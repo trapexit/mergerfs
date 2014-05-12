@@ -21,3 +21,14 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace chown
+  {
+    int
+    chown(const char *fusepath,
+          uid_t       uid,
+          gid_t       gid);
+  }
+}

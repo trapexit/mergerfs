@@ -21,3 +21,13 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace release
+  {
+    int
+    release(const char            *fusepath,
+            struct fuse_file_info *fi);
+  }
+}

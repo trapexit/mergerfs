@@ -21,3 +21,13 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace symlink
+  {
+    int
+    symlink(const char *oldpath,
+            const char *newpath);
+  }
+}

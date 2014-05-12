@@ -21,3 +21,16 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#define STATIC_ASSERT(cond) assert::StaticAssert< (cond) >()
+#define STATIC_ARRAYLENGTH_ASSERT(array,size) STATIC_ASSERT(((sizeof(array)/sizeof(array[0]))==(size)))
+
+namespace assert
+{
+  template<bool>
+  struct StaticAssert;
+
+  template<>
+  struct StaticAssert<true>
+  {};
+}

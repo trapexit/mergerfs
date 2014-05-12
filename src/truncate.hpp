@@ -21,3 +21,15 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <sys/types.h>
+
+namespace mergerfs
+{
+  namespace truncate
+  {
+    int
+    truncate(const char *fusepath,
+             off_t       size);
+  }
+}

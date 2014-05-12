@@ -1,0 +1,10 @@
+* logging
+* dynamic changing of source mounts
+* policies for readdir
+  * first found
+  * all found
+  * all found w/ permission
+  * newest
+* unit tests
+* add more to ioctl
+* use {list,set}xattr for setting runtime values via .mergerfs pseudofile

@@ -21,3 +21,65 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <errno.h>
+#include <unistd.h>
+
+#include <string>
+#include <vector>
+
+#include "ugid.hpp"
+#include "fs.hpp"
+#include "config.hpp"
+#include "assert.hpp"
+
+using std::string;
+using std::vector;
+using mergerfs::Policy;
+
+static
+int
+_unlink(const Policy::Action::Func  searchFunc,
+        const vector<string>       &srcmounts,
+        const string                fusepath)
+{
+  int rv;
+  int error;
+  vector<fs::Path> paths;
+
+  searchFunc(srcmounts,fusepath,paths);
+  if(paths.empty())
+    return -ENOENT;
+
+  rv    = -1;
+  error =  0;
+  for(vector<fs::Path>::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv &= ::unlink(i->full.c_str());
+      if(rv == -1)
+        error = errno;
+    }
+
+  return ((rv == -1) ? -error : 0);
+}
+
+namespace mergerfs
+{
+  namespace unlink
+  {
+    int
+    unlink(const char *fusepath)
+    {
+      const ugid::SetResetGuard  ugid;
+      const config::Config      &config = config::get();
+
+      if(fusepath == config.controlfile)
+        return -EPERM;
+
+      return _unlink(config.policy.action,
+                     config.srcmounts,
+                     fusepath);
+    }
+  }
+}

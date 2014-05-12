@@ -21,3 +21,19 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+#include <unistd.h>
+#include <sys/types.h>
+
+namespace mergerfs
+{
+  namespace ftruncate
+  {
+    int
+    ftruncate(const char            *fusepath,
+              off_t                  size,
+              struct fuse_file_info *fi);
+  }
+}

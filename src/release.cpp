@@ -21,3 +21,63 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+#include <errno.h>
+
+#include <string>
+
+#include "config.hpp"
+#include "ugid.hpp"
+#include "fileinfo.hpp"
+
+using std::string;
+using mergerfs::FileInfo;
+
+static
+int
+_release_controlfile(uint64_t &fh)
+{
+  string *strbuf = (string*)fh;
+
+  delete strbuf;
+
+  fh = 0;
+
+  return 0;
+}
+
+static
+int
+_release(uint64_t &fh)
+{
+  const FileInfo *fileinfo = (FileInfo*)fh;
+
+  ::close(fileinfo->fd);
+
+  delete fileinfo;
+
+  fh = 0;
+
+  return 0;
+}
+
+namespace mergerfs
+{
+  namespace release
+  {
+    int
+    release(const char            *fusepath,
+            struct fuse_file_info *fi)
+    {
+      const ugid::SetResetGuard  ugid;
+      const config::Config      &config = config::get();
+
+      if(fusepath == config.controlfile)
+        return _release_controlfile(fi->fh);
+
+      return _release(fi->fh);
+    }
+  }
+}

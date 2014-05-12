@@ -21,3 +21,15 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+namespace mergerfs
+{
+  namespace open
+  {
+    int
+    open(const char            *fusepath,
+         struct fuse_file_info *fileinfo);
+  }
+}

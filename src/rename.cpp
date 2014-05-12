@@ -21,3 +21,62 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+
+#include <string>
+#include <vector>
+
+#include "ugid.hpp"
+#include "fs.hpp"
+#include "config.hpp"
+
+using std::string;
+using std::vector;
+using mergerfs::Policy;
+
+static
+int
+_rename(const Policy::Search::Func  searchFunc,
+        const vector<string>       &srcmounts,
+        const string                from,
+        const string                to)
+{
+  int rv;
+  string pathto;
+  fs::Path pathfrom;
+
+  pathfrom = searchFunc(srcmounts,from);
+  if(pathfrom.base.empty())
+    return -ENOENT;
+
+  pathto = fs::make_path(pathfrom.base,to);
+
+  rv = ::rename(pathfrom.full.c_str(),pathto.c_str());
+
+  return ((rv == -1) ? -errno : 0);
+}
+
+namespace mergerfs
+{
+  namespace rename
+  {
+    int
+    rename(const char *from,
+           const char *to)
+    {
+      const ugid::SetResetGuard  uid;
+      const config::Config      &config = config::get();
+
+      if(from == config.controlfile)
+        return -ENOENT;
+
+      return _rename(config.policy.search,
+                     config.srcmounts,
+                     from,
+                     to);
+    }
+  }
+}

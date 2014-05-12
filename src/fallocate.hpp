@@ -21,3 +21,16 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace fallocate
+  {
+    int
+    fallocate(const char            *fusepath,
+              int                    mode,
+              off_t                  offset,
+              off_t                  len,
+              struct fuse_file_info *fi);
+  }
+}

@@ -21,3 +21,15 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace getxattr
+  {
+    int
+    getxattr(const char *fusepath,
+             const char *attrname,
+             char       *buf,
+             size_t      count);
+  }
+}

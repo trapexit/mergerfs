@@ -21,3 +21,17 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+namespace mergerfs
+{
+  namespace getattr
+  {
+    int
+    getattr(const char  *fusepath,
+            struct stat *buf);
+  }
+}

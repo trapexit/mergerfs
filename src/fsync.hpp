@@ -21,3 +21,16 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+namespace mergerfs
+{
+  namespace fsync
+  {
+    int
+    fsync(const char            *fusepath,
+          int                    isdatasync,
+          struct fuse_file_info *fi);
+  }
+}

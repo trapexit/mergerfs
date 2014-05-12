@@ -21,3 +21,63 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+
+#include "config.hpp"
+#include "fs.hpp"
+#include "ugid.hpp"
+#include "assert.hpp"
+
+using std::string;
+using std::vector;
+using mergerfs::Policy;
+
+static
+int
+_getattr(const Policy::Search::Func  searchFunc,
+         const vector<string>       &srcmounts,
+         const string                fusepath,
+         struct stat                &buf)
+{
+  int rv;
+  string path;
+
+  path = searchFunc(srcmounts,fusepath).full;
+  if(path.empty())
+    return -ENOENT;
+
+  rv = ::lstat(path.c_str(),&buf);
+
+  return ((rv == -1) ? -errno : 0);
+}
+
+namespace mergerfs
+{
+  namespace getattr
+  {
+    int
+    getattr(const char  *fusepath,
+            struct stat *buf)
+    {
+      const ugid::SetResetGuard  ugid;
+      const config::Config      &config = config::get();
+
+      if(fusepath == config.controlfile)
+        return (*buf = config.controlfilestat,0);
+
+      return _getattr(config.policy.search,
+                      config.srcmounts,
+                      fusepath,
+                      *buf);
+    }
+  }
+}

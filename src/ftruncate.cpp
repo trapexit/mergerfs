@@ -21,3 +21,47 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <errno.h>
+
+#include "config.hpp"
+#include "ugid.hpp"
+#include "fileinfo.hpp"
+
+static
+int
+_ftruncate(const int   fd,
+           const off_t size)
+{
+  int rv;
+
+  rv = ::ftruncate(fd,size);
+
+  return ((rv == -1) ? -errno : 0);
+}
+
+namespace mergerfs
+{
+  namespace ftruncate
+  {
+    int
+    ftruncate(const char            *fusepath,
+              off_t                  size,
+              struct fuse_file_info *fi)
+    {
+      const ugid::SetResetGuard  ugid;
+      const config::Config      &config   = config::get();
+      const FileInfo            *fileinfo = (FileInfo*)fi->fh;
+
+      if(fusepath == config.controlfile)
+        return -EPERM;
+
+      return _ftruncate(fileinfo->fd,
+                        size);
+    }
+  }
+}

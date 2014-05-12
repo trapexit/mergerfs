@@ -21,3 +21,17 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace ioctl
+  {
+    int
+    ioctl(const char            *fusepath,
+          int                    cmd,
+          void                  *arg,
+          struct fuse_file_info *fi,
+          unsigned int           flags,
+          void                  *data);
+  }
+}

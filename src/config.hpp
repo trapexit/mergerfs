@@ -21,3 +21,44 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#ifndef __CONFIG_HPP__
+#define __CONFIG_HPP__
+
+#include <sys/stat.h>
+
+#include <string>
+#include <vector>
+
+#include "policy.hpp"
+
+namespace mergerfs
+{
+  namespace config
+  {
+    class Config
+    {
+    public:
+      Config();
+
+      std::string generateReadStr() const;
+      void        updateReadStr();
+
+    public:
+      std::string              destmount;
+      std::vector<std::string> srcmounts;
+      Policy                   policy;
+
+      const std::string        controlfile;
+      struct stat              controlfilestat;
+      std::string              readstr;
+
+      bool                     testmode;
+    };
+
+    const Config &get(void);
+    Config       &get_writable(void);
+  }
+}
+
+#endif

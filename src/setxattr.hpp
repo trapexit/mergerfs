@@ -21,3 +21,16 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace setxattr
+  {
+    int
+    setxattr(const char *fusepath,
+             const char *attrname,
+             const char *attrval,
+             size_t      attrvalsize,
+             int         flags);
+  }
+}

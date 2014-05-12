@@ -21,3 +21,33 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
+
+#include <string>
+#include <vector>
+#include <map>
+
+#include <string.h>
+
+#include "config.hpp"
+#include "readdir.hpp"
+#include "fs.hpp"
+
+using std::string;
+
+namespace mergerfs
+{
+  int
+  test(const struct fuse_args         &args,
+       const mergerfs::config::Config &config)
+  {
+    return 0;
+  }
+}

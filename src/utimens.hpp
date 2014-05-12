@@ -21,3 +21,13 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace utimens
+  {
+    int
+    utimens(const char            *fusepath,
+            const struct timespec  ts[2]);
+  }
+}

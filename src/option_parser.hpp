@@ -21,3 +21,17 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+#include "config.hpp"
+
+namespace mergerfs
+{
+  namespace options
+  {
+    void
+    parse(struct fuse_args         &args,
+          mergerfs::config::Config &config);
+  }
+}

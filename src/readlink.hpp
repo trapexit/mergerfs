@@ -21,3 +21,14 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace readlink
+  {
+    int
+    readlink(const char *fusepath,
+             char       *buf,
+             size_t      size);
+  }
+}

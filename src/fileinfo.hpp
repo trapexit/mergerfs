@@ -21,3 +21,33 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#ifndef __FILEINFO_H__
+#define __FILEINFO_H__
+
+#include <string>
+
+namespace mergerfs
+{
+  struct FileInfo
+  {
+  public:
+    FileInfo(int         fd_,
+             int         flags_,
+             std::string realpath_) :
+      fd(fd_),
+      flags(flags_),
+      realpath(realpath_)
+    {
+    }
+
+    int         fd;
+    int         flags;
+    std::string realpath;
+
+  private:
+    FileInfo() {}
+  };
+}
+
+#endif /* __FILEINFO_H__ */

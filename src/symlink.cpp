@@ -21,3 +21,59 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <fuse.h>
+
+#include <errno.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string>
+
+#include "fs.hpp"
+#include "config.hpp"
+#include "ugid.hpp"
+
+using std::string;
+using std::vector;
+
+static
+int
+_symlink(const vector<string> &srcmounts,
+         const string          from,
+         const string          to)
+{
+  int rv;
+  fs::Path path;
+
+  path = fs::find_first(srcmounts,fs::dirname(to));
+  if(path.base.empty())
+    return -ENOENT;
+
+  path.full = fs::make_path(path.base,to);
+
+  rv = symlink(from.c_str(),path.full.c_str());
+
+  return ((rv == -1) ? -errno : 0);
+}
+
+namespace mergerfs
+{
+  namespace symlink
+  {
+    int
+    symlink(const char *oldpath,
+            const char *newpath)
+    {
+      const ugid::SetResetGuard  uid;
+      const config::Config      &config = config::get();
+
+      if(oldpath == config.controlfile ||
+         newpath == config.controlfile)
+        return -EPERM;
+
+      return _symlink(config.srcmounts,
+                      oldpath,
+                      newpath);
+    }
+  }
+}

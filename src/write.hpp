@@ -21,3 +21,16 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+namespace mergerfs
+{
+  namespace write
+  {
+    int
+    write(const char            *fusepath,
+          const char            *buf,
+          size_t                 count,
+          off_t                  offset,
+          struct fuse_file_info *fi);
+  }
+}

@@ -21,3 +21,17 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 */
+
+#include <sys/types.h>
+#include <fuse.h>
+
+namespace mergerfs
+{
+  namespace create
+  {
+    int
+    create(const char            *fusepath,
+           mode_t                 mode,
+           struct fuse_file_info *fileinfo);
+  }
+}
