@@ -27,12 +27,12 @@
 
 #include <errno.h>
 #include <sys/types.h>
-#include <attr/xattr.h>
 
 #include "config.hpp"
 #include "fs.hpp"
 #include "ugid.hpp"
 #include "assert.hpp"
+#include "xattr.hpp"
 
 using std::string;
 using std::vector;

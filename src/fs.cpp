@@ -37,10 +37,10 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
-#include <attr/xattr.h>
 #include <unistd.h>
 
 #include "fs.hpp"
+#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -446,6 +446,7 @@ namespace fs
   listxattr(const string  path,
             vector<char> &attrs)
   {
+#ifndef WITHOUT_XATTR
     int rv;
     int size;
 
@@ -459,6 +460,10 @@ namespace fs
       }
 
     return rv;
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
   }
 
   int
@@ -497,6 +502,7 @@ namespace fs
            const string  attr,
            vector<char> &value)
   {
+#ifndef WITHOUT_XATTR
     int rv;
     int size;
 
@@ -510,6 +516,10 @@ namespace fs
       }
 
     return rv;
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
   }
 
   int
@@ -562,11 +572,16 @@ namespace fs
            const string value,
            const int    flags)
   {
+#ifndef WITHOUT_XATTR
     return ::setxattr(path.c_str(),
                       key.c_str(),
                       value.data(),
                       value.size(),
                       flags);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
   }
 
   int
@@ -575,11 +590,16 @@ namespace fs
            const string value,
            const int    flags)
   {
+#ifndef WITHOUT_XATTR
     return ::fsetxattr(fd,
                        key.c_str(),
                        value.data(),
                        value.size(),
                        flags);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
   }
 
   int
