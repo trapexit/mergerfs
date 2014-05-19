@@ -59,7 +59,8 @@ $ mergerfs -o create=epmfs,search=ff,action=ff,statfs=sumf <mountpoint> <dir0>:<
 Building
 ========
 
-Need to install FUSE development libraries.
+Need to install FUSE development libraries (libfuse-dev).
+Optionally need libattr1 (libattr1-dev).
 
 
 ```
