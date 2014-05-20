@@ -27,6 +27,7 @@
 
 #include <sys/types.h>
 #include <errno.h>
+#include <string.h>
 
 #include "config.hpp"
 #include "fs.hpp"
@@ -37,6 +38,33 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs;
+
+static
+int
+_listxattr_controlfile(char         *list,
+                       const size_t  size)
+{
+#ifndef WITHOUT_XATTR
+  const char xattrs[] =
+    "user.mergerfs.action\0"
+    "user.mergerfs.create\0"
+    "user.mergerfs.search\0"
+    "user.mergerfs.statfs\0";
+
+  if(size == 0)
+    return sizeof(xattrs);
+
+  if(size < sizeof(xattrs))
+    return -ERANGE;
+
+  memcpy(list,xattrs,sizeof(xattrs));
+
+  return sizeof(xattrs);
+#else
+  return -ENOTSUP;
+#endif
+}
 
 static
 int
@@ -75,7 +103,8 @@ namespace mergerfs
       const config::Config      &config = config::get();
 
       if(fusepath == config.controlfile)
-        return -ENOTSUP;
+        return _listxattr_controlfile(list,
+                                      size);
 
       return _listxattr(config.policy.search,
                         config.srcmounts,

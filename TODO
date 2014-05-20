@@ -7,4 +7,3 @@
   * newest
 * unit tests
 * add more to ioctl
-* use {list,set}xattr for setting runtime values via .mergerfs pseudofile

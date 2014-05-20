@@ -27,6 +27,7 @@
 
 #include <errno.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include "config.hpp"
 #include "fs.hpp"
@@ -37,6 +38,45 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+
+static
+int
+_getxattr_controlfile(const Policy &policy,
+                      const string  attrname,
+                      char         *buf,
+                      const size_t  count)
+{
+#ifndef WITHOUT_XATTR
+  size_t len;
+  string attrvalue;
+
+  if(attrname == "user.mergerfs.action")
+    attrvalue = policy.action.str();
+  else if(attrname == "user.mergerfs.create")
+    attrvalue = policy.create.str();
+  else if(attrname == "user.mergerfs.search")
+    attrvalue = policy.search.str();
+  else if(attrname == "user.mergerfs.statfs")
+    attrvalue = policy.statfs.str();
+
+  if(attrvalue.empty())
+    return -ENOATTR;
+
+  len = attrvalue.size() + 1;
+
+  if(count == 0)
+    return len;
+
+  if(count < len)
+    return -ERANGE;
+
+  memcpy(buf,attrvalue.c_str(),len);
+
+  return (int)len;
+#else
+  return -ENOTSUP;
+#endif
+}
 
 static
 int
@@ -77,7 +117,10 @@ namespace mergerfs
       const config::Config      &config = config::get();
 
       if(fusepath == config.controlfile)
-        return -ENOTSUP;
+        return _getxattr_controlfile(config.policy,
+                                     attrname,
+                                     buf,
+                                     count);
 
       return _getxattr(config.policy.search,
                        config.srcmounts,

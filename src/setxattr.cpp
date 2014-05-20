@@ -37,6 +37,65 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs;
+
+static
+int
+_setxattr_controlfile(config::Config &config,
+                      const string    attrname,
+                      const string    attrval,
+                      const size_t    attrvalsize,
+                      const int       flags)
+{
+#ifndef WITHOUT_XATTR
+  if(attrname == "user.mergerfs.action")
+    {
+      if((flags & XATTR_CREATE) == XATTR_CREATE)
+        return -EEXIST;
+      if(Policy::Action::fromString(attrval) != -1)
+        config.policy.action = attrval;
+      else
+        return -ENOSPC;
+    }
+  else if(attrname == "user.mergerfs.create")
+    {
+      if((flags & XATTR_CREATE) == XATTR_CREATE)
+        return -EEXIST;
+      if(Policy::Create::fromString(attrval) != -1)
+        config.policy.create = attrval;
+      else
+        return -ENOSPC;
+    }
+  else if(attrname == "user.mergerfs.search")
+    {
+      if((flags & XATTR_CREATE) == XATTR_CREATE)
+        return -EEXIST;
+      if(Policy::Search::fromString(attrval) != -1)
+        config.policy.search = attrval;
+      else
+        return -ENOSPC;
+    }
+  else if(attrname == "user.mergerfs.statfs")
+    {
+      if((flags & XATTR_CREATE) == XATTR_CREATE)
+        return -EEXIST;
+      if(Policy::StatFS::fromString(attrval) != -1)
+        config.policy.statfs = attrval;
+      else
+        return -ENOSPC;
+    }
+  else
+    {
+      return -ENOATTR;
+    }
+
+  config.updateReadStr();
+
+  return 0;
+#else
+  return -ENOTSUP;
+#endif
+}
 
 static
 int
@@ -87,7 +146,11 @@ namespace mergerfs
       const config::Config      &config = config::get();
 
       if(fusepath == config.controlfile)
-        return -ENOTSUP;
+        return _setxattr_controlfile(config::get_writable(),
+                                     attrname,
+                                     string(attrval,attrvalsize),
+                                     attrvalsize,
+                                     flags);
 
       return _setxattr(config.policy.action,
                        config.srcmounts,
