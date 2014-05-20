@@ -46,8 +46,22 @@ _ioctl(const int           fd,
 
   switch(cmd)
     {
+#ifdef FS_IOC_GETFLAGS
     case FS_IOC_GETFLAGS:
     case FS_IOC_SETFLAGS:
+#endif
+#ifdef FS_IOC32_GETFLAGS
+    case FS_IOC32_SETFLAGS:
+    case FS_IOC32_GETFLAGS:
+#endif
+#ifdef FS_IOC_GETVERSION
+    case FS_IOC_GETVERSION:
+    case FS_IOC_SETVERSION:
+#endif
+#ifdef FS_IOC32_GETVERSION
+    case FS_IOC32_GETVERSION:
+    case FS_IOC32_SETVERSION:
+#endif
       rv = ::ioctl(fd,cmd,data);
       break;
 
