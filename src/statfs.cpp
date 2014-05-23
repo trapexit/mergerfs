@@ -68,24 +68,12 @@ _normalize_statvfs(struct statvfs      *fsstat,
 static
 void
 _merge_statvfs(struct statvfs       * const out,
-               const struct statvfs * const in,
-               const Policy::StatFS         policy)
+               const struct statvfs * const in)
 {
-  switch(policy)
+  if(out->f_bfree < in->f_bfree)
     {
-    case Policy::StatFS::SumUsedMaxFree:
-      if(out->f_bfree < in->f_bfree)
-        {
-          out->f_bfree  = in->f_bfree;
-          out->f_bavail = in->f_bavail;
-        }
-      break;
-
-    default:
-    case Policy::StatFS::SumUsedSumFree:
-      out->f_bfree  += in->f_bfree;
-      out->f_bavail += in->f_bavail;
-      break;
+      out->f_bfree  = in->f_bfree;
+      out->f_bavail = in->f_bavail;
     }
 
   out->f_ffree  += in->f_ffree;
@@ -96,8 +84,7 @@ _merge_statvfs(struct statvfs       * const out,
 
 static
 int
-_statfs(const Policy::StatFS  policy,
-        const vector<string> &srcmounts,
+_statfs(const vector<string> &srcmounts,
         struct statvfs       &fsstat)
 {
   unsigned long min_bsize   = ULONG_MAX;
@@ -134,7 +121,7 @@ _statfs(const Policy::StatFS  policy,
       for(;fsstatiter != endfsstatiter;++fsstatiter)
         {
           _normalize_statvfs(&fsstatiter->second,min_bsize,min_frsize,min_namemax);
-          _merge_statvfs(&fsstat,&fsstatiter->second,policy);
+          _merge_statvfs(&fsstat,&fsstatiter->second);
         }
     }
 
@@ -152,8 +139,7 @@ namespace mergerfs
       const ugid::SetResetGuard  uid;
       const config::Config      &config = config::get();
 
-      return _statfs(config.policy.statfs,
-                     config.srcmounts,
+      return _statfs(config.srcmounts,
                      *stat);
     }
   }

@@ -36,45 +36,12 @@ namespace mergerfs
   public:
     enum Type
       {
-        STATFS,
         ACTION,
         CREATE,
         SEARCH
       };
 
   public:
-    class StatFS
-    {
-    public:
-      enum Type
-        {
-          Invalid = -1,
-          SumUsedSumFree,
-          SumUsedMaxFree,
-          Max
-        };
-
-      StatFS(Type _value);
-
-    public:
-      operator Type() const { return _value; }
-      operator std::string() const { return _str; }
-      std::string str() const { return _str; }
-
-      StatFS& operator=(const Type);
-      StatFS& operator=(const std::string);
-
-      static Type        fromString(const std::string);
-      static std::string toString(const Type);
-
-    private:
-      StatFS();
-
-    private:
-      Type        _value;
-      std::string _str;
-    };
-
     class Create
     {
     public:
@@ -190,14 +157,12 @@ namespace mergerfs
 
   public:
     Policy() :
-      statfs(StatFS::SumUsedMaxFree),
       create(Create::ExistingPathMostFreeSpace),
       search(Search::FirstFound),
       action(Action::FirstFound)
     {}
 
   public:
-    StatFS statfs;
     Create create;
     Search search;
     Action action;

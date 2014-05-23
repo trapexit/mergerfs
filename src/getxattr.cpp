@@ -56,8 +56,6 @@ _getxattr_controlfile(const Policy &policy,
     attrvalue = policy.create.str();
   else if(attrname == "user.mergerfs.search")
     attrvalue = policy.search.str();
-  else if(attrname == "user.mergerfs.statfs")
-    attrvalue = policy.statfs.str();
 
   if(attrvalue.empty())
     return -ENOATTR;

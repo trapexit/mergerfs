@@ -63,8 +63,7 @@ namespace mergerfs
 
       ss << "action=" << policy.action.str() << std::endl
          << "create=" << policy.create.str() << std::endl
-         << "search=" << policy.search.str() << std::endl
-         << "statfs=" << policy.statfs.str() << std::endl;
+         << "search=" << policy.search.str() << std::endl;
 
       return ss.str();
     }

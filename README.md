@@ -10,20 +10,19 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 Policies
 ========
 
-Filesystem calls are broken up into 5 classes of policies: search, action, create, statfs, and none.
+Filesystem calls are broken up into 4 categories of policies: search, action, create, and none.
 
 Below shows each policy class, the FUSE calls they impact, and the policy names.
 
-####Policy classifications####
+#### Policy classifications ####
 | Class | FUSE calls | Policies |
 |-------|------------|----------|
 | search | access, getattr, getxattr, listxattr, open, readlink  | First Found (ff), First Found w/ Permission (ffwp), Newest (newest) |
 | action | chmod, link, removexattr, rmdir, setxattr, truncate, unlink, utimens | First Found (ff), First Found w/ Permission (ffwp), Newest (newest), All Found (all) |
 | create | create, mkdir, mknod | Existing Path (ep), Most Free Space (mfs), Existing Path Most Free Space (epmfs), Random (rand) |
-| statfs | statfs | Sum Used Max Free (sumf), Sum Used Sum Free (susf) |
-| none   | fallocate, fsync, ftruncate, ioctl, read, readdir, rename, symlink, write, release | |
+| none   | fallocate, fsync, ftruncate, ioctl, read, readdir, rename, statfs, symlink, write, release | |
 
-####Descriptions####
+#### Descriptions ####
 | Class/Policy | Description |
 |--------------|-------------|
 | search/ff | Given the order the paths were provided at mount time act on the first one found (regardless if stat would return EACCES). |
@@ -37,8 +36,10 @@ Below shows each policy class, the FUSE calls they impact, and the policy names.
 | create/mfs | Assuming the path is found to exist (ENOENT would not be returned) use the drive with the most free space available. |
 | create/epmfs | If the path exists in multiple locations use the one with the most free space. Otherwise fall back to mfs. |
 | create/rand | Pick a destination at random. Again the dirname of the full path must exist somewhere. |
-| statfs/sumf | When reporting the size of the filesystem it will show the sum of all used but the available space will be reported as the max available across the filesystems mounted. |
-| statfs/susf | As above but will report the sum of available space. Since the largest usable space is that of the filesystem with the most usable space this option is deceptive. |
+
+#### statvfs ####
+
+Since we aren't trying to stripe data across drives the free space of the mountpoint is just that of the source mount with the most free space at the moment.
 
 **NOTE:** create is really a search for existence and then create. The 'search' policy applies to the first part. If the [dirname](http://linux.die.net/man/3/dirname) of the full path is not found to exist [ENOENT](http://linux.die.net/man/3/errno) is returned.
 
@@ -46,7 +47,7 @@ Usage
 =====
 
 ```
-$ mergerfs -o create=epmfs,search=ff,action=ff,statfs=sumf <mountpoint> <dir0>:<dir1>:<dir2>
+$ mergerfs -o create=epmfs,search=ff,action=ff <mountpoint> <dir0>:<dir1>:<dir2>
 ```
 
 | Option | Values | Default |
@@ -54,7 +55,6 @@ $ mergerfs -o create=epmfs,search=ff,action=ff,statfs=sumf <mountpoint> <dir0>:<
 | search | ff, ffwp, newest | ff |
 | action | ff, ffwp, newest, all | ff |
 | create | ep, mfs, epmfs, rand | epmfs |
-| statfs | sumf, susf | sumf |
 
 Building
 ========
@@ -72,6 +72,7 @@ make WITHOUT_XATTR=1 - to build program without xattrs functionality
 Runtime Settings
 ================
 
+#### /.mergerfs pseudo file ####
 ```
 <mountpoint>/.mergerfs
 ```
@@ -85,7 +86,6 @@ Reading the file will result in a newline delimited list of current settings as 
 action=ff
 create=epmfs
 search=ff
-statfs=sumf
 ```
 
 Writing to the file is buffered and waits till a newline to process. Meaning echo works well.
@@ -96,7 +96,25 @@ Writing to the file is buffered and waits till a newline to process. Meaning ech
 action=ff
 create=epmfs
 search=newest
-statfs=sumf
 ```
 
 *NOTE:* offset is not supported and ignored in both read and write. There is also a safety check which limits buffered + incoming length to a max of 1024 bytes.
+
+#### xattrs ####
+
+If xattrs has been enabled you can also use [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) on the pseudo file **.mergerfs** to modify the policies. The keys are **mergerfs.action**, **mergerfs.create**, and **mergerfs.search**.
+
+```
+[trapexit:/tmp/mount] $ attr -l .mergerfs
+Attribute "mergerfs.action" has a 3 byte value for .mergerfs
+Attribute "mergerfs.create" has a 6 byte value for .mergerfs
+Attribute "mergerfs.search" has a 3 byte value for .mergerfs
+
+[trapexit:/tmp/mount] $ attr -g mergerfs.action .mergerfs
+Attribute "mergerfs.action" had a 3 byte value for .mergerfs:
+ff
+
+[trapexit:/tmp/mount] 1 $ attr -s mergerfs.action -V ffwp .mergerfs
+Attribute "mergerfs.action" set to a 3 byte value for .mergerfs:
+ffwp
+```

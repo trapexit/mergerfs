@@ -68,9 +68,7 @@ process_opt(config::Config    &config,
   switch(argvalue.size())
     {
     case 2:
-      if(argvalue[0] == "statfs")
-        policy.statfs.fromString(argvalue[1]);
-      else if(argvalue[0] == "create")
+      if(argvalue[0] == "create")
         policy.create.fromString(argvalue[1]);
       else if(argvalue[0] == "search")
         policy.search.fromString(argvalue[1]);

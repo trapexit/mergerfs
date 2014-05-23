@@ -75,15 +75,6 @@ _setxattr_controlfile(config::Config &config,
       else
         return -ENOSPC;
     }
-  else if(attrname == "user.mergerfs.statfs")
-    {
-      if((flags & XATTR_CREATE) == XATTR_CREATE)
-        return -EEXIST;
-      if(Policy::StatFS::fromString(attrval) != -1)
-        config.policy.statfs = attrval;
-      else
-        return -ENOSPC;
-    }
   else
     {
       return -ENOATTR;

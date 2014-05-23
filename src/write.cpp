@@ -68,12 +68,6 @@ _process_kv(Config       &config,
       if(rv == 0)
         config.policy.create = value;
     }
-  else if(key == "statfs")
-    {
-      rv = (Policy::StatFS::fromString(value) != -1) ? 0 : -EINVAL;
-      if(rv == 0)
-        config.policy.statfs = value;
-    }
   else
     {
       rv = -EINVAL;
