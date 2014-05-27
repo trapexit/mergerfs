@@ -69,25 +69,11 @@ _readdir(const vector<string>  &srcmounts,
       for(struct dirent *de = ::readdir(dh); de != NULL; de = ::readdir(dh))
         {
           string d_name(de->d_name);
-          pair<set<string>::iterator,bool> ret;
 
-          ret = found.insert(d_name);
-          if(ret.second == false)
+          if(found.insert(d_name).second == false)
             continue;
 
-          {
-            struct stat st;
-            string path;
-
-            path = fs::make_path(basepath,d_name);
-            if(::lstat(path.c_str(),&st) == -1)
-              {
-                found.erase(ret.first);
-                continue;
-              }
-
-            filler(buf,de->d_name,&st,NO_OFFSET);
-          }
+          filler(buf,de->d_name,NULL,NO_OFFSET);
         }
 
       ::closedir(dh);
