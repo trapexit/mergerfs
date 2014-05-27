@@ -138,7 +138,10 @@ namespace fs
   make_path(const string base,
             const string suffix)
   {
-    return base + suffix;
+    if(*base.rbegin() == '/' ||
+       *suffix.rbegin() == '/')
+      return base + suffix;
+    return base + '/' + suffix;
   }
 
   bool
