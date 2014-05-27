@@ -220,12 +220,17 @@ namespace fs
     for(vector<string>::const_iterator
           iter = beginiter; iter != enditer; ++iter)
       {
-        int         rv;
-        struct stat st;
-        string      path;
+        int    rv;
+        string path;
 
         path = make_path(*iter,suffix);
-        rv   = ::lstat(path.c_str(),&st);
+        rv = ::eaccess(path.c_str(),R_OK);
+        if(rv == 0)
+          return Path(*iter,path);
+        rv = ::eaccess(path.c_str(),W_OK);
+        if(rv == 0)
+          return Path(*iter,path);
+        rv = ::eaccess(path.c_str(),X_OK);
         if(rv == 0)
           return Path(*iter,path);
       }
