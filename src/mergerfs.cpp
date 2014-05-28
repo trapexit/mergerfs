@@ -39,6 +39,7 @@
 #include "chown.hpp"
 #include "create.hpp"
 #include "fallocate.hpp"
+#include "fgetattr.hpp"
 #include "fsync.hpp"
 #include "ftruncate.hpp"
 #include "getattr.hpp"
@@ -80,7 +81,7 @@ get_fuse_operations()
   ops.create      = mergerfs::create::create;
   ops.destroy     = NULL;
   ops.fallocate   = mergerfs::fallocate::fallocate;
-  ops.fgetattr    = NULL;
+  ops.fgetattr    = mergerfs::fgetattr::fgetattr;
   ops.flock       = NULL;
   ops.flush       = NULL;       /* called on close() of fd */
   ops.fsync       = mergerfs::fsync::fsync;

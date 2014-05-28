@@ -18,7 +18,7 @@ Filesystem calls are broken up into 4 functional categories: search, action, cre
 | search | access, getattr, getxattr, listxattr, open, readlink  |
 | action | chmod, link, removexattr, rmdir, setxattr, truncate, unlink, utimens |
 | create | create, mkdir, mknod |
-| none   | fallocate, fsync, ftruncate, ioctl, read, readdir, rename, statfs, symlink, write, release |
+| none   | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, rename, statfs, symlink, write, release |
 
 #### Policy descriptions ####
 | Policy | Description |
