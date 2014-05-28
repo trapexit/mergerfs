@@ -73,7 +73,8 @@ _readdir(const vector<string>  &srcmounts,
           if(found.insert(d_name).second == false)
             continue;
 
-          filler(buf,de->d_name,NULL,NO_OFFSET);
+          if(filler(buf,de->d_name,NULL,NO_OFFSET) != 0)
+            return -ENOMEM;
         }
 
       ::closedir(dh);
