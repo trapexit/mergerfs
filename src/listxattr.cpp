@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "config.hpp"
+#include "category.hpp"
 #include "fs.hpp"
 #include "ugid.hpp"
 #include "assert.hpp"
@@ -37,7 +38,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 using namespace mergerfs;
 
 static
@@ -46,21 +46,23 @@ _listxattr_controlfile(char         *list,
                        const size_t  size)
 {
 #ifndef WITHOUT_XATTR
-  const char xattrs[] =
-    "user.mergerfs.action\0"
-    "user.mergerfs.create\0"
-    "user.mergerfs.search\0"
-    "user.mergerfs.statfs\0";
+  size_t xattrssize;
+  string xattrs;
+
+  for(int i = Category::Enum::BEGIN; i < Category::Enum::END; ++i)
+    xattrs += "user.mergerfs." + (string)Category::categories[i] + '\0';
+
+  xattrssize = xattrs.size();
 
   if(size == 0)
-    return sizeof(xattrs);
+    return xattrssize;
 
-  if(size < sizeof(xattrs))
+  if(size < xattrssize)
     return -ERANGE;
 
-  memcpy(list,xattrs,sizeof(xattrs));
+  memcpy(list,xattrs.data(),xattrssize);
 
-  return sizeof(xattrs);
+  return xattrssize;
 #else
   return -ENOTSUP;
 #endif
@@ -68,21 +70,21 @@ _listxattr_controlfile(char         *list,
 
 static
 int
-_listxattr(const Policy::Search::Func  searchFunc,
-           const vector<string>       &srcmounts,
-           const string                fusepath,
-           char                       *list,
-           const size_t                size)
+_listxattr(const fs::SearchFunc  searchFunc,
+           const vector<string> &srcmounts,
+           const string          fusepath,
+           char                 *list,
+           const size_t          size)
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  string path;
+  fs::PathVector paths;
 
-  path = searchFunc(srcmounts,fusepath).full;
-  if(path.empty())
+  searchFunc(srcmounts,fusepath,paths);
+  if(paths.empty())
     return -ENOENT;
 
-  rv = ::llistxattr(path.c_str(),list,size);
+  rv = ::llistxattr(paths[0].full.c_str(),list,size);
 
   return ((rv == -1) ? -errno : rv);
 #else
@@ -106,7 +108,7 @@ namespace mergerfs
         return _listxattr_controlfile(list,
                                       size);
 
-      return _listxattr(config.policy.search,
+      return _listxattr(*config.search,
                         config.srcmounts,
                         fusepath,
                         list,

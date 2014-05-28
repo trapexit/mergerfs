@@ -39,14 +39,14 @@ using mergerfs::Policy;
 
 static
 int
-_utimens(const Policy::Action::Func  searchFunc,
-         const vector<string>       &srcmounts,
-         const string                fusepath,
-         const struct timespec       ts[2])
+_utimens(const fs::SearchFunc  searchFunc,
+         const vector<string> &srcmounts,
+         const string          fusepath,
+         const struct timespec ts[2])
 {
   int rv;
   int error;
-  vector<fs::Path> paths;
+  fs::PathVector paths;
 
   searchFunc(srcmounts,fusepath,paths);
   if(paths.empty())
@@ -54,7 +54,7 @@ _utimens(const Policy::Action::Func  searchFunc,
 
   rv    = -1;
   error =  0;
-  for(vector<fs::Path>::const_iterator
+  for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv &= ::utimensat(0,i->full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
@@ -79,7 +79,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EPERM;
 
-      return _utimens(config.policy.action,
+      return _utimens(*config.action,
                       config.srcmounts,
                       fusepath,
                       ts);

@@ -39,14 +39,14 @@ using mergerfs::Policy;
 
 static
 int
-_link(const Policy::Action::Func  searchFunc,
-      const vector<string>       &srcmounts,
-      const string                from,
-      const string                to)
+_link(const fs::SearchFunc  searchFunc,
+      const vector<string> &srcmounts,
+      const string          from,
+      const string          to)
 {
   int rv;
   int error;
-  vector<fs::Path> paths;
+  fs::PathVector paths;
 
   searchFunc(srcmounts,from,paths);
   if(paths.empty())
@@ -54,7 +54,7 @@ _link(const Policy::Action::Func  searchFunc,
 
   rv    = -1;
   error =  0;
-  for(vector<fs::Path>::const_iterator
+  for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       const string pathfrom = fs::make_path(i->base,from);
@@ -82,7 +82,7 @@ namespace mergerfs
       if(from == config.controlfile)
         return -EPERM;
 
-      return _link(config.policy.action,
+      return _link(*config.action,
                    config.srcmounts,
                    from,
                    to);

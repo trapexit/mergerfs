@@ -48,6 +48,8 @@ namespace mergerfs
   test(const struct fuse_args         &args,
        const mergerfs::config::Config &config)
   {
+
+    
     return 0;
   }
 }

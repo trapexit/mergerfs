@@ -54,30 +54,33 @@ _create_controlfile(uint64_t &fh)
 
 static
 int
-_create(const Policy::Search::Func  searchFunc,
-        const Policy::Create::Func  createPathFunc,
-        const vector<string>       &srcmounts,
-        const string                fusepath,
-        const mode_t                mode,
-        const int                   flags,
-        uint64_t                   &fh)
+_create(const fs::SearchFunc  searchFunc,
+        const fs::SearchFunc  createPathFunc,
+        const vector<string> &srcmounts,
+        const string          fusepath,
+        const mode_t          mode,
+        const int             flags,
+        uint64_t             &fh)
 {
   int fd;
   string path;
   string dirname;
-  fs::Path createpath;
-  fs::Path existingpath;
+  fs::PathVector createpath;
+  fs::PathVector existingpath;
 
   dirname      = fs::dirname(fusepath);
-  existingpath = searchFunc(srcmounts,dirname);
-  if(existingpath.base.empty())
+  searchFunc(srcmounts,dirname,existingpath);
+  if(existingpath.empty())
     return -ENOENT;
 
-  createpath = createPathFunc(srcmounts,dirname);
-  if(createpath.base != existingpath.base)
-    fs::clonepath(existingpath.base,createpath.base,dirname);
+  createPathFunc(srcmounts,dirname,createpath);
+  if(createpath.empty())
+    return -ENOSPC;
+  
+  if(createpath[0].base != existingpath[0].base)
+    fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
 
-  path = fs::make_path(createpath.base,fusepath);
+  path = fs::make_path(createpath[0].base,fusepath);
 
   fd = ::open(path.c_str(),flags,mode);
   if(fd == -1)
@@ -103,8 +106,8 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return _create_controlfile(fileinfo->fh);
 
-      return _create(config.policy.search,
-                     config.policy.create,
+      return _create(*config.search,
+                     *config.create,
                      config.srcmounts,
                      fusepath,
                      mode,

@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "policy.hpp"
+#include "category.hpp"
 
 namespace mergerfs
 {
@@ -47,13 +48,17 @@ namespace mergerfs
     public:
       std::string              destmount;
       std::vector<std::string> srcmounts;
-      Policy                   policy;
 
-      const std::string        controlfile;
-      struct stat              controlfilestat;
-      std::string              readstr;
+      const Policy *policies[Category::Enum::END];
+      const Policy *&action;
+      const Policy *&create;
+      const Policy *&search;
 
-      bool                     testmode;
+      const std::string controlfile;
+      struct stat       controlfilestat;
+      std::string       readstr;
+
+      bool testmode;
     };
 
     const Config &get(void);

@@ -22,58 +22,30 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
+#include <algorithm>
 
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string>
-
-#include "fs.hpp"
-#include "config.hpp"
-#include "ugid.hpp"
-
-using std::string;
-using std::vector;
-
-static
-int
-_symlink(const vector<string> &srcmounts,
-         const string          from,
-         const string          to)
+template<typename K,typename V>
+class buildmap
 {
-  int rv;
-  fs::PathVector paths;
-
-  fs::find::ff(srcmounts,fs::dirname(to),paths);
-  if(paths.empty())
-    return -ENOENT;
-
-  paths[0].full = fs::make_path(paths[0].base,to);
-
-  rv = symlink(from.c_str(),paths[0].full.c_str());
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace symlink
+public:
+  buildmap(const K &key,
+           const V &val)
   {
-    int
-    symlink(const char *oldpath,
-            const char *newpath)
-    {
-      const ugid::SetResetGuard  uid;
-      const config::Config      &config = config::get();
-
-      if(oldpath == config.controlfile ||
-         newpath == config.controlfile)
-        return -EPERM;
-
-      return _symlink(config.srcmounts,
-                      oldpath,
-                      newpath);
-    }
+    _map.insert(std::make_pair(key,val));
   }
-}
+
+  buildmap<K,V> &operator()(const K &key,
+                            const V &val)
+  {
+    _map.insert(std::make_pair(key,val));
+    return *this;
+  }
+
+  operator std::map<K,V>()
+  {
+    return _map;
+  }
+
+private:
+  std::map<K,V> _map;
+};

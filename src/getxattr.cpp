@@ -38,10 +38,11 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs::config;
 
 static
 int
-_getxattr_controlfile(const Policy &policy,
+_getxattr_controlfile(const Config &config,
                       const string  attrname,
                       char         *buf,
                       const size_t  count)
@@ -51,16 +52,16 @@ _getxattr_controlfile(const Policy &policy,
   string attrvalue;
 
   if(attrname == "user.mergerfs.action")
-    attrvalue = policy.action.str();
+    attrvalue = (std::string)*config.action;
   else if(attrname == "user.mergerfs.create")
-    attrvalue = policy.create.str();
+    attrvalue = (std::string)*config.create;
   else if(attrname == "user.mergerfs.search")
-    attrvalue = policy.search.str();
+    attrvalue = (std::string)*config.search;
 
   if(attrvalue.empty())
     return -ENOATTR;
 
-  len = attrvalue.size() + 1;
+  len = attrvalue.size();
 
   if(count == 0)
     return len;
@@ -78,22 +79,22 @@ _getxattr_controlfile(const Policy &policy,
 
 static
 int
-_getxattr(const Policy::Search::Func  searchFunc,
-          const vector<string>       &srcmounts,
-          const string                fusepath,
-          const char                 *attrname,
-          char                       *buf,
-          const size_t                count)
+_getxattr(const fs::SearchFunc  searchFunc,
+          const vector<string> &srcmounts,
+          const string          fusepath,
+          const char           *attrname,
+          char                 *buf,
+          const size_t          count)
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  string path;
+  fs::PathVector paths;
 
-  path = searchFunc(srcmounts,fusepath).full;
-  if(path.empty())
+  searchFunc(srcmounts,fusepath,paths);
+  if(paths.empty())
     return -ENOENT;
 
-  rv = ::lgetxattr(path.c_str(),attrname,buf,count);
+  rv = ::lgetxattr(paths[0].full.c_str(),attrname,buf,count);
 
   return ((rv == -1) ? -errno : rv);
 #else
@@ -115,12 +116,12 @@ namespace mergerfs
       const config::Config      &config = config::get();
 
       if(fusepath == config.controlfile)
-        return _getxattr_controlfile(config.policy,
+        return _getxattr_controlfile(config,
                                      attrname,
                                      buf,
                                      count);
 
-      return _getxattr(config.policy.search,
+      return _getxattr(*config.search,
                        config.srcmounts,
                        fusepath,
                        attrname,

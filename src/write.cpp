@@ -33,11 +33,13 @@
 
 #include "config.hpp"
 #include "policy.hpp"
+#include "category.hpp"
 #include "ugid.hpp"
 #include "fileinfo.hpp"
 
 using mergerfs::config::Config;
 using mergerfs::Policy;
+using mergerfs::Category;
 using std::string;
 using std::vector;
 using std::stringstream;
@@ -48,35 +50,22 @@ _process_kv(Config       &config,
             const string  key,
             const string  value)
 {
-  int rv = 0;
+  const Category *cat;
+  const Policy   *policy;
 
-  if(key == "search")
-    {
-      rv = (Policy::Search::fromString(value) != -1) ? 0 : -EINVAL;
-      if(rv == 0)
-        config.policy.search = value;
-    }
-  else if(key == "action")
-    {
-      rv = (Policy::Action::fromString(value) != -1) ? 0 : -EINVAL;
-      if(rv == 0)
-        config.policy.action = value;
-    }
-  else if(key == "create")
-    {
-      rv = (Policy::Create::fromString(value) != -1) ? 0 : -EINVAL;
-      if(rv == 0)
-        config.policy.create = value;
-    }
-  else
-    {
-      rv = -EINVAL;
-    }
+  cat = Category::find(key);
+  if(cat == Category::invalid)
+    return -EINVAL;
 
-  if(rv == 0)
-    config.updateReadStr();
+  policy = Policy::find(value);
+  if(policy == Policy::invalid)
+    return -EINVAL;
 
-  return rv;
+  config.policies[*cat] = policy;
+
+  config.updateReadStr();
+
+  return 0;
 }
 
 static

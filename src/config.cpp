@@ -36,9 +36,16 @@ namespace mergerfs
   namespace config
   {
     Config::Config()
-      : controlfile("/.mergerfs"),
+      : action(policies[0]),
+        create(policies[1]),
+        search(policies[2]),
+        controlfile("/.mergerfs"),
         testmode(false)
     {
+      action = &Policy::ff;
+      create = &Policy::epmfs;
+      search = &Policy::ff;
+
       time_t now = time(NULL);
 
       controlfilestat.st_dev     = 0;
@@ -61,9 +68,9 @@ namespace mergerfs
     {
       std::stringstream ss;
 
-      ss << "action=" << policy.action.str() << std::endl
-         << "create=" << policy.create.str() << std::endl
-         << "search=" << policy.search.str() << std::endl;
+      ss << "action=" << (std::string)*action << std::endl
+         << "create=" << (std::string)*create << std::endl
+         << "search=" << (std::string)*search << std::endl;
 
       return ss.str();
     }

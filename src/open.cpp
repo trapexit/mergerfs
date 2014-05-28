@@ -53,24 +53,24 @@ _open_controlfile(uint64_t &fh)
 
 static
 int
-_open(const Policy::Search::Func  searchFunc,
-      const vector<string>       &srcmounts,
-      const string                fusepath,
-      const int                   flags,
-      uint64_t                   &fh)
+_open(const fs::SearchFunc  searchFunc,
+      const vector<string> &srcmounts,
+      const string          fusepath,
+      const int             flags,
+      uint64_t             &fh)
 {
   int      fd;
-  fs::Path path;
+  fs::PathVector paths;
 
-  path = searchFunc(srcmounts,fusepath);
-  if(path.full.empty())
+  searchFunc(srcmounts,fusepath,paths);
+  if(paths.empty())
     return -ENOENT;
 
-  fd = ::open(path.full.c_str(),flags);
+  fd = ::open(paths[0].full.c_str(),flags);
   if(fd == -1)
     return -errno;
 
-  fh = (uint64_t)new FileInfo(fd,flags,path.full);
+  fh = (uint64_t)new FileInfo(fd,flags,paths[0].full);
 
   return 0;
 }
@@ -89,7 +89,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return _open_controlfile(fileinfo->fh);
 
-      return _open(config.policy.search,
+      return _open(*config.search,
                    config.srcmounts,
                    fusepath,
                    fileinfo->flags,

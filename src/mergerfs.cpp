@@ -90,7 +90,6 @@ get_fuse_operations()
   ops.getdir      = NULL;       /* deprecated; use readdir */
   ops.getxattr    = mergerfs::getxattr::getxattr;
   ops.init        = NULL;
-  ops.ioctl       = NULL;
   ops.ioctl       = mergerfs::ioctl::ioctl;
   ops.link        = mergerfs::link::link;
   ops.listxattr   = mergerfs::listxattr::listxattr;

@@ -48,8 +48,8 @@ namespace fs
     string full;
   };
 
-  typedef fs::Path (*SearchFunc)(const vector<string>&,const string);
-  typedef void     (*VecSearchFunc)(const vector<string>&,const string,vector<Path>&);
+  typedef vector<Path> PathVector;
+  typedef void (*SearchFunc)(const vector<string>&,const string,PathVector&);
 
   string dirname(const string path);
   string basename(const string path);
@@ -64,57 +64,6 @@ namespace fs
                    const string                    fusepath);
   bool path_exists(const vector<string>           &srcmounts,
                    const string                    fusepath);
-
-  Path find_first(vector<string>::const_iterator  begin,
-                  vector<string>::const_iterator  end,
-                  const string                    fusepath);
-  Path find_first(const vector<string>           &paths,
-                  const string                    fusepath);
-  void find_first(const vector<string> &paths,
-                  const string          fusepath,
-                  vector<Path>         &rv);
-
-  Path find_first_with_permission(vector<string>::const_iterator  begin,
-                                  vector<string>::const_iterator  end,
-                                  const string                    fusepath);
-  Path find_first_with_permission(const vector<string>           &paths,
-                                  const string                    fusepath);
-  void find_first_with_permission(const vector<string> &paths,
-                                  const string          fusepath,
-                                  vector<Path>         &rv);
-
-  Path find_newest(vector<string>::const_iterator  begin,
-                   vector<string>::const_iterator  end,
-                   const string                    fusepath);
-  Path find_newest(const vector<string>           &paths,
-                   const string                    fusepath);
-  void find_newest(const vector<string> &paths,
-                   const string          fusepath,
-                   vector<Path>         &rv);
-
-  void find_all(const vector<string> &paths,
-                const string          fusepath,
-                vector<Path>         &rv);
-
-  Path find_mfs(vector<string>::const_iterator  iter,
-                vector<string>::const_iterator  enditer,
-                const string                    fusepath);
-  Path find_mfs(const vector<string>           &paths,
-                const string                    fusepath);
-
-  Path find_mfs_existing(vector<string>::const_iterator  iter,
-                         vector<string>::const_iterator  enditer,
-                         const string                    fusepath);
-  Path find_mfs_existing(const vector<string>           &paths,
-                         const string                    fusepath);
-
-  Path find_random(vector<string>::const_iterator  iter,
-                   vector<string>::const_iterator  enditer,
-                   const string                    fusepath);
-  Path find_random(const vector<string>           &paths,
-                   const string                    fusepath);
-
-
 
   int clonepath(const string srcfrom,
                 const string srcto,
@@ -154,6 +103,34 @@ namespace fs
 
   int copyattr(const string from,
                const string to);
+
+  namespace find
+  {
+    void invalid(const vector<string> &basepaths,
+                 const string          fusepath,
+                 PathVector           &paths);
+    void ff(const vector<string>      &basepaths,
+            const string               fusepath,
+            PathVector                &paths);
+    void ffwp(const vector<string>    &paths,
+              const string             fusepath,
+              PathVector              &rv);
+    void newest(const vector<string>  &paths,
+                const string           fusepath,
+                PathVector            &rv);
+    void all(const vector<string>     &paths,
+             const string              fusepath,
+             PathVector               &rv);
+    void mfs(const vector<string>     &paths,
+             const string              fusepath,
+             PathVector               &rv);
+    void epmfs(const vector<string>   &paths,
+               const string            fusepath,
+               PathVector             &rv);
+    void rand(const vector<string>    &paths,
+              const string             fusepath,
+              PathVector              &rv);
+  }
 };
 
 #endif // __FS_HPP__

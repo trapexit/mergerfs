@@ -39,14 +39,14 @@ using mergerfs::Policy;
 
 static
 int
-_chmod(const Policy::Action::Func  searchFunc,
-       const vector<string>       &srcmounts,
-       const string                fusepath,
-       const mode_t                mode)
+_chmod(const fs::SearchFunc  searchFunc,
+       const vector<string> &srcmounts,
+       const string          fusepath,
+       const mode_t          mode)
 {
   int rv;
   int error;
-  vector<fs::Path> paths;
+  fs::PathVector paths;
 
   searchFunc(srcmounts,fusepath,paths);
   if(paths.empty())
@@ -54,7 +54,7 @@ _chmod(const Policy::Action::Func  searchFunc,
 
   rv    = -1;
   error =  0;
-  for(vector<fs::Path>::const_iterator
+  for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv &= ::chmod(i->full.c_str(),mode);
@@ -79,7 +79,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EPERM;
 
-      return _chmod(config.policy.action,
+      return _chmod(*config.action,
                     config.srcmounts,
                     fusepath,
                     mode);

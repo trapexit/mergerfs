@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <errno.h>
 #include <sys/types.h>
@@ -37,7 +38,23 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using mergerfs::Category;
 using namespace mergerfs;
+
+template<typename Container>
+Container&
+split(Container                                  &result,
+      const typename Container::value_type       &s,
+      typename Container::value_type::value_type  delimiter)
+{
+  std::string        str;
+  std::istringstream ss(s);
+
+  while(std::getline(ss,str,delimiter))
+    result.push_back(str);
+
+  return result;
+}
 
 static
 int
@@ -48,37 +65,33 @@ _setxattr_controlfile(config::Config &config,
                       const int       flags)
 {
 #ifndef WITHOUT_XATTR
-  if(attrname == "user.mergerfs.action")
-    {
-      if((flags & XATTR_CREATE) == XATTR_CREATE)
-        return -EEXIST;
-      if(Policy::Action::fromString(attrval) != -1)
-        config.policy.action = attrval;
-      else
-        return -ENOSPC;
-    }
-  else if(attrname == "user.mergerfs.create")
-    {
-      if((flags & XATTR_CREATE) == XATTR_CREATE)
-        return -EEXIST;
-      if(Policy::Create::fromString(attrval) != -1)
-        config.policy.create = attrval;
-      else
-        return -ENOSPC;
-    }
-  else if(attrname == "user.mergerfs.search")
-    {
-      if((flags & XATTR_CREATE) == XATTR_CREATE)
-        return -EEXIST;
-      if(Policy::Search::fromString(attrval) != -1)
-        config.policy.search = attrval;
-      else
-        return -ENOSPC;
-    }
-  else
-    {
-      return -ENOATTR;
-    }
+  const Category *cat;
+  const Policy   *policy;
+  vector<string>  nameparts;
+
+  split(nameparts,attrname,'.');
+
+  if(nameparts.size() != 3)
+    return -EINVAL;
+  
+  if(nameparts[0] != "user")
+    return -ENOATTR;
+  
+  if(nameparts[1] != "mergerfs")
+    return -ENOATTR;
+
+  cat = Category::find(nameparts[2]);
+  if(cat == Category::invalid)
+    return -ENOATTR;
+
+  if((flags & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  policy = Policy::find(attrval);
+  if(policy == Policy::invalid)
+    return -EINVAL;
+
+  config.policies[*cat] = policy;
 
   config.updateReadStr();
 
@@ -90,18 +103,18 @@ _setxattr_controlfile(config::Config &config,
 
 static
 int
-_setxattr(const Policy::Action::Func  searchFunc,
-          const vector<string>       &srcmounts,
-          const string                fusepath,
-          const char                 *attrname,
-          const char                 *attrval,
-          const size_t                attrvalsize,
-          const int                   flags)
+_setxattr(const fs::SearchFunc  searchFunc,
+          const vector<string> &srcmounts,
+          const string          fusepath,
+          const char           *attrname,
+          const char           *attrval,
+          const size_t          attrvalsize,
+          const int             flags)
 {
 #ifndef WITHOUT_XATTR
   int rv;
   int error;
-  vector<fs::Path> paths;
+  fs::PathVector paths;
 
   searchFunc(srcmounts,fusepath,paths);
   if(paths.empty())
@@ -109,7 +122,7 @@ _setxattr(const Policy::Action::Func  searchFunc,
 
   rv    = -1;
   error =  0;
-  for(vector<fs::Path>::const_iterator
+  for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv &= ::lsetxattr(i->full.c_str(),attrname,attrval,attrvalsize,flags);
@@ -143,7 +156,7 @@ namespace mergerfs
                                      attrvalsize,
                                      flags);
 
-      return _setxattr(config.policy.action,
+      return _setxattr(*config.action,
                        config.srcmounts,
                        fusepath,
                        attrname,

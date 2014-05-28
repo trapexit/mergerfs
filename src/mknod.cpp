@@ -44,32 +44,32 @@ using mergerfs::Policy;
 
 static
 int
-_mknod(const Policy::Search::Func  searchFunc,
-       const Policy::Create::Func  createPathFunc,
-       const vector<string>       &srcmounts,
-       const string                fusepath,
-       const mode_t                mode,
-       const dev_t                 dev)
+_mknod(const fs::SearchFunc  searchFunc,
+       const fs::SearchFunc  createPathFunc,
+       const vector<string> &srcmounts,
+       const string          fusepath,
+       const mode_t          mode,
+       const dev_t           dev)
 {
   int rv;
   string path;
   string dirname;
-  fs::Path createpath;
-  fs::Path existingpath;
+  fs::PathVector createpath;
+  fs::PathVector existingpath;
 
   if(fs::path_exists(srcmounts,fusepath))
     return -EEXIST;
 
   dirname      = fs::dirname(fusepath);
-  existingpath = searchFunc(srcmounts,dirname);
-  if(existingpath.base.empty())
+  searchFunc(srcmounts,dirname,existingpath);
+  if(existingpath.empty())
     return -ENOENT;
 
-  createpath = createPathFunc(srcmounts,dirname);
-  if(existingpath.base != createpath.base)
-    fs::clonepath(existingpath.base,createpath.base,dirname);
+  createPathFunc(srcmounts,dirname,createpath);
+  if(existingpath[0].base != createpath[0].base)
+    fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
 
-  path = fs::make_path(createpath.base,fusepath);
+  path = fs::make_path(createpath[0].base,fusepath);
 
   rv = ::mknod(path.c_str(),mode,dev);
 
@@ -91,8 +91,8 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EEXIST;
 
-      return _mknod(config.policy.search,
-                    config.policy.create,
+      return _mknod(*config.search,
+                    *config.create,
                     config.srcmounts,
                     fusepath,
                     mode,

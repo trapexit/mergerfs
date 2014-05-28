@@ -62,18 +62,17 @@ process_opt(config::Config    &config,
 {
   int rv = 0;
   std::vector<std::string> argvalue;
-  Policy &policy = config.policy;
 
   split(argvalue,arg,'=');
   switch(argvalue.size())
     {
     case 2:
       if(argvalue[0] == "create")
-        policy.create.fromString(argvalue[1]);
+        config.create = Policy::find(argvalue[1]);
       else if(argvalue[0] == "search")
-        policy.search.fromString(argvalue[1]);
+        config.search = Policy::find(argvalue[1]);
       else if(argvalue[0] == "action")
-        policy.action.fromString(argvalue[1]);
+        config.action = Policy::find(argvalue[1]);
       else
         rv = 1;
       break;

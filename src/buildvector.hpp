@@ -22,58 +22,30 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
+#include <algorithm>
 
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string>
-
-#include "fs.hpp"
-#include "config.hpp"
-#include "ugid.hpp"
-
-using std::string;
-using std::vector;
-
-static
-int
-_symlink(const vector<string> &srcmounts,
-         const string          from,
-         const string          to)
+template<typename V, bool SORT = false>
+class buildvector
 {
-  int rv;
-  fs::PathVector paths;
-
-  fs::find::ff(srcmounts,fs::dirname(to),paths);
-  if(paths.empty())
-    return -ENOENT;
-
-  paths[0].full = fs::make_path(paths[0].base,to);
-
-  rv = symlink(from.c_str(),paths[0].full.c_str());
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace symlink
+public:
+  buildvector(const V &val)
   {
-    int
-    symlink(const char *oldpath,
-            const char *newpath)
-    {
-      const ugid::SetResetGuard  uid;
-      const config::Config      &config = config::get();
-
-      if(oldpath == config.controlfile ||
-         newpath == config.controlfile)
-        return -EPERM;
-
-      return _symlink(config.srcmounts,
-                      oldpath,
-                      newpath);
-    }
+    _vector.push_back(val);
   }
-}
+
+  buildvector<V,SORT> &operator()(const V &val)
+  {
+    _vector.push_back(val);
+    return *this;
+  }
+
+  operator std::vector<V>()
+  {
+    if(SORT == true)
+      std::sort(_vector.begin(),_vector.end());
+    return _vector;
+  }
+
+private:
+  std::vector<V> _vector;
+};

@@ -43,31 +43,31 @@ using mergerfs::Policy;
 
 static
 int
-_mkdir(const Policy::Search::Func  searchFunc,
-       const Policy::Create::Func  createPathFunc,
-       const vector<string>       &srcmounts,
-       const string                fusepath,
-       const mode_t                mode)
+_mkdir(const fs::SearchFunc  searchFunc,
+       const fs::SearchFunc  createPathFunc,
+       const vector<string> &srcmounts,
+       const string          fusepath,
+       const mode_t          mode)
 {
   int rv;
   string path;
   string dirname;
-  fs::Path createpath;
-  fs::Path existingpath;
+  fs::PathVector createpath;
+  fs::PathVector existingpath;
 
   if(fs::path_exists(srcmounts,fusepath))
     return -EEXIST;
 
   dirname      = fs::dirname(fusepath);
-  existingpath = searchFunc(srcmounts,dirname);
-  if(existingpath.base.empty())
+  searchFunc(srcmounts,dirname,existingpath);
+  if(existingpath.empty())
     return -ENOENT;
 
-  createpath = createPathFunc(srcmounts,dirname);
-  if(createpath.base != existingpath.base)
-    fs::clonepath(existingpath.base,createpath.base,dirname);
+  createPathFunc(srcmounts,dirname,createpath);
+  if(createpath[0].base != existingpath[0].base)
+    fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
 
-  path = fs::make_path(createpath.base,fusepath);
+  path = fs::make_path(createpath[0].base,fusepath);
 
   rv = ::mkdir(path.c_str(),mode);
 
@@ -88,8 +88,8 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EEXIST;
 
-      return _mkdir(config.policy.search,
-                    config.policy.create,
+      return _mkdir(*config.search,
+                    *config.create,
                     config.srcmounts,
                     fusepath,
                     mode);

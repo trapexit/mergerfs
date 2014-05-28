@@ -42,14 +42,14 @@ using mergerfs::Policy;
 
 static
 int
-_truncate(const Policy::Action::Func  searchFunc,
-          const vector<string>       &srcmounts,
-          const string                fusepath,
-          const off_t                 size)
+_truncate(const fs::SearchFunc  searchFunc,
+          const vector<string> &srcmounts,
+          const string          fusepath,
+          const off_t           size)
 {
   int rv;
   int error;
-  vector<fs::Path> paths;
+  fs::PathVector paths;
 
   searchFunc(srcmounts,fusepath,paths);
   if(paths.empty())
@@ -57,7 +57,7 @@ _truncate(const Policy::Action::Func  searchFunc,
 
   rv    = -1;
   error =  0;
-  for(vector<fs::Path>::const_iterator
+  for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv &= ::truncate(i->full.c_str(),size);
@@ -82,7 +82,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EPERM;
 
-      return _truncate(config.policy.action,
+      return _truncate(*config.action,
                        config.srcmounts,
                        fusepath,
                        size);

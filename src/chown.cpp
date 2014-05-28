@@ -40,15 +40,15 @@ using mergerfs::Policy;
 
 static
 int
-_chown(const Policy::Action::Func  searchFunc,
-       const vector<string>       &srcmounts,
-       const string                fusepath,
-       const uid_t                 uid,
-       const gid_t                 gid)
+_chown(const fs::SearchFunc  searchFunc,
+       const vector<string> &srcmounts,
+       const string          fusepath,
+       const uid_t           uid,
+       const gid_t           gid)
 {
   int rv;
   int error;
-  vector<fs::Path> paths;
+  fs::PathVector paths;
 
   searchFunc(srcmounts,fusepath,paths);
   if(paths.empty())
@@ -56,7 +56,7 @@ _chown(const Policy::Action::Func  searchFunc,
 
   rv    = -1;
   error =  0;
-  for(vector<fs::Path>::const_iterator
+  for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv &= ::lchown(i->full.c_str(),uid,gid);
@@ -82,7 +82,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EPERM;
 
-      return _chown(config.policy.action,
+      return _chown(*config.action,
                     config.srcmounts,
                     fusepath,
                     uid,

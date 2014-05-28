@@ -45,19 +45,19 @@ using mergerfs::Policy;
 
 static
 int
-_access(const Policy::Search::Func  searchFunc,
-        const vector<string>       &srcmounts,
-        const string                fusepath,
-        const int                   mask)
+_access(const fs::SearchFunc  searchFunc,
+        const vector<string> &srcmounts,
+        const string          fusepath,
+        const int             mask)
 {
   int rv;
-  string path;
+  fs::PathVector path;
 
-  path = searchFunc(srcmounts,fusepath).full;
+  searchFunc(srcmounts,fusepath,path);
   if(path.empty())
     return -ENOENT;
 
-  rv = ::eaccess(path.c_str(),mask);
+  rv = ::eaccess(path[0].full.c_str(),mask);
 
   return ((rv == -1) ? -errno : 0);
 }
@@ -74,9 +74,12 @@ namespace mergerfs
       const config::Config      &config = config::get();
 
       if(fusepath == config.controlfile)
-        return 0;
+        return _access(*config.search,
+                       config.srcmounts,
+                       "/",
+                       mask);
 
-      return _access(config.policy.search,
+      return _access(*config.search,
                      config.srcmounts,
                      fusepath,
                      mask);

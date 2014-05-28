@@ -39,22 +39,22 @@ using mergerfs::Policy;
 
 static
 int
-_rename(const Policy::Search::Func  searchFunc,
-        const vector<string>       &srcmounts,
-        const string                from,
-        const string                to)
+_rename(const fs::SearchFunc  searchFunc,
+        const vector<string> &srcmounts,
+        const string          from,
+        const string          to)
 {
   int rv;
   string pathto;
-  fs::Path pathfrom;
+  fs::PathVector pathfrom;
 
-  pathfrom = searchFunc(srcmounts,from);
-  if(pathfrom.base.empty())
+  searchFunc(srcmounts,from,pathfrom);
+  if(pathfrom.empty())
     return -ENOENT;
 
-  pathto = fs::make_path(pathfrom.base,to);
+  pathto = fs::make_path(pathfrom[0].base,to);
 
-  rv = ::rename(pathfrom.full.c_str(),pathto.c_str());
+  rv = ::rename(pathfrom[0].full.c_str(),pathto.c_str());
 
   return ((rv == -1) ? -errno : 0);
 }
@@ -73,7 +73,7 @@ namespace mergerfs
       if(from == config.controlfile)
         return -ENOENT;
 
-      return _rename(config.policy.search,
+      return _rename(*config.search,
                      config.srcmounts,
                      from,
                      to);

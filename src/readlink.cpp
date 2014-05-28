@@ -41,20 +41,20 @@ using mergerfs::Policy;
 
 static
 int
-_readlink(const Policy::Search::Func  searchFunc,
-          const vector<string>&       srcmounts,
-          const string                fusepath,
-          char                       *buf,
-          const size_t                size)
+_readlink(const fs::SearchFunc   searchFunc,
+          const vector<string>&  srcmounts,
+          const string           fusepath,
+          char                  *buf,
+          const size_t           size)
 {
   int rv;
-  string path;
+  fs::PathVector paths;
 
-  path = searchFunc(srcmounts,fusepath).full;
-  if(path.empty())
+  searchFunc(srcmounts,fusepath,paths);
+  if(paths.empty())
     return -ENOENT;
 
-  rv = ::readlink(path.c_str(),buf,size);
+  rv = ::readlink(paths[0].full.c_str(),buf,size);
   if(rv == -1)
     return -errno;
 
@@ -78,7 +78,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -EINVAL;
 
-      return _readlink(config.policy.search,
+      return _readlink(*config.search,
                        config.srcmounts,
                        fusepath,
                        buf,

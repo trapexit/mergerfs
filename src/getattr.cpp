@@ -43,19 +43,19 @@ using mergerfs::Policy;
 
 static
 int
-_getattr(const Policy::Search::Func  searchFunc,
-         const vector<string>       &srcmounts,
-         const string                fusepath,
-         struct stat                &buf)
+_getattr(const fs::SearchFunc  searchFunc,
+         const vector<string> &srcmounts,
+         const string          fusepath,
+         struct stat          &buf)
 {
   int rv;
-  string path;
+  fs::PathVector paths;
 
-  path = searchFunc(srcmounts,fusepath).full;
-  if(path.empty())
+  searchFunc(srcmounts,fusepath,paths);
+  if(paths.empty())
     return -ENOENT;
 
-  rv = ::lstat(path.c_str(),&buf);
+  rv = ::lstat(paths[0].full.c_str(),&buf);
 
   return ((rv == -1) ? -errno : 0);
 }
@@ -74,7 +74,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return (*buf = config.controlfilestat,0);
 
-      return _getattr(config.policy.search,
+      return _getattr(*config.search,
                       config.srcmounts,
                       fusepath,
                       *buf);
