@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 
 XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
-
 FUSE_AVAILABLE = $(shell ! pkg-config --exists fuse; echo $$?)
 ifeq ($(FUSE_AVAILABLE),0)
 FUSE_AVAILABLE = $(shell test ! -e /usr/include/fuse.h; echo $$?)
@@ -31,41 +30,84 @@ ifeq ($(FUSE_AVAILABLE),0)
 $(error "FUSE development package doesn't appear available")
 endif
 
+PKGCONFIG =  	$(shell which pkg-config)
+GIT 	= 	$(shell which git)
+TAR 	= 	$(shell which tar)
+MKDIR   = 	$(shell which mkdir)
+TOUCH 	= 	$(shell which touch)
+CP      = 	$(shell which cp)
+RM 	= 	$(shell which rm)
+FIND 	= 	$(shell which find)
+INSTALL = 	$(shell which install)
+MKTEMP  = 	$(shell which mktemp)
+STRIP   = 	$(shell which strip)
+
 SRC	=	$(wildcard src/*.cpp)
-OBJ	=	$(SRC:src/%.cpp=obj/%.o)
-DEPS	=	$(OBJ:obj/%.o=obj/%.d)
-TARGET	=	mergerfs
-CFLAGS	=	-g -Wall \
-		$(shell pkg-config fuse --cflags) \
-		-DFUSE_USE_VERSION=26 \
-		-MMD
-LDFLAGS	=	$(shell pkg-config fuse --libs)
+OBJ     =       $(SRC:src/%.cpp=obj/%.o)
+DEPS    =       $(OBJ:obj/%.o=obj/%.d)
+TARGET  =       mergerfs
+CFLAGS  =       -g -Wall \
+                $(shell $(PKGCONFIG) fuse --cflags) \
+                -DFUSE_USE_VERSION=26 \
+                -MMD
+LDFLAGS	=       $(shell $(PKGCONFIG) fuse --libs)
+
+BINDIR 	= 	$(PREFIX)/usr/bin
+MANDIR 	= 	$(PREFIX)/share/man/man1
+INSTALLPATH = 	$(DESTDIR)/$(BINDIR)
+INSTALLTARGET = $(INSTALLPATH)/$(TARGET)
 
 ifeq ($(XATTR_AVAILABLE),0)
 CFLAGS += -DWITHOUT_XATTR
 endif
 
-
 all: $(TARGET)
 
 help:
-	@echo usage: make
-	@echo make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)
+	@echo "usage: make"
+	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
 
-$(TARGET): obj/obj-stamp $(OBJ)
+$(TARGET): changelog obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
+changelog:
+	$(GIT) log --pretty --numstat --summary | git2cl > ChangeLog
+
 obj/obj-stamp:
-	mkdir -p obj
-	touch $@
+	$(MKDIR) -p obj
+	$(TOUCH) $@
 
 obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf obj "$(TARGET)"
-	find -name "*~" -delete
+	$(RM) -rf obj "$(TARGET)"
+	$(FIND) -name "*~" -delete
 
-.PHONY: all clean help
+distclean: clean
+	$(GIT) clean -ifd
+
+install: $(TARGET)
+	$(INSTALL) -m 0755 -D "$(TARGET)" "$(INSTALLTARGET)"
+
+install-strip: install
+	$(STRIP) "$(INSTALLTARGET)"
+
+uninstall:
+	$(RM) "$(INSTALLTARGET)"
+
+tarball: distclean
+	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	$(eval FILENAME := $(TARGET)-$(VERSION))
+	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
+	$(MKDIR) $(TMPDIR)/$(FILENAME)
+	$(CP) -ar . $(TMPDIR)/$(FILENAME)
+	$(TAR) --exclude=.git -cz -C $(TMPDIR) -f ../$(FILENAME).tar.gz $(FILENAME)
+	$(RM) -rf $(TMPDIR)
+
+deb:
+	$(GIT) buildpackage
+
+.PHONY: all clean install help
 
 include $(wildcard obj/*.d)
