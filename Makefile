@@ -20,6 +20,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
+
+FUSE_AVAILABLE = $(shell ! pkg-config --exists fuse; echo $$?)
+ifeq ($(FUSE_AVAILABLE),0)
+FUSE_AVAILABLE = $(shell test ! -e /usr/include/fuse.h; echo $$?)
+endif
+
+ifeq ($(FUSE_AVAILABLE),0)
+$(error "FUSE development package doesn't appear available")
+endif
+
 SRC	=	$(wildcard src/*.cpp)
 OBJ	=	$(SRC:src/%.cpp=obj/%.o)
 DEPS	=	$(OBJ:obj/%.o=obj/%.d)
@@ -28,28 +39,28 @@ CFLAGS	=	-g -Wall \
 		$(shell pkg-config fuse --cflags) \
 		-DFUSE_USE_VERSION=26 \
 		-MMD
+LDFLAGS	=	$(shell pkg-config fuse --libs)
 
-ifdef WITHOUT_XATTR
-CFLAGS	+=  	-DWITHOUT_XATTR
+ifeq ($(XATTR_AVAILABLE),0)
+CFLAGS += -DWITHOUT_XATTR
 endif
 
-LDFLAGS	=	$(shell pkg-config fuse --libs)
 
 all: $(TARGET)
 
 help:
 	@echo usage: make
-	@echo make WITHOUT_XATTR=1 - to build program without xattrs functionality
+	@echo make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)
 
 $(TARGET): obj/obj-stamp $(OBJ)
-	g++ $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
+	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
 obj/obj-stamp:
 	mkdir -p obj
 	touch $@
 
 obj/%.o: src/%.cpp
-	g++ $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf obj "$(TARGET)"
