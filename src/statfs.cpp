@@ -48,21 +48,12 @@ _normalize_statvfs(struct statvfs      *fsstat,
                    const unsigned long  min_frsize,
                    const unsigned long  min_namemax)
 {
-  if(fsstat->f_bsize > min_bsize)
-    {
-      fsstat->f_bfree  *= fsstat->f_bsize / min_bsize;
-      fsstat->f_bavail *= fsstat->f_bsize / min_bsize;
-      fsstat->f_bsize   = min_bsize;
-    }
-
-  if(fsstat->f_frsize > min_frsize)
-    {
-      fsstat->f_blocks *= fsstat->f_frsize / min_frsize;
-      fsstat->f_frsize  = min_frsize;
-    }
-
-  if(fsstat->f_namemax > min_namemax)
-    fsstat->f_namemax = min_namemax;
+  fsstat->f_blocks  = (fsblkcnt_t)((fsstat->f_blocks * fsstat->f_frsize) / min_frsize);
+  fsstat->f_bfree   = (fsblkcnt_t)((fsstat->f_bfree * fsstat->f_frsize) / min_frsize);
+  fsstat->f_bavail  = (fsblkcnt_t)((fsstat->f_bavail * fsstat->f_frsize) / min_frsize);
+  fsstat->f_bsize   = min_bsize;
+  fsstat->f_frsize  = min_frsize;
+  fsstat->f_namemax = min_namemax;
 }
 
 static
@@ -70,16 +61,13 @@ void
 _merge_statvfs(struct statvfs       * const out,
                const struct statvfs * const in)
 {
-  if(out->f_bfree < in->f_bfree)
-    {
-      out->f_bfree  = in->f_bfree;
-      out->f_bavail = in->f_bavail;
-    }
+  out->f_blocks += in->f_blocks;
+  out->f_bfree  += in->f_bfree;
+  out->f_bavail += in->f_bavail;
 
+  out->f_files  += in->f_files;
   out->f_ffree  += in->f_ffree;
   out->f_favail += in->f_favail;
-  out->f_files  += in->f_files;
-  out->f_blocks += in->f_blocks;
 }
 
 static
@@ -116,9 +104,9 @@ _statfs(const vector<string> &srcmounts,
   map<unsigned long,struct statvfs>::iterator endfsstatiter = fsstats.end();
   if(fsstatiter != endfsstatiter)
     {
-      fsstat = (fsstatiter++)->second;
+      fsstat = fsstatiter->second;
       _normalize_statvfs(&fsstat,min_bsize,min_frsize,min_namemax);
-      for(;fsstatiter != endfsstatiter;++fsstatiter)
+      for(++fsstatiter;fsstatiter != endfsstatiter;++fsstatiter)
         {
           _normalize_statvfs(&fsstatiter->second,min_bsize,min_frsize,min_namemax);
           _merge_statvfs(&fsstat,&fsstatiter->second);
