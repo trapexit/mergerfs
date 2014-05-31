@@ -67,7 +67,7 @@ help:
 	@echo "usage: make"
 	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
 
-$(TARGET): changelog obj/obj-stamp $(OBJ)
+$(TARGET): obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
 changelog:
@@ -96,7 +96,7 @@ install-strip: install
 uninstall:
 	$(RM) "$(INSTALLTARGET)"
 
-tarball: distclean
+tarball: distclean changelog
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
 	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
@@ -106,7 +106,9 @@ tarball: distclean
 	$(RM) -rf $(TMPDIR)
 
 deb:
-	$(GIT) buildpackage
+	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	$(GIT) dch --auto --release --new-version="$(VERSION)"
+	$(GIT) buildpackage --git-ignore-new
 
 .PHONY: all clean install help
 
