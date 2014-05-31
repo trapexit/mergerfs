@@ -124,6 +124,24 @@ option_processor(void             *data,
   return rv;
 }
 
+static
+void
+set_fsname(struct fuse_args     &args,
+           const config::Config &config)
+{
+  if(config.srcmounts.size() > 0)
+    {
+      std::string fsname;
+
+      fsname  = "-ofsname=";
+      fsname += config.srcmounts[0];
+      for(size_t i = 1; i < config.srcmounts.size(); i++)
+        fsname += ';' + config.srcmounts[i];
+
+      fuse_opt_insert_arg(&args,1,fsname.c_str());
+    }
+}
+
 namespace mergerfs
 {
   namespace options
@@ -132,10 +150,14 @@ namespace mergerfs
     parse(struct fuse_args &args,
           config::Config   &config)
     {
+      
       fuse_opt_parse(&args,
                      &config,
                      NULL,
                      ::option_processor);
+
+      set_fsname(args,config);
+
       config.updateReadStr();
     }
   }
