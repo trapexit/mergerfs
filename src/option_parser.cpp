@@ -26,14 +26,19 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
+#include <glob.h>
 
-#include <iostream>
 #include <string>
+#include <vector>
 #include <sstream>
+#include <iostream>
 
 #include "config.hpp"
 #include "policy.hpp"
 
+using std::string;
+using std::vector;
 using namespace mergerfs;
 
 template<typename Container>
@@ -90,6 +95,29 @@ process_opt(config::Config    &config,
 }
 
 static
+void
+process_srcmounts(const char     *arg,
+                  config::Config &config)
+{
+  int flags;
+  glob_t gbuf;
+  vector<string> paths;
+
+  flags = 0;
+  split(paths,arg,':');
+  for(size_t i = 0; i < paths.size(); i++)
+    {
+      glob(paths[i].c_str(),flags,NULL,&gbuf);
+      flags = GLOB_APPEND;
+    }
+
+  for(size_t i = 0; i < gbuf.gl_pathc; ++i)
+    config.srcmounts.push_back(gbuf.gl_pathv[i]);
+
+  globfree(&gbuf);
+}
+
+static
 int
 option_processor(void             *data,
                  const char       *arg,
@@ -113,7 +141,7 @@ option_processor(void             *data,
         }
       else
         {
-          split(config.srcmounts,arg,':');
+          process_srcmounts(arg,config);
         }
       break;
 
@@ -150,7 +178,7 @@ namespace mergerfs
     parse(struct fuse_args &args,
           config::Config   &config)
     {
-      
+
       fuse_opt_parse(&args,
                      &config,
                      NULL,
