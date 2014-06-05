@@ -33,7 +33,7 @@ Filesystem calls are broken up into 4 functional categories: search, action, cre
 
 #### statvfs ####
 
-Since we aren't trying to stripe data across drives or move them should ENOSPC be return on a write the free space of the mountpoint is just that of the source mount with the most free space at the moment.
+It normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple points on the same drive will not result in double counting it's space.
 
 **NOTE:** create is really a search for existence and then create. The 'search' policy applies to the first part. If the [dirname](http://linux.die.net/man/3/dirname) of the full path is not found to exist [ENOENT](http://linux.die.net/man/3/errno) is returned.
 
@@ -41,14 +41,35 @@ Usage
 =====
 
 ```
-$ mergerfs -o create=epmfs,search=ff,action=ff <mountpoint> <dir0>:<dir1>:<dir2>
+$ mergerfs -o create=epmfs,search=ff,action=ff <srcpoints> <mountpoint>
 ```
+
+###options###
 
 | Option | Default |
 |--------|--------|
 | search | ff |
 | action | ff |
 | create | epmfs |
+
+###srcpoints###
+
+The source points argument is a colon (':') delimited list of paths. To make it simplier to include multiple source points without having to modify your [fstab](http://linux.die.net/man/5/fstab) we also support [globbing](http://linux.die.net/man/7/glob).
+
+```
+$ mergerfs /mnt/disk*:/mnt/cdrom /media/drives
+```
+
+The above line will use all points in /mnt prefixed with *disk* and the directory *cdrom*.
+
+In /etc/fstab it'd look like the following:
+
+```
+# <file system>        <mount point>  <type>         <options>    <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  allow_other  0       0
+```
+
+**NOTE:** the globbing is done at mount time. If a new directory is added matching the glob after the fact it will not be included.
 
 Building
 ========
@@ -60,7 +81,7 @@ Building
 ```
 [trapexit:~/dev/mergerfs] $ make help
 usage: make
-make WITHOUT_XATTR=1 - to build program without xattrs functionality
+make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)
 ```
 
 Runtime Settings

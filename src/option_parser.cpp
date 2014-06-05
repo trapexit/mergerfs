@@ -134,15 +134,10 @@ option_processor(void             *data,
       break;
 
     case FUSE_OPT_KEY_NONOPT:
-      if(config.destmount.empty())
-        {
-          rv = 1;
-          config.destmount = arg;
-        }
+      if(config.srcmounts.empty())
+        process_srcmounts(arg,config);
       else
-        {
-          process_srcmounts(arg,config);
-        }
+        rv = (config.destmount = arg,1);
       break;
 
     default:
