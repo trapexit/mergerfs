@@ -20,16 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
-FUSE_AVAILABLE = $(shell ! pkg-config --exists fuse; echo $$?)
-ifeq ($(FUSE_AVAILABLE),0)
-FUSE_AVAILABLE = $(shell test ! -e /usr/include/fuse.h; echo $$?)
-endif
-
-ifeq ($(FUSE_AVAILABLE),0)
-$(error "FUSE development package doesn't appear available")
-endif
-
 PKGCONFIG =  	$(shell which pkg-config)
 GIT 	= 	$(shell which git)
 TAR 	= 	$(shell which tar)
@@ -41,23 +31,46 @@ FIND 	= 	$(shell which find)
 INSTALL = 	$(shell which install)
 MKTEMP  = 	$(shell which mktemp)
 STRIP   = 	$(shell which strip)
+PANDOC  =       $(shell which pandoc)
+
+ifeq ($(PKGCONFIG),"")
+$(error "pkg-config not installed"
+endif
+
+ifeq ($(PANDOC),"")
+$(warning "pandoc does not appear available: manpage won't be buildable")
+endif
+
+XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
+
+FUSE_AVAILABLE = $(shell ! pkg-config --exists fuse; echo $$?)
+
+ifeq ($(FUSE_AVAILABLE),0)
+FUSE_AVAILABLE = $(shell test ! -e /usr/include/fuse.h; echo $$?)
+endif
+
+ifeq ($(FUSE_AVAILABLE),0)
+$(error "FUSE development package doesn't appear available")
+endif
 
 SRC	=	$(wildcard src/*.cpp)
 OBJ     =       $(SRC:src/%.cpp=obj/%.o)
 DEPS    =       $(OBJ:obj/%.o=obj/%.d)
 TARGET  =       mergerfs
+MANPAGE = 	$(TARGET).1
 CFLAGS  =       -g -Wall \
                 $(shell $(PKGCONFIG) fuse --cflags) \
                 -DFUSE_USE_VERSION=26 \
                 -MMD
 LDFLAGS	=       $(shell $(PKGCONFIG) fuse --libs)
 
-BINDIR 	= 	$(PREFIX)/usr/bin
-MANDIR 	= 	$(PREFIX)/share/man/man1
-INSTALLPATH = 	$(DESTDIR)/$(BINDIR)
-INSTALLTARGET = $(INSTALLPATH)/$(TARGET)
+BINDIR 	=	$(PREFIX)/usr/bin
+MANDIR 	=	$(PREFIX)/usr/share/man/man1
+INSTALLTARGET = $(DESTDIR)/$(BINDIR)/$(TARGET)
+MANTARGET = 	$(DESTDIR)/$(MANDIR)/$(MANPAGE)
 
 ifeq ($(XATTR_AVAILABLE),0)
+$(warning "xattr not available: disabling")
 CFLAGS += -DWITHOUT_XATTR
 endif
 
@@ -81,22 +94,29 @@ obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	$(RM) -rf obj "$(TARGET)"
+	$(RM) -rf obj "$(TARGET)" "$(MANPAGE)"
 	$(FIND) -name "*~" -delete
 
 distclean: clean
 	$(GIT) clean -ifd
 
-install: $(TARGET)
+install: $(TARGET) $(MANPAGE)
 	$(INSTALL) -m 0755 -D "$(TARGET)" "$(INSTALLTARGET)"
+	$(INSTALL) -m 0644 -D "$(MANPAGE)" "$(MANTARGET)"
 
 install-strip: install
 	$(STRIP) "$(INSTALLTARGET)"
 
 uninstall:
 	$(RM) "$(INSTALLTARGET)"
+	$(RM) "$(MANTARGET)"
 
-tarball: distclean changelog
+$(MANPAGE): README.md
+	$(PANDOC) -s -t man -o $(MANPAGE) README.md
+
+man: $(MANPAGE)
+
+tarball: clean changelog man
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
 	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
