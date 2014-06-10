@@ -51,6 +51,7 @@
 #include "mknod.hpp"
 #include "open.hpp"
 #include "read.hpp"
+#include "read_buf.hpp"
 #include "readdir.hpp"
 #include "readlink.hpp"
 #include "release.hpp"
@@ -64,6 +65,7 @@
 #include "unlink.hpp"
 #include "utimens.hpp"
 #include "write.hpp"
+#include "write_buf.hpp"
 
 static
 struct fuse_operations
@@ -101,7 +103,7 @@ get_fuse_operations()
   ops.opendir     = NULL;
   ops.poll        = NULL;
   ops.read        = mergerfs::read::read;
-  ops.read_buf    = NULL;
+  ops.read_buf    = mergerfs::read_buf::read_buf;
   ops.readdir     = mergerfs::readdir::readdir;
   ops.readlink    = mergerfs::readlink::readlink;
   ops.release     = mergerfs::release::release;
@@ -117,7 +119,7 @@ get_fuse_operations()
   ops.utime       = NULL;       /* deprecated; use utimens() */
   ops.utimens     = mergerfs::utimens::utimens;
   ops.write       = mergerfs::write::write;
-  ops.write_buf   = NULL;
+  ops.write_buf   = mergerfs::write_buf::write_buf;
 
   return ops;
 }
