@@ -40,6 +40,7 @@
 #include "create.hpp"
 #include "fallocate.hpp"
 #include "fgetattr.hpp"
+#include "flush.hpp"
 #include "fsync.hpp"
 #include "ftruncate.hpp"
 #include "getattr.hpp"
@@ -85,7 +86,7 @@ get_fuse_operations()
   ops.fallocate   = mergerfs::fallocate::fallocate;
   ops.fgetattr    = mergerfs::fgetattr::fgetattr;
   ops.flock       = NULL;
-  ops.flush       = NULL;       /* called on close() of fd */
+  ops.flush       = mergerfs::flush::flush;
   ops.fsync       = mergerfs::fsync::fsync;
   ops.fsyncdir    = NULL;
   ops.ftruncate   = mergerfs::ftruncate::ftruncate;
