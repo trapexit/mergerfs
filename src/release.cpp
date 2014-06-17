@@ -71,8 +71,7 @@ namespace mergerfs
     release(const char            *fusepath,
             struct fuse_file_info *fi)
     {
-      const ugid::SetResetGuard  ugid;
-      const config::Config      &config = config::get();
+      const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
         return _release_controlfile(fi->fh);

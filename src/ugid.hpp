@@ -25,70 +25,12 @@
 #ifndef __UGID_HPP__
 #define __UGID_HPP__
 
-#include <fuse.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-namespace mergerfs
-{
-  namespace ugid
-  {
-    struct SetResetGuard
-    {
-      SetResetGuard()
-      {
-        const struct fuse_context *fc = fuse_get_context();
-
-        olduid   = ::getuid();
-        oldgid   = ::getgid();
-        oldumask = ::umask(fc->umask);
-        newuid   = fc->uid;
-        newgid   = fc->gid;
-        newumask = fc->umask;
-
-        if(olduid != newuid)
-          ::seteuid(newuid);
-        if(oldgid != newgid)
-          ::setegid(newgid);
-      }
-
-      SetResetGuard(uid_t  u,
-                    gid_t  g,
-                    mode_t m)
-      {
-        olduid   = ::getuid();
-        oldgid   = ::getgid();
-        oldumask = ::umask(m);
-        newuid   = u;
-        newgid   = g;
-        newumask = m;
-
-        if(olduid != newuid)
-          ::seteuid(newuid);
-        if(oldgid != newgid)
-          ::setegid(newgid);
-      }
-
-      ~SetResetGuard()
-      {
-        ::umask(oldumask);
-        if(olduid != newuid)
-          ::seteuid(olduid);
-        if(oldgid != newgid)
-          ::setegid(oldgid);
-      }
-
-      uid_t  olduid;
-      gid_t  oldgid;
-      mode_t oldumask;
-      uid_t  newuid;
-      gid_t  newgid;
-      mode_t newumask;
-    };
-  }
-}
-
+#if defined LINUX
+#include "ugid_linux.hpp"
+#elif defined OSX
+#include "ugid_osx.hpp"
+#else
+#include "ugid_mutex.hpp"
+#endif
 
 #endif /* __UGID_HPP__ */

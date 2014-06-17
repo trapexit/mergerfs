@@ -28,7 +28,6 @@
 #include <fuse.h>
 
 #include "config.hpp"
-#include "ugid.hpp"
 #include "fileinfo.hpp"
 #include "write.hpp"
 
@@ -93,8 +92,7 @@ namespace mergerfs
               off_t                  offset,
               struct fuse_file_info *fi)
     {
-      const ugid::SetResetGuard  ugid;
-      const config::Config      &config = config::get();
+      const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
         return _write_buf_controlfile(config.controlfile,

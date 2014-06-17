@@ -73,8 +73,9 @@ namespace mergerfs
     chmod(const char *fusepath,
           mode_t      mode)
     {
-      ugid::SetResetGuard   ugid;
-      const config::Config &config = config::get();
+      const struct fuse_context *fc     = fuse_get_context();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const config::Config      &config = config::get();
 
       if(fusepath == config.controlfile)
         return -EPERM;

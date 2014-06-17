@@ -22,52 +22,43 @@
    THE SOFTWARE.
 */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#include <errno.h>
-
-#include "config.hpp"
-#include "fileinfo.hpp"
-
-static
-int
-_fsync(const int fd,
-       const int isdatasync)
-{
-  int rv;
-
-  rv = (isdatasync ?
-        ::fdatasync(fd) :
-        ::fsync(fd));
-
-  return ((rv == -1) ? -errno : 0);
-}
+#include <sys/syscall.h>
 
 namespace mergerfs
 {
-  namespace fsync
+  namespace ugid
   {
-    int
-    fsync(const char            *fusepath,
-          int                    isdatasync,
-          struct fuse_file_info *fi)
+    struct SetResetGuard
     {
-      const config::Config &config   = config::get();
-      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
+      SetResetGuard(const uid_t _newuid,
+                    const gid_t _newgid)
+      {
+        olduid   = ::geteuid();
+        oldgid   = ::getegid();
+        newuid   = _newuid;
+        newgid   = _newgid;
 
-      if(fusepath == config.controlfile)
-        return 0;
+        if(newgid != oldgid)
+          ::syscall(SYS_setregid,-1,newgid);
+        if(newuid != olduid)
+          ::syscall(SYS_setreuid,-1,newuid);
+      }
 
-      return _fsync(fileinfo->fd,
-                    isdatasync);
-    }
+      ~SetResetGuard()
+      {
+        if(olduid != newuid)
+          ::syscall(SYS_setreuid,-1,olduid);
+        if(oldgid != newgid)
+          ::syscall(SYS_setregid,-1,oldgid);
+      }
+
+      uid_t  olduid;
+      gid_t  oldgid;
+      uid_t  newuid;
+      gid_t  newgid;
+    };
   }
 }

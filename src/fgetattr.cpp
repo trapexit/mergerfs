@@ -30,7 +30,6 @@
 #include <errno.h>
 
 #include "config.hpp"
-#include "ugid.hpp"
 #include "fileinfo.hpp"
 
 static
@@ -54,9 +53,8 @@ namespace mergerfs
              struct stat           *st,
              struct fuse_file_info *ffi)
     {
-      const ugid::SetResetGuard  ugid;
-      const config::Config      &config   = config::get();
-      const FileInfo            *fileinfo = (FileInfo*)ffi->fh;
+      const config::Config &config   = config::get();
+      const FileInfo       *fileinfo = (FileInfo*)ffi->fh;
 
       if(fusepath == config.controlfile)
         return (*st = config.controlfilestat,0);

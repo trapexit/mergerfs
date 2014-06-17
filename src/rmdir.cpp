@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#include <fuse.h>
+
 #include <errno.h>
 #include <unistd.h>
 
@@ -70,8 +72,9 @@ namespace mergerfs
     int
     rmdir(const char *fusepath)
     {
-      const ugid::SetResetGuard  uid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
         return -ENOTDIR;

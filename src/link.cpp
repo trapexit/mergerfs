@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#include <fuse.h>
+
 #include <string>
 #include <vector>
 
@@ -76,8 +78,9 @@ namespace mergerfs
     link(const char *from,
          const char *to)
     {
-      const ugid::SetResetGuard  ugid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(from == config.controlfile)
         return -EPERM;

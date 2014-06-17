@@ -60,7 +60,7 @@ _mknod(const fs::SearchFunc  searchFunc,
   if(fs::path_exists(srcmounts,fusepath))
     return -EEXIST;
 
-  dirname      = fs::dirname(fusepath);
+  dirname = fs::dirname(fusepath);
   searchFunc(srcmounts,dirname,existingpath);
   if(existingpath.empty())
     return -ENOENT;
@@ -85,8 +85,9 @@ namespace mergerfs
           mode_t      mode,
           dev_t       rdev)
     {
-      const ugid::SetResetGuard  ugid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
         return -EEXIST;
@@ -95,7 +96,7 @@ namespace mergerfs
                     *config.create,
                     config.srcmounts,
                     fusepath,
-                    mode,
+                    (mode & ~fc->umask),
                     rdev);
     }
   }

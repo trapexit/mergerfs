@@ -32,7 +32,6 @@
 
 #include "config.hpp"
 #include "fileinfo.hpp"
-#include "ugid.hpp"
 
 static
 int
@@ -86,9 +85,8 @@ namespace mergerfs
           unsigned int           flags,
           void                  *data)
     {
-      const ugid::SetResetGuard  ugid;
-      const config::Config      &config   = config::get();
-      const FileInfo            *fileinfo = (FileInfo*)fi->fh;
+      const config::Config &config   = config::get();
+      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
 
       if(fusepath == config.controlfile)
         return -EINVAL;

@@ -82,8 +82,9 @@ namespace mergerfs
     mkdir(const char *fusepath,
           mode_t      mode)
     {
-      const ugid::SetResetGuard  ugid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
         return -EEXIST;
@@ -92,7 +93,7 @@ namespace mergerfs
                     *config.create,
                     config.srcmounts,
                     fusepath,
-                    mode);
+                    (mode & ~fc->umask));
     }
   }
 }

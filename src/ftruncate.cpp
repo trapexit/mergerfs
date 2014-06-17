@@ -29,7 +29,6 @@
 #include <errno.h>
 
 #include "config.hpp"
-#include "ugid.hpp"
 #include "fileinfo.hpp"
 
 static
@@ -53,9 +52,8 @@ namespace mergerfs
               off_t                  size,
               struct fuse_file_info *fi)
     {
-      const ugid::SetResetGuard  ugid;
-      const config::Config      &config   = config::get();
-      const FileInfo            *fileinfo = (FileInfo*)fi->fh;
+      const config::Config &config   = config::get();
+      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
 
       if(fusepath == config.controlfile)
         return -EPERM;

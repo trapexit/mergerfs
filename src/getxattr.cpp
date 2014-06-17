@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#include <fuse.h>
+
 #include <string>
 #include <vector>
 
@@ -112,8 +114,9 @@ namespace mergerfs
              char       *buf,
              size_t      count)
     {
-      const ugid::SetResetGuard  ugid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
         return _getxattr_controlfile(config,

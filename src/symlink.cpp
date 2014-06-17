@@ -64,8 +64,9 @@ namespace mergerfs
     symlink(const char *oldpath,
             const char *newpath)
     {
-      const ugid::SetResetGuard  uid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(oldpath == config.controlfile ||
          newpath == config.controlfile)

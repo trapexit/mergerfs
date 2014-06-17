@@ -22,52 +22,10 @@
    THE SOFTWARE.
 */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#include "ugid.hpp"
+
+#if defined LINUX
+#elif defined OSX
+#else
+pthread_mutex_t mergerfs::ugid::SetResetGuard::lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
-
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
-#include <unistd.h>
-#include <errno.h>
-
-#include "config.hpp"
-#include "fileinfo.hpp"
-
-static
-int
-_fsync(const int fd,
-       const int isdatasync)
-{
-  int rv;
-
-  rv = (isdatasync ?
-        ::fdatasync(fd) :
-        ::fsync(fd));
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace fsync
-  {
-    int
-    fsync(const char            *fusepath,
-          int                    isdatasync,
-          struct fuse_file_info *fi)
-    {
-      const config::Config &config   = config::get();
-      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
-
-      if(fusepath == config.controlfile)
-        return 0;
-
-      return _fsync(fileinfo->fd,
-                    isdatasync);
-    }
-  }
-}

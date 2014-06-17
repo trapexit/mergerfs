@@ -74,6 +74,14 @@ $(warning "xattr not available: disabling")
 CFLAGS += -DWITHOUT_XATTR
 endif
 
+KERNEL = $(shell uname -s)
+ifeq ($(KERNEL),Linux)
+	CFLAGS += -DLINUX
+endif
+ifeq ($(KERNEL),Darwin)
+	CFLAGS += -DOSX
+endif
+
 all: $(TARGET)
 
 help:

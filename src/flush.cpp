@@ -27,7 +27,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "ugid.hpp"
 #include "fileinfo.hpp"
 
 static
@@ -53,8 +52,6 @@ namespace mergerfs
     flush(const char            *path,
           struct fuse_file_info *fi)
     {
-      const ugid::SetResetGuard ugid;
-
       return _flush(((FileInfo*)fi->fh)->fd);
     }
   }

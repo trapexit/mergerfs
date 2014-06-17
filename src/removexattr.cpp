@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#include <fuse.h>
+
 #include <string>
 #include <vector>
 
@@ -78,8 +80,9 @@ namespace mergerfs
     removexattr(const char *fusepath,
                 const char *attrname)
     {
-      const ugid::SetResetGuard  uid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
         return -ENOTSUP;

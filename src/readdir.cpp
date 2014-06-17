@@ -122,8 +122,9 @@ namespace mergerfs
             off_t                  offset,
             struct fuse_file_info *fi)
     {
-      const ugid::SetResetGuard  ugid;
+      const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       return _readdir(config.srcmounts,
                       fusepath,

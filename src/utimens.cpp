@@ -22,8 +22,11 @@
    THE SOFTWARE.
 */
 
+#include <fuse.h>
+
 #include <errno.h>
-#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include <string>
 #include <vector>
@@ -31,7 +34,6 @@
 #include "ugid.hpp"
 #include "fs.hpp"
 #include "config.hpp"
-#include "assert.hpp"
 
 using std::string;
 using std::vector;
@@ -73,8 +75,9 @@ namespace mergerfs
     utimens(const char            *fusepath,
             const struct timespec  ts[2])
     {
-      ugid::SetResetGuard   ugid;
-      const config::Config &config = config::get();
+      const struct fuse_context *fc     = fuse_get_context();
+      const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
         return -EPERM;
