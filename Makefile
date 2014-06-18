@@ -53,12 +53,14 @@ ifeq ($(FUSE_AVAILABLE),0)
 $(error "FUSE development package doesn't appear available")
 endif
 
+OPTS 	= 	-O2
 SRC	=	$(wildcard src/*.cpp)
 OBJ     =       $(SRC:src/%.cpp=obj/%.o)
 DEPS    =       $(OBJ:obj/%.o=obj/%.d)
 TARGET  =       mergerfs
 MANPAGE = 	$(TARGET).1
 CFLAGS  =       -g -Wall \
+		$(OPTS) \
                 $(shell $(PKGCONFIG) fuse --cflags) \
                 -DFUSE_USE_VERSION=26 \
                 -MMD
