@@ -32,6 +32,7 @@ INSTALL = 	$(shell which install)
 MKTEMP  = 	$(shell which mktemp)
 STRIP   = 	$(shell which strip)
 PANDOC  =       $(shell which pandoc)
+RPMBUILD =	$(shell which rpmbuild)
 
 ifeq ($(PKGCONFIG),"")
 $(error "pkg-config not installed")
@@ -104,7 +105,7 @@ obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	$(RM) -rf obj "$(TARGET)" "$(MANPAGE)"
+	$(RM) -rf obj "$(TARGET)" "$(MANPAGE)" rpmbuild
 	$(FIND) -name "*~" -delete
 
 distclean: clean
@@ -139,6 +140,13 @@ deb:
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(GIT) dch --auto --release --new-version="$(VERSION)"
 	$(GIT) buildpackage --git-ignore-new
+
+rpm:
+	$(eval VERSION := $(subst -,_,$(shell $(GIT) describe --always --tags --dirty)))
+	$(RPMBUILD) -bb $(TARGET).spec \
+		--define "_topdir $(CURDIR)/rpmbuild" \
+		--define "_builddir $(CURDIR)" \
+		--define "pkg_version $(VERSION)"
 
 .PHONY: all clean install help
 
