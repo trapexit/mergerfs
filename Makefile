@@ -34,7 +34,7 @@ STRIP   = 	$(shell which strip)
 PANDOC  =       $(shell which pandoc)
 
 ifeq ($(PKGCONFIG),"")
-$(error "pkg-config not installed"
+$(error "pkg-config not installed")
 endif
 
 ifeq ($(PANDOC),"")
