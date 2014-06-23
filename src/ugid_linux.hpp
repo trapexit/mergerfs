@@ -36,10 +36,10 @@ namespace mergerfs
       SetResetGuard(const uid_t _newuid,
                     const gid_t _newgid)
       {
-        olduid   = ::geteuid();
-        oldgid   = ::getegid();
-        newuid   = _newuid;
-        newgid   = _newgid;
+        olduid = ::syscall(SYS_geteuid);
+        oldgid = ::syscall(SYS_getegid);
+        newuid = _newuid;
+        newgid = _newgid;
 
         if(newgid != oldgid)
           ::syscall(SYS_setregid,-1,newgid);
