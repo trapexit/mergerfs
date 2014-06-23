@@ -36,7 +36,7 @@ GIT2DEBCL =     ./tools/git2debcl
 CPPFIND   =     ./tools/cppfind
 
 ifeq ($(PKGCONFIG),"")
-$(error "pkg-config not installed"
+$(error "pkg-config not installed")
 endif
 
 ifeq ($(PANDOC),"")
