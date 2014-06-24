@@ -57,6 +57,8 @@ _rename(const fs::SearchFunc  searchFunc,
   pathto = fs::make_path(pathfrom[0].base,to);
 
   rv = ::rename(pathfrom[0].full.c_str(),pathto.c_str());
+  if(rv == -1 && errno == ENOENT)
+    return -EXDEV;
 
   return ((rv == -1) ? -errno : 0);
 }

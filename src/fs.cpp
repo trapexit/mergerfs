@@ -136,12 +136,12 @@ namespace fs
 
   string
   make_path(const string base,
-            const string fusepath)
+            const string suffix)
   {
-    if(*base.rbegin() == '/' ||
-       *fusepath.rbegin() == '/')
-      return base + fusepath;
-    return base + '/' + fusepath;
+    if(suffix[0]      == '/' ||
+       *base.rbegin() == '/')
+      return base + suffix;
+    return base + '/' + suffix;
   }
 
   bool
