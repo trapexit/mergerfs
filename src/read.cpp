@@ -80,7 +80,7 @@ namespace mergerfs
       const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
-        return _read_controlfile(config.readstr,
+        return _read_controlfile(config.controlfiledata(),
                                  buf,
                                  count);
 

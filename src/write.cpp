@@ -63,8 +63,6 @@ _process_kv(Config       &config,
 
   config.policies[*cat] = policy;
 
-  config.updateReadStr();
-
   return 0;
 }
 

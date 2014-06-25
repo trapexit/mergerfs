@@ -42,8 +42,8 @@ namespace mergerfs
     public:
       Config();
 
-      std::string generateReadStr() const;
-      void        updateReadStr();
+    public:
+      std::string controlfiledata() const;
 
     public:
       std::string              destmount;
@@ -54,11 +54,9 @@ namespace mergerfs
       const Policy *&create;
       const Policy *&search;
 
+    public:
       const std::string controlfile;
       struct stat       controlfilestat;
-      std::string       readstr;
-
-      bool testmode;
     };
 
     const Config &get(void);

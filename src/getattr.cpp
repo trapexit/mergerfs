@@ -43,6 +43,18 @@ using mergerfs::Policy;
 
 static
 int
+_getattr_controlfile(const struct stat &controlfilestat,
+                     const std::string  cfdata,
+                     struct stat       &st)
+{
+  st = controlfilestat;
+  st.st_size = cfdata.size();
+
+  return 0;
+}
+
+static
+int
 _getattr(const fs::SearchFunc  searchFunc,
          const vector<string> &srcmounts,
          const string          fusepath,
@@ -66,19 +78,21 @@ namespace mergerfs
   {
     int
     getattr(const char  *fusepath,
-            struct stat *buf)
+            struct stat *st)
     {
       const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
-        return (*buf = config.controlfilestat,0);
+        return _getattr_controlfile(config.controlfilestat,
+                                    config.controlfiledata(),
+                                    *st);
 
       return _getattr(*config.search,
                       config.srcmounts,
                       fusepath,
-                      *buf);
+                      *st);
     }
   }
 }

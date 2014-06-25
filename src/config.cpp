@@ -39,8 +39,7 @@ namespace mergerfs
       : action(policies[0]),
         create(policies[1]),
         search(policies[2]),
-        controlfile("/.mergerfs"),
-        testmode(false)
+        controlfile("/.mergerfs")
     {
       action = &Policy::ff;
       create = &Policy::epmfs;
@@ -64,7 +63,7 @@ namespace mergerfs
     }
 
     std::string
-    Config::generateReadStr() const
+    Config::controlfiledata() const
     {
       std::stringstream ss;
 
@@ -73,13 +72,6 @@ namespace mergerfs
          << "search=" << (std::string)*search << std::endl;
 
       return ss.str();
-    }
-
-    void
-    Config::updateReadStr()
-    {
-      readstr                 = generateReadStr();
-      controlfilestat.st_size = readstr.size();
     }
 
     const Config&

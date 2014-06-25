@@ -36,18 +36,18 @@ using std::string;
 static
 int
 _write_buf_controlfile(const string           controlfile,
-                       struct fuse_bufvec    *buf,
-                       struct fuse_file_info *fi)
+                       struct fuse_bufvec    &src,
+                       struct fuse_file_info &fi)
 {
   int rv;
   size_t size;
   struct fuse_bufvec dst;
 
-  size = fuse_buf_size(buf);
+  size = fuse_buf_size(&src);
   dst = FUSE_BUFVEC_INIT(size);
   dst.buf->mem = malloc(size);
 
-  rv = fuse_buf_copy(&dst,buf,(fuse_buf_copy_flags)0);
+  rv = fuse_buf_copy(&dst,&src,(fuse_buf_copy_flags)0);
   if(rv < 0)
     {
       free(dst.buf->mem);
@@ -58,7 +58,7 @@ _write_buf_controlfile(const string           controlfile,
                               (const char*)dst.buf->mem,
                               size,
                               0,
-                              fi);
+                              &fi);
   free(dst.buf->mem);
 
   return rv;
@@ -67,19 +67,19 @@ _write_buf_controlfile(const string           controlfile,
 static
 int
 _write_buf(const int           fd,
-           struct fuse_bufvec *buf,
+           struct fuse_bufvec &src,
            const off_t         offset)
 {
-  size_t size = fuse_buf_size(buf);
-  struct fuse_bufvec dest = FUSE_BUFVEC_INIT(size);
+  size_t size = fuse_buf_size(&src);
+  struct fuse_bufvec dst = FUSE_BUFVEC_INIT(size);
   const fuse_buf_copy_flags cpflags =
     (fuse_buf_copy_flags)(FUSE_BUF_SPLICE_MOVE|FUSE_BUF_SPLICE_NONBLOCK);
 
-  dest.buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK);
-  dest.buf->fd    = fd;
-  dest.buf->pos   = offset;
+  dst.buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK);
+  dst.buf->fd    = fd;
+  dst.buf->pos   = offset;
 
-  return fuse_buf_copy(&dest,buf,cpflags);
+  return fuse_buf_copy(&dst,&src,cpflags);
 }
 
 namespace mergerfs
@@ -88,7 +88,7 @@ namespace mergerfs
   {
     int
     write_buf(const char            *fusepath,
-              struct fuse_bufvec    *buf,
+              struct fuse_bufvec    *src,
               off_t                  offset,
               struct fuse_file_info *fi)
     {
@@ -96,11 +96,11 @@ namespace mergerfs
 
       if(fusepath == config.controlfile)
         return _write_buf_controlfile(config.controlfile,
-                                      buf,
-                                      fi);
+                                      *src,
+                                      *fi);
 
       return _write_buf(((FileInfo*)fi->fh)->fd,
-                        buf,
+                        *src,
                         offset);
     }
   }

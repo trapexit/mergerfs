@@ -83,11 +83,7 @@ process_opt(config::Config    &config,
       break;
 
     default:
-    case 1:
-      if(argvalue[0] == "test")
-        config.testmode = true;
-      else
-        rv = 1;
+      rv = 1;
       break;
     };
 
@@ -180,8 +176,6 @@ namespace mergerfs
                      ::option_processor);
 
       set_fsname(args,config);
-
-      config.updateReadStr();
     }
   }
 }

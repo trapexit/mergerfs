@@ -111,7 +111,7 @@ namespace mergerfs
       const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
-        return _read_buf_controlfile(config.readstr,
+        return _read_buf_controlfile(config.controlfiledata(),
                                      bufp,
                                      size);
 

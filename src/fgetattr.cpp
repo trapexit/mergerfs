@@ -34,6 +34,18 @@
 
 static
 int
+_fgetattr_controlfile(const struct stat &controlfilestat,
+                      const std::string  cfdata,
+                      struct stat       &st)
+{
+  st = controlfilestat;
+  st.st_size = cfdata.size();
+
+  return 0;
+}
+
+static
+int
 _fgetattr(const int    fd,
           struct stat &st)
 {
@@ -57,7 +69,9 @@ namespace mergerfs
       const FileInfo       *fileinfo = (FileInfo*)ffi->fh;
 
       if(fusepath == config.controlfile)
-        return (*st = config.controlfilestat,0);
+        return _fgetattr_controlfile(config.controlfilestat,
+                                     config.controlfiledata(),
+                                     *st);
 
       return _fgetattr(fileinfo->fd,
                        *st);

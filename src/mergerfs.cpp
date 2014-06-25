@@ -157,10 +157,7 @@ main(int   argc,
 
   mergerfs::options::parse(args,config);
 
-  if(config.testmode == false)
-    rv = mergerfs::main(args,config);
-  else
-    rv = mergerfs::test(args,config);
+  rv = mergerfs::main(args,config);
 
   return rv;
 }

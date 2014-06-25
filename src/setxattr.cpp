@@ -95,8 +95,6 @@ _setxattr_controlfile(config::Config &config,
 
   config.policies[*cat] = policy;
 
-  config.updateReadStr();
-
   return 0;
 #else
   return -ENOTSUP;
