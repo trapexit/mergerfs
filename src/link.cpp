@@ -59,10 +59,26 @@ _link(const fs::SearchFunc  searchFunc,
   for(fs::PathVector::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
+      int lrv;
       const string pathfrom = fs::make_path(i->base,from);
       const string pathto   = fs::make_path(i->base,to);
 
-      rv &= ::link(pathfrom.c_str(),pathto.c_str());
+      lrv = ::link(pathfrom.c_str(),pathto.c_str());
+      if(lrv == -1 && errno == ENOENT)
+        {
+          string todir;
+          fs::PathVector topaths;
+
+          todir = fs::dirname(to);
+          fs::find::ffwp(srcmounts,todir,topaths);
+          if(topaths.size() > 0)
+            {
+              fs::clonepath(topaths[0].base,i->base,todir);
+              lrv = ::link(pathfrom.c_str(),pathto.c_str());
+            }
+        }
+
+      rv &= lrv;
       if(rv == -1)
         error = errno;
     }
