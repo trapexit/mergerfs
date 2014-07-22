@@ -36,7 +36,7 @@
 static
 int
 _ioctl(const int           fd,
-       const long          cmd,
+       const int           cmd,
        void               *arg,
        const unsigned int  flags,
        void               *data)
@@ -92,7 +92,7 @@ namespace mergerfs
         return -EINVAL;
 
       return _ioctl(fileinfo->fd,
-                    (long)cmd,
+                    cmd,
                     arg,
                     flags,
                     data);
