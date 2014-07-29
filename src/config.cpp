@@ -44,34 +44,6 @@ namespace mergerfs
       action = &Policy::ff;
       create = &Policy::epmfs;
       search = &Policy::ff;
-
-      time_t now = time(NULL);
-
-      controlfilestat.st_dev     = 0;
-      controlfilestat.st_ino     = 0;
-      controlfilestat.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-      controlfilestat.st_nlink   = 1;
-      controlfilestat.st_uid     = ::getuid();
-      controlfilestat.st_gid     = ::getgid();
-      controlfilestat.st_rdev    = 0;
-      controlfilestat.st_size    = 0;
-      controlfilestat.st_blksize = 1024;
-      controlfilestat.st_blocks  = 0;
-      controlfilestat.st_atime   = now;
-      controlfilestat.st_mtime   = now;
-      controlfilestat.st_ctime   = now;
-    }
-
-    std::string
-    Config::controlfiledata() const
-    {
-      std::stringstream ss;
-
-      ss << "action=" << (std::string)*action << std::endl
-         << "create=" << (std::string)*create << std::endl
-         << "search=" << (std::string)*search << std::endl;
-
-      return ss.str();
     }
 
     const Config&

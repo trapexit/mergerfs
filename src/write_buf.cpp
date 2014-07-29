@@ -22,47 +22,12 @@
    THE SOFTWARE.
 */
 
-#include <string>
-
-#include <stdlib.h>
 #include <fuse.h>
 
-#include "config.hpp"
+#include <stdlib.h>
+
 #include "fileinfo.hpp"
 #include "write.hpp"
-
-using std::string;
-
-static
-int
-_write_buf_controlfile(const string           controlfile,
-                       struct fuse_bufvec    &src,
-                       struct fuse_file_info &fi)
-{
-  int rv;
-  size_t size;
-  struct fuse_bufvec dst;
-
-  size = fuse_buf_size(&src);
-  dst = FUSE_BUFVEC_INIT(size);
-  dst.buf->mem = malloc(size);
-
-  rv = fuse_buf_copy(&dst,&src,(fuse_buf_copy_flags)0);
-  if(rv < 0)
-    {
-      free(dst.buf->mem);
-      return rv;
-    }
-
-  rv = mergerfs::write::write(controlfile.c_str(),
-                              (const char*)dst.buf->mem,
-                              size,
-                              0,
-                              &fi);
-  free(dst.buf->mem);
-
-  return rv;
-}
 
 static
 int
@@ -90,16 +55,9 @@ namespace mergerfs
     write_buf(const char            *fusepath,
               struct fuse_bufvec    *src,
               off_t                  offset,
-              struct fuse_file_info *fi)
+              struct fuse_file_info *ffi)
     {
-      const config::Config &config = config::get();
-
-      if(fusepath == config.controlfile)
-        return _write_buf_controlfile(config.controlfile,
-                                      *src,
-                                      *fi);
-
-      return _write_buf(((FileInfo*)fi->fh)->fd,
+      return _write_buf(((FileInfo*)ffi->fh)->fd,
                         *src,
                         offset);
     }

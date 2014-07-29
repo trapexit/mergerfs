@@ -31,10 +31,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include "config.hpp"
 #include "fileinfo.hpp"
-
-using namespace mergerfs;
 
 static
 int
@@ -74,13 +71,9 @@ namespace mergerfs
               int                    mode,
               off_t                  offset,
               off_t                  len,
-              struct fuse_file_info *fi)
+              struct fuse_file_info *ffi)
     {
-      const config::Config &config   = config::get();
-      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
-
-      if(fusepath == config.controlfile)
-        return -EINVAL;
+      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
 
       return _fallocate(fileinfo->fd,
                         mode,

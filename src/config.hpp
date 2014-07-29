@@ -43,9 +43,6 @@ namespace mergerfs
       Config();
 
     public:
-      std::string controlfiledata() const;
-
-    public:
       std::string              destmount;
       std::vector<std::string> srcmounts;
 
@@ -56,7 +53,6 @@ namespace mergerfs
 
     public:
       const std::string controlfile;
-      struct stat       controlfilestat;
     };
 
     const Config &get(void);

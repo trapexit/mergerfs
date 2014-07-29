@@ -39,7 +39,6 @@ using std::string;
 using std::vector;
 using std::map;
 using std::pair;
-using mergerfs::Policy;
 
 static
 void

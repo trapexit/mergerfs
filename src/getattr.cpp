@@ -39,16 +39,26 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 
 static
 int
-_getattr_controlfile(const struct stat &controlfilestat,
-                     const std::string  cfdata,
-                     struct stat       &st)
+_getattr_controlfile(struct stat &buf)
 {
-  st = controlfilestat;
-  st.st_size = cfdata.size();
+  time_t now = time(NULL);
+
+  buf.st_dev     = 0;
+  buf.st_ino     = 0;
+  buf.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+  buf.st_nlink   = 1;
+  buf.st_uid     = ::geteuid();
+  buf.st_gid     = ::getegid();
+  buf.st_rdev    = 0;
+  buf.st_size    = 0;
+  buf.st_blksize = 1024;
+  buf.st_blocks  = 0;
+  buf.st_atime   = now;
+  buf.st_mtime   = now;
+  buf.st_ctime   = now;
 
   return 0;
 }
@@ -85,9 +95,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
       if(fusepath == config.controlfile)
-        return _getattr_controlfile(config.controlfilestat,
-                                    config.controlfiledata(),
-                                    *st);
+        return _getattr_controlfile(*st);
 
       return _getattr(*config.search,
                       config.srcmounts,

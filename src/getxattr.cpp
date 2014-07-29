@@ -39,7 +39,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 using namespace mergerfs::config;
 
 static
@@ -49,7 +48,6 @@ _getxattr_controlfile(const Config &config,
                       char         *buf,
                       const size_t  count)
 {
-#ifndef WITHOUT_XATTR
   size_t len;
   string attrvalue;
 
@@ -74,9 +72,6 @@ _getxattr_controlfile(const Config &config,
   memcpy(buf,attrvalue.c_str(),len);
 
   return (int)len;
-#else
-  return -ENOTSUP;
-#endif
 }
 
 static

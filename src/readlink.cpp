@@ -76,9 +76,6 @@ namespace mergerfs
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
-      if(fusepath == config.controlfile)
-        return -EINVAL;
-
       return _readlink(*config.search,
                        config.srcmounts,
                        fusepath,

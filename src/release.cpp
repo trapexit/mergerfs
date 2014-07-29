@@ -24,29 +24,14 @@
 
 #include <fuse.h>
 
+#include <unistd.h>
 #include <errno.h>
 
 #include <string>
 
-#include "config.hpp"
-#include "ugid.hpp"
 #include "fileinfo.hpp"
 
-using std::string;
 using mergerfs::FileInfo;
-
-static
-int
-_release_controlfile(uint64_t &fh)
-{
-  string *strbuf = (string*)fh;
-
-  delete strbuf;
-
-  fh = 0;
-
-  return 0;
-}
 
 static
 int
@@ -71,11 +56,6 @@ namespace mergerfs
     release(const char            *fusepath,
             struct fuse_file_info *fi)
     {
-      const config::Config &config = config::get();
-
-      if(fusepath == config.controlfile)
-        return _release_controlfile(fi->fh);
-
       return _release(fi->fh);
     }
   }

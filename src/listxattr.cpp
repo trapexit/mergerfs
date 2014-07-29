@@ -47,7 +47,6 @@ int
 _listxattr_controlfile(char         *list,
                        const size_t  size)
 {
-#ifndef WITHOUT_XATTR
   size_t xattrssize;
   string xattrs;
 
@@ -65,9 +64,6 @@ _listxattr_controlfile(char         *list,
   memcpy(list,xattrs.data(),xattrssize);
 
   return xattrssize;
-#else
-  return -ENOTSUP;
-#endif
 }
 
 static

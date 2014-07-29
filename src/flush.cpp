@@ -27,7 +27,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "config.hpp"
 #include "fileinfo.hpp"
 
 static
@@ -51,14 +50,9 @@ namespace mergerfs
   {
     int
     flush(const char            *fusepath,
-          struct fuse_file_info *fi)
+          struct fuse_file_info *ffi)
     {
-      const config::Config &config = config::get();
-
-      if(fusepath == config.controlfile)
-        return 0;
-
-      return _flush(((FileInfo*)fi->fh)->fd);
+      return _flush(((FileInfo*)ffi->fh)->fd);
     }
   }
 }

@@ -28,7 +28,6 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#include "config.hpp"
 #include "fileinfo.hpp"
 
 static
@@ -50,13 +49,9 @@ namespace mergerfs
     int
     ftruncate(const char            *fusepath,
               off_t                  size,
-              struct fuse_file_info *fi)
+              struct fuse_file_info *ffi)
     {
-      const config::Config &config   = config::get();
-      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
-
-      if(fusepath == config.controlfile)
-        return -EPERM;
+      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
 
       return _ftruncate(fileinfo->fd,
                         size);

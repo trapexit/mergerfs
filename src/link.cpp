@@ -98,9 +98,6 @@ namespace mergerfs
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
 
-      if(from == config.controlfile)
-        return -EPERM;
-
       return _link(*config.action,
                    config.srcmounts,
                    from,

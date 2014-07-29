@@ -30,7 +30,6 @@
 #include <sys/ioctl.h>
 #include <linux/fs.h>
 
-#include "config.hpp"
 #include "fileinfo.hpp"
 
 static
@@ -81,15 +80,11 @@ namespace mergerfs
     ioctl(const char            *fusepath,
           int                    cmd,
           void                  *arg,
-          struct fuse_file_info *fi,
+          struct fuse_file_info *ffi,
           unsigned int           flags,
           void                  *data)
     {
-      const config::Config &config   = config::get();
-      const FileInfo       *fileinfo = (FileInfo*)fi->fh;
-
-      if(fusepath == config.controlfile)
-        return -EINVAL;
+      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
 
       return _ioctl(fileinfo->fd,
                     cmd,

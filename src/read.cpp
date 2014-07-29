@@ -31,26 +31,7 @@
 #include <string>
 #include <algorithm>
 
-#include "config.hpp"
-#include "ugid.hpp"
 #include "fileinfo.hpp"
-
-using std::string;
-
-static
-int
-_read_controlfile(const string  readstr,
-                  char         *buf,
-                  const size_t  count)
-{
-  size_t n;
-
-  n = std::min(count,readstr.length());
-
-  memcpy(buf,readstr.data(),n);
-
-  return (int)n;
-}
 
 static
 int
@@ -75,16 +56,9 @@ namespace mergerfs
          char                  *buf,
          size_t                 count,
          off_t                  offset,
-         struct fuse_file_info *fi)
+         struct fuse_file_info *ffi)
     {
-      const config::Config &config = config::get();
-
-      if(fusepath == config.controlfile)
-        return _read_controlfile(config.controlfiledata(),
-                                 buf,
-                                 count);
-
-      return _read(((FileInfo*)fi->fh)->fd,
+      return _read(((FileInfo*)ffi->fh)->fd,
                    buf,
                    count,
                    offset);

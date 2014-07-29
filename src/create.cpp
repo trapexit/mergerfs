@@ -45,15 +45,6 @@ using mergerfs::Policy;
 
 static
 int
-_create_controlfile(uint64_t &fh)
-{
-  fh = (uint64_t)new string;
-
-  return 0;
-}
-
-static
-int
 _create(const fs::SearchFunc  searchFunc,
         const fs::SearchFunc  createPathFunc,
         const vector<string> &srcmounts,
@@ -68,7 +59,7 @@ _create(const fs::SearchFunc  searchFunc,
   fs::PathVector createpath;
   fs::PathVector existingpath;
 
-  dirname      = fs::dirname(fusepath);
+  dirname = fs::dirname(fusepath);
   searchFunc(srcmounts,dirname,existingpath);
   if(existingpath.empty())
     return -ENOENT;
@@ -103,9 +94,6 @@ namespace mergerfs
       const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-
-      if(fusepath == config.controlfile)
-        return _create_controlfile(fileinfo->fh);
 
       return _create(*config.search,
                      *config.create,

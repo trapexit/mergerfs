@@ -66,7 +66,6 @@ _setxattr_controlfile(config::Config &config,
                       const size_t    attrvalsize,
                       const int       flags)
 {
-#ifndef WITHOUT_XATTR
   const Category *cat;
   const Policy   *policy;
   vector<string>  nameparts;
@@ -96,9 +95,6 @@ _setxattr_controlfile(config::Config &config,
   config.policies[*cat] = policy;
 
   return 0;
-#else
-  return -ENOTSUP;
-#endif
 }
 
 static

@@ -29,20 +29,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "config.hpp"
 #include "fileinfo.hpp"
-
-static
-int
-_fgetattr_controlfile(const struct stat &controlfilestat,
-                      const std::string  cfdata,
-                      struct stat       &st)
-{
-  st = controlfilestat;
-  st.st_size = cfdata.size();
-
-  return 0;
-}
 
 static
 int
@@ -65,13 +52,7 @@ namespace mergerfs
              struct stat           *st,
              struct fuse_file_info *ffi)
     {
-      const config::Config &config   = config::get();
-      const FileInfo       *fileinfo = (FileInfo*)ffi->fh;
-
-      if(fusepath == config.controlfile)
-        return _fgetattr_controlfile(config.controlfilestat,
-                                     config.controlfiledata(),
-                                     *st);
+      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
 
       return _fgetattr(fileinfo->fd,
                        *st);

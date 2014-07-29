@@ -28,50 +28,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "config.hpp"
-#include "ugid.hpp"
 #include "fileinfo.hpp"
-
-using std::string;
-
-static
-void *
-memdup(const void   *src,
-       const size_t  len)
-{
-  void *dst;
-
-  dst = malloc(len);
-  if(dst == NULL)
-    return NULL;
-
-  memcpy(dst, src, len);
-
-  return dst;
-}
-
-static
-int
-_read_buf_controlfile(const string         readstr,
-                      struct fuse_bufvec **bufp,
-                      const size_t         size)
-{
-  struct fuse_bufvec *src;
-
-  src = (fuse_bufvec*)malloc(sizeof(struct fuse_bufvec));
-  if(src == NULL)
-    return -ENOMEM;
-
-  *src = FUSE_BUFVEC_INIT(std::min(size,readstr.size()));
-
-  src->buf->mem = memdup(readstr.data(),readstr.size());
-  if(src->buf->mem == NULL)
-    return -ENOMEM;
-
-  *bufp = src;
-
-  return 0;
-}
 
 static
 int
@@ -106,16 +63,9 @@ namespace mergerfs
              struct fuse_bufvec    **bufp,
              size_t                  size,
              off_t                   offset,
-             struct fuse_file_info  *fi)
+             struct fuse_file_info  *ffi)
     {
-      const config::Config &config = config::get();
-
-      if(fusepath == config.controlfile)
-        return _read_buf_controlfile(config.controlfiledata(),
-                                     bufp,
-                                     size);
-
-      return _read_buf(((FileInfo*)fi->fh)->fd,
+      return _read_buf(((FileInfo*)ffi->fh)->fd,
                        bufp,
                        size,
                        offset);

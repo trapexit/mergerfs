@@ -40,16 +40,6 @@
 using std::string;
 using std::vector;
 using mergerfs::FileInfo;
-using mergerfs::Policy;
-
-static
-int
-_open_controlfile(uint64_t &fh)
-{
-  fh = (uint64_t)new string;
-
-  return 0;
-}
 
 static
 int
@@ -86,9 +76,6 @@ namespace mergerfs
       const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);;
-
-      if(fusepath == config.controlfile)
-        return _open_controlfile(fileinfo->fh);
 
       return _open(*config.search,
                    config.srcmounts,
