@@ -76,6 +76,25 @@ _getxattr_controlfile(const Config &config,
 
 static
 int
+_getxattr_from_string(char         *destbuf,
+                      const size_t  destbufsize,
+                      const string &src)
+{
+  const size_t srcbufsize = src.size();
+
+  if(destbufsize == 0)
+    return srcbufsize;
+
+  if(srcbufsize > destbufsize)
+    return (errno = ERANGE, -1);
+
+  memcpy(destbuf,src.data(),srcbufsize);
+
+  return srcbufsize;
+}
+
+static
+int
 _getxattr(const fs::SearchFunc  searchFunc,
           const vector<string> &srcmounts,
           const string          fusepath,
@@ -91,7 +110,12 @@ _getxattr(const fs::SearchFunc  searchFunc,
   if(paths.empty())
     return -ENOENT;
 
-  rv = ::lgetxattr(paths[0].full.c_str(),attrname,buf,count);
+  if(!strcmp(attrname,"user.mergerfs.basepath"))
+    rv = ::_getxattr_from_string(buf,count,paths[0].base);
+  else if(!strcmp(attrname,"user.mergerfs.fullpath"))
+    rv = ::_getxattr_from_string(buf,count,paths[0].full);
+  else
+    rv = ::lgetxattr(paths[0].full.c_str(),attrname,buf,count);
 
   return ((rv == -1) ? -errno : rv);
 #else
