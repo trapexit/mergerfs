@@ -93,44 +93,36 @@ make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto dis
 <mountpoint>/.mergerfs
 ```
 
-There is a pseudo file available at the mountpoint which allows for the runtime modification of policies. The file will not show up in readdirs but can be stat'ed, read, and writen. Most other calls will fail with EPERM, EINVAL, or whatever may be appropriate for that call. Anything not understood while writing will result in EINVAL otherwise the number of bytes written will be returned.
+There is a pseudo file available at the mountpoint which allows for the runtime modification of certain mergerfs options. The file will not show up in readdirs but can be stat'ed and manipulated via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls. 
 
-Reading the file will result in a newline delimited list of current settings as followed:
+Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls will still work.
 
-```
-[trapexit:/tmp/mount] $ cat .mergerfs
-action=ff
-create=epmfs
-search=ff
-```
-
-Writing to the file is buffered and waits till a newline to process. Meaning echo works well.
+The keys are **user.mergerfs.action**, **user.mergerfs.create**, and **user.mergerfs.search**.
 
 ```
-[trapexit:/tmp/mount] $ echo "search=newest" >> .mergerfs
-[trapexit:/tmp/mount] $ cat .mergerfs
-action=ff
-create=epmfs
-search=newest
-```
+[trapexit:/tmp/mount] $ xattr -l .mergerfs
+user.mergerfs.action: ff
+user.mergerfs.create: epmfs
+user.mergerfs.search: ff
 
-*NOTE:* offset is not supported and ignored in both read and write. There is also a safety check which limits buffered + incoming length to a max of 1024 bytes.
-
-#### xattrs ####
-
-If xattrs has been enabled you can also use [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) on the pseudo file **.mergerfs** to modify the policies. The keys are **mergerfs.action**, **mergerfs.create**, and **mergerfs.search**.
-
-```
-[trapexit:/tmp/mount] $ attr -l .mergerfs
-Attribute "mergerfs.action" has a 2 byte value for .mergerfs
-Attribute "mergerfs.create" has a 5 byte value for .mergerfs
-Attribute "mergerfs.search" has a 2 byte value for .mergerfs
-
-[trapexit:/tmp/mount] $ attr -g mergerfs.action .mergerfs
-Attribute "mergerfs.action" had a 2 byte value for .mergerfs:
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.action .mergerfs
 ff
 
-[trapexit:/tmp/mount] 1 $ attr -s mergerfs.action -V ffwp .mergerfs
-Attribute "mergerfs.action" set to a 4 byte value for .mergerfs:
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.action ffwp .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.action .mergerfs
 ffwp
+```
+
+#### mergerfs xattrs ####
+
+While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) mergerfs offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
+
+* user.mergerfs.basepath : gives you the base mount point for the file given the current search policy
+* user.mergerfs.fullpath : gives you the full path of the original file given the search policy
+
+```
+[trapexit:/tmp/mount] $ ls
+A B C
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.fullpath A
+/mnt/full/path/to/A
 ```
