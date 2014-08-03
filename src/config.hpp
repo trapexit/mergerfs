@@ -45,6 +45,7 @@ namespace mergerfs
     public:
       std::string              destmount;
       std::vector<std::string> srcmounts;
+      mutable pthread_rwlock_t srcmountslock;
 
       const Policy *policies[Category::Enum::END];
       const Policy *&action;

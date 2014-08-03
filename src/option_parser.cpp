@@ -27,38 +27,19 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
-#include <glob.h>
 
 #include <string>
 #include <vector>
 #include <sstream>
 #include <iostream>
 
+#include "str.hpp"
 #include "config.hpp"
 #include "policy.hpp"
 
 using std::string;
 using std::vector;
 using namespace mergerfs;
-
-template<typename Container>
-Container&
-split(Container                                  &result,
-      const typename Container::value_type       &s,
-      typename Container::value_type::value_type  delimiter)
-{
-  std::istringstream ss(s);
-  while(!ss.eof())
-    {
-      typename Container::value_type field;
-      std::getline(ss,field,delimiter);
-      if(field.empty())
-        continue;
-      result.push_back(field);
-    }
-
-  return result;
-}
 
 static
 int
@@ -68,7 +49,7 @@ process_opt(config::Config    &config,
   int rv = 0;
   std::vector<std::string> argvalue;
 
-  split(argvalue,arg,'=');
+  str::split(argvalue,arg,'=');
   switch(argvalue.size())
     {
     case 2:
@@ -91,26 +72,27 @@ process_opt(config::Config    &config,
 }
 
 static
-void
+int
 process_srcmounts(const char     *arg,
                   config::Config &config)
 {
-  int flags;
-  glob_t gbuf;
   vector<string> paths;
 
-  flags = 0;
-  split(paths,arg,':');
-  for(size_t i = 0; i < paths.size(); i++)
-    {
-      glob(paths[i].c_str(),flags,NULL,&gbuf);
-      flags = GLOB_APPEND;
-    }
+  str::split(paths,arg,':');
 
-  for(size_t i = 0; i < gbuf.gl_pathc; ++i)
-    config.srcmounts.push_back(gbuf.gl_pathv[i]);
+  fs::glob(paths,config.srcmounts);
 
-  globfree(&gbuf);
+  return 0;
+}
+
+static
+int
+process_destmounts(const char     *arg,
+                   config::Config &config)
+{
+  config.destmount = arg;
+
+  return 1;
 }
 
 static
@@ -130,10 +112,9 @@ option_processor(void             *data,
       break;
 
     case FUSE_OPT_KEY_NONOPT:
-      if(config.srcmounts.empty())
-        process_srcmounts(arg,config);
-      else
-        rv = (config.destmount = arg,1);
+      rv = config.srcmounts.empty() ?
+        process_srcmounts(arg,config) :
+        process_destmounts(arg,config);
       break;
 
     default:
@@ -152,10 +133,7 @@ set_fsname(struct fuse_args     &args,
     {
       std::string fsname;
 
-      fsname  = "-ofsname=";
-      fsname += config.srcmounts[0];
-      for(size_t i = 1; i < config.srcmounts.size(); i++)
-        fsname += ';' + config.srcmounts[i];
+      fsname = "-ofsname=" + str::join(config.srcmounts,':');
 
       fuse_opt_insert_arg(&args,1,fsname.c_str());
     }

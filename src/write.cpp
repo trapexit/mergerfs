@@ -52,9 +52,9 @@ namespace mergerfs
           const char            *buf,
           size_t                 count,
           off_t                  offset,
-          struct fuse_file_info *fi)
+          struct fuse_file_info *ffi)
     {
-      return _write(((FileInfo*)fi->fh)->fd,
+      return _write(((FileInfo*)ffi->fh)->fd,
                     buf,
                     count,
                     offset);

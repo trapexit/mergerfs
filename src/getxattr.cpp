@@ -34,8 +34,9 @@
 #include "config.hpp"
 #include "fs.hpp"
 #include "ugid.hpp"
-#include "assert.hpp"
+#include "rwlock.hpp"
 #include "xattr.hpp"
+#include "str.hpp"
 
 using std::string;
 using std::vector;
@@ -57,6 +58,8 @@ _getxattr_controlfile(const Config &config,
     attrvalue = (std::string)*config.create;
   else if(attrname == "user.mergerfs.search")
     attrvalue = (std::string)*config.search;
+  else if(attrname == "user.mergerfs.srcmounts")
+    attrvalue = str::join(config.srcmounts,':');
 
   if(attrvalue.empty())
     return -ENOATTR;
@@ -133,15 +136,17 @@ namespace mergerfs
              char       *buf,
              size_t      count)
     {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
         return _getxattr_controlfile(config,
                                      attrname,
                                      buf,
                                      count);
+
+      const struct fuse_context *fc = fuse_get_context();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
       return _getxattr(*config.search,
                        config.srcmounts,

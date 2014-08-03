@@ -24,23 +24,34 @@
 
 #include <fuse.h>
 
-#include <sstream>
+#include <string>
+#include <vector>
 
 #include <unistd.h>
 #include <sys/stat.h>
 
 #include "config.hpp"
+#include "rwlock.hpp"
+#include "fs.hpp"
+
+using std::string;
+using std::vector;
 
 namespace mergerfs
 {
   namespace config
   {
     Config::Config()
-      : action(policies[0]),
-        create(policies[1]),
-        search(policies[2]),
+      : destmount(),
+        srcmounts(),
+        srcmountslock(),
+        action(policies[Category::Enum::action]),
+        create(policies[Category::Enum::create]),
+        search(policies[Category::Enum::search]),
         controlfile("/.mergerfs")
     {
+      pthread_rwlock_init(&srcmountslock,NULL);
+
       action = &Policy::ff;
       create = &Policy::epmfs;
       search = &Policy::ff;

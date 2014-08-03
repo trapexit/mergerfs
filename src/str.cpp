@@ -22,41 +22,39 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <unistd.h>
-#include <errno.h>
-
 #include <string>
+#include <vector>
+#include <sstream>
 
-#include "fileinfo.hpp"
+using std::string;
+using std::vector;
+using std::istringstream;
 
-using mergerfs::FileInfo;
-
-static
-int
-_release(uint64_t &fh)
+namespace str
 {
-  const FileInfo *fileinfo = (FileInfo*)fh;
-
-  ::close(fileinfo->fd);
-
-  delete fileinfo;
-
-  fh = 0;
-
-  return 0;
-}
-
-namespace mergerfs
-{
-  namespace release
+  void
+  split(vector<string> &result,
+        const string    str,
+        const char      delimiter)
   {
-    int
-    release(const char            *fusepath,
-            struct fuse_file_info *ffi)
-    {
-      return _release(ffi->fh);
-    }
+    string part;
+    istringstream ss(str);
+
+    while(std::getline(ss,part,delimiter))
+      result.push_back(part);
+  }
+
+  string
+  join(const vector<string> &vec,
+       const char            sep)
+  {
+    if(vec.empty())
+      return string();
+
+    string rv = vec[0];
+    for(size_t i = 1; i < vec.size(); i++)
+      rv += sep + vec[i];
+
+    return rv;
   }
 }

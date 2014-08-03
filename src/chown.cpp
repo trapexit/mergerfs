@@ -32,7 +32,7 @@
 #include "ugid.hpp"
 #include "fs.hpp"
 #include "config.hpp"
-#include "assert.hpp"
+#include "rwlock.hpp"
 
 using std::string;
 using std::vector;
@@ -79,6 +79,7 @@ namespace mergerfs
       const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
       return _chown(*config.action,
                     config.srcmounts,

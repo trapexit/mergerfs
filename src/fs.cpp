@@ -38,29 +38,17 @@
 #include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <glob.h>
+#include <fnmatch.h>
 
 #include "fs.hpp"
 #include "xattr.hpp"
+#include "str.hpp"
 
 using std::string;
 using std::vector;
 using std::map;
 using std::istringstream;
-
-template<typename Container>
-Container&
-split(Container                                  &result,
-      const typename Container::value_type       &s,
-      typename Container::value_type::value_type  delimiter)
-{
-  string        str;
-  istringstream ss(s);
-
-  while(std::getline(ss,str,delimiter))
-    result.push_back(str);
-
-  return result;
-}
 
 template <typename Iter>
 Iter
@@ -208,7 +196,7 @@ namespace fs
     if(rv != -1)
       {
         string tmp(attrs.begin(),attrs.end());
-        split(attrvector,tmp,'\0');
+        str::split(attrvector,tmp,'\0');
       }
 
     return rv;
@@ -451,6 +439,52 @@ namespace fs
       return -1;
 
     return (errno = 0);
+  }
+
+  void
+  glob(const vector<string> &patterns,
+       vector<string>       &strs)
+  {
+    int flags;
+    glob_t gbuf;
+
+    flags = 0;
+    for(size_t i = 0; i < patterns.size(); i++)
+      {
+        glob(patterns[i].c_str(),flags,NULL,&gbuf);
+        flags = GLOB_APPEND;
+      }
+
+    for(size_t i = 0; i < gbuf.gl_pathc; ++i)
+      strs.push_back(gbuf.gl_pathv[i]);
+
+    globfree(&gbuf);
+  }
+
+  void
+  erase_fnmatches(const vector<string> &patterns,
+                  vector<string>       &strs)
+  {
+    vector<string>::iterator si;
+    vector<string>::const_iterator pi;
+
+    si = strs.begin();
+    while(si != strs.end())
+      {
+        int match = FNM_NOMATCH;
+
+        for(pi = patterns.begin();
+            pi != patterns.end() && match != 0;
+            ++pi)
+          {
+            match = fnmatch(pi->c_str(),si->c_str(),0);
+          }
+
+        if(match == 0)
+          si = strs.erase(si);
+        else
+          ++si;
+      }
   }
 
   namespace find

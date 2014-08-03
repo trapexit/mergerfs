@@ -104,6 +104,12 @@ namespace fs
   int copyattr(const string from,
                const string to);
 
+  void glob(const vector<string> &patterns,
+            vector<string>       &strs);
+
+  void erase_fnmatches(const vector<string> &patterns,
+                       vector<string>       &strs);
+
   namespace find
   {
     void invalid(const vector<string> &basepaths,
