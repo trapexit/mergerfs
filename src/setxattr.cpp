@@ -34,8 +34,9 @@
 #include "config.hpp"
 #include "fs.hpp"
 #include "ugid.hpp"
-#include "assert.hpp"
+#include "rwlock.hpp"
 #include "xattr.hpp"
+#include "str.hpp"
 
 using std::string;
 using std::vector;
@@ -43,45 +44,135 @@ using mergerfs::Policy;
 using mergerfs::Category;
 using namespace mergerfs;
 
-template<typename Container>
-Container&
-split(Container                                  &result,
-      const typename Container::value_type       &s,
-      typename Container::value_type::value_type  delimiter)
+static
+int
+_add_srcmounts(vector<string>           &srcmounts,
+               pthread_rwlock_t         &srcmountslock,
+               const string              destmount,
+               const string              values,
+               vector<string>::iterator  pos)
 {
-  std::string        str;
-  std::istringstream ss(s);
+  vector<string> patterns;
+  vector<string> additions;
 
-  while(std::getline(ss,str,delimiter))
-    result.push_back(str);
+  str::split(patterns,values,':');
+  fs::glob(patterns,additions);
 
-  return result;
+  if(!additions.empty())
+    {
+      const rwlock::WriteGuard wrg(&srcmountslock);
+
+      srcmounts.insert(pos,
+                       additions.begin(),
+                       additions.end());
+    }
+
+  return 0;
 }
 
 static
 int
-_setxattr_controlfile(config::Config &config,
-                      const string    attrname,
-                      const string    attrval,
-                      const size_t    attrvalsize,
-                      const int       flags)
+_erase_srcmounts(vector<string>   &srcmounts,
+                 pthread_rwlock_t  srcmountslock,
+                 const string     &values)
+{
+  if(srcmounts.empty())
+    return 0;
+
+  vector<string> patterns;
+
+  str::split(patterns,values,':');
+
+  const rwlock::WriteGuard wrg(&srcmountslock);
+
+  fs::erase_fnmatches(patterns,srcmounts);
+
+  return 0;
+}
+
+static
+int
+_replace_srcmounts(vector<string>   &srcmounts,
+                   pthread_rwlock_t  srcmountslock,
+                   const string      destmount,
+                   const string      values)
+{
+  vector<string> patterns;
+  vector<string> newmounts;
+
+  str::split(patterns,values,':');
+  fs::glob(patterns,newmounts);
+
+  {
+    const rwlock::WriteGuard wrg(&srcmountslock);
+
+    srcmounts.swap(newmounts);
+  }
+
+  return 0;
+}
+
+static
+void
+_split_attrval(const string  attrval,
+               string       &instruction,
+               string       &values)
+{
+  size_t offset;
+
+  offset = attrval.find_first_of('/');
+  instruction = attrval.substr(0,offset);
+  if(offset != string::npos)
+    values = attrval.substr(offset);
+}
+
+static
+int
+_setxattr_srcmounts(vector<string>   &srcmounts,
+                    pthread_rwlock_t &srcmountslock,
+                    const string      destmount,
+                    const string      attrval,
+                    const int         flags)
+{
+  string instruction;
+  string values;
+
+  if((flags & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  _split_attrval(attrval,instruction,values);
+
+  if(instruction == "+")
+    return _add_srcmounts(srcmounts,srcmountslock,destmount,values,srcmounts.end());
+  else if(instruction == "+<")
+    return _add_srcmounts(srcmounts,srcmountslock,destmount,values,srcmounts.begin());
+  else if(instruction == "+>")
+    return _add_srcmounts(srcmounts,srcmountslock,destmount,values,srcmounts.end());
+  else if(instruction == "-")
+    return _erase_srcmounts(srcmounts,srcmountslock,values);
+  else if(instruction == "-<")
+    return _erase_srcmounts(srcmounts,srcmountslock,srcmounts.front());
+  else if(instruction == "->")
+    return _erase_srcmounts(srcmounts,srcmountslock,srcmounts.back());
+  else if(instruction == "=")
+    return _replace_srcmounts(srcmounts,srcmountslock,destmount,values);
+  else if(instruction.empty())
+    return _replace_srcmounts(srcmounts,srcmountslock,destmount,values);
+
+  return -EINVAL;
+}
+
+static
+int
+_setxattr_policy(const Policy *policies[],
+                 const string  attrname,
+                 const string  attrval,
+                 const int     flags)
 {
   const Category *cat;
   const Policy   *policy;
-  vector<string>  nameparts;
 
-  split(nameparts,attrname,'.');
-
-  if(nameparts.size() != 3)
-    return -EINVAL;
-  
-  if(nameparts[0] != "user")
-    return -ENOATTR;
-  
-  if(nameparts[1] != "mergerfs")
-    return -ENOATTR;
-
-  cat = Category::find(nameparts[2]);
+  cat = Category::find(attrname);
   if(cat == Category::invalid)
     return -ENOATTR;
 
@@ -92,9 +183,41 @@ _setxattr_controlfile(config::Config &config,
   if(policy == Policy::invalid)
     return -EINVAL;
 
-  config.policies[*cat] = policy;
+  policies[*cat] = policy;
 
   return 0;
+}
+
+static
+int
+_setxattr_controlfile(config::Config &config,
+                      const string    attrname,
+                      const string    attrval,
+                      const int       flags)
+{
+  vector<string>  nameparts;
+
+  str::split(nameparts,attrname,'.');
+
+  if(nameparts.size() != 3      ||
+     nameparts[0]     != "user" ||
+     nameparts[1]     != "mergerfs")
+    return -ENOATTR;
+
+  if(attrval.empty())
+    return -EINVAL;
+
+  if(nameparts[2] == "srcmounts")
+    return _setxattr_srcmounts(config.srcmounts,
+                               config.srcmountslock,
+                               config.destmount,
+                               attrval,
+                               flags);
+
+  return _setxattr_policy(config.policies,
+                          nameparts[2],
+                          attrval,
+                          flags);
 }
 
 static
@@ -142,24 +265,27 @@ namespace mergerfs
              size_t      attrvalsize,
              int         flags)
     {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
         return _setxattr_controlfile(config::get_writable(),
                                      attrname,
                                      string(attrval,attrvalsize),
-                                     attrvalsize,
                                      flags);
 
-      return _setxattr(*config.action,
-                       config.srcmounts,
-                       fusepath,
-                       attrname,
-                       attrval,
-                       attrvalsize,
-                       flags);
+      {
+        const struct fuse_context *fc = fuse_get_context();
+        const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+        const rwlock::ReadGuard    readlock(&config.srcmountslock);
+
+        return _setxattr(*config.action,
+                         config.srcmounts,
+                         fusepath,
+                         attrname,
+                         attrval,
+                         attrvalsize,
+                         flags);
+      }
     }
   }
 }

@@ -35,7 +35,7 @@
 #include "category.hpp"
 #include "fs.hpp"
 #include "ugid.hpp"
-#include "assert.hpp"
+#include "rwlock.hpp"
 #include "xattr.hpp"
 
 using std::string;
@@ -47,23 +47,22 @@ int
 _listxattr_controlfile(char         *list,
                        const size_t  size)
 {
-  size_t xattrssize;
-  string xattrs;
-
-  for(int i = Category::Enum::BEGIN; i < Category::Enum::END; ++i)
-    xattrs += "user.mergerfs." + (string)Category::categories[i] + '\0';
-
-  xattrssize = xattrs.size();
+  const char xattrs[] =
+    "user.mergerfs.srcmounts\0"
+    "user.mergerfs.action\0"
+    "user.mergerfs.create\0"
+    "user.mergerfs.search"
+    ;
 
   if(size == 0)
-    return xattrssize;
+    return sizeof(xattrs);
 
-  if(size < xattrssize)
+  if(size < sizeof(xattrs))
     return -ERANGE;
 
-  memcpy(list,xattrs.data(),xattrssize);
+  memcpy(list,xattrs,sizeof(xattrs));
 
-  return xattrssize;
+  return sizeof(xattrs);
 }
 
 static
@@ -99,13 +98,15 @@ namespace mergerfs
               char       *list,
               size_t      size)
     {
-      const struct fuse_context *fc = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
         return _listxattr_controlfile(list,
                                       size);
+
+      const struct fuse_context *fc = fuse_get_context();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
       return _listxattr(*config.search,
                         config.srcmounts,

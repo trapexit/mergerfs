@@ -22,41 +22,50 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <unistd.h>
-#include <errno.h>
-
-#include <string>
-
-#include "fileinfo.hpp"
-
-using mergerfs::FileInfo;
-
-static
-int
-_release(uint64_t &fh)
-{
-  const FileInfo *fileinfo = (FileInfo*)fh;
-
-  ::close(fileinfo->fd);
-
-  delete fileinfo;
-
-  fh = 0;
-
-  return 0;
-}
+#include <pthread.h>
 
 namespace mergerfs
 {
-  namespace release
+  namespace rwlock
   {
-    int
-    release(const char            *fusepath,
-            struct fuse_file_info *ffi)
+    class ReadGuard
     {
-      return _release(ffi->fh);
-    }
+    public:
+      ReadGuard(pthread_rwlock_t *lock)
+      {
+        _lock = lock;
+        pthread_rwlock_rdlock(_lock);
+      }
+
+      ~ReadGuard()
+      {
+        pthread_rwlock_unlock(_lock);
+      }
+
+      pthread_rwlock_t *_lock;
+
+    private:
+      ReadGuard();
+    };
+
+    class WriteGuard
+    {
+    public:
+      WriteGuard(pthread_rwlock_t *lock)
+      {
+        _lock = lock;
+        pthread_rwlock_wrlock(_lock);
+      }
+
+      ~WriteGuard()
+      {
+        pthread_rwlock_unlock(_lock);
+      }
+
+      pthread_rwlock_t *_lock;
+
+    private:
+      WriteGuard();
+    };
   }
 }

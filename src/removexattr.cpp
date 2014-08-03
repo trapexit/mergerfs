@@ -33,7 +33,7 @@
 #include "config.hpp"
 #include "ugid.hpp"
 #include "fs.hpp"
-#include "assert.hpp"
+#include "rwlock.hpp"
 #include "xattr.hpp"
 
 using std::string;
@@ -79,12 +79,14 @@ namespace mergerfs
     removexattr(const char *fusepath,
                 const char *attrname)
     {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
         return -ENOTSUP;
+
+      const struct fuse_context *fc = fuse_get_context();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
       return _removexattr(*config.action,
                           config.srcmounts,

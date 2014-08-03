@@ -93,14 +93,19 @@ make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto dis
 <mountpoint>/.mergerfs
 ```
 
-There is a pseudo file available at the mountpoint which allows for the runtime modification of certain mergerfs options. The file will not show up in readdirs but can be stat'ed and manipulated via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls. 
+There is a pseudo file available at the mountpoint which allows for the runtime modification of certain mergerfs options. The file will not show up in readdirs but can be stat'ed and manipulated via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls.
 
 Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls will still work.
 
-The keys are **user.mergerfs.action**, **user.mergerfs.create**, and **user.mergerfs.search**.
+The keys are:
+* user.mergerfs.srcmounts
+* user.mergerfs.action
+* user.mergerfs.create
+* user.mergerfs.search
 
 ```
 [trapexit:/tmp/mount] $ xattr -l .mergerfs
+user.mergerfs.srcmounts: /tmp/a:/tmp/b
 user.mergerfs.action: ff
 user.mergerfs.create: epmfs
 user.mergerfs.search: ff
@@ -111,9 +116,34 @@ ff
 [trapexit:/tmp/mount] $ xattr -w user.mergerfs.action ffwp .mergerfs
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.action .mergerfs
 ffwp
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts =/tmp/c .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/tmp/c
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts '+</tmp/a:/tmp/b' .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/tmp/a:/tmp/b:/tmp/c
 ```
 
-#### mergerfs xattrs ####
+For **user.mergerfs.srcmounts** there are several instructions available for manipulating the list. The value provided is just as the value used at mount time. A colon (':') delimited list of full path globs.
+
+| Instruction | Description |
+|--------------|-------------|
+| +[list] | append |
+| +<[list] | prepend |
+| +>[list] | append |
+| -[list] | remove all values provided |
+| -< | remove first in list |
+| -> | remove last in list |
+| =[list] | set |
+| [list] | set |
+
+#### mergerfs file xattrs ####
 
 While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) mergerfs offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
 
@@ -124,5 +154,7 @@ While they won't show up when using [listxattr](http://linux.die.net/man/2/listx
 [trapexit:/tmp/mount] $ ls
 A B C
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.fullpath A
-/mnt/full/path/to/A
+/mnt/a/full/path/to/A
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.basepath A
+/mnt/a
 ```
