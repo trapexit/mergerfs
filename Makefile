@@ -32,6 +32,7 @@ INSTALL = 	$(shell which install)
 MKTEMP  = 	$(shell which mktemp)
 STRIP   = 	$(shell which strip)
 PANDOC  =       $(shell which pandoc)
+GIT2DEBCL =     ./tools/git2debcl
 
 ifeq ($(PKGCONFIG),"")
 $(error "pkg-config not installed"
@@ -108,7 +109,7 @@ clean:
 	$(FIND) -name "*~" -delete
 
 distclean: clean
-	$(GIT) clean -ifd
+	$(GIT) clean -fd
 
 install: $(TARGET) $(MANPAGE)
 	$(INSTALL) -m 0755 -D "$(TARGET)" "$(INSTALLTARGET)"
@@ -137,7 +138,7 @@ tarball: clean changelog man
 
 deb:
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
-	$(GIT) dch --auto --release --new-version="$(VERSION)"
+	$(GIT2DEBCL) $(TARGET) $(VERSION) > debian/changelog
 	$(GIT) buildpackage --git-ignore-new
 
 .PHONY: all clean install help

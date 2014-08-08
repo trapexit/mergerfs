@@ -1,0 +1,58 @@
+#!/usr/bin/python
+
+#    The MIT License (MIT)
+
+#    Copyright (c) 2014 Antonio SJ Musumeci <trapexit@spawn.link>
+
+#    Permission is hereby granted, free of charge, to any person obtaining a copy
+#    of this software and associated documentation files (the "Software"), to deal
+#    in the Software without restriction, including without limitation the rights
+#    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#    copies of the Software, and to permit persons to whom the Software is
+#    furnished to do so, subject to the following conditions:
+
+#    The above copyright notice and this permission notice shall be included in
+#    all copies or substantial portions of the Software.
+
+#    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#    THE SOFTWARE.
+
+import sys
+import subprocess
+
+packagename = sys.argv[1]
+version = sys.argv[2]
+
+args = ["git", "tag", '-l']
+tags = subprocess.check_output(args)
+tags = tags.split()
+tags.reverse()
+
+if version in tags:
+    idx = tags.index(version)
+    tags = tags[idx:]
+    tags = zip(tags,tags)
+else:
+    tags = zip(tags,tags)
+    tags.insert(0,(version,'HEAD'))
+
+tag = tags[0]
+for prev in tags[1:]:
+    print packagename, "("+tag[0]+")", "trusty;", "urgency=medium"
+    print
+
+    args = ['git','log','--oneline',tag[1]+'...'+prev[1]]
+    for line in subprocess.check_output(args).strip().split('\n'):
+        print "  * " + line
+    print
+
+    args = ['git','log','-1','--format=-- %an <%ae>  %cD',tag[1]]
+    authorandtime = subprocess.check_output(args).strip()
+    print ' ' + authorandtime + '\n'
+
+    tag = prev
