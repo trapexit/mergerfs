@@ -49,7 +49,7 @@ namespace fs
   };
 
   typedef vector<Path> PathVector;
-  typedef void (*SearchFunc)(const vector<string>&,const string,PathVector&);
+  typedef int (*SearchFunc)(const vector<string>&,const string,PathVector&);
 
   string dirname(const string path);
   string basename(const string path);
@@ -112,30 +112,30 @@ namespace fs
 
   namespace find
   {
-    void invalid(const vector<string> &basepaths,
-                 const string          fusepath,
-                 PathVector           &paths);
-    void ff(const vector<string>      &basepaths,
-            const string               fusepath,
-            PathVector                &paths);
-    void ffwp(const vector<string>    &paths,
-              const string             fusepath,
-              PathVector              &rv);
-    void newest(const vector<string>  &paths,
-                const string           fusepath,
-                PathVector            &rv);
-    void all(const vector<string>     &paths,
-             const string              fusepath,
-             PathVector               &rv);
-    void mfs(const vector<string>     &paths,
-             const string              fusepath,
-             PathVector               &rv);
-    void epmfs(const vector<string>   &paths,
-               const string            fusepath,
-               PathVector             &rv);
-    void rand(const vector<string>    &paths,
-              const string             fusepath,
-              PathVector              &rv);
+    int invalid(const vector<string> &basepaths,
+                const string          fusepath,
+                PathVector           &paths);
+    int ff(const vector<string>      &basepaths,
+           const string               fusepath,
+           PathVector                &paths);
+    int ffwp(const vector<string>    &paths,
+             const string             fusepath,
+             PathVector              &rv);
+    int newest(const vector<string>  &paths,
+               const string           fusepath,
+               PathVector            &rv);
+    int all(const vector<string>     &paths,
+            const string              fusepath,
+            PathVector               &rv);
+    int mfs(const vector<string>     &paths,
+            const string              fusepath,
+            PathVector               &rv);
+    int epmfs(const vector<string>   &paths,
+              const string            fusepath,
+              PathVector             &rv);
+    int rand(const vector<string>    &paths,
+             const string             fusepath,
+             PathVector              &rv);
   }
 };
 

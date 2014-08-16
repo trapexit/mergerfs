@@ -50,9 +50,9 @@ _rename(const fs::SearchFunc  searchFunc,
   string pathto;
   fs::PathVector pathfrom;
 
-  searchFunc(srcmounts,from,pathfrom);
-  if(pathfrom.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,from,pathfrom);
+  if(rv == -1)
+    return -errno;
 
   pathto = fs::make_path(pathfrom[0].base,to);
 

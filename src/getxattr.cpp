@@ -109,9 +109,9 @@ _getxattr(const fs::SearchFunc  searchFunc,
   int rv;
   fs::PathVector paths;
 
-  searchFunc(srcmounts,fusepath,paths);
-  if(paths.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,fusepath,paths);
+  if(rv == -1)
+    return -errno;
 
   if(!strcmp(attrname,"user.mergerfs.basepath"))
     rv = ::_getxattr_from_string(buf,count,paths[0].base);

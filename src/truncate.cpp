@@ -50,9 +50,9 @@ _truncate(const fs::SearchFunc  searchFunc,
   int error;
   fs::PathVector paths;
 
-  searchFunc(srcmounts,fusepath,paths);
-  if(paths.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,fusepath,paths);
+  if(rv == -1)
+    return -errno;
 
   rv    = -1;
   error =  0;

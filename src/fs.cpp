@@ -490,19 +490,20 @@ namespace fs
 
   namespace find
   {
-    void
+    int
     invalid(const vector<string> &basepaths,
             const string          fusepath,
             PathVector           &paths)
     {
-      return;
+      return (errno = EINVAL,-1);
     }
 
-    void
+    int
     ff(const vector<string> &basepaths,
        const string          fusepath,
        PathVector           &paths)
     {
+      errno = ENOENT;
       for(vector<string>::const_iterator
             iter = basepaths.begin(), eiter = basepaths.end();
           iter != eiter;
@@ -515,22 +516,20 @@ namespace fs
           path = fs::make_path(*iter,fusepath);
           rv = ::lstat(path.c_str(),&st);
           if(rv == 0)
-            {
-              paths.push_back(Path(*iter,path));
-              return;
-            }
+            return (paths.push_back(Path(*iter,path)),0);
         }
 
-      return;
+      return -1;
     }
 
-    void
+    int
     ffwp(const vector<string> &basepaths,
          const string          fusepath,
          PathVector           &paths)
     {
       Path fallback;
 
+      errno = ENOENT;
       for(vector<string>::const_iterator
             iter = basepaths.begin(), eiter = basepaths.end();
           iter != eiter;
@@ -544,8 +543,7 @@ namespace fs
           rv = ::lstat(path.c_str(),&st);
           if(rv == 0)
             {
-              paths.push_back(Path(*iter,path));
-              return;
+              return (paths.push_back(Path(*iter,path)),0);
             }
           else if(errno == EACCES)
             {
@@ -555,12 +553,12 @@ namespace fs
         }
 
       if(!fallback.base.empty())
-        paths.push_back(fallback);
+        return (paths.push_back(fallback),0);
 
-      return;
+      return -1;
     }
 
-    void
+    int
     newest(const vector<string> &basepaths,
            const string          fusepath,
            PathVector           &paths)
@@ -570,6 +568,7 @@ namespace fs
       vector<string>::const_iterator niter;
 
       newest = 0;
+      errno  = ENOENT;
       for(vector<string>::const_iterator
             iter = basepaths.begin(), eiter = basepaths.end();
           iter != eiter;
@@ -589,16 +588,17 @@ namespace fs
         }
 
       if(newest)
-        paths.push_back(Path(*niter,npath));
+        return (paths.push_back(Path(*niter,npath)),0);
 
-      return;
+      return -1;
     }
 
-    void
+    int
     all(const vector<string> &basepaths,
         const string          fusepath,
         PathVector           &paths)
     {
+      errno = ENOENT;
       for(vector<string>::const_iterator
             iter = basepaths.begin(), eiter = basepaths.end();
           iter != eiter;
@@ -614,18 +614,20 @@ namespace fs
             paths.push_back(Path(*iter,path));
         }
 
-      return;
+      return paths.empty() ? -1 : 0;
     }
 
-    void
+    int
     mfs(const vector<string> &basepaths,
         const string          fusepath,
         PathVector           &paths)
     {
-      fsblkcnt_t mfs = 0;
+      fsblkcnt_t mfs;
       string mfspath;
       string fullmfspath;
 
+      mfs   = 0;
+      errno = ENOENT;
       for(vector<string>::const_iterator
             iter = basepaths.begin(), eiter = basepaths.end();
           iter != eiter;
@@ -649,14 +651,17 @@ namespace fs
             }
         }
 
+      if(mfs == 0)
+        return -1;
+
       fullmfspath = fs::make_path(mfspath,fusepath);
 
       paths.push_back(Path(mfspath,fullmfspath));
 
-      return;
+      return 0;
     }
 
-    void
+    int
     epmfs(const vector<string> &basepaths,
           const string          fusepath,
           PathVector           &paths)
@@ -668,6 +673,9 @@ namespace fs
       string     existingmfspath;
       vector<string>::const_iterator iter  = basepaths.begin();
       vector<string>::const_iterator eiter = basepaths.end();
+
+      if(iter == eiter)
+        return (errno = ENOENT,-1);
 
       do
         {
@@ -709,10 +717,10 @@ namespace fs
 
       paths.push_back(Path(existingmfspath,path));
 
-      return;
+      return 0;
     }
 
-    void
+    int
     rand(const vector<string> &basepaths,
          const string          fusepath,
          PathVector           &paths)
@@ -727,6 +735,8 @@ namespace fs
                                      fusepath);
 
       paths.push_back(Path(randombasepath,randomfullpath));
+
+      return 0;
     }
   }
 };

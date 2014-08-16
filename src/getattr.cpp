@@ -73,9 +73,9 @@ _getattr(const fs::SearchFunc  searchFunc,
   int rv;
   fs::PathVector paths;
 
-  searchFunc(srcmounts,fusepath,paths);
-  if(paths.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,fusepath,paths);
+  if(rv == -1)
+    return -errno;
 
   rv = ::lstat(paths[0].full.c_str(),&buf);
 

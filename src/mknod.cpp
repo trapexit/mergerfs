@@ -60,9 +60,9 @@ _mknod(const fs::SearchFunc  searchFunc,
     return -EEXIST;
 
   dirname = fs::dirname(fusepath);
-  searchFunc(srcmounts,dirname,existingpath);
-  if(existingpath.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,dirname,existingpath);
+  if(rv == -1)
+    return -errno;
 
   createPathFunc(srcmounts,dirname,createpath);
   if(existingpath[0].base != createpath[0].base)
