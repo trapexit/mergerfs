@@ -49,12 +49,13 @@ _open(const fs::SearchFunc  searchFunc,
       const int             flags,
       uint64_t             &fh)
 {
-  int      fd;
+  int fd;
+  int rv;
   fs::PathVector paths;
 
-  searchFunc(srcmounts,fusepath,paths);
-  if(paths.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,fusepath,paths);
+  if(rv == -1)
+    return -errno;
 
   fd = ::open(paths[0].full.c_str(),flags);
   if(fd == -1)

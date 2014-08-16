@@ -53,9 +53,9 @@ _access(const fs::SearchFunc  searchFunc,
   int rv;
   fs::PathVector path;
 
-  searchFunc(srcmounts,fusepath,path);
-  if(path.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,fusepath,path);
+  if(rv == -1)
+    return -errno;
 
   rv = ::eaccess(path[0].full.c_str(),mask);
 

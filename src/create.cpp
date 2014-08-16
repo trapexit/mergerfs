@@ -54,19 +54,20 @@ _create(const fs::SearchFunc  searchFunc,
         uint64_t             &fh)
 {
   int fd;
+  int rv;
   string path;
   string dirname;
   fs::PathVector createpath;
   fs::PathVector existingpath;
 
   dirname = fs::dirname(fusepath);
-  searchFunc(srcmounts,dirname,existingpath);
-  if(existingpath.empty())
-    return -ENOENT;
+  rv = searchFunc(srcmounts,dirname,existingpath);
+  if(rv == -1)
+    return -errno;
 
-  createPathFunc(srcmounts,dirname,createpath);
-  if(createpath.empty())
-    return -ENOSPC;
+  rv = createPathFunc(srcmounts,dirname,createpath);
+  if(rv == -1)
+    return -errno;
 
   if(createpath[0].base != existingpath[0].base)
     fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
