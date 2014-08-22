@@ -142,9 +142,10 @@ namespace fs
       {
         int         rv;
         string      path;
+        struct stat st;
 
         path = fs::make_path(*iter,fusepath);
-        rv   = ::eaccess(path.c_str(),F_OK);
+        rv   = ::lstat(path.c_str(),&st);
         if(rv == 0)
           return true;
       }
@@ -507,11 +508,12 @@ namespace fs
           iter != eiter;
           ++iter)
         {
-          int    rv;
-          string path;
+          int         rv;
+          string      path;
+          struct stat st;
 
           path = fs::make_path(*iter,fusepath);
-          rv   = ::eaccess(path.c_str(),F_OK);
+          rv = ::lstat(path.c_str(),&st);
           if(rv == 0)
             {
               paths.push_back(Path(*iter,path));
@@ -536,14 +538,11 @@ namespace fs
         {
           int         rv;
           string      path;
+          struct stat st;
 
           path = fs::make_path(*iter,fusepath);
-
-          rv = ((::eaccess(path.c_str(),R_OK) == 0) ||
-                (::eaccess(path.c_str(),X_OK) == 0) ||
-                (::eaccess(path.c_str(),W_OK) == 0));
-
-          if(rv)
+          rv = ::lstat(path.c_str(),&st);
+          if(rv == 0)
             {
               paths.push_back(Path(*iter,path));
               return;
@@ -576,8 +575,8 @@ namespace fs
           iter != eiter;
           ++iter)
         {
-          int rv;
-          struct stat st;
+          int          rv;
+          struct stat  st;
           const string path = fs::make_path(*iter,fusepath);
 
           rv  = ::lstat(path.c_str(),&st);
@@ -605,11 +604,12 @@ namespace fs
           iter != eiter;
           ++iter)
         {
-          int    rv;
-          string path;
+          int         rv;
+          string      path;
+          struct stat st;
 
           path = fs::make_path(*iter,fusepath);
-          rv   = ::eaccess(path.c_str(),F_OK);
+          rv   = ::lstat(path.c_str(),&st);
           if(rv == 0)
             paths.push_back(Path(*iter,path));
         }
@@ -679,6 +679,7 @@ namespace fs
           if(rv == 0)
             {
               fsblkcnt_t  spaceavail;
+              struct stat st;
 
               spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
               if(spaceavail > generalmfs)
@@ -688,7 +689,7 @@ namespace fs
                 }
 
               path = fs::make_path(mountpoint,fusepath);
-              rv = ::eaccess(path.c_str(),F_OK);
+              rv   = ::lstat(path.c_str(),&st);
               if(rv == 0)
                 {
                   if(spaceavail > existingmfs)
