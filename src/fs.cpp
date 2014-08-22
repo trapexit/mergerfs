@@ -640,7 +640,7 @@ namespace fs
             {
               fsblkcnt_t  spaceavail;
 
-              spaceavail = (fsstats.f_bsize * fsstats.f_bavail);
+              spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
               if(spaceavail > mfs)
                 {
                   mfs     = spaceavail;
@@ -680,7 +680,7 @@ namespace fs
             {
               fsblkcnt_t  spaceavail;
 
-              spaceavail = (fsstats.f_bsize * fsstats.f_bavail);
+              spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
               if(spaceavail > generalmfs)
                 {
                   generalmfs     = spaceavail;
