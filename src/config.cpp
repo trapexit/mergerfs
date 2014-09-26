@@ -22,8 +22,6 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
-
 #include <string>
 #include <vector>
 
@@ -58,9 +56,15 @@ namespace mergerfs
     }
 
     const Config&
+    get(const struct fuse_context *fc)
+    {
+      return *((Config*)fc->private_data);
+    }
+
+    const Config&
     get(void)
     {
-      return (*((Config*)fuse_get_context()->private_data));
+      return get(fuse_get_context());
     }
 
     Config&

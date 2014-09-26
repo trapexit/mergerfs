@@ -25,12 +25,20 @@
 #include <fuse.h>
 
 #include <string>
+#include <vector>
 
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <linux/fs.h>
 
+#include "config.hpp"
 #include "fileinfo.hpp"
+#include "ugid.hpp"
+#include "rwlock.hpp"
+
+using std::string;
+using std::vector;
+using namespace mergerfs;
 
 static
 int
@@ -72,6 +80,57 @@ _ioctl(const int           fd,
   return ((rv == -1) ? -errno : rv);
 }
 
+static
+int
+_ioctl_dir_base(const fs::SearchFunc  searchFunc,
+                const vector<string> &srcmounts,
+                const string          fusepath,
+                const int             cmd,
+                void                 *arg,
+                const unsigned int    flags,
+                void                 *data)
+{
+  int fd;
+  int rv;
+  fs::PathVector paths;
+
+  rv = searchFunc(srcmounts,fusepath,paths);
+  if(rv == -1)
+    return -errno;
+
+  fd = ::open(paths[0].full.c_str(),flags);
+  if(fd == -1)
+    return -errno;
+
+  rv = _ioctl(fd,cmd,arg,flags,data);
+
+  close(fd);
+
+  return rv;
+}
+
+static
+int
+_ioctl_dir(const string        fusepath,
+           const int           cmd,
+           void               *arg,
+           const unsigned int  flags,
+           void               *data)
+{
+  const struct fuse_context *fc     = fuse_get_context();
+  const config::Config      &config = config::get(fc);
+  const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
+  const rwlock::ReadGuard    readlock(&config.srcmountslock);
+
+  return _ioctl_dir_base(*config.search,
+                         config.srcmounts,
+                         fusepath,
+                         cmd,
+                         arg,
+                         flags,
+                         data);
+}
+
 namespace mergerfs
 {
   namespace ioctl
@@ -85,6 +144,13 @@ namespace mergerfs
           void                  *data)
     {
       const FileInfo *fileinfo = (FileInfo*)ffi->fh;
+
+      if(flags & FUSE_IOCTL_DIR)
+        return _ioctl_dir(fusepath,
+                          cmd,
+                          arg,
+                          flags,
+                          data);
 
       return _ioctl(fileinfo->fd,
                     cmd,

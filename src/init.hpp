@@ -22,46 +22,11 @@
    THE SOFTWARE.
 */
 
-#ifndef __CONFIG_HPP__
-#define __CONFIG_HPP__
-
-#include <fuse.h>
-
-#include <sys/stat.h>
-
-#include <string>
-#include <vector>
-
-#include "policy.hpp"
-#include "category.hpp"
-
 namespace mergerfs
 {
-  namespace config
+  namespace init
   {
-    class Config
-    {
-    public:
-      Config();
-
-    public:
-      std::string              destmount;
-      std::vector<std::string> srcmounts;
-      mutable pthread_rwlock_t srcmountslock;
-
-      const Policy *policies[Category::Enum::END];
-      const Policy *&action;
-      const Policy *&create;
-      const Policy *&search;
-
-    public:
-      const std::string controlfile;
-    };
-
-    const Config &get(const struct fuse_context *fc);
-    const Config &get(void);
-    Config       &get_writable(void);
+    void *
+    init(struct fuse_conn_info *conn);
   }
 }
-
-#endif
