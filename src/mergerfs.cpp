@@ -38,6 +38,7 @@
 #include "chmod.hpp"
 #include "chown.hpp"
 #include "create.hpp"
+#include "destroy.hpp"
 #include "fallocate.hpp"
 #include "fgetattr.hpp"
 #include "flush.hpp"
@@ -45,17 +46,20 @@
 #include "ftruncate.hpp"
 #include "getattr.hpp"
 #include "getxattr.hpp"
+#include "init.hpp"
 #include "ioctl.hpp"
 #include "link.hpp"
 #include "listxattr.hpp"
 #include "mkdir.hpp"
 #include "mknod.hpp"
 #include "open.hpp"
+#include "opendir.hpp"
 #include "read.hpp"
 #include "read_buf.hpp"
 #include "readdir.hpp"
 #include "readlink.hpp"
 #include "release.hpp"
+#include "releasedir.hpp"
 #include "removexattr.hpp"
 #include "rename.hpp"
 #include "rmdir.hpp"
@@ -82,7 +86,7 @@ get_fuse_operations()
   ops.chmod       = mergerfs::chmod::chmod;
   ops.chown       = mergerfs::chown::chown;
   ops.create      = mergerfs::create::create;
-  ops.destroy     = NULL;
+  ops.destroy     = mergerfs::destroy::destroy;
   ops.fallocate   = mergerfs::fallocate::fallocate;
   ops.fgetattr    = mergerfs::fgetattr::fgetattr;
   ops.flock       = NULL;
@@ -93,7 +97,7 @@ get_fuse_operations()
   ops.getattr     = mergerfs::getattr::getattr;
   ops.getdir      = NULL;       /* deprecated; use readdir */
   ops.getxattr    = mergerfs::getxattr::getxattr;
-  ops.init        = NULL;
+  ops.init        = mergerfs::init::init;
   ops.ioctl       = mergerfs::ioctl::ioctl;
   ops.link        = mergerfs::link::link;
   ops.listxattr   = mergerfs::listxattr::listxattr;
@@ -101,14 +105,14 @@ get_fuse_operations()
   ops.mkdir       = mergerfs::mkdir::mkdir;
   ops.mknod       = mergerfs::mknod::mknod;
   ops.open        = mergerfs::open::open;
-  ops.opendir     = NULL;
+  ops.opendir     = mergerfs::opendir::opendir;
   ops.poll        = NULL;
   ops.read        = mergerfs::read::read;
   ops.read_buf    = mergerfs::read_buf::read_buf;
   ops.readdir     = mergerfs::readdir::readdir;
   ops.readlink    = mergerfs::readlink::readlink;
   ops.release     = mergerfs::release::release;
-  ops.releasedir  = NULL;
+  ops.releasedir  = mergerfs::releasedir::releasedir;
   ops.removexattr = mergerfs::removexattr::removexattr;
   ops.rename      = mergerfs::rename::rename;
   ops.rmdir       = mergerfs::rmdir::rmdir;
