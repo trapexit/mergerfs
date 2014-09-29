@@ -46,7 +46,7 @@ for prev in tags[1:]:
     print packagename, "("+tag[0]+")", "trusty;", "urgency=medium"
     print
 
-    args = ['git','log','--oneline',tag[1]+'...'+prev[1]]
+    args = ['git','log','--no-merges','--oneline',tag[1]+'...'+prev[1]]
     for line in subprocess.check_output(args).strip().split('\n'):
         print "  * " + line
     print
