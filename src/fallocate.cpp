@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#if FALLOCATE
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -82,3 +84,5 @@ namespace mergerfs
     }
   }
 }
+
+#endif
