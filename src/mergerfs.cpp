@@ -76,9 +76,11 @@ static
 struct fuse_operations
 get_fuse_operations()
 {
-  struct fuse_operations ops = {};
+  struct fuse_operations ops = {0};
 
+#if FLAG_NOPATH
   ops.flag_nopath      = false;
+#endif
   ops.flag_nullpath_ok = false;
 
   ops.access      = mergerfs::access::access;
@@ -87,9 +89,13 @@ get_fuse_operations()
   ops.chown       = mergerfs::chown::chown;
   ops.create      = mergerfs::create::create;
   ops.destroy     = mergerfs::destroy::destroy;
+#if FALLOCATE
   ops.fallocate   = mergerfs::fallocate::fallocate;
+#endif
   ops.fgetattr    = mergerfs::fgetattr::fgetattr;
+#if FLOCK
   ops.flock       = NULL;
+#endif
   ops.flush       = mergerfs::flush::flush;
   ops.fsync       = mergerfs::fsync::fsync;
   ops.fsyncdir    = NULL;
@@ -108,7 +114,9 @@ get_fuse_operations()
   ops.opendir     = mergerfs::opendir::opendir;
   ops.poll        = NULL;
   ops.read        = mergerfs::read::read;
+#if READ_BUF
   ops.read_buf    = mergerfs::read_buf::read_buf;
+#endif
   ops.readdir     = mergerfs::readdir::readdir;
   ops.readlink    = mergerfs::readlink::readlink;
   ops.release     = mergerfs::release::release;
@@ -124,7 +132,9 @@ get_fuse_operations()
   ops.utime       = NULL;       /* deprecated; use utimens() */
   ops.utimens     = mergerfs::utimens::utimens;
   ops.write       = mergerfs::write::write;
+#if WRITE_BUF
   ops.write_buf   = mergerfs::write_buf::write_buf;
+#endif
 
   return ops;
 }

@@ -21,18 +21,19 @@
 # THE SOFTWARE.
 
 PKGCONFIG =  	$(shell which pkg-config)
-GIT 	= 	$(shell which git)
-TAR 	= 	$(shell which tar)
-MKDIR   = 	$(shell which mkdir)
-TOUCH 	= 	$(shell which touch)
-CP      = 	$(shell which cp)
-RM 	= 	$(shell which rm)
-FIND 	= 	$(shell which find)
-INSTALL = 	$(shell which install)
-MKTEMP  = 	$(shell which mktemp)
-STRIP   = 	$(shell which strip)
-PANDOC  =       $(shell which pandoc)
+GIT 	  = 	$(shell which git)
+TAR 	  = 	$(shell which tar)
+MKDIR     = 	$(shell which mkdir)
+TOUCH 	  = 	$(shell which touch)
+CP        = 	$(shell which cp)
+RM 	  = 	$(shell which rm)
+FIND 	  = 	$(shell which find)
+INSTALL   = 	$(shell which install)
+MKTEMP    = 	$(shell which mktemp)
+STRIP     = 	$(shell which strip)
+PANDOC    =	$(shell which pandoc)
 GIT2DEBCL =     ./tools/git2debcl
+CPPFIND   =     ./tools/cppfind
 
 ifeq ($(PKGCONFIG),"")
 $(error "pkg-config not installed"
@@ -54,23 +55,35 @@ ifeq ($(FUSE_AVAILABLE),0)
 $(error "FUSE development package doesn't appear available")
 endif
 
-OPTS 	= 	-O2
-SRC	=	$(wildcard src/*.cpp)
-OBJ     =       $(SRC:src/%.cpp=obj/%.o)
-DEPS    =       $(OBJ:obj/%.o=obj/%.d)
-TARGET  =       mergerfs
-MANPAGE = 	$(TARGET).1
-CFLAGS  =       -g -Wall \
-		$(OPTS) \
-                $(shell $(PKGCONFIG) fuse --cflags) \
-                -DFUSE_USE_VERSION=26 \
-                -MMD
-LDFLAGS	=       $(shell $(PKGCONFIG) fuse --libs)
+FLAG_NOPATH = $(shell $(CPPFIND) "flag_nopath")
+FALLOCATE   = $(shell $(CPPFIND) "fuse_fs_fallocate")
+FLOCK       = $(shell $(CPPFIND) "fuse_fs_flock")
+READ_BUF    = $(shell $(CPPFIND) "fuse_fs_read_buf")
+WRITE_BUF   = $(shell $(CPPFIND) "fuse_fs_write_buf")
 
-BINDIR 	=	$(PREFIX)/usr/bin
-MANDIR 	=	$(PREFIX)/usr/share/man/man1
+OPTS 	    = -O2
+SRC	    = $(wildcard src/*.cpp)
+OBJ         = $(SRC:src/%.cpp=obj/%.o)
+DEPS        = $(OBJ:obj/%.o=obj/%.d)
+TARGET      = mergerfs
+MANPAGE     = $(TARGET).1
+FUSE_CFLAGS = $(shell $(PKGCONFIG) --cflags fuse)
+CFLAGS      = -g -Wall \
+	      $(OPTS) \
+              $(FUSE_CFLAGS) \
+              -DFUSE_USE_VERSION=26 \
+              -MMD \
+	      -DFLAG_NOPATH=$(FLAG_NOPATH) \
+	      -DFALLOCATE=$(FALLOCATE) \
+              -DFLOCK=$(FLOCK) \
+	      -DREAD_BUF=$(READ_BUF) \
+              -DWRITE_BUF=$(WRITE_BUF)
+LDFLAGS       = $(shell $(PKGCONFIG) fuse --libs)
+
+BINDIR 	      =	$(PREFIX)/usr/bin
+MANDIR 	      =	$(PREFIX)/usr/share/man/man1
 INSTALLTARGET = $(DESTDIR)/$(BINDIR)/$(TARGET)
-MANTARGET = 	$(DESTDIR)/$(MANDIR)/$(MANPAGE)
+MANTARGET     =	$(DESTDIR)/$(MANDIR)/$(MANPAGE)
 
 ifeq ($(XATTR_AVAILABLE),0)
 $(warning "xattr not available: disabling")
