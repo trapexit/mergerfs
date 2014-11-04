@@ -80,6 +80,7 @@ _ioctl(const int           fd,
   return ((rv == -1) ? -errno : rv);
 }
 
+#ifdef FUSE_IOCTL_DIR
 static
 int
 _ioctl_dir_base(const fs::SearchFunc  searchFunc,
@@ -130,6 +131,7 @@ _ioctl_dir(const string        fusepath,
                          flags,
                          data);
 }
+#endif
 
 namespace mergerfs
 {
@@ -145,12 +147,14 @@ namespace mergerfs
     {
       const FileInfo *fileinfo = (FileInfo*)ffi->fh;
 
+#ifdef FUSE_IOCTL_DIR
       if(flags & FUSE_IOCTL_DIR)
         return _ioctl_dir(fusepath,
                           cmd,
                           arg,
                           flags,
                           data);
+#endif
 
       return _ioctl(fileinfo->fd,
                     cmd,

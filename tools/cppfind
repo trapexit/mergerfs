@@ -1,0 +1,7 @@
+#!/bin/bash
+
+FUSE_CFLAGS=$(pkg-config --cflags fuse)
+
+echo "#include <fuse.h>" | cpp ${FUSE_CFLAGS} | grep -q "${1}"
+
+[ "$?" != "0" ]; echo $?

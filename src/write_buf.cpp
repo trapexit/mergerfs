@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#if WRITE_BUF
+
 #include <fuse.h>
 
 #include <stdlib.h>
@@ -63,3 +65,5 @@ namespace mergerfs
     }
   }
 }
+
+#endif
