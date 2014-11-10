@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#define _BSD_SOURCE
+
 #include <fuse.h>
 
 #include <string>
@@ -53,6 +55,7 @@ _readdir(const vector<string>  &srcmounts,
          const fuse_fill_dir_t  filler)
 {
   set<string> found;
+  struct stat st = {0};
 
   for(vector<string>::const_iterator
         iter = srcmounts.begin(), enditer = srcmounts.end();
@@ -69,12 +72,11 @@ _readdir(const vector<string>  &srcmounts,
 
       for(struct dirent *de = ::readdir(dh); de != NULL; de = ::readdir(dh))
         {
-          string d_name(de->d_name);
-
-          if(found.insert(d_name).second == false)
+          if(found.insert(de->d_name).second == false)
             continue;
 
-          if(filler(buf,de->d_name,NULL,NO_OFFSET) != 0)
+          st.st_mode = DTTOIF(de->d_type);
+          if(filler(buf,de->d_name,&st,NO_OFFSET) != 0)
             return -ENOMEM;
         }
 
