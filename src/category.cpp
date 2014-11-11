@@ -38,16 +38,16 @@ namespace mergerfs
     (CATEGORY(action))
     (CATEGORY(create))
     (CATEGORY(search));
-  
+
   const Category * const Category::categories = &_categories_[1];
 
   const Category &Category::invalid = Category::categories[Category::Enum::invalid];
   const Category &Category::action  = Category::categories[Category::Enum::action];
   const Category &Category::create  = Category::categories[Category::Enum::create];
-  const Category &Category::search  = Category::categories[Category::Enum::search];  
-  
+  const Category &Category::search  = Category::categories[Category::Enum::search];
+
   const Category&
-  Category::find(const std::string str)
+  Category::find(const std::string &str)
   {
     for(int i = Enum::BEGIN; i != Enum::END; ++i)
       {
@@ -66,5 +66,5 @@ namespace mergerfs
       return categories[i];
 
     return invalid;
-  }  
+  }
 }

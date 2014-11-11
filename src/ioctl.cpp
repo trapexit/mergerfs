@@ -85,7 +85,7 @@ static
 int
 _ioctl_dir_base(const fs::SearchFunc  searchFunc,
                 const vector<string> &srcmounts,
-                const string          fusepath,
+                const string         &fusepath,
                 const int             cmd,
                 void                 *arg,
                 const unsigned int    flags,
@@ -112,7 +112,7 @@ _ioctl_dir_base(const fs::SearchFunc  searchFunc,
 
 static
 int
-_ioctl_dir(const string        fusepath,
+_ioctl_dir(const string       &fusepath,
            const int           cmd,
            void               *arg,
            const unsigned int  flags,

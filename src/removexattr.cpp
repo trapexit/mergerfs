@@ -43,7 +43,7 @@ static
 int
 _removexattr(const fs::SearchFunc  searchFunc,
              const vector<string> &srcmounts,
-             const string          fusepath,
+             const string         &fusepath,
              const char           *attrname)
 {
 #ifndef WITHOUT_XATTR

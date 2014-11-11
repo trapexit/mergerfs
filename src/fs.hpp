@@ -38,8 +38,8 @@ namespace fs
   struct Path
   {
     Path() {}
-    Path(const string b,
-         const string f)
+    Path(const string &b,
+         const string &f)
       : base(b),
         full(f)
     {}
@@ -49,60 +49,60 @@ namespace fs
   };
 
   typedef vector<Path> PathVector;
-  typedef int (*SearchFunc)(const vector<string>&,const string,PathVector&);
+  typedef int (*SearchFunc)(const vector<string>&,const string&,PathVector&);
 
-  string dirname(const string path);
-  string basename(const string path);
+  string dirname(const string &path);
+  string basename(const string &path);
 
-  bool dir_is_empty(const string path);
+  bool dir_is_empty(const string &path);
 
-  string make_path(const string base,
-                   const string suffix);
+  string make_path(const string &base,
+                   const string &suffix);
 
   bool path_exists(vector<string>::const_iterator  begin,
                    vector<string>::const_iterator  end,
-                   const string                    fusepath);
+                   const string                   &fusepath);
   bool path_exists(const vector<string>           &srcmounts,
-                   const string                    fusepath);
+                   const string                   &fusepath);
 
-  int clonepath(const string srcfrom,
-                const string srcto,
-                const string relative);
+  int clonepath(const string &srcfrom,
+                const string &srcto,
+                const string &relative);
 
-  int listxattr(const string    path,
+  int listxattr(const string   &path,
                 vector<char>   &attrs);
-  int listxattr(const string    path,
+  int listxattr(const string   &path,
                 string         &attrs);
-  int listxattr(const string    path,
+  int listxattr(const string   &path,
                 vector<string> &attrs);
 
-  int getxattr(const string  path,
-               const string  attr,
+  int getxattr(const string &path,
+               const string &attr,
                vector<char> &value);
-  int getxattr(const string  path,
-               const string  attr,
+  int getxattr(const string &path,
+               const string &attr,
                string       &value);
 
-  int getxattrs(const string        path,
+  int getxattrs(const string       &path,
                 map<string,string> &attrs);
 
-  int setxattr(const string path,
-               const string key,
-               const string value,
-               const int    flags);
-  int setxattr(const int    fd,
-               const string key,
-               const string value,
-               const int    flags);
+  int setxattr(const string &path,
+               const string &key,
+               const string &value,
+               const int     flags);
+  int setxattr(const int     fd,
+               const string &key,
+               const string &value,
+               const int     flags);
 
-  int setxattrs(const string              path,
+  int setxattrs(const string             &path,
                 const map<string,string> &attrs);
 
-  int copyxattrs(const string from,
-                 const string to);
+  int copyxattrs(const string &from,
+                 const string &to);
 
-  int copyattr(const string from,
-               const string to);
+  int copyattr(const string &from,
+               const string &to);
 
   void glob(const vector<string> &patterns,
             vector<string>       &strs);
@@ -113,28 +113,28 @@ namespace fs
   namespace find
   {
     int invalid(const vector<string> &basepaths,
-                const string          fusepath,
+                const string         &fusepath,
                 PathVector           &paths);
     int ff(const vector<string>      &basepaths,
-           const string               fusepath,
+           const string              &fusepath,
            PathVector                &paths);
     int ffwp(const vector<string>    &paths,
-             const string             fusepath,
+             const string            &fusepath,
              PathVector              &rv);
     int newest(const vector<string>  &paths,
-               const string           fusepath,
+               const string          &fusepath,
                PathVector            &rv);
     int all(const vector<string>     &paths,
-            const string              fusepath,
+            const string             &fusepath,
             PathVector               &rv);
     int mfs(const vector<string>     &paths,
-            const string              fusepath,
+            const string             &fusepath,
             PathVector               &rv);
     int epmfs(const vector<string>   &paths,
-              const string            fusepath,
+              const string           &fusepath,
               PathVector             &rv);
     int rand(const vector<string>    &paths,
-             const string             fusepath,
+             const string            &fusepath,
              PathVector              &rv);
   }
 };

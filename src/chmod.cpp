@@ -41,7 +41,7 @@ static
 int
 _chmod(const fs::SearchFunc  searchFunc,
        const vector<string> &srcmounts,
-       const string          fusepath,
+       const string         &fusepath,
        const mode_t          mode)
 {
   int rv;

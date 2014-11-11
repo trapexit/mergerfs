@@ -42,7 +42,7 @@ static
 int
 _chown(const fs::SearchFunc  searchFunc,
        const vector<string> &srcmounts,
-       const string          fusepath,
+       const string         &fusepath,
        const uid_t           uid,
        const gid_t           gid)
 {

@@ -41,10 +41,10 @@ using std::vector;
 
 static
 int
-_utimens(const fs::SearchFunc  searchFunc,
-         const vector<string> &srcmounts,
-         const string          fusepath,
-         const struct timespec ts[2])
+_utimens(const fs::SearchFunc   searchFunc,
+         const vector<string>  &srcmounts,
+         const string          &fusepath,
+         const struct timespec  ts[2])
 {
   int rv;
   int error;

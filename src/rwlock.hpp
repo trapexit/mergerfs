@@ -42,10 +42,11 @@ namespace mergerfs
         pthread_rwlock_unlock(_lock);
       }
 
-      pthread_rwlock_t *_lock;
-
     private:
       ReadGuard();
+
+    private:
+      pthread_rwlock_t *_lock;
     };
 
     class WriteGuard
@@ -62,10 +63,11 @@ namespace mergerfs
         pthread_rwlock_unlock(_lock);
       }
 
-      pthread_rwlock_t *_lock;
-
     private:
       WriteGuard();
+
+    private:
+      pthread_rwlock_t *_lock;
     };
   }
 }

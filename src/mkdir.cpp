@@ -45,7 +45,7 @@ int
 _mkdir(const fs::SearchFunc  searchFunc,
        const fs::SearchFunc  createPathFunc,
        const vector<string> &srcmounts,
-       const string          fusepath,
+       const string         &fusepath,
        const mode_t          mode)
 {
   int rv;

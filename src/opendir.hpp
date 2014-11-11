@@ -28,6 +28,8 @@ namespace mergerfs
 {
   namespace opendir
   {
-    int opendir(const char *fusepath, struct fuse_file_info *ffi);
+    int
+    opendir(const char            *fusepath,
+            struct fuse_file_info *ffi);
   }
 }
