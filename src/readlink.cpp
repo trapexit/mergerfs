@@ -42,8 +42,8 @@ using mergerfs::Policy;
 static
 int
 _readlink(const fs::SearchFunc   searchFunc,
-          const vector<string>&  srcmounts,
-          const string           fusepath,
+          const vector<string>  &srcmounts,
+          const string          &fusepath,
           char                  *buf,
           const size_t           size)
 {

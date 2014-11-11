@@ -48,7 +48,7 @@ using mergerfs::readdir::FileData;
 static
 int
 _readdir(const vector<string>  &srcmounts,
-         const string           dirname,
+         const string          &dirname,
          void                  *buf,
          const fuse_fill_dir_t  filler)
 {
@@ -107,7 +107,7 @@ namespace mergerfs
   {
     int
     readdir(const vector<string> &srcmounts,
-            const string          dirname,
+            const string         &dirname,
             vector<FileData>     &stats)
     {
       return _readdir(srcmounts,

@@ -65,9 +65,9 @@ namespace mergerfs
     {
     }
 
-    Policy(const Enum::Type        enum_,
-           const std::string       str_,
-           const fs::SearchFunc    func_)
+    Policy(const Enum::Type      enum_,
+           const std::string    &str_,
+           const fs::SearchFunc  func_)
       : _enum(enum_),
         _str(str_),
         _func(func_)
@@ -76,17 +76,17 @@ namespace mergerfs
 
   public:
     operator const Enum::Type() const { return _enum; }
-    operator const std::string() const { return _str; }
+    operator const std::string&() const { return _str; }
     operator const fs::SearchFunc() const { return _func; }
     operator const Policy*() const { return this; }
 
     bool operator==(const Enum::Type enum_) const
     { return _enum == enum_; }
-    bool operator==(const std::string str_) const
+    bool operator==(const std::string &str_) const
     { return _str == str_; }
     bool operator==(const fs::SearchFunc func_) const
     { return _func == func_; }
-    
+
     bool operator!=(const Policy &r) const
     { return _enum != r._enum; }
 
@@ -94,7 +94,7 @@ namespace mergerfs
     { return _enum < r._enum; }
 
   public:
-    static const Policy &find(const std::string);
+    static const Policy &find(const std::string&);
     static const Policy &find(const Enum::Type);
 
   public:

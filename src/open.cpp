@@ -45,7 +45,7 @@ static
 int
 _open(const fs::SearchFunc  searchFunc,
       const vector<string> &srcmounts,
-      const string          fusepath,
+      const string         &fusepath,
       const int             flags,
       uint64_t             &fh)
 {

@@ -69,7 +69,7 @@ static
 int
 _listxattr(const fs::SearchFunc  searchFunc,
            const vector<string> &srcmounts,
-           const string          fusepath,
+           const string         &fusepath,
            char                 *list,
            const size_t          size)
 {

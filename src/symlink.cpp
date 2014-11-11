@@ -40,8 +40,8 @@ using std::vector;
 static
 int
 _symlink(const vector<string> &srcmounts,
-         const string          from,
-         const string          to)
+         const string         &from,
+         const string         &to)
 {
   int rv;
   fs::PathVector paths;

@@ -43,7 +43,7 @@ static
 int
 _truncate(const fs::SearchFunc  searchFunc,
           const vector<string> &srcmounts,
-          const string          fusepath,
+          const string         &fusepath,
           const off_t           size)
 {
   int rv;

@@ -42,7 +42,7 @@ static
 int
 _unlink(const fs::SearchFunc  searchFunc,
         const vector<string> &srcmounts,
-        const string          fusepath)
+        const string         &fusepath)
 {
   int rv;
   int error;

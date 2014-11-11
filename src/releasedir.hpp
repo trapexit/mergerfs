@@ -28,6 +28,8 @@ namespace mergerfs
 {
   namespace releasedir
   {
-    int releasedir(const char *fusepath, struct fuse_file_info *ffi);
+    int
+    releasedir(const char            *fusepath,
+               struct fuse_file_info *ffi);
   }
 }

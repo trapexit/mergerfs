@@ -48,7 +48,7 @@ int
 _create(const fs::SearchFunc  searchFunc,
         const fs::SearchFunc  createPathFunc,
         const vector<string> &srcmounts,
-        const string          fusepath,
+        const string         &fusepath,
         const mode_t          mode,
         const int             flags,
         uint64_t             &fh)

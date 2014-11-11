@@ -32,7 +32,6 @@
 #include "option_parser.hpp"
 #include "resources.hpp"
 #include "fs.hpp"
-#include "test.hpp"
 
 #include "access.hpp"
 #include "chmod.hpp"

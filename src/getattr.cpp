@@ -67,7 +67,7 @@ static
 int
 _getattr(const fs::SearchFunc  searchFunc,
          const vector<string> &srcmounts,
-         const string          fusepath,
+         const string         &fusepath,
          struct stat          &buf)
 {
   int rv;
