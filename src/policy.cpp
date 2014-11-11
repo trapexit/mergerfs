@@ -55,7 +55,7 @@ namespace mergerfs
   const Policy &Policy::rand    = Policy::policies[Policy::Enum::rand];
 
   const Policy&
-  Policy::find(const std::string str)
+  Policy::find(const std::string &str)
   {
     for(int i = Enum::BEGIN; i != Enum::END; ++i)
       {

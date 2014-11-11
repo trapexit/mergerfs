@@ -46,7 +46,7 @@ int
 _mknod(const fs::SearchFunc  searchFunc,
        const fs::SearchFunc  createPathFunc,
        const vector<string> &srcmounts,
-       const string          fusepath,
+       const string         &fusepath,
        const mode_t          mode,
        const dev_t           dev)
 {

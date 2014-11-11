@@ -40,8 +40,8 @@ namespace mergerfs
   {
     struct FileData
     {
-      FileData(std::string filename_,
-               struct stat stats_)
+      FileData(const std::string &filename_,
+               const struct stat &stats_)
         : filename(filename_),
           stats(stats_)
       {}
@@ -59,7 +59,7 @@ namespace mergerfs
 
     int
     readdir(const std::vector<std::string> &srcmounts,
-            const std::string               dirname,
+            const std::string              &dirname,
             std::vector<FileData>          &stats);
   }
 }

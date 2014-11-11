@@ -48,8 +48,8 @@ static
 int
 _add_srcmounts(vector<string>           &srcmounts,
                pthread_rwlock_t         &srcmountslock,
-               const string              destmount,
-               const string              values,
+               const string             &destmount,
+               const string             &values,
                vector<string>::iterator  pos)
 {
   vector<string> patterns;
@@ -73,7 +73,7 @@ _add_srcmounts(vector<string>           &srcmounts,
 static
 int
 _erase_srcmounts(vector<string>   &srcmounts,
-                 pthread_rwlock_t  srcmountslock,
+                 pthread_rwlock_t &srcmountslock,
                  const string     &values)
 {
   if(srcmounts.empty())
@@ -83,9 +83,11 @@ _erase_srcmounts(vector<string>   &srcmounts,
 
   str::split(patterns,values,':');
 
-  const rwlock::WriteGuard wrg(&srcmountslock);
+  {
+    const rwlock::WriteGuard wrg(&srcmountslock);
 
-  fs::erase_fnmatches(patterns,srcmounts);
+    fs::erase_fnmatches(patterns,srcmounts);
+  }
 
   return 0;
 }
@@ -93,9 +95,9 @@ _erase_srcmounts(vector<string>   &srcmounts,
 static
 int
 _replace_srcmounts(vector<string>   &srcmounts,
-                   pthread_rwlock_t  srcmountslock,
-                   const string      destmount,
-                   const string      values)
+                   pthread_rwlock_t &srcmountslock,
+                   const string     &destmount,
+                   const string     &values)
 {
   vector<string> patterns;
   vector<string> newmounts;
@@ -114,7 +116,7 @@ _replace_srcmounts(vector<string>   &srcmounts,
 
 static
 void
-_split_attrval(const string  attrval,
+_split_attrval(const string &attrval,
                string       &instruction,
                string       &values)
 {
@@ -130,8 +132,8 @@ static
 int
 _setxattr_srcmounts(vector<string>   &srcmounts,
                     pthread_rwlock_t &srcmountslock,
-                    const string      destmount,
-                    const string      attrval,
+                    const string     &destmount,
+                    const string     &attrval,
                     const int         flags)
 {
   string instruction;
@@ -165,8 +167,8 @@ _setxattr_srcmounts(vector<string>   &srcmounts,
 static
 int
 _setxattr_policy(const Policy *policies[],
-                 const string  attrname,
-                 const string  attrval,
+                 const string &attrname,
+                 const string &attrval,
                  const int     flags)
 {
   const Category *cat;
@@ -191,8 +193,8 @@ _setxattr_policy(const Policy *policies[],
 static
 int
 _setxattr_controlfile(config::Config &config,
-                      const string    attrname,
-                      const string    attrval,
+                      const string   &attrname,
+                      const string   &attrval,
                       const int       flags)
 {
   vector<string>  nameparts;
@@ -224,7 +226,7 @@ static
 int
 _setxattr(const fs::SearchFunc  searchFunc,
           const vector<string> &srcmounts,
-          const string          fusepath,
+          const string         &fusepath,
           const char           *attrname,
           const char           *attrval,
           const size_t          attrvalsize,

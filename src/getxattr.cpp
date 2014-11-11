@@ -45,7 +45,7 @@ using namespace mergerfs::config;
 static
 int
 _getxattr_controlfile(const Config &config,
-                      const string  attrname,
+                      const string &attrname,
                       char         *buf,
                       const size_t  count)
 {
@@ -100,7 +100,7 @@ static
 int
 _getxattr(const fs::SearchFunc  searchFunc,
           const vector<string> &srcmounts,
-          const string          fusepath,
+          const string         &fusepath,
           const char           *attrname,
           char                 *buf,
           const size_t          count)

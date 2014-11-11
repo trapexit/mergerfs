@@ -44,7 +44,7 @@ using namespace mergerfs;
 static
 int
 process_opt(config::Config    &config,
-            const std::string  arg)
+            const std::string &arg)
 {
   int rv = 0;
   std::vector<std::string> argvalue;

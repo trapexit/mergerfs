@@ -47,7 +47,7 @@ static
 int
 _access(const fs::SearchFunc  searchFunc,
         const vector<string> &srcmounts,
-        const string          fusepath,
+        const string         &fusepath,
         const int             mask)
 {
   int rv;

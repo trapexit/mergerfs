@@ -34,7 +34,7 @@ namespace str
 {
   void
   split(vector<string> &result,
-        const string    str,
+        const string   &str,
         const char      delimiter)
   {
     string part;

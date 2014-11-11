@@ -27,10 +27,12 @@
 
 namespace str
 {
-  void split(std::vector<std::string> &result,
-             const std::string         str,
-             const char                delimiter);
+  void
+  split(std::vector<std::string> &result,
+        const std::string        &str,
+        const char                delimiter);
 
-  std::string join(const std::vector<std::string> &vec,
-                   const char                      sep);
+  std::string
+  join(const std::vector<std::string> &vec,
+       const char                      sep);
 }

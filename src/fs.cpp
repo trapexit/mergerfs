@@ -65,7 +65,7 @@ random_element(Iter begin,
 namespace fs
 {
   string
-  dirname(const string path)
+  dirname(const string &path)
   {
     string parent = path;
     string::reverse_iterator i;
@@ -88,13 +88,13 @@ namespace fs
   }
 
   string
-  basename(const string path)
+  basename(const string &path)
   {
     return path.substr(path.find_last_of('/')+1);
   }
 
   bool
-  dir_is_empty(const string path)
+  dir_is_empty(const string &path)
   {
     DIR           *dir;
     struct dirent *de;
@@ -123,8 +123,8 @@ namespace fs
   }
 
   string
-  make_path(const string base,
-            const string suffix)
+  make_path(const string &base,
+            const string &suffix)
   {
     if(suffix[0]      == '/' ||
        *base.rbegin() == '/')
@@ -133,9 +133,9 @@ namespace fs
   }
 
   bool
-  path_exists(vector<string>::const_iterator begin,
-              vector<string>::const_iterator end,
-              const string                   fusepath)
+  path_exists(vector<string>::const_iterator  begin,
+              vector<string>::const_iterator  end,
+              const string                   &fusepath)
   {
     for(vector<string>::const_iterator
           iter = begin; iter != end; ++iter)
@@ -155,7 +155,7 @@ namespace fs
 
   bool
   path_exists(const vector<string> &srcmounts,
-              const string               fusepath)
+              const string         &fusepath)
   {
     return path_exists(srcmounts.begin(),
                        srcmounts.end(),
@@ -163,7 +163,7 @@ namespace fs
   }
 
   int
-  listxattr(const string  path,
+  listxattr(const string &path,
             vector<char> &attrs)
   {
 #ifndef WITHOUT_XATTR
@@ -187,7 +187,7 @@ namespace fs
   }
 
   int
-  listxattr(const string         path,
+  listxattr(const string   &path,
             vector<string> &attrvector)
   {
     int rv;
@@ -204,8 +204,8 @@ namespace fs
   }
 
   int
-  listxattr(const string  path,
-            string &attrstr)
+  listxattr(const string &path,
+            string       &attrstr)
   {
     int rv;
     vector<char> attrs;
@@ -218,8 +218,8 @@ namespace fs
   }
 
   int
-  getxattr(const string  path,
-           const string  attr,
+  getxattr(const string &path,
+           const string &attr,
            vector<char> &value)
   {
 #ifndef WITHOUT_XATTR
@@ -243,8 +243,8 @@ namespace fs
   }
 
   int
-  getxattr(const string  path,
-           const string  attr,
+  getxattr(const string &path,
+           const string &attr,
            string       &value)
   {
     int          rv;
@@ -259,7 +259,7 @@ namespace fs
 
 
   int
-  getxattrs(const string        path,
+  getxattrs(const string       &path,
             map<string,string> &attrs)
   {
     int rv;
@@ -287,10 +287,10 @@ namespace fs
   }
 
   int
-  setxattr(const string path,
-           const string key,
-           const string value,
-           const int    flags)
+  setxattr(const string &path,
+           const string &key,
+           const string &value,
+           const int     flags)
   {
 #ifndef WITHOUT_XATTR
     return ::setxattr(path.c_str(),
@@ -305,10 +305,10 @@ namespace fs
   }
 
   int
-  setxattr(const int    fd,
-           const string key,
-           const string value,
-           const int    flags)
+  setxattr(const int     fd,
+           const string &key,
+           const string &value,
+           const int     flags)
   {
 #ifndef WITHOUT_XATTR
     return ::fsetxattr(fd,
@@ -323,7 +323,7 @@ namespace fs
   }
 
   int
-  setxattrs(const string              path,
+  setxattrs(const string             &path,
             const map<string,string> &attrs)
   {
     int fd;
@@ -342,8 +342,8 @@ namespace fs
   }
 
   int
-  copyxattrs(const string from,
-             const string to)
+  copyxattrs(const string &from,
+             const string &to)
   {
     int rv;
     map<string,string> attrs;
@@ -356,8 +356,8 @@ namespace fs
   }
 
   int
-  copyattr(const string from,
-           const string to)
+  copyattr(const string &from,
+           const string &to)
   {
     int fd;
     int rv;
@@ -395,9 +395,9 @@ namespace fs
   }
 
   int
-  clonepath(const string fromsrc,
-            const string tosrc,
-            const string relative)
+  clonepath(const string &fromsrc,
+            const string &tosrc,
+            const string &relative)
   {
     int         rv;
     struct stat st;
@@ -492,7 +492,7 @@ namespace fs
   {
     int
     invalid(const vector<string> &basepaths,
-            const string          fusepath,
+            const string         &fusepath,
             PathVector           &paths)
     {
       return (errno = EINVAL,-1);
@@ -500,7 +500,7 @@ namespace fs
 
     int
     ff(const vector<string> &basepaths,
-       const string          fusepath,
+       const string         &fusepath,
        PathVector           &paths)
     {
       errno = ENOENT;
@@ -524,7 +524,7 @@ namespace fs
 
     int
     ffwp(const vector<string> &basepaths,
-         const string          fusepath,
+         const string         &fusepath,
          PathVector           &paths)
     {
       Path fallback;
@@ -560,7 +560,7 @@ namespace fs
 
     int
     newest(const vector<string> &basepaths,
-           const string          fusepath,
+           const string         &fusepath,
            PathVector           &paths)
     {
       time_t newest;
@@ -595,7 +595,7 @@ namespace fs
 
     int
     all(const vector<string> &basepaths,
-        const string          fusepath,
+        const string         &fusepath,
         PathVector           &paths)
     {
       errno = ENOENT;
@@ -619,7 +619,7 @@ namespace fs
 
     int
     mfs(const vector<string> &basepaths,
-        const string          fusepath,
+        const string         &fusepath,
         PathVector           &paths)
     {
       fsblkcnt_t mfs;
@@ -634,8 +634,8 @@ namespace fs
           ++iter)
         {
           int rv;
-          struct statvfs fsstats;
-          const string   mountpoint = *iter;
+          struct statvfs  fsstats;
+          const string   &mountpoint = *iter;
 
           rv = ::statvfs(mountpoint.c_str(),&fsstats);
           if(rv == 0)
@@ -663,7 +663,7 @@ namespace fs
 
     int
     epmfs(const vector<string> &basepaths,
-          const string          fusepath,
+          const string         &fusepath,
           PathVector           &paths)
     {
       fsblkcnt_t existingmfs = 0;
@@ -680,8 +680,8 @@ namespace fs
       do
         {
           int rv;
-          struct statvfs fsstats;
-          const string   mountpoint = *iter;
+          struct statvfs  fsstats;
+          const string   &mountpoint = *iter;
 
           rv = ::statvfs(mountpoint.c_str(),&fsstats);
           if(rv == 0)
@@ -722,7 +722,7 @@ namespace fs
 
     int
     rand(const vector<string> &basepaths,
-         const string          fusepath,
+         const string         &fusepath,
          PathVector           &paths)
     {
       string randombasepath;

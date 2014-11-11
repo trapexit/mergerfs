@@ -43,8 +43,8 @@ static
 int
 _link(const fs::SearchFunc  searchFunc,
       const vector<string> &srcmounts,
-      const string          from,
-      const string          to)
+      const string         &from,
+      const string         &to)
 {
   int rv;
   int error;
