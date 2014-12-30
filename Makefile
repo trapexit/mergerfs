@@ -34,9 +34,13 @@ STRIP     = 	$(shell which strip)
 PANDOC    =	$(shell which pandoc)
 GIT2DEBCL =     ./tools/git2debcl
 CPPFIND   =     ./tools/cppfind
+RPMBUILD =	$(shell which rpmbuild)
+GZIP	=	$(shell which gzip)
+SED	=	$(shell which sed)
+MKDIR	=	$(shell which mkdir)
 
 ifeq ($(PKGCONFIG),"")
-$(error "pkg-config not installed"
+$(error "pkg-config not installed")
 endif
 
 ifeq ($(PANDOC),"")
@@ -118,7 +122,7 @@ obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	$(RM) -rf obj "$(TARGET)" "$(MANPAGE)"
+	$(RM) -rf obj "$(TARGET)" "$(MANPAGE)" rpmbuild
 	$(FIND) -name "*~" -delete
 
 distclean: clean
@@ -153,6 +157,16 @@ deb:
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(GIT2DEBCL) $(TARGET) $(VERSION) > debian/changelog
 	$(GIT) buildpackage --git-ignore-new
+
+rpm:
+	$(eval VERSION := $(subst -,_,$(shell $(GIT) describe --always --tags --dirty)))
+	$(MKDIR) -p rpmbuild/{BUILD,RPMS,SOURCES}
+	$(GIT) archive --prefix="$(TARGET)-$(VERSION)/" --format tar HEAD | \
+		$(GZIP) > rpmbuild/SOURCES/$(TARGET)-$(VERSION).tar.gz
+	$(SED) 's/__VERSION__/$(VERSION)/g' $(TARGET).spec > \
+		rpmbuild/SOURCES/$(TARGET).spec
+	$(RPMBUILD) -ba rpmbuild/SOURCES/$(TARGET).spec \
+		--define "_topdir $(CURDIR)/rpmbuild"
 
 .PHONY: all clean install help
 
