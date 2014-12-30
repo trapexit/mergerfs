@@ -33,6 +33,9 @@ MKTEMP  = 	$(shell which mktemp)
 STRIP   = 	$(shell which strip)
 PANDOC  =       $(shell which pandoc)
 RPMBUILD =	$(shell which rpmbuild)
+GZIP	=	$(shell which gzip)
+SED	=	$(shell which sed)
+MKDIR	=	$(shell which mkdir)
 
 ifeq ($(PKGCONFIG),"")
 $(error "pkg-config not installed")
@@ -143,10 +146,13 @@ deb:
 
 rpm:
 	$(eval VERSION := $(subst -,_,$(shell $(GIT) describe --always --tags --dirty)))
-	$(RPMBUILD) -bb $(TARGET).spec \
-		--define "_topdir $(CURDIR)/rpmbuild" \
-		--define "_builddir $(CURDIR)" \
-		--define "pkg_version $(VERSION)"
+	$(MKDIR) -p rpmbuild/{BUILD,RPMS,SOURCES}
+	$(GIT) archive --prefix="$(TARGET)-$(VERSION)/" --format tar HEAD | \
+		$(GZIP) > rpmbuild/SOURCES/$(TARGET)-$(VERSION).tar.gz
+	$(SED) 's/__VERSION__/$(VERSION)/g' $(TARGET).spec > \
+		rpmbuild/SOURCES/$(TARGET).spec
+	$(RPMBUILD) -ba rpmbuild/SOURCES/$(TARGET).spec \
+		--define "_topdir $(CURDIR)/rpmbuild"
 
 .PHONY: all clean install help
 
