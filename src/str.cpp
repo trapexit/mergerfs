@@ -46,15 +46,69 @@ namespace str
 
   string
   join(const vector<string> &vec,
+       const size_t          substridx,
        const char            sep)
   {
     if(vec.empty())
       return string();
 
-    string rv = vec[0];
+    string rv = vec[0].substr(substridx);
     for(size_t i = 1; i < vec.size(); i++)
-      rv += sep + vec[i];
+      rv += sep + vec[i].substr(substridx);
 
     return rv;
+  }
+
+  string
+  join(const vector<string> &vec,
+       const char            sep)
+  {
+    return str::join(vec,0,sep);
+  }
+
+  size_t
+  longest_common_prefix_index(const vector<string> &vec)
+  {
+    if(vec.empty())
+      return string::npos;
+
+    for(size_t n = 0; n < vec[0].size(); n++)
+      {
+        char chr = vec[0][n];
+        for(size_t i = 1; i < vec.size(); i++)
+          {
+            if(n >= vec[i].size())
+              return n;
+            if(vec[i][n] != chr)
+              return n;
+          }
+      }
+
+    return string::npos;
+  }
+
+  string
+  longest_common_prefix(const vector<string> &vec)
+  {
+    size_t idx;
+
+    idx = longest_common_prefix_index(vec);
+    if(idx != string::npos)
+      return vec[0].substr(0,idx);
+
+    return string();
+  }
+
+  string
+  remove_common_prefix_and_join(const vector<string> &vec,
+                                const char            sep)
+  {
+    size_t idx;
+
+    idx = str::longest_common_prefix_index(vec);
+    if(idx == string::npos)
+      idx = 0;
+
+    return str::join(vec,idx,sep);
   }
 }

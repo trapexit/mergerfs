@@ -133,7 +133,9 @@ set_fsname(struct fuse_args     &args,
     {
       std::string fsname;
 
-      fsname = "-ofsname=" + str::join(config.srcmounts,':');
+      fsname =
+        "-ofsname=" +
+        str::remove_common_prefix_and_join(config.srcmounts,':');
 
       fuse_opt_insert_arg(&args,1,fsname.c_str());
     }
