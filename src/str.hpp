@@ -34,5 +34,20 @@ namespace str
 
   std::string
   join(const std::vector<std::string> &vec,
+       const size_t                    substridx,
        const char                      sep);
+
+  std::string
+  join(const std::vector<std::string> &vec,
+       const char                      sep);
+
+  size_t
+  longest_common_prefix_index(const std::vector<std::string> &vec);
+
+  std::string
+  longest_common_prefix(const std::vector<std::string> &vec);
+
+  std::string
+  remove_common_prefix_and_join(const std::vector<std::string> &vec,
+                                const char                      sep);
 }
