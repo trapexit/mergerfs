@@ -27,6 +27,7 @@ MKDIR     = 	$(shell which mkdir)
 TOUCH 	  = 	$(shell which touch)
 CP        = 	$(shell which cp)
 RM 	  = 	$(shell which rm)
+LN        =     $(shell which ln)
 FIND 	  = 	$(shell which find)
 INSTALL   = 	$(shell which install)
 MKTEMP    = 	$(shell which mktemp)
@@ -82,8 +83,8 @@ LDFLAGS       = $(shell $(PKGCONFIG) fuse --libs)
 
 BINDIR 	      =	$(PREFIX)/usr/bin
 MANDIR 	      =	$(PREFIX)/usr/share/man/man1
-INSTALLTARGET = $(DESTDIR)/$(BINDIR)/$(TARGET)
-MANTARGET     =	$(DESTDIR)/$(MANDIR)/$(MANPAGE)
+INSTALLBINDIR = $(DESTDIR)$(BINDIR)
+INSTALLMANDIR = $(DESTDIR)$(MANDIR)
 
 ifeq ($(XATTR_AVAILABLE),0)
 $(warning "xattr not available: disabling")
@@ -98,7 +99,7 @@ ifeq ($(KERNEL),Darwin)
 	CFLAGS += -DOSX
 endif
 
-all: $(TARGET)
+all: $(TARGET) clonepath
 
 help:
 	@echo "usage: make"
@@ -106,6 +107,9 @@ help:
 
 $(TARGET): obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
+
+clonepath: $(TARGET)
+	$(LN) -s $< $@
 
 changelog:
 	$(GIT) log --pretty --numstat --summary | git2cl > ChangeLog
@@ -118,22 +122,37 @@ obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	$(RM) -rf obj "$(TARGET)" "$(MANPAGE)"
+	$(RM) -rf obj
+	$(RM) -f "$(TARGET)" "$(MANPAGE)" clonepath
 	$(FIND) -name "*~" -delete
 
 distclean: clean
 	$(GIT) clean -fd
 
-install: $(TARGET) $(MANPAGE)
-	$(INSTALL) -m 0755 -D "$(TARGET)" "$(INSTALLTARGET)"
-	$(INSTALL) -m 0644 -D "$(MANPAGE)" "$(MANTARGET)"
+install: install-base install-clonepath install-man
 
-install-strip: install
-	$(STRIP) "$(INSTALLTARGET)"
+install-base: $(TARGET)
+	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
 
-uninstall:
-	$(RM) "$(INSTALLTARGET)"
-	$(RM) "$(MANTARGET)"
+install-clonepath: clonepath
+	$(CP) -a $< "$(INSTALLBINDIR)/$<"
+
+install-man: $(MANPAGE)
+	$(INSTALL) -v -m 0644 -D "$(MANPAGE)" "$(INSTALLMANDIR)/$(MANPAGE)"
+
+install-strip: install-base
+	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
+
+uninstall: uninstall-base uninstall-clonepath uninstall-man
+
+uninstall-base:
+	$(RM) -f "$(INSTALLBINDIR)/$(TARGET)"
+
+uninstall-clonepath:
+	$(RM) -f "$(INSTALLBINDIR)/clonepath"
+
+uninstall-man:
+	$(RM) -f "$(INSTALLMANDIR)/$(MANPAGE")
 
 $(MANPAGE): README.md
 	$(PANDOC) -s -t man -o $(MANPAGE) README.md

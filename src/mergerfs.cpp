@@ -33,6 +33,8 @@
 #include "resources.hpp"
 #include "fs.hpp"
 
+#include "clonepath.hpp"
+
 #include "access.hpp"
 #include "chmod.hpp"
 #include "chown.hpp"
@@ -73,6 +75,14 @@
 
 namespace local
 {
+  static
+  std::string
+  getappname(const int     argc,
+             char * const *argv)
+  {
+    return fs::basename(argv[0]);
+  }
+  
   static
   void
   get_fuse_operations(struct fuse_operations &ops)
@@ -179,9 +189,11 @@ int
 main(int    argc,
      char **argv)
 {
-  int rv;
+  std::string appname;
 
-  rv = mergerfs::main(argc,argv);
+  appname = local::getappname(argc,argv);
+  if(appname == "clonepath")
+    return clonepath::main(argc,argv);
 
-  return rv;
+  return mergerfs::main(argc,argv);
 }
