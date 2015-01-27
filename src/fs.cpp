@@ -424,7 +424,14 @@ namespace fs
     topath = fs::make_path(tosrc,relative);
     rv = ::mkdir(topath.c_str(),st.st_mode);
     if(rv == -1)
-      return -1;
+      {
+        if(errno != EEXIST)
+          return -1;
+
+        rv = ::chmod(topath.c_str(),st.st_mode);
+        if(rv == -1)
+          return -1;
+      }
 
     rv = ::chown(topath.c_str(),st.st_uid,st.st_gid);
     if(rv == -1)
