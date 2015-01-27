@@ -71,87 +71,102 @@
 #include "write.hpp"
 #include "write_buf.hpp"
 
-static
-struct fuse_operations
-get_fuse_operations()
+namespace local
 {
-  struct fuse_operations ops = {0};
-
+  static
+  void
+  get_fuse_operations(struct fuse_operations &ops)
+  {
 #if FLAG_NOPATH
-  ops.flag_nopath      = false;
+    ops.flag_nopath      = false;
 #endif
-  ops.flag_nullpath_ok = false;
+    ops.flag_nullpath_ok = false;
 
-  ops.access      = mergerfs::access::access;
-  ops.bmap        = NULL;
-  ops.chmod       = mergerfs::chmod::chmod;
-  ops.chown       = mergerfs::chown::chown;
-  ops.create      = mergerfs::create::create;
-  ops.destroy     = mergerfs::destroy::destroy;
+    ops.access      = mergerfs::access::access;
+    ops.bmap        = NULL;
+    ops.chmod       = mergerfs::chmod::chmod;
+    ops.chown       = mergerfs::chown::chown;
+    ops.create      = mergerfs::create::create;
+    ops.destroy     = mergerfs::destroy::destroy;
 #if FALLOCATE
-  ops.fallocate   = mergerfs::fallocate::fallocate;
+    ops.fallocate   = mergerfs::fallocate::fallocate;
 #endif
-  ops.fgetattr    = mergerfs::fgetattr::fgetattr;
+    ops.fgetattr    = mergerfs::fgetattr::fgetattr;
 #if FLOCK
-  ops.flock       = NULL;
+    ops.flock       = NULL;
 #endif
-  ops.flush       = mergerfs::flush::flush;
-  ops.fsync       = mergerfs::fsync::fsync;
-  ops.fsyncdir    = NULL;
-  ops.ftruncate   = mergerfs::ftruncate::ftruncate;
-  ops.getattr     = mergerfs::getattr::getattr;
-  ops.getdir      = NULL;       /* deprecated; use readdir */
-  ops.getxattr    = mergerfs::getxattr::getxattr;
-  ops.init        = mergerfs::init::init;
-  ops.ioctl       = mergerfs::ioctl::ioctl;
-  ops.link        = mergerfs::link::link;
-  ops.listxattr   = mergerfs::listxattr::listxattr;
-  ops.lock        = NULL;
-  ops.mkdir       = mergerfs::mkdir::mkdir;
-  ops.mknod       = mergerfs::mknod::mknod;
-  ops.open        = mergerfs::open::open;
-  ops.opendir     = mergerfs::opendir::opendir;
-  ops.poll        = NULL;
-  ops.read        = mergerfs::read::read;
+    ops.flush       = mergerfs::flush::flush;
+    ops.fsync       = mergerfs::fsync::fsync;
+    ops.fsyncdir    = NULL;
+    ops.ftruncate   = mergerfs::ftruncate::ftruncate;
+    ops.getattr     = mergerfs::getattr::getattr;
+    ops.getdir      = NULL;       /* deprecated; use readdir */
+    ops.getxattr    = mergerfs::getxattr::getxattr;
+    ops.init        = mergerfs::init::init;
+    ops.ioctl       = mergerfs::ioctl::ioctl;
+    ops.link        = mergerfs::link::link;
+    ops.listxattr   = mergerfs::listxattr::listxattr;
+    ops.lock        = NULL;
+    ops.mkdir       = mergerfs::mkdir::mkdir;
+    ops.mknod       = mergerfs::mknod::mknod;
+    ops.open        = mergerfs::open::open;
+    ops.opendir     = mergerfs::opendir::opendir;
+    ops.poll        = NULL;
+    ops.read        = mergerfs::read::read;
 #if READ_BUF
-  ops.read_buf    = mergerfs::read_buf::read_buf;
+    ops.read_buf    = mergerfs::read_buf::read_buf;
 #endif
-  ops.readdir     = mergerfs::readdir::readdir;
-  ops.readlink    = mergerfs::readlink::readlink;
-  ops.release     = mergerfs::release::release;
-  ops.releasedir  = mergerfs::releasedir::releasedir;
-  ops.removexattr = mergerfs::removexattr::removexattr;
-  ops.rename      = mergerfs::rename::rename;
-  ops.rmdir       = mergerfs::rmdir::rmdir;
-  ops.setxattr    = mergerfs::setxattr::setxattr;
-  ops.statfs      = mergerfs::statfs::statfs;
-  ops.symlink     = mergerfs::symlink::symlink;
-  ops.truncate    = mergerfs::truncate::truncate;
-  ops.unlink      = mergerfs::unlink::unlink;
-  ops.utime       = NULL;       /* deprecated; use utimens() */
-  ops.utimens     = mergerfs::utimens::utimens;
-  ops.write       = mergerfs::write::write;
+    ops.readdir     = mergerfs::readdir::readdir;
+    ops.readlink    = mergerfs::readlink::readlink;
+    ops.release     = mergerfs::release::release;
+    ops.releasedir  = mergerfs::releasedir::releasedir;
+    ops.removexattr = mergerfs::removexattr::removexattr;
+    ops.rename      = mergerfs::rename::rename;
+    ops.rmdir       = mergerfs::rmdir::rmdir;
+    ops.setxattr    = mergerfs::setxattr::setxattr;
+    ops.statfs      = mergerfs::statfs::statfs;
+    ops.symlink     = mergerfs::symlink::symlink;
+    ops.truncate    = mergerfs::truncate::truncate;
+    ops.unlink      = mergerfs::unlink::unlink;
+    ops.utime       = NULL;       /* deprecated; use utimens() */
+    ops.utimens     = mergerfs::utimens::utimens;
+    ops.write       = mergerfs::write::write;
 #if WRITE_BUF
-  ops.write_buf   = mergerfs::write_buf::write_buf;
+    ops.write_buf   = mergerfs::write_buf::write_buf;
 #endif
 
-  return ops;
+    return;
+  }
+
+  static
+  void
+  setup_resources(void)
+  {
+    std::srand(time(NULL));
+    mergerfs::resources::reset_umask();
+    mergerfs::resources::maxout_rlimit_nofile();
+    mergerfs::resources::maxout_rlimit_fsize();
+  }
 }
 
 namespace mergerfs
 {
   int
-  main(const struct fuse_args &args,
-       config::Config         &config)
+  main(const int   argc,
+       char      **argv)
   {
-    struct fuse_operations ops;
+    struct fuse_args         args;
+    struct fuse_operations   ops = {0};
+    mergerfs::config::Config config;
 
-    ops = get_fuse_operations();
+    args.argc      = argc;
+    args.argv      = argv;
+    args.allocated = 0;
 
-    std::srand(time(NULL));
-    resources::reset_umask();
-    resources::maxout_rlimit_nofile();
-    resources::maxout_rlimit_fsize();
+    mergerfs::options::parse(args,config);
+
+    local::setup_resources();
+    local::get_fuse_operations(ops);
 
     return fuse_main(args.argc,
                      args.argv,
@@ -161,16 +176,12 @@ namespace mergerfs
 }
 
 int
-main(int   argc,
-     char *argv[])
+main(int    argc,
+     char **argv)
 {
   int rv;
-  mergerfs::config::Config config;
-  struct fuse_args args = FUSE_ARGS_INIT(argc,argv);
 
-  mergerfs::options::parse(args,config);
-
-  rv = mergerfs::main(args,config);
+  rv = mergerfs::main(argc,argv);
 
   return rv;
 }
