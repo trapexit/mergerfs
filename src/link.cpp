@@ -73,7 +73,11 @@ _link(const fs::SearchFunc  searchFunc,
           fs::find::ffwp(srcmounts,todir,topaths);
           if(topaths.size() > 0)
             {
-              fs::clonepath(topaths[0].base,i->base,todir);
+              {
+                const mergerfs::ugid::SetResetGuard ugid(0,0);
+                fs::clonepath(topaths[0].base,i->base,todir);
+              }
+
               lrv = ::link(pathfrom.c_str(),pathto.c_str());
             }
         }

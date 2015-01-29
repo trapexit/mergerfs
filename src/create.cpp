@@ -70,7 +70,10 @@ _create(const fs::SearchFunc  searchFunc,
     return -errno;
 
   if(createpath[0].base != existingpath[0].base)
-    fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+    {
+      const mergerfs::ugid::SetResetGuard ugid(0,0);
+      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+    }
 
   path = fs::make_path(createpath[0].base,fusepath);
 
