@@ -47,47 +47,35 @@ _link(const fs::SearchFunc  searchFunc,
       const string         &to)
 {
   int rv;
-  int error;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,from,paths);
+  rv = searchFunc(srcmounts,from,path);
   if(rv == -1)
     return -errno;
 
-  rv    = -1;
-  error =  0;
-  for(fs::PathVector::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  const string pathfrom = fs::make_path(path.base,from);
+  const string pathto   = fs::make_path(path.base,to);
+
+  rv = ::link(pathfrom.c_str(),pathto.c_str());
+  if(rv == -1 && errno == ENOENT)
     {
-      int lrv;
-      const string pathfrom = fs::make_path(i->base,from);
-      const string pathto   = fs::make_path(i->base,to);
+      string todir;
+      fs::Path foundpath;
 
-      lrv = ::link(pathfrom.c_str(),pathto.c_str());
-      if(lrv == -1 && errno == ENOENT)
-        {
-          string todir;
-          fs::PathVector topaths;
-
-          todir = fs::dirname(to);
-          fs::find::ffwp(srcmounts,todir,topaths);
-          if(topaths.size() > 0)
-            {
-              {
-                const mergerfs::ugid::SetResetGuard ugid(0,0);
-                fs::clonepath(topaths[0].base,i->base,todir);
-              }
-
-              lrv = ::link(pathfrom.c_str(),pathto.c_str());
-            }
-        }
-
-      rv &= lrv;
+      todir = fs::dirname(to);
+      rv = fs::find::ffwp(srcmounts,todir,foundpath);
       if(rv == -1)
-        error = errno;
+        return -errno;
+
+      {
+        const mergerfs::ugid::SetResetGuard ugid(0,0);
+        fs::clonepath(foundpath.base,path.base,todir);
+      }
+
+      rv = ::link(pathfrom.c_str(),pathto.c_str());
     }
 
-  return ((rv == -1) ? -error : 0);
+  return ((rv == -1) ? -errno : 0);
 }
 
 namespace mergerfs

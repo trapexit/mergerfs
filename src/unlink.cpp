@@ -45,24 +45,15 @@ _unlink(const fs::SearchFunc  searchFunc,
         const string         &fusepath)
 {
   int rv;
-  int error;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv    = -1;
-  error =  0;
-  for(fs::PathVector::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv &= ::unlink(i->full.c_str());
-      if(rv == -1)
-        error = errno;
-    }
+  rv = ::unlink(path.full.c_str());
 
-  return ((rv == -1) ? -error : 0);
+  return ((rv == -1) ? -errno : 0);
 }
 
 namespace mergerfs

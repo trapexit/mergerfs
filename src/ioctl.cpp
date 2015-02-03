@@ -93,13 +93,13 @@ _ioctl_dir_base(const fs::SearchFunc  searchFunc,
 {
   int fd;
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  fd = ::open(paths[0].full.c_str(),flags);
+  fd = ::open(path.full.c_str(),flags);
   if(fd == -1)
     return -errno;
 

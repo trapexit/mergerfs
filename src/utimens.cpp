@@ -47,24 +47,15 @@ _utimens(const fs::SearchFunc   searchFunc,
          const struct timespec  ts[2])
 {
   int rv;
-  int error;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv    = -1;
-  error =  0;
-  for(fs::PathVector::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv &= ::utimensat(0,i->full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
-      if(rv == -1)
-        error = errno;
-    }
+  rv = ::utimensat(0,path.full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
 
-  return ((rv == -1) ? -error : 0);
+  return ((rv == -1) ? -errno : 0);
 }
 
 namespace mergerfs

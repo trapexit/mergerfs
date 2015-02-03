@@ -107,18 +107,18 @@ _getxattr(const fs::SearchFunc  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
   if(!strcmp(attrname,"user.mergerfs.basepath"))
-    rv = ::_getxattr_from_string(buf,count,paths[0].base);
+    rv = ::_getxattr_from_string(buf,count,path.base);
   else if(!strcmp(attrname,"user.mergerfs.fullpath"))
-    rv = ::_getxattr_from_string(buf,count,paths[0].full);
+    rv = ::_getxattr_from_string(buf,count,path.full);
   else
-    rv = ::lgetxattr(paths[0].full.c_str(),attrname,buf,count);
+    rv = ::lgetxattr(path.full.c_str(),attrname,buf,count);
 
   return ((rv == -1) ? -errno : rv);
 #else

@@ -48,13 +48,13 @@ _readlink(const fs::SearchFunc   searchFunc,
           const size_t           size)
 {
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::readlink(paths[0].full.c_str(),buf,size);
+  rv = ::readlink(path.full.c_str(),buf,size);
   if(rv == -1)
     return -errno;
 

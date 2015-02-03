@@ -75,13 +75,13 @@ _listxattr(const fs::SearchFunc  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::llistxattr(paths[0].full.c_str(),list,size);
+  rv = ::llistxattr(path.full.c_str(),list,size);
 
   return ((rv == -1) ? -errno : rv);
 #else

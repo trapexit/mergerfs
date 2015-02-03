@@ -47,24 +47,15 @@ _truncate(const fs::SearchFunc  searchFunc,
           const off_t           size)
 {
   int rv;
-  int error;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv    = -1;
-  error =  0;
-  for(fs::PathVector::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv &= ::truncate(i->full.c_str(),size);
-      if(rv == -1)
-        error = errno;
-    }
+  rv = ::truncate(path.full.c_str(),size);
 
-  return ((rv == -1) ? -error : 0);
+  return ((rv == -1) ? -errno : 0);
 }
 
 namespace mergerfs

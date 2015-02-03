@@ -500,7 +500,7 @@ namespace fs
     int
     invalid(const vector<string> &basepaths,
             const string         &fusepath,
-            PathVector           &paths)
+            Path                 &rv)
     {
       return (errno = EINVAL,-1);
     }
@@ -508,7 +508,7 @@ namespace fs
     int
     ff(const vector<string> &basepaths,
        const string         &fusepath,
-       PathVector           &paths)
+       Path                 &path)
     {
       errno = ENOENT;
       for(vector<string>::const_iterator
@@ -517,13 +517,18 @@ namespace fs
           ++iter)
         {
           int         rv;
-          string      path;
           struct stat st;
+          string      fullpath;
 
-          path = fs::make_path(*iter,fusepath);
-          rv = ::lstat(path.c_str(),&st);
+          fullpath = fs::make_path(*iter,fusepath);
+
+          rv = ::lstat(fullpath.c_str(),&st);
           if(rv == 0)
-            return (paths.push_back(Path(*iter,path)),0);
+            {
+              path.base = *iter;
+              path.full = fullpath;
+              return 0;
+            }
         }
 
       return -1;
@@ -532,7 +537,7 @@ namespace fs
     int
     ffwp(const vector<string> &basepaths,
          const string         &fusepath,
-         PathVector           &paths)
+         Path                 &path)
     {
       Path fallback;
 
@@ -543,24 +548,27 @@ namespace fs
           ++iter)
         {
           int         rv;
-          string      path;
           struct stat st;
+          string      fullpath;
 
-          path = fs::make_path(*iter,fusepath);
-          rv = ::lstat(path.c_str(),&st);
+          fullpath = fs::make_path(*iter,fusepath);
+
+          rv = ::lstat(fullpath.c_str(),&st);
           if(rv == 0)
             {
-              return (paths.push_back(Path(*iter,path)),0);
+              path.base = *iter;
+              path.full = fullpath;
+              return 0;
             }
           else if(errno == EACCES)
             {
               fallback.base = *iter;
-              fallback.full = path;
+              fallback.full = fullpath;
             }
         }
 
       if(!fallback.base.empty())
-        return (paths.push_back(fallback),0);
+        return (path = fallback,0);
 
       return -1;
     }
@@ -568,7 +576,7 @@ namespace fs
     int
     newest(const vector<string> &basepaths,
            const string         &fusepath,
-           PathVector           &paths)
+           Path                 &path)
     {
       time_t newest;
       string npath;
@@ -581,70 +589,48 @@ namespace fs
           iter != eiter;
           ++iter)
         {
-          int          rv;
-          struct stat  st;
-          const string path = fs::make_path(*iter,fusepath);
+          int         rv;
+          struct stat st;
+          string      fullpath;
 
-          rv  = ::lstat(path.c_str(),&st);
+          fullpath = fs::make_path(*iter,fusepath);
+
+          rv  = ::lstat(fullpath.c_str(),&st);
           if(rv == 0 && st.st_mtime > newest)
             {
               newest = st.st_mtime;
               niter  = iter;
-              npath  = path;
+              npath  = fullpath;
             }
         }
 
       if(newest)
-        return (paths.push_back(Path(*niter,npath)),0);
+        {
+          path.base = *niter;
+          path.full = npath;
+          return 0;
+        }
 
       return -1;
     }
 
     int
-    all(const vector<string> &basepaths,
-        const string         &fusepath,
-        PathVector           &paths)
-    {
-      errno = ENOENT;
-      for(vector<string>::const_iterator
-            iter = basepaths.begin(), eiter = basepaths.end();
-          iter != eiter;
-          ++iter)
-        {
-          int         rv;
-          string      path;
-          struct stat st;
-
-          path = fs::make_path(*iter,fusepath);
-          rv   = ::lstat(path.c_str(),&st);
-          if(rv == 0)
-            paths.push_back(Path(*iter,path));
-        }
-
-      return paths.empty() ? -1 : 0;
-    }
-
-    int
     mfs(const vector<string> &basepaths,
         const string         &fusepath,
-        PathVector           &paths)
+        Path                 &path)
     {
       fsblkcnt_t mfs;
-      string mfspath;
-      string fullmfspath;
+      size_t     mfsidx;
 
-      mfs   = 0;
-      errno = ENOENT;
-      for(vector<string>::const_iterator
-            iter = basepaths.begin(), eiter = basepaths.end();
-          iter != eiter;
-          ++iter)
+      mfs = 0;
+      for(size_t i = 0, size = basepaths.size();
+          i != size;
+          i++)
         {
           int rv;
-          struct statvfs  fsstats;
-          const string   &mountpoint = *iter;
+          struct statvfs fsstats;
 
-          rv = ::statvfs(mountpoint.c_str(),&fsstats);
+          rv = ::statvfs(basepaths[i].c_str(),&fsstats);
           if(rv == 0)
             {
               fsblkcnt_t  spaceavail;
@@ -652,18 +638,17 @@ namespace fs
               spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
               if(spaceavail > mfs)
                 {
-                  mfs     = spaceavail;
-                  mfspath = mountpoint;
+                  mfs    = spaceavail;
+                  mfsidx = i;
                 }
             }
         }
 
       if(mfs == 0)
-        return -1;
+        return (errno=ENOENT,-1);
 
-      fullmfspath = fs::make_path(mfspath,fusepath);
-
-      paths.push_back(Path(mfspath,fullmfspath));
+      path.base = basepaths[mfsidx];
+      path.full = fs::make_path(path.base,fusepath);
 
       return 0;
     }
@@ -671,11 +656,11 @@ namespace fs
     int
     epmfs(const vector<string> &basepaths,
           const string         &fusepath,
-          PathVector           &paths)
+          Path                 &path)
     {
       fsblkcnt_t existingmfs = 0;
       fsblkcnt_t generalmfs  = 0;
-      string     path;
+      string     fullpath;
       string     generalmfspath;
       string     existingmfspath;
       vector<string>::const_iterator iter  = basepaths.begin();
@@ -703,8 +688,8 @@ namespace fs
                   generalmfspath = mountpoint;
                 }
 
-              path = fs::make_path(mountpoint,fusepath);
-              rv   = ::lstat(path.c_str(),&st);
+              fullpath = fs::make_path(mountpoint,fusepath);
+              rv = ::lstat(fullpath.c_str(),&st);
               if(rv == 0)
                 {
                   if(spaceavail > existingmfs)
@@ -722,7 +707,8 @@ namespace fs
       if(existingmfspath.empty())
         existingmfspath = generalmfspath;
 
-      paths.push_back(Path(existingmfspath,path));
+      path.base = existingmfspath;
+      path.full = fullpath;
 
       return 0;
     }
@@ -730,18 +716,12 @@ namespace fs
     int
     rand(const vector<string> &basepaths,
          const string         &fusepath,
-         PathVector           &paths)
+         Path                 &path)
     {
-      string randombasepath;
-      string randomfullpath;
-
-      randombasepath = *random_element(basepaths.begin(),
-                                       basepaths.end());
-
-      randomfullpath = fs::make_path(randombasepath,
-                                     fusepath);
-
-      paths.push_back(Path(randombasepath,randomfullpath));
+      path.base = *random_element(basepaths.begin(),
+                                  basepaths.end());
+      path.full = fs::make_path(path.base,
+                                fusepath);
 
       return 0;
     }

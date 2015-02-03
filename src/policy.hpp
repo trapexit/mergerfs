@@ -41,8 +41,7 @@ namespace mergerfs
         {
           invalid = -1,
           BEGIN   = 0,
-          all     = BEGIN,
-          epmfs,
+          epmfs   = BEGIN,
           ff,
           ffwp,
           mfs,
@@ -101,7 +100,6 @@ namespace mergerfs
     static const std::vector<Policy>  _policies_;
     static const Policy * const       policies;
     static const Policy              &invalid;
-    static const Policy              &all;
     static const Policy              &epmfs;
     static const Policy              &ff;
     static const Policy              &ffwp;
