@@ -53,8 +53,8 @@ _mknod(const fs::SearchFunc  searchFunc,
   int rv;
   string path;
   string dirname;
-  fs::PathVector createpath;
-  fs::PathVector existingpath;
+  fs::Path createpath;
+  fs::Path existingpath;
 
   if(fs::path_exists(srcmounts,fusepath))
     return -EEXIST;
@@ -64,14 +64,17 @@ _mknod(const fs::SearchFunc  searchFunc,
   if(rv == -1)
     return -errno;
 
-  createPathFunc(srcmounts,dirname,createpath);
-  if(existingpath[0].base != createpath[0].base)
+  rv = createPathFunc(srcmounts,dirname,createpath);
+  if(rv == -1)
+    return -errno;
+
+  if(existingpath.base != createpath.base)
     {
       const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+      fs::clonepath(existingpath.base,createpath.base,dirname);
     }
 
-  path = fs::make_path(createpath[0].base,fusepath);
+  path = fs::make_path(createpath.base,fusepath);
 
   rv = ::mknod(path.c_str(),mode,dev);
 

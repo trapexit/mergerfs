@@ -48,15 +48,15 @@ _rename(const fs::SearchFunc  searchFunc,
 {
   int rv;
   string pathto;
-  fs::PathVector pathfrom;
+  fs::Path pathfrom;
 
   rv = searchFunc(srcmounts,from,pathfrom);
   if(rv == -1)
     return -errno;
 
-  pathto = fs::make_path(pathfrom[0].base,to);
+  pathto = fs::make_path(pathfrom.base,to);
 
-  rv = ::rename(pathfrom[0].full.c_str(),pathto.c_str());
+  rv = ::rename(pathfrom.full.c_str(),pathto.c_str());
   if(rv == -1 && errno == ENOENT)
     return -EXDEV;
 

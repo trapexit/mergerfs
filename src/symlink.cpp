@@ -44,15 +44,15 @@ _symlink(const vector<string> &srcmounts,
          const string         &to)
 {
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  fs::find::ff(srcmounts,fs::dirname(to),paths);
-  if(paths.empty())
-    return -ENOENT;
+  rv = fs::find::ff(srcmounts,fs::dirname(to),path);
+  if(rv == -1)
+    return -errno;
 
-  paths[0].full = fs::make_path(paths[0].base,to);
+  path.full = fs::make_path(path.base,to);
 
-  rv = symlink(from.c_str(),paths[0].full.c_str());
+  rv = symlink(from.c_str(),path.full.c_str());
 
   return ((rv == -1) ? -errno : 0);
 }

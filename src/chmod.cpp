@@ -45,24 +45,15 @@ _chmod(const fs::SearchFunc  searchFunc,
        const mode_t          mode)
 {
   int rv;
-  int error;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv    = -1;
-  error =  0;
-  for(fs::PathVector::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv &= ::chmod(i->full.c_str(),mode);
-      if(rv == -1)
-        error = errno;
-    }
+  rv = ::chmod(path.full.c_str(),mode);
 
-  return ((rv == -1) ? -error : 0);
+  return ((rv == -1) ? -errno : 0);
 }
 
 namespace mergerfs

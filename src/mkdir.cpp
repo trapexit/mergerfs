@@ -51,25 +51,28 @@ _mkdir(const fs::SearchFunc  searchFunc,
   int rv;
   string path;
   string dirname;
-  fs::PathVector createpath;
-  fs::PathVector existingpath;
+  fs::Path createpath;
+  fs::Path existingpath;
 
   if(fs::path_exists(srcmounts,fusepath))
     return -EEXIST;
 
-  dirname      = fs::dirname(fusepath);
+  dirname = fs::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,existingpath);
   if(rv == -1)
     return -errno;
 
   rv = createPathFunc(srcmounts,dirname,createpath);
-  if(createpath[0].base != existingpath[0].base)
+  if(rv == -1)
+    return -errno;
+
+  if(createpath.base != existingpath.base)
     {
       const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+      fs::clonepath(existingpath.base,createpath.base,dirname);
     }
 
-  path = fs::make_path(createpath[0].base,fusepath);
+  path = fs::make_path(createpath.base,fusepath);
 
   rv = ::mkdir(path.c_str(),mode);
 

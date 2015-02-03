@@ -48,8 +48,7 @@ namespace fs
     string full;
   };
 
-  typedef vector<Path> PathVector;
-  typedef int (*SearchFunc)(const vector<string>&,const string&,PathVector&);
+  typedef int (*SearchFunc)(const vector<string>&,const string&,Path&);
 
   string dirname(const string &path);
   string basename(const string &path);
@@ -114,28 +113,25 @@ namespace fs
   {
     int invalid(const vector<string> &basepaths,
                 const string         &fusepath,
-                PathVector           &paths);
+                Path                 &path);
     int ff(const vector<string>      &basepaths,
            const string              &fusepath,
-           PathVector                &paths);
+           Path                      &path);
     int ffwp(const vector<string>    &paths,
              const string            &fusepath,
-             PathVector              &rv);
+             Path                    &path);
     int newest(const vector<string>  &paths,
                const string          &fusepath,
-               PathVector            &rv);
-    int all(const vector<string>     &paths,
-            const string             &fusepath,
-            PathVector               &rv);
+               Path                  &path);
     int mfs(const vector<string>     &paths,
             const string             &fusepath,
-            PathVector               &rv);
+            Path                     &path);
     int epmfs(const vector<string>   &paths,
               const string           &fusepath,
-              PathVector             &rv);
+              Path                   &path);
     int rand(const vector<string>    &paths,
              const string            &fusepath,
-             PathVector              &rv);
+             Path                    &path);
   }
 };
 

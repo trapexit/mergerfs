@@ -71,13 +71,13 @@ _getattr(const fs::SearchFunc  searchFunc,
          struct stat          &buf)
 {
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::lstat(paths[0].full.c_str(),&buf);
+  rv = ::lstat(path.full.c_str(),&buf);
 
   return ((rv == -1) ? -errno : 0);
 }

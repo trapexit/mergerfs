@@ -57,8 +57,8 @@ _create(const fs::SearchFunc  searchFunc,
   int rv;
   string path;
   string dirname;
-  fs::PathVector createpath;
-  fs::PathVector existingpath;
+  fs::Path createpath;
+  fs::Path existingpath;
 
   dirname = fs::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,existingpath);
@@ -69,13 +69,13 @@ _create(const fs::SearchFunc  searchFunc,
   if(rv == -1)
     return -errno;
 
-  if(createpath[0].base != existingpath[0].base)
+  if(createpath.base != existingpath.base)
     {
       const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+      fs::clonepath(existingpath.base,createpath.base,dirname);
     }
 
-  path = fs::make_path(createpath[0].base,fusepath);
+  path = fs::make_path(createpath.base,fusepath);
 
   fd = ::open(path.c_str(),flags,mode);
   if(fd == -1)

@@ -234,24 +234,15 @@ _setxattr(const fs::SearchFunc  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  int error;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  rv    = -1;
-  error =  0;
-  for(fs::PathVector::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv &= ::lsetxattr(i->full.c_str(),attrname,attrval,attrvalsize,flags);
-      if(rv == -1)
-        error = errno;
-    }
+  rv = ::lsetxattr(path.full.c_str(),attrname,attrval,attrvalsize,flags);
 
-  return ((rv == -1) ? -error : 0);
+  return ((rv == -1) ? -errno : 0);
 #else
   return -ENOTSUP;
 #endif

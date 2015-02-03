@@ -51,17 +51,17 @@ _open(const fs::SearchFunc  searchFunc,
 {
   int fd;
   int rv;
-  fs::PathVector paths;
+  fs::Path path;
 
-  rv = searchFunc(srcmounts,fusepath,paths);
+  rv = searchFunc(srcmounts,fusepath,path);
   if(rv == -1)
     return -errno;
 
-  fd = ::open(paths[0].full.c_str(),flags);
+  fd = ::open(path.full.c_str(),flags);
   if(fd == -1)
     return -errno;
 
-  fh = (uint64_t)new FileInfo(fd,flags,paths[0].full);
+  fh = (uint64_t)new FileInfo(fd,flags,path.full);
 
   return 0;
 }

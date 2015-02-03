@@ -47,7 +47,7 @@ In /etc/fstab it'd look like the following:
 
 # POLICIES
 
-Filesystem calls are broken up into 4 functional categories: search, action, create, and none. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves while when action on the filesystem. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search** or **action**. Since the input for any policy is the source mounts and fusepath and the output a vector of targets the choice was made to simplify the implementation and allow a policies usage in any category. **NOTE:** In any policy which can return more than one location (currently only **all**) the first value will be used in **search** and **create** policies since they can only ever act on 1 filepath.
+Filesystem calls are broken up into 3 categories: search, action, and create. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search** or **action**.
 
 #### Functional classifications ####
 | Class | FUSE calls |
@@ -60,13 +60,12 @@ Filesystem calls are broken up into 4 functional categories: search, action, cre
 #### Policy descriptions ####
 | Policy | Description |
 |--------------|-------------|
-| ff (first found) | Given the order the paths were provided at mount time act on the first one found (regardless if stat would return EACCES). |
-| ffwp (first found w/ permissions) | Given the order the paths were provided at mount time act on the first one found which you have access (stat does not error with EACCES). |
+| ff (first found) | Given the order of the paths act on the first one found (regardless if stat would return EACCES). |
+| ffwp (first found w/ permissions) | Given the order of the paths act on the first one found which you have access (stat does not error with EACCES). |
 | newest (newest file) | If multiple files exist return the one with the most recent mtime. |
-| all (all files found) | Attempt to apply the call to each file found. If any sub call succeeds the entire operation succeeds and other errors ignored. If all fail then the last error is reported. |
 | mfs (most free space) | Assuming the path is found to exist (ENOENT would not be returned) use the drive with the most free space available. |
 | epmfs (existing path, most free space) | If the path exists in multiple locations use the one with the most free space. Otherwise fall back to mfs. |
-| rand (random) | Pick a destination at random. Again the dirname of the full path must exist somewhere. |
+| rand (random) | Pick an existing destination at random. |
 
 #### statvfs ####
 
