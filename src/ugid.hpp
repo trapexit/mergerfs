@@ -25,9 +25,9 @@
 #ifndef __UGID_HPP__
 #define __UGID_HPP__
 
-#if defined LINUX
+#if defined __linux__
 #include "ugid_linux.hpp"
-#elif defined OSX
+#elif defined __APPLE__
 #include "ugid_osx.hpp"
 #else
 #include "ugid_mutex.hpp"

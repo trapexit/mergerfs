@@ -24,8 +24,8 @@
 
 #include "ugid.hpp"
 
-#if defined LINUX
-#elif defined OSX
+#if defined __linux__
+#elif defined __APPLE__
 #else
 pthread_mutex_t mergerfs::ugid::SetResetGuard::lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
