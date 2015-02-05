@@ -52,9 +52,7 @@ _getxattr_controlfile(const Config &config,
   size_t len;
   string attrvalue;
 
-  if(attrname == "user.mergerfs.action")
-    attrvalue = (std::string)*config.action;
-  else if(attrname == "user.mergerfs.create")
+  if(attrname == "user.mergerfs.create")
     attrvalue = (std::string)*config.create;
   else if(attrname == "user.mergerfs.search")
     attrvalue = (std::string)*config.search;

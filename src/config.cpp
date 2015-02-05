@@ -43,14 +43,12 @@ namespace mergerfs
       : destmount(),
         srcmounts(),
         srcmountslock(),
-        action(policies[Category::Enum::action]),
         create(policies[Category::Enum::create]),
         search(policies[Category::Enum::search]),
         controlfile("/.mergerfs")
     {
       pthread_rwlock_init(&srcmountslock,NULL);
 
-      action = &Policy::ff;
       create = &Policy::epmfs;
       search = &Policy::ff;
     }

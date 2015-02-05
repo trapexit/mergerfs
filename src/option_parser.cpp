@@ -57,8 +57,6 @@ process_opt(config::Config    &config,
         config.create = Policy::find(argvalue[1]);
       else if(argvalue[0] == "search")
         config.search = Policy::find(argvalue[1]);
-      else if(argvalue[0] == "action")
-        config.action = Policy::find(argvalue[1]);
       else
         rv = 1;
       break;

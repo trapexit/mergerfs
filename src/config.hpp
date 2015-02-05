@@ -50,7 +50,6 @@ namespace mergerfs
       mutable pthread_rwlock_t srcmountslock;
 
       const Policy *policies[Category::Enum::END];
-      const Policy *&action;
       const Policy *&create;
       const Policy *&search;
 

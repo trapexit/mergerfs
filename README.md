@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% June 9, 2014
+% 2015-02-05
 
 # NAME
 
@@ -8,7 +8,7 @@ mergerfs - another FUSE union filesystem
 
 # SYNOPSIS
 
-mergerfs -ocreate=epmfs,search=ff,action=ff &lt;srcpoints&gt; &lt;mountpoint&gt;
+mergerfs -ocreate=epmfs,search=ff &lt;srcpoints&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
@@ -23,7 +23,6 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 | Option | Default |
 |--------|--------|
 | search | ff |
-| action | ff |
 | create | epmfs |
 
 ###srcpoints###
@@ -47,13 +46,12 @@ In /etc/fstab it'd look like the following:
 
 # POLICIES
 
-Filesystem calls are broken up into 3 categories: search, action, and create. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search** or **action**.
+Filesystem calls are broken up into 2 categories: search and create. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
 
 #### Functional classifications ####
 | Class | FUSE calls |
 |-------|------------|
-| search | access, getattr, getxattr, listxattr, open, readlink  |
-| action | chmod, link, removexattr, rmdir, setxattr, truncate, unlink, utimens |
+| search | access, getattr, getxattr, listxattr, open, readlink, chmod, link, removexattr, rmdir, setxattr, truncate, unlink, utimens |
 | create | create, mkdir, mknod |
 | none   | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, rename, statfs, symlink, write, release |
 
@@ -67,11 +65,17 @@ Filesystem calls are broken up into 3 categories: search, action, and create. Th
 | epmfs (existing path, most free space) | If the path exists in multiple locations use the one with the most free space. Otherwise fall back to mfs. |
 | rand (random) | Pick an existing destination at random. |
 
+#### readdir ####
+
+[readdir](http://linux.die.net/man/3/readdir) is very different from most functions in this realm. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple `first found` merging of directories and file found. That is: only the first file or directory found for a directory is returned.
+
+It could be extended to offer the ability to see all files found. Perhaps concatinating `#` and a number to the name. But to really be useful you'd need to be able to access them which would complicate file lookup.
+
 #### statvfs ####
 
-It normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple points on the same drive will not result in double counting it's space.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple points on the same drive will not result in double counting it's space.
 
-**NOTE:** create is really a search for existence and then create. The 'search' policy applies to the first part. If the [dirname](http://linux.die.net/man/3/dirname) of the full path is not found to exist [ENOENT](http://linux.die.net/man/3/errno) is returned.
+**NOTE:** Since we can not (easily) replicate the atomicity of an `mkdir` or `mknod` without side effects those calls will first do a scan to see if the file exists and then attempts a create. This means there is a slight race condition. Worse case you'd end up with the directory or file on more than one mount.
 
 # BUILDING
 
@@ -98,22 +102,20 @@ Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/
 
 The keys are:
 * user.mergerfs.srcmounts
-* user.mergerfs.action
 * user.mergerfs.create
 * user.mergerfs.search
 
 ```
 [trapexit:/tmp/mount] $ xattr -l .mergerfs
 user.mergerfs.srcmounts: /tmp/a:/tmp/b
-user.mergerfs.action: ff
 user.mergerfs.create: epmfs
 user.mergerfs.search: ff
 
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.action .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.search .mergerfs
 ff
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.action ffwp .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.action .mergerfs
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.search ffwp .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.search .mergerfs
 ffwp
 
 [trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
