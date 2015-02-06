@@ -49,7 +49,6 @@ _listxattr_controlfile(char         *list,
 {
   const char xattrs[] =
     "user.mergerfs.srcmounts\0"
-    "user.mergerfs.action\0"
     "user.mergerfs.create\0"
     "user.mergerfs.search"
     ;

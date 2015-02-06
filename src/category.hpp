@@ -39,8 +39,7 @@ namespace mergerfs
         {
           invalid = -1,
           BEGIN   = 0,
-          action  = BEGIN,
-          create,
+          create  = BEGIN,
           search,
           END
         };
@@ -89,7 +88,6 @@ namespace mergerfs
     static const std::vector<Category>  _categories_;
     static const Category * const       categories;
     static const Category              &invalid;
-    static const Category              &action;
     static const Category              &create;
     static const Category              &search;
   };

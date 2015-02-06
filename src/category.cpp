@@ -35,14 +35,12 @@ namespace mergerfs
   const std::vector<Category> Category::_categories_ =
     buildvector<Category,true>
     (CATEGORY(invalid))
-    (CATEGORY(action))
     (CATEGORY(create))
     (CATEGORY(search));
 
   const Category * const Category::categories = &_categories_[1];
 
   const Category &Category::invalid = Category::categories[Category::Enum::invalid];
-  const Category &Category::action  = Category::categories[Category::Enum::action];
   const Category &Category::create  = Category::categories[Category::Enum::create];
   const Category &Category::search  = Category::categories[Category::Enum::search];
 

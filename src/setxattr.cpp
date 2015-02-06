@@ -271,7 +271,7 @@ namespace mergerfs
         const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
         const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-        return _setxattr(*config.action,
+        return _setxattr(*config.search,
                          config.srcmounts,
                          fusepath,
                          attrname,
