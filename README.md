@@ -148,8 +148,10 @@ For **user.mergerfs.srcmounts** there are several instructions available for man
 
 While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) mergerfs offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
 
-* user.mergerfs.basepath : gives you the base mount point for the file given the current search policy
-* user.mergerfs.fullpath : gives you the full path of the original file given the search policy
+* user.mergerfs.basepath: the base mount point for the file given the current search policy
+* user.mergerfs.relpath: the relative path of the file from the perspective of the mount point
+* user.mergerfs.fullpath: the full path of the original file given the search policy
+* user.mergerfs.allpaths: a NUL ('\0') separated list of full paths to all files found
 
 ```
 [trapexit:/tmp/mount] $ ls
@@ -158,4 +160,9 @@ A B C
 /mnt/a/full/path/to/A
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.basepath A
 /mnt/a
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.relpath A
+/full/path/to/A
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.allpaths A | tr '\0' '\n'
+/mnt/a/full/path/to/A
+/mnt/b/full/path/to/A
 ```
