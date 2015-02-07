@@ -64,6 +64,10 @@ namespace fs
   bool path_exists(const vector<string>           &srcmounts,
                    const string                   &fusepath);
 
+  void findallfiles(const vector<string> &srcmounts,
+                    const string         &fusepath,
+                    vector<string>       &paths);
+
   int clonepath(const string &srcfrom,
                 const string &srcto,
                 const string &relative);

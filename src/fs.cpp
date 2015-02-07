@@ -162,6 +162,27 @@ namespace fs
                        fusepath);
   }
 
+  void
+  findallfiles(const vector<string> &srcmounts,
+               const string         &fusepath,
+               vector<string>       &paths)
+  {
+    for(vector<string>::const_iterator
+          iter = srcmounts.begin(), eiter = srcmounts.end();
+        iter != eiter;
+        ++iter)
+      {
+        int rv;
+        string fullpath;
+        struct stat st;
+
+        fullpath = fs::make_path(*iter,fusepath);
+        rv = ::lstat(fullpath.c_str(),&st);
+        if(rv == 0)
+          paths.push_back(fullpath);
+      }
+  }
+
   int
   listxattr(const string &path,
             vector<char> &attrs)
