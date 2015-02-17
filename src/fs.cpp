@@ -376,43 +376,68 @@ namespace fs
     return setxattrs(to,attrs);
   }
 
+  static
   int
-  copyattr(const string &from,
-           const string &to)
+  get_fs_ioc_flags(const string &file,
+                   int          &flags)
   {
     int fd;
     int rv;
-    int flags;
-    int error;
     const int openflags = O_RDONLY|O_NONBLOCK;
 
-    fd = ::open(from.c_str(),openflags);
+    fd = ::open(file.c_str(),openflags);
     if(fd == -1)
       return -1;
 
     rv = ::ioctl(fd,FS_IOC_GETFLAGS,&flags);
     if(rv == -1)
       {
-        error = errno;
-        ::close(fd);
-        errno = error;
-        return -1;
-      }
-
-    fd = ::open(to.c_str(),openflags);
-    if(fd == -1)
-      return -1;
-
-    rv = ::ioctl(fd,FS_IOC_SETFLAGS,&flags);
-    if(rv == -1)
-      {
-        error = errno;
+        int error = errno;
         ::close(fd);
         errno = error;
         return -1;
       }
 
     return ::close(fd);
+  }
+
+  static
+  int
+  set_fs_ioc_flags(const string &file,
+                   const int     flags)
+  {
+    int fd;
+    int rv;
+    const int openflags = O_RDONLY|O_NONBLOCK;
+
+    fd = ::open(file.c_str(),openflags);
+    if(fd == -1)
+      return -1;
+
+    rv = ::ioctl(fd,FS_IOC_SETFLAGS,&flags);
+    if(rv == -1)
+      {
+        int error = errno;
+        ::close(fd);
+        errno = error;
+        return -1;
+      }
+
+    return ::close(fd);
+  }
+
+  int
+  copyattr(const string &from,
+           const string &to)
+  {
+    int rv;
+    int flags;
+
+    rv = get_fs_ioc_flags(from,flags);
+    if(rv == -1)
+      return -1;
+
+    return set_fs_ioc_flags(to,flags);
   }
 
   int
