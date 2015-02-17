@@ -42,25 +42,29 @@ namespace mergerfs
     int
     maxout_rlimit(int resource)
     {
+      int rv;
       struct rlimit rlim;
 
-      if(geteuid() == 0)
+      rlim.rlim_cur = RLIM_INFINITY;
+      rlim.rlim_max = RLIM_INFINITY;
+      rv = ::setrlimit(resource,&rlim);
+      if(rv == 0)
+        return 0;
+
+      rv = ::getrlimit(resource,&rlim);
+      if(rv == -1)
+        return -1;
+
+      rv = 0;
+      rlim.rlim_cur = rlim.rlim_max;
+      while(rv == 0)
         {
-          rlim.rlim_cur = RLIM_INFINITY;
-          rlim.rlim_max = RLIM_INFINITY;
-        }
-      else
-        {
-          int rv;
-
-          rv = ::getrlimit(resource,&rlim);
-          if(rv == -1)
-            return -1;
-
-          rlim.rlim_cur = rlim.rlim_max;
+          rv = ::setrlimit(resource,&rlim);
+          rlim.rlim_max *= 2;
+          rlim.rlim_cur  = rlim.rlim_max;
         }
 
-      return ::setrlimit(resource,&rlim);
+      return rv;
     }
 
     int
