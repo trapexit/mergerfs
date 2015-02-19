@@ -30,6 +30,7 @@
 
 #include <errno.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include "config.hpp"
 #include "fs.hpp"
@@ -41,7 +42,7 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
-using mergerfs::Category;
+using mergerfs::FuseFunc;
 using namespace mergerfs;
 
 static
@@ -86,7 +87,7 @@ _erase_srcmounts(vector<string>   &srcmounts,
   {
     const rwlock::WriteGuard wrg(&srcmountslock);
 
-    fs::erase_fnmatches(patterns,srcmounts);
+    str::erase_fnmatches(patterns,srcmounts);
   }
 
   return 0;
@@ -166,26 +167,54 @@ _setxattr_srcmounts(vector<string>   &srcmounts,
 
 static
 int
-_setxattr_policy(const Policy *policies[],
-                 const string &attrname,
-                 const string &attrval,
-                 const int     flags)
+_setxattr_controlfile_func_policy(const Policy *policies[],
+                                  const char   *funcname,
+                                  const string &attrval,
+                                  const int     flags)
 {
-  const Category *cat;
+  const FuseFunc *fusefunc;
   const Policy   *policy;
 
-  cat = Category::find(attrname);
-  if(cat == Category::invalid)
+  fusefunc = FuseFunc::find(funcname);
+  if(fusefunc == FuseFunc::invalid)
     return -ENOATTR;
 
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
   policy = Policy::find(attrval);
-  if(policy == Policy::invalid)
+  if((policy  == Policy::invalid) &&
+     (attrval != "invalid"))
     return -EINVAL;
 
-  policies[*cat] = policy;
+  policies[(FuseFunc::Enum::Type)*fusefunc] = policy;
+
+  return 0;
+}
+
+static
+int
+_setxattr_controlfile_category_policy(config::Config &config,
+                                      const char     *categoryname,
+                                      const string   &attrval,
+                                      const int       flags)
+{
+  const Category *category;
+  const Policy   *policy;
+
+  category = Category::find(categoryname);
+  if(category == Category::invalid)
+    return -ENOATTR;
+
+  if((flags & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  policy = Policy::find(attrval);
+  if((policy  == Policy::invalid) &&
+     (attrval != "invalid"))
+    return -EINVAL;
+
+  config.setpolicy(*category,*policy);
 
   return 0;
 }
@@ -193,33 +222,36 @@ _setxattr_policy(const Policy *policies[],
 static
 int
 _setxattr_controlfile(config::Config &config,
-                      const string   &attrname,
+                      const char    *attrname,
                       const string   &attrval,
                       const int       flags)
 {
-  vector<string>  nameparts;
+  const char *attrbasename = &attrname[sizeof("user.mergerfs.")-1];
 
-  str::split(nameparts,attrname,'.');
-
-  if(nameparts.size() != 3      ||
-     nameparts[0]     != "user" ||
-     nameparts[1]     != "mergerfs")
+  if(strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
     return -ENOATTR;
 
   if(attrval.empty())
     return -EINVAL;
 
-  if(nameparts[2] == "srcmounts")
+  if(!strcmp("srcmounts",attrbasename))
     return _setxattr_srcmounts(config.srcmounts,
                                config.srcmountslock,
                                config.destmount,
                                attrval,
                                flags);
+  else if(!strncmp("category.",attrbasename,sizeof("category.")-1))
+    return _setxattr_controlfile_category_policy(config,
+                                                 &attrbasename[sizeof("category.")-1],
+                                                 attrval,
+                                                 flags);
+  else if(!strncmp("func.",attrbasename,sizeof("func.")-1))
+    return _setxattr_controlfile_func_policy(config.policies,
+                                             &attrbasename[sizeof("func.")-1],
+                                             attrval,
+                                             flags);
 
-  return _setxattr_policy(config.policies,
-                          nameparts[2],
-                          attrval,
-                          flags);
+  return -EINVAL;
 }
 
 static
@@ -271,7 +303,7 @@ namespace mergerfs
         const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
         const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-        return _setxattr(*config.search,
+        return _setxattr(*config.setxattr,
                          config.srcmounts,
                          fusepath,
                          attrname,

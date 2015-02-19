@@ -33,7 +33,7 @@
 #include <vector>
 
 #include "policy.hpp"
-#include "category.hpp"
+#include "fusefunc.hpp"
 
 namespace mergerfs
 {
@@ -45,13 +45,36 @@ namespace mergerfs
       Config();
 
     public:
+      void setpolicy(const Category::Enum::Type category,
+                     const Policy::Enum::Type   policy);
+
+    public:
       std::string              destmount;
       std::vector<std::string> srcmounts;
       mutable pthread_rwlock_t srcmountslock;
 
-      const Policy *policies[Category::Enum::END];
+    public:
+      const Policy  *policies[FuseFunc::Enum::END];
+      const Policy *&access;
+      const Policy *&chmod;
+      const Policy *&chown;
       const Policy *&create;
-      const Policy *&search;
+      const Policy *&getattr;
+      const Policy *&getxattr;
+      const Policy *&link;
+      const Policy *&listxattr;
+      const Policy *&mkdir;
+      const Policy *&mknod;
+      const Policy *&open;
+      const Policy *&readlink;
+      const Policy *&removexattr;
+      const Policy *&rename;
+      const Policy *&rmdir;
+      const Policy *&setxattr;
+      const Policy *&symlink;
+      const Policy *&truncate;
+      const Policy *&unlink;
+      const Policy *&utimens;
 
     public:
       const std::string controlfile;

@@ -53,12 +53,13 @@ process_opt(config::Config    &config,
   switch(argvalue.size())
     {
     case 2:
-      if(argvalue[0] == "create")
-        config.create = Policy::find(argvalue[1]);
-      else if(argvalue[0] == "search")
-        config.search = Policy::find(argvalue[1]);
-      else
-        rv = 1;
+      {
+        FuseFunc fusefunc = FuseFunc::find(argvalue[0]);
+        if(fusefunc != FuseFunc::invalid)
+          config.policies[(FuseFunc::Enum::Type)*fusefunc] = Policy::find(argvalue[1]);
+        else
+          rv = 1;
+      }
       break;
 
     default:

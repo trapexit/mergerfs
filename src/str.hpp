@@ -50,4 +50,8 @@ namespace str
   std::string
   remove_common_prefix_and_join(const std::vector<std::string> &vec,
                                 const char                      sep);
+
+  void
+  erase_fnmatches(const std::vector<std::string> &pattern,
+                  std::vector<std::string>       &strs);
 }

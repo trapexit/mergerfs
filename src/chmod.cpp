@@ -69,7 +69,7 @@ namespace mergerfs
       const config::Config      &config = config::get();
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _chmod(*config.search,
+      return _chmod(*config.chmod,
                     config.srcmounts,
                     fusepath,
                     mode);
