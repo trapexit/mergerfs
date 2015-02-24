@@ -41,7 +41,8 @@ namespace mergerfs
         {
           invalid = -1,
           BEGIN   = 0,
-          epmfs   = BEGIN,
+          all     = BEGIN,
+          epmfs,
           ff,
           ffwp,
           mfs,
@@ -54,7 +55,7 @@ namespace mergerfs
   private:
     Enum::Type     _enum;
     std::string    _str;
-    fs::SearchFunc _func;
+    fs::find::Func _func;
 
   public:
     Policy()
@@ -66,7 +67,7 @@ namespace mergerfs
 
     Policy(const Enum::Type      enum_,
            const std::string    &str_,
-           const fs::SearchFunc  func_)
+           const fs::find::Func  func_)
       : _enum(enum_),
         _str(str_),
         _func(func_)
@@ -76,14 +77,14 @@ namespace mergerfs
   public:
     operator const Enum::Type() const { return _enum; }
     operator const std::string&() const { return _str; }
-    operator const fs::SearchFunc() const { return _func; }
+    operator const fs::find::Func() const { return _func; }
     operator const Policy*() const { return this; }
 
     bool operator==(const Enum::Type enum_) const
     { return _enum == enum_; }
     bool operator==(const std::string &str_) const
     { return _str == str_; }
-    bool operator==(const fs::SearchFunc func_) const
+    bool operator==(const fs::find::Func func_) const
     { return _func == func_; }
 
     bool operator!=(const Policy &r) const
@@ -100,6 +101,7 @@ namespace mergerfs
     static const std::vector<Policy>  _policies_;
     static const Policy * const       policies;
     static const Policy              &invalid;
+    static const Policy              &all;
     static const Policy              &epmfs;
     static const Policy              &ff;
     static const Policy              &ffwp;

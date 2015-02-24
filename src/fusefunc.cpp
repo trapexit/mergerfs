@@ -52,7 +52,7 @@ namespace mergerfs
     (FUSEFUNC(rename,action))
     (FUSEFUNC(rmdir,action))
     (FUSEFUNC(setxattr,action))
-    (FUSEFUNC(symlink,search))
+    (FUSEFUNC(symlink,create))
     (FUSEFUNC(truncate,action))
     (FUSEFUNC(unlink,action))
     (FUSEFUNC(utimens,action))

@@ -43,42 +43,47 @@ using std::vector;
 
 static
 int
-_mknod(const fs::SearchFunc  searchFunc,
-       const fs::SearchFunc  createPathFunc,
+_mknod(const fs::find::Func  searchFunc,
+       const fs::find::Func  createFunc,
        const vector<string> &srcmounts,
        const string         &fusepath,
        const mode_t          mode,
        const dev_t           dev)
 {
   int rv;
-  string path;
+  int error;
   string dirname;
-  fs::Path createpath;
-  fs::Path existingpath;
-
-  if(fs::path_exists(srcmounts,fusepath))
-    return -EEXIST;
+  string fullpath;
+  fs::Paths createpaths;
+  fs::Paths existingpath;
 
   dirname = fs::dirname(fusepath);
-  rv = searchFunc(srcmounts,dirname,existingpath);
+  rv = searchFunc(srcmounts,dirname,existingpath,1);
   if(rv == -1)
     return -errno;
 
-  rv = createPathFunc(srcmounts,dirname,createpath);
+  rv = createFunc(srcmounts,dirname,createpaths,-1);
   if(rv == -1)
     return -errno;
 
-  if(existingpath.base != createpath.base)
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = createpaths.begin(), ei = createpaths.end(); i != ei; ++i)
     {
-      const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath.base,createpath.base,dirname);
+      if(i->base != existingpath[0].base)
+        {
+          const mergerfs::ugid::SetResetGuard ugid(0,0);
+          fs::clonepath(existingpath[0].base,i->base,dirname);
+        }
+
+      fullpath = fs::make_path(i->base,fusepath);
+
+      rv = ::mknod(fullpath.c_str(),mode,dev);
+      if(rv == -1)
+        error = errno;
     }
 
-  path = fs::make_path(createpath.base,fusepath);
-
-  rv = ::mknod(path.c_str(),mode,dev);
-
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs

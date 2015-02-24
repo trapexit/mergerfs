@@ -41,26 +41,62 @@ using std::vector;
 
 static
 int
-_rename(const fs::SearchFunc  searchFunc,
-        const vector<string> &srcmounts,
-        const string         &from,
-        const string         &to)
+_single_rename(const fs::find::Func  searchFunc,
+               const vector<string> &srcmounts,
+               const fs::Path       &oldpath,
+               const string         &newpath)
 {
   int rv;
-  string pathto;
-  fs::Path pathfrom;
+  const string fullnewpath = fs::make_path(oldpath.base,newpath);
 
-  rv = searchFunc(srcmounts,from,pathfrom);
+  rv = ::rename(oldpath.full.c_str(),fullnewpath.c_str());
+  if(rv == -1 && errno == ENOENT)
+    {
+      string dirname;
+      fs::Paths newpathdir;
+
+      dirname = fs::dirname(newpath);
+      rv = searchFunc(srcmounts,dirname,newpathdir,1);
+      if(rv == -1)
+        return -1;
+
+      {
+        const mergerfs::ugid::SetResetGuard ugid(0,0);
+        fs::clonepath(newpathdir[0].base,oldpath.base,dirname);
+      }
+
+      rv = ::rename(oldpath.full.c_str(),fullnewpath.c_str());
+    }
+
+  return rv;
+}
+
+static
+int
+_rename(const fs::find::Func  searchFunc,
+        const fs::find::Func  actionFunc,
+        const vector<string> &srcmounts,
+        const string         &oldpath,
+        const string         &newpath)
+{
+  int rv;
+  int error;
+  fs::Paths oldpaths;
+
+  rv = actionFunc(srcmounts,oldpath,oldpaths,-1);
   if(rv == -1)
     return -errno;
 
-  pathto = fs::make_path(pathfrom.base,to);
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
+    {
+      rv = _single_rename(searchFunc,srcmounts,*i,newpath);
+      if(rv == -1)
+        error = errno;
+    }
 
-  rv = ::rename(pathfrom.full.c_str(),pathto.c_str());
-  if(rv == -1 && errno == ENOENT)
-    return -EXDEV;
-
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs
@@ -68,18 +104,19 @@ namespace mergerfs
   namespace rename
   {
     int
-    rename(const char *from,
-           const char *to)
+    rename(const char *oldpath,
+           const char *newpath)
     {
       const struct fuse_context *fc     = fuse_get_context();
       const config::Config      &config = config::get();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _rename(*config.rename,
+      return _rename(*config.getattr,
+                     *config.rename,
                      config.srcmounts,
-                     from,
-                     to);
+                     oldpath,
+                     newpath);
     }
   }
 }

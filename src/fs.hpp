@@ -31,6 +31,7 @@
 
 namespace fs
 {
+  using std::size_t;
   using std::string;
   using std::vector;
   using std::map;
@@ -48,7 +49,7 @@ namespace fs
     string full;
   };
 
-  typedef int (*SearchFunc)(const vector<string>&,const string&,Path&);
+  typedef vector<Path> Paths;
 
   string dirname(const string &path);
   string basename(const string &path);
@@ -112,27 +113,40 @@ namespace fs
 
   namespace find
   {
+    typedef int (*Func)(const vector<string>&,const string&,Paths&,size_t);
+
     int invalid(const vector<string> &basepaths,
                 const string         &fusepath,
-                Path                 &path);
+                Paths                &path,
+                size_t                max);
+    int all(const vector<string> &basepaths,
+            const string         &fusepath,
+            Paths                &path,
+            size_t                max);
     int ff(const vector<string>      &basepaths,
            const string              &fusepath,
-           Path                      &path);
+           Paths                     &path,
+           size_t                     max);
     int ffwp(const vector<string>    &paths,
              const string            &fusepath,
-             Path                    &path);
+             Paths                   &path,
+             size_t                   max);
     int newest(const vector<string>  &paths,
                const string          &fusepath,
-               Path                  &path);
+               Paths                 &path,
+               size_t                 max);
     int mfs(const vector<string>     &paths,
             const string             &fusepath,
-            Path                     &path);
+            Paths                    &path,
+            size_t                    max);
     int epmfs(const vector<string>   &paths,
               const string           &fusepath,
-              Path                   &path);
+              Paths                  &path,
+              size_t                  max);
     int rand(const vector<string>    &paths,
              const string            &fusepath,
-             Path                    &path);
+             Paths                   &path,
+             size_t                   max);
   }
 };
 

@@ -45,19 +45,19 @@ using mergerfs::Policy;
 
 static
 int
-_access(const fs::SearchFunc  searchFunc,
+_access(const fs::find::Func  searchFunc,
         const vector<string> &srcmounts,
         const string         &fusepath,
         const int             mask)
 {
   int rv;
-  fs::Path path;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = searchFunc(srcmounts,fusepath,paths,1);
   if(rv == -1)
     return -errno;
 
-  rv = ::eaccess(path.full.c_str(),mask);
+  rv = ::eaccess(paths[0].full.c_str(),mask);
 
   return ((rv == -1) ? -errno : 0);
 }

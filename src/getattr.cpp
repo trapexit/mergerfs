@@ -65,19 +65,19 @@ _getattr_controlfile(struct stat &buf)
 
 static
 int
-_getattr(const fs::SearchFunc  searchFunc,
+_getattr(const fs::find::Func  searchFunc,
          const vector<string> &srcmounts,
          const string         &fusepath,
          struct stat          &buf)
 {
   int rv;
-  fs::Path path;
+  fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = searchFunc(srcmounts,fusepath,path,1);
   if(rv == -1)
     return -errno;
 
-  rv = ::lstat(path.full.c_str(),&buf);
+  rv = ::lstat(path[0].full.c_str(),&buf);
 
   return ((rv == -1) ? -errno : 0);
 }

@@ -40,22 +40,30 @@ using mergerfs::Policy;
 
 static
 int
-_chown(const fs::SearchFunc  searchFunc,
+_chown(const fs::find::Func  actionFunc,
        const vector<string> &srcmounts,
        const string         &fusepath,
        const uid_t           uid,
        const gid_t           gid)
 {
   int rv;
-  fs::Path path;
+  int error;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = actionFunc(srcmounts,fusepath,paths,-1);
   if(rv == -1)
     return -errno;
 
-  rv = ::lchown(path.full.c_str(),uid,gid);
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv = ::lchown(i->full.c_str(),uid,gid);
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs

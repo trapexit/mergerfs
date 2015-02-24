@@ -256,7 +256,7 @@ _setxattr_controlfile(config::Config &config,
 
 static
 int
-_setxattr(const fs::SearchFunc  searchFunc,
+_setxattr(const fs::find::Func  actionFunc,
           const vector<string> &srcmounts,
           const string         &fusepath,
           const char           *attrname,
@@ -266,15 +266,23 @@ _setxattr(const fs::SearchFunc  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::Path path;
+  int error;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = actionFunc(srcmounts,fusepath,paths,-1);
   if(rv == -1)
     return -errno;
 
-  rv = ::lsetxattr(path.full.c_str(),attrname,attrval,attrvalsize,flags);
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv = ::lsetxattr(i->full.c_str(),attrname,attrval,attrvalsize,flags);
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 #else
   return -ENOTSUP;
 #endif

@@ -40,20 +40,28 @@ using mergerfs::Policy;
 
 static
 int
-_rmdir(const fs::SearchFunc  searchFunc,
+_rmdir(const fs::find::Func  actionFunc,
        const vector<string> &srcmounts,
        const string         &fusepath)
 {
   int rv;
-  fs::Path path;
+  int error;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = actionFunc(srcmounts,fusepath,paths,-1);
   if(rv == -1)
     return -errno;
 
-  rv = ::rmdir(path.full.c_str());
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv = ::rmdir(i->full.c_str());
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs

@@ -49,13 +49,41 @@ In /etc/fstab it'd look like the following:
 
 Filesystem calls are broken up into 3 categories: action, create, search. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
 
-#### Functional classifications ####
-| Class | FUSE calls |
-|-------|------------|
-| action | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
-| search | access, getattr, getxattr, listxattr, open, readlink, symlink |
-| create | create, mkdir, mknod |
-| N/A    | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, statfs, symlink, write, release |
+#### Functional  classifications ####
+| FUSE Function | Class |
+|-------------|---------|
+| access      | search  |
+| chmod       | action  |
+| chown       | action  |
+| create      | create  |
+| fallocate   | N/A     |
+| fgetattr    | N/A     |
+| fsync       | N/A     |
+| ftruncate   | N/A     |
+| getattr     | search  |
+| getxattr    | search  |
+| ioctl       | N/A*    |
+| link        | action  |
+| listxattr   | search  |
+| mkdir       | create  |
+| mknod       | create  |
+| open        | search  |
+| read        | N/A     |
+| readdir     | N/A     |
+| readlink    | search  |
+| release     | N/A     |
+| removexattr | action  |
+| rename      | action  |
+| rmdir       | action  |
+| setxattr    | action  |
+| statfs      | N/A     |
+| symlink     | create  |
+| truncate    | action  |
+| unlink      | action  |
+| utimens     | action  |
+| write       | N/A     |
+
+`ioctl` behaves differently if its acting on a directory. It'll use the `getattr` policy to find and open the directory before issuing the `ioctl`. In other cases where something may be searched (to confirm a directory exists across all source mounts) then `getattr` will be used.
 
 #### Policy descriptions ####
 | Policy | Description |
@@ -69,7 +97,7 @@ Filesystem calls are broken up into 3 categories: action, create, search. There 
 
 #### readdir ####
 
-[readdir](http://linux.die.net/man/3/readdir) is very different from most functions in this realm. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple `first found` merging of directories and file found. That is: only the first file or directory found for a directory is returned.
+[readdir](http://linux.die.net/man/3/readdir) is very different from most functions in this realm. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple `first found` merging of directories and file found. That is: only the first file or directory found for a directory is returned. Given how FUSE works though the data representing the returned entry comes from `getattr`.
 
 It could be extended to offer the ability to see all files found. Perhaps concatinating `#` and a number to the name. But to really be useful you'd need to be able to access them which would complicate file lookup.
 
@@ -133,29 +161,29 @@ Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/
 ```
 [trapexit:/tmp/mount] $ xattr -l .mergerfs
 user.mergerfs.srcmounts: /tmp/a:/tmp/b
-user.mergerfs.category.action: ff
+user.mergerfs.category.action: all
 user.mergerfs.category.create: epmfs
 user.mergerfs.category.search: ff
 user.mergerfs.func.access: ff
-user.mergerfs.func.chmod: ff
-user.mergerfs.func.chown: ff
+user.mergerfs.func.chmod: all
+user.mergerfs.func.chown: all
 user.mergerfs.func.create: epmfs
 user.mergerfs.func.getattr: ff
 user.mergerfs.func.getxattr: ff
-user.mergerfs.func.link: ff
+user.mergerfs.func.link: all
 user.mergerfs.func.listxattr: ff
 user.mergerfs.func.mkdir: epmfs
 user.mergerfs.func.mknod: epmfs
 user.mergerfs.func.open: ff
 user.mergerfs.func.readlink: ff
-user.mergerfs.func.removexattr: ff
-user.mergerfs.func.rename: ff
-user.mergerfs.func.rmdir: ff
-user.mergerfs.func.setxattr: ff
-user.mergerfs.func.symlink: ff
-user.mergerfs.func.truncate: ff
-user.mergerfs.func.unlink: ff
-user.mergerfs.func.utimens: ff
+user.mergerfs.func.removexattr: all
+user.mergerfs.func.rename: all
+user.mergerfs.func.rmdir: all
+user.mergerfs.func.setxattr: all
+user.mergerfs.func.symlink: epmfs
+user.mergerfs.func.truncate: all
+user.mergerfs.func.unlink: all
+user.mergerfs.func.utimens: all
 
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
 ff

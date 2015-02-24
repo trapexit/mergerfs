@@ -28,6 +28,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <iterator>
+#include <algorithm>
 
 #include <dirent.h>
 #include <errno.h>
@@ -519,7 +520,8 @@ namespace fs
     int
     invalid(const vector<string> &basepaths,
             const string         &fusepath,
-            Path                 &rv)
+            Paths                &rv,
+            size_t                count)
     {
       return (errno = EINVAL,-1);
     }
@@ -527,7 +529,8 @@ namespace fs
     int
     ff(const vector<string> &basepaths,
        const string         &fusepath,
-       Path                 &path)
+       Paths                &paths,
+       size_t                count)
     {
       errno = ENOENT;
       for(vector<string>::const_iterator
@@ -544,8 +547,7 @@ namespace fs
           rv = ::lstat(fullpath.c_str(),&st);
           if(rv == 0)
             {
-              path.base = *iter;
-              path.full = fullpath;
+              paths.push_back(Path(*iter,fullpath));
               return 0;
             }
         }
@@ -556,7 +558,8 @@ namespace fs
     int
     ffwp(const vector<string> &basepaths,
          const string         &fusepath,
-         Path                 &path)
+         Paths                &paths,
+         size_t                count)
     {
       Path fallback;
 
@@ -575,8 +578,7 @@ namespace fs
           rv = ::lstat(fullpath.c_str(),&st);
           if(rv == 0)
             {
-              path.base = *iter;
-              path.full = fullpath;
+              paths.push_back(Path(*iter,fullpath));
               return 0;
             }
           else if(errno == EACCES)
@@ -587,7 +589,7 @@ namespace fs
         }
 
       if(!fallback.base.empty())
-        return (path = fallback,0);
+        return (paths.push_back(fallback),0);
 
       return -1;
     }
@@ -595,7 +597,8 @@ namespace fs
     int
     newest(const vector<string> &basepaths,
            const string         &fusepath,
-           Path                 &path)
+           Paths                &paths,
+           size_t                count)
     {
       time_t newest;
       string npath;
@@ -624,11 +627,7 @@ namespace fs
         }
 
       if(newest)
-        {
-          path.base = *niter;
-          path.full = npath;
-          return 0;
-        }
+        return (paths.push_back(Path(*niter,npath)),0);
 
       return -1;
     }
@@ -636,7 +635,8 @@ namespace fs
     int
     mfs(const vector<string> &basepaths,
         const string         &fusepath,
-        Path                 &path)
+        Paths                &paths,
+        size_t                count)
     {
       fsblkcnt_t mfs;
       size_t     mfsidx;
@@ -666,8 +666,8 @@ namespace fs
       if(mfs == 0)
         return (errno=ENOENT,-1);
 
-      path.base = basepaths[mfsidx];
-      path.full = fs::make_path(path.base,fusepath);
+      paths.push_back(Path(basepaths[mfsidx],
+                           fs::make_path(basepaths[mfsidx],fusepath)));
 
       return 0;
     }
@@ -675,7 +675,8 @@ namespace fs
     int
     epmfs(const vector<string> &basepaths,
           const string         &fusepath,
-          Path                 &path)
+          Paths                &paths,
+          size_t                count)
     {
       fsblkcnt_t existingmfs = 0;
       fsblkcnt_t generalmfs  = 0;
@@ -726,21 +727,56 @@ namespace fs
       if(existingmfspath.empty())
         existingmfspath = generalmfspath;
 
-      path.base = existingmfspath;
-      path.full = fullpath;
+      paths.push_back(Path(existingmfspath,
+                           fullpath));
 
       return 0;
     }
 
     int
+    all(const vector<string> &basepaths,
+        const string         &fusepath,
+        Paths                &paths,
+        size_t                count)
+    {
+      int rv;
+      struct stat st;
+      string fullpath;
+
+      for(vector<string>::const_iterator
+            iter = basepaths.begin(), eiter = basepaths.end();
+          iter != eiter && count;
+          ++iter)
+        {
+          fullpath = fs::make_path(*iter,fusepath);
+
+          rv = ::lstat(fullpath.c_str(),&st);
+          if(rv == 0)
+            {
+              paths.push_back(Path(*iter,fullpath));
+              count--;
+            }
+        }
+
+      return paths.empty() ? (errno=ENOENT,-1) : 0;
+    }
+
+    int
     rand(const vector<string> &basepaths,
          const string         &fusepath,
-         Path                 &path)
+         Paths                &paths,
+         size_t                count)
     {
-      path.base = *random_element(basepaths.begin(),
-                                  basepaths.end());
-      path.full = fs::make_path(path.base,
-                                fusepath);
+      int rv;
+
+      rv = all(basepaths,fusepath,paths,-1);
+      if(rv == -1)
+        return -1;
+
+      std::random_shuffle(paths.begin(),paths.end());
+
+      if(paths.size() > count)
+        paths.resize(count);
 
       return 0;
     }

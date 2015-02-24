@@ -41,22 +41,30 @@ using std::vector;
 
 static
 int
-_removexattr(const fs::SearchFunc  searchFunc,
+_removexattr(const fs::find::Func  actionFunc,
              const vector<string> &srcmounts,
              const string         &fusepath,
              const char           *attrname)
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::Path path;
+  int error;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = actionFunc(srcmounts,fusepath,paths,-1);
   if(rv == -1)
     return -errno;
 
-  rv = ::lremovexattr(path.full.c_str(),attrname);
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv = ::lremovexattr(i->full.c_str(),attrname);
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 #else
   return -ENOTSUP;
 #endif
