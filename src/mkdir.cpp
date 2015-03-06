@@ -92,8 +92,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _mkdir(*config.search,
-                    *config.create,
+      return _mkdir(*config.getattr,
+                    *config.mkdir,
                     config.srcmounts,
                     fusepath,
                     (mode & ~fc->umask));

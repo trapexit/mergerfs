@@ -32,6 +32,8 @@
 #include "rwlock.hpp"
 #include "fs.hpp"
 
+#define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
+
 using std::string;
 using std::vector;
 
@@ -43,14 +45,46 @@ namespace mergerfs
       : destmount(),
         srcmounts(),
         srcmountslock(),
-        create(policies[Category::Enum::create]),
-        search(policies[Category::Enum::search]),
+        POLICYINIT(access),
+        POLICYINIT(chmod),
+        POLICYINIT(chown),
+        POLICYINIT(create),
+        POLICYINIT(getattr),
+        POLICYINIT(getxattr),
+        POLICYINIT(link),
+        POLICYINIT(listxattr),
+        POLICYINIT(mkdir),
+        POLICYINIT(mknod),
+        POLICYINIT(open),
+        POLICYINIT(readlink),
+        POLICYINIT(removexattr),
+        POLICYINIT(rename),
+        POLICYINIT(rmdir),
+        POLICYINIT(setxattr),
+        POLICYINIT(symlink),
+        POLICYINIT(truncate),
+        POLICYINIT(unlink),
+        POLICYINIT(utimens),
         controlfile("/.mergerfs")
     {
       pthread_rwlock_init(&srcmountslock,NULL);
 
-      create = &Policy::epmfs;
-      search = &Policy::ff;
+      setpolicy(Category::Enum::action,Policy::Enum::ff);
+      setpolicy(Category::Enum::create,Policy::Enum::epmfs);
+      setpolicy(Category::Enum::search,Policy::Enum::ff);
+    }
+
+    void
+    Config::setpolicy(const Category::Enum::Type category,
+                      const Policy::Enum::Type   policy_)
+    {
+      const Policy *policy = Policy::find(policy_);
+
+      for(int i = 0; i < FuseFunc::Enum::END; i++)
+        {
+          if(FuseFunc::fusefuncs[i] == category)
+            policies[(FuseFunc::Enum::Type)FuseFunc::fusefuncs[i]] = policy;
+        }
     }
 
     const Config&

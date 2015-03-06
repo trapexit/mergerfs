@@ -71,7 +71,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _utimens(*config.search,
+      return _utimens(*config.utimens,
                       config.srcmounts,
                       fusepath,
                       ts);

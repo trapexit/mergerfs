@@ -26,6 +26,8 @@
 #include <vector>
 #include <sstream>
 
+#include <fnmatch.h>
+
 using std::string;
 using std::vector;
 using std::istringstream;
@@ -110,5 +112,31 @@ namespace str
       idx = 0;
 
     return str::join(vec,idx,sep);
+  }
+
+  void
+  erase_fnmatches(const vector<string> &patterns,
+                  vector<string>       &strs)
+  {
+    vector<string>::iterator si;
+    vector<string>::const_iterator pi;
+
+    si = strs.begin();
+    while(si != strs.end())
+      {
+        int match = FNM_NOMATCH;
+
+        for(pi = patterns.begin();
+            pi != patterns.end() && match != 0;
+            ++pi)
+          {
+            match = fnmatch(pi->c_str(),si->c_str(),0);
+          }
+
+        if(match == 0)
+          si = strs.erase(si);
+        else
+          ++si;
+      }
   }
 }

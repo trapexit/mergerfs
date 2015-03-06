@@ -26,6 +26,8 @@
 
 #include <string>
 #include <vector>
+#include <set>
+#include <algorithm>
 
 #include <errno.h>
 #include <sys/types.h>
@@ -40,24 +42,76 @@
 
 using std::string;
 using std::vector;
+using std::set;
+using namespace mergerfs;
 using namespace mergerfs::config;
+
+static
+void
+_getxattr_controlfile_fusefunc_policy(const Config &config,
+                                      const char   *attrbasename,
+                                      string       &attrvalue)
+{
+  FuseFunc fusefunc;
+
+  fusefunc = FuseFunc::find(attrbasename);
+  if(fusefunc != FuseFunc::invalid)
+    attrvalue = (std::string)*config.policies[(FuseFunc::Enum::Type)*fusefunc];
+}
+
+static
+void
+_getxattr_controlfile_category_policy(const Config &config,
+                                      const char   *attrbasename,
+                                      string       &attrvalue)
+{
+  Category cat;
+
+  cat = Category::find(attrbasename);
+  if(cat != Category::invalid)
+    {
+      vector<string> policies;
+      for(int i = FuseFunc::Enum::BEGIN; i < FuseFunc::Enum::END; i++)
+        {
+          if(cat == (Category::Enum::Type)*FuseFunc::fusefuncs[i])
+            policies.push_back(*config.policies[i]);
+        }
+
+      std::sort(policies.begin(),policies.end());
+      policies.erase(std::unique(policies.begin(),policies.end()),
+                     policies.end());
+      attrvalue = str::join(policies,',');
+    }
+}
+
+static
+void
+_getxattr_controlfile_srcmounts(const Config &config,
+                                string       &attrvalue)
+{
+  attrvalue = str::join(config.srcmounts,':');
+}
 
 static
 int
 _getxattr_controlfile(const Config &config,
-                      const string &attrname,
+                      const char   *attrname,
                       char         *buf,
                       const size_t  count)
 {
   size_t len;
   string attrvalue;
+  const char *attrbasename = &attrname[sizeof("user.mergerfs.")-1];
 
-  if(attrname == "user.mergerfs.create")
-    attrvalue = (std::string)*config.create;
-  else if(attrname == "user.mergerfs.search")
-    attrvalue = (std::string)*config.search;
-  else if(attrname == "user.mergerfs.srcmounts")
-    attrvalue = str::join(config.srcmounts,':');
+  if(strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
+    return -ENOATTR;
+
+  if(!strcmp("srcmounts",attrbasename))
+    _getxattr_controlfile_srcmounts(config,attrvalue);
+  else if(!strncmp("category.",attrbasename,sizeof("category.")-1))
+    _getxattr_controlfile_category_policy(config,&attrbasename[sizeof("category.")-1],attrvalue);
+  else if(!strncmp("func.",attrbasename,sizeof("func.")-1))
+    _getxattr_controlfile_fusefunc_policy(config,&attrbasename[sizeof("func.")-1],attrvalue);
 
   if(attrvalue.empty())
     return -ENOATTR;
@@ -185,7 +239,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _getxattr(*config.search,
+      return _getxattr(*config.getxattr,
                        config.srcmounts,
                        fusepath,
                        attrname,

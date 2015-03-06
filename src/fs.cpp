@@ -39,7 +39,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <glob.h>
-#include <fnmatch.h>
 
 #include "fs.hpp"
 #include "xattr.hpp"
@@ -492,7 +491,7 @@ namespace fs
     if(rv == -1 && errno != ENOTTY)
       return -1;
 
-    return (errno = 0);
+    return 0;
   }
 
   void
@@ -513,32 +512,6 @@ namespace fs
       strs.push_back(gbuf.gl_pathv[i]);
 
     globfree(&gbuf);
-  }
-
-  void
-  erase_fnmatches(const vector<string> &patterns,
-                  vector<string>       &strs)
-  {
-    vector<string>::iterator si;
-    vector<string>::const_iterator pi;
-
-    si = strs.begin();
-    while(si != strs.end())
-      {
-        int match = FNM_NOMATCH;
-
-        for(pi = patterns.begin();
-            pi != patterns.end() && match != 0;
-            ++pi)
-          {
-            match = fnmatch(pi->c_str(),si->c_str(),0);
-          }
-
-        if(match == 0)
-          si = strs.erase(si);
-        else
-          ++si;
-      }
   }
 
   namespace find

@@ -123,7 +123,7 @@ _ioctl_dir(const string       &fusepath,
   const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
   const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-  return _ioctl_dir_base(*config.search,
+  return _ioctl_dir_base(*config.getattr,
                          config.srcmounts,
                          fusepath,
                          cmd,

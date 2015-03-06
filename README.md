@@ -8,7 +8,7 @@ mergerfs - another FUSE union filesystem
 
 # SYNOPSIS
 
-mergerfs -ocreate=epmfs,search=ff &lt;srcpoints&gt; &lt;mountpoint&gt;
+mergerfs -o&lt;options&gt; &lt;srcpoints&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
@@ -20,10 +20,11 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 
 ###options###
 
-| Option | Default |
-|--------|--------|
-| search | ff |
-| create | epmfs |
+All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `&lt;func&gt;=&lt;policy&gt;`.
+
+To set all function policies in a category use `category.&lt;category&gt;=&lt;policy&gt;` such as `category.create=mfs`.
+
+They are evaluated in the order listed so if the options are `rmdir=rand,category.action=ff` the `action` category setting will override the `rmdir` setting.
 
 ###srcpoints###
 
@@ -46,14 +47,15 @@ In /etc/fstab it'd look like the following:
 
 # POLICIES
 
-Filesystem calls are broken up into 2 categories: search and create. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
+Filesystem calls are broken up into 3 categories: action, create, search. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
 
 #### Functional classifications ####
 | Class | FUSE calls |
 |-------|------------|
-| search | access, getattr, getxattr, listxattr, open, readlink, chmod, link, removexattr, rmdir, setxattr, truncate, unlink, utimens |
+| action | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
+| search | access, getattr, getxattr, listxattr, open, readlink, symlink |
 | create | create, mkdir, mknod |
-| none   | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, rename, statfs, symlink, write, release |
+| N/A    | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, statfs, symlink, write, release |
 
 #### Policy descriptions ####
 | Policy | Description |
@@ -100,22 +102,66 @@ There is a pseudo file available at the mountpoint which allows for the runtime 
 
 Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls will still work.
 
-The keys are:
+##### Keys #####
 * user.mergerfs.srcmounts
-* user.mergerfs.create
-* user.mergerfs.search
+* user.mergerfs.category.action
+* user.mergerfs.category.create
+* user.mergerfs.category.search
+* user.mergerfs.func.access
+* user.mergerfs.func.chmod
+* user.mergerfs.func.chown
+* user.mergerfs.func.create
+* user.mergerfs.func.getattr
+* user.mergerfs.func.getxattr
+* user.mergerfs.func.link
+* user.mergerfs.func.listxattr
+* user.mergerfs.func.mkdir
+* user.mergerfs.func.mknod
+* user.mergerfs.func.open
+* user.mergerfs.func.readlink
+* user.mergerfs.func.removexattr
+* user.mergerfs.func.rename
+* user.mergerfs.func.rmdir
+* user.mergerfs.func.setxattr
+* user.mergerfs.func.symlink
+* user.mergerfs.func.truncate
+* user.mergerfs.func.unlink
+* user.mergerfs.func.utimens
+
+##### Example #####
 
 ```
 [trapexit:/tmp/mount] $ xattr -l .mergerfs
 user.mergerfs.srcmounts: /tmp/a:/tmp/b
-user.mergerfs.create: epmfs
-user.mergerfs.search: ff
+user.mergerfs.category.action: ff
+user.mergerfs.category.create: epmfs
+user.mergerfs.category.search: ff
+user.mergerfs.func.access: ff
+user.mergerfs.func.chmod: ff
+user.mergerfs.func.chown: ff
+user.mergerfs.func.create: epmfs
+user.mergerfs.func.getattr: ff
+user.mergerfs.func.getxattr: ff
+user.mergerfs.func.link: ff
+user.mergerfs.func.listxattr: ff
+user.mergerfs.func.mkdir: epmfs
+user.mergerfs.func.mknod: epmfs
+user.mergerfs.func.open: ff
+user.mergerfs.func.readlink: ff
+user.mergerfs.func.removexattr: ff
+user.mergerfs.func.rename: ff
+user.mergerfs.func.rmdir: ff
+user.mergerfs.func.setxattr: ff
+user.mergerfs.func.symlink: ff
+user.mergerfs.func.truncate: ff
+user.mergerfs.func.unlink: ff
+user.mergerfs.func.utimens: ff
 
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.search .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
 ff
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.search ffwp .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.search .mergerfs
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.category.search ffwp .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
 ffwp
 
 [trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
@@ -131,6 +177,8 @@ ffwp
 /tmp/a:/tmp/b:/tmp/c
 ```
 
+##### Extra Details #####
+
 For **user.mergerfs.srcmounts** there are several instructions available for manipulating the list. The value provided is just as the value used at mount time. A colon (':') delimited list of full path globs.
 
 | Instruction | Description |
@@ -143,6 +191,8 @@ For **user.mergerfs.srcmounts** there are several instructions available for man
 | -> | remove last in list |
 | =[list] | set |
 | [list] | set |
+
+Categories and funcs take a policy as described in the previous section. When reading funcs you'll get the policy string. However, with categories you'll get a coma separated list of policies for each type found. For example: if all search functions are `ff` except for `access` which is `ffwp` the value for `user.mergerfs.category.search` will be `ff,ffwp`.
 
 #### mergerfs file xattrs ####
 

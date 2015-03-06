@@ -47,21 +47,24 @@ int
 _listxattr_controlfile(char         *list,
                        const size_t  size)
 {
-  const char xattrs[] =
-    "user.mergerfs.srcmounts\0"
-    "user.mergerfs.create\0"
-    "user.mergerfs.search"
-    ;
+  string xattrs;
+
+  xattrs.reserve(512);
+  xattrs.append("user.mergerfs.srcmounts",sizeof("user.mergerfs.srcmounts"));
+  for(int i = Category::Enum::BEGIN; i < Category::Enum::END; i++)
+    xattrs += ("user.mergerfs.category." + (std::string)*Category::categories[i] + '\0');
+  for(int i = FuseFunc::Enum::BEGIN; i < FuseFunc::Enum::END; i++)
+    xattrs += ("user.mergerfs.func." + (std::string)*FuseFunc::fusefuncs[i] + '\0');
 
   if(size == 0)
-    return sizeof(xattrs);
+    return xattrs.size();
 
-  if(size < sizeof(xattrs))
+  if(size < xattrs.size())
     return -ERANGE;
 
-  memcpy(list,xattrs,sizeof(xattrs));
+  memcpy(list,xattrs.c_str(),xattrs.size());
 
-  return sizeof(xattrs);
+  return xattrs.size();
 }
 
 static
@@ -107,7 +110,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _listxattr(*config.search,
+      return _listxattr(*config.listxattr,
                         config.srcmounts,
                         fusepath,
                         list,
