@@ -32,14 +32,12 @@
 #include <vector>
 
 #include "ugid.hpp"
-#include "fileinfo.hpp"
 #include "fs.hpp"
 #include "config.hpp"
 #include "rwlock.hpp"
 
 using std::string;
 using std::vector;
-using mergerfs::FileInfo;
 
 static
 int
@@ -61,7 +59,7 @@ _open(const fs::find::Func  searchFunc,
   if(fd == -1)
     return -errno;
 
-  fh = (uint64_t)new FileInfo(fd,flags,path[0].full);
+  fh = fd;
 
   return 0;
 }

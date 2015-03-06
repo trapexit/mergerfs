@@ -30,8 +30,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include "fileinfo.hpp"
-
 static
 int
 _read_buf(const int            fd,
@@ -67,7 +65,7 @@ namespace mergerfs
              off_t                   offset,
              struct fuse_file_info  *ffi)
     {
-      return _read_buf(((FileInfo*)ffi->fh)->fd,
+      return _read_buf(ffi->fh,
                        bufp,
                        size,
                        offset);

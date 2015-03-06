@@ -34,13 +34,11 @@
 
 #include "config.hpp"
 #include "ugid.hpp"
-#include "fileinfo.hpp"
 #include "fs.hpp"
 #include "rwlock.hpp"
 
 using std::string;
 using std::vector;
-using mergerfs::FileInfo;
 using mergerfs::Policy;
 
 static
@@ -81,7 +79,7 @@ _create(const fs::find::Func  searchFunc,
   if(fd == -1)
     return -errno;
 
-  fh = (uint64_t)new FileInfo(fd,flags,path);
+  fh = fd;
 
   return 0;
 }

@@ -29,19 +29,11 @@
 
 #include <string>
 
-#include "fileinfo.hpp"
-
-using mergerfs::FileInfo;
-
 static
 int
 _release(uint64_t &fh)
 {
-  const FileInfo *fileinfo = (FileInfo*)fh;
-
-  ::close(fileinfo->fd);
-
-  delete fileinfo;
+  ::close(fh);
 
   fh = 0;
 
