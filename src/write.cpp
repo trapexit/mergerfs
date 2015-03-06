@@ -27,8 +27,6 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "fileinfo.hpp"
-
 static
 int
 _write(const int     fd,
@@ -54,7 +52,7 @@ namespace mergerfs
           off_t                  offset,
           struct fuse_file_info *ffi)
     {
-      return _write(((FileInfo*)ffi->fh)->fd,
+      return _write(ffi->fh,
                     buf,
                     count,
                     offset);

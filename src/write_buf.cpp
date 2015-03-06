@@ -28,7 +28,6 @@
 
 #include <stdlib.h>
 
-#include "fileinfo.hpp"
 #include "write.hpp"
 
 static
@@ -59,7 +58,7 @@ namespace mergerfs
               off_t                  offset,
               struct fuse_file_info *ffi)
     {
-      return _write_buf(((FileInfo*)ffi->fh)->fd,
+      return _write_buf(ffi->fh,
                         *src,
                         offset);
     }

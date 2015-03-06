@@ -33,8 +33,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include "fileinfo.hpp"
-
 static
 int
 _fallocate(const int   fd,
@@ -75,9 +73,7 @@ namespace mergerfs
               off_t                  len,
               struct fuse_file_info *ffi)
     {
-      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
-
-      return _fallocate(fileinfo->fd,
+      return _fallocate(ffi->fh,
                         mode,
                         offset,
                         len);

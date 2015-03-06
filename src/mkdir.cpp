@@ -32,7 +32,6 @@
 #include <vector>
 
 #include "ugid.hpp"
-#include "fileinfo.hpp"
 #include "fs.hpp"
 #include "config.hpp"
 #include "rwlock.hpp"

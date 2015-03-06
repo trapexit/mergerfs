@@ -29,8 +29,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "fileinfo.hpp"
-
 static
 int
 _fgetattr(const int    fd,
@@ -52,9 +50,7 @@ namespace mergerfs
              struct stat           *st,
              struct fuse_file_info *ffi)
     {
-      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
-
-      return _fgetattr(fileinfo->fd,
+      return _fgetattr(ffi->fh,
                        *st);
     }
   }

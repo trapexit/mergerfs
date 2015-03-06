@@ -30,8 +30,6 @@
 
 #include <string>
 
-#include "fileinfo.hpp"
-
 static
 int
 _read(const int     fd,
@@ -57,7 +55,7 @@ namespace mergerfs
          off_t                  offset,
          struct fuse_file_info *ffi)
     {
-      return _read(((FileInfo*)ffi->fh)->fd,
+      return _read(ffi->fh,
                    buf,
                    count,
                    offset);

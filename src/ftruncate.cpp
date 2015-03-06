@@ -28,8 +28,6 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#include "fileinfo.hpp"
-
 static
 int
 _ftruncate(const int   fd,
@@ -51,9 +49,7 @@ namespace mergerfs
               off_t                  size,
               struct fuse_file_info *ffi)
     {
-      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
-
-      return _ftruncate(fileinfo->fd,
+      return _ftruncate(ffi->fh,
                         size);
     }
   }

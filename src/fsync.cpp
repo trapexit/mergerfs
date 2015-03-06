@@ -34,8 +34,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "fileinfo.hpp"
-
 static
 int
 _fsync(const int fd,
@@ -59,9 +57,7 @@ namespace mergerfs
           int                    isdatasync,
           struct fuse_file_info *ffi)
     {
-      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
-
-      return _fsync(fileinfo->fd,
+      return _fsync(ffi->fh,
                     isdatasync);
     }
   }

@@ -32,7 +32,6 @@
 #include <linux/fs.h>
 
 #include "config.hpp"
-#include "fileinfo.hpp"
 #include "ugid.hpp"
 #include "rwlock.hpp"
 
@@ -145,8 +144,6 @@ namespace mergerfs
           unsigned int           flags,
           void                  *data)
     {
-      const FileInfo *fileinfo = (FileInfo*)ffi->fh;
-
 #ifdef FUSE_IOCTL_DIR
       if(flags & FUSE_IOCTL_DIR)
         return _ioctl_dir(fusepath,
@@ -156,7 +153,7 @@ namespace mergerfs
                           data);
 #endif
 
-      return _ioctl(fileinfo->fd,
+      return _ioctl(ffi->fh,
                     cmd,
                     arg,
                     flags,
