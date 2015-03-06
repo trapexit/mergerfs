@@ -39,22 +39,33 @@ using std::vector;
 
 static
 int
-_symlink(const vector<string> &srcmounts,
-         const string         &from,
-         const string         &to)
+_symlink(const fs::find::Func  createFunc,
+         const vector<string> &srcmounts,
+         const string         &oldpath,
+         const string         &newpath)
 {
   int rv;
-  fs::Path path;
+  int error;
+  string newpathdir;
+  fs::Paths newpathdirs;
 
-  rv = fs::find::ff(srcmounts,fs::dirname(to),path);
+  newpathdir = fs::dirname(newpath);
+  rv = createFunc(srcmounts,newpathdir,newpathdirs,-1);
   if(rv == -1)
     return -errno;
 
-  path.full = fs::make_path(path.base,to);
+  error = 0;
+  for(fs::Paths::iterator
+        i = newpathdirs.begin(), ei = newpathdirs.end(); i != ei; ++i)
+    {
+      i->full = fs::make_path(i->base,newpath);
 
-  rv = symlink(from.c_str(),path.full.c_str());
+      rv = symlink(oldpath.c_str(),i->full.c_str());
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs
@@ -70,7 +81,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _symlink(config.srcmounts,
+      return _symlink(*config.symlink,
+                      config.srcmounts,
                       oldpath,
                       newpath);
     }

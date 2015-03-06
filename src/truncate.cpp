@@ -41,21 +41,29 @@ using std::vector;
 
 static
 int
-_truncate(const fs::SearchFunc  searchFunc,
+_truncate(const fs::find::Func  actionFunc,
           const vector<string> &srcmounts,
           const string         &fusepath,
           const off_t           size)
 {
   int rv;
-  fs::Path path;
+  int error;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = actionFunc(srcmounts,fusepath,paths,-1);
   if(rv == -1)
     return -errno;
 
-  rv = ::truncate(path.full.c_str(),size);
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv = ::truncate(i->full.c_str(),size);
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs

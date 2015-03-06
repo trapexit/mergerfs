@@ -69,7 +69,7 @@ namespace mergerfs
     {
       pthread_rwlock_init(&srcmountslock,NULL);
 
-      setpolicy(Category::Enum::action,Policy::Enum::ff);
+      setpolicy(Category::Enum::action,Policy::Enum::all);
       setpolicy(Category::Enum::create,Policy::Enum::epmfs);
       setpolicy(Category::Enum::search,Policy::Enum::ff);
     }

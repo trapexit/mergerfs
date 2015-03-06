@@ -35,6 +35,7 @@ namespace mergerfs
   const std::vector<Policy> Policy::_policies_ =
     buildvector<Policy,true>
     (POLICY(invalid))
+    (POLICY(all))
     (POLICY(epmfs))
     (POLICY(ff))
     (POLICY(ffwp))
@@ -45,6 +46,7 @@ namespace mergerfs
   const Policy * const Policy::policies = &_policies_[1];
 
   const Policy &Policy::invalid = Policy::policies[Policy::Enum::invalid];
+  const Policy &Policy::all     = Policy::policies[Policy::Enum::all];
   const Policy &Policy::epmfs   = Policy::policies[Policy::Enum::epmfs];
   const Policy &Policy::ff      = Policy::policies[Policy::Enum::ff];
   const Policy &Policy::ffwp    = Policy::policies[Policy::Enum::ffwp];

@@ -45,8 +45,8 @@ using mergerfs::Policy;
 
 static
 int
-_create(const fs::SearchFunc  searchFunc,
-        const fs::SearchFunc  createPathFunc,
+_create(const fs::find::Func  searchFunc,
+        const fs::find::Func  createFunc,
         const vector<string> &srcmounts,
         const string         &fusepath,
         const mode_t          mode,
@@ -57,25 +57,25 @@ _create(const fs::SearchFunc  searchFunc,
   int rv;
   string path;
   string dirname;
-  fs::Path createpath;
-  fs::Path existingpath;
+  fs::Paths createpath;
+  fs::Paths existingpath;
 
   dirname = fs::dirname(fusepath);
-  rv = searchFunc(srcmounts,dirname,existingpath);
+  rv = searchFunc(srcmounts,dirname,existingpath,1);
   if(rv == -1)
     return -errno;
 
-  rv = createPathFunc(srcmounts,dirname,createpath);
+  rv = createFunc(srcmounts,dirname,createpath,1);
   if(rv == -1)
     return -errno;
 
-  if(createpath.base != existingpath.base)
+  if(createpath[0].base != existingpath[0].base)
     {
       const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath.base,createpath.base,dirname);
+      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
     }
 
-  path = fs::make_path(createpath.base,fusepath);
+  path = fs::make_path(createpath[0].base,fusepath);
 
   fd = ::open(path.c_str(),flags,mode);
   if(fd == -1)
@@ -100,7 +100,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _create(*config.create,
+      return _create(*config.getattr,
                      *config.create,
                      config.srcmounts,
                      fusepath,

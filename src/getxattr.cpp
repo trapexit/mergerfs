@@ -190,7 +190,7 @@ _getxattr_user_mergerfs(const fs::Path       &path,
 
 static
 int
-_getxattr(const fs::SearchFunc  searchFunc,
+_getxattr(const fs::find::Func  searchFunc,
           const vector<string> &srcmounts,
           const string         &fusepath,
           const char           *attrname,
@@ -199,17 +199,17 @@ _getxattr(const fs::SearchFunc  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::Path path;
+  fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = searchFunc(srcmounts,fusepath,path,1);
   if(rv == -1)
     return -errno;
 
   if(!strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
-    rv = _getxattr_user_mergerfs(path,srcmounts,fusepath,attrname,buf,count);
+    rv = _getxattr_user_mergerfs(path[0],srcmounts,fusepath,attrname,buf,count);
 
   if(rv == -1 && errno == ENOATTR)
-    rv = ::lgetxattr(path.full.c_str(),attrname,buf,count);
+    rv = ::lgetxattr(path[0].full.c_str(),attrname,buf,count);
 
   return ((rv == -1) ? -errno : rv);
 #else

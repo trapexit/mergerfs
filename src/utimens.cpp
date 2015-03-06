@@ -41,21 +41,29 @@ using std::vector;
 
 static
 int
-_utimens(const fs::SearchFunc   searchFunc,
+_utimens(const fs::find::Func   actionFunc,
          const vector<string>  &srcmounts,
          const string          &fusepath,
          const struct timespec  ts[2])
 {
   int rv;
-  fs::Path path;
+  int error;
+  fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = actionFunc(srcmounts,fusepath,paths,-1);
   if(rv == -1)
     return -errno;
 
-  rv = ::utimensat(0,path.full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+    {
+      rv = ::utimensat(0,i->full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
+      if(rv == -1)
+        error = errno;
+    }
 
-  return ((rv == -1) ? -errno : 0);
+  return -error;
 }
 
 namespace mergerfs

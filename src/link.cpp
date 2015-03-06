@@ -41,41 +41,64 @@ using mergerfs::Policy;
 
 static
 int
-_link(const fs::SearchFunc  searchFunc,
-      const vector<string> &srcmounts,
-      const string         &from,
-      const string         &to)
+_single_link(const fs::find::Func  searchFunc,
+             const vector<string> &srcmounts,
+             const string         &base,
+             const string         &oldpath,
+             const string         &newpath)
 {
   int rv;
-  fs::Path path;
+  const string fulloldpath = fs::make_path(base,oldpath);
+  const string fullnewpath = fs::make_path(base,newpath);
 
-  rv = searchFunc(srcmounts,from,path);
-  if(rv == -1)
-    return -errno;
-
-  const string pathfrom = fs::make_path(path.base,from);
-  const string pathto   = fs::make_path(path.base,to);
-
-  rv = ::link(pathfrom.c_str(),pathto.c_str());
+  rv = ::link(fulloldpath.c_str(),fullnewpath.c_str());
   if(rv == -1 && errno == ENOENT)
     {
-      string todir;
-      fs::Path foundpath;
+      string newpathdir;
+      fs::Paths foundpath;
 
-      todir = fs::dirname(to);
-      rv = fs::find::ffwp(srcmounts,todir,foundpath);
+      newpathdir = fs::dirname(newpath);
+      rv = searchFunc(srcmounts,newpathdir,foundpath,1);
       if(rv == -1)
-        return -errno;
+        return -1;
 
       {
         const mergerfs::ugid::SetResetGuard ugid(0,0);
-        fs::clonepath(foundpath.base,path.base,todir);
+        fs::clonepath(foundpath[0].base,base,newpathdir);
       }
 
-      rv = ::link(pathfrom.c_str(),pathto.c_str());
+      rv = ::link(fulloldpath.c_str(),fullnewpath.c_str());
     }
 
-  return ((rv == -1) ? -errno : 0);
+  return rv;
+}
+
+static
+int
+_link(const fs::find::Func  searchFunc,
+      const fs::find::Func  actionFunc,
+      const vector<string> &srcmounts,
+      const string         &oldpath,
+      const string         &newpath)
+{
+  int rv;
+  int error;
+  fs::Paths oldpaths;
+
+  rv = actionFunc(srcmounts,oldpath,oldpaths,-1);
+  if(rv == -1)
+    return -errno;
+
+  error = 0;
+  for(fs::Paths::const_iterator
+        i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
+    {
+      rv = _single_link(searchFunc,srcmounts,i->base,oldpath,newpath);
+      if(rv == -1)
+        error = errno;
+    }
+
+  return -error;
 }
 
 namespace mergerfs
@@ -91,7 +114,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _link(*config.link,
+      return _link(*config.getattr,
+                   *config.link,
                    config.srcmounts,
                    from,
                    to);

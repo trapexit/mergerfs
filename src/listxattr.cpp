@@ -69,7 +69,7 @@ _listxattr_controlfile(char         *list,
 
 static
 int
-_listxattr(const fs::SearchFunc  searchFunc,
+_listxattr(const fs::find::Func  searchFunc,
            const vector<string> &srcmounts,
            const string         &fusepath,
            char                 *list,
@@ -77,13 +77,13 @@ _listxattr(const fs::SearchFunc  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::Path path;
+  fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = searchFunc(srcmounts,fusepath,path,1);
   if(rv == -1)
     return -errno;
 
-  rv = ::llistxattr(path.full.c_str(),list,size);
+  rv = ::llistxattr(path[0].full.c_str(),list,size);
 
   return ((rv == -1) ? -errno : rv);
 #else

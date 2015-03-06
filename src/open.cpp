@@ -43,7 +43,7 @@ using mergerfs::FileInfo;
 
 static
 int
-_open(const fs::SearchFunc  searchFunc,
+_open(const fs::find::Func  searchFunc,
       const vector<string> &srcmounts,
       const string         &fusepath,
       const int             flags,
@@ -51,17 +51,17 @@ _open(const fs::SearchFunc  searchFunc,
 {
   int fd;
   int rv;
-  fs::Path path;
+  fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path);
+  rv = searchFunc(srcmounts,fusepath,path,1);
   if(rv == -1)
     return -errno;
 
-  fd = ::open(path.full.c_str(),flags);
+  fd = ::open(path[0].full.c_str(),flags);
   if(fd == -1)
     return -errno;
 
-  fh = (uint64_t)new FileInfo(fd,flags,path.full);
+  fh = (uint64_t)new FileInfo(fd,flags,path[0].full);
 
   return 0;
 }
