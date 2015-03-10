@@ -94,6 +94,14 @@ Filesystem calls are broken up into 3 categories: action, create, search. There 
 | mfs (most free space) | Assuming the path is found to exist (ENOENT would not be returned) use the drive with the most free space available. |
 | epmfs (existing path, most free space) | If the path exists in multiple locations use the one with the most free space. Otherwise fall back to mfs. |
 | rand (random) | Pick an existing destination at random. |
+| all | Applies action to all found. For searches it will behave like first found `ff`. |
+
+#### Defaults ####
+| Category | Policy |
+|----------|--------|
+| action   | all    |
+| create   | epmfs  |
+| search   | ff     |
 
 #### readdir ####
 
