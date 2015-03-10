@@ -45,8 +45,10 @@ namespace mergerfs
       Config();
 
     public:
-      void setpolicy(const Category::Enum::Type category,
-                     const Policy::Enum::Type   policy);
+      int set_func_policy(const std::string &fusefunc_,
+                          const std::string &policy_);
+      int set_category_policy(const std::string &category,
+                              const std::string &policy);
 
     public:
       std::string              destmount;

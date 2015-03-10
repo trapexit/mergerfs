@@ -43,6 +43,31 @@ using namespace mergerfs;
 
 static
 int
+parse_and_process_kv_arg(config::Config    &config,
+                         const std::string &key,
+                         const std::string &value)
+{
+  int rv;
+  std::vector<std::string> keypart;
+
+  str::split(keypart,key,'.');
+  if(keypart.size() != 2)
+    return 1;
+
+  rv = 0;
+  if(keypart[0] == "func")
+    rv = config.set_func_policy(keypart[1],value);
+  else if(keypart[0] == "category")
+    rv = config.set_category_policy(keypart[1],value);
+
+  if(rv == -1)
+    rv = 1;
+
+  return rv;
+}
+
+static
+int
 process_opt(config::Config    &config,
             const std::string &arg)
 {
@@ -53,13 +78,7 @@ process_opt(config::Config    &config,
   switch(argvalue.size())
     {
     case 2:
-      {
-        FuseFunc fusefunc = FuseFunc::find(argvalue[0]);
-        if(fusefunc != FuseFunc::invalid)
-          config.policies[(FuseFunc::Enum::Type)*fusefunc] = Policy::find(argvalue[1]);
-        else
-          rv = 1;
-      }
+      rv = parse_and_process_kv_arg(config,argvalue[0],argvalue[1]);
       break;
 
     default:

@@ -27,6 +27,7 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #include "config.hpp"
 #include "rwlock.hpp"
@@ -69,22 +70,53 @@ namespace mergerfs
     {
       pthread_rwlock_init(&srcmountslock,NULL);
 
-      setpolicy(Category::Enum::action,Policy::Enum::all);
-      setpolicy(Category::Enum::create,Policy::Enum::epmfs);
-      setpolicy(Category::Enum::search,Policy::Enum::ff);
+      set_category_policy("action","all");
+      set_category_policy("create","epmfs");
+      set_category_policy("search","ff");
     }
 
-    void
-    Config::setpolicy(const Category::Enum::Type category,
-                      const Policy::Enum::Type   policy_)
+    int
+    Config::set_func_policy(const string &fusefunc_,
+                            const string &policy_)
     {
-      const Policy *policy = Policy::find(policy_);
+      const Policy   *policy;
+      const FuseFunc *fusefunc;
+
+      fusefunc = FuseFunc::find(fusefunc_);
+      if(fusefunc == FuseFunc::invalid)
+        return (errno=ENODATA,-1);
+
+      policy = Policy::find(policy_);
+      if(policy == Policy::invalid)
+        return (errno=EINVAL,-1);
+
+      policies[(FuseFunc::Enum::Type)*fusefunc] = policy;
+
+      return 0;
+    }
+
+    int
+    Config::set_category_policy(const string &category_,
+                                const string &policy_)
+    {
+      const Policy   *policy;
+      const Category *category;
+
+      category = Category::find(category_);
+      if(category == Category::invalid)
+        return (errno=ENODATA,-1);
+
+      policy = Policy::find(policy_);
+      if(policy == Policy::invalid)
+        return (errno=EINVAL,-1);
 
       for(int i = 0; i < FuseFunc::Enum::END; i++)
         {
-          if(FuseFunc::fusefuncs[i] == category)
+          if(FuseFunc::fusefuncs[i] == (Category::Enum::Type)*category)
             policies[(FuseFunc::Enum::Type)FuseFunc::fusefuncs[i]] = policy;
         }
+
+      return 0;
     }
 
     const Config&

@@ -167,27 +167,19 @@ _setxattr_srcmounts(vector<string>   &srcmounts,
 
 static
 int
-_setxattr_controlfile_func_policy(const Policy *policies[],
-                                  const char   *funcname,
-                                  const string &attrval,
-                                  const int     flags)
+_setxattr_controlfile_func_policy(config::Config &config,
+                                  const char     *funcname,
+                                  const string   &attrval,
+                                  const int       flags)
 {
-  const FuseFunc *fusefunc;
-  const Policy   *policy;
-
-  fusefunc = FuseFunc::find(funcname);
-  if(fusefunc == FuseFunc::invalid)
-    return -ENOATTR;
+  int rv;
 
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  policy = Policy::find(attrval);
-  if((policy  == Policy::invalid) &&
-     (attrval != "invalid"))
-    return -EINVAL;
-
-  policies[(FuseFunc::Enum::Type)*fusefunc] = policy;
+  rv = config.set_func_policy(funcname,attrval);
+  if(rv == -1)
+    return -errno;
 
   return 0;
 }
@@ -199,22 +191,14 @@ _setxattr_controlfile_category_policy(config::Config &config,
                                       const string   &attrval,
                                       const int       flags)
 {
-  const Category *category;
-  const Policy   *policy;
-
-  category = Category::find(categoryname);
-  if(category == Category::invalid)
-    return -ENOATTR;
+  int rv;
 
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  policy = Policy::find(attrval);
-  if((policy  == Policy::invalid) &&
-     (attrval != "invalid"))
-    return -EINVAL;
-
-  config.setpolicy(*category,*policy);
+  rv = config.set_category_policy(categoryname,attrval);
+  if(rv == -1)
+    return -errno;
 
   return 0;
 }
@@ -246,7 +230,7 @@ _setxattr_controlfile(config::Config &config,
                                                  attrval,
                                                  flags);
   else if(!strncmp("func.",attrbasename,sizeof("func.")-1))
-    return _setxattr_controlfile_func_policy(config.policies,
+    return _setxattr_controlfile_func_policy(config,
                                              &attrbasename[sizeof("func.")-1],
                                              attrval,
                                              flags);

@@ -20,11 +20,11 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 
 ###options###
 
-All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `&lt;func&gt;=&lt;policy&gt;`.
+All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `func.<func>=<policy>`.
 
-To set all function policies in a category use `category.&lt;category&gt;=&lt;policy&gt;` such as `category.create=mfs`.
+To set all function policies in a category use `category.<category>=<policy>` such as `category.create=mfs`.
 
-They are evaluated in the order listed so if the options are `rmdir=rand,category.action=ff` the `action` category setting will override the `rmdir` setting.
+They are evaluated in the order listed so if the options are `func.rmdir=rand,category.action=ff` the `action` category setting will override the `rmdir` setting.
 
 ###srcpoints###
 
