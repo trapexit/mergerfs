@@ -151,12 +151,18 @@ set_fsname(struct fuse_args     &args,
     {
       std::string fsname;
 
-      fsname =
-        "-ofsname=" +
-        str::remove_common_prefix_and_join(config.srcmounts,':');
+      fsname = str::remove_common_prefix_and_join(config.srcmounts,':');
+      fsname = "-ofsname=" + fsname;
 
       fuse_opt_insert_arg(&args,1,fsname.c_str());
     }
+}
+
+static
+void
+set_subtype(struct fuse_args &args)
+{
+  fuse_opt_insert_arg(&args,1,"-osubtype=mergerfs");
 }
 
 namespace mergerfs
@@ -174,6 +180,7 @@ namespace mergerfs
                      ::option_processor);
 
       set_fsname(args,config);
+      set_subtype(args);
     }
   }
 }
