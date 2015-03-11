@@ -42,6 +42,80 @@ using std::vector;
 using namespace mergerfs;
 
 static
+void
+set_option(struct fuse_args  &args,
+           const std::string &option_)
+{
+  string option;
+
+  option = "-o" + option_;
+
+  fuse_opt_insert_arg(&args,1,option.c_str());
+}
+
+static
+void
+set_kv_option(struct fuse_args  &args,
+              const std::string &key,
+              const std::string &value)
+{
+  std::string option;
+
+  option = key + '=' + value;
+
+  set_option(args,option);
+}
+
+static
+void
+set_fsname(struct fuse_args     &args,
+           const vector<string> &srcmounts)
+{
+  if(srcmounts.size() > 0)
+    {
+      std::string fsname;
+
+      fsname = str::remove_common_prefix_and_join(srcmounts,':');
+
+      set_kv_option(args,"fsname",fsname);
+    }
+}
+
+static
+void
+set_subtype(struct fuse_args &args)
+{
+  set_kv_option(args,"subtype","mergerfs");
+}
+
+static
+void
+set_default_options(struct fuse_args &args)
+{
+  set_option(args,"big_writes");
+  set_option(args,"splice_read");
+  set_option(args,"splice_write");
+  set_option(args,"splice_move");
+  set_option(args,"auto_cache");
+  set_option(args,"atomic_o_trunc");
+}
+
+static
+int
+parse_and_process_arg(config::Config    &config,
+                      const std::string &arg,
+                      struct fuse_args  *outargs)
+{
+  if(arg == "defaults")
+    {
+      set_default_options(*outargs);
+      return 0;
+    }
+
+  return 1;
+}
+
+static
 int
 parse_and_process_kv_arg(config::Config    &config,
                          const std::string &key,
@@ -54,11 +128,12 @@ parse_and_process_kv_arg(config::Config    &config,
   if(keypart.size() != 2)
     return 1;
 
-  rv = 0;
   if(keypart[0] == "func")
     rv = config.set_func_policy(keypart[1],value);
   else if(keypart[0] == "category")
     rv = config.set_category_policy(keypart[1],value);
+  else
+    rv = -1;
 
   if(rv == -1)
     rv = 1;
@@ -69,14 +144,20 @@ parse_and_process_kv_arg(config::Config    &config,
 static
 int
 process_opt(config::Config    &config,
-            const std::string &arg)
+            const std::string &arg,
+            struct fuse_args  *outargs)
 {
-  int rv = 0;
+  int rv;
   std::vector<std::string> argvalue;
 
+  rv = 1;
   str::split(argvalue,arg,'=');
   switch(argvalue.size())
     {
+    case 1:
+      rv = parse_and_process_arg(config,argvalue[0],outargs);
+      break;
+
     case 2:
       rv = parse_and_process_kv_arg(config,argvalue[0],argvalue[1]);
       break;
@@ -126,7 +207,7 @@ option_processor(void             *data,
   switch(key)
     {
     case FUSE_OPT_KEY_OPT:
-      rv = process_opt(config,arg);
+      rv = process_opt(config,arg,outargs);
       break;
 
     case FUSE_OPT_KEY_NONOPT:
@@ -140,29 +221,6 @@ option_processor(void             *data,
     }
 
   return rv;
-}
-
-static
-void
-set_fsname(struct fuse_args     &args,
-           const config::Config &config)
-{
-  if(config.srcmounts.size() > 0)
-    {
-      std::string fsname;
-
-      fsname = str::remove_common_prefix_and_join(config.srcmounts,':');
-      fsname = "-ofsname=" + fsname;
-
-      fuse_opt_insert_arg(&args,1,fsname.c_str());
-    }
-}
-
-static
-void
-set_subtype(struct fuse_args &args)
-{
-  fuse_opt_insert_arg(&args,1,"-osubtype=mergerfs");
 }
 
 namespace mergerfs
@@ -179,7 +237,7 @@ namespace mergerfs
                      NULL,
                      ::option_processor);
 
-      set_fsname(args,config);
+      set_fsname(args,config.srcmounts);
       set_subtype(args);
     }
   }
