@@ -48,10 +48,10 @@ _getattr_controlfile(struct stat &buf)
 
   buf.st_dev     = 0;
   buf.st_ino     = 0;
-  buf.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+  buf.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
   buf.st_nlink   = 1;
-  buf.st_uid     = ::geteuid();
-  buf.st_gid     = ::getegid();
+  buf.st_uid     = ::getuid();
+  buf.st_gid     = ::getgid();
   buf.st_rdev    = 0;
   buf.st_size    = 0;
   buf.st_blksize = 1024;
