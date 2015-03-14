@@ -282,18 +282,23 @@ namespace mergerfs
              size_t      attrvalsize,
              int         flags)
     {
-      const config::Config &config = config::get();
+      const config::Config      &config = config::get();
+      const struct fuse_context *fc     = fuse_get_context();
 
       if(fusepath == config.controlfile)
-        return _setxattr_controlfile(config::get_writable(),
-                                     attrname,
-                                     string(attrval,attrvalsize),
-                                     flags);
+        {
+          if((fc->uid != ::getuid()) && (fc->gid != ::getgid()))
+            return -EPERM;
+
+          return _setxattr_controlfile(config::get_writable(),
+                                       attrname,
+                                       string(attrval,attrvalsize),
+                                       flags);
+        }
 
       {
-        const struct fuse_context *fc = fuse_get_context();
-        const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-        const rwlock::ReadGuard    readlock(&config.srcmountslock);
+        const ugid::SetResetGuard ugid(fc->uid,fc->gid);
+        const rwlock::ReadGuard   readlock(&config.srcmountslock);
 
         return _setxattr(*config.setxattr,
                          config.srcmounts,
