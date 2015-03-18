@@ -27,8 +27,9 @@ namespace mergerfs
   namespace resources
   {
     int reset_umask(void);
-    int maxout_rlimit(int resource);
+    int maxout_rlimit(const int resource);
     int maxout_rlimit_nofile(void);
     int maxout_rlimit_fsize(void);
+    int setpriority(const int prio);
   }
 }
