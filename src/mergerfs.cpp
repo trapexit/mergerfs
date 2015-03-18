@@ -82,7 +82,7 @@ namespace local
   {
     return fs::basename(argv[0]);
   }
-  
+
   static
   void
   get_fuse_operations(struct fuse_operations &ops)
@@ -152,10 +152,13 @@ namespace local
   void
   setup_resources(void)
   {
+    const int prio = -10;
+
     std::srand(time(NULL));
     mergerfs::resources::reset_umask();
     mergerfs::resources::maxout_rlimit_nofile();
     mergerfs::resources::maxout_rlimit_fsize();
+    mergerfs::resources::setpriority(prio);
   }
 }
 

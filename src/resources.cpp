@@ -40,7 +40,7 @@ namespace mergerfs
     }
 
     int
-    maxout_rlimit(int resource)
+    maxout_rlimit(const int resource)
     {
       int rv;
       struct rlimit rlim;
@@ -77,6 +77,14 @@ namespace mergerfs
     maxout_rlimit_fsize(void)
     {
       return maxout_rlimit(RLIMIT_FSIZE);
+    }
+
+    int
+    setpriority(const int prio)
+    {
+      const int SELF = 0;
+
+      return ::setpriority(PRIO_PROCESS,SELF,prio);
     }
   }
 }
