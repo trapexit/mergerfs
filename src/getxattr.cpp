@@ -185,7 +185,7 @@ _getxattr_user_mergerfs(const fs::Path       &path,
   else if(!strcmp(attrbasename,"allpaths"))
     return ::_getxattr_user_mergerfs_allpaths(srcmounts,fusepath,buf,count);
 
-  return (errno=ENOATTR,-1);
+  return ::lgetxattr(path.full.c_str(),attrname,buf,count);
 }
 
 static
@@ -207,8 +207,7 @@ _getxattr(const fs::find::Func  searchFunc,
 
   if(!strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
     rv = _getxattr_user_mergerfs(path[0],srcmounts,fusepath,attrname,buf,count);
-
-  if(rv == -1 && errno == ENOATTR)
+  else
     rv = ::lgetxattr(path[0].full.c_str(),attrname,buf,count);
 
   return ((rv == -1) ? -errno : rv);
