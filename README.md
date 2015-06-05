@@ -20,6 +20,8 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 
 ###options###
 
+`defaults` is a shortcut to `big_writes`, `auto_cache`, `atomic_o_trunc`, `splice_read`, `splice_write`, and `splice_move`. These options seem to provide the best performance.
+
 All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `func.<func>=<policy>`.
 
 To set all function policies in a category use `category.<category>=<policy>` such as `category.create=mfs`.
