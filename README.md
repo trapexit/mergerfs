@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2015-02-05
+% 2015-06-05
 
 # NAME
 
@@ -12,13 +12,15 @@ mergerfs -o&lt;options&gt; &lt;srcpoints&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
-mergerfs is similar to mhddfs, unionfs, and aufs. Like mhddfs in that it too uses FUSE. Like aufs in that it provides multiple policies for how to handle behavior.
+mergerfs is similar to mhddfs, unionfs, and aufs. Like mhddfs in that it too uses [FUSE](http://en.wikipedia.org/wiki/Filesystem_in_Userspace). Like aufs in that it provides multiple policies for how to handle behavior.
 
-Why create mergerfs when those exist? mhddfs isn't really maintained or flexible. There are also issues with running as root. aufs is more flexible but contains some hard to debug inconsistencies in behavior. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
+Why create mergerfs when those exist? mhddfs isn't really maintained or flexible. There are also security issues when with running as root. aufs is more flexible than mhddfs but contains some hard to debug inconsistencies in behavior on account of it being a kernel driver. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
 
 # OPTIONS
 
 ###options###
+
+`defaults` is a shortcut for `big_writes`, `auto_cache`, `atomic_o_trunc`, `splice_read`, `splice_write`, and `splice_move`. These options seem to provide the best performance.
 
 All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `func.<func>=<policy>`.
 
@@ -39,8 +41,8 @@ The above line will use all points in /mnt prefixed with *disk* and the director
 In /etc/fstab it'd look like the following:
 
 ```
-# <file system>        <mount point>  <type>         <options>    <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  allow_other  0       0
+# <file system>        <mount point>  <type>         <options>             <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other  0       0
 ```
 
 **NOTE:** the globbing is done at mount time. If a new directory is added matching the glob after the fact it will not be included.
@@ -252,3 +254,26 @@ A B C
 /mnt/a/full/path/to/A
 /mnt/b/full/path/to/A
 ```
+
+# Tips / Notes
+
+* The recommended options are `defaults,allow_other`. The `allow_other` is to allow users who are not the one which executed mergerfs access to the mountpoint. `defaults` is described above and should offer the best performance. It's possible that if you're running on an older platform the `splice` features aren't available and could error. In that case simply use the other options manually.
+* Remember that some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside [mergerfs](http://github.com/trapexit/mergerfs) but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
+* An example: [Kodi](http://kodi.tv) can apparently use directory [mtime](http://linux.die.net/man/2/stat) to more determine whether or not to scan for new content rather than a full scan. If using the current default `getattr` policy of `ff` it's possible Kodi will miss an update on account of it returning the first directory found's `stat` info and its a later directory on another mount which had the `mtime` recently updated. To fix this you will want to set `func.getattr=newest`. Remember though that this is just `stat`. If the file is later `open`ed or `unlink`ed and the policy is different for those then a completely different file or directory could be acted on.
+* Due to previously mentioned issues its generally best to set `category` wide policies rather than individual `func`s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync).
+
+# FAQ
+
+* It's mentioned that there are some security issues with `mhddfs`. What are they? How does `mergerfs` address them?
+
+[mhddfs](https://github.com/trapexit/mhddfs) trys to handle being run as `root` by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns `0` then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle many other situtations. Rather than attempting to simulate POSIX ACL behaviors the proper behavior is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), become the user making the original call and perform the action as them. This is how [mergerfs](https://github.com/trapexit/mergerfs) handles things.
+
+If you are familiar with POSIX standards you'll know that this behavior poses a problem. `seteuid` and `setegid` affect the whole process and `libfuse` is multithreaded by default. We'd need to lock access to `seteuid` and `setegid` with a mutex so that the several threads aren't stepping on one another and files end up with weird permissions and ownership. This however wouldn't scale well. With lots of calls the contention on that mutex would be extremely high. Thankfully on Linux and OSX we have a better solution.
+
+OSX has a [non-portable pthread extension](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) for per-thread user and group impersonation. When building on OSX mergerfs will use this without any mutexes.
+
+Linux does not support [pthread_setugid_cp](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) but user and group IDs are a per-thread attribute though documention on that fact or how to manipulate them is not well distributed. From the `4.00` release of the Linux man-pages project for [setuid](http://man7.org/linux/man-pages/man2/setuid.2.html)
+
+> At the kernel level, user IDs and group IDs are a per-thread attribute.  However, POSIX requires that all threads in a process share the same credentials.  The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs.  These wrapper functions (including the one for setuid()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials.  For details, see nptl(7).
+
+Turns out the setreuid syscalls apply only to the thread. GLIBC hides this away using RT signals and other tricks. Taking after Samba mergerfs uses `syscall(SYS_setreuid,...)` to set the callers credentials for that thread only. Jumping back to `root` as necessary should escalated privilages be needed (for instance: to clone paths).
