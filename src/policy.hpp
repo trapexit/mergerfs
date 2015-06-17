@@ -45,6 +45,7 @@ namespace mergerfs
           epmfs,
           ff,
           ffwp,
+          fwfs,
           mfs,
           newest,
           rand,
@@ -105,6 +106,7 @@ namespace mergerfs
     static const Policy              &epmfs;
     static const Policy              &ff;
     static const Policy              &ffwp;
+    static const Policy              &fwfs;
     static const Policy              &mfs;
     static const Policy              &newest;
     static const Policy              &rand;
