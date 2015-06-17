@@ -148,6 +148,10 @@ namespace fs
                const string          &fusepath,
                const size_t           minfreespace,
                Paths                 &path);
+    int lfs(const vector<string>     &paths,
+            const string             &fusepath,
+            const size_t              minfreespace,
+            Paths                    &path);
     int mfs(const vector<string>     &paths,
             const string             &fusepath,
             const size_t              minfreespace,
