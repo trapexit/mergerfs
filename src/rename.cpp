@@ -43,6 +43,7 @@ static
 int
 _single_rename(const fs::find::Func  searchFunc,
                const vector<string> &srcmounts,
+               const size_t          minfreespace,
                const fs::Path       &oldpath,
                const string         &newpath)
 {
@@ -56,7 +57,7 @@ _single_rename(const fs::find::Func  searchFunc,
       fs::Paths newpathdir;
 
       dirname = fs::dirname(newpath);
-      rv = searchFunc(srcmounts,dirname,newpathdir,1);
+      rv = searchFunc(srcmounts,dirname,minfreespace,newpathdir);
       if(rv == -1)
         return -1;
 
@@ -76,6 +77,7 @@ int
 _rename(const fs::find::Func  searchFunc,
         const fs::find::Func  actionFunc,
         const vector<string> &srcmounts,
+        const size_t          minfreespace,
         const string         &oldpath,
         const string         &newpath)
 {
@@ -83,7 +85,7 @@ _rename(const fs::find::Func  searchFunc,
   int error;
   fs::Paths oldpaths;
 
-  rv = actionFunc(srcmounts,oldpath,oldpaths,-1);
+  rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
     return -errno;
 
@@ -91,7 +93,7 @@ _rename(const fs::find::Func  searchFunc,
   for(fs::Paths::const_iterator
         i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
     {
-      rv = _single_rename(searchFunc,srcmounts,*i,newpath);
+      rv = _single_rename(searchFunc,srcmounts,minfreespace,*i,newpath);
       if(rv == -1)
         error = errno;
     }
@@ -115,6 +117,7 @@ namespace mergerfs
       return _rename(*config.getattr,
                      *config.rename,
                      config.srcmounts,
+                     config.minfreespace,
                      oldpath,
                      newpath);
     }

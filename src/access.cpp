@@ -47,13 +47,14 @@ static
 int
 _access(const fs::find::Func  searchFunc,
         const vector<string> &srcmounts,
+        const size_t          minfreespace,
         const string         &fusepath,
         const int             mask)
 {
   int rv;
   fs::Paths paths;
 
-  rv = searchFunc(srcmounts,fusepath,paths,1);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
@@ -77,6 +78,7 @@ namespace mergerfs
 
       return _access(*config.access,
                      config.srcmounts,
+                     config.minfreespace,
                      fusepath,
                      mask);
     }

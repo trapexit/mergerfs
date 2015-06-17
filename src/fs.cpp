@@ -520,8 +520,8 @@ namespace fs
     int
     invalid(const vector<string> &basepaths,
             const string         &fusepath,
-            Paths                &rv,
-            size_t                count)
+            const size_t          minfreespace,
+            Paths                &rv)
     {
       return (errno = EINVAL,-1);
     }
@@ -529,8 +529,8 @@ namespace fs
     int
     ff(const vector<string> &basepaths,
        const string         &fusepath,
-       Paths                &paths,
-       size_t                count)
+       const size_t          minfreespace,
+       Paths                &paths)
     {
       errno = ENOENT;
       for(vector<string>::const_iterator
@@ -558,8 +558,8 @@ namespace fs
     int
     ffwp(const vector<string> &basepaths,
          const string         &fusepath,
-         Paths                &paths,
-         size_t                count)
+         const size_t          minfreespace,
+         Paths                &paths)
     {
       Path fallback;
 
@@ -597,8 +597,8 @@ namespace fs
     int
     newest(const vector<string> &basepaths,
            const string         &fusepath,
-           Paths                &paths,
-           size_t                count)
+           const size_t          minfreespace,
+           Paths                &paths)
     {
       time_t newest;
       string npath;
@@ -635,8 +635,8 @@ namespace fs
     int
     mfs(const vector<string> &basepaths,
         const string         &fusepath,
-        Paths                &paths,
-        size_t                count)
+        const size_t          minfreespace,
+        Paths                &paths)
     {
       fsblkcnt_t mfs;
       size_t     mfsidx;
@@ -675,11 +675,11 @@ namespace fs
     int
     epmfs(const vector<string> &basepaths,
           const string         &fusepath,
-          Paths                &paths,
-          size_t                count)
+          const size_t          minfreespace,
+          Paths                &paths)
     {
-      fsblkcnt_t existingmfs = 0;
-      fsblkcnt_t generalmfs  = 0;
+      fsblkcnt_t existingmfs;
+      fsblkcnt_t generalmfs;
       string     fullpath;
       string     generalmfspath;
       string     existingmfspath;
@@ -689,6 +689,8 @@ namespace fs
       if(iter == eiter)
         return (errno = ENOENT,-1);
 
+      existingmfs = 0;
+      generalmfs  = 0;
       do
         {
           int rv;
@@ -736,8 +738,8 @@ namespace fs
     int
     all(const vector<string> &basepaths,
         const string         &fusepath,
-        Paths                &paths,
-        size_t                count)
+        const size_t          minfreespace,
+        Paths                &paths)
     {
       int rv;
       struct stat st;
@@ -745,17 +747,14 @@ namespace fs
 
       for(vector<string>::const_iterator
             iter = basepaths.begin(), eiter = basepaths.end();
-          iter != eiter && count;
+          iter != eiter;
           ++iter)
         {
           fullpath = fs::make_path(*iter,fusepath);
 
           rv = ::lstat(fullpath.c_str(),&st);
           if(rv == 0)
-            {
-              paths.push_back(Path(*iter,fullpath));
-              count--;
-            }
+            paths.push_back(Path(*iter,fullpath));
         }
 
       return paths.empty() ? (errno=ENOENT,-1) : 0;
@@ -764,19 +763,16 @@ namespace fs
     int
     rand(const vector<string> &basepaths,
          const string         &fusepath,
-         Paths                &paths,
-         size_t                count)
+         const size_t          minfreespace,
+         Paths                &paths)
     {
       int rv;
 
-      rv = all(basepaths,fusepath,paths,-1);
+      rv = all(basepaths,fusepath,minfreespace,paths);
       if(rv == -1)
         return -1;
 
       std::random_shuffle(paths.begin(),paths.end());
-
-      if(paths.size() > count)
-        paths.resize(count);
 
       return 0;
     }

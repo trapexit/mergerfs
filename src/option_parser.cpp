@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <string>
 #include <vector>
@@ -102,6 +103,38 @@ set_default_options(struct fuse_args &args)
 
 static
 int
+parse_and_process_minfreespace(const std::string &value,
+                               size_t            &minfreespace)
+{
+  char *endptr;
+
+  minfreespace = strtoll(value.c_str(),&endptr,10);
+  switch(*endptr)
+    {
+    case 'k':
+    case 'K':
+      minfreespace *= 1024;
+      break;
+
+    case 'm':
+    case 'M':
+      minfreespace *= (1024 * 1024);
+      break;
+
+    case 'b':
+    case 'B':
+      minfreespace *= (1024 * 1024 * 1024);
+      break;
+
+    default:
+      return 1;
+    }
+
+  return 0;
+}
+
+static
+int
 parse_and_process_arg(config::Config    &config,
                       const std::string &arg,
                       struct fuse_args  *outargs)
@@ -121,19 +154,22 @@ parse_and_process_kv_arg(config::Config    &config,
                          const std::string &key,
                          const std::string &value)
 {
-  int rv;
+  int rv = -1;
   std::vector<std::string> keypart;
 
   str::split(keypart,key,'.');
-  if(keypart.size() != 2)
-    return 1;
-
-  if(keypart[0] == "func")
-    rv = config.set_func_policy(keypart[1],value);
-  else if(keypart[0] == "category")
-    rv = config.set_category_policy(keypart[1],value);
+  if(keypart.size() == 2)
+    {
+      if(keypart[0] == "func")
+        rv = config.set_func_policy(keypart[1],value);
+      else if(keypart[0] == "category")
+        rv = config.set_category_policy(keypart[1],value);
+    }
   else
-    rv = -1;
+    {
+      if(key == "minfreespace")
+        rv = parse_and_process_minfreespace(value,config.minfreespace);
+    }
 
   if(rv == -1)
     rv = 1;

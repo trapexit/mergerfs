@@ -67,13 +67,14 @@ static
 int
 _getattr(const fs::find::Func  searchFunc,
          const vector<string> &srcmounts,
+         const size_t          minfreespace,
          const string         &fusepath,
          struct stat          &buf)
 {
   int rv;
   fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path,1);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
@@ -101,6 +102,7 @@ namespace mergerfs
 
       return _getattr(*config.getattr,
                       config.srcmounts,
+                      config.minfreespace,
                       fusepath,
                       *st);
     }

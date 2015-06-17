@@ -46,6 +46,7 @@ namespace mergerfs
       : destmount(),
         srcmounts(),
         srcmountslock(),
+        minfreespace(UINT32_MAX),
         POLICYINIT(access),
         POLICYINIT(chmod),
         POLICYINIT(chown),

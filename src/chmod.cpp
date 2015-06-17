@@ -41,6 +41,7 @@ static
 int
 _chmod(const fs::find::Func  actionFunc,
        const vector<string> &srcmounts,
+       const size_t          minfreespace,
        const string         &fusepath,
        const mode_t          mode)
 {
@@ -48,7 +49,7 @@ _chmod(const fs::find::Func  actionFunc,
   int error;
   fs::Paths paths;
 
-  rv = actionFunc(srcmounts,fusepath,paths,-1);
+  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
@@ -73,12 +74,13 @@ namespace mergerfs
           mode_t      mode)
     {
       const struct fuse_context *fc     = fuse_get_context();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const config::Config      &config = config::get();
+      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
       return _chmod(*config.chmod,
                     config.srcmounts,
+                    config.minfreespace,
                     fusepath,
                     mode);
     }

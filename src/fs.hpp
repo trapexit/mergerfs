@@ -39,7 +39,16 @@ namespace fs
   struct Path
   {
     Path() {}
+
+    explicit
     Path(const string &b,
+         const string &f)
+      : base(b),
+        full(f)
+    {}
+
+    explicit
+    Path(const char   *b,
          const string &f)
       : base(b),
         full(f)
@@ -113,40 +122,40 @@ namespace fs
 
   namespace find
   {
-    typedef int (*Func)(const vector<string>&,const string&,Paths&,size_t);
+    typedef int (*Func)(const vector<string>&,const string&,const size_t,Paths&);
 
     int invalid(const vector<string> &basepaths,
                 const string         &fusepath,
-                Paths                &path,
-                size_t                max);
+                const size_t          minfreespace,
+                Paths                &path);
     int all(const vector<string> &basepaths,
             const string         &fusepath,
-            Paths                &path,
-            size_t                max);
+            const size_t          minfreespace,
+            Paths                &path);
     int ff(const vector<string>      &basepaths,
            const string              &fusepath,
-           Paths                     &path,
-           size_t                     max);
+           const size_t               minfreespace,
+           Paths                     &path);
     int ffwp(const vector<string>    &paths,
              const string            &fusepath,
-             Paths                   &path,
-             size_t                   max);
+             const size_t             minfreespace,
+             Paths                   &path);
     int newest(const vector<string>  &paths,
                const string          &fusepath,
-               Paths                 &path,
-               size_t                 max);
+               const size_t           minfreespace,
+               Paths                 &path);
     int mfs(const vector<string>     &paths,
             const string             &fusepath,
-            Paths                    &path,
-            size_t                    max);
+            const size_t              minfreespace,
+            Paths                    &path);
     int epmfs(const vector<string>   &paths,
               const string           &fusepath,
-              Paths                  &path,
-              size_t                  max);
+              const size_t            minfreespace,
+              Paths                  &path);
     int rand(const vector<string>    &paths,
              const string            &fusepath,
-             Paths                   &path,
-             size_t                   max);
+             const size_t             minfreespace,
+             Paths                   &path);
   }
 };
 

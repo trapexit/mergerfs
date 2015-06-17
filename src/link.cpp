@@ -43,6 +43,7 @@ static
 int
 _single_link(const fs::find::Func  searchFunc,
              const vector<string> &srcmounts,
+             const size_t          minfreespace,
              const string         &base,
              const string         &oldpath,
              const string         &newpath)
@@ -58,7 +59,7 @@ _single_link(const fs::find::Func  searchFunc,
       fs::Paths foundpath;
 
       newpathdir = fs::dirname(newpath);
-      rv = searchFunc(srcmounts,newpathdir,foundpath,1);
+      rv = searchFunc(srcmounts,newpathdir,minfreespace,foundpath);
       if(rv == -1)
         return -1;
 
@@ -78,6 +79,7 @@ int
 _link(const fs::find::Func  searchFunc,
       const fs::find::Func  actionFunc,
       const vector<string> &srcmounts,
+      const size_t          minfreespace,
       const string         &oldpath,
       const string         &newpath)
 {
@@ -85,7 +87,7 @@ _link(const fs::find::Func  searchFunc,
   int error;
   fs::Paths oldpaths;
 
-  rv = actionFunc(srcmounts,oldpath,oldpaths,-1);
+  rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
     return -errno;
 
@@ -93,7 +95,7 @@ _link(const fs::find::Func  searchFunc,
   for(fs::Paths::const_iterator
         i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
     {
-      rv = _single_link(searchFunc,srcmounts,i->base,oldpath,newpath);
+      rv = _single_link(searchFunc,srcmounts,minfreespace,i->base,oldpath,newpath);
       if(rv == -1)
         error = errno;
     }
@@ -117,6 +119,7 @@ namespace mergerfs
       return _link(*config.getattr,
                    *config.link,
                    config.srcmounts,
+                   config.minfreespace,
                    from,
                    to);
     }
