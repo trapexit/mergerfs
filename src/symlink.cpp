@@ -41,6 +41,7 @@ static
 int
 _symlink(const fs::find::Func  createFunc,
          const vector<string> &srcmounts,
+         const size_t          minfreespace,
          const string         &oldpath,
          const string         &newpath)
 {
@@ -50,7 +51,7 @@ _symlink(const fs::find::Func  createFunc,
   fs::Paths newpathdirs;
 
   newpathdir = fs::dirname(newpath);
-  rv = createFunc(srcmounts,newpathdir,newpathdirs,-1);
+  rv = createFunc(srcmounts,newpathdir,minfreespace,newpathdirs);
   if(rv == -1)
     return -errno;
 
@@ -83,6 +84,7 @@ namespace mergerfs
 
       return _symlink(*config.symlink,
                       config.srcmounts,
+                      config.minfreespace,
                       oldpath,
                       newpath);
     }

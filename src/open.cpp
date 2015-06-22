@@ -43,6 +43,7 @@ static
 int
 _open(const fs::find::Func  searchFunc,
       const vector<string> &srcmounts,
+      const size_t          minfreespace,
       const string         &fusepath,
       const int             flags,
       uint64_t             &fh)
@@ -51,7 +52,7 @@ _open(const fs::find::Func  searchFunc,
   int rv;
   fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path,1);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
@@ -79,6 +80,7 @@ namespace mergerfs
 
       return _open(*config.open,
                    config.srcmounts,
+                   config.minfreespace,
                    fusepath,
                    fileinfo->flags,
                    fileinfo->fh);

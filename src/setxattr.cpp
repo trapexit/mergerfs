@@ -242,6 +242,7 @@ static
 int
 _setxattr(const fs::find::Func  actionFunc,
           const vector<string> &srcmounts,
+          const size_t          minfreespace,
           const string         &fusepath,
           const char           *attrname,
           const char           *attrval,
@@ -253,7 +254,7 @@ _setxattr(const fs::find::Func  actionFunc,
   int error;
   fs::Paths paths;
 
-  rv = actionFunc(srcmounts,fusepath,paths,-1);
+  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
@@ -302,6 +303,7 @@ namespace mergerfs
 
         return _setxattr(*config.setxattr,
                          config.srcmounts,
+                         config.minfreespace,
                          fusepath,
                          attrname,
                          attrval,

@@ -28,6 +28,7 @@
 #include <fuse.h>
 
 #include <sys/stat.h>
+#include <stdint.h>
 
 #include <string>
 #include <vector>
@@ -54,6 +55,7 @@ namespace mergerfs
       std::string              destmount;
       std::vector<std::string> srcmounts;
       mutable pthread_rwlock_t srcmountslock;
+      size_t                   minfreespace;
 
     public:
       const Policy  *policies[FuseFunc::Enum::END];

@@ -71,6 +71,7 @@ static
 int
 _listxattr(const fs::find::Func  searchFunc,
            const vector<string> &srcmounts,
+           const size_t          minfreespace,
            const string         &fusepath,
            char                 *list,
            const size_t          size)
@@ -79,7 +80,7 @@ _listxattr(const fs::find::Func  searchFunc,
   int rv;
   fs::Paths path;
 
-  rv = searchFunc(srcmounts,fusepath,path,1);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
@@ -103,8 +104,7 @@ namespace mergerfs
       const config::Config &config = config::get();
 
       if(fusepath == config.controlfile)
-        return _listxattr_controlfile(list,
-                                      size);
+        return _listxattr_controlfile(list,size);
 
       const struct fuse_context *fc = fuse_get_context();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
@@ -112,6 +112,7 @@ namespace mergerfs
 
       return _listxattr(*config.listxattr,
                         config.srcmounts,
+                        config.minfreespace,
                         fusepath,
                         list,
                         size);

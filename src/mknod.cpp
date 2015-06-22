@@ -46,6 +46,7 @@ int
 _mknod(const fs::find::Func  searchFunc,
        const fs::find::Func  createFunc,
        const vector<string> &srcmounts,
+       const size_t          minfreespace,
        const string         &fusepath,
        const mode_t          mode,
        const dev_t           dev)
@@ -58,11 +59,11 @@ _mknod(const fs::find::Func  searchFunc,
   fs::Paths existingpath;
 
   dirname = fs::dirname(fusepath);
-  rv = searchFunc(srcmounts,dirname,existingpath,1);
+  rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
   if(rv == -1)
     return -errno;
 
-  rv = createFunc(srcmounts,dirname,createpaths,-1);
+  rv = createFunc(srcmounts,dirname,minfreespace,createpaths);
   if(rv == -1)
     return -errno;
 
@@ -103,6 +104,7 @@ namespace mergerfs
       return _mknod(*config.getattr,
                     *config.mknod,
                     config.srcmounts,
+                    config.minfreespace,
                     fusepath,
                     (mode & ~fc->umask),
                     rdev);
