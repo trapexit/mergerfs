@@ -595,6 +595,37 @@ namespace fs
     }
 
     int
+    fwfs(const vector<string> &basepaths,
+         const string         &fusepath,
+         const size_t          minfreespace,
+         Paths                &paths)
+    {
+      for(size_t i = 0, size = basepaths.size(); i != size; i++)
+        {
+          int rv;
+          const char *basepath;
+          struct statvfs fsstats;
+
+          basepath = basepaths[i].c_str();
+          rv = ::statvfs(basepath,&fsstats);
+          if(rv == 0)
+            {
+              fsblkcnt_t spaceavail;
+
+              spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+              if(spaceavail > minfreespace)
+                {
+                  paths.push_back(Path(basepath,
+                                       fs::make_path(basepath,fusepath)));
+                  return 0;
+                }
+            }
+        }
+
+      return mfs(basepaths,fusepath,minfreespace,paths);
+    }
+
+    int
     newest(const vector<string> &basepaths,
            const string         &fusepath,
            const size_t          minfreespace,

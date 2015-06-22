@@ -39,6 +39,7 @@ namespace mergerfs
     (POLICY(epmfs))
     (POLICY(ff))
     (POLICY(ffwp))
+    (POLICY(fwfs))
     (POLICY(mfs))
     (POLICY(newest))
     (POLICY(rand));
@@ -50,6 +51,7 @@ namespace mergerfs
   const Policy &Policy::epmfs   = Policy::policies[Policy::Enum::epmfs];
   const Policy &Policy::ff      = Policy::policies[Policy::Enum::ff];
   const Policy &Policy::ffwp    = Policy::policies[Policy::Enum::ffwp];
+  const Policy &Policy::fwfs    = Policy::policies[Policy::Enum::fwfs];
   const Policy &Policy::mfs     = Policy::policies[Policy::Enum::mfs];
   const Policy &Policy::newest  = Policy::policies[Policy::Enum::newest];
   const Policy &Policy::rand    = Policy::policies[Policy::Enum::rand];
