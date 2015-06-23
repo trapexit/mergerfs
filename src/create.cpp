@@ -43,8 +43,8 @@ using mergerfs::Policy;
 
 static
 int
-_create(const fs::find::Func  searchFunc,
-        const fs::find::Func  createFunc,
+_create(const Policy::FuncPtr searchFunc,
+        const Policy::FuncPtr createFunc,
         const vector<string> &srcmounts,
         const size_t          minfreespace,
         const string         &fusepath,

@@ -37,10 +37,11 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_unlink(const fs::find::Func  actionFunc,
+_unlink(const Policy::FuncPtr actionFunc,
         const vector<string> &srcmounts,
         const size_t          minfreespace,
         const string         &fusepath)

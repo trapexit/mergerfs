@@ -41,12 +41,12 @@ using mergerfs::Policy;
 
 static
 int
-_readlink(const fs::find::Func   searchFunc,
-          const vector<string>  &srcmounts,
-          const size_t           minfreespace,
-          const string          &fusepath,
-          char                  *buf,
-          const size_t           size)
+_readlink(const Policy::FuncPtr searchFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const string         &fusepath,
+          char                 *buf,
+          const size_t          size)
 {
   int rv;
   Paths path;

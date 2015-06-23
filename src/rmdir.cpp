@@ -40,7 +40,7 @@ using mergerfs::Policy;
 
 static
 int
-_rmdir(const fs::find::Func  actionFunc,
+_rmdir(const Policy::FuncPtr actionFunc,
        const vector<string> &srcmounts,
        const size_t          minfreespace,
        const string         &fusepath)

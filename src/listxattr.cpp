@@ -69,7 +69,7 @@ _listxattr_controlfile(char         *list,
 
 static
 int
-_listxattr(const fs::find::Func  searchFunc,
+_listxattr(const Policy::FuncPtr searchFunc,
            const vector<string> &srcmounts,
            const size_t          minfreespace,
            const string         &fusepath,

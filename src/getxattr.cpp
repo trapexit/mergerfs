@@ -190,7 +190,7 @@ _getxattr_user_mergerfs(const Path           &path,
 
 static
 int
-_getxattr(const fs::find::Func  searchFunc,
+_getxattr(const Policy::FuncPtr searchFunc,
           const vector<string> &srcmounts,
           const size_t          minfreespace,
           const string         &fusepath,

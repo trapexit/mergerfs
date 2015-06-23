@@ -36,10 +36,11 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_symlink(const fs::find::Func  createFunc,
+_symlink(const Policy::FuncPtr createFunc,
          const vector<string> &srcmounts,
          const size_t          minfreespace,
          const string         &oldpath,

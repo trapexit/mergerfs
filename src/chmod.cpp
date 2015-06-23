@@ -39,7 +39,7 @@ using mergerfs::Policy;
 
 static
 int
-_chmod(const fs::find::Func  actionFunc,
+_chmod(const Policy::FuncPtr actionFunc,
        const vector<string> &srcmounts,
        const size_t          minfreespace,
        const string         &fusepath,

@@ -100,8 +100,6 @@ namespace fs
 
   namespace find
   {
-    typedef int (*Func)(const vector<string>&,const string&,const size_t,Paths&);
-
     int invalid(const vector<string> &basepaths,
                 const string         &fusepath,
                 const size_t          minfreespace,

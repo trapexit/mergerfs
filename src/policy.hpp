@@ -26,8 +26,10 @@
 #define __POLICY_HPP__
 
 #include <string>
+#include <vector>
 #include <map>
 
+#include "path.hpp"
 #include "fs.hpp"
 
 namespace mergerfs
@@ -35,6 +37,8 @@ namespace mergerfs
   class Policy
   {
   public:
+    typedef int (*FuncPtr)(const std::vector<std::string>&,const std::string&,const std::size_t,Paths&);
+
     struct Enum
     {
       enum Type
@@ -55,9 +59,9 @@ namespace mergerfs
     };
 
   private:
-    Enum::Type     _enum;
-    std::string    _str;
-    fs::find::Func _func;
+    Enum::Type  _enum;
+    std::string _str;
+    FuncPtr     _func;
 
   public:
     Policy()
@@ -67,9 +71,9 @@ namespace mergerfs
     {
     }
 
-    Policy(const Enum::Type      enum_,
-           const std::string    &str_,
-           const fs::find::Func  func_)
+    Policy(const Enum::Type   enum_,
+           const std::string &str_,
+           const FuncPtr      func_)
       : _enum(enum_),
         _str(str_),
         _func(func_)
@@ -79,14 +83,14 @@ namespace mergerfs
   public:
     operator const Enum::Type() const { return _enum; }
     operator const std::string&() const { return _str; }
-    operator const fs::find::Func() const { return _func; }
+    operator const FuncPtr() const { return _func; }
     operator const Policy*() const { return this; }
 
     bool operator==(const Enum::Type enum_) const
     { return _enum == enum_; }
     bool operator==(const std::string &str_) const
     { return _str == str_; }
-    bool operator==(const fs::find::Func func_) const
+    bool operator==(const FuncPtr func_) const
     { return _func == func_; }
 
     bool operator!=(const Policy &r) const

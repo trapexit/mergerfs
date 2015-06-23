@@ -40,11 +40,12 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_mknod(const fs::find::Func  searchFunc,
-       const fs::find::Func  createFunc,
+_mknod(const Policy::FuncPtr searchFunc,
+       const Policy::FuncPtr createFunc,
        const vector<string> &srcmounts,
        const size_t          minfreespace,
        const string         &fusepath,

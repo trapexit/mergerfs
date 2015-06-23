@@ -38,10 +38,11 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_single_rename(const fs::find::Func  searchFunc,
+_single_rename(const Policy::FuncPtr searchFunc,
                const vector<string> &srcmounts,
                const size_t          minfreespace,
                const Path           &oldpath,
@@ -74,8 +75,8 @@ _single_rename(const fs::find::Func  searchFunc,
 
 static
 int
-_rename(const fs::find::Func  searchFunc,
-        const fs::find::Func  actionFunc,
+_rename(const Policy::FuncPtr searchFunc,
+        const Policy::FuncPtr actionFunc,
         const vector<string> &srcmounts,
         const size_t          minfreespace,
         const string         &oldpath,

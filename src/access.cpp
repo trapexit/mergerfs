@@ -45,7 +45,7 @@ using mergerfs::Policy;
 
 static
 int
-_access(const fs::find::Func  searchFunc,
+_access(const Policy::FuncPtr searchFunc,
         const vector<string> &srcmounts,
         const size_t          minfreespace,
         const string         &fusepath,

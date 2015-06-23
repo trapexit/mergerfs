@@ -41,7 +41,7 @@ using mergerfs::Policy;
 
 static
 int
-_single_link(const fs::find::Func  searchFunc,
+_single_link(const Policy::FuncPtr searchFunc,
              const vector<string> &srcmounts,
              const size_t          minfreespace,
              const string         &base,
@@ -76,8 +76,8 @@ _single_link(const fs::find::Func  searchFunc,
 
 static
 int
-_link(const fs::find::Func  searchFunc,
-      const fs::find::Func  actionFunc,
+_link(const Policy::FuncPtr searchFunc,
+      const Policy::FuncPtr actionFunc,
       const vector<string> &srcmounts,
       const size_t          minfreespace,
       const string         &oldpath,
