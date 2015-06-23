@@ -56,8 +56,8 @@ _create(const fs::find::Func  searchFunc,
   int rv;
   string path;
   string dirname;
-  fs::Paths createpath;
-  fs::Paths existingpath;
+  Paths createpath;
+  Paths existingpath;
 
   dirname = fs::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);

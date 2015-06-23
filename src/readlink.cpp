@@ -49,7 +49,7 @@ _readlink(const fs::find::Func   searchFunc,
           const size_t           size)
 {
   int rv;
-  fs::Paths path;
+  Paths path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)

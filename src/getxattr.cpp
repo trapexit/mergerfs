@@ -167,7 +167,7 @@ _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
 
 static
 int
-_getxattr_user_mergerfs(const fs::Path       &path,
+_getxattr_user_mergerfs(const Path           &path,
                         const vector<string> &srcmounts,
                         const string         &fusepath,
                         const char           *attrname,
@@ -200,7 +200,7 @@ _getxattr(const fs::find::Func  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  fs::Paths path;
+  Paths path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)

@@ -52,7 +52,7 @@ _access(const fs::find::Func  searchFunc,
         const int             mask)
 {
   int rv;
-  fs::Paths paths;
+  Paths paths;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)

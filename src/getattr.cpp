@@ -72,7 +72,7 @@ _getattr(const fs::find::Func  searchFunc,
          struct stat          &buf)
 {
   int rv;
-  fs::Paths path;
+  Paths path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)

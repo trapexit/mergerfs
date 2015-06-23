@@ -22,65 +22,34 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <errno.h>
-#include <unistd.h>
+#ifndef __PATH_HPP__
+#define __PATH_HPP__
 
 #include <string>
 #include <vector>
 
-#include "ugid.hpp"
-#include "fs.hpp"
-#include "config.hpp"
-#include "rwlock.hpp"
-
-using std::string;
-using std::vector;
-
-static
-int
-_unlink(const fs::find::Func  actionFunc,
-        const vector<string> &srcmounts,
-        const size_t          minfreespace,
-        const string         &fusepath)
+struct Path
 {
-  int rv;
-  int error;
-  Paths paths;
+  Path() {}
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
-  if(rv == -1)
-    return -errno;
+  explicit
+  Path(const std::string &b,
+       const std::string &f)
+    : base(b),
+      full(f)
+  {}
 
-  error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv = ::unlink(i->full.c_str());
-      if(rv == -1)
-        error = errno;
-    }
+  explicit
+  Path(const char        *b,
+       const std::string &f)
+    : base(b),
+      full(f)
+  {}
 
-  return -error;
-}
+  std::string base;
+  std::string full;
+};
 
-namespace mergerfs
-{
-  namespace unlink
-  {
-    int
-    unlink(const char *fusepath)
-    {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+typedef std::vector<Path> Paths;
 
-      return _unlink(*config.unlink,
-                     config.srcmounts,
-                     config.minfreespace,
-                     fusepath);
-    }
-  }
-}
+#endif /* __PATH_HPP__ */

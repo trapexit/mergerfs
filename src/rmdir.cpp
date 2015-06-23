@@ -47,14 +47,14 @@ _rmdir(const fs::find::Func  actionFunc,
 {
   int rv;
   int error;
-  fs::Paths paths;
+  Paths paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv = ::rmdir(i->full.c_str());

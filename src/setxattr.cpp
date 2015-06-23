@@ -252,14 +252,14 @@ _setxattr(const fs::find::Func  actionFunc,
 #ifndef WITHOUT_XATTR
   int rv;
   int error;
-  fs::Paths paths;
+  Paths paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv = ::lsetxattr(i->full.c_str(),attrname,attrval,attrvalsize,flags);

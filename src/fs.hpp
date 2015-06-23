@@ -29,36 +29,14 @@
 #include <vector>
 #include <map>
 
+#include "path.hpp"
+
 namespace fs
 {
   using std::size_t;
   using std::string;
   using std::vector;
   using std::map;
-
-  struct Path
-  {
-    Path() {}
-
-    explicit
-    Path(const string &b,
-         const string &f)
-      : base(b),
-        full(f)
-    {}
-
-    explicit
-    Path(const char   *b,
-         const string &f)
-      : base(b),
-        full(f)
-    {}
-
-    string base;
-    string full;
-  };
-
-  typedef vector<Path> Paths;
 
   string dirname(const string &path);
   string basename(const string &path);

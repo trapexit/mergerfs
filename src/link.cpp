@@ -56,7 +56,7 @@ _single_link(const fs::find::Func  searchFunc,
   if(rv == -1 && errno == ENOENT)
     {
       string newpathdir;
-      fs::Paths foundpath;
+      Paths foundpath;
 
       newpathdir = fs::dirname(newpath);
       rv = searchFunc(srcmounts,newpathdir,minfreespace,foundpath);
@@ -85,14 +85,14 @@ _link(const fs::find::Func  searchFunc,
 {
   int rv;
   int error;
-  fs::Paths oldpaths;
+  Paths oldpaths;
 
   rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
     {
       rv = _single_link(searchFunc,srcmounts,minfreespace,i->base,oldpath,newpath);

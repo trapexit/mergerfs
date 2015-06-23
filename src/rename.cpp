@@ -44,7 +44,7 @@ int
 _single_rename(const fs::find::Func  searchFunc,
                const vector<string> &srcmounts,
                const size_t          minfreespace,
-               const fs::Path       &oldpath,
+               const Path           &oldpath,
                const string         &newpath)
 {
   int rv;
@@ -54,7 +54,7 @@ _single_rename(const fs::find::Func  searchFunc,
   if(rv == -1 && errno == ENOENT)
     {
       string dirname;
-      fs::Paths newpathdir;
+      Paths newpathdir;
 
       dirname = fs::dirname(newpath);
       rv = searchFunc(srcmounts,dirname,minfreespace,newpathdir);
@@ -83,14 +83,14 @@ _rename(const fs::find::Func  searchFunc,
 {
   int rv;
   int error;
-  fs::Paths oldpaths;
+  Paths oldpaths;
 
   rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
     {
       rv = _single_rename(searchFunc,srcmounts,minfreespace,*i,newpath);
