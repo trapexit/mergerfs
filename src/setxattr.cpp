@@ -240,14 +240,14 @@ _setxattr_controlfile(config::Config &config,
 
 static
 int
-_setxattr(const Policy::FuncPtr actionFunc,
-          const vector<string> &srcmounts,
-          const size_t          minfreespace,
-          const string         &fusepath,
-          const char           *attrname,
-          const char           *attrval,
-          const size_t          attrvalsize,
-          const int             flags)
+_setxattr(const Policy::Func::Ptr  actionFunc,
+          const vector<string>    &srcmounts,
+          const size_t             minfreespace,
+          const string            &fusepath,
+          const char              *attrname,
+          const char              *attrval,
+          const size_t             attrvalsize,
+          const int                flags)
 {
 #ifndef WITHOUT_XATTR
   int rv;

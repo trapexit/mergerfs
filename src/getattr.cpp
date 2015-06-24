@@ -66,11 +66,11 @@ _getattr_controlfile(struct stat &buf)
 
 static
 int
-_getattr(const Policy::FuncPtr searchFunc,
-         const vector<string> &srcmounts,
-         const size_t          minfreespace,
-         const string         &fusepath,
-         struct stat          &buf)
+_getattr(const Policy::Func::Ptr  searchFunc,
+         const vector<string>    &srcmounts,
+         const size_t             minfreespace,
+         const string            &fusepath,
+         struct stat             &buf)
 {
   int rv;
   Paths path;

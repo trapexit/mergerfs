@@ -40,12 +40,12 @@ using mergerfs::Policy;
 
 static
 int
-_chown(const Policy::FuncPtr actionFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const uid_t           uid,
-       const gid_t           gid)
+_chown(const Policy::Func::Ptr  actionFunc,
+       const vector<string>    &srcmounts,
+       const size_t             minfreespace,
+       const string            &fusepath,
+       const uid_t              uid,
+       const gid_t              gid)
 {
   int rv;
   int error;

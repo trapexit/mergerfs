@@ -22,65 +22,48 @@
    THE SOFTWARE.
 */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <fuse.h>
+#include <sys/statvfs.h>
+#include <errno.h>
 
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-#include <errno.h>
-
-#include "ugid.hpp"
-#include "fs.hpp"
-#include "config.hpp"
-#include "rwlock.hpp"
+#include "policy.hpp"
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
-
-static
-int
-_access(const Policy::Func::Ptr  searchFunc,
-        const vector<string>    &srcmounts,
-        const size_t             minfreespace,
-        const string            &fusepath,
-        const int                mask)
-{
-  int rv;
-  Paths paths;
-
-  rv = searchFunc(srcmounts,fusepath,minfreespace,paths);
-  if(rv == -1)
-    return -errno;
-
-  rv = ::eaccess(paths[0].full.c_str(),mask);
-
-  return ((rv == -1) ? -errno : 0);
-}
+using std::size_t;
 
 namespace mergerfs
 {
-  namespace access
+  int
+  Policy::Func::fwfs(const vector<string> &basepaths,
+                     const string         &fusepath,
+                     const size_t          minfreespace,
+                     Paths                &paths)
   {
-    int
-    access(const char *fusepath,
-           int         mask)
-    {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+    for(size_t i = 0, size = basepaths.size(); i != size; i++)
+      {
+        int rv;
+        const char *basepath;
+        struct statvfs fsstats;
 
-      return _access(*config.access,
-                     config.srcmounts,
-                     config.minfreespace,
-                     fusepath,
-                     mask);
-    }
+        basepath = basepaths[i].c_str();
+        rv = ::statvfs(basepath,&fsstats);
+        if(rv == 0)
+          {
+            fsblkcnt_t spaceavail;
+
+            spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+            if(spaceavail > minfreespace)
+              {
+                paths.push_back(Path(basepath,
+                                     fs::make_path(basepath,fusepath)));
+                return 0;
+              }
+          }
+      }
+
+    return mfs(basepaths,fusepath,minfreespace,paths);
   }
 }

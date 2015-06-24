@@ -42,12 +42,12 @@ using mergerfs::Policy;
 
 static
 int
-_mkdir(const Policy::FuncPtr searchFunc,
-       const Policy::FuncPtr createFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const mode_t          mode)
+_mkdir(const Policy::Func::Ptr  searchFunc,
+       const Policy::Func::Ptr  createFunc,
+       const vector<string>    &srcmounts,
+       const size_t             minfreespace,
+       const string            &fusepath,
+       const mode_t             mode)
 {
   int rv;
   int error;

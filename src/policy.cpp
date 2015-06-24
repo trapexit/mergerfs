@@ -28,7 +28,7 @@
 #include "fs.hpp"
 #include "buildvector.hpp"
 
-#define POLICY(X) (Policy(Policy::Enum::X,#X,fs::find::X))
+#define POLICY(X) (Policy(Policy::Enum::X,#X,Policy::Func::X))
 
 namespace mergerfs
 {

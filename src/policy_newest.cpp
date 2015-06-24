@@ -22,70 +22,57 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <string>
 #include <vector>
 
-#include "ugid.hpp"
-#include "fs.hpp"
-#include "config.hpp"
-#include "rwlock.hpp"
+#include "policy.hpp"
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
-
-static
-int
-_truncate(const Policy::Func::Ptr  actionFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          const off_t              size)
-{
-  int rv;
-  int error;
-  Paths paths;
-
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
-  if(rv == -1)
-    return -errno;
-
-  error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv = ::truncate(i->full.c_str(),size);
-      if(rv == -1)
-        error = errno;
-    }
-
-  return -error;
-}
+using std::size_t;
 
 namespace mergerfs
 {
-  namespace truncate
+  int
+  Policy::Func::newest(const vector<string> &basepaths,
+                       const string         &fusepath,
+                       const size_t          minfreespace,
+                       Paths                &paths)
   {
-    int
-    truncate(const char *fusepath,
-             off_t       size)
-    {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+    time_t newest;
+    string npath;
+    vector<string>::const_iterator niter;
 
-      return _truncate(*config.truncate,
-                       config.srcmounts,
-                       config.minfreespace,
-                       fusepath,
-                       size);
-    }
+    newest = 0;
+    errno  = ENOENT;
+    for(vector<string>::const_iterator
+          iter = basepaths.begin(), eiter = basepaths.end();
+        iter != eiter;
+        ++iter)
+      {
+        int         rv;
+        struct stat st;
+        string      fullpath;
+
+        fullpath = fs::make_path(*iter,fusepath);
+
+        rv  = ::lstat(fullpath.c_str(),&st);
+        if(rv == 0 && st.st_mtime > newest)
+          {
+            newest = st.st_mtime;
+            niter  = iter;
+            npath  = fullpath;
+          }
+      }
+
+    if(newest)
+      return (paths.push_back(Path(*niter,npath)),0);
+
+    return -1;
   }
 }

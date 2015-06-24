@@ -41,12 +41,12 @@ using mergerfs::Policy;
 
 static
 int
-_single_link(const Policy::FuncPtr searchFunc,
-             const vector<string> &srcmounts,
-             const size_t          minfreespace,
-             const string         &base,
-             const string         &oldpath,
-             const string         &newpath)
+_single_link(const Policy::Func::Ptr  searchFunc,
+             const vector<string>    &srcmounts,
+             const size_t             minfreespace,
+             const string            &base,
+             const string            &oldpath,
+             const string            &newpath)
 {
   int rv;
   const string fulloldpath = fs::make_path(base,oldpath);
@@ -76,12 +76,12 @@ _single_link(const Policy::FuncPtr searchFunc,
 
 static
 int
-_link(const Policy::FuncPtr searchFunc,
-      const Policy::FuncPtr actionFunc,
-      const vector<string> &srcmounts,
-      const size_t          minfreespace,
-      const string         &oldpath,
-      const string         &newpath)
+_link(const Policy::Func::Ptr  searchFunc,
+      const Policy::Func::Ptr  actionFunc,
+      const vector<string>    &srcmounts,
+      const size_t             minfreespace,
+      const string            &oldpath,
+      const string            &newpath)
 {
   int rv;
   int error;

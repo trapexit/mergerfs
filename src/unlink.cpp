@@ -41,10 +41,10 @@ using mergerfs::Policy;
 
 static
 int
-_unlink(const Policy::FuncPtr actionFunc,
-        const vector<string> &srcmounts,
-        const size_t          minfreespace,
-        const string         &fusepath)
+_unlink(const Policy::Func::Ptr  actionFunc,
+        const vector<string>    &srcmounts,
+        const size_t             minfreespace,
+        const string            &fusepath)
 {
   int rv;
   int error;

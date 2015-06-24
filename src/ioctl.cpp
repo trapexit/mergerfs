@@ -82,14 +82,14 @@ _ioctl(const int           fd,
 #ifdef FUSE_IOCTL_DIR
 static
 int
-_ioctl_dir_base(const Policy::FuncPtr searchFunc,
-                const vector<string> &srcmounts,
-                const size_t          minfreespace,
-                const string         &fusepath,
-                const int             cmd,
-                void                 *arg,
-                const unsigned int    flags,
-                void                 *data)
+_ioctl_dir_base(const Policy::Func::Ptr  searchFunc,
+                const vector<string>    &srcmounts,
+                const size_t             minfreespace,
+                const string            &fusepath,
+                const int                cmd,
+                void                    *arg,
+                const unsigned int       flags,
+                void                    *data)
 {
   int fd;
   int rv;

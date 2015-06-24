@@ -69,12 +69,12 @@ _listxattr_controlfile(char         *list,
 
 static
 int
-_listxattr(const Policy::FuncPtr searchFunc,
-           const vector<string> &srcmounts,
-           const size_t          minfreespace,
-           const string         &fusepath,
-           char                 *list,
-           const size_t          size)
+_listxattr(const Policy::Func::Ptr  searchFunc,
+           const vector<string>    &srcmounts,
+           const size_t             minfreespace,
+           const string            &fusepath,
+           char                    *list,
+           const size_t             size)
 {
 #ifndef WITHOUT_XATTR
   int rv;

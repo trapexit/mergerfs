@@ -97,50 +97,6 @@ namespace fs
 
   void glob(const vector<string> &patterns,
             vector<string>       &strs);
-
-  namespace find
-  {
-    int invalid(const vector<string> &basepaths,
-                const string         &fusepath,
-                const size_t          minfreespace,
-                Paths                &path);
-    int all(const vector<string> &basepaths,
-            const string         &fusepath,
-            const size_t          minfreespace,
-            Paths                &path);
-    int ff(const vector<string>      &basepaths,
-           const string              &fusepath,
-           const size_t               minfreespace,
-           Paths                     &path);
-    int ffwp(const vector<string>    &paths,
-             const string            &fusepath,
-             const size_t             minfreespace,
-             Paths                   &path);
-    int fwfs(const vector<string>    &paths,
-             const string            &fusepath,
-             const size_t             minfreespace,
-             Paths                   &path);
-    int newest(const vector<string>  &paths,
-               const string          &fusepath,
-               const size_t           minfreespace,
-               Paths                 &path);
-    int lfs(const vector<string>     &paths,
-            const string             &fusepath,
-            const size_t              minfreespace,
-            Paths                    &path);
-    int mfs(const vector<string>     &paths,
-            const string             &fusepath,
-            const size_t              minfreespace,
-            Paths                    &path);
-    int epmfs(const vector<string>   &paths,
-              const string           &fusepath,
-              const size_t            minfreespace,
-              Paths                  &path);
-    int rand(const vector<string>    &paths,
-             const string            &fusepath,
-             const size_t             minfreespace,
-             Paths                   &path);
-  }
 };
 
 #endif // __FS_HPP__

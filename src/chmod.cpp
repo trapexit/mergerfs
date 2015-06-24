@@ -39,11 +39,11 @@ using mergerfs::Policy;
 
 static
 int
-_chmod(const Policy::FuncPtr actionFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const mode_t          mode)
+_chmod(const Policy::Func::Ptr  actionFunc,
+       const vector<string>    &srcmounts,
+       const size_t             minfreespace,
+       const string            &fusepath,
+       const mode_t             mode)
 {
   int rv;
   int error;

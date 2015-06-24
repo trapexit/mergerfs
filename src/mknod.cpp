@@ -44,13 +44,13 @@ using mergerfs::Policy;
 
 static
 int
-_mknod(const Policy::FuncPtr searchFunc,
-       const Policy::FuncPtr createFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const mode_t          mode,
-       const dev_t           dev)
+_mknod(const Policy::Func::Ptr  searchFunc,
+       const Policy::Func::Ptr  createFunc,
+       const vector<string>    &srcmounts,
+       const size_t             minfreespace,
+       const string            &fusepath,
+       const mode_t             mode,
+       const dev_t              dev)
 {
   int rv;
   int error;

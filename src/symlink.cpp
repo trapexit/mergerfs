@@ -40,11 +40,11 @@ using mergerfs::Policy;
 
 static
 int
-_symlink(const Policy::FuncPtr createFunc,
-         const vector<string> &srcmounts,
-         const size_t          minfreespace,
-         const string         &oldpath,
-         const string         &newpath)
+_symlink(const Policy::Func::Ptr  createFunc,
+         const vector<string>    &srcmounts,
+         const size_t             minfreespace,
+         const string            &oldpath,
+         const string            &newpath)
 {
   int rv;
   int error;

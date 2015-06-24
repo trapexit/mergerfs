@@ -42,11 +42,11 @@ using mergerfs::Policy;
 
 static
 int
-_single_rename(const Policy::FuncPtr searchFunc,
-               const vector<string> &srcmounts,
-               const size_t          minfreespace,
-               const Path           &oldpath,
-               const string         &newpath)
+_single_rename(const Policy::Func::Ptr  searchFunc,
+               const vector<string>    &srcmounts,
+               const size_t             minfreespace,
+               const Path              &oldpath,
+               const string            &newpath)
 {
   int rv;
   const string fullnewpath = fs::make_path(oldpath.base,newpath);
@@ -75,12 +75,12 @@ _single_rename(const Policy::FuncPtr searchFunc,
 
 static
 int
-_rename(const Policy::FuncPtr searchFunc,
-        const Policy::FuncPtr actionFunc,
-        const vector<string> &srcmounts,
-        const size_t          minfreespace,
-        const string         &oldpath,
-        const string         &newpath)
+_rename(const Policy::Func::Ptr  searchFunc,
+        const Policy::Func::Ptr  actionFunc,
+        const vector<string>    &srcmounts,
+        const size_t             minfreespace,
+        const string            &oldpath,
+        const string            &newpath)
 {
   int rv;
   int error;

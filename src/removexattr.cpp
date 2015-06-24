@@ -42,11 +42,11 @@ using mergerfs::Policy;
 
 static
 int
-_removexattr(const Policy::FuncPtr actionFunc,
-             const vector<string> &srcmounts,
-             const size_t          minfreespace,
-             const string         &fusepath,
-             const char           *attrname)
+_removexattr(const Policy::Func::Ptr  actionFunc,
+             const vector<string>    &srcmounts,
+             const size_t             minfreespace,
+             const string            &fusepath,
+             const char              *attrname)
 {
 #ifndef WITHOUT_XATTR
   int rv;

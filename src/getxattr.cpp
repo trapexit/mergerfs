@@ -190,13 +190,13 @@ _getxattr_user_mergerfs(const Path           &path,
 
 static
 int
-_getxattr(const Policy::FuncPtr searchFunc,
-          const vector<string> &srcmounts,
-          const size_t          minfreespace,
-          const string         &fusepath,
-          const char           *attrname,
-          char                 *buf,
-          const size_t          count)
+_getxattr(const Policy::Func::Ptr  searchFunc,
+          const vector<string>    &srcmounts,
+          const size_t             minfreespace,
+          const string            &fusepath,
+          const char              *attrname,
+          char                    *buf,
+          const size_t             count)
 {
 #ifndef WITHOUT_XATTR
   int rv;
