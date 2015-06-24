@@ -36,19 +36,20 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_symlink(const fs::find::Func  createFunc,
-         const vector<string> &srcmounts,
-         const size_t          minfreespace,
-         const string         &oldpath,
-         const string         &newpath)
+_symlink(const Policy::Func::Ptr  createFunc,
+         const vector<string>    &srcmounts,
+         const size_t             minfreespace,
+         const string            &oldpath,
+         const string            &newpath)
 {
   int rv;
   int error;
   string newpathdir;
-  fs::Paths newpathdirs;
+  Paths newpathdirs;
 
   newpathdir = fs::dirname(newpath);
   rv = createFunc(srcmounts,newpathdir,minfreespace,newpathdirs);
@@ -56,7 +57,7 @@ _symlink(const fs::find::Func  createFunc,
     return -errno;
 
   error = 0;
-  for(fs::Paths::iterator
+  for(Paths::iterator
         i = newpathdirs.begin(), ei = newpathdirs.end(); i != ei; ++i)
     {
       i->full = fs::make_path(i->base,newpath);

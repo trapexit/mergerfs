@@ -26,8 +26,10 @@
 #define __POLICY_HPP__
 
 #include <string>
+#include <vector>
 #include <map>
 
+#include "path.hpp"
 #include "fs.hpp"
 
 namespace mergerfs
@@ -54,10 +56,30 @@ namespace mergerfs
         };
     };
 
+    struct Func
+    {
+      typedef std::string string;
+      typedef std::size_t size_t;
+      typedef std::vector<string> strvec;
+
+      typedef int (*Ptr)(const strvec&,const string&,const size_t,Paths&);
+
+      static int invalid(const strvec&,const string&,const size_t,Paths&);
+      static int all(const strvec&,const string&,const size_t,Paths&);
+      static int epmfs(const strvec&,const string&,const size_t,Paths&);
+      static int ff(const strvec&,const string&,const size_t,Paths&);
+      static int ffwp(const strvec&,const string&,const size_t,Paths&);
+      static int fwfs(const strvec&,const string&,const size_t,Paths&);
+      static int lfs(const strvec&,const string&,const size_t,Paths&);
+      static int mfs(const strvec&,const string&,const size_t,Paths&);
+      static int newest(const strvec&,const string&,const size_t,Paths&);
+      static int rand(const strvec&,const string&,const size_t,Paths&);
+    };
+
   private:
-    Enum::Type     _enum;
-    std::string    _str;
-    fs::find::Func _func;
+    Enum::Type  _enum;
+    std::string _str;
+    Func::Ptr   _func;
 
   public:
     Policy()
@@ -67,9 +89,9 @@ namespace mergerfs
     {
     }
 
-    Policy(const Enum::Type      enum_,
-           const std::string    &str_,
-           const fs::find::Func  func_)
+    Policy(const Enum::Type   enum_,
+           const std::string &str_,
+           const Func::Ptr    func_)
       : _enum(enum_),
         _str(str_),
         _func(func_)
@@ -79,14 +101,14 @@ namespace mergerfs
   public:
     operator const Enum::Type() const { return _enum; }
     operator const std::string&() const { return _str; }
-    operator const fs::find::Func() const { return _func; }
+    operator const Func::Ptr() const { return _func; }
     operator const Policy*() const { return this; }
 
     bool operator==(const Enum::Type enum_) const
     { return _enum == enum_; }
     bool operator==(const std::string &str_) const
     { return _str == str_; }
-    bool operator==(const fs::find::Func func_) const
+    bool operator==(const Func::Ptr func_) const
     { return _func == func_; }
 
     bool operator!=(const Policy &r) const

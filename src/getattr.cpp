@@ -39,6 +39,7 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
@@ -65,14 +66,14 @@ _getattr_controlfile(struct stat &buf)
 
 static
 int
-_getattr(const fs::find::Func  searchFunc,
-         const vector<string> &srcmounts,
-         const size_t          minfreespace,
-         const string         &fusepath,
-         struct stat          &buf)
+_getattr(const Policy::Func::Ptr  searchFunc,
+         const vector<string>    &srcmounts,
+         const size_t             minfreespace,
+         const string            &fusepath,
+         struct stat             &buf)
 {
   int rv;
-  fs::Paths path;
+  Paths path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)

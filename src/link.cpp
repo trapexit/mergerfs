@@ -41,12 +41,12 @@ using mergerfs::Policy;
 
 static
 int
-_single_link(const fs::find::Func  searchFunc,
-             const vector<string> &srcmounts,
-             const size_t          minfreespace,
-             const string         &base,
-             const string         &oldpath,
-             const string         &newpath)
+_single_link(const Policy::Func::Ptr  searchFunc,
+             const vector<string>    &srcmounts,
+             const size_t             minfreespace,
+             const string            &base,
+             const string            &oldpath,
+             const string            &newpath)
 {
   int rv;
   const string fulloldpath = fs::make_path(base,oldpath);
@@ -56,7 +56,7 @@ _single_link(const fs::find::Func  searchFunc,
   if(rv == -1 && errno == ENOENT)
     {
       string newpathdir;
-      fs::Paths foundpath;
+      Paths foundpath;
 
       newpathdir = fs::dirname(newpath);
       rv = searchFunc(srcmounts,newpathdir,minfreespace,foundpath);
@@ -76,23 +76,23 @@ _single_link(const fs::find::Func  searchFunc,
 
 static
 int
-_link(const fs::find::Func  searchFunc,
-      const fs::find::Func  actionFunc,
-      const vector<string> &srcmounts,
-      const size_t          minfreespace,
-      const string         &oldpath,
-      const string         &newpath)
+_link(const Policy::Func::Ptr  searchFunc,
+      const Policy::Func::Ptr  actionFunc,
+      const vector<string>    &srcmounts,
+      const size_t             minfreespace,
+      const string            &oldpath,
+      const string            &newpath)
 {
   int rv;
   int error;
-  fs::Paths oldpaths;
+  Paths oldpaths;
 
   rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
     {
       rv = _single_link(searchFunc,srcmounts,minfreespace,i->base,oldpath,newpath);

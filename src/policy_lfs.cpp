@@ -22,70 +22,62 @@
    THE SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <string>
 #include <vector>
 
-#include "ugid.hpp"
-#include "fs.hpp"
-#include "config.hpp"
-#include "rwlock.hpp"
+#include "policy.hpp"
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
-
-static
-int
-_truncate(const Policy::Func::Ptr  actionFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          const off_t              size)
-{
-  int rv;
-  int error;
-  Paths paths;
-
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
-  if(rv == -1)
-    return -errno;
-
-  error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
-    {
-      rv = ::truncate(i->full.c_str(),size);
-      if(rv == -1)
-        error = errno;
-    }
-
-  return -error;
-}
+using std::size_t;
 
 namespace mergerfs
 {
-  namespace truncate
+  int
+  Policy::Func::lfs(const vector<string> &basepaths,
+                    const string         &fusepath,
+                    const size_t          minfreespace,
+                    Paths                &paths)
   {
-    int
-    truncate(const char *fusepath,
-             off_t       size)
-    {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+    fsblkcnt_t  lfs;
+    const char *lfsstr;
 
-      return _truncate(*config.truncate,
-                       config.srcmounts,
-                       config.minfreespace,
-                       fusepath,
-                       size);
-    }
+    lfs    = -1;
+    lfsstr = NULL;
+    for(size_t i = 0, size = basepaths.size(); i != size; i++)
+      {
+        int rv;
+        const char *basepath;
+        struct statvfs fsstats;
+
+        basepath = basepaths[i].c_str();
+        rv = ::statvfs(basepath,&fsstats);
+        if(rv == 0)
+          {
+            fsblkcnt_t spaceavail;
+
+            spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+            if((spaceavail > minfreespace) &&
+               (spaceavail < lfs))
+              {
+                lfs    = spaceavail;
+                lfsstr = basepath;
+              }
+          }
+      }
+
+    if(lfsstr == NULL)
+      return Policy::Func::mfs(basepaths,fusepath,minfreespace,paths);
+
+    paths.push_back(Path(lfsstr,
+                         fs::make_path(lfsstr,fusepath)));
+
+    return 0;
   }
 }

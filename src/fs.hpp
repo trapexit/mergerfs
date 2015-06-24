@@ -29,36 +29,14 @@
 #include <vector>
 #include <map>
 
+#include "path.hpp"
+
 namespace fs
 {
   using std::size_t;
   using std::string;
   using std::vector;
   using std::map;
-
-  struct Path
-  {
-    Path() {}
-
-    explicit
-    Path(const string &b,
-         const string &f)
-      : base(b),
-        full(f)
-    {}
-
-    explicit
-    Path(const char   *b,
-         const string &f)
-      : base(b),
-        full(f)
-    {}
-
-    string base;
-    string full;
-  };
-
-  typedef vector<Path> Paths;
 
   string dirname(const string &path);
   string basename(const string &path);
@@ -119,52 +97,6 @@ namespace fs
 
   void glob(const vector<string> &patterns,
             vector<string>       &strs);
-
-  namespace find
-  {
-    typedef int (*Func)(const vector<string>&,const string&,const size_t,Paths&);
-
-    int invalid(const vector<string> &basepaths,
-                const string         &fusepath,
-                const size_t          minfreespace,
-                Paths                &path);
-    int all(const vector<string> &basepaths,
-            const string         &fusepath,
-            const size_t          minfreespace,
-            Paths                &path);
-    int ff(const vector<string>      &basepaths,
-           const string              &fusepath,
-           const size_t               minfreespace,
-           Paths                     &path);
-    int ffwp(const vector<string>    &paths,
-             const string            &fusepath,
-             const size_t             minfreespace,
-             Paths                   &path);
-    int fwfs(const vector<string>    &paths,
-             const string            &fusepath,
-             const size_t             minfreespace,
-             Paths                   &path);
-    int newest(const vector<string>  &paths,
-               const string          &fusepath,
-               const size_t           minfreespace,
-               Paths                 &path);
-    int lfs(const vector<string>     &paths,
-            const string             &fusepath,
-            const size_t              minfreespace,
-            Paths                    &path);
-    int mfs(const vector<string>     &paths,
-            const string             &fusepath,
-            const size_t              minfreespace,
-            Paths                    &path);
-    int epmfs(const vector<string>   &paths,
-              const string           &fusepath,
-              const size_t            minfreespace,
-              Paths                  &path);
-    int rand(const vector<string>    &paths,
-             const string            &fusepath,
-             const size_t             minfreespace,
-             Paths                   &path);
-  }
 };
 
 #endif // __FS_HPP__

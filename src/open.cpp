@@ -38,19 +38,20 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_open(const fs::find::Func  searchFunc,
-      const vector<string> &srcmounts,
-      const size_t          minfreespace,
-      const string         &fusepath,
-      const int             flags,
-      uint64_t             &fh)
+_open(const Policy::Func::Ptr  searchFunc,
+      const vector<string>    &srcmounts,
+      const size_t             minfreespace,
+      const string            &fusepath,
+      const int                flags,
+      uint64_t                &fh)
 {
   int fd;
   int rv;
-  fs::Paths path;
+  Paths path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)

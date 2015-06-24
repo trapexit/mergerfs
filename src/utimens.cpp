@@ -38,25 +38,26 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_utimens(const fs::find::Func   actionFunc,
-         const vector<string>  &srcmounts,
-         const size_t           minfreespace,
-         const string          &fusepath,
-         const struct timespec  ts[2])
+_utimens(const Policy::Func::Ptr  actionFunc,
+         const vector<string>    &srcmounts,
+         const size_t             minfreespace,
+         const string            &fusepath,
+         const struct timespec    ts[2])
 {
   int rv;
   int error;
-  fs::Paths paths;
+  Paths paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = paths.begin(), ei = paths.end(); i != ei; ++i)
     {
       rv = ::utimensat(0,i->full.c_str(),ts,AT_SYMLINK_NOFOLLOW);

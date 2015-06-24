@@ -38,14 +38,15 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_single_rename(const fs::find::Func  searchFunc,
-               const vector<string> &srcmounts,
-               const size_t          minfreespace,
-               const fs::Path       &oldpath,
-               const string         &newpath)
+_single_rename(const Policy::Func::Ptr  searchFunc,
+               const vector<string>    &srcmounts,
+               const size_t             minfreespace,
+               const Path              &oldpath,
+               const string            &newpath)
 {
   int rv;
   const string fullnewpath = fs::make_path(oldpath.base,newpath);
@@ -54,7 +55,7 @@ _single_rename(const fs::find::Func  searchFunc,
   if(rv == -1 && errno == ENOENT)
     {
       string dirname;
-      fs::Paths newpathdir;
+      Paths newpathdir;
 
       dirname = fs::dirname(newpath);
       rv = searchFunc(srcmounts,dirname,minfreespace,newpathdir);
@@ -74,23 +75,23 @@ _single_rename(const fs::find::Func  searchFunc,
 
 static
 int
-_rename(const fs::find::Func  searchFunc,
-        const fs::find::Func  actionFunc,
-        const vector<string> &srcmounts,
-        const size_t          minfreespace,
-        const string         &oldpath,
-        const string         &newpath)
+_rename(const Policy::Func::Ptr  searchFunc,
+        const Policy::Func::Ptr  actionFunc,
+        const vector<string>    &srcmounts,
+        const size_t             minfreespace,
+        const string            &oldpath,
+        const string            &newpath)
 {
   int rv;
   int error;
-  fs::Paths oldpaths;
+  Paths oldpaths;
 
   rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
     {
       rv = _single_rename(searchFunc,srcmounts,minfreespace,*i,newpath);

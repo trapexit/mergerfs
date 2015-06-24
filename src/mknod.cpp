@@ -40,23 +40,24 @@
 
 using std::string;
 using std::vector;
+using mergerfs::Policy;
 
 static
 int
-_mknod(const fs::find::Func  searchFunc,
-       const fs::find::Func  createFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const mode_t          mode,
-       const dev_t           dev)
+_mknod(const Policy::Func::Ptr  searchFunc,
+       const Policy::Func::Ptr  createFunc,
+       const vector<string>    &srcmounts,
+       const size_t             minfreespace,
+       const string            &fusepath,
+       const mode_t             mode,
+       const dev_t              dev)
 {
   int rv;
   int error;
   string dirname;
   string fullpath;
-  fs::Paths createpaths;
-  fs::Paths existingpath;
+  Paths createpaths;
+  Paths existingpath;
 
   dirname = fs::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
@@ -68,7 +69,7 @@ _mknod(const fs::find::Func  searchFunc,
     return -errno;
 
   error = 0;
-  for(fs::Paths::const_iterator
+  for(Paths::const_iterator
         i = createpaths.begin(), ei = createpaths.end(); i != ei; ++i)
     {
       if(i->base != existingpath[0].base)
