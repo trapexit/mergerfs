@@ -240,14 +240,14 @@ _setxattr_controlfile(config::Config &config,
 
 static
 int
-_setxattr(const Policy::Func::Ptr  actionFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          const char              *attrname,
-          const char              *attrval,
-          const size_t             attrvalsize,
-          const int                flags)
+_setxattr(Policy::Func::Action  actionFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const string         &fusepath,
+          const char           *attrname,
+          const char           *attrval,
+          const size_t          attrvalsize,
+          const int             flags)
 {
 #ifndef WITHOUT_XATTR
   int rv;
@@ -301,7 +301,7 @@ namespace mergerfs
         const ugid::SetResetGuard ugid(fc->uid,fc->gid);
         const rwlock::ReadGuard   readlock(&config.srcmountslock);
 
-        return _setxattr(*config.setxattr,
+        return _setxattr(config.setxattr,
                          config.srcmounts,
                          config.minfreespace,
                          fusepath,

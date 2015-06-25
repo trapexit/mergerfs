@@ -39,11 +39,11 @@ using mergerfs::Policy;
 
 static
 int
-_chmod(const Policy::Func::Ptr  actionFunc,
-       const vector<string>    &srcmounts,
-       const size_t             minfreespace,
-       const string            &fusepath,
-       const mode_t             mode)
+_chmod(Policy::Func::Action  actionFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const string         &fusepath,
+       const mode_t          mode)
 {
   int rv;
   int error;
@@ -78,7 +78,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _chmod(*config.chmod,
+      return _chmod(config.chmod,
                     config.srcmounts,
                     config.minfreespace,
                     fusepath,

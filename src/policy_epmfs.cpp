@@ -40,10 +40,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::epmfs(const vector<string> &basepaths,
-                      const string         &fusepath,
-                      const size_t          minfreespace,
-                      Paths                &paths)
+  Policy::Func::epmfs(const Category::Enum::Type  type,
+                      const vector<string>       &basepaths,
+                      const string               &fusepath,
+                      const size_t                minfreespace,
+                      Paths                      &paths)
   {
     fsblkcnt_t existingmfs;
     fsblkcnt_t generalmfs;

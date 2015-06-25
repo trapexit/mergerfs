@@ -40,10 +40,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::ff(const vector<string> &basepaths,
-                   const string         &fusepath,
-                   const size_t          minfreespace,
-                   Paths                &paths)
+  Policy::Func::ff(const Category::Enum::Type  type,
+                   const vector<string>       &basepaths,
+                   const string               &fusepath,
+                   const size_t                minfreespace,
+                   Paths                      &paths)
   {
     errno = ENOENT;
     for(vector<string>::const_iterator

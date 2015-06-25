@@ -41,12 +41,12 @@ using mergerfs::Policy;
 
 static
 int
-_single_link(const Policy::Func::Ptr  searchFunc,
-             const vector<string>    &srcmounts,
-             const size_t             minfreespace,
-             const string            &base,
-             const string            &oldpath,
-             const string            &newpath)
+_single_link(Policy::Func::Search  searchFunc,
+             const vector<string> &srcmounts,
+             const size_t          minfreespace,
+             const string         &base,
+             const string         &oldpath,
+             const string         &newpath)
 {
   int rv;
   const string fulloldpath = fs::make_path(base,oldpath);
@@ -76,12 +76,12 @@ _single_link(const Policy::Func::Ptr  searchFunc,
 
 static
 int
-_link(const Policy::Func::Ptr  searchFunc,
-      const Policy::Func::Ptr  actionFunc,
-      const vector<string>    &srcmounts,
-      const size_t             minfreespace,
-      const string            &oldpath,
-      const string            &newpath)
+_link(Policy::Func::Search  searchFunc,
+      Policy::Func::Action  actionFunc,
+      const vector<string> &srcmounts,
+      const size_t          minfreespace,
+      const string         &oldpath,
+      const string         &newpath)
 {
   int rv;
   int error;
@@ -116,8 +116,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _link(*config.getattr,
-                   *config.link,
+      return _link(config.getattr,
+                   config.link,
                    config.srcmounts,
                    config.minfreespace,
                    from,

@@ -37,14 +37,15 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::rand(const vector<string> &basepaths,
-                     const string         &fusepath,
-                     const size_t          minfreespace,
-                     Paths                &paths)
+  Policy::Func::rand(const Category::Enum::Type  type,
+                     const vector<string>       &basepaths,
+                     const string               &fusepath,
+                     const size_t                minfreespace,
+                     Paths                      &paths)
   {
     int rv;
 
-    rv = Policy::Func::all(basepaths,fusepath,minfreespace,paths);
+    rv = Policy::Func::all(type,basepaths,fusepath,minfreespace,paths);
     if(rv == -1)
       return -1;
 

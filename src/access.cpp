@@ -42,14 +42,15 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using mergerfs::Category;
 
 static
 int
-_access(const Policy::Func::Ptr  searchFunc,
-        const vector<string>    &srcmounts,
-        const size_t             minfreespace,
-        const string            &fusepath,
-        const int                mask)
+_access(Policy::Func::Search  searchFunc,
+        const vector<string> &srcmounts,
+        const size_t          minfreespace,
+        const string         &fusepath,
+        const int             mask)
 {
   int rv;
   Paths paths;
@@ -76,7 +77,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _access(*config.access,
+      return _access(config.access,
                      config.srcmounts,
                      config.minfreespace,
                      fusepath,

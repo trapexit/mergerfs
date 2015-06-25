@@ -41,12 +41,12 @@ using mergerfs::Policy;
 
 static
 int
-_readlink(const Policy::Func::Ptr  searchFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          char                    *buf,
-          const size_t             size)
+_readlink(Policy::Func::Search  searchFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const string         &fusepath,
+          char                 *buf,
+          const size_t          size)
 {
   int rv;
   Paths path;
@@ -78,7 +78,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _readlink(*config.readlink,
+      return _readlink(config.readlink,
                        config.srcmounts,
                        config.minfreespace,
                        fusepath,

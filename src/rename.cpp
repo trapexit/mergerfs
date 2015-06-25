@@ -42,11 +42,11 @@ using mergerfs::Policy;
 
 static
 int
-_single_rename(const Policy::Func::Ptr  searchFunc,
-               const vector<string>    &srcmounts,
-               const size_t             minfreespace,
-               const Path              &oldpath,
-               const string            &newpath)
+_single_rename(Policy::Func::Search  searchFunc,
+               const vector<string> &srcmounts,
+               const size_t          minfreespace,
+               const Path           &oldpath,
+               const string         &newpath)
 {
   int rv;
   const string fullnewpath = fs::make_path(oldpath.base,newpath);
@@ -75,12 +75,12 @@ _single_rename(const Policy::Func::Ptr  searchFunc,
 
 static
 int
-_rename(const Policy::Func::Ptr  searchFunc,
-        const Policy::Func::Ptr  actionFunc,
-        const vector<string>    &srcmounts,
-        const size_t             minfreespace,
-        const string            &oldpath,
-        const string            &newpath)
+_rename(Policy::Func::Search  searchFunc,
+        Policy::Func::Action  actionFunc,
+        const vector<string> &srcmounts,
+        const size_t          minfreespace,
+        const string         &oldpath,
+        const string         &newpath)
 {
   int rv;
   int error;
@@ -115,8 +115,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _rename(*config.getattr,
-                     *config.rename,
+      return _rename(config.getattr,
+                     config.rename,
                      config.srcmounts,
                      config.minfreespace,
                      oldpath,

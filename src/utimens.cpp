@@ -42,11 +42,11 @@ using mergerfs::Policy;
 
 static
 int
-_utimens(const Policy::Func::Ptr  actionFunc,
-         const vector<string>    &srcmounts,
-         const size_t             minfreespace,
-         const string            &fusepath,
-         const struct timespec    ts[2])
+_utimens(Policy::Func::Action   actionFunc,
+         const vector<string>  &srcmounts,
+         const size_t           minfreespace,
+         const string          &fusepath,
+         const struct timespec  ts[2])
 {
   int rv;
   int error;
@@ -81,7 +81,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _utimens(*config.utimens,
+      return _utimens(config.utimens,
                       config.srcmounts,
                       config.minfreespace,
                       fusepath,

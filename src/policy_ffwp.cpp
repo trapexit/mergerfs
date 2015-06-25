@@ -39,10 +39,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::ffwp(const vector<string> &basepaths,
-                     const string         &fusepath,
-                     const size_t          minfreespace,
-                     Paths                &paths)
+  Policy::Func::ffwp(const Category::Enum::Type  type,
+                     const vector<string>       &basepaths,
+                     const string               &fusepath,
+                     const size_t                minfreespace,
+                     Paths                      &paths)
   {
     Path fallback;
 

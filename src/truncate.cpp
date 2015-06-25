@@ -42,11 +42,11 @@ using mergerfs::Policy;
 
 static
 int
-_truncate(const Policy::Func::Ptr  actionFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          const off_t              size)
+_truncate(Policy::Func::Action  actionFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const string         &fusepath,
+          const off_t           size)
 {
   int rv;
   int error;
@@ -81,7 +81,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _truncate(*config.truncate,
+      return _truncate(config.truncate,
                        config.srcmounts,
                        config.minfreespace,
                        fusepath,

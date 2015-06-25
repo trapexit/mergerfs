@@ -42,11 +42,11 @@ using mergerfs::Policy;
 
 static
 int
-_removexattr(const Policy::Func::Ptr  actionFunc,
-             const vector<string>    &srcmounts,
-             const size_t             minfreespace,
-             const string            &fusepath,
-             const char              *attrname)
+_removexattr(Policy::Func::Action  actionFunc,
+             const vector<string> &srcmounts,
+             const size_t          minfreespace,
+             const string         &fusepath,
+             const char           *attrname)
 {
 #ifndef WITHOUT_XATTR
   int rv;
@@ -89,7 +89,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _removexattr(*config.removexattr,
+      return _removexattr(config.removexattr,
                           config.srcmounts,
                           config.minfreespace,
                           fusepath,

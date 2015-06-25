@@ -40,11 +40,11 @@ using mergerfs::Policy;
 
 static
 int
-_symlink(const Policy::Func::Ptr  createFunc,
-         const vector<string>    &srcmounts,
-         const size_t             minfreespace,
-         const string            &oldpath,
-         const string            &newpath)
+_symlink(Policy::Func::Create  createFunc,
+         const vector<string> &srcmounts,
+         const size_t          minfreespace,
+         const string         &oldpath,
+         const string         &newpath)
 {
   int rv;
   int error;
@@ -83,7 +83,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _symlink(*config.symlink,
+      return _symlink(config.symlink,
                       config.srcmounts,
                       config.minfreespace,
                       oldpath,

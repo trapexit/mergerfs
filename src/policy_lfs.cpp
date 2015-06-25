@@ -40,10 +40,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::lfs(const vector<string> &basepaths,
-                    const string         &fusepath,
-                    const size_t          minfreespace,
-                    Paths                &paths)
+  Policy::Func::lfs(const Category::Enum::Type  type,
+                    const vector<string>       &basepaths,
+                    const string               &fusepath,
+                    const size_t                minfreespace,
+                    Paths                      &paths)
   {
     fsblkcnt_t  lfs;
     const char *lfsstr;
@@ -73,7 +74,7 @@ namespace mergerfs
       }
 
     if(lfsstr == NULL)
-      return Policy::Func::mfs(basepaths,fusepath,minfreespace,paths);
+      return mfs(type,basepaths,fusepath,minfreespace,paths);
 
     paths.push_back(Path(lfsstr,
                          fs::make_path(lfsstr,fusepath)));

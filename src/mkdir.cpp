@@ -42,12 +42,12 @@ using mergerfs::Policy;
 
 static
 int
-_mkdir(const Policy::Func::Ptr  searchFunc,
-       const Policy::Func::Ptr  createFunc,
-       const vector<string>    &srcmounts,
-       const size_t             minfreespace,
-       const string            &fusepath,
-       const mode_t             mode)
+_mkdir(Policy::Func::Search  searchFunc,
+       Policy::Func::Create  createFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const string         &fusepath,
+       const mode_t          mode)
 {
   int rv;
   int error;
@@ -98,8 +98,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _mkdir(*config.getattr,
-                    *config.mkdir,
+      return _mkdir(config.getattr,
+                    config.mkdir,
                     config.srcmounts,
                     config.minfreespace,
                     fusepath,

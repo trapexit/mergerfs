@@ -39,10 +39,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::newest(const vector<string> &basepaths,
-                       const string         &fusepath,
-                       const size_t          minfreespace,
-                       Paths                &paths)
+  Policy::Func::newest(const Category::Enum::Type  type,
+                       const vector<string>       &basepaths,
+                       const string               &fusepath,
+                       const size_t                minfreespace,
+                       Paths                      &paths)
   {
     time_t newest;
     string npath;

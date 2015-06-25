@@ -43,14 +43,14 @@ using mergerfs::Policy;
 
 static
 int
-_create(const Policy::Func::Ptr  searchFunc,
-        const Policy::Func::Ptr  createFunc,
-        const vector<string>    &srcmounts,
-        const size_t             minfreespace,
-        const string            &fusepath,
-        const mode_t             mode,
-        const int                flags,
-        uint64_t                &fh)
+_create(Policy::Func::Search  searchFunc,
+        Policy::Func::Create  createFunc,
+        const vector<string> &srcmounts,
+        const size_t          minfreespace,
+        const string         &fusepath,
+        const mode_t          mode,
+        const int             flags,
+        uint64_t             &fh)
 {
   int fd;
   int rv;
@@ -99,8 +99,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _create(*config.getattr,
-                     *config.create,
+      return _create(config.getattr,
+                     config.create,
                      config.srcmounts,
                      config.minfreespace,
                      fusepath,

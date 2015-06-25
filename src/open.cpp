@@ -42,12 +42,12 @@ using mergerfs::Policy;
 
 static
 int
-_open(const Policy::Func::Ptr  searchFunc,
-      const vector<string>    &srcmounts,
-      const size_t             minfreespace,
-      const string            &fusepath,
-      const int                flags,
-      uint64_t                &fh)
+_open(Policy::Func::Search  searchFunc,
+      const vector<string> &srcmounts,
+      const size_t          minfreespace,
+      const string         &fusepath,
+      const int             flags,
+      uint64_t             &fh)
 {
   int fd;
   int rv;
@@ -79,7 +79,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _open(*config.open,
+      return _open(config.open,
                    config.srcmounts,
                    config.minfreespace,
                    fusepath,

@@ -39,10 +39,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::all(const vector<string> &basepaths,
-                    const string         &fusepath,
-                    const size_t          minfreespace,
-                    Paths                &paths)
+  Policy::Func::all(const Category::Enum::Type  type,
+                    const vector<string>       &basepaths,
+                    const string               &fusepath,
+                    const size_t                minfreespace,
+                    Paths                      &paths)
   {
     int rv;
     struct stat st;

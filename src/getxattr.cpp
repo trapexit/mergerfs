@@ -190,13 +190,13 @@ _getxattr_user_mergerfs(const Path           &path,
 
 static
 int
-_getxattr(const Policy::Func::Ptr  searchFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          const char              *attrname,
-          char                    *buf,
-          const size_t             count)
+_getxattr(Policy::Func::Search  searchFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const string         &fusepath,
+          const char           *attrname,
+          char                 *buf,
+          const size_t          count)
 {
 #ifndef WITHOUT_XATTR
   int rv;
@@ -239,7 +239,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _getxattr(*config.getxattr,
+      return _getxattr(config.getxattr,
                        config.srcmounts,
                        config.minfreespace,
                        fusepath,

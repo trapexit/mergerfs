@@ -40,10 +40,10 @@ using mergerfs::Policy;
 
 static
 int
-_rmdir(const Policy::Func::Ptr  actionFunc,
-       const vector<string>    &srcmounts,
-       const size_t             minfreespace,
-       const string            &fusepath)
+_rmdir(Policy::Func::Action  actionFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const string         &fusepath)
 {
   int rv;
   int error;
@@ -77,7 +77,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readguard(&config.srcmountslock);
 
-      return _rmdir(*config.rmdir,
+      return _rmdir(config.rmdir,
                     config.srcmounts,
                     config.minfreespace,
                     fusepath);
