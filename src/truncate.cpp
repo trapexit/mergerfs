@@ -50,7 +50,7 @@ _truncate(Policy::Func::Action  actionFunc,
 {
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
@@ -59,7 +59,9 @@ _truncate(Policy::Func::Action  actionFunc,
   error = 0;
   for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::truncate(paths[i].full.c_str(),size);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::truncate(paths[i].c_str(),size);
       if(rv == -1)
         error = errno;
     }

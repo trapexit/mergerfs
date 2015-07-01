@@ -40,7 +40,7 @@ static
 int
 _newest(const vector<string> &basepaths,
         const string         &fusepath,
-        Paths                &paths)
+        vector<string>       &paths)
 {
   time_t newest;
   const char *neweststr;
@@ -55,7 +55,7 @@ _newest(const vector<string> &basepaths,
       string       fullpath;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == 0 && st.st_mtime > newest)
@@ -68,8 +68,7 @@ _newest(const vector<string> &basepaths,
   if(neweststr == NULL)
     return (errno=ENOENT,-1);
 
-  paths.push_back(Path(neweststr,
-                       fs::make_path(neweststr,fusepath)));
+  paths.push_back(neweststr);
 
   return 0;
 }
@@ -81,7 +80,7 @@ namespace mergerfs
                        const vector<string>       &basepaths,
                        const string               &fusepath,
                        const size_t                minfreespace,
-                       Paths                      &paths)
+                       vector<string>             &paths)
   {
     return _newest(basepaths,fusepath,paths);
   }

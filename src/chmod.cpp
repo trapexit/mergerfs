@@ -47,7 +47,7 @@ _chmod(Policy::Func::Action  actionFunc,
 {
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
@@ -56,7 +56,9 @@ _chmod(Policy::Func::Action  actionFunc,
   error = 0;
   for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::chmod(paths[i].full.c_str(),mode);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::chmod(paths[i].c_str(),mode);
       if(rv == -1)
         error = errno;
     }

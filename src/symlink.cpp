@@ -49,9 +49,9 @@ _symlink(Policy::Func::Create  createFunc,
   int rv;
   int error;
   string newpathdir;
-  Paths newpathdirs;
+  vector<string> newpathdirs;
 
-  newpathdir = fs::dirname(newpath);
+  newpathdir = fs::path::dirname(newpath);
   rv = createFunc(srcmounts,newpathdir,minfreespace,newpathdirs);
   if(rv == -1)
     return -errno;
@@ -59,9 +59,9 @@ _symlink(Policy::Func::Create  createFunc,
   error = 0;
   for(size_t i = 0, ei = newpathdirs.size(); i != ei; i++)
     {
-      newpathdirs[i].full = fs::make_path(newpathdirs[i].base,newpath);
+      fs::path::append(newpathdirs[i],newpath);
 
-      rv = symlink(oldpath.c_str(),newpathdirs[i].full.c_str());
+      rv = symlink(oldpath.c_str(),newpathdirs[i].c_str());
       if(rv == -1)
         error = errno;
     }

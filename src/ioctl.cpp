@@ -93,19 +93,21 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 {
   int fd;
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  fd = ::open(path[0].full.c_str(),flags);
+  fs::path::append(path[0],fusepath);
+
+  fd = ::open(path[0].c_str(),flags);
   if(fd == -1)
     return -errno;
 
   rv = _ioctl(fd,cmd,arg,flags,data);
 
-  close(fd);
+  ::close(fd);
 
   return rv;
 }

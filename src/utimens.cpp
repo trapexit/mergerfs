@@ -50,7 +50,7 @@ _utimens(Policy::Func::Action   actionFunc,
 {
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
@@ -59,7 +59,9 @@ _utimens(Policy::Func::Action   actionFunc,
   error = 0;
   for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::utimensat(0,paths[i].full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::utimensat(0,paths[i].c_str(),ts,AT_SYMLINK_NOFOLLOW);
       if(rv == -1)
         error = errno;
     }

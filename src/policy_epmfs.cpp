@@ -122,7 +122,7 @@ static
 int
 _epmfs_create(const vector<string> &basepaths,
               const string         &fusepath,
-              Paths                &paths)
+              vector<string>       &paths)
 
 {
   fsblkcnt_t  epmfs;
@@ -141,7 +141,7 @@ _epmfs_create(const vector<string> &basepaths,
       int rv;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       rv = _try_statvfs(basepath,fusepath,epmfs,epmfsbasepath,mfs,mfsbasepath);
       if(rv == -1)
@@ -151,8 +151,7 @@ _epmfs_create(const vector<string> &basepaths,
   if(epmfsbasepath == NULL)
     epmfsbasepath = mfsbasepath;
 
-  paths.push_back(Path(epmfsbasepath,
-                       fs::make_path(epmfsbasepath,fusepath)));
+  paths.push_back(epmfsbasepath);
 
   return 0;
 }
@@ -161,7 +160,7 @@ static
 int
 _epmfs(const vector<string> &basepaths,
        const string         &fusepath,
-       Paths                &paths)
+       vector<string>       &paths)
 
 {
   fsblkcnt_t  epmfs;
@@ -177,7 +176,7 @@ _epmfs(const vector<string> &basepaths,
       struct statvfs fsstats;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)
@@ -187,8 +186,7 @@ _epmfs(const vector<string> &basepaths,
   if(epmfsbasepath == NULL)
     return (errno=ENOENT,-1);
 
-  paths.push_back(Path(epmfsbasepath,
-                       fs::make_path(epmfsbasepath,fusepath)));
+  paths.push_back(epmfsbasepath);
 
   return 0;
 }
@@ -200,7 +198,7 @@ namespace mergerfs
                       const vector<string>       &basepaths,
                       const string               &fusepath,
                       const size_t                minfreespace,
-                      Paths                      &paths)
+                      vector<string>             &paths)
   {
     if(type == Category::Enum::create)
       return _epmfs_create(basepaths,fusepath,paths);

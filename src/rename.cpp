@@ -45,29 +45,30 @@ int
 _single_rename(Policy::Func::Search  searchFunc,
                const vector<string> &srcmounts,
                const size_t          minfreespace,
-               const Path           &oldpath,
+               const string         &oldbasepath,
+               const string         &oldfullpath,
                const string         &newpath)
 {
   int rv;
-  const string fullnewpath = fs::make_path(oldpath.base,newpath);
+  const string newfullpath = fs::path::make(oldbasepath,newpath);
 
-  rv = ::rename(oldpath.full.c_str(),fullnewpath.c_str());
+  rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
   if(rv == -1 && errno == ENOENT)
     {
       string dirname;
-      Paths newpathdir;
+      vector<string> newpathdir;
 
-      dirname = fs::dirname(newpath);
+      dirname = fs::path::dirname(newpath);
       rv = searchFunc(srcmounts,dirname,minfreespace,newpathdir);
       if(rv == -1)
         return -1;
 
       {
         const mergerfs::ugid::SetResetGuard ugid(0,0);
-        fs::clonepath(newpathdir[0].base,oldpath.base,dirname);
+        fs::clonepath(newpathdir[0],oldbasepath,dirname);
       }
 
-      rv = ::rename(oldpath.full.c_str(),fullnewpath.c_str());
+      rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
     }
 
   return rv;
@@ -79,21 +80,24 @@ _rename(Policy::Func::Search  searchFunc,
         Policy::Func::Action  actionFunc,
         const vector<string> &srcmounts,
         const size_t          minfreespace,
-        const string         &oldpath,
-        const string         &newpath)
+        const string         &oldfusepath,
+        const string         &newfusepath)
 {
   int rv;
   int error;
-  Paths oldpaths;
+  vector<string> oldbasepaths;
 
-  rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
+  rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(size_t i = 0, ei = oldpaths.size(); i != ei; i++)
+  for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
     {
-      rv = _single_rename(searchFunc,srcmounts,minfreespace,oldpaths[i],newpath);
+      const string oldfullpath = fs::path::make(oldbasepaths[i],oldfusepath);
+
+      rv = _single_rename(searchFunc,srcmounts,minfreespace,
+                          oldbasepaths[i],oldfullpath,newfusepath);
       if(rv == -1)
         error = errno;
     }

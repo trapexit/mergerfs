@@ -38,7 +38,7 @@ static
 int
 _mfs_create(const vector<string> &basepaths,
             const string         &fusepath,
-            Paths                &paths)
+            vector<string>       &paths)
 {
   fsblkcnt_t  mfs;
   const char *mfsstr;
@@ -69,8 +69,7 @@ _mfs_create(const vector<string> &basepaths,
   if(mfsstr == NULL)
     return (errno=ENOENT,-1);
 
-  paths.push_back(Path(mfsstr,
-                       fs::make_path(mfsstr,fusepath)));
+  paths.push_back(mfsstr);
 
   return 0;
 }
@@ -78,8 +77,8 @@ _mfs_create(const vector<string> &basepaths,
 static
 int
 _mfs(const vector<string> &basepaths,
-            const string  &fusepath,
-            Paths         &paths)
+     const string         &fusepath,
+     vector<string>       &paths)
 {
   fsblkcnt_t  mfs;
   const char *mfsstr;
@@ -94,7 +93,7 @@ _mfs(const vector<string> &basepaths,
       struct statvfs fsstats;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)
         {
@@ -112,8 +111,7 @@ _mfs(const vector<string> &basepaths,
   if(mfsstr == NULL)
     return (errno=ENOENT,-1);
 
-  paths.push_back(Path(mfsstr,
-                       fs::make_path(mfsstr,fusepath)));
+  paths.push_back(mfsstr);
 
   return 0;
 }
@@ -125,7 +123,7 @@ namespace mergerfs
                     const vector<string>       &basepaths,
                     const string               &fusepath,
                     const size_t                minfreespace,
-                    Paths                      &paths)
+                    vector<string>             &paths)
   {
     if(type == Category::Enum::create)
       return _mfs_create(basepaths,fusepath,paths);

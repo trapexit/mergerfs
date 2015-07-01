@@ -53,13 +53,15 @@ _access(Policy::Func::Search  searchFunc,
         const int             mask)
 {
   int rv;
-  Paths paths;
+  vector<string> path;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,paths);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::eaccess(paths[0].full.c_str(),mask);
+  fs::path::append(path[0],fusepath);
+
+  rv = ::eaccess(path[0].c_str(),mask);
 
   return ((rv == -1) ? -errno : 0);
 }

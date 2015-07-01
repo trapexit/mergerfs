@@ -42,7 +42,7 @@ _fwfs_create(const Category::Enum::Type  type,
              const vector<string>       &basepaths,
              const string               &fusepath,
              const size_t                minfreespace,
-             Paths                      &paths)
+             vector<string>             &paths)
 {
   for(size_t i = 0, size = basepaths.size(); i != size; i++)
     {
@@ -60,8 +60,7 @@ _fwfs_create(const Category::Enum::Type  type,
           if(spaceavail < minfreespace)
             continue;
 
-          paths.push_back(Path(basepath,
-                               fs::make_path(basepath,fusepath)));
+          paths.push_back(basepath);
 
           return 0;
         }
@@ -76,7 +75,7 @@ _fwfs(const Category::Enum::Type  type,
       const vector<string>       &basepaths,
       const string               &fusepath,
       const size_t                minfreespace,
-      Paths                      &paths)
+      vector<string>             &paths)
 {
   for(size_t i = 0, size = basepaths.size(); i != size; i++)
     {
@@ -86,7 +85,7 @@ _fwfs(const Category::Enum::Type  type,
       struct statvfs fsstats;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)
         {
@@ -96,7 +95,7 @@ _fwfs(const Category::Enum::Type  type,
           if(spaceavail < minfreespace)
             continue;
 
-          paths.push_back(Path(basepath,fullpath));
+          paths.push_back(basepath);
 
           return 0;
         }
@@ -112,7 +111,7 @@ namespace mergerfs
                      const vector<string>       &basepaths,
                      const string               &fusepath,
                      const size_t                minfreespace,
-                     Paths                      &paths)
+                     vector<string>             &paths)
   {
     if(type == Category::Enum::create)
       return _fwfs_create(type,basepaths,fusepath,minfreespace,paths);

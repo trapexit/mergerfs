@@ -49,23 +49,23 @@ _single_link(Policy::Func::Search  searchFunc,
              const string         &newpath)
 {
   int rv;
-  const string fulloldpath = fs::make_path(base,oldpath);
-  const string fullnewpath = fs::make_path(base,newpath);
+  const string fulloldpath = fs::path::make(base,oldpath);
+  const string fullnewpath = fs::path::make(base,newpath);
 
   rv = ::link(fulloldpath.c_str(),fullnewpath.c_str());
   if(rv == -1 && errno == ENOENT)
     {
       string newpathdir;
-      Paths foundpath;
+      vector<string> foundpath;
 
-      newpathdir = fs::dirname(newpath);
+      newpathdir = fs::path::dirname(newpath);
       rv = searchFunc(srcmounts,newpathdir,minfreespace,foundpath);
       if(rv == -1)
         return -1;
 
       {
         const mergerfs::ugid::SetResetGuard ugid(0,0);
-        fs::clonepath(foundpath[0].base,base,newpathdir);
+        fs::clonepath(foundpath[0],base,newpathdir);
       }
 
       rv = ::link(fulloldpath.c_str(),fullnewpath.c_str());
@@ -85,7 +85,7 @@ _link(Policy::Func::Search  searchFunc,
 {
   int rv;
   int error;
-  Paths oldpaths;
+  vector<string> oldpaths;
 
   rv = actionFunc(srcmounts,oldpath,minfreespace,oldpaths);
   if(rv == -1)
@@ -94,7 +94,7 @@ _link(Policy::Func::Search  searchFunc,
   error = 0;
   for(size_t i = 0, ei = oldpaths.size(); i != ei; i++)
     {
-      rv = _single_link(searchFunc,srcmounts,minfreespace,oldpaths[i].base,oldpath,newpath);
+      rv = _single_link(searchFunc,srcmounts,minfreespace,oldpaths[i],oldpath,newpath);
       if(rv == -1)
         error = errno;
     }

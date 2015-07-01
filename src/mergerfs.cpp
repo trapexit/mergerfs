@@ -80,7 +80,7 @@ namespace local
   getappname(const int     argc,
              char * const *argv)
   {
-    return fs::basename(argv[0]);
+    return fs::path::basename(argv[0]);
   }
 
   static

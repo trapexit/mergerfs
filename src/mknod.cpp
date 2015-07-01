@@ -55,11 +55,10 @@ _mknod(Policy::Func::Search  searchFunc,
   int rv;
   int error;
   string dirname;
-  string fullpath;
-  Paths createpaths;
-  Paths existingpath;
+  vector<string> createpaths;
+  vector<string> existingpath;
 
-  dirname = fs::dirname(fusepath);
+  dirname = fs::path::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
   if(rv == -1)
     return -errno;
@@ -71,17 +70,17 @@ _mknod(Policy::Func::Search  searchFunc,
   error = 0;
   for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
-      const string &createpath = createpaths[0].base;
+      string &createpath = createpaths[0];
 
-      if(createpath != existingpath[0].base)
+      if(createpath != existingpath[0])
         {
           const mergerfs::ugid::SetResetGuard ugid(0,0);
-          fs::clonepath(existingpath[0].base,createpath,dirname);
+          fs::clonepath(existingpath[0],createpath,dirname);
         }
 
-      fullpath = fs::make_path(createpath,fusepath);
+      fs::path::append(createpath,fusepath);
 
-      rv = ::mknod(fullpath.c_str(),mode,dev);
+      rv = ::mknod(createpath.c_str(),mode,dev);
       if(rv == -1)
         error = errno;
     }

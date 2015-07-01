@@ -62,7 +62,7 @@ _readdir(const vector<string>  &srcmounts,
       DIR *dh;
       string basepath;
 
-      basepath = fs::make_path(srcmounts[i],dirname);
+      basepath = fs::path::make(srcmounts[i],dirname);
       dh = ::opendir(basepath.c_str());
       if(!dh)
         continue;

@@ -51,7 +51,7 @@ _removexattr(Policy::Func::Action  actionFunc,
 #ifndef WITHOUT_XATTR
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
@@ -60,7 +60,9 @@ _removexattr(Policy::Func::Action  actionFunc,
   error = 0;
   for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lremovexattr(paths[i].full.c_str(),attrname);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::lremovexattr(paths[i].c_str(),attrname);
       if(rv == -1)
         error = errno;
     }

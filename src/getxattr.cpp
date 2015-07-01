@@ -167,9 +167,10 @@ _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
 
 static
 int
-_getxattr_user_mergerfs(const Path           &path,
-                        const vector<string> &srcmounts,
+_getxattr_user_mergerfs(const string         &basepath,
                         const string         &fusepath,
+                        const string         &fullpath,
+                        const vector<string> &srcmounts,
                         const char           *attrname,
                         char                 *buf,
                         const size_t          count)
@@ -177,15 +178,15 @@ _getxattr_user_mergerfs(const Path           &path,
   const char *attrbasename = &attrname[sizeof("user.mergerfs")];
 
   if(!strcmp(attrbasename,"basepath"))
-    return ::_getxattr_from_string(buf,count,path.base);
+    return ::_getxattr_from_string(buf,count,basepath);
   else if(!strcmp(attrbasename,"fullpath"))
-    return ::_getxattr_from_string(buf,count,path.full);
+    return ::_getxattr_from_string(buf,count,fullpath);
   else if(!strcmp(attrbasename,"relpath"))
     return ::_getxattr_from_string(buf,count,fusepath);
   else if(!strcmp(attrbasename,"allpaths"))
     return ::_getxattr_user_mergerfs_allpaths(srcmounts,fusepath,buf,count);
 
-  return ::lgetxattr(path.full.c_str(),attrname,buf,count);
+  return ::lgetxattr(fullpath.c_str(),attrname,buf,count);
 }
 
 static
@@ -200,16 +201,19 @@ _getxattr(Policy::Func::Search  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  Paths path;
+  vector<string> basepath;
+  string fullpath;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepath);
   if(rv == -1)
     return -errno;
 
+  fullpath = fs::path::make(basepath[0],fusepath);
+
   if(!strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
-    rv = _getxattr_user_mergerfs(path[0],srcmounts,fusepath,attrname,buf,count);
+    rv = _getxattr_user_mergerfs(basepath[0],fusepath,fullpath,srcmounts,attrname,buf,count);
   else
-    rv = ::lgetxattr(path[0].full.c_str(),attrname,buf,count);
+    rv = ::lgetxattr(fullpath.c_str(),attrname,buf,count);
 
   return ((rv == -1) ? -errno : rv);
 #else

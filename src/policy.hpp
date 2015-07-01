@@ -67,7 +67,7 @@ namespace mergerfs
       typedef const strvec cstrvec;
       typedef const Category::Enum::Type CType;
 
-      typedef int (*Ptr)(CType,cstrvec&,cstring&,csize_t,Paths&);
+      typedef int (*Ptr)(CType,cstrvec&,cstring&,csize_t,strvec&);
 
       class Action
       {
@@ -77,7 +77,7 @@ namespace mergerfs
         {}
 
         int
-        operator()(cstrvec& b,cstring& c,csize_t d,Paths& e)
+        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
         {
           return func(Category::Enum::action,b,c,d,e);
         }
@@ -94,7 +94,7 @@ namespace mergerfs
         {}
 
         int
-        operator()(cstrvec& b,cstring& c,csize_t d,Paths& e)
+        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
         {
           return func(Category::Enum::create,b,c,d,e);
         }
@@ -111,7 +111,7 @@ namespace mergerfs
         {}
 
         int
-        operator()(cstrvec& b,cstring& c,csize_t d,Paths& e)
+        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
         {
           return func(Category::Enum::search,b,c,d,e);
         }
@@ -120,16 +120,16 @@ namespace mergerfs
         const Ptr func;
       };
 
-      static int invalid(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int all(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int epmfs(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int ff(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int ffwp(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int fwfs(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int lfs(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int mfs(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int newest(CType,cstrvec&,cstring&,csize_t,Paths&);
-      static int rand(CType,cstrvec&,cstring&,csize_t,Paths&);
+      static int invalid(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int all(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int epmfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int ff(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int ffwp(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int fwfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int lfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int mfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int newest(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int rand(CType,cstrvec&,cstring&,csize_t,strvec&);
     };
 
   private:

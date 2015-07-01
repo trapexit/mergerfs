@@ -63,102 +63,85 @@ random_element(Iter begin,
 
 namespace fs
 {
-  string
-  dirname(const string &path)
+  namespace path
   {
-    string parent = path;
-    string::reverse_iterator i;
-    string::reverse_iterator bi;
+    string
+    dirname(const string &path)
+    {
+      string parent = path;
+      string::reverse_iterator i;
+      string::reverse_iterator bi;
 
-    bi = parent.rend();
-    i  = parent.rbegin();
-    while(*i == '/' && i != bi)
-      i++;
+      bi = parent.rend();
+      i  = parent.rbegin();
+      while(*i == '/' && i != bi)
+        i++;
 
-    while(*i != '/' && i != bi)
-      i++;
+      while(*i != '/' && i != bi)
+        i++;
 
-    while(*i == '/' && i != bi)
-      i++;
+      while(*i == '/' && i != bi)
+        i++;
 
-    parent.erase(i.base(),parent.end());
+      parent.erase(i.base(),parent.end());
 
-    return parent;
-  }
+      return parent;
+    }
 
-  string
-  basename(const string &path)
-  {
-    return path.substr(path.find_last_of('/')+1);
-  }
+    string
+    basename(const string &path)
+    {
+      return path.substr(path.find_last_of('/')+1);
+    }
 
-  bool
-  dir_is_empty(const string &path)
-  {
-    DIR           *dir;
-    struct dirent *de;
+    bool
+    is_empty(const string &path)
+    {
+      DIR           *dir;
+      struct dirent *de;
 
-    dir = ::opendir(path.c_str());
-    if(!dir)
-      return false;
-
-    while((de = ::readdir(dir)))
-      {
-        const char *d_name = de->d_name;
-
-        if(d_name[0] == '.'     &&
-           ((d_name[1] == '\0') ||
-            (d_name[1] == '.' && d_name[2] == '\0')))
-          continue;
-
-        ::closedir(dir);
-
+      dir = ::opendir(path.c_str());
+      if(!dir)
         return false;
-      }
 
-    ::closedir(dir);
+      while((de = ::readdir(dir)))
+        {
+          const char *d_name = de->d_name;
 
-    return true;
-  }
+          if(d_name[0] == '.'     &&
+             ((d_name[1] == '\0') ||
+              (d_name[1] == '.' && d_name[2] == '\0')))
+            continue;
 
-  string
-  make_path(const string &base,
-            const string &suffix)
-  {
-    if(suffix[0]      == '/' ||
-       *base.rbegin() == '/')
-      return base + suffix;
-    return base + '/' + suffix;
-  }
+          ::closedir(dir);
 
-  bool
-  path_exists(vector<string>::const_iterator  begin,
-              vector<string>::const_iterator  end,
-              const string                   &fusepath)
-  {
-    for(vector<string>::const_iterator
-          iter = begin; iter != end; ++iter)
-      {
-        int         rv;
-        string      path;
-        struct stat st;
+          return false;
+        }
 
-        path = fs::make_path(*iter,fusepath);
-        rv   = ::lstat(path.c_str(),&st);
-        if(rv == 0)
-          return true;
-      }
+      ::closedir(dir);
 
-    return false;
-  }
+      return true;
+    }
 
-  bool
-  path_exists(const vector<string> &srcmounts,
-              const string         &fusepath)
-  {
-    return path_exists(srcmounts.begin(),
-                       srcmounts.end(),
-                       fusepath);
+    bool
+    exists(const vector<string> &paths,
+           const string         &fusepath)
+    {
+      for(size_t i = 0, ei = paths.size(); i != ei; i++)
+        {
+          int rv;
+          string path;
+          struct stat st;
+
+          path = fs::path::make(paths[i],fusepath);
+
+          rv  = ::lstat(path.c_str(),&st);
+          if(rv == 0)
+            return true;
+        }
+
+      return false;
+    }
   }
 
   void
@@ -166,16 +149,14 @@ namespace fs
                const string         &fusepath,
                vector<string>       &paths)
   {
-    for(vector<string>::const_iterator
-          iter = srcmounts.begin(), eiter = srcmounts.end();
-        iter != eiter;
-        ++iter)
+    for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
       {
         int rv;
         string fullpath;
         struct stat st;
 
-        fullpath = fs::make_path(*iter,fusepath);
+        fullpath = fs::path::make(srcmounts[i],fusepath);
+
         rv = ::lstat(fullpath.c_str(),&st);
         if(rv == 0)
           paths.push_back(fullpath);
@@ -450,7 +431,7 @@ namespace fs
     string      frompath;
     string      dirname;
 
-    dirname = fs::dirname(relative);
+    dirname = fs::path::dirname(relative);
     if(!dirname.empty())
       {
         rv = clonepath(fromsrc,tosrc,dirname);
@@ -458,15 +439,14 @@ namespace fs
           return -1;
       }
 
-    frompath = fs::make_path(fromsrc,relative);
-
+    frompath = fs::path::make(fromsrc,relative);
     rv = ::stat(frompath.c_str(),&st);
     if(rv == -1)
       return -1;
     else if(!S_ISDIR(st.st_mode))
       return (errno = ENOTDIR,-1);
 
-    topath = fs::make_path(tosrc,relative);
+    topath = fs::path::make(tosrc,relative);
     rv = ::mkdir(topath.c_str(),st.st_mode);
     if(rv == -1)
       {

@@ -40,7 +40,7 @@ static
 int
 _ffwp(const vector<string> &basepaths,
       const string         &fusepath,
-      Paths                &paths)
+      vector<string>       &paths)
 {
   const char *fallback;
 
@@ -53,12 +53,12 @@ _ffwp(const vector<string> &basepaths,
       string       fullpath;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == 0)
         {
-          paths.push_back(Path(basepath,fullpath));
+          paths.push_back(basepath);
           return 0;
         }
       else if(errno == EACCES)
@@ -70,8 +70,7 @@ _ffwp(const vector<string> &basepaths,
   if(fallback == NULL)
     return (errno=ENOENT,-1);
 
-  paths.push_back(Path(fallback,
-                       fs::make_path(fallback,fusepath)));
+  paths.push_back(fallback);
 
   return 0;
 }
@@ -83,7 +82,7 @@ namespace mergerfs
                      const vector<string>       &basepaths,
                      const string               &fusepath,
                      const size_t                minfreespace,
-                     Paths                      &paths)
+                     vector<string>             &paths)
   {
     return _ffwp(basepaths,fusepath,paths);
   }

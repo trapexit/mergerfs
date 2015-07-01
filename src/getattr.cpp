@@ -73,13 +73,15 @@ _getattr(Policy::Func::Search  searchFunc,
          struct stat          &buf)
 {
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::lstat(path[0].full.c_str(),&buf);
+  fs::path::append(path[0],fusepath);
+
+  rv = ::lstat(path[0].c_str(),&buf);
 
   return ((rv == -1) ? -errno : 0);
 }

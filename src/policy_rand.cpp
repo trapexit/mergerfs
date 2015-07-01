@@ -41,7 +41,7 @@ namespace mergerfs
                      const vector<string>       &basepaths,
                      const string               &fusepath,
                      const size_t                minfreespace,
-                     Paths                      &paths)
+                     vector<string>             &paths)
   {
     int rv;
 

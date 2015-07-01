@@ -40,7 +40,7 @@ namespace mergerfs
                         const vector<string>       &basepaths,
                         const string               &fusepath,
                         const size_t                minfreespace,
-                        Paths                      &rv)
+                        vector<string>             &rv)
   {
     return (errno = EINVAL,-1);
   }

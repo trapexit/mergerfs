@@ -78,13 +78,15 @@ _listxattr(Policy::Func::Search  searchFunc,
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::llistxattr(path[0].full.c_str(),list,size);
+  fs::path::append(path[0],fusepath);
+
+  rv = ::llistxattr(path[0].c_str(),list,size);
 
   return ((rv == -1) ? -errno : rv);
 #else

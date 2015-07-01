@@ -41,7 +41,7 @@ static
 int
 _ff(const vector<string> &basepaths,
     const string         &fusepath,
-    Paths                &paths)
+    vector<string>       &paths)
 {
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
@@ -51,13 +51,13 @@ _ff(const vector<string> &basepaths,
       string       fullpath;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == -1)
         continue;
 
-      paths.push_back(Path(basepath,fullpath));
+      paths.push_back(basepath);
 
       return 0;
     }
@@ -72,7 +72,7 @@ namespace mergerfs
                    const vector<string>       &basepaths,
                    const string               &fusepath,
                    const size_t                minfreespace,
-                   Paths                      &paths)
+                   vector<string>             &paths)
   {
     return _ff(basepaths,fusepath,paths);
   }

@@ -39,8 +39,8 @@ using std::size_t;
 static
 int
 _all(const vector<string> &basepaths,
-    const string          &fusepath,
-    Paths                 &paths)
+     const string         &fusepath,
+     vector<string>       &paths)
 {
   int rv;
   struct stat st;
@@ -51,11 +51,11 @@ _all(const vector<string> &basepaths,
       const char *basepath;
 
       basepath = basepaths[i].c_str();
-      fullpath = fs::make_path(basepath,fusepath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == 0)
-        paths.push_back(Path(basepath,fullpath));
+        paths.push_back(basepath);
     }
 
   return paths.empty() ? (errno=ENOENT,-1) : 0;
@@ -68,7 +68,7 @@ namespace mergerfs
                     const vector<string>       &basepaths,
                     const string               &fusepath,
                     const size_t                minfreespace,
-                    Paths                      &paths)
+                    vector<string>             &paths)
   {
     return _all(basepaths,fusepath,paths);
   }

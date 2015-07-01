@@ -54,12 +54,11 @@ _create(Policy::Func::Search  searchFunc,
 {
   int fd;
   int rv;
-  string path;
   string dirname;
-  Paths createpath;
-  Paths existingpath;
+  vector<string> createpath;
+  vector<string> existingpath;
 
-  dirname = fs::dirname(fusepath);
+  dirname = fs::path::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
   if(rv == -1)
     return -errno;
@@ -68,15 +67,15 @@ _create(Policy::Func::Search  searchFunc,
   if(rv == -1)
     return -errno;
 
-  if(createpath[0].base != existingpath[0].base)
+  if(createpath[0] != existingpath[0])
     {
       const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+      fs::clonepath(existingpath[0],createpath[0],dirname);
     }
 
-  path = fs::make_path(createpath[0].base,fusepath);
+  fs::path::append(createpath[0],fusepath);
 
-  fd = ::open(path.c_str(),flags,mode);
+  fd = ::open(createpath[0].c_str(),flags,mode);
   if(fd == -1)
     return -errno;
 

@@ -252,7 +252,7 @@ _setxattr(Policy::Func::Action  actionFunc,
 #ifndef WITHOUT_XATTR
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
@@ -261,7 +261,9 @@ _setxattr(Policy::Func::Action  actionFunc,
   error = 0;
   for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lsetxattr(paths[i].full.c_str(),attrname,attrval,attrvalsize,flags);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::lsetxattr(paths[i].c_str(),attrname,attrval,attrvalsize,flags);
       if(rv == -1)
         error = errno;
     }
