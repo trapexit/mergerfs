@@ -91,10 +91,9 @@ _rename(Policy::Func::Search  searchFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = oldpaths.begin(), ei = oldpaths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = oldpaths.size(); i != ei; i++)
     {
-      rv = _single_rename(searchFunc,srcmounts,minfreespace,*i,newpath);
+      rv = _single_rename(searchFunc,srcmounts,minfreespace,oldpaths[i],newpath);
       if(rv == -1)
         error = errno;
     }

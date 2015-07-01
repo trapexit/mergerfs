@@ -57,10 +57,9 @@ _truncate(Policy::Func::Action  actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::truncate(i->full.c_str(),size);
+      rv = ::truncate(paths[i].full.c_str(),size);
       if(rv == -1)
         error = errno;
     }

@@ -54,10 +54,9 @@ _rmdir(Policy::Func::Action  actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::rmdir(i->full.c_str());
+      rv = ::rmdir(paths[i].full.c_str());
       if(rv == -1)
         error = errno;
     }

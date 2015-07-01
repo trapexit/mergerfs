@@ -54,10 +54,9 @@ _chmod(Policy::Func::Action  actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::chmod(i->full.c_str(),mode);
+      rv = ::chmod(paths[i].full.c_str(),mode);
       if(rv == -1)
         error = errno;
     }

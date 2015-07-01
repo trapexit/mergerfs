@@ -36,6 +36,46 @@ using std::string;
 using std::vector;
 using std::size_t;
 
+static
+int
+_ffwp(const vector<string> &basepaths,
+      const string         &fusepath,
+      Paths                &paths)
+{
+  const char *fallback;
+
+  fallback = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      int          rv;
+      struct stat  st;
+      const char  *basepath;
+      string       fullpath;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::make_path(basepath,fusepath);
+
+      rv = ::lstat(fullpath.c_str(),&st);
+      if(rv == 0)
+        {
+          paths.push_back(Path(basepath,fullpath));
+          return 0;
+        }
+      else if(errno == EACCES)
+        {
+          fallback = basepath;
+        }
+    }
+
+  if(fallback == NULL)
+    return (errno=ENOENT,-1);
+
+  paths.push_back(Path(fallback,
+                       fs::make_path(fallback,fusepath)));
+
+  return 0;
+}
+
 namespace mergerfs
 {
   int
@@ -45,36 +85,6 @@ namespace mergerfs
                      const size_t                minfreespace,
                      Paths                      &paths)
   {
-    Path fallback;
-
-    errno = ENOENT;
-    for(vector<string>::const_iterator
-          iter = basepaths.begin(), eiter = basepaths.end();
-        iter != eiter;
-        ++iter)
-      {
-        int         rv;
-        struct stat st;
-        string      fullpath;
-
-        fullpath = fs::make_path(*iter,fusepath);
-
-        rv = ::lstat(fullpath.c_str(),&st);
-        if(rv == 0)
-          {
-            paths.push_back(Path(*iter,fullpath));
-            return 0;
-          }
-        else if(errno == EACCES)
-          {
-            fallback.base = *iter;
-            fallback.full = fullpath;
-          }
-      }
-
-    if(!fallback.base.empty())
-      return (paths.push_back(fallback),0);
-
-    return -1;
+    return _ffwp(basepaths,fusepath,paths);
   }
 }

@@ -57,12 +57,11 @@ _symlink(Policy::Func::Create  createFunc,
     return -errno;
 
   error = 0;
-  for(Paths::iterator
-        i = newpathdirs.begin(), ei = newpathdirs.end(); i != ei; ++i)
+  for(size_t i = 0, ei = newpathdirs.size(); i != ei; i++)
     {
-      i->full = fs::make_path(i->base,newpath);
+      newpathdirs[i].full = fs::make_path(newpathdirs[i].base,newpath);
 
-      rv = symlink(oldpath.c_str(),i->full.c_str());
+      rv = symlink(oldpath.c_str(),newpathdirs[i].full.c_str());
       if(rv == -1)
         error = errno;
     }

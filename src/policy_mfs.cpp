@@ -34,6 +34,90 @@ using std::string;
 using std::vector;
 using std::size_t;
 
+static
+int
+_mfs_create(const vector<string> &basepaths,
+            const string         &fusepath,
+            Paths                &paths)
+{
+  fsblkcnt_t  mfs;
+  const char *mfsstr;
+
+  mfs = 0;
+  mfsstr = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      int rv;
+      const char *basepath;
+      struct statvfs fsstats;
+
+      basepath = basepaths[i].c_str();
+      rv = ::statvfs(basepath,&fsstats);
+      if(rv == 0)
+        {
+          fsblkcnt_t spaceavail;
+
+          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+          if(spaceavail > mfs)
+            {
+              mfs    = spaceavail;
+              mfsstr = basepath;
+            }
+        }
+    }
+
+  if(mfsstr == NULL)
+    return (errno=ENOENT,-1);
+
+  paths.push_back(Path(mfsstr,
+                       fs::make_path(mfsstr,fusepath)));
+
+  return 0;
+}
+
+static
+int
+_mfs(const vector<string> &basepaths,
+            const string  &fusepath,
+            Paths         &paths)
+{
+  fsblkcnt_t  mfs;
+  const char *mfsstr;
+
+  mfs = 0;
+  mfsstr = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      int rv;
+      string fullpath;
+      const char *basepath;
+      struct statvfs fsstats;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::make_path(basepath,fusepath);
+      rv = ::statvfs(fullpath.c_str(),&fsstats);
+      if(rv == 0)
+        {
+          fsblkcnt_t spaceavail;
+
+          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+          if(spaceavail > mfs)
+            {
+              mfs    = spaceavail;
+              mfsstr = basepath;
+            }
+        }
+    }
+
+  if(mfsstr == NULL)
+    return (errno=ENOENT,-1);
+
+  paths.push_back(Path(mfsstr,
+                       fs::make_path(mfsstr,fusepath)));
+
+  return 0;
+}
+
 namespace mergerfs
 {
   int
@@ -43,37 +127,9 @@ namespace mergerfs
                     const size_t                minfreespace,
                     Paths                      &paths)
   {
-    fsblkcnt_t mfs;
-    size_t     mfsidx;
+    if(type == Category::Enum::create)
+      return _mfs_create(basepaths,fusepath,paths);
 
-    mfs = 0;
-    for(size_t i = 0, size = basepaths.size();
-        i != size;
-        i++)
-      {
-        int rv;
-        struct statvfs fsstats;
-
-        rv = ::statvfs(basepaths[i].c_str(),&fsstats);
-        if(rv == 0)
-          {
-            fsblkcnt_t  spaceavail;
-
-            spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
-            if(spaceavail > mfs)
-              {
-                mfs    = spaceavail;
-                mfsidx = i;
-              }
-          }
-      }
-
-    if(mfs == 0)
-      return (errno=ENOENT,-1);
-
-    paths.push_back(Path(basepaths[mfsidx],
-                         fs::make_path(basepaths[mfsidx],fusepath)));
-
-    return 0;
+    return _mfs(basepaths,fusepath,paths);
   }
 }

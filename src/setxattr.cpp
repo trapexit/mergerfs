@@ -259,10 +259,9 @@ _setxattr(Policy::Func::Action  actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lsetxattr(i->full.c_str(),attrname,attrval,attrvalsize,flags);
+      rv = ::lsetxattr(paths[i].full.c_str(),attrname,attrval,attrvalsize,flags);
       if(rv == -1)
         error = errno;
     }

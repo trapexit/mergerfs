@@ -57,10 +57,9 @@ _utimens(Policy::Func::Action   actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::utimensat(0,i->full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
+      rv = ::utimensat(0,paths[i].full.c_str(),ts,AT_SYMLINK_NOFOLLOW);
       if(rv == -1)
         error = errno;
     }

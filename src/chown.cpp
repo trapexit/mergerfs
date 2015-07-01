@@ -56,10 +56,9 @@ _chown(Policy::Func::Action  actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lchown(i->full.c_str(),uid,gid);
+      rv = ::lchown(paths[i].full.c_str(),uid,gid);
       if(rv == -1)
         error = errno;
     }

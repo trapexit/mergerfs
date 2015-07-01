@@ -36,6 +36,31 @@ using std::string;
 using std::vector;
 using std::size_t;
 
+static
+int
+_all(const vector<string> &basepaths,
+    const string          &fusepath,
+    Paths                 &paths)
+{
+  int rv;
+  struct stat st;
+  string fullpath;
+
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      const char *basepath;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::make_path(basepath,fusepath);
+
+      rv = ::lstat(fullpath.c_str(),&st);
+      if(rv == 0)
+        paths.push_back(Path(basepath,fullpath));
+    }
+
+  return paths.empty() ? (errno=ENOENT,-1) : 0;
+}
+
 namespace mergerfs
 {
   int
@@ -45,22 +70,6 @@ namespace mergerfs
                     const size_t                minfreespace,
                     Paths                      &paths)
   {
-    int rv;
-    struct stat st;
-    string fullpath;
-
-    for(vector<string>::const_iterator
-          iter = basepaths.begin(), eiter = basepaths.end();
-        iter != eiter;
-        ++iter)
-      {
-        fullpath = fs::make_path(*iter,fusepath);
-
-        rv = ::lstat(fullpath.c_str(),&st);
-        if(rv == 0)
-          paths.push_back(Path(*iter,fullpath));
-      }
-
-    return paths.empty() ? (errno=ENOENT,-1) : 0;
+    return _all(basepaths,fusepath,paths);
   }
 }

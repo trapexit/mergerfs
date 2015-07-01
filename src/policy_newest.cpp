@@ -36,6 +36,44 @@ using std::string;
 using std::vector;
 using std::size_t;
 
+static
+int
+_newest(const vector<string> &basepaths,
+        const string         &fusepath,
+        Paths                &paths)
+{
+  time_t newest;
+  const char *neweststr;
+
+  newest = 0;
+  neweststr = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      int          rv;
+      struct stat  st;
+      const char  *basepath;
+      string       fullpath;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::make_path(basepath,fusepath);
+
+      rv = ::lstat(fullpath.c_str(),&st);
+      if(rv == 0 && st.st_mtime > newest)
+        {
+          newest    = st.st_mtime;
+          neweststr = basepath;
+        }
+    }
+
+  if(neweststr == NULL)
+    return (errno=ENOENT,-1);
+
+  paths.push_back(Path(neweststr,
+                       fs::make_path(neweststr,fusepath)));
+
+  return 0;
+}
+
 namespace mergerfs
 {
   int
@@ -45,35 +83,6 @@ namespace mergerfs
                        const size_t                minfreespace,
                        Paths                      &paths)
   {
-    time_t newest;
-    string npath;
-    vector<string>::const_iterator niter;
-
-    newest = 0;
-    errno  = ENOENT;
-    for(vector<string>::const_iterator
-          iter = basepaths.begin(), eiter = basepaths.end();
-        iter != eiter;
-        ++iter)
-      {
-        int         rv;
-        struct stat st;
-        string      fullpath;
-
-        fullpath = fs::make_path(*iter,fusepath);
-
-        rv  = ::lstat(fullpath.c_str(),&st);
-        if(rv == 0 && st.st_mtime > newest)
-          {
-            newest = st.st_mtime;
-            niter  = iter;
-            npath  = fullpath;
-          }
-      }
-
-    if(newest)
-      return (paths.push_back(Path(*niter,npath)),0);
-
-    return -1;
+    return _newest(basepaths,fusepath,paths);
   }
 }

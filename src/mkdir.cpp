@@ -66,16 +66,17 @@ _mkdir(Policy::Func::Search  searchFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = createpaths.begin(), ei = createpaths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
-      if(i->base != existingpath[0].base)
+      const string &createpath = createpaths[i].base;
+
+      if(createpath != existingpath[0].base)
         {
           const mergerfs::ugid::SetResetGuard ugid(0,0);
-          fs::clonepath(existingpath[0].base,i->base,dirname);
+          fs::clonepath(existingpath[0].base,createpath,dirname);
         }
 
-      fullpath = fs::make_path(i->base,fusepath);
+      fullpath = fs::make_path(createpath,fusepath);
 
       rv = ::mkdir(fullpath.c_str(),mode);
       if(rv == -1)

@@ -58,10 +58,9 @@ _removexattr(Policy::Func::Action  actionFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lremovexattr(i->full.c_str(),attrname);
+      rv = ::lremovexattr(paths[i].full.c_str(),attrname);
       if(rv == -1)
         error = errno;
     }
