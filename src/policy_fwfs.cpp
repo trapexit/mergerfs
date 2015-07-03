@@ -33,37 +33,89 @@
 using std::string;
 using std::vector;
 using std::size_t;
+using mergerfs::Policy;
+using mergerfs::Category;
+
+static
+int
+_fwfs_create(const Category::Enum::Type  type,
+             const vector<string>       &basepaths,
+             const string               &fusepath,
+             const size_t                minfreespace,
+             vector<string>             &paths)
+{
+  for(size_t i = 0, size = basepaths.size(); i != size; i++)
+    {
+      int rv;
+      const char *basepath;
+      struct statvfs fsstats;
+
+      basepath = basepaths[i].c_str();
+      rv = ::statvfs(basepath,&fsstats);
+      if(rv == 0)
+        {
+          fsblkcnt_t spaceavail;
+
+          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+          if(spaceavail < minfreespace)
+            continue;
+
+          paths.push_back(basepath);
+
+          return 0;
+        }
+    }
+
+  return Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
+}
+
+static
+int
+_fwfs(const Category::Enum::Type  type,
+      const vector<string>       &basepaths,
+      const string               &fusepath,
+      const size_t                minfreespace,
+      vector<string>             &paths)
+{
+  for(size_t i = 0, size = basepaths.size(); i != size; i++)
+    {
+      int rv;
+      string fullpath;
+      const char *basepath;
+      struct statvfs fsstats;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::path::make(basepath,fusepath);
+      rv = ::statvfs(fullpath.c_str(),&fsstats);
+      if(rv == 0)
+        {
+          fsblkcnt_t spaceavail;
+
+          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+          if(spaceavail < minfreespace)
+            continue;
+
+          paths.push_back(basepath);
+
+          return 0;
+        }
+    }
+
+  return Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
+}
 
 namespace mergerfs
 {
   int
-  Policy::Func::fwfs(const vector<string> &basepaths,
-                     const string         &fusepath,
-                     const size_t          minfreespace,
-                     Paths                &paths)
+  Policy::Func::fwfs(const Category::Enum::Type  type,
+                     const vector<string>       &basepaths,
+                     const string               &fusepath,
+                     const size_t                minfreespace,
+                     vector<string>             &paths)
   {
-    for(size_t i = 0, size = basepaths.size(); i != size; i++)
-      {
-        int rv;
-        const char *basepath;
-        struct statvfs fsstats;
+    if(type == Category::Enum::create)
+      return _fwfs_create(type,basepaths,fusepath,minfreespace,paths);
 
-        basepath = basepaths[i].c_str();
-        rv = ::statvfs(basepath,&fsstats);
-        if(rv == 0)
-          {
-            fsblkcnt_t spaceavail;
-
-            spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
-            if(spaceavail > minfreespace)
-              {
-                paths.push_back(Path(basepath,
-                                     fs::make_path(basepath,fusepath)));
-                return 0;
-              }
-          }
-      }
-
-    return mfs(basepaths,fusepath,minfreespace,paths);
+    return _fwfs(type,basepaths,fusepath,minfreespace,paths);
   }
 }

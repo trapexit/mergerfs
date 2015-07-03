@@ -42,26 +42,27 @@ using mergerfs::Policy;
 
 static
 int
-_removexattr(const Policy::Func::Ptr  actionFunc,
-             const vector<string>    &srcmounts,
-             const size_t             minfreespace,
-             const string            &fusepath,
-             const char              *attrname)
+_removexattr(Policy::Func::Action  actionFunc,
+             const vector<string> &srcmounts,
+             const size_t          minfreespace,
+             const string         &fusepath,
+             const char           *attrname)
 {
 #ifndef WITHOUT_XATTR
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lremovexattr(i->full.c_str(),attrname);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::lremovexattr(paths[i].c_str(),attrname);
       if(rv == -1)
         error = errno;
     }
@@ -89,7 +90,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _removexattr(*config.removexattr,
+      return _removexattr(config.removexattr,
                           config.srcmounts,
                           config.minfreespace,
                           fusepath,

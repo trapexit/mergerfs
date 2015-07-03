@@ -44,22 +44,21 @@ using mergerfs::Policy;
 
 static
 int
-_mknod(const Policy::Func::Ptr  searchFunc,
-       const Policy::Func::Ptr  createFunc,
-       const vector<string>    &srcmounts,
-       const size_t             minfreespace,
-       const string            &fusepath,
-       const mode_t             mode,
-       const dev_t              dev)
+_mknod(Policy::Func::Search  searchFunc,
+       Policy::Func::Create  createFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const string         &fusepath,
+       const mode_t          mode,
+       const dev_t           dev)
 {
   int rv;
   int error;
   string dirname;
-  string fullpath;
-  Paths createpaths;
-  Paths existingpath;
+  vector<string> createpaths;
+  vector<string> existingpath;
 
-  dirname = fs::dirname(fusepath);
+  dirname = fs::path::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
   if(rv == -1)
     return -errno;
@@ -69,18 +68,19 @@ _mknod(const Policy::Func::Ptr  searchFunc,
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = createpaths.begin(), ei = createpaths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
-      if(i->base != existingpath[0].base)
+      string &createpath = createpaths[0];
+
+      if(createpath != existingpath[0])
         {
           const mergerfs::ugid::SetResetGuard ugid(0,0);
-          fs::clonepath(existingpath[0].base,i->base,dirname);
+          fs::clonepath(existingpath[0],createpath,dirname);
         }
 
-      fullpath = fs::make_path(i->base,fusepath);
+      fs::path::append(createpath,fusepath);
 
-      rv = ::mknod(fullpath.c_str(),mode,dev);
+      rv = ::mknod(createpath.c_str(),mode,dev);
       if(rv == -1)
         error = errno;
     }
@@ -102,8 +102,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _mknod(*config.getattr,
-                    *config.mknod,
+      return _mknod(config.getattr,
+                    config.mknod,
                     config.srcmounts,
                     config.minfreespace,
                     fusepath,

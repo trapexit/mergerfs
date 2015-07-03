@@ -82,11 +82,11 @@ _statfs(const vector<string> &srcmounts,
   vector<string>::const_iterator iter;
   vector<string>::const_iterator enditer;
 
-  for(iter = srcmounts.begin(), enditer = srcmounts.end(); iter != enditer; ++iter)
+  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       int rv;
       struct statvfs fsstat;
-      rv = ::statvfs(iter->c_str(),&fsstat);
+      rv = ::statvfs(srcmounts[i].c_str(),&fsstat);
       if(rv != 0)
         continue;
 

@@ -82,30 +82,32 @@ _ioctl(const int           fd,
 #ifdef FUSE_IOCTL_DIR
 static
 int
-_ioctl_dir_base(const Policy::Func::Ptr  searchFunc,
-                const vector<string>    &srcmounts,
-                const size_t             minfreespace,
-                const string            &fusepath,
-                const int                cmd,
-                void                    *arg,
-                const unsigned int       flags,
-                void                    *data)
+_ioctl_dir_base(Policy::Func::Search  searchFunc,
+                const vector<string> &srcmounts,
+                const size_t          minfreespace,
+                const string         &fusepath,
+                const int             cmd,
+                void                 *arg,
+                const unsigned int    flags,
+                void                 *data)
 {
   int fd;
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  fd = ::open(path[0].full.c_str(),flags);
+  fs::path::append(path[0],fusepath);
+
+  fd = ::open(path[0].c_str(),flags);
   if(fd == -1)
     return -errno;
 
   rv = _ioctl(fd,cmd,arg,flags,data);
 
-  close(fd);
+  ::close(fd);
 
   return rv;
 }
@@ -123,7 +125,7 @@ _ioctl_dir(const string       &fusepath,
   const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
   const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-  return _ioctl_dir_base(*config.getattr,
+  return _ioctl_dir_base(config.getattr,
                          config.srcmounts,
                          config.minfreespace,
                          fusepath,

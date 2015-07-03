@@ -43,23 +43,22 @@ using mergerfs::Policy;
 
 static
 int
-_create(const Policy::Func::Ptr  searchFunc,
-        const Policy::Func::Ptr  createFunc,
-        const vector<string>    &srcmounts,
-        const size_t             minfreespace,
-        const string            &fusepath,
-        const mode_t             mode,
-        const int                flags,
-        uint64_t                &fh)
+_create(Policy::Func::Search  searchFunc,
+        Policy::Func::Create  createFunc,
+        const vector<string> &srcmounts,
+        const size_t          minfreespace,
+        const string         &fusepath,
+        const mode_t          mode,
+        const int             flags,
+        uint64_t             &fh)
 {
   int fd;
   int rv;
-  string path;
   string dirname;
-  Paths createpath;
-  Paths existingpath;
+  vector<string> createpath;
+  vector<string> existingpath;
 
-  dirname = fs::dirname(fusepath);
+  dirname = fs::path::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
   if(rv == -1)
     return -errno;
@@ -68,15 +67,15 @@ _create(const Policy::Func::Ptr  searchFunc,
   if(rv == -1)
     return -errno;
 
-  if(createpath[0].base != existingpath[0].base)
+  if(createpath[0] != existingpath[0])
     {
       const mergerfs::ugid::SetResetGuard ugid(0,0);
-      fs::clonepath(existingpath[0].base,createpath[0].base,dirname);
+      fs::clonepath(existingpath[0],createpath[0],dirname);
     }
 
-  path = fs::make_path(createpath[0].base,fusepath);
+  fs::path::append(createpath[0],fusepath);
 
-  fd = ::open(path.c_str(),flags,mode);
+  fd = ::open(createpath[0].c_str(),flags,mode);
   if(fd == -1)
     return -errno;
 
@@ -99,8 +98,8 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _create(*config.getattr,
-                     *config.create,
+      return _create(config.getattr,
+                     config.create,
                      config.srcmounts,
                      config.minfreespace,
                      fusepath,

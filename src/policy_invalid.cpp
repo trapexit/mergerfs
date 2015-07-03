@@ -36,10 +36,11 @@ using std::size_t;
 namespace mergerfs
 {
   int
-  Policy::Func::invalid(const vector<string> &basepaths,
-                        const string         &fusepath,
-                        const size_t          minfreespace,
-                        Paths                &rv)
+  Policy::Func::invalid(const Category::Enum::Type  type,
+                        const vector<string>       &basepaths,
+                        const string               &fusepath,
+                        const size_t                minfreespace,
+                        vector<string>             &rv)
   {
     return (errno = EINVAL,-1);
   }

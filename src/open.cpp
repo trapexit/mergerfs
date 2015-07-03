@@ -42,22 +42,22 @@ using mergerfs::Policy;
 
 static
 int
-_open(const Policy::Func::Ptr  searchFunc,
-      const vector<string>    &srcmounts,
-      const size_t             minfreespace,
-      const string            &fusepath,
-      const int                flags,
-      uint64_t                &fh)
+_open(Policy::Func::Search  searchFunc,
+      const vector<string> &srcmounts,
+      const size_t          minfreespace,
+      const string         &fusepath,
+      const int             flags,
+      uint64_t             &fh)
 {
   int fd;
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  fd = ::open(path[0].full.c_str(),flags);
+  fd = ::open(path[0].c_str(),flags);
   if(fd == -1)
     return -errno;
 
@@ -79,7 +79,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _open(*config.open,
+      return _open(config.open,
                    config.srcmounts,
                    config.minfreespace,
                    fusepath,

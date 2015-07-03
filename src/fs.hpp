@@ -38,19 +38,35 @@ namespace fs
   using std::vector;
   using std::map;
 
-  string dirname(const string &path);
-  string basename(const string &path);
+  namespace path
+  {
+    string dirname(const string &path);
+    string basename(const string &path);
 
-  bool dir_is_empty(const string &path);
+    bool is_empty(const string &path);
 
-  string make_path(const string &base,
-                   const string &suffix);
+    bool exists(vector<string>::const_iterator  begin,
+                vector<string>::const_iterator  end,
+                const string                   &fusepath);
+    bool exists(const vector<string>           &srcmounts,
+                const string                   &fusepath);
 
-  bool path_exists(vector<string>::const_iterator  begin,
-                   vector<string>::const_iterator  end,
-                   const string                   &fusepath);
-  bool path_exists(const vector<string>           &srcmounts,
-                   const string                   &fusepath);
+    inline
+    string
+    make(const string &base,
+         const string &suffix)
+    {
+      return base + suffix;
+    }
+
+    inline
+    void
+    append(string       &base,
+           const string &suffix)
+    {
+      base += suffix;
+    }
+  }
 
   void findallfiles(const vector<string> &srcmounts,
                     const string         &fusepath,

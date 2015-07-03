@@ -57,15 +57,12 @@ _readdir(const vector<string>  &srcmounts,
   set<string> found;
   struct stat st = {0};
 
-  for(vector<string>::const_iterator
-        iter = srcmounts.begin(), enditer = srcmounts.end();
-      iter != enditer;
-      ++iter)
+  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       DIR *dh;
       string basepath;
 
-      basepath = fs::make_path(*iter,dirname);
+      basepath = fs::path::make(srcmounts[i],dirname);
       dh = ::opendir(basepath.c_str());
       if(!dh)
         continue;

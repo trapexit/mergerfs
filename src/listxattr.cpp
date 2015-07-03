@@ -69,22 +69,24 @@ _listxattr_controlfile(char         *list,
 
 static
 int
-_listxattr(const Policy::Func::Ptr  searchFunc,
-           const vector<string>    &srcmounts,
-           const size_t             minfreespace,
-           const string            &fusepath,
-           char                    *list,
-           const size_t             size)
+_listxattr(Policy::Func::Search  searchFunc,
+           const vector<string> &srcmounts,
+           const size_t          minfreespace,
+           const string         &fusepath,
+           char                 *list,
+           const size_t          size)
 {
 #ifndef WITHOUT_XATTR
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::llistxattr(path[0].full.c_str(),list,size);
+  fs::path::append(path[0],fusepath);
+
+  rv = ::llistxattr(path[0].c_str(),list,size);
 
   return ((rv == -1) ? -errno : rv);
 #else
@@ -110,7 +112,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _listxattr(*config.listxattr,
+      return _listxattr(config.listxattr,
                         config.srcmounts,
                         config.minfreespace,
                         fusepath,

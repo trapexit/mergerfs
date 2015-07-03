@@ -37,68 +37,172 @@ using std::string;
 using std::vector;
 using std::size_t;
 
+static
+inline
+void
+_calc_epmfs(const struct statvfs  &fsstats,
+            const char            *basepath,
+            fsblkcnt_t            &epmfs,
+            const char           *&epmfsbasepath,
+            fsblkcnt_t            &mfs,
+            const char           *&mfsbasepath)
+{
+  fsblkcnt_t spaceavail;
+
+  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  if(spaceavail > epmfs)
+    {
+      epmfs         = spaceavail;
+      epmfsbasepath = basepath;
+    }
+
+  if(spaceavail > mfs)
+    {
+      mfs         = spaceavail;
+      mfsbasepath = basepath;
+    }
+}
+
+static
+inline
+void
+_calc_mfs(const struct statvfs  &fsstats,
+          const char            *basepath,
+          fsblkcnt_t            &mfs,
+          const char           *&mfsbasepath)
+{
+  fsblkcnt_t spaceavail;
+
+  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  if(spaceavail > mfs)
+    {
+      mfs         = spaceavail;
+      mfsbasepath = basepath;
+    }
+}
+
+static
+inline
+int
+_try_statvfs(const char    *basepath,
+             const string  &fullpath,
+             fsblkcnt_t    &epmfs,
+             const char   *&epmfsbasepath,
+             fsblkcnt_t    &mfs,
+             const char   *&mfsbasepath)
+{
+  int rv;
+  struct statvfs fsstats;
+
+  rv = ::statvfs(fullpath.c_str(),&fsstats);
+  if(rv == 0)
+    _calc_epmfs(fsstats,basepath,epmfs,epmfsbasepath,mfs,mfsbasepath);
+
+  return rv;
+}
+
+static
+inline
+int
+_try_statvfs(const char  *basepath,
+             fsblkcnt_t  &mfs,
+             const char *&mfsbasepath)
+{
+  int rv;
+  struct statvfs fsstats;
+
+  rv = ::statvfs(basepath,&fsstats);
+  if(rv == 0)
+    _calc_mfs(fsstats,basepath,mfs,mfsbasepath);
+
+  return rv;
+}
+
+static
+int
+_epmfs_create(const vector<string> &basepaths,
+              const string         &fusepath,
+              vector<string>       &paths)
+
+{
+  fsblkcnt_t  epmfs;
+  fsblkcnt_t  mfs;
+  const char *basepath;
+  const char *mfsbasepath;
+  const char *epmfsbasepath;
+  string      fullpath;
+
+  mfs = 0;
+  epmfs = 0;
+  mfsbasepath = NULL;
+  epmfsbasepath = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      int rv;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::path::make(basepath,fusepath);
+
+      rv = _try_statvfs(basepath,fusepath,epmfs,epmfsbasepath,mfs,mfsbasepath);
+      if(rv == -1)
+        _try_statvfs(basepath,mfs,mfsbasepath);
+    }
+
+  if(epmfsbasepath == NULL)
+    epmfsbasepath = mfsbasepath;
+
+  paths.push_back(epmfsbasepath);
+
+  return 0;
+}
+
+static
+int
+_epmfs(const vector<string> &basepaths,
+       const string         &fusepath,
+       vector<string>       &paths)
+
+{
+  fsblkcnt_t  epmfs;
+  const char *basepath;
+  const char *epmfsbasepath;
+  string      fullpath;
+
+  epmfs = 0;
+  epmfsbasepath = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      int rv;
+      struct statvfs fsstats;
+
+      basepath = basepaths[i].c_str();
+      fullpath = fs::path::make(basepath,fusepath);
+
+      rv = ::statvfs(fullpath.c_str(),&fsstats);
+      if(rv == 0)
+        _calc_mfs(fsstats,basepath,epmfs,epmfsbasepath);
+    }
+
+  if(epmfsbasepath == NULL)
+    return (errno=ENOENT,-1);
+
+  paths.push_back(epmfsbasepath);
+
+  return 0;
+}
+
 namespace mergerfs
 {
   int
-  Policy::Func::epmfs(const vector<string> &basepaths,
-                      const string         &fusepath,
-                      const size_t          minfreespace,
-                      Paths                &paths)
+  Policy::Func::epmfs(const Category::Enum::Type  type,
+                      const vector<string>       &basepaths,
+                      const string               &fusepath,
+                      const size_t                minfreespace,
+                      vector<string>             &paths)
   {
-    fsblkcnt_t existingmfs;
-    fsblkcnt_t generalmfs;
-    string     fullpath;
-    string     generalmfspath;
-    string     existingmfspath;
-    vector<string>::const_iterator iter  = basepaths.begin();
-    vector<string>::const_iterator eiter = basepaths.end();
+    if(type == Category::Enum::create)
+      return _epmfs_create(basepaths,fusepath,paths);
 
-    if(iter == eiter)
-      return (errno = ENOENT,-1);
-
-    existingmfs = 0;
-    generalmfs  = 0;
-    do
-      {
-        int rv;
-        struct statvfs  fsstats;
-        const string   &mountpoint = *iter;
-
-        rv = ::statvfs(mountpoint.c_str(),&fsstats);
-        if(rv == 0)
-          {
-            fsblkcnt_t  spaceavail;
-            struct stat st;
-
-            spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
-            if(spaceavail > generalmfs)
-              {
-                generalmfs     = spaceavail;
-                generalmfspath = mountpoint;
-              }
-
-            fullpath = fs::make_path(mountpoint,fusepath);
-            rv = ::lstat(fullpath.c_str(),&st);
-            if(rv == 0)
-              {
-                if(spaceavail > existingmfs)
-                  {
-                    existingmfs     = spaceavail;
-                    existingmfspath = mountpoint;
-                  }
-              }
-          }
-
-        ++iter;
-      }
-    while(iter != eiter);
-
-    if(existingmfspath.empty())
-      existingmfspath = generalmfspath;
-
-    paths.push_back(Path(existingmfspath,
-                         fullpath));
-
-    return 0;
+    return _epmfs(basepaths,fusepath,paths);
   }
 }

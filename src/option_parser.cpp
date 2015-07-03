@@ -121,8 +121,8 @@ parse_and_process_minfreespace(const std::string &value,
       minfreespace *= (1024 * 1024);
       break;
 
-    case 'b':
-    case 'B':
+    case 'g':
+    case 'G':
       minfreespace *= (1024 * 1024 * 1024);
       break;
 

@@ -31,6 +31,7 @@
 
 #include "path.hpp"
 #include "fs.hpp"
+#include "category.hpp"
 
 namespace mergerfs
 {
@@ -61,19 +62,74 @@ namespace mergerfs
       typedef std::string string;
       typedef std::size_t size_t;
       typedef std::vector<string> strvec;
+      typedef const string cstring;
+      typedef const size_t csize_t;
+      typedef const strvec cstrvec;
+      typedef const Category::Enum::Type CType;
 
-      typedef int (*Ptr)(const strvec&,const string&,const size_t,Paths&);
+      typedef int (*Ptr)(CType,cstrvec&,cstring&,csize_t,strvec&);
 
-      static int invalid(const strvec&,const string&,const size_t,Paths&);
-      static int all(const strvec&,const string&,const size_t,Paths&);
-      static int epmfs(const strvec&,const string&,const size_t,Paths&);
-      static int ff(const strvec&,const string&,const size_t,Paths&);
-      static int ffwp(const strvec&,const string&,const size_t,Paths&);
-      static int fwfs(const strvec&,const string&,const size_t,Paths&);
-      static int lfs(const strvec&,const string&,const size_t,Paths&);
-      static int mfs(const strvec&,const string&,const size_t,Paths&);
-      static int newest(const strvec&,const string&,const size_t,Paths&);
-      static int rand(const strvec&,const string&,const size_t,Paths&);
+      class Action
+      {
+      public:
+        Action(const Policy *p)
+          : func(p->_func)
+        {}
+
+        int
+        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
+        {
+          return func(Category::Enum::action,b,c,d,e);
+        }
+
+      private:
+        const Ptr func;
+      };
+
+      class Create
+      {
+      public:
+        Create(const Policy *p)
+          : func(p->_func)
+        {}
+
+        int
+        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
+        {
+          return func(Category::Enum::create,b,c,d,e);
+        }
+
+      private:
+        const Ptr func;
+      };
+
+      class Search
+      {
+      public:
+        Search(const Policy *p)
+          : func(p->_func)
+        {}
+
+        int
+        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
+        {
+          return func(Category::Enum::search,b,c,d,e);
+        }
+
+      private:
+        const Ptr func;
+      };
+
+      static int invalid(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int all(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int epmfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int ff(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int ffwp(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int fwfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int lfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int mfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int newest(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int rand(CType,cstrvec&,cstring&,csize_t,strvec&);
     };
 
   private:
@@ -124,16 +180,17 @@ namespace mergerfs
   public:
     static const std::vector<Policy>  _policies_;
     static const Policy * const       policies;
-    static const Policy              &invalid;
-    static const Policy              &all;
-    static const Policy              &epmfs;
-    static const Policy              &ff;
-    static const Policy              &ffwp;
-    static const Policy              &fwfs;
-    static const Policy              &lfs;
-    static const Policy              &mfs;
-    static const Policy              &newest;
-    static const Policy              &rand;
+
+    static const Policy &invalid;
+    static const Policy &all;
+    static const Policy &epmfs;
+    static const Policy &ff;
+    static const Policy &ffwp;
+    static const Policy &fwfs;
+    static const Policy &lfs;
+    static const Policy &mfs;
+    static const Policy &newest;
+    static const Policy &rand;
   };
 }
 

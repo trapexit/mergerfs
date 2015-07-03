@@ -40,26 +40,27 @@ using mergerfs::Policy;
 
 static
 int
-_chown(const Policy::Func::Ptr  actionFunc,
-       const vector<string>    &srcmounts,
-       const size_t             minfreespace,
-       const string            &fusepath,
-       const uid_t              uid,
-       const gid_t              gid)
+_chown(Policy::Func::Action  actionFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const string         &fusepath,
+       const uid_t           uid,
+       const gid_t           gid)
 {
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lchown(i->full.c_str(),uid,gid);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::lchown(paths[i].c_str(),uid,gid);
       if(rv == -1)
         error = errno;
     }
@@ -81,7 +82,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _chown(*config.chown,
+      return _chown(config.chown,
                     config.srcmounts,
                     config.minfreespace,
                     fusepath,

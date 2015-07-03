@@ -240,29 +240,30 @@ _setxattr_controlfile(config::Config &config,
 
 static
 int
-_setxattr(const Policy::Func::Ptr  actionFunc,
-          const vector<string>    &srcmounts,
-          const size_t             minfreespace,
-          const string            &fusepath,
-          const char              *attrname,
-          const char              *attrval,
-          const size_t             attrvalsize,
-          const int                flags)
+_setxattr(Policy::Func::Action  actionFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const string         &fusepath,
+          const char           *attrname,
+          const char           *attrval,
+          const size_t          attrvalsize,
+          const int             flags)
 {
 #ifndef WITHOUT_XATTR
   int rv;
   int error;
-  Paths paths;
+  vector<string> paths;
 
   rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(Paths::const_iterator
-        i = paths.begin(), ei = paths.end(); i != ei; ++i)
+  for(size_t i = 0, ei = paths.size(); i != ei; i++)
     {
-      rv = ::lsetxattr(i->full.c_str(),attrname,attrval,attrvalsize,flags);
+      fs::path::append(paths[i],fusepath);
+
+      rv = ::lsetxattr(paths[i].c_str(),attrname,attrval,attrvalsize,flags);
       if(rv == -1)
         error = errno;
     }
@@ -301,7 +302,7 @@ namespace mergerfs
         const ugid::SetResetGuard ugid(fc->uid,fc->gid);
         const rwlock::ReadGuard   readlock(&config.srcmountslock);
 
-        return _setxattr(*config.setxattr,
+        return _setxattr(config.setxattr,
                          config.srcmounts,
                          config.minfreespace,
                          fusepath,

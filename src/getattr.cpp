@@ -66,20 +66,22 @@ _getattr_controlfile(struct stat &buf)
 
 static
 int
-_getattr(const Policy::Func::Ptr  searchFunc,
-         const vector<string>    &srcmounts,
-         const size_t             minfreespace,
-         const string            &fusepath,
-         struct stat             &buf)
+_getattr(Policy::Func::Search  searchFunc,
+         const vector<string> &srcmounts,
+         const size_t          minfreespace,
+         const string         &fusepath,
+         struct stat          &buf)
 {
   int rv;
-  Paths path;
+  vector<string> path;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,path);
   if(rv == -1)
     return -errno;
 
-  rv = ::lstat(path[0].full.c_str(),&buf);
+  fs::path::append(path[0],fusepath);
+
+  rv = ::lstat(path[0].c_str(),&buf);
 
   return ((rv == -1) ? -errno : 0);
 }
@@ -101,7 +103,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _getattr(*config.getattr,
+      return _getattr(config.getattr,
                       config.srcmounts,
                       config.minfreespace,
                       fusepath,

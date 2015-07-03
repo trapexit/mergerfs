@@ -40,29 +40,28 @@ using mergerfs::Policy;
 
 static
 int
-_symlink(const Policy::Func::Ptr  createFunc,
-         const vector<string>    &srcmounts,
-         const size_t             minfreespace,
-         const string            &oldpath,
-         const string            &newpath)
+_symlink(Policy::Func::Create  createFunc,
+         const vector<string> &srcmounts,
+         const size_t          minfreespace,
+         const string         &oldpath,
+         const string         &newpath)
 {
   int rv;
   int error;
   string newpathdir;
-  Paths newpathdirs;
+  vector<string> newpathdirs;
 
-  newpathdir = fs::dirname(newpath);
+  newpathdir = fs::path::dirname(newpath);
   rv = createFunc(srcmounts,newpathdir,minfreespace,newpathdirs);
   if(rv == -1)
     return -errno;
 
   error = 0;
-  for(Paths::iterator
-        i = newpathdirs.begin(), ei = newpathdirs.end(); i != ei; ++i)
+  for(size_t i = 0, ei = newpathdirs.size(); i != ei; i++)
     {
-      i->full = fs::make_path(i->base,newpath);
+      fs::path::append(newpathdirs[i],newpath);
 
-      rv = symlink(oldpath.c_str(),i->full.c_str());
+      rv = symlink(oldpath.c_str(),newpathdirs[i].c_str());
       if(rv == -1)
         error = errno;
     }
@@ -83,7 +82,7 @@ namespace mergerfs
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
-      return _symlink(*config.symlink,
+      return _symlink(config.symlink,
                       config.srcmounts,
                       config.minfreespace,
                       oldpath,
