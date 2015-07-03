@@ -45,45 +45,19 @@ In /etc/fstab it'd look like the following:
 /mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other  0       0
 ```
 
-**NOTE:** the globbing is done at mount time. If a new directory is added matching the glob after the fact it will not be included.
+**NOTE:** the globbing is done at mount or xattr update time. If a new directory is added matching the glob after the fact it will not be included.
 
 # POLICIES
 
 Filesystem calls are broken up into 3 categories: action, create, search. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
 
 #### Functional  classifications ####
-| FUSE Function | Class |
-|-------------|---------|
-| access      | search  |
-| chmod       | action  |
-| chown       | action  |
-| create      | create  |
-| fallocate   | N/A     |
-| fgetattr    | N/A     |
-| fsync       | N/A     |
-| ftruncate   | N/A     |
-| getattr     | search  |
-| getxattr    | search  |
-| ioctl       | N/A*    |
-| link        | action  |
-| listxattr   | search  |
-| mkdir       | create  |
-| mknod       | create  |
-| open        | search  |
-| read        | N/A     |
-| readdir     | N/A     |
-| readlink    | search  |
-| release     | N/A     |
-| removexattr | action  |
-| rename      | action  |
-| rmdir       | action  |
-| setxattr    | action  |
-| statfs      | N/A     |
-| symlink     | create  |
-| truncate    | action  |
-| unlink      | action  |
-| utimens     | action  |
-| write       | N/A     |
+| Category | FUSE Functions |
+|----------|----------------|
+| action   | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
+| create   | create, mkdir, mknod, symlink |
+| search   | access, getattr, getxattr, ioctl*, listxattr, open, readlink |
+| N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl*, read, readdir, release, statfs, write |
 
 `ioctl` behaves differently if its acting on a directory. It'll use the `getattr` policy to find and open the directory before issuing the `ioctl`. In other cases where something may be searched (to confirm a directory exists across all source mounts) then `getattr` will be used.
 
