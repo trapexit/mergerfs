@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2015-06-05
+% 2015-07-03
 
 # NAME
 
@@ -20,13 +20,11 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 
 ###options###
 
-`defaults` is a shortcut for `big_writes`, `auto_cache`, `atomic_o_trunc`, `splice_read`, `splice_write`, and `splice_move`. These options seem to provide the best performance.
-
-All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `func.<func>=<policy>`.
-
-To set all function policies in a category use `category.<category>=<policy>` such as `category.create=mfs`.
-
-They are evaluated in the order listed so if the options are `func.rmdir=rand,category.action=ff` the `action` category setting will override the `rmdir` setting.
+* `defaults` is a shortcut for `big_writes`, `auto_cache`, `atomic_o_trunc`, `splice_read`, `splice_write`, and `splice_move`. These options seem to provide the best performance.
+* `minfreespace` (defaults to `4G`) is the minimum space value used for the `lfs` and `fwfs` policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
+* All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `func.<func>=<policy>`.
+* To set all function policies in a category use `category.<category>=<policy>` such as `category.create=mfs`.
+* They are evaluated in the order listed so if the options are `func.rmdir=rand,category.action=ff` the `action` category setting will override the `rmdir` setting.
 
 ###srcpoints###
 
@@ -45,60 +43,39 @@ In /etc/fstab it'd look like the following:
 /mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other  0       0
 ```
 
-**NOTE:** the globbing is done at mount time. If a new directory is added matching the glob after the fact it will not be included.
+**NOTE:** the globbing is done at mount or xattr update time. If a new directory is added matching the glob after the fact it will not be included.
 
 # POLICIES
 
 Filesystem calls are broken up into 3 categories: action, create, search. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how [mergerfs](http://github.com/trapexit/mergerfs) behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: rand (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
 
 #### Functional  classifications ####
-| FUSE Function | Class |
-|-------------|---------|
-| access      | search  |
-| chmod       | action  |
-| chown       | action  |
-| create      | create  |
-| fallocate   | N/A     |
-| fgetattr    | N/A     |
-| fsync       | N/A     |
-| ftruncate   | N/A     |
-| getattr     | search  |
-| getxattr    | search  |
-| ioctl       | N/A*    |
-| link        | action  |
-| listxattr   | search  |
-| mkdir       | create  |
-| mknod       | create  |
-| open        | search  |
-| read        | N/A     |
-| readdir     | N/A     |
-| readlink    | search  |
-| release     | N/A     |
-| removexattr | action  |
-| rename      | action  |
-| rmdir       | action  |
-| setxattr    | action  |
-| statfs      | N/A     |
-| symlink     | create  |
-| truncate    | action  |
-| unlink      | action  |
-| utimens     | action  |
-| write       | N/A     |
+
+| Category | FUSE Functions |
+|----------|----------------|
+| action   | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
+| create   | create, mkdir, mknod, symlink |
+| search   | access, getattr, getxattr, ioctl*, listxattr, open, readlink |
+| N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl*, read, readdir, release, statfs, write |
 
 `ioctl` behaves differently if its acting on a directory. It'll use the `getattr` policy to find and open the directory before issuing the `ioctl`. In other cases where something may be searched (to confirm a directory exists across all source mounts) then `getattr` will be used.
 
 #### Policy descriptions ####
+
 | Policy | Description |
 |--------------|-------------|
 | ff (first found) | Given the order of the paths act on the first one found (regardless if stat would return EACCES). |
 | ffwp (first found w/ permissions) | Given the order of the paths act on the first one found which you have access (stat does not error with EACCES). |
 | newest (newest file) | If multiple files exist return the one with the most recent mtime. |
-| mfs (most free space) | Assuming the path is found to exist (ENOENT would not be returned) use the drive with the most free space available. |
+| mfs (most free space) | Use the drive with the most free space available. |
 | epmfs (existing path, most free space) | If the path exists in multiple locations use the one with the most free space. Otherwise fall back to mfs. |
+| fwfs (first with free space) | Pick the first path which has at least `minfreespace`. |
+| lfs (least free space) | Pick the path with least available space but more than `minfreespace`. |
 | rand (random) | Pick an existing destination at random. |
 | all | Applies action to all found. For searches it will behave like first found `ff`. |
 
 #### Defaults ####
+
 | Category | Policy |
 |----------|--------|
 | action   | all    |
@@ -141,6 +118,7 @@ There is a pseudo file available at the mountpoint which allows for the runtime 
 Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls will still work.
 
 ##### Keys #####
+
 * user.mergerfs.srcmounts
 * user.mergerfs.category.action
 * user.mergerfs.category.create
