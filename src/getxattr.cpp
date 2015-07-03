@@ -29,6 +29,7 @@
 #include <set>
 #include <algorithm>
 
+#include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <string.h>
@@ -93,6 +94,18 @@ _getxattr_controlfile_srcmounts(const Config &config,
 }
 
 static
+void
+_getxattr_controlfile_minfreespace(const Config &config,
+                                   string       &attrvalue)
+{
+  char buf[64];
+
+  snprintf(buf,sizeof(buf),"%li",config.minfreespace);
+
+  attrvalue = buf;
+}
+
+static
 int
 _getxattr_controlfile(const Config &config,
                       const char   *attrname,
@@ -108,6 +121,8 @@ _getxattr_controlfile(const Config &config,
 
   if(!strcmp("srcmounts",attrbasename))
     _getxattr_controlfile_srcmounts(config,attrvalue);
+  else if(!strcmp("minfreespace",attrbasename))
+    _getxattr_controlfile_minfreespace(config,attrvalue);
   else if(!strncmp("category.",attrbasename,sizeof("category.")-1))
     _getxattr_controlfile_category_policy(config,&attrbasename[sizeof("category.")-1],attrvalue);
   else if(!strncmp("func.",attrbasename,sizeof("func.")-1))

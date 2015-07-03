@@ -35,6 +35,7 @@
 #include <iostream>
 
 #include "str.hpp"
+#include "num.hpp"
 #include "config.hpp"
 #include "policy.hpp"
 
@@ -106,29 +107,11 @@ int
 parse_and_process_minfreespace(const std::string &value,
                                size_t            &minfreespace)
 {
-  char *endptr;
+  int rv;
 
-  minfreespace = strtoll(value.c_str(),&endptr,10);
-  switch(*endptr)
-    {
-    case 'k':
-    case 'K':
-      minfreespace *= 1024;
-      break;
-
-    case 'm':
-    case 'M':
-      minfreespace *= (1024 * 1024);
-      break;
-
-    case 'g':
-    case 'G':
-      minfreespace *= (1024 * 1024 * 1024);
-      break;
-
-    default:
-      return 1;
-    }
+  rv = num::to_size_t(value,minfreespace);
+  if(rv == -1)
+    return 1;
 
   return 0;
 }
