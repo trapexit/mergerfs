@@ -37,6 +37,7 @@
 #include "ugid.hpp"
 #include "rwlock.hpp"
 #include "xattr.hpp"
+#include "buildvector.hpp"
 
 using std::string;
 using std::vector;
@@ -48,12 +49,17 @@ _listxattr_controlfile(char         *list,
                        const size_t  size)
 {
   string xattrs;
+  const vector<string> strs =
+    buildvector<string>
+    ("user.mergerfs.srcmounts")
+    ("user.mergerfs.minfreespace");
 
   xattrs.reserve(512);
-  xattrs.append("user.mergerfs.srcmounts",sizeof("user.mergerfs.srcmounts"));
-  for(int i = Category::Enum::BEGIN; i < Category::Enum::END; i++)
+  for(size_t i = 0; i < strs.size(); i++)
+    xattrs += (strs[i] + '\0');
+  for(size_t i = Category::Enum::BEGIN; i < Category::Enum::END; i++)
     xattrs += ("user.mergerfs.category." + (std::string)*Category::categories[i] + '\0');
-  for(int i = FuseFunc::Enum::BEGIN; i < FuseFunc::Enum::END; i++)
+  for(size_t i = FuseFunc::Enum::BEGIN; i < FuseFunc::Enum::END; i++)
     xattrs += ("user.mergerfs.func." + (std::string)*FuseFunc::fusefuncs[i] + '\0');
 
   if(size == 0)

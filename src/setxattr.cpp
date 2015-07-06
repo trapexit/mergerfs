@@ -38,6 +38,7 @@
 #include "rwlock.hpp"
 #include "xattr.hpp"
 #include "str.hpp"
+#include "num.hpp"
 
 using std::string;
 using std::vector;
@@ -167,6 +168,24 @@ _setxattr_srcmounts(vector<string>   &srcmounts,
 
 static
 int
+_setxattr_minfreespace(config::Config &config,
+                       const string   &attrval,
+                       const int       flags)
+{
+  int rv;
+
+  if((flags & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  rv = num::to_size_t(attrval,config.minfreespace);
+  if(rv == -1)
+    return -EINVAL;
+
+  return 0;
+}
+
+static
+int
 _setxattr_controlfile_func_policy(config::Config &config,
                                   const char     *funcname,
                                   const string   &attrval,
@@ -224,6 +243,10 @@ _setxattr_controlfile(config::Config &config,
                                config.destmount,
                                attrval,
                                flags);
+  else if(!strcmp("minfreespace",attrbasename))
+    return _setxattr_minfreespace(config,
+                                  attrval,
+                                  flags);
   else if(!strncmp("category.",attrbasename,sizeof("category.")-1))
     return _setxattr_controlfile_category_policy(config,
                                                  &attrbasename[sizeof("category.")-1],

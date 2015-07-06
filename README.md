@@ -120,6 +120,7 @@ Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/
 ##### Keys #####
 
 * user.mergerfs.srcmounts
+* user.mergerfs.minfreespace
 * user.mergerfs.category.action
 * user.mergerfs.category.create
 * user.mergerfs.category.search
@@ -149,6 +150,7 @@ Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/
 ```
 [trapexit:/tmp/mount] $ xattr -l .mergerfs
 user.mergerfs.srcmounts: /tmp/a:/tmp/b
+user.mergerfs.minfreespace: 4294967295
 user.mergerfs.category.action: all
 user.mergerfs.category.create: epmfs
 user.mergerfs.category.search: ff
