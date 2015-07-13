@@ -420,6 +420,23 @@ namespace fs
     return set_fs_ioc_flags(to,flags);
   }
 
+  static
+  bool
+  ignorable_error(const int err)
+  {
+    switch(err)
+      {
+      case ENOTTY:
+      case ENOTSUP:
+#if ENOTSUP != EOPNOTSUPP
+      case EOPNOTSUPP:
+#endif
+        return true;
+      }
+
+    return false;
+  }
+
   int
   clonepath(const string &fromsrc,
             const string &tosrc,
@@ -464,11 +481,11 @@ namespace fs
 
     // It may not support it... it's fine...
     rv = copyattr(frompath,topath);
-    if(rv == -1 && errno != ENOTTY)
+    if(rv == -1 && !ignorable_error(errno))
       return -1;
 
     rv = copyxattrs(frompath,topath);
-    if(rv == -1 && errno != ENOTTY)
+    if(rv == -1 && !ignorable_error(errno))
       return -1;
 
     return 0;
