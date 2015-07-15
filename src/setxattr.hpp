@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace setxattr
+  namespace fuse
   {
     int
     setxattr(const char *fusepath,

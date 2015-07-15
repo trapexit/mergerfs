@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace fallocate
+  namespace fuse
   {
     int
     fallocate(const char            *fusepath,

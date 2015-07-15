@@ -71,7 +71,7 @@ _symlink(Policy::Func::Create  createFunc,
 
 namespace mergerfs
 {
-  namespace symlink
+  namespace fuse
   {
     int
     symlink(const char *oldpath,

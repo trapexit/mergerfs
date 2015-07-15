@@ -88,7 +88,7 @@ _getattr(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace getattr
+  namespace fuse
   {
     int
     getattr(const char  *fusepath,

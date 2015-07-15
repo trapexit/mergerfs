@@ -26,7 +26,7 @@
 
 namespace mergerfs
 {
-  namespace truncate
+  namespace fuse
   {
     int
     truncate(const char *fusepath,

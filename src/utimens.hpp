@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace utimens
+  namespace fuse
   {
     int
     utimens(const char            *fusepath,

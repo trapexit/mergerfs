@@ -118,7 +118,7 @@ _statfs(const vector<string> &srcmounts,
 
 namespace mergerfs
 {
-  namespace statfs
+  namespace fuse
   {
     int
     statfs(const char     *fusepath,

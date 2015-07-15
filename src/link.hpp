@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace link
+  namespace fuse
   {
     int
     link(const char *from,

@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace mknod
+  namespace fuse
   {
     int
     mknod(const char *fusepath,

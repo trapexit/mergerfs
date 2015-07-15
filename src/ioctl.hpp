@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace ioctl
+  namespace fuse
   {
     int
     ioctl(const char            *fusepath,

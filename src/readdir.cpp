@@ -87,7 +87,7 @@ _readdir(const vector<string>  &srcmounts,
 
 namespace mergerfs
 {
-  namespace readdir
+  namespace fuse
   {
     int
     readdir(const char            *fusepath,

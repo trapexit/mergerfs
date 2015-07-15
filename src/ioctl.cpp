@@ -138,7 +138,7 @@ _ioctl_dir(const string       &fusepath,
 
 namespace mergerfs
 {
-  namespace ioctl
+  namespace fuse
   {
     int
     ioctl(const char            *fusepath,

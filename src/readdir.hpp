@@ -36,7 +36,7 @@
 
 namespace mergerfs
 {
-  namespace readdir
+  namespace fuse
   {
     int
     readdir(const char            *fusepath,

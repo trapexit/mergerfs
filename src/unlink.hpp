@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace unlink
+  namespace fuse
   {
     int
     unlink(const char *fusepath);

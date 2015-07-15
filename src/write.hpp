@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace write
+  namespace fuse
   {
     int
     write(const char            *fusepath,

@@ -68,7 +68,7 @@ _rmdir(Policy::Func::Action  actionFunc,
 
 namespace mergerfs
 {
-  namespace rmdir
+  namespace fuse
   {
     int
     rmdir(const char *fusepath)

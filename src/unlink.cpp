@@ -69,7 +69,7 @@ _unlink(Policy::Func::Action  actionFunc,
 
 namespace mergerfs
 {
-  namespace unlink
+  namespace fuse
   {
     int
     unlink(const char *fusepath)

@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace symlink
+  namespace fuse
   {
     int
     symlink(const char *oldpath,

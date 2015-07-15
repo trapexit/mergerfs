@@ -50,7 +50,7 @@ _fsync(const int fd,
 
 namespace mergerfs
 {
-  namespace fsync
+  namespace fuse
   {
     int
     fsync(const char            *fusepath,

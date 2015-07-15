@@ -44,7 +44,7 @@ _flush(const int fd)
 
 namespace mergerfs
 {
-  namespace flush
+  namespace fuse
   {
     int
     flush(const char            *fusepath,
