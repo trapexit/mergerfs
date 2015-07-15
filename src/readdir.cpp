@@ -43,7 +43,6 @@ using std::string;
 using std::vector;
 using std::set;
 using std::pair;
-using mergerfs::readdir::FileData;
 
 #define NO_OFFSET 0
 
@@ -86,35 +85,10 @@ _readdir(const vector<string>  &srcmounts,
   return 0;
 }
 
-static
-int
-stat_vector_filler(void              *buf,
-                   const char        *name,
-                   const struct stat *stbuf,
-                   off_t              off)
-{
-  vector<FileData> *stats = (vector<FileData>*)buf;
-
-  stats->push_back(FileData(name,*stbuf));
-
-  return 0;
-}
-
 namespace mergerfs
 {
   namespace readdir
   {
-    int
-    readdir(const vector<string> &srcmounts,
-            const string         &dirname,
-            vector<FileData>     &stats)
-    {
-      return _readdir(srcmounts,
-                      dirname,
-                      &stats,
-                      stat_vector_filler);
-    }
-
     int
     readdir(const char            *fusepath,
             void                  *buf,
