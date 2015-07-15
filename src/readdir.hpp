@@ -38,29 +38,12 @@ namespace mergerfs
 {
   namespace readdir
   {
-    struct FileData
-    {
-      FileData(const std::string &filename_,
-               const struct stat &stats_)
-        : filename(filename_),
-          stats(stats_)
-      {}
-
-      std::string filename;
-      struct stat stats;
-    };
-
     int
     readdir(const char            *fusepath,
             void                  *buf,
             fuse_fill_dir_t        filler,
             off_t                  offset,
             struct fuse_file_info *fi);
-
-    int
-    readdir(const std::vector<std::string> &srcmounts,
-            const std::string              &dirname,
-            std::vector<FileData>          &stats);
   }
 }
 
