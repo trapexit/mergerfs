@@ -34,8 +34,7 @@ namespace mergerfs
       SetResetGuard(const uid_t _newuid,
                     const gid_t _newgid)
       {
-        olduid   = ::geteuid();
-        oldgid   = ::getegid();
+        pthread_getugid_np(&olduid,&oldgid);
         newuid   = _newuid;
         newgid   = _newgid;
 
