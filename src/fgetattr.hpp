@@ -28,7 +28,7 @@
 
 namespace mergerfs
 {
-  namespace fgetattr
+  namespace fuse
   {
     int
     fgetattr(const char            *fusepath,

@@ -71,7 +71,7 @@ _utimens(Policy::Func::Action   actionFunc,
 
 namespace mergerfs
 {
-  namespace utimens
+  namespace fuse
   {
     int
     utimens(const char            *fusepath,

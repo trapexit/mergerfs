@@ -43,7 +43,7 @@ _write(const int     fd,
 
 namespace mergerfs
 {
-  namespace write
+  namespace fuse
   {
     int
     write(const char            *fusepath,

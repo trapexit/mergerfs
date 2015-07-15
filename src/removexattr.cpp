@@ -75,7 +75,7 @@ _removexattr(Policy::Func::Action  actionFunc,
 
 namespace mergerfs
 {
-  namespace removexattr
+  namespace fuse
   {
     int
     removexattr(const char *fusepath,

@@ -86,7 +86,7 @@ _create(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace create
+  namespace fuse
   {
     int
     create(const char            *fusepath,

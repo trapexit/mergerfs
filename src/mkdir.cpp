@@ -88,7 +88,7 @@ _mkdir(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace mkdir
+  namespace fuse
   {
     int
     mkdir(const char *fusepath,

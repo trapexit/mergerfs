@@ -43,7 +43,7 @@ _fgetattr(const int    fd,
 
 namespace mergerfs
 {
-  namespace fgetattr
+  namespace fuse
   {
     int
     fgetattr(const char            *fusepath,

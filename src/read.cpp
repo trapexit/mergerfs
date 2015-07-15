@@ -46,7 +46,7 @@ _read(const int     fd,
 
 namespace mergerfs
 {
-  namespace read
+  namespace fuse
   {
     int
     read(const char            *fusepath,

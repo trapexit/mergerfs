@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace rename
+  namespace fuse
   {
     int
     rename(const char *from,

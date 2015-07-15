@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace readlink
+  namespace fuse
   {
     int
     readlink(const char *fusepath,

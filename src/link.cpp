@@ -104,7 +104,7 @@ _link(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace link
+  namespace fuse
   {
     int
     link(const char *from,

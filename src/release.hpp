@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace release
+  namespace fuse
   {
     int
     release(const char            *fusepath,

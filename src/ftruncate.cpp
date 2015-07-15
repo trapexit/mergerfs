@@ -42,7 +42,7 @@ _ftruncate(const int   fd,
 
 namespace mergerfs
 {
-  namespace ftruncate
+  namespace fuse
   {
     int
     ftruncate(const char            *fusepath,

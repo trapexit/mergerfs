@@ -68,7 +68,7 @@ _open(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace open
+  namespace fuse
   {
     int
     open(const char            *fusepath,

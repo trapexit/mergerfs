@@ -107,7 +107,7 @@ _rename(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace rename
+  namespace fuse
   {
     int
     rename(const char *oldpath,

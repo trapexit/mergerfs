@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace destroy
+  namespace fuse
   {
     void
     destroy(void *);

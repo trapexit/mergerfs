@@ -68,7 +68,7 @@ _readlink(Policy::Func::Search  searchFunc,
 
 namespace mergerfs
 {
-  namespace readlink
+  namespace fuse
   {
     int
     readlink(const char *fusepath,

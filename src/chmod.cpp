@@ -68,7 +68,7 @@ _chmod(Policy::Func::Action  actionFunc,
 
 namespace mergerfs
 {
-  namespace chmod
+  namespace fuse
   {
     int
     chmod(const char *fusepath,

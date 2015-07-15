@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace chown
+  namespace fuse
   {
     int
     chown(const char *fusepath,

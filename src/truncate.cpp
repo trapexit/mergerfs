@@ -71,7 +71,7 @@ _truncate(Policy::Func::Action  actionFunc,
 
 namespace mergerfs
 {
-  namespace truncate
+  namespace fuse
   {
     int
     truncate(const char *fusepath,

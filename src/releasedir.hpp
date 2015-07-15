@@ -26,7 +26,7 @@
 
 namespace mergerfs
 {
-  namespace releasedir
+  namespace fuse
   {
     int
     releasedir(const char            *fusepath,

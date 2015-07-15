@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace removexattr
+  namespace fuse
   {
     int
     removexattr(const char *fusepath,

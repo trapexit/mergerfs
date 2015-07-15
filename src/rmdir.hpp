@@ -24,7 +24,7 @@
 
 namespace mergerfs
 {
-  namespace rmdir
+  namespace fuse
   {
     int
     rmdir(const char *fusepath);
