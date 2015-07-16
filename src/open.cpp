@@ -57,6 +57,8 @@ _open(Policy::Func::Search  searchFunc,
   if(rv == -1)
     return -errno;
 
+  fs::path::append(path[0],fusepath);
+
   fd = ::open(path[0].c_str(),flags);
   if(fd == -1)
     return -errno;
