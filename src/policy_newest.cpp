@@ -43,17 +43,16 @@ _newest(const vector<string> &basepaths,
         const string         &fusepath,
         vector<string>       &paths)
 {
-  time_t      newest    = std::numeric_limits<time_t>::min();
-  const char *neweststr = NULL;
+  time_t newest = std::numeric_limits<time_t>::min();
+  string neweststr;
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int          rv;
-      struct stat  st;
-      const char  *basepath;
-      string       fullpath;
+      int rv;
+      struct stat st;
+      string fullpath;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
@@ -64,7 +63,7 @@ _newest(const vector<string> &basepaths,
         }
     }
 
-  if(neweststr == NULL)
+  if(neweststr.empty())
     return (errno=ENOENT,-1);
 
   paths.push_back(neweststr);

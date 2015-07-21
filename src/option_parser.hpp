@@ -31,7 +31,7 @@ namespace mergerfs
   namespace options
   {
     void
-    parse(struct fuse_args         &args,
-          mergerfs::config::Config &config);
+    parse(fuse_args &args,
+          Config    &config);
   }
 }

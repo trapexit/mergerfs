@@ -74,8 +74,8 @@ namespace mergerfs
     access(const char *fusepath,
            int         mask)
     {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
+      const fuse_context        *fc     = fuse_get_context();
+      const Config              &config = Config::get(fc);
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 

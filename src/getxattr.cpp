@@ -45,7 +45,6 @@ using std::string;
 using std::vector;
 using std::set;
 using namespace mergerfs;
-using namespace mergerfs::config;
 
 static
 void
@@ -246,7 +245,8 @@ namespace mergerfs
              char       *buf,
              size_t      count)
     {
-      const config::Config &config = config::get();
+      const fuse_context *fc     = fuse_get_context();
+      const Config       &config = Config::get(fc);
 
       if(fusepath == config.controlfile)
         return _getxattr_controlfile(config,
@@ -254,9 +254,8 @@ namespace mergerfs
                                      buf,
                                      count);
 
-      const struct fuse_context *fc = fuse_get_context();
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const ugid::SetResetGuard ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard   readlock(&config.srcmountslock);
 
       return _getxattr(config.getxattr,
                        config.srcmounts,

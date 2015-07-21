@@ -27,10 +27,10 @@ namespace mergerfs
   namespace fuse
   {
     int
-    read_buf(const char             *fusepath,
-             struct fuse_bufvec    **buf,
-             size_t                  size,
-             off_t                   offset,
-             struct fuse_file_info  *fi);
+    read_buf(const char      *fusepath,
+             fuse_bufvec    **buf,
+             size_t           size,
+             off_t            offset,
+             fuse_file_info  *fi);
   }
 }

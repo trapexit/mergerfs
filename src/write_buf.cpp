@@ -32,12 +32,12 @@
 
 static
 int
-_write_buf(const int           fd,
-           struct fuse_bufvec &src,
-           const off_t         offset)
+_write_buf(const int    fd,
+           fuse_bufvec &src,
+           const off_t  offset)
 {
-  size_t size = fuse_buf_size(&src);
-  struct fuse_bufvec dst = FUSE_BUFVEC_INIT(size);
+  size_t      size = fuse_buf_size(&src);
+  fuse_bufvec dst  = FUSE_BUFVEC_INIT(size);
   const fuse_buf_copy_flags cpflags =
     (fuse_buf_copy_flags)(FUSE_BUF_SPLICE_MOVE|FUSE_BUF_SPLICE_NONBLOCK);
 
@@ -53,10 +53,10 @@ namespace mergerfs
   namespace fuse
   {
     int
-    write_buf(const char            *fusepath,
-              struct fuse_bufvec    *src,
-              off_t                  offset,
-              struct fuse_file_info *ffi)
+    write_buf(const char     *fusepath,
+              fuse_bufvec    *src,
+              off_t           offset,
+              fuse_file_info *ffi)
     {
       return _write_buf(ffi->fh,
                         *src,

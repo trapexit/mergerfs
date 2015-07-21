@@ -53,9 +53,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    fsync(const char            *fusepath,
-          int                    isdatasync,
-          struct fuse_file_info *ffi)
+    fsync(const char     *fusepath,
+          int             isdatasync,
+          fuse_file_info *ffi)
     {
       return _fsync(ffi->fh,
                     isdatasync);

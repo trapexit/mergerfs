@@ -98,8 +98,8 @@ _ioctl_dir(const string &fusepath,
            const int     cmd,
            void         *data)
 {
-  const struct fuse_context *fc     = fuse_get_context();
-  const config::Config      &config = config::get(fc);
+  const fuse_context        *fc     = fuse_get_context();
+  const Config              &config = Config::get(fc);
   const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
   const rwlock::ReadGuard    readlock(&config.srcmountslock);
 
@@ -117,12 +117,12 @@ namespace mergerfs
   namespace fuse
   {
     int
-    ioctl(const char            *fusepath,
-          int                    cmd,
-          void                  *arg,
-          struct fuse_file_info *ffi,
-          unsigned int           flags,
-          void                  *data)
+    ioctl(const char     *fusepath,
+          int             cmd,
+          void           *arg,
+          fuse_file_info *ffi,
+          unsigned int    flags,
+          void           *data)
     {
 #ifdef FUSE_IOCTL_DIR
       if(flags & FUSE_IOCTL_DIR)

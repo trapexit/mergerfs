@@ -40,102 +40,81 @@ using std::vector;
 
 namespace mergerfs
 {
-  namespace config
+  Config::Config()
+    : destmount(),
+      srcmounts(),
+      srcmountslock(),
+      minfreespace(UINT32_MAX),
+      POLICYINIT(access),
+      POLICYINIT(chmod),
+      POLICYINIT(chown),
+      POLICYINIT(create),
+      POLICYINIT(getattr),
+      POLICYINIT(getxattr),
+      POLICYINIT(link),
+      POLICYINIT(listxattr),
+      POLICYINIT(mkdir),
+      POLICYINIT(mknod),
+      POLICYINIT(open),
+      POLICYINIT(readlink),
+      POLICYINIT(removexattr),
+      POLICYINIT(rename),
+      POLICYINIT(rmdir),
+      POLICYINIT(setxattr),
+    POLICYINIT(symlink),
+    POLICYINIT(truncate),
+    POLICYINIT(unlink),
+    POLICYINIT(utimens),
+    controlfile("/.mergerfs")
   {
-    Config::Config()
-      : destmount(),
-        srcmounts(),
-        srcmountslock(),
-        minfreespace(UINT32_MAX),
-        POLICYINIT(access),
-        POLICYINIT(chmod),
-        POLICYINIT(chown),
-        POLICYINIT(create),
-        POLICYINIT(getattr),
-        POLICYINIT(getxattr),
-        POLICYINIT(link),
-        POLICYINIT(listxattr),
-        POLICYINIT(mkdir),
-        POLICYINIT(mknod),
-        POLICYINIT(open),
-        POLICYINIT(readlink),
-        POLICYINIT(removexattr),
-        POLICYINIT(rename),
-        POLICYINIT(rmdir),
-        POLICYINIT(setxattr),
-        POLICYINIT(symlink),
-        POLICYINIT(truncate),
-        POLICYINIT(unlink),
-        POLICYINIT(utimens),
-        controlfile("/.mergerfs")
-    {
-      pthread_rwlock_init(&srcmountslock,NULL);
+    pthread_rwlock_init(&srcmountslock,NULL);
 
-      set_category_policy("action","all");
-      set_category_policy("create","epmfs");
-      set_category_policy("search","ff");
-    }
+    set_category_policy("action","all");
+    set_category_policy("create","epmfs");
+    set_category_policy("search","ff");
+  }
 
-    int
-    Config::set_func_policy(const string &fusefunc_,
-                            const string &policy_)
-    {
-      const Policy   *policy;
-      const FuseFunc *fusefunc;
+  int
+  Config::set_func_policy(const string &fusefunc_,
+                          const string &policy_)
+  {
+    const Policy   *policy;
+    const FuseFunc *fusefunc;
 
-      fusefunc = FuseFunc::find(fusefunc_);
-      if(fusefunc == FuseFunc::invalid)
-        return (errno=ENODATA,-1);
+    fusefunc = FuseFunc::find(fusefunc_);
+    if(fusefunc == FuseFunc::invalid)
+      return (errno=ENODATA,-1);
 
-      policy = Policy::find(policy_);
-      if(policy == Policy::invalid)
-        return (errno=EINVAL,-1);
+    policy = Policy::find(policy_);
+    if(policy == Policy::invalid)
+      return (errno=EINVAL,-1);
 
-      policies[(FuseFunc::Enum::Type)*fusefunc] = policy;
+    policies[(FuseFunc::Enum::Type)*fusefunc] = policy;
 
-      return 0;
-    }
+    return 0;
+  }
 
-    int
-    Config::set_category_policy(const string &category_,
-                                const string &policy_)
-    {
-      const Policy   *policy;
-      const Category *category;
+  int
+  Config::set_category_policy(const string &category_,
+                              const string &policy_)
+  {
+    const Policy   *policy;
+    const Category *category;
 
-      category = Category::find(category_);
-      if(category == Category::invalid)
-        return (errno=ENODATA,-1);
+    category = Category::find(category_);
+    if(category == Category::invalid)
+      return (errno=ENODATA,-1);
 
-      policy = Policy::find(policy_);
-      if(policy == Policy::invalid)
-        return (errno=EINVAL,-1);
+    policy = Policy::find(policy_);
+    if(policy == Policy::invalid)
+      return (errno=EINVAL,-1);
 
-      for(int i = 0; i < FuseFunc::Enum::END; i++)
-        {
-          if(FuseFunc::fusefuncs[i] == (Category::Enum::Type)*category)
-            policies[(FuseFunc::Enum::Type)FuseFunc::fusefuncs[i]] = policy;
-        }
+    for(int i = 0; i < FuseFunc::Enum::END; i++)
+      {
+        if(FuseFunc::fusefuncs[i] == (Category::Enum::Type)*category)
+          policies[(FuseFunc::Enum::Type)FuseFunc::fusefuncs[i]] = policy;
+      }
 
-      return 0;
-    }
-
-    const Config&
-    get(const struct fuse_context *fc)
-    {
-      return *((Config*)fc->private_data);
-    }
-
-    const Config&
-    get(void)
-    {
-      return get(fuse_get_context());
-    }
-
-    Config&
-    get_writable(void)
-    {
-      return (*((Config*)fuse_get_context()->private_data));
-    }
+    return 0;
   }
 }

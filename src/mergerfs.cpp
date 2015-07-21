@@ -168,9 +168,9 @@ namespace mergerfs
   main(const int   argc,
        char      **argv)
   {
-    struct fuse_args         args;
-    struct fuse_operations   ops = {0};
-    mergerfs::config::Config config;
+    fuse_args       args;
+    fuse_operations ops = {0};
+    Config          config;
 
     args.argc      = argc;
     args.argv      = argv;

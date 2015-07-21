@@ -27,11 +27,11 @@ namespace mergerfs
   namespace fuse
   {
     int
-    ioctl(const char            *fusepath,
-          int                    cmd,
-          void                  *arg,
-          struct fuse_file_info *fi,
-          unsigned int           flags,
-          void                  *data);
+    ioctl(const char     *fusepath,
+          int             cmd,
+          void           *arg,
+          fuse_file_info *fi,
+          unsigned int    flags,
+          void           *data);
   }
 }

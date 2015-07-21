@@ -27,6 +27,6 @@ namespace mergerfs
   namespace fuse
   {
     void *
-    init(struct fuse_conn_info *conn);
+    init(fuse_conn_info *conn);
   }
 }

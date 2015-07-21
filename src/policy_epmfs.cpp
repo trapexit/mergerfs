@@ -40,12 +40,12 @@ using std::size_t;
 static
 inline
 void
-_calc_epmfs(const struct statvfs  &fsstats,
-            const char            *basepath,
-            fsblkcnt_t            &epmfs,
-            const char           *&epmfsbasepath,
-            fsblkcnt_t            &mfs,
-            const char           *&mfsbasepath)
+_calc_epmfs(const struct statvfs &fsstats,
+            const string         &basepath,
+            fsblkcnt_t           &epmfs,
+            string               &epmfsbasepath,
+            fsblkcnt_t           &mfs,
+            string               &mfsbasepath)
 {
   fsblkcnt_t spaceavail;
 
@@ -66,10 +66,10 @@ _calc_epmfs(const struct statvfs  &fsstats,
 static
 inline
 void
-_calc_mfs(const struct statvfs  &fsstats,
-          const char            *basepath,
-          fsblkcnt_t            &mfs,
-          const char           *&mfsbasepath)
+_calc_mfs(const struct statvfs &fsstats,
+          const string         &basepath,
+          fsblkcnt_t           &mfs,
+          string               &mfsbasepath)
 {
   fsblkcnt_t spaceavail;
 
@@ -84,12 +84,12 @@ _calc_mfs(const struct statvfs  &fsstats,
 static
 inline
 int
-_try_statvfs(const char    *basepath,
-             const string  &fullpath,
-             fsblkcnt_t    &epmfs,
-             const char   *&epmfsbasepath,
-             fsblkcnt_t    &mfs,
-             const char   *&mfsbasepath)
+_try_statvfs(const string &basepath,
+             const string &fullpath,
+             fsblkcnt_t   &epmfs,
+             string       &epmfsbasepath,
+             fsblkcnt_t   &mfs,
+             string       &mfsbasepath)
 {
   int rv;
   struct statvfs fsstats;
@@ -104,14 +104,14 @@ _try_statvfs(const char    *basepath,
 static
 inline
 int
-_try_statvfs(const char  *basepath,
-             fsblkcnt_t  &mfs,
-             const char *&mfsbasepath)
+_try_statvfs(const string &basepath,
+             fsblkcnt_t   &mfs,
+             string       &mfsbasepath)
 {
   int rv;
   struct statvfs fsstats;
 
-  rv = ::statvfs(basepath,&fsstats);
+  rv = ::statvfs(basepath.c_str(),&fsstats);
   if(rv == 0)
     _calc_mfs(fsstats,basepath,mfs,mfsbasepath);
 
@@ -125,22 +125,19 @@ _epmfs_create(const vector<string> &basepaths,
               vector<string>       &paths)
 
 {
-  fsblkcnt_t  epmfs;
-  fsblkcnt_t  mfs;
-  const char *basepath;
-  const char *mfsbasepath;
-  const char *epmfsbasepath;
-  string      fullpath;
+  fsblkcnt_t epmfs;
+  fsblkcnt_t mfs;
+  string     mfsbasepath;
+  string     epmfsbasepath;
+  string     fullpath;
 
   mfs = 0;
   epmfs = 0;
-  mfsbasepath = NULL;
-  epmfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int rv;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
 
       rv = _try_statvfs(basepath,fusepath,epmfs,epmfsbasepath,mfs,mfsbasepath);
@@ -148,7 +145,7 @@ _epmfs_create(const vector<string> &basepaths,
         _try_statvfs(basepath,mfs,mfsbasepath);
     }
 
-  if(epmfsbasepath == NULL)
+  if(epmfsbasepath.empty())
     epmfsbasepath = mfsbasepath;
 
   paths.push_back(epmfsbasepath);
@@ -163,19 +160,17 @@ _epmfs(const vector<string> &basepaths,
        vector<string>       &paths)
 
 {
-  fsblkcnt_t  epmfs;
-  const char *basepath;
-  const char *epmfsbasepath;
-  string      fullpath;
+  fsblkcnt_t epmfs;
+  string     epmfsbasepath;
+  string     fullpath;
 
   epmfs = 0;
-  epmfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int rv;
       struct statvfs fsstats;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::statvfs(fullpath.c_str(),&fsstats);
@@ -183,7 +178,7 @@ _epmfs(const vector<string> &basepaths,
         _calc_mfs(fsstats,basepath,epmfs,epmfsbasepath);
     }
 
-  if(epmfsbasepath == NULL)
+  if(epmfsbasepath.empty())
     return (errno=ENOENT,-1);
 
   paths.push_back(epmfsbasepath);

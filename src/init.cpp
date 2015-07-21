@@ -31,13 +31,13 @@ namespace mergerfs
   namespace fuse
   {
     void *
-    init(struct fuse_conn_info *conn)
+    init(fuse_conn_info *conn)
     {
 #ifdef FUSE_CAP_IOCTL_DIR
       conn->want |= FUSE_CAP_IOCTL_DIR;
 #endif
 
-      return &config::get_writable();
+      return &Config::get_writable();
     }
   }
 }

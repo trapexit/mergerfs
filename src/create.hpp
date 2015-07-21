@@ -30,8 +30,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    create(const char            *fusepath,
-           mode_t                 mode,
-           struct fuse_file_info *fileinfo);
+    create(const char     *fusepath,
+           mode_t          mode,
+           fuse_file_info *fileinfo);
   }
 }

@@ -168,9 +168,9 @@ _setxattr_srcmounts(vector<string>   &srcmounts,
 
 static
 int
-_setxattr_minfreespace(config::Config &config,
-                       const string   &attrval,
-                       const int       flags)
+_setxattr_minfreespace(Config       &config,
+                       const string &attrval,
+                       const int     flags)
 {
   int rv;
 
@@ -186,10 +186,10 @@ _setxattr_minfreespace(config::Config &config,
 
 static
 int
-_setxattr_controlfile_func_policy(config::Config &config,
-                                  const char     *funcname,
-                                  const string   &attrval,
-                                  const int       flags)
+_setxattr_controlfile_func_policy(Config       &config,
+                                  const char   *funcname,
+                                  const string &attrval,
+                                  const int     flags)
 {
   int rv;
 
@@ -205,10 +205,10 @@ _setxattr_controlfile_func_policy(config::Config &config,
 
 static
 int
-_setxattr_controlfile_category_policy(config::Config &config,
-                                      const char     *categoryname,
-                                      const string   &attrval,
-                                      const int       flags)
+_setxattr_controlfile_category_policy(Config       &config,
+                                      const char   *categoryname,
+                                      const string &attrval,
+                                      const int     flags)
 {
   int rv;
 
@@ -224,10 +224,10 @@ _setxattr_controlfile_category_policy(config::Config &config,
 
 static
 int
-_setxattr_controlfile(config::Config &config,
-                      const char    *attrname,
-                      const string   &attrval,
-                      const int       flags)
+_setxattr_controlfile(Config       &config,
+                      const char   *attrname,
+                      const string &attrval,
+                      const int     flags)
 {
   const char *attrbasename = &attrname[sizeof("user.mergerfs.")-1];
 
@@ -307,33 +307,31 @@ namespace mergerfs
              size_t      attrvalsize,
              int         flags)
     {
-      const config::Config      &config = config::get();
-      const struct fuse_context *fc     = fuse_get_context();
+      const fuse_context *fc     = fuse_get_context();
+      const Config       &config = Config::get(fc);
 
       if(fusepath == config.controlfile)
         {
           if((fc->uid != ::getuid()) && (fc->gid != ::getgid()))
             return -EPERM;
 
-          return _setxattr_controlfile(config::get_writable(),
+          return _setxattr_controlfile(Config::get_writable(),
                                        attrname,
                                        string(attrval,attrvalsize),
                                        flags);
         }
 
-      {
-        const ugid::SetResetGuard ugid(fc->uid,fc->gid);
-        const rwlock::ReadGuard   readlock(&config.srcmountslock);
+      const ugid::SetResetGuard ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard   readlock(&config.srcmountslock);
 
-        return _setxattr(config.setxattr,
-                         config.srcmounts,
-                         config.minfreespace,
-                         fusepath,
-                         attrname,
-                         attrval,
-                         attrvalsize,
-                         flags);
-      }
+      return _setxattr(config.setxattr,
+                       config.srcmounts,
+                       config.minfreespace,
+                       fusepath,
+                       attrname,
+                       attrval,
+                       attrvalsize,
+                       flags);
     }
   }
 }

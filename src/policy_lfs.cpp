@@ -47,19 +47,17 @@ _lfs_create(const Category::Enum::Type  type,
             const size_t                minfreespace,
             vector<string>             &paths)
 {
-  fsblkcnt_t  lfs;
-  const char *lfsstr;
+  fsblkcnt_t lfs;
+  string     lfsstr;
 
   lfs    = -1;
-  lfsstr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int rv;
-      const char *basepath;
       struct statvfs fsstats;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
-      rv = ::statvfs(basepath,&fsstats);
+      rv = ::statvfs(basepath.c_str(),&fsstats);
       if(rv == 0)
         {
           fsblkcnt_t spaceavail;
@@ -74,7 +72,7 @@ _lfs_create(const Category::Enum::Type  type,
         }
     }
 
-  if(lfsstr == NULL)
+  if(lfsstr.empty())
     return Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 
   paths.push_back(lfsstr);
@@ -90,20 +88,19 @@ _lfs(const Category::Enum::Type  type,
      const size_t                minfreespace,
      vector<string>             &paths)
 {
-  fsblkcnt_t  lfs;
-  const char *lfsstr;
+  fsblkcnt_t lfs;
+  string     lfsstr;
 
   lfs    = -1;
-  lfsstr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int rv;
       string fullpath;
-      const char *basepath;
       struct statvfs fsstats;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
+
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)
         {
@@ -119,7 +116,7 @@ _lfs(const Category::Enum::Type  type,
         }
     }
 
-  if(lfsstr == NULL)
+  if(lfsstr.empty())
     return Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 
   paths.push_back(lfsstr);

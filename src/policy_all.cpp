@@ -48,9 +48,8 @@ _all(const vector<string> &basepaths,
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      const char *basepath;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
@@ -58,7 +57,23 @@ _all(const vector<string> &basepaths,
         paths.push_back(basepath);
     }
 
-  return paths.empty() ? (errno=ENOENT,-1) : 0;
+  if(paths.empty())
+    return (errno=ENOENT,-1);
+
+  return 0;
+}
+
+static
+int
+_all_create(const vector<string> &basepaths,
+            vector<string>       &paths)
+{
+  if(basepaths.empty())
+    return (errno=ENOENT,-1);
+
+  paths = basepaths;
+
+  return 0;
 }
 
 namespace mergerfs
@@ -70,6 +85,9 @@ namespace mergerfs
                     const size_t                minfreespace,
                     vector<string>             &paths)
   {
+    if(type == Category::Enum::create)
+      return _all_create(basepaths,paths);
+
     return _all(basepaths,fusepath,paths);
   }
 }

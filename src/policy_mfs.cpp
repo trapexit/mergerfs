@@ -40,19 +40,17 @@ _mfs_create(const vector<string> &basepaths,
             const string         &fusepath,
             vector<string>       &paths)
 {
-  fsblkcnt_t  mfs;
-  const char *mfsstr;
+  fsblkcnt_t mfs;
+  string     mfsstr;
 
   mfs = 0;
-  mfsstr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int rv;
-      const char *basepath;
       struct statvfs fsstats;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
-      rv = ::statvfs(basepath,&fsstats);
+      rv = ::statvfs(basepath.c_str(),&fsstats);
       if(rv == 0)
         {
           fsblkcnt_t spaceavail;
@@ -66,7 +64,7 @@ _mfs_create(const vector<string> &basepaths,
         }
     }
 
-  if(mfsstr == NULL)
+  if(mfsstr.empty())
     return (errno=ENOENT,-1);
 
   paths.push_back(mfsstr);
@@ -80,20 +78,19 @@ _mfs(const vector<string> &basepaths,
      const string         &fusepath,
      vector<string>       &paths)
 {
-  fsblkcnt_t  mfs;
-  const char *mfsstr;
+  fsblkcnt_t mfs;
+  string     mfsstr;
 
   mfs = 0;
-  mfsstr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int rv;
       string fullpath;
-      const char *basepath;
       struct statvfs fsstats;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
+
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)
         {
@@ -108,7 +105,7 @@ _mfs(const vector<string> &basepaths,
         }
     }
 
-  if(mfsstr == NULL)
+  if(mfsstr.empty())
     return (errno=ENOENT,-1);
 
   paths.push_back(mfsstr);

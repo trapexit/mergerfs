@@ -32,14 +32,14 @@
 
 static
 int
-_read_buf(const int            fd,
-          struct fuse_bufvec **bufp,
-          const size_t         size,
-          const off_t          offset)
+_read_buf(const int      fd,
+          fuse_bufvec  **bufp,
+          const size_t   size,
+          const off_t    offset)
 {
-  struct fuse_bufvec *src;
+  fuse_bufvec *src;
 
-  src = (fuse_bufvec*)malloc(sizeof(struct fuse_bufvec));
+  src = (fuse_bufvec*)malloc(sizeof(fuse_bufvec));
   if(src == NULL)
     return -ENOMEM;
 
@@ -59,11 +59,11 @@ namespace mergerfs
   namespace fuse
   {
     int
-    read_buf(const char             *fusepath,
-             struct fuse_bufvec    **bufp,
-             size_t                  size,
-             off_t                   offset,
-             struct fuse_file_info  *ffi)
+    read_buf(const char      *fusepath,
+             fuse_bufvec    **bufp,
+             size_t           size,
+             off_t            offset,
+             fuse_file_info  *ffi)
     {
       return _read_buf(ffi->fh,
                        bufp,

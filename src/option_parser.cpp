@@ -45,7 +45,7 @@ using namespace mergerfs;
 
 static
 void
-set_option(struct fuse_args  &args,
+set_option(fuse_args         &args,
            const std::string &option_)
 {
   string option;
@@ -57,7 +57,7 @@ set_option(struct fuse_args  &args,
 
 static
 void
-set_kv_option(struct fuse_args  &args,
+set_kv_option(fuse_args         &args,
               const std::string &key,
               const std::string &value)
 {
@@ -70,7 +70,7 @@ set_kv_option(struct fuse_args  &args,
 
 static
 void
-set_fsname(struct fuse_args     &args,
+set_fsname(fuse_args            &args,
            const vector<string> &srcmounts)
 {
   if(srcmounts.size() > 0)
@@ -85,14 +85,14 @@ set_fsname(struct fuse_args     &args,
 
 static
 void
-set_subtype(struct fuse_args &args)
+set_subtype(fuse_args &args)
 {
   set_kv_option(args,"subtype","mergerfs");
 }
 
 static
 void
-set_default_options(struct fuse_args &args)
+set_default_options(fuse_args &args)
 {
   set_option(args,"big_writes");
   set_option(args,"splice_read");
@@ -118,9 +118,9 @@ parse_and_process_minfreespace(const std::string &value,
 
 static
 int
-parse_and_process_arg(config::Config    &config,
+parse_and_process_arg(Config            &config,
                       const std::string &arg,
-                      struct fuse_args  *outargs)
+                      fuse_args         *outargs)
 {
   if(arg == "defaults")
     {
@@ -133,7 +133,7 @@ parse_and_process_arg(config::Config    &config,
 
 static
 int
-parse_and_process_kv_arg(config::Config    &config,
+parse_and_process_kv_arg(Config            &config,
                          const std::string &key,
                          const std::string &value)
 {
@@ -162,9 +162,9 @@ parse_and_process_kv_arg(config::Config    &config,
 
 static
 int
-process_opt(config::Config    &config,
+process_opt(Config            &config,
             const std::string &arg,
-            struct fuse_args  *outargs)
+            fuse_args         *outargs)
 {
   int rv;
   std::vector<std::string> argvalue;
@@ -191,8 +191,8 @@ process_opt(config::Config    &config,
 
 static
 int
-process_srcmounts(const char     *arg,
-                  config::Config &config)
+process_srcmounts(const char *arg,
+                  Config     &config)
 {
   vector<string> paths;
 
@@ -205,8 +205,8 @@ process_srcmounts(const char     *arg,
 
 static
 int
-process_destmounts(const char     *arg,
-                   config::Config &config)
+process_destmounts(const char *arg,
+                   Config     &config)
 {
   config.destmount = arg;
 
@@ -215,13 +215,13 @@ process_destmounts(const char     *arg,
 
 static
 int
-option_processor(void             *data,
-                 const char       *arg,
-                 int               key,
-                 struct fuse_args *outargs)
+option_processor(void       *data,
+                 const char *arg,
+                 int         key,
+                 fuse_args  *outargs)
 {
-  int rv = 0;
-  config::Config &config = *(config::Config*)data;
+  int     rv     = 0;
+  Config &config = *(Config*)data;
 
   switch(key)
     {
@@ -247,8 +247,8 @@ namespace mergerfs
   namespace options
   {
     void
-    parse(struct fuse_args &args,
-          config::Config   &config)
+    parse(fuse_args &args,
+          Config    &config)
     {
 
       fuse_opt_parse(&args,

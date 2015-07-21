@@ -73,11 +73,11 @@ namespace mergerfs
   namespace fuse
   {
     int
-    open(const char            *fusepath,
-         struct fuse_file_info *fileinfo)
+    open(const char     *fusepath,
+         fuse_file_info *fileinfo)
     {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
+      const fuse_context        *fc     = fuse_get_context();
+      const Config              &config = Config::get(fc);
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 

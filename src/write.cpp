@@ -46,11 +46,11 @@ namespace mergerfs
   namespace fuse
   {
     int
-    write(const char            *fusepath,
-          const char            *buf,
-          size_t                 count,
-          off_t                  offset,
-          struct fuse_file_info *ffi)
+    write(const char     *fusepath,
+          const char     *buf,
+          size_t          count,
+          off_t           offset,
+          fuse_file_info *ffi)
     {
       return _write(ffi->fh,
                     buf,

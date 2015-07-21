@@ -27,7 +27,7 @@ namespace mergerfs
   namespace fuse
   {
     int
-    utimens(const char            *fusepath,
-            const struct timespec  ts[2]);
+    utimens(const char     *fusepath,
+            const timespec  ts[2]);
   }
 }
