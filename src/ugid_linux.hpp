@@ -27,38 +27,89 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+#define ROOT 0
+#define UNCHANGED -1
+
 namespace mergerfs
 {
   namespace ugid
   {
-    struct SetResetGuard
+    extern __thread uid_t currentuid;
+    extern __thread gid_t currentgid;
+    extern __thread bool  initialized;
+
+    static
+    void
+    init()
     {
-      SetResetGuard(const uid_t _newuid,
-                    const gid_t _newgid)
-      {
-        olduid = ::syscall(SYS_geteuid);
-        oldgid = ::syscall(SYS_getegid);
-        newuid = _newuid;
-        newgid = _newgid;
+      if(initialized == false)
+        {
+          currentuid  = ::syscall(SYS_geteuid);
+          currentgid  = ::syscall(SYS_getegid);
+          initialized = true;
+        }
+    }
 
-        if(newgid != oldgid)
-          ::syscall(SYS_setregid,-1,newgid);
-        if(newuid != olduid)
-          ::syscall(SYS_setreuid,-1,newuid);
+    static
+    void
+    set(const uid_t newuid,
+        const gid_t newgid)
+    {
+      if(currentuid != newuid || currentgid != newgid)
+        {
+          ::syscall(SYS_setreuid,UNCHANGED,ROOT);
+          if(currentgid != newgid)
+            ::syscall(SYS_setregid,UNCHANGED,newgid);
+          if(newuid != ROOT)
+            ::syscall(SYS_setreuid,UNCHANGED,newuid);
+          currentuid = newuid;
+          currentgid = newgid;
+        }
+    }
+
+    struct SetReset
+    {
+      SetReset(const uid_t newuid,
+               const gid_t newgid)
+      {
+        init();
+
+        olduid = currentuid;
+        oldgid = currentgid;
+
+        set(newuid,newgid);
       }
 
-      ~SetResetGuard()
+      ~SetReset()
       {
-        if(olduid != newuid)
-          ::syscall(SYS_setreuid,-1,olduid);
-        if(oldgid != newgid)
-          ::syscall(SYS_setregid,-1,oldgid);
+        set(olduid,oldgid);
       }
 
-      uid_t  olduid;
-      gid_t  oldgid;
-      uid_t  newuid;
-      gid_t  newgid;
+      uid_t olduid;
+      gid_t oldgid;
+    };
+
+    struct SuperUser
+    {
+      SuperUser()
+        : setreset(0,0)
+      {}
+
+      const SetReset setreset;
+    };
+
+    struct Set
+    {
+      Set(const uid_t newuid,
+          const gid_t newgid)
+      {
+        init();
+
+        set(newuid,newgid);
+      }
     };
   }
 }
+
+#undef ROOT
+#undef UNCHANGED

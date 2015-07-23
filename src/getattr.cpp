@@ -100,8 +100,8 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return _getattr_controlfile(*st);
 
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const ugid::Set         ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard readlock(&config.srcmountslock);
 
       return _getattr(config.getattr,
                       config.srcmounts,

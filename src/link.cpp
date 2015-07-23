@@ -38,6 +38,7 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs::ugid;
 
 static
 int
@@ -64,7 +65,7 @@ _single_link(Policy::Func::Search  searchFunc,
         return -1;
 
       {
-        const mergerfs::ugid::SetResetGuard ugid(0,0);
+        const SuperUser superuser;
         fs::clonepath(foundpath[0],base,newpathdir);
       }
 
@@ -110,10 +111,10 @@ namespace mergerfs
     link(const char *from,
          const char *to)
     {
-      const fuse_context        *fc     = fuse_get_context();
-      const Config              &config = Config::get(fc);
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const fuse_context      *fc     = fuse_get_context();
+      const Config            &config = Config::get(fc);
+      const ugid::Set          ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
       return _link(config.getattr,
                    config.link,

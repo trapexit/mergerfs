@@ -25,7 +25,16 @@
 #include "ugid.hpp"
 
 #if defined __linux__
+__thread uid_t mergerfs::ugid::currentuid  = 0;
+__thread gid_t mergerfs::ugid::currentgid  = 0;
+__thread bool  mergerfs::ugid::initialized = false;
 #elif defined __APPLE__
+__thread uid_t mergerfs::ugid::currentuid  = 0;
+__thread gid_t mergerfs::ugid::currentgid  = 0;
+__thread bool  mergerfs::ugid::initialized = false;
 #else
-pthread_mutex_t mergerfs::ugid::SetResetGuard::lock = PTHREAD_MUTEX_INITIALIZER;
+uid_t           mergerfs::ugid::currentuid  = 0;
+gid_t           mergerfs::ugid::currentgid  = 0;
+bool            mergerfs::ugid::initialized = false;
+pthread_mutex_t mergerfs::ugid::lock        = PTHREAD_MUTEX_INITIALIZER;
 #endif

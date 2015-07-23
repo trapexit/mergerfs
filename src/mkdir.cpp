@@ -39,6 +39,7 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs::ugid;
 
 static
 int
@@ -72,7 +73,7 @@ _mkdir(Policy::Func::Search  searchFunc,
 
       if(createpath != existingpath[0])
         {
-          const mergerfs::ugid::SetResetGuard ugid(0,0);
+          const SuperUser superuser;
           fs::clonepath(existingpath[0],createpath,dirname);
         }
 
@@ -94,10 +95,10 @@ namespace mergerfs
     mkdir(const char *fusepath,
           mode_t      mode)
     {
-      const fuse_context        *fc     = fuse_get_context();
-      const Config              &config = Config::get(fc);
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const fuse_context      *fc     = fuse_get_context();
+      const Config            &config = Config::get(fc);
+      const ugid::Set          ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
       return _mkdir(config.getattr,
                     config.mkdir,

@@ -73,10 +73,10 @@ namespace mergerfs
     int
     rmdir(const char *fusepath)
     {
-      const fuse_context        *fc     = fuse_get_context();
-      const Config              &config = Config::get(fc);
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readguard(&config.srcmountslock);
+      const fuse_context      *fc     = fuse_get_context();
+      const Config            &config = Config::get(fc);
+      const ugid::Set          ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard  readguard(&config.srcmountslock);
 
       return _rmdir(config.rmdir,
                     config.srcmounts,

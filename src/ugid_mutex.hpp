@@ -31,38 +31,68 @@ namespace mergerfs
 {
   namespace ugid
   {
-    struct SetResetGuard
+    extern uid_t currentuid;
+    extern gid_t currentgid;
+    extern bool  initialized;
+    extern pthread_mutex_t lock;
+
+    static
+    void
+    init()
     {
-      SetResetGuard(const uid_t _newuid,
-                    const gid_t _newgid)
+      if(initialized == false)
+        {
+          currentuid  = ::geteuid();
+          currentgid  = ::getegid();
+          initialized = true;
+        }
+    }
+
+    static
+    void
+    set(const uid_t newuid,
+        const gid_t newgid)
+    {
+
+    }
+
+    struct SetReset
+    {
+      SetReset(const uid_t _newuid,
+               const gid_t _newgid)
       {
-        pthread_mutex_lock(&lock);
+        init();
 
-        olduid   = ::geteuid();
-        oldgid   = ::getegid();
-        newuid   = _newuid;
-        newgid   = _newgid;
+        olduid = currentuid;
+        oldgid = currentgid;
 
-        if(newgid != oldgid)
+        seteuid(0);
+        if(_newgid != oldgid)
           setegid(newgid);
-        if(newuid != olduid)
+        if(_newuid != olduid)
           seteuid(newuid);
       }
 
       ~SetResetGuard()
       {
         if(olduid != newuid)
-          seteuid(newuid);
+          seteuid(olduid);
         if(oldgid != newgid)
-          setegid(newgid);
+          setegid(oldgid);
       }
 
       uid_t  olduid;
       gid_t  oldgid;
       uid_t  newuid;
       gid_t  newgid;
-
-      static pthread_mutex_t lock;
     };
+
+    struct SuperUser : public SetReset
+    {
+      SuperUser()
+        : UnlockedSetReset(0,0)
+      {}
+    };
+
   }
 }

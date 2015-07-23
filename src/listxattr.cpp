@@ -115,8 +115,8 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return _listxattr_controlfile(list,size);
 
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const ugid::Set         ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard readlock(&config.srcmountslock);
 
       return _listxattr(config.listxattr,
                         config.srcmounts,

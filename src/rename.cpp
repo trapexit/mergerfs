@@ -39,6 +39,7 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs::ugid;
 
 static
 int
@@ -64,7 +65,7 @@ _single_rename(Policy::Func::Search  searchFunc,
         return -1;
 
       {
-        const mergerfs::ugid::SetResetGuard ugid(0,0);
+        const SuperUser superuser;
         fs::clonepath(newpathdir[0],oldbasepath,dirname);
       }
 
@@ -113,10 +114,10 @@ namespace mergerfs
     rename(const char *oldpath,
            const char *newpath)
     {
-      const fuse_context        *fc     = fuse_get_context();
-      const Config              &config = Config::get(fc);
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const fuse_context      *fc     = fuse_get_context();
+      const Config            &config = Config::get(fc);
+      const ugid::Set          ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
       return _rename(config.getattr,
                      config.rename,

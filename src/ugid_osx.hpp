@@ -29,29 +29,75 @@ namespace mergerfs
 {
   namespace ugid
   {
-    struct SetResetGuard
+    extern __thread uid_t currentuid;
+    extern __thread gid_t currentgid;
+    extern __thread bool  initialized;
+
+    static
+    void
+    init()
     {
-      SetResetGuard(const uid_t _newuid,
-                    const gid_t _newgid)
-      {
-        pthread_getugid_np(&olduid,&oldgid);
-        newuid   = _newuid;
-        newgid   = _newgid;
+      if(initialized == false)
+        {
+          pthread_getugid_np(&currentuid,&currentgid);
+          initialized = true;
+        }
+    }
 
-        if(newgid != oldgid || newuid != olduid)
+    static
+    void
+    set(const uid_t newuid,
+        const gid_t newgid)
+    {
+      if(currentuid != newuid || currentgid != newgid)
+        {
+          pthread_setugid_np(KAUTH_UID_NONE,KAUTH_GID_NONE);
           pthread_setugid_np(newuid,newgid);
+          currentuid = newuid;
+          currentgid = newgid;
+        }
+    }
+
+    struct SetReset
+    {
+      SetReset(const uid_t newuid,
+               const gid_t newgid)
+      {
+        init();
+
+        olduid = currentuid;
+        oldgid = currentgid;
+
+        set(newuid,newgid);
       }
 
-      ~SetResetGuard()
+      ~SetReset()
       {
-        if(newgid != oldgid || newuid != olduid)
-          pthread_setugid_np(newuid,newgid);
+        set(olduid,oldgid);
       }
 
-      uid_t  olduid;
-      gid_t  oldgid;
-      uid_t  newuid;
-      gid_t  newgid;
+      uid_t olduid;
+      gid_t oldgid;
+    };
+
+    struct SuperUser
+    {
+      SuperUser()
+        : setreset(0,0)
+      {}
+
+      SetReset setreset;
+    };
+
+    struct Set
+    {
+      Set(const uid_t newuid,
+          const gid_t newgid)
+      {
+        init();
+
+        set(newuid,newgid);
+      }
     };
   }
 }

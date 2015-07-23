@@ -77,10 +77,10 @@ namespace mergerfs
     utimens(const char     *fusepath,
             const timespec  ts[2])
     {
-      const fuse_context        *fc     = fuse_get_context();
-      const Config              &config = Config::get(fc);
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const fuse_context      *fc     = fuse_get_context();
+      const Config            &config = Config::get(fc);
+      const ugid::Set          ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
       return _utimens(config.utimens,
                       config.srcmounts,
