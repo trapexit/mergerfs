@@ -29,6 +29,7 @@
 
 #include <string>
 #include <vector>
+#include <limits>
 
 #include "policy.hpp"
 
@@ -42,11 +43,9 @@ _newest(const vector<string> &basepaths,
         const string         &fusepath,
         vector<string>       &paths)
 {
-  time_t newest;
-  const char *neweststr;
+  time_t      newest    = std::numeric_limits<time_t>::min();
+  const char *neweststr = NULL;
 
-  newest = 0;
-  neweststr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       int          rv;
@@ -58,7 +57,7 @@ _newest(const vector<string> &basepaths,
       fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
-      if(rv == 0 && st.st_mtime > newest)
+      if(rv == 0 && st.st_mtime >= newest)
         {
           newest    = st.st_mtime;
           neweststr = basepath;
