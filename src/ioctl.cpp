@@ -43,43 +43,25 @@ static
 int
 _ioctl(const int           fd,
        const int           cmd,
-       void               *arg,
-       const unsigned int  flags,
        void               *data)
 {
   int rv;
 
-  switch(cmd)
-    {
-#ifdef FS_IOC_GETFLAGS
-    case FS_IOC_GETFLAGS:
-    case FS_IOC_SETFLAGS:
-#endif
-#ifdef FS_IOC32_GETFLAGS
-    case FS_IOC32_SETFLAGS:
-    case FS_IOC32_GETFLAGS:
-#endif
-#ifdef FS_IOC_GETVERSION
-    case FS_IOC_GETVERSION:
-    case FS_IOC_SETVERSION:
-#endif
-#ifdef FS_IOC32_GETVERSION
-    case FS_IOC32_GETVERSION:
-    case FS_IOC32_SETVERSION:
-#endif
-      rv = ::ioctl(fd,cmd,data);
-      break;
-
-    default:
-      rv = -1;
-      errno = ENOTTY;
-      break;
-    }
+  rv = ::ioctl(fd,cmd,data);
 
   return ((rv == -1) ? -errno : rv);
 }
 
 #ifdef FUSE_IOCTL_DIR
+
+#ifndef O_DIRECTORY
+#define O_DIRECTORY 0
+#endif
+
+#ifndef O_NOATIME
+#define O_NOATIME 0
+#endif
+
 static
 int
 _ioctl_dir_base(Policy::Func::Search  searchFunc,
@@ -87,8 +69,6 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
                 const size_t          minfreespace,
                 const string         &fusepath,
                 const int             cmd,
-                void                 *arg,
-                const unsigned int    flags,
                 void                 *data)
 {
   int fd;
@@ -101,11 +81,11 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 
   fs::path::append(path[0],fusepath);
 
-  fd = ::open(path[0].c_str(),flags);
+  fd = ::open(path[0].c_str(),O_RDWR|O_NOATIME|O_DIRECTORY);
   if(fd == -1)
     return -errno;
 
-  rv = _ioctl(fd,cmd,arg,flags,data);
+  rv = _ioctl(fd,cmd,data);
 
   ::close(fd);
 
@@ -114,11 +94,9 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 
 static
 int
-_ioctl_dir(const string       &fusepath,
-           const int           cmd,
-           void               *arg,
-           const unsigned int  flags,
-           void               *data)
+_ioctl_dir(const string &fusepath,
+           const int     cmd,
+           void         *data)
 {
   const struct fuse_context *fc     = fuse_get_context();
   const config::Config      &config = config::get(fc);
@@ -130,8 +108,6 @@ _ioctl_dir(const string       &fusepath,
                          config.minfreespace,
                          fusepath,
                          cmd,
-                         arg,
-                         flags,
                          data);
 }
 #endif
@@ -152,15 +128,11 @@ namespace mergerfs
       if(flags & FUSE_IOCTL_DIR)
         return _ioctl_dir(fusepath,
                           cmd,
-                          arg,
-                          flags,
                           data);
 #endif
 
       return _ioctl(ffi->fh,
                     cmd,
-                    arg,
-                    flags,
                     data);
     }
   }
