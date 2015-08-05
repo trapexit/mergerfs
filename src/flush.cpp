@@ -47,8 +47,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    flush(const char            *fusepath,
-          struct fuse_file_info *ffi)
+    flush(const char     *fusepath,
+          fuse_file_info *ffi)
     {
       return _flush(ffi->fh);
     }

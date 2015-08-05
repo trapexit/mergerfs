@@ -39,11 +39,11 @@ namespace mergerfs
   namespace fuse
   {
     int
-    readdir(const char            *fusepath,
-            void                  *buf,
-            fuse_fill_dir_t        filler,
-            off_t                  offset,
-            struct fuse_file_info *fi);
+    readdir(const char      *fusepath,
+            void            *buf,
+            fuse_fill_dir_t  filler,
+            off_t            offset,
+            fuse_file_info  *fi);
   }
 }
 

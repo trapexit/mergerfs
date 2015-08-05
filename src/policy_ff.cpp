@@ -45,12 +45,11 @@ _ff(const vector<string> &basepaths,
 {
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int          rv;
-      struct stat  st;
-      const char  *basepath;
-      string       fullpath;
+      int           rv;
+      struct stat   st;
+      string        fullpath;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
 
       rv = ::lstat(fullpath.c_str(),&st);
@@ -65,6 +64,20 @@ _ff(const vector<string> &basepaths,
   return (errno=ENOENT,-1);
 }
 
+static
+int
+_ff_create(const vector<string> &basepaths,
+           const string         &fusepath,
+           vector<string>       &paths)
+{
+  if(basepaths.empty())
+    return (errno=ENOENT,-1);
+
+  paths.push_back(basepaths[0]);
+
+  return 0;
+}
+
 namespace mergerfs
 {
   int
@@ -74,6 +87,9 @@ namespace mergerfs
                    const size_t                minfreespace,
                    vector<string>             &paths)
   {
+    if(type == Category::Enum::create)
+      return _ff_create(basepaths,fusepath,paths);
+
     return _ff(basepaths,fusepath,paths);
   }
 }

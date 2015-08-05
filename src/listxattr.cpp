@@ -109,12 +109,12 @@ namespace mergerfs
               char       *list,
               size_t      size)
     {
-      const config::Config &config = config::get();
+      const fuse_context *fc     = fuse_get_context();
+      const Config       &config = Config::get(fc);
 
       if(fusepath == config.controlfile)
         return _listxattr_controlfile(list,size);
 
-      const struct fuse_context *fc = fuse_get_context();
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 

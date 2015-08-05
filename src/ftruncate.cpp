@@ -45,9 +45,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    ftruncate(const char            *fusepath,
-              off_t                  size,
-              struct fuse_file_info *ffi)
+    ftruncate(const char     *fusepath,
+              off_t           size,
+              fuse_file_info *ffi)
     {
       return _ftruncate(ffi->fh,
                         size);

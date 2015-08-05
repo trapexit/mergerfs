@@ -38,56 +38,64 @@
 
 namespace mergerfs
 {
-  namespace config
+  class Config
   {
-    class Config
+  public:
+    Config();
+
+  public:
+    int set_func_policy(const std::string &fusefunc_,
+                        const std::string &policy_);
+    int set_category_policy(const std::string &category,
+                            const std::string &policy);
+
+  public:
+    std::string              destmount;
+    std::vector<std::string> srcmounts;
+    mutable pthread_rwlock_t srcmountslock;
+    size_t                   minfreespace;
+
+  public:
+    const Policy  *policies[FuseFunc::Enum::END];
+    const Policy *&access;
+    const Policy *&chmod;
+    const Policy *&chown;
+    const Policy *&create;
+    const Policy *&getattr;
+    const Policy *&getxattr;
+    const Policy *&link;
+    const Policy *&listxattr;
+    const Policy *&mkdir;
+    const Policy *&mknod;
+    const Policy *&open;
+    const Policy *&readlink;
+    const Policy *&removexattr;
+    const Policy *&rename;
+    const Policy *&rmdir;
+    const Policy *&setxattr;
+    const Policy *&symlink;
+    const Policy *&truncate;
+    const Policy *&unlink;
+    const Policy *&utimens;
+
+  public:
+    const std::string controlfile;
+
+  public:
+    static
+    const Config &
+    get(const fuse_context *fc)
     {
-    public:
-      Config();
+      return *((Config*)fc->private_data);
+    }
 
-    public:
-      int set_func_policy(const std::string &fusefunc_,
-                          const std::string &policy_);
-      int set_category_policy(const std::string &category,
-                              const std::string &policy);
-
-    public:
-      std::string              destmount;
-      std::vector<std::string> srcmounts;
-      mutable pthread_rwlock_t srcmountslock;
-      size_t                   minfreespace;
-
-    public:
-      const Policy  *policies[FuseFunc::Enum::END];
-      const Policy *&access;
-      const Policy *&chmod;
-      const Policy *&chown;
-      const Policy *&create;
-      const Policy *&getattr;
-      const Policy *&getxattr;
-      const Policy *&link;
-      const Policy *&listxattr;
-      const Policy *&mkdir;
-      const Policy *&mknod;
-      const Policy *&open;
-      const Policy *&readlink;
-      const Policy *&removexattr;
-      const Policy *&rename;
-      const Policy *&rmdir;
-      const Policy *&setxattr;
-      const Policy *&symlink;
-      const Policy *&truncate;
-      const Policy *&unlink;
-      const Policy *&utimens;
-
-    public:
-      const std::string controlfile;
-    };
-
-    const Config &get(const struct fuse_context *fc);
-    const Config &get(void);
-    Config       &get_writable(void);
-  }
+    static
+    Config &
+    get_writable(void)
+    {
+      return (*((Config*)fuse_get_context()->private_data));
+    }
+  };
 }
 
 #endif

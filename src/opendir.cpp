@@ -29,8 +29,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    opendir(const char            *fusepath,
-            struct fuse_file_info *ffi)
+    opendir(const char     *fusepath,
+            fuse_file_info *ffi)
     {
       ffi->fh = 0;
 

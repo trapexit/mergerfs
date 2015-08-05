@@ -90,14 +90,14 @@ namespace mergerfs
   namespace fuse
   {
     int
-    readdir(const char            *fusepath,
-            void                  *buf,
-            fuse_fill_dir_t        filler,
-            off_t                  offset,
-            struct fuse_file_info *fi)
+    readdir(const char      *fusepath,
+            void            *buf,
+            fuse_fill_dir_t  filler,
+            off_t            offset,
+            fuse_file_info  *fi)
     {
-      const struct fuse_context *fc     = fuse_get_context();
-      const config::Config      &config = config::get();
+      const fuse_context        *fc     = fuse_get_context();
+      const Config              &config = Config::get(fc);
       const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard    readlock(&config.srcmountslock);
 

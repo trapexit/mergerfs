@@ -47,11 +47,10 @@ _fwfs_create(const Category::Enum::Type  type,
   for(size_t i = 0, size = basepaths.size(); i != size; i++)
     {
       int rv;
-      const char *basepath;
       struct statvfs fsstats;
+      const string   &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
-      rv = ::statvfs(basepath,&fsstats);
+      rv = ::statvfs(basepath.c_str(),&fsstats);
       if(rv == 0)
         {
           fsblkcnt_t spaceavail;
@@ -81,11 +80,11 @@ _fwfs(const Category::Enum::Type  type,
     {
       int rv;
       string fullpath;
-      const char *basepath;
       struct statvfs fsstats;
+      const string &basepath = basepaths[i];
 
-      basepath = basepaths[i].c_str();
       fullpath = fs::path::make(basepath,fusepath);
+
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)
         {

@@ -29,7 +29,7 @@ namespace mergerfs
   namespace fuse
   {
     int
-    open(const char            *fusepath,
-         struct fuse_file_info *fileinfo);
+    open(const char     *fusepath,
+         fuse_file_info *fileinfo);
   }
 }

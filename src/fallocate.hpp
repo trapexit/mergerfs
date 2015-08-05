@@ -27,10 +27,10 @@ namespace mergerfs
   namespace fuse
   {
     int
-    fallocate(const char            *fusepath,
-              int                    mode,
-              off_t                  offset,
-              off_t                  len,
-              struct fuse_file_info *fi);
+    fallocate(const char     *fusepath,
+              int             mode,
+              off_t           offset,
+              off_t           len,
+              fuse_file_info *fi);
   }
 }
