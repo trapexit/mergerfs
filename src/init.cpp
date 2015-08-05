@@ -33,8 +33,26 @@ namespace mergerfs
     void *
     init(struct fuse_conn_info *conn)
     {
+#ifdef FUSE_CAP_ASYNC_READ
+      conn->want |= FUSE_CAP_ASYNC_READ;
+#endif
 #ifdef FUSE_CAP_IOCTL_DIR
       conn->want |= FUSE_CAP_IOCTL_DIR;
+#endif
+#ifdef FUSE_CAP_ATOMIC_O_TRUNC
+      conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
+#endif
+#ifdef FUSE_CAP_BIG_WRITES
+      conn->want |= FUSE_CAP_BIG_WRITES;
+#endif
+#ifdef FUSE_CAP_SPLICE_WRITE
+      conn->want |= FUSE_CAP_SPLICE_WRITE;
+#endif
+#ifdef FUSE_CAP_SPLICE_READ
+      conn->want |= FUSE_CAP_SPLICE_READ;
+#endif
+#ifdef FUSE_CAP_SPLICE_MOVE
+      conn->want |= FUSE_CAP_SPLICE_MOVE;
 #endif
 
       return &config::get_writable();
