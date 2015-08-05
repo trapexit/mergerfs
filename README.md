@@ -20,7 +20,7 @@ Why create mergerfs when those exist? mhddfs isn't really maintained or flexible
 
 ###options###
 
-* `defaults` is a shortcut for `big_writes`, `auto_cache`, `atomic_o_trunc`, `splice_read`, `splice_write`, and `splice_move`. These options seem to provide the best performance.
+* `defaults` is a shortcut for `auto_cache`. `big_writes`, `atomic_o_trunc`, `splice_read`, `splice_write`, and `splice_move` are in effect also enabled (by asking FUSE internally for such features) but if unavailable will be ignored. These options seem to provide the best performance.
 * `minfreespace` (defaults to `4G`) is the minimum space value used for the `lfs` and `fwfs` policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
 * All [FUSE](http://fuse.sourceforge.net) functions which have a category (see below) are option keys. The syntax being `func.<func>=<policy>`.
 * To set all function policies in a category use `category.<category>=<policy>` such as `category.create=mfs`.
