@@ -24,35 +24,78 @@
 
 import sys
 import subprocess
+import argparse
 
-packagename = sys.argv[1]
-version = sys.argv[2]
+def git_tags():
+    args = ["git", "tag", '-l']
+    tags = subprocess.check_output(args)
+    tags = tags.split()
+    tags.reverse()
+    return tags
 
-args = ["git", "tag", '-l']
-tags = subprocess.check_output(args)
-tags = tags.split()
-tags.reverse()
+def git_log(fromtag,totag):
+    args = ['git','log','--no-merges','--oneline',fromtag+'...'+totag]
+    return subprocess.check_output(args).strip().split('\n')
 
-if version in tags:
+def git_author_and_time(tag):
+    args = ['git','log','-1','--format=-- %an <%ae>  %cD',tag]
+    return subprocess.check_output(args).strip()
+
+def git_version():
+    args = ['git','describe','--always','--tags','--dirty']
+    return subprocess.check_output(args).strip()
+
+def find_distrib_codename(f):
+    for line in f:
+        (key,value) = line.partition('=')[::2]
+        if key == 'DISTRIB_CODENAME':
+            return value.strip()
+
+def guess_distribution():
+    try:
+        with open('/etc/upstream-release/lsb-release') as f:
+            return find_distrib_codename(f)
+    except:
+        try:
+            with open('/etc/lsb-release') as f:
+                return find_distrib_codename(f)
+        except:
+            return 'unknown'
+
+parser = argparse.ArgumentParser(description='Generated debian/changelog from git log')
+parser.add_argument('--name',type=str,help='Name of package',required=True)
+parser.add_argument('--version',type=str,help='Place in git history to include upto',default='::guess::')
+parser.add_argument('--distro',type=str,help='Distribution name',default='::guess::')
+parser.add_argument('--urgency',type=str,help='Urgency',default='medium')
+
+args = parser.parse_args()
+
+if args.distro == '::guess::':
+    args.distro = guess_distribution()
+
+if args.version == '::guess::':
+    args.version = git_version()
+
+tags = git_tags()
+
+if args.version in tags:
     idx = tags.index(version)
     tags = tags[idx:]
     tags = zip(tags,tags)
 else:
     tags = zip(tags,tags)
-    tags.insert(0,(version,'HEAD'))
+    tags.insert(0,(args.version,'HEAD'))
 
 tag = tags[0]
 for prev in tags[1:]:
-    print packagename, "("+tag[0]+")", "trusty;", "urgency=medium"
-    print
+    print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.distro,args.urgency))
 
-    args = ['git','log','--no-merges','--oneline',tag[1]+'...'+prev[1]]
-    for line in subprocess.check_output(args).strip().split('\n'):
+    lines = git_log(tag[1],prev[1])
+    for line in lines:
         print "  * " + line
     print
 
-    args = ['git','log','-1','--format=-- %an <%ae>  %cD',tag[1]]
-    authorandtime = subprocess.check_output(args).strip()
-    print ' ' + authorandtime + '\n'
+    authorandtime = git_author_and_time(tag[1])
+    print(' %s\n' % authorandtime)
 
     tag = prev
