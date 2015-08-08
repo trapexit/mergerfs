@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 FUSE_CFLAGS=$(pkg-config --cflags fuse)
 

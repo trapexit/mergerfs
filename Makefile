@@ -81,10 +81,16 @@ CFLAGS      = -g -Wall \
               -DWRITE_BUF=$(WRITE_BUF)
 LDFLAGS       = $(shell $(PKGCONFIG) fuse --libs)
 
-BINDIR 	      =	$(PREFIX)/usr/bin
-MANDIR 	      =	$(PREFIX)/usr/share/man/man1
-INSTALLBINDIR = $(DESTDIR)$(BINDIR)
-INSTALLMANDIR = $(DESTDIR)$(MANDIR)
+PREFIX        = /usr/local
+EXEC_PREFIX   = $(PREFIX)
+DATAROOTDIR   = $(PREFIX)/share
+DATADIR       = $(DATAROOTDIR)
+BINDIR        = $(EXEC_PREFIX)/bin
+MANDIR        = $(DATAROOTDIR)/man
+MAN1DIR       = $(MANDIR)/man1
+
+INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
+INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
 ifeq ($(XATTR_AVAILABLE),0)
 $(warning "xattr not available: disabling")
@@ -104,7 +110,10 @@ clonepath: $(TARGET)
 	$(LN) -s $< $@
 
 changelog:
-	$(GIT) log --pretty --numstat --summary | git2cl > ChangeLog
+	$(GIT2DEBCL) --name $(TARGET) > ChangeLog
+
+authors:
+	$(GIT) log --format='%aN <%aE>' | sort -f | uniq > AUTHORS
 
 obj/obj-stamp:
 	$(MKDIR) -p obj
@@ -116,7 +125,7 @@ obj/%.o: src/%.cpp
 clean:
 	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" "$(MANPAGE)" clonepath
-	$(FIND) -name "*~" -delete
+	$(FIND) . -name "*~" -delete
 
 distclean: clean
 	$(GIT) clean -fd
@@ -130,7 +139,7 @@ install-clonepath: clonepath
 	$(CP) -a $< "$(INSTALLBINDIR)/$<"
 
 install-man: $(MANPAGE)
-	$(INSTALL) -v -m 0644 -D "$(MANPAGE)" "$(INSTALLMANDIR)/$(MANPAGE)"
+	$(INSTALL) -v -m 0644 -D "$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
@@ -144,14 +153,14 @@ uninstall-clonepath:
 	$(RM) -f "$(INSTALLBINDIR)/clonepath"
 
 uninstall-man:
-	$(RM) -f "$(INSTALLMANDIR)/$(MANPAGE")
+	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 $(MANPAGE): README.md
 	$(PANDOC) -s -t man -o $(MANPAGE) README.md
 
 man: $(MANPAGE)
 
-tarball: clean changelog man
+tarball: clean man changelog authors
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
 	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
@@ -160,10 +169,14 @@ tarball: clean changelog man
 	$(TAR) --exclude=.git -cz -C $(TMPDIR) -f ../$(FILENAME).tar.gz $(FILENAME)
 	$(RM) -rf $(TMPDIR)
 
-deb:
-	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
-	$(GIT2DEBCL) $(TARGET) $(VERSION) > debian/changelog
-	$(GIT) buildpackage --git-ignore-new
+debian-changelog:
+	$(GIT2DEBCL) --name $(TARGET) > debian/changelog
+
+deb: debian-changelog
+	dpkg-buildpackage
+
+unsigned-deb: debian-changelog
+	dpkg-buildpackage -uc -us
 
 .PHONY: all clean install help
 
