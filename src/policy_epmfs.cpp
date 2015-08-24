@@ -129,6 +129,7 @@ _epmfs_create(const vector<string> &basepaths,
   fsblkcnt_t mfs;
   string     mfsbasepath;
   string     epmfsbasepath;
+  string     fullpath;
 
   mfs = 0;
   epmfs = 0;
@@ -137,7 +138,9 @@ _epmfs_create(const vector<string> &basepaths,
       int rv;
       const string &basepath = basepaths[i];
 
-      rv = _try_statvfs(basepath,fusepath,epmfs,epmfsbasepath,mfs,mfsbasepath);
+      fullpath = fs::path::make(basepath,fusepath);
+
+      rv = _try_statvfs(basepath,fullpath,epmfs,epmfsbasepath,mfs,mfsbasepath);
       if(rv == -1)
         _try_statvfs(basepath,mfs,mfsbasepath);
     }
