@@ -45,7 +45,12 @@ namespace mergerfs
           invalid = -1,
           BEGIN   = 0,
           all     = BEGIN,
+          einval,
+          enosys,
+          enotsup,
           epmfs,
+          erofs,
+          exdev,
           ff,
           ffwp,
           fwfs,
@@ -120,12 +125,17 @@ namespace mergerfs
         const Ptr func;
       };
 
-      static int invalid(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int all(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int einval(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int enosys(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int enotsup(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int epmfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int erofs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int exdev(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int ff(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int ffwp(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int fwfs(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int invalid(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int lfs(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int mfs(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int newest(CType,cstrvec&,cstring&,csize_t,strvec&);
@@ -183,7 +193,11 @@ namespace mergerfs
 
     static const Policy &invalid;
     static const Policy &all;
+    static const Policy &enosys;
+    static const Policy &enotsup;
     static const Policy &epmfs;
+    static const Policy &erofs;
+    static const Policy &exdev;
     static const Policy &ff;
     static const Policy &ffwp;
     static const Policy &fwfs;

@@ -73,6 +73,7 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 | lfs (least free space) | Pick the path with least available space but more than **minfreespace**. |
 | rand (random) | Pick an existing destination at random. |
 | all | Applies action to all found. For searches it will behave like first found **ff**. |
+| enosys, einval, enotsup, exdev, erofs | Exclusively return `-1` with `errno` set to the respective value. Useful for debugging other applications' behavior to errors. |
 
 #### Defaults ####
 
