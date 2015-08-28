@@ -31,17 +31,16 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 
 namespace mergerfs
 {
   int
-  Policy::Func::invalid(const Category::Enum::Type  type,
+  Policy::Func::enotsup(const Category::Enum::Type  type,
                         const vector<string>       &basepaths,
                         const string               &fusepath,
                         const size_t                minfreespace,
-                        vector<string>             &rv)
+                        vector<string>             &paths)
   {
-    return (errno=EINVAL,-1);
+    return (errno=ENOTSUP,-1);
   }
 }

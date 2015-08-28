@@ -36,7 +36,12 @@ namespace mergerfs
     buildvector<Policy,true>
     (POLICY(invalid))
     (POLICY(all))
+    (POLICY(einval))
+    (POLICY(enosys))
+    (POLICY(enotsup))
     (POLICY(epmfs))
+    (POLICY(erofs))
+    (POLICY(exdev))
     (POLICY(ff))
     (POLICY(ffwp))
     (POLICY(fwfs))
@@ -47,16 +52,23 @@ namespace mergerfs
 
   const Policy * const Policy::policies = &_policies_[1];
 
-  const Policy &Policy::invalid = Policy::policies[Policy::Enum::invalid];
-  const Policy &Policy::all     = Policy::policies[Policy::Enum::all];
-  const Policy &Policy::epmfs   = Policy::policies[Policy::Enum::epmfs];
-  const Policy &Policy::ff      = Policy::policies[Policy::Enum::ff];
-  const Policy &Policy::ffwp    = Policy::policies[Policy::Enum::ffwp];
-  const Policy &Policy::fwfs    = Policy::policies[Policy::Enum::fwfs];
-  const Policy &Policy::lfs     = Policy::policies[Policy::Enum::lfs];
-  const Policy &Policy::mfs     = Policy::policies[Policy::Enum::mfs];
-  const Policy &Policy::newest  = Policy::policies[Policy::Enum::newest];
-  const Policy &Policy::rand    = Policy::policies[Policy::Enum::rand];
+#define CONST_POLICY(X) const Policy &Policy::X = Policy::policies[Policy::Enum::X]
+
+  CONST_POLICY(invalid);
+  CONST_POLICY(all);
+  CONST_POLICY(einval);
+  CONST_POLICY(enosys);
+  CONST_POLICY(enotsup);
+  CONST_POLICY(epmfs);
+  CONST_POLICY(erofs);
+  CONST_POLICY(exdev);
+  CONST_POLICY(ff);
+  CONST_POLICY(ffwp);
+  CONST_POLICY(fwfs);
+  CONST_POLICY(lfs);
+  CONST_POLICY(mfs);
+  CONST_POLICY(newest);
+  CONST_POLICY(rand);
 
   const Policy&
   Policy::find(const std::string &str)
