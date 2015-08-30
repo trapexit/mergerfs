@@ -133,7 +133,7 @@ namespace fs
           string path;
           struct stat st;
 
-          path = fs::path::make(paths[i],fusepath);
+          fs::path::make(paths[i],fusepath,path);
 
           rv  = ::lstat(path.c_str(),&st);
           if(rv == 0)
@@ -155,7 +155,7 @@ namespace fs
         string fullpath;
         struct stat st;
 
-        fullpath = fs::path::make(srcmounts[i],fusepath);
+        fs::path::make(srcmounts[i],fusepath,fullpath);
 
         rv = ::lstat(fullpath.c_str(),&st);
         if(rv == 0)
@@ -456,14 +456,14 @@ namespace fs
           return -1;
       }
 
-    frompath = fs::path::make(fromsrc,relative);
+    fs::path::make(fromsrc,relative,frompath);
     rv = ::stat(frompath.c_str(),&st);
     if(rv == -1)
       return -1;
     else if(!S_ISDIR(st.st_mode))
       return (errno = ENOTDIR,-1);
 
-    topath = fs::path::make(tosrc,relative);
+    fs::path::make(tosrc,relative,topath);
     rv = ::mkdir(topath.c_str(),st.st_mode);
     if(rv == -1)
       {

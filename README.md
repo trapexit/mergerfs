@@ -83,6 +83,10 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 | create   | epmfs  |
 | search   | ff     |
 
+#### rename ####
+
+[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the from and to paths existing on different mount points it will return `-1` with `errno = EXDEV`. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. Meaning that if you just renamed each source locally you could end up with the destination files not overwriten / replaced. To address this mergerfs works in the following way. If the source and destination exist in different directories it will immediately return `EXDEV`. Generally it's not expected for cross directory renames to work so it should be fine for most instances (mv,rsync,etc.). If they do belong to the same directory it then runs the `rename` policy to get the files to rename. It iterates through and renames each file while keeping track of those paths which have not been renamed. If all the renames succeed it will then `unlink` or `rmdir` the other paths to clean up any preexisting target files. This allows the new file to be found without the file itself ever disappearing. There may still be some issues with this behavior. Particularly on error. At the moment however this seems the best policy.
+
 #### readdir ####
 
 [readdir](http://linux.die.net/man/3/readdir) is very different from most functions in this realm. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple **first found** merging of directories and file found. That is: only the first file or directory found for a directory is returned. Given how FUSE works though the data representing the returned entry comes from **getattr**.
