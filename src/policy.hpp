@@ -193,6 +193,7 @@ namespace mergerfs
 
     static const Policy &invalid;
     static const Policy &all;
+    static const Policy &einval;
     static const Policy &enosys;
     static const Policy &enotsup;
     static const Policy &epmfs;
