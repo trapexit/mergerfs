@@ -61,6 +61,15 @@ namespace fs
 
     inline
     void
+    make(const string &base,
+         const string &suffix,
+         string       &output)
+    {
+      output = base + suffix;
+    }
+
+    inline
+    void
     append(string       &base,
            const string &suffix)
     {

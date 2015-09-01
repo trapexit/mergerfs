@@ -30,6 +30,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 #include "ugid.hpp"
 #include "fs.hpp"
@@ -38,40 +39,65 @@
 
 using std::string;
 using std::vector;
+using std::set;
 using mergerfs::Policy;
 
 static
-int
-_single_rename(Policy::Func::Search  searchFunc,
-               const vector<string> &srcmounts,
-               const size_t          minfreespace,
-               const string         &oldbasepath,
-               const string         &oldfullpath,
-               const string         &newpath)
+bool
+_different_dirname(const string &path0,
+                   const string &path1)
+{
+  return (fs::path::dirname(path0) != fs::path::dirname(path1));
+}
+
+static
+void
+_unlink(const set<string> &tounlink,
+        const string      &newfusepath)
 {
   int rv;
-  const string newfullpath = fs::path::make(oldbasepath,newpath);
+  string fullpath;
 
-  rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
-  if(rv == -1 && errno == ENOENT)
+  for(set<string>::const_iterator i = tounlink.begin(), ei = tounlink.end(); i != ei; i++)
     {
-      string dirname;
-      vector<string> newpathdir;
+      fs::path::make(*i,newfusepath,fullpath);
 
-      dirname = fs::path::dirname(newpath);
-      rv = searchFunc(srcmounts,dirname,minfreespace,newpathdir);
-      if(rv == -1)
-        return -1;
+      rv = ::unlink(fullpath.c_str());
+      if(rv == -1 && errno == EISDIR)
+        ::rmdir(fullpath.c_str());
+    }
+}
 
-      {
-        const mergerfs::ugid::SetResetGuard ugid(0,0);
-        fs::clonepath(newpathdir[0],oldbasepath,dirname);
-      }
+static
+int
+_rename(const vector<string> &srcmounts,
+        const vector<string> &basepaths,
+        const string         &oldfusepath,
+        const string         &newfusepath)
+{
+  int rv;
+  int error;
+  string oldfullpath;
+  string newfullpath;
+  set<string> tounlink;
 
+  error = 0;
+  tounlink.insert(srcmounts.begin(),srcmounts.end());
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      fs::path::make(basepaths[i],oldfusepath,oldfullpath);
+      fs::path::make(basepaths[i],newfusepath,newfullpath);
+
+      tounlink.erase(basepaths[i]);
       rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
+      if(rv == -1)
+        error = errno;
     }
 
-  return rv;
+  if(error == 0)
+    _unlink(tounlink,newfusepath);
+
+  return -error;
 }
 
 static
@@ -84,25 +110,16 @@ _rename(Policy::Func::Search  searchFunc,
         const string         &newfusepath)
 {
   int rv;
-  int error;
   vector<string> oldbasepaths;
+
+  if(_different_dirname(oldfusepath,newfusepath))
+    return -EXDEV;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
-  error = 0;
-  for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
-    {
-      const string oldfullpath = fs::path::make(oldbasepaths[i],oldfusepath);
-
-      rv = _single_rename(searchFunc,srcmounts,minfreespace,
-                          oldbasepaths[i],oldfullpath,newfusepath);
-      if(rv == -1)
-        error = errno;
-    }
-
-  return -error;
+  return _rename(srcmounts,oldbasepaths,oldfusepath,newfusepath);
 }
 
 namespace mergerfs
