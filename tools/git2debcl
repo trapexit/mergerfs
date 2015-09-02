@@ -79,7 +79,7 @@ if args.version == '::guess::':
 tags = git_tags()
 
 if args.version in tags:
-    idx = tags.index(version)
+    idx = tags.index(args.version)
     tags = tags[idx:]
     tags = zip(tags,tags)
 else:
