@@ -21,7 +21,7 @@ Why create **mergerfs** when those exist? **mhddfs** has not been updated in som
 ###options###
 
 * **defaults** is a shortcut for **auto_cache**. **big_writes**, **atomic_o_trunc**, **splice_read**, **splice_write**, and **splice_move** are in effect also enabled (by asking **FUSE** internally for such features) but if unavailable will be ignored. These options seem to provide the best performance.
-* **minfreespace** (defaults to **4G**) is the minimum space value used for the **lfs** and **fwfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
+* **minfreespace** (defaults to **4G**) is the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
 * All FUSE functions which have a category (see below) are option keys. The syntax being **func.&lt;func&gt;=&lt;policy&gt;**. Example: **func.getattr=newest**.
 * To set all function policies in a category use **categor.&lt;category&gt;=&lt;policy&gt;**. Example: **category.create=mfs**.
 * Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
@@ -64,14 +64,14 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 
 | Policy | Description |
 |--------------|-------------|
-| ff (first found) | Given the order of the paths act on the first one found (regardless if stat would return EACCES). |
-| ffwp (first found w/ permissions) | Given the order of the paths act on the first one found which you have access (stat does not error with EACCES). |
+| ff (first found) | Given the order of the drives act on the first one found (regardless if stat would return EACCES). |
+| ffwp (first found w/ permissions) | Given the order of the drives act on the first one found which you have access (stat does not error with EACCES). |
 | newest (newest file) | If multiple files exist return the one with the most recent mtime. |
 | mfs (most free space) | Use the drive with the most free space available. |
-| epmfs (existing path, most free space) | If the path exists in multiple locations use the one with the most free space. Otherwise fall back to **mfs**. |
-| fwfs (first with free space) | Pick the first path which has at least **minfreespace**. |
-| lfs (least free space) | Pick the path with least available space but more than **minfreespace**. |
-| rand (random) | Pick an existing destination at random. |
+| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space and is greater than **minfreespace**. If no drive has at least **minfreespace** then fallback to **mfs**. |
+| fwfs (first with free space) | Pick the first drive which has at least **minfreespace**. |
+| lfs (least free space) | Pick the drive with least available space but more than **minfreespace**. |
+| rand (random) | Pick an existing drive at random. |
 | all | Applies action to all found. For searches it will behave like first found **ff**. |
 | enosys, einval, enotsup, exdev, erofs | Exclusively return `-1` with `errno` set to the respective value. Useful for debugging other applications' behavior to errors. |
 
