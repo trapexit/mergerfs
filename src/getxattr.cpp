@@ -47,14 +47,32 @@ using std::set;
 using namespace mergerfs;
 
 static
+int
+_lgetxattr(const string &path,
+           const string &name,
+           void         *value,
+           const size_t  size)
+{
+#ifndef WITHOUT_XATTR
+  int rv;
+
+  rv = ::lgetxattr(path.c_str(),name.c_str(),value,size);
+
+  return ((rv == -1) ? -errno : rv);
+#else
+  return -ENOSUP;
+#endif
+}
+
+static
 void
 _getxattr_controlfile_fusefunc_policy(const Config &config,
-                                      const char   *attrbasename,
+                                      const string &attr,
                                       string       &attrvalue)
 {
   FuseFunc fusefunc;
 
-  fusefunc = FuseFunc::find(attrbasename);
+  fusefunc = FuseFunc::find(attr);
   if(fusefunc != FuseFunc::invalid)
     attrvalue = (std::string)*config.policies[(FuseFunc::Enum::Type)*fusefunc];
 }
@@ -62,12 +80,12 @@ _getxattr_controlfile_fusefunc_policy(const Config &config,
 static
 void
 _getxattr_controlfile_category_policy(const Config &config,
-                                      const char   *attrbasename,
+                                      const string &attr,
                                       string       &attrvalue)
 {
   Category cat;
 
-  cat = Category::find(attrbasename);
+  cat = Category::find(attr);
   if(cat != Category::invalid)
     {
       vector<string> policies;
@@ -107,25 +125,34 @@ _getxattr_controlfile_minfreespace(const Config &config,
 static
 int
 _getxattr_controlfile(const Config &config,
-                      const char   *attrname,
+                      const string &attrname,
                       char         *buf,
                       const size_t  count)
 {
   size_t len;
   string attrvalue;
-  const char *attrbasename = &attrname[sizeof("user.mergerfs.")-1];
+  vector<string> attr;
 
-  if(strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
+  str::split(attr,attrname,'.');
+  if((attr[0] != "user") || (attr[1] != "mergerfs"))
     return -ENOATTR;
 
-  if(!strcmp("srcmounts",attrbasename))
-    _getxattr_controlfile_srcmounts(config,attrvalue);
-  else if(!strcmp("minfreespace",attrbasename))
-    _getxattr_controlfile_minfreespace(config,attrvalue);
-  else if(!strncmp("category.",attrbasename,sizeof("category.")-1))
-    _getxattr_controlfile_category_policy(config,&attrbasename[sizeof("category.")-1],attrvalue);
-  else if(!strncmp("func.",attrbasename,sizeof("func.")-1))
-    _getxattr_controlfile_fusefunc_policy(config,&attrbasename[sizeof("func.")-1],attrvalue);
+  switch(attr.size())
+    {
+    case 3:
+      if(attr[2] == "srcmounts")
+        _getxattr_controlfile_srcmounts(config,attrvalue);
+      else if(attr[2] == "minfreespace")
+        _getxattr_controlfile_minfreespace(config,attrvalue);
+      break;
+
+    case 4:
+      if(attr[2] == "category")
+        _getxattr_controlfile_category_policy(config,attr[3],attrvalue);
+      else if(attr[2] == "func")
+        _getxattr_controlfile_fusefunc_policy(config,attr[3],attrvalue);
+      break;
+    }
 
   if(attrvalue.empty())
     return -ENOATTR;
@@ -155,7 +182,7 @@ _getxattr_from_string(char         *destbuf,
     return srcbufsize;
 
   if(srcbufsize > destbufsize)
-    return (errno = ERANGE, -1);
+    return -ERANGE;
 
   memcpy(destbuf,src.data(),srcbufsize);
 
@@ -176,7 +203,7 @@ _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
 
   concated = str::join(paths,'\0');
 
-  return ::_getxattr_from_string(buf,count,concated);
+  return _getxattr_from_string(buf,count,concated);
 }
 
 static
@@ -185,22 +212,24 @@ _getxattr_user_mergerfs(const string         &basepath,
                         const string         &fusepath,
                         const string         &fullpath,
                         const vector<string> &srcmounts,
-                        const char           *attrname,
+                        const string         &attrname,
                         char                 *buf,
                         const size_t          count)
 {
-  const char *attrbasename = &attrname[sizeof("user.mergerfs")];
+  vector<string> attr;
 
-  if(!strcmp(attrbasename,"basepath"))
-    return ::_getxattr_from_string(buf,count,basepath);
-  else if(!strcmp(attrbasename,"fullpath"))
-    return ::_getxattr_from_string(buf,count,fullpath);
-  else if(!strcmp(attrbasename,"relpath"))
-    return ::_getxattr_from_string(buf,count,fusepath);
-  else if(!strcmp(attrbasename,"allpaths"))
-    return ::_getxattr_user_mergerfs_allpaths(srcmounts,fusepath,buf,count);
+  str::split(attr,attrname,'.');
 
-  return ::lgetxattr(fullpath.c_str(),attrname,buf,count);
+  if(attr[2] == "basepath")
+    return _getxattr_from_string(buf,count,basepath);
+  else if(attr[2] ==  "relpath")
+    return _getxattr_from_string(buf,count,fusepath);
+  else if(attr[2] == "fullpath")
+    return _getxattr_from_string(buf,count,fullpath);
+  else if(attr[2] == "allpaths")
+    return _getxattr_user_mergerfs_allpaths(srcmounts,fusepath,buf,count);
+
+  return -ENOATTR;
 }
 
 static
@@ -209,30 +238,26 @@ _getxattr(Policy::Func::Search  searchFunc,
           const vector<string> &srcmounts,
           const size_t          minfreespace,
           const string         &fusepath,
-          const char           *attrname,
+          const string         &attrname,
           char                 *buf,
           const size_t          count)
 {
-#ifndef WITHOUT_XATTR
   int rv;
-  vector<string> basepath;
   string fullpath;
+  vector<string> basepath;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,basepath);
   if(rv == -1)
     return -errno;
 
-  fullpath = fs::path::make(basepath[0],fusepath);
+  fs::path::make(basepath[0],fusepath,fullpath);
 
-  if(!strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
+  if(str::isprefix(attrname,"user.mergerfs."))
     rv = _getxattr_user_mergerfs(basepath[0],fusepath,fullpath,srcmounts,attrname,buf,count);
   else
-    rv = ::lgetxattr(fullpath.c_str(),attrname,buf,count);
+    rv = _lgetxattr(fullpath,attrname,buf,count);
 
-  return ((rv == -1) ? -errno : rv);
-#else
-  return -ENOTSUP;
-#endif
+  return rv;
 }
 
 namespace mergerfs
