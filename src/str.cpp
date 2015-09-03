@@ -139,4 +139,12 @@ namespace str
           ++si;
       }
   }
+
+  bool
+  isprefix(const string &s0,
+           const string &s1)
+  {
+    return ((s0.size() >= s1.size()) &&
+            (s0.compare(0,s1.size(),s1) == 0));
+  }
 }

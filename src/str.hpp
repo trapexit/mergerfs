@@ -54,4 +54,8 @@ namespace str
   void
   erase_fnmatches(const std::vector<std::string> &pattern,
                   std::vector<std::string>       &strs);
+
+  bool
+  isprefix(const std::string &s0,
+           const std::string &s1);
 }
