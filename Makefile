@@ -33,11 +33,14 @@ INSTALL   = 	$(shell which install)
 MKTEMP    = 	$(shell which mktemp)
 STRIP     = 	$(shell which strip)
 PANDOC    =	$(shell which pandoc)
+SED       =     $(shell which sed)
+GZIP      =     $(shell which gzip)
+RPMBUILD  =     $(shell which rpmbuild)
 GIT2DEBCL =     ./tools/git2debcl
 CPPFIND   =     ./tools/cppfind
 
 ifeq ($(PKGCONFIG),"")
-$(error "pkg-config not installed"
+$(error "pkg-config not installed")
 endif
 
 ifeq ($(PANDOC),"")
@@ -122,7 +125,7 @@ obj/obj-stamp:
 obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
-clean:
+clean: rpm-clean
 	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" "$(MANPAGE)" clonepath
 	$(FIND) . -name "*~" -delete
@@ -162,11 +165,12 @@ man: $(MANPAGE)
 
 tarball: clean man changelog authors
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
 	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
 	$(MKDIR) $(TMPDIR)/$(FILENAME)
 	$(CP) -ar . $(TMPDIR)/$(FILENAME)
-	$(TAR) --exclude=.git -cz -C $(TMPDIR) -f ../$(FILENAME).tar.gz $(FILENAME)
+	$(TAR) --exclude=.git -cz -C $(TMPDIR) -f $(FILENAME).tar.gz $(FILENAME)
 	$(RM) -rf $(TMPDIR)
 
 debian-changelog:
@@ -177,6 +181,19 @@ deb: debian-changelog
 
 unsigned-deb: debian-changelog
 	dpkg-buildpackage -uc -us
+
+rpm-clean:
+	$(RM) -rf rpmbuild
+
+rpm: tarball
+	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	$(eval VERSION := $(subst -,_,$(VERSION)))
+	$(MKDIR) -p rpmbuild/{BUILD,RPMS,SOURCES}
+	$(SED) 's/__VERSION__/$(VERSION)/g' $(TARGET).spec > \
+		rpmbuild/SOURCES/$(TARGET).spec
+	cp -ar $(TARGET)-$(VERSION).tar.gz rpmbuild/SOURCES
+	$(RPMBUILD) -ba rpmbuild/SOURCES/$(TARGET).spec \
+		--define "_topdir $(CURDIR)/rpmbuild"
 
 .PHONY: all clean install help
 

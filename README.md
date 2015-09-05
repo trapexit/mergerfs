@@ -121,7 +121,9 @@ $ sudo dpkg -i ../mergerfs_version_arch.deb
 ```
 $ su -
 # dnf install fuse-devel libattr-devel pandoc gcc-c++
-# make install
+# cd mergerfs
+# make rpm
+# rpm -i rpmbuild/RPMS/<arch>/mergerfs-<verion>.<arch>.rpm
 ```
 
 #### Generically
