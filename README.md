@@ -117,6 +117,13 @@ $ make deb
 $ sudo dpkg -i ../mergerfs_version_arch.deb
 ```
 
+#### Fedora
+```
+$ su -
+# dnf install fuse-devel libattr-devel pandoc gcc-c++
+# make install
+```
+
 #### Generically
 
 Have pkg-config, pandoc, libfuse, libattr1 installed.
