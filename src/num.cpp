@@ -53,6 +53,9 @@ namespace num
         tmp *= (1024 * 1024 * 1024);
         break;
 
+      case '\0':
+        break;
+
       default:
         return -1;
       }
