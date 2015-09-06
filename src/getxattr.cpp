@@ -40,6 +40,7 @@
 #include "rwlock.hpp"
 #include "xattr.hpp"
 #include "str.hpp"
+#include "version.hpp"
 
 using std::string;
 using std::vector;
@@ -135,6 +136,13 @@ _getxattr_controlfile_policies(const Config &config,
 }
 
 static
+void
+_getxattr_controlfile_version(string &attrvalue)
+{
+  attrvalue = MERGERFS_VERSION;
+}
+
+static
 int
 _getxattr_controlfile(const Config &config,
                       const string &attrname,
@@ -158,6 +166,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_minfreespace(config,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
+      else if(attr[2] == "version")
+        _getxattr_controlfile_version(attrvalue);
       break;
 
     case 4:
