@@ -106,7 +106,7 @@ help:
 	@echo "usage: make"
 	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
 
-$(TARGET): obj/obj-stamp $(OBJ)
+$(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
 clonepath: $(TARGET)
@@ -117,6 +117,13 @@ changelog:
 
 authors:
 	$(GIT) log --format='%aN <%aE>' | sort -f | uniq > AUTHORS
+
+src/version.hpp:
+	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	@echo "#ifndef _VERSION_HPP" > src/version.hpp
+	@echo "#define _VERSION_HPP" >> src/version.hpp
+	@echo "static const char MERGERFS_VERSION[] = \"$(VERSION)\";" >> src/version.hpp
+	@echo "#endif" >> src/version.hpp
 
 obj/obj-stamp:
 	$(MKDIR) -p obj
@@ -163,7 +170,7 @@ $(MANPAGE): README.md
 
 man: $(MANPAGE)
 
-tarball: clean man changelog authors
+tarball: clean man changelog authors src/version.hpp
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(eval FILENAME := $(TARGET)-$(VERSION))

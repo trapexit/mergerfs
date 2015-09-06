@@ -53,7 +53,8 @@ _listxattr_controlfile(char         *list,
     buildvector<string>
     ("user.mergerfs.srcmounts")
     ("user.mergerfs.minfreespace")
-    ("user.mergerfs.policies");
+    ("user.mergerfs.policies")
+    ("user.mergerfs.version");
 
   xattrs.reserve(512);
   for(size_t i = 0; i < strs.size(); i++)
