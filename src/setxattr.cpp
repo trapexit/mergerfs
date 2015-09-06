@@ -59,6 +59,7 @@ _add_srcmounts(vector<string>           &srcmounts,
 
   str::split(patterns,values,':');
   fs::glob(patterns,additions);
+  fs::realpathize(additions);
 
   if(!additions.empty())
     {
@@ -106,6 +107,7 @@ _replace_srcmounts(vector<string>   &srcmounts,
 
   str::split(patterns,values,':');
   fs::glob(patterns,newmounts);
+  fs::realpathize(newmounts);
 
   {
     const rwlock::WriteGuard wrg(&srcmountslock);

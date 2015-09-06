@@ -200,6 +200,8 @@ process_srcmounts(const char *arg,
 
   fs::glob(paths,config.srcmounts);
 
+  fs::realpathize(config.srcmounts);
+
   return 0;
 }
 

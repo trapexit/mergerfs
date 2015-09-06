@@ -29,6 +29,8 @@
 #include <cstdlib>
 #include <iterator>
 
+#include <stdlib.h>
+#include <limits.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -509,5 +511,21 @@ namespace fs
       strs.push_back(gbuf.gl_pathv[i]);
 
     globfree(&gbuf);
+  }
+
+  void
+  realpathize(vector<string> &strs)
+  {
+    char *rv;
+    char buf[PATH_MAX];
+
+    for(size_t i = 0; i < strs.size(); i++)
+      {
+        rv = ::realpath(strs[i].c_str(),buf);
+        if(rv == NULL)
+          continue;
+
+        strs[i] = buf;
+      }
   }
 };

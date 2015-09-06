@@ -122,6 +122,8 @@ namespace fs
 
   void glob(const vector<string> &patterns,
             vector<string>       &strs);
+
+  void realpathize(vector<string> &strs);
 };
 
 #endif // __FS_HPP__
