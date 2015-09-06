@@ -60,6 +60,9 @@ namespace mergerfs
           rand,
           END
         };
+
+      static size_t begin() { return BEGIN; }
+      static size_t end()   { return END; }
     };
 
     struct Func

@@ -123,6 +123,18 @@ _getxattr_controlfile_minfreespace(const Config &config,
 }
 
 static
+void
+_getxattr_controlfile_policies(const Config &config,
+                               string       &attrvalue)
+{
+  size_t i = Policy::Enum::begin();
+
+  attrvalue = (string)Policy::policies[i];
+  for(i++; i < Policy::Enum::end(); i++)
+    attrvalue += ',' + (string)Policy::policies[i];
+}
+
+static
 int
 _getxattr_controlfile(const Config &config,
                       const string &attrname,
@@ -144,6 +156,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_srcmounts(config,attrvalue);
       else if(attr[2] == "minfreespace")
         _getxattr_controlfile_minfreespace(config,attrvalue);
+      else if(attr[2] == "policies")
+        _getxattr_controlfile_policies(config,attrvalue);
       break;
 
     case 4:
