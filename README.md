@@ -31,10 +31,10 @@ Why create **mergerfs** when those exist? **mhddfs** has not been updated in som
 The source points argument is a colon (':') delimited list of paths. To make it simpler to include multiple source points without having to modify your [fstab](http://linux.die.net/man/5/fstab) we also support [globbing](http://linux.die.net/man/7/glob).
 
 ```
-$ mergerfs /mnt/disk*:/mnt/cdrom /media/drives
+$ mergerfs /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
-The above line will use all points in /mnt prefixed with *disk* and the directory *cdrom*.
+The above line will use all points in /mnt prefixed with *disk* and the directory *cdrom*. The `*` (or any glob tokens) must be escaped on the command line else the shell resolve them. 
 
 In /etc/fstab it'd look like the following:
 
@@ -249,6 +249,10 @@ A B C
 * Remember that some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * An example: [Kodi](http://kodi.tv) can apparently use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether or not to scan for new content rather than simply performing a full scan. If using the current default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync).
+
+# Known Issues / Bugs
+
+* Performing an [initgroups](http://linux.die.net/man/3/initgroups) or [setgroups](http://linux.die.net/man/2/setgroups) for every call (see below) would be relatively expensive and currently not [done](https://github.com/trapexit/mergerfs/issues/88). Some caching system will need to be created to limit calls to [getgroups](http://linux.die.net/man/2/getgroups) and [getpwuid_r](http://linux.die.net/man/3/getpwuid_r). Until that's done if a file / directory set to be accessable only by a group may not work if the primary group of the user making the call is not used. Limiting the switching of IDs is also in the works which will help as well.
 
 # FAQ
 
