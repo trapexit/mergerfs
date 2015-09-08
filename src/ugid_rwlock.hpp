@@ -22,65 +22,86 @@
    THE SOFTWARE.
 */
 
-#include <stdlib.h>
 #include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
+#include <sys/stat.h>
 #include <unistd.h>
-
-#include <vector>
-#include <map>
-
-typedef std::vector<gid_t> gid_t_vector;
-typedef std::map<uid_t,gid_t_vector> gid_t_cache;
-
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#include "ugid_linux.ipp"
-#else
-#include "ugid_rwlock.ipp"
-#endif
+#include <pthread.h>
 
 namespace mergerfs
 {
   namespace ugid
   {
+    extern uid_t currentuid;
+    extern gid_t currentgid;
+    extern pthread_rwlock_t rwlock;
+
     static
-    inline
     void
-    prime_cache(const uid_t   uid,
-                const gid_t   gid,
-                gid_t_vector &gidlist)
+    ugid_set(const uid_t newuid,
+             const gid_t newgid)
     {
-      int rv;
-      char buf[4096];
-      struct passwd pwd;
-      struct passwd *pwdrv;
+      pthread_rwlock_rdlock(&rwlock);
 
-      rv = getpwuid_r(uid,&pwd,buf,sizeof(buf),&pwdrv);
-      if(pwdrv != NULL && rv == 0)
+      if(newuid == currentuid && newgid == currentgid)
+        return;
+
+      pthread_rwlock_unlock(&rwlock);
+      pthread_rwlock_wrlock(&rwlock);
+
+      if(newuid == currentuid && newgid == currentgid)
+        return;
+
+      if(currentuid != 0)
         {
-          int count;
-
-          count = 0;
-          rv = ::getgrouplist(pwd.pw_name,gid,NULL,&count);
-          gidlist.resize(count);
-          rv = ::getgrouplist(pwd.pw_name,gid,&gidlist[0],&count);
-          if(rv == -1)
-            gidlist.resize(1,gid);
+          ::seteuid(0);
+          ::setegid(0);
         }
+
+      if(newgid)
+        {
+          ::setegid(newgid);
+          initgroups(newuid,newgid);
+        }
+
+      if(newuid)
+        ::seteuid(newuid);
+
+      currentuid = newuid;
+      currentgid = newgid;
     }
 
-    void
-    initgroups(const uid_t uid,
-               const gid_t gid)
+    struct Set
     {
-      static __thread gid_t_cache cache;
+      Set(const uid_t newuid,
+          const gid_t newgid)
+      {
+        ugid_set(newuid,newgid);
+      }
 
-      gid_t_vector &gidlist = cache[uid];
-      if(gidlist.empty())
-        prime_cache(uid,gid,gidlist);
+      ~Set()
+      {
+        pthread_rwlock_unlock(&rwlock);
+      }
+    };
 
-      setgroups(gidlist);
-    }
+    struct SetRootGuard
+    {
+      SetRootGuard() :
+        prevuid(currentuid),
+        prevgid(currentgid)
+      {
+        pthread_rwlock_unlock(&rwlock);
+        ugid_set(0,0);
+      }
+
+      ~SetRootGuard()
+      {
+        pthread_rwlock_unlock(&rwlock);
+        ugid_set(prevuid,prevgid);
+      }
+
+      const uid_t prevuid;
+      const gid_t prevgid;
+    };
   }
 }

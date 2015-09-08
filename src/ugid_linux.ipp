@@ -22,47 +22,32 @@
    THE SOFTWARE.
 */
 
+#include <stdlib.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <pthread.h>
+#include <sys/syscall.h>
+
+#include <vector>
+
+typedef std::vector<gid_t> gid_t_vector;
 
 namespace mergerfs
 {
   namespace ugid
   {
-    struct SetResetGuard
+    __thread uid_t currentuid  = 0;
+    __thread gid_t currentgid  = 0;
+    __thread bool  initialized = false;
+
+    void
+    init()
     {
-      SetResetGuard(const uid_t _newuid,
-                    const gid_t _newgid)
-      {
-        pthread_mutex_lock(&lock);
+    }
 
-        olduid   = ::geteuid();
-        oldgid   = ::getegid();
-        newuid   = _newuid;
-        newgid   = _newgid;
-
-        if(newgid != oldgid)
-          setegid(newgid);
-        if(newuid != olduid)
-          seteuid(newuid);
-      }
-
-      ~SetResetGuard()
-      {
-        if(olduid != newuid)
-          seteuid(newuid);
-        if(oldgid != newgid)
-          setegid(newgid);
-      }
-
-      uid_t  olduid;
-      gid_t  oldgid;
-      uid_t  newuid;
-      gid_t  newgid;
-
-      static pthread_mutex_t lock;
-    };
+    int
+    setgroups(const gid_t_vector &gidlist)
+    {
+      return ::syscall(SYS_setgroups,gidlist.size(),&gidlist[0]);
+    }
   }
 }

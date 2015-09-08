@@ -87,8 +87,8 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return -ENOTSUP;
 
-      const ugid::SetResetGuard ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard   readlock(&config.srcmountslock);
+      const ugid::Set         ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard readlock(&config.srcmountslock);
 
       return _removexattr(config.removexattr,
                           config.srcmounts,
