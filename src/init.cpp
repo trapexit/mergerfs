@@ -25,6 +25,7 @@
 #include <fuse.h>
 
 #include "config.hpp"
+#include "ugid.hpp"
 
 namespace mergerfs
 {
@@ -33,6 +34,8 @@ namespace mergerfs
     void *
     init(fuse_conn_info *conn)
     {
+      ugid::init();
+
 #ifdef FUSE_CAP_ASYNC_READ
       conn->want |= FUSE_CAP_ASYNC_READ;
 #endif

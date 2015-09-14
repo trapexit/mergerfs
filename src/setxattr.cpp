@@ -323,8 +323,8 @@ namespace mergerfs
                                        flags);
         }
 
-      const ugid::SetResetGuard ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard   readlock(&config.srcmountslock);
+      const ugid::Set         ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard readlock(&config.srcmountslock);
 
       return _setxattr(config.setxattr,
                        config.srcmounts,

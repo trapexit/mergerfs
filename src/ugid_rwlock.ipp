@@ -22,36 +22,43 @@
    THE SOFTWARE.
 */
 
+#include <stdlib.h>
 #include <sys/types.h>
-#include <sys/unistd.h>
+#include <unistd.h>
+#include <pthread.h>
+
+#include <vector>
+
+typedef std::vector<gid_t> gid_t_vector;
 
 namespace mergerfs
 {
   namespace ugid
   {
-    struct SetResetGuard
+    uid_t currentuid;
+    gid_t currentgid;
+    pthread_rwlock_t rwlock;
+
+    void
+    init()
     {
-      SetResetGuard(const uid_t _newuid,
-                    const gid_t _newgid)
-      {
-        pthread_getugid_np(&olduid,&oldgid);
-        newuid   = _newuid;
-        newgid   = _newgid;
+      pthread_rwlockattr_t attr;
 
-        if(newgid != oldgid || newuid != olduid)
-          pthread_setugid_np(newuid,newgid);
-      }
+      pthread_rwlockattr_init(&attr);
+# if defined PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
+      pthread_rwlockattr_setkind_np(&attr,PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+# endif
 
-      ~SetResetGuard()
-      {
-        if(newgid != oldgid || newuid != olduid)
-          pthread_setugid_np(newuid,newgid);
-      }
+      pthread_rwlock_init(&rwlock,&attr);
 
-      uid_t  olduid;
-      gid_t  oldgid;
-      uid_t  newuid;
-      gid_t  newgid;
-    };
+      currentuid = ::geteuid();
+      currentgid = ::getegid();
+    }
+
+    int
+    setgroups(const gid_t_vector &gidlist)
+    {
+      return ::setgroups(gidlist.size(),&gidlist[0]);
+    }
   }
 }

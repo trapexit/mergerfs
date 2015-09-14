@@ -25,12 +25,27 @@
 #ifndef __UGID_HPP__
 #define __UGID_HPP__
 
-#if defined __linux__
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <vector>
+
+typedef std::vector<gid_t> gid_t_vector;
+
+namespace mergerfs
+{
+  namespace ugid
+  {
+    void init();
+    void initgroups(const uid_t uid, const gid_t gid);
+    void setgroups(const gid_t_vector &gidlist);
+  }
+}
+
+#if defined __linux__ and UGID_USE_RWLOCK == 0
 #include "ugid_linux.hpp"
-#elif defined __APPLE__
-#include "ugid_osx.hpp"
 #else
-#include "ugid_mutex.hpp"
+#include "ugid_rwlock.hpp"
 #endif
 
 #endif /* __UGID_HPP__ */

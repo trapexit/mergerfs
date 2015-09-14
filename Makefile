@@ -65,6 +65,8 @@ FLOCK       = $(shell $(CPPFIND) "fuse_fs_flock")
 READ_BUF    = $(shell $(CPPFIND) "fuse_fs_read_buf")
 WRITE_BUF   = $(shell $(CPPFIND) "fuse_fs_write_buf")
 
+UGID_USE_RWLOCK = 0
+
 OPTS 	    = -O2
 SRC	    = $(wildcard src/*.cpp)
 OBJ         = $(SRC:src/%.cpp=obj/%.o)
@@ -74,6 +76,7 @@ MANPAGE     = $(TARGET).1
 FUSE_CFLAGS = $(shell $(PKGCONFIG) --cflags fuse)
 CFLAGS      = -g -Wall \
 	      $(OPTS) \
+	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
               -DFUSE_USE_VERSION=26 \
               -MMD \
@@ -81,7 +84,8 @@ CFLAGS      = -g -Wall \
 	      -DFALLOCATE=$(FALLOCATE) \
               -DFLOCK=$(FLOCK) \
 	      -DREAD_BUF=$(READ_BUF) \
-              -DWRITE_BUF=$(WRITE_BUF)
+              -DWRITE_BUF=$(WRITE_BUF) \
+	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
 LDFLAGS       = $(shell $(PKGCONFIG) fuse --libs)
 
 PREFIX        = /usr/local

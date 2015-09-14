@@ -40,6 +40,7 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs;
 
 static
 int
@@ -69,7 +70,7 @@ _create(Policy::Func::Search  searchFunc,
 
   if(createpath[0] != existingpath[0])
     {
-      const mergerfs::ugid::SetResetGuard ugid(0,0);
+      const ugid::SetRootGuard ugidGuard;
       fs::clonepath(existingpath[0],createpath[0],dirname);
     }
 
@@ -93,10 +94,10 @@ namespace mergerfs
            mode_t          mode,
            fuse_file_info *fileinfo)
     {
-      const fuse_context        *fc     = fuse_get_context();
-      const Config              &config = Config::get(fc);
-      const ugid::SetResetGuard  ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard    readlock(&config.srcmountslock);
+      const fuse_context      *fc     = fuse_get_context();
+      const Config            &config = Config::get(fc);
+      const ugid::Set          ugid(fc->uid,fc->gid);
+      const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
       return _create(config.getattr,
                      config.create,

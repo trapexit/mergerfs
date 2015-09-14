@@ -27,38 +27,71 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+#include <grp.h>
+#include <pwd.h>
+
+#include <map>
+#include <vector>
+
 namespace mergerfs
 {
   namespace ugid
   {
-    struct SetResetGuard
+    extern __thread uid_t currentuid;
+    extern __thread gid_t currentgid;
+    extern __thread bool  initialized;
+
+    struct Set
     {
-      SetResetGuard(const uid_t _newuid,
-                    const gid_t _newgid)
+      Set(const uid_t newuid,
+          const gid_t newgid)
       {
-        olduid = ::syscall(SYS_geteuid);
-        oldgid = ::syscall(SYS_getegid);
-        newuid = _newuid;
-        newgid = _newgid;
+        if(!initialized)
+          {
+            currentuid  = ::syscall(SYS_geteuid);
+            currentgid  = ::syscall(SYS_getegid);
+            initialized = true;
+          }
 
-        if(newgid != oldgid)
-          ::syscall(SYS_setregid,-1,newgid);
-        if(newuid != olduid)
+        if(newuid == currentuid && newgid == currentgid)
+          return;
+
+        if(currentuid != 0)
+          {
+            ::syscall(SYS_setreuid,-1,0);
+            ::syscall(SYS_setregid,-1,0);
+          }
+
+        if(newgid)
+          {
+            ::syscall(SYS_setregid,-1,newgid);
+            initgroups(newuid,newgid);
+          }
+
+        if(newuid)
           ::syscall(SYS_setreuid,-1,newuid);
-      }
 
-      ~SetResetGuard()
+        currentuid = newuid;
+        currentgid = newgid;
+      }
+    };
+
+    struct SetRootGuard
+    {
+      SetRootGuard() :
+        prevuid(currentuid),
+        prevgid(currentgid)
       {
-        if(olduid != newuid)
-          ::syscall(SYS_setreuid,-1,olduid);
-        if(oldgid != newgid)
-          ::syscall(SYS_setregid,-1,oldgid);
+        Set(0,0);
       }
 
-      uid_t  olduid;
-      gid_t  oldgid;
-      uid_t  newuid;
-      gid_t  newgid;
+      ~SetRootGuard()
+      {
+        Set(prevuid,prevgid);
+      }
+
+      const uid_t prevuid;
+      const gid_t prevgid;
     };
   }
 }
