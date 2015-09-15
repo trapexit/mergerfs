@@ -189,7 +189,7 @@ _setxattr_minfreespace(Config       &config,
 static
 int
 _setxattr_controlfile_func_policy(Config       &config,
-                                  const char   *funcname,
+                                  const string &funcname,
                                   const string &attrval,
                                   const int     flags)
 {
@@ -208,7 +208,7 @@ _setxattr_controlfile_func_policy(Config       &config,
 static
 int
 _setxattr_controlfile_category_policy(Config       &config,
-                                      const char   *categoryname,
+                                      const string &categoryname,
                                       const string &attrval,
                                       const int     flags)
 {
@@ -227,38 +227,45 @@ _setxattr_controlfile_category_policy(Config       &config,
 static
 int
 _setxattr_controlfile(Config       &config,
-                      const char   *attrname,
+                      const string &attrname,
                       const string &attrval,
                       const int     flags)
 {
-  const char *attrbasename = &attrname[sizeof("user.mergerfs.")-1];
+  vector<string> attr;
 
-  if(strncmp("user.mergerfs.",attrname,sizeof("user.mergerfs.")-1))
-    return -ENOATTR;
+  str::split(attr,attrname,'.');
 
-  if(attrval.empty())
-    return -EINVAL;
+  switch(attr.size())
+    {
+    case 3:
+      if(attr[2] == "srcmounts")
+        return _setxattr_srcmounts(config.srcmounts,
+                                   config.srcmountslock,
+                                   config.destmount,
+                                   attrval,
+                                   flags);
+      else if(attr[2] == "minfreespace")
+        return _setxattr_minfreespace(config,
+                                      attrval,
+                                      flags);
+      break;
 
-  if(!strcmp("srcmounts",attrbasename))
-    return _setxattr_srcmounts(config.srcmounts,
-                               config.srcmountslock,
-                               config.destmount,
-                               attrval,
-                               flags);
-  else if(!strcmp("minfreespace",attrbasename))
-    return _setxattr_minfreespace(config,
-                                  attrval,
-                                  flags);
-  else if(!strncmp("category.",attrbasename,sizeof("category.")-1))
-    return _setxattr_controlfile_category_policy(config,
-                                                 &attrbasename[sizeof("category.")-1],
+    case 4:
+      if(attr[2] == "category")
+        return _setxattr_controlfile_category_policy(config,
+                                                     attr[3],
+                                                     attrval,
+                                                     flags);
+      else if(attr[2] == "func")
+        return _setxattr_controlfile_func_policy(config,
+                                                 attr[3],
                                                  attrval,
                                                  flags);
-  else if(!strncmp("func.",attrbasename,sizeof("func.")-1))
-    return _setxattr_controlfile_func_policy(config,
-                                             &attrbasename[sizeof("func.")-1],
-                                             attrval,
-                                             flags);
+      break;
+
+    default:
+      break;
+    }
 
   return -EINVAL;
 }
