@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "fs_path.hpp"
 #include "policy.hpp"
 
 using std::string;

@@ -27,6 +27,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "fileinfo.hpp"
+
 static
 int
 _flush(const int fd)
@@ -50,7 +52,9 @@ namespace mergerfs
     flush(const char     *fusepath,
           fuse_file_info *ffi)
     {
-      return _flush(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+
+      return _flush(fi->fd);
     }
   }
 }

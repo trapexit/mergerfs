@@ -35,12 +35,12 @@
 #include <string.h>
 
 #include "config.hpp"
-#include "fs.hpp"
-#include "ugid.hpp"
+#include "fs_path.hpp"
 #include "rwlock.hpp"
-#include "xattr.hpp"
 #include "str.hpp"
+#include "ugid.hpp"
 #include "version.hpp"
+#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -125,6 +125,14 @@ _getxattr_controlfile_minfreespace(const Config &config,
 
 static
 void
+_getxattr_controlfile_moveonenospc(const Config &config,
+                                   string       &attrvalue)
+{
+  attrvalue = (config.moveonenospc ? "true" : "false");
+}
+
+static
+void
 _getxattr_controlfile_policies(const Config &config,
                                string       &attrvalue)
 {
@@ -164,6 +172,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_srcmounts(config,attrvalue);
       else if(attr[2] == "minfreespace")
         _getxattr_controlfile_minfreespace(config,attrvalue);
+      else if(attr[2] == "moveonenospc")
+        _getxattr_controlfile_moveonenospc(config,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")

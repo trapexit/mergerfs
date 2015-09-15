@@ -20,35 +20,14 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
- */
+*/
 
-#include <unistd.h>
+#include <string>
 
-#include <iostream>
-
-#include "fs.hpp"
-
-namespace clonepath
+namespace fs
 {
-  static
-  void
-  print_usage_and__exit(void)
-  {
-    std::cerr << "usage: clonepath "
-              << "<sourcedir> <destdir> <relativepath>"
-              << std::endl;
-    _exit(1);
-  }
-
-  int
-  main(const int    argc,
-       char * const argv[])
-  {
-    if(argc != 4)
-      print_usage_and__exit();
-
-    return fs::clonepath(argv[1],
-                         argv[2],
-                         argv[3]);
-  }
+  int clonefile(const int fdin,
+                const int fdout);
+  int clonefile(const std::string &from,
+                const std::string &to);
 }

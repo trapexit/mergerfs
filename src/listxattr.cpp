@@ -31,13 +31,13 @@
 #include <errno.h>
 #include <string.h>
 
-#include "config.hpp"
-#include "category.hpp"
-#include "fs.hpp"
-#include "ugid.hpp"
-#include "rwlock.hpp"
-#include "xattr.hpp"
 #include "buildvector.hpp"
+#include "category.hpp"
+#include "config.hpp"
+#include "fs_path.hpp"
+#include "rwlock.hpp"
+#include "ugid.hpp"
+#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -53,6 +53,7 @@ _listxattr_controlfile(char         *list,
     buildvector<string>
     ("user.mergerfs.srcmounts")
     ("user.mergerfs.minfreespace")
+    ("user.mergerfs.moveonenospc")
     ("user.mergerfs.policies")
     ("user.mergerfs.version");
 

@@ -32,8 +32,10 @@
 #include <linux/fs.h>
 
 #include "config.hpp"
-#include "ugid.hpp"
+#include "fileinfo.hpp"
+#include "fs_path.hpp"
 #include "rwlock.hpp"
+#include "ugid.hpp"
 
 using std::string;
 using std::vector;
@@ -130,8 +132,9 @@ namespace mergerfs
                           cmd,
                           data);
 #endif
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _ioctl(ffi->fh,
+      return _ioctl(fi->fd,
                     cmd,
                     data);
     }

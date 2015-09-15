@@ -22,34 +22,19 @@
    THE SOFTWARE.
 */
 
-#ifndef __PATH_HPP__
-#define __PATH_HPP__
+#ifndef __FS_MOVEFILE_HPP__
+#define __FS_MOVEFILE_HPP__
 
 #include <string>
 #include <vector>
 
-struct Path
+namespace fs
 {
-  Path() {}
+  int
+  movefile(const vector<string> &basepaths,
+           const char           *fusepath,
+           const size_t          additional_size,
+           int                  &origfd);
+}
 
-  explicit
-  Path(const std::string &b,
-       const std::string &f)
-    : base(b),
-      full(f)
-  {}
-
-  explicit
-  Path(const char        *b,
-       const std::string &f)
-    : base(b),
-      full(f)
-  {}
-
-  std::string base;
-  std::string full;
-};
-
-typedef std::vector<Path> Paths;
-
-#endif /* __PATH_HPP__ */
+#endif

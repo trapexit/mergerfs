@@ -22,37 +22,55 @@
   THE SOFTWARE.
 */
 
-#ifndef __FS_HPP__
-#define __FS_HPP__
+#ifndef __FS_PATH_HPP__
+#define __FS_PATH_HPP__
 
 #include <string>
 #include <vector>
 
 namespace fs
 {
-  using std::size_t;
-  using std::string;
-  using std::vector;
+  namespace path
+  {
+    using std::string;
+    using std::vector;
 
-  void findallfiles(const vector<string> &srcmounts,
-                    const string         &fusepath,
-                    vector<string>       &paths);
+    string dirname(const string &path);
+    string basename(const string &path);
 
-  int findonfs(const vector<string> &srcmounts,
-               const string         &fusepath,
-               const int             fd,
-               string               &basepath);
+    bool is_empty(const string &path);
 
-  void glob(const vector<string> &patterns,
-            vector<string>       &strs);
+    bool exists(vector<string>::const_iterator  begin,
+                vector<string>::const_iterator  end,
+                const string                   &fusepath);
+    bool exists(const vector<string>           &srcmounts,
+                const string                   &fusepath);
 
-  void realpathize(vector<string> &strs);
+    inline
+    string
+    make(const string &base,
+         const string &suffix)
+    {
+      return base + suffix;
+    }
 
-  int getfl(const int fd);
+    inline
+    void
+    make(const string &base,
+         const string &suffix,
+         string       &output)
+    {
+      output = base + suffix;
+    }
 
-  int mfs(const vector<string> &srcs,
-          const size_t          minfreespace,
-          string               &path);
+    inline
+    void
+    append(string       &base,
+           const string &suffix)
+    {
+      base += suffix;
+    }
+  }
 };
 
-#endif // __FS_HPP__
+#endif // __FS_PATH_HPP__

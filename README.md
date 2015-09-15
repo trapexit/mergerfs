@@ -33,7 +33,8 @@ Why **mergerfs** when those exist? **mhddfs** has not been updated in some time 
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
 * **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed. 
-* **minfreespace**: (defaults to **4G**) the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
+* **minfreespace**: the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
+* **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
 
@@ -173,8 +174,9 @@ Use `xattr -l /mount/point/.mergerfs` to see all supported keys.
 [trapexit:/tmp/mount] $ xattr -l .mergerfs
 user.mergerfs.srcmounts: /tmp/a:/tmp/b
 user.mergerfs.minfreespace: 4294967295
+user.mergerfs.moveonenospc: false
 user.mergerfs.policies: all,einval,enosys,enotsup,epmfs,erofs,exdev,ff,ffwp,fwfs,lfs,mfs,newest,rand
-user.mergerfs.version: 2.5.0
+user.mergerfs.version: x.y.z
 user.mergerfs.category.action: all
 user.mergerfs.category.create: epmfs
 user.mergerfs.category.search: ff
@@ -232,10 +234,20 @@ For **user.mergerfs.srcmounts** there are several instructions available for man
 | -<           | remove first in list |
 | ->           | remove last in list |
 
+##### minfreespace #####
 
-##### misc #####
+Input: interger with an optional suffix. **K**, **M**, or **G**.
+Output: value in bytes
 
-Categories and funcs take a policy as described in the previous section. When reading funcs you'll get the policy string. However, with categories you'll get a comma separated list of policies for each type found. For example: if all search functions are **ff** except for **access** which is **ffwp** the value for **user.mergerfs.category.search** will be **ff,ffwp**.
+##### moveonenospc #####
+
+Input: **true** and **false**
+Ouput: **true** or **false**
+
+##### categories / funcs #####
+
+Input: short policy string as described elsewhere in this document
+Output: the policy string except for categories where its funcs have multiple types. In that case it will be a comma separated list.
 
 #### mergerfs file xattrs ####
 

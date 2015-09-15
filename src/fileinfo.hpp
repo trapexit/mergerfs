@@ -20,11 +20,21 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
- */
+*/
 
-namespace clonepath
+#ifndef __FILEINFO_HPP__
+#define __FILEINFO_HPP__
+
+class FileInfo
 {
-  int
-  main(const int     argc,
-       char * const *argv);
-}
+public:
+  FileInfo(int _fd) :
+    fd(_fd)
+  {
+  }
+
+public:
+  int fd;
+};
+
+#endif

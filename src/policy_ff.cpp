@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-#include "path.hpp"
+#include "fs_path.hpp"
 #include "policy.hpp"
 
 using std::string;

@@ -30,6 +30,6 @@ namespace mergerfs
   {
     int
     open(const char     *fusepath,
-         fuse_file_info *fileinfo);
+         fuse_file_info *ffi);
   }
 }

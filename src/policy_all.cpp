@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include "fs_path.hpp"
 #include "policy.hpp"
 
 using std::string;
@@ -50,7 +51,7 @@ _all(const vector<string> &basepaths,
     {
       const string &basepath = basepaths[i];
 
-      fullpath = fs::path::make(basepath,fusepath);
+      fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == 0)

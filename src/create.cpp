@@ -33,9 +33,11 @@
 #include <vector>
 
 #include "config.hpp"
-#include "ugid.hpp"
-#include "fs.hpp"
+#include "fileinfo.hpp"
+#include "fs_path.hpp"
+#include "fs_clonepath.hpp"
 #include "rwlock.hpp"
+#include "ugid.hpp"
 
 using std::string;
 using std::vector;
@@ -80,7 +82,7 @@ _create(Policy::Func::Search  searchFunc,
   if(fd == -1)
     return -errno;
 
-  fh = fd;
+  fh = reinterpret_cast<uint64_t>(new FileInfo(fd));
 
   return 0;
 }
@@ -92,7 +94,7 @@ namespace mergerfs
     int
     create(const char     *fusepath,
            mode_t          mode,
-           fuse_file_info *fileinfo)
+           fuse_file_info *ffi)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
@@ -105,8 +107,8 @@ namespace mergerfs
                      config.minfreespace,
                      fusepath,
                      (mode & ~fc->umask),
-                     fileinfo->flags,
-                     fileinfo->fh);
+                     ffi->flags,
+                     ffi->fh);
     }
   }
 }

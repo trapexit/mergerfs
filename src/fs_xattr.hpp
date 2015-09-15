@@ -22,37 +22,57 @@
   THE SOFTWARE.
 */
 
-#ifndef __FS_HPP__
-#define __FS_HPP__
+#ifndef __FS_XATTR_HPP__
+#define __FS_XATTR_HPP__
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace fs
 {
-  using std::size_t;
-  using std::string;
-  using std::vector;
+  namespace xattr
+  {
+    using std::size_t;
+    using std::string;
+    using std::vector;
+    using std::map;
 
-  void findallfiles(const vector<string> &srcmounts,
-                    const string         &fusepath,
-                    vector<string>       &paths);
+  
+    int list(const string   &path,
+             vector<char>   &attrs);
+    int list(const string   &path,
+             string         &attrs);
+    int list(const string   &path,
+             vector<string> &attrs);
 
-  int findonfs(const vector<string> &srcmounts,
-               const string         &fusepath,
-               const int             fd,
-               string               &basepath);
+    int get(const string &path,
+            const string &attr,
+            vector<char> &value);
+    int get(const string &path,
+            const string &attr,
+            string       &value);
 
-  void glob(const vector<string> &patterns,
-            vector<string>       &strs);
+    int get(const string       &path,
+            map<string,string> &attrs);
 
-  void realpathize(vector<string> &strs);
+    int set(const string &path,
+            const string &key,
+            const string &value,
+            const int     flags);
+    int set(const int     fd,
+            const string &key,
+            const string &value,
+            const int     flags);
 
-  int getfl(const int fd);
+    int set(const string             &path,
+            const map<string,string> &attrs);
 
-  int mfs(const vector<string> &srcs,
-          const size_t          minfreespace,
-          string               &path);
-};
+    int copy(const int fdin,
+             const int fdout);
+    int copy(const string &from,
+             const string &to);
+  }
+}
 
 #endif // __FS_HPP__

@@ -22,47 +22,11 @@
    THE SOFTWARE.
 */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <fuse.h>
-
 #include <string>
-#include <vector>
 
-#include <unistd.h>
-#include <errno.h>
-
-#include "fileinfo.hpp"
-
-static
-int
-_fsync(const int fd,
-       const int isdatasync)
+namespace fs
 {
-  int rv;
-
-  rv = (isdatasync ?
-        ::fdatasync(fd) :
-        ::fsync(fd));
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace fuse
-  {
-    int
-    fsync(const char     *fusepath,
-          int             isdatasync,
-          fuse_file_info *ffi)
-    {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
-
-      return _fsync(fi->fd,
-                    isdatasync);
-    }
-  }
+  int clonepath(const std::string &from,
+                const std::string &to,
+                const std::string &relative);
 }
