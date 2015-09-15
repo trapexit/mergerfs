@@ -313,15 +313,10 @@ namespace mergerfs
       const Config       &config = Config::get(fc);
 
       if(fusepath == config.controlfile)
-        {
-          if((fc->uid != ::getuid()) && (fc->gid != ::getgid()))
-            return -EPERM;
-
-          return _setxattr_controlfile(Config::get_writable(),
-                                       attrname,
-                                       string(attrval,attrvalsize),
-                                       flags);
-        }
+        return _setxattr_controlfile(Config::get_writable(),
+                                     attrname,
+                                     string(attrval,attrvalsize),
+                                     flags);
 
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);

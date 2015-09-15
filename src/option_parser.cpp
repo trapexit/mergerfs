@@ -94,12 +94,13 @@ static
 void
 set_default_options(fuse_args &args)
 {
-  //  set_option(args,"big_writes");
-  //  set_option(args,"splice_read");
-  //  set_option(args,"splice_write");
-  //  set_option(args,"splice_move");
+  set_option(args,"atomic_o_trunc");
   set_option(args,"auto_cache");
-  //  set_option(args,"atomic_o_trunc");
+  set_option(args,"big_writes");
+  set_option(args,"default_permissions");
+  set_option(args,"splice_move");
+  set_option(args,"splice_read");
+  set_option(args,"splice_write");
 }
 
 static

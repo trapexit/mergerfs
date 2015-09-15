@@ -45,14 +45,16 @@ static
 int
 _getattr_controlfile(struct stat &buf)
 {
-  time_t now = time(NULL);
+  static const uid_t  uid = ::getuid();
+  static const gid_t  gid = ::getgid();
+  static const time_t now = ::time(NULL);
 
   buf.st_dev     = 0;
   buf.st_ino     = 0;
   buf.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
   buf.st_nlink   = 1;
-  buf.st_uid     = ::getuid();
-  buf.st_gid     = ::getgid();
+  buf.st_uid     = uid;
+  buf.st_gid     = gid;
   buf.st_rdev    = 0;
   buf.st_size    = 0;
   buf.st_blksize = 1024;
