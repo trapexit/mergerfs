@@ -20,7 +20,7 @@ Why create **mergerfs** when those exist? **mhddfs** has not been updated in som
 
 ###options###
 
-* **defaults** is a shortcut for **auto_cache**. **big_writes**, **atomic_o_trunc**, **splice_read**, **splice_write**, and **splice_move** are in effect also enabled (by asking **FUSE** internally for such features) but if unavailable will be ignored. These options seem to provide the best performance.
+* **defaults** is a shortcut for FUSE's **atomic_o_trunc**, **auto_cache*, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
 * **minfreespace** (defaults to **4G**) is the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
 * All FUSE functions which have a category (see below) are option keys. The syntax being **func.&lt;func&gt;=&lt;policy&gt;**. Example: **func.getattr=newest**.
 * To set all function policies in a category use **category.&lt;category&gt;=&lt;policy&gt;**. Example: **category.create=mfs**.

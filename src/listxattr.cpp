@@ -56,7 +56,7 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.policies")
     ("user.mergerfs.version");
 
-  xattrs.reserve(512);
+  xattrs.reserve(1024);
   for(size_t i = 0; i < strs.size(); i++)
     xattrs += (strs[i] + '\0');
   for(size_t i = Category::Enum::BEGIN; i < Category::Enum::END; i++)

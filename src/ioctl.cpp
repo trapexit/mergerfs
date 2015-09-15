@@ -41,9 +41,9 @@ using namespace mergerfs;
 
 static
 int
-_ioctl(const int           fd,
-       const int           cmd,
-       void               *data)
+_ioctl(const int  fd,
+       const int  cmd,
+       void      *data)
 {
   int rv;
 
