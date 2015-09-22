@@ -14,7 +14,18 @@ mergerfs -o&lt;options&gt; &lt;srcpoints&gt; &lt;mountpoint&gt;
 
 **mergerfs** is similar to **mhddfs**, **unionfs**, and **aufs**. Like **mhddfs** in that it too uses **FUSE**. Like **aufs** in that it provides multiple policies for how to handle behavior.
 
-Why create **mergerfs** when those exist? **mhddfs** has not been updated in some time nor very flexible. There are also security issues when with running as root. **aufs** is more flexible than **mhddfs** but contains some hard to debug inconsistencies in behavior on account of it being a kernel driver. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
+Why **mergerfs** when those exist? **mhddfs** has not been updated in some time nor very flexible. There are also security issues when with running as root. **aufs** is more flexible than **mhddfs** but kernel based and difficult to debug when problems arise and slower to evolve as a result. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
+
+# FEATURES
+
+* Runs in userspace (FUSE)
+* Configurable behaviors
+* Supports extended attributes (xattrs)
+* Supports file attributes (chattr)
+* Dynamically configurable (via xattrs)
+* Safe to run as root
+* Opportunistic credential caching
+* Works with heterogeneous filesystem types
 
 # OPTIONS
 
