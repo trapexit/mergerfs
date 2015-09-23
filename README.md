@@ -31,11 +31,13 @@ Why **mergerfs** when those exist? **mhddfs** has not been updated in some time 
 
 ###options###
 
-* **defaults** is a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
-* **minfreespace** (defaults to **4G**) is the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
-* All FUSE functions which have a category (see below) are option keys. The syntax being **func.&lt;func&gt;=&lt;policy&gt;**. Example: **func.getattr=newest**.
-* To set all function policies in a category use **category.&lt;category&gt;=&lt;policy&gt;**. Example: **category.create=mfs**.
-* Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
+* **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
+* **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed. 
+* **minfreespace**: (defaults to **4G**) the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively.
+* **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
+* **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
+
+**NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
 ###srcpoints###
 
