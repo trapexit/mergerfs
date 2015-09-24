@@ -114,6 +114,8 @@ It could be extended to offer the ability to see all files found. Perhaps concat
 
 # BUILDING
 
+**NOTE:** Prebuilt packages can be found at: https://github.com/trapexit/mergerfs/releases
+
 First get the code from [github](http://github.com/trapexit/mergerfs).
 
 ```
