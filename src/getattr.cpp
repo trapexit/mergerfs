@@ -33,9 +33,9 @@
 #include <errno.h>
 
 #include "config.hpp"
-#include "fs.hpp"
-#include "ugid.hpp"
+#include "fs_path.hpp"
 #include "rwlock.hpp"
+#include "ugid.hpp"
 
 using std::string;
 using std::vector;

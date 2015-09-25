@@ -31,9 +31,9 @@
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
 #include "resources.hpp"
-#include "fs.hpp"
+#include "fs_path.hpp"
 
-#include "clonepath.hpp"
+#include "clone.hpp"
 
 #include "access.hpp"
 #include "chmod.hpp"
@@ -195,8 +195,8 @@ main(int    argc,
   std::string appname;
 
   appname = local::getappname(argc,argv);
-  if(appname == "clonepath")
-    return clonepath::main(argc,argv);
+  if(appname == "clone")
+    return clonetool::main(argc,argv);
 
   return mergerfs::main(argc,argv);
 }

@@ -20,49 +20,11 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
-*/
+ */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
-#include <unistd.h>
-#include <errno.h>
-
-#include "fileinfo.hpp"
-
-static
-int
-_fsync(const int fd,
-       const int isdatasync)
+namespace clonetool
 {
-  int rv;
-
-  rv = (isdatasync ?
-        ::fdatasync(fd) :
-        ::fsync(fd));
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace fuse
-  {
-    int
-    fsync(const char     *fusepath,
-          int             isdatasync,
-          fuse_file_info *ffi)
-    {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
-
-      return _fsync(fi->fd,
-                    isdatasync);
-    }
-  }
+  int
+  main(const int     argc,
+       char * const *argv);
 }

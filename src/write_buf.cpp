@@ -25,10 +25,24 @@
 #if WRITE_BUF
 
 #include <fuse.h>
-
 #include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
 
+#include <string>
+#include <vector>
+
+#include "config.hpp"
+#include "fileinfo.hpp"
+#include "fs_movefile.hpp"
+#include "policy.hpp"
+#include "rwlock.hpp"
+#include "ugid.hpp"
 #include "write.hpp"
+
+using std::string;
+using std::vector;
+using namespace mergerfs;
 
 static
 int
@@ -58,9 +72,31 @@ namespace mergerfs
               off_t           offset,
               fuse_file_info *ffi)
     {
-      return _write_buf(ffi->fh,
-                        *src,
-                        offset);
+      int rv;
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+
+      rv = _write_buf(fi->fd,*src,offset);
+      if(rv == -ENOSPC)
+       {
+          const fuse_context *fc     = fuse_get_context();
+          const Config       &config = Config::get(fc);
+
+          if(config.moveonenospc)
+            {
+              size_t extra;
+              const ugid::Set         ugid(0,0);
+              const rwlock::ReadGuard readlock(&config.srcmountslock);
+
+              extra = fuse_buf_size(src);
+              rv = fs::movefile(config.srcmounts,fusepath,extra,fi->fd);
+              if(rv == -1)
+                return -ENOSPC;
+
+              rv = _write_buf(fi->fd,*src,offset);
+            }
+        }
+
+      return rv;
     }
   }
 }

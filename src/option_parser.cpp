@@ -119,6 +119,21 @@ parse_and_process_minfreespace(const std::string &value,
 
 static
 int
+parse_and_process_moveonenospc(const std::string &value,
+                               bool              &moveonenospc)
+{
+  if(value == "false")
+    moveonenospc = false;
+  else if(value == "true")
+    moveonenospc = true;
+  else
+    return 1;
+
+  return 0;
+}
+
+static
+int
 parse_and_process_arg(Config            &config,
                       const std::string &arg,
                       fuse_args         *outargs)
@@ -153,6 +168,8 @@ parse_and_process_kv_arg(Config            &config,
     {
       if(key == "minfreespace")
         rv = parse_and_process_minfreespace(value,config.minfreespace);
+      else if(key == "moveonenospc")
+        rv = parse_and_process_moveonenospc(value,config.moveonenospc);
     }
 
   if(rv == -1)

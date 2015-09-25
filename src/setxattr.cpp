@@ -33,12 +33,12 @@
 #include <string.h>
 
 #include "config.hpp"
-#include "fs.hpp"
-#include "ugid.hpp"
-#include "rwlock.hpp"
-#include "xattr.hpp"
-#include "str.hpp"
+#include "fs_path.hpp"
 #include "num.hpp"
+#include "rwlock.hpp"
+#include "str.hpp"
+#include "ugid.hpp"
+#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -188,6 +188,26 @@ _setxattr_minfreespace(Config       &config,
 
 static
 int
+_setxattr_moveonenospc(Config       &config,
+                       const string &attrval,
+                       const int     flags)
+{
+  if((flags & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  if(attrval == "false")
+    config.moveonenospc = false;
+  else if(attrval == "true")
+    config.moveonenospc = true;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+
+static
+int
 _setxattr_controlfile_func_policy(Config       &config,
                                   const string &funcname,
                                   const string &attrval,
@@ -246,6 +266,10 @@ _setxattr_controlfile(Config       &config,
                                    flags);
       else if(attr[2] == "minfreespace")
         return _setxattr_minfreespace(config,
+                                      attrval,
+                                      flags);
+      else if(attr[2] == "moveonenospc")
+        return _setxattr_moveonenospc(config,
                                       attrval,
                                       flags);
       break;

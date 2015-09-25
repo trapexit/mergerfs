@@ -33,11 +33,11 @@
 #include <errno.h>
 #include <dirent.h>
 
-#include "readdir.hpp"
 #include "config.hpp"
-#include "ugid.hpp"
-#include "fs.hpp"
+#include "fs_path.hpp"
+#include "readdir.hpp"
 #include "rwlock.hpp"
+#include "ugid.hpp"
 
 using std::string;
 using std::vector;
@@ -61,7 +61,7 @@ _readdir(const vector<string>  &srcmounts,
       DIR *dh;
       string basepath;
 
-      basepath = fs::path::make(srcmounts[i],dirname);
+      fs::path::make(srcmounts[i],dirname,basepath);
       dh = ::opendir(basepath.c_str());
       if(!dh)
         continue;

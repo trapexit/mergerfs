@@ -45,6 +45,7 @@ namespace mergerfs
       srcmounts(),
       srcmountslock(),
       minfreespace(UINT32_MAX),
+      moveonenospc(false),
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),
@@ -61,11 +62,11 @@ namespace mergerfs
       POLICYINIT(rename),
       POLICYINIT(rmdir),
       POLICYINIT(setxattr),
-    POLICYINIT(symlink),
-    POLICYINIT(truncate),
-    POLICYINIT(unlink),
-    POLICYINIT(utimens),
-    controlfile("/.mergerfs")
+      POLICYINIT(symlink),
+      POLICYINIT(truncate),
+      POLICYINIT(unlink),
+      POLICYINIT(utimens),
+      controlfile("/.mergerfs")
   {
     pthread_rwlock_init(&srcmountslock,NULL);
 

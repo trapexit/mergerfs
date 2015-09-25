@@ -27,6 +27,12 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "config.hpp"
+#include "fileinfo.hpp"
+#include "fs_movefile.hpp"
+#include "rwlock.hpp"
+#include "ugid.hpp"
+
 static
 int
 _write(const int     fd,
@@ -52,10 +58,29 @@ namespace mergerfs
           off_t           offset,
           fuse_file_info *ffi)
     {
-      return _write(ffi->fh,
-                    buf,
-                    count,
-                    offset);
+      int rv;
+      FileInfo* fi = reinterpret_cast<FileInfo*>(ffi->fh);
+
+      rv = _write(fi->fd,buf,count,offset);
+      if(rv == -ENOSPC)
+        {
+          const fuse_context *fc     = fuse_get_context();
+          const Config       &config = Config::get(fc);
+
+          if(config.moveonenospc)
+            {
+              const ugid::Set         ugid(0,0);
+              const rwlock::ReadGuard readlock(&config.srcmountslock);
+
+              rv = fs::movefile(config.srcmounts,fusepath,count,fi->fd);
+              if(rv == -1)
+                return -ENOSPC;
+
+              rv = _write(fi->fd,buf,count,offset);
+            }
+        }
+
+      return rv;
     }
   }
 }

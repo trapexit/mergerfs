@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 
+#include "fs_path.hpp"
 #include "policy.hpp"
 
 using std::string;
@@ -89,7 +90,7 @@ _mfs(const vector<string> &basepaths,
       struct statvfs fsstats;
       const string &basepath = basepaths[i];
 
-      fullpath = fs::path::make(basepath,fusepath);
+      fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::statvfs(fullpath.c_str(),&fsstats);
       if(rv == 0)

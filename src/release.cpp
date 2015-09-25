@@ -29,13 +29,15 @@
 
 #include <string>
 
+#include "fileinfo.hpp"
+
 static
 int
-_release(uint64_t &fh)
+_release(FileInfo *fi)
 {
-  ::close(fh);
+  ::close(fi->fd);
 
-  fh = 0;
+  delete fi;
 
   return 0;
 }
@@ -48,7 +50,9 @@ namespace mergerfs
     release(const char     *fusepath,
             fuse_file_info *ffi)
     {
-      return _release(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+
+      return _release(fi);
     }
   }
 }

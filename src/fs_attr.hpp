@@ -22,37 +22,22 @@
   THE SOFTWARE.
 */
 
-#ifndef __FS_HPP__
-#define __FS_HPP__
+#ifndef __FS_ATTR_HPP__
+#define __FS_ATTR_HPP__
 
 #include <string>
-#include <vector>
 
 namespace fs
 {
-  using std::size_t;
-  using std::string;
-  using std::vector;
+  namespace attr
+  {
+    using std::string;
 
-  void findallfiles(const vector<string> &srcmounts,
-                    const string         &fusepath,
-                    vector<string>       &paths);
+    int copy(const int fdin,
+             const int fdout);
+    int copy(const string &from,
+             const string &to);
+  }
+}
 
-  int findonfs(const vector<string> &srcmounts,
-               const string         &fusepath,
-               const int             fd,
-               string               &basepath);
-
-  void glob(const vector<string> &patterns,
-            vector<string>       &strs);
-
-  void realpathize(vector<string> &strs);
-
-  int getfl(const int fd);
-
-  int mfs(const vector<string> &srcs,
-          const size_t          minfreespace,
-          string               &path);
-};
-
-#endif // __FS_HPP__
+#endif // __FS_ATTR_HPP__

@@ -20,49 +20,50 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
-*/
+ */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
-#include <unistd.h>
 #include <errno.h>
+#include <unistd.h>
+#include <string.h>
 
-#include "fileinfo.hpp"
+#include <iostream>
 
-static
-int
-_fsync(const int fd,
-       const int isdatasync)
+#include "fs.hpp"
+#include "fs_clonefile.hpp"
+#include "fs_clonepath.hpp"
+
+namespace clonetool
 {
-  int rv;
-
-  rv = (isdatasync ?
-        ::fdatasync(fd) :
-        ::fsync(fd));
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace fuse
+  static
+  void
+  print_usage_and__exit(void)
   {
-    int
-    fsync(const char     *fusepath,
-          int             isdatasync,
-          fuse_file_info *ffi)
-    {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+    std::cerr << "usage: clone "
+              << "[path <sourcedir> <destdir> <relativepath>]"
+              << " | "
+              << "[file <source> <dest>]"
+              << std::endl;
+    _exit(1);
+  }
 
-      return _fsync(fi->fd,
-                    isdatasync);
-    }
+  int
+  main(const int    argc,
+       char * const argv[])
+  {
+    int rv = 0;
+    
+    if(argc == 4 && !strcmp(argv[1],"file"))
+      rv = fs::clonefile(argv[2],argv[3]);
+    else if(argc == 5 && !strcmp(argv[1],"path"))
+      rv = fs::clonepath(argv[2],argv[3],argv[4]);
+    else
+      print_usage_and__exit();
+
+    if(rv == -1)
+      std::cerr << "error: "
+                << strerror(errno)
+                << std::endl;
+
+    return 0;
   }
 }

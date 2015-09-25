@@ -31,6 +31,7 @@
 #include <vector>
 #include <limits>
 
+#include "fs_path.hpp"
 #include "policy.hpp"
 
 using std::string;
@@ -53,7 +54,7 @@ _newest(const vector<string> &basepaths,
       string fullpath;
       const string &basepath = basepaths[i];
 
-      fullpath = fs::path::make(basepath,fusepath);
+      fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == 0 && st.st_mtime >= newest)

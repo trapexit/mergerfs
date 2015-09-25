@@ -32,6 +32,6 @@ namespace mergerfs
     int
     create(const char     *fusepath,
            mode_t          mode,
-           fuse_file_info *fileinfo);
+           fuse_file_info *ffi);
   }
 }

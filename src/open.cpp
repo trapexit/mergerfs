@@ -31,10 +31,11 @@
 #include <string>
 #include <vector>
 
-#include "ugid.hpp"
-#include "fs.hpp"
 #include "config.hpp"
+#include "fileinfo.hpp"
+#include "fs_path.hpp"
 #include "rwlock.hpp"
+#include "ugid.hpp"
 
 using std::string;
 using std::vector;
@@ -63,7 +64,7 @@ _open(Policy::Func::Search  searchFunc,
   if(fd == -1)
     return -errno;
 
-  fh = fd;
+  fh = reinterpret_cast<uint64_t>(new FileInfo(fd));
 
   return 0;
 }
@@ -74,7 +75,7 @@ namespace mergerfs
   {
     int
     open(const char     *fusepath,
-         fuse_file_info *fileinfo)
+         fuse_file_info *ffi)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
@@ -85,8 +86,8 @@ namespace mergerfs
                    config.srcmounts,
                    config.minfreespace,
                    fusepath,
-                   fileinfo->flags,
-                   fileinfo->fh);
+                   ffi->flags,
+                   ffi->fh);
     }
   }
 }

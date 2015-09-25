@@ -29,7 +29,6 @@
 #include <vector>
 #include <map>
 
-#include "path.hpp"
 #include "fs.hpp"
 #include "category.hpp"
 

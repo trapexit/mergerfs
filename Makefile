@@ -104,7 +104,7 @@ $(warning "xattr not available: disabling")
 CFLAGS += -DWITHOUT_XATTR
 endif
 
-all: $(TARGET) clonepath
+all: $(TARGET) clone
 
 help:
 	@echo "usage: make"
@@ -113,7 +113,7 @@ help:
 $(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
-clonepath: $(TARGET)
+clone: $(TARGET)
 	$(LN) -s $< $@
 
 changelog:
@@ -139,18 +139,18 @@ obj/%.o: src/%.cpp
 clean: rpm-clean
 	$(RM) -rf obj
 	$(RM) -f src/version.hpp
-	$(RM) -f "$(TARGET)" "$(MANPAGE)" clonepath
+	$(RM) -f "$(TARGET)" "$(MANPAGE)" clone
 	$(FIND) . -name "*~" -delete
 
 distclean: clean
 	$(GIT) clean -fd
 
-install: install-base install-clonepath install-man
+install: install-base install-clone install-man
 
 install-base: $(TARGET)
 	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
 
-install-clonepath: clonepath
+install-clone: clone
 	$(CP) -a $< "$(INSTALLBINDIR)/$<"
 
 install-man: $(MANPAGE)
@@ -159,13 +159,13 @@ install-man: $(MANPAGE)
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
 
-uninstall: uninstall-base uninstall-clonepath uninstall-man
+uninstall: uninstall-base uninstall-clone uninstall-man
 
 uninstall-base:
 	$(RM) -f "$(INSTALLBINDIR)/$(TARGET)"
 
-uninstall-clonepath:
-	$(RM) -f "$(INSTALLBINDIR)/clonepath"
+uninstall-clone:
+	$(RM) -f "$(INSTALLBINDIR)/clone"
 
 uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
