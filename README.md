@@ -41,13 +41,13 @@ Why **mergerfs** when those exist? **mhddfs** has not been updated in some time 
 
 ###srcpoints###
 
-The source points argument is a colon (':') delimited list of paths. To make it simpler to include multiple source points without having to modify your [fstab](http://linux.die.net/man/5/fstab) we also support [globbing](http://linux.die.net/man/7/glob).
+The source points argument is a colon (':') delimited list of paths. To make it simpler to include multiple source points without having to modify your [fstab](http://linux.die.net/man/5/fstab) we also support [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will probably expand it.**
 
 ```
 $ mergerfs /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
-The above line will use all points in /mnt prefixed with *disk* and the directory *cdrom*. The `*` (or any glob tokens) must be escaped on the command line else the shell resolve them. 
+The above line will use all points in /mnt prefixed with *disk* and the directory *cdrom*.
 
 In /etc/fstab it'd look like the following:
 
