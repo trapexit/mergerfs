@@ -188,10 +188,10 @@ tarball: clean man changelog authors src/version.hpp
 debian-changelog:
 	$(GIT2DEBCL) --name $(TARGET) > debian/changelog
 
-deb: debian-changelog
+signed-deb: debian-changelog
 	dpkg-buildpackage
 
-unsigned-deb: debian-changelog
+deb: debian-changelog
 	dpkg-buildpackage -uc -us
 
 rpm-clean:
