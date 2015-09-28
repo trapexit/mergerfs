@@ -28,20 +28,29 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <string>
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
-#include "str.hpp"
-#include "num.hpp"
 #include "config.hpp"
+#include "num.hpp"
 #include "policy.hpp"
+#include "str.hpp"
+#include "version.hpp"
 
 using std::string;
 using std::vector;
 using namespace mergerfs;
+
+enum
+  {
+    MERGERFS_OPT_HELP,
+    MERGERFS_OPT_VERSION
+  };
 
 static
 void
@@ -234,6 +243,43 @@ process_destmounts(const char *arg,
 }
 
 static
+void
+usage(void)
+{
+  std::cout <<
+    "Usage: mergerfs [options] <srcpaths> <destpath>\n"
+    "\n"
+    "    -o [opt,...]           mount options\n"
+    "    -h --help              print help\n"
+    "    -v --version           print version\n"
+    "\n"
+    "mergerfs options:\n"
+    "    <srcpaths>             ':' delimited list of directories. Supports\n"
+    "                           shell globbing (must be escaped in shell)\n"
+    "    -o defaults            default FUSE options which seem to provide the\n"
+    "                           best performance: atomic_o_trunc, auto_cache,\n"
+    "                           big_writes, default_permissions, splice_read,\n"
+    "                           splice_write, splice_move\n"
+    "    -o direct_io           bypass additional caching, increases write\n"
+    "                           speeds at the cost of reads\n"
+    "    -o minfreespace=<int>  minimum free space needed for certain policies:\n"
+    "                           default 4G\n"
+    "    -o moveonenospc=<bool> try to move file to another drive when ENOSPC\n"
+    "                           on write: default false\n"
+    "    -o func.<f>=<p>        set function <f> to policy <p>\n"
+    "    -o category.<c>=<p>    set functions in category <c> to <p>\n"
+            << std::endl;
+}
+
+static
+void
+version(void)
+{
+  std::cout << "mergerfs version: " << MERGERFS_VERSION
+            << std::endl;
+}
+
+static
 int
 option_processor(void       *data,
                  const char *arg,
@@ -255,6 +301,18 @@ option_processor(void       *data,
         process_destmounts(arg,config);
       break;
 
+    case MERGERFS_OPT_HELP:
+      usage();
+      close(2);
+      dup(1);
+      fuse_opt_add_arg(outargs,"-ho");
+      break;
+
+    case MERGERFS_OPT_VERSION:
+      version();
+      fuse_opt_add_arg(outargs,"--version");
+      break;
+
     default:
       break;
     }
@@ -270,10 +328,19 @@ namespace mergerfs
     parse(fuse_args &args,
           Config    &config)
     {
+      const struct fuse_opt opts[] =
+        {
+          FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
+          FUSE_OPT_KEY("--help",MERGERFS_OPT_HELP),
+          FUSE_OPT_KEY("-v",MERGERFS_OPT_VERSION),
+          FUSE_OPT_KEY("--version",MERGERFS_OPT_VERSION),
+          FUSE_OPT_END
+        };
+
 
       fuse_opt_parse(&args,
                      &config,
-                     NULL,
+                     opts,
                      ::option_processor);
 
       set_fsname(args,config.srcmounts);
