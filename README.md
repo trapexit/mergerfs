@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2015-09-14
+% 2015-10-11
 
 # NAME
 
@@ -14,7 +14,7 @@ mergerfs -o&lt;options&gt; &lt;srcpoints&gt; &lt;mountpoint&gt;
 
 **mergerfs** is similar to **mhddfs**, **unionfs**, and **aufs**. Like **mhddfs** in that it too uses **FUSE**. Like **aufs** in that it provides multiple policies for how to handle behavior.
 
-Why **mergerfs** when those exist? **mhddfs** has not been updated in some time nor very flexible. There are also security issues when with running as root. **aufs** is more flexible than **mhddfs** but kernel based and difficult to debug when problems arise and slower to evolve as a result. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
+Why **mergerfs** when those exist? **mhddfs** has not been updated in some time nor very flexible. There are also security issues when with running as root. **aufs** is more flexible than **mhddfs** but kernel based and difficult to debug when problems arise. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
 
 # FEATURES
 
@@ -288,7 +288,8 @@ A B C
 
 # Known Issues / Bugs
 
-* Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs utilizes a cache. This cache is opportunistic and per thread. This means each thread will query the supplemental groups for a user when that particular thread needs to change credentials and currently it will keep that data for the lifetime of the mount or thread. This means that if a user is added to a group it may not be picked up without the restart of mergerfs. However, since the high level FUSE API's (at least the standard version) thread pool dynamically grows and shrinks it's possible that over time a thread will be killed and later a new thread with no cache will start and query the new data.
+* Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs utilizes a cache. This cache is opportunistic and per thread. Each thread will query the supplemental groups for a user when that particular thread needs to change credentials and will keep that data for the lifetime of the mount or thread. This means that if a user is added to a group it may not be picked up without the restart of mergerfs. However, since the high level FUSE API's (at least the standard version) thread pool dynamically grows and shrinks it's possible that over time a thread will be killed and later a new thread with no cache will start and query the new data.
+* The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers (as the original design required). There is enough storage for 256 users' supplemental groups. Each user is allowed upto 32 supplemental groups. Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
 
 # FAQ
 
