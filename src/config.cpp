@@ -33,6 +33,7 @@
 #include "rwlock.hpp"
 #include "fs.hpp"
 
+#define MINFREESPACE_DEFAULT (4294967295)
 #define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
 
 using std::string;
@@ -44,7 +45,7 @@ namespace mergerfs
     : destmount(),
       srcmounts(),
       srcmountslock(),
-      minfreespace(UINT32_MAX),
+      minfreespace(MINFREESPACE_DEFAULT),
       moveonenospc(false),
       POLICYINIT(access),
       POLICYINIT(chmod),
