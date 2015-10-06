@@ -93,10 +93,12 @@ EXEC_PREFIX   = $(PREFIX)
 DATAROOTDIR   = $(PREFIX)/share
 DATADIR       = $(DATAROOTDIR)
 BINDIR        = $(EXEC_PREFIX)/bin
+SBINDIR       = $(EXEC_PREFIX)/sbin
 MANDIR        = $(DATAROOTDIR)/man
 MAN1DIR       = $(MANDIR)/man1
 
 INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
+INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
 INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
 ifeq ($(XATTR_AVAILABLE),0)
@@ -115,6 +117,8 @@ $(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
 
 clone: $(TARGET)
 	$(LN) -s $< $@
+
+fsck.mergerfs: tools/fsck.mergerfs
 
 changelog:
 	$(GIT2DEBCL) --name $(TARGET) > ChangeLog
@@ -145,13 +149,16 @@ clean: rpm-clean
 distclean: clean
 	$(GIT) clean -fd
 
-install: install-base install-clone install-man
+install: install-base install-clone install-tools install-man
 
 install-base: $(TARGET)
 	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
 
 install-clone: clone
 	$(CP) -a $< "$(INSTALLBINDIR)/$<"
+
+install-tools: fsck.mergerfs
+	$(INSTALL) -v -m 0755 -D "tools/$<" "$(INSTALLSBINDIR)/$<"
 
 install-man: $(MANPAGE)
 	$(INSTALL) -v -m 0644 -D "$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
