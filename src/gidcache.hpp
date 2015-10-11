@@ -22,25 +22,45 @@
   THE SOFTWARE.
 */
 
-#include "gidcache.hpp"
+#ifndef __GIDCACHE_HPP__
+#define __GIDCACHE_HPP__
 
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#include "ugid_linux.ipp"
-#else
-#include "ugid_rwlock.ipp"
-#endif
+#include <sys/types.h>
+#include <unistd.h>
 
-namespace mergerfs
+#define MAXGIDS 32
+#define MAXRECS 256
+
+struct gid_t_rec
 {
-  namespace ugid
-  {
-    void
-    initgroups(const uid_t uid,
-               const gid_t gid)
-    {
-      static __thread gid_t_cache cache = {0};
+  uid_t uid;
+  int   size;
+  gid_t gids[MAXGIDS];
 
-      cache.initgroups(uid,gid);
-    }
-  }
-}
+  bool
+  operator<(const struct gid_t_rec &b) const;
+};
+
+struct gid_t_cache
+{
+public:
+  size_t     size;
+  gid_t_rec  recs[MAXRECS];
+
+private:
+  gid_t_rec * begin(void);
+  gid_t_rec * end(void);
+  gid_t_rec * allocrec(void);
+  gid_t_rec * lower_bound(gid_t_rec   *begin,
+                          gid_t_rec   *end,
+                          const uid_t  uid);
+  gid_t_rec * cache(const uid_t uid,
+                    const gid_t gid);
+
+public:
+  void
+  initgroups(const uid_t uid,
+             const gid_t gid);
+};
+
+#endif
