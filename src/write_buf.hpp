@@ -22,14 +22,23 @@
    THE SOFTWARE.
 */
 
+#ifndef __WRITE_BUF_HPP__
+#define __WRITE_BUF_HPP__
+
+#include <fuse.h>
+
+#include <sys/types.h>
+
 namespace mergerfs
 {
   namespace fuse
   {
     int
-    write_buf(const char     *fusepath,
-              fuse_bufvec    *buf,
-              off_t           offset,
-              fuse_file_info *fi);
+    write_buf(const char         *fusepath,
+              struct fuse_bufvec *buf,
+              off_t               offset,
+              fuse_file_info     *fi);
   }
 }
+
+#endif
