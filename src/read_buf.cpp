@@ -32,6 +32,8 @@
 
 #include "fileinfo.hpp"
 
+typedef struct fuse_bufvec fuse_bufvec;
+
 static
 int
 _read_buf(const int      fd,

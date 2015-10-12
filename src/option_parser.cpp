@@ -334,7 +334,7 @@ namespace mergerfs
           FUSE_OPT_KEY("--help",MERGERFS_OPT_HELP),
           FUSE_OPT_KEY("-v",MERGERFS_OPT_VERSION),
           FUSE_OPT_KEY("--version",MERGERFS_OPT_VERSION),
-          FUSE_OPT_END
+          {NULL,-1U,0}
         };
 
 
