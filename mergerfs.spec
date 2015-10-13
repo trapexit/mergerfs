@@ -35,6 +35,7 @@ make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 
 %files
 %{_bindir}/*
+%{_sbindir}/*
 %doc %{_mandir}/*
 
 %changelog
