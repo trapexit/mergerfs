@@ -116,9 +116,12 @@ $(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
 clone: $(TARGET)
-	$(LN) -s $< $@
+	$(LN) -fs "$<" "$@"
 
 fsck.mergerfs: tools/fsck.mergerfs
+
+mount.mergerfs: $(TARGET)
+	$(LN) -fs "$<" "$@"
 
 changelog:
 	$(GIT2DEBCL) --name $(TARGET) > ChangeLog
@@ -149,13 +152,18 @@ clean: rpm-clean
 distclean: clean
 	$(GIT) clean -fd
 
-install: install-base install-clone install-tools install-man
+install: install-base install-clone install-mount.mergerfs install-tools install-man
 
 install-base: $(TARGET)
 	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
 
 install-clone: clone
-	$(CP) -a $< "$(INSTALLBINDIR)/$<"
+	$(MKDIR) -p "$(INSTALLBINDIR)"
+	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
+
+install-mount.mergerfs: mount.mergerfs
+	$(MKDIR) -p "$(INSTALLBINDIR)"
+	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
 
 install-tools: fsck.mergerfs
 	$(INSTALL) -v -m 0755 -D "tools/$<" "$(INSTALLSBINDIR)/$<"
