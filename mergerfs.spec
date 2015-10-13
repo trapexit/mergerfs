@@ -17,7 +17,7 @@ BuildRequires:	git
 # pandoc pulls in ~60 packages (87M installed) from EPEL :(
 BuildRequires:	pandoc
 
-Requires:	fuse-libs
+Requires:	fuse
 
 %prep
 %setup -q
