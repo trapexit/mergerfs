@@ -60,42 +60,75 @@ def guess_distribution():
             with open('/etc/lsb-release') as f:
                 return find_distrib_codename(f)
         except:
-            return 'unknown'
+            try:
+                args = ['lsb_release','-c','-s']
+                return subprocess.check_output(args).strip()
+            except:
+                return 'unknown'
 
-parser = argparse.ArgumentParser(description='Generated debian/changelog from git log')
-parser.add_argument('--name',type=str,help='Name of package',required=True)
-parser.add_argument('--version',type=str,help='Place in git history to include upto',default='::guess::')
-parser.add_argument('--distro',type=str,help='Distribution name',default='::guess::')
-parser.add_argument('--urgency',type=str,help='Urgency',default='medium')
+def patch_subprocess():
+    if "check_output"  not in dir( subprocess ): # duck punch it in!
+        def check_output(*popenargs, **kwargs):
+            r"""Run command with arguments and return its output as a byte string.
 
-args = parser.parse_args()
+            Backported from Python 2.7 as it's implemented as pure python on stdlib.
 
-if args.distro == '::guess::':
-    args.distro = guess_distribution()
+            >>> check_output(['/usr/bin/python', '--version'])
+            Python 2.6.2
+            """
+            process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+            output, unused_err = process.communicate()
+            retcode = process.poll()
+            if retcode:
+                cmd = kwargs.get("args")
+                if cmd is None:
+                    cmd = popenargs[0]
+                error = subprocess.CalledProcessError(retcode, cmd)
+                error.output = output
+                raise error
+            return output
 
-if args.version == '::guess::':
-    args.version = git_version()
+        subprocess.check_output = check_output
 
-tags = git_tags()
+def main():
+    patch_subprocess()
 
-if args.version in tags:
-    idx = tags.index(args.version)
-    tags = tags[idx:]
-    tags = zip(tags,tags)
-else:
-    tags = zip(tags,tags)
-    tags.insert(0,(args.version,'HEAD'))
+    parser = argparse.ArgumentParser(description='Generated debian/changelog from git log')
+    parser.add_argument('--name',type=str,help='Name of package',required=True)
+    parser.add_argument('--version',type=str,help='Place in git history to include upto',default='::guess::')
+    parser.add_argument('--distro',type=str,help='Distribution name',default='::guess::')
+    parser.add_argument('--urgency',type=str,help='Urgency',default='medium')
 
-tag = tags[0]
-for prev in tags[1:]:
-    print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.distro,args.urgency))
+    args = parser.parse_args()
 
-    lines = git_log(tag[1],prev[1])
-    for line in lines:
-        print "  * " + line
-    print
+    if args.distro == '::guess::':
+        args.distro = guess_distribution()
 
-    authorandtime = git_author_and_time(tag[1])
-    print(' %s\n' % authorandtime)
+    if args.version == '::guess::':
+        args.version = git_version()
 
-    tag = prev
+    tags = git_tags()
+
+    if args.version in tags:
+        idx = tags.index(args.version)
+        tags = tags[idx:]
+        tags = zip(tags,tags)
+    else:
+        tags = zip(tags,tags)
+        tags.insert(0,(args.version,'HEAD'))
+
+    tag = tags[0]
+    for prev in tags[1:]:
+        print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.distro,args.urgency))
+
+        lines = git_log(tag[1],prev[1])
+        for line in lines:
+            print "  * " + line
+
+        authorandtime = git_author_and_time(tag[1])
+        print(' %s\n' % authorandtime)
+
+        tag = prev
+
+if __name__ == "__main__":
+    main()
