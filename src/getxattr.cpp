@@ -117,8 +117,10 @@ _getxattr_controlfile_minfreespace(const Config &config,
                                    string       &attrvalue)
 {
   char buf[64];
+  unsigned long long minfreespace;
 
-  snprintf(buf,sizeof(buf),"%li",config.minfreespace);
+  minfreespace = (unsigned long long)config.minfreespace;
+  snprintf(buf,sizeof(buf),"%llu",minfreespace);
 
   attrvalue = buf;
 }

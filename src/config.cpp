@@ -33,7 +33,7 @@
 #include "rwlock.hpp"
 #include "fs.hpp"
 
-#define MINFREESPACE_DEFAULT (4294967295)
+#define MINFREESPACE_DEFAULT (4294967295ULL)
 #define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
 
 using std::string;
