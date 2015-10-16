@@ -186,7 +186,9 @@ uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 $(MANPAGE): README.md
+ifneq (,$(PANDOC))
 	$(PANDOC) -s -t man -o $(MANPAGE) README.md
+endif
 
 man: $(MANPAGE)
 
