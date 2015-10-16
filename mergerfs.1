@@ -1,0 +1,759 @@
+.\"t
+.TH "mergerfs" "1" "2015\-10\-11" "mergerfs user manual" ""
+.SH NAME
+.PP
+mergerfs \- another FUSE union filesystem
+.SH SYNOPSIS
+.PP
+mergerfs \-o<options> <srcpoints> <mountpoint>
+.SH DESCRIPTION
+.PP
+\f[B]mergerfs\f[] is similar to \f[B]mhddfs\f[], \f[B]unionfs\f[], and
+\f[B]aufs\f[].
+Like \f[B]mhddfs\f[] in that it too uses \f[B]FUSE\f[].
+Like \f[B]aufs\f[] in that it provides multiple policies for how to
+handle behavior.
+.PP
+Why \f[B]mergerfs\f[] when those exist?
+\f[B]mhddfs\f[] has not been updated in some time nor very flexible.
+There are also security issues when with running as root.
+\f[B]aufs\f[] is more flexible than \f[B]mhddfs\f[] but kernel based and
+difficult to debug when problems arise.
+Neither support file attributes
+(chattr (http://linux.die.net/man/1/chattr)).
+.SH FEATURES
+.IP \[bu] 2
+Runs in userspace (FUSE)
+.IP \[bu] 2
+Configurable behaviors
+.IP \[bu] 2
+Supports extended attributes (xattrs)
+.IP \[bu] 2
+Supports file attributes (chattr)
+.IP \[bu] 2
+Dynamically configurable (via xattrs)
+.IP \[bu] 2
+Safe to run as root
+.IP \[bu] 2
+Opportunistic credential caching
+.IP \[bu] 2
+Works with heterogeneous filesystem types
+.SH OPTIONS
+.SS options
+.IP \[bu] 2
+\f[B]defaults\f[]: a shortcut for FUSE\[aq]s \f[B]atomic_o_trunc\f[],
+\f[B]auto_cache\f[], \f[B]big_writes\f[], \f[B]default_permissions\f[],
+\f[B]splice_move\f[], \f[B]splice_read\f[], and \f[B]splice_write\f[].
+These options seem to provide the best performance.
+.IP \[bu] 2
+\f[B]direct_io\f[]: causes FUSE to bypass an addition caching step which
+can increase write speeds at the detriment of read speed.
+.IP \[bu] 2
+\f[B]minfreespace\f[]: the minimum space value used for the
+\f[B]lfs\f[], \f[B]fwfs\f[], and \f[B]epmfs\f[] policies.
+Understands \[aq]K\[aq], \[aq]M\[aq], and \[aq]G\[aq] to represent
+kilobyte, megabyte, and gigabyte respectively.
+(default: 4G)
+.IP \[bu] 2
+\f[B]moveonenospc\f[]: when enabled (set to \f[B]true\f[]) if a
+\f[B]write\f[] fails with \f[B]ENOSPC\f[] a scan of all drives will be
+done looking for the drive with most free space which is at least the
+size of the file plus the amount which failed to write.
+An attempt to move the file to that drive will occur (keeping all
+metadata possible) and if successful the original is unlinked and the
+write retried.
+(default: false)
+.IP \[bu] 2
+\f[B]func.<func>=<policy>\f[]: sets the specific FUSE function\[aq]s
+policy.
+See below for the list of value types.
+Example: \f[B]func.getattr=newest\f[]
+.IP \[bu] 2
+\f[B]category.<category>=<policy>\f[]: Sets policy of all FUSE functions
+in the provided category.
+Example: \f[B]category.create=mfs\f[]
+.PP
+\f[B]NOTE:\f[] Options are evaluated in the order listed so if the
+options are \f[B]func.rmdir=rand,category.action=ff\f[] the
+\f[B]action\f[] category setting will override the \f[B]rmdir\f[]
+setting.
+.SS srcpoints
+.PP
+The source points argument is a colon (\[aq]:\[aq]) delimited list of
+paths.
+To make it simpler to include multiple source points without having to
+modify your fstab (http://linux.die.net/man/5/fstab) we also support
+globbing (http://linux.die.net/man/7/glob).
+\f[B]The globbing tokens MUST be escaped when using via the shell else
+the shell itself will probably expand it.\f[]
+.IP
+.nf
+\f[C]
+$\ mergerfs\ /mnt/disk\\*:/mnt/cdrom\ /media/drives
+\f[]
+.fi
+.PP
+The above line will use all points in /mnt prefixed with \f[I]disk\f[]
+and the directory \f[I]cdrom\f[].
+.PP
+In /etc/fstab it\[aq]d look like the following:
+.IP
+.nf
+\f[C]
+#\ <file\ system>\ \ \ \ \ \ \ \ <mount\ point>\ \ <type>\ \ \ \ \ \ \ \ \ <options>\ \ \ \ \ \ \ \ \ \ \ \ \ <dump>\ \ <pass>
+/mnt/disk*:/mnt/cdrom\ \ /media/drives\ \ fuse.mergerfs\ \ defaults,allow_other\ \ 0\ \ \ \ \ \ \ 0
+\f[]
+.fi
+.PP
+\f[B]NOTE:\f[] the globbing is done at mount or xattr update time.
+If a new directory is added matching the glob after the fact it will not
+be included.
+.SH POLICIES
+.PP
+Filesystem calls are broken up into 3 categories: \f[B]action\f[],
+\f[B]create\f[], \f[B]search\f[].
+There are also some calls which have no policy attached due to state
+being kept between calls.
+These categories can be assigned a policy which dictates how
+\f[B]mergerfs\f[] behaves.
+Any policy can be assigned to a category though some aren\[aq]t terribly
+practical.
+For instance: \f[B]rand\f[] (Random) may be useful for \f[B]create\f[]
+but could lead to very odd behavior if used for \f[B]search\f[].
+.SS Functional classifications
+.PP
+.TS
+tab(@);
+l l.
+T{
+Category
+T}@T{
+FUSE Functions
+T}
+_
+T{
+action
+T}@T{
+chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate,
+unlink, utimens
+T}
+T{
+create
+T}@T{
+create, mkdir, mknod, symlink
+T}
+T{
+search
+T}@T{
+access, getattr, getxattr, ioctl, listxattr, open, readlink
+T}
+T{
+N/A
+T}@T{
+fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, release,
+statfs, write
+T}
+.TE
+.PP
+\f[B]ioctl\f[] behaves differently if its acting on a directory.
+It\[aq]ll use the \f[B]getattr\f[] policy to find and open the directory
+before issuing the \f[B]ioctl\f[].
+In other cases where something may be searched (to confirm a directory
+exists across all source mounts) then \f[B]getattr\f[] will be used.
+.SS Policy descriptions
+.PP
+.TS
+tab(@);
+l l.
+T{
+Policy
+T}@T{
+Description
+T}
+_
+T{
+ff (first found)
+T}@T{
+Given the order of the drives act on the first one found (regardless if
+stat would return EACCES).
+T}
+T{
+ffwp (first found w/ permissions)
+T}@T{
+Given the order of the drives act on the first one found which you have
+access (stat does not error with EACCES).
+T}
+T{
+newest (newest file)
+T}@T{
+If multiple files exist return the one with the most recent mtime.
+T}
+T{
+mfs (most free space)
+T}@T{
+Use the drive with the most free space available.
+T}
+T{
+epmfs (existing path, most free space)
+T}@T{
+If the path exists on multiple drives use the one with the most free
+space and is greater than \f[B]minfreespace\f[].
+If no drive has at least \f[B]minfreespace\f[] then fallback to
+\f[B]mfs\f[].
+T}
+T{
+fwfs (first with free space)
+T}@T{
+Pick the first drive which has at least \f[B]minfreespace\f[].
+T}
+T{
+lfs (least free space)
+T}@T{
+Pick the drive with least available space but more than
+\f[B]minfreespace\f[].
+T}
+T{
+rand (random)
+T}@T{
+Pick an existing drive at random.
+T}
+T{
+all
+T}@T{
+Applies action to all found.
+For searches it will behave like first found \f[B]ff\f[].
+T}
+T{
+enosys, einval, enotsup, exdev, erofs
+T}@T{
+Exclusively return \f[C]\-1\f[] with \f[C]errno\f[] set to the
+respective value.
+Useful for debugging other applications\[aq] behavior to errors.
+T}
+.TE
+.SS Defaults
+.PP
+.TS
+tab(@);
+l l.
+T{
+Category
+T}@T{
+Policy
+T}
+_
+T{
+action
+T}@T{
+all
+T}
+T{
+create
+T}@T{
+epmfs
+T}
+T{
+search
+T}@T{
+ff
+T}
+.TE
+.SS rename
+.PP
+rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
+function in a merged system.
+Normally if a rename can\[aq]t be done atomically due to the from and to
+paths existing on different mount points it will return \f[C]\-1\f[]
+with \f[C]errno\ =\ EXDEV\f[].
+The atomic rename is most critical for replacing files in place
+atomically (such as securing writing to a temp file and then replacing a
+target).
+The problem is that by merging multiple paths you can have N instances
+of the source and destinations on different drives.
+Meaning that if you just renamed each source locally you could end up
+with the destination files not overwriten / replaced.
+To address this mergerfs works in the following way.
+If the source and destination exist in different directories it will
+immediately return \f[C]EXDEV\f[].
+Generally it\[aq]s not expected for cross directory renames to work so
+it should be fine for most instances (mv,rsync,etc.).
+If they do belong to the same directory it then runs the \f[C]rename\f[]
+policy to get the files to rename.
+It iterates through and renames each file while keeping track of those
+paths which have not been renamed.
+If all the renames succeed it will then \f[C]unlink\f[] or
+\f[C]rmdir\f[] the other paths to clean up any preexisting target files.
+This allows the new file to be found without the file itself ever
+disappearing.
+There may still be some issues with this behavior.
+Particularly on error.
+At the moment however this seems the best policy.
+.SS readdir
+.PP
+readdir (http://linux.die.net/man/3/readdir) is very different from most
+functions in this realm.
+It certainly could have it\[aq]s own set of policies to tweak its
+behavior.
+At this time it provides a simple \f[B]first found\f[] merging of
+directories and file found.
+That is: only the first file or directory found for a directory is
+returned.
+Given how FUSE works though the data representing the returned entry
+comes from \f[B]getattr\f[].
+.PP
+It could be extended to offer the ability to see all files found.
+Perhaps concatenating \f[B]#\f[] and a number to the name.
+But to really be useful you\[aq]d need to be able to access them which
+would complicate file lookup.
+.SS statvfs
+.PP
+statvfs (http://linux.die.net/man/2/statvfs) normalizes the source
+drives based on the fragment size and sums the number of adjusted blocks
+and inodes.
+This means you will see the combined space of all sources.
+Total, used, and free.
+The sources however are dedupped based on the drive so multiple points
+on the same drive will not result in double counting it\[aq]s space.
+.PP
+\f[B]NOTE:\f[] Since we can not (easily) replicate the atomicity of an
+\f[B]mkdir\f[] or \f[B]mknod\f[] without side effects those calls will
+first do a scan to see if the file exists and then attempts a create.
+This means there is a slight race condition.
+Worse case you\[aq]d end up with the directory or file on more than one
+mount.
+.SH BUILDING
+.PP
+\f[B]NOTE:\f[] Prebuilt packages can be found at:
+https://github.com/trapexit/mergerfs/releases
+.PP
+First get the code from github (http://github.com/trapexit/mergerfs).
+.IP
+.nf
+\f[C]
+$\ git\ clone\ https://github.com/trapexit/mergerfs.git
+$\ #\ or
+$\ wget\ https://github.com/trapexit/mergerfs/archive/master.zip
+\f[]
+.fi
+.SS Debian / Ubuntu
+.IP
+.nf
+\f[C]
+$\ sudo\ apt\-get\ install\ g++\ pkg\-config\ git\ git\-buildpackage\ pandoc\ debhelper\ libfuse\-dev\ libattr1\-dev
+$\ cd\ mergerfs
+$\ make\ deb
+$\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
+\f[]
+.fi
+.SS Fedora
+.IP
+.nf
+\f[C]
+$\ su\ \-
+#\ dnf\ install\ rpm\-build\ fuse\-devel\ libattr\-devel\ pandoc\ gcc\-c++\ git\ make\ which
+#\ cd\ mergerfs
+#\ make\ rpm
+#\ rpm\ \-i\ rpmbuild/RPMS/<arch>/mergerfs\-<verion>.<arch>.rpm
+\f[]
+.fi
+.SS Generically
+.PP
+Have pkg\-config, pandoc, libfuse, libattr1 installed.
+.IP
+.nf
+\f[C]
+$\ cd\ mergerfs
+$\ make
+$\ make\ man
+$\ sudo\ make\ install
+\f[]
+.fi
+.SH RUNTIME
+.SS \&.mergerfs pseudo file
+.IP
+.nf
+\f[C]
+<mountpoint>/.mergerfs
+\f[]
+.fi
+.PP
+There is a pseudo file available at the mount point which allows for the
+runtime modification of certain \f[B]mergerfs\f[] options.
+The file will not show up in \f[B]readdir\f[] but can be
+\f[B]stat\f[]\[aq]ed and manipulated via
+{list,get,set}xattrs (http://linux.die.net/man/2/listxattr) calls.
+.PP
+Even if xattrs are disabled the
+{list,get,set}xattrs (http://linux.die.net/man/2/listxattr) calls will
+still work.
+.SS Keys
+.PP
+Use \f[C]xattr\ \-l\ /mount/point/.mergerfs\f[] to see all supported
+keys.
+.SS Example
+.IP
+.nf
+\f[C]
+[trapexit:/tmp/mount]\ $\ xattr\ \-l\ .mergerfs
+user.mergerfs.srcmounts:\ /tmp/a:/tmp/b
+user.mergerfs.minfreespace:\ 4294967295
+user.mergerfs.moveonenospc:\ false
+user.mergerfs.policies:\ all,einval,enosys,enotsup,epmfs,erofs,exdev,ff,ffwp,fwfs,lfs,mfs,newest,rand
+user.mergerfs.version:\ x.y.z
+user.mergerfs.category.action:\ all
+user.mergerfs.category.create:\ epmfs
+user.mergerfs.category.search:\ ff
+user.mergerfs.func.access:\ ff
+user.mergerfs.func.chmod:\ all
+user.mergerfs.func.chown:\ all
+user.mergerfs.func.create:\ epmfs
+user.mergerfs.func.getattr:\ ff
+user.mergerfs.func.getxattr:\ ff
+user.mergerfs.func.link:\ all
+user.mergerfs.func.listxattr:\ ff
+user.mergerfs.func.mkdir:\ epmfs
+user.mergerfs.func.mknod:\ epmfs
+user.mergerfs.func.open:\ ff
+user.mergerfs.func.readlink:\ ff
+user.mergerfs.func.removexattr:\ all
+user.mergerfs.func.rename:\ all
+user.mergerfs.func.rmdir:\ all
+user.mergerfs.func.setxattr:\ all
+user.mergerfs.func.symlink:\ epmfs
+user.mergerfs.func.truncate:\ all
+user.mergerfs.func.unlink:\ all
+user.mergerfs.func.utimens:\ all
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
+ff
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.category.search\ ffwp\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
+ffwp
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ +/tmp/c\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ =/tmp/c\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+/tmp/c
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ \[aq]+</tmp/a:/tmp/b\[aq]\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+\f[]
+.fi
+.SS user.mergerfs.srcmounts
+.PP
+For \f[B]user.mergerfs.srcmounts\f[] there are several instructions
+available for manipulating the list.
+The value provided is just as the value used at mount time.
+A colon (\[aq]:\[aq]) delimited list of full path globs.
+.PP
+.TS
+tab(@);
+l l.
+T{
+Instruction
+T}@T{
+Description
+T}
+_
+T{
+[list]
+T}@T{
+set
+T}
+T{
++<[list]
+T}@T{
+prepend
+T}
+T{
++>[list]
+T}@T{
+append
+T}
+T{
+\-[list]
+T}@T{
+remove all values provided
+T}
+T{
+\-<
+T}@T{
+remove first in list
+T}
+T{
+\->
+T}@T{
+remove last in list
+T}
+.TE
+.SS minfreespace
+.PP
+Input: interger with an optional suffix.
+\f[B]K\f[], \f[B]M\f[], or \f[B]G\f[].
+Output: value in bytes
+.SS moveonenospc
+.PP
+Input: \f[B]true\f[] and \f[B]false\f[] Ouput: \f[B]true\f[] or
+\f[B]false\f[]
+.SS categories / funcs
+.PP
+Input: short policy string as described elsewhere in this document
+Output: the policy string except for categories where its funcs have
+multiple types.
+In that case it will be a comma separated list.
+.SS mergerfs file xattrs
+.PP
+While they won\[aq]t show up when using
+listxattr (http://linux.die.net/man/2/listxattr) \f[B]mergerfs\f[]
+offers a number of special xattrs to query information about the files
+served.
+To access the values you will need to issue a
+getxattr (http://linux.die.net/man/2/getxattr) for one of the following:
+.IP \[bu] 2
+\f[B]user.mergerfs.basepath:\f[] the base mount point for the file given
+the current search policy
+.IP \[bu] 2
+\f[B]user.mergerfs.relpath:\f[] the relative path of the file from the
+perspective of the mount point
+.IP \[bu] 2
+\f[B]user.mergerfs.fullpath:\f[] the full path of the original file
+given the search policy
+.IP \[bu] 2
+\f[B]user.mergerfs.allpaths:\f[] a NUL (\[aq]\[aq]) separated list of
+full paths to all files found
+.IP
+.nf
+\f[C]
+[trapexit:/tmp/mount]\ $\ ls
+A\ B\ C
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.fullpath\ A
+/mnt/a/full/path/to/A
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.basepath\ A
+/mnt/a
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.relpath\ A
+/full/path/to/A
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.allpaths\ A\ |\ tr\ \[aq]\\0\[aq]\ \[aq]\\n\[aq]
+/mnt/a/full/path/to/A
+/mnt/b/full/path/to/A
+\f[]
+.fi
+.SH TOOLING
+.IP \[bu] 2
+/usr/sbin/fsck.mergerfs: Provides permissions and ownership auditing and
+the ability to fix them.
+.SH TIPS / NOTES
+.IP \[bu] 2
+If you don\[aq]t see some directories / files you expect in a merged
+point be sure the user has permission to all the underlying directories.
+If \f[C]/drive0/a\f[] has is owned by \f[C]root:root\f[] with ACLs set
+to \f[C]0700\f[] and \f[C]/drive1/a\f[] is \f[C]root:root\f[] and
+\f[C]0755\f[] you\[aq]ll see only \f[C]/drive1/a\f[].
+Use \f[C]fsck.mergerfs\f[] to audit the drive for out of sync
+permissions.
+.IP \[bu] 2
+Since POSIX gives you only error or success on calls its difficult to
+determine the proper behavior when applying the behavior to multiple
+targets.
+Generally if something succeeds when reading it returns the data it can.
+If something fails when making an action we continue on and return the
+last error.
+.IP \[bu] 2
+The recommended options are \f[B]defaults,allow_other\f[].
+The \f[B]allow_other\f[] is to allow users who are not the one which
+executed mergerfs access to the mountpoint.
+\f[B]defaults\f[] is described above and should offer the best
+performance.
+It\[aq]s possible that if you\[aq]re running on an older platform the
+\f[B]splice\f[] features aren\[aq]t available and could error.
+In that case simply use the other options manually.
+.IP \[bu] 2
+If write performance is valued more than read it may be useful to enable
+\f[B]direct_io\f[].
+.IP \[bu] 2
+Remember that some policies mixed with some functions may result in
+strange behaviors.
+Not that some of these behaviors and race conditions couldn\[aq]t happen
+outside \f[B]mergerfs\f[] but that they are far more likely to occur on
+account of attempt to merge together multiple sources of data which
+could be out of sync due to the different policies.
+.IP \[bu] 2
+An example: Kodi (http://kodi.tv) and Plex (http://plex.tv) can
+apparently use directory mtime (http://linux.die.net/man/2/stat) to more
+efficiently determine whether or not to scan for new content rather than
+simply performing a full scan.
+If using the current default \f[B]getattr\f[] policy of \f[B]ff\f[] its
+possible \f[B]Kodi\f[] will miss an update on account of it returning
+the first directory found\[aq]s \f[B]stat\f[] info and its a later
+directory on another mount which had the \f[B]mtime\f[] recently
+updated.
+To fix this you will want to set \f[B]func.getattr=newest\f[].
+Remember though that this is just \f[B]stat\f[].
+If the file is later \f[B]open\f[]\[aq]ed or \f[B]unlink\f[]\[aq]ed and
+the policy is different for those then a completely different file or
+directory could be acted on.
+.IP \[bu] 2
+Due to previously mentioned issues its generally best to set
+\f[B]category\f[] wide policies rather than individual
+\f[B]func\f[]\[aq]s.
+This will help limit the confusion of tools such as
+rsync (http://linux.die.net/man/1/rsync).
+.SH Known Issues / Bugs
+.SS Samba
+.IP \[bu] 2
+Moving files or directories between directories on a SMB share fail with
+IO errors.
+.RS 2
+.PP
+Workaround: Copy the file/directory and then remove the original rather
+than move.
+.PP
+This isn\[aq]t an issue with Samba but some SMB clients.
+GVFS\-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed
+to handle certain error codes correctly.
+Particularly \f[B]STATUS_NOT_SAME_DEVICE\f[] which comes from the
+\f[B]EXDEV\f[] which is returned by \f[B]rename\f[] when the call is
+crossing mountpoints.
+When a program gets an \f[B]EXDEV\f[] it needs to explicitly take an
+alternate action to accomplish it\[aq]s goal.
+In the case of \f[B]mv\f[] or similar it tries \f[B]rename\f[] and on
+\f[B]EXDEV\f[] falls back to a manual copying of data between the two
+locations and unlinking the source.
+In these older versions of GVFS\-fuse if it received \f[B]EXDEV\f[] it
+would translate that into \f[B]EIO\f[].
+This would cause \f[B]mv\f[] or most any application attempting to move
+files around on that SMB share to fail with a IO error.
+.PP
+GVFS\-fuse v1.22.0 (https://bugzilla.gnome.org/show_bug.cgi?id=734568)
+and above fixed this issue but a large number of systems use the older
+release.
+On Ubuntu the version can be checked by issuing
+\f[C]apt\-cache\ showpkg\ gvfs\-fuse\f[].
+Most distros released in 2015 seem to have the updated release and will
+work fine but older systems may not.
+Upgrading gvfs\-fuse or the distro in general will address the problem.
+.PP
+In Apple\[aq]s MacOSX 10.9 they replaced Samba (client and server) with
+their own product.
+It appears their new client does not handle \f[B]EXDEV\f[] either and
+responds similar to older release of gvfs on Linux.
+.RE
+.SS Supplemental groups
+.IP \[bu] 2
+Due to the overhead of
+getgroups/setgroups (http://linux.die.net/man/2/setgroups) mergerfs
+utilizes a cache.
+This cache is opportunistic and per thread.
+Each thread will query the supplemental groups for a user when that
+particular thread needs to change credentials and will keep that data
+for the lifetime of the mount or thread.
+This means that if a user is added to a group it may not be picked up
+without the restart of mergerfs.
+However, since the high level FUSE API\[aq]s (at least the standard
+version) thread pool dynamically grows and shrinks it\[aq]s possible
+that over time a thread will be killed and later a new thread with no
+cache will start and query the new data.
+.RS 2
+.PP
+The gid cache uses fixed storage to simplify the design and be
+compatible with older systems which may not have C++11 compilers (as the
+original design required).
+There is enough storage for 256 users\[aq] supplemental groups.
+Each user is allowed upto 32 supplemental groups.
+Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs
+allow far less.
+NFS allowing only 16.
+The system does handle overflow gracefully.
+If the user has more than 32 supplemental groups only the first 32 will
+be used.
+If more than 256 users are using the system when an uncached user is
+found it will evict an existing user\[aq]s cache at random.
+So long as there aren\[aq]t more than 256 active users this should be
+fine.
+If either value is too low for your needs you will have to modify
+\f[C]gidcache.hpp\f[] to increase the values.
+Note that doing so will increase the memory needed by each thread.
+.RE
+.SH FAQ
+.PP
+\f[I]It\[aq]s mentioned that there are some security issues with mhddfs.
+What are they? How does mergerfs address them?\f[]
+.PP
+mhddfs (https://github.com/trapexit/mhddfs) tries to handle being run as
+\f[B]root\f[] by calling
+getuid() (https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319)
+and if it returns \f[B]0\f[] then it will
+chown (http://linux.die.net/man/1/chown) the file.
+Not only is that a race condition but it doesn\[aq]t handle many other
+situations.
+Rather than attempting to simulate POSIX ACL behaviors the proper
+behavior is to use seteuid (http://linux.die.net/man/2/seteuid) and
+setegid (http://linux.die.net/man/2/setegid), become the user making the
+original call and perform the action as them.
+This is how mergerfs (https://github.com/trapexit/mergerfs) handles
+things.
+.PP
+If you are familiar with POSIX standards you\[aq]ll know that this
+behavior poses a problem.
+\f[B]seteuid\f[] and \f[B]setegid\f[] affect the whole process and
+\f[B]libfuse\f[] is multithreaded by default.
+We\[aq]d need to lock access to \f[B]seteuid\f[] and \f[B]setegid\f[]
+with a mutex so that the several threads aren\[aq]t stepping on one
+another and files end up with weird permissions and ownership.
+This however wouldn\[aq]t scale well.
+With lots of calls the contention on that mutex would be extremely high.
+Thankfully on Linux and OSX we have a better solution.
+.PP
+OSX has a non\-portable pthread
+extension (https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html)
+for per\-thread user and group impersonation.
+.PP
+Linux does not support
+pthread_setugid_np (https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html)
+but user and group IDs are a per\-thread attribute though documentation
+on that fact or how to manipulate them is not well distributed.
+From the \f[B]4.00\f[] release of the Linux man\-pages project for
+setuid (http://man7.org/linux/man-pages/man2/setuid.2.html)
+.RS
+.PP
+At the kernel level, user IDs and group IDs are a per\-thread attribute.
+However, POSIX requires that all threads in a process share the same
+credentials.
+The NPTL threading implementation handles the POSIX requirements by
+providing wrapper functions for the various system calls that change
+process UIDs and GIDs.
+These wrapper functions (including the one for setuid()) employ a
+signal\-based technique to ensure that when one thread changes
+credentials, all of the other threads in the process also change their
+credentials.
+For details, see nptl(7).
+.RE
+.PP
+Turns out the setreuid syscalls apply only to the thread.
+GLIBC hides this away using RT signals to inform all threads to change
+credentials.
+Taking after \f[B]Samba\f[] mergerfs uses
+\f[B]syscall(SYS_setreuid,...)\f[] to set the callers credentials for
+that thread only.
+Jumping back to \f[B]root\f[] as necessary should escalated privileges
+be needed (for instance: to clone paths).
+.PP
+For non\-Linux systems mergerfs uses a read\-write lock and changes
+credentials only when necessary.
+If multiple threads are to be user X then only the first one will need
+to change the processes credentials.
+So long as the other threads need to be user X they will take a readlock
+allow multiple threads to share the credentials.
+Once a request comes in to run as user Y that thread will attempt a
+write lock and change to Y\[aq]s credentials when it can.
+If the ability to give writers priority is supported then that flag will
+be used so threads trying to change credentials don\[aq]t starve.
+This isn\[aq]t the best solution but should work reasonably well.
+As new platforms are supported if they offer per thread credentials
+those APIs will be adopted.
+.SH AUTHORS
+Antonio SJ Musumeci <trapexit@spawn.link>.
