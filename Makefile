@@ -188,6 +188,8 @@ uninstall-man:
 $(MANPAGE): README.md
 ifneq (,$(PANDOC))
 	$(PANDOC) -s -t man -o $(MANPAGE) README.md
+else
+	$(CP) man/mergerfs.1 .
 endif
 
 man: $(MANPAGE)
