@@ -14,8 +14,6 @@ BuildRequires:	libattr-devel
 BuildRequires:	fuse-devel
 # rpmbuild driven by the Makefile uses git to generate a version number
 BuildRequires:	git
-# pandoc pulls in ~60 packages (87M installed) from EPEL :(
-BuildRequires:	pandoc
 
 Requires:	fuse
 
