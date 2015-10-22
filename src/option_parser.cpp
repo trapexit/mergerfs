@@ -196,7 +196,6 @@ process_opt(Config            &config,
   int rv;
   std::vector<std::string> argvalue;
 
-  rv = 1;
   str::split(argvalue,arg,'=');
   switch(argvalue.size())
     {
