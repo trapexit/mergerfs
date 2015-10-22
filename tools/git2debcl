@@ -45,26 +45,21 @@ def git_version():
     args = ['git','describe','--always','--tags','--dirty']
     return subprocess.check_output(args).strip()
 
-def find_distrib_codename(f):
-    for line in f:
-        (key,value) = line.partition('=')[::2]
-        if key == 'DISTRIB_CODENAME':
-            return value.strip()
-
-def guess_distribution():
+def guess_distro():
     try:
-        with open('/etc/upstream-release/lsb-release') as f:
-            return find_distrib_codename(f)
+        args = ['lsb_release','-i','-s']
+        return subprocess.check_output(args).strip().lower()
     except:
-        try:
-            with open('/etc/lsb-release') as f:
-                return find_distrib_codename(f)
-        except:
-            try:
-                args = ['lsb_release','-c','-s']
-                return subprocess.check_output(args).strip()
-            except:
-                return 'unknown'
+        return 'unknown'
+
+
+def guess_codename():
+    try:
+        args = ['lsb_release','-c','-s']
+        return subprocess.check_output(args).strip().lower()
+    except:
+        return 'unknown'
+
 
 def patch_subprocess():
     if "check_output"  not in dir( subprocess ): # duck punch it in!
@@ -97,15 +92,20 @@ def main():
     parser.add_argument('--name',type=str,help='Name of package',required=True)
     parser.add_argument('--version',type=str,help='Place in git history to include upto',default='::guess::')
     parser.add_argument('--distro',type=str,help='Distribution name',default='::guess::')
+    parser.add_argument('--codename',type=str,help='Distribution codename',default='::guess::')
     parser.add_argument('--urgency',type=str,help='Urgency',default='medium')
 
     args = parser.parse_args()
 
     if args.distro == '::guess::':
-        args.distro = guess_distribution()
+        args.distro = guess_distro()
+
+    if args.codename == '::guess::':
+        args.codename = guess_codename()
 
     if args.version == '::guess::':
-        args.version = git_version()
+        ver = git_version()
+        args.version = ver+"~"+args.distro+"-"+args.codename
 
     tags = git_tags()
 
@@ -119,7 +119,7 @@ def main():
 
     tag = tags[0]
     for prev in tags[1:]:
-        print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.distro,args.urgency))
+        print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.codename,args.urgency))
 
         lines = git_log(tag[1],prev[1])
         for line in lines:
