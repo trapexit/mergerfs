@@ -110,7 +110,7 @@ gid_t_cache::cache(const uid_t uid,
   if(pwdrv != NULL && rv == 0)
     {
       rec->size = 0;
-      rv = ::getgrouplist(pwd.pw_name,gid,NULL,&rec->size);
+      ::getgrouplist(pwd.pw_name,gid,NULL,&rec->size);
       rec->size = std::min(MAXGIDS,rec->size);
       rv = ::getgrouplist(pwd.pw_name,gid,rec->gids,&rec->size);
       if(rv == -1)

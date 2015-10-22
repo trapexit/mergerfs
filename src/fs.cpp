@@ -104,7 +104,7 @@ namespace fs
        vector<string>       &strs)
   {
     int flags;
-    glob_t gbuf;
+    glob_t gbuf = {0};
 
     flags = 0;
     for(size_t i = 0; i < patterns.size(); i++)
