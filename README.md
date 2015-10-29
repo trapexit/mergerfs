@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2015-10-11
+% 2015-10-29
 
 # NAME
 
@@ -321,3 +321,13 @@ Linux does not support [pthread_setugid_np](https://developer.apple.com/library/
 Turns out the setreuid syscalls apply only to the thread. GLIBC hides this away using RT signals to inform all threads to change credentials. Taking after **Samba** mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths).  
 
 For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allow multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well. As new platforms are supported if they offer per thread credentials those APIs will be adopted.   
+
+# SUPPORT
+
+#### Issues with the software
+* github.com: https://github.com/trapexit/mergerfs/issues
+* email: trapexit@spawn.link
+
+#### Support development
+* Gratipay: https://gratipay.com/~trapexit
+* BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
