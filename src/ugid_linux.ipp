@@ -29,8 +29,6 @@
 
 #include <vector>
 
-typedef std::vector<gid_t> gid_t_vector;
-
 namespace mergerfs
 {
   namespace ugid
@@ -42,12 +40,6 @@ namespace mergerfs
     void
     init()
     {
-    }
-
-    int
-    setgroups(const gid_t_vector &gidlist)
-    {
-      return ::syscall(SYS_setgroups,gidlist.size(),&gidlist[0]);
     }
   }
 }

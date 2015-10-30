@@ -28,11 +28,16 @@
 #include <grp.h>
 #include <unistd.h>
 
+#if defined __linux__ and UGID_USE_RWLOCK == 0
+# include <sys/syscall.h>
+#endif
+
 #include <cstdlib>
 #include <algorithm>
 
 #include "gidcache.hpp"
 
+inline
 bool
 gid_t_rec::operator<(const struct gid_t_rec &b) const
 {
@@ -123,21 +128,36 @@ gid_t_cache::cache(const uid_t uid,
   return rec;
 }
 
-void
+static
+inline
+int
+setgroups(const gid_t_rec *rec)
+{
+#if defined __linux__ and UGID_USE_RWLOCK == 0
+  return ::syscall(SYS_setgroups,rec->size,rec->gids);
+#else
+  return ::setgroups(rec->size,rec->gids);
+#endif
+}
+
+int
 gid_t_cache::initgroups(const uid_t uid,
                         const gid_t gid)
 {
+  int rv;
   gid_t_rec *rec;
 
   rec = lower_bound(begin(),end(),uid);
   if(rec == end() || rec->uid != uid)
     {
       rec = cache(uid,gid);
-      ::setgroups(rec->size,rec->gids);
+      rv = ::setgroups(rec);
       std::sort(begin(),end());
     }
   else
     {
-      ::setgroups(rec->size,rec->gids);
+      rv = ::setgroups(rec);
     }
+
+  return rv;
 }

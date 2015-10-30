@@ -29,8 +29,6 @@
 
 #include <vector>
 
-typedef std::vector<gid_t> gid_t_vector;
-
 namespace mergerfs
 {
   namespace ugid
@@ -53,12 +51,6 @@ namespace mergerfs
 
       currentuid = ::geteuid();
       currentgid = ::getegid();
-    }
-
-    int
-    setgroups(const gid_t_vector &gidlist)
-    {
-      return ::setgroups(gidlist.size(),&gidlist[0]);
     }
   }
 }
