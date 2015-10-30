@@ -58,7 +58,7 @@ private:
                     const gid_t gid);
 
 public:
-  void
+  int
   initgroups(const uid_t uid,
              const gid_t gid);
 };

@@ -30,15 +30,12 @@
 
 #include <vector>
 
-typedef std::vector<gid_t> gid_t_vector;
-
 namespace mergerfs
 {
   namespace ugid
   {
     void init();
     void initgroups(const uid_t uid, const gid_t gid);
-    void setgroups(const gid_t_vector &gidlist);
   }
 }
 
