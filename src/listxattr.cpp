@@ -55,7 +55,8 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.minfreespace")
     ("user.mergerfs.moveonenospc")
     ("user.mergerfs.policies")
-    ("user.mergerfs.version");
+    ("user.mergerfs.version")
+    ("user.mergerfs.pid");
 
   xattrs.reserve(1024);
   for(size_t i = 0; i < strs.size(); i++)
