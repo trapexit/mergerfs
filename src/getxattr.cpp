@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "config.hpp"
 #include "fs_path.hpp"
@@ -153,6 +154,19 @@ _getxattr_controlfile_version(string &attrvalue)
 }
 
 static
+void
+_getxattr_pid(string &attrvalue)
+{
+  int pid;
+  char buf[32];
+
+  pid = getpid();
+  snprintf(buf,sizeof(buf),"%d",pid);
+
+  attrvalue = buf;
+}
+
+static
 int
 _getxattr_controlfile(const Config &config,
                       const string &attrname,
@@ -180,6 +194,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")
         _getxattr_controlfile_version(attrvalue);
+      else if(attr[2] == "pid")
+        _getxattr_pid(attrvalue);
       break;
 
     case 4:
