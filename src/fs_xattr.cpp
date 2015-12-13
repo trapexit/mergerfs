@@ -24,7 +24,10 @@
 
 #include <stdlib.h>
 #include <sys/types.h>
+#ifndef WITHOUT_XATTR
 #include <attr/xattr.h>
+#endif
+#include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
