@@ -62,7 +62,7 @@ _lgetxattr(const string &path,
 
   return ((rv == -1) ? -errno : rv);
 #else
-  return -ENOSUP;
+  return -ENOTSUP;
 #endif
 }
 
