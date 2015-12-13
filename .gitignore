@@ -15,3 +15,8 @@
 # Debian files
 debian/files
 debian/changelog
+
+# ignore build artifacts
+obj/
+rpmbuild/
+src/version.hpp
