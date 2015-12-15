@@ -12,6 +12,14 @@
 *.la
 *.a
 
+# build artifacts
+mergerfs
+obj/
+src/version.hpp
+
 # Debian files
 debian/files
 debian/changelog
+
+# RPM files
+rpmbuild/
