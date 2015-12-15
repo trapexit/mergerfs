@@ -219,7 +219,7 @@ rpm-clean:
 rpm: tarball
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
-	$(MKDIR) -p rpmbuild/{BUILD,RPMS,SOURCES}
+	$(MKDIR) -p rpmbuild/BUILD rpmbuild/RPMS rpmbuild/SOURCES
 	$(SED) 's/__VERSION__/$(VERSION)/g' $(TARGET).spec > \
 		rpmbuild/SOURCES/$(TARGET).spec
 	cp -ar $(TARGET)-$(VERSION).tar.gz rpmbuild/SOURCES
