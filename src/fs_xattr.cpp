@@ -22,11 +22,11 @@
   THE SOFTWARE.
 */
 
-#include <stdlib.h>
-#include <sys/types.h>
-#include <attr/xattr.h>
-#include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <string>

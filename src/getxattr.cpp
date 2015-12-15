@@ -29,10 +29,10 @@
 #include <set>
 #include <algorithm>
 
-#include <stdio.h>
 #include <errno.h>
-#include <sys/types.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "config.hpp"
@@ -62,7 +62,7 @@ _lgetxattr(const string &path,
 
   return ((rv == -1) ? -errno : rv);
 #else
-  return -ENOSUP;
+  return -ENOTSUP;
 #endif
 }
 
