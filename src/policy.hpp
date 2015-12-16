@@ -76,56 +76,40 @@ namespace mergerfs
 
       typedef int (*Ptr)(CType,cstrvec&,cstring&,csize_t,strvec&);
 
-      class Action
+      template <CType T>
+      class Base
       {
       public:
-        Action(const Policy *p)
+        Base(const Policy *p)
           : func(p->_func)
         {}
 
         int
         operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
         {
-          return func(Category::Enum::action,b,c,d,e);
+          return func(T,b,c,d,e);
         }
-
-      private:
-        const Ptr func;
-      };
-
-      class Create
-      {
-      public:
-        Create(const Policy *p)
-          : func(p->_func)
-        {}
 
         int
-        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
+        operator()(cstrvec& b,cstring& c,csize_t d,string& e)
         {
-          return func(Category::Enum::create,b,c,d,e);
+          int rv;
+          strvec vec;
+
+          rv = func(T,b,c,d,vec);
+          if(!vec.empty())
+            e = vec[0];
+
+          return rv;
         }
 
       private:
         const Ptr func;
       };
 
-      class Search
-      {
-      public:
-        Search(const Policy *p)
-          : func(p->_func)
-        {}
-
-        int
-        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
-        {
-          return func(Category::Enum::search,b,c,d,e);
-        }
-
-      private:
-        const Ptr func;
-      };
+      typedef Base<Category::Enum::action> Action;
+      typedef Base<Category::Enum::create> Create;
+      typedef Base<Category::Enum::search> Search;
 
       static int all(CType,cstrvec&,cstring&,csize_t,strvec&);
       static int einval(CType,cstrvec&,cstring&,csize_t,strvec&);
