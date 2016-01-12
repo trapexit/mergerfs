@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2015-10-29
+% 2016-01-12
 
 # NAME
 
@@ -99,7 +99,37 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 
 #### rename ####
 
-[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the from and to paths existing on different mount points it will return `-1` with `errno = EXDEV`. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. Meaning that if you just renamed each source locally you could end up with the destination files not overwriten / replaced. To address this mergerfs works in the following way. If the source and destination exist in different directories it will immediately return `EXDEV`. Generally it's not expected for cross directory renames to work so it should be fine for most instances (mv,rsync,etc.). If they do belong to the same directory it then runs the `rename` policy to get the files to rename. It iterates through and renames each file while keeping track of those paths which have not been renamed. If all the renames succeed it will then `unlink` or `rmdir` the other paths to clean up any preexisting target files. This allows the new file to be found without the file itself ever disappearing. There may still be some issues with this behavior. Particularly on error. At the moment however this seems the best policy.
+[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the source and destination paths existing on different mount points it will return `-1` with `errno = EXDEV`. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. This can lead to several undesirable situtations with or without errors and it's not entirely obvious what to do when an error occurs.
+
+Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or they only partially support EXDEV (don't respond the same as `mv` would). Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
+
+* If using a policy which tries to preserve directories (epmfs)
+  * Using the `rename` policy get the list of files to rename
+  * For each file attempt rename:
+    * If failure with ENOENT run `create` policy
+    * If create policy returns the same drive as currently evaluating then clone the path
+    * Re-attempt rename
+  * If **any** of the renames succeed the higher level rename is considered a success
+  * If **no** renames succeed the first error encountered will be returned
+  * On success:
+    * Remove the target from all drives with no source file
+    * Remove the source from all drives which failed to rename
+* If using a policy which does **not** try to preserve directories
+  * Using the `rename` policy get the list of files to rename
+  * Using the `getattr` policy get the target path
+  * For each file attempt rename:
+    * If the source drive != target drive:
+      * Clone target path from target drive to source drive
+    * Rename
+  * If **any** of the renames succeed the higher level rename is considered a success
+  * If **no** renames succeed the first error encountered will be returned
+  * On success:
+    * Remove the target from all drives with no source file
+    * Remove the source from all drives which failed to rename
+
+The the removals are subject to normal entitlement checks.
+
+The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible. To remove the possibility all together mergerfs would need to perform the as `mv` does when it receives EXDEV normally.
 
 #### readdir ####
 
@@ -289,7 +319,7 @@ A B C
 # Known Issues / Bugs
 
 #### Samba
-* Moving files or directories between directories on a SMB share fail with IO errors.    
+* Moving files or directories between some directories on a SMB share fail with IO errors.    
     
     Workaround: Copy the file/directory and then remove the original rather than move.
     
