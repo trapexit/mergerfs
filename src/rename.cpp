@@ -34,6 +34,7 @@
 #include "config.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
+#include "rv.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
@@ -49,23 +50,6 @@ member(const vector<string> &haystack,
        const string         &needle)
 {
   return (std::find(haystack.begin(),haystack.end(),needle) != haystack.end());
-}
-
-// a single success trumps any failure
-static
-int
-_process_rv(const int rv,
-            const int preverror,
-            const int error)
-{
-  if(rv == -1)
-    {
-      if(preverror == 0)
-        return 0;
-      return error;
-    }
-
-  return 0;
 }
 
 static
@@ -106,7 +90,7 @@ _rename_create_path_one(const vector<string> &oldbasepaths,
       fs::path::make(oldbasepath,oldfusepath,oldfullpath);
 
       rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
-      error = _process_rv(rv,error,errno);
+      error = calc_error(rv,error,errno);
       if(rv == -1)
         tounlink.push_back(oldfullpath);
     }
@@ -231,7 +215,7 @@ _rename_preserve_path_one(Policy::Func::Search  searchFunc,
             rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
         }
 
-      error = _process_rv(rv,error,errno);
+      error = calc_error(rv,error,errno);
       if(rv == -1)
         toremove.push_back(oldfullpath);
     }
