@@ -1,11 +1,11 @@
 .\"t
-.TH "mergerfs" "1" "2015\-10\-29" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-01\-12" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another FUSE union filesystem
 .SH SYNOPSIS
 .PP
-mergerfs \-o<options> <srcpoints> <mountpoint>
+mergerfs \-o<options> <srcmounts> <mountpoint>
 .SH DESCRIPTION
 .PP
 \f[B]mergerfs\f[] is similar to \f[B]mhddfs\f[], \f[B]unionfs\f[], and
@@ -77,11 +77,11 @@ Example: \f[B]category.create=mfs\f[]
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
 \f[B]action\f[] category setting will override the \f[B]rmdir\f[]
 setting.
-.SS srcpoints
+.SS srcmounts
 .PP
-The source points argument is a colon (\[aq]:\[aq]) delimited list of
+The source mounts argument is a colon (\[aq]:\[aq]) delimited list of
 paths.
-To make it simpler to include multiple source points without having to
+To make it simpler to include multiple source mounts without having to
 modify your fstab (http://linux.die.net/man/5/fstab) we also support
 globbing (http://linux.die.net/man/7/glob).
 \f[B]The globbing tokens MUST be escaped when using via the shell else
@@ -93,8 +93,8 @@ $\ mergerfs\ /mnt/disk\\*:/mnt/cdrom\ /media/drives
 \f[]
 .fi
 .PP
-The above line will use all points in /mnt prefixed with \f[I]disk\f[]
-and the directory \f[I]cdrom\f[].
+The above line will use all mount points in /mnt prefixed with
+\f[I]disk\f[] and the directory \f[I]cdrom\f[].
 .PP
 In /etc/fstab it\[aq]d look like the following:
 .IP
@@ -262,32 +262,92 @@ T}
 .PP
 rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
 function in a merged system.
-Normally if a rename can\[aq]t be done atomically due to the from and to
-paths existing on different mount points it will return \f[C]\-1\f[]
-with \f[C]errno\ =\ EXDEV\f[].
+Normally if a rename can\[aq]t be done atomically due to the source and
+destination paths existing on different mount points it will return
+\f[C]\-1\f[] with \f[C]errno\ =\ EXDEV\f[].
 The atomic rename is most critical for replacing files in place
 atomically (such as securing writing to a temp file and then replacing a
 target).
 The problem is that by merging multiple paths you can have N instances
 of the source and destinations on different drives.
-Meaning that if you just renamed each source locally you could end up
-with the destination files not overwriten / replaced.
-To address this mergerfs works in the following way.
-If the source and destination exist in different directories it will
-immediately return \f[C]EXDEV\f[].
-Generally it\[aq]s not expected for cross directory renames to work so
-it should be fine for most instances (mv,rsync,etc.).
-If they do belong to the same directory it then runs the \f[C]rename\f[]
-policy to get the files to rename.
-It iterates through and renames each file while keeping track of those
-paths which have not been renamed.
-If all the renames succeed it will then \f[C]unlink\f[] or
-\f[C]rmdir\f[] the other paths to clean up any preexisting target files.
-This allows the new file to be found without the file itself ever
-disappearing.
-There may still be some issues with this behavior.
-Particularly on error.
-At the moment however this seems the best policy.
+This can lead to several undesirable situtations with or without errors
+and it\[aq]s not entirely obvious what to do when an error occurs.
+.PP
+Originally mergerfs would return EXDEV whenever a rename was requested
+which was cross directory in any way.
+This made the code simple and was technically complient with POSIX
+requirements.
+However, many applications fail to handle EXDEV at all and treat it as a
+normal error or they only partially support EXDEV (don\[aq]t respond the
+same as \f[C]mv\f[] would).
+Such apps include: gvfsd\-fuse v1.20.3 and prior, Finder / CIFS/SMB
+client in Apple OSX 10.9+, NZBGet, Samba\[aq]s recycling bin feature.
+.IP \[bu] 2
+If using a policy which tries to preserve directories (epmfs)
+.IP \[bu] 2
+Using the \f[C]rename\f[] policy get the list of files to rename
+.IP \[bu] 2
+For each file attempt rename:
+.RS 2
+.IP \[bu] 2
+If failure with ENOENT run \f[C]create\f[] policy
+.IP \[bu] 2
+If create policy returns the same drive as currently evaluating then
+clone the path
+.IP \[bu] 2
+Re\-attempt rename
+.RE
+.IP \[bu] 2
+If \f[B]any\f[] of the renames succeed the higher level rename is
+considered a success
+.IP \[bu] 2
+If \f[B]no\f[] renames succeed the first error encountered will be
+returned
+.IP \[bu] 2
+On success:
+.RS 2
+.IP \[bu] 2
+Remove the target from all drives with no source file
+.IP \[bu] 2
+Remove the source from all drives which failed to rename
+.RE
+.IP \[bu] 2
+If using a policy which does \f[B]not\f[] try to preserve directories
+.IP \[bu] 2
+Using the \f[C]rename\f[] policy get the list of files to rename
+.IP \[bu] 2
+Using the \f[C]getattr\f[] policy get the target path
+.IP \[bu] 2
+For each file attempt rename:
+.RS 2
+.IP \[bu] 2
+If the source drive != target drive:
+.IP \[bu] 2
+Clone target path from target drive to source drive
+.IP \[bu] 2
+Rename
+.RE
+.IP \[bu] 2
+If \f[B]any\f[] of the renames succeed the higher level rename is
+considered a success
+.IP \[bu] 2
+If \f[B]no\f[] renames succeed the first error encountered will be
+returned
+.IP \[bu] 2
+On success:
+.RS 2
+.IP \[bu] 2
+Remove the target from all drives with no source file
+.IP \[bu] 2
+Remove the source from all drives which failed to rename
+.RE
+.PP
+The the removals are subject to normal entitlement checks.
+.PP
+The above behavior will help minimize the likelihood of EXDEV being
+returned but it will still be possible.
+To remove the possibility all together mergerfs would need to perform
+the as \f[C]mv\f[] does when it receives EXDEV normally.
 .SS readdir
 .PP
 readdir (http://linux.die.net/man/3/readdir) is very different from most
@@ -312,8 +372,9 @@ drives based on the fragment size and sums the number of adjusted blocks
 and inodes.
 This means you will see the combined space of all sources.
 Total, used, and free.
-The sources however are dedupped based on the drive so multiple points
-on the same drive will not result in double counting it\[aq]s space.
+The sources however are dedupped based on the drive so multiple mount
+points on the same drive will not result in double counting it\[aq]s
+space.
 .PP
 \f[B]NOTE:\f[] Since we can not (easily) replicate the atomicity of an
 \f[B]mkdir\f[] or \f[B]mknod\f[] without side effects those calls will
@@ -605,8 +666,8 @@ rsync (http://linux.die.net/man/1/rsync).
 .SH Known Issues / Bugs
 .SS Samba
 .IP \[bu] 2
-Moving files or directories between directories on a SMB share fail with
-IO errors.
+Moving files or directories between some directories on a SMB share fail
+with IO errors.
 .RS 2
 .PP
 Workaround: Copy the file/directory and then remove the original rather
@@ -617,7 +678,7 @@ GVFS\-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed
 to handle certain error codes correctly.
 Particularly \f[B]STATUS_NOT_SAME_DEVICE\f[] which comes from the
 \f[B]EXDEV\f[] which is returned by \f[B]rename\f[] when the call is
-crossing mountpoints.
+crossing mount points.
 When a program gets an \f[B]EXDEV\f[] it needs to explicitly take an
 alternate action to accomplish it\[aq]s goal.
 In the case of \f[B]mv\f[] or similar it tries \f[B]rename\f[] and on
