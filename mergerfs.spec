@@ -4,7 +4,7 @@ Release:	1%{?dist}
 Summary:	A FUSE union filesystem
 
 Group:		Applications/System
-License:	MIT
+License:	ISC
 URL:		https://github.com/trapexit/mergerfs
 
 Source:		mergerfs-%{version}.tar.gz
