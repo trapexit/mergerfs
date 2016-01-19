@@ -111,8 +111,6 @@ $(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
 clone: $(TARGET)
 	$(LN) -fs "$<" "$@"
 
-fsck.mergerfs: tools/fsck.mergerfs
-
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
 
@@ -145,7 +143,7 @@ clean: rpm-clean
 distclean: clean
 	$(GIT) clean -fd
 
-install: install-base install-clone install-mount.mergerfs install-tools install-man
+install: install-base install-clone install-mount.mergerfs install-man
 
 install-base: $(TARGET)
 	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
@@ -157,9 +155,6 @@ install-clone: clone
 install-mount.mergerfs: mount.mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
-
-install-tools: fsck.mergerfs
-	$(INSTALL) -v -m 0755 -D "tools/$<" "$(INSTALLSBINDIR)/$<"
 
 install-man: $(MANPAGE)
 	$(INSTALL) -v -m 0644 -D "$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
