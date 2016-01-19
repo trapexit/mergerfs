@@ -304,7 +304,9 @@ A B C
 
 # TOOLING
 
-* /usr/sbin/fsck.mergerfs: Provides permissions and ownership auditing and the ability to fix them.
+Find extra tooling to help with managing `mergerfs` at: https://github.com/trapexit/mergerfs-tools
+
+* fsck.mergerfs: Provides permissions and ownership auditing and the ability to fix them
 
 # TIPS / NOTES
 
