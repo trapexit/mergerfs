@@ -47,9 +47,8 @@ _mkdir(Policy::Func::Search  searchFunc,
   int rv;
   int error;
   string dirname;
-  string fullpath;
+  string existingpath;
   vector<string> createpaths;
-  vector<string> existingpath;
 
   dirname = fs::path::dirname(fusepath);
   rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
@@ -65,10 +64,10 @@ _mkdir(Policy::Func::Search  searchFunc,
     {
       string &createpath = createpaths[i];
 
-      if(createpath != existingpath[0])
+      if(createpath != existingpath)
         {
           const ugid::SetRootGuard ugidGuard;
-          fs::clonepath(existingpath[0],createpath,dirname);
+          fs::clonepath(existingpath,createpath,dirname);
         }
 
       fs::path::append(createpath,fusepath);
