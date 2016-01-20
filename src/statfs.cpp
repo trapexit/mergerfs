@@ -20,18 +20,43 @@
 #include <errno.h>
 
 #include <climits>
+#include <set>
 #include <string>
 #include <vector>
-#include <map>
 
-#include "ugid.hpp"
 #include "config.hpp"
 #include "rwlock.hpp"
+#include "ugid.hpp"
 
 using std::string;
 using std::vector;
-using std::map;
+using std::set;
 using std::pair;
+
+#define CMP(FOO) (lhs.f_##FOO < rhs.f_##FOO)
+
+struct
+statvfs_compare
+{
+  bool
+  operator()(const struct statvfs &lhs,
+             const struct statvfs &rhs) const
+  {
+    return (CMP(bsize)  &&
+            CMP(frsize) &&
+            CMP(blocks) &&
+            CMP(bfree)  &&
+            CMP(bavail) &&
+            CMP(files)  &&
+            CMP(ffree)  &&
+            CMP(favail) &&
+            CMP(fsid)   &&
+            CMP(flag)   &&
+            CMP(namemax));
+  }
+};
+
+typedef set<struct statvfs,statvfs_compare> statvfs_set;
 
 static
 void
@@ -67,19 +92,18 @@ int
 _statfs(const vector<string> &srcmounts,
         struct statvfs       &fsstat)
 {
+  statvfs_set fsstats;
   unsigned long min_bsize   = ULONG_MAX;
   unsigned long min_frsize  = ULONG_MAX;
   unsigned long min_namemax = ULONG_MAX;
-  map<unsigned long,struct statvfs> fsstats;
-  vector<string>::const_iterator iter;
-  vector<string>::const_iterator enditer;
 
   for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       int rv;
       struct statvfs fsstat;
+
       rv = ::statvfs(srcmounts[i].c_str(),&fsstat);
-      if(rv != 0)
+      if(rv == -1)
         continue;
 
       if(min_bsize > fsstat.f_bsize)
@@ -89,19 +113,22 @@ _statfs(const vector<string> &srcmounts,
       if(min_namemax > fsstat.f_namemax)
         min_namemax = fsstat.f_namemax;
 
-      fsstats.insert(pair<unsigned long,struct statvfs>(fsstat.f_fsid,fsstat));
+      fsstats.insert(fsstat);
     }
 
-  map<unsigned long,struct statvfs>::iterator fsstatiter    = fsstats.begin();
-  map<unsigned long,struct statvfs>::iterator endfsstatiter = fsstats.end();
+  statvfs_set::const_iterator fsstatiter    = fsstats.begin();
+  statvfs_set::const_iterator endfsstatiter = fsstats.end();
   if(fsstatiter != endfsstatiter)
     {
-      fsstat = fsstatiter->second;
+      fsstat = *fsstatiter;
       _normalize_statvfs(&fsstat,min_bsize,min_frsize,min_namemax);
       for(++fsstatiter;fsstatiter != endfsstatiter;++fsstatiter)
         {
-          _normalize_statvfs(&fsstatiter->second,min_bsize,min_frsize,min_namemax);
-          _merge_statvfs(&fsstat,&fsstatiter->second);
+          struct statvfs tmp = *fsstatiter;
+
+          _normalize_statvfs(&tmp,min_bsize,min_frsize,min_namemax);
+
+          _merge_statvfs(&fsstat,&tmp);
         }
     }
 
