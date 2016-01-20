@@ -139,7 +139,7 @@ It could be extended to offer the ability to see all files found. Perhaps concat
 
 #### statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple mount points on the same drive will not result in double counting it's space.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple mount points on the same drive will not result in double counting it's space. It is possible due to a race condition that the same drive could be double counted but it's rather unlikely.
 
 **NOTE:** Since we can not (easily) replicate the atomicity of an **mkdir** or **mknod** without side effects those calls will first do a scan to see if the file exists and then attempts a create. This means there is a slight race condition. Worse case you'd end up with the directory or file on more than one mount.
 
