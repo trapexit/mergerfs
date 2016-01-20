@@ -22,6 +22,7 @@
 #include <string>
 
 #include "config.hpp"
+#include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -30,10 +31,12 @@
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using namespace mergerfs;
 
 static
 int
-_symlink(Policy::Func::Create  createFunc,
+_symlink(Policy::Func::Search  searchFunc,
+         Policy::Func::Create  createFunc,
          const vector<string> &srcmounts,
          const size_t          minfreespace,
          const string         &oldpath,
@@ -41,20 +44,33 @@ _symlink(Policy::Func::Create  createFunc,
 {
   int rv;
   int error;
-  string newpathdir;
+  string dirname;
+  string existingpath;
   vector<string> newpathdirs;
 
-  newpathdir = fs::path::dirname(newpath);
-  rv = createFunc(srcmounts,newpathdir,minfreespace,newpathdirs);
+  dirname = fs::path::dirname(newpath);
+  rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
+  if(rv == -1)
+    return -errno;
+
+  rv = createFunc(srcmounts,dirname,minfreespace,newpathdirs);
   if(rv == -1)
     return -errno;
 
   error = -1;
   for(size_t i = 0, ei = newpathdirs.size(); i != ei; i++)
     {
-      fs::path::append(newpathdirs[i],newpath);
+      string &newpathdir = newpathdirs[i];
 
-      rv = symlink(oldpath.c_str(),newpathdirs[i].c_str());
+      if(newpathdir != existingpath)
+        {
+          const ugid::SetRootGuard ugidGuard;
+          fs::clonepath(existingpath,newpathdir,dirname);
+        }
+
+      fs::path::append(newpathdir,newpath);
+
+      rv = symlink(oldpath.c_str(),newpathdir.c_str());
 
       error = calc_error(rv,error,errno);
     }
@@ -75,7 +91,8 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
-      return _symlink(config.symlink,
+      return _symlink(config.getattr,
+                      config.symlink,
                       config.srcmounts,
                       config.minfreespace,
                       oldpath,
