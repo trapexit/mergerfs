@@ -1,10 +1,10 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-01-12
+% 2016-01-21
 
 # NAME
 
-mergerfs - another FUSE union filesystem
+mergerfs - another (FUSE based) union filesystem
 
 # SYNOPSIS
 
@@ -12,20 +12,19 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
-**mergerfs** is similar to **mhddfs**, **unionfs**, and **aufs**. Like **mhddfs** in that it too uses **FUSE**. Like **aufs** in that it provides multiple policies for how to handle behavior.
-
-Why **mergerfs** when those exist? **mhddfs** has not been updated in some time nor very flexible. There are also security issues when with running as root. **aufs** is more flexible than **mhddfs** but kernel based and difficult to debug when problems arise. Neither support file attributes ([chattr](http://linux.die.net/man/1/chattr)).
+**mergerfs** is a union filesystem geared towards simplifing storage and management of files across numerous commodity storage devices. It is similar to **mhddfs**, **unionfs**, and **aufs**.
 
 # FEATURES
 
 * Runs in userspace (FUSE)
 * Configurable behaviors
-* Supports extended attributes (xattrs)
-* Supports file attributes (chattr)
-* Dynamically configurable (via xattrs)
+* Support for extended attributes (xattrs)
+* Support for file attributes (chattr)
+* Runtime configurable (via xattrs)
 * Safe to run as root
 * Opportunistic credential caching
 * Works with heterogeneous filesystem types
+* Handling of writes to full drives
 
 # OPTIONS
 
@@ -97,7 +96,7 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 | create   | epmfs  |
 | search   | ff     |
 
-#### rename ####
+#### rename & link ####
 
 [rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the source and destination paths existing on different mount points it will return `-1` with `errno = EXDEV`. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. This can lead to several undesirable situtations with or without errors and it's not entirely obvious what to do when an error occurs.
 
@@ -131,9 +130,11 @@ The the removals are subject to normal entitlement checks.
 
 The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible. To remove the possibility all together mergerfs would need to perform the as `mv` does when it receives EXDEV normally.
 
+`link` uses the same basic strategy.
+
 #### readdir ####
 
-[readdir](http://linux.die.net/man/3/readdir) is very different from most functions in this realm. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple **first found** merging of directories and file found. That is: only the first file or directory found for a directory is returned. Given how FUSE works though the data representing the returned entry comes from **getattr**.
+[readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple **first found** merging of directories and files found. That is: only the first file or directory found for a directory is returned. Given how FUSE works though the data representing the returned entry comes from **getattr**.
 
 It could be extended to offer the ability to see all files found. Perhaps concatenating **#** and a number to the name. But to really be useful you'd need to be able to access them which would complicate file lookup.
 
@@ -155,7 +156,7 @@ $ wget https://github.com/trapexit/mergerfs/archive/master.zip
 
 #### Debian / Ubuntu
 ```
-$ sudo apt-get install g++ pkg-config git git-buildpackage pandoc debhelper libfuse-dev libattr1-dev
+$ sudo apt-get install g++ pkg-config git git-buildpackage pandoc debhelper libfuse-dev libattr1-dev python
 $ cd mergerfs
 $ make deb
 $ sudo dpkg -i ../mergerfs_version_arch.deb
@@ -164,7 +165,7 @@ $ sudo dpkg -i ../mergerfs_version_arch.deb
 #### Fedora
 ```
 $ su -
-# dnf install rpm-build fuse-devel libattr-devel pandoc gcc-c++ git make which
+# dnf install rpm-build fuse-devel libattr-devel pandoc gcc-c++ git make which python
 # cd mergerfs
 # make rpm
 # rpm -i rpmbuild/RPMS/<arch>/mergerfs-<verion>.<arch>.rpm
@@ -172,7 +173,7 @@ $ su -
 
 #### Generically
 
-Have pkg-config, pandoc, libfuse, libattr1 installed.
+Have git, python, pkg-config, pandoc, libfuse, libattr1 installed.
 
 ```
 $ cd mergerfs
@@ -264,26 +265,29 @@ For **user.mergerfs.srcmounts** there are several instructions available for man
 
 ##### minfreespace #####
 
-Input: interger with an optional suffix. **K**, **M**, or **G**.
+Input: interger with an optional multiplier suffix. **K**, **M**, or **G**.
+
 Output: value in bytes
 
 ##### moveonenospc #####
 
 Input: **true** and **false**
+
 Ouput: **true** or **false**
 
 ##### categories / funcs #####
 
 Input: short policy string as described elsewhere in this document
+
 Output: the policy string except for categories where its funcs have multiple types. In that case it will be a comma separated list.
 
 #### mergerfs file xattrs ####
 
 While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) **mergerfs** offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
 
-* **user.mergerfs.basepath:** the base mount point for the file given the current search policy
+* **user.mergerfs.basepath:** the base mount point for the file given the current getattr policy
 * **user.mergerfs.relpath:** the relative path of the file from the perspective of the mount point
-* **user.mergerfs.fullpath:** the full path of the original file given the search policy
+* **user.mergerfs.fullpath:** the full path of the original file given the getattr policy
 * **user.mergerfs.allpaths:** a NUL ('\0') separated list of full paths to all files found
 
 ```
@@ -309,11 +313,11 @@ Find extra tooling to help with managing `mergerfs` at: https://github.com/trape
 # TIPS / NOTES
 
 * If you don't see some directories / files you expect in a merged point be sure the user has permission to all the underlying directories. If `/drive0/a` has is owned by `root:root` with ACLs set to `0700` and `/drive1/a` is `root:root` and `0755` you'll see only `/drive1/a`. Use `fsck.mergerfs` to audit the drive for out of sync permissions.
-* Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. Generally if something succeeds when reading it returns the data it can. If something fails when making an action we continue on and return the last error.
+* Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned.
 * The recommended options are **defaults,allow_other**. The **allow_other** is to allow users who are not the one which executed mergerfs access to the mountpoint. **defaults** is described above and should offer the best performance. It's possible that if you're running on an older platform the **splice** features aren't available and could error. In that case simply use the other options manually.
-* If write performance is valued more than read it may be useful to enable **direct_io**.
-* Remember that some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
-* An example: [Kodi](http://kodi.tv) and [Plex](http://plex.tv) can apparently use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether or not to scan for new content rather than simply performing a full scan. If using the current default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
+* If write performance is valued more than read it may be useful to enable **direct_io**. Best to benchmark with and without and choose appropriately.
+* Remember: some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
+* An example: [Kodi](http://kodi.tv) and [Plex](http://plex.tv) can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the current default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync).
 
 # Known Issues / Bugs
