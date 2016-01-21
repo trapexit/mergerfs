@@ -99,7 +99,7 @@ $(warning "xattr not available: disabling")
 CFLAGS += -DWITHOUT_XATTR
 endif
 
-all: $(TARGET) clone
+all: $(TARGET)
 
 help:
 	@echo "usage: make"
@@ -107,9 +107,6 @@ help:
 
 $(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
-
-clone: $(TARGET)
-	$(LN) -fs "$<" "$@"
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
@@ -137,20 +134,16 @@ obj/%.o: src/%.cpp
 clean: rpm-clean
 	$(RM) -rf obj
 	$(RM) -f src/version.hpp
-	$(RM) -f "$(TARGET)" "$(MANPAGE)" clone
+	$(RM) -f "$(TARGET)" "$(MANPAGE)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
 
 distclean: clean
 	$(GIT) clean -fd
 
-install: install-base install-clone install-mount.mergerfs install-man
+install: install-base install-mount.mergerfs install-man
 
 install-base: $(TARGET)
 	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
-
-install-clone: clone
-	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
 
 install-mount.mergerfs: mount.mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
@@ -162,13 +155,13 @@ install-man: $(MANPAGE)
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
 
-uninstall: uninstall-base uninstall-clone uninstall-man
+uninstall: uninstall-base uninstall-mount.mergerfs uninstall-man
 
 uninstall-base:
 	$(RM) -f "$(INSTALLBINDIR)/$(TARGET)"
 
-uninstall-clone:
-	$(RM) -f "$(INSTALLBINDIR)/clone"
+uninstall-mount.mergerfs:
+	$(RM) -f "$(INSTALLBINDIR)/mount.mergerfs"
 
 uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
