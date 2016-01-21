@@ -1,43 +1,36 @@
 .\"t
-.TH "mergerfs" "1" "2016\-01\-12" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-01\-21" "mergerfs user manual" ""
 .SH NAME
 .PP
-mergerfs \- another FUSE union filesystem
+mergerfs \- another (FUSE based) union filesystem
 .SH SYNOPSIS
 .PP
 mergerfs \-o<options> <srcmounts> <mountpoint>
 .SH DESCRIPTION
 .PP
-\f[B]mergerfs\f[] is similar to \f[B]mhddfs\f[], \f[B]unionfs\f[], and
-\f[B]aufs\f[].
-Like \f[B]mhddfs\f[] in that it too uses \f[B]FUSE\f[].
-Like \f[B]aufs\f[] in that it provides multiple policies for how to
-handle behavior.
-.PP
-Why \f[B]mergerfs\f[] when those exist?
-\f[B]mhddfs\f[] has not been updated in some time nor very flexible.
-There are also security issues when with running as root.
-\f[B]aufs\f[] is more flexible than \f[B]mhddfs\f[] but kernel based and
-difficult to debug when problems arise.
-Neither support file attributes
-(chattr (http://linux.die.net/man/1/chattr)).
+\f[B]mergerfs\f[] is a union filesystem geared towards simplifing
+storage and management of files across numerous commodity storage
+devices.
+It is similar to \f[B]mhddfs\f[], \f[B]unionfs\f[], and \f[B]aufs\f[].
 .SH FEATURES
 .IP \[bu] 2
 Runs in userspace (FUSE)
 .IP \[bu] 2
 Configurable behaviors
 .IP \[bu] 2
-Supports extended attributes (xattrs)
+Support for extended attributes (xattrs)
 .IP \[bu] 2
-Supports file attributes (chattr)
+Support for file attributes (chattr)
 .IP \[bu] 2
-Dynamically configurable (via xattrs)
+Runtime configurable (via xattrs)
 .IP \[bu] 2
 Safe to run as root
 .IP \[bu] 2
 Opportunistic credential caching
 .IP \[bu] 2
 Works with heterogeneous filesystem types
+.IP \[bu] 2
+Handling of writes to full drives
 .SH OPTIONS
 .SS options
 .IP \[bu] 2
@@ -258,7 +251,7 @@ T}@T{
 ff
 T}
 .TE
-.SS rename
+.SS rename & link
 .PP
 rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
 function in a merged system.
@@ -348,14 +341,16 @@ The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 To remove the possibility all together mergerfs would need to perform
 the as \f[C]mv\f[] does when it receives EXDEV normally.
+.PP
+\f[C]link\f[] uses the same basic strategy.
 .SS readdir
 .PP
-readdir (http://linux.die.net/man/3/readdir) is very different from most
-functions in this realm.
+readdir (http://linux.die.net/man/3/readdir) is different from all other
+filesystem functions.
 It certainly could have it\[aq]s own set of policies to tweak its
 behavior.
 At this time it provides a simple \f[B]first found\f[] merging of
-directories and file found.
+directories and files found.
 That is: only the first file or directory found for a directory is
 returned.
 Given how FUSE works though the data representing the returned entry
@@ -375,13 +370,8 @@ Total, used, and free.
 The sources however are dedupped based on the drive so multiple mount
 points on the same drive will not result in double counting it\[aq]s
 space.
-.PP
-\f[B]NOTE:\f[] Since we can not (easily) replicate the atomicity of an
-\f[B]mkdir\f[] or \f[B]mknod\f[] without side effects those calls will
-first do a scan to see if the file exists and then attempts a create.
-This means there is a slight race condition.
-Worse case you\[aq]d end up with the directory or file on more than one
-mount.
+It is possible due to a race condition that the same drive could be
+double counted but it\[aq]s rather unlikely.
 .SH BUILDING
 .PP
 \f[B]NOTE:\f[] Prebuilt packages can be found at:
@@ -400,7 +390,7 @@ $\ wget\ https://github.com/trapexit/mergerfs/archive/master.zip
 .IP
 .nf
 \f[C]
-$\ sudo\ apt\-get\ install\ g++\ pkg\-config\ git\ git\-buildpackage\ pandoc\ debhelper\ libfuse\-dev\ libattr1\-dev
+$\ sudo\ apt\-get\ install\ g++\ pkg\-config\ git\ git\-buildpackage\ pandoc\ debhelper\ libfuse\-dev\ libattr1\-dev\ python
 $\ cd\ mergerfs
 $\ make\ deb
 $\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
@@ -411,7 +401,7 @@ $\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
 .nf
 \f[C]
 $\ su\ \-
-#\ dnf\ install\ rpm\-build\ fuse\-devel\ libattr\-devel\ pandoc\ gcc\-c++\ git\ make\ which
+#\ dnf\ install\ rpm\-build\ fuse\-devel\ libattr\-devel\ pandoc\ gcc\-c++\ git\ make\ which\ python
 #\ cd\ mergerfs
 #\ make\ rpm
 #\ rpm\ \-i\ rpmbuild/RPMS/<arch>/mergerfs\-<verion>.<arch>.rpm
@@ -419,7 +409,7 @@ $\ su\ \-
 .fi
 .SS Generically
 .PP
-Have pkg\-config, pandoc, libfuse, libattr1 installed.
+Have git, python, pkg\-config, pandoc, libfuse, libattr1 installed.
 .IP
 .nf
 \f[C]
@@ -554,16 +544,19 @@ T}
 .TE
 .SS minfreespace
 .PP
-Input: interger with an optional suffix.
+Input: interger with an optional multiplier suffix.
 \f[B]K\f[], \f[B]M\f[], or \f[B]G\f[].
+.PP
 Output: value in bytes
 .SS moveonenospc
 .PP
-Input: \f[B]true\f[] and \f[B]false\f[] Ouput: \f[B]true\f[] or
-\f[B]false\f[]
+Input: \f[B]true\f[] and \f[B]false\f[]
+.PP
+Ouput: \f[B]true\f[] or \f[B]false\f[]
 .SS categories / funcs
 .PP
 Input: short policy string as described elsewhere in this document
+.PP
 Output: the policy string except for categories where its funcs have
 multiple types.
 In that case it will be a comma separated list.
@@ -577,13 +570,13 @@ To access the values you will need to issue a
 getxattr (http://linux.die.net/man/2/getxattr) for one of the following:
 .IP \[bu] 2
 \f[B]user.mergerfs.basepath:\f[] the base mount point for the file given
-the current search policy
+the current getattr policy
 .IP \[bu] 2
 \f[B]user.mergerfs.relpath:\f[] the relative path of the file from the
 perspective of the mount point
 .IP \[bu] 2
 \f[B]user.mergerfs.fullpath:\f[] the full path of the original file
-given the search policy
+given the getattr policy
 .IP \[bu] 2
 \f[B]user.mergerfs.allpaths:\f[] a NUL (\[aq]\[aq]) separated list of
 full paths to all files found
@@ -604,9 +597,12 @@ A\ B\ C
 \f[]
 .fi
 .SH TOOLING
+.PP
+Find extra tooling to help with managing \f[C]mergerfs\f[] at:
+https://github.com/trapexit/mergerfs\-tools
 .IP \[bu] 2
-/usr/sbin/fsck.mergerfs: Provides permissions and ownership auditing and
-the ability to fix them.
+fsck.mergerfs: Provides permissions and ownership auditing and the
+ability to fix them
 .SH TIPS / NOTES
 .IP \[bu] 2
 If you don\[aq]t see some directories / files you expect in a merged
@@ -620,9 +616,9 @@ permissions.
 Since POSIX gives you only error or success on calls its difficult to
 determine the proper behavior when applying the behavior to multiple
 targets.
-Generally if something succeeds when reading it returns the data it can.
-If something fails when making an action we continue on and return the
-last error.
+\f[B]mergerfs\f[] will return an error only if all attempts of an action
+fail.
+Any success will lead to a success returned.
 .IP \[bu] 2
 The recommended options are \f[B]defaults,allow_other\f[].
 The \f[B]allow_other\f[] is to allow users who are not the one which
@@ -635,18 +631,19 @@ In that case simply use the other options manually.
 .IP \[bu] 2
 If write performance is valued more than read it may be useful to enable
 \f[B]direct_io\f[].
+Best to benchmark with and without and choose appropriately.
 .IP \[bu] 2
-Remember that some policies mixed with some functions may result in
-strange behaviors.
+Remember: some policies mixed with some functions may result in strange
+behaviors.
 Not that some of these behaviors and race conditions couldn\[aq]t happen
 outside \f[B]mergerfs\f[] but that they are far more likely to occur on
 account of attempt to merge together multiple sources of data which
 could be out of sync due to the different policies.
 .IP \[bu] 2
-An example: Kodi (http://kodi.tv) and Plex (http://plex.tv) can
-apparently use directory mtime (http://linux.die.net/man/2/stat) to more
-efficiently determine whether or not to scan for new content rather than
-simply performing a full scan.
+An example: Kodi (http://kodi.tv) and Plex (http://plex.tv) can use
+directory mtime (http://linux.die.net/man/2/stat) to more efficiently
+determine whether to scan for new content rather than simply performing
+a full scan.
 If using the current default \f[B]getattr\f[] policy of \f[B]ff\f[] its
 possible \f[B]Kodi\f[] will miss an update on account of it returning
 the first directory found\[aq]s \f[B]stat\f[] info and its a later
