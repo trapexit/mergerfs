@@ -19,6 +19,7 @@
 #include <sys/statvfs.h>
 #include <errno.h>
 
+#include <algorithm>
 #include <climits>
 #include <set>
 #include <string>
@@ -30,33 +31,35 @@
 
 using std::string;
 using std::vector;
-using std::set;
 using std::pair;
 
-#define CMP(FOO) (lhs.f_##FOO < rhs.f_##FOO)
+#define EQ(FOO) (lhs.f_##FOO == rhs.f_##FOO)
 
-struct
-statvfs_compare
+static
+bool
+operator==(const struct statvfs &lhs,
+           const struct statvfs &rhs)
 {
-  bool
-  operator()(const struct statvfs &lhs,
-             const struct statvfs &rhs) const
-  {
-    return (CMP(bsize)  &&
-            CMP(frsize) &&
-            CMP(blocks) &&
-            CMP(bfree)  &&
-            CMP(bavail) &&
-            CMP(files)  &&
-            CMP(ffree)  &&
-            CMP(favail) &&
-            CMP(fsid)   &&
-            CMP(flag)   &&
-            CMP(namemax));
-  }
-};
+  return (EQ(bsize)  &&
+          EQ(frsize) &&
+          EQ(blocks) &&
+          EQ(bfree)  &&
+          EQ(bavail) &&
+          EQ(files)  &&
+          EQ(ffree)  &&
+          EQ(favail) &&
+          EQ(fsid)   &&
+          EQ(flag)   &&
+          EQ(namemax));
+}
 
-typedef set<struct statvfs,statvfs_compare> statvfs_set;
+static
+bool
+member(const vector<struct statvfs> &haystack,
+       const struct statvfs         &needle)
+{
+  return (std::find(haystack.begin(),haystack.end(),needle) != haystack.end());
+}
 
 static
 void
@@ -92,18 +95,18 @@ int
 _statfs(const vector<string> &srcmounts,
         struct statvfs       &fsstat)
 {
-  statvfs_set fsstats;
+  vector<struct statvfs> fsstats;
   unsigned long min_bsize   = ULONG_MAX;
   unsigned long min_frsize  = ULONG_MAX;
   unsigned long min_namemax = ULONG_MAX;
 
-  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+  for(size_t i = 0, ei = srcmounts.size(); i < ei; i++)
     {
       int rv;
       struct statvfs fsstat;
 
       rv = ::statvfs(srcmounts[i].c_str(),&fsstat);
-      if(rv == -1)
+      if((rv == -1) || member(fsstats,fsstat))
         continue;
 
       if(min_bsize > fsstat.f_bsize)
@@ -113,18 +116,17 @@ _statfs(const vector<string> &srcmounts,
       if(min_namemax > fsstat.f_namemax)
         min_namemax = fsstat.f_namemax;
 
-      fsstats.insert(fsstat);
+      fsstats.push_back(fsstat);
     }
 
-  statvfs_set::const_iterator fsstatiter    = fsstats.begin();
-  statvfs_set::const_iterator endfsstatiter = fsstats.end();
-  if(fsstatiter != endfsstatiter)
+  if(!fsstats.empty())
     {
-      fsstat = *fsstatiter;
+      fsstat = fsstats[0];
       _normalize_statvfs(&fsstat,min_bsize,min_frsize,min_namemax);
-      for(++fsstatiter;fsstatiter != endfsstatiter;++fsstatiter)
+
+      for(size_t i = 1, ei = fsstats.size(); i < ei; i++)
         {
-          struct statvfs tmp = *fsstatiter;
+          struct statvfs tmp = fsstats[i];
 
           _normalize_statvfs(&tmp,min_bsize,min_frsize,min_namemax);
 
