@@ -33,10 +33,12 @@ make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 
 %files
 %{_bindir}/*
-%{_sbindir}/*
 %doc %{_mandir}/*
 
 %changelog
+* Mon Jan 25 2016 Antonio SJ Musumeci <trapexit@spawn.link>
+- Remove sbin files
+
 * Sat Sep 05 2015 Antonio SJ Musumeci <trapexit@spawn.link>
 - Include PREFIX to install
 
