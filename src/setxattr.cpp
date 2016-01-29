@@ -287,41 +287,73 @@ _setxattr_controlfile(Config       &config,
   return -EINVAL;
 }
 
+#ifndef WITHOUT_XATTR
+
+static
+int
+_setxattr_loop_core(const string *basepath,
+                    const char   *fusepath,
+                    const char   *attrname,
+                    const char   *attrval,
+                    const size_t  attrvalsize,
+                    const int     flags,
+                    const int     error)
+{
+  int rv;
+  string fullpath;
+
+  fs::path::make(basepath,fusepath,fullpath);
+
+  rv = ::lsetxattr(fullpath.c_str(),attrname,attrval,attrvalsize,flags);
+
+  return calc_error(rv,error,errno);
+}
+
+static
+int
+_setxattr_loop(const vector<const string*> &basepaths,
+               const char                  *fusepath,
+               const char                  *attrname,
+               const char                  *attrval,
+               const size_t                 attrvalsize,
+               const int                    flags)
+{
+  int error;
+
+  error = -1;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      error = _setxattr_loop_core(basepaths[i],fusepath,
+                                  attrname,attrval,attrvalsize,flags,
+                                  error);
+    }
+
+  return -error;
+}
+
 static
 int
 _setxattr(Policy::Func::Action  actionFunc,
           const vector<string> &srcmounts,
           const size_t          minfreespace,
-          const string         &fusepath,
+          const char           *fusepath,
           const char           *attrname,
           const char           *attrval,
           const size_t          attrvalsize,
           const int             flags)
 {
-#ifndef WITHOUT_XATTR
   int rv;
-  int error;
-  vector<string> paths;
+  vector<const string*> basepaths;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
+  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  error = -1;
-  for(size_t i = 0, ei = paths.size(); i != ei; i++)
-    {
-      fs::path::append(paths[i],fusepath);
-
-      rv = ::lsetxattr(paths[i].c_str(),attrname,attrval,attrvalsize,flags);
-
-      error = calc_error(rv,error,errno);
-    }
-
-  return -error;
-#else
-  return -ENOTSUP;
-#endif
+  return _setxattr_loop(basepaths,fusepath,attrname,attrval,attrvalsize,flags);
 }
+
+#endif
+
 namespace mergerfs
 {
   namespace fuse
@@ -342,6 +374,7 @@ namespace mergerfs
                                      string(attrval,attrvalsize),
                                      flags);
 
+#ifndef WITHOUT_XATTR
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);
 
@@ -353,6 +386,9 @@ namespace mergerfs
                        attrval,
                        attrvalsize,
                        flags);
+#else
+      return -ENOTSUP;
+#endif
     }
   }
 }

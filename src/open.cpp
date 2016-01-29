@@ -35,30 +35,42 @@ using mergerfs::Policy;
 
 static
 int
-_open(Policy::Func::Search  searchFunc,
-      const vector<string> &srcmounts,
-      const size_t          minfreespace,
-      const string         &fusepath,
-      const int             flags,
-      uint64_t             &fh)
+_open_core(const string *basepath,
+           const char   *fusepath,
+           const int     flags,
+           uint64_t     &fh)
 {
   int fd;
-  int rv;
-  vector<string> path;
+  string fullpath;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
-  if(rv == -1)
-    return -errno;
+  fs::path::make(basepath,fusepath,fullpath);
 
-  fs::path::append(path[0],fusepath);
-
-  fd = ::open(path[0].c_str(),flags);
+  fd = ::open(fullpath.c_str(),flags);
   if(fd == -1)
     return -errno;
 
   fh = reinterpret_cast<uint64_t>(new FileInfo(fd));
 
   return 0;
+}
+
+static
+int
+_open(Policy::Func::Search  searchFunc,
+      const vector<string> &srcmounts,
+      const size_t          minfreespace,
+      const char           *fusepath,
+      const int             flags,
+      uint64_t             &fh)
+{
+  int rv;
+  vector<const string*> basepaths;
+
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  if(rv == -1)
+    return -errno;
+
+  return _open_core(basepaths[0],fusepath,flags,fh);
 }
 
 namespace mergerfs

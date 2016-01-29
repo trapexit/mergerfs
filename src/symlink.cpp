@@ -35,47 +35,79 @@ using namespace mergerfs;
 
 static
 int
+_symlink_loop_core(const string &existingpath,
+                   const string &newbasepath,
+                   const char   *oldpath,
+                   const char   *newpath,
+                   const char   *newdirpath,
+                   const int     error)
+{
+  int rv;
+  string fullnewpath;
+
+  if(newbasepath != existingpath)
+    {
+      const ugid::SetRootGuard ugidGuard;
+      fs::clonepath(existingpath,newbasepath,newdirpath);
+    }
+
+  fs::path::make(&newbasepath,newpath,fullnewpath);
+
+  rv = ::symlink(oldpath,fullnewpath.c_str());
+
+  return calc_error(rv,error,errno);
+}
+
+static
+int
+_symlink_loop(const string                &existingpath,
+              const vector<const string*>  newbasepaths,
+              const char                  *oldpath,
+              const char                  *newpath,
+              const char                  *newdirpath)
+{
+  int error;
+
+  error = -1;
+  for(size_t i = 0, ei = newbasepaths.size(); i != ei; i++)
+    {
+      error = _symlink_loop_core(existingpath,*newbasepaths[i],
+                                 oldpath,newpath,newdirpath,
+                                 error);
+    }
+
+  return -error;
+}
+
+static
+int
 _symlink(Policy::Func::Search  searchFunc,
          Policy::Func::Create  createFunc,
          const vector<string> &srcmounts,
          const size_t          minfreespace,
-         const string         &oldpath,
-         const string         &newpath)
+         const char           *oldpath,
+         const char           *newpath)
 {
   int rv;
-  int error;
-  string dirname;
-  string existingpath;
-  vector<string> newpathdirs;
+  string newdirpath;
+  const char *newdirpathcstr;
+  vector<const string*> newbasepaths;
+  vector<const string*> existingpaths;
 
-  dirname = fs::path::dirname(newpath);
-  rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
+  newdirpath = newpath;
+  fs::path::dirname(newdirpath);
+  newdirpathcstr = newdirpath.c_str();
+
+  rv = searchFunc(srcmounts,newdirpathcstr,minfreespace,existingpaths);
   if(rv == -1)
     return -errno;
 
-  rv = createFunc(srcmounts,dirname,minfreespace,newpathdirs);
+  rv = createFunc(srcmounts,newdirpathcstr,minfreespace,newbasepaths);
   if(rv == -1)
     return -errno;
 
-  error = -1;
-  for(size_t i = 0, ei = newpathdirs.size(); i != ei; i++)
-    {
-      string &newpathdir = newpathdirs[i];
-
-      if(newpathdir != existingpath)
-        {
-          const ugid::SetRootGuard ugidGuard;
-          fs::clonepath(existingpath,newpathdir,dirname);
-        }
-
-      fs::path::append(newpathdir,newpath);
-
-      rv = symlink(oldpath.c_str(),newpathdir.c_str());
-
-      error = calc_error(rv,error,errno);
-    }
-
-  return -error;
+  return _symlink_loop(*existingpaths[0],newbasepaths,
+                       oldpath,newpath,newdirpathcstr);
 }
 
 namespace mergerfs

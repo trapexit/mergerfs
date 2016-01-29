@@ -31,18 +31,19 @@ using std::size_t;
 
 static
 int
-_ffwp(const vector<string> &basepaths,
-      const string         &fusepath,
-      vector<string>       &paths)
+_ffwp(const vector<string>  &basepaths,
+      const char            *fusepath,
+      vector<const string*> &paths)
 {
-  string fallback;
+  int rv;
+  struct stat st;
+  string fullpath;
+  const string *fallback;
 
+  fallback = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int           rv;
-      struct stat   st;
-      string        fullpath;
-      const string &basepath = basepaths[i];
+      const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
@@ -58,7 +59,7 @@ _ffwp(const vector<string> &basepaths,
         }
     }
 
-  if(fallback.empty())
+  if(fallback == NULL)
     return (errno=ENOENT,-1);
 
   paths.push_back(fallback);
@@ -71,9 +72,9 @@ namespace mergerfs
   int
   Policy::Func::ffwp(const Category::Enum::Type  type,
                      const vector<string>       &basepaths,
-                     const string               &fusepath,
+                     const char                 *fusepath,
                      const size_t                minfreespace,
-                     vector<string>             &paths)
+                     vector<const string*>      &paths)
   {
     return _ffwp(basepaths,fusepath,paths);
   }

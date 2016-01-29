@@ -33,30 +33,52 @@ using mergerfs::Policy;
 
 static
 int
-_rmdir(Policy::Func::Action  actionFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath)
+_rmdir_loop_core(const string *basepath,
+                 const char   *fusepath,
+                 const int     error)
 {
   int rv;
-  int error;
-  vector<string> paths;
+  string fullpath;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
-  if(rv == -1)
-    return -errno;
+  fs::path::make(basepath,fusepath,fullpath);
+
+  rv = ::rmdir(fullpath.c_str());
+
+  return calc_error(rv,error,errno);
+}
+
+
+static
+int
+_rmdir_loop(const vector<const string*> &basepaths,
+            const char                  *fusepath)
+{
+  int error;
 
   error = -1;
-  for(size_t i = 0, ei = paths.size(); i != ei; i++)
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      fs::path::append(paths[i],fusepath);
-
-      rv = ::rmdir(paths[i].c_str());
-
-      error = calc_error(rv,error,errno);
+      error = _rmdir_loop_core(basepaths[i],fusepath,error);
     }
 
   return -error;
+}
+
+static
+int
+_rmdir(Policy::Func::Action  actionFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const char           *fusepath)
+{
+  int rv;
+  vector<const string*> basepaths;
+
+  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
+  if(rv == -1)
+    return -errno;
+
+  return _rmdir_loop(basepaths,fusepath);
 }
 
 namespace mergerfs

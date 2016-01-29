@@ -20,5 +20,5 @@ namespace fs
 {
   int clonepath(const std::string &from,
                 const std::string &to,
-                const std::string &relative);
+                const char        *relative);
 }

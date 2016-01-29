@@ -27,11 +27,11 @@ namespace fs
   using std::vector;
 
   void findallfiles(const vector<string> &srcmounts,
-                    const string         &fusepath,
+                    const char           *fusepath,
                     vector<string>       &paths);
 
   int findonfs(const vector<string> &srcmounts,
-               const string         &fusepath,
+               const char           *fusepath,
                const int             fd,
                string               &basepath);
 

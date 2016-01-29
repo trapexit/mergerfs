@@ -29,18 +29,19 @@ using std::size_t;
 
 static
 int
-_mfs_create(const vector<string> &basepaths,
-            const string         &fusepath,
-            vector<string>       &paths)
+_mfs_create(const vector<string>  &basepaths,
+            const char            *fusepath,
+            vector<const string*> &paths)
 {
+  int rv;
+  struct statvfs fsstats;
   fsblkcnt_t mfs;
-  string     mfsstr;
+  const string *mfsstr;
 
   mfs = 0;
+  mfsstr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int rv;
-      struct statvfs fsstats;
       const string &basepath = basepaths[i];
 
       rv = ::statvfs(basepath.c_str(),&fsstats);
@@ -52,12 +53,12 @@ _mfs_create(const vector<string> &basepaths,
           if(spaceavail > mfs)
             {
               mfs    = spaceavail;
-              mfsstr = basepath;
+              mfsstr = &basepath;
             }
         }
     }
 
-  if(mfsstr.empty())
+  if(mfsstr == NULL)
     return (errno=ENOENT,-1);
 
   paths.push_back(mfsstr);
@@ -67,20 +68,21 @@ _mfs_create(const vector<string> &basepaths,
 
 static
 int
-_mfs(const vector<string> &basepaths,
-     const string         &fusepath,
-     vector<string>       &paths)
+_mfs(const vector<string>  &basepaths,
+     const char            *fusepath,
+     vector<const string*> &paths)
 {
+  int rv;
+  string fullpath;
+  struct statvfs fsstats;
   fsblkcnt_t mfs;
-  string     mfsstr;
+  const string *mfsstr;
 
   mfs = 0;
+  mfsstr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int rv;
-      string fullpath;
-      struct statvfs fsstats;
-      const string &basepath = basepaths[i];
+      const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
@@ -98,7 +100,7 @@ _mfs(const vector<string> &basepaths,
         }
     }
 
-  if(mfsstr.empty())
+  if(mfsstr == NULL)
     return (errno=ENOENT,-1);
 
   paths.push_back(mfsstr);
@@ -111,9 +113,9 @@ namespace mergerfs
   int
   Policy::Func::mfs(const Category::Enum::Type  type,
                     const vector<string>       &basepaths,
-                    const string               &fusepath,
+                    const char                 *fusepath,
                     const size_t                minfreespace,
-                    vector<string>             &paths)
+                    vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
       return _mfs_create(basepaths,fusepath,paths);

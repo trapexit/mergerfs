@@ -35,19 +35,20 @@ int
 _access(Policy::Func::Search  searchFunc,
         const vector<string> &srcmounts,
         const size_t          minfreespace,
-        const string         &fusepath,
+        const char           *fusepath,
         const int             mask)
 {
   int rv;
-  string path;
+  string fullpath;
+  vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  fs::path::append(path,fusepath);
+  fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = ::eaccess(path.c_str(),mask);
+  rv = ::eaccess(fullpath.c_str(),mask);
 
   return ((rv == -1) ? -errno : 0);
 }

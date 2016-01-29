@@ -36,12 +36,12 @@ using namespace mergerfs;
 
 static
 int
-_link_create_path_one(const string &oldbasepath,
-                      const string &newbasepath,
-                      const string &oldfusepath,
-                      const string &newfusepath,
-                      const string &newfusedirpath,
-                      const int     error)
+_link_create_path_core(const string &oldbasepath,
+                       const string &newbasepath,
+                       const char   *oldfusepath,
+                       const char   *newfusepath,
+                       const string &newfusedirpath,
+                       const int     error)
 {
   int rv;
   string oldfullpath;
@@ -50,11 +50,11 @@ _link_create_path_one(const string &oldbasepath,
   if(oldbasepath != newbasepath)
     {
       const ugid::SetRootGuard ugidGuard;
-      fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
+      fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
     }
 
-  fs::path::make(oldbasepath,oldfusepath,oldfullpath);
-  fs::path::make(oldbasepath,newfusepath,newfullpath);
+  fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
+  fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
   rv = ::link(oldfullpath.c_str(),newfullpath.c_str());
 
@@ -63,40 +63,53 @@ _link_create_path_one(const string &oldbasepath,
 
 static
 int
+_link_create_path_loop(const vector<const string*> &oldbasepaths,
+                       const string                &newbasepath,
+                       const char                  *oldfusepath,
+                       const char                  *newfusepath,
+                       const string                &newfusedirpath)
+{
+  int error;
+
+  error = -1;
+  for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
+    {
+      error = _link_create_path_core(*oldbasepaths[i],newbasepath,
+                                     oldfusepath,newfusepath,
+                                     newfusedirpath,
+                                     error);
+    }
+
+  return -error;
+}
+
+static
+int
 _link_create_path(Policy::Func::Search  searchFunc,
                   Policy::Func::Action  actionFunc,
                   const vector<string> &srcmounts,
                   const size_t          minfreespace,
-                  const string         &oldfusepath,
-                  const string         &newfusepath)
+                  const char           *oldfusepath,
+                  const char           *newfusepath)
 {
   int rv;
-  int error;
-  string newbasepath;
-  vector<string> toremove;
-  vector<string> oldbasepaths;
+  string newfusedirpath;
+  vector<const string*> oldbasepaths;
+  vector<const string*> newbasepaths;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
-  const string newfusedirpath = fs::path::dirname(newfusepath);
-  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  newfusedirpath = newfusepath;
+  fs::path::dirname(newfusedirpath);
+  rv = searchFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepaths);
   if(rv == -1)
     return -errno;
 
-  error = -1;
-  for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
-    {
-      const string &oldbasepath = oldbasepaths[i];
-
-      error = _link_create_path_one(oldbasepath,newbasepath,
-                                    oldfusepath,newfusepath,
-                                    newfusedirpath,
-                                    error);
-    }
-
-  return -error;
+  return _link_create_path_loop(oldbasepaths,*newbasepaths[0],
+                                oldfusepath,newfusepath,
+                                newfusedirpath);
 }
 
 static
@@ -106,25 +119,28 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            const vector<string> &srcmounts,
                            const size_t          minfreespace,
                            const string         &oldbasepath,
-                           const string         &oldfusepath,
-                           const string         &newfusepath)
+                           const char           *oldfusepath,
+                           const char           *newfusepath)
 {
   int rv;
-  string newbasepath;
   string newfusedirpath;
+  const char *newfusedirpathcstr;
+  vector<const string*> newbasepath;
 
-  newfusedirpath = fs::path::dirname(newfusepath);
+  newfusedirpath = newfusepath;
+  fs::path::dirname(newfusedirpath);
+  newfusedirpathcstr = newfusedirpath.c_str();
 
-  rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  rv = createFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
   if(rv != -1)
     {
-      if(oldbasepath == newbasepath)
+      if(oldbasepath == *newbasepath[0])
         {
-          rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+          rv = searchFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
           if(rv != -1)
             {
               const ugid::SetRootGuard ugidGuard;
-              fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
+              fs::clonepath(*newbasepath[0],oldbasepath,newfusedirpathcstr);
             }
         }
       else
@@ -139,28 +155,29 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
 static
 int
-_link_preserve_path_one(Policy::Func::Search  searchFunc,
-                        Policy::Func::Create  createFunc,
-                        const vector<string> &srcmounts,
-                        const size_t          minfreespace,
-                        const string         &oldbasepath,
-                        const string         &oldfusepath,
-                        const string         &newfusepath,
-                        const int             error)
+_link_preserve_path_core(Policy::Func::Search  searchFunc,
+                         Policy::Func::Create  createFunc,
+                         const vector<string> &srcmounts,
+                         const size_t          minfreespace,
+                         const string         &oldbasepath,
+                         const char           *oldfusepath,
+                         const char           *newfusepath,
+                         const int             error)
 {
   int rv;
   string oldfullpath;
   string newfullpath;
 
-  fs::path::make(oldbasepath,oldfusepath,oldfullpath);
-  fs::path::make(oldbasepath,newfusepath,newfullpath);
+  fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
+  fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
   rv = ::link(oldfullpath.c_str(),newfullpath.c_str());
   if((rv == -1) && (errno == ENOENT))
     {
       rv = _clonepath_if_would_create(searchFunc,createFunc,
                                       srcmounts,minfreespace,
-                                      oldbasepath,oldfusepath,newfusepath);
+                                      oldbasepath,
+                                      oldfusepath,newfusepath);
       if(rv != -1)
         rv = ::link(oldfullpath.c_str(),newfullpath.c_str());
     }
@@ -170,36 +187,50 @@ _link_preserve_path_one(Policy::Func::Search  searchFunc,
 
 static
 int
+_link_preserve_path_loop(Policy::Func::Search         searchFunc,
+                         Policy::Func::Create         createFunc,
+                         const vector<string>        &srcmounts,
+                         const size_t                 minfreespace,
+                         const char                  *oldfusepath,
+                         const char                  *newfusepath,
+                         const vector<const string*> &oldbasepaths)
+{
+  int error;
+
+  error = -1;
+  for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
+    {
+      error = _link_preserve_path_core(searchFunc,createFunc,
+                                       srcmounts,minfreespace,
+                                       *oldbasepaths[i],
+                                       oldfusepath,newfusepath,
+                                       error);
+    }
+
+  return -error;
+}
+
+static
+int
 _link_preserve_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
                     Policy::Func::Create  createFunc,
                     const vector<string> &srcmounts,
                     const size_t          minfreespace,
-                    const string         &oldfusepath,
-                    const string         &newfusepath)
+                    const char          *oldfusepath,
+                    const char          *newfusepath)
 {
   int rv;
-  int error;
-  vector<string> toremove;
-  vector<string> oldbasepaths;
+  vector<const string*> oldbasepaths;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
-  error = -1;
-  for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
-    {
-      const string &oldbasepath = oldbasepaths[i];
-
-      error = _link_preserve_path_one(searchFunc,createFunc,
-                                      srcmounts,minfreespace,
-                                      oldbasepath,
-                                      oldfusepath,newfusepath,
-                                      error);
-    }
-
-  return -error;
+  return _link_preserve_path_loop(searchFunc,createFunc,
+                                  srcmounts,minfreespace,
+                                  oldfusepath,newfusepath,
+                                  oldbasepaths);
 }
 
 namespace mergerfs

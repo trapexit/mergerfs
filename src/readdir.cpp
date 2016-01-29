@@ -41,7 +41,7 @@ using std::pair;
 static
 int
 _readdir(const vector<string>  &srcmounts,
-         const string          &dirname,
+         const char            *dirname,
          void                  *buf,
          const fuse_fill_dir_t  filler)
 {
@@ -53,7 +53,8 @@ _readdir(const vector<string>  &srcmounts,
       DIR *dh;
       string basepath;
 
-      fs::path::make(srcmounts[i],dirname,basepath);
+      fs::path::make(&srcmounts[i],dirname,basepath);
+
       dh = ::opendir(basepath.c_str());
       if(!dh)
         continue;

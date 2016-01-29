@@ -66,8 +66,9 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    fusedir = fs::path::dirname(fusepath);
-    rv = fs::clonepath(fdin_path,fdout_path,fusedir);
+    fusedir = fusepath;
+    fs::path::dirname(fusedir);
+    rv = fs::clonepath(fdin_path,fdout_path,fusedir.c_str());
     if(rv == -1)
       return -1;
 

@@ -61,21 +61,23 @@ int
 _ioctl_dir_base(Policy::Func::Search  searchFunc,
                 const vector<string> &srcmounts,
                 const size_t          minfreespace,
-                const string         &fusepath,
+                const char           *fusepath,
                 const int             cmd,
                 void                 *data)
 {
   int fd;
   int rv;
-  vector<string> path;
+  string fullpath;
+  vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  fs::path::append(path[0],fusepath);
+  fs::path::make(basepaths[0],fusepath,fullpath);
 
-  fd = ::open(path[0].c_str(),O_RDWR|O_NOATIME|O_DIRECTORY);
+  const int flags = O_RDWR | O_NOATIME | O_DIRECTORY;
+  fd = ::open(fullpath.c_str(),flags);
   if(fd == -1)
     return -errno;
 
@@ -88,9 +90,9 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 
 static
 int
-_ioctl_dir(const string &fusepath,
-           const int     cmd,
-           void         *data)
+_ioctl_dir(const char *fusepath,
+           const int   cmd,
+           void       *data)
 {
   const fuse_context      *fc     = fuse_get_context();
   const Config            &config = Config::get(fc);

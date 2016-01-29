@@ -31,18 +31,19 @@ using std::size_t;
 
 static
 int
-_ff(const vector<string> &basepaths,
-    const string         &fusepath,
-    vector<string>       &paths)
+_ff(const vector<string>  &basepaths,
+    const char            *fusepath,
+    vector<const string*> &paths)
 {
+  int rv;
+  string fullpath;
+  struct stat st;
+
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int           rv;
-      struct stat   st;
-      string        fullpath;
-      const string &basepath = basepaths[i];
+      const string *basepath = &basepaths[i];
 
-      fullpath = fs::path::make(basepath,fusepath);
+      fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::lstat(fullpath.c_str(),&st);
       if(rv == -1)
@@ -58,14 +59,14 @@ _ff(const vector<string> &basepaths,
 
 static
 int
-_ff_create(const vector<string> &basepaths,
-           const string         &fusepath,
-           vector<string>       &paths)
+_ff_create(const vector<string>  &basepaths,
+           const char            *fusepath,
+           vector<const string*> &paths)
 {
   if(basepaths.empty())
     return (errno=ENOENT,-1);
 
-  paths.push_back(basepaths[0]);
+  paths.push_back(&basepaths[0]);
 
   return 0;
 }
@@ -75,9 +76,9 @@ namespace mergerfs
   int
   Policy::Func::ff(const Category::Enum::Type  type,
                    const vector<string>       &basepaths,
-                   const string               &fusepath,
+                   const char                 *fusepath,
                    const size_t                minfreespace,
-                   vector<string>             &paths)
+                   vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
       return _ff_create(basepaths,fusepath,paths);

@@ -38,10 +38,16 @@ using namespace mergerfs;
 
 static
 bool
-member(const vector<string> &haystack,
-       const string         &needle)
+member(const vector<const string*> &haystack,
+       const string                &needle)
 {
-  return (std::find(haystack.begin(),haystack.end(),needle) != haystack.end());
+  for(size_t i = 0, ei = haystack.size(); i != ei; i++)
+    {
+      if(*haystack[i] == needle)
+        return true;
+    }
+
+  return false;
 }
 
 static
@@ -54,21 +60,21 @@ _remove(const vector<string> &toremove)
 
 static
 void
-_rename_create_path_one(const vector<string> &oldbasepaths,
-                        const string         &oldbasepath,
-                        const string         &newbasepath,
-                        const string         &oldfusepath,
-                        const string         &newfusepath,
-                        const string         &newfusedirpath,
-                        int                  &error,
-                        vector<string>       &tounlink)
+_rename_create_path_core(const vector<const string*> &oldbasepaths,
+                         const string                &oldbasepath,
+                         const string                &newbasepath,
+                         const char                  *oldfusepath,
+                         const char                  *newfusepath,
+                         const string                &newfusedirpath,
+                         int                         &error,
+                         vector<string>              &tounlink)
 {
   int rv;
   bool ismember;
   string oldfullpath;
   string newfullpath;
 
-  fs::path::make(oldbasepath,newfusepath,newfullpath);
+  fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
   ismember = member(oldbasepaths,oldbasepath);
   if(ismember)
@@ -76,10 +82,10 @@ _rename_create_path_one(const vector<string> &oldbasepaths,
       if(oldbasepath != newbasepath)
         {
           const ugid::SetRootGuard ugidGuard;
-          fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
+          fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
         }
 
-      fs::path::make(oldbasepath,oldfusepath,oldfullpath);
+      fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
 
       rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
       error = calc_error(rv,error,errno);
@@ -98,21 +104,22 @@ _rename_create_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
                     const vector<string> &srcmounts,
                     const size_t          minfreespace,
-                    const string         &oldfusepath,
-                    const string         &newfusepath)
+                    const char           *oldfusepath,
+                    const char           *newfusepath)
 {
   int rv;
   int error;
-  string newbasepath;
   vector<string> toremove;
-  vector<string> oldbasepaths;
+  vector<const string*> newbasepath;
+  vector<const string*> oldbasepaths;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
-  const string newfusedirpath = fs::path::dirname(newfusepath);
-  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  string newfusedirpath = newfusepath;
+  fs::path::dirname(newfusedirpath);
+  rv = searchFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepath);
   if(rv == -1)
     return -errno;
 
@@ -121,10 +128,11 @@ _rename_create_path(Policy::Func::Search  searchFunc,
     {
       const string &oldbasepath = srcmounts[i];
 
-      _rename_create_path_one(oldbasepaths,oldbasepath,newbasepath,
-                              oldfusepath,newfusepath,
-                              newfusedirpath,
-                              error,toremove);
+      _rename_create_path_core(oldbasepaths,
+                               oldbasepath,*newbasepath[0],
+                               oldfusepath,newfusepath,
+                               newfusedirpath,
+                               error,toremove);
     }
 
   if(error == 0)
@@ -140,25 +148,25 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            const vector<string> &srcmounts,
                            const size_t          minfreespace,
                            const string         &oldbasepath,
-                           const string         &oldfusepath,
-                           const string         &newfusepath)
+                           const char           *oldfusepath,
+                           const char           *newfusepath)
 {
   int rv;
-  string newbasepath;
   string newfusedirpath;
+  vector<const string*> newbasepath;
 
-  newfusedirpath = fs::path::dirname(newfusepath);
-
-  rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  newfusedirpath = newfusepath;
+  fs::path::dirname(newfusedirpath);
+  rv = createFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepath);
   if(rv != -1)
     {
-      if(oldbasepath == newbasepath)
+      if(oldbasepath == *newbasepath[0])
         {
-          rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+          rv = searchFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepath);
           if(rv != -1)
             {
               const ugid::SetRootGuard ugidGuard;
-              fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
+              fs::clonepath(*newbasepath[0],oldbasepath,newfusedirpath.c_str());
             }
         }
       else
@@ -173,29 +181,29 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
 static
 void
-_rename_preserve_path_one(Policy::Func::Search  searchFunc,
-                          Policy::Func::Create  createFunc,
-                          const vector<string> &srcmounts,
-                          const size_t          minfreespace,
-                          const vector<string> &oldbasepaths,
-                          const string         &oldbasepath,
-                          const string         &oldfusepath,
-                          const string         &newfusepath,
-                          int                  &error,
-                          vector<string>       &toremove)
+_rename_preserve_path_core(Policy::Func::Search         searchFunc,
+                           Policy::Func::Create         createFunc,
+                           const vector<string>        &srcmounts,
+                           const size_t                 minfreespace,
+                           const vector<const string*> &oldbasepaths,
+                           const string                &oldbasepath,
+                           const char                  *oldfusepath,
+                           const char                  *newfusepath,
+                           int                         &error,
+                           vector<string>              &toremove)
 {
   int rv;
   bool ismember;
   string newfullpath;
 
-  fs::path::make(oldbasepath,newfusepath,newfullpath);
+  fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
   ismember = member(oldbasepaths,oldbasepath);
   if(ismember)
     {
       string oldfullpath;
 
-      fs::path::make(oldbasepath,oldfusepath,oldfullpath);
+      fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
 
       rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
       if((rv == -1) && (errno == ENOENT))
@@ -224,13 +232,13 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
                       Policy::Func::Create  createFunc,
                       const vector<string> &srcmounts,
                       const size_t          minfreespace,
-                      const string         &oldfusepath,
-                      const string         &newfusepath)
+                      const char           *oldfusepath,
+                      const char           *newfusepath)
 {
   int rv;
   int error;
   vector<string> toremove;
-  vector<string> oldbasepaths;
+  vector<const string*> oldbasepaths;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
@@ -241,11 +249,11 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
     {
       const string &oldbasepath = srcmounts[i];
 
-      _rename_preserve_path_one(searchFunc,createFunc,
-                                srcmounts,minfreespace,
-                                oldbasepaths,oldbasepath,
-                                oldfusepath,newfusepath,
-                                error,toremove);
+      _rename_preserve_path_core(searchFunc,createFunc,
+                                 srcmounts,minfreespace,
+                                 oldbasepaths,oldbasepath,
+                                 oldfusepath,newfusepath,
+                                 error,toremove);
     }
 
   if(error == 0)

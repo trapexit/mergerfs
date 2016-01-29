@@ -43,14 +43,14 @@ using namespace mergerfs;
 static
 int
 _lgetxattr(const string &path,
-           const string &name,
+           const char   *attrname,
            void         *value,
            const size_t  size)
 {
 #ifndef WITHOUT_XATTR
   int rv;
 
-  rv = ::lgetxattr(path.c_str(),name.c_str(),value,size);
+  rv = ::lgetxattr(path.c_str(),attrname,value,size);
 
   return ((rv == -1) ? -errno : rv);
 #else
@@ -161,7 +161,7 @@ _getxattr_pid(string &attrvalue)
 static
 int
 _getxattr_controlfile(const Config &config,
-                      const string &attrname,
+                      const char   *attrname,
                       char         *buf,
                       const size_t  count)
 {
@@ -236,7 +236,7 @@ _getxattr_from_string(char         *destbuf,
 static
 int
 _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
-                                 const string         &fusepath,
+                                 const char           *fusepath,
                                  char                 *buf,
                                  const size_t          count)
 {
@@ -253,10 +253,10 @@ _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
 static
 int
 _getxattr_user_mergerfs(const string         &basepath,
-                        const string         &fusepath,
+                        const char           *fusepath,
                         const string         &fullpath,
                         const vector<string> &srcmounts,
-                        const string         &attrname,
+                        const char           *attrname,
                         char                 *buf,
                         const size_t          count)
 {
@@ -281,23 +281,23 @@ int
 _getxattr(Policy::Func::Search  searchFunc,
           const vector<string> &srcmounts,
           const size_t          minfreespace,
-          const string         &fusepath,
-          const string         &attrname,
+          const char           *fusepath,
+          const char           *attrname,
           char                 *buf,
           const size_t          count)
 {
   int rv;
   string fullpath;
-  vector<string> basepath;
+  vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,basepath);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  fs::path::make(basepath[0],fusepath,fullpath);
+  fs::path::make(basepaths[0],fusepath,fullpath);
 
   if(str::isprefix(attrname,"user.mergerfs."))
-    rv = _getxattr_user_mergerfs(basepath[0],fusepath,fullpath,srcmounts,attrname,buf,count);
+    rv = _getxattr_user_mergerfs(*basepaths[0],fusepath,fullpath,srcmounts,attrname,buf,count);
   else
     rv = _lgetxattr(fullpath,attrname,buf,count);
 

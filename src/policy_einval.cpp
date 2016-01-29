@@ -29,9 +29,9 @@ namespace mergerfs
   int
   Policy::Func::einval(const Category::Enum::Type  type,
                        const vector<string>       &basepaths,
-                       const string               &fusepath,
+                       const char                 *fusepath,
                        const size_t                minfreespace,
-                       vector<string>             &paths)
+                       vector<const string*>      &paths)
   {
     return (errno=EINVAL,-1);
   }

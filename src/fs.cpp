@@ -40,16 +40,16 @@ namespace fs
 {
   void
   findallfiles(const vector<string> &srcmounts,
-               const string         &fusepath,
+               const char           *fusepath,
                vector<string>       &paths)
   {
+    int rv;
+    string fullpath;
+    struct stat st;
+
     for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
       {
-        int rv;
-        string fullpath;
-        struct stat st;
-
-        fs::path::make(srcmounts[i],fusepath,fullpath);
+        fs::path::make(&srcmounts[i],fusepath,fullpath);
 
         rv = ::lstat(fullpath.c_str(),&st);
         if(rv == 0)
@@ -59,12 +59,12 @@ namespace fs
 
   int
   findonfs(const vector<string> &srcmounts,
-           const string         &fusepath,
+           const char           *fusepath,
            const int             fd,
            string               &basepath)
   {
     int rv;
-    string tmppath;
+    string fullpath;
     unsigned long fsid;
     struct statvfs buf;
 
@@ -75,9 +75,9 @@ namespace fs
     fsid = buf.f_fsid;
     for(int i = 0, ei = srcmounts.size(); i != ei; i++)
       {
-        fs::path::make(srcmounts[i],fusepath,tmppath);
+        fs::path::make(&srcmounts[i],fusepath,fullpath);
 
-        rv = ::statvfs(tmppath.c_str(),&buf);
+        rv = ::statvfs(fullpath.c_str(),&buf);
         if(rv == -1)
           continue;
 

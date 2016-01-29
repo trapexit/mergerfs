@@ -25,42 +25,27 @@ namespace fs
   namespace path
   {
     using std::string;
-    using std::vector;
 
-    string dirname(const string &path);
+    void dirname(string &path);
+
     string basename(const string &path);
 
-    bool is_empty(const string &path);
-
-    bool exists(vector<string>::const_iterator  begin,
-                vector<string>::const_iterator  end,
-                const string                   &fusepath);
-    bool exists(const vector<string>           &srcmounts,
-                const string                   &fusepath);
-
-    inline
-    string
-    make(const string &base,
-         const string &suffix)
-    {
-      return base + suffix;
-    }
-
     inline
     void
-    make(const string &base,
-         const string &suffix,
-         string       &output)
-    {
-      output = base + suffix;
-    }
-
-    inline
-    void
-    append(string       &base,
-           const string &suffix)
+    append(string     &base,
+           const char *suffix)
     {
       base += suffix;
+    }
+
+    inline
+    void
+    make(const string *base,
+         const char   *suffix,
+         string       &output)
+    {
+      output  = *base;
+      output += suffix;
     }
   }
 };

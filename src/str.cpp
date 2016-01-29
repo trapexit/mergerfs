@@ -28,7 +28,7 @@ namespace str
 {
   void
   split(vector<string> &result,
-        const string   &str,
+        const char     *str,
         const char      delimiter)
   {
     string part;
@@ -36,6 +36,14 @@ namespace str
 
     while(std::getline(ss,part,delimiter))
       result.push_back(part);
+  }
+
+  void
+  split(vector<string> &result,
+        const string   &str,
+        const char      delimiter)
+  {
+    return split(result,str.c_str(),delimiter);
   }
 
   string
