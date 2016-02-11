@@ -352,7 +352,19 @@ In order to fix this please install newer versions of libfuse. If using a Debian
 
 # FAQ
 
-*It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?*
+#### Why use mergerfs over mhddfs?
+
+mhddfs is no longer maintained and has some known stability and security issues (see below).
+
+#### Why use mergerfs over aufs?
+
+While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs also doesn't offer the overlay features which tends to result in whiteout files being left around the underlying filesystems.
+
+#### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
+
+A single drive failure will lead to full pool failure without additional redundency. mergerfs performance a similar behavior without the catastrophic failure and lack of recovery. Drives can fail and all other data will continue to be accessable.
+
+#### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
 [mhddfs](https://github.com/trapexit/mhddfs) tries to handle being run as **root** by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns **0** then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle many other situations. Rather than attempting to simulate POSIX ACL behaviors the proper behavior is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), become the user making the original call and perform the action as them. This is how [mergerfs](https://github.com/trapexit/mergerfs) handles things.  
 
