@@ -322,6 +322,12 @@ Find extra tooling to help with managing `mergerfs` at: https://github.com/trape
 
 # Known Issues / Bugs
 
+#### Trashing files occasionally fails
+
+This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do. 
+
+To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
+
 #### Samba
 * Moving files or directories between some directories on a SMB share fail with IO errors.    
     
