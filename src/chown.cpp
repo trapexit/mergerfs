@@ -34,32 +34,57 @@ using mergerfs::Config;
 
 static
 int
+_chown_loop_core(const string *basepath,
+                 const char   *fusepath,
+                 const uid_t   uid,
+                 const gid_t   gid,
+                 const int     error)
+{
+  int rv;
+  string fullpath;
+
+  fs::path::make(basepath,fusepath,fullpath);
+
+  rv = ::lchown(fullpath.c_str(),uid,gid);
+
+  return calc_error(rv,error,errno);
+}
+
+static
+int
+_chown_loop(const vector<const string*> &basepaths,
+            const char                  *fusepath,
+            const uid_t                  uid,
+            const gid_t                  gid)
+{
+  int error;
+
+  error = -1;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      error = _chown_loop_core(basepaths[i],fusepath,uid,gid,error);
+    }
+
+  return -error;
+}
+
+static
+int
 _chown(Policy::Func::Action  actionFunc,
        const vector<string> &srcmounts,
        const size_t          minfreespace,
-       const string         &fusepath,
+       const char           *fusepath,
        const uid_t           uid,
        const gid_t           gid)
 {
   int rv;
-  int error;
-  vector<string> paths;
+  vector<const string*> basepaths;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
+  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  error = -1;
-  for(size_t i = 0, ei = paths.size(); i != ei; i++)
-    {
-      fs::path::append(paths[i],fusepath);
-
-      rv = ::lchown(paths[i].c_str(),uid,gid);
-
-      error = calc_error(rv,error,errno);
-    }
-
-  return -error;
+  return _chown_loop(basepaths,fusepath,uid,gid);
 }
 
 namespace mergerfs

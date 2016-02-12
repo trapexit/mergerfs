@@ -38,45 +38,67 @@ using namespace mergerfs;
 
 static
 int
-_create(Policy::Func::Search  searchFunc,
-        Policy::Func::Create  createFunc,
-        const vector<string> &srcmounts,
-        const size_t          minfreespace,
-        const string         &fusepath,
-        const mode_t          mode,
-        const int             flags,
-        uint64_t             &fh)
+_create_core(const string &existingpath,
+             const string &createpath,
+             const char   *fusepath,
+             const char   *fusedirpath,
+             const mode_t  mode,
+             const int     flags,
+             uint64_t     &fh)
 {
   int fd;
-  int rv;
-  string dirname;
-  vector<string> createpath;
-  vector<string> existingpath;
+  string fullpath;
 
-  dirname = fs::path::dirname(fusepath);
-  rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
-  if(rv == -1)
-    return -errno;
-
-  rv = createFunc(srcmounts,dirname,minfreespace,createpath);
-  if(rv == -1)
-    return -errno;
-
-  if(createpath[0] != existingpath[0])
+  if(createpath != existingpath)
     {
       const ugid::SetRootGuard ugidGuard;
-      fs::clonepath(existingpath[0],createpath[0],dirname);
+      fs::clonepath(existingpath,createpath,fusedirpath);
     }
 
-  fs::path::append(createpath[0],fusepath);
+  fs::path::make(&createpath,fusepath,fullpath);
 
-  fd = ::open(createpath[0].c_str(),flags,mode);
+  fd = ::open(fullpath.c_str(),flags,mode);
   if(fd == -1)
     return -errno;
 
   fh = reinterpret_cast<uint64_t>(new FileInfo(fd));
 
   return 0;
+}
+
+static
+int
+_create(Policy::Func::Search  searchFunc,
+        Policy::Func::Create  createFunc,
+        const vector<string> &srcmounts,
+        const size_t          minfreespace,
+        const char           *fusepath,
+        const mode_t          mode,
+        const int             flags,
+        uint64_t             &fh)
+{
+  int rv;
+  string fullpath;
+  string fusedirpath;
+  const char *fusedirpathcstr;
+  vector<const string*> createpaths;
+  vector<const string*> existingpaths;
+
+  fusedirpath = fusepath;
+  fs::path::dirname(fusedirpath);
+  fusedirpathcstr = fusedirpath.c_str();
+
+  rv = searchFunc(srcmounts,fusedirpathcstr,minfreespace,existingpaths);
+  if(rv == -1)
+    return -errno;
+
+  rv = createFunc(srcmounts,fusedirpathcstr,minfreespace,createpaths);
+  if(rv == -1)
+    return -errno;
+
+  return _create_core(*existingpaths[0],*createpaths[0],
+                      fusepath,fusedirpathcstr,
+                      mode,flags,fh);
 }
 
 namespace mergerfs

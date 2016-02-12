@@ -49,7 +49,7 @@ namespace fs
   int
   clonepath(const string &fromsrc,
             const string &tosrc,
-            const string &relative)
+            const char   *relative)
   {
     int         rv;
     struct stat st;
@@ -57,22 +57,23 @@ namespace fs
     string      frompath;
     string      dirname;
 
-    dirname = fs::path::dirname(relative);
+    dirname = relative;
+    fs::path::dirname(dirname);
     if(!dirname.empty())
       {
-        rv = clonepath(fromsrc,tosrc,dirname);
+        rv = clonepath(fromsrc,tosrc,dirname.c_str());
         if(rv == -1)
           return -1;
       }
 
-    fs::path::make(fromsrc,relative,frompath);
+    fs::path::make(&fromsrc,relative,frompath);
     rv = ::stat(frompath.c_str(),&st);
     if(rv == -1)
       return -1;
     else if(!S_ISDIR(st.st_mode))
       return (errno = ENOTDIR,-1);
 
-    fs::path::make(tosrc,relative,topath);
+    fs::path::make(&tosrc,relative,topath);
     rv = ::mkdir(topath.c_str(),st.st_mode);
     if(rv == -1)
       {

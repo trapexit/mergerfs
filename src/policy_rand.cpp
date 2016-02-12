@@ -31,9 +31,9 @@ namespace mergerfs
   int
   Policy::Func::rand(const Category::Enum::Type  type,
                      const vector<string>       &basepaths,
-                     const string               &fusepath,
+                     const char                 *fusepath,
                      const size_t                minfreespace,
-                     vector<string>             &paths)
+                     vector<const string*>      &paths)
   {
     int rv;
 

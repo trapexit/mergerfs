@@ -32,19 +32,21 @@ using std::size_t;
 
 static
 int
-_newest(const vector<string> &basepaths,
-        const string         &fusepath,
-        vector<string>       &paths)
+_newest(const vector<string>  &basepaths,
+        const char            *fusepath,
+        vector<const string*> &paths)
 {
-  time_t newest = std::numeric_limits<time_t>::min();
-  string neweststr;
+  int rv;
+  struct stat st;
+  string fullpath;
+  time_t newest;
+  const string *neweststr;
 
+  newest = std::numeric_limits<time_t>::min();
+  neweststr = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      int rv;
-      struct stat st;
-      string fullpath;
-      const string &basepath = basepaths[i];
+      const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
@@ -56,7 +58,7 @@ _newest(const vector<string> &basepaths,
         }
     }
 
-  if(neweststr.empty())
+  if(neweststr == NULL)
     return (errno=ENOENT,-1);
 
   paths.push_back(neweststr);
@@ -69,9 +71,9 @@ namespace mergerfs
   int
   Policy::Func::newest(const Category::Enum::Type  type,
                        const vector<string>       &basepaths,
-                       const string               &fusepath,
+                       const char                 *fusepath,
                        const size_t                minfreespace,
-                       vector<string>             &paths)
+                       vector<const string*>      &paths)
   {
     return _newest(basepaths,fusepath,paths);
   }

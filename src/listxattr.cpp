@@ -69,32 +69,31 @@ _listxattr_controlfile(char         *list,
   return xattrs.size();
 }
 
+#ifndef WITHOUT_XATTR
 static
 int
 _listxattr(Policy::Func::Search  searchFunc,
            const vector<string> &srcmounts,
            const size_t          minfreespace,
-           const string         &fusepath,
+           const char           *fusepath,
            char                 *list,
            const size_t          size)
 {
-#ifndef WITHOUT_XATTR
   int rv;
-  vector<string> path;
+  string fullpath;
+  vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  fs::path::append(path[0],fusepath);
+  fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = ::llistxattr(path[0].c_str(),list,size);
+  rv = ::llistxattr(fullpath.c_str(),list,size);
 
   return ((rv == -1) ? -errno : rv);
-#else
-  return -ENOTSUP;
-#endif
 }
+#endif
 
 namespace mergerfs
 {
@@ -111,6 +110,7 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return _listxattr_controlfile(list,size);
 
+#ifndef WITHOUT_XATTR
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);
 
@@ -120,6 +120,9 @@ namespace mergerfs
                         fusepath,
                         list,
                         size);
+#else
+      return -ENOTSUP;
+#endif
     }
   }
 }

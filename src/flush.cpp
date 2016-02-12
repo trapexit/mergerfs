@@ -27,11 +27,11 @@ _flush(const int fd)
 {
   int rv;
 
-  rv = dup(fd);
+  rv = ::dup(fd);
   if(rv == -1)
     errno = EIO;
   else
-    rv = close(rv);
+    rv = ::close(rv);
 
   return ((rv == -1) ? -errno : 0);
 }

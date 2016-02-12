@@ -63,19 +63,20 @@ int
 _getattr(Policy::Func::Search  searchFunc,
          const vector<string> &srcmounts,
          const size_t          minfreespace,
-         const string         &fusepath,
+         const char           *fusepath,
          struct stat          &buf)
 {
   int rv;
-  vector<string> path;
+  string fullpath;
+  vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  fs::path::append(path[0],fusepath);
+  fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = ::lstat(path[0].c_str(),&buf);
+  rv = ::lstat(fullpath.c_str(),&buf);
 
   return ((rv == -1) ? -errno : 0);
 }

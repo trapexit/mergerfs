@@ -33,29 +33,42 @@ using mergerfs::Policy;
 
 static
 int
-_readlink(Policy::Func::Search  searchFunc,
-          const vector<string> &srcmounts,
-          const size_t          minfreespace,
-          const string         &fusepath,
-          char                 *buf,
-          const size_t          size)
+_readlink_core(const string *basepath,
+               const char   *fusepath,
+               char         *buf,
+               const size_t  size)
 {
   int rv;
-  vector<string> path;
+  string fullpath;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,path);
-  if(rv == -1)
-    return -errno;
+  fs::path::make(basepath,fusepath,fullpath);
 
-  fs::path::append(path[0],fusepath);
-
-  rv = ::readlink(path[0].c_str(),buf,size);
+  rv = ::readlink(fullpath.c_str(),buf,size);
   if(rv == -1)
     return -errno;
 
   buf[rv] = '\0';
 
   return 0;
+}
+
+static
+int
+_readlink(Policy::Func::Search  searchFunc,
+          const vector<string> &srcmounts,
+          const size_t          minfreespace,
+          const char           *fusepath,
+          char                 *buf,
+          const size_t          size)
+{
+  int rv;
+  vector<const string*> basepaths;
+
+  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  if(rv == -1)
+    return -errno;
+
+  return _readlink_core(basepaths[0],fusepath,buf,size);
 }
 
 namespace mergerfs

@@ -61,12 +61,13 @@ namespace mergerfs
       typedef std::string string;
       typedef std::size_t size_t;
       typedef std::vector<string> strvec;
+      typedef std::vector<const string*> cstrptrvec;
       typedef const string cstring;
       typedef const size_t csize_t;
       typedef const strvec cstrvec;
       typedef const Category::Enum::Type CType;
 
-      typedef int (*Ptr)(CType,cstrvec&,cstring&,csize_t,strvec&);
+      typedef int (*Ptr)(CType,cstrvec &,const char *,csize_t,cstrptrvec &);
 
       template <CType T>
       class Base
@@ -77,22 +78,9 @@ namespace mergerfs
         {}
 
         int
-        operator()(cstrvec& b,cstring& c,csize_t d,strvec& e)
+        operator()(cstrvec &b,const char *c,csize_t d,cstrptrvec &e)
         {
           return func(T,b,c,d,e);
-        }
-
-        int
-        operator()(cstrvec& b,cstring& c,csize_t d,string& e)
-        {
-          int rv;
-          strvec vec;
-
-          rv = func(T,b,c,d,vec);
-          if(!vec.empty())
-            e = vec[0];
-
-          return rv;
         }
 
       private:
@@ -103,21 +91,21 @@ namespace mergerfs
       typedef Base<Category::Enum::create> Create;
       typedef Base<Category::Enum::search> Search;
 
-      static int all(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int einval(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int enosys(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int enotsup(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int epmfs(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int erofs(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int exdev(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int ff(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int ffwp(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int fwfs(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int invalid(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int lfs(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int mfs(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int newest(CType,cstrvec&,cstring&,csize_t,strvec&);
-      static int rand(CType,cstrvec&,cstring&,csize_t,strvec&);
+      static int all(CType,cstrvec&,const char*,csize_t,cstrptrvec&);
+      static int einval(CType,cstrvec&,const char*,csize_t,cstrptrvec&);
+      static int enosys(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int enotsup(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int epmfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int erofs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int exdev(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int ff(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int ffwp(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int fwfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int invalid(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int lfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int mfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int newest(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int rand(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
     };
 
   private:

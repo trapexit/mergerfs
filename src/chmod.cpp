@@ -32,31 +32,54 @@ using mergerfs::Policy;
 
 static
 int
-_chmod(Policy::Func::Action  actionFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const mode_t          mode)
+_chmod_loop_core(const string *basepath,
+                 const char   *fusepath,
+                 const mode_t  mode,
+                 const int     error)
 {
   int rv;
-  int error;
-  vector<string> paths;
+  string fullpath;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
-  if(rv == -1)
-    return -errno;
+  fs::path::make(basepath,fusepath,fullpath);
+
+  rv = ::chmod(fullpath.c_str(),mode);
+
+  return calc_error(rv,error,errno);
+}
+
+static
+int
+_chmod_loop(const vector<const string*> &basepaths,
+            const char                  *fusepath,
+            const mode_t                 mode)
+{
+  int error;
 
   error = -1;
-  for(size_t i = 0, ei = paths.size(); i != ei; i++)
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      fs::path::append(paths[i],fusepath);
-
-      rv = ::chmod(paths[i].c_str(),mode);
-
-      error = calc_error(rv,error,errno);
+      error = _chmod_loop_core(basepaths[i],fusepath,mode,error);
     }
 
   return -error;
+}
+
+static
+int
+_chmod(Policy::Func::Action  actionFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const char           *fusepath,
+       const mode_t          mode)
+{
+  int rv;
+  vector<const string*> basepaths;
+
+  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
+  if(rv == -1)
+    return -errno;
+
+  return _chmod_loop(basepaths,fusepath,mode);
 }
 
 namespace mergerfs

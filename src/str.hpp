@@ -21,6 +21,10 @@ namespace str
 {
   void
   split(std::vector<std::string> &result,
+        const char               *str,
+        const char                delimiter);
+  void
+  split(std::vector<std::string> &result,
         const std::string        &str,
         const char                delimiter);
 

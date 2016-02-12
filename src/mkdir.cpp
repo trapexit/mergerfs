@@ -37,47 +37,78 @@ using namespace mergerfs;
 
 static
 int
-_mkdir(Policy::Func::Search  searchFunc,
-       Policy::Func::Create  createFunc,
-       const vector<string> &srcmounts,
-       const size_t          minfreespace,
-       const string         &fusepath,
-       const mode_t          mode)
+_mkdir_loop_core(const string &existingpath,
+                 const string &createpath,
+                 const char   *fusepath,
+                 const char   *fusedirpath,
+                 const mode_t  mode,
+                 const int     error)
 {
   int rv;
+  string fullpath;
+
+  if(createpath != existingpath)
+    {
+      const ugid::SetRootGuard ugidGuard;
+      fs::clonepath(existingpath,createpath,fusedirpath);
+    }
+
+  fs::path::make(&createpath,fusepath,fullpath);
+
+  rv = ::mkdir(fullpath.c_str(),mode);
+
+  return calc_error(rv,error,errno);
+}
+
+static
+int
+_mkdir_loop(const string                &existingpath,
+            const vector<const string*> &createpaths,
+            const char                  *fusepath,
+            const char                  *fusedirpath,
+            const mode_t                 mode)
+{
   int error;
-  string dirname;
-  string existingpath;
-  vector<string> createpaths;
-
-  dirname = fs::path::dirname(fusepath);
-  rv = searchFunc(srcmounts,dirname,minfreespace,existingpath);
-  if(rv == -1)
-    return -errno;
-
-  rv = createFunc(srcmounts,dirname,minfreespace,createpaths);
-  if(rv == -1)
-    return -errno;
 
   error = -1;
   for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
-      string &createpath = createpaths[i];
-
-      if(createpath != existingpath)
-        {
-          const ugid::SetRootGuard ugidGuard;
-          fs::clonepath(existingpath,createpath,dirname);
-        }
-
-      fs::path::append(createpath,fusepath);
-
-      rv = ::mkdir(createpath.c_str(),mode);
-
-      error = calc_error(rv,error,errno);
+      error = _mkdir_loop_core(existingpath,*createpaths[i],
+                               fusepath,fusedirpath,mode,error);
     }
 
   return -error;
+}
+
+static
+int
+_mkdir(Policy::Func::Search  searchFunc,
+       Policy::Func::Create  createFunc,
+       const vector<string> &srcmounts,
+       const size_t          minfreespace,
+       const char           *fusepath,
+       const mode_t          mode)
+{
+  int rv;
+  string fusedirpath;
+  const char *fusedirpathcstr;
+  vector<const string*> createpaths;
+  vector<const string*> existingpaths;
+
+  fusedirpath = fusepath;
+  fs::path::dirname(fusedirpath);
+  fusedirpathcstr = fusedirpath.c_str();
+
+  rv = searchFunc(srcmounts,fusedirpathcstr,minfreespace,existingpaths);
+  if(rv == -1)
+    return -errno;
+
+  rv = createFunc(srcmounts,fusedirpathcstr,minfreespace,createpaths);
+  if(rv == -1)
+    return -errno;
+
+  return _mkdir_loop(*existingpaths[0],createpaths,
+                     fusepath,fusedirpathcstr,mode);
 }
 
 namespace mergerfs

@@ -31,9 +31,9 @@ using std::size_t;
 
 static
 int
-_all(const vector<string> &basepaths,
-     const string         &fusepath,
-     vector<string>       &paths)
+_all(const vector<string>  &basepaths,
+     const char            *fusepath,
+     vector<const string*> &paths)
 {
   int rv;
   struct stat st;
@@ -41,7 +41,7 @@ _all(const vector<string> &basepaths,
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      const string &basepath = basepaths[i];
+      const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
@@ -58,13 +58,14 @@ _all(const vector<string> &basepaths,
 
 static
 int
-_all_create(const vector<string> &basepaths,
-            vector<string>       &paths)
+_all_create(const vector<string>  &basepaths,
+            vector<const string*> &paths)
 {
   if(basepaths.empty())
     return (errno=ENOENT,-1);
 
-  paths = basepaths;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    paths.push_back(&basepaths[i]);
 
   return 0;
 }
@@ -74,9 +75,9 @@ namespace mergerfs
   int
   Policy::Func::all(const Category::Enum::Type  type,
                     const vector<string>       &basepaths,
-                    const string               &fusepath,
+                    const char                 *fusepath,
                     const size_t                minfreespace,
-                    vector<string>             &paths)
+                    vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
       return _all_create(basepaths,paths);

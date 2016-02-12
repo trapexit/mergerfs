@@ -33,15 +33,16 @@ static
 int
 _fwfs_create(const Category::Enum::Type  type,
              const vector<string>       &basepaths,
-             const string               &fusepath,
+             const char                 *fusepath,
              const size_t                minfreespace,
-             vector<string>             &paths)
+             vector<const string*>      &paths)
 {
+  int rv;
+  struct statvfs fsstats;
+
   for(size_t i = 0, size = basepaths.size(); i != size; i++)
     {
-      int rv;
-      struct statvfs fsstats;
-      const string   &basepath = basepaths[i];
+      const string &basepath = basepaths[i];
 
       rv = ::statvfs(basepath.c_str(),&fsstats);
       if(rv == 0)
@@ -52,7 +53,7 @@ _fwfs_create(const Category::Enum::Type  type,
           if(spaceavail < minfreespace)
             continue;
 
-          paths.push_back(basepath);
+          paths.push_back(&basepath);
 
           return 0;
         }
@@ -65,16 +66,17 @@ static
 int
 _fwfs(const Category::Enum::Type  type,
       const vector<string>       &basepaths,
-      const string               &fusepath,
+      const char                 *fusepath,
       const size_t                minfreespace,
-      vector<string>             &paths)
+      vector<const string*>      &paths)
 {
+  int rv;
+  string fullpath;
+  struct statvfs fsstats;
+
   for(size_t i = 0, size = basepaths.size(); i != size; i++)
     {
-      int rv;
-      string fullpath;
-      struct statvfs fsstats;
-      const string &basepath = basepaths[i];
+      const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
@@ -101,9 +103,9 @@ namespace mergerfs
   int
   Policy::Func::fwfs(const Category::Enum::Type  type,
                      const vector<string>       &basepaths,
-                     const string               &fusepath,
+                     const char                 *fusepath,
                      const size_t                minfreespace,
-                     vector<string>             &paths)
+                     vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
       return _fwfs_create(type,basepaths,fusepath,minfreespace,paths);

@@ -33,38 +33,60 @@ using std::string;
 using std::vector;
 using mergerfs::Policy;
 
+#ifndef WITHOUT_XATTR
+static
+int
+_removexattr_loop_core(const string *basepath,
+                       const char   *fusepath,
+                       const char   *attrname,
+                       const int     error)
+{
+  int rv;
+  string fullpath;
+
+  fs::path::make(basepath,fusepath,fullpath);
+
+  rv = ::lremovexattr(fullpath.c_str(),attrname);
+
+  return calc_error(rv,error,errno);
+}
+
+static
+int
+_removexattr_loop(const vector<const string*> &basepaths,
+                  const char                  *fusepath,
+                  const char                  *attrname)
+{
+  int error;
+
+  error = -1;
+
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      error = _removexattr_loop_core(basepaths[i],fusepath,attrname,error);
+    }
+
+  return -error;
+}
+
 static
 int
 _removexattr(Policy::Func::Action  actionFunc,
              const vector<string> &srcmounts,
              const size_t          minfreespace,
-             const string         &fusepath,
+             const char           *fusepath,
              const char           *attrname)
 {
-#ifndef WITHOUT_XATTR
   int rv;
-  int error;
-  vector<string> paths;
+  vector<const string*> basepaths;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,paths);
+  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
-  error = -1;
-  for(size_t i = 0, ei = paths.size(); i != ei; i++)
-    {
-      fs::path::append(paths[i],fusepath);
-
-      rv = ::lremovexattr(paths[i].c_str(),attrname);
-
-      error = calc_error(rv,error,errno);
-    }
-
-  return -error;
-#else
-  return -ENOTSUP;
-#endif
+  return _removexattr_loop(basepaths,fusepath,attrname);
 }
+#endif
 
 namespace mergerfs
 {
@@ -74,6 +96,7 @@ namespace mergerfs
     removexattr(const char *fusepath,
                 const char *attrname)
     {
+#ifndef WITHOUT_XATTR
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
@@ -88,6 +111,9 @@ namespace mergerfs
                           config.minfreespace,
                           fusepath,
                           attrname);
+#else
+      return -ENOTSUP;
+#endif
     }
   }
 }
