@@ -246,21 +246,21 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
-      if(config.create != Policy::epmfs)
-        return _link_create_path(config.link,
-                                 config.create,
-                                 config.srcmounts,
-                                 config.minfreespace,
-                                 from,
-                                 to);
+      if(config.create->path_preserving())
+        return _link_preserve_path(config.getattr,
+                                   config.link,
+                                   config.create,
+                                   config.srcmounts,
+                                   config.minfreespace,
+                                   from,
+                                   to);
 
-      return _link_preserve_path(config.getattr,
-                                 config.link,
-                                 config.create,
-                                 config.srcmounts,
-                                 config.minfreespace,
-                                 from,
-                                 to);
+      return _link_create_path(config.link,
+                               config.create,
+                               config.srcmounts,
+                               config.minfreespace,
+                               from,
+                               to);
     }
   }
 }

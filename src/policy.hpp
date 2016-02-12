@@ -39,6 +39,7 @@ namespace mergerfs
           einval,
           enosys,
           enotsup,
+          eplfs,
           epmfs,
           erofs,
           exdev,
@@ -95,6 +96,7 @@ namespace mergerfs
       static int einval(CType,cstrvec&,const char*,csize_t,cstrptrvec&);
       static int enosys(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int enotsup(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int eplfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int epmfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int erofs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int exdev(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
@@ -112,22 +114,32 @@ namespace mergerfs
     Enum::Type  _enum;
     std::string _str;
     Func::Ptr   _func;
+    bool        _path_preserving;
 
   public:
     Policy()
       : _enum(invalid),
         _str(invalid),
-        _func(invalid)
+        _func(invalid),
+        _path_preserving(false)
     {
     }
 
     Policy(const Enum::Type   enum_,
            const std::string &str_,
-           const Func::Ptr    func_)
+           const Func::Ptr    func_,
+           const bool         path_preserving_)
       : _enum(enum_),
         _str(str_),
-        _func(func_)
+        _func(func_),
+        _path_preserving(path_preserving_)
     {
+    }
+
+    bool
+    path_preserving() const
+    {
+      return _path_preserving;
     }
 
   public:
@@ -162,6 +174,7 @@ namespace mergerfs
     static const Policy &einval;
     static const Policy &enosys;
     static const Policy &enotsup;
+    static const Policy &eplfs;
     static const Policy &epmfs;
     static const Policy &erofs;
     static const Policy &exdev;
