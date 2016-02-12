@@ -20,27 +20,30 @@
 #include "fs.hpp"
 #include "buildvector.hpp"
 
-#define POLICY(X) (Policy(Policy::Enum::X,#X,Policy::Func::X))
+#define POLICY(X,PP) (Policy(Policy::Enum::X,#X,Policy::Func::X,PP))
+#define PRESERVES_PATH true
+#define DOESNT_PRESERVE_PATH false
 
 namespace mergerfs
 {
   const std::vector<Policy> Policy::_policies_ =
     buildvector<Policy,true>
-    (POLICY(invalid))
-    (POLICY(all))
-    (POLICY(einval))
-    (POLICY(enosys))
-    (POLICY(enotsup))
-    (POLICY(epmfs))
-    (POLICY(erofs))
-    (POLICY(exdev))
-    (POLICY(ff))
-    (POLICY(ffwp))
-    (POLICY(fwfs))
-    (POLICY(lfs))
-    (POLICY(mfs))
-    (POLICY(newest))
-    (POLICY(rand));
+    (POLICY(invalid,DOESNT_PRESERVE_PATH))
+    (POLICY(all,DOESNT_PRESERVE_PATH))
+    (POLICY(einval,DOESNT_PRESERVE_PATH))
+    (POLICY(enosys,DOESNT_PRESERVE_PATH))
+    (POLICY(enotsup,DOESNT_PRESERVE_PATH))
+    (POLICY(eplfs,PRESERVES_PATH))
+    (POLICY(epmfs,PRESERVES_PATH))
+    (POLICY(erofs,DOESNT_PRESERVE_PATH))
+    (POLICY(exdev,DOESNT_PRESERVE_PATH))
+    (POLICY(ff,DOESNT_PRESERVE_PATH))
+    (POLICY(ffwp,DOESNT_PRESERVE_PATH))
+    (POLICY(fwfs,DOESNT_PRESERVE_PATH))
+    (POLICY(lfs,DOESNT_PRESERVE_PATH))
+    (POLICY(mfs,DOESNT_PRESERVE_PATH))
+    (POLICY(newest,DOESNT_PRESERVE_PATH))
+    (POLICY(rand,DOESNT_PRESERVE_PATH));
 
   const Policy * const Policy::policies = &_policies_[1];
 
@@ -51,6 +54,7 @@ namespace mergerfs
   CONST_POLICY(einval);
   CONST_POLICY(enosys);
   CONST_POLICY(enotsup);
+  CONST_POLICY(eplfs);
   CONST_POLICY(epmfs);
   CONST_POLICY(erofs);
   CONST_POLICY(exdev);
