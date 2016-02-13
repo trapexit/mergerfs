@@ -22,48 +22,27 @@
 
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
 using std::size_t;
 
 static
-int
-_mfs_create(const vector<string>  &basepaths,
-            const char            *fusepath,
-            vector<const string*> &paths)
+void
+_calc_mfs(const struct statvfs  &fsstats,
+          const string          *basepath,
+          fsblkcnt_t            &mfs,
+          const string         *&mfsbasepath)
 {
-  int rv;
-  struct statvfs fsstats;
-  fsblkcnt_t mfs;
-  const string *mfsstr;
+  fsblkcnt_t spaceavail;
 
-  mfs = 0;
-  mfsstr = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  if(spaceavail > mfs)
     {
-      const string &basepath = basepaths[i];
-
-      rv = ::statvfs(basepath.c_str(),&fsstats);
-      if(rv == 0)
-        {
-          fsblkcnt_t spaceavail;
-
-          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
-          if(spaceavail > mfs)
-            {
-              mfs    = spaceavail;
-              mfsstr = &basepath;
-            }
-        }
+      mfs         = spaceavail;
+      mfsbasepath = basepath;
     }
-
-  if(mfsstr == NULL)
-    return (errno=ENOENT,-1);
-
-  paths.push_back(mfsstr);
-
-  return 0;
 }
 
 static
@@ -76,10 +55,10 @@ _mfs(const vector<string>  &basepaths,
   string fullpath;
   struct statvfs fsstats;
   fsblkcnt_t mfs;
-  const string *mfsstr;
+  const string *mfsbasepath;
 
   mfs = 0;
-  mfsstr = NULL;
+  mfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       const string *basepath = &basepaths[i];
@@ -87,25 +66,16 @@ _mfs(const vector<string>  &basepaths,
       fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(rv == 0)
-        {
-          fsblkcnt_t spaceavail;
-
-          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
-          if(spaceavail > mfs)
-            {
-              mfs    = spaceavail;
-              mfsstr = basepath;
-            }
-        }
+      if(STATVFS_SUCCEEDED(rv))
+        _calc_mfs(fsstats,basepath,mfs,mfsbasepath);
     }
 
-  if(mfsstr == NULL)
-    return (errno=ENOENT,-1);
+  if(mfsbasepath == NULL)
+    return (errno=ENOENT,POLICY_FAIL);
 
-  paths.push_back(mfsstr);
+  paths.push_back(mfsbasepath);
 
-  return 0;
+  return POLICY_SUCCESS;
 }
 
 namespace mergerfs
@@ -117,9 +87,9 @@ namespace mergerfs
                     const size_t                minfreespace,
                     vector<const string*>      &paths)
   {
-    if(type == Category::Enum::create)
-      return _mfs_create(basepaths,fusepath,paths);
+    const char *fp =
+      ((type == Category::Enum::create) ? "" : fusepath);
 
-    return _mfs(basepaths,fusepath,paths);
+    return _mfs(basepaths,fp,paths);
   }
 }

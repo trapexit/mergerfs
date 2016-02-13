@@ -14,25 +14,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
+#ifndef __MERGERFS_SUCCESS_FAIL_HPP__
 
-#include <string>
-#include <vector>
+#define STATVFS_SUCCESS 0
+#define STATVFS_SUCCEEDED(RV) ((RV) == STATVFS_SUCCESS)
 
-#include "policy.hpp"
+#define STAT_SUCCESS 0
+#define STAT_SUCCEEDED(RV) ((RV) == STAT_SUCCESS)
+#define STAT_FAIL -1
+#define STAT_FAILED(RV) ((RV) == STAT_FAIL)
 
-using std::string;
-using std::vector;
+#define LSTAT_SUCCESS 0
+#define LSTAT_SUCCEEDED(RV) ((RV) == LSTAT_SUCCESS)
+#define LSTAT_FAIL -1
+#define LSTAT_FAILED(RV) ((RV) == LSTAT_FAIL)
 
-namespace mergerfs
-{
-  int
-  Policy::Func::einval(const Category::Enum::Type  type,
-                       const vector<string>       &basepaths,
-                       const char                 *fusepath,
-                       const size_t                minfreespace,
-                       vector<const string*>      &paths)
-  {
-    return (errno=EINVAL,POLICY_FAIL);
-  }
-}
+#endif /*__MERGERFS_SUCCESS_FAIL_HPP__ */

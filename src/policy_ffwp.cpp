@@ -24,6 +24,7 @@
 
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -48,10 +49,10 @@ _ffwp(const vector<string>  &basepaths,
       fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::lstat(fullpath.c_str(),&st);
-      if(rv == 0)
+      if(LSTAT_SUCCEEDED(rv))
         {
           paths.push_back(basepath);
-          return 0;
+          return POLICY_SUCCESS;
         }
       else if(errno == EACCES)
         {
@@ -60,11 +61,11 @@ _ffwp(const vector<string>  &basepaths,
     }
 
   if(fallback == NULL)
-    return (errno=ENOENT,-1);
+    return (errno=ENOENT,POLICY_FAIL);
 
   paths.push_back(fallback);
 
-  return 0;
+  return POLICY_SUCCESS;
 }
 
 namespace mergerfs

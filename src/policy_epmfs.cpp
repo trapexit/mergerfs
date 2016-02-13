@@ -25,6 +25,7 @@
 
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -53,10 +54,10 @@ _calc_mfs(const statvfs_t  &fsstats,
 
 static
 int
-_epmfs_create(const vector<string>  &basepaths,
-              const char            *fusepath,
-              const size_t           minfreespace,
-              vector<const string*> &paths)
+_epmfs(const vector<string>  &basepaths,
+       const char            *fusepath,
+       const size_t           minfreespace,
+       vector<const string*> &paths)
 {
   int rv;
   string fullpath;
@@ -73,50 +74,16 @@ _epmfs_create(const vector<string>  &basepaths,
       fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(rv == 0)
+      if(STATVFS_SUCCEEDED(rv))
         _calc_mfs(fsstats,basepath,minfreespace,epmfs,epmfsbasepath);
     }
 
   if(epmfsbasepath == NULL)
-    return Policy::Func::mfs(Category::Enum::create,basepaths,fusepath,minfreespace,paths);
+    return (errno=ENOENT,POLICY_FAIL);
 
   paths.push_back(epmfsbasepath);
 
-  return 0;
-}
-
-static
-int
-_epmfs(const vector<string>  &basepaths,
-       const char            *fusepath,
-       vector<const string*> &paths)
-
-{
-  int rv;
-  string fullpath;
-  statvfs_t fsstats;
-  fsblkcnt_t epmfs;
-  const string *epmfsbasepath;
-
-  epmfs = 0;
-  epmfsbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      const string *basepath = &basepaths[i];
-
-      fs::path::make(basepath,fusepath,fullpath);
-
-      rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(rv == 0)
-        _calc_mfs(fsstats,basepath,0,epmfs,epmfsbasepath);
-    }
-
-  if(epmfsbasepath == NULL)
-    return (errno=ENOENT,-1);
-
-  paths.push_back(epmfsbasepath);
-
-  return 0;
+  return POLICY_SUCCESS;
 }
 
 namespace mergerfs
@@ -128,9 +95,14 @@ namespace mergerfs
                       const size_t                minfreespace,
                       vector<const string*>     &paths)
   {
-    if(type == Category::Enum::create)
-      return _epmfs_create(basepaths,fusepath,minfreespace,paths);
+    int rv;
+    const size_t minfs =
+      ((type == Category::Enum::create) ? minfreespace : 0);
 
-    return _epmfs(basepaths,fusepath,paths);
+    rv = _epmfs(basepaths,fusepath,minfs,paths);
+    if(POLICY_FAILED(rv))
+      rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
+
+    return rv;
   }
 }

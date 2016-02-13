@@ -24,6 +24,11 @@
 #include "fs.hpp"
 #include "category.hpp"
 
+#define POLICY_SUCCESS 0
+#define POLICY_FAIL -1
+#define POLICY_SUCCEEDED(RV) ((RV) == POLICY_SUCCESS)
+#define POLICY_FAILED(RV) ((RV) == POLICY_FAIL)
+
 namespace mergerfs
 {
   class Policy
