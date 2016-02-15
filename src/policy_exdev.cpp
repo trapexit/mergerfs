@@ -33,6 +33,6 @@ namespace mergerfs
                       const size_t                minfreespace,
                       vector<const string*>      &paths)
   {
-    return (errno=EXDEV,-1);
+    return (errno=EXDEV,POLICY_FAIL);
   }
 }

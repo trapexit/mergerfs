@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -38,11 +39,9 @@ namespace mergerfs
     int rv;
 
     rv = Policy::Func::all(type,basepaths,fusepath,minfreespace,paths);
-    if(rv == -1)
-      return -1;
+    if(POLICY_SUCCEEDED(rv))
+      std::random_shuffle(paths.begin(),paths.end());
 
-    std::random_shuffle(paths.begin(),paths.end());
-
-    return 0;
+    return rv;
   }
 }

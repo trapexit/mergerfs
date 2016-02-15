@@ -24,6 +24,7 @@
 
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -46,29 +47,15 @@ _ff(const vector<string>  &basepaths,
       fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::lstat(fullpath.c_str(),&st);
-      if(rv == -1)
+      if(LSTAT_FAILED(rv))
         continue;
 
       paths.push_back(basepath);
 
-      return 0;
+      return POLICY_SUCCESS;
     }
 
-  return (errno=ENOENT,-1);
-}
-
-static
-int
-_ff_create(const vector<string>  &basepaths,
-           const char            *fusepath,
-           vector<const string*> &paths)
-{
-  if(basepaths.empty())
-    return (errno=ENOENT,-1);
-
-  paths.push_back(&basepaths[0]);
-
-  return 0;
+  return (errno=ENOENT,POLICY_FAIL);
 }
 
 namespace mergerfs
@@ -80,9 +67,9 @@ namespace mergerfs
                    const size_t                minfreespace,
                    vector<const string*>      &paths)
   {
-    if(type == Category::Enum::create)
-      return _ff_create(basepaths,fusepath,paths);
+    const char *fp =
+      ((type == Category::Enum::create) ? "" : fusepath);
 
-    return _ff(basepaths,fusepath,paths);
+    return _ff(basepaths,fp,paths);
   }
 }

@@ -25,6 +25,7 @@
 
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -40,10 +41,10 @@ _newest(const vector<string>  &basepaths,
   struct stat st;
   string fullpath;
   time_t newest;
-  const string *neweststr;
+  const string *newestbasepath;
 
   newest = std::numeric_limits<time_t>::min();
-  neweststr = NULL;
+  newestbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       const string *basepath = &basepaths[i];
@@ -51,19 +52,19 @@ _newest(const vector<string>  &basepaths,
       fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::lstat(fullpath.c_str(),&st);
-      if(rv == 0 && st.st_mtime >= newest)
+      if(LSTAT_SUCCEEDED(rv) && (st.st_mtime >= newest))
         {
-          newest    = st.st_mtime;
-          neweststr = basepath;
+          newest = st.st_mtime;
+          newestbasepath = basepath;
         }
     }
 
-  if(neweststr == NULL)
-    return (errno=ENOENT,-1);
+  if(newestbasepath == NULL)
+    return (errno=ENOENT,POLICY_FAIL);
 
-  paths.push_back(neweststr);
+  paths.push_back(newestbasepath);
 
-  return 0;
+  return POLICY_SUCCESS;
 }
 
 namespace mergerfs

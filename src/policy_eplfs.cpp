@@ -25,6 +25,7 @@
 
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -74,16 +75,16 @@ _eplfs(const Category::Enum::Type  type,
       fs::path::make(basepath,fusepath,fullpath);
 
       rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(rv == 0)
+      if(STATVFS_SUCCEEDED(rv))
         _calc_lfs(fsstats,basepath,minfreespace,eplfs,eplfsbasepath);
     }
 
   if(eplfsbasepath == NULL)
-    return -ENOENT;
+    return (errno=ENOENT,POLICY_FAIL);
 
   paths.push_back(eplfsbasepath);
 
-  return 0;
+  return POLICY_SUCCESS;
 }
 
 namespace mergerfs
@@ -100,7 +101,7 @@ namespace mergerfs
       ((type == Category::Enum::create) ? minfreespace : 0);
 
     rv = _eplfs(type,basepaths,fusepath,minfs,paths);
-    if(rv != 0)
+    if(POLICY_FAILED(rv))
       rv = Policy::Func::lfs(type,basepaths,fusepath,minfreespace,paths);
 
     return rv;
