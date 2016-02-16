@@ -21,45 +21,18 @@
 
 #include <algorithm>
 #include <climits>
-#include <set>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "config.hpp"
 #include "rwlock.hpp"
+#include "success_fail.hpp"
 #include "ugid.hpp"
 
 using std::string;
+using std::map;
 using std::vector;
-using std::pair;
-
-#define EQ(FOO) (lhs.f_##FOO == rhs.f_##FOO)
-
-static
-bool
-operator==(const struct statvfs &lhs,
-           const struct statvfs &rhs)
-{
-  return (EQ(bsize)  &&
-          EQ(frsize) &&
-          EQ(blocks) &&
-          EQ(bfree)  &&
-          EQ(bavail) &&
-          EQ(files)  &&
-          EQ(ffree)  &&
-          EQ(favail) &&
-          EQ(fsid)   &&
-          EQ(flag)   &&
-          EQ(namemax));
-}
-
-static
-bool
-member(const vector<struct statvfs> &haystack,
-       const struct statvfs         &needle)
-{
-  return (std::find(haystack.begin(),haystack.end(),needle) != haystack.end());
-}
 
 static
 void
@@ -91,46 +64,61 @@ _merge_statvfs(struct statvfs       * const out,
 }
 
 static
+void
+_statfs_core(const char                *srcmount,
+             unsigned long             &min_bsize,
+             unsigned long             &min_frsize,
+             unsigned long             &min_namemax,
+             map<dev_t,struct statvfs> &fsstats)
+{
+  int rv;
+  struct stat st;
+  struct statvfs fsstat;
+
+  rv = ::statvfs(srcmount,&fsstat);
+  if(STATVFS_FAILED(rv))
+    return;
+
+  rv = ::stat(srcmount,&st);
+  if(STAT_FAILED(rv))
+    return;
+
+  if(min_bsize > fsstat.f_bsize)
+    min_bsize = fsstat.f_bsize;
+  if(min_frsize > fsstat.f_frsize)
+    min_frsize = fsstat.f_frsize;
+  if(min_namemax > fsstat.f_namemax)
+    min_namemax = fsstat.f_namemax;
+
+  fsstats.insert(std::make_pair(st.st_dev,fsstat));
+}
+
+static
 int
 _statfs(const vector<string> &srcmounts,
         struct statvfs       &fsstat)
 {
-  vector<struct statvfs> fsstats;
+  map<dev_t,struct statvfs> fsstats;
   unsigned long min_bsize   = ULONG_MAX;
   unsigned long min_frsize  = ULONG_MAX;
   unsigned long min_namemax = ULONG_MAX;
 
   for(size_t i = 0, ei = srcmounts.size(); i < ei; i++)
     {
-      int rv;
-      struct statvfs fsstat;
-
-      rv = ::statvfs(srcmounts[i].c_str(),&fsstat);
-      if((rv == -1) || member(fsstats,fsstat))
-        continue;
-
-      if(min_bsize > fsstat.f_bsize)
-        min_bsize = fsstat.f_bsize;
-      if(min_frsize > fsstat.f_frsize)
-        min_frsize = fsstat.f_frsize;
-      if(min_namemax > fsstat.f_namemax)
-        min_namemax = fsstat.f_namemax;
-
-      fsstats.push_back(fsstat);
+      _statfs_core(srcmounts[i].c_str(),min_bsize,min_frsize,min_namemax,fsstats);
     }
 
-  if(!fsstats.empty())
+  map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
+  map<dev_t,struct statvfs>::iterator enditer = fsstats.end();
+  if(iter != enditer)
     {
-      fsstat = fsstats[0];
+      fsstat = iter->second;
       _normalize_statvfs(&fsstat,min_bsize,min_frsize,min_namemax);
 
-      for(size_t i = 1, ei = fsstats.size(); i < ei; i++)
+      for(++iter; iter != enditer; ++iter)
         {
-          struct statvfs tmp = fsstats[i];
-
-          _normalize_statvfs(&tmp,min_bsize,min_frsize,min_namemax);
-
-          _merge_statvfs(&fsstat,&tmp);
+          _normalize_statvfs(&iter->second,min_bsize,min_frsize,min_namemax);
+          _merge_statvfs(&fsstat,&iter->second);
         }
     }
 
