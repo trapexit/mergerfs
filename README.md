@@ -32,7 +32,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
 * **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed. 
-* **minfreespace**: the minimum space value used for the **lfs**, **fwfs**, and **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
+* **minfreespace**: the minimum space value used for the **lfs**, **fwfs**, **eplfs**, & **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
@@ -83,7 +83,8 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 | mfs (most free space) | Use the drive with the most free space available. |
 | epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space and is greater than **minfreespace**. If no drive has at least **minfreespace** then fallback to **mfs**. |
 | fwfs (first with free space) | Pick the first drive which has at least **minfreespace**. |
-| lfs (least free space) | Pick the drive with least available space but more than **minfreespace**. |
+| lfs (least free space) | Pick the drive with least available space but more than **minfreespace**. If all drives fail it will fallback to **mfs**. |
+| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space and greater than **minfreespace**. If no drive has at least **minfreespace** then it falls back to **lfs**. |
 | rand (random) | Pick an existing drive at random. |
 | all | Applies action to all found. For searches it will behave like first found **ff**. |
 | enosys, einval, enotsup, exdev, erofs | Exclusively return `-1` with `errno` set to the respective value. Useful for debugging other applications' behavior to errors. |
@@ -102,7 +103,7 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 
 Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or they only partially support EXDEV (don't respond the same as `mv` would). Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
 
-* If using a policy which tries to preserve directories (epmfs)
+* If using a policy which tries to preserve directories (epmfs,eplfs)
   * Using the `rename` policy get the list of files to rename
   * For each file attempt rename:
     * If failure with ENOENT run `create` policy
@@ -204,31 +205,7 @@ Use `xattr -l /mount/point/.mergerfs` to see all supported keys.
 user.mergerfs.srcmounts: /tmp/a:/tmp/b
 user.mergerfs.minfreespace: 4294967295
 user.mergerfs.moveonenospc: false
-user.mergerfs.policies: all,einval,enosys,enotsup,epmfs,erofs,exdev,ff,ffwp,fwfs,lfs,mfs,newest,rand
-user.mergerfs.version: x.y.z
-user.mergerfs.category.action: all
-user.mergerfs.category.create: epmfs
-user.mergerfs.category.search: ff
-user.mergerfs.func.access: ff
-user.mergerfs.func.chmod: all
-user.mergerfs.func.chown: all
-user.mergerfs.func.create: epmfs
-user.mergerfs.func.getattr: ff
-user.mergerfs.func.getxattr: ff
-user.mergerfs.func.link: all
-user.mergerfs.func.listxattr: ff
-user.mergerfs.func.mkdir: epmfs
-user.mergerfs.func.mknod: epmfs
-user.mergerfs.func.open: ff
-user.mergerfs.func.readlink: ff
-user.mergerfs.func.removexattr: all
-user.mergerfs.func.rename: all
-user.mergerfs.func.rmdir: all
-user.mergerfs.func.setxattr: all
-user.mergerfs.func.symlink: epmfs
-user.mergerfs.func.truncate: all
-user.mergerfs.func.unlink: all
-user.mergerfs.func.utimens: all
+...
 
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
 ff
