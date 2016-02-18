@@ -14,17 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <errno.h>
+#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -34,11 +33,12 @@ static
 int
 _ff(const vector<string>  &basepaths,
     const char            *fusepath,
+    const bool             needswritablefs,
     vector<const string*> &paths)
 {
-  int rv;
   string fullpath;
-  struct stat st;
+  struct statvfs st;
+  const string *fallback = NULL;
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
@@ -46,12 +46,24 @@ _ff(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::lstat(fullpath.c_str(),&st);
-      if(LSTAT_FAILED(rv))
+      if(!fs::exists(fullpath,st))
         continue;
+
+      if(needswritablefs && StatVFS::readonly(st))
+        {
+          if(fallback == NULL)
+            fallback = basepath;
+          continue;
+        }
 
       paths.push_back(basepath);
 
+      return POLICY_SUCCESS;
+    }
+
+  if(fallback != NULL)
+    {
+      paths.push_back(fallback);
       return POLICY_SUCCESS;
     }
 
@@ -69,7 +81,9 @@ namespace mergerfs
   {
     const char *fp =
       ((type == Category::Enum::create) ? "" : fusepath);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
 
-    return _ff(basepaths,fp,paths);
+    return _ff(basepaths,fp,needswritablefs,paths);
   }
 }

@@ -14,15 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/statvfs.h>
 #include <errno.h>
+#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -35,11 +36,11 @@ int
 _fwfs(const vector<string>  &basepaths,
       const char            *fusepath,
       const size_t           minfreespace,
+      const bool             needswritablefs,
       vector<const string*> &paths)
 {
-  int rv;
   string fullpath;
-  struct statvfs fsstats;
+  struct statvfs st;
 
   for(size_t i = 0, size = basepaths.size(); i != size; i++)
     {
@@ -47,19 +48,15 @@ _fwfs(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(STATVFS_SUCCEEDED(rv))
-        {
-          fsblkcnt_t spaceavail;
+      if(!fs::available(fullpath,needswritablefs,st))
+        continue;
 
-          spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
-          if(spaceavail < minfreespace)
-            continue;
+      if(StatVFS::spaceavail(st) < minfreespace)
+        continue;
 
-          paths.push_back(basepath);
+      paths.push_back(basepath);
 
-          return POLICY_SUCCESS;
-        }
+      return POLICY_SUCCESS;
     }
 
   return (errno=ENOENT,POLICY_FAIL);
@@ -77,8 +74,10 @@ namespace mergerfs
     int rv;
     const char *fp =
       ((type == Category::Enum::create) ? "" : fusepath);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
 
-    rv = _fwfs(basepaths,fp,minfreespace,paths);
+    rv = _fwfs(basepaths,fp,minfreespace,needswritablefs,paths);
     if(POLICY_FAILED(rv))
       rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 

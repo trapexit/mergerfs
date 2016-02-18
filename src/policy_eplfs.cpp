@@ -15,36 +15,33 @@
 */
 
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
 using std::size_t;
 using mergerfs::Policy;
 using mergerfs::Category;
-typedef struct statvfs statvfs_t;
 
 static
 void
-_calc_lfs(const statvfs_t  &fsstats,
-          const string     *basepath,
-          const size_t      minfreespace,
-          fsblkcnt_t       &lfs,
-          const string    *&lfsbasepath)
+_calc_lfs(const struct statvfs  &st,
+          const string          *basepath,
+          const size_t           minfreespace,
+          fsblkcnt_t            &lfs,
+          const string         *&lfsbasepath)
 {
   fsblkcnt_t spaceavail;
 
-  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  spaceavail = StatVFS::spaceavail(st);
   if((spaceavail > minfreespace) && (spaceavail < lfs))
     {
       lfs         = spaceavail;
@@ -54,15 +51,14 @@ _calc_lfs(const statvfs_t  &fsstats,
 
 static
 int
-_eplfs(const Category::Enum::Type  type,
-       const vector<string>       &basepaths,
-       const char                 *fusepath,
-       const size_t                minfreespace,
-       vector<const string*>      &paths)
+_eplfs(const vector<string>  &basepaths,
+       const char            *fusepath,
+       const size_t           minfreespace,
+       const bool             needswritablefs,
+       vector<const string*> &paths)
 {
-  int rv;
   string fullpath;
-  statvfs_t fsstats;
+  struct statvfs st;
   fsblkcnt_t eplfs;
   const string *eplfsbasepath;
 
@@ -74,9 +70,10 @@ _eplfs(const Category::Enum::Type  type,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(STATVFS_SUCCEEDED(rv))
-        _calc_lfs(fsstats,basepath,minfreespace,eplfs,eplfsbasepath);
+      if(!fs::available(fullpath,needswritablefs,st))
+        continue;
+
+      _calc_lfs(st,basepath,minfreespace,eplfs,eplfsbasepath);
     }
 
   if(eplfsbasepath == NULL)
@@ -94,13 +91,15 @@ namespace mergerfs
                       const vector<string>       &basepaths,
                       const char                 *fusepath,
                       const size_t                minfreespace,
-                      vector<const string*>     &paths)
+                      vector<const string*>      &paths)
   {
     int rv;
+    const bool needswritablefs =
+      (type == Category::Enum::create);
     const size_t minfs =
       ((type == Category::Enum::create) ? minfreespace : 0);
 
-    rv = _eplfs(type,basepaths,fusepath,minfs,paths);
+    rv = _eplfs(basepaths,fusepath,minfs,needswritablefs,paths);
     if(POLICY_FAILED(rv))
       rv = Policy::Func::lfs(type,basepaths,fusepath,minfreespace,paths);
 

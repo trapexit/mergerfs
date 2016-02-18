@@ -15,36 +15,33 @@
 */
 
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
 using std::size_t;
 using mergerfs::Policy;
 using mergerfs::Category;
-typedef struct statvfs statvfs_t;
 
 static
 void
-_calc_mfs(const statvfs_t  &fsstats,
-          const string     *basepath,
-          const size_t      minfreespace,
-          fsblkcnt_t       &mfs,
-          const string    *&mfsbasepath)
+_calc_mfs(const struct statvfs  &st,
+          const string          *basepath,
+          const size_t           minfreespace,
+          fsblkcnt_t            &mfs,
+          const string         *&mfsbasepath)
 {
   fsblkcnt_t spaceavail;
 
-  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  spaceavail = StatVFS::spaceavail(st);
   if((spaceavail > minfreespace) && (spaceavail > mfs))
     {
       mfs         = spaceavail;
@@ -57,11 +54,11 @@ int
 _epmfs(const vector<string>  &basepaths,
        const char            *fusepath,
        const size_t           minfreespace,
+       const bool             needswritablefs,
        vector<const string*> &paths)
 {
-  int rv;
   string fullpath;
-  statvfs_t fsstats;
+  struct statvfs st;
   fsblkcnt_t epmfs;
   const string *epmfsbasepath;
 
@@ -73,9 +70,10 @@ _epmfs(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(STATVFS_SUCCEEDED(rv))
-        _calc_mfs(fsstats,basepath,minfreespace,epmfs,epmfsbasepath);
+      if(!fs::available(fullpath,needswritablefs,st))
+        continue;
+
+      _calc_mfs(st,basepath,minfreespace,epmfs,epmfsbasepath);
     }
 
   if(epmfsbasepath == NULL)
@@ -98,8 +96,10 @@ namespace mergerfs
     int rv;
     const size_t minfs =
       ((type == Category::Enum::create) ? minfreespace : 0);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
 
-    rv = _epmfs(basepaths,fusepath,minfs,paths);
+    rv = _epmfs(basepaths,fusepath,minfs,needswritablefs,paths);
     if(POLICY_FAILED(rv))
       rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 

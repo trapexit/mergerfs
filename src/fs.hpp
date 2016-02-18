@@ -26,6 +26,16 @@ namespace fs
   using std::string;
   using std::vector;
 
+  bool exists(const string &path,
+              struct stat  &st);
+  bool exists(const string   &path,
+              struct statvfs &st);
+  bool exists(const string &path);
+
+  bool exists_on_rw_fs(const string   &path,
+                       struct statvfs &st);
+  bool exists_on_rw_fs(const string &path);
+
   void findallfiles(const vector<string> &srcmounts,
                     const char           *fusepath,
                     vector<string>       &paths);
@@ -45,6 +55,13 @@ namespace fs
   int mfs(const vector<string> &srcs,
           const size_t          minfreespace,
           string               &path);
+
+  bool available(const string &path,
+                 const bool    needswritablefs);
+
+  bool available(const string   &path,
+                 const bool      needswritablefs,
+                 struct statvfs &st);
 };
 
 #endif // __FS_HPP__

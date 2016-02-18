@@ -14,17 +14,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <errno.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -34,10 +31,9 @@ static
 int
 _all(const vector<string>  &basepaths,
      const char            *fusepath,
+     const bool             needswritablefs,
      vector<const string*> &paths)
 {
-  int rv;
-  struct stat st;
   string fullpath;
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
@@ -46,9 +42,10 @@ _all(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::lstat(fullpath.c_str(),&st);
-      if(LSTAT_SUCCEEDED(rv))
-        paths.push_back(basepath);
+      if(!fs::available(fullpath,needswritablefs))
+        continue;
+
+      paths.push_back(basepath);
     }
 
   if(paths.empty())
@@ -68,7 +65,9 @@ namespace mergerfs
   {
     const char *fp =
       ((type == Category::Enum::create) ? "" : fusepath);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
 
-    return _all(basepaths,fp,paths);
+    return _all(basepaths,fp,needswritablefs,paths);
   }
 }
