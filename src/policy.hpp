@@ -41,15 +41,10 @@ namespace mergerfs
           invalid = -1,
           BEGIN   = 0,
           all     = BEGIN,
-          einval,
-          enosys,
-          enotsup,
           eplfs,
           epmfs,
           erofs,
-          exdev,
           ff,
-          ffwp,
           fwfs,
           lfs,
           mfs,
@@ -97,18 +92,13 @@ namespace mergerfs
       typedef Base<Category::Enum::create> Create;
       typedef Base<Category::Enum::search> Search;
 
+      static int invalid(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int all(CType,cstrvec&,const char*,csize_t,cstrptrvec&);
-      static int einval(CType,cstrvec&,const char*,csize_t,cstrptrvec&);
-      static int enosys(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int enotsup(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int eplfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int epmfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int erofs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int exdev(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int ff(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int ffwp(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int fwfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int invalid(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int lfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int mfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int newest(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
@@ -176,15 +166,10 @@ namespace mergerfs
 
     static const Policy &invalid;
     static const Policy &all;
-    static const Policy &einval;
-    static const Policy &enosys;
-    static const Policy &enotsup;
     static const Policy &eplfs;
     static const Policy &epmfs;
     static const Policy &erofs;
-    static const Policy &exdev;
     static const Policy &ff;
-    static const Policy &ffwp;
     static const Policy &fwfs;
     static const Policy &lfs;
     static const Policy &mfs;
