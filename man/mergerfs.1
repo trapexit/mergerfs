@@ -1,5 +1,5 @@
 .\"t
-.TH "mergerfs" "1" "2016\-01\-21" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-02\-21" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another (FUSE based) union filesystem
@@ -31,6 +31,8 @@ Opportunistic credential caching
 Works with heterogeneous filesystem types
 .IP \[bu] 2
 Handling of writes to full drives
+.IP \[bu] 2
+Handles pool of readonly and read/write drives
 .SH OPTIONS
 .SS options
 .IP \[bu] 2
@@ -43,7 +45,7 @@ These options seem to provide the best performance.
 can increase write speeds at the detriment of read speed.
 .IP \[bu] 2
 \f[B]minfreespace\f[]: the minimum space value used for the
-\f[B]lfs\f[], \f[B]fwfs\f[], and \f[B]epmfs\f[] policies.
+\f[B]lfs\f[], \f[B]fwfs\f[], \f[B]eplfs\f[], & \f[B]epmfs\f[] policies.
 Understands \[aq]K\[aq], \[aq]M\[aq], and \[aq]G\[aq] to represent
 kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
@@ -101,19 +103,22 @@ In /etc/fstab it\[aq]d look like the following:
 \f[B]NOTE:\f[] the globbing is done at mount or xattr update time.
 If a new directory is added matching the glob after the fact it will not
 be included.
-.SH POLICIES
+.SH FUNCTIONS / POLICIES / CATEGORIES
 .PP
-Filesystem calls are broken up into 3 categories: \f[B]action\f[],
+The filesystem has a number of functions.
+Those functions are grouped into 3 categories: \f[B]action\f[],
 \f[B]create\f[], \f[B]search\f[].
-There are also some calls which have no policy attached due to state
-being kept between calls.
-These categories can be assigned a policy which dictates how
-\f[B]mergerfs\f[] behaves.
-Any policy can be assigned to a category though some aren\[aq]t terribly
-practical.
-For instance: \f[B]rand\f[] (Random) may be useful for \f[B]create\f[]
-but could lead to very odd behavior if used for \f[B]search\f[].
-.SS Functional classifications
+These functions and categories can be assigned a policy which dictates
+how \f[B]mergerfs\f[] behaves.
+Any policy can be assigned to a function or category though some are not
+very practical.
+For instance: \f[B]rand\f[] (Random) may be useful for file creation
+(create) but could lead to very odd behavior if used for \f[C]chmod\f[].
+.PP
+All policies when used to create will ignore drives which are mounted
+readonly.
+This allows for read/write and readonly drives to be mixed together.
+.SS Function / Category classifications
 .PP
 .TS
 tab(@);
@@ -165,63 +170,68 @@ Description
 T}
 _
 T{
-ff (first found)
+all
 T}@T{
-Given the order of the drives act on the first one found (regardless if
-stat would return EACCES).
+Applies action to all found.
+For searches it will behave like first found \f[B]ff\f[].
+For \f[C]create\f[] functions it will only apply to \f[C]mkdir\f[],
+\f[C]mkdnod\f[], and \f[C]symlink\f[].
 T}
 T{
-ffwp (first found w/ permissions)
+eplfs (existing path, least free space)
 T}@T{
-Given the order of the drives act on the first one found which you have
-access (stat does not error with EACCES).
-T}
-T{
-newest (newest file)
-T}@T{
-If multiple files exist return the one with the most recent mtime.
-T}
-T{
-mfs (most free space)
-T}@T{
-Use the drive with the most free space available.
+If the path exists on multiple drives use the one with the least free
+space and is greater than \f[B]minfreespace\f[].
+Falls back to \f[B]lfs\f[].
 T}
 T{
 epmfs (existing path, most free space)
 T}@T{
 If the path exists on multiple drives use the one with the most free
 space and is greater than \f[B]minfreespace\f[].
-If no drive has at least \f[B]minfreespace\f[] then fallback to
-\f[B]mfs\f[].
+Falls back to \f[B]mfs\f[].
+T}
+T{
+erofs
+T}@T{
+Exclusively return \f[C]\-1\f[] with \f[C]errno\f[] set to EROFS.
+By setting \f[C]create\f[] functions to this you can in effect turn the
+filesystem readonly.
+T}
+T{
+ff (first found)
+T}@T{
+Given the order of the drives, as defined at mount time or when
+configured via xattr interface, act on the first one found.
 T}
 T{
 fwfs (first with free space)
 T}@T{
 Pick the first drive which has at least \f[B]minfreespace\f[].
+Falls back to \f[B]mfs\f[].
 T}
 T{
 lfs (least free space)
 T}@T{
-Pick the drive with least available space but more than
+Pick the drive with the least available free space but more than
 \f[B]minfreespace\f[].
+Falls back to \f[B]mfs\f[].
+T}
+T{
+mfs (most free space)
+T}@T{
+Use the drive with the most available free space.
+Falls back to \f[B]ff\f[].
+T}
+T{
+newest (newest file)
+T}@T{
+Pick the file / directory with the largest mtime.
 T}
 T{
 rand (random)
 T}@T{
-Pick an existing drive at random.
-T}
-T{
-all
-T}@T{
-Applies action to all found.
-For searches it will behave like first found \f[B]ff\f[].
-T}
-T{
-enosys, einval, enotsup, exdev, erofs
-T}@T{
-Exclusively return \f[C]\-1\f[] with \f[C]errno\f[] set to the
-respective value.
-Useful for debugging other applications\[aq] behavior to errors.
+Calls \f[B]all\f[] and then randomizes.
 T}
 .TE
 .SS Defaults
@@ -276,7 +286,7 @@ same as \f[C]mv\f[] would).
 Such apps include: gvfsd\-fuse v1.20.3 and prior, Finder / CIFS/SMB
 client in Apple OSX 10.9+, NZBGet, Samba\[aq]s recycling bin feature.
 .IP \[bu] 2
-If using a policy which tries to preserve directories (epmfs)
+If using a policy which tries to preserve directories (epmfs,eplfs)
 .IP \[bu] 2
 Using the \f[C]rename\f[] policy get the list of files to rename
 .IP \[bu] 2
@@ -367,11 +377,8 @@ drives based on the fragment size and sums the number of adjusted blocks
 and inodes.
 This means you will see the combined space of all sources.
 Total, used, and free.
-The sources however are dedupped based on the drive so multiple mount
-points on the same drive will not result in double counting it\[aq]s
-space.
-It is possible due to a race condition that the same drive could be
-double counted but it\[aq]s rather unlikely.
+The sources however are dedupped based on the drive so multiple sources
+on the same drive will not result in double counting it\[aq]s space.
 .SH BUILDING
 .PP
 \f[B]NOTE:\f[] Prebuilt packages can be found at:
@@ -441,60 +448,6 @@ still work.
 .PP
 Use \f[C]xattr\ \-l\ /mount/point/.mergerfs\f[] to see all supported
 keys.
-.SS Example
-.IP
-.nf
-\f[C]
-[trapexit:/tmp/mount]\ $\ xattr\ \-l\ .mergerfs
-user.mergerfs.srcmounts:\ /tmp/a:/tmp/b
-user.mergerfs.minfreespace:\ 4294967295
-user.mergerfs.moveonenospc:\ false
-user.mergerfs.policies:\ all,einval,enosys,enotsup,epmfs,erofs,exdev,ff,ffwp,fwfs,lfs,mfs,newest,rand
-user.mergerfs.version:\ x.y.z
-user.mergerfs.category.action:\ all
-user.mergerfs.category.create:\ epmfs
-user.mergerfs.category.search:\ ff
-user.mergerfs.func.access:\ ff
-user.mergerfs.func.chmod:\ all
-user.mergerfs.func.chown:\ all
-user.mergerfs.func.create:\ epmfs
-user.mergerfs.func.getattr:\ ff
-user.mergerfs.func.getxattr:\ ff
-user.mergerfs.func.link:\ all
-user.mergerfs.func.listxattr:\ ff
-user.mergerfs.func.mkdir:\ epmfs
-user.mergerfs.func.mknod:\ epmfs
-user.mergerfs.func.open:\ ff
-user.mergerfs.func.readlink:\ ff
-user.mergerfs.func.removexattr:\ all
-user.mergerfs.func.rename:\ all
-user.mergerfs.func.rmdir:\ all
-user.mergerfs.func.setxattr:\ all
-user.mergerfs.func.symlink:\ epmfs
-user.mergerfs.func.truncate:\ all
-user.mergerfs.func.unlink:\ all
-user.mergerfs.func.utimens:\ all
-
-[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
-ff
-
-[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.category.search\ ffwp\ .mergerfs
-[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
-ffwp
-
-[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ +/tmp/c\ .mergerfs
-[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
-/tmp/a:/tmp/b:/tmp/c
-
-[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ =/tmp/c\ .mergerfs
-[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
-/tmp/c
-
-[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ \[aq]+</tmp/a:/tmp/b\[aq]\ .mergerfs
-[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
-/tmp/a:/tmp/b:/tmp/c
-\f[]
-.fi
 .SS user.mergerfs.srcmounts
 .PP
 For \f[B]user.mergerfs.srcmounts\f[] there are several instructions
@@ -559,7 +512,37 @@ Input: short policy string as described elsewhere in this document
 .PP
 Output: the policy string except for categories where its funcs have
 multiple types.
-In that case it will be a comma separated list.
+In that case it will be a comma separated list
+.SS Example
+.IP
+.nf
+\f[C]
+[trapexit:/tmp/mount]\ $\ xattr\ \-l\ .mergerfs
+user.mergerfs.srcmounts:\ /tmp/a:/tmp/b
+user.mergerfs.minfreespace:\ 4294967295
+user.mergerfs.moveonenospc:\ false
+\&...
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
+ff
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.category.search\ fwfs\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
+fwfs
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ +/tmp/c\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ =/tmp/c\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+/tmp/c
+
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ \[aq]+</tmp/a:/tmp/b\[aq]\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+\f[]
+.fi
 .SS mergerfs file xattrs
 .PP
 While they won\[aq]t show up when using
@@ -598,11 +581,14 @@ A\ B\ C
 .fi
 .SH TOOLING
 .PP
-Find extra tooling to help with managing \f[C]mergerfs\f[] at:
+Find tooling to help with managing \f[C]mergerfs\f[] at:
 https://github.com/trapexit/mergerfs\-tools
 .IP \[bu] 2
 fsck.mergerfs: Provides permissions and ownership auditing and the
 ability to fix them
+.IP \[bu] 2
+mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible
+directories on a mergerfs mount
 .SH TIPS / NOTES
 .IP \[bu] 2
 If you don\[aq]t see some directories / files you expect in a merged
@@ -660,12 +646,25 @@ Due to previously mentioned issues its generally best to set
 \f[B]func\f[]\[aq]s.
 This will help limit the confusion of tools such as
 rsync (http://linux.die.net/man/1/rsync).
-.SH Known Issues / Bugs
-.SS Samba
-.IP \[bu] 2
-Moving files or directories between some directories on a SMB share fail
-with IO errors.
-.RS 2
+.SH KNOWN ISSUES / BUGS
+.SS Trashing files occasionally fails
+.PP
+This is the same issue as with Samba.
+\f[C]rename\f[] returns \f[C]EXDEV\f[] (in our case that will really
+only happen with path preserving policies like \f[C]epmfs\f[]) and the
+software doesn\[aq]t handle the situtation well.
+This is unfortunately a common failure of software which moves files
+around.
+The standard indicates that an implementation \f[C]MAY\f[] choose to
+support non\-user home directory trashing of files (which is a
+\f[C]MUST\f[]).
+The implementation \f[C]MAY\f[] also support "top directory trashes"
+which many probably do.
+.PP
+To create a \f[C]$topdir/.Trash\f[] directory as defined in the standard
+use the mergerfs\-tools (https://github.com/trapexit/mergerfs-tools)
+tool \f[C]mergerfs.mktrash\f[].
+.SS Samba: Moving files / directories fails
 .PP
 Workaround: Copy the file/directory and then remove the original rather
 than move.
@@ -699,27 +698,24 @@ In Apple\[aq]s MacOSX 10.9 they replaced Samba (client and server) with
 their own product.
 It appears their new client does not handle \f[B]EXDEV\f[] either and
 responds similar to older release of gvfs on Linux.
-.RE
-.SS Supplemental groups
-.IP \[bu] 2
+.SS Supplemental user groups
+.PP
 Due to the overhead of
 getgroups/setgroups (http://linux.die.net/man/2/setgroups) mergerfs
 utilizes a cache.
 This cache is opportunistic and per thread.
 Each thread will query the supplemental groups for a user when that
 particular thread needs to change credentials and will keep that data
-for the lifetime of the mount or thread.
+for the lifetime of the thread.
 This means that if a user is added to a group it may not be picked up
 without the restart of mergerfs.
 However, since the high level FUSE API\[aq]s (at least the standard
 version) thread pool dynamically grows and shrinks it\[aq]s possible
 that over time a thread will be killed and later a new thread with no
 cache will start and query the new data.
-.RS 2
 .PP
 The gid cache uses fixed storage to simplify the design and be
-compatible with older systems which may not have C++11 compilers (as the
-original design required).
+compatible with older systems which may not have C++11 compilers.
 There is enough storage for 256 users\[aq] supplemental groups.
 Each user is allowed upto 32 supplemental groups.
 Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs
@@ -735,11 +731,43 @@ fine.
 If either value is too low for your needs you will have to modify
 \f[C]gidcache.hpp\f[] to increase the values.
 Note that doing so will increase the memory needed by each thread.
-.RE
-.SH FAQ
+.SS mergerfs or libfuse crashing
 .PP
-\f[I]It\[aq]s mentioned that there are some security issues with mhddfs.
-What are they? How does mergerfs address them?\f[]
+If suddenly the mergerfs mount point disappears and
+\f[C]Transport\ endpoint\ is\ not\ connected\f[] is returned when
+attempting to perform actions within the mount directory \f[B]and\f[]
+the version of libfuse (use \f[C]mergerfs\ \-v\f[] to find the version)
+is older than \f[C]2.9.4\f[] its likely due to a bug in libfuse.
+Affected versions of libfuse can be found in Debian Wheezy, Ubuntu
+Precise and others.
+.PP
+In order to fix this please install newer versions of libfuse.
+If using a Debian based distro (Debian,Ubuntu,Mint) you can likely just
+install newer versions of
+libfuse (https://packages.debian.org/unstable/libfuse2) and
+fuse (https://packages.debian.org/unstable/fuse) from the repo of a
+newer release.
+.SH FAQ
+.SS Why use mergerfs over mhddfs?
+.PP
+mhddfs is no longer maintained and has some known stability and security
+issues (see below).
+.SS Why use mergerfs over aufs?
+.PP
+While aufs can offer better peak performance mergerfs offers more
+configurability and is generally easier to use.
+mergerfs however doesn\[aq]t offer the overlay features which tends to
+result in whiteout files being left around the underlying filesystems.
+.SS Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation /
+striping?
+.PP
+A single drive failure will lead to full pool failure without additional
+redundancy.
+mergerfs performs a similar behavior without the catastrophic failure
+and lack of recovery.
+Drives can fail and all other data will continue to be accessable.
+.SS It\[aq]s mentioned that there are some security issues with mhddfs.
+What are they? How does mergerfs address them?
 .PP
 mhddfs (https://github.com/trapexit/mhddfs) tries to handle being run as
 \f[B]root\f[] by calling
@@ -775,7 +803,7 @@ pthread_setugid_np (https://developer.apple.com/library/mac/documentation/Darwin
 but user and group IDs are a per\-thread attribute though documentation
 on that fact or how to manipulate them is not well distributed.
 From the \f[B]4.00\f[] release of the Linux man\-pages project for
-setuid (http://man7.org/linux/man-pages/man2/setuid.2.html)
+setuid (http://man7.org/linux/man-pages/man2/setuid.2.html).
 .RS
 .PP
 At the kernel level, user IDs and group IDs are a per\-thread attribute.
