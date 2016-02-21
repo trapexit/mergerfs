@@ -31,28 +31,76 @@
 #include "fs_attr.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
+#include "statvfs_util.hpp"
 #include "str.hpp"
+#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
 
 namespace fs
 {
+  bool
+  exists(const string &path,
+         struct stat  &st)
+  {
+    int rv;
+
+    rv = ::lstat(path.c_str(),&st);
+
+    return LSTAT_SUCCEEDED(rv);
+  }
+
+  bool
+  exists(const string   &path,
+         struct statvfs &st)
+  {
+    int rv;
+
+    rv = ::statvfs(path.c_str(),&st);
+
+    return STATVFS_SUCCEEDED(rv);
+  }
+
+  bool
+  exists(const string &path)
+  {
+    struct stat st;
+
+    return exists(path,st);
+  }
+
+  bool
+  exists_on_rw_fs(const string   &path,
+                  struct statvfs &st)
+  {
+    int rv;
+
+    rv = ::statvfs(path.c_str(),&st);
+
+    return (STATVFS_SUCCEEDED(rv) && !StatVFS::readonly(st));
+  }
+
+  bool
+  exists_on_rw_fs(const string &path)
+  {
+    struct statvfs st;
+
+    return exists_on_rw_fs(path,st);
+  }
+
   void
   findallfiles(const vector<string> &srcmounts,
                const char           *fusepath,
                vector<string>       &paths)
   {
-    int rv;
     string fullpath;
-    struct stat st;
 
     for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
       {
         fs::path::make(&srcmounts[i],fusepath,fullpath);
 
-        rv = ::lstat(fullpath.c_str(),&st);
-        if(rv == 0)
+        if(fs::exists(fullpath))
           paths.push_back(fullpath);
       }
   }
@@ -145,16 +193,14 @@ namespace fs
     mfsidx = -1;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        int rv;
-        struct statvfs fsstats;
+        struct statvfs st;
         const string &basepath = basepaths[i];
 
-        rv = ::statvfs(basepath.c_str(),&fsstats);
-        if(rv == 0)
+        if(fs::exists(basepath,st))
           {
             fsblkcnt_t spaceavail;
 
-            spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+            spaceavail = StatVFS::spaceavail(st);
             if((spaceavail > mfs) && (spaceavail >= minfreespace))
               {
                 mfs    = spaceavail;
@@ -169,5 +215,24 @@ namespace fs
     path = basepaths[mfsidx];
 
     return 0;
+  }
+
+  bool
+  available(const string   &path,
+            const bool      needswritablefs,
+            struct statvfs &st)
+  {
+    return (needswritablefs ?
+            fs::exists_on_rw_fs(path,st) :
+            fs::exists(path,st));
+  }
+
+  bool
+  available(const string &path,
+            const bool    needswritablefs)
+  {
+    return (needswritablefs ?
+            fs::exists_on_rw_fs(path) :
+            fs::exists(path));
   }
 };

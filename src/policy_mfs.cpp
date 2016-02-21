@@ -14,15 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/statvfs.h>
 #include <errno.h>
+#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -30,14 +31,14 @@ using std::size_t;
 
 static
 void
-_calc_mfs(const struct statvfs  &fsstats,
+_calc_mfs(const struct statvfs  &st,
           const string          *basepath,
           fsblkcnt_t            &mfs,
           const string         *&mfsbasepath)
 {
   fsblkcnt_t spaceavail;
 
-  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  spaceavail = StatVFS::spaceavail(st);
   if(spaceavail > mfs)
     {
       mfs         = spaceavail;
@@ -49,11 +50,11 @@ static
 int
 _mfs(const vector<string>  &basepaths,
      const char            *fusepath,
+     const bool             needswritablefs,
      vector<const string*> &paths)
 {
-  int rv;
   string fullpath;
-  struct statvfs fsstats;
+  struct statvfs st;
   fsblkcnt_t mfs;
   const string *mfsbasepath;
 
@@ -65,9 +66,10 @@ _mfs(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(STATVFS_SUCCEEDED(rv))
-        _calc_mfs(fsstats,basepath,mfs,mfsbasepath);
+      if(!fs::available(fullpath,needswritablefs,st))
+        continue;
+
+      _calc_mfs(st,basepath,mfs,mfsbasepath);
     }
 
   if(mfsbasepath == NULL)
@@ -87,9 +89,16 @@ namespace mergerfs
                     const size_t                minfreespace,
                     vector<const string*>      &paths)
   {
+    int rv;
     const char *fp =
       ((type == Category::Enum::create) ? "" : fusepath);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
 
-    return _mfs(basepaths,fp,paths);
+    rv = _mfs(basepaths,fp,needswritablefs,paths);
+    if(POLICY_FAILED(rv))
+      rv = Policy::Func::ff(type,basepaths,fusepath,minfreespace,paths);
+
+    return rv;
   }
 }

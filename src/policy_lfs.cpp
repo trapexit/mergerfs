@@ -14,18 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/statvfs.h>
-#include <unistd.h>
 #include <errno.h>
+#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -35,7 +33,7 @@ using mergerfs::Category;
 
 static
 void
-_calc_lfs(const struct statvfs  &fsstats,
+_calc_lfs(const struct statvfs  &st,
           const string          *basepath,
           const size_t           minfreespace,
           fsblkcnt_t            &lfs,
@@ -43,7 +41,7 @@ _calc_lfs(const struct statvfs  &fsstats,
 {
   fsblkcnt_t spaceavail;
 
-  spaceavail = (fsstats.f_frsize * fsstats.f_bavail);
+  spaceavail = StatVFS::spaceavail(st);
   if((spaceavail > minfreespace) && (spaceavail < lfs))
     {
       lfs         = spaceavail;
@@ -56,11 +54,11 @@ int
 _lfs(const vector<string>  &basepaths,
      const char            *fusepath,
      const size_t           minfreespace,
+     const bool             needswritablefs,
      vector<const string*> &paths)
 {
-  int rv;
   string fullpath;
-  struct statvfs fsstats;
+  struct statvfs st;
   fsblkcnt_t lfs;
   const string *lfsbasepath;
 
@@ -72,9 +70,10 @@ _lfs(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::statvfs(fullpath.c_str(),&fsstats);
-      if(STATVFS_SUCCEEDED(rv))
-        _calc_lfs(fsstats,basepath,minfreespace,lfs,lfsbasepath);
+      if(!fs::available(fullpath,needswritablefs,st))
+        continue;
+
+      _calc_lfs(st,basepath,minfreespace,lfs,lfsbasepath);
     }
 
   if(lfsbasepath == NULL)
@@ -97,8 +96,10 @@ namespace mergerfs
     int rv;
     const char *fp =
       ((type == Category::Enum::create) ? "" : fusepath);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
 
-    rv = _lfs(basepaths,fp,minfreespace,paths);
+    rv = _lfs(basepaths,fp,minfreespace,needswritablefs,paths);
     if(POLICY_FAILED(rv))
       rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 

@@ -14,10 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
@@ -26,6 +25,7 @@
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "success_fail.hpp"
+#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -35,12 +35,12 @@ static
 int
 _newest(const vector<string>  &basepaths,
         const char            *fusepath,
+        const bool             needswritablefs,
         vector<const string*> &paths)
 {
-  int rv;
-  struct stat st;
-  string fullpath;
   time_t newest;
+  string fullpath;
+  struct stat st;
   const string *newestbasepath;
 
   newest = std::numeric_limits<time_t>::min();
@@ -51,12 +51,15 @@ _newest(const vector<string>  &basepaths,
 
       fs::path::make(basepath,fusepath,fullpath);
 
-      rv = ::lstat(fullpath.c_str(),&st);
-      if(LSTAT_SUCCEEDED(rv) && (st.st_mtime >= newest))
-        {
-          newest = st.st_mtime;
-          newestbasepath = basepath;
-        }
+      if(!fs::exists(fullpath,st))
+        continue;
+      if(st.st_mtime < newest)
+        continue;
+      if(needswritablefs && !fs::exists_on_rw_fs(fullpath))
+        continue;
+
+      newest         = st.st_mtime;
+      newestbasepath = basepath;
     }
 
   if(newestbasepath == NULL)
@@ -76,6 +79,9 @@ namespace mergerfs
                        const size_t                minfreespace,
                        vector<const string*>      &paths)
   {
-    return _newest(basepaths,fusepath,paths);
+    const bool needswritablefs =
+      (type == Category::Enum::create);
+
+    return _newest(basepaths,fusepath,needswritablefs,paths);
   }
 }
