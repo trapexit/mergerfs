@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-01-21
+% 2016-02-21
 
 # NAME
 
@@ -25,6 +25,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * Opportunistic credential caching
 * Works with heterogeneous filesystem types
 * Handling of writes to full drives
+* Handles pool of readonly and read/write drives
 
 # OPTIONS
 
@@ -58,11 +59,13 @@ In /etc/fstab it'd look like the following:
 
 **NOTE:** the globbing is done at mount or xattr update time. If a new directory is added matching the glob after the fact it will not be included.
 
-# POLICIES
+# FUNCTIONS / POLICIES / CATEGORIES
 
-Filesystem calls are broken up into 3 categories: **action**, **create**, **search**. There are also some calls which have no policy attached due to state being kept between calls. These categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a category though some aren't terribly practical. For instance: **rand** (Random) may be useful for **create** but could lead to very odd behavior if used for **search**.
+The filesystem has a number of functions. Those functions are grouped into 3 categories: **action**, **create**, **search**. These functions and categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a function or category though some are not very practical. For instance: **rand** (Random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod`.
 
-#### Functional  classifications ####
+All policies when used to create will ignore drives which are mounted readonly. This allows for read/write and readonly drives to be mixed together.
+
+#### Function / Category classifications ####
 
 | Category | FUSE Functions |
 |----------|----------------|
@@ -77,17 +80,16 @@ Filesystem calls are broken up into 3 categories: **action**, **create**, **sear
 
 | Policy | Description |
 |--------------|-------------|
-| ff (first found) | Given the order of the drives act on the first one found (regardless if stat would return EACCES). |
-| ffwp (first found w/ permissions) | Given the order of the drives act on the first one found which you have access (stat does not error with EACCES). |
-| newest (newest file) | If multiple files exist return the one with the most recent mtime. |
-| mfs (most free space) | Use the drive with the most free space available. |
-| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space and is greater than **minfreespace**. If no drive has at least **minfreespace** then fallback to **mfs**. |
-| fwfs (first with free space) | Pick the first drive which has at least **minfreespace**. |
-| lfs (least free space) | Pick the drive with least available space but more than **minfreespace**. If all drives fail it will fallback to **mfs**. |
-| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space and greater than **minfreespace**. If no drive has at least **minfreespace** then it falls back to **lfs**. |
-| rand (random) | Pick an existing drive at random. |
-| all | Applies action to all found. For searches it will behave like first found **ff**. |
-| enosys, einval, enotsup, exdev, erofs | Exclusively return `-1` with `errno` set to the respective value. Useful for debugging other applications' behavior to errors. |
+| all | Applies action to all found. For searches it will behave like first found **ff**. For `create` functions it will only apply to `mkdir`, `mkdnod`, and `symlink`. |
+| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space and is greater than **minfreespace**. Falls back to **lfs**. |
+| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space and is greater than **minfreespace**. Falls back to **mfs**. |
+| erofs | Exclusively return `-1` with `errno` set to EROFS. By setting `create` functions to this you can in effect turn the filesystem readonly. |
+| ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. |
+| fwfs (first with free space) | Pick the first drive which has at least **minfreespace**. Falls back to **mfs**. |
+| lfs (least free space) | Pick the drive with the least available free space but more than **minfreespace**. Falls back to **mfs**. |
+| mfs (most free space) | Use the drive with the most available free space. Falls back to **ff**. |
+| newest (newest file) | Pick the file / directory with the largest mtime. |
+| rand (random) | Calls **all** and then randomizes. |
 
 #### Defaults ####
 
@@ -141,7 +143,7 @@ It could be extended to offer the ability to see all files found. Perhaps concat
 
 #### statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple mount points on the same drive will not result in double counting it's space. It is possible due to a race condition that the same drive could be double counted but it's rather unlikely.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space.
 
 # BUILDING
 
@@ -198,35 +200,6 @@ Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/
 
 Use `xattr -l /mount/point/.mergerfs` to see all supported keys.
 
-##### Example #####
-
-```
-[trapexit:/tmp/mount] $ xattr -l .mergerfs
-user.mergerfs.srcmounts: /tmp/a:/tmp/b
-user.mergerfs.minfreespace: 4294967295
-user.mergerfs.moveonenospc: false
-...
-
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
-ff
-
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.category.search ffwp .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
-ffwp
-
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
-/tmp/a:/tmp/b:/tmp/c
-
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts =/tmp/c .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
-/tmp/c
-
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts '+</tmp/a:/tmp/b' .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
-/tmp/a:/tmp/b:/tmp/c
-```
-
 ##### user.mergerfs.srcmounts #####
 
 For **user.mergerfs.srcmounts** there are several instructions available for manipulating the list. The value provided is just as the value used at mount time. A colon (':') delimited list of full path globs.
@@ -256,7 +229,36 @@ Ouput: **true** or **false**
 
 Input: short policy string as described elsewhere in this document
 
-Output: the policy string except for categories where its funcs have multiple types. In that case it will be a comma separated list.
+Output: the policy string except for categories where its funcs have multiple types. In that case it will be a comma separated list
+
+##### Example #####
+
+```
+[trapexit:/tmp/mount] $ xattr -l .mergerfs
+user.mergerfs.srcmounts: /tmp/a:/tmp/b
+user.mergerfs.minfreespace: 4294967295
+user.mergerfs.moveonenospc: false
+...
+
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
+ff
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.category.search fwfs .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
+fwfs
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts =/tmp/c .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/tmp/c
+
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts '+</tmp/a:/tmp/b' .mergerfs
+[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/tmp/a:/tmp/b:/tmp/c
+```
 
 #### mergerfs file xattrs ####
 
@@ -283,9 +285,10 @@ A B C
 
 # TOOLING
 
-Find extra tooling to help with managing `mergerfs` at: https://github.com/trapexit/mergerfs-tools
+Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/mergerfs-tools
 
 * fsck.mergerfs: Provides permissions and ownership auditing and the ability to fix them
+* mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 
 # TIPS / NOTES
 
@@ -297,7 +300,7 @@ Find extra tooling to help with managing `mergerfs` at: https://github.com/trape
 * An example: [Kodi](http://kodi.tv) and [Plex](http://plex.tv) can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the current default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync).
 
-# Known Issues / Bugs
+# KNOWN ISSUES / BUGS
 
 #### Trashing files occasionally fails
 
@@ -305,23 +308,23 @@ This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that
 
 To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
 
-#### Samba
-* Moving files or directories between some directories on a SMB share fail with IO errors.    
-    
-    Workaround: Copy the file/directory and then remove the original rather than move.
-    
-    This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed to handle certain error codes correctly. Particularly **STATUS_NOT_SAME_DEVICE** which comes from the **EXDEV** which is returned by **rename** when the call is crossing mount points. When a program gets an **EXDEV** it needs to explicitly take an alternate action to accomplish it's goal. In the case of **mv** or similar it tries **rename** and on **EXDEV** falls back to a manual copying of data between the two locations and unlinking the source. In these older versions of GVFS-fuse if it received **EXDEV** it would translate that into **EIO**. This would cause **mv** or most any application attempting to move files around on that SMB share to fail with a IO error.    
-    
-    [GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568) and above fixed this issue but a large number of systems use the older release. On Ubuntu the version can be checked by issuing `apt-cache showpkg gvfs-fuse`. Most distros released in 2015 seem to have the updated release and will work fine but older systems may not. Upgrading gvfs-fuse or the distro in general will address the problem.
-    
-    In Apple's MacOSX 10.9 they replaced Samba (client and server) with their own product. It appears their new client does not handle **EXDEV** either and responds similar to older release of gvfs on Linux.
+#### Samba: Moving files / directories fails
 
-#### Supplemental groups
-* Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs utilizes a cache. This cache is opportunistic and per thread. Each thread will query the supplemental groups for a user when that particular thread needs to change credentials and will keep that data for the lifetime of the mount or thread. This means that if a user is added to a group it may not be picked up without the restart of mergerfs. However, since the high level FUSE API's (at least the standard version) thread pool dynamically grows and shrinks it's possible that over time a thread will be killed and later a new thread with no cache will start and query the new data.    
-    
-    The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers (as the original design required). There is enough storage for 256 users' supplemental groups. Each user is allowed upto 32 supplemental groups. Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
+Workaround: Copy the file/directory and then remove the original rather than move.
 
-#### mergerfs / libfuse crashes
+This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed to handle certain error codes correctly. Particularly **STATUS_NOT_SAME_DEVICE** which comes from the **EXDEV** which is returned by **rename** when the call is crossing mount points. When a program gets an **EXDEV** it needs to explicitly take an alternate action to accomplish it's goal. In the case of **mv** or similar it tries **rename** and on **EXDEV** falls back to a manual copying of data between the two locations and unlinking the source. In these older versions of GVFS-fuse if it received **EXDEV** it would translate that into **EIO**. This would cause **mv** or most any application attempting to move files around on that SMB share to fail with a IO error.
+
+[GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568) and above fixed this issue but a large number of systems use the older release. On Ubuntu the version can be checked by issuing `apt-cache showpkg gvfs-fuse`. Most distros released in 2015 seem to have the updated release and will work fine but older systems may not. Upgrading gvfs-fuse or the distro in general will address the problem.
+
+In Apple's MacOSX 10.9 they replaced Samba (client and server) with their own product. It appears their new client does not handle **EXDEV** either and responds similar to older release of gvfs on Linux.
+
+#### Supplemental user groups
+
+Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs utilizes a cache. This cache is opportunistic and per thread. Each thread will query the supplemental groups for a user when that particular thread needs to change credentials and will keep that data for the lifetime of the thread. This means that if a user is added to a group it may not be picked up without the restart of mergerfs. However, since the high level FUSE API's (at least the standard version) thread pool dynamically grows and shrinks it's possible that over time a thread will be killed and later a new thread with no cache will start and query the new data.
+
+The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers. There is enough storage for 256 users' supplemental groups. Each user is allowed upto 32 supplemental groups. Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
+
+#### mergerfs or libfuse crashing
 
 If suddenly the mergerfs mount point disappears and `Transport endpoint is not connected` is returned when attempting to perform actions within the mount directory **and** the version of libfuse (use `mergerfs -v` to find the version) is older than `2.9.4` its likely due to a bug in libfuse. Affected versions of libfuse can be found in Debian Wheezy, Ubuntu Precise and others.
 
@@ -335,27 +338,27 @@ mhddfs is no longer maintained and has some known stability and security issues 
 
 #### Why use mergerfs over aufs?
 
-While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs also doesn't offer the overlay features which tends to result in whiteout files being left around the underlying filesystems.
+While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs however doesn't offer the overlay features which tends to result in whiteout files being left around the underlying filesystems.
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-A single drive failure will lead to full pool failure without additional redundency. mergerfs performance a similar behavior without the catastrophic failure and lack of recovery. Drives can fail and all other data will continue to be accessable.
+A single drive failure will lead to full pool failure without additional redundancy. mergerfs performs a similar behavior without the catastrophic failure and lack of recovery. Drives can fail and all other data will continue to be accessable.
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
-[mhddfs](https://github.com/trapexit/mhddfs) tries to handle being run as **root** by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns **0** then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle many other situations. Rather than attempting to simulate POSIX ACL behaviors the proper behavior is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), become the user making the original call and perform the action as them. This is how [mergerfs](https://github.com/trapexit/mergerfs) handles things.  
+[mhddfs](https://github.com/trapexit/mhddfs) tries to handle being run as **root** by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns **0** then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle many other situations. Rather than attempting to simulate POSIX ACL behaviors the proper behavior is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), become the user making the original call and perform the action as them. This is how [mergerfs](https://github.com/trapexit/mergerfs) handles things.
 
-If you are familiar with POSIX standards you'll know that this behavior poses a problem. **seteuid** and **setegid** affect the whole process and **libfuse** is multithreaded by default. We'd need to lock access to **seteuid** and **setegid** with a mutex so that the several threads aren't stepping on one another and files end up with weird permissions and ownership. This however wouldn't scale well. With lots of calls the contention on that mutex would be extremely high. Thankfully on Linux and OSX we have a better solution.  
+If you are familiar with POSIX standards you'll know that this behavior poses a problem. **seteuid** and **setegid** affect the whole process and **libfuse** is multithreaded by default. We'd need to lock access to **seteuid** and **setegid** with a mutex so that the several threads aren't stepping on one another and files end up with weird permissions and ownership. This however wouldn't scale well. With lots of calls the contention on that mutex would be extremely high. Thankfully on Linux and OSX we have a better solution.
 
-OSX has a [non-portable pthread extension](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) for per-thread user and group impersonation.  
+OSX has a [non-portable pthread extension](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) for per-thread user and group impersonation.
 
-Linux does not support [pthread_setugid_np](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) but user and group IDs are a per-thread attribute though documentation on that fact or how to manipulate them is not well distributed. From the **4.00** release of the Linux man-pages project for [setuid](http://man7.org/linux/man-pages/man2/setuid.2.html)  
+Linux does not support [pthread_setugid_np](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) but user and group IDs are a per-thread attribute though documentation on that fact or how to manipulate them is not well distributed. From the **4.00** release of the Linux man-pages project for [setuid](http://man7.org/linux/man-pages/man2/setuid.2.html).
 
-> At the kernel level, user IDs and group IDs are a per-thread attribute.  However, POSIX requires that all threads in a process share the same credentials.  The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs.  These wrapper functions (including the one for setuid()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials.  For details, see nptl(7).  
+> At the kernel level, user IDs and group IDs are a per-thread attribute.  However, POSIX requires that all threads in a process share the same credentials.  The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs.  These wrapper functions (including the one for setuid()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials.  For details, see nptl(7).
 
-Turns out the setreuid syscalls apply only to the thread. GLIBC hides this away using RT signals to inform all threads to change credentials. Taking after **Samba** mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths).  
+Turns out the setreuid syscalls apply only to the thread. GLIBC hides this away using RT signals to inform all threads to change credentials. Taking after **Samba** mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths).
 
-For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allow multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well. As new platforms are supported if they offer per thread credentials those APIs will be adopted.   
+For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allow multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well. As new platforms are supported if they offer per thread credentials those APIs will be adopted.
 
 # SUPPORT
 
