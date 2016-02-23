@@ -112,28 +112,29 @@ namespace fs
            string               &basepath)
   {
     int rv;
+    dev_t dev;
     string fullpath;
-    unsigned long fsid;
-    struct statvfs buf;
+    struct stat st;
 
-    rv = ::fstatvfs(fd,&buf);
-    if(rv == -1)
+    rv = ::fstat(fd,&st);
+    if(FSTAT_FAILED(rv))
       return -1;
 
-    fsid = buf.f_fsid;
+    dev = st.st_dev;
     for(int i = 0, ei = srcmounts.size(); i != ei; i++)
       {
         fs::path::make(&srcmounts[i],fusepath,fullpath);
 
-        rv = ::statvfs(fullpath.c_str(),&buf);
-        if(rv == -1)
+        rv = ::lstat(fullpath.c_str(),&st);
+        if(FSTAT_FAILED(rv))
           continue;
 
-        if(buf.f_fsid == fsid)
-          {
-            basepath = srcmounts[i];
-            return 0;
-          }
+        if(st.st_dev != dev)
+          continue;
+
+        basepath = srcmounts[i];
+
+        return 0;
       }
 
     return (errno=ENOENT,-1);
