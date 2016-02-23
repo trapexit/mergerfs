@@ -100,8 +100,10 @@ namespace fs
       {
         fs::path::make(&srcmounts[i],fusepath,fullpath);
 
-        if(fs::exists(fullpath))
-          paths.push_back(fullpath);
+        if(!fs::exists(fullpath))
+          continue;
+
+        paths.push_back(fullpath);
       }
   }
 
@@ -145,14 +147,19 @@ namespace fs
        vector<string>       &strs)
   {
     int flags;
+    size_t veclen;
     glob_t gbuf = {0};
 
+    veclen = patterns.size();
+    if(veclen == 0)
+      return;
+
     flags = 0;
-    for(size_t i = 0; i < patterns.size(); i++)
-      {
-        glob(patterns[i].c_str(),flags,NULL,&gbuf);
-        flags = GLOB_APPEND;
-      }
+    glob(patterns[0].c_str(),flags,NULL,&gbuf);
+
+    flags = GLOB_APPEND;
+    for(size_t i = 1; i < veclen; i++)
+      glob(patterns[i].c_str(),flags,NULL,&gbuf);
 
     for(size_t i = 0; i < gbuf.gl_pathc; ++i)
       strs.push_back(gbuf.gl_pathv[i]);
@@ -188,32 +195,33 @@ namespace fs
       string               &path)
   {
     fsblkcnt_t mfs;
-    ssize_t    mfsidx;
+    fsblkcnt_t spaceavail;
+    const string *mfsbasepath;
 
-    mfs    = 0;
-    mfsidx = -1;
+    mfs = 0;
+    mfsbasepath = NULL;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
         struct statvfs st;
         const string &basepath = basepaths[i];
 
-        if(fs::exists(basepath,st))
-          {
-            fsblkcnt_t spaceavail;
+        if(!fs::exists(basepath,st))
+          continue;
 
-            spaceavail = StatVFS::spaceavail(st);
-            if((spaceavail > mfs) && (spaceavail >= minfreespace))
-              {
-                mfs    = spaceavail;
-                mfsidx = i;
-              }
-          }
+        spaceavail = StatVFS::spaceavail(st);
+        if(spaceavail < minfreespace)
+          continue;
+        if(spaceavail <= mfs)
+          continue;
+
+        mfs         = spaceavail;
+        mfsbasepath = &basepaths[i];
       }
 
-    if(mfsidx == -1)
+    if(mfsbasepath == NULL)
       return (errno=ENOENT,-1);
 
-    path = basepaths[mfsidx];
+    path = *mfsbasepath;
 
     return 0;
   }
