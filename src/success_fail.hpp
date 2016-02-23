@@ -31,4 +31,9 @@
 #define LSTAT_FAIL -1
 #define LSTAT_FAILED(RV) ((RV) == LSTAT_FAIL)
 
+#define FSTAT_SUCCESS 0
+#define FSTAT_SUCCEEDED(RV) ((RV) == FSTAT_SUCCESS)
+#define FSTAT_FAIL -1
+#define FSTAT_FAILED(RV) ((RV) == FSTAT_FAIL)
+
 #endif /*__MERGERFS_SUCCESS_FAIL_HPP__ */
