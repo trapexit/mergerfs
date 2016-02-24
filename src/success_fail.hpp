@@ -36,4 +36,10 @@
 #define FSTAT_FAIL -1
 #define FSTAT_FAILED(RV) ((RV) == FSTAT_FAIL)
 
+#define RENAME_SUCCESS 0
+#define RENAME_SUCCEEDED(RV) ((RV) == RENAME_SUCCESS)
+#define RENAME_FAIL -1
+#define RENAME_FAILED(RV) ((RV) == RENAME_FAIL)
+#define RENAME_FAILED_WITH(RV,ERRNO) (((RV) == RENAME_FAIL) && (errno == ERRNO))
+
 #endif /*__MERGERFS_SUCCESS_FAIL_HPP__ */
