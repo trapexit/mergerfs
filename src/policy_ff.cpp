@@ -31,12 +31,9 @@ using std::size_t;
 
 static
 int
-_ff(const vector<string>  &basepaths,
-    const char            *fusepath,
-    const bool             needswritablefs,
-    vector<const string*> &paths)
+_ff_rw(const vector<string>  &basepaths,
+       vector<const string*> &paths)
 {
-  string fullpath;
   struct statvfs st;
   const string *fallback = NULL;
 
@@ -44,12 +41,10 @@ _ff(const vector<string>  &basepaths,
     {
       const string *basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
-
-      if(!fs::exists(fullpath,st))
+      if(!fs::exists(basepath->c_str(),st))
         continue;
 
-      if(needswritablefs && StatVFS::readonly(st))
+      if(StatVFS::readonly(st))
         {
           if(fallback == NULL)
             fallback = basepath;
@@ -61,13 +56,37 @@ _ff(const vector<string>  &basepaths,
       return POLICY_SUCCESS;
     }
 
-  if(fallback != NULL)
+  if(fallback == NULL)
+    return POLICY_FAIL_ENOENT;
+
+  paths.push_back(fallback);
+
+  return POLICY_SUCCESS;
+}
+
+static
+int
+_ff_ro(const vector<string>  &basepaths,
+       const char            *fusepath,
+       vector<const string*> &paths)
+{
+  string fullpath;
+
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      paths.push_back(fallback);
+      const string *basepath = &basepaths[i];
+
+      fs::path::make(basepath,fusepath,fullpath);
+
+      if(!fs::exists(fullpath))
+        continue;
+
+      paths.push_back(basepath);
+
       return POLICY_SUCCESS;
     }
 
-  return (errno=ENOENT,POLICY_FAIL);
+  return POLICY_FAIL_ENOENT;
 }
 
 namespace mergerfs
@@ -79,11 +98,9 @@ namespace mergerfs
                    const size_t                minfreespace,
                    vector<const string*>      &paths)
   {
-    const char *fp =
-      ((type == Category::Enum::create) ? "" : fusepath);
-    const bool needswritablefs =
-      (type == Category::Enum::create);
+    if(type == Category::Enum::create)
+      return _ff_rw(basepaths,paths);
 
-    return _ff(basepaths,fp,needswritablefs,paths);
+    return _ff_ro(basepaths,fusepath,paths);
   }
 }
