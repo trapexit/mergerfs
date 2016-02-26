@@ -144,6 +144,29 @@ _rename_create_path(Policy::Func::Search  searchFunc,
 
 static
 int
+_clonepath(Policy::Func::Search  searchFunc,
+           const vector<string> &srcmounts,
+           const size_t          minfreespace,
+           const string         &dstbasepath,
+           const string         &fusedirpath)
+{
+  int rv;
+  vector<const string*> srcbasepath;
+
+  rv = searchFunc(srcmounts,fusedirpath.c_str(),minfreespace,srcbasepath);
+  if(POLICY_FAILED(rv))
+    return rv;
+
+  {
+    const ugid::SetRootGuard ugidGuard;
+    fs::clonepath(*srcbasepath[0],dstbasepath,fusedirpath.c_str());
+  }
+
+  return POLICY_SUCCESS;
+}
+
+static
+int
 _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
                            const vector<string> &srcmounts,
@@ -163,18 +186,7 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
     return rv;
 
   if(oldbasepath == *newbasepath[0])
-    {
-      rv = searchFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepath);
-      if(POLICY_FAILED(rv))
-        return rv;
-
-      {
-        const ugid::SetRootGuard ugidGuard;
-        fs::clonepath(*newbasepath[0],oldbasepath,newfusedirpath.c_str());
-      }
-
-      return POLICY_SUCCESS;
-    }
+    return _clonepath(searchFunc,srcmounts,minfreespace,oldbasepath,newfusedirpath);
 
   return POLICY_FAIL_ERRNO(EXDEV);
 }
