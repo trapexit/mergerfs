@@ -29,27 +29,48 @@ using std::size_t;
 
 static
 int
-_all(const vector<string>  &basepaths,
-     const char            *fusepath,
-     const bool             needswritablefs,
-     vector<const string*> &paths)
+_all_create(const vector<string>  &srcmounts,
+            const size_t           minfreespace,
+            vector<const string*> &paths)
 {
-  string fullpath;
-
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
-      const string *basepath = &basepaths[i];
+      const string *basepath = &srcmounts[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
-
-      if(!fs::available(fullpath,needswritablefs))
+      if(!fs::exists_on_rw_fs_with_at_least(*basepath,minfreespace))
         continue;
 
       paths.push_back(basepath);
     }
 
   if(paths.empty())
-    return (errno=ENOENT,POLICY_FAIL);
+    return POLICY_FAIL_ENOENT;
+
+  return POLICY_SUCCESS;
+}
+
+static
+int
+_all(const vector<string>  &srcmounts,
+     const char            *fusepath,
+     vector<const string*> &paths)
+{
+  string fullpath;
+
+  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+    {
+      const string *basepath = &srcmounts[i];
+
+      fs::path::make(basepath,fusepath,fullpath);
+
+      if(!fs::exists(fullpath))
+        continue;
+
+      paths.push_back(basepath);
+    }
+
+  if(paths.empty())
+    return POLICY_FAIL_ENOENT;
 
   return POLICY_SUCCESS;
 }
@@ -58,16 +79,14 @@ namespace mergerfs
 {
   int
   Policy::Func::all(const Category::Enum::Type  type,
-                    const vector<string>       &basepaths,
+                    const vector<string>       &srcmounts,
                     const char                 *fusepath,
                     const size_t                minfreespace,
                     vector<const string*>      &paths)
   {
-    const char *fp =
-      ((type == Category::Enum::create) ? "" : fusepath);
-    const bool needswritablefs =
-      (type == Category::Enum::create);
+    if(type == Category::Enum::create)
+      return _all_create(srcmounts,minfreespace,paths);
 
-    return _all(basepaths,fp,needswritablefs,paths);
+    return _all(srcmounts,fusepath,paths);
   }
 }
