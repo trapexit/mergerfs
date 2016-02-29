@@ -47,7 +47,6 @@ namespace mergerfs
           epmfs,
           erofs,
           ff,
-          fwfs,
           lfs,
           mfs,
           newest,
@@ -100,7 +99,6 @@ namespace mergerfs
       static int epmfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int erofs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int ff(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int fwfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int lfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int mfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int newest(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
@@ -172,7 +170,6 @@ namespace mergerfs
     static const Policy &epmfs;
     static const Policy &erofs;
     static const Policy &ff;
-    static const Policy &fwfs;
     static const Policy &lfs;
     static const Policy &mfs;
     static const Policy &newest;

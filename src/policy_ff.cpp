@@ -15,7 +15,6 @@
 */
 
 #include <errno.h>
-#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
@@ -23,7 +22,6 @@
 #include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -31,44 +29,9 @@ using std::size_t;
 
 static
 int
-_ff_rw(const vector<string>  &basepaths,
-       vector<const string*> &paths)
-{
-  struct statvfs st;
-  const string *fallback = NULL;
-
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      const string *basepath = &basepaths[i];
-
-      if(!fs::exists(basepath->c_str(),st))
-        continue;
-
-      if(StatVFS::readonly(st))
-        {
-          if(fallback == NULL)
-            fallback = basepath;
-          continue;
-        }
-
-      paths.push_back(basepath);
-
-      return POLICY_SUCCESS;
-    }
-
-  if(fallback == NULL)
-    return POLICY_FAIL_ENOENT;
-
-  paths.push_back(fallback);
-
-  return POLICY_SUCCESS;
-}
-
-static
-int
-_ff_ro(const vector<string>  &basepaths,
-       const char            *fusepath,
-       vector<const string*> &paths)
+_ff(const vector<string>  &basepaths,
+    const char            *fusepath,
+    vector<const string*> &paths)
 {
   string fullpath;
 
@@ -89,6 +52,46 @@ _ff_ro(const vector<string>  &basepaths,
   return POLICY_FAIL_ENOENT;
 }
 
+static
+int
+_ff_create(const vector<string>  &basepaths,
+           const size_t           minfreespace,
+           vector<const string*> &paths)
+{
+  bool readonly;
+  size_t spaceavail;
+  const string *fallback;
+
+  fallback = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      const string *basepath = &basepaths[i];
+
+      if(!fs::exists(*basepath,readonly,spaceavail))
+        continue;
+
+      if(readonly)
+        continue;
+
+      if(fallback == NULL)
+        fallback = basepath;
+
+      if(spaceavail < minfreespace)
+        continue;
+
+      paths.push_back(basepath);
+
+      return POLICY_SUCCESS;
+    }
+
+  if(fallback == NULL)
+    return POLICY_FAIL_ENOENT;
+
+  paths.push_back(fallback);
+
+  return POLICY_SUCCESS;
+}
+
 namespace mergerfs
 {
   int
@@ -99,8 +102,8 @@ namespace mergerfs
                    vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
-      return _ff_rw(basepaths,paths);
+      return _ff_create(basepaths,minfreespace,paths);
 
-    return _ff_ro(basepaths,fusepath,paths);
+    return _ff(basepaths,fusepath,paths);
   }
 }

@@ -31,6 +31,9 @@ namespace fs
   bool exists(const string   &path,
               struct statvfs &st);
   bool exists(const string &path);
+  bool exists(const string &path,
+              bool         &readonly,
+              size_t       &spaceavail);
 
   bool exists_on_rw_fs(const string   &path,
                        struct statvfs &st);

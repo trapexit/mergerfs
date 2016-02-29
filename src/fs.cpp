@@ -71,6 +71,24 @@ namespace fs
   }
 
   bool
+  exists(const string &path,
+         bool         &readonly,
+         size_t       &spaceavail)
+  {
+    bool rv;
+    struct statvfs st;
+
+    rv = exists(path,st);
+    if(rv)
+      {
+        readonly   = StatVFS::readonly(st);
+        spaceavail = StatVFS::spaceavail(st);
+      }
+
+    return rv;
+  }
+
+  bool
   exists_on_rw_fs(const string   &path,
                   struct statvfs &st)
   {

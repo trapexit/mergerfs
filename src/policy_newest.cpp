@@ -16,16 +16,15 @@
 
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/statvfs.h>
 
 #include <string>
 #include <vector>
 #include <limits>
 
+#include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "success_fail.hpp"
-#include "statvfs_util.hpp"
 
 using std::string;
 using std::vector;
@@ -33,9 +32,46 @@ using std::size_t;
 
 static
 int
+_newest_create(const vector<string>  &basepaths,
+               const char            *fusepath,
+               vector<const string*> &paths)
+{
+  time_t newest;
+  string fullpath;
+  struct stat st;
+  const string *newestbasepath;
+
+  newest = std::numeric_limits<time_t>::min();
+  newestbasepath = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      const string *basepath = &basepaths[i];
+
+      fs::path::make(basepath,fusepath,fullpath);
+
+      if(!fs::exists(fullpath,st))
+        continue;
+      if(st.st_mtime < newest)
+        continue;
+      if(!fs::exists_on_rw_fs(fullpath))
+        continue;
+
+      newest         = st.st_mtime;
+      newestbasepath = basepath;
+    }
+
+  if(newestbasepath == NULL)
+    return POLICY_FAIL_ENOENT;
+
+  paths.push_back(newestbasepath);
+
+  return POLICY_SUCCESS;
+}
+
+static
+int
 _newest(const vector<string>  &basepaths,
         const char            *fusepath,
-        const bool             needswritablefs,
         vector<const string*> &paths)
 {
   time_t newest;
@@ -55,15 +91,13 @@ _newest(const vector<string>  &basepaths,
         continue;
       if(st.st_mtime < newest)
         continue;
-      if(needswritablefs && !fs::exists_on_rw_fs(fullpath))
-        continue;
 
       newest         = st.st_mtime;
       newestbasepath = basepath;
     }
 
   if(newestbasepath == NULL)
-    return (errno=ENOENT,POLICY_FAIL);
+    return POLICY_FAIL_ENOENT;
 
   paths.push_back(newestbasepath);
 
@@ -79,9 +113,9 @@ namespace mergerfs
                        const size_t                minfreespace,
                        vector<const string*>      &paths)
   {
-    const bool needswritablefs =
-      (type == Category::Enum::create);
+    if(type == Category::Enum::create)
+      return _newest_create(basepaths,fusepath,paths);
 
-    return _newest(basepaths,fusepath,needswritablefs,paths);
+    return _newest(basepaths,fusepath,paths);
   }
 }
