@@ -153,12 +153,16 @@ statfs, write
 T}
 .TE
 .PP
-\f[B]ioctl\f[] behaves differently if its acting on a directory.
+Due to FUSE limitations \f[B]ioctl\f[] behaves differently if its acting
+on a directory.
 It\[aq]ll use the \f[B]getattr\f[] policy to find and open the directory
 before issuing the \f[B]ioctl\f[].
 In other cases where something may be searched (to confirm a directory
 exists across all source mounts) then \f[B]getattr\f[] will be used.
 .SS Policy descriptions
+.PP
+Generally speaking most policies when called to create will filter out
+drives which are readonly or have less than \f[C]minfreespace\f[].
 .PP
 .TS
 tab(@);
@@ -172,30 +176,33 @@ _
 T{
 all
 T}@T{
-Applies action to all found.
-For searches it will behave like first found \f[B]ff\f[].
-For \f[C]create\f[] functions it will only apply to \f[C]mkdir\f[],
-\f[C]mkdnod\f[], and \f[C]symlink\f[].
+Search category: acts like \f[B]ff\f[].
+Action category: apply to all found.
+Create category: for \f[B]mkdir\f[], \f[B]mknod\f[], and
+\f[B]symlink\f[] perform on all read/write drives with
+\f[B]minfreespace\f[].
+\f[B]create\f[] filters the same way but acts like \f[B]ff\f[].
 T}
 T{
 eplfs (existing path, least free space)
 T}@T{
 If the path exists on multiple drives use the one with the least free
-space and is greater than \f[B]minfreespace\f[].
+space.
 Falls back to \f[B]lfs\f[].
 T}
 T{
 epmfs (existing path, most free space)
 T}@T{
 If the path exists on multiple drives use the one with the most free
-space and is greater than \f[B]minfreespace\f[].
+space.
 Falls back to \f[B]mfs\f[].
 T}
 T{
 erofs
 T}@T{
-Exclusively return \f[C]\-1\f[] with \f[C]errno\f[] set to EROFS.
-By setting \f[C]create\f[] functions to this you can in effect turn the
+Exclusively return \f[B]\-1\f[] with \f[B]errno\f[] set to
+\f[B]EROFS\f[].
+By setting \f[B]create\f[] functions to this you can in effect turn the
 filesystem readonly.
 T}
 T{
