@@ -74,16 +74,18 @@ All policies when used to create will ignore drives which are mounted readonly. 
 | search   | access, getattr, getxattr, ioctl, listxattr, open, readlink |
 | N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, release, statfs, write |
 
-**ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) then **getattr** will be used.
+Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) then **getattr** will be used.
 
 #### Policy descriptions ####
 
+Generally speaking most policies when called to create will filter out drives which are readonly or have less than `minfreespace`.
+
 | Policy | Description |
 |--------------|-------------|
-| all | Applies action to all found. For searches it will behave like first found **ff**. For `create` functions it will only apply to `mkdir`, `mkdnod`, and `symlink`. |
-| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space and is greater than **minfreespace**. Falls back to **lfs**. |
-| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space and is greater than **minfreespace**. Falls back to **mfs**. |
-| erofs | Exclusively return `-1` with `errno` set to EROFS. By setting `create` functions to this you can in effect turn the filesystem readonly. |
+| all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** perform on all read/write drives with **minfreespace**. **create** filters the same way but acts like **ff**. |
+| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. Falls back to **lfs**. |
+| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. Falls back to **mfs**. |
+| erofs | Exclusively return **-1** with **errno** set to **EROFS**. By setting **create** functions to this you can in effect turn the filesystem readonly. |
 | ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. |
 | fwfs (first with free space) | Pick the first drive which has at least **minfreespace**. Falls back to **mfs**. |
 | lfs (least free space) | Pick the drive with the least available free space but more than **minfreespace**. Falls back to **mfs**. |
