@@ -36,6 +36,9 @@ namespace fs
                        struct statvfs &st);
   bool exists_on_rw_fs(const string &path);
 
+  bool exists_on_rw_fs_with_at_least(const string &path,
+                                     const size_t minfreespace);
+
   void findallfiles(const vector<string> &srcmounts,
                     const char           *fusepath,
                     vector<string>       &paths);

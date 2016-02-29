@@ -89,6 +89,17 @@ namespace fs
     return exists_on_rw_fs(path,st);
   }
 
+  bool
+  exists_on_rw_fs_with_at_least(const string &path,
+                                const size_t  minfreespace)
+  {
+    struct statvfs st;
+
+    return (exists_on_rw_fs(path,st)
+            &&
+            StatVFS::spaceavail(st) >= minfreespace);
+  }
+
   void
   findallfiles(const vector<string> &srcmounts,
                const char           *fusepath,
