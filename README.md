@@ -33,7 +33,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
 * **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed. 
-* **minfreespace**: the minimum space value used for the **lfs**, **fwfs**, **eplfs**, & **epmfs** policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
+* **minfreespace**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
@@ -78,7 +78,7 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 
 #### Policy descriptions ####
 
-Generally speaking most policies when called to create will filter out drives which are readonly or have less than `minfreespace`.
+Most policies when called to create will filter out drives which are readonly or have less than **minfreespace**.
 
 | Policy | Description |
 |--------------|-------------|
@@ -87,7 +87,6 @@ Generally speaking most policies when called to create will filter out drives wh
 | epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. Falls back to **mfs**. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS**. By setting **create** functions to this you can in effect turn the filesystem readonly. |
 | ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. |
-| fwfs (first with free space) | Pick the first drive which has at least **minfreespace**. Falls back to **mfs**. |
 | lfs (least free space) | Pick the drive with the least available free space but more than **minfreespace**. Falls back to **mfs**. |
 | mfs (most free space) | Use the drive with the most available free space. Falls back to **ff**. |
 | newest (newest file) | Pick the file / directory with the largest mtime. |
@@ -245,9 +244,9 @@ user.mergerfs.moveonenospc: false
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
 ff
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.category.search fwfs .mergerfs
+[trapexit:/tmp/mount] $ xattr -w user.mergerfs.category.search newest .mergerfs
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
-fwfs
+newest
 
 [trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
 [trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs

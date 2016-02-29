@@ -44,8 +44,8 @@ These options seem to provide the best performance.
 \f[B]direct_io\f[]: causes FUSE to bypass an addition caching step which
 can increase write speeds at the detriment of read speed.
 .IP \[bu] 2
-\f[B]minfreespace\f[]: the minimum space value used for the
-\f[B]lfs\f[], \f[B]fwfs\f[], \f[B]eplfs\f[], & \f[B]epmfs\f[] policies.
+\f[B]minfreespace\f[]: the minimum space value used for creation
+policies.
 Understands \[aq]K\[aq], \[aq]M\[aq], and \[aq]G\[aq] to represent
 kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
@@ -161,8 +161,8 @@ In other cases where something may be searched (to confirm a directory
 exists across all source mounts) then \f[B]getattr\f[] will be used.
 .SS Policy descriptions
 .PP
-Generally speaking most policies when called to create will filter out
-drives which are readonly or have less than \f[C]minfreespace\f[].
+Most policies when called to create will filter out drives which are
+readonly or have less than \f[B]minfreespace\f[].
 .PP
 .TS
 tab(@);
@@ -210,12 +210,6 @@ ff (first found)
 T}@T{
 Given the order of the drives, as defined at mount time or when
 configured via xattr interface, act on the first one found.
-T}
-T{
-fwfs (first with free space)
-T}@T{
-Pick the first drive which has at least \f[B]minfreespace\f[].
-Falls back to \f[B]mfs\f[].
 T}
 T{
 lfs (least free space)
@@ -533,9 +527,9 @@ user.mergerfs.moveonenospc:\ false
 [trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
 ff
 
-[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.category.search\ fwfs\ .mergerfs
+[trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.category.search\ newest\ .mergerfs
 [trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
-fwfs
+newest
 
 [trapexit:/tmp/mount]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ +/tmp/c\ .mergerfs
 [trapexit:/tmp/mount]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
