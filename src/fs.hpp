@@ -28,19 +28,19 @@ namespace fs
 
   bool exists(const string &path,
               struct stat  &st);
-  bool exists(const string   &path,
-              struct statvfs &st);
   bool exists(const string &path);
-  bool exists(const string &path,
-              bool         &readonly,
-              size_t       &spaceavail);
 
-  bool exists_on_rw_fs(const string   &path,
-                       struct statvfs &st);
-  bool exists_on_rw_fs(const string &path);
+  bool statvfs(const string   &path,
+               struct statvfs &st);
 
-  bool exists_on_rw_fs_with_at_least(const string &path,
-                                     const size_t minfreespace);
+  bool info(const string &path,
+            bool         &readonly,
+            size_t       &spaceavail);
+
+  bool readonly(const string &path);
+
+  bool spaceavail(const string &path,
+                  size_t       &spaceavail);
 
   void findallfiles(const vector<string> &srcmounts,
                     const char           *fusepath,
@@ -61,13 +61,6 @@ namespace fs
   int mfs(const vector<string> &srcs,
           const size_t          minfreespace,
           string               &path);
-
-  bool available(const string &path,
-                 const bool    needswritablefs);
-
-  bool available(const string   &path,
-                 const bool      needswritablefs,
-                 struct statvfs &st);
 };
 
 #endif // __FS_HPP__
