@@ -29,9 +29,46 @@ using std::size_t;
 
 static
 int
-_ff(const vector<string>  &basepaths,
-    const char            *fusepath,
-    vector<const string*> &paths)
+_ff_create(const vector<string>  &basepaths,
+           const size_t           minfreespace,
+           vector<const string*> &paths)
+{
+  const string *fallback;
+
+  fallback = NULL;
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    {
+      bool readonly;
+      size_t spaceavail;
+      const string *basepath = &basepaths[i];
+
+      if(!fs::info(*basepath,readonly,spaceavail))
+        continue;
+      if(readonly)
+        continue;
+      if(fallback == NULL)
+        fallback = basepath;
+      if(spaceavail < minfreespace)
+        continue;
+
+      paths.push_back(basepath);
+
+      return POLICY_SUCCESS;
+    }
+
+  if(fallback == NULL)
+    return POLICY_FAIL_ENOENT;
+
+  paths.push_back(fallback);
+
+  return POLICY_SUCCESS;
+}
+
+static
+int
+_ff_other(const vector<string>  &basepaths,
+          const char            *fusepath,
+          vector<const string*> &paths)
 {
   string fullpath;
 
@@ -52,46 +89,6 @@ _ff(const vector<string>  &basepaths,
   return POLICY_FAIL_ENOENT;
 }
 
-static
-int
-_ff_create(const vector<string>  &basepaths,
-           const size_t           minfreespace,
-           vector<const string*> &paths)
-{
-  bool readonly;
-  size_t spaceavail;
-  const string *fallback;
-
-  fallback = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      const string *basepath = &basepaths[i];
-
-      if(!fs::exists(*basepath,readonly,spaceavail))
-        continue;
-
-      if(readonly)
-        continue;
-
-      if(fallback == NULL)
-        fallback = basepath;
-
-      if(spaceavail < minfreespace)
-        continue;
-
-      paths.push_back(basepath);
-
-      return POLICY_SUCCESS;
-    }
-
-  if(fallback == NULL)
-    return POLICY_FAIL_ENOENT;
-
-  paths.push_back(fallback);
-
-  return POLICY_SUCCESS;
-}
-
 namespace mergerfs
 {
   int
@@ -104,6 +101,6 @@ namespace mergerfs
     if(type == Category::Enum::create)
       return _ff_create(basepaths,minfreespace,paths);
 
-    return _ff(basepaths,fusepath,paths);
+    return _ff_other(basepaths,fusepath,paths);
   }
 }

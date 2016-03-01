@@ -52,8 +52,16 @@ namespace fs
   }
 
   bool
-  exists(const string   &path,
-         struct statvfs &st)
+  exists(const string &path)
+  {
+    struct stat st;
+
+    return exists(path,st);
+  }
+
+  bool
+  statvfs(const string   &path,
+          struct statvfs &st)
   {
     int rv;
 
@@ -63,22 +71,14 @@ namespace fs
   }
 
   bool
-  exists(const string &path)
-  {
-    struct stat st;
-
-    return exists(path,st);
-  }
-
-  bool
-  exists(const string &path,
-         bool         &readonly,
-         size_t       &spaceavail)
+  info(const string &path,
+       bool         &readonly,
+       size_t       &spaceavail)
   {
     bool rv;
     struct statvfs st;
 
-    rv = exists(path,st);
+    rv = fs::statvfs(path,st);
     if(rv)
       {
         readonly   = StatVFS::readonly(st);
@@ -89,33 +89,28 @@ namespace fs
   }
 
   bool
-  exists_on_rw_fs(const string   &path,
-                  struct statvfs &st)
+  readonly(const string &path)
   {
-    int rv;
+    bool rv;
+    struct statvfs st;
 
-    rv = ::statvfs(path.c_str(),&st);
+    rv = fs::statvfs(path,st);
 
-    return (STATVFS_SUCCEEDED(rv) && !StatVFS::readonly(st));
+    return (rv && StatVFS::readonly(st));
   }
 
   bool
-  exists_on_rw_fs(const string &path)
+  spaceavail(const string &path,
+             size_t       &spaceavail)
   {
+    bool rv;
     struct statvfs st;
 
-    return exists_on_rw_fs(path,st);
-  }
+    rv = fs::statvfs(path,st);
+    if(rv)
+      spaceavail = StatVFS::spaceavail(st);
 
-  bool
-  exists_on_rw_fs_with_at_least(const string &path,
-                                const size_t  minfreespace)
-  {
-    struct statvfs st;
-
-    return (exists_on_rw_fs(path,st)
-            &&
-            StatVFS::spaceavail(st) >= minfreespace);
+    return rv;
   }
 
   void
@@ -224,20 +219,18 @@ namespace fs
       string               &path)
   {
     fsblkcnt_t mfs;
-    fsblkcnt_t spaceavail;
     const string *mfsbasepath;
 
     mfs = 0;
     mfsbasepath = NULL;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        struct statvfs st;
+        size_t spaceavail;
         const string &basepath = basepaths[i];
 
-        if(!fs::exists(basepath,st))
+        if(!fs::spaceavail(basepath,spaceavail))
           continue;
 
-        spaceavail = StatVFS::spaceavail(st);
         if(spaceavail < minfreespace)
           continue;
         if(spaceavail <= mfs)
@@ -253,24 +246,5 @@ namespace fs
     path = *mfsbasepath;
 
     return 0;
-  }
-
-  bool
-  available(const string   &path,
-            const bool      needswritablefs,
-            struct statvfs &st)
-  {
-    return (needswritablefs ?
-            fs::exists_on_rw_fs(path,st) :
-            fs::exists(path,st));
-  }
-
-  bool
-  available(const string &path,
-            const bool    needswritablefs)
-  {
-    return (needswritablefs ?
-            fs::exists_on_rw_fs(path) :
-            fs::exists(path));
   }
 };

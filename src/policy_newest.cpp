@@ -38,13 +38,14 @@ _newest_create(const vector<string>  &basepaths,
 {
   time_t newest;
   string fullpath;
-  struct stat st;
   const string *newestbasepath;
 
   newest = std::numeric_limits<time_t>::min();
   newestbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
+
+      struct stat st;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
@@ -53,10 +54,10 @@ _newest_create(const vector<string>  &basepaths,
         continue;
       if(st.st_mtime < newest)
         continue;
-      if(!fs::exists_on_rw_fs(fullpath))
+      if(fs::readonly(*basepath))
         continue;
 
-      newest         = st.st_mtime;
+      newest = st.st_mtime;
       newestbasepath = basepath;
     }
 
@@ -70,19 +71,19 @@ _newest_create(const vector<string>  &basepaths,
 
 static
 int
-_newest(const vector<string>  &basepaths,
-        const char            *fusepath,
-        vector<const string*> &paths)
+_newest_other(const vector<string>  &basepaths,
+              const char            *fusepath,
+              vector<const string*> &paths)
 {
   time_t newest;
   string fullpath;
-  struct stat st;
   const string *newestbasepath;
 
   newest = std::numeric_limits<time_t>::min();
   newestbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
+      struct stat st;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
@@ -92,7 +93,7 @@ _newest(const vector<string>  &basepaths,
       if(st.st_mtime < newest)
         continue;
 
-      newest         = st.st_mtime;
+      newest = st.st_mtime;
       newestbasepath = basepath;
     }
 
@@ -116,6 +117,6 @@ namespace mergerfs
     if(type == Category::Enum::create)
       return _newest_create(basepaths,fusepath,paths);
 
-    return _newest(basepaths,fusepath,paths);
+    return _newest_other(basepaths,fusepath,paths);
   }
 }

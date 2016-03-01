@@ -29,15 +29,21 @@ using std::size_t;
 
 static
 int
-_all_create(const vector<string>  &srcmounts,
+_all_create(const vector<string>  &basepaths,
             const size_t           minfreespace,
             vector<const string*> &paths)
 {
-  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      const string *basepath = &srcmounts[i];
+      bool readonly;
+      size_t spaceavail;
+      const string *basepath = &basepaths[i];
 
-      if(!fs::exists_on_rw_fs_with_at_least(*basepath,minfreespace))
+      if(!fs::info(*basepath,readonly,spaceavail))
+        continue;
+      if(readonly)
+        continue;
+      if(spaceavail < minfreespace)
         continue;
 
       paths.push_back(basepath);
@@ -51,15 +57,15 @@ _all_create(const vector<string>  &srcmounts,
 
 static
 int
-_all(const vector<string>  &srcmounts,
-     const char            *fusepath,
-     vector<const string*> &paths)
+_all_other(const vector<string>  &basepaths,
+           const char            *fusepath,
+           vector<const string*> &paths)
 {
   string fullpath;
 
-  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      const string *basepath = &srcmounts[i];
+      const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
@@ -79,14 +85,14 @@ namespace mergerfs
 {
   int
   Policy::Func::all(const Category::Enum::Type  type,
-                    const vector<string>       &srcmounts,
+                    const vector<string>       &basepaths,
                     const char                 *fusepath,
                     const size_t                minfreespace,
                     vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
-      return _all_create(srcmounts,minfreespace,paths);
+      return _all_create(basepaths,minfreespace,paths);
 
-    return _all(srcmounts,fusepath,paths);
+    return _all_other(basepaths,fusepath,paths);
   }
 }
