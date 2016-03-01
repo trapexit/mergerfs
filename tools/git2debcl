@@ -97,9 +97,10 @@ def main():
     if args.codename == '::guess::':
         args.codename = guess_codename()
 
+    versuffix = "~"+args.distro+"-"+args.codename
+
     if args.version == '::guess::':
-        ver = git_version()
-        args.version = ver+"~"+args.distro+"-"+args.codename
+        args.version = git_version()
 
     tags = git_tags()
 
@@ -110,6 +111,9 @@ def main():
     else:
         tags = zip(tags,tags)
         tags.insert(0,(args.version,'HEAD'))
+
+    for i in xrange(0,len(tags)):
+        tags[i] = (tags[i][0] + versuffix,tags[i][1])
 
     tag = tags[0]
     for prev in tags[1:]:
