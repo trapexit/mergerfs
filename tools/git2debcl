@@ -113,9 +113,13 @@ def main():
 
     tag = tags[0]
     for prev in tags[1:]:
+        lines = git_log(tag[1],prev[1])
+        if lines == ['']:
+            tag = prev
+            continue
+
         print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.codename,args.urgency))
 
-        lines = git_log(tag[1],prev[1])
         for line in lines:
             print "  * " + line
 
