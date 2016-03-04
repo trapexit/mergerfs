@@ -16,6 +16,7 @@
 
 #include <errno.h>
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -32,13 +33,14 @@ static
 int
 _epmfs_create(const vector<string>  &basepaths,
               const char            *fusepath,
+              const size_t           minfreespace,
               vector<const string*> &paths)
 {
   string fullpath;
   size_t epmfs;
   const string *epmfsbasepath;
 
-  epmfs = 0;
+  epmfs = std::numeric_limits<size_t>::min();
   epmfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
@@ -53,6 +55,8 @@ _epmfs_create(const vector<string>  &basepaths,
       if(!fs::info(*basepath,readonly,spaceavail))
         continue;
       if(readonly)
+        continue;
+      if(spaceavail < minfreespace)
         continue;
       if(spaceavail < epmfs)
         continue;
@@ -112,10 +116,11 @@ int
 _epmfs(const Category::Enum::Type  type,
        const vector<string>       &basepaths,
        const char                 *fusepath,
-       vector<const string*>     &paths)
+       const size_t                minfreespace,
+       vector<const string*>      &paths)
 {
   if(type == Category::Enum::create)
-    return _epmfs_create(basepaths,fusepath,paths);
+    return _epmfs_create(basepaths,fusepath,minfreespace,paths);
 
   return _epmfs_other(basepaths,fusepath,paths);
 }
@@ -131,7 +136,7 @@ namespace mergerfs
   {
     int rv;
 
-    rv = _epmfs(type,basepaths,fusepath,paths);
+    rv = _epmfs(type,basepaths,fusepath,minfreespace,paths);
     if(POLICY_FAILED(rv))
       rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 
