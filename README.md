@@ -106,7 +106,7 @@ Most policies when called to create will filter out drives which are readonly or
 
 Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or they only partially support EXDEV (don't respond the same as `mv` would). Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
 
-* If using a policy which tries to preserve directories (epmfs,eplfs)
+* If using a `create` policy which tries to preserve directory paths (epmfs,eplfs)
   * Using the `rename` policy get the list of files to rename
   * For each file attempt rename:
     * If failure with ENOENT run `create` policy
@@ -117,7 +117,7 @@ Originally mergerfs would return EXDEV whenever a rename was requested which was
   * On success:
     * Remove the target from all drives with no source file
     * Remove the source from all drives which failed to rename
-* If using a policy which does **not** try to preserve directories
+* If using a `create` policy which does **not** try to preserve directory paths
   * Using the `rename` policy get the list of files to rename
   * Using the `getattr` policy get the target path
   * For each file attempt rename:
