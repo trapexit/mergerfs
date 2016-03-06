@@ -296,8 +296,8 @@ namespace mergerfs
                                      oldpath,
                                      newpath);
 
-      return _rename_create_path(config.rename,
-                                 config.create,
+      return _rename_create_path(config.getattr,
+                                 config.rename,
                                  config.srcmounts,
                                  config.minfreespace,
                                  oldpath,
