@@ -134,7 +134,7 @@ obj/%.o: src/%.cpp
 clean: rpm-clean
 	$(RM) -rf obj
 	$(RM) -f src/version.hpp
-	$(RM) -f "$(TARGET)" "$(MANPAGE)" mount.mergerfs
+	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
 
 distclean: clean
@@ -150,7 +150,7 @@ install-mount.mergerfs: mount.mergerfs
 	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
 
 install-man: $(MANPAGE)
-	$(INSTALL) -v -m 0644 -D "$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
+	$(INSTALL) -v -m 0644 -D "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
@@ -168,9 +168,7 @@ uninstall-man:
 
 $(MANPAGE): README.md
 ifneq (,$(PANDOC))
-	$(PANDOC) -s -t man -o $(MANPAGE) README.md
-else
-	$(CP) man/mergerfs.1 .
+	$(PANDOC) -s -t man -o "man/$(MANPAGE)" README.md
 endif
 
 man: $(MANPAGE)
