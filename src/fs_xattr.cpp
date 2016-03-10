@@ -44,23 +44,23 @@ namespace fs
     {
 #ifndef WITHOUT_XATTR
       ssize_t rv;
-      ssize_t size;
 
       rv    = -1;
       errno = ERANGE;
-      while(rv == -1 && errno == ERANGE)
+      while((rv == -1) && (errno == ERANGE))
         {
-          size = ::flistxattr(fd,NULL,0);
-          attrs.resize(size);
-          if(size == 0)
-            return 0;
-          rv = ::flistxattr(fd,&attrs[0],size);
+          rv = ::flistxattr(fd,NULL,0);
+          if(rv <= 0)
+            return rv;
+
+          attrs.resize(rv);
+
+          rv = ::flistxattr(fd,&attrs[0],rv);
         }
 
       return rv;
 #else
-      errno = ENOTSUP;
-      return -1;
+      return (errno=ENOTSUP,-1);
 #endif
     }
 
@@ -69,24 +69,24 @@ namespace fs
          vector<char> &attrs)
     {
 #ifndef WITHOUT_XATTR
-      int rv;
-      int size;
+      ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
-      while(rv == -1 && errno == ERANGE)
+      while((rv == -1) && (errno == ERANGE))
         {
-          size = ::listxattr(path.c_str(),NULL,0);
-          attrs.resize(size);
-          if(size == 0)
-            return 0;
-          rv = ::listxattr(path.c_str(),&attrs[0],size);
+          rv = ::llistxattr(path.c_str(),NULL,0);
+          if(rv <= 0)
+            return rv;
+
+          attrs.resize(rv);
+
+          rv = ::llistxattr(path.c_str(),&attrs[0],rv);
         }
 
       return rv;
 #else
-      errno = ENOTSUP;
-      return -1;
+      return (errno=ENOTSUP,-1);
 #endif
     }
 
@@ -126,7 +126,7 @@ namespace fs
 
     int
     list(const int  fd,
-          string   &attrstr)
+         string    &attrstr)
     {
       int rv;
       vector<char> attrs;
@@ -158,24 +158,24 @@ namespace fs
         vector<char> &value)
     {
 #ifndef WITHOUT_XATTR
-      int rv;
-      int size;
+      ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
-      while(rv == -1 && errno == ERANGE)
+      while((rv == -1) && (errno == ERANGE))
         {
-          size = ::fgetxattr(fd,attr.c_str(),NULL,0);
-          value.resize(size);
-          if(size == 0)
-            return 0;
-          rv = ::fgetxattr(fd,attr.c_str(),&value[0],size);
+          rv = ::fgetxattr(fd,attr.c_str(),NULL,0);
+          if(rv <= 0)
+            return rv;
+
+          value.resize(rv);
+
+          rv = ::fgetxattr(fd,attr.c_str(),&value[0],rv);
         }
 
       return rv;
 #else
-      errno = ENOTSUP;
-      return -1;
+      return (errno=ENOTSUP,-1);
 #endif
     }
 
@@ -185,24 +185,24 @@ namespace fs
         vector<char> &value)
     {
 #ifndef WITHOUT_XATTR
-      int rv;
-      int size;
+      ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
-      while(rv == -1 && errno == ERANGE)
+      while((rv == -1) && (errno == ERANGE))
         {
-          size = ::getxattr(path.c_str(),attr.c_str(),NULL,0);
-          value.resize(size);
-          if(size == 0)
-            return 0;
-          rv = ::getxattr(path.c_str(),attr.c_str(),&value[0],size);
+          rv = ::lgetxattr(path.c_str(),attr.c_str(),NULL,0);
+          if(rv <= 0)
+            return rv;
+
+          value.resize(rv);
+
+          rv = ::lgetxattr(path.c_str(),attr.c_str(),&value[0],rv);
         }
 
       return rv;
 #else
-      errno = ENOTSUP;
-      return -1;
+      return (errno=ENOTSUP,-1);
 #endif
     }
 
@@ -305,8 +305,7 @@ namespace fs
                          value.size(),
                          flags);
 #else
-      errno = ENOTSUP;
-      return -1;
+      return (errno=ENOTSUP,-1);
 #endif
     }
 
@@ -317,14 +316,13 @@ namespace fs
         const int     flags)
     {
 #ifndef WITHOUT_XATTR
-      return ::setxattr(path.c_str(),
-                        key.c_str(),
-                        value.data(),
-                        value.size(),
-                        flags);
+      return ::lsetxattr(path.c_str(),
+                         key.c_str(),
+                         value.data(),
+                         value.size(),
+                         flags);
 #else
-      errno = ENOTSUP;
-      return -1;
+      return (errno=ENOTSUP,-1);
 #endif
     }
 
