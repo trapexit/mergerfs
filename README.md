@@ -289,6 +289,7 @@ A B C
 Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/mergerfs-tools
 
 * mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
+* mergerfs.dedup: Will help identify and optionally remove duplicate files
 * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 
 # TIPS / NOTES
