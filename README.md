@@ -155,7 +155,7 @@ First get the code from [github](http://github.com/trapexit/mergerfs).
 ```
 $ git clone https://github.com/trapexit/mergerfs.git
 $ # or
-$ wget https://github.com/trapexit/mergerfs/archive/master.zip
+$ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>.tar.gz
 ```
 
 #### Debian / Ubuntu
