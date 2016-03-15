@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-02-21
+% 2016-03-15
 
 # NAME
 
@@ -308,7 +308,7 @@ Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/me
 
 #### rtorrent fails with ENODEV (No such device)
 
-Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off but it's the only way to get such applications to work.
+Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it.
 
 #### Trashing files occasionally fails
 
