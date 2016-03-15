@@ -296,6 +296,7 @@ Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/me
 
 * Detailed guides to setting up a backup solution using mergerfs and other technologies: https://github.com/trapexit/backup-and-recovery-howtos
 * If you don't see some directories / files you expect in a merged point be sure the user has permission to all the underlying directories. If `/drive0/a` has is owned by `root:root` with ACLs set to `0700` and `/drive1/a` is `root:root` and `0755` you'll see only `/drive1/a`. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
+* Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled.
 * Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned.
 * The recommended options are **defaults,allow_other**. The **allow_other** is to allow users who are not the one which executed mergerfs access to the mountpoint. **defaults** is described above and should offer the best performance. It's possible that if you're running on an older platform the **splice** features aren't available and could error. In that case simply use the other options manually.
 * If write performance is valued more than read it may be useful to enable **direct_io**. Best to benchmark with and without and choose appropriately.
@@ -304,6 +305,10 @@ Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/me
 * Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync).
 
 # KNOWN ISSUES / BUGS
+
+#### rtorrent fails with ENODEV (No such device)
+
+Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off but it's the only way to get such applications to work.
 
 #### Trashing files occasionally fails
 
