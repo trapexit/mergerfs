@@ -310,6 +310,10 @@ Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/me
 
 Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it.
 
+#### mmap performance is really bad
+
+There [appears to be a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels.
+
 #### Trashing files occasionally fails
 
 This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do. 
