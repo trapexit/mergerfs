@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-03-15
+% 2016-04-06
 
 # NAME
 
@@ -42,10 +42,12 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 ###srcmounts###
 
-The source mounts argument is a colon (':') delimited list of paths. To make it simpler to include multiple source mounts without having to modify your [fstab](http://linux.die.net/man/5/fstab) we also support [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will probably expand it.**
+The srcmounts (source mounts) argument is a colon (':') delimited list of paths to be included in the pool. It does not matter if the paths are on the same or different drives nor does it matter the filesystem. Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
+
+To make it easier to include multiple source mounts mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will probably expand it.**
 
 ```
-$ mergerfs /mnt/disk\*:/mnt/cdrom /media/drives
+$ mergerfs -o defaults,allow_other /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
 The above line will use all mount points in /mnt prefixed with *disk* and the directory *cdrom*.
@@ -57,13 +59,13 @@ In /etc/fstab it'd look like the following:
 /mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other  0       0
 ```
 
-**NOTE:** the globbing is done at mount or xattr update time. If a new directory is added matching the glob after the fact it will not be included.
+**NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
-The filesystem has a number of functions. Those functions are grouped into 3 categories: **action**, **create**, **search**. These functions and categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a function or category though some are not very practical. For instance: **rand** (Random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod`.
+The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs these functions are grouped into 3 categories: **action**, **create**, and **search**. Functions and categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a function or category though some are not very practical. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` (though only if there were more than one copy of the file).
 
-All policies when used to create will ignore drives which are mounted readonly. This allows for read/write and readonly drives to be mixed together.
+Policies, when called to create, will ignore drives which are readonly or have less than **minfreespace**. This allows for read/write and readonly drives to be mixed together and keep drives which may remount as readonly on error from further affecting the pool.
 
 #### Function / Category classifications ####
 
@@ -74,15 +76,13 @@ All policies when used to create will ignore drives which are mounted readonly. 
 | search   | access, getattr, getxattr, ioctl, listxattr, open, readlink |
 | N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, release, statfs, write |
 
-Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) then **getattr** will be used.
+Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will also be used.
 
 #### Policy descriptions ####
 
-Most policies when called to create will filter out drives which are readonly or have less than **minfreespace**.
-
 | Policy | Description |
 |--------------|-------------|
-| all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** perform on all read/write drives with **minfreespace**. **create** filters the same way but acts like **ff**. |
+| all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** perform on all read/write drives with at least **minfreespace**. **create** filters the same way but acts like **ff**. |
 | eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. Falls back to **lfs**. |
 | epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. Falls back to **mfs**. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS**. By setting **create** functions to this you can in effect turn the filesystem readonly. |
@@ -102,14 +102,14 @@ Most policies when called to create will filter out drives which are readonly or
 
 #### rename & link ####
 
-[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the source and destination paths existing on different mount points it will return `-1` with `errno = EXDEV`. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. This can lead to several undesirable situtations with or without errors and it's not entirely obvious what to do when an error occurs.
+[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV**. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. This can lead to several undesirable situtations with or without errors and it's not entirely obvious what to do when an error occurs.
 
 Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or they only partially support EXDEV (don't respond the same as `mv` would). Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
 
-* If using a `create` policy which tries to preserve directory paths (epmfs,eplfs)
-  * Using the `rename` policy get the list of files to rename
+* If using a **create** policy which tries to preserve directory paths (epmfs,eplfs)
+  * Using the **rename** policy get the list of files to rename
   * For each file attempt rename:
-    * If failure with ENOENT run `create` policy
+    * If failure with ENOENT run **create** policy
     * If create policy returns the same drive as currently evaluating then clone the path
     * Re-attempt rename
   * If **any** of the renames succeed the higher level rename is considered a success
@@ -117,9 +117,9 @@ Originally mergerfs would return EXDEV whenever a rename was requested which was
   * On success:
     * Remove the target from all drives with no source file
     * Remove the source from all drives which failed to rename
-* If using a `create` policy which does **not** try to preserve directory paths
-  * Using the `rename` policy get the list of files to rename
-  * Using the `getattr` policy get the target path
+* If using a **create** policy which does **not** try to preserve directory paths
+  * Using the **rename** policy get the list of files to rename
+  * Using the **getattr** policy get the target path
   * For each file attempt rename:
     * If the source drive != target drive:
       * Clone target path from target drive to source drive
@@ -132,15 +132,13 @@ Originally mergerfs would return EXDEV whenever a rename was requested which was
 
 The the removals are subject to normal entitlement checks.
 
-The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible. To remove the possibility all together mergerfs would need to perform the as `mv` does when it receives EXDEV normally.
+The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible. To remove the possibility all together mergerfs would need to perform the as **mv** does when it receives EXDEV normally.
 
-`link` uses the same basic strategy.
+**link** uses the same basic strategy.
 
 #### readdir ####
 
-[readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. It certainly could have it's own set of policies to tweak its behavior. At this time it provides a simple **first found** merging of directories and files found. That is: only the first file or directory found for a directory is returned. Given how FUSE works though the data representing the returned entry comes from **getattr**.
-
-It could be extended to offer the ability to see all files found. Perhaps concatenating **#** and a number to the name. But to really be useful you'd need to be able to access them which would complicate file lookup.
+[readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. While it could have it's own set of policies to tweak its behavior at this time it provides a simple union of files and directories found. Remember that any action or information queried about these files and directories come from the respective function. For instance: an **ls** is a **readdir** and for each file/directory returned **getattr** is called. Meaning the policy of **getattr** is responsible for choosing the file/directory which is the source of the metadata you see in an **ls**.
 
 #### statvfs ####
 
@@ -195,38 +193,40 @@ $ sudo make install
 
 There is a pseudo file available at the mount point which allows for the runtime modification of certain **mergerfs** options. The file will not show up in **readdir** but can be **stat**'ed and manipulated via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls.
 
-Even if xattrs are disabled the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls will still work.
+Even if xattrs are disabled for mergerfs the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls against this pseudo file will still work.
+
+Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (fstab?).
 
 ##### Keys #####
 
 Use `xattr -l /mount/point/.mergerfs` to see all supported keys.
 
-##### user.mergerfs.srcmounts #####
+###### user.mergerfs.srcmounts ######
 
-For **user.mergerfs.srcmounts** there are several instructions available for manipulating the list. The value provided is just as the value used at mount time. A colon (':') delimited list of full path globs.
+Used to query or modify the list of source mounts. When modifying there are several shortcuts to easy manipulation of the list.
 
-| Instruction | Description |
+| Value        | Description |
 |--------------|-------------|
-| [list]       | set |
-| +<[list]     | prepend |
-| +>[list]     | append |
+| [list]       | set         |
+| +<[list]     | prepend     |
+| +>[list]     | append      |
 | -[list]      | remove all values provided |
 | -<           | remove first in list |
 | ->           | remove last in list |
 
-##### minfreespace #####
+###### minfreespace ######
 
 Input: interger with an optional multiplier suffix. **K**, **M**, or **G**.
 
 Output: value in bytes
 
-##### moveonenospc #####
+###### moveonenospc ######
 
 Input: **true** and **false**
 
 Ouput: **true** or **false**
 
-##### categories / funcs #####
+###### categories / funcs ######
 
 Input: short policy string as described elsewhere in this document
 
@@ -261,7 +261,7 @@ newest
 /tmp/a:/tmp/b:/tmp/c
 ```
 
-#### mergerfs file xattrs ####
+#### file / directory xattrs ####
 
 While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) **mergerfs** offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
 
@@ -286,7 +286,7 @@ A B C
 
 # TOOLING
 
-Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/mergerfs-tools
+Find tooling to help with managing **mergerfs** at: https://github.com/trapexit/mergerfs-tools
 
 * mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
 * mergerfs.dedup: Will help identify and optionally remove duplicate files
@@ -294,7 +294,7 @@ Find tooling to help with managing `mergerfs` at: https://github.com/trapexit/me
 
 # TIPS / NOTES
 
-* Detailed guides to setting up a backup solution using mergerfs and other technologies: https://github.com/trapexit/backup-and-recovery-howtos
+* https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories / files you expect in a merged point be sure the user has permission to all the underlying directories. If `/drive0/a` has is owned by `root:root` with ACLs set to `0700` and `/drive1/a` is `root:root` and `0755` you'll see only `/drive1/a`. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled.
 * Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned.
@@ -381,3 +381,9 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 #### Support development
 * Gratipay: https://gratipay.com/~trapexit
 * BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
+
+# Links
+
+* http://github.com/trapexit/mergerfs
+* http://github.com/trapexit/mergerfs-tools
+* http://github.com/trapexit/backup-and-recovery-howtos
