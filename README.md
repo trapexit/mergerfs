@@ -83,13 +83,13 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | Policy | Description |
 |--------------|-------------|
 | all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **ff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
-| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. It will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
-| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. It will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
+| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS**. By setting **create** functions to this you can in effect turn the filesystem readonly. |
-| ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. It will exclude readonly drives and those with free space less than **minfreespace**. |
-| lfs (least free space) | Pick the drive with the least available free space. It will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
-| mfs (most free space) | Pick the drive with the most available free space. It will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **ff**. |
-| newest (newest file) | Pick the file / directory with the largest mtime. It will exclude readonly drives and those with free space less than **minfreespace**. |
+| ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
+| lfs (least free space) | Pick the drive with the least available free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| mfs (most free space) | Pick the drive with the most available free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **ff**. |
+| newest (newest file) | Pick the file / directory with the largest mtime. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
 | rand (random) | Calls **all** and then randomizes. |
 
 #### Defaults ####
