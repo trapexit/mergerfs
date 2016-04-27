@@ -45,15 +45,15 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 The srcmounts (source mounts) argument is a colon (':') delimited list of paths to be included in the pool. It does not matter if the paths are on the same or different drives nor does it matter the filesystem. Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
 
-To make it easier to include multiple source mounts mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will probably expand it.**
+To make it easier to include multiple source mounts mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will expand it.**
 
 ```
 $ mergerfs -o defaults,allow_other /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
-The above line will use all mount points in /mnt prefixed with *disk* and the directory *cdrom*.
+The above line will use all mount points in /mnt prefixed with **disk** and the **cdrom**.
 
-In /etc/fstab it'd look like the following:
+To have the pool mounted at boot or otherwise accessable from related tools use **/etc/fstab**.
 
 ```
 # <file system>        <mount point>  <type>         <options>             <dump>  <pass>
@@ -61,6 +61,8 @@ In /etc/fstab it'd look like the following:
 ```
 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
+
+**NOTE:** for mounting via **fstab** to work you must have **mount.fuse** installed. For Ubuntu/Debian it is included in the **fuse** package.
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
@@ -196,11 +198,11 @@ There is a pseudo file available at the mount point which allows for the runtime
 
 Even if xattrs are disabled for mergerfs the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls against this pseudo file will still work.
 
-Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (fstab?).
+Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (fstab).
 
 ##### Keys #####
 
-Use `xattr -l /mount/point/.mergerfs` to see all supported keys.
+Use `xattr -l /mount/point/.mergerfs` to see all supported keys. Some are informational and therefore readonly.
 
 ###### user.mergerfs.srcmounts ######
 
