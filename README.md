@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-04-25
+% 2016-05-03
 
 # NAME
 
@@ -358,6 +358,10 @@ While aufs can offer better peak performance mergerfs offers more configurabilit
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
 A single drive failure will lead to full pool failure without additional redundancy. mergerfs performs a similar behavior without the catastrophic failure and lack of recovery. Drives can fail and all other data will continue to be accessable.
+
+#### Can drives be written to directly? Outside of mergerfs while pooled?
+
+Yes. It will be represented immediately in the pool as the policies would describe.
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
