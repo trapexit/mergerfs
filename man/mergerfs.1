@@ -1,5 +1,5 @@
 .\"t
-.TH "mergerfs" "1" "2016\-02\-21" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-05\-03" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another (FUSE based) union filesystem
@@ -67,6 +67,11 @@ Example: \f[B]func.getattr=newest\f[]
 \f[B]category.<category>=<policy>\f[]: Sets policy of all FUSE functions
 in the provided category.
 Example: \f[B]category.create=mfs\f[]
+.IP \[bu] 2
+\f[B]fsname\f[]: sets the name of the filesystem as seen in
+\f[B]mount\f[], \f[B]df\f[], etc.
+Defaults to a list of the source paths concatenated together with the
+longest common prefix removed.
 .PP
 \f[B]NOTE:\f[] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
@@ -74,24 +79,31 @@ options are \f[B]func.rmdir=rand,category.action=ff\f[] the
 setting.
 .SS srcmounts
 .PP
-The source mounts argument is a colon (\[aq]:\[aq]) delimited list of
-paths.
-To make it simpler to include multiple source mounts without having to
-modify your fstab (http://linux.die.net/man/5/fstab) we also support
+The srcmounts (source mounts) argument is a colon (\[aq]:\[aq])
+delimited list of paths to be included in the pool.
+It does not matter if the paths are on the same or different drives nor
+does it matter the filesystem.
+Used and available space will not be duplicated for paths on the same
+device and any features which aren\[aq]t supported by the underlying
+filesystem (such as file attributes or extended attributes) will return
+the appropriate errors.
+.PP
+To make it easier to include multiple source mounts mergerfs supports
 globbing (http://linux.die.net/man/7/glob).
 \f[B]The globbing tokens MUST be escaped when using via the shell else
-the shell itself will probably expand it.\f[]
+the shell itself will expand it.\f[]
 .IP
 .nf
 \f[C]
-$\ mergerfs\ /mnt/disk\\*:/mnt/cdrom\ /media/drives
+$\ mergerfs\ \-o\ defaults,allow_other\ /mnt/disk\\*:/mnt/cdrom\ /media/drives
 \f[]
 .fi
 .PP
 The above line will use all mount points in /mnt prefixed with
-\f[I]disk\f[] and the directory \f[I]cdrom\f[].
+\f[B]disk\f[] and the \f[B]cdrom\f[].
 .PP
-In /etc/fstab it\[aq]d look like the following:
+To have the pool mounted at boot or otherwise accessable from related
+tools use \f[B]/etc/fstab\f[].
 .IP
 .nf
 \f[C]
@@ -100,24 +112,33 @@ In /etc/fstab it\[aq]d look like the following:
 \f[]
 .fi
 .PP
-\f[B]NOTE:\f[] the globbing is done at mount or xattr update time.
+\f[B]NOTE:\f[] the globbing is done at mount or xattr update time (see
+below).
 If a new directory is added matching the glob after the fact it will not
-be included.
+be automatically included.
+.PP
+\f[B]NOTE:\f[] for mounting via \f[B]fstab\f[] to work you must have
+\f[B]mount.fuse\f[] installed.
+For Ubuntu/Debian it is included in the \f[B]fuse\f[] package.
 .SH FUNCTIONS / POLICIES / CATEGORIES
 .PP
-The filesystem has a number of functions.
-Those functions are grouped into 3 categories: \f[B]action\f[],
-\f[B]create\f[], \f[B]search\f[].
-These functions and categories can be assigned a policy which dictates
-how \f[B]mergerfs\f[] behaves.
+The POSIX filesystem API has a number of functions.
+\f[B]creat\f[], \f[B]stat\f[], \f[B]chown\f[], etc.
+In mergerfs these functions are grouped into 3 categories:
+\f[B]action\f[], \f[B]create\f[], and \f[B]search\f[].
+Functions and categories can be assigned a policy which dictates how
+\f[B]mergerfs\f[] behaves.
 Any policy can be assigned to a function or category though some are not
 very practical.
-For instance: \f[B]rand\f[] (Random) may be useful for file creation
-(create) but could lead to very odd behavior if used for \f[C]chmod\f[].
+For instance: \f[B]rand\f[] (random) may be useful for file creation
+(create) but could lead to very odd behavior if used for \f[C]chmod\f[]
+(though only if there were more than one copy of the file).
 .PP
-All policies when used to create will ignore drives which are mounted
-readonly.
-This allows for read/write and readonly drives to be mixed together.
+Policies, when called to create, will ignore drives which are readonly
+or have less than \f[B]minfreespace\f[].
+This allows for read/write and readonly drives to be mixed together and
+keep drives which may remount as readonly on error from further
+affecting the pool.
 .SS Function / Category classifications
 .PP
 .TS
@@ -158,11 +179,8 @@ on a directory.
 It\[aq]ll use the \f[B]getattr\f[] policy to find and open the directory
 before issuing the \f[B]ioctl\f[].
 In other cases where something may be searched (to confirm a directory
-exists across all source mounts) then \f[B]getattr\f[] will be used.
+exists across all source mounts) \f[B]getattr\f[] will also be used.
 .SS Policy descriptions
-.PP
-Most policies when called to create will filter out drives which are
-readonly or have less than \f[B]minfreespace\f[].
 .PP
 .TS
 tab(@);
@@ -179,22 +197,36 @@ T}@T{
 Search category: acts like \f[B]ff\f[].
 Action category: apply to all found.
 Create category: for \f[B]mkdir\f[], \f[B]mknod\f[], and
-\f[B]symlink\f[] perform on all read/write drives with
+\f[B]symlink\f[] it will apply to all found.
+\f[B]create\f[] works like \f[B]ff\f[].
+It will exclude readonly drives and those with free space less than
 \f[B]minfreespace\f[].
-\f[B]create\f[] filters the same way but acts like \f[B]ff\f[].
 T}
 T{
 eplfs (existing path, least free space)
 T}@T{
 If the path exists on multiple drives use the one with the least free
 space.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[].
 Falls back to \f[B]lfs\f[].
+T}
+T{
+eplus (existing path, least used space)
+T}@T{
+If the path exists on multiple drives the the one with the least used
+space.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[].
+Falls back to \f[B]lus\f[].
 T}
 T{
 epmfs (existing path, most free space)
 T}@T{
 If the path exists on multiple drives use the one with the most free
 space.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[].
 Falls back to \f[B]mfs\f[].
 T}
 T{
@@ -210,24 +242,41 @@ ff (first found)
 T}@T{
 Given the order of the drives, as defined at mount time or when
 configured via xattr interface, act on the first one found.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[] (unless there is no
+other option).
 T}
 T{
 lfs (least free space)
 T}@T{
-Pick the drive with the least available free space but more than
-\f[B]minfreespace\f[].
+Pick the drive with the least available free space.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[].
+Falls back to \f[B]mfs\f[].
+T}
+T{
+lus (least used space)
+T}@T{
+Pick the drive with the least used space.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[].
 Falls back to \f[B]mfs\f[].
 T}
 T{
 mfs (most free space)
 T}@T{
-Use the drive with the most available free space.
+Pick the drive with the most available free space.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[].
 Falls back to \f[B]ff\f[].
 T}
 T{
 newest (newest file)
 T}@T{
 Pick the file / directory with the largest mtime.
+For \f[B]create\f[] category it will exclude readonly drives and those
+with free space less than \f[B]minfreespace\f[] (unless there is no
+other option).
 T}
 T{
 rand (random)
@@ -268,7 +317,7 @@ rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
 function in a merged system.
 Normally if a rename can\[aq]t be done atomically due to the source and
 destination paths existing on different mount points it will return
-\f[C]\-1\f[] with \f[C]errno\ =\ EXDEV\f[].
+\f[B]\-1\f[] with \f[B]errno = EXDEV\f[].
 The atomic rename is most critical for replacing files in place
 atomically (such as securing writing to a temp file and then replacing a
 target).
@@ -287,15 +336,15 @@ same as \f[C]mv\f[] would).
 Such apps include: gvfsd\-fuse v1.20.3 and prior, Finder / CIFS/SMB
 client in Apple OSX 10.9+, NZBGet, Samba\[aq]s recycling bin feature.
 .IP \[bu] 2
-If using a \f[C]create\f[] policy which tries to preserve directory
+If using a \f[B]create\f[] policy which tries to preserve directory
 paths (epmfs,eplfs)
 .IP \[bu] 2
-Using the \f[C]rename\f[] policy get the list of files to rename
+Using the \f[B]rename\f[] policy get the list of files to rename
 .IP \[bu] 2
 For each file attempt rename:
 .RS 2
 .IP \[bu] 2
-If failure with ENOENT run \f[C]create\f[] policy
+If failure with ENOENT run \f[B]create\f[] policy
 .IP \[bu] 2
 If create policy returns the same drive as currently evaluating then
 clone the path
@@ -317,12 +366,12 @@ Remove the target from all drives with no source file
 Remove the source from all drives which failed to rename
 .RE
 .IP \[bu] 2
-If using a \f[C]create\f[] policy which does \f[B]not\f[] try to
+If using a \f[B]create\f[] policy which does \f[B]not\f[] try to
 preserve directory paths
 .IP \[bu] 2
-Using the \f[C]rename\f[] policy get the list of files to rename
+Using the \f[B]rename\f[] policy get the list of files to rename
 .IP \[bu] 2
-Using the \f[C]getattr\f[] policy get the target path
+Using the \f[B]getattr\f[] policy get the target path
 .IP \[bu] 2
 For each file attempt rename:
 .RS 2
@@ -353,26 +402,22 @@ The the removals are subject to normal entitlement checks.
 The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 To remove the possibility all together mergerfs would need to perform
-the as \f[C]mv\f[] does when it receives EXDEV normally.
+the as \f[B]mv\f[] does when it receives EXDEV normally.
 .PP
-\f[C]link\f[] uses the same basic strategy.
+\f[B]link\f[] uses the same basic strategy.
 .SS readdir
 .PP
 readdir (http://linux.die.net/man/3/readdir) is different from all other
 filesystem functions.
-It certainly could have it\[aq]s own set of policies to tweak its
-behavior.
-At this time it provides a simple \f[B]first found\f[] merging of
-directories and files found.
-That is: only the first file or directory found for a directory is
-returned.
-Given how FUSE works though the data representing the returned entry
-comes from \f[B]getattr\f[].
-.PP
-It could be extended to offer the ability to see all files found.
-Perhaps concatenating \f[B]#\f[] and a number to the name.
-But to really be useful you\[aq]d need to be able to access them which
-would complicate file lookup.
+While it could have it\[aq]s own set of policies to tweak its behavior
+at this time it provides a simple union of files and directories found.
+Remember that any action or information queried about these files and
+directories come from the respective function.
+For instance: an \f[B]ls\f[] is a \f[B]readdir\f[] and for each
+file/directory returned \f[B]getattr\f[] is called.
+Meaning the policy of \f[B]getattr\f[] is responsible for choosing the
+file/directory which is the source of the metadata you see in an
+\f[B]ls\f[].
 .SS statvfs
 .PP
 statvfs (http://linux.die.net/man/2/statvfs) normalizes the source
@@ -393,7 +438,7 @@ First get the code from github (http://github.com/trapexit/mergerfs).
 \f[C]
 $\ git\ clone\ https://github.com/trapexit/mergerfs.git
 $\ #\ or
-$\ wget\ https://github.com/trapexit/mergerfs/archive/master.zip
+$\ wget\ https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs\-<ver>.tar.gz
 \f[]
 .fi
 .SS Debian / Ubuntu
@@ -444,25 +489,29 @@ The file will not show up in \f[B]readdir\f[] but can be
 \f[B]stat\f[]\[aq]ed and manipulated via
 {list,get,set}xattrs (http://linux.die.net/man/2/listxattr) calls.
 .PP
-Even if xattrs are disabled the
-{list,get,set}xattrs (http://linux.die.net/man/2/listxattr) calls will
-still work.
+Even if xattrs are disabled for mergerfs the
+{list,get,set}xattrs (http://linux.die.net/man/2/listxattr) calls
+against this pseudo file will still work.
+.PP
+Any changes made at runtime are \f[B]not\f[] persisted.
+If you wish for values to persist they must be included as options
+wherever you configure the mounting of mergerfs (fstab).
 .SS Keys
 .PP
 Use \f[C]xattr\ \-l\ /mount/point/.mergerfs\f[] to see all supported
 keys.
+Some are informational and therefore readonly.
 .SS user.mergerfs.srcmounts
 .PP
-For \f[B]user.mergerfs.srcmounts\f[] there are several instructions
-available for manipulating the list.
-The value provided is just as the value used at mount time.
-A colon (\[aq]:\[aq]) delimited list of full path globs.
+Used to query or modify the list of source mounts.
+When modifying there are several shortcuts to easy manipulation of the
+list.
 .PP
 .TS
 tab(@);
 l l.
 T{
-Instruction
+Value
 T}@T{
 Description
 T}
@@ -546,7 +595,7 @@ newest
 /tmp/a:/tmp/b:/tmp/c
 \f[]
 .fi
-.SS mergerfs file xattrs
+.SS file / directory xattrs
 .PP
 While they won\[aq]t show up when using
 listxattr (http://linux.die.net/man/2/listxattr) \f[B]mergerfs\f[]
@@ -584,18 +633,21 @@ A\ B\ C
 .fi
 .SH TOOLING
 .PP
-Find tooling to help with managing \f[C]mergerfs\f[] at:
+Find tooling to help with managing \f[B]mergerfs\f[] at:
 https://github.com/trapexit/mergerfs\-tools
 .IP \[bu] 2
 mergerfs.fsck: Provides permissions and ownership auditing and the
 ability to fix them
 .IP \[bu] 2
+mergerfs.dedup: Will help identify and optionally remove duplicate files
+.IP \[bu] 2
 mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible
 directories on a mergerfs mount
 .SH TIPS / NOTES
 .IP \[bu] 2
-Detailed guides to setting up a backup solution using mergerfs and other
-technologies: https://github.com/trapexit/backup\-and\-recovery\-howtos
+https://github.com/trapexit/backup\-and\-recovery\-howtos : A set of
+guides / howtos on creating a data storage system, backing it up,
+maintaining it, and recovering from failure.
 .IP \[bu] 2
 If you don\[aq]t see some directories / files you expect in a merged
 point be sure the user has permission to all the underlying directories.
@@ -604,6 +656,10 @@ to \f[C]0700\f[] and \f[C]/drive1/a\f[] is \f[C]root:root\f[] and
 \f[C]0755\f[] you\[aq]ll see only \f[C]/drive1/a\f[].
 Use \f[C]mergerfs.fsck\f[] to audit the drive for out of sync
 permissions.
+.IP \[bu] 2
+Do \f[I]not\f[] use \f[C]direct_io\f[] if you expect applications (such
+as rtorrent) to mmap (http://linux.die.net/man/2/mmap) files.
+It is not currently supported in FUSE w/ \f[C]direct_io\f[] enabled.
 .IP \[bu] 2
 Since POSIX gives you only error or success on calls its difficult to
 determine the proper behavior when applying the behavior to multiple
@@ -653,6 +709,23 @@ Due to previously mentioned issues its generally best to set
 This will help limit the confusion of tools such as
 rsync (http://linux.die.net/man/1/rsync).
 .SH KNOWN ISSUES / BUGS
+.SS rtorrent fails with ENODEV (No such device)
+.PP
+Be sure to turn off \f[C]direct_io\f[].
+rtorrent and some other applications use
+mmap (http://linux.die.net/man/2/mmap) to read and write to files and
+offer no failback to traditional methods.
+FUSE does not currently support mmap while using \f[C]direct_io\f[].
+There will be a performance penalty on writes with \f[C]direct_io\f[]
+off but it\[aq]s the only way to get such applications to work.
+If the performance loss is too high for other apps you can mount
+mergerfs twice.
+Once with \f[C]direct_io\f[] enabled and one without it.
+.SS mmap performance is really bad
+.PP
+There appears to be a bug (https://lkml.org/lkml/2016/3/16/260) in
+caching which affects overall performance of mmap through FUSE in Linux
+4.x kernels.
 .SS Trashing files occasionally fails
 .PP
 This is the same issue as with Samba.
@@ -772,6 +845,11 @@ redundancy.
 mergerfs performs a similar behavior without the catastrophic failure
 and lack of recovery.
 Drives can fail and all other data will continue to be accessable.
+.SS Can drives be written to directly? Outside of mergerfs while pooled?
+.PP
+Yes.
+It will be represented immediately in the pool as the policies would
+describe.
 .SS It\[aq]s mentioned that there are some security issues with mhddfs.
 What are they? How does mergerfs address them?
 .PP
@@ -858,5 +936,12 @@ email: trapexit\@spawn.link
 Gratipay: https://gratipay.com/~trapexit
 .IP \[bu] 2
 BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
+.SH LINKS
+.IP \[bu] 2
+http://github.com/trapexit/mergerfs
+.IP \[bu] 2
+http://github.com/trapexit/mergerfs\-tools
+.IP \[bu] 2
+http://github.com/trapexit/backup\-and\-recovery\-howtos
 .SH AUTHORS
 Antonio SJ Musumeci <trapexit@spawn.link>.
