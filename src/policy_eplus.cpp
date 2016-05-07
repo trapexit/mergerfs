@@ -31,105 +31,105 @@ using mergerfs::Category;
 
 static
 int
-_epmfs_create(const vector<string>  &basepaths,
+_eplus_create(const vector<string>  &basepaths,
               const char            *fusepath,
               const size_t           minfreespace,
               vector<const string*> &paths)
 {
   string fullpath;
-  size_t epmfs;
-  const string *epmfsbasepath;
+  size_t eplus;
+  const string *eplusbasepath;
 
-  epmfs = std::numeric_limits<size_t>::min();
-  epmfsbasepath = NULL;
+  eplus = std::numeric_limits<size_t>::max();
+  eplusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       bool readonly;
       size_t spaceavail;
-      size_t _spaceused;
+      size_t spaceused;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
       if(!fs::exists(fullpath))
         continue;
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      if(!fs::info(*basepath,readonly,spaceavail,spaceused))
         continue;
       if(readonly)
         continue;
       if(spaceavail < minfreespace)
         continue;
-      if(spaceavail < epmfs)
+      if(spaceused >= eplus)
         continue;
 
-      epmfs = spaceavail;
-      epmfsbasepath = basepath;
+      eplus = spaceused;
+      eplusbasepath = basepath;
     }
 
-  if(epmfsbasepath == NULL)
+  if(eplusbasepath == NULL)
     return POLICY_FAIL_ENOENT;
 
-  paths.push_back(epmfsbasepath);
+  paths.push_back(eplusbasepath);
 
   return POLICY_SUCCESS;
 }
 
 static
 int
-_epmfs_other(const vector<string>  &basepaths,
+_eplus_other(const vector<string>  &basepaths,
              const char            *fusepath,
              vector<const string*> &paths)
 {
   string fullpath;
-  size_t epmfs;
-  const string *epmfsbasepath;
+  size_t eplus;
+  const string *eplusbasepath;
 
-  epmfs = 0;
-  epmfsbasepath = NULL;
+  eplus = 0;
+  eplusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      size_t spaceavail;
+      size_t spaceused;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
 
       if(!fs::exists(fullpath))
         continue;
-      if(!fs::spaceavail(*basepath,spaceavail))
+      if(!fs::spaceused(*basepath,spaceused))
         continue;
-      if(spaceavail < epmfs)
+      if(spaceused >= eplus)
         continue;
 
-      epmfs = spaceavail;
-      epmfsbasepath = basepath;
+      eplus = spaceused;
+      eplusbasepath = basepath;
     }
 
-  if(epmfsbasepath == NULL)
+  if(eplusbasepath == NULL)
     return POLICY_FAIL_ENOENT;
 
-  paths.push_back(epmfsbasepath);
+  paths.push_back(eplusbasepath);
 
   return POLICY_SUCCESS;
 }
 
 static
 int
-_epmfs(const Category::Enum::Type  type,
+_eplus(const Category::Enum::Type  type,
        const vector<string>       &basepaths,
        const char                 *fusepath,
        const size_t                minfreespace,
        vector<const string*>      &paths)
 {
   if(type == Category::Enum::create)
-    return _epmfs_create(basepaths,fusepath,minfreespace,paths);
+    return _eplus_create(basepaths,fusepath,minfreespace,paths);
 
-  return _epmfs_other(basepaths,fusepath,paths);
+  return _eplus_other(basepaths,fusepath,paths);
 }
 
 namespace mergerfs
 {
   int
-  Policy::Func::epmfs(const Category::Enum::Type  type,
+  Policy::Func::eplus(const Category::Enum::Type  type,
                       const vector<string>       &basepaths,
                       const char                 *fusepath,
                       const size_t                minfreespace,
@@ -137,9 +137,9 @@ namespace mergerfs
   {
     int rv;
 
-    rv = _epmfs(type,basepaths,fusepath,minfreespace,paths);
+    rv = _eplus(type,basepaths,fusepath,minfreespace,paths);
     if(POLICY_FAILED(rv))
-      rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
+      rv = Policy::Func::lus(type,basepaths,fusepath,minfreespace,paths);
 
     return rv;
   }

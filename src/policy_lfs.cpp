@@ -45,9 +45,10 @@ _lfs_create(const vector<string>  &basepaths,
     {
       bool readonly;
       size_t spaceavail;
+      size_t _spaceused;
       const string *basepath = &basepaths[i];
 
-      if(!fs::info(*basepath,readonly,spaceavail))
+      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
         continue;
       if(readonly)
         continue;

@@ -73,7 +73,8 @@ namespace fs
   bool
   info(const string &path,
        bool         &readonly,
-       size_t       &spaceavail)
+       size_t       &spaceavail,
+       size_t       &spaceused)
   {
     bool rv;
     struct statvfs st;
@@ -83,6 +84,7 @@ namespace fs
       {
         readonly   = StatVFS::readonly(st);
         spaceavail = StatVFS::spaceavail(st);
+        spaceused  = StatVFS::spaceused(st);
       }
 
     return rv;
@@ -109,6 +111,20 @@ namespace fs
     rv = fs::statvfs(path,st);
     if(rv)
       spaceavail = StatVFS::spaceavail(st);
+
+    return rv;
+  }
+
+  bool
+  spaceused(const string &path,
+            size_t       &spaceused)
+  {
+    bool rv;
+    struct statvfs st;
+
+    rv = fs::statvfs(path,st);
+    if(rv)
+      spaceused = StatVFS::spaceused(st);
 
     return rv;
   }
