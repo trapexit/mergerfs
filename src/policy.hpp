@@ -48,6 +48,7 @@ namespace mergerfs
           erofs,
           ff,
           lfs,
+          lus,
           mfs,
           newest,
           rand,
@@ -100,6 +101,7 @@ namespace mergerfs
       static int erofs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int ff(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int lfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int lus(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int mfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int newest(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
       static int rand(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
@@ -171,6 +173,7 @@ namespace mergerfs
     static const Policy &erofs;
     static const Policy &ff;
     static const Policy &lfs;
+    static const Policy &lus;
     static const Policy &mfs;
     static const Policy &newest;
     static const Policy &rand;

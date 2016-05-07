@@ -52,4 +52,12 @@ namespace StatVFS
   {
     return (st.f_frsize * st.f_bavail);
   }
+
+  static
+  inline
+  fsblkcnt_t
+  spaceused(const struct statvfs &st)
+  {
+    return (st.f_frsize * (st.f_blocks - st.f_bavail));
+  }
 }

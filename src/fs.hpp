@@ -35,12 +35,16 @@ namespace fs
 
   bool info(const string &path,
             bool         &readonly,
-            size_t       &spaceavail);
+            size_t       &spaceavail,
+            size_t       &spaceused);
 
   bool readonly(const string &path);
 
   bool spaceavail(const string &path,
                   size_t       &spaceavail);
+
+  bool spaceused(const string &path,
+                 size_t       &spaceavail);
 
   void findallfiles(const vector<string> &srcmounts,
                     const char           *fusepath,

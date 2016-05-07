@@ -35,6 +35,7 @@ namespace mergerfs
     (POLICY(erofs,DOESNT_PRESERVE_PATH))
     (POLICY(ff,DOESNT_PRESERVE_PATH))
     (POLICY(lfs,DOESNT_PRESERVE_PATH))
+    (POLICY(lus,DOESNT_PRESERVE_PATH))
     (POLICY(mfs,DOESNT_PRESERVE_PATH))
     (POLICY(newest,DOESNT_PRESERVE_PATH))
     (POLICY(rand,DOESNT_PRESERVE_PATH));
@@ -50,6 +51,7 @@ namespace mergerfs
   CONST_POLICY(erofs);
   CONST_POLICY(ff);
   CONST_POLICY(lfs);
+  CONST_POLICY(lus);
   CONST_POLICY(mfs);
   CONST_POLICY(newest);
   CONST_POLICY(rand);
