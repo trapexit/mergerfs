@@ -20,8 +20,10 @@
 #include <vector>
 
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/fs.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "config.hpp"
 #include "fileinfo.hpp"
@@ -48,10 +50,6 @@ _ioctl(const int  fd,
 
 #ifdef FUSE_IOCTL_DIR
 
-#ifndef O_DIRECTORY
-#define O_DIRECTORY 0
-#endif
-
 #ifndef O_NOATIME
 #define O_NOATIME 0
 #endif
@@ -76,7 +74,7 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  const int flags = O_RDWR | O_NOATIME | O_DIRECTORY;
+  const int flags = O_RDONLY | O_NOATIME | O_NONBLOCK;
   fd = ::open(fullpath.c_str(),flags);
   if(fd == -1)
     return -errno;
