@@ -14,20 +14,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
-#ifdef __linux__
-#include <sys/sendfile.h>
-#endif
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <string>
 #include <vector>
 
 #include "fs_attr.hpp"
+#include "fs_fallocate.hpp"
+#include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
 
 using std::string;
@@ -35,20 +34,6 @@ using std::vector;
 
 namespace fs
 {
-  static
-  ssize_t
-  sendfile(const int    fdin,
-           const int    fdout,
-           const size_t count)
-  {
-#if defined __linux__
-    off_t offset = 0;
-    return ::sendfile(fdout,fdin,&offset,count);
-#else
-    return (errno=EINVAL,-1);
-#endif
-  }
-
   int
   writen(const int     fd,
          const char   *buf,
@@ -69,7 +54,7 @@ namespace fs
           }
 
         nleft -= nwritten;
-        buf += nwritten;
+        buf   += nwritten;
       }
 
     return count;
@@ -91,6 +76,8 @@ namespace fs
     bufsize = (blocksize * 16);
     buf.resize(bufsize);
 
+    ::lseek(fdin,0,SEEK_SET);
+
     totalwritten = 0;
     while(totalwritten < count)
       {
@@ -99,8 +86,7 @@ namespace fs
           {
             if(errno == EINTR)
               continue;
-            else
-              return -1;
+            return -1;
           }
 
         nw = writen(fdout,&buf[0],nr);
@@ -125,7 +111,7 @@ namespace fs
     ::posix_fadvise(fdin,0,count,POSIX_FADV_WILLNEED);
     ::posix_fadvise(fdin,0,count,POSIX_FADV_SEQUENTIAL);
 
-    ::posix_fallocate(fdout,0,count);
+    fs::fallocate(fdout,0,0,count);
 
     rv = fs::sendfile(fdin,fdout,count);
     if((rv == -1) && ((errno == EINVAL) || (errno == ENOSYS)))
