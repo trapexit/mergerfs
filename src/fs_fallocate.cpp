@@ -14,49 +14,31 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#if FALLOCATE
-
-#include <fuse.h>
-
 #include <errno.h>
+#include <fcntl.h>
 
 #include "fs_fallocate.hpp"
-#include "fileinfo.hpp"
 
-static
-int
-_fallocate(const int   fd,
-           const int   mode,
-           const off_t offset,
-           const off_t len)
+namespace fs
 {
-  int rv;
-
-  rv = fs::fallocate(fd,mode,offset,len);
-
-  return ((rv == -1) ? -errno : 0);
-}
-
-namespace mergerfs
-{
-  namespace fuse
+  int
+  fallocate(const int   fd,
+            const int   mode,
+            const off_t offset,
+            const off_t len)
   {
-    int
-    fallocate(const char     *fusepath,
-              int             mode,
-              off_t           offset,
-              off_t           len,
-              fuse_file_info *ffi)
-    {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+    int rv;
 
+#ifdef __linux__
+    rv = ::fallocate(fd,mode,offset,len);
+#elif _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
+    rv = (mode ?
+          (errno=EOPNOTSUPP,-1) :
+          (::posix_fallocate(fd,offset,len)));
+#else
+    rv = (errno=EOPNOTSUPP,-1);
+#endif
 
-      return _fallocate(fi->fd,
-                        mode,
-                        offset,
-                        len);
-    }
+    return rv;
   }
 }
-
-#endif

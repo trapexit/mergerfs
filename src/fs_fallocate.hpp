@@ -14,49 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#if FALLOCATE
+#ifndef __FS_FALLOCATE_HPP__
+#define __FS_FALLOCATE_HPP__
 
-#include <fuse.h>
-
-#include <errno.h>
-
-#include "fs_fallocate.hpp"
-#include "fileinfo.hpp"
-
-static
-int
-_fallocate(const int   fd,
-           const int   mode,
-           const off_t offset,
-           const off_t len)
+namespace fs
 {
-  int rv;
-
-  rv = fs::fallocate(fd,mode,offset,len);
-
-  return ((rv == -1) ? -errno : 0);
+  int
+  fallocate(const int   fd,
+            const int   mode,
+            const off_t offset,
+            const off_t len);
 }
 
-namespace mergerfs
-{
-  namespace fuse
-  {
-    int
-    fallocate(const char     *fusepath,
-              int             mode,
-              off_t           offset,
-              off_t           len,
-              fuse_file_info *ffi)
-    {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
-
-
-      return _fallocate(fi->fd,
-                        mode,
-                        offset,
-                        len);
-    }
-  }
-}
-
-#endif
+#endif // __FS_FALLOCATE_HPP__
