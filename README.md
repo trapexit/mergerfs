@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-05-03
+% 2016-05-17
 
 # NAME
 
@@ -317,7 +317,7 @@ Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap]
 
 #### mmap performance is really bad
 
-There [appears to be a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels.
+There [is a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59). 
 
 #### Trashing files occasionally fails
 
