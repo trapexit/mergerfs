@@ -1,5 +1,5 @@
 .\"t
-.TH "mergerfs" "1" "2016\-05\-03" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-05\-17" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another (FUSE based) union filesystem
@@ -723,9 +723,9 @@ mergerfs twice.
 Once with \f[C]direct_io\f[] enabled and one without it.
 .SS mmap performance is really bad
 .PP
-There appears to be a bug (https://lkml.org/lkml/2016/3/16/260) in
-caching which affects overall performance of mmap through FUSE in Linux
-4.x kernels.
+There is a bug (https://lkml.org/lkml/2016/3/16/260) in caching which
+affects overall performance of mmap through FUSE in Linux 4.x kernels.
+It is fixed in 4.4.10 and 4.5.4 (https://lkml.org/lkml/2016/5/11/59).
 .SS Trashing files occasionally fails
 .PP
 This is the same issue as with Samba.
