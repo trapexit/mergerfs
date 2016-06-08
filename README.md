@@ -97,6 +97,8 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | newest (newest file) | Pick the file / directory with the largest mtime. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
 | rand (random) | Calls **all** and then randomizes. |
 
+**eplfs**, **eplus**, and **epmf** are path preserving policies. As the descriptions above explain they will only consider drives where the path being accessed exists. Non-path preserving policies will clone paths as necessary.
+
 #### Defaults ####
 
 | Category | Policy |
@@ -364,6 +366,11 @@ A single drive failure will lead to full pool failure without additional redunda
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
 Yes. It will be represented immediately in the pool as the policies would describe.
+
+#### Why do I get an "out of space" error even though the system says there's lots of space left?
+
+Please reread the sections above about policies, path preserving, and the **moveonenospc** option. If the policy is path preserving and a drive is almost full and the drive the policy would pick then the writing of the file may fill the drive and receive ENOSPC errors. That is expected with those settings. If you don't want that: enable **moveonenospc** and don't use a path preserving policy.
+
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
