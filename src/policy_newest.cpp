@@ -28,7 +28,6 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 
 static
 int
@@ -111,7 +110,7 @@ namespace mergerfs
   Policy::Func::newest(const Category::Enum::Type  type,
                        const vector<string>       &basepaths,
                        const char                 *fusepath,
-                       const size_t                minfreespace,
+                       const uint64_t              minfreespace,
                        vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)

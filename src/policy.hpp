@@ -63,15 +63,14 @@ namespace mergerfs
     struct Func
     {
       typedef std::string string;
-      typedef std::size_t size_t;
       typedef std::vector<string> strvec;
       typedef std::vector<const string*> cstrptrvec;
       typedef const string cstring;
-      typedef const size_t csize_t;
+      typedef const uint64_t cuint64_t;
       typedef const strvec cstrvec;
       typedef const Category::Enum::Type CType;
 
-      typedef int (*Ptr)(CType,cstrvec &,const char *,csize_t,cstrptrvec &);
+      typedef int (*Ptr)(CType,cstrvec &,const char *,cuint64_t,cstrptrvec &);
 
       template <CType T>
       class Base
@@ -82,7 +81,7 @@ namespace mergerfs
         {}
 
         int
-        operator()(cstrvec &b,const char *c,csize_t d,cstrptrvec &e)
+        operator()(cstrvec &b,const char *c,cuint64_t d,cstrptrvec &e)
         {
           return func(T,b,c,d,e);
         }
@@ -95,18 +94,18 @@ namespace mergerfs
       typedef Base<Category::Enum::create> Create;
       typedef Base<Category::Enum::search> Search;
 
-      static int invalid(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int all(CType,cstrvec&,const char*,csize_t,cstrptrvec&);
-      static int eplfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int eplus(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int epmfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int erofs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int ff(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int lfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int lus(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int mfs(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int newest(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
-      static int rand(CType,cstrvec&,const char *,csize_t,cstrptrvec&);
+      static int invalid(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int all(CType,cstrvec&,const char*,cuint64_t,cstrptrvec&);
+      static int eplfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int eplus(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int epmfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int erofs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int ff(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int lfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int lus(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int mfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int newest(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int rand(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
     };
 
   private:
@@ -165,8 +164,8 @@ namespace mergerfs
     static const Policy &find(const Enum::Type);
 
   public:
-    static const std::vector<Policy>  _policies_;
-    static const Policy * const       policies;
+    static const std::vector<Policy> _policies_;
+    static const Policy * const      policies;
 
     static const Policy &invalid;
     static const Policy &all;

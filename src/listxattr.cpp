@@ -74,7 +74,7 @@ static
 int
 _listxattr(Policy::Func::Search  searchFunc,
            const vector<string> &srcmounts,
-           const size_t          minfreespace,
+           const uint64_t        minfreespace,
            const char           *fusepath,
            char                 *list,
            const size_t          size)

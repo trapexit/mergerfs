@@ -172,7 +172,7 @@ _setxattr_minfreespace(Config       &config,
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  rv = num::to_size_t(attrval,config.minfreespace);
+  rv = num::to_uint64_t(attrval,config.minfreespace);
   if(rv == -1)
     return -EINVAL;
 
@@ -335,7 +335,7 @@ static
 int
 _setxattr(Policy::Func::Action  actionFunc,
           const vector<string> &srcmounts,
-          const size_t          minfreespace,
+          const uint64_t        minfreespace,
           const char           *fusepath,
           const char           *attrname,
           const char           *attrval,

@@ -25,7 +25,6 @@ namespace fs
 {
   namespace xattr
   {
-    using std::size_t;
     using std::string;
     using std::vector;
     using std::map;

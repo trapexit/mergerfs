@@ -14,6 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <string>
@@ -21,11 +22,11 @@
 namespace num
 {
   int
-  to_size_t(const std::string &str,
-            size_t            &value)
+  to_uint64_t(const std::string &str,
+              uint64_t          &value)
   {
-    size_t  tmp;
-    char   *endptr;
+    char *endptr;
+    uint64_t tmp;
 
     tmp = strtoll(str.c_str(),&endptr,10);
     switch(*endptr)

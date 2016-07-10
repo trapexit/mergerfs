@@ -14,9 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <stdint.h>
+
 #include <string>
 
 namespace num
 {
-  int to_size_t(const std::string &str, size_t &value);
+  int to_uint64_t(const std::string &str, uint64_t &value);
 }

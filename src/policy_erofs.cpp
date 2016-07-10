@@ -30,7 +30,7 @@ namespace mergerfs
   Policy::Func::erofs(const Category::Enum::Type  type,
                       const vector<string>       &basepaths,
                       const char                 *fusepath,
-                      const size_t                minfreespace,
+                      const uint64_t              minfreespace,
                       vector<const string*>      &paths)
   {
     return POLICY_FAIL_ERRNO(EROFS);

@@ -26,26 +26,25 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 using mergerfs::Category;
 
 static
 int
 _lfs_create(const vector<string>  &basepaths,
-            const size_t           minfreespace,
+            const uint64_t         minfreespace,
             vector<const string*> &paths)
 {
   string fullpath;
-  size_t lfs;
+  uint64_t lfs;
   const string *lfsbasepath;
 
-  lfs = std::numeric_limits<size_t>::max();
+  lfs = std::numeric_limits<uint64_t>::max();
   lfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       bool readonly;
-      size_t spaceavail;
-      size_t _spaceused;
+      uint64_t spaceavail;
+      uint64_t _spaceused;
       const string *basepath = &basepaths[i];
 
       if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
@@ -76,14 +75,14 @@ _lfs_other(const vector<string>  &basepaths,
            vector<const string*> &paths)
 {
   string fullpath;
-  size_t lfs;
+  uint64_t lfs;
   const string *lfsbasepath;
 
-  lfs = std::numeric_limits<size_t>::max();
+  lfs = std::numeric_limits<uint64_t>::max();
   lfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      size_t spaceavail;
+      uint64_t spaceavail;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
@@ -112,7 +111,7 @@ int
 _lfs(const Category::Enum::Type  type,
      const vector<string>       &basepaths,
      const char                 *fusepath,
-     const size_t                minfreespace,
+     const uint64_t              minfreespace,
      vector<const string*>      &paths)
 {
   if(type == Category::Enum::create)
@@ -128,7 +127,7 @@ namespace mergerfs
   Policy::Func::lfs(const Category::Enum::Type  type,
                     const vector<string>       &basepaths,
                     const char                 *fusepath,
-                    const size_t                minfreespace,
+                    const uint64_t              minfreespace,
                     vector<const string*>      &paths)
   {
     int rv;

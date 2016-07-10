@@ -25,7 +25,6 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 
 namespace mergerfs
 {
@@ -33,7 +32,7 @@ namespace mergerfs
   Policy::Func::rand(const Category::Enum::Type  type,
                      const vector<string>       &basepaths,
                      const char                 *fusepath,
-                     const size_t                minfreespace,
+                     const uint64_t              minfreespace,
                      vector<const string*>      &paths)
   {
     int rv;

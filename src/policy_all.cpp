@@ -25,19 +25,18 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 
 static
 int
 _all_create(const vector<string>  &basepaths,
-            const size_t           minfreespace,
+            const uint64_t         minfreespace,
             vector<const string*> &paths)
 {
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       bool readonly;
-      size_t spaceavail;
-      size_t _spaceused;
+      uint64_t spaceavail;
+      uint64_t _spaceused;
       const string *basepath = &basepaths[i];
 
       if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
@@ -88,7 +87,7 @@ namespace mergerfs
   Policy::Func::all(const Category::Enum::Type  type,
                     const vector<string>       &basepaths,
                     const char                 *fusepath,
-                    const size_t                minfreespace,
+                    const uint64_t              minfreespace,
                     vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)

@@ -88,7 +88,7 @@ int
 _link_create_path(Policy::Func::Search  searchFunc,
                   Policy::Func::Action  actionFunc,
                   const vector<string> &srcmounts,
-                  const size_t          minfreespace,
+                  const uint64_t        minfreespace,
                   const char           *oldfusepath,
                   const char           *newfusepath)
 {
@@ -117,7 +117,7 @@ int
 _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
                            const vector<string> &srcmounts,
-                           const size_t          minfreespace,
+                           const uint64_t        minfreespace,
                            const string         &oldbasepath,
                            const char           *oldfusepath,
                            const char           *newfusepath)
@@ -158,7 +158,7 @@ int
 _link_preserve_path_core(Policy::Func::Search  searchFunc,
                          Policy::Func::Create  createFunc,
                          const vector<string> &srcmounts,
-                         const size_t          minfreespace,
+                         const uint64_t        minfreespace,
                          const string         &oldbasepath,
                          const char           *oldfusepath,
                          const char           *newfusepath,
@@ -190,7 +190,7 @@ int
 _link_preserve_path_loop(Policy::Func::Search         searchFunc,
                          Policy::Func::Create         createFunc,
                          const vector<string>        &srcmounts,
-                         const size_t                 minfreespace,
+                         const uint64_t               minfreespace,
                          const char                  *oldfusepath,
                          const char                  *newfusepath,
                          const vector<const string*> &oldbasepaths)
@@ -216,9 +216,9 @@ _link_preserve_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
                     Policy::Func::Create  createFunc,
                     const vector<string> &srcmounts,
-                    const size_t          minfreespace,
-                    const char          *oldfusepath,
-                    const char          *newfusepath)
+                    const uint64_t        minfreespace,
+                    const char           *oldfusepath,
+                    const char           *newfusepath)
 {
   int rv;
   vector<const string*> oldbasepaths;

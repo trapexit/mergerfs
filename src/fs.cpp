@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -73,8 +74,8 @@ namespace fs
   bool
   info(const string &path,
        bool         &readonly,
-       size_t       &spaceavail,
-       size_t       &spaceused)
+       uint64_t     &spaceavail,
+       uint64_t     &spaceused)
   {
     bool rv;
     struct statvfs st;
@@ -103,7 +104,7 @@ namespace fs
 
   bool
   spaceavail(const string &path,
-             size_t       &spaceavail)
+             uint64_t       &spaceavail)
   {
     bool rv;
     struct statvfs st;
@@ -117,7 +118,7 @@ namespace fs
 
   bool
   spaceused(const string &path,
-            size_t       &spaceused)
+            uint64_t     &spaceused)
   {
     bool rv;
     struct statvfs st;
@@ -231,7 +232,7 @@ namespace fs
 
   int
   mfs(const vector<string> &basepaths,
-      const size_t          minfreespace,
+      const uint64_t        minfreespace,
       string               &path)
   {
     fsblkcnt_t mfs;
@@ -241,7 +242,7 @@ namespace fs
     mfsbasepath = NULL;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        size_t spaceavail;
+        uint64_t spaceavail;
         const string &basepath = basepaths[i];
 
         if(!fs::spaceavail(basepath,spaceavail))

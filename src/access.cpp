@@ -34,7 +34,7 @@ static
 int
 _access(Policy::Func::Search  searchFunc,
         const vector<string> &srcmounts,
-        const size_t          minfreespace,
+        const uint64_t        minfreespace,
         const char           *fusepath,
         const int             mask)
 {

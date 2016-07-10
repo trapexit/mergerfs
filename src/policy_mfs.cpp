@@ -25,7 +25,6 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 using mergerfs::Category;
 
 static
@@ -34,7 +33,7 @@ _mfs_create(const vector<string>  &basepaths,
             vector<const string*> &paths)
 {
   string fullpath;
-  size_t mfs;
+  uint64_t mfs;
   const string *mfsbasepath;
 
   mfs = 0;
@@ -42,8 +41,8 @@ _mfs_create(const vector<string>  &basepaths,
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       bool readonly;
-      size_t spaceavail;
-      size_t _spaceused;
+      uint64_t spaceavail;
+      uint64_t _spaceused;
       const string *basepath = &basepaths[i];
 
       if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
@@ -72,14 +71,14 @@ _mfs_other(const vector<string>  &basepaths,
            vector<const string*> &paths)
 {
   string fullpath;
-  size_t mfs;
+  uint64_t mfs;
   const string *mfsbasepath;
 
   mfs = 0;
   mfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      size_t spaceavail;
+      uint64_t spaceavail;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
@@ -122,7 +121,7 @@ namespace mergerfs
   Policy::Func::mfs(const Category::Enum::Type  type,
                     const vector<string>       &basepaths,
                     const char                 *fusepath,
-                    const size_t                minfreespace,
+                    const uint64_t              minfreespace,
                     vector<const string*>      &paths)
   {
     int rv;

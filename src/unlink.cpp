@@ -68,7 +68,7 @@ static
 int
 _unlink(Policy::Func::Action  actionFunc,
         const vector<string> &srcmounts,
-        const size_t          minfreespace,
+        const uint64_t        minfreespace,
         const char           *fusepath)
 {
   int rv;
