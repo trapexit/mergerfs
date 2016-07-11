@@ -43,6 +43,7 @@ namespace mergerfs
           invalid = -1,
           BEGIN   = 0,
           all     = BEGIN,
+          epff,
           eplfs,
           eplus,
           epmfs,
@@ -96,6 +97,7 @@ namespace mergerfs
 
       static int invalid(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int all(CType,cstrvec&,const char*,cuint64_t,cstrptrvec&);
+      static int epff(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int eplfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int eplus(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int epmfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
@@ -169,6 +171,7 @@ namespace mergerfs
 
     static const Policy &invalid;
     static const Policy &all;
+    static const Policy &epff;
     static const Policy &eplfs;
     static const Policy &eplus;
     static const Policy &epmfs;

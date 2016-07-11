@@ -86,6 +86,7 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | Policy | Description |
 |--------------|-------------|
 | all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **ff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
+| epff | Given the order of the drives, as defined at mount time or when configured via the xattr interface, act on the first one found where the path already exists. For **create** cateogry it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). Falls back to **ff**. |
 | eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
 | eplus (existing path, least used space) | If the path exists on multiple drives the the one with the least used space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lus**. |
 | epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
@@ -97,7 +98,7 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | newest (newest file) | Pick the file / directory with the largest mtime. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
 | rand (random) | Calls **all** and then randomizes. |
 
-**eplfs**, **eplus**, and **epmf** are path preserving policies. As the descriptions above explain they will only consider drives where the path being accessed exists. Non-path preserving policies will clone paths as necessary.
+**epff**, **eplfs**, **eplus**, and **epmf** are path preserving policies. As the descriptions above explain they will only consider drives where the path being accessed exists. Non-path preserving policies will clone paths as necessary.
 
 #### Defaults ####
 
@@ -113,7 +114,7 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 
 Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or they only partially support EXDEV (don't respond the same as `mv` would). Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
 
-* If using a **create** policy which tries to preserve directory paths (epmfs,eplfs)
+* If using a **create** policy which tries to preserve directory paths (epff,eplfs,eplus,epmfs)
   * Using the **rename** policy get the list of files to rename
   * For each file attempt rename:
     * If failure with ENOENT run **create** policy
