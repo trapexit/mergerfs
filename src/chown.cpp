@@ -72,7 +72,7 @@ static
 int
 _chown(Policy::Func::Action  actionFunc,
        const vector<string> &srcmounts,
-       const size_t          minfreespace,
+       const uint64_t        minfreespace,
        const char           *fusepath,
        const uid_t           uid,
        const gid_t           gid)

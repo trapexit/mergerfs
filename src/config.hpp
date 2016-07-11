@@ -45,7 +45,7 @@ namespace mergerfs
     std::string              destmount;
     std::vector<std::string> srcmounts;
     mutable pthread_rwlock_t srcmountslock;
-    size_t                   minfreespace;
+    uint64_t                 minfreespace;
     bool                     moveonenospc;
 
   public:

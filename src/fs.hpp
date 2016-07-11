@@ -17,12 +17,13 @@
 #ifndef __FS_HPP__
 #define __FS_HPP__
 
+#include <stdint.h>
+
 #include <string>
 #include <vector>
 
 namespace fs
 {
-  using std::size_t;
   using std::string;
   using std::vector;
 
@@ -35,16 +36,16 @@ namespace fs
 
   bool info(const string &path,
             bool         &readonly,
-            size_t       &spaceavail,
-            size_t       &spaceused);
+            uint64_t     &spaceavail,
+            uint64_t     &spaceused);
 
   bool readonly(const string &path);
 
   bool spaceavail(const string &path,
-                  size_t       &spaceavail);
+                  uint64_t     &spaceavail);
 
   bool spaceused(const string &path,
-                 size_t       &spaceavail);
+                 uint64_t     &spaceavail);
 
   void findallfiles(const vector<string> &srcmounts,
                     const char           *fusepath,
@@ -63,7 +64,7 @@ namespace fs
   int getfl(const int fd);
 
   int mfs(const vector<string> &srcs,
-          const size_t          minfreespace,
+          const uint64_t        minfreespace,
           string               &path);
 };
 

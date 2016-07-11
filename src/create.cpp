@@ -71,7 +71,7 @@ int
 _create(Policy::Func::Search  searchFunc,
         Policy::Func::Create  createFunc,
         const vector<string> &srcmounts,
-        const size_t          minfreespace,
+        const uint64_t        minfreespace,
         const char           *fusepath,
         const mode_t          mode,
         const int             flags,

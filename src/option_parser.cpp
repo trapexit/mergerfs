@@ -107,11 +107,11 @@ set_default_options(fuse_args &args)
 static
 int
 parse_and_process_minfreespace(const std::string &value,
-                               size_t            &minfreespace)
+                               uint64_t          &minfreespace)
 {
   int rv;
 
-  rv = num::to_size_t(value,minfreespace);
+  rv = num::to_uint64_t(value,minfreespace);
   if(rv == -1)
     return 1;
 

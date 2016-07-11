@@ -58,7 +58,7 @@ static
 int
 _ioctl_dir_base(Policy::Func::Search  searchFunc,
                 const vector<string> &srcmounts,
-                const size_t          minfreespace,
+                const uint64_t        minfreespace,
                 const char           *fusepath,
                 const int             cmd,
                 void                 *data)

@@ -71,7 +71,7 @@ static
 int
 _utimens(Policy::Func::Action  actionFunc,
          const vector<string> &srcmounts,
-         const size_t          minfreespace,
+         const uint64_t        minfreespace,
          const char           *fusepath,
          const timespec        ts[2])
 {

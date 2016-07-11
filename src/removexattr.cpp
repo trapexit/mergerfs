@@ -73,7 +73,7 @@ static
 int
 _removexattr(Policy::Func::Action  actionFunc,
              const vector<string> &srcmounts,
-             const size_t          minfreespace,
+             const uint64_t        minfreespace,
              const char           *fusepath,
              const char           *attrname)
 {

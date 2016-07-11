@@ -104,7 +104,7 @@ int
 _rename_create_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
                     const vector<string> &srcmounts,
-                    const size_t          minfreespace,
+                    const uint64_t        minfreespace,
                     const char           *oldfusepath,
                     const char           *newfusepath)
 {
@@ -146,7 +146,7 @@ static
 int
 _clonepath(Policy::Func::Search  searchFunc,
            const vector<string> &srcmounts,
-           const size_t          minfreespace,
+           const uint64_t        minfreespace,
            const string         &dstbasepath,
            const string         &fusedirpath)
 {
@@ -170,7 +170,7 @@ int
 _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
                            const vector<string> &srcmounts,
-                           const size_t          minfreespace,
+                           const uint64_t        minfreespace,
                            const string         &oldbasepath,
                            const char           *oldfusepath,
                            const char           *newfusepath)
@@ -196,7 +196,7 @@ void
 _rename_preserve_path_core(Policy::Func::Search         searchFunc,
                            Policy::Func::Create         createFunc,
                            const vector<string>        &srcmounts,
-                           const size_t                 minfreespace,
+                           const uint64_t               minfreespace,
                            const vector<const string*> &oldbasepaths,
                            const string                &oldbasepath,
                            const char                  *oldfusepath,
@@ -243,7 +243,7 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
                       Policy::Func::Action  actionFunc,
                       Policy::Func::Create  createFunc,
                       const vector<string> &srcmounts,
-                      const size_t          minfreespace,
+                      const uint64_t        minfreespace,
                       const char           *oldfusepath,
                       const char           *newfusepath)
 {

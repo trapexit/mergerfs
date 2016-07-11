@@ -42,7 +42,7 @@ _write_buf(const int    fd,
            fuse_bufvec &src,
            const off_t  offset)
 {
-  size_t      size = fuse_buf_size(&src);
+  size_t size = fuse_buf_size(&src);
   fuse_bufvec dst  = FUSE_BUFVEC_INIT(size);
   const fuse_buf_copy_flags cpflags =
     (fuse_buf_copy_flags)(FUSE_BUF_SPLICE_MOVE|FUSE_BUF_SPLICE_NONBLOCK);

@@ -26,26 +26,25 @@
 
 using std::string;
 using std::vector;
-using std::size_t;
 using mergerfs::Category;
 
 static
 int
 _lus_create(const vector<string>  &basepaths,
-            const size_t           minfreespace,
+            const uint64_t         minfreespace,
             vector<const string*> &paths)
 {
   string fullpath;
-  size_t lus;
+  uint64_t lus;
   const string *lusbasepath;
 
-  lus = std::numeric_limits<size_t>::max();
+  lus = std::numeric_limits<uint64_t>::max();
   lusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       bool readonly;
-      size_t spaceused;
-      size_t spaceavail;
+      uint64_t spaceused;
+      uint64_t spaceavail;
       const string *basepath = &basepaths[i];
 
       if(!fs::info(*basepath,readonly,spaceavail,spaceused))
@@ -76,14 +75,14 @@ _lus_other(const vector<string>  &basepaths,
            vector<const string*> &paths)
 {
   string fullpath;
-  size_t lus;
+  uint64_t lus;
   const string *lusbasepath;
 
   lus = 0;
   lusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      size_t spaceused;
+      uint64_t spaceused;
       const string *basepath = &basepaths[i];
 
       fs::path::make(basepath,fusepath,fullpath);
@@ -112,7 +111,7 @@ int
 _lus(const Category::Enum::Type  type,
      const vector<string>       &basepaths,
      const char                 *fusepath,
-     const size_t                minfreespace,
+     const uint64_t              minfreespace,
      vector<const string*>      &paths)
 {
   if(type == Category::Enum::create)
@@ -127,7 +126,7 @@ namespace mergerfs
   Policy::Func::lus(const Category::Enum::Type  type,
                     const vector<string>       &basepaths,
                     const char                 *fusepath,
-                    const size_t                minfreespace,
+                    const uint64_t              minfreespace,
                     vector<const string*>      &paths)
   {
     int rv;
