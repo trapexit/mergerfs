@@ -12,7 +12,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
-**mergerfs** is a union filesystem geared towards simplifing storage and management of files across numerous commodity storage devices. It is similar to **mhddfs**, **unionfs**, and **aufs**.
+**mergerfs** is a union filesystem geared towards simplifying storage and management of files across numerous commodity storage devices. It is similar to **mhddfs**, **unionfs**, and **aufs**.
 
 # FEATURES
 
@@ -24,7 +24,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * Safe to run as root
 * Opportunistic credential caching
 * Works with heterogeneous filesystem types
-* Handling of writes to full drives
+* Handling of writes to full drives (transparently move file to drive with capacity)
 * Handles pool of readonly and read/write drives
 
 # OPTIONS
