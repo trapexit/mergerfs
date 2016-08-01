@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-05-17
+% 2016-08-01
 
 # NAME
 
@@ -86,10 +86,12 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | Policy | Description |
 |--------------|-------------|
 | all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **ff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
+| epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
 | epff | Given the order of the drives, as defined at mount time or when configured via the xattr interface, act on the first one found where the path already exists. For **create** cateogry it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). Falls back to **ff**. |
 | eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
 | eplus (existing path, least used space) | If the path exists on multiple drives the the one with the least used space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lus**. |
 | epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| eprand (existing path, random) | Calls **epall** and then randomizes. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS**. By setting **create** functions to this you can in effect turn the filesystem readonly. |
 | ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
 | lfs (least free space) | Pick the drive with the least available free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
