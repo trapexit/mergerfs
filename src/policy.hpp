@@ -43,10 +43,12 @@ namespace mergerfs
           invalid = -1,
           BEGIN   = 0,
           all     = BEGIN,
+          epall,
           epff,
           eplfs,
           eplus,
           epmfs,
+          eprand,
           erofs,
           ff,
           lfs,
@@ -97,10 +99,12 @@ namespace mergerfs
 
       static int invalid(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int all(CType,cstrvec&,const char*,cuint64_t,cstrptrvec&);
+      static int epall(CType,cstrvec&,const char*,cuint64_t,cstrptrvec&);
       static int epff(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int eplfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int eplus(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int epmfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int eprand(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int erofs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int ff(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
       static int lfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
@@ -171,10 +175,12 @@ namespace mergerfs
 
     static const Policy &invalid;
     static const Policy &all;
+    static const Policy &epall;
     static const Policy &epff;
     static const Policy &eplfs;
     static const Policy &eplus;
     static const Policy &epmfs;
+    static const Policy &eprand;
     static const Policy &erofs;
     static const Policy &ff;
     static const Policy &lfs;

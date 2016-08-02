@@ -30,10 +30,12 @@ namespace mergerfs
     buildvector<Policy,true>
     (POLICY(invalid,DOESNT_PRESERVE_PATH))
     (POLICY(all,DOESNT_PRESERVE_PATH))
+    (POLICY(epall,PRESERVES_PATH))
     (POLICY(epff,PRESERVES_PATH))
     (POLICY(eplfs,PRESERVES_PATH))
     (POLICY(eplus,PRESERVES_PATH))
     (POLICY(epmfs,PRESERVES_PATH))
+    (POLICY(eprand,PRESERVES_PATH))
     (POLICY(erofs,DOESNT_PRESERVE_PATH))
     (POLICY(ff,DOESNT_PRESERVE_PATH))
     (POLICY(lfs,DOESNT_PRESERVE_PATH))
@@ -48,10 +50,12 @@ namespace mergerfs
 
   CONST_POLICY(invalid);
   CONST_POLICY(all);
+  CONST_POLICY(epall);
   CONST_POLICY(epff);
   CONST_POLICY(eplfs);
   CONST_POLICY(eplus);
   CONST_POLICY(epmfs);
+  CONST_POLICY(eprand);
   CONST_POLICY(erofs);
   CONST_POLICY(ff);
   CONST_POLICY(lfs);
