@@ -14,12 +14,18 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fs_fallocate_linux.icpp"
-#elif _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
-# include "fs_fallocate_posix.icpp"
-#elif __APPLE__
-# include "fs_fallocate_osx.icpp"
-#else
-# include "fs_fallocate_unsupported.icpp"
-#endif
+#include <errno.h>
+
+#include "fs_fallocate.hpp"
+
+namespace fs
+{
+  int
+  fallocate(const int   fd,
+            const int   mode,
+            const off_t offset,
+            const off_t len)
+  {
+    return (errno=EOPNOTSUPP,-1);
+  }
+}
