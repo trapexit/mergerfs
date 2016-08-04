@@ -14,8 +14,24 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fs_attr_linux.icpp"
-#else
-# include "fs_attr_unsupported.icpp"
-#endif
+#include <errno.h>
+
+namespace fs
+{
+  namespace attr
+  {
+    int
+    copy(const int fdin,
+         const int fdout)
+    {
+      return ENOTSUP;
+    }
+
+    int
+    copy(const string &from,
+         const string &to)
+    {
+      return ENOTSUP;
+    }
+  }
+}
