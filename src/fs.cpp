@@ -212,15 +212,16 @@ namespace fs
   realpathize(vector<string> &strs)
   {
     char *rv;
-    char buf[PATH_MAX];
 
     for(size_t i = 0; i < strs.size(); i++)
       {
-        rv = ::realpath(strs[i].c_str(),buf);
+        rv = ::realpath(strs[i].c_str(),NULL);
         if(rv == NULL)
           continue;
 
-        strs[i] = buf;
+        strs[i] = rv;
+
+        ::free(rv);
       }
   }
 
