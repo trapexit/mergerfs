@@ -14,8 +14,18 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fs_sendfile_linux.icpp"
-#else
-# include "fs_sendfile_unsupported.icpp"
-#endif
+#include <errno.h>
+#include <sys/sendfile.h>
+
+namespace fs
+{
+  ssize_t
+  sendfile(const int    fdin,
+           const int    fdout,
+           const size_t count)
+  {
+    off_t offset = 0;
+
+    return ::sendfile(fdout,fdin,&offset,count);
+  }
+}
