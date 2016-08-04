@@ -71,7 +71,7 @@ CFLAGS      = -g -Wall \
 	      $(OPTS) \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
-              -DFUSE_USE_VERSION=26 \
+              -DFUSE_USE_VERSION=29 \
               -MMD \
 	      -DFLAG_NOPATH=$(FLAG_NOPATH) \
 	      -DFALLOCATE=$(FALLOCATE) \
