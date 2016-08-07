@@ -27,6 +27,7 @@
 #include "fs_attr.hpp"
 #include "fs_fallocate.hpp"
 #include "fs_sendfile.hpp"
+#include "fs_time.hpp"
 #include "fs_xattr.hpp"
 
 using std::string;
@@ -168,10 +169,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    struct timespec times[2];
-    times[0] = stin.st_atim;
-    times[1] = stin.st_mtim;
-    rv = ::futimens(fdout,times);
+    rv = fs::utimes(fdout,stin);
     if(rv == -1)
       return -1;
 
