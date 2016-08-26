@@ -17,9 +17,9 @@
 #include "gidcache.hpp"
 
 #if defined __linux__ and UGID_USE_RWLOCK == 0
-#include "ugid_linux.ipp"
+#include "ugid_linux.icpp"
 #else
-#include "ugid_rwlock.ipp"
+#include "ugid_rwlock.icpp"
 #endif
 
 namespace mergerfs
