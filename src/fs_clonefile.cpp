@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "fs_attr.hpp"
+#include "fs_fadvise.hpp"
 #include "fs_fallocate.hpp"
 #include "fs_sendfile.hpp"
 #include "fs_time.hpp"
@@ -109,8 +110,8 @@ namespace fs
   {
     int rv;
 
-    ::posix_fadvise(fdin,0,count,POSIX_FADV_WILLNEED);
-    ::posix_fadvise(fdin,0,count,POSIX_FADV_SEQUENTIAL);
+    fs::fadvise(fdin,0,count,POSIX_FADV_WILLNEED);
+    fs::fadvise(fdin,0,count,POSIX_FADV_SEQUENTIAL);
 
     fs::fallocate(fdout,0,0,count);
 
