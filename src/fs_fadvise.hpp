@@ -22,7 +22,7 @@
 #endif
 
 #ifndef POSIX_FADV_RANDOM
-# define POSIX_FADV_NORMAL 1
+# define POSIX_FADV_RANDOM 1
 #endif
 
 #ifndef POSIX_FADV_SEQUENTIAL
