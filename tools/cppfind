@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FUSE_CFLAGS=$(pkg-config --cflags fuse)
+FUSE_CFLAGS="$(pkg-config --cflags fuse) -DFUSE_USE_VERSION=29"
 
 echo "#include <fuse.h>" | cpp ${FUSE_CFLAGS} | grep -q "${1}"
 

@@ -22,10 +22,10 @@
 #include <set>
 #include <vector>
 
-#include <errno.h>
 #include <dirent.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_path.hpp"
 #include "readdir.hpp"
 #include "rwlock.hpp"

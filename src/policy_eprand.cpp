@@ -14,12 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
-
+#include <algorithm>
 #include <string>
 #include <vector>
-#include <algorithm>
 
+#include "errno.hpp"
 #include "policy.hpp"
 #include "success_fail.hpp"
 

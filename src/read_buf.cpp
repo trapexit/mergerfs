@@ -19,9 +19,9 @@
 #include <fuse.h>
 
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 
+#include "errno.hpp"
 #include "fileinfo.hpp"
 
 typedef struct fuse_bufvec fuse_bufvec;

@@ -17,14 +17,15 @@
 #if WRITE_BUF
 
 #include <fuse.h>
+
 #include <stdlib.h>
-#include <errno.h>
 #include <unistd.h>
 
 #include <string>
 #include <vector>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_movefile.hpp"
 #include "policy.hpp"

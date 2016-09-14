@@ -19,13 +19,13 @@
 #include <string>
 #include <vector>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"

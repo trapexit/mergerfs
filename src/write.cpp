@@ -16,10 +16,10 @@
 
 #include <fuse.h>
 
-#include <errno.h>
 #include <unistd.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_movefile.hpp"
 #include "rwlock.hpp"

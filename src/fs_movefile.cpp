@@ -14,18 +14,18 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <string>
 #include <vector>
 
 #include "fs.hpp"
-#include "fs_path.hpp"
-#include "fs_clonepath.hpp"
 #include "fs_clonefile.hpp"
+#include "fs_clonepath.hpp"
+#include "fs_path.hpp"
 
 using std::string;
 using std::vector;

@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -24,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "errno.hpp"
 #include "fs_attr.hpp"
 #include "fs_fadvise.hpp"
 #include "fs_fallocate.hpp"

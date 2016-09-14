@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -26,6 +25,7 @@
 #include <map>
 #include <sstream>
 
+#include "errno.hpp"
 #include "str.hpp"
 #include "xattr.hpp"
 

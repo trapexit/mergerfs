@@ -14,11 +14,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
-
 #include <string>
 #include <vector>
 
+#include "errno.hpp"
 #include "policy.hpp"
 
 using std::string;

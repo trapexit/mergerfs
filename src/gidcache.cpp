@@ -14,10 +14,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <grp.h>
+#include <pwd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
 #include <unistd.h>
 
 #if defined __linux__ and UGID_USE_RWLOCK == 0

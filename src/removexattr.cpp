@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 
-#include <errno.h>
 #include <sys/types.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"

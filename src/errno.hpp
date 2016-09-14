@@ -14,18 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_FALLOCATE_HPP__
-#define __FS_FALLOCATE_HPP__
+#include <errno.h>
 
-#include <fcntl.h>
+#if defined(ENODATA) && !defined(ENOATTR)
+#define ENOATTR ENODATA
+#endif
 
-namespace fs
-{
-  int
-  fallocate(const int   fd,
-            const int   mode,
-            const off_t offset,
-            const off_t len);
-}
+#if defined(ENOATTR) && !defined(ENODATA)
+#define ENODATA ENOATTR
+#endif
 
-#endif // __FS_FALLOCATE_HPP__
+#if !defined(ENOATTR) && !defined(ENODATA)
+#error "Neither ENOATTR or ENODATA defined: please contact mergerfs author with platform information"
+#endif
