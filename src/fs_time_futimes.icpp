@@ -25,8 +25,8 @@ namespace fs
   {
     struct timeval times[2];
 
-    TIMESPEC_TO_TIMEVAL(&times[0],&st.st_atimespec);
-    TIMESPEC_TO_TIMEVAL(&times[1],&st.st_mtimespec);
+    TIMESPEC_TO_TIMEVAL(&times[0],&st.st_atim);
+    TIMESPEC_TO_TIMEVAL(&times[1],&st.st_mtim);
 
     return ::futimes(fd,times);
   }
