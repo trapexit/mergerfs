@@ -20,11 +20,11 @@
 #include <vector>
 #include <sstream>
 
-#include <errno.h>
-#include <sys/types.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_path.hpp"
 #include "num.hpp"
 #include "rv.hpp"

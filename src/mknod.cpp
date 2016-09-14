@@ -19,13 +19,13 @@
 #include <string>
 #include <vector>
 
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"

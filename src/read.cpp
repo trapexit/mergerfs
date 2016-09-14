@@ -16,12 +16,12 @@
 
 #include <fuse.h>
 
-#include <errno.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <string>
 
+#include "errno.hpp"
 #include "fileinfo.hpp"
 
 static

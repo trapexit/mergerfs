@@ -16,7 +16,6 @@
 
 #include <fuse.h>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -24,6 +23,7 @@
 #include <vector>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"

@@ -21,13 +21,13 @@
 #include <set>
 #include <algorithm>
 
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "str.hpp"

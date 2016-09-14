@@ -17,7 +17,6 @@
 #include <fuse.h>
 
 #include <sys/statvfs.h>
-#include <errno.h>
 
 #include <algorithm>
 #include <climits>
@@ -26,6 +25,7 @@
 #include <vector>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "rwlock.hpp"
 #include "success_fail.hpp"
 #include "ugid.hpp"

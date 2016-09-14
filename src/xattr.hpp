@@ -18,22 +18,10 @@
 #include <attr/xattr.h>
 #endif
 
-#if defined(ENODATA) && !defined(ENOATTR)
-#define ENOATTR ENODATA
-#endif
-
-#if defined(ENOATTR) && !defined(ENODATA)
-#define ENODATA ENOATTR
-#endif
-
-#if !defined(ENOATTR) && !defined(ENODATA)
-#error "Neither ENOATTR or ENODATA defined: please contact mergerfs author with platform information"
-#endif
-
 #ifndef XATTR_CREATE
-#define XATTR_CREATE 0x1
+# define XATTR_CREATE 0x1
 #endif
 
 #ifndef XATTR_REPLACE
-#define XATTR_REPLACE 0x2
+# define XATTR_REPLACE 0x2
 #endif

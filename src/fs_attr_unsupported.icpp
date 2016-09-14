@@ -14,7 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
+#include <string>
+
+#include "errno.hpp"
 
 namespace fs
 {
@@ -28,8 +30,8 @@ namespace fs
     }
 
     int
-    copy(const string &from,
-         const string &to)
+    copy(const std::string &from,
+         const std::string &to)
     {
       return ENOTSUP;
     }

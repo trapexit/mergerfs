@@ -16,14 +16,15 @@
 
 #include <fuse.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <string>
 #include <vector>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"

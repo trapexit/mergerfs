@@ -19,11 +19,11 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
-#include <errno.h>
 
 #include "config.hpp"
-#include "rwlock.hpp"
+#include "errno.hpp"
 #include "fs.hpp"
+#include "rwlock.hpp"
 
 #define MINFREESPACE_DEFAULT (4294967295ULL)
 #define POLICYINIT(X) X(policies[FuseFunc::Enum::X])

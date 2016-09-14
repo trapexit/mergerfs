@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <sys/ioctl.h>
@@ -23,6 +22,8 @@
 #include <unistd.h>
 
 #include <string>
+
+#include "errno.hpp"
 
 using std::string;
 

@@ -14,12 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 
 #include <iostream>
 
+#include "errno.hpp"
 #include "fs.hpp"
 #include "fs_clonefile.hpp"
 #include "fs_clonepath.hpp"

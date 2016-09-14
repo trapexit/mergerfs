@@ -14,13 +14,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
 #include <sys/stat.h>
 
 #include <string>
 #include <vector>
 #include <limits>
 
+#include "errno.hpp"
 #include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"

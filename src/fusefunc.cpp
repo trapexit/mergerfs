@@ -17,9 +17,9 @@
 #include <string>
 #include <vector>
 
-#include "fusefunc.hpp"
-#include "category.hpp"
 #include "buildvector.hpp"
+#include "category.hpp"
+#include "fusefunc.hpp"
 
 #define FUSEFUNC(X,Y) FuseFunc(FuseFunc::Enum::X,#X,Category::Enum::Y)
 

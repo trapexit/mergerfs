@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <fcntl.h>
 #include <glob.h>
@@ -29,6 +28,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "errno.hpp"
 #include "fs_attr.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"

@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 
-#include <errno.h>
 #include <unistd.h>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"

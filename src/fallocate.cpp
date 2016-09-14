@@ -18,10 +18,9 @@
 
 #include <fuse.h>
 
-#include <errno.h>
-
-#include "fs_fallocate.hpp"
+#include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_fallocate.hpp"
 
 static
 int
