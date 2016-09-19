@@ -126,7 +126,11 @@ int
 setgroups(const gid_t_rec *rec)
 {
 #if defined __linux__ and UGID_USE_RWLOCK == 0
+# if defined SYS_setgroups32
+  return ::syscall(SYS_setgroups32,rec->size,rec->gids);
+# else
   return ::syscall(SYS_setgroups,rec->size,rec->gids);
+# endif
 #else
   return ::setgroups(rec->size,rec->gids);
 #endif
