@@ -74,12 +74,8 @@ namespace local
                       const bool              nullrw)
   {
     ops.flag_nullpath_ok   = true;
-#if FLAG_NOPATH
     ops.flag_nopath        = true;
-#endif
-#if FLAG_UTIME
     ops.flag_utime_omit_ok = true;
-#endif
 
     ops.access      = mergerfs::fuse::access;
     ops.bmap        = NULL;
@@ -87,13 +83,9 @@ namespace local
     ops.chown       = mergerfs::fuse::chown;
     ops.create      = mergerfs::fuse::create;
     ops.destroy     = mergerfs::fuse::destroy;
-#if FALLOCATE
     ops.fallocate   = mergerfs::fuse::fallocate;
-#endif
     ops.fgetattr    = mergerfs::fuse::fgetattr;
-#if FLOCK
     ops.flock       = mergerfs::fuse::flock;
-#endif
     ops.flush       = mergerfs::fuse::flush;
     ops.fsync       = mergerfs::fuse::fsync;
     ops.fsyncdir    = mergerfs::fuse::fsyncdir;
@@ -116,11 +108,9 @@ namespace local
                        (direct_io ?
                         mergerfs::fuse::read_direct_io :
                         mergerfs::fuse::read));
-#if READ_BUF
     ops.read_buf    = (nullrw ?
                        NULL :
                        mergerfs::fuse::read_buf);
-#endif
     ops.readdir     = mergerfs::fuse::readdir;
     ops.readlink    = mergerfs::fuse::readlink;
     ops.release     = mergerfs::fuse::release;
@@ -140,11 +130,9 @@ namespace local
                        (direct_io ?
                         mergerfs::fuse::write_direct_io :
                         mergerfs::fuse::write));
-#if WRITE_BUF
     ops.write_buf   = (nullrw ?
                        mergerfs::fuse::write_buf_null :
                        mergerfs::fuse::write_buf);
-#endif
 
     return;
   }

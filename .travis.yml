@@ -5,30 +5,21 @@ matrix:
     - os: linux
       dist: precise
       compiler: gcc
-      sudo: false
+      sudo: required
     - os: linux
       dist: precise
       compiler: clang
-      sudo: false
+      sudo: required
     - os: linux
       dist: trusty
       compiler: gcc
-      sudo: false
+      sudo: required
     - os: linux
       dist: trusty
       compiler: clang
-      sudo: false
+      sudo: required
     - os: osx
       compiler: clang
-
-addons:
-  apt:
-    packages:
-      - pkg-config
-      - debhelper
-      - libfuse-dev
-      - libattr1-dev
-      - python
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
@@ -36,4 +27,5 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install osxfuse; fi
 
 script:
+  - sudo -E make install-build-pkgs
   - make

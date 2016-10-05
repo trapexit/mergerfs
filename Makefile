@@ -12,8 +12,6 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-
-PKGCONFIG =  	$(shell which pkg-config)
 GIT 	  = 	$(shell which git)
 TAR 	  = 	$(shell which tar)
 MKDIR     = 	$(shell which mkdir)
@@ -30,34 +28,12 @@ SED       =     $(shell which sed)
 GZIP      =     $(shell which gzip)
 RPMBUILD  =     $(shell which rpmbuild)
 GIT2DEBCL =     ./tools/git2debcl
-CPPFIND   =     ./tools/cppfind
-
-ifeq ($(PKGCONFIG),"")
-$(error "pkg-config not installed")
-endif
 
 ifeq ($(PANDOC),"")
 $(warning "pandoc does not appear available: manpage won't be buildable")
 endif
 
 XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
-
-FUSE_AVAILABLE = $(shell ! pkg-config --exists fuse; echo $$?)
-
-ifeq ($(FUSE_AVAILABLE),0)
-FUSE_AVAILABLE = $(shell test ! -e /usr/include/fuse.h; echo $$?)
-endif
-
-ifeq ($(FUSE_AVAILABLE),0)
-$(error "FUSE development package doesn't appear available")
-endif
-
-FLAG_NOPATH = $(shell $(CPPFIND) "flag_nopath")
-FLAG_UTIME  = $(shell $(CPPFIND) "flag_utime_omit_ok")
-FALLOCATE   = $(shell $(CPPFIND) "fuse_fs_fallocate")
-FLOCK       = $(shell $(CPPFIND) "fuse_fs_flock")
-READ_BUF    = $(shell $(CPPFIND) "fuse_fs_read_buf")
-WRITE_BUF   = $(shell $(CPPFIND) "fuse_fs_write_buf")
 
 UGID_USE_RWLOCK = 0
 
@@ -67,21 +43,15 @@ OBJ         = $(SRC:src/%.cpp=obj/%.o)
 DEPS        = $(OBJ:obj/%.o=obj/%.d)
 TARGET      = mergerfs
 MANPAGE     = $(TARGET).1
-FUSE_CFLAGS = $(shell $(PKGCONFIG) --cflags fuse)
+FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
 CFLAGS      = -g -Wall \
 	      $(OPTS) \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
               -DFUSE_USE_VERSION=29 \
               -MMD \
-	      -DFLAG_NOPATH=$(FLAG_NOPATH) \
-	      -DFLAG_UTIME=$(FLAG_UTIME) \
-	      -DFALLOCATE=$(FALLOCATE) \
-              -DFLOCK=$(FLOCK) \
-	      -DREAD_BUF=$(READ_BUF) \
-              -DWRITE_BUF=$(WRITE_BUF) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
-LDFLAGS       = $(shell $(PKGCONFIG) fuse --libs)
+LDFLAGS       = -pthread -lrt
 
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
@@ -107,8 +77,9 @@ help:
 	@echo "usage: make"
 	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
 
-$(TARGET): src/version.hpp obj/obj-stamp $(OBJ)
-	$(CXX) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
+$(TARGET): src/version.hpp obj/obj-stamp libfuse/lib/.libs/libfuse.a $(OBJ)
+	cd libfuse && make
+	$(CXX) $(CFLAGS) $(OBJ) -o $@ libfuse/lib/.libs/libfuse.a -ldl $(LDFLAGS)
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
@@ -133,7 +104,7 @@ obj/obj-stamp:
 obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
-clean: rpm-clean
+clean: rpm-clean libfuse_Makefile
 ifneq ($(GIT),)
 ifeq  ($(shell test -e .git; echo $$?),0)
 	$(RM) -f src/version.hpp
@@ -143,7 +114,10 @@ endif
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
 
-distclean: clean
+	cd libfuse && $(MAKE) clean
+
+distclean: clean libfuse_Makefile
+	cd libfuse && $(MAKE) distclean
 	$(GIT) clean -fd
 
 install: install-base install-mount.mergerfs install-man
@@ -213,6 +187,32 @@ rpm: tarball
 	$(RPMBUILD) -ba rpmbuild/SOURCES/$(TARGET).spec \
 		--define "_topdir $(CURDIR)/rpmbuild"
 
+install-build-pkgs:
+ifeq ($(shell test -e /usr/bin/apt-get; echo $$?),0)
+	apt-get -qy update
+	apt-get -qy --no-install-suggests --no-install-recommends --force-yes \
+		install build-essential git g++ debhelper libattr1-dev python automake libtool lsb-release
+else ifeq ($(shell test -e /usr/bin/dnf; echo $$?),0)
+	dnf -y update
+	dnf -y install git rpm-build libattr-devel gcc-c++ make which python automake libtool gettext-devel
+else ifeq ($(shell test -e /usr/bin/yum; echo $$?),0)
+	yum -y update
+	yum -y install git rpm-build libattr-devel gcc-c++ make which python automake libtool gettext-devel
+endif
+
+unexport CFLAGS LDFLAGS
+.PHONY: libfuse_Makefile
+libfuse_Makefile:
+ifeq ($(shell test -e libfuse/Makefile; echo $$?),1)
+	cd libfuse && \
+	$(MKDIR) -p m4 && \
+	autoreconf --force --install && \
+        ./configure --enable-lib --disable-util --disable-example
+endif
+
+libfuse/lib/.libs/libfuse.a: libfuse_Makefile
+	cd libfuse && $(MAKE)
+
 .PHONY: all clean install help
 
-include $(wildcard obj/*.d)
+-include $(DEPS)
