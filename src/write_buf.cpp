@@ -38,6 +38,14 @@ using std::vector;
 using namespace mergerfs;
 
 static
+bool
+_out_of_space(const int error)
+{
+  return ((error == ENOSPC) ||
+          (error == EDQUOT));
+}
+
+static
 int
 _write_buf(const int    fd,
            fuse_bufvec &src,
@@ -69,8 +77,8 @@ namespace mergerfs
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
       rv = _write_buf(fi->fd,*src,offset);
-      if(rv == -ENOSPC)
-       {
+      if(_out_of_space(-rv))
+        {
           const fuse_context *fc     = fuse_get_context();
           const Config       &config = Config::get(fc);
 

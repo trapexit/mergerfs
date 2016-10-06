@@ -52,9 +52,9 @@ kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
 .IP \[bu] 2
 \f[B]moveonenospc\f[]: when enabled (set to \f[B]true\f[]) if a
-\f[B]write\f[] fails with \f[B]ENOSPC\f[] a scan of all drives will be
-done looking for the drive with most free space which is at least the
-size of the file plus the amount which failed to write.
+\f[B]write\f[] fails with \f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of
+all drives will be done looking for the drive with most free space which
+is at least the size of the file plus the amount which failed to write.
 An attempt to move the file to that drive will occur (keeping all
 metadata possible) and if successful the original is unlinked and the
 write retried.
