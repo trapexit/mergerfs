@@ -1,5 +1,5 @@
 .\"t
-.TH "mergerfs" "1" "2016\-08\-01" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-10\-13" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another (FUSE based) union filesystem
@@ -666,9 +666,11 @@ A\ B\ C
 \f[]
 .fi
 .SH TOOLING
-.PP
-Find tooling to help with managing \f[B]mergerfs\f[] at:
+.IP \[bu] 2
 https://github.com/trapexit/mergerfs\-tools
+.IP \[bu] 2
+mergerfs.ctl: A tool to make it easier to query and configure mergerfs
+at runtime
 .IP \[bu] 2
 mergerfs.fsck: Provides permissions and ownership auditing and the
 ability to fix them
@@ -677,6 +679,10 @@ mergerfs.dedup: Will help identify and optionally remove duplicate files
 .IP \[bu] 2
 mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible
 directories on a mergerfs mount
+.IP \[bu] 2
+https://github.com/trapexit/scorch
+.IP \[bu] 2
+scorch: A tool to help discover silent corruption of files
 .SH TIPS / NOTES
 .IP \[bu] 2
 https://github.com/trapexit/backup\-and\-recovery\-howtos : A set of
@@ -1034,6 +1040,8 @@ BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
 http://github.com/trapexit/mergerfs
 .IP \[bu] 2
 http://github.com/trapexit/mergerfs\-tools
+.IP \[bu] 2
+http://github.com/trapexit/scorch
 .IP \[bu] 2
 http://github.com/trapexit/backup\-and\-recovery\-howtos
 .SH AUTHORS

@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-08-01
+% 2016-10-13
 
 # NAME
 
@@ -296,11 +296,13 @@ A B C
 
 # TOOLING
 
-Find tooling to help with managing **mergerfs** at: https://github.com/trapexit/mergerfs-tools
-
-* mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
-* mergerfs.dedup: Will help identify and optionally remove duplicate files
-* mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
+* https://github.com/trapexit/mergerfs-tools
+  * mergerfs.ctl: A tool to make it easier to query and configure mergerfs at runtime
+  * mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
+  * mergerfs.dedup: Will help identify and optionally remove duplicate files
+  * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
+* https://github.com/trapexit/scorch
+  * scorch: A tool to help discover silent corruption of files
 
 # TIPS / NOTES
 
@@ -447,4 +449,5 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 * http://github.com/trapexit/mergerfs
 * http://github.com/trapexit/mergerfs-tools
+* http://github.com/trapexit/scorch
 * http://github.com/trapexit/backup-and-recovery-howtos
