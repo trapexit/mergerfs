@@ -16,8 +16,6 @@
 
 #include <fuse.h>
 
-#include <sys/statvfs.h>
-
 #include <algorithm>
 #include <climits>
 #include <map>
@@ -26,6 +24,8 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_base_statvfs.hpp"
 #include "rwlock.hpp"
 #include "success_fail.hpp"
 #include "ugid.hpp"
@@ -75,11 +75,11 @@ _statfs_core(const char                *srcmount,
   struct stat st;
   struct statvfs fsstat;
 
-  rv = ::statvfs(srcmount,&fsstat);
+  rv = fs::statvfs(srcmount,fsstat);
   if(STATVFS_FAILED(rv))
     return;
 
-  rv = ::stat(srcmount,&st);
+  rv = fs::stat(srcmount,st);
   if(STAT_FAILED(rv))
     return;
 

@@ -21,6 +21,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_chown.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -44,7 +45,7 @@ _chown_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::lchown(fullpath.c_str(),uid,gid);
+  rv = fs::lchown(fullpath,uid,gid);
 
   return calc_error(rv,error,errno);
 }

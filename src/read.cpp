@@ -17,12 +17,12 @@
 #include <fuse.h>
 
 #include <string.h>
-#include <unistd.h>
 
 #include <string>
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_read.hpp"
 
 static
 int
@@ -33,7 +33,7 @@ _read(const int     fd,
 {
   int rv;
 
-  rv = ::pread(fd,buf,count,offset);
+  rv = fs::pread(fd,buf,count,offset);
 
   return ((rv == -1) ? -errno : rv);
 }

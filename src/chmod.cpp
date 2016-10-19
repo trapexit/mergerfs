@@ -21,6 +21,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_chmod.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -42,7 +43,7 @@ _chmod_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::chmod(fullpath.c_str(),mode);
+  rv = fs::chmod(fullpath,mode);
 
   return calc_error(rv,error,errno);
 }

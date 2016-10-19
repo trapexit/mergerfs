@@ -23,10 +23,9 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_fsync.hpp"
 
 static
 int
@@ -36,8 +35,8 @@ _fsync(const int fd,
   int rv;
 
   rv = (isdatasync ?
-        ::fdatasync(fd) :
-        ::fsync(fd));
+        fs::fdatasync(fd) :
+        fs::fsync(fd));
 
   return ((rv == -1) ? -errno : 0);
 }

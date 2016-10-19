@@ -17,13 +17,13 @@
 #include <fuse.h>
 
 #include <fcntl.h>
-#include <sys/stat.h>
 
 #include <string>
 #include <vector>
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_utimensat.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -45,7 +45,7 @@ _utimens_loop_core(const string   *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::utimensat(0,fullpath.c_str(),ts,AT_SYMLINK_NOFOLLOW);
+  rv = fs::utimensat(AT_FDCWD,fullpath,ts,AT_SYMLINK_NOFOLLOW);
 
   return calc_error(rv,error,errno);
 }

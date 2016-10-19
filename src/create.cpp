@@ -16,16 +16,13 @@
 
 #include <fuse.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include <string>
 #include <vector>
 
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_open.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
@@ -57,7 +54,7 @@ _create_core(const string &existingpath,
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  fd = ::open(fullpath.c_str(),flags,mode);
+  fd = fs::open(fullpath,flags,mode);
   if(fd == -1)
     return -errno;
 

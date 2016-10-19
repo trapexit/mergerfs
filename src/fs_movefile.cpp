@@ -23,6 +23,10 @@
 #include <vector>
 
 #include "fs.hpp"
+#include "fs_base_open.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_unlink.hpp"
+#include "fs_base_stat.hpp"
 #include "fs_clonefile.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
@@ -49,7 +53,7 @@ namespace fs
 
     fdin = origfd;
 
-    rv = fstat(fdin,&fdin_st);
+    rv = fs::fstat(fdin,fdin_st);
     if(rv == -1)
       return -1;
 
@@ -73,35 +77,35 @@ namespace fs
       return -1;
 
     fs::path::append(fdin_path,fusepath);
-    fdin = ::open(fdin_path.c_str(),O_RDONLY);
+    fdin = fs::open(fdin_path,O_RDONLY);
     if(fdin == -1)
       return -1;
 
     fs::path::append(fdout_path,fusepath);
-    fdout = ::open(fdout_path.c_str(),fdin_flags|O_CREAT,fdin_st.st_mode);
+    fdout = fs::open(fdout_path,fdin_flags|O_CREAT,fdin_st.st_mode);
     if(fdout == -1)
       return -1;
 
     rv = fs::clonefile(fdin,fdout);
     if(rv == -1)
       {
-        ::close(fdin);
-        ::close(fdout);
-        ::unlink(fdout_path.c_str());
+        fs::close(fdin);
+        fs::close(fdout);
+        fs::unlink(fdout_path.c_str());
         return -1;
       }
 
-    rv = ::unlink(fdin_path.c_str());
+    rv = fs::unlink(fdin_path);
     if(rv == -1)
       {
-        ::close(fdin);
-        ::close(fdout);
-        ::unlink(fdout_path.c_str());
+        fs::close(fdin);
+        fs::close(fdout);
+        fs::unlink(fdout_path);
         return -1;
       }
 
-    ::close(fdin);
-    ::close(origfd);
+    fs::close(fdin);
+    fs::close(origfd);
 
     origfd = fdout;
 

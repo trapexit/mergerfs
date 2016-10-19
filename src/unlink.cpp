@@ -23,6 +23,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_unlink.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -43,7 +44,7 @@ _unlink_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::unlink(fullpath.c_str());
+  rv = fs::unlink(fullpath);
 
   return calc_error(rv,error,errno);
 }

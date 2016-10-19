@@ -16,11 +16,9 @@
 
 #include <fuse.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_ftruncate.hpp"
 
 static
 int
@@ -29,7 +27,7 @@ _ftruncate(const int   fd,
 {
   int rv;
 
-  rv = ::ftruncate(fd,size);
+  rv = fs::ftruncate(fd,size);
 
   return ((rv == -1) ? -errno : 0);
 }

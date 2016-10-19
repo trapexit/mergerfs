@@ -16,10 +16,10 @@
 
 #include <fuse.h>
 
-#include <unistd.h>
-
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_dup.hpp"
 
 static
 int
@@ -27,11 +27,11 @@ _flush(const int fd)
 {
   int rv;
 
-  rv = ::dup(fd);
+  rv = fs::dup(fd);
   if(rv == -1)
     errno = EIO;
   else
-    rv = ::close(rv);
+    rv = fs::close(rv);
 
   return ((rv == -1) ? -errno : 0);
 }

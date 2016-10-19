@@ -19,21 +19,18 @@
 #include <string>
 #include <vector>
 
-#include <sys/types.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_removexattr.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
-#include "xattr.hpp"
 
 using std::string;
 using std::vector;
 using mergerfs::Policy;
 
-#ifndef WITHOUT_XATTR
 static
 int
 _removexattr_loop_core(const string *basepath,
@@ -46,7 +43,7 @@ _removexattr_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::lremovexattr(fullpath.c_str(),attrname);
+  rv = fs::lremovexattr(fullpath,attrname);
 
   return calc_error(rv,error,errno);
 }
@@ -86,7 +83,6 @@ _removexattr(Policy::Func::Action  actionFunc,
 
   return _removexattr_loop(basepaths,fusepath,attrname);
 }
-#endif
 
 namespace mergerfs
 {
@@ -96,7 +92,6 @@ namespace mergerfs
     removexattr(const char *fusepath,
                 const char *attrname)
     {
-#ifndef WITHOUT_XATTR
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
@@ -111,9 +106,6 @@ namespace mergerfs
                           config.minfreespace,
                           fusepath,
                           attrname);
-#else
-      return -ENOTSUP;
-#endif
     }
   }
 }

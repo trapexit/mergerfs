@@ -21,17 +21,16 @@
 #include <sstream>
 
 #include <string.h>
-#include <sys/types.h>
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_setxattr.hpp"
 #include "fs_path.hpp"
 #include "num.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
-#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -287,8 +286,6 @@ _setxattr_controlfile(Config       &config,
   return -EINVAL;
 }
 
-#ifndef WITHOUT_XATTR
-
 static
 int
 _setxattr_loop_core(const string *basepath,
@@ -304,7 +301,7 @@ _setxattr_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::lsetxattr(fullpath.c_str(),attrname,attrval,attrvalsize,flags);
+  rv = fs::lsetxattr(fullpath,attrname,attrval,attrvalsize,flags);
 
   return calc_error(rv,error,errno);
 }
@@ -352,8 +349,6 @@ _setxattr(Policy::Func::Action  actionFunc,
   return _setxattr_loop(basepaths,fusepath,attrname,attrval,attrvalsize,flags);
 }
 
-#endif
-
 namespace mergerfs
 {
   namespace fuse
@@ -374,7 +369,6 @@ namespace mergerfs
                                      string(attrval,attrvalsize),
                                      flags);
 
-#ifndef WITHOUT_XATTR
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);
 
@@ -386,9 +380,6 @@ namespace mergerfs
                        attrval,
                        attrvalsize,
                        flags);
-#else
-      return -ENOTSUP;
-#endif
     }
   }
 }

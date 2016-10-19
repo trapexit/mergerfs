@@ -14,9 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdio.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <set>
 #include <string>
@@ -24,6 +21,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_rename.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -88,7 +86,7 @@ _rename_create_path_core(const vector<const string*> &oldbasepaths,
 
       fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
 
-      rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
+      rv = fs::rename(oldfullpath,newfullpath);
       error = calc_error(rv,error,errno);
       if(RENAME_FAILED(rv))
         tounlink.push_back(oldfullpath);
@@ -217,14 +215,14 @@ _rename_preserve_path_core(Policy::Func::Search         searchFunc,
 
       fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
 
-      rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
+      rv = fs::rename(oldfullpath,newfullpath);
       if(RENAME_FAILED_WITH(rv,ENOENT))
         {
           rv = _clonepath_if_would_create(searchFunc,createFunc,
                                           srcmounts,minfreespace,
                                           oldbasepath,oldfusepath,newfusepath);
           if(POLICY_SUCCEEDED(rv))
-            rv = ::rename(oldfullpath.c_str(),newfullpath.c_str());
+            rv = fs::rename(oldfullpath,newfullpath);
         }
 
       error = calc_error(rv,error,errno);

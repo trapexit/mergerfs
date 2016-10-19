@@ -16,18 +16,17 @@
 
 #include <fuse.h>
 
-#include <unistd.h>
-
 #include <string>
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_close.hpp"
 
 static
 int
 _release(FileInfo *fi)
 {
-  ::close(fi->fd);
+  fs::close(fi->fd);
 
   delete fi;
 

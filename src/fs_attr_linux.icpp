@@ -16,14 +16,13 @@
 
 #include <fcntl.h>
 #include <linux/fs.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include <string>
 
 #include "errno.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_open.hpp"
+#include "fs_base_ioctl.hpp"
 
 using std::string;
 
@@ -36,7 +35,7 @@ namespace fs
     get_fs_ioc_flags(const int  fd,
                      int       &flags)
     {
-      return ::ioctl(fd,FS_IOC_GETFLAGS,&flags);
+      return fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
     }
 
     static
@@ -48,7 +47,7 @@ namespace fs
       int rv;
       const int openflags = O_RDONLY|O_NONBLOCK;
 
-      fd = ::open(file.c_str(),openflags);
+      fd = fs::open(file,openflags);
       if(fd == -1)
         return -1;
 
@@ -56,12 +55,12 @@ namespace fs
       if(rv == -1)
         {
           int error = errno;
-          ::close(fd);
+          fs::close(fd);
           errno = error;
           return -1;
         }
 
-      return ::close(fd);
+      return fs::close(fd);
     }
 
     static
@@ -69,7 +68,7 @@ namespace fs
     set_fs_ioc_flags(const int fd,
                      const int flags)
     {
-      return ::ioctl(fd,FS_IOC_SETFLAGS,&flags);
+      return fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
     }
 
     static
@@ -81,7 +80,7 @@ namespace fs
       int rv;
       const int openflags = O_RDONLY|O_NONBLOCK;
 
-      fd = ::open(file.c_str(),openflags);
+      fd = fs::open(file,openflags);
       if(fd == -1)
         return -1;
 
@@ -89,12 +88,12 @@ namespace fs
       if(rv == -1)
         {
           int error = errno;
-          ::close(fd);
+          fs::close(fd);
           errno = error;
           return -1;
         }
 
-      return ::close(fd);
+      return fs::close(fd);
     }
 
     int

@@ -17,11 +17,9 @@
 #include <string>
 #include <vector>
 
-#include <fcntl.h>
-#include <unistd.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_access.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -49,7 +47,7 @@ _access(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = ::faccessat(AT_FDCWD,fullpath.c_str(),mask,AT_EACCESS);
+  rv = fs::access(fullpath,mask,AT_EACCESS);
 
   return ((rv == -1) ? -errno : 0);
 }

@@ -18,18 +18,15 @@
 #include <vector>
 
 #include <fcntl.h>
-#include <fcntl.h>
 #include <glob.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/statvfs.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "errno.hpp"
 #include "fs_attr.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_base_statvfs.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
 #include "statvfs_util.hpp"
@@ -47,7 +44,7 @@ namespace fs
   {
     int rv;
 
-    rv = ::lstat(path.c_str(),&st);
+    rv = fs::lstat(path,st);
 
     return LSTAT_SUCCEEDED(rv);
   }
@@ -61,73 +58,62 @@ namespace fs
   }
 
   bool
-  statvfs(const string   &path,
-          struct statvfs &st)
-  {
-    int rv;
-
-    rv = ::statvfs(path.c_str(),&st);
-
-    return STATVFS_SUCCEEDED(rv);
-  }
-
-  bool
   info(const string &path,
        bool         &readonly,
        uint64_t     &spaceavail,
        uint64_t     &spaceused)
   {
-    bool rv;
+    int rv;
     struct statvfs st;
 
     rv = fs::statvfs(path,st);
-    if(rv)
+    if(STATVFS_SUCCEEDED(rv))
       {
         readonly   = StatVFS::readonly(st);
         spaceavail = StatVFS::spaceavail(st);
         spaceused  = StatVFS::spaceused(st);
       }
 
-    return rv;
+    return STATVFS_SUCCEEDED(rv);
   }
 
   bool
   readonly(const string &path)
   {
-    bool rv;
+    int rv;
     struct statvfs st;
 
     rv = fs::statvfs(path,st);
 
-    return (rv && StatVFS::readonly(st));
+    return (STATVFS_SUCCEEDED(rv) && StatVFS::readonly(st));
   }
 
   bool
   spaceavail(const string &path,
              uint64_t       &spaceavail)
   {
-    bool rv;
+    int rv;
     struct statvfs st;
 
     rv = fs::statvfs(path,st);
-    if(rv)
+    if(STATVFS_SUCCEEDED(rv))
       spaceavail = StatVFS::spaceavail(st);
 
-    return rv;
+    return STATVFS_SUCCEEDED(rv);
   }
 
   bool
   spaceused(const string &path,
             uint64_t     &spaceused)
   {
-    bool rv;
+    int rv;
     struct statvfs st;
 
     rv = fs::statvfs(path,st);
-    if(rv)
+    if(STATVFS_SUCCEEDED(rv))
       spaceused = StatVFS::spaceused(st);
 
-    return rv;
+    return STATVFS_SUCCEEDED(rv);
   }
 
   void
@@ -159,7 +145,7 @@ namespace fs
     string fullpath;
     struct stat st;
 
-    rv = ::fstat(fd,&st);
+    rv = fs::fstat(fd,st);
     if(FSTAT_FAILED(rv))
       return -1;
 

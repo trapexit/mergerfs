@@ -31,9 +31,6 @@ namespace fs
               struct stat  &st);
   bool exists(const string &path);
 
-  bool statvfs(const string   &path,
-               struct statvfs &st);
-
   bool info(const string &path,
             bool         &readonly,
             uint64_t     &spaceavail,

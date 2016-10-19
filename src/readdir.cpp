@@ -22,10 +22,11 @@
 #include <set>
 #include <vector>
 
-#include <dirent.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_closedir.hpp"
+#include "fs_base_opendir.hpp"
+#include "fs_base_readdir.hpp"
 #include "fs_path.hpp"
 #include "readdir.hpp"
 #include "rwlock.hpp"
@@ -55,11 +56,11 @@ _readdir(const vector<string>  &srcmounts,
 
       fs::path::make(&srcmounts[i],dirname,basepath);
 
-      dh = ::opendir(basepath.c_str());
+      dh = fs::opendir(basepath);
       if(!dh)
         continue;
 
-      for(struct dirent *de = ::readdir(dh); de != NULL; de = ::readdir(dh))
+      for(struct dirent *de = fs::readdir(dh); de != NULL; de = fs::readdir(dh))
         {
           if(found.insert(de->d_name).second == false)
             continue;
@@ -69,7 +70,7 @@ _readdir(const vector<string>  &srcmounts,
             return -ENOMEM;
         }
 
-      ::closedir(dh);
+      fs::closedir(dh);
     }
 
   if(found.empty())

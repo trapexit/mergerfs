@@ -16,13 +16,9 @@
 
 #include <fuse.h>
 
-#include <string.h>
-#include <string>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_readlink.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -43,7 +39,7 @@ _readlink_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::readlink(fullpath.c_str(),buf,size);
+  rv = fs::readlink(fullpath,buf,size);
   if(rv == -1)
     return -errno;
 
