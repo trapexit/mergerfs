@@ -400,15 +400,17 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 
 #### Why use mergerfs over mhddfs?
 
-mhddfs is no longer maintained and has some known stability and security issues (see below).
+mhddfs is no longer maintained and has some known stability and security issues (see below). MergerFS provides a superset of mhddfs' features and should offer the same or maybe better performance.
 
 #### Why use mergerfs over aufs?
 
-While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs however doesn't offer the overlay features which tends to result in whiteout files being left around the underlying filesystems.
+While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs however doesn't offer the same overlay features (which tends to result in whiteout files being left around the underlying filesystems.)
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-A single drive failure will lead to full pool failure without additional redundancy. mergerfs performs a similar behavior without the catastrophic failure and lack of recovery. Drives can fail and all other data will continue to be accessable.
+With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will lead to full pool failure. mergerfs performs a similar behavior without the catastrophic failure and general lack of recovery. Drives can fail and all other data will continue to be accessable.
+
+When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite full backup solution you can have the flexibilty of JBOD without the single point of failure.
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
