@@ -19,13 +19,13 @@
 #include <string>
 #include <vector>
 
-#include <sys/types.h>
 #include <string.h>
 
 #include "buildvector.hpp"
 #include "category.hpp"
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_listxattr.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -69,7 +69,6 @@ _listxattr_controlfile(char         *list,
   return xattrs.size();
 }
 
-#ifndef WITHOUT_XATTR
 static
 int
 _listxattr(Policy::Func::Search  searchFunc,
@@ -89,11 +88,10 @@ _listxattr(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = ::llistxattr(fullpath.c_str(),list,size);
+  rv = fs::llistxattr(fullpath,list,size);
 
   return ((rv == -1) ? -errno : rv);
 }
-#endif
 
 namespace mergerfs
 {
@@ -110,7 +108,6 @@ namespace mergerfs
       if(fusepath == config.controlfile)
         return _listxattr_controlfile(list,size);
 
-#ifndef WITHOUT_XATTR
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);
 
@@ -120,9 +117,6 @@ namespace mergerfs
                         fusepath,
                         list,
                         size);
-#else
-      return -ENOTSUP;
-#endif
     }
   }
 }

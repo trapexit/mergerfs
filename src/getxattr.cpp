@@ -23,17 +23,15 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_getxattr.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 #include "version.hpp"
-#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -47,15 +45,11 @@ _lgetxattr(const string &path,
            void         *value,
            const size_t  size)
 {
-#ifndef WITHOUT_XATTR
   int rv;
 
-  rv = ::lgetxattr(path.c_str(),attrname,value,size);
+  rv = fs::lgetxattr(path,attrname,value,size);
 
   return ((rv == -1) ? -errno : rv);
-#else
-  return -ENOTSUP;
-#endif
 }
 
 static

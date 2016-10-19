@@ -49,7 +49,6 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-
       return _fallocate(fi->fd,
                         mode,
                         offset,

@@ -19,10 +19,9 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_link.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -56,7 +55,7 @@ _link_create_path_core(const string &oldbasepath,
   fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
   fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
-  rv = ::link(oldfullpath.c_str(),newfullpath.c_str());
+  rv = fs::link(oldfullpath,newfullpath);
 
   return calc_error(rv,error,errno);
 }
@@ -171,7 +170,7 @@ _link_preserve_path_core(Policy::Func::Search  searchFunc,
   fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
   fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
-  rv = ::link(oldfullpath.c_str(),newfullpath.c_str());
+  rv = fs::link(oldfullpath,newfullpath);
   if((rv == -1) && (errno == ENOENT))
     {
       rv = _clonepath_if_would_create(searchFunc,createFunc,
@@ -179,7 +178,7 @@ _link_preserve_path_core(Policy::Func::Search  searchFunc,
                                       oldbasepath,
                                       oldfusepath,newfusepath);
       if(rv != -1)
-        rv = ::link(oldfullpath.c_str(),newfullpath.c_str());
+        rv = fs::link(oldfullpath,newfullpath);
     }
 
   return calc_error(rv,error,errno);

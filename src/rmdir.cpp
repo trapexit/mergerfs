@@ -22,6 +22,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_rmdir.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -42,7 +43,7 @@ _rmdir_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = ::rmdir(fullpath.c_str());
+  rv = fs::rmdir(fullpath);
 
   return calc_error(rv,error,errno);
 }

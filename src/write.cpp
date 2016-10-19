@@ -16,11 +16,10 @@
 
 #include <fuse.h>
 
-#include <unistd.h>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_write.hpp"
 #include "fs_movefile.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -42,7 +41,7 @@ _write(const int     fd,
 {
   int rv;
 
-  rv = ::pwrite(fd,buf,count,offset);
+  rv = fs::pwrite(fd,buf,count,offset);
 
   return ((rv == -1) ? -errno : rv);
 }

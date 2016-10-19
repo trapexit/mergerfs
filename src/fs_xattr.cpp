@@ -26,6 +26,8 @@
 #include <sstream>
 
 #include "errno.hpp"
+#include "fs_base_open.hpp"
+#include "fs_base_close.hpp"
 #include "str.hpp"
 #include "xattr.hpp"
 
@@ -349,13 +351,13 @@ namespace fs
     {
       int fd;
 
-      fd = ::open(path.c_str(),O_RDONLY|O_NONBLOCK);
+      fd = fs::open(path,O_RDONLY|O_NONBLOCK);
       if(fd == -1)
         return -1;
 
       set(fd,attrs);
 
-      return ::close(fd);
+      return fs::close(fd);
     }
 
     int

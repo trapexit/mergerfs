@@ -16,12 +16,9 @@
 
 #include <fuse.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_stat.hpp"
 
 static
 int
@@ -30,7 +27,7 @@ _fgetattr(const int    fd,
 {
   int rv;
 
-  rv = ::fstat(fd,&st);
+  rv = fs::fstat(fd,st);
 
   return ((rv == -1) ? -errno : 0);
 }

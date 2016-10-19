@@ -17,8 +17,6 @@
 #include <fuse.h>
 
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include <string>
 #include <vector>
@@ -26,6 +24,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_open.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -46,7 +45,7 @@ _open_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  fd = ::open(fullpath.c_str(),flags);
+  fd = fs::open(fullpath,flags);
   if(fd == -1)
     return -errno;
 

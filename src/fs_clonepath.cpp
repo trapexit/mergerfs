@@ -14,14 +14,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include <string>
 
 #include "errno.h"
 #include "fs_attr.hpp"
+#include "fs_base_chmod.hpp"
+#include "fs_base_chown.hpp"
+#include "fs_base_mkdir.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_base_utimensat.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
 
@@ -61,26 +62,26 @@ namespace fs
     fs::path::dirname(dirname);
     if(!dirname.empty())
       {
-        rv = clonepath(fromsrc,tosrc,dirname.c_str());
+        rv = fs::clonepath(fromsrc,tosrc,dirname.c_str());
         if(rv == -1)
           return -1;
       }
 
     fs::path::make(&fromsrc,relative,frompath);
-    rv = ::stat(frompath.c_str(),&st);
+    rv = fs::stat(frompath,st);
     if(rv == -1)
       return -1;
     else if(!S_ISDIR(st.st_mode))
       return (errno = ENOTDIR,-1);
 
     fs::path::make(&tosrc,relative,topath);
-    rv = ::mkdir(topath.c_str(),st.st_mode);
+    rv = fs::mkdir(topath,st.st_mode);
     if(rv == -1)
       {
         if(errno != EEXIST)
           return -1;
 
-        rv = ::chmod(topath.c_str(),st.st_mode);
+        rv = fs::chmod(topath,st.st_mode);
         if(rv == -1)
           return -1;
       }
@@ -94,14 +95,11 @@ namespace fs
     if(rv == -1 && !ignorable_error(errno))
       return -1;
 
-    rv = ::chown(topath.c_str(),st.st_uid,st.st_gid);
+    rv = fs::chown(topath,st);
     if(rv == -1)
       return -1;
 
-    struct timespec times[2];
-    times[0] = st.st_atim;
-    times[1] = st.st_mtim;
-    rv = ::utimensat(-1,topath.c_str(),times,0);
+    rv = fs::utimensat(topath,st);
     if(rv == -1)
       return -1;
 

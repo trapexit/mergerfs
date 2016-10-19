@@ -19,12 +19,9 @@
 #include <string>
 #include <vector>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_stat.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -76,7 +73,7 @@ _getattr(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = ::lstat(fullpath.c_str(),&buf);
+  rv = fs::lstat(fullpath,buf);
 
   return ((rv == -1) ? -errno : 0);
 }

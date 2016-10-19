@@ -14,9 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <sys/statvfs.h>
-
 #include <string>
+
+#include <sys/statvfs.h>
 
 #include "success_fail.hpp"
 
@@ -28,21 +28,6 @@ namespace StatVFS
   readonly(const struct statvfs &st)
   {
     return (st.f_flag & ST_RDONLY);
-  }
-
-  static
-  inline
-  bool
-  readonly(const std::string &path)
-  {
-    int rv;
-    struct statvfs st;
-
-    rv = ::statvfs(path.c_str(),&st);
-    if(STATVFS_FAILED(rv))
-      return false;
-
-    return readonly(st);
   }
 
   static

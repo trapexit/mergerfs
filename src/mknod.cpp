@@ -19,13 +19,9 @@
 #include <string>
 #include <vector>
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_mknod.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -57,7 +53,7 @@ _mknod_loop_core(const string &existingpath,
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = ::mknod(fullpath.c_str(),mode,dev);
+  rv = fs::mknod(fullpath,mode,dev);
 
   return calc_error(rv,error,errno);
 }

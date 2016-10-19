@@ -1,0 +1,49 @@
+/*
+  ISC License
+
+  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include <sys/stat.h>
+
+namespace fs
+{
+  static
+  inline
+  int
+  chmod(const std::string &path,
+        const mode_t       mode)
+  {
+    return ::chmod(path.c_str(),mode);
+  }
+
+  static
+  inline
+  int
+  fchmod(const int    fd,
+         const mode_t mode)
+  {
+    return ::fchmod(fd,mode);
+  }
+
+  static
+  inline
+  int
+  fchmod(const int          fd,
+         const struct stat &st)
+  {
+    return ::fchmod(fd,st.st_mode);
+  }
+}

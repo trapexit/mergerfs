@@ -16,14 +16,12 @@
 
 #include <fuse.h>
 
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include <string>
 #include <vector>
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_mkdir.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -55,7 +53,7 @@ _mkdir_loop_core(const string &existingpath,
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = ::mkdir(fullpath.c_str(),mode);
+  rv = fs::mkdir(fullpath,mode);
 
   return calc_error(rv,error,errno);
 }

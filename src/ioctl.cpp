@@ -20,13 +20,13 @@
 #include <vector>
 
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_ioctl.hpp"
+#include "fs_base_open.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -43,7 +43,7 @@ _ioctl(const int  fd,
 {
   int rv;
 
-  rv = ::ioctl(fd,cmd,data);
+  rv = fs::ioctl(fd,cmd,data);
 
   return ((rv == -1) ? -errno : rv);
 }
@@ -75,13 +75,13 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
   fs::path::make(basepaths[0],fusepath,fullpath);
 
   const int flags = O_RDONLY | O_NOATIME | O_NONBLOCK;
-  fd = ::open(fullpath.c_str(),flags);
+  fd = fs::open(fullpath,flags);
   if(fd == -1)
     return -errno;
 
   rv = _ioctl(fd,cmd,data);
 
-  ::close(fd);
+  fs::close(fd);
 
   return rv;
 }

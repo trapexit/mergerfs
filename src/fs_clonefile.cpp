@@ -25,6 +25,11 @@
 
 #include "errno.hpp"
 #include "fs_attr.hpp"
+#include "fs_base_chown.hpp"
+#include "fs_base_chmod.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_mkdir.hpp"
+#include "fs_base_open.hpp"
 #include "fs_fadvise.hpp"
 #include "fs_fallocate.hpp"
 #include "fs_sendfile.hpp"
@@ -162,11 +167,11 @@ namespace fs
     if(rv == -1 && !ignorable_error(errno))
       return -1;
 
-    rv = ::fchown(fdout,stin.st_uid,stin.st_gid);
+    rv = fs::fchown(fdout,stin);
     if(rv == -1)
       return -1;
 
-    rv = ::fchmod(fdout,stin.st_mode);
+    rv = fs::fchmod(fdout,stin);
     if(rv == -1)
       return -1;
 
@@ -186,21 +191,21 @@ namespace fs
     int fdout;
     int error;
 
-    fdin = ::open(in.c_str(),O_RDONLY|O_NOFOLLOW);
+    fdin = fs::open(in,O_RDONLY|O_NOFOLLOW);
     if(fdin == -1)
       return -1;
 
-    const int flags = O_CREAT|O_LARGEFILE|O_NOATIME|O_NOFOLLOW|O_TRUNC|O_WRONLY;
-    const int mode  = S_IWUSR;
-    fdout = ::open(out.c_str(),flags,mode);
+    const int    flags = O_CREAT|O_LARGEFILE|O_NOATIME|O_NOFOLLOW|O_TRUNC|O_WRONLY;
+    const mode_t mode  = S_IWUSR;
+    fdout = fs::open(out,flags,mode);
     if(fdout == -1)
       return -1;
 
     rv = fs::clonefile(fdin,fdout);
     error = errno;
 
-    ::close(fdin);
-    ::close(fdout);
+    fs::close(fdin);
+    fs::close(fdout);
 
     errno = error;
     return rv;
