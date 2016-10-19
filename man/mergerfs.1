@@ -919,20 +919,27 @@ turn them on.
 .PP
 mhddfs is no longer maintained and has some known stability and security
 issues (see below).
+MergerFS provides a superset of mhddfs\[aq] features and should offer
+the same or maybe better performance.
 .SS Why use mergerfs over aufs?
 .PP
 While aufs can offer better peak performance mergerfs offers more
 configurability and is generally easier to use.
-mergerfs however doesn\[aq]t offer the overlay features which tends to
-result in whiteout files being left around the underlying filesystems.
+mergerfs however doesn\[aq]t offer the same overlay features (which
+tends to result in whiteout files being left around the underlying
+filesystems.)
 .SS Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation /
 striping?
 .PP
-A single drive failure will lead to full pool failure without additional
-redundancy.
+With simple JBOD / drive concatenation / stripping / RAID0 a single
+drive failure will lead to full pool failure.
 mergerfs performs a similar behavior without the catastrophic failure
-and lack of recovery.
+and general lack of recovery.
 Drives can fail and all other data will continue to be accessable.
+.PP
+When combined with something like SnapRaid (http://www.snapraid.it)
+and/or an offsite full backup solution you can have the flexibilty of
+JBOD without the single point of failure.
 .SS Can drives be written to directly? Outside of mergerfs while pooled?
 .PP
 Yes.
