@@ -34,6 +34,7 @@
 #include "destroy.hpp"
 #include "fallocate.hpp"
 #include "fgetattr.hpp"
+#include "flock.hpp"
 #include "flush.hpp"
 #include "fsync.hpp"
 #include "ftruncate.hpp"
@@ -95,7 +96,7 @@ namespace local
 #endif
     ops.fgetattr    = mergerfs::fuse::fgetattr;
 #if FLOCK
-    ops.flock       = NULL;
+    ops.flock       = mergerfs::fuse::flock;
 #endif
     ops.flush       = mergerfs::fuse::flush;
     ops.fsync       = mergerfs::fuse::fsync;
