@@ -23,6 +23,16 @@ namespace fs
   static
   inline
   ssize_t
+  read(const int     fd,
+       void         *buf,
+       const size_t  count)
+  {
+    return ::read(fd,buf,count);
+  }
+
+  static
+  inline
+  ssize_t
   pread(const int     fd,
         void         *buf,
         const size_t  count,

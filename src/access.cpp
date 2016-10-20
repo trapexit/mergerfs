@@ -47,7 +47,7 @@ _access(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = fs::access(fullpath,mask,AT_EACCESS);
+  rv = fs::eaccess(fullpath,mask);
 
   return ((rv == -1) ? -errno : 0);
 }

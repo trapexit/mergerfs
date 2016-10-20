@@ -25,6 +25,7 @@
 
 #include "errno.hpp"
 #include "fs_attr.hpp"
+#include "fs_base_realpath.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_base_statvfs.hpp"
 #include "fs_path.hpp"
@@ -154,7 +155,7 @@ namespace fs
       {
         fs::path::make(&srcmounts[i],fusepath,fullpath);
 
-        rv = ::lstat(fullpath.c_str(),&st);
+        rv = fs::lstat(fullpath,st);
         if(FSTAT_FAILED(rv))
           continue;
 
@@ -201,7 +202,7 @@ namespace fs
 
     for(size_t i = 0; i < strs.size(); i++)
       {
-        rv = ::realpath(strs[i].c_str(),NULL);
+        rv = fs::realpath(strs[i]);
         if(rv == NULL)
           continue;
 

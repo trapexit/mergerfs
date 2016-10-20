@@ -18,38 +18,25 @@
 
 #include <string>
 
-#include <fcntl.h>
-#include <unistd.h>
+#include <limits.h>
+#include <stdlib.h>
 
 namespace fs
 {
   static
   inline
-  int
-  access(const int          dirfd,
-         const std::string &path,
-         const int          mode,
-         const int          flags)
+  char *
+  realpath(const std::string &path,
+           char              *resolved_path)
   {
-    return ::faccessat(dirfd,path.c_str(),mode,flags);
+    return ::realpath(path.c_str(),resolved_path);
   }
 
   static
   inline
-  int
-  access(const std::string &path,
-         const int          mode,
-         const int          flags)
+  char *
+  realpath(const std::string &path)
   {
-    return fs::access(AT_FDCWD,path,mode,flags);
-  }
-
-  static
-  inline
-  int
-  eaccess(const std::string &path,
-          const int          mode)
-  {
-    return fs::access(path,mode,AT_EACCESS);
+    return fs::realpath(path,NULL);
   }
 }
