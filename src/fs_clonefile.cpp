@@ -16,20 +16,21 @@
 
 #include <fcntl.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include <string>
 #include <vector>
 
 #include "errno.hpp"
 #include "fs_attr.hpp"
-#include "fs_base_chown.hpp"
 #include "fs_base_chmod.hpp"
+#include "fs_base_chown.hpp"
 #include "fs_base_close.hpp"
+#include "fs_base_lseek.hpp"
 #include "fs_base_mkdir.hpp"
 #include "fs_base_open.hpp"
+#include "fs_base_read.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_base_write.hpp"
 #include "fs_fadvise.hpp"
 #include "fs_fallocate.hpp"
 #include "fs_sendfile.hpp"
@@ -52,7 +53,7 @@ namespace fs
     nleft = count;
     while(nleft > 0)
       {
-        nwritten = ::write(fd,buf,nleft);
+        nwritten = fs::write(fd,buf,nleft);
         if(nwritten == -1)
           {
             if(errno == EINTR)
@@ -83,12 +84,12 @@ namespace fs
     bufsize = (blocksize * 16);
     buf.resize(bufsize);
 
-    ::lseek(fdin,0,SEEK_SET);
+    fs::lseek(fdin,0,SEEK_SET);
 
     totalwritten = 0;
     while(totalwritten < count)
       {
-        nr = ::read(fdin,&buf[0],bufsize);
+        nr = fs::read(fdin,&buf[0],bufsize);
         if(nr == -1)
           {
             if(errno == EINTR)
@@ -151,7 +152,7 @@ namespace fs
     int rv;
     struct stat stin;
 
-    rv = ::fstat(fdin,&stin);
+    rv = fs::fstat(fdin,stin);
     if(rv == -1)
       return -1;
 

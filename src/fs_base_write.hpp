@@ -23,6 +23,16 @@ namespace fs
   static
   inline
   ssize_t
+  write(const int     fd,
+        const void   *buf,
+        const size_t  count)
+  {
+    return ::write(fd,buf,count);
+  }
+
+  static
+  inline
+  ssize_t
   pwrite(const int     fd,
          const void   *buf,
          const size_t  count,

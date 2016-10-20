@@ -16,40 +16,18 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-
-#include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 namespace fs
 {
   static
   inline
-  int
-  access(const int          dirfd,
-         const std::string &path,
-         const int          mode,
-         const int          flags)
+  off_t
+  lseek(const int   fd,
+        const off_t offset,
+        const int   whence)
   {
-    return ::faccessat(dirfd,path.c_str(),mode,flags);
-  }
-
-  static
-  inline
-  int
-  access(const std::string &path,
-         const int          mode,
-         const int          flags)
-  {
-    return fs::access(AT_FDCWD,path,mode,flags);
-  }
-
-  static
-  inline
-  int
-  eaccess(const std::string &path,
-          const int          mode)
-  {
-    return fs::access(path,mode,AT_EACCESS);
+    return ::lseek(fd,offset,whence);
   }
 }
