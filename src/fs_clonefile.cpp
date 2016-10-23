@@ -196,7 +196,7 @@ namespace fs
     if(fdin == -1)
       return -1;
 
-    const int    flags = O_CREAT|O_LARGEFILE|O_NOATIME|O_NOFOLLOW|O_TRUNC|O_WRONLY;
+    const int    flags = O_CREAT|O_NOFOLLOW|O_TRUNC|O_WRONLY;
     const mode_t mode  = S_IWUSR;
     fdout = fs::open(out,flags,mode);
     if(fdout == -1)
