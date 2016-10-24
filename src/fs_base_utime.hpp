@@ -14,20 +14,50 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
-#include <sys/stat.h>
+#ifdef __linux__
+# include "fs_base_utime_utimensat.hpp"
+#elif __FreeBSD__ >= 11
+# include "fs_base_utime_utimensat.hpp"
+#else
+# include "fs_base_utime_generic.hpp"
+#endif
 
 namespace fs
 {
+  static
+  inline
   int
-  utimes(const int          fd,
-         const struct stat &st)
+  utime(const std::string &path,
+        const struct stat &st)
   {
     struct timespec times[2];
 
     times[0] = st.st_atim;
     times[1] = st.st_mtim;
 
-    return ::futimens(fd,times);
+    return fs::utime(AT_FDCWD,path,times,0);
+  }
+
+  static
+  inline
+  int
+  utime(const int          fd,
+        const struct stat &st)
+  {
+    struct timespec times[2];
+
+    times[0] = st.st_atim;
+    times[1] = st.st_mtim;
+
+    return fs::utime(fd,times);
+  }
+
+  static
+  inline
+  int
+  lutime(const std::string     &path,
+         const struct timespec  times[2])
+  {
+    return fs::utime(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
   }
 }
