@@ -37,6 +37,14 @@
 #include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
 
+#ifndef O_LARGEFILE
+# define O_LARGEFILE 0
+#endif
+
+#ifndef O_NOATIME
+# define O_NOATIME 0
+#endif
+
 using std::string;
 using std::vector;
 
