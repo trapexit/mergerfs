@@ -143,14 +143,16 @@ distclean: clean
 install: install-base install-mount.mergerfs install-man
 
 install-base: $(TARGET)
-	$(INSTALL) -v -m 0755 -D "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
+	$(MKDIR) -p "$(INSTALLBINDIR)"
+	$(INSTALL) -v -m 0755 "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
 
 install-mount.mergerfs: mount.mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
 
 install-man: $(MANPAGE)
-	$(INSTALL) -v -m 0644 -D "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
+	$(MKDIR) -p "$(INSTALLMAN1DIR)"
+	$(INSTALL) -v -m 0644 "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
