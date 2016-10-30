@@ -33,6 +33,6 @@ namespace fs
   int
   fdatasync(const int fd)
   {
-    return ::fdatasync(fd);
+    return fs::fdatasync(fd);
   }
 }

@@ -31,7 +31,7 @@ namespace fs
             const struct timespec  times[2],
             const int              flags)
   {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
+    return fs::utimensat(dirfd,path.c_str(),times,flags);
   }
 
   static
