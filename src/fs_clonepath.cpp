@@ -22,31 +22,31 @@
 #include "fs_base_chown.hpp"
 #include "fs_base_mkdir.hpp"
 #include "fs_base_stat.hpp"
-#include "fs_base_utimensat.hpp"
+#include "fs_base_utime.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
 
 using std::string;
 
+static
+bool
+ignorable_error(const int err)
+{
+  switch(err)
+    {
+    case ENOTTY:
+    case ENOTSUP:
+#if ENOTSUP != EOPNOTSUPP
+    case EOPNOTSUPP:
+#endif
+      return true;
+    }
+
+  return false;
+}
+
 namespace fs
 {
-  static
-  bool
-  ignorable_error(const int err)
-  {
-    switch(err)
-      {
-      case ENOTTY:
-      case ENOTSUP:
-#if ENOTSUP != EOPNOTSUPP
-      case EOPNOTSUPP:
-#endif
-        return true;
-      }
-
-    return false;
-  }
-
   int
   clonepath(const string &fromsrc,
             const string &tosrc,
@@ -72,7 +72,7 @@ namespace fs
     if(rv == -1)
       return -1;
     else if(!S_ISDIR(st.st_mode))
-      return (errno = ENOTDIR,-1);
+      return (errno=ENOTDIR,-1);
 
     fs::path::make(&tosrc,relative,topath);
     rv = fs::mkdir(topath,st.st_mode);
@@ -88,18 +88,18 @@ namespace fs
 
     // It may not support it... it's fine...
     rv = fs::attr::copy(frompath,topath);
-    if(rv == -1 && !ignorable_error(errno))
+    if((rv == -1) && !ignorable_error(errno))
       return -1;
 
     rv = fs::xattr::copy(frompath,topath);
-    if(rv == -1 && !ignorable_error(errno))
+    if((rv == -1) && !ignorable_error(errno))
       return -1;
 
     rv = fs::chown(topath,st);
     if(rv == -1)
       return -1;
 
-    rv = fs::utimensat(topath,st);
+    rv = fs::utime(topath,st);
     if(rv == -1)
       return -1;
 

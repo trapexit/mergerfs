@@ -23,7 +23,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_utimensat.hpp"
+#include "fs_base_utime.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -45,7 +45,7 @@ _utimens_loop_core(const string   *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = fs::utimensat(AT_FDCWD,fullpath,ts,AT_SYMLINK_NOFOLLOW);
+  rv = fs::lutime(fullpath,ts);
 
   return calc_error(rv,error,errno);
 }

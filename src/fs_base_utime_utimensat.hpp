@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,8 +16,30 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fs_time_futimens.icpp"
-#else
-# include "fs_time_futimes.icpp"
-#endif
+#include <string>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+
+namespace fs
+{
+  static
+  inline
+  int
+  utime(const int              dirfd,
+        const std::string     &path,
+        const struct timespec  times[2],
+        const int              flags)
+  {
+    return ::utimensat(dirfd,path.c_str(),times,flags);
+  }
+
+  static
+  inline
+  int
+  utime(const int             fd,
+        const struct timespec times[2])
+  {
+    return ::futimens(fd,times);
+  }
+}

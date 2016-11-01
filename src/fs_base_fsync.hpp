@@ -16,6 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <errno.h>
 #include <unistd.h>
 
 namespace fs
@@ -33,6 +34,10 @@ namespace fs
   int
   fdatasync(const int fd)
   {
+#if _POSIX_SYNCHRONIZED_IO > 0
     return ::fdatasync(fd);
+#else
+    return (errno=ENOSYS,-1);
+#endif
   }
 }
