@@ -83,11 +83,11 @@ _statfs_core(const char                *srcmount,
   if(STAT_FAILED(rv))
     return;
 
-  if(min_bsize > fsstat.f_bsize)
+  if(fsstat.f_bsize   && (min_bsize > fsstat.f_bsize))
     min_bsize = fsstat.f_bsize;
-  if(min_frsize > fsstat.f_frsize)
+  if(fsstat.f_frsize  && (min_frsize > fsstat.f_frsize))
     min_frsize = fsstat.f_frsize;
-  if(min_namemax > fsstat.f_namemax)
+  if(fsstat.f_namemax && (min_namemax > fsstat.f_namemax))
     min_namemax = fsstat.f_namemax;
 
   fsstats.insert(std::make_pair(st.st_dev,fsstat));
