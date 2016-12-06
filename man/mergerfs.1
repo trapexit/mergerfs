@@ -685,6 +685,9 @@ https://github.com/trapexit/scorch
 scorch: A tool to help discover silent corruption of files
 .SH TIPS / NOTES
 .IP \[bu] 2
+Run mergerfs as \f[C]root\f[] unless you\[aq]re merging paths which are
+owned by the same user otherwise strange permission issues may arise.
+.IP \[bu] 2
 https://github.com/trapexit/backup\-and\-recovery\-howtos : A set of
 guides / howtos on creating a data storage system, backing it up,
 maintaining it, and recovering from failure.
