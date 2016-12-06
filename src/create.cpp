@@ -43,22 +43,24 @@ _create_core(const string &existingpath,
              const int     flags,
              uint64_t     &fh)
 {
-  int fd;
+  int rv;
   string fullpath;
 
   if(createpath != existingpath)
     {
       const ugid::SetRootGuard ugidGuard;
-      fs::clonepath(existingpath,createpath,fusedirpath);
+      rv = fs::clonepath(existingpath,createpath,fusedirpath);
+      if(rv == -1)
+        return -errno;
     }
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  fd = fs::open(fullpath,flags,mode);
-  if(fd == -1)
+  rv = fs::open(fullpath,flags,mode);
+  if(rv == -1)
     return -errno;
 
-  fh = reinterpret_cast<uint64_t>(new FileInfo(fd));
+  fh = reinterpret_cast<uint64_t>(new FileInfo(rv));
 
   return 0;
 }

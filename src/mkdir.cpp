@@ -48,7 +48,9 @@ _mkdir_loop_core(const string &existingpath,
   if(createpath != existingpath)
     {
       const ugid::SetRootGuard ugidGuard;
-      fs::clonepath(existingpath,createpath,fusedirpath);
+      rv = fs::clonepath(existingpath,createpath,fusedirpath);
+      if(rv == -1)
+        return errno;
     }
 
   fs::path::make(&createpath,fusepath,fullpath);
