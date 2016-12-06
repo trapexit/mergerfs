@@ -49,7 +49,9 @@ _symlink_loop_core(const string &existingpath,
   if(newbasepath != existingpath)
     {
       const ugid::SetRootGuard ugidGuard;
-      fs::clonepath(existingpath,newbasepath,newdirpath);
+      rv = fs::clonepath(existingpath,newbasepath,newdirpath);
+      if(rv == -1)
+        return -1;
     }
 
   fs::path::make(&newbasepath,newpath,fullnewpath);

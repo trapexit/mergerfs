@@ -58,6 +58,27 @@ _remove(const vector<string> &toremove)
 }
 
 static
+int
+_rename(const std::string &oldbasepath,
+        const std::string &oldfullpath,
+        const std::string &newbasepath,
+        const std::string &newfusedirpath,
+        const std::string &newfullpath)
+{
+  int rv;
+
+  if(oldbasepath != newbasepath)
+    {
+      const ugid::SetRootGuard guard;
+      rv = fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
+      if(rv == -1)
+        return -1;
+    }
+
+  return fs::rename(oldfullpath,newfullpath);
+}
+
+static
 void
 _rename_create_path_core(const vector<const string*> &oldbasepaths,
                          const string                &oldbasepath,
@@ -78,15 +99,10 @@ _rename_create_path_core(const vector<const string*> &oldbasepaths,
   ismember = member(oldbasepaths,oldbasepath);
   if(ismember)
     {
-      if(oldbasepath != newbasepath)
-        {
-          const ugid::SetRootGuard ugidGuard;
-          fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
-        }
-
       fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
 
-      rv = fs::rename(oldfullpath,newfullpath);
+      rv = _rename(oldbasepath,oldfullpath,
+                   newbasepath,newfusedirpath,newfullpath);
       error = calc_error(rv,error,errno);
       if(RENAME_FAILED(rv))
         tounlink.push_back(oldfullpath);

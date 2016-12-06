@@ -49,7 +49,9 @@ _link_create_path_core(const string &oldbasepath,
   if(oldbasepath != newbasepath)
     {
       const ugid::SetRootGuard ugidGuard;
-      fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
+      rv = fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
+      if(rv == -1)
+        return errno;
     }
 
   fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
@@ -131,25 +133,18 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
   newfusedirpathcstr = newfusedirpath.c_str();
 
   rv = createFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
-  if(rv != -1)
-    {
-      if(oldbasepath == *newbasepath[0])
-        {
-          rv = searchFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
-          if(rv != -1)
-            {
-              const ugid::SetRootGuard ugidGuard;
-              fs::clonepath(*newbasepath[0],oldbasepath,newfusedirpathcstr);
-            }
-        }
-      else
-        {
-          rv = -1;
-          errno = EXDEV;
-        }
-    }
+  if(rv == -1)
+    return -1;
 
-  return rv;
+  if(oldbasepath != *newbasepath[0])
+    return (errno=EXDEV,-1);
+
+  rv = searchFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
+  if(rv == -1)
+    return -1;
+
+  const ugid::SetRootGuard ugidGuard;
+  return fs::clonepath(*newbasepath[0],oldbasepath,newfusedirpathcstr);
 }
 
 static
