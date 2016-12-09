@@ -14,22 +14,36 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FILEINFO_HPP__
-#define __FILEINFO_HPP__
+#ifndef __MUTEX_HPP__
+#define __MUTEX_HPP__
 
-class FileInfo
+#include <pthread.h>
+
+namespace mergerfs
 {
-public:
-  FileInfo(const int _fd,
-           const int _flags) :
-    fd(_fd),
-    flags(_flags)
+  namespace mutex
   {
-  }
+    class Guard
+    {
+    public:
+      Guard(pthread_mutex_t &lock)
+        : _lock(&lock)
+      {
+        pthread_mutex_lock(_lock);
+      }
 
-public:
-  int fd;
-  int flags;
-};
+      ~Guard()
+      {
+        pthread_mutex_unlock(_lock);
+      }
+
+    private:
+      Guard();
+
+    private:
+      pthread_mutex_t *_lock;
+    };
+  }
+}
 
 #endif

@@ -49,7 +49,7 @@ _open_core(const string *basepath,
   if(fd == -1)
     return -errno;
 
-  fh = reinterpret_cast<uint64_t>(new FileInfo(fd));
+  fh = reinterpret_cast<uint64_t>(new FileInfo(fd,flags));
 
   return 0;
 }
