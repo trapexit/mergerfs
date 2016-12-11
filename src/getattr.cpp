@@ -22,6 +22,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_stat.hpp"
+#include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -32,25 +33,25 @@ using mergerfs::Policy;
 
 static
 int
-_getattr_controlfile(struct stat &buf)
+_getattr_controlfile(struct stat &st)
 {
   static const uid_t  uid = ::getuid();
   static const gid_t  gid = ::getgid();
   static const time_t now = ::time(NULL);
 
-  buf.st_dev     = 0;
-  buf.st_ino     = 0;
-  buf.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-  buf.st_nlink   = 1;
-  buf.st_uid     = uid;
-  buf.st_gid     = gid;
-  buf.st_rdev    = 0;
-  buf.st_size    = 0;
-  buf.st_blksize = 1024;
-  buf.st_blocks  = 0;
-  buf.st_atime   = now;
-  buf.st_mtime   = now;
-  buf.st_ctime   = now;
+  st.st_dev     = 0;
+  st.st_ino     = fs::inode::MAGIC;
+  st.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+  st.st_nlink   = 1;
+  st.st_uid     = uid;
+  st.st_gid     = gid;
+  st.st_rdev    = 0;
+  st.st_size    = 0;
+  st.st_blksize = 512;
+  st.st_blocks  = 0;
+  st.st_atime   = now;
+  st.st_mtime   = now;
+  st.st_ctime   = now;
 
   return 0;
 }
@@ -61,7 +62,7 @@ _getattr(Policy::Func::Search  searchFunc,
          const vector<string> &srcmounts,
          const uint64_t        minfreespace,
          const char           *fusepath,
-         struct stat          &buf)
+         struct stat          &st)
 {
   int rv;
   string fullpath;
@@ -73,9 +74,13 @@ _getattr(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = fs::lstat(fullpath,buf);
+  rv = fs::lstat(fullpath,st);
+  if(rv == -1)
+    return -errno;
 
-  return ((rv == -1) ? -errno : 0);
+  fs::inode::recompute(st);
+
+  return 0;
 }
 
 namespace mergerfs

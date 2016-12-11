@@ -27,6 +27,8 @@
 #include "fs_base_closedir.hpp"
 #include "fs_base_opendir.hpp"
 #include "fs_base_readdir.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "readdir.hpp"
 #include "rwlock.hpp"
@@ -50,6 +52,7 @@ _readdir(const vector<string>  &srcmounts,
   struct stat st = {0};
   StrSet names;
 
+  st.st_ino = fs::inode::MAGIC;
   for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       DIR *dh;

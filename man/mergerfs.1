@@ -1,5 +1,5 @@
 .\"t
-.TH "mergerfs" "1" "2016\-10\-13" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2016\-12\-14" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another (FUSE based) union filesystem
@@ -73,6 +73,11 @@ Example: \f[B]category.create=mfs\f[]
 \f[B]mount\f[], \f[B]df\f[], etc.
 Defaults to a list of the source paths concatenated together with the
 longest common prefix removed.
+.IP \[bu] 2
+\f[B]use_ino\f[]: causes mergerfs to supply file/directory inodes rather
+than libfuse.
+While not a default it is generally recommended it be enabled so that
+hard linked files share the same inode value.
 .PP
 \f[B]NOTE:\f[] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
@@ -959,6 +964,16 @@ drive and receive ENOSPC errors.
 That is expected with those settings.
 If you don\[aq]t want that: enable \f[B]moveonenospc\f[] and don\[aq]t
 use a path preserving policy.
+.SS How are inodes calculated?
+.PP
+mergerfs\-inode = (original\-inode | (device\-id << 32))
+.PP
+While \f[C]ino_t\f[] is 64 bits few filesystems use more than 32.
+Similarly, while \f[C]dev_t\f[] is also 64 bits it was traditionally 16
+bits.
+Bitwise or\[aq]ing them together should work most of the time.
+Should it cause a problem in the future the values could be hashed
+instead.
 .SS It\[aq]s mentioned that there are some security issues with mhddfs.
 What are they? How does mergerfs address them?
 .PP
