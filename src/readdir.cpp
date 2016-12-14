@@ -30,11 +30,11 @@
 #include "fs_path.hpp"
 #include "readdir.hpp"
 #include "rwlock.hpp"
+#include "strset.hpp"
 #include "ugid.hpp"
 
 using std::string;
 using std::vector;
-using std::set;
 using std::pair;
 
 #define NO_OFFSET 0
@@ -46,13 +46,13 @@ _readdir(const vector<string>  &srcmounts,
          void                  *buf,
          const fuse_fill_dir_t  filler)
 {
-  set<string> found;
+  string basepath;
   struct stat st = {0};
+  StrSet names;
 
   for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       DIR *dh;
-      string basepath;
 
       fs::path::make(&srcmounts[i],dirname,basepath);
 
@@ -62,19 +62,20 @@ _readdir(const vector<string>  &srcmounts,
 
       for(struct dirent *de = fs::readdir(dh); de != NULL; de = fs::readdir(dh))
         {
-          if(found.insert(de->d_name).second == false)
+          int rv;
+
+          rv = names.put(de->d_name);
+          if(rv == 0)
             continue;
 
           st.st_mode = DTTOIF(de->d_type);
-          if(filler(buf,de->d_name,&st,NO_OFFSET) != 0)
+          rv = filler(buf,de->d_name,&st,NO_OFFSET);
+          if(rv)
             return -ENOMEM;
         }
 
       fs::closedir(dh);
     }
-
-  if(found.empty())
-    return -ENOENT;
 
   return 0;
 }
