@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,41 +16,27 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
+#ifndef __FS_INODE_HPP__
+#define __FS_INODE_HPP__
 
-#include "errno.hpp"
-#include "fileinfo.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_inode.hpp"
+#include <sys/stat.h>
 
-static
-int
-_fgetattr(const int    fd,
-          struct stat &st)
+namespace fs
 {
-  int rv;
-
-  rv = fs::fstat(fd,st);
-  if(rv == -1)
-    return -errno;
-
-  fs::inode::recompute(st);
-
-  return 0;
-}
-
-namespace mergerfs
-{
-  namespace fuse
+  namespace inode
   {
-    int
-    fgetattr(const char     *fusepath,
-             struct stat    *st,
-             fuse_file_info *ffi)
-    {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+    enum
+      {
+        MAGIC = 0x7472617065786974
+      };
 
-      return _fgetattr(fi->fd,*st);
+    inline
+    void
+    recompute(struct stat &st)
+    {
+      st.st_ino |= (st.st_dev << 32);
     }
   }
 }
+
+#endif

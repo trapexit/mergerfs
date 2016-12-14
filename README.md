@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-10-13
+% 2016-12-14
 
 # NAME
 
@@ -32,12 +32,13 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 ###options###
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
-* **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed. 
+* **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed.
 * **minfreespace**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
 * **fsname**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
+* **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -325,11 +326,11 @@ Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap]
 
 #### mmap performance is really bad
 
-There [is a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59). 
+There [is a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59).
 
 #### Trashing files occasionally fails
 
-This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do. 
+This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
 
 To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
 
@@ -421,6 +422,12 @@ Yes. It will be represented immediately in the pool as the policies would descri
 
 Please reread the sections above about policies, path preserving, and the **moveonenospc** option. If the policy is path preserving and a drive is almost full and the drive the policy would pick then the writing of the file may fill the drive and receive ENOSPC errors. That is expected with those settings. If you don't want that: enable **moveonenospc** and don't use a path preserving policy.
 
+
+#### How are inodes calculated?
+
+mergerfs-inode = (original-inode | (device-id << 32))
+
+While `ino_t` is 64 bits few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. Should it cause a problem in the future the values could be hashed instead.
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
