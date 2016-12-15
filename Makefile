@@ -132,8 +132,12 @@ obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean: rpm-clean
-	$(RM) -rf obj
+ifneq ($(GIT),)
+ifeq  ($(shell test -e .git; echo $$?),0)
 	$(RM) -f src/version.hpp
+endif
+endif
+	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
 
