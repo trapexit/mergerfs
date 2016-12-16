@@ -25,9 +25,11 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_closedir.hpp"
+#include "fs_base_dirfd.hpp"
 #include "fs_base_opendir.hpp"
 #include "fs_base_readdir.hpp"
 #include "fs_base_stat.hpp"
+#include "fs_devid.hpp"
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "readdir.hpp"
@@ -48,13 +50,14 @@ _readdir(const vector<string>  &srcmounts,
          void                  *buf,
          const fuse_fill_dir_t  filler)
 {
+  StrSet names;
   string basepath;
   struct stat st = {0};
-  StrSet names;
 
-  st.st_ino = fs::inode::MAGIC;
   for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
+      int rv;
+      int dirfd;
       DIR *dh;
 
       fs::path::make(&srcmounts[i],dirname,basepath);
@@ -63,18 +66,26 @@ _readdir(const vector<string>  &srcmounts,
       if(!dh)
         continue;
 
-      for(struct dirent *de = fs::readdir(dh); de != NULL; de = fs::readdir(dh))
-        {
-          int rv;
+      dirfd     = fs::dirfd(dh);
+      st.st_dev = fs::devid(dirfd);
+      if(st.st_dev == (dev_t)-1)
+        st.st_dev = i;
 
+      rv = 0;
+      for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
+        {
           rv = names.put(de->d_name);
           if(rv == 0)
             continue;
 
+          st.st_ino  = de->d_ino;
           st.st_mode = DTTOIF(de->d_type);
+
+          fs::inode::recompute(st);
+
           rv = filler(buf,de->d_name,&st,NO_OFFSET);
           if(rv)
-            return -ENOMEM;
+            return (fs::closedir(dh),-ENOMEM);
         }
 
       fs::closedir(dh);
