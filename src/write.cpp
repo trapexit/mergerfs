@@ -24,6 +24,10 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+using namespace mergerfs;
+
+typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
+
 static
 bool
 _out_of_space(const int error)
@@ -33,6 +37,7 @@ _out_of_space(const int error)
 }
 
 static
+inline
 int
 _write(const int     fd,
        const void   *buf,
@@ -42,25 +47,52 @@ _write(const int     fd,
   int rv;
 
   rv = fs::pwrite(fd,buf,count,offset);
+  if(rv == -1)
+    return -errno;
+  if(rv == 0)
+    return 0;
 
-  return ((rv == -1) ? -errno : rv);
+  return count;
 }
+
+static
+inline
+int
+_write_direct_io(const int     fd,
+                 const void   *buf,
+                 const size_t  count,
+                 const off_t   offset)
+{
+  int rv;
+
+  rv = fs::pwrite(fd,buf,count,offset);
+  if(rv == -1)
+    return -errno;
+
+  return rv;
+}
+
+
+
 
 namespace mergerfs
 {
   namespace fuse
   {
+    static
+    inline
     int
-    write(const char     *fusepath,
+    write(WriteFunc       func,
+          const char     *fusepath,
           const char     *buf,
-          size_t          count,
-          off_t           offset,
+          const size_t    count,
+          const off_t     offset,
           fuse_file_info *ffi)
     {
       int rv;
       FileInfo* fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      rv = _write(fi->fd,buf,count,offset);
+      rv = func(fi->fd,buf,count,offset);
       if(_out_of_space(-rv))
         {
           const fuse_context *fc     = fuse_get_context();
@@ -75,11 +107,31 @@ namespace mergerfs
               if(rv == -1)
                 return -ENOSPC;
 
-              rv = _write(fi->fd,buf,count,offset);
+              rv = func(fi->fd,buf,count,offset);
             }
         }
 
       return rv;
+    }
+
+    int
+    write(const char     *fusepath,
+          const char     *buf,
+          size_t          count,
+          off_t           offset,
+          fuse_file_info *ffi)
+    {
+      return write(_write,fusepath,buf,count,offset,ffi);
+    }
+
+    int
+    write_direct_io(const char     *fusepath,
+                    const char     *buf,
+                    size_t          count,
+                    off_t           offset,
+                    fuse_file_info *ffi)
+    {
+      return write(_write_direct_io,fusepath,buf,count,offset,ffi);
     }
   }
 }

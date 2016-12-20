@@ -78,7 +78,8 @@ namespace local
 
   static
   void
-  get_fuse_operations(struct fuse_operations &ops)
+  get_fuse_operations(struct fuse_operations &ops,
+                      const bool              direct_io)
   {
 #if FLAG_NOPATH
     ops.flag_nopath      = false;
@@ -115,7 +116,9 @@ namespace local
     ops.open        = mergerfs::fuse::open;
     ops.opendir     = mergerfs::fuse::opendir;
     ops.poll        = NULL;
-    ops.read        = mergerfs::fuse::read;
+    ops.read        = direct_io ?
+      mergerfs::fuse::read_direct_io :
+      mergerfs::fuse::read;
 #if READ_BUF
     ops.read_buf    = mergerfs::fuse::read_buf;
 #endif
@@ -133,7 +136,9 @@ namespace local
     ops.unlink      = mergerfs::fuse::unlink;
     ops.utime       = NULL;       /* deprecated; use utimens() */
     ops.utimens     = mergerfs::fuse::utimens;
-    ops.write       = mergerfs::fuse::write;
+    ops.write       = direct_io ?
+      mergerfs::fuse::write_direct_io :
+      mergerfs::fuse::write;
 #if WRITE_BUF
     ops.write_buf   = mergerfs::fuse::write_buf;
 #endif
@@ -172,7 +177,7 @@ namespace mergerfs
     mergerfs::options::parse(args,config);
 
     local::setup_resources();
-    local::get_fuse_operations(ops);
+    local::get_fuse_operations(ops,config.direct_io);
 
     return fuse_main(args.argc,
                      args.argv,

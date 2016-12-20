@@ -24,5 +24,12 @@ namespace mergerfs
          size_t          count,
          off_t           offset,
          fuse_file_info *fi);
+
+    int
+    read_direct_io(const char     *fusepath,
+                   char           *buf,
+                   size_t          count,
+                   off_t           offset,
+                   fuse_file_info *fi);
   }
 }

@@ -47,6 +47,7 @@ namespace mergerfs
     mutable pthread_rwlock_t srcmountslock;
     uint64_t                 minfreespace;
     bool                     moveonenospc;
+    bool                     direct_io;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];
