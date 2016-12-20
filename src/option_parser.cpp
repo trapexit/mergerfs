@@ -140,10 +140,9 @@ parse_and_process_arg(Config            &config,
                       fuse_args         *outargs)
 {
   if(arg == "defaults")
-    {
-      set_default_options(*outargs);
-      return 0;
-    }
+    return (set_default_options(*outargs),0);
+  else if(arg == "direct_io")
+    return (config.direct_io=true,1);
 
   return 1;
 }

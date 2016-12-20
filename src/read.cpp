@@ -25,6 +25,7 @@
 #include "fs_base_read.hpp"
 
 static
+inline
 int
 _read(const int     fd,
       void         *buf,
@@ -34,8 +35,29 @@ _read(const int     fd,
   int rv;
 
   rv = fs::pread(fd,buf,count,offset);
+  if(rv == -1)
+    return -errno;
+  if(rv == 0)
+    return 0;
 
-  return ((rv == -1) ? -errno : rv);
+  return count;
+}
+
+static
+inline
+int
+_read_direct_io(const int     fd,
+                void         *buf,
+                const size_t  count,
+                const off_t   offset)
+{
+  int rv;
+
+  rv = fs::pread(fd,buf,count,offset);
+  if(rv == -1)
+    return -errno;
+
+  return rv;
 }
 
 namespace mergerfs
@@ -51,10 +73,19 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _read(fi->fd,
-                   buf,
-                   count,
-                   offset);
+      return _read(fi->fd,buf,count,offset);
+    }
+
+    int
+    read_direct_io(const char     *fusepath,
+                   char           *buf,
+                   size_t          count,
+                   off_t           offset,
+                   fuse_file_info *ffi)
+    {
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+
+      return _read_direct_io(fi->fd,buf,count,offset);
     }
   }
 }
