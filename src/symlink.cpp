@@ -58,7 +58,7 @@ _symlink_loop_core(const string &existingpath,
 
   rv = ::symlink(oldpath,fullnewpath.c_str());
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

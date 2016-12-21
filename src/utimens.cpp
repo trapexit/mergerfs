@@ -47,7 +47,7 @@ _utimens_loop_core(const string   *basepath,
 
   rv = fs::lutime(fullpath,ts);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

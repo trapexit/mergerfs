@@ -48,7 +48,7 @@ _truncate_loop_core(const string *basepath,
 
   rv = fs::truncate(fullpath,size);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

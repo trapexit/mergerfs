@@ -59,7 +59,7 @@ _link_create_path_core(const string &oldbasepath,
 
   rv = fs::link(oldfullpath,newfullpath);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static
@@ -176,7 +176,7 @@ _link_preserve_path_core(Policy::Func::Search  searchFunc,
         rv = fs::link(oldfullpath,newfullpath);
     }
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

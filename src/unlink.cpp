@@ -46,7 +46,7 @@ _unlink_loop_core(const string *basepath,
 
   rv = fs::unlink(fullpath);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

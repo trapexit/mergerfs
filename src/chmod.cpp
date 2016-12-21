@@ -45,7 +45,7 @@ _chmod_loop_core(const string *basepath,
 
   rv = fs::chmod(fullpath,mode);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

@@ -103,7 +103,7 @@ _rename_create_path_core(const vector<const string*> &oldbasepaths,
 
       rv = _rename(oldbasepath,oldfullpath,
                    newbasepath,newfusedirpath,newfullpath);
-      error = calc_error(rv,error,errno);
+      error = error::calc(rv,error,errno);
       if(RENAME_FAILED(rv))
         tounlink.push_back(oldfullpath);
     }
@@ -241,7 +241,7 @@ _rename_preserve_path_core(Policy::Func::Search         searchFunc,
             rv = fs::rename(oldfullpath,newfullpath);
         }
 
-      error = calc_error(rv,error,errno);
+      error = error::calc(rv,error,errno);
       if(RENAME_FAILED(rv))
         toremove.push_back(oldfullpath);
     }
