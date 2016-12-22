@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -16,12 +18,15 @@
 
 #include <string>
 
+#include <stdio.h>
+
 namespace fs
 {
-  int clonepath(const std::string &from,
-                const std::string &to,
-                const char        *relative);
-  int clonepath(const std::string &from,
-                const std::string &to,
-                const std::string &relative);
+  static
+  inline
+  int
+  remove(const std::string &pathname)
+  {
+    return ::remove(pathname.c_str());
+  }
 }

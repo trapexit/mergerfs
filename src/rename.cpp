@@ -21,6 +21,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_remove.hpp"
 #include "fs_base_rename.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
@@ -32,7 +33,6 @@
 using std::string;
 using std::vector;
 using std::set;
-using mergerfs::Policy;
 using namespace mergerfs;
 
 static
@@ -54,7 +54,7 @@ void
 _remove(const vector<string> &toremove)
 {
   for(size_t i = 0, ei = toremove.size(); i != ei; i++)
-    ::remove(toremove[i].c_str());
+    fs::remove(toremove[i]);
 }
 
 static
@@ -70,7 +70,7 @@ _rename(const std::string &oldbasepath,
   if(oldbasepath != newbasepath)
     {
       const ugid::SetRootGuard guard;
-      rv = fs::clonepath(newbasepath,oldbasepath,newfusedirpath.c_str());
+      rv = fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
       if(rv == -1)
         return -1;
     }
@@ -173,7 +173,7 @@ _clonepath(Policy::Func::Search  searchFunc,
 
   {
     const ugid::SetRootGuard ugidGuard;
-    fs::clonepath(*srcbasepath[0],dstbasepath,fusedirpath.c_str());
+    fs::clonepath(*srcbasepath[0],dstbasepath,fusedirpath);
   }
 
   return POLICY_SUCCESS;

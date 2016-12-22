@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -16,12 +18,25 @@
 
 #include <string>
 
+#include <unistd.h>
+
 namespace fs
 {
-  int clonepath(const std::string &from,
-                const std::string &to,
-                const char        *relative);
-  int clonepath(const std::string &from,
-                const std::string &to,
-                const std::string &relative);
+  static
+  inline
+  int
+  symlink(const std::string &oldpath,
+          const std::string &newpath)
+  {
+    return ::symlink(oldpath.c_str(),newpath.c_str());
+  }
+
+  static
+  inline
+  int
+  symlink(const char        *oldpath,
+          const std::string &newpath)
+  {
+    return ::symlink(oldpath,newpath.c_str());
+  }
 }

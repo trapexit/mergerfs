@@ -23,6 +23,7 @@
 #include "fs_base_mkdir.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_base_utime.hpp"
+#include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
 
@@ -62,7 +63,7 @@ namespace fs
     fs::path::dirname(dirname);
     if(!dirname.empty())
       {
-        rv = fs::clonepath(fromsrc,tosrc,dirname.c_str());
+        rv = fs::clonepath(fromsrc,tosrc,dirname);
         if(rv == -1)
           return -1;
       }
@@ -104,5 +105,13 @@ namespace fs
       return -1;
 
     return 0;
+  }
+
+  int
+  clonepath(const std::string &from,
+            const std::string &to,
+            const std::string &relative)
+  {
+    return fs::clonepath(from,to,relative.c_str());
   }
 }

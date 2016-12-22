@@ -23,6 +23,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_base_symlink.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -31,7 +32,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 using namespace mergerfs;
 
 static
@@ -56,7 +56,7 @@ _symlink_loop_core(const string &existingpath,
 
   fs::path::make(&newbasepath,newpath,fullnewpath);
 
-  rv = ::symlink(oldpath,fullnewpath.c_str());
+  rv = fs::symlink(oldpath,fullnewpath);
 
   return error::calc(rv,error,errno);
 }
