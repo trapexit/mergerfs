@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_IOCTL_HPP__
+#define __FS_BASE_IOCTL_HPP__
+
 #include <sys/ioctl.h>
 
 namespace fs
@@ -30,3 +33,5 @@ namespace fs
     return ::ioctl(fd,request,data);
   }
 }
+
+#endif

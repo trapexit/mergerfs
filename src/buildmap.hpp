@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __BUILDMAP_HPP__
+#define __BUILDMAP_HPP__
+
 #include <algorithm>
 
 template<typename K,typename V>
@@ -41,3 +44,5 @@ public:
 private:
   std::map<K,V> _map;
 };
+
+#endif

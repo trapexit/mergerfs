@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_LSEEK_HPP__
+#define __FS_BASE_LSEEK_HPP__
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -31,3 +34,5 @@ namespace fs
     return ::lseek(fd,offset,whence);
   }
 }
+
+#endif

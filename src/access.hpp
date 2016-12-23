@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __ACCESS_HPP__
+#define __ACCESS_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -23,3 +26,5 @@ namespace mergerfs
            int         mask);
   }
 }
+
+#endif

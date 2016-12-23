@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __INIT_HPP__
+#define __INIT_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -22,3 +25,5 @@ namespace mergerfs
     init(fuse_conn_info *conn);
   }
 }
+
+#endif

@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_TRUNCATE_HPP__
+#define __FS_BASE_TRUNCATE_HPP__
+
 #include <string>
 
 #include <sys/types.h>
@@ -32,3 +35,5 @@ namespace fs
     return ::truncate(path.c_str(),length);
   }
 }
+
+#endif

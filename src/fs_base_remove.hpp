@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_REMOVE_HPP__
+#define __FS_BASE_REMOVE_HPP__
+
 #include <string>
 
 #include <stdio.h>
@@ -30,3 +33,5 @@ namespace fs
     return ::remove(pathname.c_str());
   }
 }
+
+#endif

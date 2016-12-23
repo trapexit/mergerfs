@@ -14,13 +14,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __MERGERFS_READDIR_HPP__
-#define __MERGERFS_READDIR_HPP__
-
-#include <fuse.h>
+#ifndef __READDIR_HPP__
+#define __READDIR_HPP__
 
 #include <string>
 #include <vector>
+
+#include <fuse.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

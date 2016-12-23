@@ -17,10 +17,10 @@
 #ifndef __FS_HPP__
 #define __FS_HPP__
 
-#include <stdint.h>
-
 #include <string>
 #include <vector>
+
+#include <stdint.h>
 
 namespace fs
 {

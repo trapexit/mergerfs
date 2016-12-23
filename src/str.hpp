@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __STR_HPP__
+#define __STR_HPP__
+
 #include <string>
 #include <vector>
 
@@ -55,3 +58,5 @@ namespace str
   isprefix(const std::string &s0,
            const std::string &s1);
 }
+
+#endif

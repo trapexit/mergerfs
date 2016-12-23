@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FGETATTR_HPP__
+#define __FGETATTR_HPP__
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -28,3 +31,5 @@ namespace mergerfs
              fuse_file_info *fileinfo);
   }
 }
+
+#endif

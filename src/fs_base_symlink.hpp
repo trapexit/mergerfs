@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_SYMLINK_HPP__
+#define __FS_BASE_SYMLINK_HPP__
+
 #include <string>
 
 #include <unistd.h>
@@ -40,3 +43,5 @@ namespace fs
     return ::symlink(oldpath,newpath.c_str());
   }
 }
+
+#endif

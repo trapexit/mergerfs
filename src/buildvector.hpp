@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __BUILDVECTOR_HPP__
+#define __BUILDVECTOR_HPP__
+
 #include <algorithm>
 
 template<typename V, bool SORT = false>
@@ -41,3 +44,5 @@ public:
 private:
   std::vector<V> _vector;
 };
+
+#endif

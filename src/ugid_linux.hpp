@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __UGID_LINUX_HPP__
+#define __UGID_LINUX_HPP__
+
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -87,3 +90,5 @@ namespace mergerfs
     };
   }
 }
+
+#endif

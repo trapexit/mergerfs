@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __RELEASE_HPP__
+#define __RELEASE_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -23,3 +26,5 @@ namespace mergerfs
             fuse_file_info *fi);
   }
 }
+
+#endif

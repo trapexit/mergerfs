@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_READDIR_HPP__
+#define __FS_BASE_READDIR_HPP__
+
 #include <dirent.h>
 
 namespace fs
@@ -28,3 +31,5 @@ namespace fs
     return ::readdir(dirp);
   }
 }
+
+#endif

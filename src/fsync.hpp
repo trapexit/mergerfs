@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FSYNC_HPP__
+#define __FSYNC_HPP__
+
 #include <fuse.h>
 
 namespace mergerfs
@@ -26,3 +29,5 @@ namespace mergerfs
           fuse_file_info *fi);
   }
 }
+
+#endif

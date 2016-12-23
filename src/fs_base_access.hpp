@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_ACCESS_HPP__
+#define __FS_BASE_ACCESS_HPP__
+
 #include <string>
 
 #include <fcntl.h>
@@ -53,3 +56,5 @@ namespace fs
     return fs::access(path,mode,AT_EACCESS);
   }
 }
+
+#endif

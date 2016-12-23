@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __XATTR_HPP__
+#define __XATTR_HPP__
+
 #ifndef WITHOUT_XATTR
 #include <attr/xattr.h>
 #endif
@@ -24,4 +27,6 @@
 
 #ifndef XATTR_REPLACE
 # define XATTR_REPLACE 0x2
+#endif
+
 #endif

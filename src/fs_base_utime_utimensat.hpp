@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_UTIME_UTIMENSAT_HPP__
+#define __FS_BASE_UTIME_UTIMENSAT_HPP__
+
 #include <string>
 
 #include <fcntl.h>
@@ -43,3 +46,5 @@ namespace fs
     return ::futimens(fd,times);
   }
 }
+
+#endif

@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_REALPATH_HPP__
+#define __FS_BASE_REALPATH_HPP__
+
 #include <string>
 
 #include <limits.h>
@@ -40,3 +43,5 @@ namespace fs
     return fs::realpath(path,NULL);
   }
 }
+
+#endif

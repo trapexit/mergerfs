@@ -16,8 +16,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <errno.h>
+#ifndef __FS_BASE_FSYNC_HPP__
+#define __FS_BASE_FSYNC_HPP__
+
 #include <unistd.h>
+
+#include "errno.hpp"
 
 namespace fs
 {
@@ -41,3 +45,5 @@ namespace fs
 #endif
   }
 }
+
+#endif

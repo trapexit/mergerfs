@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __TRUNCATE_HPP__
+#define __TRUNCATE_HPP__
+
 #include <sys/types.h>
 
 namespace mergerfs
@@ -25,3 +28,5 @@ namespace mergerfs
              off_t       size);
   }
 }
+
+#endif

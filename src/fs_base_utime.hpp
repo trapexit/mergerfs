@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_UTIME_HPP__
+#define __FS_BASE_UTIME_HPP__
+
 #ifdef __linux__
 # include "fs_base_utime_utimensat.hpp"
 #elif __FreeBSD__ >= 11
@@ -61,3 +64,5 @@ namespace fs
     return fs::utime(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
   }
 }
+
+#endif
