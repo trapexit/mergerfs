@@ -22,6 +22,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_acl.hpp"
 #include "fs_base_open.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
@@ -30,8 +31,21 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 using namespace mergerfs;
+
+static
+inline
+int
+_create_core(const string &fullpath,
+             mode_t        mode,
+             const mode_t  umask,
+             const int     flags)
+{
+  if(!fs::acl::dir_has_defaults(fullpath))
+    mode &= ~umask;
+
+  return fs::open(fullpath,flags,mode);
+}
 
 static
 int
@@ -40,6 +54,7 @@ _create_core(const string &existingpath,
              const char   *fusepath,
              const char   *fusedirpath,
              const mode_t  mode,
+             const mode_t  umask,
              const int     flags,
              uint64_t     &fh)
 {
@@ -56,7 +71,7 @@ _create_core(const string &existingpath,
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = fs::open(fullpath,flags,mode);
+  rv = _create_core(fullpath,mode,umask,flags);
   if(rv == -1)
     return -errno;
 
@@ -73,6 +88,7 @@ _create(Policy::Func::Search  searchFunc,
         const uint64_t        minfreespace,
         const char           *fusepath,
         const mode_t          mode,
+        const mode_t          umask,
         const int             flags,
         uint64_t             &fh)
 {
@@ -97,7 +113,7 @@ _create(Policy::Func::Search  searchFunc,
 
   return _create_core(*existingpaths[0],*createpaths[0],
                       fusepath,fusedirpathcstr,
-                      mode,flags,fh);
+                      mode,umask,flags,fh);
 }
 
 namespace mergerfs
@@ -119,7 +135,8 @@ namespace mergerfs
                      config.srcmounts,
                      config.minfreespace,
                      fusepath,
-                     (mode & ~fc->umask),
+                     mode,
+                     fc->umask,
                      ffi->flags,
                      ffi->fh);
     }

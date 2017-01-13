@@ -21,6 +21,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_acl.hpp"
 #include "fs_base_mkdir.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
@@ -30,8 +31,20 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 using namespace mergerfs;
+
+static
+inline
+int
+_mkdir_core(const string &fullpath,
+            mode_t        mode,
+            const mode_t  umask)
+{
+  if(!fs::acl::dir_has_defaults(fullpath))
+    mode &= ~umask;
+
+  return fs::mkdir(fullpath,mode);
+}
 
 static
 int
@@ -40,6 +53,7 @@ _mkdir_loop_core(const string &existingpath,
                  const char   *fusepath,
                  const char   *fusedirpath,
                  const mode_t  mode,
+                 const mode_t  umask,
                  const int     error)
 {
   int rv;
@@ -55,7 +69,7 @@ _mkdir_loop_core(const string &existingpath,
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = fs::mkdir(fullpath,mode);
+  rv = _mkdir_core(fullpath,mode,umask);
 
   return calc_error(rv,error,errno);
 }
@@ -66,7 +80,8 @@ _mkdir_loop(const string                &existingpath,
             const vector<const string*> &createpaths,
             const char                  *fusepath,
             const char                  *fusedirpath,
-            const mode_t                 mode)
+            const mode_t                 mode,
+            const mode_t                 umask)
 {
   int error;
 
@@ -74,7 +89,7 @@ _mkdir_loop(const string                &existingpath,
   for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
       error = _mkdir_loop_core(existingpath,*createpaths[i],
-                               fusepath,fusedirpath,mode,error);
+                               fusepath,fusedirpath,mode,umask,error);
     }
 
   return -error;
@@ -87,7 +102,8 @@ _mkdir(Policy::Func::Search  searchFunc,
        const vector<string> &srcmounts,
        const uint64_t        minfreespace,
        const char           *fusepath,
-       const mode_t          mode)
+       const mode_t          mode,
+       const mode_t          umask)
 {
   int rv;
   string fusedirpath;
@@ -108,7 +124,7 @@ _mkdir(Policy::Func::Search  searchFunc,
     return -errno;
 
   return _mkdir_loop(*existingpaths[0],createpaths,
-                     fusepath,fusedirpathcstr,mode);
+                     fusepath,fusedirpathcstr,mode,umask);
 }
 
 namespace mergerfs
@@ -129,7 +145,8 @@ namespace mergerfs
                     config.srcmounts,
                     config.minfreespace,
                     fusepath,
-                    (mode & ~fc->umask));
+                    mode,
+                    fc->umask);
     }
   }
 }

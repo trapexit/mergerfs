@@ -21,6 +21,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_acl.hpp"
 #include "fs_base_mknod.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
@@ -33,12 +34,27 @@ using std::vector;
 using namespace mergerfs;
 
 static
+inline
+int
+_mknod_core(const string &fullpath,
+            mode_t        mode,
+            const mode_t  umask,
+            const dev_t   dev)
+{
+  if(!fs::acl::dir_has_defaults(fullpath))
+    mode &= ~umask;
+
+  return fs::mknod(fullpath,mode,dev);
+}
+
+static
 int
 _mknod_loop_core(const string &existingpath,
                  const string &createpath,
                  const char   *fusepath,
                  const char   *fusedirpath,
                  const mode_t  mode,
+                 const mode_t  umask,
                  const dev_t   dev,
                  const int     error)
 {
@@ -55,7 +71,7 @@ _mknod_loop_core(const string &existingpath,
 
   fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = fs::mknod(fullpath,mode,dev);
+  rv = _mknod_core(fullpath,mode,umask,dev);
 
   return calc_error(rv,error,errno);
 }
@@ -67,6 +83,7 @@ _mknod_loop(const string                &existingpath,
             const char                  *fusepath,
             const char                  *fusedirpath,
             const mode_t                 mode,
+            const mode_t                 umask,
             const dev_t                  dev)
 {
   int error;
@@ -76,7 +93,7 @@ _mknod_loop(const string                &existingpath,
     {
       error = _mknod_loop_core(existingpath,*createpaths[i],
                                fusepath,fusedirpath,
-                               mode,dev,error);
+                               mode,umask,dev,error);
     }
 
   return -error;
@@ -90,6 +107,7 @@ _mknod(Policy::Func::Search  searchFunc,
        const uint64_t        minfreespace,
        const char           *fusepath,
        const mode_t          mode,
+       const mode_t          umask,
        const dev_t           dev)
 {
   int rv;
@@ -112,7 +130,7 @@ _mknod(Policy::Func::Search  searchFunc,
 
   return _mknod_loop(*existingpaths[0],createpaths,
                      fusepath,fusedirpathcstr,
-                     mode,dev);
+                     mode,umask,dev);
 }
 
 namespace mergerfs
@@ -134,7 +152,8 @@ namespace mergerfs
                     config.srcmounts,
                     config.minfreespace,
                     fusepath,
-                    (mode & ~fc->umask),
+                    mode,
+                    fc->umask,
                     rdev);
     }
   }
