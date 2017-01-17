@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,26 +16,28 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
+#include <string>
 
-#include "config.hpp"
-#include "ugid.hpp"
+#include "fs_base_getxattr.hpp"
+#include "fs_path.hpp"
 
-namespace mergerfs
+const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
+
+namespace fs
 {
-  namespace fuse
+  namespace acl
   {
-    void *
-    init(fuse_conn_info *conn)
+    bool
+    dir_has_defaults(const std::string &fullpath)
     {
-      ugid::init();
+      int rv;
+      std::string dirpath = fullpath;
 
-      conn->want |= FUSE_CAP_DONT_MASK;
-#ifdef FUSE_CAP_IOCTL_DIR
-      conn->want |= FUSE_CAP_IOCTL_DIR;
-#endif
+      fs::path::dirname(dirpath);
 
-      return &Config::get_writable();
+      rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
+
+      return (rv != -1);
     }
   }
 }

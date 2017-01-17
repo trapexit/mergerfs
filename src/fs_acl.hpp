@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,26 +16,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
+#include <string>
 
-#include "config.hpp"
-#include "ugid.hpp"
-
-namespace mergerfs
+namespace fs
 {
-  namespace fuse
+  namespace acl
   {
-    void *
-    init(fuse_conn_info *conn)
-    {
-      ugid::init();
-
-      conn->want |= FUSE_CAP_DONT_MASK;
-#ifdef FUSE_CAP_IOCTL_DIR
-      conn->want |= FUSE_CAP_IOCTL_DIR;
-#endif
-
-      return &Config::get_writable();
-    }
+    bool
+    dir_has_defaults(const std::string &fullpath);
   }
 }
