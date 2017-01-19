@@ -32,7 +32,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 ###options###
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
-* **direct_io**: causes FUSE to bypass an addition caching step which can increase write speeds at the detriment of read speed.
+* **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally. However, `mmap` does not work when `direct_io` is enabled.
 * **minfreespace**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
@@ -307,22 +307,27 @@ A B C
 
 # TIPS / NOTES
 
+* The recommended options are **defaults,allow_other,direct_io,use_ino**.
 * Run mergerfs as `root` unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories / files you expect in a merged point be sure the user has permission to all the underlying directories. If `/drive0/a` has is owned by `root:root` with ACLs set to `0700` and `/drive1/a` is `root:root` and `0755` you'll see only `/drive1/a`. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled.
-* Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned.
-* The recommended options are **defaults,allow_other**. The **allow_other** is to allow users who are not the one which executed mergerfs access to the mountpoint. **defaults** is described above and should offer the best performance. It's possible that if you're running on an older platform the **splice** features aren't available and could error. In that case simply use the other options manually.
-* If write performance is valued more than read it may be useful to enable **direct_io**. Best to benchmark with and without and choose appropriately.
-* Remember: some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
+* Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
+* Remember that some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * An example: [Kodi](http://kodi.tv) and [Plex](http://plex.tv) can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the current default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
-* Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync).
+* Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
 
 # KNOWN ISSUES / BUGS
 
+#### cached memory appears greater than it should be
+
+Use the `direct_io` option as described above. Due to what mergerfs is doing there ends up being two caches of a file under normal usage. One from the underlying filesystem and one from mergerfs. Enabling `direct_io` removes the mergerfs cache. This saves on memory but means the kernel needs to communicate with mergerfs more often and can therefore result in slower read speeds.
+
+Since enabling `direct_io` disables `mmap` this is not an ideal situation however write speeds should be increased and there are some tweaks being developed which may help in minimizing the extra caching.
+
 #### rtorrent fails with ENODEV (No such device)
 
-Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it.
+Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it.
 
 #### mmap performance is really bad
 
@@ -396,7 +401,7 @@ https://lkml.org/lkml/2016/9/14/527
 [25192.603193]  [<ffffffff810a0730>] ? kthread_create_on_node+0x1e0/0x1e0
 ```
 
-There is a bug in the kernel. A work around appears to be turning off `splice`. Add `no_splice_write,no_splice_move,no_splice_read` to mergerfs' options. Should be placed after `defaults` if it is used since it will turn them on.
+There is a bug in the kernel. A work around appears to be turning off `splice`. Add `no_splice_write,no_splice_move,no_splice_read` to mergerfs' options. Should be placed after `defaults` if it is used since it will turn them on. This however is not guaranteed to work.
 
 # FAQ
 
@@ -406,13 +411,17 @@ mhddfs is no longer maintained and has some known stability and security issues 
 
 #### Why use mergerfs over aufs?
 
-While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs however doesn't offer the same overlay features (which tends to result in whiteout files being left around the underlying filesystems.)
+While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (COW) features which aufs and overlayfs have.
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
 With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will lead to full pool failure. mergerfs performs a similar behavior without the catastrophic failure and general lack of recovery. Drives can fail and all other data will continue to be accessable.
 
 When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite full backup solution you can have the flexibilty of JBOD without the single point of failure.
+
+#### Why use mergerfs over ZFS?
+
+MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as media storage. And where data integrity and backup can be managed in other ways. In that situation ZFS can introduce major maintance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
@@ -422,26 +431,25 @@ Yes. It will be represented immediately in the pool as the policies would descri
 
 Please reread the sections above about policies, path preserving, and the **moveonenospc** option. If the policy is path preserving and a drive is almost full and the drive the policy would pick then the writing of the file may fill the drive and receive ENOSPC errors. That is expected with those settings. If you don't want that: enable **moveonenospc** and don't use a path preserving policy.
 
-
 #### How are inodes calculated?
 
 mergerfs-inode = (original-inode | (device-id << 32))
 
-While `ino_t` is 64 bits few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. Should it cause a problem in the future the values could be hashed instead.
+While `ino_t` is 64 bits only a few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. While totally unique inodes are preferred the overhead which would be needed does not seem to outweighted by the benefits.
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
 [mhddfs](https://github.com/trapexit/mhddfs) tries to handle being run as **root** by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns **0** then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle many other situations. Rather than attempting to simulate POSIX ACL behaviors the proper behavior is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), become the user making the original call and perform the action as them. This is how [mergerfs](https://github.com/trapexit/mergerfs) handles things.
 
-If you are familiar with POSIX standards you'll know that this behavior poses a problem. **seteuid** and **setegid** affect the whole process and **libfuse** is multithreaded by default. We'd need to lock access to **seteuid** and **setegid** with a mutex so that the several threads aren't stepping on one anofther and files end up with weird permissions and ownership. This however wouldn't scale well. With lots of calls the contention on that mutex would be extremely high. Thankfully on Linux and OSX we have a better solution.
+If you are familiar with POSIX standards you'll know that this behavior poses a problem. **seteuid** and **setegid** affect the whole process and **libfuse** is multithreaded by default. We'd need to lock access to **seteuid** and **setegid** with a mutex so that the several threads aren't stepping on one another and files end up with weird permissions and ownership. However, with lots of calls the contention on that mutex would be extremely high. Thankfully on Linux and macOS there is a better solution.
 
-OSX has a [non-portable pthread extension](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) for per-thread user and group impersonation.
+macOS has a [non-portable pthread extension](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) for per-thread user and group impersonation.
 
 Linux does not support [pthread_setugid_np](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html) but user and group IDs are a per-thread attribute though documentation on that fact or how to manipulate them is not well distributed. From the **4.00** release of the Linux man-pages project for [setuid](http://man7.org/linux/man-pages/man2/setuid.2.html).
 
 > At the kernel level, user IDs and group IDs are a per-thread attribute.  However, POSIX requires that all threads in a process share the same credentials.  The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs.  These wrapper functions (including the one for setuid()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials.  For details, see nptl(7).
 
-Turns out the setreuid syscalls apply only to the thread. GLIBC hides this away using RT signals to inform all threads to change credentials. Taking after **Samba** mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths).
+As it turns out the setreuid syscalls apply only to the thread. GLIBC hides this away using RT signals to inform all threads to change credentials. Taking after **Samba**, mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths between drives).
 
 For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allow multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well. As new platforms are supported if they offer per thread credentials those APIs will be adopted.
 
