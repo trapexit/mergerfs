@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_MKNOD_HPP__
+#define __FS_BASE_MKNOD_HPP__
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -33,3 +36,5 @@ namespace fs
     return ::mknod(path.c_str(),mode,dev);
   }
 }
+
+#endif

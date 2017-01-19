@@ -20,12 +20,10 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "fs_path.hpp"
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
 #include "resources.hpp"
-#include "fs_path.hpp"
-
-#include "clone.hpp"
 
 #include "access.hpp"
 #include "chmod.hpp"
@@ -68,14 +66,6 @@
 
 namespace local
 {
-  static
-  std::string
-  getappname(const int     argc,
-             char * const *argv)
-  {
-    return fs::path::basename(argv[0]);
-  }
-
   static
   void
   get_fuse_operations(struct fuse_operations &ops,
@@ -190,11 +180,5 @@ int
 main(int    argc,
      char **argv)
 {
-  std::string appname;
-
-  appname = local::getappname(argc,argv);
-  if(appname == "clone")
-    return clonetool::main(argc,argv);
-
   return mergerfs::main(argc,argv);
 }

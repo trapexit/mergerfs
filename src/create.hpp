@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __CREATE_HPP__
+#define __CREATE_HPP__
+
 #include <fuse.h>
 
 #include <sys/types.h>
@@ -28,3 +31,5 @@ namespace mergerfs
            fuse_file_info *ffi);
   }
 }
+
+#endif

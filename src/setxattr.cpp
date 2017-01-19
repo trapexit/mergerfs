@@ -303,7 +303,7 @@ _setxattr_loop_core(const string *basepath,
 
   rv = fs::lsetxattr(fullpath,attrname,attrval,attrvalsize,flags);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

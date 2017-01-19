@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_CLONEPATH_HPP__
+#define __FS_CLONEPATH_HPP__
+
 #include <string>
 
 namespace fs
@@ -21,4 +24,9 @@ namespace fs
   int clonepath(const std::string &from,
                 const std::string &to,
                 const char        *relative);
+  int clonepath(const std::string &from,
+                const std::string &to,
+                const std::string &relative);
 }
+
+#endif

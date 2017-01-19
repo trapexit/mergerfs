@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_RMDIR_HPP__
+#define __FS_BASE_RMDIR_HPP__
+
 #include <string>
 
 #include <unistd.h>
@@ -30,3 +33,5 @@ namespace fs
     return ::rmdir(path.c_str());
   }
 }
+
+#endif

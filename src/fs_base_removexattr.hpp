@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_REMOVEXATTR_HPP__
+#define __FS_BASE_REMOVEXATTR_HPP__
+
 #include <sys/types.h>
 
 #include "errno.hpp"
@@ -36,3 +39,5 @@ namespace fs
 #endif
   }
 }
+
+#endif

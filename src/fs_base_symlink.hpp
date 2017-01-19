@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,19 +16,31 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FSYNC_HPP__
-#define __FSYNC_HPP__
+#ifndef __FS_BASE_SYMLINK_HPP__
+#define __FS_BASE_SYMLINK_HPP__
 
-#include <fuse.h>
+#include <string>
 
-namespace mergerfs
+#include <unistd.h>
+
+namespace fs
 {
-  namespace fuse
+  static
+  inline
+  int
+  symlink(const std::string &oldpath,
+          const std::string &newpath)
   {
-    int
-    fsync(const char     *fusepath,
-          int             isdatasync,
-          fuse_file_info *fi);
+    return ::symlink(oldpath.c_str(),newpath.c_str());
+  }
+
+  static
+  inline
+  int
+  symlink(const char        *oldpath,
+          const std::string &newpath)
+  {
+    return ::symlink(oldpath,newpath.c_str());
   }
 }
 

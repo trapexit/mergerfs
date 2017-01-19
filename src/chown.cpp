@@ -47,7 +47,7 @@ _chown_loop_core(const string *basepath,
 
   rv = fs::lchown(fullpath,uid,gid);
 
-  return calc_error(rv,error,errno);
+  return error::calc(rv,error,errno);
 }
 
 static

@@ -37,4 +37,4 @@ namespace mergerfs
 #include "ugid_rwlock.hpp"
 #endif
 
-#endif /* __UGID_HPP__ */
+#endif

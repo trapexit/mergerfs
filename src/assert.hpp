@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __ASSERT_HPP__
+#define __ASSERT_HPP__
+
 #define STATIC_ASSERT(cond) assert::StaticAssert< (cond) >()
 #define STATIC_ARRAYLENGTH_ASSERT(array,size) STATIC_ASSERT(((sizeof(array)/sizeof(array[0]))==(size)))
 
@@ -26,3 +29,5 @@ namespace assert
   struct StaticAssert<true>
   {};
 }
+
+#endif

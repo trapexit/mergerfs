@@ -14,11 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdint.h>
+#ifndef __NUM_HPP__
+#define __NUM_HPP__
 
 #include <string>
+
+#include <stdint.h>
 
 namespace num
 {
   int to_uint64_t(const std::string &str, uint64_t &value);
 }
+
+#endif

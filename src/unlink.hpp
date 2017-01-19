@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __UNLINK_HPP__
+#define __UNLINK_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -22,3 +25,5 @@ namespace mergerfs
     unlink(const char *fusepath);
   }
 }
+
+#endif

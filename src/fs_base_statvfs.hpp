@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_STATVFS_HPP__
+#define __FS_BASE_STATVFS_HPP__
+
 #include <string>
 
 #include <sys/statvfs.h>
@@ -40,3 +43,5 @@ namespace fs
     return fs::statvfs(path.c_str(),st);
   }
 }
+
+#endif

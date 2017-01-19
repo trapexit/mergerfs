@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_MKDIR_HPP__
+#define __FS_BASE_MKDIR_HPP__
+
 #include <string>
 
 #include <sys/stat.h>
@@ -32,3 +35,5 @@ namespace fs
     return ::mkdir(path.c_str(),mode);
   }
 }
+
+#endif

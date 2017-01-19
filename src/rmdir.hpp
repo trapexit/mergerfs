@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __RMDIR_HPP__
+#define __RMDIR_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -22,3 +25,5 @@ namespace mergerfs
     rmdir(const char *fusepath);
   }
 }
+
+#endif

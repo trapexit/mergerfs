@@ -17,21 +17,24 @@
 #ifndef __RV_HPP__
 #define __RV_HPP__
 
-static
-inline
-int
-calc_error(const int rv,
-           const int prev,
-           const int cur)
+namespace error
 {
-  if(rv == -1)
-    {
-      if(prev == 0)
-        return 0;
-      return cur;
-    }
+  static
+  inline
+  int
+  calc(const int rv,
+       const int prev,
+       const int cur)
+  {
+    if(rv == -1)
+      {
+        if(prev == 0)
+          return 0;
+        return cur;
+      }
 
-  return 0;
+    return 0;
+  }
 }
 
 #endif // __RV_HPP__

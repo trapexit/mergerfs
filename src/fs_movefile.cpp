@@ -72,7 +72,7 @@ namespace fs
 
     fusedir = fusepath;
     fs::path::dirname(fusedir);
-    rv = fs::clonepath(fdin_path,fdout_path,fusedir.c_str());
+    rv = fs::clonepath(fdin_path,fdout_path,fusedir);
     if(rv == -1)
       return -1;
 
@@ -91,7 +91,7 @@ namespace fs
       {
         fs::close(fdin);
         fs::close(fdout);
-        fs::unlink(fdout_path.c_str());
+        fs::unlink(fdout_path);
         return -1;
       }
 

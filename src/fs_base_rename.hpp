@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_RENAME_HPP__
+#define __FS_BASE_RENAME_HPP__
+
 #include <stdio.h>
 
 namespace fs
@@ -29,3 +32,5 @@ namespace fs
     return ::rename(oldpath.c_str(),newpath.c_str());
   }
 }
+
+#endif

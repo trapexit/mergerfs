@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __LISTXATTR_HPP__
+#define __LISTXATTR_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -24,3 +27,5 @@ namespace mergerfs
               size_t      count);
   }
 }
+
+#endif

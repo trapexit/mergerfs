@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_CLOSEDIR_HPP__
+#define __FS_BASE_CLOSEDIR_HPP__
+
 #include <dirent.h>
 #include <sys/types.h>
 
@@ -29,3 +32,5 @@ namespace fs
     return ::closedir(dirp);
   }
 }
+
+#endif

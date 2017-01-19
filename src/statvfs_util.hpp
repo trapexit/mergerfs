@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __STATVFS_UTIL_HPP__
+#define __STATVFS_UTIL_HPP__
+
 #include <string>
 
 #include <sys/statvfs.h>
@@ -46,3 +49,5 @@ namespace StatVFS
     return (st.f_frsize * (st.f_blocks - st.f_bavail));
   }
 }
+
+#endif

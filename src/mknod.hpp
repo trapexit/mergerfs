@@ -1,3 +1,4 @@
+
 /*
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
@@ -14,6 +15,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __MKNOD_HPP__
+#define __MKNOD_HPP__
+
 namespace mergerfs
 {
   namespace fuse
@@ -24,3 +28,5 @@ namespace mergerfs
           dev_t       rdev);
   }
 }
+
+#endif

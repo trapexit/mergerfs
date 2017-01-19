@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,9 +16,22 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-namespace clonetool
+#ifndef __FS_BASE_REMOVE_HPP__
+#define __FS_BASE_REMOVE_HPP__
+
+#include <string>
+
+#include <stdio.h>
+
+namespace fs
 {
+  static
+  inline
   int
-  main(const int     argc,
-       char * const *argv);
+  remove(const std::string &pathname)
+  {
+    return ::remove(pathname.c_str());
+  }
 }
+
+#endif

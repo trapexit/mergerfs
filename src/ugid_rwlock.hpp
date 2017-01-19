@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __UGID_RWLOCK_HPP__
+#define __UGID_RWLOCK_HPP__
+
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -97,3 +100,5 @@ namespace mergerfs
     };
   }
 }
+
+#endif

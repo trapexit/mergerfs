@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __ERRNO_HPP__
+#define __ERRNO_HPP__
+
 #include <errno.h>
 
 #if defined(ENODATA) && !defined(ENOATTR)
@@ -26,4 +29,6 @@
 
 #if !defined(ENOATTR) && !defined(ENODATA)
 #error "Neither ENOATTR or ENODATA defined: please contact mergerfs author with platform information"
+#endif
+
 #endif

@@ -16,6 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef __FS_BASE_CHOWN_HPP__
+#define __FS_BASE_CHOWN_HPP__
+
 #include <string>
 
 #include <sys/stat.h>
@@ -72,3 +75,5 @@ namespace fs
     return fs::fchown(fd,st.st_uid,st.st_gid);
   }
 }
+
+#endif
