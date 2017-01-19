@@ -42,8 +42,11 @@ Handles pool of readonly and read/write drives
 \f[B]splice_move\f[], \f[B]splice_read\f[], and \f[B]splice_write\f[].
 These options seem to provide the best performance.
 .IP \[bu] 2
-\f[B]direct_io\f[]: causes FUSE to bypass an addition caching step which
-can increase write speeds at the detriment of read speed.
+\f[B]direct_io\f[]: causes FUSE to bypass caching which can increase
+write speeds at the detriment of reads.
+Note that not enabling \f[C]direct_io\f[] will cause double caching of
+files and therefore less memory for caching generally.
+However, \f[C]mmap\f[] does not work when \f[C]direct_io\f[] is enabled.
 .IP \[bu] 2
 \f[B]minfreespace\f[]: the minimum space value used for creation
 policies.
@@ -690,6 +693,9 @@ https://github.com/trapexit/scorch
 scorch: A tool to help discover silent corruption of files
 .SH TIPS / NOTES
 .IP \[bu] 2
+The recommended options are
+\f[B]defaults,allow_other,direct_io,use_ino\f[].
+.IP \[bu] 2
 Run mergerfs as \f[C]root\f[] unless you\[aq]re merging paths which are
 owned by the same user otherwise strange permission issues may arise.
 .IP \[bu] 2
@@ -715,22 +721,10 @@ targets.
 \f[B]mergerfs\f[] will return an error only if all attempts of an action
 fail.
 Any success will lead to a success returned.
+This means however that some odd situations may arise.
 .IP \[bu] 2
-The recommended options are \f[B]defaults,allow_other\f[].
-The \f[B]allow_other\f[] is to allow users who are not the one which
-executed mergerfs access to the mountpoint.
-\f[B]defaults\f[] is described above and should offer the best
-performance.
-It\[aq]s possible that if you\[aq]re running on an older platform the
-\f[B]splice\f[] features aren\[aq]t available and could error.
-In that case simply use the other options manually.
-.IP \[bu] 2
-If write performance is valued more than read it may be useful to enable
-\f[B]direct_io\f[].
-Best to benchmark with and without and choose appropriately.
-.IP \[bu] 2
-Remember: some policies mixed with some functions may result in strange
-behaviors.
+Remember that some policies mixed with some functions may result in
+strange behaviors.
 Not that some of these behaviors and race conditions couldn\[aq]t happen
 outside \f[B]mergerfs\f[] but that they are far more likely to occur on
 account of attempt to merge together multiple sources of data which
@@ -756,7 +750,22 @@ Due to previously mentioned issues its generally best to set
 \f[B]func\f[]\[aq]s.
 This will help limit the confusion of tools such as
 rsync (http://linux.die.net/man/1/rsync).
+However, the flexibility is there if needed.
 .SH KNOWN ISSUES / BUGS
+.SS cached memory appears greater than it should be
+.PP
+Use the \f[C]direct_io\f[] option as described above.
+Due to what mergerfs is doing there ends up being two caches of a file
+under normal usage.
+One from the underlying filesystem and one from mergerfs.
+Enabling \f[C]direct_io\f[] removes the mergerfs cache.
+This saves on memory but means the kernel needs to communicate with
+mergerfs more often and can therefore result in slower read speeds.
+.PP
+Since enabling \f[C]direct_io\f[] disables \f[C]mmap\f[] this is not an
+ideal situation however write speeds should be increased and there are
+some tweaks being developed which may help in minimizing the extra
+caching.
 .SS rtorrent fails with ENODEV (No such device)
 .PP
 Be sure to turn off \f[C]direct_io\f[].
@@ -765,7 +774,8 @@ mmap (http://linux.die.net/man/2/mmap) to read and write to files and
 offer no failback to traditional methods.
 FUSE does not currently support mmap while using \f[C]direct_io\f[].
 There will be a performance penalty on writes with \f[C]direct_io\f[]
-off but it\[aq]s the only way to get such applications to work.
+off as well as the problem of double caching but it\[aq]s the only way
+to get such applications to work.
 If the performance loss is too high for other apps you can mount
 mergerfs twice.
 Once with \f[C]direct_io\f[] enabled and one without it.
@@ -922,6 +932,7 @@ Add \f[C]no_splice_write,no_splice_move,no_splice_read\f[] to
 mergerfs\[aq] options.
 Should be placed after \f[C]defaults\f[] if it is used since it will
 turn them on.
+This however is not guaranteed to work.
 .SH FAQ
 .SS Why use mergerfs over mhddfs?
 .PP
@@ -933,9 +944,8 @@ the same or maybe better performance.
 .PP
 While aufs can offer better peak performance mergerfs offers more
 configurability and is generally easier to use.
-mergerfs however doesn\[aq]t offer the same overlay features (which
-tends to result in whiteout files being left around the underlying
-filesystems.)
+mergerfs however does not offer the overlay / copy\-on\-write (COW)
+features which aufs and overlayfs have.
 .SS Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation /
 striping?
 .PP
@@ -948,6 +958,16 @@ Drives can fail and all other data will continue to be accessable.
 When combined with something like SnapRaid (http://www.snapraid.it)
 and/or an offsite full backup solution you can have the flexibilty of
 JBOD without the single point of failure.
+.SS Why use mergerfs over ZFS?
+.PP
+MergerFS is not intended to be a replacement for ZFS.
+MergerFS is intended to provide flexible pooling of arbitrary drives
+(local or remote), of arbitrary sizes, and arbitrary filesystems.
+For \f[C]write\ once,\ read\ many\f[] usecases such as media storage.
+And where data integrity and backup can be managed in other ways.
+In that situation ZFS can introduce major maintance and cost burdens as
+described
+here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 .SS Can drives be written to directly? Outside of mergerfs while pooled?
 .PP
 Yes.
@@ -968,12 +988,12 @@ use a path preserving policy.
 .PP
 mergerfs\-inode = (original\-inode | (device\-id << 32))
 .PP
-While \f[C]ino_t\f[] is 64 bits few filesystems use more than 32.
+While \f[C]ino_t\f[] is 64 bits only a few filesystems use more than 32.
 Similarly, while \f[C]dev_t\f[] is also 64 bits it was traditionally 16
 bits.
 Bitwise or\[aq]ing them together should work most of the time.
-Should it cause a problem in the future the values could be hashed
-instead.
+While totally unique inodes are preferred the overhead which would be
+needed does not seem to outweighted by the benefits.
 .SS It\[aq]s mentioned that there are some security issues with mhddfs.
 What are they? How does mergerfs address them?
 .PP
@@ -997,12 +1017,12 @@ behavior poses a problem.
 \f[B]libfuse\f[] is multithreaded by default.
 We\[aq]d need to lock access to \f[B]seteuid\f[] and \f[B]setegid\f[]
 with a mutex so that the several threads aren\[aq]t stepping on one
-anofther and files end up with weird permissions and ownership.
-This however wouldn\[aq]t scale well.
-With lots of calls the contention on that mutex would be extremely high.
-Thankfully on Linux and OSX we have a better solution.
+another and files end up with weird permissions and ownership.
+However, with lots of calls the contention on that mutex would be
+extremely high.
+Thankfully on Linux and macOS there is a better solution.
 .PP
-OSX has a non\-portable pthread
+macOS has a non\-portable pthread
 extension (https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/pthread_setugid_np.2.html)
 for per\-thread user and group impersonation.
 .PP
@@ -1027,14 +1047,14 @@ credentials.
 For details, see nptl(7).
 .RE
 .PP
-Turns out the setreuid syscalls apply only to the thread.
+As it turns out the setreuid syscalls apply only to the thread.
 GLIBC hides this away using RT signals to inform all threads to change
 credentials.
-Taking after \f[B]Samba\f[] mergerfs uses
+Taking after \f[B]Samba\f[], mergerfs uses
 \f[B]syscall(SYS_setreuid,...)\f[] to set the callers credentials for
 that thread only.
 Jumping back to \f[B]root\f[] as necessary should escalated privileges
-be needed (for instance: to clone paths).
+be needed (for instance: to clone paths between drives).
 .PP
 For non\-Linux systems mergerfs uses a read\-write lock and changes
 credentials only when necessary.
