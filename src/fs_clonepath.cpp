@@ -97,8 +97,8 @@ namespace fs
       return -1;
 
     rv = fs::chown(topath,st);
-    if(rv == -1)
-      return -1;
+    //if(rv == -1) 
+    //  return -1;
 
     rv = fs::utime(topath,st);
     if(rv == -1)

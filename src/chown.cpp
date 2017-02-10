@@ -96,6 +96,7 @@ namespace mergerfs
           uid_t       uid,
           gid_t       gid)
     {
+/*
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
@@ -107,6 +108,8 @@ namespace mergerfs
                     fusepath,
                     uid,
                     gid);
+*/
+     return 0;
     }
   }
 }
