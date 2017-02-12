@@ -143,6 +143,8 @@ parse_and_process_arg(Config            &config,
     return (set_default_options(*outargs),0);
   else if(arg == "direct_io")
     return (config.direct_io=true,1);
+  else if(arg == "cifs")
+    return (config.cifs=true,0);
 
   return 1;
 }
@@ -260,6 +262,8 @@ usage(void)
     "                           on write: default false\n"
     "    -o func.<f>=<p>        set function <f> to policy <p>\n"
     "    -o category.<c>=<p>    set functions in category <c> to <p>\n"
+    "    -o cifs                disable chown command execution as CIFS\n"
+    "                           don't support it\n"
             << std::endl;
 }
 

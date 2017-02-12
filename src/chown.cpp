@@ -96,11 +96,13 @@ namespace mergerfs
           uid_t       uid,
           gid_t       gid)
     {
-/*
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.srcmountslock);
+
+      if(config.cifs)
+	return 0;
 
       return _chown(config.chown,
                     config.srcmounts,
@@ -108,8 +110,6 @@ namespace mergerfs
                     fusepath,
                     uid,
                     gid);
-*/
-     return 0;
     }
   }
 }

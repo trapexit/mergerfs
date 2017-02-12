@@ -40,6 +40,7 @@ namespace mergerfs
       minfreespace(MINFREESPACE_DEFAULT),
       moveonenospc(false),
       direct_io(false),
+      cifs(false),
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),
