@@ -82,7 +82,7 @@ namespace fs
         if(errno != EEXIST)
           return -1;
 
-        rv = fs::chmod(topath,st.st_mode);
+        rv = fs::chmod_check_on_error(topath,st.st_mode);
         if(rv == -1)
           return -1;
       }
@@ -96,7 +96,7 @@ namespace fs
     if((rv == -1) && !ignorable_error(errno))
       return -1;
 
-    rv = fs::chown(topath,st);
+    rv = fs::lchown_check_on_error(topath,st);
     if(rv == -1)
       return -1;
 

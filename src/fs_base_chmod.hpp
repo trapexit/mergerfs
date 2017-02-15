@@ -21,6 +21,10 @@
 
 #include <sys/stat.h>
 
+#include "fs_base_stat.hpp"
+
+#define MODE_BITS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+
 namespace fs
 {
   static
@@ -48,6 +52,58 @@ namespace fs
          const struct stat &st)
   {
     return ::fchmod(fd,st.st_mode);
+  }
+
+  static
+  inline
+  int
+  chmod_check_on_error(const std::string &path,
+                       const mode_t       mode)
+  {
+    int rv;
+
+    rv = fs::chmod(path,mode);
+    if(rv == -1)
+      {
+        int error;
+        struct stat st;
+
+        error = errno;
+        rv = fs::stat(path,st);
+        if(rv == -1)
+          return -1;
+
+        if((st.st_mode & MODE_BITS) != (mode & MODE_BITS))
+          return (errno=error,-1);
+      }
+
+    return 0;
+  }
+
+  static
+  inline
+  int
+  fchmod_check_on_error(const int          fd,
+                        const struct stat &st)
+  {
+    int rv;
+
+    rv = fs::fchmod(fd,st);
+    if(rv == -1)
+      {
+        int error;
+        struct stat tmpst;
+
+        error = errno;
+        rv = fs::fstat(fd,tmpst);
+        if(rv == -1)
+          return -1;
+
+        if((st.st_mode & MODE_BITS) != (tmpst.st_mode & MODE_BITS))
+          return (errno=error,-1);
+      }
+
+    return 0;
   }
 }
 
