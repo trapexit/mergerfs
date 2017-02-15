@@ -101,9 +101,6 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
-      if(config.cifs)
-	return 0;
-
       return _chown(config.chown,
                     config.srcmounts,
                     config.minfreespace,
