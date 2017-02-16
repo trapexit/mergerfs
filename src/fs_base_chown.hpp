@@ -25,6 +25,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "fs_base_stat.hpp"
+
 namespace fs
 {
   static
@@ -59,6 +61,15 @@ namespace fs
   static
   inline
   int
+  lchown(const std::string &path,
+         const struct stat &st)
+  {
+    return fs::lchown(path,st.st_uid,st.st_gid);
+  }
+
+  static
+  inline
+  int
   fchown(const int   fd,
          const uid_t uid,
          const gid_t gid)
@@ -73,6 +84,60 @@ namespace fs
          const struct stat &st)
   {
     return fs::fchown(fd,st.st_uid,st.st_gid);
+  }
+
+  static
+  inline
+  int
+  lchown_check_on_error(const std::string &path,
+                        const struct stat &st)
+  {
+    int rv;
+
+    rv = fs::lchown(path,st);
+    if(rv == -1)
+      {
+        int error;
+        struct stat tmpst;
+
+        error = errno;
+        rv = fs::lstat(path,tmpst);
+        if(rv == -1)
+          return -1;
+
+        if((st.st_uid != tmpst.st_uid) ||
+           (st.st_gid != tmpst.st_gid))
+          return (errno=error,-1);
+      }
+
+    return 0;
+  }
+
+  static
+  inline
+  int
+  fchown_check_on_error(const int          fd,
+                        const struct stat &st)
+  {
+    int rv;
+
+    rv = fs::fchown(fd,st);
+    if(rv == -1)
+      {
+        int error;
+        struct stat tmpst;
+
+        error = errno;
+        rv = fs::fstat(fd,tmpst);
+        if(rv == -1)
+          return -1;
+
+        if((st.st_uid != tmpst.st_uid) ||
+           (st.st_gid != tmpst.st_gid))
+          return (errno=error,-1);
+      }
+
+    return 0;
   }
 }
 

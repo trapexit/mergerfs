@@ -176,11 +176,11 @@ namespace fs
     if((rv == -1) && !ignorable_error(errno))
       return -1;
 
-    rv = fs::fchown(fdout,stin);
+    rv = fs::fchown_check_on_error(fdout,stin);
     if(rv == -1)
       return -1;
 
-    rv = fs::fchmod(fdout,stin);
+    rv = fs::fchmod_check_on_error(fdout,stin);
     if(rv == -1)
       return -1;
 
