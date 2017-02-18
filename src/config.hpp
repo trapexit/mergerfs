@@ -48,6 +48,7 @@ namespace mergerfs
     uint64_t                 minfreespace;
     bool                     moveonenospc;
     bool                     direct_io;
+    bool                     dropcacheonclose;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];

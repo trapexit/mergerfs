@@ -18,14 +18,25 @@
 
 #include <string>
 
+#include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_base_close.hpp"
+#include "fs_fadvise.hpp"
 
 static
 int
-_release(FileInfo *fi)
+_release(FileInfo   *fi,
+         const bool  dropcacheonclose)
 {
+  // according to Feh of nocache calling it once doesn't always work
+  // https://github.com/Feh/nocache
+  if(dropcacheonclose)
+    {
+      fs::fadvise(fi->fd,0,0,POSIX_FADV_DONTNEED);
+      fs::fadvise(fi->fd,0,0,POSIX_FADV_DONTNEED);
+    }
+
   fs::close(fi->fd);
 
   delete fi;
@@ -41,9 +52,11 @@ namespace mergerfs
     release(const char     *fusepath,
             fuse_file_info *ffi)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      const fuse_context *fc     = fuse_get_context();
+      const Config       &config = Config::get(fc);
+      FileInfo           *fi     = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _release(fi);
+      return _release(fi,config.dropcacheonclose);
     }
   }
 }
