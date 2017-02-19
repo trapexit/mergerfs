@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2016-12-14
+% 2017-02-18
 
 # NAME
 
@@ -35,10 +35,11 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally. However, `mmap` does not work when `direct_io` is enabled.
 * **minfreespace**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
+* **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
+* **dropcacheonclose**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
+* **fsname**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
-* **fsname**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
-* **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -313,17 +314,27 @@ A B C
 * If you don't see some directories / files you expect in a merged point be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled.
 * Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
-* Remember that some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
-* An example: [Kodi](http://kodi.tv) and [Plex](http://plex.tv) can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the current default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
-* Due to previously mentioned issues its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
+* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
+* Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
+* For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
 
 # KNOWN ISSUES / BUGS
 
+#### directory mtime is not being updated
+
+Remember that the default policy for `getattr` is `ff`. The information for the first directory found will be returned. If it wasn't the directory which had been updated then it will appear outdated.
+
+The reason this is the default is because any other policy would be far more expensive and for many applications it is unnecessary. To always return the directory with the most recent mtime or a faked value based on all found would require a scan of all drives. That alone is far more expensive than `ff` but would also possibly spin up sleeping drives.
+
+If you always want the directory information from the one with the most recent mtime then use the `newest` policy for `getattr`.
+
 #### cached memory appears greater than it should be
 
-Use the `direct_io` option as described above. Due to what mergerfs is doing there ends up being two caches of a file under normal usage. One from the underlying filesystem and one from mergerfs. Enabling `direct_io` removes the mergerfs cache. This saves on memory but means the kernel needs to communicate with mergerfs more often and can therefore result in slower read speeds.
+Use the `direct_io` option as described above. Due to what mergerfs is doing there ends up being two caches of a file under normal usage. One from the underlying filesystem and one from mergerfs. Enabling `direct_io` removes the mergerfs cache. This saves on memory but means the kernel needs to communicate with mergerfs more often and can therefore result in slower speeds.
 
-Since enabling `direct_io` disables `mmap` this is not an ideal situation however write speeds should be increased and there are some tweaks being developed which may help in minimizing the extra caching.
+Since enabling `direct_io` disables `mmap` this is not an ideal situation however write speeds should be increased.
+
+If `direct_io` is disabled it is probably a good idea to enable `dropcacheonclose` to minimize double caching.
 
 #### NFS clients don't work
 
@@ -366,6 +377,10 @@ The gid cache uses fixed storage to simplify the design and be compatible with o
 If suddenly the mergerfs mount point disappears and `Transport endpoint is not connected` is returned when attempting to perform actions within the mount directory **and** the version of libfuse (use `mergerfs -v` to find the version) is older than `2.9.4` its likely due to a bug in libfuse. Affected versions of libfuse can be found in Debian Wheezy, Ubuntu Precise and others.
 
 In order to fix this please install newer versions of libfuse. If using a Debian based distro (Debian,Ubuntu,Mint) you can likely just install newer versions of [libfuse](https://packages.debian.org/unstable/libfuse2) and [fuse](https://packages.debian.org/unstable/fuse) from the repo of a newer release.
+
+#### mergerfs appears to be crashing or exiting
+
+There seems to be an issue with Linux version `4.9.0` and above in which an invalid message appears to be transmitted to libfuse (used by mergerfs) causing it to exit. No messages will be printed in any logs as its not a proper crash. Debugging of the issue is still ongoing and can be followed via the [fuse-devel thread](https://sourceforge.net/p/fuse/mailman/message/35662577).
 
 #### mergerfs under heavy load and memory preasure leads to kernel panic
 

@@ -1,5 +1,5 @@
 .\"t
-.TH "mergerfs" "1" "2016\-12\-14" "mergerfs user manual" ""
+.TH "mergerfs" "1" "2017\-02\-18" "mergerfs user manual" ""
 .SH NAME
 .PP
 mergerfs \- another (FUSE based) union filesystem
@@ -63,6 +63,23 @@ metadata possible) and if successful the original is unlinked and the
 write retried.
 (default: false)
 .IP \[bu] 2
+\f[B]use_ino\f[]: causes mergerfs to supply file/directory inodes rather
+than libfuse.
+While not a default it is generally recommended it be enabled so that
+hard linked files share the same inode value.
+.IP \[bu] 2
+\f[B]dropcacheonclose\f[]: when a file is requested to be closed call
+\f[C]posix_fadvise\f[] on it first to instruct the kernel that we no
+longer need the data and it can drop its cache.
+Recommended when \f[B]direct_io\f[] is not enabled to limit double
+caching.
+(default: false)
+.IP \[bu] 2
+\f[B]fsname\f[]: sets the name of the filesystem as seen in
+\f[B]mount\f[], \f[B]df\f[], etc.
+Defaults to a list of the source paths concatenated together with the
+longest common prefix removed.
+.IP \[bu] 2
 \f[B]func.<func>=<policy>\f[]: sets the specific FUSE function\[aq]s
 policy.
 See below for the list of value types.
@@ -71,16 +88,6 @@ Example: \f[B]func.getattr=newest\f[]
 \f[B]category.<category>=<policy>\f[]: Sets policy of all FUSE functions
 in the provided category.
 Example: \f[B]category.create=mfs\f[]
-.IP \[bu] 2
-\f[B]fsname\f[]: sets the name of the filesystem as seen in
-\f[B]mount\f[], \f[B]df\f[], etc.
-Defaults to a list of the source paths concatenated together with the
-longest common prefix removed.
-.IP \[bu] 2
-\f[B]use_ino\f[]: causes mergerfs to supply file/directory inodes rather
-than libfuse.
-While not a default it is generally recommended it be enabled so that
-hard linked files share the same inode value.
 .PP
 \f[B]NOTE:\f[] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
@@ -719,35 +726,49 @@ fail.
 Any success will lead to a success returned.
 This means however that some odd situations may arise.
 .IP \[bu] 2
-Remember that some policies mixed with some functions may result in
-strange behaviors.
-Not that some of these behaviors and race conditions couldn\[aq]t happen
-outside \f[B]mergerfs\f[] but that they are far more likely to occur on
-account of attempt to merge together multiple sources of data which
-could be out of sync due to the different policies.
-.IP \[bu] 2
-An example: Kodi (http://kodi.tv) and Plex (http://plex.tv) can use
-directory mtime (http://linux.die.net/man/2/stat) to more efficiently
-determine whether to scan for new content rather than simply performing
-a full scan.
-If using the current default \f[B]getattr\f[] policy of \f[B]ff\f[] its
-possible \f[B]Kodi\f[] will miss an update on account of it returning
-the first directory found\[aq]s \f[B]stat\f[] info and its a later
-directory on another mount which had the \f[B]mtime\f[] recently
-updated.
+Kodi (http://kodi.tv), Plex (http://plex.tv),
+Subsonic (http://subsonic.org), etc.
+can use directory mtime (http://linux.die.net/man/2/stat) to more
+efficiently determine whether to scan for new content rather than simply
+performing a full scan.
+If using the default \f[B]getattr\f[] policy of \f[B]ff\f[] its possible
+\f[B]Kodi\f[] will miss an update on account of it returning the first
+directory found\[aq]s \f[B]stat\f[] info and its a later directory on
+another mount which had the \f[B]mtime\f[] recently updated.
 To fix this you will want to set \f[B]func.getattr=newest\f[].
 Remember though that this is just \f[B]stat\f[].
 If the file is later \f[B]open\f[]\[aq]ed or \f[B]unlink\f[]\[aq]ed and
 the policy is different for those then a completely different file or
 directory could be acted on.
 .IP \[bu] 2
-Due to previously mentioned issues its generally best to set
-\f[B]category\f[] wide policies rather than individual
-\f[B]func\f[]\[aq]s.
+Some policies mixed with some functions may result in strange behaviors.
+Not that some of these behaviors and race conditions couldn\[aq]t happen
+outside \f[B]mergerfs\f[] but that they are far more likely to occur on
+account of attempt to merge together multiple sources of data which
+could be out of sync due to the different policies.
+.IP \[bu] 2
+For consistency its generally best to set \f[B]category\f[] wide
+policies rather than individual \f[B]func\f[]\[aq]s.
 This will help limit the confusion of tools such as
 rsync (http://linux.die.net/man/1/rsync).
 However, the flexibility is there if needed.
 .SH KNOWN ISSUES / BUGS
+.SS directory mtime is not being updated
+.PP
+Remember that the default policy for \f[C]getattr\f[] is \f[C]ff\f[].
+The information for the first directory found will be returned.
+If it wasn\[aq]t the directory which had been updated then it will
+appear outdated.
+.PP
+The reason this is the default is because any other policy would be far
+more expensive and for many applications it is unnecessary.
+To always return the directory with the most recent mtime or a faked
+value based on all found would require a scan of all drives.
+That alone is far more expensive than \f[C]ff\f[] but would also
+possibly spin up sleeping drives.
+.PP
+If you always want the directory information from the one with the most
+recent mtime then use the \f[C]newest\f[] policy for \f[C]getattr\f[].
 .SS cached memory appears greater than it should be
 .PP
 Use the \f[C]direct_io\f[] option as described above.
@@ -756,12 +777,13 @@ under normal usage.
 One from the underlying filesystem and one from mergerfs.
 Enabling \f[C]direct_io\f[] removes the mergerfs cache.
 This saves on memory but means the kernel needs to communicate with
-mergerfs more often and can therefore result in slower read speeds.
+mergerfs more often and can therefore result in slower speeds.
 .PP
 Since enabling \f[C]direct_io\f[] disables \f[C]mmap\f[] this is not an
-ideal situation however write speeds should be increased and there are
-some tweaks being developed which may help in minimizing the extra
-caching.
+ideal situation however write speeds should be increased.
+.PP
+If \f[C]direct_io\f[] is disabled it is probably a good idea to enable
+\f[C]dropcacheonclose\f[] to minimize double caching.
 .SS NFS clients don\[aq]t work
 .PP
 Some NFS clients appear to fail when a mergerfs mount is exported.
@@ -887,6 +909,15 @@ install newer versions of
 libfuse (https://packages.debian.org/unstable/libfuse2) and
 fuse (https://packages.debian.org/unstable/fuse) from the repo of a
 newer release.
+.SS mergerfs appears to be crashing or exiting
+.PP
+There seems to be an issue with Linux version \f[C]4.9.0\f[] and above
+in which an invalid message appears to be transmitted to libfuse (used
+by mergerfs) causing it to exit.
+No messages will be printed in any logs as its not a proper crash.
+Debugging of the issue is still ongoing and can be followed via the
+fuse\-devel
+thread (https://sourceforge.net/p/fuse/mailman/message/35662577).
 .SS mergerfs under heavy load and memory preasure leads to kernel panic
 .PP
 https://lkml.org/lkml/2016/9/14/527
