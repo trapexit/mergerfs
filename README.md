@@ -68,9 +68,9 @@ To have the pool mounted at boot or otherwise accessable from related tools use 
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
-The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs these functions are grouped into 3 categories: **action**, **create**, and **search**. Functions and categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a function or category though some are not very practical. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` (though only if there were more than one copy of the file).
+The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs these functions are grouped into 3 categories: **action**, **create**, and **search**. Functions and categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` (though only if there were more than one copy of the file).
 
-Policies, when called to create, will ignore drives which are readonly or have less than **minfreespace**. This allows for read/write and readonly drives to be mixed together and keep drives which may remount as readonly on error from further affecting the pool.
+Policies, when called to create, will ignore drives which are readonly. This allows for readonly and read/write drives to be mixed together. Note that the drive must be explicitly mounted with the **ro** mount option for this to work.
 
 #### Function / Category classifications ####
 
@@ -88,21 +88,21 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | Policy | Description |
 |--------------|-------------|
 | all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **ff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
-| epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
-| epff | Given the order of the drives, as defined at mount time or when configured via the xattr interface, act on the first one found where the path already exists. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). Falls back to **ff**. |
-| eplfs (existing path, least free space) | If the path exists on multiple drives use the one with the least free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
-| eplus (existing path, least used space) | If the path exists on multiple drives use the one with the least used space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lus**. |
-| epmfs (existing path, most free space) | If the path exists on multiple drives use the one with the most free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
-| eprand (existing path, random) | Calls **epall** and then randomizes. |
-| erofs | Exclusively return **-1** with **errno** set to **EROFS**. By setting **create** functions to this you can in effect turn the filesystem readonly. |
-| ff (first found) | Given the order of the drives, as defined at mount time or when configured via xattr interface, act on the first one found. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
-| lfs (least free space) | Pick the drive with the least available free space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
-| lus (least used space) | Pick the drive with the least used space. For **create** category it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
-| mfs (most free space) | Pick the drive with the most available free space. For **create** category it will exclude readonly drives. Falls back to **ff**. |
-| newest (newest file) | Pick the file / directory with the largest mtime. For **create** category it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
+| epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. Excludes readonly drives and those with free space less than **minfreespace**. |
+| epff (existing path, first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found where the relative path already exists. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). Falls back to **ff**. |
+| eplfs (existing path, least free space) | Of all the drives on which the relative path exists choose the drive with the least free space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
+| eplus (existing path, least used space) | Of all the drives on which the relative path exists choose the drive with the least used space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lus**. |
+| epmfs (existing path, most free space) | Of all the drives on which the relative path exists choose the drive with the most free space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| eprand (existing path, random) | Calls **epall** and then randomizes. Otherwise behaves the same as **epall**. |
+| erofs | Exclusively return **-1** with **errno** set to **EROFS** (Read-only filesystem). By setting **create** functions to this you can in effect turn the filesystem mostly readonly. |
+| ff (first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
+| lfs (least free space) | Pick the drive with the least available free space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| lus (least used space) | Pick the drive with the least used space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| mfs (most free space) | Pick the drive with the most available free space. For **create** category functions it will exclude readonly drives. Falls back to **ff**. |
+| newest | Pick the file / directory with the largest mtime. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
 | rand (random) | Calls **all** and then randomizes. |
 
-**epff**, **eplfs**, **eplus**, and **epmf** are path preserving policies. As the descriptions above explain they will only consider drives where the path being accessed exists. Non-path preserving policies will clone paths as necessary.
+**epff**, **eplfs**, **eplus**, **epmf**, **eprand** are `path preserving` policies. As the descriptions above explain they will only consider drives where the relative path being accessed already exists. Non-path preserving policies will result in paths being copied to drives as necessary.
 
 #### Defaults ####
 
@@ -114,9 +114,11 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 
 #### rename & link ####
 
-[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Normally if a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV**. The atomic rename is most critical for replacing files in place atomically (such as securing writing to a temp file and then replacing a target). The problem is that by merging multiple paths you can have N instances of the source and destinations on different drives. This can lead to several undesirable situtations with or without errors and it's not entirely obvious what to do when an error occurs.
+[rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Under normal situations rename only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device).
 
-Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or they only partially support EXDEV (don't respond the same as `mv` would). Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
+Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or otherwise handle it poorly. Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
+
+As a result a compromise was made in order to get most software to work while still obeying mergerfs' policies. Below is the rather complicated logic.
 
 * If using a **create** policy which tries to preserve directory paths (epff,eplfs,eplus,epmfs)
   * Using the **rename** policy get the list of files to rename
@@ -144,9 +146,11 @@ Originally mergerfs would return EXDEV whenever a rename was requested which was
 
 The the removals are subject to normal entitlement checks.
 
-The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible. To remove the possibility all together mergerfs would need to perform the as **mv** does when it receives EXDEV normally.
+The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible.
 
 **link** uses the same basic strategy.
+
+If you're receiving errors from software when files are moved / renamed then you should consider changing the create policy to one which is **not** path preserving.
 
 #### readdir ####
 
@@ -302,16 +306,19 @@ A B C
   * mergerfs.ctl: A tool to make it easier to query and configure mergerfs at runtime
   * mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
   * mergerfs.dedup: Will help identify and optionally remove duplicate files
+  * mergerfs.balance: Rebalance files across drives by moving them from the most filled to the least filled
   * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 * https://github.com/trapexit/scorch
   * scorch: A tool to help discover silent corruption of files
+* https://github.com/trapexit/bbf
+  * bbf (bad block finder): a tool to scan for and 'fix' hard drive bad blocks and find the files using those blocks
 
 # TIPS / NOTES
 
 * The recommended options are **defaults,allow_other,direct_io,use_ino**.
 * Run mergerfs as `root` unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
-* If you don't see some directories / files you expect in a merged point be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
+* If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled.
 * Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
@@ -432,29 +439,31 @@ mhddfs is no longer maintained and has some known stability and security issues 
 
 #### Why use mergerfs over aufs?
 
-While aufs can offer better peak performance mergerfs offers more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (COW) features which aufs and overlayfs have.
+While aufs can offer better peak performance mergerfs provides more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (COW) features which aufs and overlayfs have.
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will lead to full pool failure. mergerfs performs a similar behavior without the catastrophic failure and general lack of recovery. Drives can fail and all other data will continue to be accessable.
+With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar behavior without the possibility of catastrophic failure and difficulties in recovery. Drives may fail however all other data will continue to be accessable.
 
-When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite full backup solution you can have the flexibilty of JBOD without the single point of failure.
+When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite backup solution you can have the flexibilty of JBOD without the single point of failure.
 
 #### Why use mergerfs over ZFS?
 
-MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as media storage. And where data integrity and backup can be managed in other ways. In that situation ZFS can introduce major maintance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
+MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce major maintance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes. It will be represented immediately in the pool as the policies would describe.
+Yes. It will be represented immediately in the pool as the policies perscribe.
 
 #### Why do I get an "out of space" error even though the system says there's lots of space left?
 
-Please reread the sections above about policies, path preserving, and the **moveonenospc** option. If the policy is path preserving and a drive is almost full and the drive the policy would pick then the writing of the file may fill the drive and receive ENOSPC errors. That is expected with those settings. If you don't want that: enable **moveonenospc** and don't use a path preserving policy.
+Please reread the sections above about policies, path preserving, and the **moveonenospc** option.
+
+Remember that mergerfs is simply presenting a logical merging of the contents of the pooled drives. The reported free space is the aggregate space available *not* the contiguous space available. If the writing of a file fills a drive and **moveonenospc** is disabled it will return an ENOSPC error.
 
 #### Can mergerfs mounts be exported over NFS?
 
-Yes. Some clients (Kodi) have issues but users have found that enabling the `use_ino` option often address the problem.
+Yes. Some clients (Kodi) have issues in which the contents of the NFS mount will not be presented but users have found that enabling the `use_ino` option often fixes that problem.
 
 #### Can mergerfs mounts be exported over Samba / SMB?
 
