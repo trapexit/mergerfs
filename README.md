@@ -457,9 +457,13 @@ Yes. It will be represented immediately in the pool as the policies perscribe.
 
 #### Why do I get an "out of space" error even though the system says there's lots of space left?
 
-Please reread the sections above about policies, path preserving, and the **moveonenospc** option.
+First make sure you've read the sections above about policies, path preserving, and the **moveonenospc** option.
 
-Remember that mergerfs is simply presenting a logical merging of the contents of the pooled drives. The reported free space is the aggregate space available *not* the contiguous space available. If the writing of a file fills a drive and **moveonenospc** is disabled it will return an ENOSPC error.
+Remember that mergerfs is simply presenting a logical merging of the contents of the pooled drives. The reported free space is the aggregate space available **not** the contiguous space available. MergerFS does not split files across drives. If the writing of a file fills a drive and **moveonenospc** is disabled it will return an ENOSPC error.
+
+If **moveonenospc** is enabled but there exists no drives with enough space for the file and the data to be written (or the drive happened to fill up as the file was being moved) it will error indicating there isn't enough space.
+
+It is also possible that the filesystem selected has run out of inodes. Use `df -i` to list the total and available inodes per filesystem. In the future it might be worth considering the number of inodes available when making placement decisions in order to minimize this situation.
 
 #### Can mergerfs mounts be exported over NFS?
 
