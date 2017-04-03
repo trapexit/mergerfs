@@ -5,7 +5,7 @@
 .hy
 .SH NAME
 .PP
-mergerfs \- another (FUSE based) union filesystem
+mergerfs \- a featureful union filesystem
 .SH SYNOPSIS
 .PP
 mergerfs \-o<options> <srcmounts> <mountpoint>
@@ -198,6 +198,20 @@ It\[aq]ll use the \f[B]getattr\f[] policy to find and open the directory
 before issuing the \f[B]ioctl\f[].
 In other cases where something may be searched (to confirm a directory
 exists across all source mounts) \f[B]getattr\f[] will also be used.
+.SS Path Preservation
+.PP
+Policies, as described below, are of two core types.
+\f[C]path\ preserving\f[] and \f[C]non\-path\ preserving\f[].
+.PP
+All policies which start with \f[C]ep\f[] (\f[B]epff\f[],
+\f[B]eplfs\f[], \f[B]eplus\f[], \f[B]epmfs\f[], \f[B]eprand\f[]) are
+\f[C]path\ preserving\[aq].\f[]ep\f[C]stands\ for\ \[aq]existing\ path\f[].
+.PP
+As the descriptions explain a path preserving policy will only consider
+drives where the relative path being accessed already exists.
+.PP
+When using non\-path preserving policies where something is created
+paths will be copied to target drives as necessary.
 .SS Policy descriptions
 .PP
 .TS
@@ -329,13 +343,6 @@ T}@T{
 Calls \f[B]all\f[] and then randomizes.
 T}
 .TE
-.PP
-\f[B]epff\f[], \f[B]eplfs\f[], \f[B]eplus\f[], \f[B]epmf\f[],
-\f[B]eprand\f[] are \f[C]path\ preserving\f[] policies.
-As the descriptions above explain they will only consider drives where
-the relative path being accessed already exists.
-Non\-path preserving policies will result in paths being copied to
-drives as necessary.
 .SS Defaults
 .PP
 .TS
@@ -364,6 +371,12 @@ ff
 T}
 .TE
 .SS rename & link
+.PP
+\f[B]NOTE:\f[] If you\[aq]re receiving errors from software when files
+are moved / renamed then you should consider changing the create policy
+to one which is \f[B]not\f[] path preserving or contacting the author of
+the offending software and requesting that \f[C]EXDEV\f[] be properly
+handled.
 .PP
 rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
 function in a merged system.
@@ -453,10 +466,6 @@ The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 .PP
 \f[B]link\f[] uses the same basic strategy.
-.PP
-If you\[aq]re receiving errors from software when files are moved /
-renamed then you should consider changing the create policy to one which
-is \f[B]not\f[] path preserving.
 .SS readdir
 .PP
 readdir (http://linux.die.net/man/3/readdir) is different from all other
@@ -822,23 +831,23 @@ Once with \f[C]direct_io\f[] enabled and one without it.
 There is a bug (https://lkml.org/lkml/2016/3/16/260) in caching which
 affects overall performance of mmap through FUSE in Linux 4.x kernels.
 It is fixed in 4.4.10 and 4.5.4 (https://lkml.org/lkml/2016/5/11/59).
-.SS Trashing files occasionally fails
+.SS When a program tries to move or rename a file it fails
 .PP
-This is the same issue as with Samba.
-\f[C]rename\f[] returns \f[C]EXDEV\f[] (in our case that will really
-only happen with path preserving policies like \f[C]epmfs\f[]) and the
-software doesn\[aq]t handle the situtation well.
-This is unfortunately a common failure of software which moves files
-around.
-The standard indicates that an implementation \f[C]MAY\f[] choose to
-support non\-user home directory trashing of files (which is a
-\f[C]MUST\f[]).
-The implementation \f[C]MAY\f[] also support "top directory trashes"
-which many probably do.
+Please read the section above regarding rename & link (#rename--link).
 .PP
-To create a \f[C]$topdir/.Trash\f[] directory as defined in the standard
-use the mergerfs\-tools (https://github.com/trapexit/mergerfs-tools)
-tool \f[C]mergerfs.mktrash\f[].
+The problem is that many applications do not properly handle
+\f[C]EXDEV\f[] errors which \f[C]rename\f[] and \f[C]link\f[] may return
+even though they are perfectly valid situations which do not indicate
+actual drive or OS errors.
+The error will only be returned by mergerfs if using a path preserving
+policy as described in the policy section above.
+If you do not care about path preservation simply change the mergerfs
+policy to the non\-path preserving version.
+For example: \f[C]\-o\ category.create=mfs\f[]
+.PP
+Ideally the offending software would be fixed and it is recommended that
+if you run into this problem you contact the software\[aq]s author and
+request proper handling of \f[C]EXDEV\f[] errors.
 .SS Samba: Moving files / directories fails
 .PP
 Workaround: Copy the file/directory and then remove the original rather
@@ -873,6 +882,23 @@ In Apple\[aq]s MacOSX 10.9 they replaced Samba (client and server) with
 their own product.
 It appears their new client does not handle \f[B]EXDEV\f[] either and
 responds similar to older release of gvfs on Linux.
+.SS Trashing files occasionally fails
+.PP
+This is the same issue as with Samba.
+\f[C]rename\f[] returns \f[C]EXDEV\f[] (in our case that will really
+only happen with path preserving policies like \f[C]epmfs\f[]) and the
+software doesn\[aq]t handle the situtation well.
+This is unfortunately a common failure of software which moves files
+around.
+The standard indicates that an implementation \f[C]MAY\f[] choose to
+support non\-user home directory trashing of files (which is a
+\f[C]MUST\f[]).
+The implementation \f[C]MAY\f[] also support "top directory trashes"
+which many probably do.
+.PP
+To create a \f[C]$topdir/.Trash\f[] directory as defined in the standard
+use the mergerfs\-tools (https://github.com/trapexit/mergerfs-tools)
+tool \f[C]mergerfs.mktrash\f[].
 .SS Supplemental user groups
 .PP
 Due to the overhead of
@@ -987,6 +1013,9 @@ mhddfs is no longer maintained and has some known stability and security
 issues (see below).
 MergerFS provides a superset of mhddfs\[aq] features and should offer
 the same or maybe better performance.
+.PP
+If you wish to get similar behavior to mhddfs from mergerfs then set
+\f[C]category.create=ff\f[].
 .SS Why use mergerfs over aufs?
 .PP
 While aufs can offer better peak performance mergerfs provides more
