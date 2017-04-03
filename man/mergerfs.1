@@ -38,7 +38,7 @@ capacity)
 .IP \[bu] 2
 Handles pool of readonly and read/write drives
 .SH OPTIONS
-.SS options
+.SS mount options
 .IP \[bu] 2
 \f[B]defaults\f[]: a shortcut for FUSE\[aq]s \f[B]atomic_o_trunc\f[],
 \f[B]auto_cache\f[], \f[B]big_writes\f[], \f[B]default_permissions\f[],
@@ -1024,15 +1024,28 @@ perscribe.
 .SS Why do I get an "out of space" error even though the system says
 there\[aq]s lots of space left?
 .PP
-Please reread the sections above about policies, path preserving, and
-the \f[B]moveonenospc\f[] option.
+First make sure you\[aq]ve read the sections above about policies, path
+preserving, and the \f[B]moveonenospc\f[] option.
 .PP
 Remember that mergerfs is simply presenting a logical merging of the
 contents of the pooled drives.
-The reported free space is the aggregate space available \f[I]not\f[]
+The reported free space is the aggregate space available \f[B]not\f[]
 the contiguous space available.
+MergerFS does not split files across drives.
 If the writing of a file fills a drive and \f[B]moveonenospc\f[] is
 disabled it will return an ENOSPC error.
+.PP
+If \f[B]moveonenospc\f[] is enabled but there exists no drives with
+enough space for the file and the data to be written (or the drive
+happened to fill up as the file was being moved) it will error
+indicating there isn\[aq]t enough space.
+.PP
+It is also possible that the filesystem selected has run out of inodes.
+Use \f[C]df\ \-i\f[] to list the total and available inodes per
+filesystem.
+In the future it might be worth considering the number of inodes
+available when making placement decisions in order to minimize this
+situation.
 .SS Can mergerfs mounts be exported over NFS?
 .PP
 Yes.

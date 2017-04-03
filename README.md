@@ -29,7 +29,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 # OPTIONS
 
-###options###
+### mount options
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
 * **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally. However, `mmap` does not work when `direct_io` is enabled.
@@ -43,7 +43,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
-###srcmounts###
+### srcmounts
 
 The srcmounts (source mounts) argument is a colon (':') delimited list of paths to be included in the pool. It does not matter if the paths are on the same or different drives nor does it matter the filesystem. Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
 
