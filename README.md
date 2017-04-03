@@ -4,7 +4,7 @@
 
 # NAME
 
-mergerfs - another (FUSE based) union filesystem
+mergerfs - a featureful union filesystem
 
 # SYNOPSIS
 
@@ -72,7 +72,7 @@ The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown
 
 Policies, when called to create, will ignore drives which are readonly. This allows for readonly and read/write drives to be mixed together. Note that the drive must be explicitly mounted with the **ro** mount option for this to work.
 
-#### Function / Category classifications ####
+#### Function / Category classifications
 
 | Category | FUSE Functions |
 |----------|----------------|
@@ -83,7 +83,17 @@ Policies, when called to create, will ignore drives which are readonly. This all
 
 Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will also be used.
 
-#### Policy descriptions ####
+#### Path Preservation
+
+Policies, as described below, are of two core types. `path preserving` and `non-path preserving`.
+
+All policies which start with `ep` (**epff**, **eplfs**, **eplus**, **epmfs**, **eprand**) are `path preserving'. `ep` stands for 'existing path`.
+
+As the descriptions explain a path preserving policy will only consider drives where the relative path being accessed already exists.
+
+When using non-path preserving policies where something is created paths will be copied to target drives as necessary.
+
+#### Policy descriptions
 
 | Policy | Description |
 |--------------|-------------|
@@ -102,8 +112,6 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | newest | Pick the file / directory with the largest mtime. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
 | rand (random) | Calls **all** and then randomizes. |
 
-**epff**, **eplfs**, **eplus**, **epmf**, **eprand** are `path preserving` policies. As the descriptions above explain they will only consider drives where the relative path being accessed already exists. Non-path preserving policies will result in paths being copied to drives as necessary.
-
 #### Defaults ####
 
 | Category | Policy |
@@ -113,6 +121,8 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 | search   | ff     |
 
 #### rename & link ####
+
+**NOTE:** If you're receiving errors from software when files are moved / renamed then you should consider changing the create policy to one which is **not** path preserving or contacting the author of the offending software and requesting that `EXDEV` be properly handled.
 
 [rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Under normal situations rename only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device).
 
@@ -149,8 +159,6 @@ The the removals are subject to normal entitlement checks.
 The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible.
 
 **link** uses the same basic strategy.
-
-If you're receiving errors from software when files are moved / renamed then you should consider changing the create policy to one which is **not** path preserving.
 
 #### readdir ####
 
@@ -357,11 +365,13 @@ Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap]
 
 There [is a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59).
 
-#### Trashing files occasionally fails
+#### When a program tries to move or rename a file it fails
 
-This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
+Please read the section above regarding [rename & link](#rename--link).
 
-To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
+The problem is that many applications do not properly handle `EXDEV` errors which `rename` and `link` may return even though they are perfectly valid situations which do not indicate actual drive or OS errors. The error will only be returned by mergerfs if using a path preserving policy as described in the policy section above. If you do not care about path preservation simply change the mergerfs policy to the non-path preserving version. For example: `-o category.create=mfs`
+
+Ideally the offending software would be fixed and it is recommended that if you run into this problem you contact the software's author and request proper handling of `EXDEV` errors.
 
 #### Samba: Moving files / directories fails
 
@@ -372,6 +382,12 @@ This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3 and prior
 [GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568) and above fixed this issue but a large number of systems use the older release. On Ubuntu the version can be checked by issuing `apt-cache showpkg gvfs-fuse`. Most distros released in 2015 seem to have the updated release and will work fine but older systems may not. Upgrading gvfs-fuse or the distro in general will address the problem.
 
 In Apple's MacOSX 10.9 they replaced Samba (client and server) with their own product. It appears their new client does not handle **EXDEV** either and responds similar to older release of gvfs on Linux.
+
+#### Trashing files occasionally fails
+
+This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
+
+To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
 
 #### Supplemental user groups
 
@@ -436,6 +452,8 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 #### Why use mergerfs over mhddfs?
 
 mhddfs is no longer maintained and has some known stability and security issues (see below). MergerFS provides a superset of mhddfs' features and should offer the same or maybe better performance.
+
+If you wish to get similar behavior to mhddfs from mergerfs then set `category.create=ff`.
 
 #### Why use mergerfs over aufs?
 
