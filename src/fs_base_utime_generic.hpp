@@ -25,9 +25,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
-#if __APPLE__
-#import <sys/param.h> /* MAXPATHLEN */
-#endif
+#include "futimesat.hpp" /* futimesat replacement */
 
 #ifndef UTIME_NOW
 # define UTIME_NOW  ((1l << 30) - 1l)
@@ -293,16 +291,7 @@ namespace fs
 
     if((flags & AT_SYMLINK_NOFOLLOW) == 0) {
 #if __APPLE__
-      
-      char fullpath[MAXPATHLEN];
-      
-      if (fcntl(dirfd,F_GETPATH,fullpath) < 0)
-        return (errno=errno,-1);
-      
-      if (strlcat(fullpath, "/", MAXPATHLEN) > MAXPATHLEN || strlcat(fullpath, path.c_str(), MAXPATHLEN) > MAXPATHLEN)
-          return (errno=ENAMETOOLONG,-1);
-      
-      return ::utimes(fullpath,tvp);
+      return _futimesat(dirfd,path.c_str(),tvp);
 #else
       return ::futimesat(dirfd,path.c_str(),tvp);
 #endif
