@@ -21,12 +21,22 @@ namespace mergerfs
 {
   namespace fuse
   {
+#if __APPLE__
+    int
+    getxattr(const char *fusepath,
+             const char *attrname,
+             char       *buf,
+             size_t      count,
+             uint32_t    position);
+  }
+#else
     int
     getxattr(const char *fusepath,
              const char *attrname,
              char       *buf,
              size_t      count);
   }
+#endif
 }
 
 #endif

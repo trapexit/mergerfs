@@ -18,8 +18,12 @@
 #define __XATTR_HPP__
 
 #ifndef WITHOUT_XATTR
+#if __APPLE__
+#include <sys/xattr.h>
+#else
 #include <attr/xattr.h>
-#endif
+#endif /* __APPLE__ */
+#endif /* WITHOUT_XATTR */
 
 #ifndef XATTR_CREATE
 # define XATTR_CREATE 0x1

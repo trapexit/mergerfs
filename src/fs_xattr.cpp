@@ -36,6 +36,60 @@ using std::vector;
 using std::map;
 using std::istringstream;
 
+/*
+  The Mac version of the get/set APIs includes a position arg to seek around the
+  resource fork; for all other uses, the value is 0.
+
+  For the other APIs, there are no link-specific variants; rather the standard call
+  has a flags argument where XATTR_NOFOLLOW is specified to address the link itself.
+*/
+
+#if __APPLE__
+  ssize_t
+  _flistxattr(int fd, char* namebuf, size_t size)
+  {
+    return ::flistxattr(fd, namebuf, size, 0);
+  }
+  
+  ssize_t
+  _llistxattr(const char* path, char* namebuf, size_t size)
+  {
+    return ::listxattr(path, namebuf, size, XATTR_NOFOLLOW);
+  }
+  
+  ssize_t
+  _fgetxattr(int fd, const char* name, char* value, size_t size)
+  {
+    return ::fgetxattr(fd, name, value, size, 0, 0);
+  }
+
+  int
+  _lgetxattr(const char* path, const char* name, char* value, size_t size)
+  {
+    return ::getxattr(path, name, value, size, 0, XATTR_NOFOLLOW);
+  }
+  
+  int
+  _fsetxattr(int fd, const char* name, const char* value, size_t size, int flags)
+  {
+    return ::fsetxattr(fd, name, value, size, 0, flags);
+  }
+
+  int
+  _lsetxattr(const char* path, const char* name, const char* value, size_t size, int flags)
+  {
+    return ::setxattr(path, name, value, size, 0, flags && XATTR_NOFOLLOW);
+  }
+  
+#else
+  #define _flistxattr ::flistxattr
+  #define _llistxattr ::llistxattr
+  #define _fgetxattr  ::fgetxattr
+  #define _lgetxattr  ::lgetxattr
+  #define _fsetxattr  ::fsetxattr
+  #define _lsetxattr  ::lsetxattr
+#endif
+
 namespace fs
 {
   namespace xattr
@@ -51,13 +105,13 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::flistxattr(fd,NULL,0);
+          rv = _flistxattr(fd,NULL,0);
           if(rv <= 0)
             return rv;
 
           attrs.resize(rv);
 
-          rv = ::flistxattr(fd,&attrs[0],rv);
+          rv = _flistxattr(fd,&attrs[0],rv);
         }
 
       return rv;
@@ -77,13 +131,13 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::llistxattr(path.c_str(),NULL,0);
+          rv = _llistxattr(path.c_str(),NULL,0);
           if(rv <= 0)
             return rv;
 
           attrs.resize(rv);
 
-          rv = ::llistxattr(path.c_str(),&attrs[0],rv);
+          rv = _llistxattr(path.c_str(),&attrs[0],rv);
         }
 
       return rv;
@@ -166,13 +220,13 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::fgetxattr(fd,attr.c_str(),NULL,0);
+          rv = _fgetxattr(fd,attr.c_str(),NULL,0);
           if(rv <= 0)
             return rv;
 
           value.resize(rv);
 
-          rv = ::fgetxattr(fd,attr.c_str(),&value[0],rv);
+          rv = _fgetxattr(fd,attr.c_str(),&value[0],rv);
         }
 
       return rv;
@@ -193,13 +247,13 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::lgetxattr(path.c_str(),attr.c_str(),NULL,0);
+          rv = _lgetxattr(path.c_str(),attr.c_str(),NULL,0);
           if(rv <= 0)
             return rv;
 
           value.resize(rv);
 
-          rv = ::lgetxattr(path.c_str(),attr.c_str(),&value[0],rv);
+          rv = _lgetxattr(path.c_str(),attr.c_str(),&value[0],rv);
         }
 
       return rv;
@@ -301,11 +355,11 @@ namespace fs
         const int     flags)
     {
 #ifndef WITHOUT_XATTR
-      return ::fsetxattr(fd,
-                         key.c_str(),
-                         value.data(),
-                         value.size(),
-                         flags);
+      return _fsetxattr(fd,
+                        key.c_str(),
+                        value.data(),
+                        value.size(),
+                        flags);
 #else
       return (errno=ENOTSUP,-1);
 #endif
@@ -318,11 +372,11 @@ namespace fs
         const int     flags)
     {
 #ifndef WITHOUT_XATTR
-      return ::lsetxattr(path.c_str(),
-                         key.c_str(),
-                         value.data(),
-                         value.size(),
-                         flags);
+      return _lsetxattr(path.c_str(),
+                        key.c_str(),
+                        value.data(),
+                        value.size(),
+                        flags);
 #else
       return (errno=ENOTSUP,-1);
 #endif

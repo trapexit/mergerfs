@@ -302,11 +302,20 @@ namespace mergerfs
 {
   namespace fuse
   {
+#if __APPLE__
+    int
+    getxattr(const char *fusepath,
+             const char *attrname,
+             char       *buf,
+             size_t      count,
+             uint32_t    position)
+#else
     int
     getxattr(const char *fusepath,
              const char *attrname,
              char       *buf,
              size_t      count)
+#endif
     {
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);

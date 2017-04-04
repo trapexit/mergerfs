@@ -33,7 +33,11 @@ namespace fs
                const char        *attrname)
   {
 #ifndef WITHOUT_XATTR
+#if __APPLE__
+    return ::removexattr(path.c_str(),attrname,XATTR_NOFOLLOW);
+#else
     return ::lremovexattr(path.c_str(),attrname);
+#endif /* __APPLE__ */
 #else
     return (errno=ENOTSUP,-1);
 #endif

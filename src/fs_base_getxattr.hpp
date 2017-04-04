@@ -35,7 +35,11 @@ namespace fs
             const size_t       size)
   {
 #ifndef WITHOUT_XATTR
+#if __APPLE__
+    return ::getxattr(path.c_str(),attrname,value,size,0,XATTR_NOFOLLOW);
+#else
     return ::lgetxattr(path.c_str(),attrname,value,size);
+#endif /* __APPLE__ */
 #else
     return (errno=ENOTSUP,-1);
 #endif
