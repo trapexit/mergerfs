@@ -1,0 +1,27 @@
+language: cpp
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: linux
+      compiler: clang
+    - os: osx
+      compiler: clang
+
+addons:
+  apt:
+    packages:
+      - pkg-config
+      - debhelper
+      - libfuse-dev
+      - libattr1-dev
+      - python
+
+before_script:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew tap caskroom/cask; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install osxfuse; fi
+
+script:
+  - make
