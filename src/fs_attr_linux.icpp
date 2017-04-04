@@ -35,7 +35,13 @@ namespace fs
     get_fs_ioc_flags(const int  fd,
                      int       &flags)
     {
-      return fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
+      int rv;
+
+      rv = fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
+      if((rv == -1) && (errno == EINVAL))
+        errno = ENOTSUP;
+
+      return rv;
     }
 
     static
@@ -68,7 +74,13 @@ namespace fs
     set_fs_ioc_flags(const int fd,
                      const int flags)
     {
-      return fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
+      int rv;
+
+      rv = fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
+      if((rv == -1) && (errno == EINVAL))
+        errno = ENOTSUP;
+
+      return rv;
     }
 
     static
