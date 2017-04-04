@@ -18,6 +18,7 @@
 
 #include "errno.hpp"
 #include "fs_fallocate.hpp"
+#include "fs_base_ftruncate.hpp"
 
 namespace fs
 {
@@ -52,6 +53,6 @@ namespace fs
     if(mode)
       return (errno=EOPNOTSUPP,-1);
 
-    return ::_fallocate_core(fd,offset,len);
+    return _fallocate_core(fd,offset,len);
   }
 }

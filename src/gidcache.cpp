@@ -109,7 +109,15 @@ gid_t_cache::cache(const uid_t uid,
       rec->size = 0;
       ::getgrouplist(pwd.pw_name,gid,NULL,&rec->size);
       rec->size = std::min(MAXGIDS,rec->size);
+      
+ #if __APPLE__ 
+      // OSX:   getgrouplist(const char *name, int basegid, int *groups, int *ngroups)
+      rv = ::getgrouplist(pwd.pw_name,gid,(int*)rec->gids,&rec->size);
+#else
+      // Linux: getgrouplist(const char *name, gid_t group, gid_t *groups int *ngroups)
       rv = ::getgrouplist(pwd.pw_name,gid,rec->gids,&rec->size);
+#endif
+      
       if(rv == -1)
         {
           rec->gids[0] = gid;

@@ -35,8 +35,13 @@ namespace fs
   {
     struct timespec times[2];
 
+#if __APPLE__
+    times[0] = st.st_atimespec;
+    times[1] = st.st_mtimespec;
+#else
     times[0] = st.st_atim;
     times[1] = st.st_mtim;
+#endif
 
     return fs::utime(AT_FDCWD,path,times,0);
   }
@@ -49,8 +54,13 @@ namespace fs
   {
     struct timespec times[2];
 
+#if __APPLE__
+    times[0] = st.st_atimespec;
+    times[1] = st.st_mtimespec;
+#else
     times[0] = st.st_atim;
     times[1] = st.st_mtim;
+#endif
 
     return fs::utime(fd,times);
   }

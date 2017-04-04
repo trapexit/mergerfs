@@ -25,6 +25,10 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#if __APPLE__
+#import <sys/param.h> /* MAXPATHLEN */
+#endif
+
 #ifndef UTIME_NOW
 # define UTIME_NOW  ((1l << 30) - 1l)
 #endif
@@ -123,6 +127,7 @@ _set_utime_omit_to_current_value(const int              dirfd,
 {
   int rv;
   struct stat st;
+  timespec *atime, *mtime;
 
   if(!_any_timespec_is_utime_omit(ts))
     return 0;
@@ -131,10 +136,18 @@ _set_utime_omit_to_current_value(const int              dirfd,
   if(rv == -1)
     return -1;
 
+#if __APPLE__
+  atime = &st.st_atimespec;
+  mtime = &st.st_mtimespec;
+#else
+  atime = &st.st_atim;
+  mtime = &st.st_mtim;
+#endif
+  
   if(ts[0].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[0],&st.st_atim);
+    TIMESPEC_TO_TIMEVAL(&tv[0],atime);
   if(ts[1].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[1],&st.st_mtim);
+    TIMESPEC_TO_TIMEVAL(&tv[1],mtime);
 
   return 0;
 }
@@ -148,6 +161,7 @@ _set_utime_omit_to_current_value(const int             fd,
 {
   int rv;
   struct stat st;
+  timespec *atime, *mtime;
 
   if(!_any_timespec_is_utime_omit(ts))
     return 0;
@@ -156,10 +170,18 @@ _set_utime_omit_to_current_value(const int             fd,
   if(rv == -1)
     return -1;
 
+#if __APPLE__
+  atime = &st.st_atimespec;
+  mtime = &st.st_mtimespec;
+#else
+  atime = &st.st_atim;
+  mtime = &st.st_mtim;
+#endif
+
   if(ts[0].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[0],&st.st_atim);
+    TIMESPEC_TO_TIMEVAL(&tv[0],atime);
   if(ts[1].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[1],&st.st_mtim);
+    TIMESPEC_TO_TIMEVAL(&tv[1],mtime);
 
   return 0;
 }
@@ -269,8 +291,22 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    if((flags & AT_SYMLINK_NOFOLLOW) == 0)
+    if((flags & AT_SYMLINK_NOFOLLOW) == 0) {
+#if __APPLE__
+      
+      char fullpath[MAXPATHLEN];
+      
+      if (fcntl(dirfd,F_GETPATH,fullpath) < 0)
+        return (errno=errno,-1);
+      
+      if (strlcat(fullpath, "/", MAXPATHLEN) > MAXPATHLEN || strlcat(fullpath, path.c_str(), MAXPATHLEN) > MAXPATHLEN)
+          return (errno=ENAMETOOLONG,-1);
+      
+      return ::utimes(fullpath,tvp);
+#else
       return ::futimesat(dirfd,path.c_str(),tvp);
+#endif
+    }
     if(_can_call_lutimes(dirfd,path,flags))
       return ::lutimes(path.c_str(),tvp);
 
