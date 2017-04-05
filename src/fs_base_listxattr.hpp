@@ -33,14 +33,12 @@ namespace fs
              char              *list,
              const size_t       size)
   {
-#ifndef WITHOUT_XATTR
-#if __APPLE__
+#ifdef WITHOUT_XATTR
+    return (errno=ENOTSUP,-1);
+#elif __APPLE__
     return ::listxattr(path.c_str(),list,size,XATTR_NOFOLLOW);
 #else
     return ::llistxattr(path.c_str(),list,size);
-#endif /* __APPLE__ */
-#else
-    return (errno=ENOTSUP,-1);
 #endif
   }
 }

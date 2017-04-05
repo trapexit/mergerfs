@@ -35,14 +35,12 @@ namespace fs
             const size_t       size,
             const int          flags)
   {
-#ifndef WITHOUT_XATTR
-#if __APPLE__
+#if WITHOUT_XATTR
+    return (errno=ENOTSUP,-1);
+#elif __APPLE__
     return ::setxattr(path.c_str(),name,value,size,0,flags);
 #else
     return ::lsetxattr(path.c_str(),name,value,size,flags);
-#endif /* __APPLE__ */
-#else
-    return (errno=ENOTSUP,-1);
 #endif
   }
 }
