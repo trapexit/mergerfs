@@ -151,7 +151,7 @@ namespace fs
       return -1;
 
     dev = st.st_dev;
-    for(int i = 0, ei = srcmounts.size(); i != ei; i++)
+    for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
       {
         fs::path::make(&srcmounts[i],fusepath,fullpath);
 
@@ -241,7 +241,7 @@ namespace fs
         if(spaceavail <= mfs)
           continue;
 
-        mfs         = spaceavail;
+        mfs         = (fsblkcnt_t)spaceavail;
         mfsbasepath = &basepaths[i];
       }
 

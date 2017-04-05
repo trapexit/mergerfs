@@ -66,8 +66,8 @@ gid_t_cache::lower_bound(gid_t_rec   *begin,
                          gid_t_rec   *end,
                          const uid_t  uid)
 {
-  int step;
-  int count;
+  long step;
+  long count;
   gid_t_rec *iter;
 
   count = std::distance(begin,end);
@@ -106,15 +106,19 @@ gid_t_cache::cache(const uid_t uid,
   rv = ::getpwuid_r(uid,&pwd,buf,sizeof(buf),&pwdrv);
   if(pwdrv != NULL && rv == 0)
     {
+ #if __APPLE__
+      // OSX:   getgrouplist(const char *name, int basegid, int *groups, int *ngroups)
+      rec->size = 0;
+      ::getgrouplist(pwd.pw_name,(int)gid,NULL,&rec->size);
+      rec->size = std::min(MAXGIDS,rec->size);
+      
+      rv = ::getgrouplist(pwd.pw_name,(int)gid,(int*)rec->gids,&rec->size);
+#else
+      // Linux: getgrouplist(const char *name, gid_t group, gid_t *groups int *ngroups)
       rec->size = 0;
       ::getgrouplist(pwd.pw_name,gid,NULL,&rec->size);
       rec->size = std::min(MAXGIDS,rec->size);
       
- #if __APPLE__ 
-      // OSX:   getgrouplist(const char *name, int basegid, int *groups, int *ngroups)
-      rv = ::getgrouplist(pwd.pw_name,gid,(int*)rec->gids,&rec->size);
-#else
-      // Linux: getgrouplist(const char *name, gid_t group, gid_t *groups int *ngroups)
       rv = ::getgrouplist(pwd.pw_name,gid,rec->gids,&rec->size);
 #endif
       

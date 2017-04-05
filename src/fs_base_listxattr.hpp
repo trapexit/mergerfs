@@ -28,7 +28,7 @@ namespace fs
 {
   static
   inline
-  int
+  ssize_t
   llistxattr(const std::string &path,
              char              *list,
              const size_t       size)

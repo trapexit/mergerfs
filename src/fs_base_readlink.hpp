@@ -27,7 +27,7 @@ namespace fs
 {
   static
   inline
-  int
+  ssize_t
   readlink(const std::string &path,
            char              *buf,
            const size_t       bufsiz)

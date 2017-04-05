@@ -37,9 +37,9 @@ using namespace mergerfs;
 
 static
 int
-_ioctl(const int  fd,
-       const int  cmd,
-       void      *data)
+_ioctl(const int            fd,
+       const unsigned long  cmd,
+       void                *data)
 {
   int rv;
 
@@ -60,7 +60,7 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
                 const vector<string> &srcmounts,
                 const uint64_t        minfreespace,
                 const char           *fusepath,
-                const int             cmd,
+                const unsigned long   cmd,
                 void                 *data)
 {
   int fd;
@@ -88,9 +88,9 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 
 static
 int
-_ioctl_dir(const char *fusepath,
-           const int   cmd,
-           void       *data)
+_ioctl_dir(const char         *fusepath,
+           const unsigned long cmd,
+           void               *data)
 {
   const fuse_context      *fc     = fuse_get_context();
   const Config            &config = Config::get(fc);
@@ -121,13 +121,13 @@ namespace mergerfs
 #ifdef FUSE_IOCTL_DIR
       if(flags & FUSE_IOCTL_DIR)
         return _ioctl_dir(fusepath,
-                          cmd,
+           (unsigned long)cmd,
                           data);
 #endif
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
       return _ioctl(fi->fd,
-                    cmd,
+     (unsigned long)cmd,
                     data);
     }
   }

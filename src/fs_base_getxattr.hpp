@@ -28,7 +28,7 @@ namespace fs
 {
   static
   inline
-  int
+  ssize_t
   lgetxattr(const std::string &path,
             const char        *attrname,
             void              *value,

@@ -34,7 +34,11 @@ namespace fs
     void
     recompute(struct stat &st)
     {
-      uint64_t st_dev = st.st_dev; /* Mac OS has a 32-bit device ID */
+      /*
+       Some OSes have 32-bit device IDs, so box this up first.
+       This does also presume a 64-bit inode value.
+       */
+      uint64_t st_dev = (uint64_t)st.st_dev;
       st.st_ino |= (st_dev << 32);
     }
   }

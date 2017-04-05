@@ -39,13 +39,13 @@ using std::set;
 using namespace mergerfs;
 
 static
-int
+ssize_t
 _lgetxattr(const string &path,
            const char   *attrname,
            void         *value,
            const size_t  size)
 {
-  int rv;
+  ssize_t rv;
 
   rv = fs::lgetxattr(path,attrname,value,size);
 
@@ -153,7 +153,7 @@ _getxattr_pid(string &attrvalue)
 }
 
 static
-int
+ssize_t
 _getxattr_controlfile(const Config &config,
                       const char   *attrname,
                       char         *buf,
@@ -198,7 +198,7 @@ _getxattr_controlfile(const Config &config,
   len = attrvalue.size();
 
   if(count == 0)
-    return len;
+    return (ssize_t)len;
 
   if(count < len)
     return -ERANGE;
@@ -209,7 +209,7 @@ _getxattr_controlfile(const Config &config,
 }
 
 static
-int
+ssize_t
 _getxattr_from_string(char         *destbuf,
                       const size_t  destbufsize,
                       const string &src)
@@ -217,18 +217,18 @@ _getxattr_from_string(char         *destbuf,
   const size_t srcbufsize = src.size();
 
   if(destbufsize == 0)
-    return srcbufsize;
+    return (ssize_t)srcbufsize;
 
   if(srcbufsize > destbufsize)
     return -ERANGE;
 
   memcpy(destbuf,src.data(),srcbufsize);
 
-  return srcbufsize;
+  return (ssize_t)srcbufsize;
 }
 
 static
-int
+ssize_t
 _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
                                  const char           *fusepath,
                                  char                 *buf,
@@ -245,7 +245,7 @@ _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
 }
 
 static
-int
+ssize_t
 _getxattr_user_mergerfs(const string         &basepath,
                         const char           *fusepath,
                         const string         &fullpath,
@@ -271,7 +271,7 @@ _getxattr_user_mergerfs(const string         &basepath,
 }
 
 static
-int
+ssize_t
 _getxattr(Policy::Func::Search  searchFunc,
           const vector<string> &srcmounts,
           const size_t          minfreespace,
@@ -280,7 +280,7 @@ _getxattr(Policy::Func::Search  searchFunc,
           char                 *buf,
           const size_t          count)
 {
-  int rv;
+  ssize_t rv;
   string fullpath;
   vector<const string*> basepaths;
 
@@ -303,14 +303,14 @@ namespace mergerfs
   namespace fuse
   {
 #if __APPLE__
-    int
+    ssize_t
     getxattr(const char *fusepath,
              const char *attrname,
              char       *buf,
              size_t      count,
              uint32_t    position)
 #else
-    int
+    ssize_t
     getxattr(const char *fusepath,
              const char *attrname,
              char       *buf,
@@ -331,7 +331,7 @@ namespace mergerfs
 
       return _getxattr(config.getxattr,
                        config.srcmounts,
-                       config.minfreespace,
+               (size_t)config.minfreespace,
                        fusepath,
                        attrname,
                        buf,

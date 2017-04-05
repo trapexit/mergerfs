@@ -30,7 +30,7 @@ namespace fs
     bool
     dir_has_defaults(const std::string &fullpath)
     {
-      int rv;
+      ssize_t rv;
       std::string dirpath = fullpath;
 
       fs::path::dirname(dirpath);
