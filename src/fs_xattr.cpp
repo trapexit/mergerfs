@@ -44,51 +44,66 @@ using std::istringstream;
   has a flags argument where XATTR_NOFOLLOW is specified to address the link itself.
 */
 
+ssize_t
+_flistxattr(int fd, char* namebuf, size_t size)
+{
 #if __APPLE__
-  ssize_t
-  _flistxattr(int fd, char* namebuf, size_t size)
-  {
-    return ::flistxattr(fd, namebuf, size, 0);
-  }
-  
-  ssize_t
-  _llistxattr(const char* path, char* namebuf, size_t size)
-  {
-    return ::listxattr(path, namebuf, size, XATTR_NOFOLLOW);
-  }
-  
-  ssize_t
-  _fgetxattr(int fd, const char* name, char* value, size_t size)
-  {
-    return ::fgetxattr(fd, name, value, size, 0, 0);
-  }
-
-  ssize_t
-  _lgetxattr(const char* path, const char* name, char* value, size_t size)
-  {
-    return ::getxattr(path, name, value, size, 0, XATTR_NOFOLLOW);
-  }
-  
-  ssize_t
-  _fsetxattr(int fd, const char* name, const char* value, size_t size, int flags)
-  {
-    return ::fsetxattr(fd, name, value, size, 0, flags);
-  }
-
-  ssize_t
-  _lsetxattr(const char* path, const char* name, const char* value, size_t size, int flags)
-  {
-    return ::setxattr(path, name, value, size, 0, flags && XATTR_NOFOLLOW);
-  }
-  
+  return ::flistxattr(fd, namebuf, size, XATTR_SHOWCOMPRESSION);
 #else
-  #define _flistxattr ::flistxattr
-  #define _llistxattr ::llistxattr
-  #define _fgetxattr  ::fgetxattr
-  #define _lgetxattr  ::lgetxattr
-  #define _fsetxattr  ::fsetxattr
-  #define _lsetxattr  ::lsetxattr
+  return ::flistxattr(fd, namebuf, size);
 #endif
+}
+
+ssize_t
+_llistxattr(const char* path, char* namebuf, size_t size)
+{
+#if __APPLE__
+  return ::listxattr(path, namebuf, size, XATTR_SHOWCOMPRESSION & XATTR_NOFOLLOW);
+#else
+  return ::llistxattr(path, namebuf, size);
+#endif
+}
+
+ssize_t
+_fgetxattr(int fd, const char* name, char* value, size_t size, u_int32_t position)
+{
+#if __APPLE__
+  return ::fgetxattr(fd, name, value, size, position, XATTR_SHOWCOMPRESSION);
+#else
+  return ::fgetxattr(fd, name, value, size);
+#endif
+}
+
+ssize_t
+_lgetxattr(const char* path, const char* name, char* value, size_t size, u_int32_t position)
+{
+#if __APPLE__
+  return ::getxattr(path, name, value, size, position, XATTR_SHOWCOMPRESSION & XATTR_NOFOLLOW);
+#else
+  return ::lgetxattr(path, name, value, size);
+#endif
+}
+
+ssize_t
+_fsetxattr(int fd, const char* name, const char* value, size_t size, int flags, u_int32_t position)
+{
+#if __APPLE__
+  return ::fsetxattr(fd, name, value, size, position, flags);
+#else
+  return ::fsetxattr(fd, name, value, size, flags);
+#endif
+}
+
+ssize_t
+_lsetxattr(const char* path, const char* name, const char* value, size_t size, int flags, u_int32_t position)
+{
+#if __APPLE__
+  return ::setxattr(path, name, value, size, position, flags & XATTR_NOFOLLOW);
+#else
+  return ::lsetxattr(path, name, value, size, flags);
+#endif
+}
+
 
 namespace fs
 {
@@ -220,13 +235,14 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = _fgetxattr(fd,attr.c_str(),NULL,0);
+          rv = _fgetxattr(fd,attr.c_str(),NULL,0,0);
+
           if(rv <= 0)
             return rv;
 
           value.resize((size_t)rv);
 
-          rv = _fgetxattr(fd,attr.c_str(),&value[0],(size_t)rv);
+          rv = _fgetxattr(fd,attr.c_str(),&value[0],(size_t)rv, 0);
         }
 
       return rv;
@@ -247,13 +263,14 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = _lgetxattr(path.c_str(),attr.c_str(),NULL,0);
+          rv = _lgetxattr(path.c_str(),attr.c_str(),NULL,0, 0);
+
           if(rv <= 0)
             return rv;
 
           value.resize((size_t)rv);
 
-          rv = _lgetxattr(path.c_str(),attr.c_str(),&value[0],(size_t)rv);
+          rv = _lgetxattr(path.c_str(),attr.c_str(),&value[0],(size_t)rv, 0);
         }
 
       return rv;
@@ -359,7 +376,7 @@ namespace fs
                         key.c_str(),
                         value.data(),
                         value.size(),
-                        flags);
+                        flags,0);
 #else
       return (errno=ENOTSUP,-1);
 #endif
@@ -376,7 +393,7 @@ namespace fs
                         key.c_str(),
                         value.data(),
                         value.size(),
-                        flags);
+                        flags,0);
 #else
       return (errno=ENOTSUP,-1);
 #endif

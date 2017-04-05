@@ -294,6 +294,7 @@ _setxattr_loop_core(const string *basepath,
                     const char   *attrval,
                     const size_t  attrvalsize,
                     const int     flags,
+                    const u_int32_t position,
                     const int     error)
 {
   int rv;
@@ -301,7 +302,7 @@ _setxattr_loop_core(const string *basepath,
 
   fs::path::make(basepath,fusepath,fullpath);
 
-  rv = fs::lsetxattr(fullpath,attrname,attrval,attrvalsize,flags);
+  rv = fs::lsetxattr(fullpath,attrname,attrval,attrvalsize,flags,position);
 
   return error::calc(rv,error,errno);
 }
@@ -313,6 +314,7 @@ _setxattr_loop(const vector<const string*> &basepaths,
                const char                  *attrname,
                const char                  *attrval,
                const size_t                 attrvalsize,
+               const u_int32_t               position,
                const int                    flags)
 {
   int error;
@@ -321,7 +323,7 @@ _setxattr_loop(const vector<const string*> &basepaths,
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
       error = _setxattr_loop_core(basepaths[i],fusepath,
-                                  attrname,attrval,attrvalsize,flags,
+                                  attrname,attrval,attrvalsize,flags,position,
                                   error);
     }
 
@@ -337,6 +339,7 @@ _setxattr(Policy::Func::Action  actionFunc,
           const char           *attrname,
           const char           *attrval,
           const size_t          attrvalsize,
+          const u_int32_t        position,
           const int             flags)
 {
   int rv;
@@ -346,30 +349,27 @@ _setxattr(Policy::Func::Action  actionFunc,
   if(rv == -1)
     return -errno;
 
-  return _setxattr_loop(basepaths,fusepath,attrname,attrval,attrvalsize,flags);
+  return _setxattr_loop(basepaths,fusepath,attrname,attrval,attrvalsize,position,flags);
 }
 
 namespace mergerfs
 {
   namespace fuse
   {
-#if __APPLE__
     int
     setxattr(const char *fusepath,
              const char *attrname,
              const char *attrval,
              size_t      attrvalsize,
+#ifdef __APPLE__
              int         flags,
-             uint32_t    position)
-#else
-    int
-    setxattr(const char *fusepath,
-             const char *attrname,
-             const char *attrval,
-             size_t      attrvalsize,
-             int         flags)
-#endif
+             u_int32_t   position)
     {
+#else
+             int         flags)
+    {
+      u_int32_t position = 0;
+#endif
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
@@ -389,6 +389,7 @@ namespace mergerfs
                        attrname,
                        attrval,
                        attrvalsize,
+                       position,
                        flags);
     }
   }

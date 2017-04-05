@@ -43,11 +43,12 @@ ssize_t
 _lgetxattr(const string &path,
            const char   *attrname,
            void         *value,
-           const size_t  size)
+           const size_t  size,
+           const u_int32_t position)
 {
   ssize_t rv;
 
-  rv = fs::lgetxattr(path,attrname,value,size);
+  rv = fs::lgetxattr(path,attrname,value,size,position);
 
   return ((rv == -1) ? -errno : rv);
 }
@@ -278,7 +279,8 @@ _getxattr(Policy::Func::Search  searchFunc,
           const char           *fusepath,
           const char           *attrname,
           char                 *buf,
-          const size_t          count)
+          size_t                count,
+          u_int32_t             position)
 {
   ssize_t rv;
   string fullpath;
@@ -293,30 +295,30 @@ _getxattr(Policy::Func::Search  searchFunc,
   if(str::isprefix(attrname,"user.mergerfs."))
     rv = _getxattr_user_mergerfs(*basepaths[0],fusepath,fullpath,srcmounts,attrname,buf,count);
   else
-    rv = _lgetxattr(fullpath,attrname,buf,count);
+    rv = _lgetxattr(fullpath,attrname,buf,count,position);
 
   return rv;
 }
+
+/* The FUSE API is different for rthe *xattr APIs on Mac OS; it adds the position parameter. */
 
 namespace mergerfs
 {
   namespace fuse
   {
+    ssize_t
+    getxattr(const char *fusepath,
+             const char *attrname,
+             char       *buf,
 #if __APPLE__
-    ssize_t
-    getxattr(const char *fusepath,
-             const char *attrname,
-             char       *buf,
              size_t      count,
-             uint32_t    position)
-#else
-    ssize_t
-    getxattr(const char *fusepath,
-             const char *attrname,
-             char       *buf,
-             size_t      count)
-#endif
+             u_int32_t   position)
     {
+#else
+             size_t      count)
+    {
+      u_int32_t position = 0;
+#endif
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
@@ -335,7 +337,8 @@ namespace mergerfs
                        fusepath,
                        attrname,
                        buf,
-                       count);
+                       count,
+                       position);
     }
   }
 }

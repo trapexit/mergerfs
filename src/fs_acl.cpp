@@ -35,7 +35,7 @@ namespace fs
 
       fs::path::dirname(dirpath);
 
-      rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
+      rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0,0);
 
       return (rv != -1);
     }

@@ -21,20 +21,15 @@ namespace mergerfs
 {
   namespace fuse
   {
+    int
+    setxattr(const char *fusepath,
+             const char *attrname,
+             const char *attrval,
+             size_t      attrvalsize,
 #if __APPLE__
-    int
-    setxattr(const char *fusepath,
-             const char *attrname,
-             const char *attrval,
-             size_t      attrvalsize,
              int         flags,
-             uint32_t    position);
+             u_int32_t   position);
 #else
-    int
-    setxattr(const char *fusepath,
-             const char *attrname,
-             const char *attrval,
-             size_t      attrvalsize,
              int         flags);
 #endif
   }
