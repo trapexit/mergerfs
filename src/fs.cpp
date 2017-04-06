@@ -223,7 +223,7 @@ namespace fs
       const uint64_t        minfreespace,
       string               &path)
   {
-    fsblkcnt_t mfs;
+    uint64_t mfs;
     const string *mfsbasepath;
 
     mfs = 0;
@@ -241,7 +241,7 @@ namespace fs
         if(spaceavail <= mfs)
           continue;
 
-        mfs         = (fsblkcnt_t)spaceavail;
+        mfs         = spaceavail;
         mfsbasepath = &basepaths[i];
       }
 
