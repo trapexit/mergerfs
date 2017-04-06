@@ -64,6 +64,7 @@ namespace fs
             const char           *path,
             const struct timeval  times[2])
   {
+    int rv;
     char fullpath[MAXPATHLEN];
 
     if((dirfd == AT_FDCWD) ||
