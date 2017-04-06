@@ -48,7 +48,7 @@ ssize_t
 _flistxattr(int fd, char* namebuf, size_t size)
 {
 #if __APPLE__
-  return ::flistxattr(fd, namebuf, size, XATTR_SHOWCOMPRESSION);
+  return ::flistxattr(fd, namebuf, size, 0);
 #else
   return ::flistxattr(fd, namebuf, size);
 #endif
@@ -58,7 +58,7 @@ ssize_t
 _llistxattr(const char* path, char* namebuf, size_t size)
 {
 #if __APPLE__
-  return ::listxattr(path, namebuf, size, XATTR_SHOWCOMPRESSION & XATTR_NOFOLLOW);
+  return ::listxattr(path, namebuf, size, XATTR_NOFOLLOW);
 #else
   return ::llistxattr(path, namebuf, size);
 #endif
@@ -68,7 +68,7 @@ ssize_t
 _fgetxattr(int fd, const char* name, char* value, size_t size, u_int32_t position)
 {
 #if __APPLE__
-  return ::fgetxattr(fd, name, value, size, position, XATTR_SHOWCOMPRESSION);
+  return ::fgetxattr(fd, name, value, size, position, 0);
 #else
   return ::fgetxattr(fd, name, value, size);
 #endif
@@ -78,7 +78,7 @@ ssize_t
 _lgetxattr(const char* path, const char* name, char* value, size_t size, u_int32_t position)
 {
 #if __APPLE__
-  return ::getxattr(path, name, value, size, position, XATTR_SHOWCOMPRESSION & XATTR_NOFOLLOW);
+  return ::getxattr(path, name, value, size, position, XATTR_NOFOLLOW);
 #else
   return ::lgetxattr(path, name, value, size);
 #endif
