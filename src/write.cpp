@@ -26,7 +26,7 @@
 
 using namespace mergerfs;
 
-typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
+typedef ssize_t (*WriteFunc)(const int,const void*,const size_t,const off_t);
 
 static
 bool
@@ -38,32 +38,30 @@ _out_of_space(const int error)
 
 static
 inline
-int
+ssize_t
 _write(const int     fd,
        const void   *buf,
        const size_t  count,
        const off_t   offset)
 {
-  int rv;
+  ssize_t rv;
 
   rv = fs::pwrite(fd,buf,count,offset);
   if(rv == -1)
     return -errno;
-  if(rv == 0)
-    return 0;
 
-  return count;
+  return rv;
 }
 
 static
 inline
-int
+ssize_t
 _write_direct_io(const int     fd,
                  const void   *buf,
                  const size_t  count,
                  const off_t   offset)
 {
-  int rv;
+  ssize_t rv;
 
   rv = fs::pwrite(fd,buf,count,offset);
   if(rv == -1)
@@ -81,7 +79,7 @@ namespace mergerfs
   {
     static
     inline
-    int
+    ssize_t
     write(WriteFunc       func,
           const char     *fusepath,
           const char     *buf,
@@ -89,11 +87,11 @@ namespace mergerfs
           const off_t     offset,
           fuse_file_info *ffi)
     {
-      int rv;
+      ssize_t rv;
       FileInfo* fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
       rv = func(fi->fd,buf,count,offset);
-      if(_out_of_space(-rv))
+      if(_out_of_space((int)-rv))
         {
           const fuse_context *fc     = fuse_get_context();
           const Config       &config = Config::get(fc);
@@ -114,7 +112,7 @@ namespace mergerfs
       return rv;
     }
 
-    int
+    ssize_t
     write(const char     *fusepath,
           const char     *buf,
           size_t          count,
@@ -124,7 +122,7 @@ namespace mergerfs
       return write(_write,fusepath,buf,count,offset,ffi);
     }
 
-    int
+    ssize_t
     write_direct_io(const char     *fusepath,
                     const char     *buf,
                     size_t          count,

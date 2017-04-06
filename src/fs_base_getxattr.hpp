@@ -28,16 +28,19 @@ namespace fs
 {
   static
   inline
-  int
+  ssize_t
   lgetxattr(const std::string &path,
             const char        *attrname,
             void              *value,
-            const size_t       size)
+            const size_t       size,
+            const u_int32_t    position)
   {
-#ifndef WITHOUT_XATTR
-    return ::lgetxattr(path.c_str(),attrname,value,size);
-#else
+#if WITHOUT_XATTR
     return (errno=ENOTSUP,-1);
+#elif __APPLE__
+    return ::getxattr(path.c_str(),attrname,value,size,position,XATTR_NOFOLLOW);
+#else
+    return ::lgetxattr(path.c_str(),attrname,value,size);
 #endif
   }
 }

@@ -40,7 +40,7 @@ ifeq ($(PANDOC),"")
 $(warning "pandoc does not appear available: manpage won't be buildable")
 endif
 
-XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
+XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h -a ! -e /usr/include/sys/xattr.h; echo $$?)
 
 FUSE_AVAILABLE = $(shell ! pkg-config --exists fuse; echo $$?)
 

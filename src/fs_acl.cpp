@@ -30,12 +30,12 @@ namespace fs
     bool
     dir_has_defaults(const std::string &fullpath)
     {
-      int rv;
+      ssize_t rv;
       std::string dirpath = fullpath;
 
       fs::path::dirname(dirpath);
 
-      rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
+      rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0,0);
 
       return (rv != -1);
     }

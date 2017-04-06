@@ -36,11 +36,80 @@ using std::vector;
 using std::map;
 using std::istringstream;
 
+/*
+  The Mac version of the get/set APIs includes a position arg to seek around the
+  resource fork; for all other uses, the value is 0.
+
+  For the other APIs, there are no link-specific variants; rather the standard call
+  has a flags argument where XATTR_NOFOLLOW is specified to address the link itself.
+*/
+
+ssize_t
+_flistxattr(int fd, char* namebuf, size_t size)
+{
+#if __APPLE__
+  return ::flistxattr(fd, namebuf, size, 0);
+#else
+  return ::flistxattr(fd, namebuf, size);
+#endif
+}
+
+ssize_t
+_llistxattr(const char* path, char* namebuf, size_t size)
+{
+#if __APPLE__
+  return ::listxattr(path, namebuf, size, XATTR_NOFOLLOW);
+#else
+  return ::llistxattr(path, namebuf, size);
+#endif
+}
+
+ssize_t
+_fgetxattr(int fd, const char* name, char* value, size_t size, u_int32_t position)
+{
+#if __APPLE__
+  return ::fgetxattr(fd, name, value, size, position, 0);
+#else
+  return ::fgetxattr(fd, name, value, size);
+#endif
+}
+
+ssize_t
+_lgetxattr(const char* path, const char* name, char* value, size_t size, u_int32_t position)
+{
+#if __APPLE__
+  return ::getxattr(path, name, value, size, position, XATTR_NOFOLLOW);
+#else
+  return ::lgetxattr(path, name, value, size);
+#endif
+}
+
+ssize_t
+_fsetxattr(int fd, const char* name, const char* value, size_t size, int flags, u_int32_t position)
+{
+#if __APPLE__
+  return ::fsetxattr(fd, name, value, size, position, flags);
+#else
+  return ::fsetxattr(fd, name, value, size, flags);
+#endif
+}
+
+ssize_t
+_lsetxattr(const char* path, const char* name, const char* value, size_t size, int flags, u_int32_t position)
+{
+#if __APPLE__
+  return ::setxattr(path, name, value, size, position, flags & XATTR_NOFOLLOW);
+#else
+  return ::lsetxattr(path, name, value, size, flags);
+#endif
+}
+
+
 namespace fs
 {
   namespace xattr
   {
-    int
+    ssize_t
     list(const int     fd,
          vector<char> &attrs)
     {
@@ -51,13 +120,13 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::flistxattr(fd,NULL,0);
+          rv = _flistxattr(fd,NULL,0);
           if(rv <= 0)
             return rv;
 
-          attrs.resize(rv);
+          attrs.resize((size_t)rv);
 
-          rv = ::flistxattr(fd,&attrs[0],rv);
+          rv = _flistxattr(fd,&attrs[0],(size_t)rv);
         }
 
       return rv;
@@ -66,7 +135,7 @@ namespace fs
 #endif
     }
 
-    int
+    ssize_t
     list(const string &path,
          vector<char> &attrs)
     {
@@ -77,13 +146,13 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::llistxattr(path.c_str(),NULL,0);
+          rv = _llistxattr(path.c_str(),NULL,0);
           if(rv <= 0)
             return rv;
 
-          attrs.resize(rv);
+          attrs.resize((size_t)rv);
 
-          rv = ::llistxattr(path.c_str(),&attrs[0],rv);
+          rv = _llistxattr(path.c_str(),&attrs[0],(size_t)rv);
         }
 
       return rv;
@@ -92,11 +161,11 @@ namespace fs
 #endif
     }
 
-    int
+    ssize_t
     list(const int        fd,
           vector<string> &attrvector)
     {
-      int rv;
+      ssize_t rv;
       vector<char> attrs;
 
       rv = list(fd,attrs);
@@ -109,11 +178,11 @@ namespace fs
       return rv;
     }
 
-    int
+    ssize_t
     list(const string   &path,
          vector<string> &attrvector)
     {
-      int rv;
+      ssize_t rv;
       vector<char> attrs;
 
       rv = list(path,attrs);
@@ -126,11 +195,11 @@ namespace fs
       return rv;
     }
 
-    int
+    ssize_t
     list(const int  fd,
          string    &attrstr)
     {
-      int rv;
+      ssize_t rv;
       vector<char> attrs;
 
       rv = list(fd,attrs);
@@ -140,11 +209,11 @@ namespace fs
       return rv;
     }
 
-    int
+    ssize_t
     list(const string &path,
          string       &attrstr)
     {
-      int rv;
+      ssize_t rv;
       vector<char> attrs;
 
       rv = list(path,attrs);
@@ -154,7 +223,7 @@ namespace fs
       return rv;
     }
 
-    int
+    ssize_t
     get(const int     fd,
         const string &attr,
         vector<char> &value)
@@ -166,13 +235,14 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::fgetxattr(fd,attr.c_str(),NULL,0);
+          rv = _fgetxattr(fd,attr.c_str(),NULL,0,0);
+
           if(rv <= 0)
             return rv;
 
-          value.resize(rv);
+          value.resize((size_t)rv);
 
-          rv = ::fgetxattr(fd,attr.c_str(),&value[0],rv);
+          rv = _fgetxattr(fd,attr.c_str(),&value[0],(size_t)rv, 0);
         }
 
       return rv;
@@ -181,7 +251,7 @@ namespace fs
 #endif
     }
 
-    int
+    ssize_t
     get(const string &path,
         const string &attr,
         vector<char> &value)
@@ -193,13 +263,14 @@ namespace fs
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::lgetxattr(path.c_str(),attr.c_str(),NULL,0);
+          rv = _lgetxattr(path.c_str(),attr.c_str(),NULL,0, 0);
+
           if(rv <= 0)
             return rv;
 
-          value.resize(rv);
+          value.resize((size_t)rv);
 
-          rv = ::lgetxattr(path.c_str(),attr.c_str(),&value[0],rv);
+          rv = _lgetxattr(path.c_str(),attr.c_str(),&value[0],(size_t)rv, 0);
         }
 
       return rv;
@@ -208,12 +279,12 @@ namespace fs
 #endif
     }
 
-    int
+    ssize_t
     get(const int     fd,
         const string &attr,
         string       &value)
     {
-      int          rv;
+      ssize_t          rv;
       vector<char> tmpvalue;
 
       rv = get(fd,attr,tmpvalue);
@@ -223,12 +294,12 @@ namespace fs
       return rv;
     }
 
-    int
+    ssize_t
     get(const string &path,
         const string &attr,
         string       &value)
     {
-      int          rv;
+      ssize_t          rv;
       vector<char> tmpvalue;
 
       rv = get(path,attr,tmpvalue);
@@ -238,11 +309,11 @@ namespace fs
       return rv;
     }
 
-    int
+    ssize_t
     get(const int           fd,
         map<string,string> &attrs)
     {
-      int rv;
+      ssize_t rv;
       string attrstr;
 
       rv = list(fd,attrstr);
@@ -266,11 +337,11 @@ namespace fs
       return 0;
     }
 
-    int
+    ssize_t
     get(const string       &path,
         map<string,string> &attrs)
     {
-      int rv;
+      ssize_t rv;
       string attrstr;
 
       rv = list(path,attrstr);
@@ -294,45 +365,45 @@ namespace fs
       return 0;
     }
 
-    int
+    ssize_t
     set(const int     fd,
         const string &key,
         const string &value,
         const int     flags)
     {
 #ifndef WITHOUT_XATTR
-      return ::fsetxattr(fd,
-                         key.c_str(),
-                         value.data(),
-                         value.size(),
-                         flags);
+      return _fsetxattr(fd,
+                        key.c_str(),
+                        value.data(),
+                        value.size(),
+                        flags,0);
 #else
       return (errno=ENOTSUP,-1);
 #endif
     }
 
-    int
+    ssize_t
     set(const string &path,
         const string &key,
         const string &value,
         const int     flags)
     {
 #ifndef WITHOUT_XATTR
-      return ::lsetxattr(path.c_str(),
-                         key.c_str(),
-                         value.data(),
-                         value.size(),
-                         flags);
+      return _lsetxattr(path.c_str(),
+                        key.c_str(),
+                        value.data(),
+                        value.size(),
+                        flags,0);
 #else
       return (errno=ENOTSUP,-1);
 #endif
     }
 
-    int
+    ssize_t
     set(const int                 fd,
         const map<string,string> &attrs)
     {
-      int rv;
+      ssize_t rv;
 
       for(map<string,string>::const_iterator
             i = attrs.begin(), ei = attrs.end(); i != ei; ++i)
@@ -360,11 +431,11 @@ namespace fs
       return fs::close(fd);
     }
 
-    int
+    ssize_t
     copy(const int fdin,
          const int fdout)
     {
-      int rv;
+      ssize_t rv;
       map<string,string> attrs;
 
       rv = get(fdin,attrs);
@@ -374,11 +445,11 @@ namespace fs
       return set(fdout,attrs);
     }
 
-    int
+    ssize_t
     copy(const string &from,
          const string &to)
     {
-      int rv;
+      ssize_t rv;
       map<string,string> attrs;
 
       rv = get(from,attrs);

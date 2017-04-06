@@ -26,7 +26,12 @@ namespace mergerfs
              const char *attrname,
              const char *attrval,
              size_t      attrvalsize,
+#if __APPLE__
+             int         flags,
+             u_int32_t   position);
+#else
              int         flags);
+#endif
   }
 }
 

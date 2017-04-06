@@ -28,15 +28,17 @@ namespace fs
 {
   static
   inline
-  int
+  ssize_t
   llistxattr(const std::string &path,
              char              *list,
              const size_t       size)
   {
-#ifndef WITHOUT_XATTR
-    return ::llistxattr(path.c_str(),list,size);
-#else
+#ifdef WITHOUT_XATTR
     return (errno=ENOTSUP,-1);
+#elif __APPLE__
+    return ::listxattr(path.c_str(),list,size,XATTR_NOFOLLOW);
+#else
+    return ::llistxattr(path.c_str(),list,size);
 #endif
   }
 }

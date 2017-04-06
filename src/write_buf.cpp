@@ -46,7 +46,7 @@ _out_of_space(const int error)
 }
 
 static
-int
+ssize_t
 _write_buf(const int    fd,
            fuse_bufvec &src,
            const off_t  offset)
@@ -67,17 +67,17 @@ namespace mergerfs
 {
   namespace fuse
   {
-    int
+    ssize_t
     write_buf(const char     *fusepath,
               fuse_bufvec    *src,
               off_t           offset,
               fuse_file_info *ffi)
     {
-      int rv;
+      ssize_t rv;
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
       rv = _write_buf(fi->fd,*src,offset);
-      if(_out_of_space(-rv))
+      if(_out_of_space((int)-rv))
         {
           const fuse_context *fc     = fuse_get_context();
           const Config       &config = Config::get(fc);

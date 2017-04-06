@@ -36,7 +36,7 @@ using std::vector;
 using namespace mergerfs;
 
 static
-int
+ssize_t
 _listxattr_controlfile(char         *list,
                        const size_t  size)
 {
@@ -59,18 +59,18 @@ _listxattr_controlfile(char         *list,
     xattrs += ("user.mergerfs.func." + (std::string)*FuseFunc::fusefuncs[i] + '\0');
 
   if(size == 0)
-    return xattrs.size();
+    return (ssize_t)xattrs.size();
 
   if(size < xattrs.size())
     return -ERANGE;
 
   memcpy(list,xattrs.c_str(),xattrs.size());
 
-  return xattrs.size();
+  return (ssize_t)xattrs.size();
 }
 
 static
-int
+ssize_t
 _listxattr(Policy::Func::Search  searchFunc,
            const vector<string> &srcmounts,
            const uint64_t        minfreespace,
@@ -78,7 +78,7 @@ _listxattr(Policy::Func::Search  searchFunc,
            char                 *list,
            const size_t          size)
 {
-  int rv;
+  ssize_t rv;
   string fullpath;
   vector<const string*> basepaths;
 
@@ -97,7 +97,7 @@ namespace mergerfs
 {
   namespace fuse
   {
-    int
+    ssize_t
     listxattr(const char *fusepath,
               char       *list,
               size_t      size)

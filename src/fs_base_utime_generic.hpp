@@ -25,6 +25,9 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#include "fs_base_futimesat.hpp"
+#include "fs_base_stat.hpp"
+
 #ifndef UTIME_NOW
 # define UTIME_NOW  ((1l << 30) - 1l)
 #endif
@@ -123,6 +126,8 @@ _set_utime_omit_to_current_value(const int              dirfd,
 {
   int rv;
   struct stat st;
+  timespec *atime;
+  timespec *mtime;
 
   if(!_any_timespec_is_utime_omit(ts))
     return 0;
@@ -131,10 +136,13 @@ _set_utime_omit_to_current_value(const int              dirfd,
   if(rv == -1)
     return -1;
 
+  atime = fs::stat_atime(st);
+  mtime = fs::stat_mtime(st);
+
   if(ts[0].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[0],&st.st_atim);
+    TIMESPEC_TO_TIMEVAL(&tv[0],atime);
   if(ts[1].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[1],&st.st_mtim);
+    TIMESPEC_TO_TIMEVAL(&tv[1],mtime);
 
   return 0;
 }
@@ -148,6 +156,8 @@ _set_utime_omit_to_current_value(const int             fd,
 {
   int rv;
   struct stat st;
+  timespec *atime;
+  timespec *mtime;
 
   if(!_any_timespec_is_utime_omit(ts))
     return 0;
@@ -156,10 +166,13 @@ _set_utime_omit_to_current_value(const int             fd,
   if(rv == -1)
     return -1;
 
+  atime = fs::stat_atime(st);
+  mtime = fs::stat_mtime(st);
+
   if(ts[0].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[0],&st.st_atim);
+    TIMESPEC_TO_TIMEVAL(&tv[0],atime);
   if(ts[1].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[1],&st.st_mtim);
+    TIMESPEC_TO_TIMEVAL(&tv[1],mtime);
 
   return 0;
 }
@@ -270,7 +283,8 @@ namespace fs
       return -1;
 
     if((flags & AT_SYMLINK_NOFOLLOW) == 0)
-      return ::futimesat(dirfd,path.c_str(),tvp);
+      return fs::futimesat(dirfd,path.c_str(),tvp);
+
     if(_can_call_lutimes(dirfd,path,flags))
       return ::lutimes(path.c_str(),tvp);
 

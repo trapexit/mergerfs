@@ -32,10 +32,12 @@ namespace fs
   lremovexattr(const std::string &path,
                const char        *attrname)
   {
-#ifndef WITHOUT_XATTR
-    return ::lremovexattr(path.c_str(),attrname);
-#else
+#if WITHOUT_XATTR
     return (errno=ENOTSUP,-1);
+#elif __APPLE__
+    return ::removexattr(path.c_str(),attrname,XATTR_NOFOLLOW);
+#else
+    return ::lremovexattr(path.c_str(),attrname);
 #endif
   }
 }

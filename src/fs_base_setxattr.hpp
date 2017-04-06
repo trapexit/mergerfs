@@ -33,13 +33,16 @@ namespace fs
             const char        *name,
             const void        *value,
             const size_t       size,
-            const int          flags)
+            const int          flags,
+            const u_int32_t    position)
   {
-#ifndef WITHOUT_XATTR
-    return ::lsetxattr(path.c_str(),name,value,size,flags);
-#else
+  #if WITHOUT_XATTR
     return (errno=ENOTSUP,-1);
-#endif
+  #elif __APPLE__
+    return ::setxattr(path.c_str(),name,value,size,position,flags & XATTR_NOFOLLOW);
+  #else
+    return ::lsetxattr(path.c_str(),name,value,size,flags);
+  #endif
   }
 }
 

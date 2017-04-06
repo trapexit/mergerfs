@@ -39,15 +39,16 @@ using std::set;
 using namespace mergerfs;
 
 static
-int
+ssize_t
 _lgetxattr(const string &path,
            const char   *attrname,
            void         *value,
-           const size_t  size)
+           const size_t  size,
+           const u_int32_t position)
 {
-  int rv;
+  ssize_t rv;
 
-  rv = fs::lgetxattr(path,attrname,value,size);
+  rv = fs::lgetxattr(path,attrname,value,size,position);
 
   return ((rv == -1) ? -errno : rv);
 }
@@ -153,7 +154,7 @@ _getxattr_pid(string &attrvalue)
 }
 
 static
-int
+ssize_t
 _getxattr_controlfile(const Config &config,
                       const char   *attrname,
                       char         *buf,
@@ -198,7 +199,7 @@ _getxattr_controlfile(const Config &config,
   len = attrvalue.size();
 
   if(count == 0)
-    return len;
+    return (ssize_t)len;
 
   if(count < len)
     return -ERANGE;
@@ -209,7 +210,7 @@ _getxattr_controlfile(const Config &config,
 }
 
 static
-int
+ssize_t
 _getxattr_from_string(char         *destbuf,
                       const size_t  destbufsize,
                       const string &src)
@@ -217,18 +218,18 @@ _getxattr_from_string(char         *destbuf,
   const size_t srcbufsize = src.size();
 
   if(destbufsize == 0)
-    return srcbufsize;
+    return (ssize_t)srcbufsize;
 
   if(srcbufsize > destbufsize)
     return -ERANGE;
 
   memcpy(destbuf,src.data(),srcbufsize);
 
-  return srcbufsize;
+  return (ssize_t)srcbufsize;
 }
 
 static
-int
+ssize_t
 _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
                                  const char           *fusepath,
                                  char                 *buf,
@@ -245,7 +246,7 @@ _getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
 }
 
 static
-int
+ssize_t
 _getxattr_user_mergerfs(const string         &basepath,
                         const char           *fusepath,
                         const string         &fullpath,
@@ -271,16 +272,17 @@ _getxattr_user_mergerfs(const string         &basepath,
 }
 
 static
-int
+ssize_t
 _getxattr(Policy::Func::Search  searchFunc,
           const vector<string> &srcmounts,
           const size_t          minfreespace,
           const char           *fusepath,
           const char           *attrname,
           char                 *buf,
-          const size_t          count)
+          size_t                count,
+          u_int32_t             position)
 {
-  int rv;
+  ssize_t rv;
   string fullpath;
   vector<const string*> basepaths;
 
@@ -293,21 +295,30 @@ _getxattr(Policy::Func::Search  searchFunc,
   if(str::isprefix(attrname,"user.mergerfs."))
     rv = _getxattr_user_mergerfs(*basepaths[0],fusepath,fullpath,srcmounts,attrname,buf,count);
   else
-    rv = _lgetxattr(fullpath,attrname,buf,count);
+    rv = _lgetxattr(fullpath,attrname,buf,count,position);
 
   return rv;
 }
+
+/* The FUSE API is different for rthe *xattr APIs on Mac OS; it adds the position parameter. */
 
 namespace mergerfs
 {
   namespace fuse
   {
-    int
+    ssize_t
     getxattr(const char *fusepath,
              const char *attrname,
              char       *buf,
+#if __APPLE__
+             size_t      count,
+             u_int32_t   position)
+    {
+#else
              size_t      count)
     {
+      u_int32_t position = 0;
+#endif
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
@@ -322,11 +333,12 @@ namespace mergerfs
 
       return _getxattr(config.getxattr,
                        config.srcmounts,
-                       config.minfreespace,
+               (size_t)config.minfreespace,
                        fusepath,
                        attrname,
                        buf,
-                       count);
+                       count,
+                       position);
     }
   }
 }

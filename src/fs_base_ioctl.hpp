@@ -26,9 +26,9 @@ namespace fs
   static
   inline
   int
-  ioctl(const int  fd,
-        const int  request,
-        void      *data)
+  ioctl(const int            fd,
+        const unsigned long  request,
+        void                *data)
   {
     return ::ioctl(fd,request,data);
   }

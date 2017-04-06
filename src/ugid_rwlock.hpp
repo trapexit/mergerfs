@@ -48,13 +48,13 @@ namespace mergerfs
 
       if(currentuid != 0)
         {
-          ::seteuid(0);
-          ::setegid(0);
+          (void)::seteuid(0);
+          (void)::setegid(0);
         }
 
       if(newgid)
         {
-          ::setegid(newgid);
+          (void)::setegid(newgid);
           initgroups(newuid,newgid);
         }
 

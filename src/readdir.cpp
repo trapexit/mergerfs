@@ -50,7 +50,7 @@ _readdir(const vector<string>  &srcmounts,
          void                  *buf,
          const fuse_fill_dir_t  filler)
 {
-  StrSet names;
+  StrSet names = StrSet();
   string basepath;
   struct stat st = {0};
 
@@ -69,7 +69,7 @@ _readdir(const vector<string>  &srcmounts,
       dirfd     = fs::dirfd(dh);
       st.st_dev = fs::devid(dirfd);
       if(st.st_dev == (dev_t)-1)
-        st.st_dev = i;
+        st.st_dev = (dev_t)i;
 
       rv = 0;
       for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
@@ -79,7 +79,7 @@ _readdir(const vector<string>  &srcmounts,
             continue;
 
           st.st_ino  = de->d_ino;
-          st.st_mode = DTTOIF(de->d_type);
+          st.st_mode = (mode_t)DTTOIF(de->d_type);
 
           fs::inode::recompute(st);
 

@@ -28,7 +28,7 @@ namespace num
     char *endptr;
     uint64_t tmp;
 
-    tmp = strtoll(str.c_str(),&endptr,10);
+    tmp = strtoul(str.c_str(),&endptr,10);
     switch(*endptr)
       {
       case 'k':

@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2017, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,24 +16,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GETXATTR_HPP__
-#define __GETXATTR_HPP__
+#ifndef __FS_BASE_FUTIMESAT_HPP__
+#define __FS_BASE_FUTIMESAT_HPP__
 
-namespace mergerfs
+namespace fs
 {
-  namespace fuse
-  {
-    int
-    getxattr(const char *fusepath,
-             const char *attrname,
-             char       *buf,
-#if __APPLE__
-             size_t      count,
-             u_int32_t   position);
-#else
-             size_t      count);
-#endif
-  }
+  int
+  futimesat(const int             dirfd,
+            const char           *pathname,
+            const struct timeval  times[2]);
 }
 
 #endif

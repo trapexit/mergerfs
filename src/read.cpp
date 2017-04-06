@@ -26,32 +26,30 @@
 
 static
 inline
-int
+ssize_t
 _read(const int     fd,
       void         *buf,
       const size_t  count,
       const off_t   offset)
 {
-  int rv;
+  ssize_t rv;
 
   rv = fs::pread(fd,buf,count,offset);
   if(rv == -1)
     return -errno;
-  if(rv == 0)
-    return 0;
 
-  return count;
+  return rv;
 }
 
 static
 inline
-int
+ssize_t
 _read_direct_io(const int     fd,
                 void         *buf,
                 const size_t  count,
                 const off_t   offset)
 {
-  int rv;
+  ssize_t rv;
 
   rv = fs::pread(fd,buf,count,offset);
   if(rv == -1)
@@ -64,7 +62,7 @@ namespace mergerfs
 {
   namespace fuse
   {
-    int
+    ssize_t
     read(const char     *fusepath,
          char           *buf,
          size_t          count,
@@ -76,7 +74,7 @@ namespace mergerfs
       return _read(fi->fd,buf,count,offset);
     }
 
-    int
+    ssize_t
     read_direct_io(const char     *fusepath,
                    char           *buf,
                    size_t          count,

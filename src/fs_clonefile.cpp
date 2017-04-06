@@ -48,13 +48,13 @@
 using std::string;
 using std::vector;
 
-int
+ssize_t
 writen(const int     fd,
        const char   *buf,
        const size_t  count)
 {
   size_t nleft;
-  ssize_t nwritten;
+  ssize_t nwritten = 0;
 
   nleft = count;
   while(nleft > 0)
@@ -67,15 +67,15 @@ writen(const int     fd,
           return -1;
         }
 
-      nleft -= nwritten;
-      buf   += nwritten;
+      nleft -= (size_t)nwritten;
+      buf   += (size_t)nwritten;
     }
 
-  return count;
+  return nwritten;
 }
 
 static
-int
+ssize_t
 copyfile_rw(const int    fdin,
             const int    fdout,
             const size_t count,
@@ -83,8 +83,8 @@ copyfile_rw(const int    fdin,
 {
   ssize_t nr;
   ssize_t nw;
-  ssize_t bufsize;
-  size_t  totalwritten;
+  size_t  bufsize;
+  ssize_t totalwritten;
   vector<char> buf;
 
   bufsize = (blocksize * 16);
@@ -93,7 +93,7 @@ copyfile_rw(const int    fdin,
   fs::lseek(fdin,0,SEEK_SET);
 
   totalwritten = 0;
-  while(totalwritten < count)
+  while(totalwritten < (ssize_t)count)
     {
       nr = fs::read(fdin,&buf[0],bufsize);
       if(nr == -1)
@@ -103,29 +103,30 @@ copyfile_rw(const int    fdin,
           return -1;
         }
 
-      nw = writen(fdout,&buf[0],nr);
+      nw = writen(fdout,&buf[0],(size_t)nr);
       if(nw == -1)
         return -1;
 
       totalwritten += nw;
     }
 
-  return count;
+  return totalwritten;
 }
 
 static
-int
+ssize_t
 copydata(const int    fdin,
          const int    fdout,
          const size_t count,
          const size_t blocksize)
 {
-  int rv;
+  ssize_t rv;
+  off_t scount = (off_t)count;
+	
+  fs::fadvise(fdin,0,scount,POSIX_FADV_WILLNEED);
+  fs::fadvise(fdin,0,scount,POSIX_FADV_SEQUENTIAL);
 
-  fs::fadvise(fdin,0,count,POSIX_FADV_WILLNEED);
-  fs::fadvise(fdin,0,count,POSIX_FADV_SEQUENTIAL);
-
-  fs::fallocate(fdout,0,0,count);
+  fs::fallocate(fdout,0,0,scount);
 
   rv = fs::sendfile(fdin,fdout,count);
   if((rv == -1) && ((errno == EINVAL) || (errno == ENOSYS)))
@@ -153,18 +154,18 @@ ignorable_error(const int err)
 
 namespace fs
 {
-  int
+  ssize_t
   clonefile(const int fdin,
             const int fdout)
   {
-    int rv;
+    ssize_t rv;
     struct stat stin;
 
     rv = fs::fstat(fdin,stin);
     if(rv == -1)
       return -1;
 
-    rv = ::copydata(fdin,fdout,stin.st_size,stin.st_blksize);
+    rv = ::copydata(fdin,fdout,(size_t)stin.st_size,(size_t)stin.st_blksize);
     if(rv == -1)
       return -1;
 
@@ -191,11 +192,11 @@ namespace fs
     return 0;
   }
 
-  int
+  ssize_t
   clonefile(const string &in,
             const string &out)
   {
-    int rv;
+    ssize_t rv;
     int fdin;
     int fdout;
     int error;

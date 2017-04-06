@@ -66,7 +66,7 @@ namespace fs
       return -1;
 
     fdin_st.st_size += additional_size;
-    rv = fs::mfs(basepaths,fdin_st.st_size,fdout_path);
+    rv = fs::mfs(basepaths,(uint64_t)fdin_st.st_size,fdout_path);
     if(rv == -1)
       return -1;
 

@@ -28,13 +28,13 @@ using std::vector;
 using mergerfs::Policy;
 
 static
-int
+ssize_t
 _readlink_core(const string *basepath,
                const char   *fusepath,
                char         *buf,
                const size_t  size)
 {
-  int rv;
+  ssize_t rv;
   string fullpath;
 
   fs::path::make(basepath,fusepath,fullpath);
@@ -49,7 +49,7 @@ _readlink_core(const string *basepath,
 }
 
 static
-int
+ssize_t
 _readlink(Policy::Func::Search  searchFunc,
           const vector<string> &srcmounts,
           const uint64_t        minfreespace,
@@ -57,7 +57,7 @@ _readlink(Policy::Func::Search  searchFunc,
           char                 *buf,
           const size_t          size)
 {
-  int rv;
+  ssize_t rv;
   vector<const string*> basepaths;
 
   rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
@@ -71,7 +71,7 @@ namespace mergerfs
 {
   namespace fuse
   {
-    int
+    ssize_t
     readlink(const char *fusepath,
              char       *buf,
              size_t      size)

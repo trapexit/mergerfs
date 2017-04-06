@@ -142,7 +142,7 @@ namespace local
   {
     const int prio = -10;
 
-    std::srand(time(NULL));
+    std::srand((unsigned int)time(NULL));
     mergerfs::resources::reset_umask();
     mergerfs::resources::maxout_rlimit_nofile();
     mergerfs::resources::maxout_rlimit_fsize();
