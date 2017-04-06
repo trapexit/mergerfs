@@ -25,7 +25,8 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
-#include "futimesat.hpp" /* futimesat replacement */
+#include "fs_base_futimesat.hpp"
+#include "fs_base_stat.hpp"
 
 #ifndef UTIME_NOW
 # define UTIME_NOW  ((1l << 30) - 1l)
@@ -125,7 +126,8 @@ _set_utime_omit_to_current_value(const int              dirfd,
 {
   int rv;
   struct stat st;
-  timespec *atime, *mtime;
+  timespec *atime;
+  timespec *mtime;
 
   if(!_any_timespec_is_utime_omit(ts))
     return 0;
@@ -134,14 +136,9 @@ _set_utime_omit_to_current_value(const int              dirfd,
   if(rv == -1)
     return -1;
 
-#if __APPLE__
-  atime = &st.st_atimespec;
-  mtime = &st.st_mtimespec;
-#else
-  atime = &st.st_atim;
-  mtime = &st.st_mtim;
-#endif
-  
+  atime = fs::stat_atime(st);
+  mtime = fs::stat_mtime(st);
+
   if(ts[0].tv_nsec == UTIME_OMIT)
     TIMESPEC_TO_TIMEVAL(&tv[0],atime);
   if(ts[1].tv_nsec == UTIME_OMIT)
@@ -159,7 +156,8 @@ _set_utime_omit_to_current_value(const int             fd,
 {
   int rv;
   struct stat st;
-  timespec *atime, *mtime;
+  timespec *atime;
+  timespec *mtime;
 
   if(!_any_timespec_is_utime_omit(ts))
     return 0;
@@ -168,13 +166,8 @@ _set_utime_omit_to_current_value(const int             fd,
   if(rv == -1)
     return -1;
 
-#if __APPLE__
-  atime = &st.st_atimespec;
-  mtime = &st.st_mtimespec;
-#else
-  atime = &st.st_atim;
-  mtime = &st.st_mtim;
-#endif
+  atime = fs::stat_atime(st);
+  mtime = fs::stat_mtime(st);
 
   if(ts[0].tv_nsec == UTIME_OMIT)
     TIMESPEC_TO_TIMEVAL(&tv[0],atime);
@@ -289,13 +282,9 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    if((flags & AT_SYMLINK_NOFOLLOW) == 0) {
-#if __APPLE__
-      return _futimesat(dirfd,path.c_str(),tvp);
-#else
-      return ::futimesat(dirfd,path.c_str(),tvp);
-#endif
-    }
+    if((flags & AT_SYMLINK_NOFOLLOW) == 0)
+      return fs::futimesat(dirfd,path.c_str(),tvp);
+
     if(_can_call_lutimes(dirfd,path,flags))
       return ::lutimes(path.c_str(),tvp);
 
