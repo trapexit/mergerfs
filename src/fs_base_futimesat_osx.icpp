@@ -46,11 +46,11 @@ getpath(const int   dirfd,
   if(rv == -1)
     return -1;
 
-  rv = ::strlcat(fullpath,"/",MAXPATHLEN);
+  rv = (int)::strlcat(fullpath,"/",MAXPATHLEN);
   if(rv > MAXPATHLEN)
     return (errno=ENAMETOOLONG,-1);
 
-  rv = ::strlcat(fullpath,path,MAXPATHLEN);
+  rv = (int)::strlcat(fullpath,path,MAXPATHLEN);
   if(rv > MAXPATHLEN)
     return (errno=ENAMETOOLONG,-1);
 
