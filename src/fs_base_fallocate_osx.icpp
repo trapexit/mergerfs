@@ -15,9 +15,31 @@
 */
 
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "errno.hpp"
-#include "fs_fallocate.hpp"
+
+static
+int
+_fallocate_core(const int   fd,
+                const off_t offset,
+                const off_t len)
+{
+  int rv;
+  fstore_t store = {F_ALLOCATECONTIG,F_PEOFPOSMODE,offset,len,0};
+
+  rv = ::fcntl(fd,F_PREALLOCATE,&store);
+  if(rv == -1)
+    {
+      store.fst_flags = F_ALLOCATEALL;
+      rv = ::fcntl(fd,F_PREALLOCATE,&store);
+    }
+
+  if(rv == -1)
+    return rv;
+
+  return ::ftruncate(fd,(offset+len));
+}
 
 namespace fs
 {
@@ -27,8 +49,9 @@ namespace fs
             const off_t offset,
             const off_t len)
   {
-    return (mode ?
-            (errno=EOPNOTSUPP,-1) :
-            (::posix_fallocate(fd,offset,len)));
+    if(mode)
+      return (errno=EOPNOTSUPP,-1);
+
+    return ::_fallocate_core(fd,offset,len);
   }
 }

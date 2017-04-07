@@ -14,8 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_FALLOCATE_HPP__
-#define __FS_FALLOCATE_HPP__
+#ifndef __FS_BASE_FALLOCATE_HPP__
+#define __FS_BASE_FALLOCATE_HPP__
 
 #include <fcntl.h>
 
@@ -28,4 +28,4 @@ namespace fs
             const off_t len);
 }
 
-#endif // __FS_FALLOCATE_HPP__
+#endif

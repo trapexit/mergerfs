@@ -16,42 +16,12 @@
 
 #include <fcntl.h>
 
-#include "errno.hpp"
-#include "fs_fallocate.hpp"
-
-namespace fs
-{
-  static
-  int
-  _fallocate_core(const int   fd,
-                  const off_t offset,
-                  const off_t len)
-  {
-    int rv;
-    fstore_t store = {F_ALLOCATECONTIG,F_PEOFPOSMODE,offset,len,0};
-
-    rv = ::fcntl(fd,F_PREALLOCATE,&store);
-    if(rv == -1)
-      {
-        store.fst_flags = F_ALLOCATEALL;
-        rv = ::fcntl(fd,F_PREALLOCATE,&store);
-      }
-
-    if(rv == -1)
-      return rv;
-
-    return ::ftruncate(fd,(offset+len));
-  }
-
-  int
-  fallocate(const int   fd,
-            const int   mode,
-            const off_t offset,
-            const off_t len)
-  {
-    if(mode)
-      return (errno=EOPNOTSUPP,-1);
-
-    return ::_fallocate_core(fd,offset,len);
-  }
-}
+#ifdef __linux__
+# include "fs_base_fallocate_linux.icpp"
+#elif _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
+# include "fs_base_fallocate_posix.icpp"
+#elif __APPLE__
+# include "fs_base_fallocate_osx.icpp"
+#else
+# include "fs_base_fallocate_unsupported.icpp"
+#endif
