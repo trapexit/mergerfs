@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#include "fs_base_futimesat.hpp"
 #include "fs_base_stat.hpp"
 
 #ifndef UTIME_NOW
@@ -169,7 +170,7 @@ _set_utime_omit_to_current_value(const int             fd,
   mtime = fs::stat_mtime(st);
 
   if(ts[0].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[0],atime;
+    TIMESPEC_TO_TIMEVAL(&tv[0],atime);
   if(ts[1].tv_nsec == UTIME_OMIT)
     TIMESPEC_TO_TIMEVAL(&tv[1],mtime);
 
@@ -282,7 +283,7 @@ namespace fs
       return -1;
 
     if((flags & AT_SYMLINK_NOFOLLOW) == 0)
-      return ::futimesat(dirfd,path.c_str(),tvp);
+      return fs::futimesat(dirfd,path.c_str(),tvp);
     if(_can_call_lutimes(dirfd,path,flags))
       return ::lutimes(path.c_str(),tvp);
 
