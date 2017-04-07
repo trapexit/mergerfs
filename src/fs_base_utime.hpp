@@ -25,6 +25,8 @@
 # include "fs_base_utime_generic.hpp"
 #endif
 
+#include "fs_base_stat.hpp"
+
 namespace fs
 {
   static
@@ -35,8 +37,8 @@ namespace fs
   {
     struct timespec times[2];
 
-    times[0] = st.st_atim;
-    times[1] = st.st_mtim;
+    times[0] = *fs::stat_atime(st);
+    times[1] = *fs::stat_mtime(st);
 
     return fs::utime(AT_FDCWD,path,times,0);
   }
@@ -49,8 +51,8 @@ namespace fs
   {
     struct timespec times[2];
 
-    times[0] = st.st_atim;
-    times[1] = st.st_mtim;
+    times[0] = *fs::stat_atime(st);
+    times[1] = *fs::stat_mtime(st);
 
     return fs::utime(fd,times);
   }

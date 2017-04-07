@@ -62,6 +62,56 @@ namespace fs
   {
     return ::fstat(fd,&st);
   }
+
+  static
+  inline
+  timespec *
+  stat_atime(struct stat &st)
+  {
+#if __APPLE__
+    return &st.st_atimespec;
+#else
+    return &st.st_atim;
+#endif
+  }
+
+  static
+  inline
+  const
+  timespec *
+  stat_atime(const struct stat &st)
+  {
+#if __APPLE__
+    return &st.st_atimespec;
+#else
+    return &st.st_atim;
+#endif
+  }
+
+  static
+  inline
+  timespec *
+  stat_mtime(struct stat &st)
+  {
+#if __APPLE__
+    return &st.st_mtimespec;
+#else
+    return &st.st_mtim;
+#endif
+  }
+
+  static
+  inline
+  const
+  timespec *
+  stat_mtime(const struct stat &st)
+  {
+#if __APPLE__
+    return &st.st_mtimespec;
+#else
+    return &st.st_mtim;
+#endif
+  }
 }
 
 #endif
