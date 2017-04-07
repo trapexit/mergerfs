@@ -25,6 +25,7 @@
 #include "fs_base_chmod.hpp"
 #include "fs_base_chown.hpp"
 #include "fs_base_close.hpp"
+#include "fs_base_fadvise.hpp"
 #include "fs_base_fallocate.hpp"
 #include "fs_base_lseek.hpp"
 #include "fs_base_mkdir.hpp"
@@ -33,7 +34,6 @@
 #include "fs_base_stat.hpp"
 #include "fs_base_utime.hpp"
 #include "fs_base_write.hpp"
-#include "fs_fadvise.hpp"
 #include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
 
