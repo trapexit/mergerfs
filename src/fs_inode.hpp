@@ -19,6 +19,7 @@
 #ifndef __FS_INODE_HPP__
 #define __FS_INODE_HPP__
 
+#include <stdint.h>
 #include <sys/stat.h>
 
 namespace fs
@@ -34,7 +35,11 @@ namespace fs
     void
     recompute(struct stat &st)
     {
-      st.st_ino |= (st.st_dev << 32);
+      // not ideal to do this at runtime but usually gets optimized out
+      if(sizeof(st.st_ino) == 4)
+        st.st_ino |= ((uint32_t)st.st_dev << 16);
+      else
+        st.st_ino |= ((uint64_t)st.st_dev << 32);
     }
   }
 }
