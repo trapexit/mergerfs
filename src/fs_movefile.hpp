@@ -23,10 +23,16 @@
 namespace fs
 {
   int
-  movefile(const vector<string> &basepaths,
-           const char           *fusepath,
-           const size_t          additional_size,
-           int                  &origfd);
+  movefile(const std::vector<std::string> &basepaths,
+           const std::string              &fusepath,
+           const size_t                    additional_size,
+           int                            &origfd);
+
+  int
+  movefile(const std::vector<std::string> &basepaths,
+           const char                     *fusepath,
+           const size_t                    additional_size,
+           int                            &origfd);
 }
 
 #endif
