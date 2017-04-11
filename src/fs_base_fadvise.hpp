@@ -14,41 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_FADVISE_HPP__
-#define __FS_FADVISE_HPP__
-
-#ifndef POSIX_FADV_NORMAL
-# define POSIX_FADV_NORMAL 0
-#endif
-
-#ifndef POSIX_FADV_RANDOM
-# define POSIX_FADV_RANDOM 1
-#endif
-
-#ifndef POSIX_FADV_SEQUENTIAL
-# define POSIX_FADV_SEQUENTIAL 2
-#endif
-
-#ifndef POSIX_FADV_WILLNEED
-# define POSIX_FADV_WILLNEED 3
-#endif
-
-#ifndef POSIX_FADV_DONTNEED
-# define POSIX_FADV_DONTNEED 4
-#endif
-
-#ifndef POSIX_FADV_NOREUSE
-# define POSIX_FADV_NOREUSE 5
-#endif
+#ifndef __FS_BASE_FADVISE_HPP__
+#define __FS_BASE_FADVISE_HPP__
 
 namespace fs
 {
-  int
-  fadvise(const int   fd,
-          const off_t offset,
-          const off_t len,
-          const int   advice);
-
   int
   fadvise_dontneed(const int   fd,
                    const off_t offset = 0,

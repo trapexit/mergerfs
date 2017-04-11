@@ -20,6 +20,7 @@
 
 namespace fs
 {
+  static
   int
   fadvise(const int   fd,
           const off_t offset,
