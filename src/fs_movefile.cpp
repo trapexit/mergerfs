@@ -38,6 +38,15 @@ namespace fs
 {
   int
   movefile(const vector<string> &basepaths,
+           const string         &fusepath,
+           const size_t          additional_size,
+           int                  &origfd)
+  {
+    return fs::movefile(basepaths,fusepath.c_str(),additional_size,origfd);
+  }
+
+  int
+  movefile(const vector<string> &basepaths,
            const char           *fusepath,
            const size_t          additional_size,
            int                  &origfd)
@@ -95,19 +104,12 @@ namespace fs
         return -1;
       }
 
-    rv = fs::unlink(fdin_path);
-    if(rv == -1)
-      {
-        fs::close(fdin);
-        fs::close(fdout);
-        fs::unlink(fdout_path);
-        return -1;
-      }
+    // should we care if it fails?
+    fs::unlink(fdin_path);
 
+    std::swap(origfd,fdout);
     fs::close(fdin);
-    fs::close(origfd);
-
-    origfd = fdout;
+    fs::close(fdout);
 
     return 0;
   }
