@@ -17,16 +17,21 @@
 #ifndef __FILEINFO_HPP__
 #define __FILEINFO_HPP__
 
+#include <string>
+
 class FileInfo
 {
 public:
-  FileInfo(int _fd) :
-    fd(_fd)
+  FileInfo(const int   fd_,
+           const char *fusepath_)
+    : fd(fd_),
+      fusepath(fusepath_)
   {
   }
 
 public:
   int fd;
+  std::string fusepath;
 };
 
 #endif

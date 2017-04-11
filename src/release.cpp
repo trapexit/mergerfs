@@ -52,9 +52,8 @@ namespace mergerfs
     release(const char     *fusepath,
             fuse_file_info *ffi)
     {
-      const fuse_context *fc     = fuse_get_context();
-      const Config       &config = Config::get(fc);
-      FileInfo           *fi     = reinterpret_cast<FileInfo*>(ffi->fh);
+      const Config &config = Config::get();
+      FileInfo     *fi     = reinterpret_cast<FileInfo*>(ffi->fh);
 
       return _release(fi,config.dropcacheonclose);
     }

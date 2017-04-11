@@ -72,9 +72,6 @@ _write_direct_io(const int     fd,
   return rv;
 }
 
-
-
-
 namespace mergerfs
 {
   namespace fuse
@@ -83,7 +80,6 @@ namespace mergerfs
     inline
     int
     write(WriteFunc       func,
-          const char     *fusepath,
           const char     *buf,
           const size_t    count,
           const off_t     offset,
@@ -103,7 +99,7 @@ namespace mergerfs
               const ugid::Set         ugid(0,0);
               const rwlock::ReadGuard readlock(&config.srcmountslock);
 
-              rv = fs::movefile(config.srcmounts,fusepath,count,fi->fd);
+              rv = fs::movefile(config.srcmounts,fi->fusepath,count,fi->fd);
               if(rv == -1)
                 return -ENOSPC;
 
@@ -121,7 +117,7 @@ namespace mergerfs
           off_t           offset,
           fuse_file_info *ffi)
     {
-      return write(_write,fusepath,buf,count,offset,ffi);
+      return write(_write,buf,count,offset,ffi);
     }
 
     int
@@ -131,7 +127,7 @@ namespace mergerfs
                     off_t           offset,
                     fuse_file_info *ffi)
     {
-      return write(_write_direct_io,fusepath,buf,count,offset,ffi);
+      return write(_write_direct_io,buf,count,offset,ffi);
     }
   }
 }

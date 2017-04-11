@@ -35,6 +35,7 @@
 #include "flock.hpp"
 #include "flush.hpp"
 #include "fsync.hpp"
+#include "fsyncdir.hpp"
 #include "ftruncate.hpp"
 #include "getattr.hpp"
 #include "getxattr.hpp"
@@ -71,9 +72,9 @@ namespace local
   get_fuse_operations(struct fuse_operations &ops,
                       const bool              direct_io)
   {
-    ops.flag_nullpath_ok   = false;
+    ops.flag_nullpath_ok   = true;
 #if FLAG_NOPATH
-    ops.flag_nopath        = false;
+    ops.flag_nopath        = true;
 #endif
 #if FLAG_UTIME
     ops.flag_utime_omit_ok = true;
@@ -94,7 +95,7 @@ namespace local
 #endif
     ops.flush       = mergerfs::fuse::flush;
     ops.fsync       = mergerfs::fuse::fsync;
-    ops.fsyncdir    = NULL;
+    ops.fsyncdir    = mergerfs::fuse::fsyncdir;
     ops.ftruncate   = mergerfs::fuse::ftruncate;
     ops.getattr     = mergerfs::fuse::getattr;
     ops.getdir      = NULL;       /* deprecated; use readdir */

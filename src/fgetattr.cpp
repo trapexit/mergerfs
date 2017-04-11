@@ -48,7 +48,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _fgetattr(fi->fd,*st);
+      return ::_fgetattr(fi->fd,*st);
     }
   }
 }

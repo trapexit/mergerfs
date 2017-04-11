@@ -16,6 +16,17 @@
 
 #include <fuse.h>
 
+#include "dirinfo.hpp"
+
+static
+int
+_releasedir(DirInfo *di)
+{
+  delete di;
+
+  return 0;
+}
+
 namespace mergerfs
 {
   namespace fuse
@@ -24,7 +35,9 @@ namespace mergerfs
     releasedir(const char     *fusepath,
                fuse_file_info *ffi)
     {
-      return 0;
+      DirInfo *di = reinterpret_cast<DirInfo*>(ffi->fh);
+
+      return ::_releasedir(di);
     }
   }
 }

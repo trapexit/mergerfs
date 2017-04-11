@@ -22,6 +22,7 @@
 #include <fcntl.h>
 
 #include "config.hpp"
+#include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_base_close.hpp"
@@ -37,15 +38,26 @@ using namespace mergerfs;
 
 static
 int
-_ioctl(const int  fd,
-       const int  cmd,
-       void      *data)
+_ioctl(const int            fd,
+       const unsigned long  cmd,
+       void                *data)
 {
   int rv;
 
   rv = fs::ioctl(fd,cmd,data);
 
   return ((rv == -1) ? -errno : rv);
+}
+
+static
+int
+_ioctl_file(fuse_file_info      *ffi,
+            const unsigned long  cmd,
+            void                *data)
+{
+  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+
+  return _ioctl(fi->fd,cmd,data);
 }
 
 #ifdef FUSE_IOCTL_DIR
@@ -60,7 +72,7 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
                 const vector<string> &srcmounts,
                 const uint64_t        minfreespace,
                 const char           *fusepath,
-                const int             cmd,
+                const unsigned long   cmd,
                 void                 *data)
 {
   int fd;
@@ -88,10 +100,11 @@ _ioctl_dir_base(Policy::Func::Search  searchFunc,
 
 static
 int
-_ioctl_dir(const char *fusepath,
-           const int   cmd,
-           void       *data)
+_ioctl_dir(fuse_file_info      *ffi,
+           const unsigned long  cmd,
+           void                *data)
 {
+  DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi->fh);
   const fuse_context      *fc     = fuse_get_context();
   const Config            &config = Config::get(fc);
   const ugid::Set          ugid(fc->uid,fc->gid);
@@ -100,7 +113,7 @@ _ioctl_dir(const char *fusepath,
   return _ioctl_dir_base(config.getattr,
                          config.srcmounts,
                          config.minfreespace,
-                         fusepath,
+                         di->fusepath.c_str(),
                          cmd,
                          data);
 }
@@ -120,15 +133,10 @@ namespace mergerfs
     {
 #ifdef FUSE_IOCTL_DIR
       if(flags & FUSE_IOCTL_DIR)
-        return _ioctl_dir(fusepath,
-                          cmd,
-                          data);
+        return ::_ioctl_dir(ffi,cmd,data);
 #endif
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _ioctl(fi->fd,
-                    cmd,
-                    data);
+      return ::_ioctl_file(ffi,cmd,data);
     }
   }
 }

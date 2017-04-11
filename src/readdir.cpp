@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "config.hpp"
+#include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_base_closedir.hpp"
 #include "fs_base_dirfd.hpp"
@@ -39,7 +40,6 @@
 
 using std::string;
 using std::vector;
-using std::pair;
 
 #define NO_OFFSET 0
 
@@ -103,17 +103,18 @@ namespace mergerfs
             void            *buf,
             fuse_fill_dir_t  filler,
             off_t            offset,
-            fuse_file_info  *fi)
+            fuse_file_info  *ffi)
     {
+      DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi->fh);
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.srcmountslock);
 
-      return _readdir(config.srcmounts,
-                      fusepath,
-                      buf,
-                      filler);
+      return ::_readdir(config.srcmounts,
+                        di->fusepath.c_str(),
+                        buf,
+                        filler);
     }
   }
 }

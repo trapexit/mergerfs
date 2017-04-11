@@ -16,6 +16,8 @@
 
 #include <fuse.h>
 
+#include "dirinfo.hpp"
+
 namespace mergerfs
 {
   namespace fuse
@@ -24,7 +26,7 @@ namespace mergerfs
     opendir(const char     *fusepath,
             fuse_file_info *ffi)
     {
-      ffi->fh = 0;
+      ffi->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath));
 
       return 0;
     }
