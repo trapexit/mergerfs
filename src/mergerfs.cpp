@@ -71,11 +71,13 @@ namespace local
   get_fuse_operations(struct fuse_operations &ops,
                       const bool              direct_io)
   {
+    ops.flag_nullpath_ok   = false;
 #if FLAG_NOPATH
     ops.flag_nopath        = false;
 #endif
-    ops.flag_nullpath_ok   = false;
+#if FLAG_UTIME
     ops.flag_utime_omit_ok = true;
+#endif
 
     ops.access      = mergerfs::fuse::access;
     ops.bmap        = NULL;

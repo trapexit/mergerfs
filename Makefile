@@ -53,6 +53,7 @@ $(error "FUSE development package doesn't appear available")
 endif
 
 FLAG_NOPATH = $(shell $(CPPFIND) "flag_nopath")
+FLAG_UTIME  = $(shell $(CPPFIND) "flag_utime_omit_ok")
 FALLOCATE   = $(shell $(CPPFIND) "fuse_fs_fallocate")
 FLOCK       = $(shell $(CPPFIND) "fuse_fs_flock")
 READ_BUF    = $(shell $(CPPFIND) "fuse_fs_read_buf")
@@ -74,6 +75,7 @@ CFLAGS      = -g -Wall \
               -DFUSE_USE_VERSION=29 \
               -MMD \
 	      -DFLAG_NOPATH=$(FLAG_NOPATH) \
+	      -DFLAG_UTIME=$(FLAG_UTIME) \
 	      -DFALLOCATE=$(FALLOCATE) \
               -DFLOCK=$(FLOCK) \
 	      -DREAD_BUF=$(READ_BUF) \
