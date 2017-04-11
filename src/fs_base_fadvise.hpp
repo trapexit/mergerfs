@@ -48,6 +48,21 @@ namespace fs
           const off_t offset,
           const off_t len,
           const int   advice);
+
+  int
+  fadvise_dontneed(const int   fd,
+                   const off_t offset = 0,
+                   const off_t len    = 0);
+
+  int
+  fadvise_willneed(const int   fd,
+                   const off_t offset = 0,
+                   const off_t len    = 0);
+
+  int
+  fadvise_sequential(const int   fd,
+                     const off_t offset = 0,
+                     const off_t len    = 0);
 }
 
 #endif // __FS_FADVISE_HPP__

@@ -21,3 +21,30 @@
 #else
 # include "fs_base_fadvise_unsupported.icpp"
 #endif
+
+namespace fs
+{
+  int
+  fadvise_dontneed(const int   fd,
+                   const off_t offset,
+                   const off_t len)
+  {
+    return fs::fadvise(fd,offset,len,POSIX_FADV_DONTNEED);
+  }
+
+  int
+  fadvise_willneed(const int   fd,
+                   const off_t offset,
+                   const off_t len)
+  {
+    return fs::fadvise(fd,offset,len,POSIX_FADV_WILLNEED);
+  }
+
+  int
+  fadvise_sequential(const int   fd,
+                     const off_t offset,
+                     const off_t len)
+  {
+    return fs::fadvise(fd,offset,len,POSIX_FADV_SEQUENTIAL);
+  }
+}

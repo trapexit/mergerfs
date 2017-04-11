@@ -122,8 +122,8 @@ copydata(const int    fdin,
 {
   int rv;
 
-  fs::fadvise(fdin,0,count,POSIX_FADV_WILLNEED);
-  fs::fadvise(fdin,0,count,POSIX_FADV_SEQUENTIAL);
+  fs::fadvise_willneed(fdin,0,count);
+  fs::fadvise_sequential(fdin,0,count);
 
   fs::fallocate(fdout,0,0,count);
 

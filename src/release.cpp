@@ -33,8 +33,8 @@ _release(FileInfo   *fi,
   // https://github.com/Feh/nocache
   if(dropcacheonclose)
     {
-      fs::fadvise(fi->fd,0,0,POSIX_FADV_DONTNEED);
-      fs::fadvise(fi->fd,0,0,POSIX_FADV_DONTNEED);
+      fs::fadvise_dontneed(fi->fd);
+      fs::fadvise_dontneed(fi->fd);
     }
 
   fs::close(fi->fd);
