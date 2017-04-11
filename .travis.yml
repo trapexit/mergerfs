@@ -3,9 +3,21 @@ language: cpp
 matrix:
   include:
     - os: linux
+      dist: precise
       compiler: gcc
+      sudo: false
     - os: linux
+      dist: precise
       compiler: clang
+      sudo: false
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      sudo: false
+    - os: linux
+      dist: trusty
+      compiler: clang
+      sudo: false
     - os: osx
       compiler: clang
 
