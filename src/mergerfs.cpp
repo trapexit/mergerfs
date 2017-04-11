@@ -72,9 +72,10 @@ namespace local
                       const bool              direct_io)
   {
 #if FLAG_NOPATH
-    ops.flag_nopath      = false;
+    ops.flag_nopath        = false;
 #endif
-    ops.flag_nullpath_ok = false;
+    ops.flag_nullpath_ok   = false;
+    ops.flag_utime_omit_ok = true;
 
     ops.access      = mergerfs::fuse::access;
     ops.bmap        = NULL;
