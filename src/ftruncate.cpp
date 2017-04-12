@@ -43,8 +43,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _ftruncate(fi->fd,
-                        size);
+      return ::_ftruncate(fi->fd,size);
     }
   }
 }

@@ -73,7 +73,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _read(fi->fd,buf,count,offset);
+      return ::_read(fi->fd,buf,count,offset);
     }
 
     int
@@ -85,7 +85,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return _read_direct_io(fi->fd,buf,count,offset);
+      return ::_read_direct_io(fi->fd,buf,count,offset);
     }
   }
 }

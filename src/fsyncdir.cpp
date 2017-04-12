@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2017, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -20,19 +20,18 @@
 #include <vector>
 
 #include "errno.hpp"
-#include "fileinfo.hpp"
+#include "dirinfo.hpp"
 #include "fs_base_fsync.hpp"
 
 static
 int
-_fsync(const int fd,
-       const int isdatasync)
+_fsyncdir(const DirInfo *di,
+          const int      isdatasync)
 {
   int rv;
 
-  rv = (isdatasync ?
-        fs::fdatasync(fd) :
-        fs::fsync(fd));
+  rv    = -1;
+  errno = ENOSYS;
 
   return ((rv == -1) ? -errno : 0);
 }
@@ -42,13 +41,13 @@ namespace mergerfs
   namespace fuse
   {
     int
-    fsync(const char     *fusepath,
-          int             isdatasync,
-          fuse_file_info *ffi)
+    fsyncdir(const char     *fusepath,
+             int             isdatasync,
+             fuse_file_info *ffi)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      DirInfo *di = reinterpret_cast<DirInfo*>(ffi->fh);
 
-      return ::_fsync(fi->fd,isdatasync);
+      return ::_fsyncdir(di,isdatasync);
     }
   }
 }

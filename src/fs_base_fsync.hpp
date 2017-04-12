@@ -19,6 +19,10 @@
 #ifndef __FS_BASE_FSYNC_HPP__
 #define __FS_BASE_FSYNC_HPP__
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <unistd.h>
 
 #include "errno.hpp"

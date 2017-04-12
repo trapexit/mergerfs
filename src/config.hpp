@@ -78,6 +78,16 @@ namespace mergerfs
 
   public:
     static
+    const
+    Config &
+    get(void)
+    {
+      const fuse_context *fc = fuse_get_context();
+
+      return get(fc);
+    }
+
+    static
     const Config &
     get(const fuse_context *fc)
     {

@@ -75,7 +75,7 @@ _create_core(const string &existingpath,
   if(rv == -1)
     return -errno;
 
-  fh = reinterpret_cast<uint64_t>(new FileInfo(rv));
+  fh = reinterpret_cast<uint64_t>(new FileInfo(rv,fusepath));
 
   return 0;
 }
