@@ -57,19 +57,18 @@ writen(const int     fd,
   ssize_t nwritten;
 
   nleft = count;
-  while(nleft > 0)
+  do
     {
       nwritten = fs::write(fd,buf,nleft);
+      if((nwritten == -1) && (errno == EINTR))
+        continue;
       if(nwritten == -1)
-        {
-          if(errno == EINTR)
-            continue;
-          return -1;
-        }
+        return -1;
 
       nleft -= nwritten;
       buf   += nwritten;
     }
+  while(nleft > 0);
 
   return count;
 }
@@ -96,12 +95,12 @@ copyfile_rw(const int    fdin,
   while(totalwritten < count)
     {
       nr = fs::read(fdin,&buf[0],bufsize);
+      if(nr == 0)
+        return totalwritten;
+      if((nr == -1) && (errno == EINTR))
+        continue;
       if(nr == -1)
-        {
-          if(errno == EINTR)
-            continue;
-          return -1;
-        }
+        return -1;
 
       nw = writen(fdout,&buf[0],nr);
       if(nw == -1)
@@ -110,7 +109,7 @@ copyfile_rw(const int    fdin,
       totalwritten += nw;
     }
 
-  return count;
+  return totalwritten;
 }
 
 static
