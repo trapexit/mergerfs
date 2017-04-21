@@ -126,11 +126,11 @@ _split_attrval(const string &attrval,
 
 static
 int
-_setxattr_srcmounts(vector<string>   &srcmounts,
+_setxattr_srcmounts(const string     &attrval,
+                    const int         flags,
+                    vector<string>   &srcmounts,
                     pthread_rwlock_t &srcmountslock,
-                    const string     &destmount,
-                    const string     &attrval,
-                    const int         flags)
+                    const string     &destmount)
 {
   string instruction;
   string values;
@@ -162,16 +162,16 @@ _setxattr_srcmounts(vector<string>   &srcmounts,
 
 static
 int
-_setxattr_minfreespace(Config       &config,
-                       const string &attrval,
-                       const int     flags)
+_setxattr_uint64_t(const string &attrval,
+                   const int     flags,
+                   uint64_t     &uint)
 {
   int rv;
 
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  rv = num::to_uint64_t(attrval,config.minfreespace);
+  rv = num::to_uint64_t(attrval,uint);
   if(rv == -1)
     return -EINVAL;
 
@@ -180,23 +180,22 @@ _setxattr_minfreespace(Config       &config,
 
 static
 int
-_setxattr_moveonenospc(Config       &config,
-                       const string &attrval,
-                       const int     flags)
+_setxattr_bool(const string &attrval,
+               const int     flags,
+               bool         &value)
 {
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
   if(attrval == "false")
-    config.moveonenospc = false;
+    value = false;
   else if(attrval == "true")
-    config.moveonenospc = true;
+    value = true;
   else
     return -EINVAL;
 
   return 0;
 }
-
 
 static
 int
@@ -251,19 +250,23 @@ _setxattr_controlfile(Config       &config,
     {
     case 3:
       if(attr[2] == "srcmounts")
-        return _setxattr_srcmounts(config.srcmounts,
+        return _setxattr_srcmounts(attrval,
+                                   flags,
+                                   config.srcmounts,
                                    config.srcmountslock,
-                                   config.destmount,
-                                   attrval,
-                                   flags);
+                                   config.destmount);
       else if(attr[2] == "minfreespace")
-        return _setxattr_minfreespace(config,
-                                      attrval,
-                                      flags);
+        return _setxattr_uint64_t(attrval,
+                                  flags,
+                                  config.minfreespace);
       else if(attr[2] == "moveonenospc")
-        return _setxattr_moveonenospc(config,
-                                      attrval,
-                                      flags);
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.moveonenospc);
+      else if(attr[2] == "dropcacheonclose")
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.dropcacheonclose);
       break;
 
     case 4:

@@ -46,6 +46,7 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.srcmounts")
     ("user.mergerfs.minfreespace")
     ("user.mergerfs.moveonenospc")
+    ("user.mergerfs.dropcacheonclose")
     ("user.mergerfs.policies")
     ("user.mergerfs.version")
     ("user.mergerfs.pid");

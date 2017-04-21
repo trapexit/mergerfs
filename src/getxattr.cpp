@@ -114,10 +114,10 @@ _getxattr_controlfile_minfreespace(const Config &config,
 
 static
 void
-_getxattr_controlfile_moveonenospc(const Config &config,
-                                   string       &attrvalue)
+_getxattr_controlfile_bool(bool    boolvalue,
+                           string &attrvalue)
 {
-  attrvalue = (config.moveonenospc ? "true" : "false");
+  attrvalue = (boolvalue ? "true" : "false");
 }
 
 static
@@ -175,7 +175,9 @@ _getxattr_controlfile(const Config &config,
       else if(attr[2] == "minfreespace")
         _getxattr_controlfile_minfreespace(config,attrvalue);
       else if(attr[2] == "moveonenospc")
-        _getxattr_controlfile_moveonenospc(config,attrvalue);
+        _getxattr_controlfile_bool(config.moveonenospc,attrvalue);
+      else if(attr[2] == "dropcacheonclose")
+        _getxattr_controlfile_bool(config.dropcacheonclose,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")
