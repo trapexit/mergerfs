@@ -16,11 +16,11 @@
 
 #include <fuse.h>
 
+#include <string.h>
+
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-
-#include <string.h>
 
 #include "config.hpp"
 #include "errno.hpp"
@@ -180,6 +180,24 @@ _setxattr_uint64_t(const string &attrval,
 
 static
 int
+_setxattr_time_t(const string &attrval,
+                 const int     flags,
+                 time_t       &time)
+{
+  int rv;
+
+  if((flags & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  rv = num::to_time_t(attrval,time);
+  if(rv == -1)
+    return -EINVAL;
+
+  return 0;
+}
+
+static
+int
 _setxattr_bool(const string &attrval,
                const int     flags,
                bool         &value)
@@ -267,6 +285,14 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_bool(attrval,
                               flags,
                               config.dropcacheonclose);
+      else if(attr[2] == "symlinkify")
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.symlinkify);
+      else if(attr[2] == "symlinkify_timeout")
+        return _setxattr_time_t(attrval,
+                                flags,
+                                config.symlinkify_timeout);
       break;
 
     case 4:

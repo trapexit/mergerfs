@@ -26,6 +26,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * Works with heterogeneous filesystem types
 * Handling of writes to full drives (transparently move file to drive with capacity)
 * Handles pool of readonly and read/write drives
+* Turn read-only files into symlinks to increase read performance
 
 # OPTIONS
 
@@ -37,6 +38,8 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * **moveonenospc**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
 * **dropcacheonclose**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
+* **symlinkify**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
+* **symlinkify_timeout**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **fsname**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
@@ -66,6 +69,14 @@ To have the pool mounted at boot or otherwise accessable from related tools use 
 
 **NOTE:** for mounting via **fstab** to work you must have **mount.fuse** installed. For Ubuntu/Debian it is included in the **fuse** package.
 
+### symlinkify
+
+Due to the levels of indirection introduced by mergerfs and the underlying technology FUSE there can be varying levels of performance degredation. This feature will turn non-directories which are not writable into symlinks to the original file found by the `readlink` policy after the mtime and ctime are older than the timeout.
+
+**WARNING:** The current implementation has a known issue in which if the file is open and being used when the file is converted to a symlink then the application which has that file open will receive an error when using it. This is unlikely to occur in practice but is something to keep in mind.
+
+**WARNING:** Some backup solutions, such as CrashPlan, do not backup the target of a symlink. If using this feature it will be necessary to point any backup software to the original drives or configure the software to follow symlinks if such an option is available. Alternatively create two mounts. One for backup and one for general consumption.
+
 # FUNCTIONS / POLICIES / CATEGORIES
 
 The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs these functions are grouped into 3 categories: **action**, **create**, and **search**. Functions and categories can be assigned a policy which dictates how **mergerfs** behaves. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` (though only if there were more than one copy of the file).
@@ -74,11 +85,11 @@ Policies, when called to create, will ignore drives which are readonly. This all
 
 #### Function / Category classifications
 
-| Category | FUSE Functions |
-|----------|----------------|
+| Category | FUSE Functions                                                                      |
+|----------|-------------------------------------------------------------------------------------|
 | action   | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
-| create   | create, mkdir, mknod, symlink |
-| search   | access, getattr, getxattr, ioctl, listxattr, open, readlink |
+| create   | create, mkdir, mknod, symlink                                                       |
+| search   | access, getattr, getxattr, ioctl, listxattr, open, readlink                         |
 | N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, release, statfs, write |
 
 Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will also be used.
@@ -95,8 +106,8 @@ When using non-path preserving policies where something is created paths will be
 
 #### Policy descriptions
 
-| Policy | Description |
-|--------------|-------------|
+| Policy           | Description                                                |
+|------------------|------------------------------------------------------------|
 | all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **ff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
 | epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. Excludes readonly drives and those with free space less than **minfreespace**. |
 | epff (existing path, first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found where the relative path already exists. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). Falls back to **ff**. |

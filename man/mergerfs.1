@@ -37,6 +37,8 @@ Handling of writes to full drives (transparently move file to drive with
 capacity)
 .IP \[bu] 2
 Handles pool of readonly and read/write drives
+.IP \[bu] 2
+Turn read\-only files into symlinks to increase read performance
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
@@ -77,6 +79,17 @@ longer need the data and it can drop its cache.
 Recommended when \f[B]direct_io\f[] is not enabled to limit double
 caching.
 (default: false)
+.IP \[bu] 2
+\f[B]symlinkify\f[]: when enabled (set to \f[B]true\f[]) and a file is
+not writable and its mtime or ctime is older than
+\f[B]symlinkify_timeout\f[] files will be reported as symlinks to the
+original files.
+Please read more below before using.
+(default: false)
+.IP \[bu] 2
+\f[B]symlinkify_timeout\f[]: time to wait, in seconds, to activate the
+\f[B]symlinkify\f[] behavior.
+(default: 3600)
 .IP \[bu] 2
 \f[B]fsname\f[]: sets the name of the filesystem as seen in
 \f[B]mount\f[], \f[B]df\f[], etc.
@@ -139,6 +152,28 @@ be automatically included.
 \f[B]NOTE:\f[] for mounting via \f[B]fstab\f[] to work you must have
 \f[B]mount.fuse\f[] installed.
 For Ubuntu/Debian it is included in the \f[B]fuse\f[] package.
+.SS symlinkify
+.PP
+Due to the levels of indirection introduced by mergerfs and the
+underlying technology FUSE there can be varying levels of performance
+degredation.
+This feature will turn non\-directories which are not writable into
+symlinks to the original file found by the \f[C]readlink\f[] policy
+after the mtime and ctime are older than the timeout.
+.PP
+\f[B]WARNING:\f[] The current implementation has a known issue in which
+if the file is open and being used when the file is converted to a
+symlink then the application which has that file open will receive an
+error when using it.
+This is unlikely to occur in practice but is something to keep in mind.
+.PP
+\f[B]WARNING:\f[] Some backup solutions, such as CrashPlan, do not
+backup the target of a symlink.
+If using this feature it will be necessary to point any backup software
+to the original drives or configure the software to follow symlinks if
+such an option is available.
+Alternatively create two mounts.
+One for backup and one for general consumption.
 .SH FUNCTIONS / POLICIES / CATEGORIES
 .PP
 The POSIX filesystem API has a number of functions.
@@ -161,7 +196,7 @@ mount option for this to work.
 .PP
 .TS
 tab(@);
-lw(10.7n) lw(16.5n).
+lw(7.9n) lw(62.1n).
 T{
 Category
 T}@T{
@@ -216,7 +251,7 @@ paths will be copied to target drives as necessary.
 .PP
 .TS
 tab(@);
-lw(14.6n) lw(13.6n).
+lw(16.6n) lw(53.4n).
 T{
 Policy
 T}@T{

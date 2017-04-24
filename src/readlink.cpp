@@ -16,11 +16,15 @@
 
 #include <fuse.h>
 
+#include <string.h>
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_readlink.hpp"
+#include "fs_base_stat.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
+#include "symlinkify.hpp"
 #include "ugid.hpp"
 
 using std::string;
@@ -29,15 +33,12 @@ using mergerfs::Policy;
 
 static
 int
-_readlink_core(const string *basepath,
-               const char   *fusepath,
-               char         *buf,
-               const size_t  size)
+_readlink_core_standard(const string &fullpath,
+                        char         *buf,
+                        const size_t  size)
+
 {
   int rv;
-  string fullpath;
-
-  fs::path::make(basepath,fusepath,fullpath);
 
   rv = fs::readlink(fullpath,buf,size);
   if(rv == -1)
@@ -50,12 +51,55 @@ _readlink_core(const string *basepath,
 
 static
 int
+_readlink_core_symlinkify(const string &fullpath,
+                          char         *buf,
+                          const size_t  size,
+                          const time_t  symlinkify_timeout)
+{
+  int rv;
+  struct stat st;
+
+  rv = fs::stat(fullpath,st);
+  if(rv == -1)
+    return -errno;
+
+  if(!symlinkify::can_be_symlink(st,symlinkify_timeout))
+    return _readlink_core_standard(fullpath,buf,size);
+
+  strncpy(buf,fullpath.c_str(),size);
+
+  return 0;
+}
+
+static
+int
+_readlink_core(const string *basepath,
+               const char   *fusepath,
+               char         *buf,
+               const size_t  size,
+               const bool    symlinkify,
+               const time_t  symlinkify_timeout)
+{
+  string fullpath;
+
+  fs::path::make(basepath,fusepath,fullpath);
+
+  if(symlinkify)
+    return _readlink_core_symlinkify(fullpath,buf,size,symlinkify_timeout);
+
+  return _readlink_core_standard(fullpath,buf,size);
+}
+
+static
+int
 _readlink(Policy::Func::Search  searchFunc,
           const vector<string> &srcmounts,
           const uint64_t        minfreespace,
           const char           *fusepath,
           char                 *buf,
-          const size_t          size)
+          const size_t          size,
+          const bool            symlinkify,
+          const time_t          symlinkify_timeout)
 {
   int rv;
   vector<const string*> basepaths;
@@ -64,7 +108,8 @@ _readlink(Policy::Func::Search  searchFunc,
   if(rv == -1)
     return -errno;
 
-  return _readlink_core(basepaths[0],fusepath,buf,size);
+  return _readlink_core(basepaths[0],fusepath,buf,size,
+                        symlinkify,symlinkify_timeout);
 }
 
 namespace mergerfs
@@ -86,7 +131,9 @@ namespace mergerfs
                        config.minfreespace,
                        fusepath,
                        buf,
-                       size);
+                       size,
+                       config.symlinkify,
+                       config.symlinkify_timeout);
     }
   }
 }

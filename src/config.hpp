@@ -49,6 +49,8 @@ namespace mergerfs
     bool                     moveonenospc;
     bool                     direct_io;
     bool                     dropcacheonclose;
+    bool                     symlinkify;
+    time_t                   symlinkify_timeout;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];
