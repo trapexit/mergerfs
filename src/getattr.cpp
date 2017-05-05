@@ -25,6 +25,7 @@
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
+#include "symlinkify.hpp"
 #include "ugid.hpp"
 
 using std::string;
@@ -62,7 +63,9 @@ _getattr(Policy::Func::Search  searchFunc,
          const vector<string> &srcmounts,
          const uint64_t        minfreespace,
          const char           *fusepath,
-         struct stat          &st)
+         struct stat          &st,
+         const bool            symlinkify,
+         const time_t          symlinkify_timeout)
 {
   int rv;
   string fullpath;
@@ -77,6 +80,9 @@ _getattr(Policy::Func::Search  searchFunc,
   rv = fs::lstat(fullpath,st);
   if(rv == -1)
     return -errno;
+
+  if(symlinkify && symlinkify::can_be_symlink(st,symlinkify_timeout))
+    st.st_mode = symlinkify::convert(st.st_mode);
 
   fs::inode::recompute(st);
 
@@ -104,7 +110,9 @@ namespace mergerfs
                       config.srcmounts,
                       config.minfreespace,
                       fusepath,
-                      *st);
+                      *st,
+                      config.symlinkify,
+                      config.symlinkify_timeout);
     }
   }
 }

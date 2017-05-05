@@ -16,13 +16,14 @@
 
 #include <fuse.h>
 
-#include <string>
-#include <vector>
-#include <set>
-#include <algorithm>
-
 #include <stdio.h>
 #include <string.h>
+
+#include <algorithm>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "config.hpp"
 #include "errno.hpp"
@@ -100,22 +101,32 @@ _getxattr_controlfile_srcmounts(const Config &config,
 
 static
 void
-_getxattr_controlfile_minfreespace(const Config &config,
-                                   string       &attrvalue)
+_getxattr_controlfile_uint64_t(const uint64_t  uint,
+                               string         &attrvalue)
 {
-  char buf[64];
-  unsigned long long minfreespace;
+  std::ostringstream os;
 
-  minfreespace = (unsigned long long)config.minfreespace;
-  snprintf(buf,sizeof(buf),"%llu",minfreespace);
+  os << uint;
 
-  attrvalue = buf;
+  attrvalue = os.str();
 }
 
 static
 void
-_getxattr_controlfile_bool(bool    boolvalue,
-                           string &attrvalue)
+_getxattr_controlfile_time_t(const time_t  time,
+                             string       &attrvalue)
+{
+  std::ostringstream os;
+
+  os << time;
+
+  attrvalue = os.str();
+}
+
+static
+void
+_getxattr_controlfile_bool(const bool  boolvalue,
+                           string     &attrvalue)
 {
   attrvalue = (boolvalue ? "true" : "false");
 }
@@ -173,11 +184,15 @@ _getxattr_controlfile(const Config &config,
       if(attr[2] == "srcmounts")
         _getxattr_controlfile_srcmounts(config,attrvalue);
       else if(attr[2] == "minfreespace")
-        _getxattr_controlfile_minfreespace(config,attrvalue);
+        _getxattr_controlfile_uint64_t(config.minfreespace,attrvalue);
       else if(attr[2] == "moveonenospc")
         _getxattr_controlfile_bool(config.moveonenospc,attrvalue);
       else if(attr[2] == "dropcacheonclose")
         _getxattr_controlfile_bool(config.dropcacheonclose,attrvalue);
+      else if(attr[2] == "symlinkify")
+        _getxattr_controlfile_bool(config.symlinkify,attrvalue);
+      else if(attr[2] == "symlinkify_timeout")
+        _getxattr_controlfile_time_t(config.symlinkify_timeout,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")

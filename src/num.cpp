@@ -57,4 +57,22 @@ namespace num
 
     return 0;
   }
+
+  int
+  to_time_t(const std::string &str,
+            time_t            &value)
+  {
+    time_t tmp;
+    char *endptr;
+
+    tmp = strtoll(str.c_str(),&endptr,10);
+    if(*endptr != '\0')
+      return -1;
+    if(tmp < 0)
+      return -1;
+
+    value = tmp;
+
+    return 0;
+  }
 }

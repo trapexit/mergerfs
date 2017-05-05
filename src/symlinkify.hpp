@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2017, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,17 +16,37 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __NUM_HPP__
-#define __NUM_HPP__
+#ifndef __SYMLINKIFY_HPP__
+#define __SYMLINKIFY_HPP__
 
-#include <string>
+#include <sys/stat.h>
+#include <time.h>
 
-#include <stdint.h>
-
-namespace num
+namespace symlinkify
 {
-  int to_uint64_t(const std::string &str, uint64_t &value);
-  int to_time_t(const std::string &str, time_t &value);
+  static
+  inline
+  bool
+  can_be_symlink(const struct stat &st,
+                 const time_t       timeout)
+  {
+    if(S_ISDIR(st.st_mode) ||
+       (st.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
+      return false;
+
+    const time_t now = ::time(NULL);
+
+    return (((now - st.st_mtime) > timeout) &&
+            ((now - st.st_ctime) > timeout));
+  }
+
+  static
+  inline
+  mode_t
+  convert(const mode_t mode)
+  {
+    return ((mode & ~S_IFMT) | S_IFLNK);
+  }
 }
 
 #endif

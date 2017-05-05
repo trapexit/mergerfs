@@ -47,6 +47,8 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.minfreespace")
     ("user.mergerfs.moveonenospc")
     ("user.mergerfs.dropcacheonclose")
+    ("user.mergerfs.symlinkify")
+    ("user.mergerfs.symlinkify_timeout")
     ("user.mergerfs.policies")
     ("user.mergerfs.version")
     ("user.mergerfs.pid");
