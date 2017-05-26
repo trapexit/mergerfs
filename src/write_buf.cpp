@@ -99,6 +99,15 @@ namespace mergerfs
 
       return rv;
     }
+
+    int
+    write_buf_null(const char     *fusepath,
+                   fuse_bufvec    *src,
+                   off_t           offset,
+                   fuse_file_info *ffi)
+    {
+      return src->buf[0].size;
+    }
   }
 }
 

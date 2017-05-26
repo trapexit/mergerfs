@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2017-02-18
+% 2017-05-26
 
 # NAME
 
@@ -40,6 +40,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * **dropcacheonclose**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
 * **symlinkify**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
 * **symlinkify_timeout**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
+* **nullrw**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
 * **fsname**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
@@ -76,6 +77,37 @@ Due to the levels of indirection introduced by mergerfs and the underlying techn
 **WARNING:** The current implementation has a known issue in which if the file is open and being used when the file is converted to a symlink then the application which has that file open will receive an error when using it. This is unlikely to occur in practice but is something to keep in mind.
 
 **WARNING:** Some backup solutions, such as CrashPlan, do not backup the target of a symlink. If using this feature it will be necessary to point any backup software to the original drives or configure the software to follow symlinks if such an option is available. Alternatively create two mounts. One for backup and one for general consumption.
+
+### nullrw
+
+Due to how FUSE works there is an overhead to all requests made to a FUSE filesystem. Meaning that even a simple passthrough will have some slowdown. However, generally the overhead is minimal in comparison to the cost of the underlying I/O. By disabling the underlying I/O we can test the theoretical performance boundries.
+
+By enabling `nullrw` mergerfs will work as it always does **except** that all reads and writes will be no-ops. A write will succeed (the size of the write will be returned as if it were successful) but mergerfs does nothing with the data it was given. Similarly a read will return the size requested but won't touch the buffer.
+
+Example:
+```
+$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=512 count=1024
+1024+0 records in
+2097152+0 records out
+1073741824 bytes (1.1 GB, 1.0 GiB) copied, 15.4067 s, 69.7 MB/s
+
+$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=1M count=1024
+1024+0 records in
+1024+0 records out
+1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.219585 s, 4.9 GB/s
+
+$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=512 count=102400
+102400+0 records in
+102400+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.757991 s, 69.2 MB/s
+
+$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024
+1024+0 records in
+1024+0 records out
+1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.18405 s, 5.8 GB/s
+```
+
+It's important to test with different `obs` (output block size) values since the relative overhead is greater with smaller values. As you can see above the size of a read or write can massively impact theoretical performance. If an application performs much worse through mergerfs it could very well be that it doesn't optimally size its read and write requests.
 
 # FUNCTIONS / POLICIES / CATEGORIES
 

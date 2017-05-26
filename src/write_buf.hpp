@@ -30,6 +30,12 @@ namespace mergerfs
               struct fuse_bufvec *buf,
               off_t               offset,
               fuse_file_info     *fi);
+
+    int
+    write_buf_null(const char         *fusepath,
+                   struct fuse_bufvec *buf,
+                   off_t               offset,
+                   fuse_file_info     *fi);
   }
 }
 

@@ -70,7 +70,8 @@ namespace local
   static
   void
   get_fuse_operations(struct fuse_operations &ops,
-                      const bool              direct_io)
+                      const bool              direct_io,
+                      const bool              nullrw)
   {
     ops.flag_nullpath_ok   = true;
 #if FLAG_NOPATH
@@ -110,11 +111,15 @@ namespace local
     ops.open        = mergerfs::fuse::open;
     ops.opendir     = mergerfs::fuse::opendir;
     ops.poll        = NULL;
-    ops.read        = direct_io ?
-      mergerfs::fuse::read_direct_io :
-      mergerfs::fuse::read;
+    ops.read        = (nullrw ?
+                       mergerfs::fuse::read_null :
+                       (direct_io ?
+                        mergerfs::fuse::read_direct_io :
+                        mergerfs::fuse::read));
 #if READ_BUF
-    ops.read_buf    = mergerfs::fuse::read_buf;
+    ops.read_buf    = (nullrw ?
+                       NULL :
+                       mergerfs::fuse::read_buf);
 #endif
     ops.readdir     = mergerfs::fuse::readdir;
     ops.readlink    = mergerfs::fuse::readlink;
@@ -130,11 +135,15 @@ namespace local
     ops.unlink      = mergerfs::fuse::unlink;
     ops.utime       = NULL;       /* deprecated; use utimens() */
     ops.utimens     = mergerfs::fuse::utimens;
-    ops.write       = direct_io ?
-      mergerfs::fuse::write_direct_io :
-      mergerfs::fuse::write;
+    ops.write       = (nullrw ?
+                       mergerfs::fuse::write_null :
+                       (direct_io ?
+                        mergerfs::fuse::write_direct_io :
+                        mergerfs::fuse::write));
 #if WRITE_BUF
-    ops.write_buf   = mergerfs::fuse::write_buf;
+    ops.write_buf   = (nullrw ?
+                       mergerfs::fuse::write_buf_null :
+                       mergerfs::fuse::write_buf);
 #endif
 
     return;
@@ -171,7 +180,9 @@ namespace mergerfs
     mergerfs::options::parse(args,config);
 
     local::setup_resources();
-    local::get_fuse_operations(ops,config.direct_io);
+    local::get_fuse_operations(ops,
+                               config.direct_io,
+                               config.nullrw);
 
     return fuse_main(args.argc,
                      args.argv,
