@@ -190,6 +190,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.symlinkify);
       else if(key == "symlinkify_timeout")
         rv = parse_and_process(value,config.symlinkify_timeout);
+      else if(key == "nullrw")
+        rv = parse_and_process(value,config.nullrw);
     }
 
   if(rv == -1)
@@ -291,6 +293,7 @@ usage(void)
     "    -o symlinkify_timeout=<int>\n"
     "                           timeout in seconds before will turn to symlinks.\n"
     "                           default=3600\n"
+    "    -o nullrw=<bool>       Disables reads and writes. For benchmarking.\n"
             << std::endl;
 }
 

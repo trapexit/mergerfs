@@ -51,6 +51,7 @@ namespace mergerfs
     bool                     dropcacheonclose;
     bool                     symlinkify;
     time_t                   symlinkify_timeout;
+    bool                     nullrw;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];

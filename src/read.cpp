@@ -87,5 +87,16 @@ namespace mergerfs
 
       return ::_read_direct_io(fi->fd,buf,count,offset);
     }
+
+    int
+    read_null(const char     *fusepath,
+              char           *buf,
+              size_t          count,
+              off_t           offset,
+              fuse_file_info *ffi)
+
+    {
+      return count;
+    }
   }
 }

@@ -43,6 +43,7 @@ namespace mergerfs
       dropcacheonclose(false),
       symlinkify(false),
       symlinkify_timeout(3600),
+      nullrw(false),
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),

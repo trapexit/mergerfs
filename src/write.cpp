@@ -129,5 +129,15 @@ namespace mergerfs
     {
       return write(_write_direct_io,buf,count,offset,ffi);
     }
+
+    int
+    write_null(const char     *fusepath,
+               const char     *buf,
+               size_t          count,
+               off_t           offset,
+               fuse_file_info *ffi)
+    {
+      return count;
+    }
   }
 }
