@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#if READ_BUF
-
 #include <fuse.h>
 
 #include <stdlib.h>
@@ -70,5 +68,3 @@ namespace mergerfs
     }
   }
 }
-
-#endif

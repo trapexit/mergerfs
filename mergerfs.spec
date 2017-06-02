@@ -11,7 +11,6 @@ Source:		mergerfs-%{version}.tar.gz
 
 BuildRequires:	gcc-c++
 BuildRequires:	libattr-devel
-BuildRequires:	fuse-devel
 # rpmbuild driven by the Makefile uses git to generate a version number
 BuildRequires:	git
 

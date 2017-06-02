@@ -3,17 +3,14 @@ Section: utils
 Priority: optional
 Maintainer: Antonio SJ Musumeci <trapexit@spawn.link>
 Build-Depends: debhelper (>= 8.0.0),
- libfuse-dev,
- libattr1-dev,
- pkg-config
+ libattr1-dev
 Standards-Version: 3.9.4
 Homepage: http://github.com/trapexit/mergerfs
 
 Package: mergerfs
 Architecture: any
 Depends: ${shlibs:Depends},
- ${misc:Depends},
- libfuse2
+ ${misc:Depends}
 Description: another FUSE union filesystem
  mergerfs is similar to mhddfs, unionfs, and aufs. Like mhddfs in that it too
  uses FUSE. Like aufs in that it provides multiple policies for how to handle

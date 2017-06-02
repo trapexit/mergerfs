@@ -595,8 +595,10 @@ $\ wget\ https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs\-
 .IP
 .nf
 \f[C]
-$\ sudo\ apt\-get\ install\ g++\ pkg\-config\ git\ git\-buildpackage\ pandoc\ debhelper\ libfuse\-dev\ libattr1\-dev\ python
+$\ sudo\ apt\-get\ \-y\ update
+$\ sudo\ apt\-get\ \-y\ install\ git\ make
 $\ cd\ mergerfs
+$\ make\ install\-build\-pkgs
 $\ make\ deb
 $\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
 \f[]
@@ -606,21 +608,22 @@ $\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
 .nf
 \f[C]
 $\ su\ \-
-#\ dnf\ install\ rpm\-build\ fuse\-devel\ libattr\-devel\ pandoc\ gcc\-c++\ git\ make\ which\ python
+#\ dnf\ \-y\ update
+#\ dnf\ \-y\ install\ git\ make
 #\ cd\ mergerfs
+#\ make\ install\-build\-pkgs
 #\ make\ rpm
 #\ rpm\ \-i\ rpmbuild/RPMS/<arch>/mergerfs\-<verion>.<arch>.rpm
 \f[]
 .fi
 .SS Generically
 .PP
-Have git, python, pkg\-config, pandoc, libfuse, libattr1 installed.
+Have git, g++, make, python, libattr1, automake, libtool installed.
 .IP
 .nf
 \f[C]
 $\ cd\ mergerfs
 $\ make
-$\ make\ man
 $\ sudo\ make\ install
 \f[]
 .fi
@@ -811,6 +814,8 @@ bad blocks and find the files using those blocks
 .IP \[bu] 2
 The recommended options are
 \f[B]defaults,allow_other,direct_io,use_ino\f[].
+(\f[B]use_ino\f[] will only work when used with mergerfs 2.18.0 and
+above.)
 .IP \[bu] 2
 Run mergerfs as \f[C]root\f[] unless you\[aq]re merging paths which are
 owned by the same user otherwise strange permission issues may arise.
@@ -1022,6 +1027,10 @@ If either value is too low for your needs you will have to modify
 \f[C]gidcache.hpp\f[] to increase the values.
 Note that doing so will increase the memory needed by each thread.
 .SS mergerfs or libfuse crashing
+.PP
+\f[B]NOTE:\f[] as of mergerfs 2.22.0 it includes the most recent version
+of libfuse so any crash should be reported.
+For older releases continue reading...
 .PP
 If suddenly the mergerfs mount point disappears and
 \f[C]Transport\ endpoint\ is\ not\ connected\f[] is returned when
