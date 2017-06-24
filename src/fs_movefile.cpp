@@ -42,15 +42,6 @@ namespace fs
            const size_t          additional_size,
            int                  &origfd)
   {
-    return fs::movefile(basepaths,fusepath.c_str(),additional_size,origfd);
-  }
-
-  int
-  movefile(const vector<string> &basepaths,
-           const char           *fusepath,
-           const size_t          additional_size,
-           int                  &origfd)
-  {
     int rv;
     int fdin;
     int fdout;

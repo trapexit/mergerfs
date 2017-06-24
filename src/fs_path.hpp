@@ -40,8 +40,26 @@ namespace fs
 
     inline
     void
+    append(string       &base,
+           const string &suffix)
+    {
+      base += suffix;
+    }
+
+    inline
+    void
     make(const string *base,
          const char   *suffix,
+         string       &output)
+    {
+      output  = *base;
+      output += suffix;
+    }
+
+    inline
+    void
+    make(const string *base,
+         const string &suffix,
          string       &output)
     {
       output  = *base;

@@ -27,12 +27,6 @@ namespace fs
            const std::string              &fusepath,
            const size_t                    additional_size,
            int                            &origfd);
-
-  int
-  movefile(const std::vector<std::string> &basepaths,
-           const char                     *fusepath,
-           const size_t                    additional_size,
-           int                            &origfd);
 }
 
 #endif

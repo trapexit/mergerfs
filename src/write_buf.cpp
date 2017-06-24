@@ -87,7 +87,7 @@ namespace mergerfs
               const rwlock::ReadGuard readlock(&config.srcmountslock);
 
               extra = fuse_buf_size(src);
-              rv = fs::movefile(config.srcmounts,fusepath,extra,fi->fd);
+              rv = fs::movefile(config.srcmounts,fi->fusepath,extra,fi->fd);
               if(rv == -1)
                 return -ENOSPC;
 

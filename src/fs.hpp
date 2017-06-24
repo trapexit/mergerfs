@@ -49,7 +49,7 @@ namespace fs
                     vector<string>       &paths);
 
   int findonfs(const vector<string> &srcmounts,
-               const char           *fusepath,
+               const string         &fusepath,
                const int             fd,
                string               &basepath);
 
