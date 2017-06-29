@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include <fcntl.h>
 #include <stdint.h>
 
 namespace fs
@@ -59,6 +60,8 @@ namespace fs
   void realpathize(vector<string> &strs);
 
   int getfl(const int fd);
+  int setfl(const int    fd,
+            const mode_t mode);
 
   int mfs(const vector<string> &srcs,
           const uint64_t        minfreespace,
