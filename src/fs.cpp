@@ -219,6 +219,13 @@ namespace fs
   }
 
   int
+  setfl(const int    fd,
+        const mode_t mode)
+  {
+    return ::fcntl(fd,F_SETFL,mode);
+  }
+
+  int
   mfs(const vector<string> &basepaths,
       const uint64_t        minfreespace,
       string               &path)

@@ -15,6 +15,7 @@
 */
 
 #include <fcntl.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -22,9 +23,12 @@
 #include <string>
 #include <vector>
 
+#include "errno.hpp"
 #include "fs.hpp"
 #include "fs_base_open.hpp"
 #include "fs_base_close.hpp"
+#include "fs_base_mkstemp.hpp"
+#include "fs_base_rename.hpp"
 #include "fs_base_unlink.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_clonefile.hpp"
@@ -49,6 +53,7 @@ namespace fs
     string fusedir;
     string fdin_path;
     string fdout_path;
+    string fdout_temp;
     struct stat fdin_st;
 
     fdin = origfd;
@@ -82,18 +87,22 @@ namespace fs
       return -1;
 
     fs::path::append(fdout_path,fusepath);
-    fdout = fs::open(fdout_path,fdin_flags|O_CREAT,fdin_st.st_mode);
+    fdout_temp = fdout_path;
+    fdout = fs::mkstemp(fdout_temp);
     if(fdout == -1)
       return -1;
 
     rv = fs::clonefile(fdin,fdout);
     if(rv == -1)
-      {
-        fs::close(fdin);
-        fs::close(fdout);
-        fs::unlink(fdout_path);
-        return -1;
-      }
+      goto cleanup;
+
+    rv = fs::setfl(fdout,fdin_flags);
+    if(rv == -1)
+      goto cleanup;
+
+    rv = fs::rename(fdout_temp,fdout_path);
+    if(rv == -1)
+      goto cleanup;
 
     // should we care if it fails?
     fs::unlink(fdin_path);
@@ -103,5 +112,15 @@ namespace fs
     fs::close(fdout);
 
     return 0;
+
+  cleanup:
+    rv = errno;
+    if(fdin != -1)
+      fs::close(fdin);
+    if(fdout != -1)
+      fs::close(fdout);
+    fs::unlink(fdout_temp);
+    errno = rv;
+    return -1;
   }
 }
