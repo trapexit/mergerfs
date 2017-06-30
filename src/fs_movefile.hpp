@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_MOVEFILE_HPP__
-#define __FS_MOVEFILE_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -28,5 +27,3 @@ namespace fs
            const size_t                    additional_size,
            int                            &origfd);
 }
-
-#endif

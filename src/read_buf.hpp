@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __READ_BUF_HPP__
-#define __READ_BUF_HPP__
+#pragma once
 
 #include <fuse.h>
 
@@ -33,5 +32,3 @@ namespace mergerfs
              fuse_file_info      *fi);
   }
 }
-
-#endif

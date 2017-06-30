@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __CATEGORY_HPP__
-#define __CATEGORY_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -86,5 +85,3 @@ namespace mergerfs
     static const Category              &search;
   };
 }
-
-#endif

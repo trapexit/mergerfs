@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __RWLOCK_HPP__
-#define __RWLOCK_HPP__
+#pragma once
 
 #include <pthread.h>
 
@@ -66,5 +65,3 @@ namespace mergerfs
     };
   }
 }
-
-#endif

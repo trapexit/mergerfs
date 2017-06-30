@@ -15,8 +15,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __MKNOD_HPP__
-#define __MKNOD_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -28,5 +27,3 @@ namespace mergerfs
           dev_t       rdev);
   }
 }
-
-#endif

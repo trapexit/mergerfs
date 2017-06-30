@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_MKSTEMP_HPP__
-#define __FS_BASE_MKSTEMP_HPP__
+#pragma once
 
 #include <stdlib.h>
 #include <string.h>
@@ -46,5 +45,3 @@ namespace fs
     return fd;
   }
 }
-
-#endif

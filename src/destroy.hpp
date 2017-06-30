@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __DESTROY_HPP__
-#define __DESTROY_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -25,5 +24,3 @@ namespace mergerfs
     destroy(void *);
   }
 }
-
-#endif

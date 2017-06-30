@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_ATTR_HPP__
-#define __FS_ATTR_HPP__
+#pragma once
 
 #include <string>
 
@@ -31,5 +30,3 @@ namespace fs
              const string &to);
   }
 }
-
-#endif // __FS_ATTR_HPP__

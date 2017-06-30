@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_PATH_HPP__
-#define __FS_PATH_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -67,5 +66,3 @@ namespace fs
     }
   }
 };
-
-#endif // __FS_PATH_HPP__

@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_FUTIMESAT_HPP__
-#define __FS_BASE_FUTIMESAT_HPP__
+#pragma once
 
 namespace fs
 {
@@ -26,5 +25,3 @@ namespace fs
             const char           *pathname,
             const struct timeval  times[2]);
 }
-
-#endif

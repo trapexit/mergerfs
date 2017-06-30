@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_DEVID_HPP__
-#define __FS_DEVID_HPP__
+#pragma once
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -40,5 +39,3 @@ namespace fs
     return st.st_dev;
   }
 }
-
-#endif

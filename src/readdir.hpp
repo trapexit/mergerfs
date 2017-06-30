@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __READDIR_HPP__
-#define __READDIR_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -38,5 +37,3 @@ namespace mergerfs
             fuse_file_info  *fi);
   }
 }
-
-#endif

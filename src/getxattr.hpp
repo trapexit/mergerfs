@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GETXATTR_HPP__
-#define __GETXATTR_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -28,5 +27,3 @@ namespace mergerfs
              size_t      count);
   }
 }
-
-#endif

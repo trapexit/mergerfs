@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_UTIME_HPP__
-#define __FS_BASE_UTIME_HPP__
+#pragma once
 
 #ifdef __linux__
 # include "fs_base_utime_utimensat.hpp"
@@ -66,5 +65,3 @@ namespace fs
     return fs::utime(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
   }
 }
-
-#endif

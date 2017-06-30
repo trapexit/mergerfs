@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_FADVISE_HPP__
-#define __FS_BASE_FADVISE_HPP__
+#pragma once
 
 namespace fs
 {
@@ -34,5 +33,3 @@ namespace fs
                      const off_t offset = 0,
                      const off_t len    = 0);
 }
-
-#endif // __FS_FADVISE_HPP__

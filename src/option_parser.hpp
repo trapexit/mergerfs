@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __OPTION_PARSER_HPP__
-#define __OPTION_PARSER_HPP__
+#pragma once
 
 #include <fuse.h>
 
@@ -30,5 +29,3 @@ namespace mergerfs
           Config    &config);
   }
 }
-
-#endif

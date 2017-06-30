@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __READLINK_HPP__
-#define __READLINK_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -27,5 +26,3 @@ namespace mergerfs
              size_t      size);
   }
 }
-
-#endif

@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __SETXATTR_HPP__
-#define __SETXATTR_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -29,5 +28,3 @@ namespace mergerfs
              int         flags);
   }
 }
-
-#endif

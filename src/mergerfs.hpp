@@ -14,7 +14,4 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __MERGER_HPP__
-#define __MERGER_HPP__
-
-#endif
+#pragma once

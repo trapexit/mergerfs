@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GIDCACHE_HPP__
-#define __GIDCACHE_HPP__
+#pragma once
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -54,5 +53,3 @@ public:
   initgroups(const uid_t uid,
              const gid_t gid);
 };
-
-#endif

@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GETATTR_HPP__
-#define __GETATTR_HPP__
+#pragma once
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -30,5 +29,3 @@ namespace mergerfs
             struct stat *buf);
   }
 }
-
-#endif

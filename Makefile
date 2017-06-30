@@ -92,10 +92,8 @@ authors:
 
 src/version.hpp:
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
-	@echo "#ifndef _VERSION_HPP" > src/version.hpp
-	@echo "#define _VERSION_HPP" >> src/version.hpp
+	@echo "#pragma once" > src/version.hpp
 	@echo "static const char MERGERFS_VERSION[] = \"$(VERSION)\";" >> src/version.hpp
-	@echo "#endif" >> src/version.hpp
 
 obj/obj-stamp:
 	$(MKDIR) -p obj

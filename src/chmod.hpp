@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __CHMOD_HPP__
-#define __CHMOD_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -26,5 +25,3 @@ namespace mergerfs
           mode_t      mode);
   }
 }
-
-#endif

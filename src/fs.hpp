@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_HPP__
-#define __FS_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -67,5 +66,3 @@ namespace fs
           const uint64_t        minfreespace,
           string               &path);
 };
-
-#endif // __FS_HPP__

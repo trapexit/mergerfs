@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __SYMLINK_HPP__
-#define __SYMLINK_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -26,5 +25,3 @@ namespace mergerfs
             const char *newpath);
   }
 }
-
-#endif

@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __RV_HPP__
-#define __RV_HPP__
+#pragma once
 
 namespace error
 {
@@ -36,5 +35,3 @@ namespace error
     return 0;
   }
 }
-
-#endif // __RV_HPP__

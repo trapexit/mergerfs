@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FLUSH_HPP__
-#define __FLUSH_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -26,5 +25,3 @@ namespace mergerfs
           fuse_file_info *fi);
   }
 }
-
-#endif

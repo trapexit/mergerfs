@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_SENDFILE_HPP__
-#define __FS_SENDFILE_HPP__
+#pragma once
 
 namespace fs
 {
@@ -24,5 +23,3 @@ namespace fs
            const int    fdout,
            const size_t count);
 }
-
-#endif // __FS_SENDFILE_HPP__
