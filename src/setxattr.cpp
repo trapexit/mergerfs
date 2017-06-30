@@ -293,6 +293,10 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_time_t(attrval,
                                 flags,
                                 config.symlinkify_timeout);
+      else if(attr[2] == "ignorepponrename")
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.ignorepponrename);
       break;
 
     case 4:

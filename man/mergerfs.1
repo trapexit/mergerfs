@@ -96,6 +96,13 @@ The request will succeed but do nothing.
 Useful for benchmarking mergerfs.
 (default: false)
 .IP \[bu] 2
+\f[B]ignorepponrename\f[]: ignore path preserving on rename.
+Typically rename and link act differently depending on the policy of
+\f[C]create\f[] (read below).
+Enabling this will cause rename and link to always use the non\-path
+preserving behavior.
+This means files, when renamed or linked, will stay on the same drive.
+.IP \[bu] 2
 \f[B]fsname\f[]: sets the name of the filesystem as seen in
 \f[B]mount\f[], \f[B]df\f[], etc.
 Defaults to a list of the source paths concatenated together with the
@@ -463,9 +470,9 @@ T}
 .PP
 \f[B]NOTE:\f[] If you\[aq]re receiving errors from software when files
 are moved / renamed then you should consider changing the create policy
-to one which is \f[B]not\f[] path preserving or contacting the author of
-the offending software and requesting that \f[C]EXDEV\f[] be properly
-handled.
+to one which is \f[B]not\f[] path preserving, enabling
+\f[C]ignorepponrename\f[], or contacting the author of the offending
+software and requesting that \f[C]EXDEV\f[] be properly handled.
 .PP
 rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
 function in a merged system.
@@ -920,6 +927,16 @@ to get such applications to work.
 If the performance loss is too high for other apps you can mount
 mergerfs twice.
 Once with \f[C]direct_io\f[] enabled and one without it.
+.SS Plex doesn\[aq]t work with mergerfs
+.PP
+It does.
+If you\[aq]re trying to put Plex\[aq]s config / metadata on mergerfs you
+have to leave \f[C]direct_io\f[] off because Plex is using sqlite which
+apparently needs mmap.
+mmap doesn\[aq]t work with \f[C]direct_io\f[].
+.PP
+If the issue is that scanning doesn\[aq]t seem to pick up media then be
+sure to set \f[C]func.getattr=newest\f[] as mentioned above.
 .SS mmap performance is really bad
 .PP
 There is a bug (https://lkml.org/lkml/2016/3/16/260) in caching which
