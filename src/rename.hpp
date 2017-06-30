@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __RENAME_HPP__
-#define __RENAME_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -26,5 +25,3 @@ namespace mergerfs
            const char *to);
   }
 }
-
-#endif

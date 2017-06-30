@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_REMOVEXATTR_HPP__
-#define __FS_BASE_REMOVEXATTR_HPP__
+#pragma once
 
 #include <sys/types.h>
 
@@ -39,5 +38,3 @@ namespace fs
 #endif
   }
 }
-
-#endif

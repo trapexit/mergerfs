@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __SYMLINKIFY_HPP__
-#define __SYMLINKIFY_HPP__
+#pragma once
 
 #include <sys/stat.h>
 #include <time.h>
@@ -48,5 +47,3 @@ namespace symlinkify
     return ((mode & ~S_IFMT) | S_IFLNK);
   }
 }
-
-#endif

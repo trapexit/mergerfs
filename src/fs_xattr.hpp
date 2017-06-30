@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_XATTR_HPP__
-#define __FS_XATTR_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -65,5 +64,3 @@ namespace fs
              const string &to);
   }
 }
-
-#endif // __FS_HPP__

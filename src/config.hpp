@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __CONFIG_HPP__
-#define __CONFIG_HPP__
+#pragma once
 
 #include <fuse.h>
 
@@ -106,5 +105,3 @@ namespace mergerfs
     }
   };
 }
-
-#endif

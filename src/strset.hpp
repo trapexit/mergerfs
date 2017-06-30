@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __STRSET_HPP__
-#define __STRSET_HPP__
+#pragma once
 
 #include <string.h>
 
@@ -61,5 +60,3 @@ public:
 private:
   khash_t(strset) *_set;
 };
-
-#endif

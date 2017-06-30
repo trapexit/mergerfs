@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_CLOSE_HPP__
-#define __FS_BASE_CLOSE_HPP__
+#pragma once
 
 #include <unistd.h>
 
@@ -31,5 +30,3 @@ namespace fs
     return ::close(fd);
   }
 }
-
-#endif

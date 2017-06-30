@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_DIRFD_HPP__
-#define __FS_DIRFD_HPP__
+#pragma once
 
 #include <dirent.h>
 #include <sys/types.h>
@@ -32,5 +31,3 @@ namespace fs
     return ::dirfd(dirp);
   }
 }
-
-#endif

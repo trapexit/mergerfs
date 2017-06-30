@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __POLICY_HPP__
-#define __POLICY_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -190,5 +189,3 @@ namespace mergerfs
     static const Policy &rand;
   };
 }
-
-#endif

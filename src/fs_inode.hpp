@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_INODE_HPP__
-#define __FS_INODE_HPP__
+#pragma once
 
 #include <stdint.h>
 #include <sys/stat.h>
@@ -35,7 +34,7 @@ namespace fs
     void
     recompute(struct stat &st)
     {
-      // not ideal to do this at runtime but usually gets optimized out
+      // not ideal to do this at runtime but likely gets optimized out
       if(sizeof(st.st_ino) == 4)
         st.st_ino |= ((uint32_t)st.st_dev << 16);
       else
@@ -43,5 +42,3 @@ namespace fs
     }
   }
 }
-
-#endif

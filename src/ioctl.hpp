@@ -14,8 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __IOCTL_HPP__
-#define __IOCTL_HPP__
+#pragma once
+
+#include <fuse.h>
 
 namespace mergerfs
 {
@@ -30,5 +31,3 @@ namespace mergerfs
           void           *data);
   }
 }
-
-#endif

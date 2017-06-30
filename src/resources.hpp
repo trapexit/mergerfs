@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __RESOURCES_HPP__
-#define __RESOURCES_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -28,5 +27,3 @@ namespace mergerfs
     int setpriority(const int prio);
   }
 }
-
-#endif

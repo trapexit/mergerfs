@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __UGID_HPP__
-#define __UGID_HPP__
+#pragma once
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -35,6 +34,4 @@ namespace mergerfs
 #include "ugid_linux.hpp"
 #else
 #include "ugid_rwlock.hpp"
-#endif
-
 #endif

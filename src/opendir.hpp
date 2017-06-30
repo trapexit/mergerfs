@@ -14,8 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __OPENDIR_HPP__
-#define __OPENDIR_HPP__
+#pragma once
+
+#include <fuse.h>
 
 #include <vector>
 
@@ -28,5 +29,3 @@ namespace mergerfs
             fuse_file_info *ffi);
   }
 }
-
-#endif

@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FUSEFUNC_HPP__
-#define __FUSEFUNC_HPP__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -127,5 +126,3 @@ namespace mergerfs
     static const FuseFunc              &utimens;
   };
 }
-
-#endif

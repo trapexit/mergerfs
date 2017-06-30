@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_WRITE_HPP__
-#define __FS_BASE_WRITE_HPP__
+#pragma once
 
 #include <unistd.h>
 
@@ -44,5 +43,3 @@ namespace fs
     return ::pwrite(fd,buf,count,offset);
   }
 }
-
-#endif

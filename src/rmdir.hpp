@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __RMDIR_HPP__
-#define __RMDIR_HPP__
+#pragma once
 
 namespace mergerfs
 {
@@ -25,5 +24,3 @@ namespace mergerfs
     rmdir(const char *fusepath);
   }
 }
-
-#endif

@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_FLOCK_HPP__
-#define __FS_BASE_FLOCK_HPP__
+#pragma once
 
 #include <sys/file.h>
 
@@ -32,5 +31,3 @@ namespace fs
     return ::flock(fd,operation);
   }
 }
-
-#endif

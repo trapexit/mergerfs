@@ -14,8 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __DIRINFO_HPP__
-#define __DIRINFO_HPP__
+#pragma once
 
 #include <string>
 
@@ -30,5 +29,3 @@ public:
 public:
   std::string fusepath;
 };
-
-#endif

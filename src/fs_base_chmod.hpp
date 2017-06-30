@@ -16,8 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __FS_BASE_CHMOD_HPP__
-#define __FS_BASE_CHMOD_HPP__
+#pragma once
 
 #include <sys/stat.h>
 
@@ -106,5 +105,3 @@ namespace fs
     return 0;
   }
 }
-
-#endif
