@@ -193,6 +193,10 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_bool(config.symlinkify,attrvalue);
       else if(attr[2] == "symlinkify_timeout")
         _getxattr_controlfile_time_t(config.symlinkify_timeout,attrvalue);
+      else if(attr[2] == "nullrw")
+        _getxattr_controlfile_bool(config.nullrw,attrvalue);
+      else if(attr[2] == "ignorepponrename")
+        _getxattr_controlfile_bool(config.ignorepponrename,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")

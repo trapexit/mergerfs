@@ -41,6 +41,7 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * **symlinkify**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
 * **symlinkify_timeout**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **nullrw**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
+* **ignorepponrename**: ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive.
 * **fsname**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
@@ -165,7 +166,7 @@ When using non-path preserving policies where something is created paths will be
 
 #### rename & link ####
 
-**NOTE:** If you're receiving errors from software when files are moved / renamed then you should consider changing the create policy to one which is **not** path preserving or contacting the author of the offending software and requesting that `EXDEV` be properly handled.
+**NOTE:** If you're receiving errors from software when files are moved / renamed then you should consider changing the create policy to one which is **not** path preserving, enabling `ignorepponrename`, or contacting the author of the offending software and requesting that `EXDEV` be properly handled.
 
 [rename](http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky function in a merged system. Under normal situations rename only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device).
 
@@ -406,6 +407,12 @@ Try enabling the `use_ino` option. Some have reported that it fixes the issue.
 #### rtorrent fails with ENODEV (No such device)
 
 Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There will be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it.
+
+#### Plex doesn't work with mergerfs
+
+It does. If you're trying to put Plex's config / metadata on mergerfs you have to leave `direct_io` off because Plex is using sqlite which apparently needs mmap. mmap doesn't work with `direct_io`.
+
+If the issue is that scanning doesn't seem to pick up media then be sure to set `func.getattr=newest` as mentioned above.
 
 #### mmap performance is really bad
 

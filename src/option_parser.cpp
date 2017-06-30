@@ -192,6 +192,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.symlinkify_timeout);
       else if(key == "nullrw")
         rv = parse_and_process(value,config.nullrw);
+      else if(key == "ignorepponrename")
+        rv = parse_and_process(value,config.ignorepponrename);
     }
 
   if(rv == -1)
@@ -294,6 +296,9 @@ usage(void)
     "                           timeout in seconds before will turn to symlinks.\n"
     "                           default=3600\n"
     "    -o nullrw=<bool>       Disables reads and writes. For benchmarking.\n"
+    "    -o ignorepponrename=<bool>\n"
+    "                           Ignore path preserving when performing renames\n"
+    "                           and links. default = false"
             << std::endl;
 }
 
