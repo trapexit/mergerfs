@@ -103,6 +103,18 @@ Enabling this will cause rename and link to always use the non\-path
 preserving behavior.
 This means files, when renamed or linked, will stay on the same drive.
 .IP \[bu] 2
+\f[B]threads\f[]: number of threads to use in multithreaded mode.
+When set to zero (the default) it will attempt to discover and use the
+number of logical cores.
+If the lookup fails it will fall back to using 4.
+If the thread count is set negative it will look up the number of cores
+then divide by the absolute value.
+ie.
+threads=\-2 on an 8 core machine will result in 8 / 2 = 4 threads.
+There will always be at least 1 thread.
+NOTE: higher number of threads increases parallelism but usually
+decreases throughput.
+.IP \[bu] 2
 \f[B]fsname\f[]: sets the name of the filesystem as seen in
 \f[B]mount\f[], \f[B]df\f[], etc.
 Defaults to a list of the source paths concatenated together with the

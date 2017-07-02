@@ -19,6 +19,7 @@
 #include <semaphore.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 /* Environment var controlling the thread stack size */
 #define ENVNAME_THREAD_STACK "FUSE_THREAD_STACK"
@@ -167,9 +168,21 @@ static void fuse_join_worker(struct fuse_worker *w)
 	free(w);
 }
 
-int fuse_session_loop_mt(struct fuse_session *se)
+static int number_of_threads(void)
 {
+#ifdef _SC_NPROCESSORS_ONLN
+  return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+
+  return 4;
+}
+
+int fuse_session_loop_mt(struct fuse_session *se,
+                         const int            _threads)
+{
+        int i;
 	int err;
+        int threads;
 	struct fuse_mt mt;
 	struct fuse_worker *w;
 
@@ -181,8 +194,14 @@ int fuse_session_loop_mt(struct fuse_session *se)
 	mt.main.prev = mt.main.next = &mt.main;
 	sem_init(&mt.finish, 0, 0);
 
+        threads = ((_threads > 0) ? _threads : number_of_threads());
+        if(_threads < 0)
+          threads /= -_threads;
+        if(threads == 0)
+          threads = 1;
+
         err = 0;
-        for(size_t i = 0; (i < 10) && !err; i++)
+        for(i = 0; (i < threads) && !err; i++)
           err = fuse_loop_start_thread(&mt);
 
 	if (!err) {

@@ -77,6 +77,7 @@ struct fuse_config {
 	int intr_signal;
 	int help;
 	char *modules;
+        int threads;
 };
 
 struct fuse_fs {
@@ -4405,6 +4406,7 @@ static const struct fuse_opt fuse_lib_opts[] = {
 	FUSE_LIB_OPT("intr",		      intr, 1),
 	FUSE_LIB_OPT("intr_signal=%d",	      intr_signal, 0),
 	FUSE_LIB_OPT("modules=%s",	      modules, 0),
+        FUSE_LIB_OPT("threads=%d",            threads, 0),
 	FUSE_OPT_END
 };
 
@@ -4900,3 +4902,8 @@ struct fuse *fuse_new_compat25(int fd, struct fuse_args *args,
 }
 
 FUSE_SYMVER(".symver fuse_new_compat25,fuse_new@FUSE_2.5");
+
+int fuse_config_num_threads(const struct fuse *f)
+{
+  return f->conf.threads;
+}

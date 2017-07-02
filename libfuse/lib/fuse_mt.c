@@ -100,7 +100,8 @@ int fuse_loop_mt_proc(struct fuse *f, fuse_processor_t proc, void *data)
 		return -1;
 	}
 	fuse_session_add_chan(se, ch);
-	res = fuse_session_loop_mt(se);
+	res = fuse_session_loop_mt(se,
+                                   fuse_config_num_threads(f));
 	fuse_session_destroy(se);
 	return res;
 }
@@ -114,7 +115,8 @@ int fuse_loop_mt(struct fuse *f)
 	if (res)
 		return -1;
 
-	res = fuse_session_loop_mt(fuse_get_session(f));
+	res = fuse_session_loop_mt(fuse_get_session(f),
+                                   fuse_config_num_threads(f));
 	fuse_stop_cleanup_thread(f);
 	return res;
 }
