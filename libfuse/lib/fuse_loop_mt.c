@@ -33,9 +33,6 @@ struct fuse_worker {
 };
 
 struct fuse_mt {
-	pthread_mutex_t lock;
-	int numworker;
-	int numavail;
 	struct fuse_session *se;
 	struct fuse_chan *prevch;
 	struct fuse_worker main;
@@ -65,11 +62,10 @@ static int fuse_loop_start_thread(struct fuse_mt *mt);
 
 static void *fuse_do_work(void *data)
 {
-	struct fuse_worker *w = (struct fuse_worker *) data;
-	struct fuse_mt *mt = w->mt;
+	struct fuse_worker *w  = (struct fuse_worker *) data;
+	struct fuse_mt     *mt = w->mt;
 
 	while (!fuse_session_exited(mt->se)) {
-		int isforget = 0;
 		struct fuse_chan *ch = mt->prevch;
 		struct fuse_buf fbuf = {
 			.mem = w->buf,
@@ -90,51 +86,10 @@ static void *fuse_do_work(void *data)
 			break;
 		}
 
-		pthread_mutex_lock(&mt->lock);
-		if (mt->exit) {
-			pthread_mutex_unlock(&mt->lock);
+		if (mt->exit)
 			return NULL;
-		}
-
-		/*
-		 * This disgusting hack is needed so that zillions of threads
-		 * are not created on a burst of FORGET messages
-		 */
-		if (!(fbuf.flags & FUSE_BUF_IS_FD)) {
-			struct fuse_in_header *in = fbuf.mem;
-
-			if (in->opcode == FUSE_FORGET ||
-			    in->opcode == FUSE_BATCH_FORGET)
-				isforget = 1;
-		}
-
-		if (!isforget)
-			mt->numavail--;
-		if (mt->numavail == 0)
-			fuse_loop_start_thread(mt);
-		pthread_mutex_unlock(&mt->lock);
 
 		fuse_session_process_buf(mt->se, &fbuf, ch);
-
-		pthread_mutex_lock(&mt->lock);
-		if (!isforget)
-			mt->numavail++;
-		if (mt->numavail > 10) {
-			if (mt->exit) {
-				pthread_mutex_unlock(&mt->lock);
-				return NULL;
-			}
-			list_del_worker(w);
-			mt->numavail--;
-			mt->numworker--;
-			pthread_mutex_unlock(&mt->lock);
-
-			pthread_detach(w->thread_id);
-			free(w->buf);
-			free(w);
-			return NULL;
-		}
-		pthread_mutex_unlock(&mt->lock);
 	}
 
 	sem_post(&mt->finish);
@@ -200,18 +155,14 @@ static int fuse_loop_start_thread(struct fuse_mt *mt)
 		return -1;
 	}
 	list_add_worker(w, &mt->main);
-	mt->numavail ++;
-	mt->numworker ++;
 
 	return 0;
 }
 
-static void fuse_join_worker(struct fuse_mt *mt, struct fuse_worker *w)
+static void fuse_join_worker(struct fuse_worker *w)
 {
 	pthread_join(w->thread_id, NULL);
-	pthread_mutex_lock(&mt->lock);
 	list_del_worker(w);
-	pthread_mutex_unlock(&mt->lock);
 	free(w->buf);
 	free(w);
 }
@@ -226,34 +177,29 @@ int fuse_session_loop_mt(struct fuse_session *se)
 	mt.se = se;
 	mt.prevch = fuse_session_next_chan(se, NULL);
 	mt.error = 0;
-	mt.numworker = 0;
-	mt.numavail = 0;
 	mt.main.thread_id = pthread_self();
 	mt.main.prev = mt.main.next = &mt.main;
 	sem_init(&mt.finish, 0, 0);
-	fuse_mutex_init(&mt.lock);
 
-	pthread_mutex_lock(&mt.lock);
-	err = fuse_loop_start_thread(&mt);
-	pthread_mutex_unlock(&mt.lock);
+        err = 0;
+        for(size_t i = 0; (i < 10) && !err; i++)
+          err = fuse_loop_start_thread(&mt);
+
 	if (!err) {
 		/* sem_wait() is interruptible */
 		while (!fuse_session_exited(se))
 			sem_wait(&mt.finish);
 
-		pthread_mutex_lock(&mt.lock);
 		for (w = mt.main.next; w != &mt.main; w = w->next)
 			pthread_cancel(w->thread_id);
 		mt.exit = 1;
-		pthread_mutex_unlock(&mt.lock);
 
 		while (mt.main.next != &mt.main)
-			fuse_join_worker(&mt, mt.main.next);
+			fuse_join_worker(mt.main.next);
 
 		err = mt.error;
 	}
 
-	pthread_mutex_destroy(&mt.lock);
 	sem_destroy(&mt.finish);
 	fuse_session_reset(se);
 	return err;
