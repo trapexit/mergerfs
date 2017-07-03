@@ -298,7 +298,10 @@ usage(void)
     "    -o nullrw=<bool>       Disables reads and writes. For benchmarking.\n"
     "    -o ignorepponrename=<bool>\n"
     "                           Ignore path preserving when performing renames\n"
-    "                           and links. default = false"
+    "                           and links. default = false\n"
+    "    -o threads=<int>       number of worker threads. 0 = autodetect.\n"
+    "                           Negative values autodetect then divide by\n"
+    "                           absolute value. default = 0\n"
             << std::endl;
 }
 

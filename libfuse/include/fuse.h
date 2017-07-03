@@ -115,7 +115,7 @@ struct fuse_operations {
 	 */
 	int (*mknod) (const char *, mode_t, dev_t);
 
-	/** Create a directory 
+	/** Create a directory
 	 *
 	 * Note that the mode argument may not have the type specification
 	 * bits set, i.e. S_ISDIR(mode) can be false.  To obtain the
@@ -695,6 +695,8 @@ int fuse_loop(struct fuse *f);
  * @param f the FUSE handle
  */
 void fuse_exit(struct fuse *f);
+
+int fuse_config_num_threads(const struct fuse *f);
 
 /**
  * FUSE event loop with multiple threads
