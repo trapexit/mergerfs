@@ -369,6 +369,71 @@ A B C
 * https://github.com/trapexit/bbf
   * bbf (bad block finder): a tool to scan for and 'fix' hard drive bad blocks and find the files using those blocks
 
+# CACHING
+
+MergerFS does not natively support any sort of caching. Most users have no use for such a feature and it would greatly complicate the code. However, there are a few situations where a cache drive could help with a typical mergerfs setup.
+
+1. Fast network, slow drives, many readers: You've a 10+Gbps network with many readers and your regular drives can't keep up.
+2. Fast network, slow drives, small'ish bursty writes: You have a 10+Gbps network and wish to transfer amounts of data less than your cache drive but wish to do so quickly.
+
+The below will mostly address usecase #2. It will also work for #1 assuming the data is regularly accessed and was placed into the system via this method. Otherwise a similar script may need to be written to populate the cache from the backing pool.
+
+1. Create 2 mergerfs pools. One which includes just the backing drives and one which has both the cache drives (SSD,NVME,etc.) and backing drives.
+2. The 'cache' pool should have the cache drives listed first.
+3. The best policies to use for the 'cache' pool would probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under the assumption that the cache drive(s) are far smaller than the backing drives. If using path preserving policies remember that you'll need to manually create the core directories of those paths you wish to be cached. (Be sure the permissions are in sync. Use `mergerfs.fsck` to check / correct them.)
+4. Enable `moveonenospc` and set `minfreespace` appropriately.
+5. Set your programs to use the cache pool.
+6. Save one of the below scripts.
+7. Use `crontab` (as root) to schedule the command at whatever frequency is appropriate for your workflow.
+
+### Time based expiring
+
+Move files from cache to backing pool based only on the last time the file was accessed.
+
+```
+#!/bin/bash
+
+if [ $# != 3 ]; then
+  echo "usage: $0 <cache-drive> <backing-pool> <days-old>"
+  exit 1
+fi
+
+CACHE="${1}"
+BACKING="${2}"
+N=${3}
+
+find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
+  rsync --files-from=- -aq --remove-source-files "${CACHE}/" "${BACKING}/"
+```
+
+### Percentage full expiring
+
+Move the oldest file from the cache to the backing pool. Continue till below percentage threshold.
+
+```
+#!/bin/bash
+
+if [ $# != 3 ]; then
+  echo "usage: $0 <cache-drive> <backing-pool> <percentage>"
+  exit 1
+fi
+
+CACHE="${1}"
+BACKING="${2}"
+PERCENTAGE=${3}
+
+set -o errexit
+while [ $(df --output=pcent "${CACHE}" | grep -v Use | cut -d'%' -f1) -gt ${PERCENTAGE} ]
+do
+    FILE=$(find "${CACHE}" -type f -printf '%A@ %P\n' | \
+                  sort | \
+                  head -n 1 | \
+                  cut -d' ' -f2-)
+    test -n "${FILE}"
+    rsync -aq --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
+done
+```
+
 # TIPS / NOTES
 
 * The recommended options are **defaults,allow_other,direct_io,use_ino**. (**use_ino** will only work when used with mergerfs 2.18.0 and above.)
