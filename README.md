@@ -634,8 +634,10 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 * twitter: https://twitter.com/_trapexit
 
 #### Support development
-* Gratipay: https://gratipay.com/~trapexit
 * BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
+* PayPal: trapexit@spawn.link
+* Patreon: https://www.patreon.com/trapexit
+* Gratipay: https://gratipay.com/~trapexit
 
 # LINKS
 
