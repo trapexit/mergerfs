@@ -29,7 +29,14 @@ GZIP      =     $(shell which gzip)
 RPMBUILD  =     $(shell which rpmbuild)
 GIT2DEBCL =     ./tools/git2debcl
 
-ifeq ($(PANDOC),"")
+GIT_REPO = 0
+ifneq ($(GIT),)
+ifeq  ($(shell test -e .git; echo $$?),0)
+GIT_REPO = 1
+endif
+endif
+
+ifeq ($(PANDOC),)
 $(warning "pandoc does not appear available: manpage won't be buildable")
 endif
 
@@ -85,13 +92,23 @@ mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
 
 changelog:
+ifeq ($(GIT_REPO),1)
 	$(GIT2DEBCL) --name $(TARGET) > ChangeLog
+endif
 
 authors:
+ifeq ($(GIT_REPO),1)
 	$(GIT) log --format='%aN <%aE>' | sort -f | uniq > AUTHORS
+endif
 
-src/version.hpp:
+version:
+ifeq ($(GIT_REPO),1)
 	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	@echo "$(VERSION)" > VERSION
+endif
+
+src/version.hpp: version
+	$(eval VERSION := $(shell cat VERSION))
 	@echo "#pragma once" > src/version.hpp
 	@echo "static const char MERGERFS_VERSION[] = \"$(VERSION)\";" >> src/version.hpp
 
@@ -103,20 +120,17 @@ obj/%.o: src/%.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean: rpm-clean libfuse_Makefile
-ifneq ($(GIT),)
-ifeq  ($(shell test -e .git; echo $$?),0)
 	$(RM) -f src/version.hpp
-endif
-endif
 	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
-
 	cd libfuse && $(MAKE) clean
 
 distclean: clean libfuse_Makefile
 	cd libfuse && $(MAKE) distclean
+ifeq ($(GIT_REPO),1)
 	$(GIT) clean -fd
+endif
 
 install: install-base install-mount.mergerfs install-man
 
@@ -147,14 +161,14 @@ uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 $(MANPAGE): README.md
-ifneq (,$(PANDOC))
+ifneq ($(PANDOC),)
 	$(PANDOC) -s -t man -o "man/$(MANPAGE)" README.md
 endif
 
 man: $(MANPAGE)
 
-tarball: clean man changelog authors src/version.hpp
-	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+tarball: distclean man changelog authors version
+	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
 	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
@@ -164,7 +178,11 @@ tarball: clean man changelog authors src/version.hpp
 	$(RM) -rf $(TMPDIR)
 
 debian-changelog:
+ifeq ($(GIT_REPO),1)
 	$(GIT2DEBCL) --name $(TARGET) > debian/changelog
+else
+	cp ChangeLog debian/changelog
+endif
 
 signed-deb: debian-changelog
 	dpkg-buildpackage
@@ -176,7 +194,7 @@ rpm-clean:
 	$(RM) -rf rpmbuild
 
 rpm: tarball
-	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
+	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(MKDIR) -p rpmbuild/BUILD rpmbuild/RPMS rpmbuild/SOURCES
 	$(SED) 's/__VERSION__/$(VERSION)/g' $(TARGET).spec > \
