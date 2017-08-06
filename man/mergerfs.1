@@ -53,14 +53,14 @@ Note that not enabling \f[C]direct_io\f[] will cause double caching of
 files and therefore less memory for caching generally.
 However, \f[C]mmap\f[] does not work when \f[C]direct_io\f[] is enabled.
 .IP \[bu] 2
-\f[B]minfreespace\f[]: the minimum space value used for creation
+\f[B]minfreespace=value\f[]: the minimum space value used for creation
 policies.
 Understands \[aq]K\[aq], \[aq]M\[aq], and \[aq]G\[aq] to represent
 kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
 .IP \[bu] 2
-\f[B]moveonenospc\f[]: when enabled (set to \f[B]true\f[]) if a
-\f[B]write\f[] fails with \f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of
+\f[B]moveonenospc=true|false\f[]: when enabled (set to \f[B]true\f[]) if
+a \f[B]write\f[] fails with \f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of
 all drives will be done looking for the drive with most free space which
 is at least the size of the file plus the amount which failed to write.
 An attempt to move the file to that drive will occur (keeping all
@@ -73,37 +73,38 @@ than libfuse.
 While not a default it is generally recommended it be enabled so that
 hard linked files share the same inode value.
 .IP \[bu] 2
-\f[B]dropcacheonclose\f[]: when a file is requested to be closed call
-\f[C]posix_fadvise\f[] on it first to instruct the kernel that we no
-longer need the data and it can drop its cache.
+\f[B]dropcacheonclose=true|false\f[]: when a file is requested to be
+closed call \f[C]posix_fadvise\f[] on it first to instruct the kernel
+that we no longer need the data and it can drop its cache.
 Recommended when \f[B]direct_io\f[] is not enabled to limit double
 caching.
 (default: false)
 .IP \[bu] 2
-\f[B]symlinkify\f[]: when enabled (set to \f[B]true\f[]) and a file is
-not writable and its mtime or ctime is older than
+\f[B]symlinkify=true|false\f[]: when enabled (set to \f[B]true\f[]) and
+a file is not writable and its mtime or ctime is older than
 \f[B]symlinkify_timeout\f[] files will be reported as symlinks to the
 original files.
 Please read more below before using.
 (default: false)
 .IP \[bu] 2
-\f[B]symlinkify_timeout\f[]: time to wait, in seconds, to activate the
-\f[B]symlinkify\f[] behavior.
+\f[B]symlinkify_timeout=value\f[]: time to wait, in seconds, to activate
+the \f[B]symlinkify\f[] behavior.
 (default: 3600)
 .IP \[bu] 2
-\f[B]nullrw\f[]: turns reads and writes into no\-ops.
+\f[B]nullrw=true|false\f[]: turns reads and writes into no\-ops.
 The request will succeed but do nothing.
 Useful for benchmarking mergerfs.
 (default: false)
 .IP \[bu] 2
-\f[B]ignorepponrename\f[]: ignore path preserving on rename.
+\f[B]ignorepponrename=true|false\f[]: ignore path preserving on rename.
 Typically rename and link act differently depending on the policy of
 \f[C]create\f[] (read below).
 Enabling this will cause rename and link to always use the non\-path
 preserving behavior.
 This means files, when renamed or linked, will stay on the same drive.
+(default: false)
 .IP \[bu] 2
-\f[B]threads\f[]: number of threads to use in multithreaded mode.
+\f[B]threads=num\f[]: number of threads to use in multithreaded mode.
 When set to zero (the default) it will attempt to discover and use the
 number of logical cores.
 If the lookup fails it will fall back to using 4.
@@ -114,8 +115,9 @@ threads=\-2 on an 8 core machine will result in 8 / 2 = 4 threads.
 There will always be at least 1 thread.
 NOTE: higher number of threads increases parallelism but usually
 decreases throughput.
+(default: number of cores)
 .IP \[bu] 2
-\f[B]fsname\f[]: sets the name of the filesystem as seen in
+\f[B]fsname=name\f[]: sets the name of the filesystem as seen in
 \f[B]mount\f[], \f[B]df\f[], etc.
 Defaults to a list of the source paths concatenated together with the
 longest common prefix removed.
@@ -313,7 +315,8 @@ Policies, as described below, are of two core types.
 .PP
 All policies which start with \f[C]ep\f[] (\f[B]epff\f[],
 \f[B]eplfs\f[], \f[B]eplus\f[], \f[B]epmfs\f[], \f[B]eprand\f[]) are
-\f[C]path\ preserving\[aq].\f[]ep\f[C]stands\ for\ \[aq]existing\ path\f[].
+\f[C]path\ preserving\f[].
+\f[C]ep\f[] stands for \f[C]existing\ path\f[].
 .PP
 As the descriptions explain a path preserving policy will only consider
 drives where the relative path being accessed already exists.
@@ -618,6 +621,7 @@ $\ sudo\ apt\-get\ \-y\ update
 $\ sudo\ apt\-get\ \-y\ install\ git\ make
 $\ cd\ mergerfs
 $\ make\ install\-build\-pkgs
+$\ #\ build\-essential\ git\ g++\ debhelper\ libattr1\-dev\ python\ automake\ libtool\ lsb\-release
 $\ make\ deb
 $\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
 \f[]
@@ -631,6 +635,7 @@ $\ su\ \-
 #\ dnf\ \-y\ install\ git\ make
 #\ cd\ mergerfs
 #\ make\ install\-build\-pkgs
+#\ #\ rpm\-build\ libattr\-devel\ gcc\-c++\ which\ python\ automake\ libtool\ gettext\-devel
 #\ make\ rpm
 #\ rpm\ \-i\ rpmbuild/RPMS/<arch>/mergerfs\-<verion>.<arch>.rpm
 \f[]
@@ -829,6 +834,104 @@ https://github.com/trapexit/bbf
 .IP \[bu] 2
 bbf (bad block finder): a tool to scan for and \[aq]fix\[aq] hard drive
 bad blocks and find the files using those blocks
+.SH CACHING
+.PP
+MergerFS does not natively support any sort of caching.
+Most users have no use for such a feature and it would greatly
+complicate the code.
+However, there are a few situations where a cache drive could help with
+a typical mergerfs setup.
+.IP "1." 3
+Fast network, slow drives, many readers: You\[aq]ve a 10+Gbps network
+with many readers and your regular drives can\[aq]t keep up.
+.IP "2." 3
+Fast network, slow drives, small\[aq]ish bursty writes: You have a
+10+Gbps network and wish to transfer amounts of data less than your
+cache drive but wish to do so quickly.
+.PP
+The below will mostly address usecase #2.
+It will also work for #1 assuming the data is regularly accessed and was
+placed into the system via this method.
+Otherwise a similar script may need to be written to populate the cache
+from the backing pool.
+.IP "1." 3
+Create 2 mergerfs pools.
+One which includes just the backing drives and one which has both the
+cache drives (SSD,NVME,etc.) and backing drives.
+.IP "2." 3
+The \[aq]cache\[aq] pool should have the cache drives listed first.
+.IP "3." 3
+The best policies to use for the \[aq]cache\[aq] pool would probably be
+\f[C]ff\f[], \f[C]epff\f[], \f[C]lfs\f[], or \f[C]eplfs\f[].
+The latter two under the assumption that the cache drive(s) are far
+smaller than the backing drives.
+If using path preserving policies remember that you\[aq]ll need to
+manually create the core directories of those paths you wish to be
+cached.
+(Be sure the permissions are in sync.
+Use \f[C]mergerfs.fsck\f[] to check / correct them.)
+.IP "4." 3
+Enable \f[C]moveonenospc\f[] and set \f[C]minfreespace\f[]
+appropriately.
+.IP "5." 3
+Set your programs to use the cache pool.
+.IP "6." 3
+Save one of the below scripts.
+.IP "7." 3
+Use \f[C]crontab\f[] (as root) to schedule the command at whatever
+frequency is appropriate for your workflow.
+.SS Time based expiring
+.PP
+Move files from cache to backing pool based only on the last time the
+file was accessed.
+.IP
+.nf
+\f[C]
+#!/bin/bash
+
+if\ [\ $#\ !=\ 3\ ];\ then
+\ \ echo\ "usage:\ $0\ <cache\-drive>\ <backing\-pool>\ <days\-old>"
+\ \ exit\ 1
+fi
+
+CACHE="${1}"
+BACKING="${2}"
+N=${3}
+
+find\ "${CACHE}"\ \-type\ f\ \-atime\ +${N}\ \-printf\ \[aq]%P\\n\[aq]\ |\ \\
+\ \ rsync\ \-\-files\-from=\-\ \-aq\ \-\-remove\-source\-files\ "${CACHE}/"\ "${BACKING}/"
+\f[]
+.fi
+.SS Percentage full expiring
+.PP
+Move the oldest file from the cache to the backing pool.
+Continue till below percentage threshold.
+.IP
+.nf
+\f[C]
+#!/bin/bash
+
+if\ [\ $#\ !=\ 3\ ];\ then
+\ \ echo\ "usage:\ $0\ <cache\-drive>\ <backing\-pool>\ <percentage>"
+\ \ exit\ 1
+fi
+
+CACHE="${1}"
+BACKING="${2}"
+PERCENTAGE=${3}
+
+set\ \-o\ errexit
+while\ [\ $(df\ \-\-output=pcent\ "${CACHE}"\ |\ grep\ \-v\ Use\ |\ cut\ \-d\[aq]%\[aq]\ \-f1)\ \-gt\ ${PERCENTAGE}\ ]
+do
+\ \ \ \ FILE=$(find\ "${CACHE}"\ \-type\ f\ \-printf\ \[aq]%A\@\ %P\\n\[aq]\ |\ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sort\ |\ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ head\ \-n\ 1\ |\ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cut\ \-d\[aq]\ \[aq]\ \-f2\-)
+\ \ \ \ test\ \-n\ "${FILE}"
+\ \ \ \ rsync\ \-aq\ \-\-remove\-source\-files\ "${CACHE}/./${FILE}"\ "${BACKING}/"
+done
+\f[]
+.fi
 .SH TIPS / NOTES
 .IP \[bu] 2
 The recommended options are
@@ -1268,9 +1371,13 @@ email: trapexit\@spawn.link
 twitter: https://twitter.com/_trapexit
 .SS Support development
 .IP \[bu] 2
-Gratipay: https://gratipay.com/~trapexit
-.IP \[bu] 2
 BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
+.IP \[bu] 2
+PayPal: trapexit\@spawn.link
+.IP \[bu] 2
+Patreon: https://www.patreon.com/trapexit
+.IP \[bu] 2
+Gratipay: https://gratipay.com/~trapexit
 .SH LINKS
 .IP \[bu] 2
 http://github.com/trapexit/mergerfs
