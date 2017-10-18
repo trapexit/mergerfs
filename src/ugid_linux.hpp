@@ -27,6 +27,31 @@
 #include <map>
 #include <vector>
 
+#if defined SYS_setreuid32
+#define SETREUID(R,E) (::syscall(SYS_setreuid32,(R),(E)))
+#else
+#define SETREUID(R,E) (::syscall(SYS_setreuid,(R),(E)))
+#endif
+
+#if defined SYS_setregid32
+#define SETREGID(R,E) (::syscall(SYS_setregid32,(R),(E)))
+#else
+#define SETREGID(R,E) (::syscall(SYS_setregid,(R),(E)))
+#endif
+
+#if defined SYS_geteuid32
+#define GETEUID() (::syscall(SYS_geteuid32))
+#else
+#define GETEUID() (::syscall(SYS_geteuid))
+#endif
+
+#if defined SYS_getegid32
+#define GETEGID() (::syscall(SYS_getegid32))
+#else
+#define GETEGID() (::syscall(SYS_getegid))
+#endif
+
+
 namespace mergerfs
 {
   namespace ugid
@@ -42,8 +67,8 @@ namespace mergerfs
       {
         if(!initialized)
           {
-            currentuid  = ::syscall(SYS_geteuid);
-            currentgid  = ::syscall(SYS_getegid);
+            currentuid  = GETEUID();
+            currentgid  = GETEGID();
             initialized = true;
           }
 
@@ -52,18 +77,18 @@ namespace mergerfs
 
         if(currentuid != 0)
           {
-            ::syscall(SYS_setreuid,-1,0);
-            ::syscall(SYS_setregid,-1,0);
+            SETREUID(-1,0);
+            SETREGID(-1,0);
           }
 
         if(newgid)
           {
-            ::syscall(SYS_setregid,-1,newgid);
+            SETREGID(-1,newgid);
             initgroups(newuid,newgid);
           }
 
         if(newuid)
-          ::syscall(SYS_setreuid,-1,newuid);
+          SETREUID(-1,newuid);
 
         currentuid = newuid;
         currentgid = newgid;
@@ -89,3 +114,8 @@ namespace mergerfs
     };
   }
 }
+
+#undef SETREUID
+#undef SETREGID
+#undef GETEUID
+#undef GETEGID
