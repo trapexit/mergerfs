@@ -28,6 +28,33 @@ mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
 * Handles pool of readonly and read/write drives
 * Turn read-only files into symlinks to increase read performance
 
+# How it works
+
+mergerfs logically merges multiple paths together. Think a union of sets. The file/s or directory/s acted on or presented through mergerfs are based on the policy chosen for that particular action. Read more about policies below.
+
+```
+A         +      B        =       C
+/disk1           /disk2           /merged
+|                |                |
++-- /dir1        +-- /dir1        +-- /dir1
+|   |            |   |            |   |
+|   +-- file1    |   +-- file2    |   +-- file1
+|                |   +-- file3    |   +-- file2
++-- /dir2        |                |   +-- file3
+|   |            +-- /dir3        |
+|   +-- file4        |            +-- /dir2
+|                     +-- file5   |   |
++-- file6                         |   +-- file4
+                                  |
+                                  +-- /dir3
+                                  |   |
+                                  |   +-- file5
+                                  |
+                                  +-- file6
+```
+
+mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix rw and ro drives.
+
 # OPTIONS
 
 ### mount options
@@ -630,7 +657,22 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 # SUPPORT
 
-#### Issues with the software
+Filesystems are very complex and difficult to debug. mergerfs, while being just a proxy of sorts, is also very difficult to debug given the large number of possible settings it can have itself and the massive number of environments it can run in. When reporting on a suspected issue **please, please** include as much of the below information as possible otherwise it will be difficult or impossible to diagnose. Also please make sure to read all of the above documentation as it includes nearly every common system or user issue.
+
+#### Information to include in bug reports
+* Version of mergerfs: `mergerfs -V`
+* mergerfs settings: from `/etc/fstab` or command line execution
+* Version of Linux: `uname -a`
+* Versions of any additional software being used
+* List of drives, their filesystems, and sizes (before and after issue): `df -h`
+* A `strace` of the app having problems:
+  * `strace -f -o /tmp/app.strace.txt <cmd>`
+  * A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
+    * `strace -f -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
+* **Precise** directions on replicating the issue. Don't leave **anything** out.
+* Try to recreate the problem in the simplist way using standard programs.
+
+#### Issue submission / Contact
 * github.com: https://github.com/trapexit/mergerfs/issues
 * email: trapexit@spawn.link
 * twitter: https://twitter.com/_trapexit
