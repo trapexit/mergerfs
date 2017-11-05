@@ -39,6 +39,42 @@ capacity)
 Handles pool of readonly and read/write drives
 .IP \[bu] 2
 Turn read\-only files into symlinks to increase read performance
+.SH How it works
+.PP
+mergerfs logically merges multiple paths together.
+Think a union of sets.
+The file/s or directory/s acted on or presented through mergerfs are
+based on the policy chosen for that particular action.
+Read more about policies below.
+.IP
+.nf
+\f[C]
+A\ \ \ \ \ \ \ \ \ +\ \ \ \ \ \ B\ \ \ \ \ \ \ \ =\ \ \ \ \ \ \ C
+/disk1\ \ \ \ \ \ \ \ \ \ \ /disk2\ \ \ \ \ \ \ \ \ \ \ /merged
+|\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |
++\-\-\ /dir1\ \ \ \ \ \ \ \ +\-\-\ /dir1\ \ \ \ \ \ \ \ +\-\-\ /dir1
+|\ \ \ |\ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ |\ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ |
+|\ \ \ +\-\-\ file1\ \ \ \ |\ \ \ +\-\-\ file2\ \ \ \ |\ \ \ +\-\-\ file1
+|\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ +\-\-\ file3\ \ \ \ |\ \ \ +\-\-\ file2
++\-\-\ /dir2\ \ \ \ \ \ \ \ |\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ +\-\-\ file3
+|\ \ \ |\ \ \ \ \ \ \ \ \ \ \ \ +\-\-\ /dir3\ \ \ \ \ \ \ \ |
+|\ \ \ +\-\-\ file4\ \ \ \ \ \ \ \ |\ \ \ \ \ \ \ \ \ \ \ \ +\-\-\ /dir2
+|\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\-\-\ file5\ \ \ |\ \ \ |
++\-\-\ file6\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ +\-\-\ file4
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\-\-\ /dir3
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ |
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ \ \ +\-\-\ file5
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\-\-\ file6
+\f[]
+.fi
+.PP
+mergerfs does \f[B]not\f[] support the copy\-on\-write (CoW) behavior
+found in \f[B]aufs\f[] and \f[B]overlayfs\f[].
+You can \f[B]not\f[] mount a read\-only filesystem and write to it.
+However, mergerfs will ignore read\-only drives when creating new files
+so you can mix rw and ro drives.
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
@@ -1362,7 +1398,45 @@ be used so threads trying to change credentials don\[aq]t starve.
 This isn\[aq]t the best solution but should work reasonably well
 assuming there are few users.
 .SH SUPPORT
-.SS Issues with the software
+.PP
+Filesystems are very complex and difficult to debug.
+mergerfs, while being just a proxy of sorts, is also very difficult to
+debug given the large number of possible settings it can have itself and
+the massive number of environments it can run in.
+When reporting on a suspected issue \f[B]please, please\f[] include as
+much of the below information as possible otherwise it will be difficult
+or impossible to diagnose.
+Also please make sure to read all of the above documentation as it
+includes nearly every common system or user issue.
+.SS Information to include in bug reports
+.IP \[bu] 2
+Version of mergerfs: \f[C]mergerfs\ \-V\f[]
+.IP \[bu] 2
+mergerfs settings: from \f[C]/etc/fstab\f[] or command line execution
+.IP \[bu] 2
+Version of Linux: \f[C]uname\ \-a\f[]
+.IP \[bu] 2
+Versions of any additional software being used
+.IP \[bu] 2
+List of drives, their filesystems, and sizes (before and after issue):
+\f[C]df\ \-h\f[]
+.IP \[bu] 2
+A \f[C]strace\f[] of the app having problems:
+.IP \[bu] 2
+\f[C]strace\ \-f\ \-o\ /tmp/app.strace.txt\ <cmd>\f[]
+.IP \[bu] 2
+A \f[C]strace\f[] of mergerfs while the program is trying to do whatever
+it\[aq]s failing to do:
+.RS 2
+.IP \[bu] 2
+\f[C]strace\ \-f\ \-p\ <mergerfsPID>\ \-o\ /tmp/mergerfs.strace.txt\f[]
+.RE
+.IP \[bu] 2
+\f[B]Precise\f[] directions on replicating the issue.
+Don\[aq]t leave \f[B]anything\f[] out.
+.IP \[bu] 2
+Try to recreate the problem in the simplist way using standard programs.
+.SS Issue submission / Contact
 .IP \[bu] 2
 github.com: https://github.com/trapexit/mergerfs/issues
 .IP \[bu] 2
