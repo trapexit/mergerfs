@@ -83,10 +83,15 @@ so you can mix rw and ro drives.
 \f[B]splice_move\f[], \f[B]splice_read\f[], and \f[B]splice_write\f[].
 These options seem to provide the best performance.
 .IP \[bu] 2
+\f[B]allow_other\f[]: a libfuse option which allows users besides the
+one which ran mergerfs to see the filesystem.
+This is is required for most use\-cases.
+.IP \[bu] 2
 \f[B]direct_io\f[]: causes FUSE to bypass caching which can increase
 write speeds at the detriment of reads.
 Note that not enabling \f[C]direct_io\f[] will cause double caching of
-files and therefore less memory for caching generally.
+files and therefore less memory for caching generally (enable
+\f[B]dropcacheonclose\f[] to help with this problem).
 However, \f[C]mmap\f[] does not work when \f[C]direct_io\f[] is enabled.
 .IP \[bu] 2
 \f[B]minfreespace=value\f[]: the minimum space value used for creation
@@ -97,8 +102,9 @@ kilobyte, megabyte, and gigabyte respectively.
 .IP \[bu] 2
 \f[B]moveonenospc=true|false\f[]: when enabled (set to \f[B]true\f[]) if
 a \f[B]write\f[] fails with \f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of
-all drives will be done looking for the drive with most free space which
-is at least the size of the file plus the amount which failed to write.
+all drives will be done looking for the drive with the most free space
+which is at least the size of the file plus the amount which failed to
+write.
 An attempt to move the file to that drive will occur (keeping all
 metadata possible) and if successful the original is unlinked and the
 write retried.
@@ -856,6 +862,9 @@ ability to fix them
 .IP \[bu] 2
 mergerfs.dedup: Will help identify and optionally remove duplicate files
 .IP \[bu] 2
+mergerfs.dup: Ensure there are at least N copies of a file across the
+pool
+.IP \[bu] 2
 mergerfs.balance: Rebalance files across drives by moving them from the
 most filled to the least filled
 .IP \[bu] 2
@@ -991,6 +1000,8 @@ permissions.
 Do \f[I]not\f[] use \f[C]direct_io\f[] if you expect applications (such
 as rtorrent) to mmap (http://linux.die.net/man/2/mmap) files.
 It is not currently supported in FUSE w/ \f[C]direct_io\f[] enabled.
+Enabling \f[C]dropcacheonclose\f[] is recommended when
+\f[C]direct_io\f[] is disabled.
 .IP \[bu] 2
 Since POSIX gives you only error or success on calls its difficult to
 determine the proper behavior when applying the behavior to multiple
@@ -1018,7 +1029,7 @@ directory could be acted on.
 Some policies mixed with some functions may result in strange behaviors.
 Not that some of these behaviors and race conditions couldn\[aq]t happen
 outside \f[B]mergerfs\f[] but that they are far more likely to occur on
-account of attempt to merge together multiple sources of data which
+account of the attempt to merge together multiple sources of data which
 could be out of sync due to the different policies.
 .IP \[bu] 2
 For consistency its generally best to set \f[B]category\f[] wide
@@ -1273,6 +1284,35 @@ Should be placed after \f[C]defaults\f[] if it is used since it will
 turn them on.
 This however is not guaranteed to work.
 .SH FAQ
+.SS Why can\[aq]t I see my files / directories?
+.PP
+It\[aq]s almost always a permissions issue.
+Unlike mhddfs, which runs as root and attempts to access content as
+such, mergerfs always changes it\[aq]s credentials to that of the
+caller.
+This means that if the user doesn\[aq]t have access to a file or
+directory than neither will mergerfs.
+However, because mergerfs is creating a union of paths it may be able to
+read some files and directories on one drive but not another resulting
+in an incomplete set.
+.PP
+Whenever you run into a split permission issue (seeing some but not all
+files) try using
+mergerfs.fsck (https://github.com/trapexit/mergerfs-tools) tool to check
+for and fix the mismatch.
+If you aren\[aq]t seeing anything at all be sure that the basic
+permissions are correct.
+The user and group values are correct and that directories have their
+executable bit set.
+A common mistake by users new to Linux is to \f[C]chmod\ \-R\ 644\f[]
+when they should have \f[C]chmod\ \-R\ u=rwX,go=rX\f[].
+.PP
+If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to
+pay close attention to anything regarding permissioning and users.
+Root squashing and user translation for instance has bitten a few
+mergerfs users.
+Some of these also affect the use of mergerfs from container platforms
+such as Docker.
 .SS Why use mergerfs over mhddfs?
 .PP
 mhddfs is no longer maintained and has some known stability and security
@@ -1280,13 +1320,16 @@ issues (see below).
 MergerFS provides a superset of mhddfs\[aq] features and should offer
 the same or maybe better performance.
 .PP
-If you wish to get similar behavior to mhddfs from mergerfs then set
-\f[C]category.create=ff\f[].
+Below is an example of mhddfs and mergerfs setup to work similarly.
+.PP
+\f[C]mhddfs\ \-o\ mlimit=4G,allow_other\ /mnt/drive1,/mnt/drive2\ /mnt/pool\f[]
+.PP
+\f[C]mergerfs\ \-o\ minfreespace=4G,defaults,allow_other,category.create=ff\ /mnt/drive1:/mnt/drive2\ /mnt/pool\f[]
 .SS Why use mergerfs over aufs?
 .PP
 While aufs can offer better peak performance mergerfs provides more
 configurability and is generally easier to use.
-mergerfs however does not offer the overlay / copy\-on\-write (COW)
+mergerfs however does not offer the overlay / copy\-on\-write (CoW)
 features which aufs and overlayfs have.
 .SS Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation /
 striping?
@@ -1294,7 +1337,7 @@ striping?
 With simple JBOD / drive concatenation / stripping / RAID0 a single
 drive failure will result in full pool failure.
 mergerfs performs a similar behavior without the possibility of
-catastrophic failure and difficulties in recovery.
+catastrophic failure and the difficulties in recovery.
 Drives may fail however all other data will continue to be accessable.
 .PP
 When combined with something like SnapRaid (http://www.snapraid.it)
@@ -1327,8 +1370,9 @@ contents of the pooled drives.
 The reported free space is the aggregate space available \f[B]not\f[]
 the contiguous space available.
 MergerFS does not split files across drives.
-If the writing of a file fills a drive and \f[B]moveonenospc\f[] is
-disabled it will return an ENOSPC error.
+If the writing of a file fills an underlying drive and
+\f[B]moveonenospc\f[] is disabled it will return an ENOSPC (No space
+left on device) error.
 .PP
 If \f[B]moveonenospc\f[] is enabled but there exists no drives with
 enough space for the file and the data to be written (or the drive
@@ -1350,6 +1394,8 @@ will not be presented but users have found that enabling the
 .SS Can mergerfs mounts be exported over Samba / SMB?
 .PP
 Yes.
+While some users have reported problems it appears to always be related
+to how Samba is setup in relation to permissions.
 .SS How are inodes calculated?
 .PP
 mergerfs\-inode = (original\-inode | (device\-id << 32))
@@ -1407,7 +1453,7 @@ When reporting on a suspected issue \f[B]please, please\f[] include as
 much of the below information as possible otherwise it will be difficult
 or impossible to diagnose.
 Also please make sure to read all of the above documentation as it
-includes nearly every common system or user issue.
+includes nearly every known system or user issue previously encountered.
 .SS Information to include in bug reports
 .IP \[bu] 2
 Version of mergerfs: \f[C]mergerfs\ \-V\f[]
@@ -1427,16 +1473,14 @@ A \f[C]strace\f[] of the app having problems:
 .IP \[bu] 2
 A \f[C]strace\f[] of mergerfs while the program is trying to do whatever
 it\[aq]s failing to do:
-.RS 2
 .IP \[bu] 2
 \f[C]strace\ \-f\ \-p\ <mergerfsPID>\ \-o\ /tmp/mergerfs.strace.txt\f[]
-.RE
 .IP \[bu] 2
 \f[B]Precise\f[] directions on replicating the issue.
-Don\[aq]t leave \f[B]anything\f[] out.
+Do not leave \f[B]anything\f[] out.
 .IP \[bu] 2
 Try to recreate the problem in the simplist way using standard programs.
-.SS Issue submission / Contact
+.SS Contact / Issue submission
 .IP \[bu] 2
 github.com: https://github.com/trapexit/mergerfs/issues
 .IP \[bu] 2
