@@ -60,9 +60,10 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 ### mount options
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
-* **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally. However, `mmap` does not work when `direct_io` is enabled.
+* **allow_other**: a libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is is required for most use-cases.
+* **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally (enable **dropcacheonclose** to help with this problem). However, `mmap` does not work when `direct_io` is enabled.
 * **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
-* **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
+* **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
 * **dropcacheonclose=true|false**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
 * **symlinkify=true|false**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
@@ -391,6 +392,7 @@ A B C
   * mergerfs.ctl: A tool to make it easier to query and configure mergerfs at runtime
   * mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
   * mergerfs.dedup: Will help identify and optionally remove duplicate files
+  * mergerfs.dup: Ensure there are at least N copies of a file across the pool
   * mergerfs.balance: Rebalance files across drives by moving them from the most filled to the least filled
   * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 * https://github.com/trapexit/scorch
@@ -469,10 +471,10 @@ done
 * Run mergerfs as `root` unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
-* Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled.
+* Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `direct_io` is disabled.
 * Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
-* Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of attempt to merge together multiple sources of data which could be out of sync due to the different policies.
+* Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
 
 # KNOWN ISSUES / BUGS
@@ -599,19 +601,31 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 
 # FAQ
 
+#### Why can't I see my files / directories?
+
+It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes it's credentials to that of the caller. This means that if the user doesn't have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
+
+Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
+
+If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay close attention to anything regarding permissioning and users. Root squashing and user translation for instance has bitten a few mergerfs users. Some of these also affect the use of mergerfs from container platforms such as Docker.
+
 #### Why use mergerfs over mhddfs?
 
 mhddfs is no longer maintained and has some known stability and security issues (see below). MergerFS provides a superset of mhddfs' features and should offer the same or maybe better performance.
 
-If you wish to get similar behavior to mhddfs from mergerfs then set `category.create=ff`.
+Below is an example of mhddfs and mergerfs setup to work similarly.
+
+`mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool`
+
+`mergerfs -o minfreespace=4G,defaults,allow_other,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
 
 #### Why use mergerfs over aufs?
 
-While aufs can offer better peak performance mergerfs provides more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (COW) features which aufs and overlayfs have.
+While aufs can offer better peak performance mergerfs provides more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (CoW) features which aufs and overlayfs have.
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar behavior without the possibility of catastrophic failure and difficulties in recovery. Drives may fail however all other data will continue to be accessable.
+With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar behavior without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail however all other data will continue to be accessable.
 
 When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite backup solution you can have the flexibilty of JBOD without the single point of failure.
 
@@ -627,7 +641,7 @@ Yes. It will be represented immediately in the pool as the policies perscribe.
 
 First make sure you've read the sections above about policies, path preserving, and the **moveonenospc** option.
 
-Remember that mergerfs is simply presenting a logical merging of the contents of the pooled drives. The reported free space is the aggregate space available **not** the contiguous space available. MergerFS does not split files across drives. If the writing of a file fills a drive and **moveonenospc** is disabled it will return an ENOSPC error.
+Remember that mergerfs is simply presenting a logical merging of the contents of the pooled drives. The reported free space is the aggregate space available **not** the contiguous space available. MergerFS does not split files across drives. If the writing of a file fills an underlying drive and **moveonenospc** is disabled it will return an ENOSPC (No space left on device) error.
 
 If **moveonenospc** is enabled but there exists no drives with enough space for the file and the data to be written (or the drive happened to fill up as the file was being moved) it will error indicating there isn't enough space.
 
@@ -639,7 +653,7 @@ Yes. Some clients (Kodi) have issues in which the contents of the NFS mount will
 
 #### Can mergerfs mounts be exported over Samba / SMB?
 
-Yes.
+Yes. While some users have reported problems it appears to always be related to how Samba is setup in relation to permissions.
 
 #### How are inodes calculated?
 
@@ -657,7 +671,7 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 # SUPPORT
 
-Filesystems are very complex and difficult to debug. mergerfs, while being just a proxy of sorts, is also very difficult to debug given the large number of possible settings it can have itself and the massive number of environments it can run in. When reporting on a suspected issue **please, please** include as much of the below information as possible otherwise it will be difficult or impossible to diagnose. Also please make sure to read all of the above documentation as it includes nearly every common system or user issue.
+Filesystems are very complex and difficult to debug. mergerfs, while being just a proxy of sorts, is also very difficult to debug given the large number of possible settings it can have itself and the massive number of environments it can run in. When reporting on a suspected issue **please, please** include as much of the below information as possible otherwise it will be difficult or impossible to diagnose. Also please make sure to read all of the above documentation as it includes nearly every known system or user issue previously encountered.
 
 #### Information to include in bug reports
 * Version of mergerfs: `mergerfs -V`
@@ -667,12 +681,12 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 * List of drives, their filesystems, and sizes (before and after issue): `df -h`
 * A `strace` of the app having problems:
   * `strace -f -o /tmp/app.strace.txt <cmd>`
-  * A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
-    * `strace -f -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
-* **Precise** directions on replicating the issue. Don't leave **anything** out.
+* A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
+  * `strace -f -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
+* **Precise** directions on replicating the issue. Do not leave **anything** out.
 * Try to recreate the problem in the simplist way using standard programs.
 
-#### Issue submission / Contact
+#### Contact / Issue submission
 * github.com: https://github.com/trapexit/mergerfs/issues
 * email: trapexit@spawn.link
 * twitter: https://twitter.com/_trapexit
