@@ -297,7 +297,7 @@ There is a pseudo file available at the mount point which allows for the runtime
 
 Even if xattrs are disabled for mergerfs the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls against this pseudo file will still work.
 
-Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (fstab).
+Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (/etc/fstab).
 
 ##### Keys #####
 
@@ -315,6 +315,8 @@ Used to query or modify the list of source mounts. When modifying there are seve
 | -[list]      | remove all values provided |
 | -<           | remove first in list |
 | ->           | remove last in list |
+
+`xattr -w user.mergerfs.srcmounts +</mnt/drive3 /mnt/pool/.mergerfs`
 
 ###### minfreespace ######
 
@@ -608,6 +610,12 @@ It's almost always a permissions issue. Unlike mhddfs, which runs as root and at
 Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
 
 If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay close attention to anything regarding permissioning and users. Root squashing and user translation for instance has bitten a few mergerfs users. Some of these also affect the use of mergerfs from container platforms such as Docker.
+
+#### Why is only one drive being used?
+
+Are you using a path preserving policy? The default policy for file creation is `epmfs`. That means only the drives with the path preexisting will be considered when creating a file. If you don't care about where files and directories are created you likely shouldn't be using a path preserving policy and instead something like `mfs`.
+
+This can be especially apparent when filling an empty pool from an external source. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transfering your data.
 
 #### Why use mergerfs over mhddfs?
 

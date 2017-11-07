@@ -714,7 +714,7 @@ against this pseudo file will still work.
 .PP
 Any changes made at runtime are \f[B]not\f[] persisted.
 If you wish for values to persist they must be included as options
-wherever you configure the mounting of mergerfs (fstab).
+wherever you configure the mounting of mergerfs (/etc/fstab).
 .SS Keys
 .PP
 Use \f[C]xattr\ \-l\ /mount/point/.mergerfs\f[] to see all supported
@@ -766,6 +766,8 @@ T}@T{
 remove last in list
 T}
 .TE
+.PP
+\f[C]xattr\ \-w\ user.mergerfs.srcmounts\ +</mnt/drive3\ /mnt/pool/.mergerfs\f[]
 .SS minfreespace
 .PP
 Input: interger with an optional multiplier suffix.
@@ -1313,6 +1315,21 @@ Root squashing and user translation for instance has bitten a few
 mergerfs users.
 Some of these also affect the use of mergerfs from container platforms
 such as Docker.
+.SS Why is only one drive being used?
+.PP
+Are you using a path preserving policy?
+The default policy for file creation is \f[C]epmfs\f[].
+That means only the drives with the path preexisting will be considered
+when creating a file.
+If you don\[aq]t care about where files and directories are created you
+likely shouldn\[aq]t be using a path preserving policy and instead
+something like \f[C]mfs\f[].
+.PP
+This can be especially apparent when filling an empty pool from an
+external source.
+If you do want path preservation you\[aq]ll need to perform the manual
+act of creating paths on the drives you want the data to land on before
+transfering your data.
 .SS Why use mergerfs over mhddfs?
 .PP
 mhddfs is no longer maintained and has some known stability and security
