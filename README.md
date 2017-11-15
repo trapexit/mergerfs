@@ -603,6 +603,16 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 
 # FAQ
 
+#### Can mergerfs be used with drives which already have data / are in use?
+
+Yes. MergerFS is a proxy and does **NOT** interfere with the normal form or function of the drives / mounts / paths it manages.
+
+MergerFS is **not** an actual filesystem. MergerFS is **not** RAID. It does **not** manipulate the data that passes through it. It does **not** shard data across drives. It merely shards some **behavior** and aggregates others.
+
+#### Can mergerfs be removed without affecting the data?
+
+See the previous question's answer.
+
 #### Why can't I see my files / directories?
 
 It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes it's credentials to that of the caller. This means that if the user doesn't have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.

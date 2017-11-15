@@ -1286,6 +1286,21 @@ Should be placed after \f[C]defaults\f[] if it is used since it will
 turn them on.
 This however is not guaranteed to work.
 .SH FAQ
+.SS Can mergerfs be used with drives which already have data / are in
+use?
+.PP
+Yes.
+MergerFS is a proxy and does \f[B]NOT\f[] interfere with the normal form
+or function of the drives / mounts / paths it manages.
+.PP
+MergerFS is \f[B]not\f[] an actual filesystem.
+MergerFS is \f[B]not\f[] RAID.
+It does \f[B]not\f[] manipulate the data that passes through it.
+It does \f[B]not\f[] shard data across drives.
+It merely shards some \f[B]behavior\f[] and aggregates others.
+.SS Can mergerfs be removed without affecting the data?
+.PP
+See the previous question\[aq]s answer.
 .SS Why can\[aq]t I see my files / directories?
 .PP
 It\[aq]s almost always a permissions issue.
