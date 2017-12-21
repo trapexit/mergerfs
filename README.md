@@ -710,10 +710,12 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 * twitter: https://twitter.com/_trapexit
 
 #### Support development
-* BitCoin: 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
+* Bitcoin (BTC): 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
+* Bitcoin Cash (BCH): 1AjPqZZhu7GVEs6JFPjHmtsvmDL4euzMzp
+* Ethereum (ETH): 0x09A166B11fCC127324C7fc5f1B572255b3046E94
+* Litecoin (LTC): LXAsq6yc6zYU3EbcqyWtHBrH1Ypx4GjUjm
 * PayPal: trapexit@spawn.link
 * Patreon: https://www.patreon.com/trapexit
-* Gratipay: https://gratipay.com/~trapexit
 
 # LINKS
 
