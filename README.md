@@ -60,7 +60,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 ### mount options
 
 * **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
-* **allow_other**: a libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is is required for most use-cases.
+* **allow_other**: a libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
 * **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally (enable **dropcacheonclose** to help with this problem). However, `mmap` does not work when `direct_io` is enabled.
 * **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
