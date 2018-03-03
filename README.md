@@ -65,6 +65,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
+* **hard_remove**: force libfuse to immedately remove files when unlinked. This can have a very minor performance impact in some cases but is generally recommended since there are subtle race conditions which can occur when removing large sets of files & directories.
 * **dropcacheonclose=true|false**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
 * **symlinkify=true|false**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
 * **symlinkify_timeout=value**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
@@ -92,8 +93,8 @@ The above line will use all mount points in /mnt prefixed with **disk** and the 
 To have the pool mounted at boot or otherwise accessable from related tools use **/etc/fstab**.
 
 ```
-# <file system>        <mount point>  <type>         <options>                     <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other,use_ino  0       0
+# <file system>        <mount point>  <type>         <options>                                 <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other,use_ino,hard_remove  0       0
 ```
 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
@@ -469,13 +470,13 @@ done
 
 # TIPS / NOTES
 
-* The recommended options are **defaults,allow_other,direct_io,use_ino**. (**use_ino** will only work when used with mergerfs 2.18.0 and above.)
+* The recommended base options are **defaults,allow_other,direct_io,use_ino,hard_remove**. (**use_ino** will only work when used with mergerfs 2.18.0 and above.)
 * Run mergerfs as `root` unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
-* Do *not* use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `direct_io` is disabled.
+* Do **not** use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `direct_io` is disabled.
 * Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
-* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible **Kodi** will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
+* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
 
@@ -601,6 +602,12 @@ https://lkml.org/lkml/2016/9/14/527
 
 There is a bug in the kernel. A work around appears to be turning off `splice`. Add `no_splice_write,no_splice_move,no_splice_read` to mergerfs' options. Should be placed after `defaults` if it is used since it will turn them on. This however is not guaranteed to work.
 
+#### rm: fts_read failed: No such file or directory
+
+Not *really* a bug. The FUSE library will move files when asked to delete them as a way to deal with certain edge cases and then later delete that file when its clear the file is no longer needed. This however can lead to two issues. One is that these hidden files are noticed by `rm -rf` or `find` when scanning directories and they may try to remove them and they might have disappeared already. There is nothing *wrong* about this happening but it can be annoying. The second issue is that a directory might not be able to removed on account of the hidden file being still there.
+
+Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately.
+
 # FAQ
 
 #### Can mergerfs be used with drives which already have data / are in use?
@@ -640,6 +647,10 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 #### Why use mergerfs over aufs?
 
 While aufs can offer better peak performance mergerfs provides more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (CoW) features which aufs and overlayfs have.
+
+#### Why use mergerfs over unionfs?
+
+UnionFS is more like aufs then mergerfs in that it offers overlay / CoW features. If you're just looking to create a union of drives and want flexibility in file/directory placement then mergerfs offers that whereas unionfs is more for overlaying RW filesystems over RO ones.
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
