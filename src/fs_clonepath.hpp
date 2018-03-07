@@ -26,4 +26,11 @@ namespace fs
   int clonepath(const std::string &from,
                 const std::string &to,
                 const std::string &relative);
+
+  int clonepath_as_root(const std::string &from,
+                        const std::string &to,
+                        const char        *relative);
+  int clonepath_as_root(const std::string &from,
+                        const std::string &to,
+                        const std::string &relative);
 }

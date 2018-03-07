@@ -34,7 +34,6 @@ using std::vector;
 using namespace mergerfs;
 
 static
-inline
 int
 _mkdir_core(const string &fullpath,
             mode_t        mode,
@@ -48,24 +47,14 @@ _mkdir_core(const string &fullpath,
 
 static
 int
-_mkdir_loop_core(const string &existingpath,
-                 const string &createpath,
+_mkdir_loop_core(const string &createpath,
                  const char   *fusepath,
-                 const char   *fusedirpath,
                  const mode_t  mode,
                  const mode_t  umask,
                  const int     error)
 {
   int rv;
   string fullpath;
-
-  if(createpath != existingpath)
-    {
-      const ugid::SetRootGuard ugidGuard;
-      rv = fs::clonepath(existingpath,createpath,fusedirpath);
-      if(rv == -1)
-        return errno;
-    }
 
   fs::path::make(&createpath,fusepath,fullpath);
 
@@ -83,13 +72,19 @@ _mkdir_loop(const string                &existingpath,
             const mode_t                 mode,
             const mode_t                 umask)
 {
+  int rv;
   int error;
 
   error = -1;
   for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
-      error = _mkdir_loop_core(existingpath,*createpaths[i],
-                               fusepath,fusedirpath,mode,umask,error);
+      rv = fs::clonepath_as_root(existingpath,*createpaths[i],fusedirpath);
+      if(rv == -1)
+        error = error::calc(rv,error,errno);
+      else
+        error = _mkdir_loop_core(*createpaths[i],
+                                 fusepath,
+                                 mode,umask,error);
     }
 
   return -error;

@@ -36,23 +36,13 @@ using namespace mergerfs;
 
 static
 int
-_symlink_loop_core(const string &existingpath,
-                   const string &newbasepath,
+_symlink_loop_core(const string &newbasepath,
                    const char   *oldpath,
                    const char   *newpath,
-                   const char   *newdirpath,
                    const int     error)
 {
   int rv;
   string fullnewpath;
-
-  if(newbasepath != existingpath)
-    {
-      const ugid::SetRootGuard ugidGuard;
-      rv = fs::clonepath(existingpath,newbasepath,newdirpath);
-      if(rv == -1)
-        return -1;
-    }
 
   fs::path::make(&newbasepath,newpath,fullnewpath);
 
@@ -69,14 +59,20 @@ _symlink_loop(const string                &existingpath,
               const char                  *newpath,
               const char                  *newdirpath)
 {
+  int rv;
   int error;
 
   error = -1;
   for(size_t i = 0, ei = newbasepaths.size(); i != ei; i++)
     {
-      error = _symlink_loop_core(existingpath,*newbasepaths[i],
-                                 oldpath,newpath,newdirpath,
-                                 error);
+      rv = fs::clonepath_as_root(existingpath,*newbasepaths[i],newdirpath);
+      if(rv == -1)
+        error = error::calc(rv,error,errno);
+      else
+        error = _symlink_loop_core(*newbasepaths[i],
+                                   oldpath,
+                                   newpath,
+                                   error);
     }
 
   return -error;

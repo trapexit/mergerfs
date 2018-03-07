@@ -49,10 +49,8 @@ _mknod_core(const string &fullpath,
 
 static
 int
-_mknod_loop_core(const string &existingpath,
-                 const string &createpath,
+_mknod_loop_core(const string &createpath,
                  const char   *fusepath,
-                 const char   *fusedirpath,
                  const mode_t  mode,
                  const mode_t  umask,
                  const dev_t   dev,
@@ -60,14 +58,6 @@ _mknod_loop_core(const string &existingpath,
 {
   int rv;
   string fullpath;
-
-  if(createpath != existingpath)
-    {
-      const ugid::SetRootGuard ugidGuard;
-      rv = fs::clonepath(existingpath,createpath,fusedirpath);
-      if(rv == -1)
-        return -1;
-    }
 
   fs::path::make(&createpath,fusepath,fullpath);
 
@@ -86,14 +76,19 @@ _mknod_loop(const string                &existingpath,
             const mode_t                 umask,
             const dev_t                  dev)
 {
+  int rv;
   int error;
 
   error = -1;
   for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
     {
-      error = _mknod_loop_core(existingpath,*createpaths[i],
-                               fusepath,fusedirpath,
-                               mode,umask,dev,error);
+      rv = fs::clonepath_as_root(existingpath,*createpaths[i],fusedirpath);
+      if(rv == -1)
+        error = error::calc(rv,error,errno);
+      else
+        error = _mknod_loop_core(*createpaths[i],
+                                 fusepath,
+                                 mode,umask,dev,error);
     }
 
   return -error;

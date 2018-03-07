@@ -34,7 +34,6 @@ using std::vector;
 using namespace mergerfs;
 
 static
-inline
 int
 _create_core(const string &fullpath,
              mode_t        mode,
@@ -49,10 +48,8 @@ _create_core(const string &fullpath,
 
 static
 int
-_create_core(const string &existingpath,
-             const string &createpath,
+_create_core(const string &createpath,
              const char   *fusepath,
-             const char   *fusedirpath,
              const mode_t  mode,
              const mode_t  umask,
              const int     flags,
@@ -60,14 +57,6 @@ _create_core(const string &existingpath,
 {
   int rv;
   string fullpath;
-
-  if(createpath != existingpath)
-    {
-      const ugid::SetRootGuard ugidGuard;
-      rv = fs::clonepath(existingpath,createpath,fusedirpath);
-      if(rv == -1)
-        return -errno;
-    }
 
   fs::path::make(&createpath,fusepath,fullpath);
 
@@ -111,8 +100,12 @@ _create(Policy::Func::Search  searchFunc,
   if(rv == -1)
     return -errno;
 
-  return _create_core(*existingpaths[0],*createpaths[0],
-                      fusepath,fusedirpathcstr,
+  rv = fs::clonepath_as_root(*existingpaths[0],*createpaths[0],fusedirpath);
+  if(rv == -1)
+    return -errno;
+
+  return _create_core(*createpaths[0],
+                      fusepath,
                       mode,umask,flags,fh);
 }
 

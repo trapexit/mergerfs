@@ -21,13 +21,10 @@
 
 #include <vector>
 
-namespace mergerfs
+namespace ugid
 {
-  namespace ugid
-  {
-    void init();
-    void initgroups(const uid_t uid, const gid_t gid);
-  }
+  void init();
+  void initgroups(const uid_t uid, const gid_t gid);
 }
 
 #if defined __linux__ and UGID_USE_RWLOCK == 0

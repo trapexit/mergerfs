@@ -21,81 +21,78 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-namespace mergerfs
+namespace ugid
 {
-  namespace ugid
+  extern uid_t currentuid;
+  extern gid_t currentgid;
+  extern pthread_rwlock_t rwlock;
+
+  static
+  void
+  ugid_set(const uid_t newuid,
+           const gid_t newgid)
   {
-    extern uid_t currentuid;
-    extern gid_t currentgid;
-    extern pthread_rwlock_t rwlock;
+    pthread_rwlock_rdlock(&rwlock);
 
-    static
-    void
-    ugid_set(const uid_t newuid,
-             const gid_t newgid)
+    if(newuid == currentuid && newgid == currentgid)
+      return;
+
+    pthread_rwlock_unlock(&rwlock);
+    pthread_rwlock_wrlock(&rwlock);
+
+    if(newuid == currentuid && newgid == currentgid)
+      return;
+
+    if(currentuid != 0)
+      {
+        ::seteuid(0);
+        ::setegid(0);
+      }
+
+    if(newgid)
+      {
+        ::setegid(newgid);
+        initgroups(newuid,newgid);
+      }
+
+    if(newuid)
+      ::seteuid(newuid);
+
+    currentuid = newuid;
+    currentgid = newgid;
+  }
+
+  struct Set
+  {
+    Set(const uid_t newuid,
+        const gid_t newgid)
     {
-      pthread_rwlock_rdlock(&rwlock);
-
-      if(newuid == currentuid && newgid == currentgid)
-        return;
-
-      pthread_rwlock_unlock(&rwlock);
-      pthread_rwlock_wrlock(&rwlock);
-
-      if(newuid == currentuid && newgid == currentgid)
-        return;
-
-      if(currentuid != 0)
-        {
-          ::seteuid(0);
-          ::setegid(0);
-        }
-
-      if(newgid)
-        {
-          ::setegid(newgid);
-          initgroups(newuid,newgid);
-        }
-
-      if(newuid)
-        ::seteuid(newuid);
-
-      currentuid = newuid;
-      currentgid = newgid;
+      ugid_set(newuid,newgid);
     }
 
-    struct Set
+    ~Set()
     {
-      Set(const uid_t newuid,
-          const gid_t newgid)
-      {
-        ugid_set(newuid,newgid);
-      }
+      pthread_rwlock_unlock(&rwlock);
+    }
+  };
 
-      ~Set()
-      {
-        pthread_rwlock_unlock(&rwlock);
-      }
-    };
-
-    struct SetRootGuard
+  struct SetRootGuard
+  {
+    SetRootGuard() :
+      prevuid(currentuid),
+      prevgid(currentgid)
     {
-      SetRootGuard() :
-        prevuid(currentuid),
-        prevgid(currentgid)
-      {
-        pthread_rwlock_unlock(&rwlock);
-        ugid_set(0,0);
-      }
+      pthread_rwlock_unlock(&rwlock);
+      ugid_set(0,0);
+    }
 
-      ~SetRootGuard()
-      {
-        pthread_rwlock_unlock(&rwlock);
-        ugid_set(prevuid,prevgid);
-      }
+    ~SetRootGuard()
+    {
+      pthread_rwlock_unlock(&rwlock);
+      ugid_set(prevuid,prevgid);
+    }
 
-      const uid_t prevuid;
-      const gid_t prevgid;
-    };
-  }
+    const uid_t prevuid;
+    const gid_t prevgid;
+  };
 }
