@@ -21,17 +21,14 @@
 
 #include <vector>
 
-namespace mergerfs
+namespace ugid
 {
-  namespace ugid
-  {
-    __thread uid_t currentuid  = 0;
-    __thread gid_t currentgid  = 0;
-    __thread bool  initialized = false;
+  __thread uid_t currentuid  = 0;
+  __thread gid_t currentgid  = 0;
+  __thread bool  initialized = false;
 
-    void
-    init()
-    {
-    }
+  void
+  init()
+  {
   }
 }

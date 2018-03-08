@@ -27,7 +27,6 @@
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
-#include "success_fail.hpp"
 #include "ugid.hpp"
 
 using std::string;
@@ -58,27 +57,6 @@ _remove(const vector<string> &toremove)
 }
 
 static
-int
-_rename(const std::string &oldbasepath,
-        const std::string &oldfullpath,
-        const std::string &newbasepath,
-        const std::string &newfusedirpath,
-        const std::string &newfullpath)
-{
-  int rv;
-
-  if(oldbasepath != newbasepath)
-    {
-      const ugid::SetRootGuard guard;
-      rv = fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
-      if(rv == -1)
-        return -1;
-    }
-
-  return fs::rename(oldfullpath,newfullpath);
-}
-
-static
 void
 _rename_create_path_core(const vector<const string*> &oldbasepaths,
                          const string                &oldbasepath,
@@ -94,21 +72,26 @@ _rename_create_path_core(const vector<const string*> &oldbasepaths,
   string oldfullpath;
   string newfullpath;
 
-  fs::path::make(&oldbasepath,newfusepath,newfullpath);
-
   ismember = member(oldbasepaths,oldbasepath);
   if(ismember)
     {
-      fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
+      rv = fs::clonepath_as_root(newbasepath,oldbasepath,newfusedirpath);
+      if(rv != -1)
+        {
+          fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
+          fs::path::make(&oldbasepath,newfusepath,newfullpath);
 
-      rv = _rename(oldbasepath,oldfullpath,
-                   newbasepath,newfusedirpath,newfullpath);
+          rv = fs::rename(oldfullpath,newfullpath);
+        }
+
       error = error::calc(rv,error,errno);
-      if(RENAME_FAILED(rv))
+      if(rv == -1)
         tounlink.push_back(oldfullpath);
     }
   else
     {
+      fs::path::make(&oldbasepath,newfusepath,newfullpath);
+
       tounlink.push_back(newfullpath);
     }
 }
@@ -138,7 +121,7 @@ _rename_create_path(Policy::Func::Search  searchFunc,
   if(POLICY_FAILED(rv))
     return -errno;
 
-  error = RENAME_FAIL;
+  error = -1;
   for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       const string &oldbasepath = srcmounts[i];
@@ -150,7 +133,8 @@ _rename_create_path(Policy::Func::Search  searchFunc,
                                error,toremove);
     }
 
-  if(RENAME_SUCCEEDED(error))
+
+  if(error == 0)
     _remove(toremove);
 
   return -error;
@@ -169,12 +153,9 @@ _clonepath(Policy::Func::Search  searchFunc,
 
   rv = searchFunc(srcmounts,fusedirpath.c_str(),minfreespace,srcbasepath);
   if(POLICY_FAILED(rv))
-    return rv;
+    return -errno;
 
-  {
-    const ugid::SetRootGuard ugidGuard;
-    fs::clonepath(*srcbasepath[0],dstbasepath,fusedirpath);
-  }
+  fs::clonepath_as_root(*srcbasepath[0],dstbasepath,fusedirpath);
 
   return POLICY_SUCCESS;
 }
@@ -232,7 +213,7 @@ _rename_preserve_path_core(Policy::Func::Search         searchFunc,
       fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
 
       rv = fs::rename(oldfullpath,newfullpath);
-      if(RENAME_FAILED_WITH(rv,ENOENT))
+      if((rv == -1) && (errno == ENOENT))
         {
           rv = _clonepath_if_would_create(searchFunc,createFunc,
                                           srcmounts,minfreespace,
@@ -242,7 +223,7 @@ _rename_preserve_path_core(Policy::Func::Search         searchFunc,
         }
 
       error = error::calc(rv,error,errno);
-      if(RENAME_FAILED(rv))
+      if(rv == -1)
         toremove.push_back(oldfullpath);
     }
   else
@@ -270,7 +251,7 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
   if(POLICY_FAILED(rv))
     return -errno;
 
-  error = RENAME_FAIL;
+  error = -1;
   for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
     {
       const string &oldbasepath = srcmounts[i];
@@ -282,7 +263,7 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
                                  error,toremove);
     }
 
-  if(RENAME_SUCCEEDED(error))
+  if(error == 0)
     _remove(toremove);
 
   return -error;

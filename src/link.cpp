@@ -39,20 +39,11 @@ _link_create_path_core(const string &oldbasepath,
                        const string &newbasepath,
                        const char   *oldfusepath,
                        const char   *newfusepath,
-                       const string &newfusedirpath,
                        const int     error)
 {
   int rv;
   string oldfullpath;
   string newfullpath;
-
-  if(oldbasepath != newbasepath)
-    {
-      const ugid::SetRootGuard ugidGuard;
-      rv = fs::clonepath(newbasepath,oldbasepath,newfusedirpath);
-      if(rv == -1)
-        return errno;
-    }
 
   fs::path::make(&oldbasepath,oldfusepath,oldfullpath);
   fs::path::make(&oldbasepath,newfusepath,newfullpath);
@@ -70,15 +61,19 @@ _link_create_path_loop(const vector<const string*> &oldbasepaths,
                        const char                  *newfusepath,
                        const string                &newfusedirpath)
 {
+  int rv;
   int error;
 
   error = -1;
   for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
     {
-      error = _link_create_path_core(*oldbasepaths[i],newbasepath,
-                                     oldfusepath,newfusepath,
-                                     newfusedirpath,
-                                     error);
+      rv = fs::clonepath_as_root(newbasepath,*oldbasepaths[i],newfusedirpath);
+      if(rv == -1)
+        error = error::calc(rv,error,errno);
+      else
+        error = _link_create_path_core(*oldbasepaths[i],newbasepath,
+                                       oldfusepath,newfusepath,
+                                       error);
     }
 
   return -error;
@@ -143,8 +138,7 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
   if(rv == -1)
     return -1;
 
-  const ugid::SetRootGuard ugidGuard;
-  return fs::clonepath(*newbasepath[0],oldbasepath,newfusedirpathcstr);
+  return fs::clonepath_as_root(*newbasepath[0],oldbasepath,newfusedirpathcstr);
 }
 
 static

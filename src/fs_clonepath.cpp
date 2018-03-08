@@ -26,6 +26,7 @@
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
+#include "ugid.hpp"
 
 using std::string;
 
@@ -58,6 +59,9 @@ namespace fs
     string      topath;
     string      frompath;
     string      dirname;
+
+    if((relative == NULL) || (relative[0] == '\0'))
+      return 0;
 
     dirname = relative;
     fs::path::dirname(dirname);
@@ -113,5 +117,30 @@ namespace fs
             const std::string &relative)
   {
     return fs::clonepath(from,to,relative.c_str());
+  }
+
+  int
+  clonepath_as_root(const string &from,
+                    const string &to,
+                    const char   *relative)
+  {
+    if((relative == NULL) || (relative[0] == '\0'))
+      return 0;
+    if(from == to)
+      return 0;
+
+    {
+      const ugid::SetRootGuard ugidGuard;
+
+      return fs::clonepath(from,to,relative);
+    }
+  }
+
+  int
+  clonepath_as_root(const std::string &from,
+                    const std::string &to,
+                    const std::string &relative)
+  {
+    return fs::clonepath_as_root(from,to,relative.c_str());
   }
 }

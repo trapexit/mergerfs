@@ -22,17 +22,14 @@
 #include "ugid_rwlock.icpp"
 #endif
 
-namespace mergerfs
+namespace ugid
 {
-  namespace ugid
+  void
+  initgroups(const uid_t uid,
+             const gid_t gid)
   {
-    void
-    initgroups(const uid_t uid,
-               const gid_t gid)
-    {
-      static __thread gid_t_cache cache = {0};
+    static __thread gid_t_cache cache = {0};
 
-      cache.initgroups(uid,gid);
-    }
+    cache.initgroups(uid,gid);
   }
 }
