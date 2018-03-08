@@ -22,15 +22,19 @@ namespace fs
 {
   int clonepath(const std::string &from,
                 const std::string &to,
-                const char        *relative);
+                const char        *relative,
+                const bool         return_metadata_errors = false);
   int clonepath(const std::string &from,
                 const std::string &to,
-                const std::string &relative);
+                const std::string &relative,
+                const bool         return_metadata_errors = false);
 
   int clonepath_as_root(const std::string &from,
                         const std::string &to,
-                        const char        *relative);
+                        const char        *relative,
+                        const bool         return_metadata_errors = false);
   int clonepath_as_root(const std::string &from,
                         const std::string &to,
-                        const std::string &relative);
+                        const std::string &relative,
+                        const bool         return_metadata_errors = false);
 }

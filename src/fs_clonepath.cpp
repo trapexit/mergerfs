@@ -49,10 +49,17 @@ ignorable_error(const int err)
 
 namespace fs
 {
+  /*
+    Attempts to clone a path.
+    The directories which already exist are left alone.
+    The new directories have metadata set to match the original if
+    possible. Optionally ignore errors on metadata copies.
+   */
   int
   clonepath(const string &fromsrc,
             const string &tosrc,
-            const char   *relative)
+            const char   *relative,
+            const bool    return_metadata_errors)
   {
     int         rv;
     struct stat st;
@@ -83,29 +90,28 @@ namespace fs
     rv = fs::mkdir(topath,st.st_mode);
     if(rv == -1)
       {
-        if(errno != EEXIST)
-          return -1;
-
-        rv = fs::chmod_check_on_error(topath,st.st_mode);
-        if(rv == -1)
+        if(errno == EEXIST)
+          return 0;
+        else
           return -1;
       }
 
-    // It may not support it... it's fine...
+    // it may not support it... it's fine...
     rv = fs::attr::copy(frompath,topath);
-    if((rv == -1) && !ignorable_error(errno))
+    if(return_metadata_errors && (rv == -1) && !ignorable_error(errno))
       return -1;
 
+    // it may not support it... it's fine...
     rv = fs::xattr::copy(frompath,topath);
-    if((rv == -1) && !ignorable_error(errno))
+    if(return_metadata_errors && (rv == -1) && !ignorable_error(errno))
       return -1;
 
     rv = fs::lchown_check_on_error(topath,st);
-    if(rv == -1)
+    if(return_metadata_errors && (rv == -1))
       return -1;
 
     rv = fs::utime(topath,st);
-    if(rv == -1)
+    if(return_metadata_errors && (rv == -1))
       return -1;
 
     return 0;
@@ -114,15 +120,17 @@ namespace fs
   int
   clonepath(const std::string &from,
             const std::string &to,
-            const std::string &relative)
+            const std::string &relative,
+            const bool         return_metadata_errors)
   {
-    return fs::clonepath(from,to,relative.c_str());
+    return fs::clonepath(from,to,relative.c_str(),return_metadata_errors);
   }
 
   int
   clonepath_as_root(const string &from,
                     const string &to,
-                    const char   *relative)
+                    const char   *relative,
+                    const bool    return_metadata_errors)
   {
     if((relative == NULL) || (relative[0] == '\0'))
       return 0;
@@ -132,15 +140,16 @@ namespace fs
     {
       const ugid::SetRootGuard ugidGuard;
 
-      return fs::clonepath(from,to,relative);
+      return fs::clonepath(from,to,relative,return_metadata_errors);
     }
   }
 
   int
   clonepath_as_root(const std::string &from,
                     const std::string &to,
-                    const std::string &relative)
+                    const std::string &relative,
+                    const bool         return_metadata_errors)
   {
-    return fs::clonepath_as_root(from,to,relative.c_str());
+    return fs::clonepath_as_root(from,to,relative.c_str(),return_metadata_errors);
   }
 }
