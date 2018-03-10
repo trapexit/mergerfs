@@ -1,0 +1,16 @@
+#!/bin/sh
+
+GIT=$(which git)
+if [ "${GIT}" = "" ]; then
+    exit 0
+fi
+
+VERSION=$(git describe --always --tags --dirty)
+
+echo -n "${VERSION}" > VERSION
+grep -q \"${VERSION}\" src/version.hpp
+RV=$?
+if [ $RV -ne 0 ]; then
+    echo "#pragma once" > src/version.hpp
+    echo "static const char MERGERFS_VERSION[] = \"${VERSION}\";" >> src/version.hpp
+fi

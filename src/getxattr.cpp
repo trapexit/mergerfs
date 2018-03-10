@@ -148,6 +148,8 @@ void
 _getxattr_controlfile_version(string &attrvalue)
 {
   attrvalue = MERGERFS_VERSION;
+  if(attrvalue.empty())
+    attrvalue = "unknown_possible_problem_with_build";
 }
 
 static

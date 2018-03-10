@@ -306,15 +306,6 @@ usage(void)
 }
 
 static
-void
-version(void)
-{
-  std::cout << "mergerfs version: "
-            << MERGERFS_VERSION
-            << std::endl;
-}
-
-static
 int
 option_processor(void       *data,
                  const char *arg,
@@ -344,7 +335,9 @@ option_processor(void       *data,
       break;
 
     case MERGERFS_OPT_VERSION:
-      version();
+      std::cout << "mergerfs version: "
+                << (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown")
+                << std::endl;
       fuse_opt_add_arg(outargs,"--version");
       break;
 
