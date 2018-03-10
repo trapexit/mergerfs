@@ -84,7 +84,7 @@ help:
 	@echo "usage: make"
 	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
 
-$(TARGET): src/version.hpp obj/obj-stamp libfuse/lib/.libs/libfuse.a $(OBJ)
+$(TARGET): version obj/obj-stamp libfuse/lib/.libs/libfuse.a $(OBJ)
 	cd libfuse && make
 	$(CXX) $(CFLAGS) $(OBJ) -o $@ libfuse/lib/.libs/libfuse.a -ldl $(LDFLAGS)
 
@@ -102,15 +102,7 @@ ifeq ($(GIT_REPO),1)
 endif
 
 version:
-ifeq ($(GIT_REPO),1)
-	$(eval VERSION := $(shell $(GIT) describe --always --tags --dirty))
-	@echo "$(VERSION)" > VERSION
-endif
-
-src/version.hpp: version
-	$(eval VERSION := $(shell cat VERSION))
-	@echo "#pragma once" > src/version.hpp
-	@echo "static const char MERGERFS_VERSION[] = \"$(VERSION)\";" >> src/version.hpp
+	tools/update-version
 
 obj/obj-stamp:
 	$(MKDIR) -p obj
@@ -229,6 +221,6 @@ endif
 libfuse/lib/.libs/libfuse.a: libfuse_Makefile
 	cd libfuse && $(MAKE)
 
-.PHONY: all clean install help
+.PHONY: all clean install help version
 
 -include $(DEPS)
