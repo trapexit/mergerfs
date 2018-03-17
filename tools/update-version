@@ -6,6 +6,9 @@ if [ "${GIT}" = "" ]; then
 fi
 
 VERSION=$(git describe --always --tags --dirty)
+if [ $? -ne 0 ]; then
+    exit 0
+fi
 
 echo -n "${VERSION}" > VERSION
 grep -q \"${VERSION}\" src/version.hpp
