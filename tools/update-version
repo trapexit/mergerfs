@@ -7,7 +7,11 @@ fi
 
 VERSION=$(git describe --always --tags --dirty)
 if [ $? -ne 0 ]; then
-    exit 0
+    VERSION=$(cat VERSION)
+fi
+
+if [ "${VERSION}" = "" ]; then
+    VERSION="unknown"
 fi
 
 echo -n "${VERSION}" > VERSION
