@@ -340,30 +340,30 @@ Output: the policy string except for categories where its funcs have multiple ty
 ##### Example #####
 
 ```
-[trapexit:/tmp/mount] $ xattr -l .mergerfs
-user.mergerfs.srcmounts: /tmp/a:/tmp/b
+[trapexit:/mnt/mergerfs] $ xattr -l .mergerfs
+user.mergerfs.srcmounts: /mnt/a:/mnt/b
 user.mergerfs.minfreespace: 4294967295
 user.mergerfs.moveonenospc: false
 ...
 
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.category.search .mergerfs
 ff
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.category.search newest .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.category.search .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.category.search newest .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.category.search .mergerfs
 newest
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts +/tmp/c .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
-/tmp/a:/tmp/b:/tmp/c
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.srcmounts +/mnt/c .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/mnt/a:/mnt/b:/mnt/c
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts =/tmp/c .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
-/tmp/c
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.srcmounts =/mnt/c .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/mnt/c
 
-[trapexit:/tmp/mount] $ xattr -w user.mergerfs.srcmounts '+</tmp/a:/tmp/b' .mergerfs
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.srcmounts .mergerfs
-/tmp/a:/tmp/b:/tmp/c
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.srcmounts '+</mnt/a:/mnt/b' .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.srcmounts .mergerfs
+/mnt/a:/mnt/b:/mnt/c
 ```
 
 #### file / directory xattrs ####
@@ -376,15 +376,15 @@ While they won't show up when using [listxattr](http://linux.die.net/man/2/listx
 * **user.mergerfs.allpaths:** a NUL ('\0') separated list of full paths to all files found
 
 ```
-[trapexit:/tmp/mount] $ ls
+[trapexit:/mnt/mergerfs] $ ls
 A B C
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.fullpath A
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.fullpath A
 /mnt/a/full/path/to/A
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.basepath A
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.basepath A
 /mnt/a
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.relpath A
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.relpath A
 /full/path/to/A
-[trapexit:/tmp/mount] $ xattr -p user.mergerfs.allpaths A | tr '\0' '\n'
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.allpaths A | tr '\0' '\n'
 /mnt/a/full/path/to/A
 /mnt/b/full/path/to/A
 ```
@@ -609,6 +609,10 @@ Not *really* a bug. The FUSE library will move files when asked to delete them a
 Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately.
 
 # FAQ
+
+#### How well does mergerfs scale? Is it "production ready?"
+
+Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs is it's sole solution for pooling drives.
 
 #### Can mergerfs be used with drives which already have data / are in use?
 
