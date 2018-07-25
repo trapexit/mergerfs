@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-03-09
+% 2018-07-25
 
 # NAME
 
@@ -689,6 +689,21 @@ Yes. While some users have reported problems it appears to always be related to 
 mergerfs-inode = (original-inode | (device-id << 32))
 
 While `ino_t` is 64 bits only a few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. While totally unique inodes are preferred the overhead which would be needed does not seem to outweighted by the benefits.
+
+While atypical, yes, inodes can be reused and not refer to the same file. The internal id used to reference a file in FUSE is different from the inode value presented. The former is the `nodeid` and is actually a tuple of (nodeid,generation). That tuple is not user facing. The inode is merely metadata passed through the kernel and found using the `stat` family of calls or `readdir`.
+
+From FUSE docs regarding `use_ino`:
+
+```
+Honor the st_ino field in the functions getattr() and
+fill_dir(). This value is used to fill in the st_ino field
+in the stat(2), lstat(2), fstat(2) functions and the d_ino
+field in the readdir(2) function. The filesystem does not
+have to guarantee uniqueness, however some applications
+rely on this value being unique for the whole filesystem.
+Note that this does *not* affect the inode that libfuse
+and the kernel use internally (also called the "nodeid").
+```
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
