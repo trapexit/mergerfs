@@ -58,7 +58,6 @@ CFLAGS      = -g -Wall \
               -DFUSE_USE_VERSION=29 \
               -MMD \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
-LDFLAGS       = -pthread -lrt
 
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
@@ -86,7 +85,7 @@ help:
 
 $(TARGET): version obj/obj-stamp libfuse/lib/.libs/libfuse.a $(OBJ)
 	cd libfuse && make
-	$(CXX) $(CFLAGS) $(OBJ) -o $@ libfuse/lib/.libs/libfuse.a -ldl $(LDFLAGS)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ libfuse/lib/.libs/libfuse.a -ldl -pthread -lrt
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
@@ -208,7 +207,7 @@ else ifeq ($(shell test -e /usr/bin/yum; echo $$?),0)
 	yum -y install git rpm-build libattr-devel gcc-c++ make which python automake libtool gettext-devel
 endif
 
-unexport CFLAGS LDFLAGS
+unexport CFLAGS
 .PHONY: libfuse_Makefile
 libfuse_Makefile:
 ifeq ($(shell test -e libfuse/Makefile; echo $$?),1)
