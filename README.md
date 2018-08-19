@@ -624,6 +624,10 @@ MergerFS is **not** an actual filesystem. MergerFS is **not** RAID. It does **no
 
 See the previous question's answer.
 
+#### Do hard links work?
+
+Yes. You need to use `use_ino` to support proper reporting of inodes. Read the section "rename & link" for caveats.
+
 #### Why can't I see my files / directories?
 
 It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes it's credentials to that of the caller. This means that if the user doesn't have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
