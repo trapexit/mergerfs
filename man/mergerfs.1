@@ -1332,6 +1332,11 @@ It merely shards some \f[B]behavior\f[] and aggregates others.
 .SS Can mergerfs be removed without affecting the data?
 .PP
 See the previous question\[aq]s answer.
+.SS Do hard links work?
+.PP
+Yes.
+You need to use \f[C]use_ino\f[] to support proper reporting of inodes.
+Read the section "rename & link" for caveats.
 .SS Why can\[aq]t I see my files / directories?
 .PP
 It\[aq]s almost always a permissions issue.
