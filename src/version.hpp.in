@@ -1,0 +1,2 @@
+#pragma once
+static const char MERGERFS_VERSION[] = "@MERGERFS_VERSION@";
