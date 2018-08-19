@@ -12,31 +12,38 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-GIT 	  = 	$(shell which git)
-TAR 	  = 	$(shell which tar)
-MKDIR     = 	$(shell which mkdir)
-TOUCH 	  = 	$(shell which touch)
-CP        = 	$(shell which cp)
-RM 	  = 	$(shell which rm)
-LN        =     $(shell which ln)
-FIND 	  = 	$(shell which find)
-INSTALL   = 	$(shell which install)
-MKTEMP    = 	$(shell which mktemp)
-STRIP     = 	$(shell which strip)
-PANDOC    =	$(shell which pandoc)
-SED       =     $(shell which sed)
-GZIP      =     $(shell which gzip)
-RPMBUILD  =     $(shell which rpmbuild)
-GIT2DEBCL =     ./tools/git2debcl
-PKGCONFIG =     pkg-config
+GIT       = git
+TAR       = tar
+MKDIR     = mkdir
+TOUCH     = touch
+CP        = cp
+RM        = rm
+LN        = ln
+FIND      = find
+INSTALL   = install
+MKTEMP    = mktemp
+STRIP     = strip
+PANDOC    = pandoc
+SED       = sed
+GZIP      = gzip
+RPMBUILD  = rpmbuild
+GIT2DEBCL = ./tools/git2debcl
+PKGCONFIG = pkg-config
 
 GIT_REPO = 0
 ifneq ($(GIT),)
+ifneq ($(shell $(GIT) --version 2>/dev/null),)
 ifeq  ($(shell test -e .git; echo $$?),0)
 GIT_REPO = 1
 endif
 endif
+endif
 
+ifneq ($(PANDOC),)
+ifeq ($(shell $(PANDOC) --version 2>/dev/null),)
+PANDOC :=
+endif
+endif
 ifeq ($(PANDOC),)
 $(warning "pandoc does not appear available: manpage won't be buildable")
 endif
