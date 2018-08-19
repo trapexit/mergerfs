@@ -4432,6 +4432,9 @@ static void fuse_lib_help(void)
 "    -o intr                allow requests to be interrupted\n"
 "    -o intr_signal=NUM     signal to send on interrupt (%i)\n"
 "    -o modules=M1[:M2...]  names of modules to push onto filesystem stack\n"
+"    -o threads=NUM         number of worker threads. 0 = autodetect.\n"
+"                           Negative values autodetect then divide by\n"
+"                           absolute value. default = 0\n"
 "\n", FUSE_DEFAULT_INTR_SIGNAL);
 }
 
