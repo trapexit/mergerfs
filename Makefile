@@ -61,13 +61,13 @@ endif
 
 UGID_USE_RWLOCK = 0
 
-OPTS 	    = -O2
+OPTS 	    = -g -O2
 SRC	    = $(wildcard src/*.cpp)
 OBJ         = $(SRC:src/%.cpp=obj/%.o)
 DEPS        = $(OBJ:obj/%.o=obj/%.d)
 TARGET      = mergerfs
 MANPAGE     = $(TARGET).1
-CFLAGS      = -g -Wall \
+CFLAGS      = -Wall \
 	      $(OPTS) \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
@@ -101,7 +101,7 @@ help:
 	@echo "make INTERNAL_FUSE=0   - to build program with external (system) libfuse rather than the bundled one ('-o threads=' option will be unavailable)"
 
 $(TARGET): version obj/obj-stamp $(FUSE_TARGET) $(OBJ)
-	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
+	$(CXX) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
@@ -124,7 +124,7 @@ obj/obj-stamp:
 	$(TOUCH) $@
 
 obj/%.o: src/%.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean: rpm-clean libfuse_Makefile
 	$(RM) -f src/version.hpp
