@@ -28,6 +28,7 @@ SED       =     $(shell which sed)
 GZIP      =     $(shell which gzip)
 RPMBUILD  =     $(shell which rpmbuild)
 GIT2DEBCL =     ./tools/git2debcl
+PKGCONFIG =     pkg-config
 
 GIT_REPO = 0
 ifneq ($(GIT),)
@@ -42,6 +43,22 @@ endif
 
 XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
 
+INTERNAL_FUSE = 1
+EXTERNAL_FUSE_MIN_REQ = 2.9.7
+
+ifeq ($(INTERNAL_FUSE),1)
+FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
+FUSE_LIBS   = libfuse/lib/.libs/libfuse.a
+FUSE_TARGET = $(FUSE_LIBS)
+else
+FUSE_CFLAGS := $(shell $(PKGCONFIG) --cflags 'fuse >= $(EXTERNAL_FUSE_MIN_REQ)')
+FUSE_LIBS   := $(shell $(PKGCONFIG) --libs   'fuse >= $(EXTERNAL_FUSE_MIN_REQ)')
+FUSE_TARGET :=
+ifeq ($(FUSE_CFLAGS)$(FUSE_LIBS),)
+$(error "Use of external FUSE requested, but no libfuse >= $(EXTERNAL_FUSE_MIN_REQ) found.")
+endif
+endif
+
 UGID_USE_RWLOCK = 0
 
 OPTS 	    = -O2
@@ -50,7 +67,6 @@ OBJ         = $(SRC:src/%.cpp=obj/%.o)
 DEPS        = $(OBJ:obj/%.o=obj/%.d)
 TARGET      = mergerfs
 MANPAGE     = $(TARGET).1
-FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
 CFLAGS      = -g -Wall \
 	      $(OPTS) \
 	      -Wno-unused-result \
@@ -82,10 +98,10 @@ all: $(TARGET)
 help:
 	@echo "usage: make"
 	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
+	@echo "make INTERNAL_FUSE=0   - to build program with external (system) libfuse rather than the bundled one ('-o threads=' option will be unavailable)"
 
-$(TARGET): version obj/obj-stamp libfuse/lib/.libs/libfuse.a $(OBJ)
-	cd libfuse && make
-	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ libfuse/lib/.libs/libfuse.a -ldl -pthread -lrt
+$(TARGET): version obj/obj-stamp $(FUSE_TARGET) $(OBJ)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
@@ -115,10 +131,14 @@ clean: rpm-clean libfuse_Makefile
 	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
+ifeq ($(INTERNAL_FUSE),1)
 	cd libfuse && $(MAKE) clean
+endif
 
 distclean: clean libfuse_Makefile
+ifeq ($(INTERNAL_FUSE),1)
 	cd libfuse && $(MAKE) distclean
+endif
 ifeq ($(GIT_REPO),1)
 	$(GIT) clean -fd
 endif
@@ -210,11 +230,13 @@ endif
 unexport CFLAGS
 .PHONY: libfuse_Makefile
 libfuse_Makefile:
+ifeq ($(INTERNAL_FUSE),1)
 ifeq ($(shell test -e libfuse/Makefile; echo $$?),1)
 	cd libfuse && \
 	$(MKDIR) -p m4 && \
 	autoreconf --force --install && \
         ./configure --enable-lib --disable-util --disable-example
+endif
 endif
 
 libfuse/lib/.libs/libfuse.a: libfuse_Makefile

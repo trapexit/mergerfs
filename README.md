@@ -71,7 +71,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **symlinkify_timeout=value**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **nullrw=true|false**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
 * **ignorepponrename=true|false**: ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
-* **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores)
+* **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores) *NOTE2:* the option is unavailable when built with system libfuse.
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
@@ -285,6 +285,19 @@ Have git, g++, make, python, libattr1, automake, libtool installed.
 $ cd mergerfs
 $ make
 $ sudo make install
+```
+
+#### Generically with system libfuse
+
+**NOTE:** Multithreading and thus `-o threads=num` option will be unavailable when built with system libfuse.
+
+Have git, g++, make, python, libattr1, pkg-config installed.
+Also, install libfuse >= 2.9.7 (but not libfuse-3.x) and matching libfuse-dev (or libfuse-devel).
+
+```
+$ cd mergerfs
+$ make INTERNAL_FUSE=0
+$ sudo make INTERNAL_FUSE=0 install
 ```
 
 # RUNTIME
@@ -550,7 +563,7 @@ The gid cache uses fixed storage to simplify the design and be compatible with o
 
 #### mergerfs or libfuse crashing
 
-**NOTE:** as of mergerfs 2.22.0 it includes the most recent version of libfuse so any crash should be reported. For older releases continue reading...
+**NOTE:** as of mergerfs 2.22.0 it includes the most recent version of libfuse (or requires libfuse-2.9.7) so any crash should be reported. For older releases continue reading...
 
 If suddenly the mergerfs mount point disappears and `Transport endpoint is not connected` is returned when attempting to perform actions within the mount directory **and** the version of libfuse (use `mergerfs -v` to find the version) is older than `2.9.4` its likely due to a bug in libfuse. Affected versions of libfuse can be found in Debian Wheezy, Ubuntu Precise and others.
 
