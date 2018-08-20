@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-07-25
+% 2018-08-20
 
 # NAME
 
@@ -289,7 +289,7 @@ $ sudo make install
 
 #### Generically with system libfuse
 
-**NOTE:** Multithreading and thus `-o threads=num` option will be unavailable when built with system libfuse.
+**NOTE:** Configurable threading and thus `-o threads=num` option will be unavailable when built with system libfuse.
 
 Have git, g++, make, python, libattr1, pkg-config installed.
 Also, install libfuse >= 2.9.7 (but not libfuse-3.x) and matching libfuse-dev (or libfuse-devel).
@@ -631,7 +631,7 @@ Users have reported running mergerfs on everything from a Raspberry Pi to dual s
 
 Yes. MergerFS is a proxy and does **NOT** interfere with the normal form or function of the drives / mounts / paths it manages.
 
-MergerFS is **not** an actual filesystem. MergerFS is **not** RAID. It does **not** manipulate the data that passes through it. It does **not** shard data across drives. It merely shards some **behavior** and aggregates others.
+MergerFS is **not** a traditional filesystem. MergerFS is **not** RAID. It does **not** manipulate the data that passes through it. It does **not** shard data across drives. It merely shards some **behavior** and aggregates others.
 
 #### Can mergerfs be removed without affecting the data?
 
@@ -643,7 +643,7 @@ Yes. You need to use `use_ino` to support proper reporting of inodes. Read the s
 
 #### Why can't I see my files / directories?
 
-It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes it's credentials to that of the caller. This means that if the user doesn't have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
+It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes it's credentials to that of the caller. This means that if the user does not have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
 
 Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
 
@@ -654,6 +654,10 @@ If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay clos
 Are you using a path preserving policy? The default policy for file creation is `epmfs`. That means only the drives with the path preexisting will be considered when creating a file. If you don't care about where files and directories are created you likely shouldn't be using a path preserving policy and instead something like `mfs`.
 
 This can be especially apparent when filling an empty pool from an external source. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transfering your data.
+
+#### Why was libfuse embedded into mergerfs?
+
+A significant number of users use mergerfs on distros with very old versions of libfuse which have serious bugs. Requiring updated versions of libfuse on those distros isn't pratical (no package offered, user inexperience, etc.). The only practical way to provide a stable runtime on those systems was to "vendor" the library into the project.
 
 #### Why use mergerfs over mhddfs?
 
@@ -666,6 +670,8 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 `mergerfs -o minfreespace=4G,defaults,allow_other,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
 
 #### Why use mergerfs over aufs?
+
+aufs is mostly abandoned and no longer available in many distros.
 
 While aufs can offer better peak performance mergerfs provides more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (CoW) features which aufs and overlayfs have.
 
