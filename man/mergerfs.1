@@ -1197,6 +1197,9 @@ which many probably do.
 To create a \f[C]$topdir/.Trash\f[] directory as defined in the standard
 use the mergerfs\-tools (https://github.com/trapexit/mergerfs-tools)
 tool \f[C]mergerfs.mktrash\f[].
+.SS tar: Directory renamed before its status could be extracted
+.PP
+Make sure to use the \f[C]use_ino\f[] option.
 .SS Supplemental user groups
 .PP
 Due to the overhead of
