@@ -29,6 +29,7 @@
 #include <iomanip>
 
 #include "config.hpp"
+#include "fs_glob.hpp"
 #include "num.hpp"
 #include "policy.hpp"
 #include "str.hpp"
