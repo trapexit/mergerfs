@@ -17,7 +17,7 @@
 #pragma once
 
 #ifndef WITHOUT_XATTR
-#include <attr/xattr.h>
+#include <sys/xattr.h>
 #endif
 
 #ifndef XATTR_CREATE
