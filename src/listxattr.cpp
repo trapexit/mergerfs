@@ -51,6 +51,7 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.symlinkify_timeout")
     ("user.mergerfs.nullrw")
     ("user.mergerfs.ignorepponrename")
+    ("user.mergerfs.security_capability")
     ("user.mergerfs.policies")
     ("user.mergerfs.version")
     ("user.mergerfs.pid");

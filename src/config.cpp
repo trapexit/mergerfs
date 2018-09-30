@@ -45,6 +45,7 @@ namespace mergerfs
       symlinkify_timeout(3600),
       nullrw(false),
       ignorepponrename(false),
+      security_capability(true),
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),
