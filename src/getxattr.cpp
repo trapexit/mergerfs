@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -34,10 +34,19 @@
 #include "ugid.hpp"
 #include "version.hpp"
 
+static const char SECURITY_CAPABILITY[] = "security.capability";
+
 using std::string;
 using std::vector;
 using std::set;
 using namespace mergerfs;
+
+static
+bool
+_is_attrname_security_capability(const char *attrname_)
+{
+  return (strcmp(attrname_,SECURITY_CAPABILITY) == 0);
+}
 
 static
 int
@@ -199,6 +208,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_bool(config.nullrw,attrvalue);
       else if(attr[2] == "ignorepponrename")
         _getxattr_controlfile_bool(config.ignorepponrename,attrvalue);
+      else if(attr[2] == "security_capability")
+        _getxattr_controlfile_bool(config.security_capability,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")
@@ -333,6 +344,10 @@ namespace mergerfs
     {
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
+
+      if((config.security_capability == false) &&
+         _is_attrname_security_capability(attrname))
+        return -ENOATTR;
 
       if(fusepath == config.controlfile)
         return _getxattr_controlfile(config,

@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-08-20
+% 2018-09-30
 
 # NAME
 
@@ -71,6 +71,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **symlinkify_timeout=value**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **nullrw=true|false**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
 * **ignorepponrename=true|false**: ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
+* **security_capability=true|false**: If false return ENOATTR when xattr security.capability is queried. (default: true)
 * **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores) *NOTE2:* the option is unavailable when built with system libfuse.
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
@@ -735,6 +736,10 @@ rely on this value being unique for the whole filesystem.
 Note that this does *not* affect the inode that libfuse
 and the kernel use internally (also called the "nodeid").
 ```
+
+#### I notice massive slowdowns of writes over NFS
+
+Due to how NFS works and interacts with FUSE when not using `direct_io` its possible that a getxattr for `security.capability` will be issued prior to any write. This will usually result in a massive slowdown for writes. Using `direct_io` will keep this from happening (and generally good to enable unless you need the features it disables) but the `security_capability` option can also help by short circuiting the call and returning `ENOATTR`.
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 

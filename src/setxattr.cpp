@@ -297,6 +297,10 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_bool(attrval,
                               flags,
                               config.ignorepponrename);
+      else if(attr[2] == "security_capability")
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.security_capability);
       break;
 
     case 4:

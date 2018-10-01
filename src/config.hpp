@@ -52,6 +52,7 @@ namespace mergerfs
     time_t                   symlinkify_timeout;
     bool                     nullrw;
     bool                     ignorepponrename;
+    bool                     security_capability;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];
