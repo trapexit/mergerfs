@@ -53,9 +53,6 @@ namespace fs
                const int             fd,
                string               &basepath);
 
-  void glob(const vector<string> &patterns,
-            vector<string>       &strs);
-
   void realpathize(vector<string> &strs);
 
   int getfl(const int fd);

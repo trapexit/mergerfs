@@ -25,6 +25,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_setxattr.hpp"
+#include "fs_glob.hpp"
 #include "fs_path.hpp"
 #include "num.hpp"
 #include "rv.hpp"

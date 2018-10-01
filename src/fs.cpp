@@ -18,7 +18,6 @@
 #include <vector>
 
 #include <fcntl.h>
-#include <glob.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -168,31 +167,6 @@ namespace fs
       }
 
     return (errno=ENOENT,-1);
-  }
-
-  void
-  glob(const vector<string> &patterns,
-       vector<string>       &strs)
-  {
-    int flags;
-    size_t veclen;
-    glob_t gbuf = {0};
-
-    veclen = patterns.size();
-    if(veclen == 0)
-      return;
-
-    flags = 0;
-    glob(patterns[0].c_str(),flags,NULL,&gbuf);
-
-    flags = GLOB_APPEND;
-    for(size_t i = 1; i < veclen; i++)
-      glob(patterns[i].c_str(),flags,NULL,&gbuf);
-
-    for(size_t i = 0; i < gbuf.gl_pathc; ++i)
-      strs.push_back(gbuf.gl_pathv[i]);
-
-    globfree(&gbuf);
   }
 
   void
