@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,25 +18,16 @@
 
 #pragma once
 
-#include <string>
-
-#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace fs
 {
-  static
-  inline
-  int
-  unlink(const char *path_)
+  namespace cow
   {
-    return ::unlink(path_);
-  }
+    bool is_eligible(const int flags_, const struct stat &st_);
+    bool is_eligible(const char *fullpath_, const int flags_);
 
-  static
-  inline
-  int
-  unlink(const std::string &path_)
-  {
-    return fs::unlink(path_.c_str());
+    int  break_link(const char *fullpath_);
   }
 }

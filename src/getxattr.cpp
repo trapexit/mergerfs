@@ -210,6 +210,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_bool(config.ignorepponrename,attrvalue);
       else if(attr[2] == "security_capability")
         _getxattr_controlfile_bool(config.security_capability,attrvalue);
+      else if(attr[2] == "link_cow")
+        _getxattr_controlfile_bool(config.link_cow,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")

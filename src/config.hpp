@@ -16,16 +16,16 @@
 
 #pragma once
 
+#include "fusefunc.hpp"
+#include "policy.hpp"
+
 #include <fuse.h>
 
-#include <sys/stat.h>
 #include <stdint.h>
+#include <sys/stat.h>
 
 #include <string>
 #include <vector>
-
-#include "policy.hpp"
-#include "fusefunc.hpp"
 
 namespace mergerfs
 {
@@ -37,8 +37,8 @@ namespace mergerfs
   public:
     int set_func_policy(const std::string &fusefunc_,
                         const std::string &policy_);
-    int set_category_policy(const std::string &category,
-                            const std::string &policy);
+    int set_category_policy(const std::string &category_,
+                            const std::string &policy_);
 
   public:
     std::string              destmount;
@@ -53,6 +53,7 @@ namespace mergerfs
     bool                     nullrw;
     bool                     ignorepponrename;
     bool                     security_capability;
+    bool                     link_cow;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];

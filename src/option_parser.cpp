@@ -197,6 +197,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.ignorepponrename);
       else if(key == "security_capability")
         rv = parse_and_process(value,config.security_capability);
+      else if(key == "link_cow")
+        rv = parse_and_process(value,config.link_cow);
     }
 
   if(rv == -1)
@@ -299,12 +301,15 @@ usage(void)
     "                           timeout in seconds before will turn to symlinks.\n"
     "                           default = 3600\n"
     "    -o nullrw=<bool>       Disables reads and writes. For benchmarking.\n"
+    "                           default = false\n"
     "    -o ignorepponrename=<bool>\n"
     "                           Ignore path preserving when performing renames\n"
     "                           and links. default = false\n"
     "    -o security_capability=<bool>\n"
     "                           When disabled return ENOATTR when the xattr\n"
     "                           security.capability is queried. default = true\n"
+    "    -o link_cow=<bool>     delink/clone file on open to simulate CoW.\n"
+    "                           default = false\n"
             << std::endl;
 }
 

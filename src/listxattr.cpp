@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -52,6 +52,7 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.nullrw")
     ("user.mergerfs.ignorepponrename")
     ("user.mergerfs.security_capability")
+    ("user.mergerfs.link_cow")
     ("user.mergerfs.policies")
     ("user.mergerfs.version")
     ("user.mergerfs.pid");

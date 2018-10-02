@@ -25,9 +25,18 @@ namespace fs
   static
   inline
   int
-  rename(const std::string &oldpath,
-         const std::string &newpath)
+  rename(const char *oldpath_,
+         const char *newpath_)
   {
-    return ::rename(oldpath.c_str(),newpath.c_str());
+    return ::rename(oldpath_,newpath_);
+  }
+
+  static
+  inline
+  int
+  rename(const std::string &oldpath_,
+         const std::string &newpath_)
+  {
+    return fs::rename(oldpath_.c_str(),newpath_.c_str());
   }
 }

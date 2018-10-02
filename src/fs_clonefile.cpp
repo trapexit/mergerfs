@@ -14,12 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
-#include <stdlib.h>
-
-#include <string>
-#include <vector>
-
 #include "errno.hpp"
 #include "fs_attr.hpp"
 #include "fs_base_chmod.hpp"
@@ -37,6 +31,12 @@
 #include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
 
+#include <fcntl.h>
+#include <stdlib.h>
+
+#include <string>
+#include <vector>
+
 #ifndef O_LARGEFILE
 # define O_LARGEFILE 0
 #endif
@@ -49,36 +49,36 @@ using std::string;
 using std::vector;
 
 int
-writen(const int     fd,
-       const char   *buf,
-       const size_t  count)
+writen(const int     fd_,
+       const char   *buf_,
+       const size_t  count_)
 {
   size_t nleft;
   ssize_t nwritten;
 
-  nleft = count;
+  nleft = count_;
   do
     {
-      nwritten = fs::write(fd,buf,nleft);
+      nwritten = fs::write(fd_,buf_,nleft);
       if((nwritten == -1) && (errno == EINTR))
         continue;
       if(nwritten == -1)
         return -1;
 
       nleft -= nwritten;
-      buf   += nwritten;
+      buf_  += nwritten;
     }
   while(nleft > 0);
 
-  return count;
+  return count_;
 }
 
 static
 int
-copyfile_rw(const int    fdin,
-            const int    fdout,
-            const size_t count,
-            const size_t blocksize)
+copyfile_rw(const int    src_fd_,
+            const int    dst_fd_,
+            const size_t count_,
+            const size_t blocksize_)
 {
   ssize_t nr;
   ssize_t nw;
@@ -86,15 +86,15 @@ copyfile_rw(const int    fdin,
   size_t  totalwritten;
   vector<char> buf;
 
-  bufsize = (blocksize * 16);
+  bufsize = (blocksize_ * 16);
   buf.resize(bufsize);
 
-  fs::lseek(fdin,0,SEEK_SET);
+  fs::lseek(src_fd_,0,SEEK_SET);
 
   totalwritten = 0;
-  while(totalwritten < count)
+  while(totalwritten < count_)
     {
-      nr = fs::read(fdin,&buf[0],bufsize);
+      nr = fs::read(src_fd_,&buf[0],bufsize);
       if(nr == 0)
         return totalwritten;
       if((nr == -1) && (errno == EINTR))
@@ -102,7 +102,7 @@ copyfile_rw(const int    fdin,
       if(nr == -1)
         return -1;
 
-      nw = writen(fdout,&buf[0],nr);
+      nw = writen(dst_fd_,&buf[0],nr);
       if(nw == -1)
         return -1;
 
@@ -114,30 +114,30 @@ copyfile_rw(const int    fdin,
 
 static
 int
-copydata(const int    fdin,
-         const int    fdout,
-         const size_t count,
-         const size_t blocksize)
+copydata(const int    src_fd_,
+         const int    dst_fd_,
+         const size_t count_,
+         const size_t blocksize_)
 {
   int rv;
 
-  fs::fadvise_willneed(fdin,0,count);
-  fs::fadvise_sequential(fdin,0,count);
+  fs::fadvise_willneed(src_fd_,0,count_);
+  fs::fadvise_sequential(src_fd_,0,count_);
 
-  fs::fallocate(fdout,0,0,count);
+  fs::fallocate(dst_fd_,0,0,count_);
 
-  rv = fs::sendfile(fdin,fdout,count);
+  rv = fs::sendfile(src_fd_,dst_fd_,count_);
   if((rv == -1) && ((errno == EINVAL) || (errno == ENOSYS)))
-    return ::copyfile_rw(fdin,fdout,count,blocksize);
+    return ::copyfile_rw(src_fd_,dst_fd_,count_,blocksize_);
 
   return rv;
 }
 
 static
 bool
-ignorable_error(const int err)
+ignorable_error(const int err_)
 {
-  switch(err)
+  switch(err_)
     {
     case ENOTTY:
     case ENOTSUP:
@@ -153,69 +153,40 @@ ignorable_error(const int err)
 namespace fs
 {
   int
-  clonefile(const int fdin,
-            const int fdout)
+  clonefile(const int src_fd_,
+            const int dst_fd_)
   {
     int rv;
-    struct stat stin;
+    struct stat src_st;
 
-    rv = fs::fstat(fdin,stin);
+    rv = fs::fstat(src_fd_,src_st);
     if(rv == -1)
       return -1;
 
-    rv = ::copydata(fdin,fdout,stin.st_size,stin.st_blksize);
+    rv = ::copydata(src_fd_,dst_fd_,src_st.st_size,src_st.st_blksize);
     if(rv == -1)
       return -1;
 
-    rv = fs::attr::copy(fdin,fdout);
+    rv = fs::attr::copy(src_fd_,dst_fd_);
     if((rv == -1) && !ignorable_error(errno))
       return -1;
 
-    rv = fs::xattr::copy(fdin,fdout);
+    rv = fs::xattr::copy(src_fd_,dst_fd_);
     if((rv == -1) && !ignorable_error(errno))
       return -1;
 
-    rv = fs::fchown_check_on_error(fdout,stin);
+    rv = fs::fchown_check_on_error(dst_fd_,src_st);
     if(rv == -1)
       return -1;
 
-    rv = fs::fchmod_check_on_error(fdout,stin);
+    rv = fs::fchmod_check_on_error(dst_fd_,src_st);
     if(rv == -1)
       return -1;
 
-    rv = fs::utime(fdout,stin);
+    rv = fs::utime(dst_fd_,src_st);
     if(rv == -1)
       return -1;
 
     return 0;
-  }
-
-  int
-  clonefile(const string &in,
-            const string &out)
-  {
-    int rv;
-    int fdin;
-    int fdout;
-    int error;
-
-    fdin = fs::open(in,O_RDONLY|O_NOFOLLOW);
-    if(fdin == -1)
-      return -1;
-
-    const int    flags = O_CREAT|O_LARGEFILE|O_NOATIME|O_NOFOLLOW|O_TRUNC|O_WRONLY;
-    const mode_t mode  = S_IWUSR;
-    fdout = fs::open(out,flags,mode);
-    if(fdout == -1)
-      return -1;
-
-    rv = fs::clonefile(fdin,fdout);
-    error = errno;
-
-    fs::close(fdin);
-    fs::close(fdout);
-
-    errno = error;
-    return rv;
   }
 }

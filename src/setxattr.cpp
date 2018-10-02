@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -302,6 +302,10 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_bool(attrval,
                               flags,
                               config.security_capability);
+      else if(attr[2] == "link_cow")
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.link_cow);
       break;
 
     case 4:
