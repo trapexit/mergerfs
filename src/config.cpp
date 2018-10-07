@@ -46,6 +46,7 @@ namespace mergerfs
       nullrw(false),
       ignorepponrename(false),
       security_capability(true),
+      link_cow(false),
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),

@@ -16,18 +16,19 @@
 
 #include <fuse.h>
 
-#include <fcntl.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_base_open.hpp"
+#include "fs_cow.hpp"
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
+
+#include <fcntl.h>
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -35,42 +36,47 @@ using mergerfs::Policy;
 
 static
 int
-_open_core(const string *basepath,
-           const char   *fusepath,
-           const int     flags,
-           uint64_t     &fh)
+_open_core(const string *basepath_,
+           const char   *fusepath_,
+           const int     flags_,
+           const bool    link_cow_,
+           uint64_t     &fh_)
 {
   int fd;
   string fullpath;
 
-  fs::path::make(basepath,fusepath,fullpath);
+  fs::path::make(basepath_,fusepath_,fullpath);
 
-  fd = fs::open(fullpath,flags);
+  if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),flags_))
+    fs::cow::break_link(fullpath.c_str());
+
+  fd = fs::open(fullpath,flags_);
   if(fd == -1)
     return -errno;
 
-  fh = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath));
+  fh_ = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_));
 
   return 0;
 }
 
 static
 int
-_open(Policy::Func::Search  searchFunc,
-      const vector<string> &srcmounts,
-      const uint64_t        minfreespace,
-      const char           *fusepath,
-      const int             flags,
-      uint64_t             &fh)
+_open(Policy::Func::Search  searchFunc_,
+      const vector<string> &srcmounts_,
+      const uint64_t        minfreespace_,
+      const char           *fusepath_,
+      const int             flags_,
+      const bool            link_cow_,
+      uint64_t             &fh_)
 {
   int rv;
   vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = searchFunc_(srcmounts_,fusepath_,minfreespace_,basepaths);
   if(rv == -1)
     return -errno;
 
-  return _open_core(basepaths[0],fusepath,flags,fh);
+  return _open_core(basepaths[0],fusepath_,flags_,link_cow_,fh_);
 }
 
 namespace mergerfs
@@ -78,8 +84,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    open(const char     *fusepath,
-         fuse_file_info *ffi)
+    open(const char     *fusepath_,
+         fuse_file_info *ffi_)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
@@ -89,9 +95,10 @@ namespace mergerfs
       return _open(config.open,
                    config.srcmounts,
                    config.minfreespace,
-                   fusepath,
-                   ffi->flags,
-                   ffi->fh);
+                   fusepath_,
+                   ffi_->flags,
+                   config.link_cow,
+                   ffi_->fh);
     }
   }
 }

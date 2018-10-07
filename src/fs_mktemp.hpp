@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -20,23 +20,9 @@
 
 #include <string>
 
-#include <unistd.h>
-
 namespace fs
 {
-  static
-  inline
   int
-  unlink(const char *path_)
-  {
-    return ::unlink(path_);
-  }
-
-  static
-  inline
-  int
-  unlink(const std::string &path_)
-  {
-    return fs::unlink(path_.c_str());
-  }
+  mktemp(std::string &base_,
+         const int    flags_);
 }

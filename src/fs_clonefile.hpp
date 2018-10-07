@@ -16,12 +16,9 @@
 
 #pragma once
 
-#include <string>
-
 namespace fs
 {
-  int clonefile(const int fdin,
-                const int fdout);
-  int clonefile(const std::string &from,
-                const std::string &to);
+  int
+  clonefile(const int src_fd_,
+            const int dst_fd_);
 }
