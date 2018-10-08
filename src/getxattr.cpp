@@ -142,6 +142,28 @@ _getxattr_controlfile_bool(const bool  boolvalue,
 
 static
 void
+_getxattr_controlfile_errno(const int  errno_,
+                            string    &attrvalue)
+{
+  switch(errno_)
+    {
+    case 0:
+      attrvalue = "passthrough";
+      break;
+    case ENOATTR:
+      attrvalue = "noattr";
+      break;
+    case ENOTSUP:
+      attrvalue = "notsup";
+      break;
+    default:
+      attrvalue = "ERROR";
+      break;
+    }
+}
+
+static
+void
 _getxattr_controlfile_policies(const Config &config,
                                string       &attrvalue)
 {
@@ -210,6 +232,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_bool(config.ignorepponrename,attrvalue);
       else if(attr[2] == "security_capability")
         _getxattr_controlfile_bool(config.security_capability,attrvalue);
+      else if(attr[2] == "xattr")
+        _getxattr_controlfile_errno(config.xattr,attrvalue);
       else if(attr[2] == "link_cow")
         _getxattr_controlfile_bool(config.link_cow,attrvalue);
       else if(attr[2] == "policies")
@@ -347,15 +371,18 @@ namespace mergerfs
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
-      if((config.security_capability == false) &&
-         _is_attrname_security_capability(attrname))
-        return -ENOATTR;
-
       if(fusepath == config.controlfile)
         return _getxattr_controlfile(config,
                                      attrname,
                                      buf,
                                      count);
+
+      if((config.security_capability == false) &&
+         _is_attrname_security_capability(attrname))
+        return -ENOATTR;
+
+      if(config.xattr)
+        return -config.xattr;
 
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);

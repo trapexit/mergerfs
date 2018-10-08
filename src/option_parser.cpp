@@ -29,6 +29,7 @@
 #include <iomanip>
 
 #include "config.hpp"
+#include "errno.hpp"
 #include "fs_glob.hpp"
 #include "num.hpp"
 #include "policy.hpp"
@@ -150,6 +151,23 @@ parse_and_process(const std::string &value,
 
 static
 int
+parse_and_process_errno(const std::string &value_,
+                        int               &errno_)
+{
+  if(value_ == "passthrough")
+    errno_ = 0;
+  else if(value_ == "notsup")
+    errno_ = ENOTSUP;
+  else if(value_ == "noattr")
+    errno_ = ENOATTR;
+  else
+    return 1;
+
+  return 0;
+}
+
+static
+int
 parse_and_process_arg(Config            &config,
                       const std::string &arg,
                       fuse_args         *outargs)
@@ -199,6 +217,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.security_capability);
       else if(key == "link_cow")
         rv = parse_and_process(value,config.link_cow);
+      else if(key == "xattr")
+        rv = parse_and_process_errno(value,config.xattr);
     }
 
   if(rv == -1)
@@ -305,11 +325,17 @@ usage(void)
     "    -o ignorepponrename=<bool>\n"
     "                           Ignore path preserving when performing renames\n"
     "                           and links. default = false\n"
+    "    -o link_cow=<bool>     delink/clone file on open to simulate CoW.\n"
+    "                           default = false\n"
     "    -o security_capability=<bool>\n"
     "                           When disabled return ENOATTR when the xattr\n"
     "                           security.capability is queried. default = true\n"
-    "    -o link_cow=<bool>     delink/clone file on open to simulate CoW.\n"
-    "                           default = false\n"
+    "    -o xattr=passthrough|noattr|notsup\n"
+    "                           Runtime control of xattrs. By default xattr\n"
+    "                           requests will pass through to the underlying\n"
+    "                           filesystems. notattr will short circuit as if\n"
+    "                           nothing exists. notsup will respond as if not\n"
+    "                           supported or disabled. default = passthrough\n"
             << std::endl;
 }
 

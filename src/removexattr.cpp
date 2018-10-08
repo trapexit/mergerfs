@@ -96,7 +96,9 @@ namespace mergerfs
       const Config       &config = Config::get(fc);
 
       if(fusepath == config.controlfile)
-        return -ENOTSUP;
+        return -ENOATTR;
+      if(config.xattr)
+        return -config.xattr;
 
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);

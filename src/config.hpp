@@ -54,6 +54,7 @@ namespace mergerfs
     bool                     ignorepponrename;
     bool                     security_capability;
     bool                     link_cow;
+    int                      xattr;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];

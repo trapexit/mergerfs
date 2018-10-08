@@ -51,8 +51,9 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.symlinkify_timeout")
     ("user.mergerfs.nullrw")
     ("user.mergerfs.ignorepponrename")
-    ("user.mergerfs.security_capability")
     ("user.mergerfs.link_cow")
+    ("user.mergerfs.security_capability")
+    ("user.mergerfs.xattr")
     ("user.mergerfs.policies")
     ("user.mergerfs.version")
     ("user.mergerfs.pid");
@@ -114,6 +115,16 @@ namespace mergerfs
 
       if(fusepath == config.controlfile)
         return _listxattr_controlfile(list,size);
+
+      switch(config.xattr)
+        {
+        case 0:
+          break;
+        case ENOATTR:
+          return 0;
+        default:
+          return -config.xattr;
+        }
 
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);
