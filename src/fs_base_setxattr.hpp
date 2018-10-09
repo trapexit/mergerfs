@@ -34,8 +34,24 @@ namespace fs
             const size_t       size,
             const int          flags)
   {
-#ifndef WITHOUT_XATTR
+#ifdef USE_XATTR
     return ::lsetxattr(path.c_str(),name,value,size,flags);
+#else
+    return (errno=ENOTSUP,-1);
+#endif
+  }
+
+  static
+  inline
+  int
+  fsetxattr(const int     fd_,
+            const char   *name_,
+            const void   *value_,
+            const size_t  size_,
+            const int     flags_)
+  {
+#ifdef USE_XATTR
+    return ::fsetxattr(fd_,name_,value_,size_,flags_);
 #else
     return (errno=ENOTSUP,-1);
 #endif

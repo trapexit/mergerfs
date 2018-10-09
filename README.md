@@ -271,7 +271,7 @@ $ sudo apt-get -y update
 $ sudo apt-get -y install git make
 $ cd mergerfs
 $ make install-build-pkgs
-$ # build-essential git g++ debhelper libattr1-dev python automake libtool lsb-release
+$ # build-essential git g++ debhelper python automake libtool lsb-release
 $ make deb
 $ sudo dpkg -i ../mergerfs_version_arch.deb
 ```
@@ -283,14 +283,14 @@ $ su -
 # dnf -y install git make
 # cd mergerfs
 # make install-build-pkgs
-# # rpm-build libattr-devel gcc-c++ which python automake libtool gettext-devel
+# # rpm-build gcc-c++ which python automake libtool gettext-devel
 # make rpm
 # rpm -i rpmbuild/RPMS/<arch>/mergerfs-<verion>.<arch>.rpm
 ```
 
 #### Generically
 
-Have git, g++, make, python, libattr1, automake, libtool installed.
+Have git, g++, make, python, automake, libtool installed.
 
 ```
 $ cd mergerfs
@@ -302,7 +302,7 @@ $ sudo make install
 
 **NOTE:** Configurable threading and thus `-o threads=num` option will be unavailable when built with system libfuse.
 
-Have git, g++, make, python, libattr1, pkg-config installed.
+Have git, g++, make, python, pkg-config installed.
 Also, install libfuse >= 2.9.7 (but not libfuse-3.x) and matching libfuse-dev (or libfuse-devel).
 
 ```

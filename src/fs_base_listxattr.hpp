@@ -18,22 +18,48 @@
 
 #pragma once
 
-#include <sys/types.h>
-
 #include "errno.hpp"
 #include "xattr.hpp"
+
+#include <sys/types.h>
+
+#include <string>
 
 namespace fs
 {
   static
   inline
   int
-  llistxattr(const std::string &path,
-             char              *list,
-             const size_t       size)
+  llistxattr(const char   *path_,
+             char         *list_,
+             const size_t  size_)
   {
-#ifndef WITHOUT_XATTR
-    return ::llistxattr(path.c_str(),list,size);
+#ifdef USE_XATTR
+    return ::llistxattr(path_,list_,size_);
+#else
+    return (errno=ENOTSUP,-1);
+#endif
+  }
+
+  static
+  inline
+  int
+  llistxattr(const std::string &path_,
+             char              *list_,
+             const size_t       size_)
+  {
+    return fs::llistxattr(path_.c_str(),list_,size_);
+  }
+
+  static
+  inline
+  int
+  flistxattr(const int     fd_,
+             char         *list_,
+             const size_t  size_)
+  {
+#ifdef USE_XATTR
+    return ::flistxattr(fd_,list_,size_);
 #else
     return (errno=ENOTSUP,-1);
 #endif

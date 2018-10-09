@@ -14,22 +14,20 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include "errno.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_getxattr.hpp"
+#include "fs_base_listxattr.hpp"
+#include "fs_base_open.hpp"
+#include "fs_base_removexattr.hpp"
+#include "fs_base_setxattr.hpp"
+#include "str.hpp"
 
 #include <string>
 #include <vector>
 #include <map>
 #include <sstream>
 
-#include "errno.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_close.hpp"
-#include "str.hpp"
-#include "xattr.hpp"
 
 using std::string;
 using std::vector;
@@ -44,57 +42,49 @@ namespace fs
     list(const int     fd,
          vector<char> &attrs)
     {
-#ifndef WITHOUT_XATTR
       ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::flistxattr(fd,NULL,0);
+          rv = fs::flistxattr(fd,NULL,0);
           if(rv <= 0)
             return rv;
 
           attrs.resize(rv);
 
-          rv = ::flistxattr(fd,&attrs[0],rv);
+          rv = fs::flistxattr(fd,&attrs[0],rv);
         }
 
       return rv;
-#else
-      return (errno=ENOTSUP,-1);
-#endif
     }
 
     int
     list(const string &path,
          vector<char> &attrs)
     {
-#ifndef WITHOUT_XATTR
       ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::llistxattr(path.c_str(),NULL,0);
+          rv = fs::llistxattr(path,NULL,0);
           if(rv <= 0)
             return rv;
 
           attrs.resize(rv);
 
-          rv = ::llistxattr(path.c_str(),&attrs[0],rv);
+          rv = fs::llistxattr(path,&attrs[0],rv);
         }
 
       return rv;
-#else
-      return (errno=ENOTSUP,-1);
-#endif
     }
 
     int
     list(const int        fd,
-          vector<string> &attrvector)
+         vector<string> &attrvector)
     {
       int rv;
       vector<char> attrs;
@@ -159,26 +149,22 @@ namespace fs
         const string &attr,
         vector<char> &value)
     {
-#ifndef WITHOUT_XATTR
       ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::fgetxattr(fd,attr.c_str(),NULL,0);
+          rv = fs::fgetxattr(fd,attr,NULL,0);
           if(rv <= 0)
             return rv;
 
           value.resize(rv);
 
-          rv = ::fgetxattr(fd,attr.c_str(),&value[0],rv);
+          rv = fs::fgetxattr(fd,attr,&value[0],rv);
         }
 
       return rv;
-#else
-      return (errno=ENOTSUP,-1);
-#endif
     }
 
     int
@@ -186,26 +172,22 @@ namespace fs
         const string &attr,
         vector<char> &value)
     {
-#ifndef WITHOUT_XATTR
       ssize_t rv;
 
       rv    = -1;
       errno = ERANGE;
       while((rv == -1) && (errno == ERANGE))
         {
-          rv = ::lgetxattr(path.c_str(),attr.c_str(),NULL,0);
+          rv = fs::lgetxattr(path,attr,NULL,0);
           if(rv <= 0)
             return rv;
 
           value.resize(rv);
 
-          rv = ::lgetxattr(path.c_str(),attr.c_str(),&value[0],rv);
+          rv = fs::lgetxattr(path,attr,&value[0],rv);
         }
 
       return rv;
-#else
-      return (errno=ENOTSUP,-1);
-#endif
     }
 
     int
@@ -300,15 +282,11 @@ namespace fs
         const string &value,
         const int     flags)
     {
-#ifndef WITHOUT_XATTR
-      return ::fsetxattr(fd,
-                         key.c_str(),
-                         value.data(),
-                         value.size(),
-                         flags);
-#else
-      return (errno=ENOTSUP,-1);
-#endif
+      return fs::fsetxattr(fd,
+                           key.c_str(),
+                           value.data(),
+                           value.size(),
+                           flags);
     }
 
     int
@@ -317,15 +295,11 @@ namespace fs
         const string &value,
         const int     flags)
     {
-#ifndef WITHOUT_XATTR
-      return ::lsetxattr(path.c_str(),
-                         key.c_str(),
-                         value.data(),
-                         value.size(),
-                         flags);
-#else
-      return (errno=ENOTSUP,-1);
-#endif
+      return fs::lsetxattr(path.c_str(),
+                           key.c_str(),
+                           value.data(),
+                           value.size(),
+                           flags);
     }
 
     int
