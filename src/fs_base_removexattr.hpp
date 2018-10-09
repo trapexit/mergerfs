@@ -31,7 +31,7 @@ namespace fs
   lremovexattr(const std::string &path,
                const char        *attrname)
   {
-#ifndef WITHOUT_XATTR
+#ifdef USE_XATTR
     return ::lremovexattr(path.c_str(),attrname);
 #else
     return (errno=ENOTSUP,-1);

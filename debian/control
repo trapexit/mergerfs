@@ -2,8 +2,7 @@ Source: mergerfs
 Section: utils
 Priority: optional
 Maintainer: Antonio SJ Musumeci <trapexit@spawn.link>
-Build-Depends: debhelper (>= 8.0.0),
- libattr1-dev
+Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.4
 Homepage: http://github.com/trapexit/mergerfs
 

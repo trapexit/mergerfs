@@ -16,8 +16,21 @@
 
 #pragma once
 
-#ifndef WITHOUT_XATTR
-#include <attr/xattr.h>
+#if defined(__ANDROID__)
+# include <sys/cdefs.h>
+#elif defined(__APPLE__)
+# include <TargetConditionals.h>
+#elif defined(__linux__)
+# include <features.h>
+#endif
+
+#ifdef USE_XATTR
+# ifdef __GLIBC__
+#  include <sys/xattr.h>
+# else
+#  undef USE_XATTR
+#  warning "USE_XATTR unset: xattrs disabled"
+# endif
 #endif
 
 #ifndef XATTR_CREATE

@@ -41,7 +41,7 @@ ifeq ($(PANDOC),)
 $(warning "pandoc does not appear available: manpage won't be buildable")
 endif
 
-XATTR_AVAILABLE = $(shell test ! -e /usr/include/attr/xattr.h; echo $$?)
+USE_XATTR = 1
 
 INTERNAL_FUSE = 1
 EXTERNAL_FUSE_MIN_REQ = 2.9.7
@@ -73,6 +73,7 @@ CFLAGS      = -g -Wall \
               $(FUSE_CFLAGS) \
               -DFUSE_USE_VERSION=29 \
               -MMD \
+	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
 
 PREFIX        = /usr/local
@@ -88,17 +89,12 @@ INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
 INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
 INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
-ifeq ($(XATTR_AVAILABLE),0)
-$(warning "xattr not available: disabling")
-CFLAGS += -DWITHOUT_XATTR
-endif
-
 all: $(TARGET)
 
 help:
 	@echo "usage: make"
-	@echo "make XATTR_AVAILABLE=0 - to build program without xattrs functionality (auto discovered otherwise)"
-	@echo "make INTERNAL_FUSE=0   - to build program with external (system) libfuse rather than the bundled one ('-o threads=' option will be unavailable)"
+	@echo "make USE_XATTR=0      - build program without xattrs functionality"
+	@echo "make INTERNAL_FUSE=0  - to build program with external (system) libfuse rather than the bundled one ('-o threads=' option will be unavailable)"
 
 $(TARGET): version obj/obj-stamp $(FUSE_TARGET) $(OBJ)
 	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
@@ -218,13 +214,13 @@ install-build-pkgs:
 ifeq ($(shell test -e /usr/bin/apt-get; echo $$?),0)
 	apt-get -qy update
 	apt-get -qy --no-install-suggests --no-install-recommends --force-yes \
-		install build-essential git g++ debhelper libattr1-dev python automake libtool lsb-release
+		install build-essential git g++ debhelper python automake libtool lsb-release
 else ifeq ($(shell test -e /usr/bin/dnf; echo $$?),0)
 	dnf -y update
-	dnf -y install git rpm-build libattr-devel gcc-c++ make which python automake libtool gettext-devel
+	dnf -y install git rpm-build gcc-c++ make which python automake libtool gettext-devel
 else ifeq ($(shell test -e /usr/bin/yum; echo $$?),0)
 	yum -y update
-	yum -y install git rpm-build libattr-devel gcc-c++ make which python automake libtool gettext-devel
+	yum -y install git rpm-build gcc-c++ make which python automake libtool gettext-devel
 endif
 
 unexport CFLAGS
