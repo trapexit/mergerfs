@@ -16,6 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
 #include "fs_base_open.hpp"
 
 #include <fcntl.h>
