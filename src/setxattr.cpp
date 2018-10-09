@@ -33,11 +33,20 @@
 #include "str.hpp"
 #include "ugid.hpp"
 
+static const char SECURITY_CAPABILITY[] = "security.capability";
+
 using std::string;
 using std::vector;
 using mergerfs::Policy;
 using mergerfs::FuseFunc;
 using namespace mergerfs;
+
+static
+bool
+_is_attrname_security_capability(const char *attrname_)
+{
+  return (strcmp(attrname_,SECURITY_CAPABILITY) == 0);
+}
 
 static
 int
@@ -410,6 +419,13 @@ namespace mergerfs
                                      attrname,
                                      string(attrval,attrvalsize),
                                      flags);
+
+      if((config.security_capability == false) &&
+         _is_attrname_security_capability(attrname))
+        return -ENOATTR;
+
+      if(config.xattr)
+        return -config.xattr;
 
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.srcmountslock);

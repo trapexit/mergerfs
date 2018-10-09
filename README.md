@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-10-05
+% 2018-10-08
 
 # NAME
 
@@ -72,6 +72,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **nullrw=true|false**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
 * **ignorepponrename=true|false**: ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
 * **security_capability=true|false**: If false return ENOATTR when xattr security.capability is queried. (default: true)
+* **xattr=passthrough|noattr|notsup**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'notsup' will respond with ENOTSUP as if xattrs are not supported or disabled. (default: passthrough)
 * **link_cow=true|false**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
 * **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores) *NOTE2:* the option is unavailable when built with system libfuse.
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
@@ -141,6 +142,14 @@ $ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024
 ```
 
 It's important to test with different `obs` (output block size) values since the relative overhead is greater with smaller values. As you can see above the size of a read or write can massively impact theoretical performance. If an application performs much worse through mergerfs it could very well be that it doesn't optimally size its read and write requests.
+
+### xattr
+
+Runtime extended attribute support can be managed via the `xattr` option. By default it will passthrough any xattr calls. Given xattr support is rarely used and can have significant performance implications mergerfs allows it to be disabled at runtime.
+
+`noattr` will cause mergerfs to short circuit all xattr calls and return ENOATTR where appropriate. mergerfs still gets all the requests but they will not be forwarded on to the underlying filesystems. The runtime control will still function in this mode.
+
+`notsup` will cause mergerfs to return ENOTSUP for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This will be more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
@@ -311,8 +320,6 @@ $ sudo make INTERNAL_FUSE=0 install
 
 There is a pseudo file available at the mount point which allows for the runtime modification of certain **mergerfs** options. The file will not show up in **readdir** but can be **stat**'ed and manipulated via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls.
 
-Even if xattrs are disabled for mergerfs the [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls against this pseudo file will still work.
-
 Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (/etc/fstab).
 
 ##### Keys #####
@@ -414,7 +421,7 @@ A B C
   * mergerfs.balance: Rebalance files across drives by moving them from the most filled to the least filled
   * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 * https://github.com/trapexit/scorch
-  * scorch: A tool to help discover silent corruption of files
+  * scorch: A tool to help discover silent corruption of files and keep track of files
 * https://github.com/trapexit/bbf
   * bbf (bad block finder): a tool to scan for and 'fix' hard drive bad blocks and find the files using those blocks
 
@@ -745,6 +752,8 @@ and the kernel use internally (also called the "nodeid").
 #### I notice massive slowdowns of writes over NFS
 
 Due to how NFS works and interacts with FUSE when not using `direct_io` its possible that a getxattr for `security.capability` will be issued prior to any write. This will usually result in a massive slowdown for writes. Using `direct_io` will keep this from happening (and generally good to enable unless you need the features it disables) but the `security_capability` option can also help by short circuiting the call and returning `ENOATTR`.
+
+You could also set `xattr` to `noattr` or `notsup` to short circuit or stop all xattr requests.
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
