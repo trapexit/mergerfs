@@ -1,0 +1,87 @@
+/*
+  ISC License
+
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#define _GNU_SOURCE
+
+#include "errno.hpp"
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
+static
+loff_t
+copy_file_range_(int           fd_in_,
+                 loff_t       *off_in_,
+                 int           fd_out_,
+                 loff_t       *off_out_,
+                 size_t        len_,
+                 unsigned int  flags_)
+{
+#ifdef SYS_copy_file_range
+  return ::syscall(SYS_copy_file_range,
+                   fd_in_,
+                   off_in_,
+                   fd_out_,
+                   off_out_,
+                   len_,
+                   flags_);
+#else
+  return (errno=EOPNOTSUPP,-1);
+#endif
+}
+
+namespace fs
+{
+  ssize_t
+  copy_file_range(const int           fd_in_,
+                  loff_t             *off_in_,
+                  const int           fd_out_,
+                  loff_t             *off_out_,
+                  const size_t        len_,
+                  const unsigned int  flags_)
+  {
+    return ::copy_file_range_(fd_in_,
+                              off_in_,
+                              fd_out_,
+                              off_out_,
+                              len_,
+                              flags_);
+  }
+
+  ssize_t
+  copy_file_range(const int           fd_in_,
+                  const int           fd_out_,
+                  const size_t        len_,
+                  const unsigned int  flags_)
+  {
+    loff_t off_in;
+    loff_t off_out;
+
+    off_in  = 0;
+    off_out = 0;
+
+    return fs::copy_file_range(fd_in_,
+                               &off_in,
+                               fd_out_,
+                               &off_out,
+                               len_,
+                               flags_);
+  }
+}

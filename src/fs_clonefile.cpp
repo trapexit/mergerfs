@@ -18,106 +18,22 @@
 #include "fs_attr.hpp"
 #include "fs_base_chmod.hpp"
 #include "fs_base_chown.hpp"
-#include "fs_base_close.hpp"
 #include "fs_base_fadvise.hpp"
 #include "fs_base_fallocate.hpp"
-#include "fs_base_lseek.hpp"
-#include "fs_base_mkdir.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_read.hpp"
+#include "fs_base_ftruncate.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_base_utime.hpp"
-#include "fs_base_write.hpp"
+#include "fs_copy_file_range.hpp"
+#include "fs_copyfile.hpp"
+#include "fs_ficlone.hpp"
 #include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
-
-#include <fcntl.h>
-#include <stdlib.h>
-
-#include <string>
-#include <vector>
-
-#ifndef O_LARGEFILE
-# define O_LARGEFILE 0
-#endif
-
-#ifndef O_NOATIME
-# define O_NOATIME 0
-#endif
-
-using std::string;
-using std::vector;
-
-int
-writen(const int     fd_,
-       const char   *buf_,
-       const size_t  count_)
-{
-  size_t nleft;
-  ssize_t nwritten;
-
-  nleft = count_;
-  do
-    {
-      nwritten = fs::write(fd_,buf_,nleft);
-      if((nwritten == -1) && (errno == EINTR))
-        continue;
-      if(nwritten == -1)
-        return -1;
-
-      nleft -= nwritten;
-      buf_  += nwritten;
-    }
-  while(nleft > 0);
-
-  return count_;
-}
-
-static
-int
-copyfile_rw(const int    src_fd_,
-            const int    dst_fd_,
-            const size_t count_,
-            const size_t blocksize_)
-{
-  ssize_t nr;
-  ssize_t nw;
-  ssize_t bufsize;
-  size_t  totalwritten;
-  vector<char> buf;
-
-  bufsize = (blocksize_ * 16);
-  buf.resize(bufsize);
-
-  fs::lseek(src_fd_,0,SEEK_SET);
-
-  totalwritten = 0;
-  while(totalwritten < count_)
-    {
-      nr = fs::read(src_fd_,&buf[0],bufsize);
-      if(nr == 0)
-        return totalwritten;
-      if((nr == -1) && (errno == EINTR))
-        continue;
-      if(nr == -1)
-        return -1;
-
-      nw = writen(dst_fd_,&buf[0],nr);
-      if(nw == -1)
-        return -1;
-
-      totalwritten += nw;
-    }
-
-  return totalwritten;
-}
 
 static
 int
 copydata(const int    src_fd_,
          const int    dst_fd_,
-         const size_t count_,
-         const size_t blocksize_)
+         const size_t count_)
 {
   int rv;
 
@@ -125,12 +41,21 @@ copydata(const int    src_fd_,
   fs::fadvise_sequential(src_fd_,0,count_);
 
   fs::fallocate(dst_fd_,0,0,count_);
+  fs::ftruncate(dst_fd_,count_);
+
+  rv = fs::ficlone(src_fd_,dst_fd_);
+  if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
+    return rv;
+
+  rv = fs::copy_file_range(src_fd_,dst_fd_,count_);
+  if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
+    return rv;
 
   rv = fs::sendfile(src_fd_,dst_fd_,count_);
-  if((rv == -1) && ((errno == EINVAL) || (errno == ENOSYS)))
-    return ::copyfile_rw(src_fd_,dst_fd_,count_,blocksize_);
+  if((rv != -1) || ((rv == -1) && (errno != EINVAL) && (errno != ENOSYS)))
+    return rv;
 
-  return rv;
+  return fs::copyfile(src_fd_,dst_fd_);
 }
 
 static
@@ -163,7 +88,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    rv = ::copydata(src_fd_,dst_fd_,src_st.st_size,src_st.st_blksize);
+    rv = ::copydata(src_fd_,dst_fd_,src_st.st_size);
     if(rv == -1)
       return -1;
 
