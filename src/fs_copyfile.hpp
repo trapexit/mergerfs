@@ -1,6 +1,4 @@
 /*
-  ISC License
-
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -18,27 +16,9 @@
 
 #pragma once
 
-#include <sys/ioctl.h>
-
 namespace fs
 {
-  static
-  inline
   int
-  ioctl(const int            fd_,
-        const unsigned long  request_,
-        void                *data_)
-  {
-    return ::ioctl(fd_,request_,data_);
-  }
-
-  static
-  inline
-  int
-  ioctl(const int           fd_,
-        const unsigned long request_,
-        const int           int_)
-  {
-    return ::ioctl(fd_,request_,int_);
-  }
+  copyfile(const int src_fd_,
+           const int dst_fd_);
 }

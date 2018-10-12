@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,29 +16,27 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
-
-#include <sys/ioctl.h>
+#include <cstddef>
 
 namespace fs
 {
-  static
-  inline
-  int
-  ioctl(const int            fd_,
-        const unsigned long  request_,
-        void                *data_)
+  ssize_t
+  copy_file_range(const int           fd_in_,
+                  loff_t             *off_in_,
+                  const int           fd_out_,
+                  loff_t             *off_out_,
+                  const size_t        len_,
+                  const unsigned int  flags_)
   {
-    return ::ioctl(fd_,request_,data_);
+    return (errno=EOPNOTSUPP,-1);
   }
 
-  static
-  inline
-  int
-  ioctl(const int           fd_,
-        const unsigned long request_,
-        const int           int_)
+  ssize_t
+  copy_file_range(const int           fd_in_,
+                  const int           fd_out_,
+                  const size_t        len_,
+                  const unsigned int  flags_)
   {
-    return ::ioctl(fd_,request_,int_);
+    return (errno=EOPNOTSUPP,-1);
   }
 }
