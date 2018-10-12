@@ -56,11 +56,11 @@ _mfs_create(const vector<string>  &basepaths,
     }
 
   if(mfsbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(mfsbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -94,11 +94,11 @@ _mfs_other(const vector<string>  &basepaths,
     }
 
   if(mfsbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(mfsbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -126,7 +126,7 @@ namespace mergerfs
     int rv;
 
     rv = _mfs(type,basepaths,fusepath,paths);
-    if(POLICY_FAILED(rv))
+    if(rv == -1)
       rv = Policy::Func::ff(type,basepaths,fusepath,minfreespace,paths);
 
     return rv;

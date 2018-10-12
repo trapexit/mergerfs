@@ -112,13 +112,13 @@ _rename_create_path(Policy::Func::Search  searchFunc,
   vector<const string*> oldbasepaths;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
-  if(POLICY_FAILED(rv))
+  if(rv == -1)
     return -errno;
 
   string newfusedirpath = newfusepath;
   fs::path::dirname(newfusedirpath);
-  rv = searchFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepath);
-  if(POLICY_FAILED(rv))
+  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  if(rv == -1)
     return -errno;
 
   error = -1;
@@ -151,13 +151,13 @@ _clonepath(Policy::Func::Search  searchFunc,
   int rv;
   vector<const string*> srcbasepath;
 
-  rv = searchFunc(srcmounts,fusedirpath.c_str(),minfreespace,srcbasepath);
-  if(POLICY_FAILED(rv))
+  rv = searchFunc(srcmounts,fusedirpath,minfreespace,srcbasepath);
+  if(rv == -1)
     return -errno;
 
   fs::clonepath_as_root(*srcbasepath[0],dstbasepath,fusedirpath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -176,14 +176,14 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
   newfusedirpath = newfusepath;
   fs::path::dirname(newfusedirpath);
-  rv = createFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepath);
-  if(POLICY_FAILED(rv))
+  rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  if(rv == -1)
     return rv;
 
   if(oldbasepath == *newbasepath[0])
     return _clonepath(searchFunc,srcmounts,minfreespace,oldbasepath,newfusedirpath);
 
-  return POLICY_FAIL_ERRNO(EXDEV);
+  return (errno=EXDEV,-1);
 }
 
 static
@@ -218,7 +218,7 @@ _rename_preserve_path_core(Policy::Func::Search         searchFunc,
           rv = _clonepath_if_would_create(searchFunc,createFunc,
                                           srcmounts,minfreespace,
                                           oldbasepath,oldfusepath,newfusepath);
-          if(POLICY_SUCCEEDED(rv))
+          if(rv == 0)
             rv = fs::rename(oldfullpath,newfullpath);
         }
 
@@ -248,7 +248,7 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
   vector<const string*> oldbasepaths;
 
   rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
-  if(POLICY_FAILED(rv))
+  if(rv == -1)
     return -errno;
 
   error = -1;

@@ -59,15 +59,15 @@ _epff_create(const vector<string>  &basepaths,
 
       paths.push_back(basepath);
 
-      return POLICY_SUCCESS;
+      return 0;
     }
 
   if(fallback == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(fallback);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -89,10 +89,10 @@ _epff_other(const vector<string>  &basepaths,
 
       paths.push_back(basepath);
 
-      return POLICY_SUCCESS;
+      return 0;
     }
 
-  return POLICY_FAIL_ENOENT;
+  return (errno=ENOENT,-1);
 }
 
 static
@@ -122,7 +122,7 @@ namespace mergerfs
     int rv;
 
     rv = _epff(type,basepaths,fusepath,minfreespace,paths);
-    if(POLICY_FAILED(rv))
+    if(rv == -1)
       rv = Policy::Func::ff(type,basepaths,fusepath,minfreespace,paths);
 
     return rv;
