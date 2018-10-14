@@ -14,14 +14,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_info.hpp"
+#include "fs_path.hpp"
+#include "policy.hpp"
+
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_path.hpp"
-#include "policy.hpp"
 
 using std::string;
 using std::vector;
@@ -30,32 +31,34 @@ using mergerfs::Category;
 static
 int
 _lfs_create(const vector<string>  &basepaths,
+            const string          &fusepath,
             const uint64_t         minfreespace,
             vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t lfs;
+  string fullpath;
+  fs::info_t info;
+  const string *basepath;
   const string *lfsbasepath;
 
   lfs = std::numeric_limits<uint64_t>::max();
   lfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t _spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      rv = fs::r_info(basepath,&fusepath,&info);
+      if(rv == -1)
         continue;
-      if(readonly)
+      if(info.readonly)
         continue;
-      if(spaceavail < minfreespace)
+      if(info.spaceavail < minfreespace)
         continue;
-      if(spaceavail > lfs)
+      if(info.spaceavail > lfs)
         continue;
 
-      lfs = spaceavail;
+      lfs = info.spaceavail;
       lfsbasepath = basepath;
     }
 
@@ -70,25 +73,26 @@ _lfs_create(const vector<string>  &basepaths,
 static
 int
 _lfs_other(const vector<string>  &basepaths,
-           const char            *fusepath,
+           const string          &fusepath,
            vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t lfs;
+  uint64_t spaceavail;
+  string fullpath;
+  const string *basepath;
   const string *lfsbasepath;
 
   lfs = std::numeric_limits<uint64_t>::max();
   lfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      uint64_t spaceavail;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,&fusepath);
 
-      if(!fs::exists(fullpath))
-        continue;
-      if(!fs::spaceavail(*basepath,spaceavail))
+      rv = fs::spaceavail(basepath,&spaceavail);
+      if(rv == -1)
         continue;
       if(spaceavail > lfs)
         continue;
@@ -109,12 +113,14 @@ static
 int
 _lfs(const Category::Enum::Type  type,
      const vector<string>       &basepaths,
-     const char                 *fusepath,
+     const char                 *fusepath_,
      const uint64_t              minfreespace,
      vector<const string*>      &paths)
 {
+  string fusepath(fusepath_);
+
   if(type == Category::Enum::create)
-    return _lfs_create(basepaths,minfreespace,paths);
+    return _lfs_create(basepaths,fusepath,minfreespace,paths);
 
   return _lfs_other(basepaths,fusepath,paths);
 }

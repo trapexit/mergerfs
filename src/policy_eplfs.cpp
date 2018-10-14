@@ -14,14 +14,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_info.hpp"
+#include "fs_path.hpp"
+#include "policy.hpp"
+
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_path.hpp"
-#include "policy.hpp"
 
 using std::string;
 using std::vector;
@@ -34,33 +35,32 @@ _eplfs_create(const vector<string>  &basepaths,
               const uint64_t         minfreespace,
               vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t eplfs;
+  string fullpath;
+  fs::info_t info;
+  const string *basepath;
   const string *eplfsbasepath;
 
   eplfs = std::numeric_limits<uint64_t>::max();
   eplfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t _spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,fusepath);
 
-      if(!fs::exists(fullpath))
+      rv = fs::info(&fullpath,&info);
+      if(rv == -1)
         continue;
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      if(info.readonly)
         continue;
-      if(readonly)
+      if(info.spaceavail < minfreespace)
         continue;
-      if(spaceavail < minfreespace)
-        continue;
-      if(spaceavail > eplfs)
+      if(info.spaceavail > eplfs)
         continue;
 
-      eplfs = spaceavail;
+      eplfs = info.spaceavail;
       eplfsbasepath = basepath;
     }
 
@@ -78,22 +78,23 @@ _eplfs_other(const vector<string>  &basepaths,
              const char            *fusepath,
              vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t eplfs;
+  uint64_t spaceavail;
+  string fullpath;
+  const string *basepath;
   const string *eplfsbasepath;
 
   eplfs = std::numeric_limits<uint64_t>::max();
   eplfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      uint64_t spaceavail;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,fusepath);
 
-      if(!fs::exists(fullpath))
-        continue;
-      if(!fs::spaceavail(*basepath,spaceavail))
+      rv = fs::spaceavail(basepath,&spaceavail);
+      if(rv == -1)
         continue;
       if(spaceavail > eplfs)
         continue;

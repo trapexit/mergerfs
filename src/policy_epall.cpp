@@ -14,13 +14,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "errno.hpp"
 #include "fs.hpp"
+#include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -32,24 +33,23 @@ _epall_create(const vector<string>  &basepaths,
               const uint64_t         minfreespace,
               vector<const string*> &paths)
 {
+  int rv;
   string fullpath;
+  fs::info_t info;
+  const string *basepath;
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t _spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,fusepath);
 
-      if(!fs::exists(fullpath))
+      rv = fs::info(&fullpath,&info);
+      if(rv == -1)
         continue;
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      if(info.readonly)
         continue;
-      if(readonly)
-        continue;
-      if(spaceavail < minfreespace)
+      if(info.spaceavail < minfreespace)
         continue;
 
       paths.push_back(basepath);
@@ -68,12 +68,13 @@ _epall_other(const vector<string>  &basepaths,
              vector<const string*> &paths)
 {
   string fullpath;
+  const string *basepath;
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       if(!fs::exists(fullpath))
         continue;

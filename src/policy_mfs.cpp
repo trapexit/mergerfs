@@ -14,13 +14,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "errno.hpp"
 #include "fs.hpp"
+#include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -29,29 +30,31 @@ using mergerfs::Category;
 static
 int
 _mfs_create(const vector<string>  &basepaths,
+            const string          &fusepath,
             vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t mfs;
+  string fullpath;
+  fs::info_t info;
+  const string *basepath;
   const string *mfsbasepath;
 
   mfs = 0;
   mfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t _spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      rv = fs::r_info(basepath,&fusepath,&info);
+      if(rv == -1)
         continue;
-      if(readonly)
+      if(info.readonly)
         continue;
-      if(spaceavail < mfs)
+      if(info.spaceavail < mfs)
         continue;
 
-      mfs = spaceavail;
+      mfs = info.spaceavail;
       mfsbasepath = basepath;
     }
 
@@ -66,25 +69,26 @@ _mfs_create(const vector<string>  &basepaths,
 static
 int
 _mfs_other(const vector<string>  &basepaths,
-           const char            *fusepath,
+           const string          &fusepath,
            vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t mfs;
+  uint64_t spaceavail;
+  string fullpath;
+  const string *basepath;
   const string *mfsbasepath;
 
   mfs = 0;
   mfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      uint64_t spaceavail;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,&fusepath);
 
-      if(!fs::exists(fullpath))
-        continue;
-      if(!fs::spaceavail(*basepath,spaceavail))
+      rv = fs::spaceavail(basepath,&spaceavail);
+      if(rv == -1)
         continue;
       if(spaceavail < mfs)
         continue;
@@ -105,11 +109,13 @@ static
 int
 _mfs(const Category::Enum::Type  type,
      const vector<string>       &basepaths,
-     const char                 *fusepath,
+     const char                 *fusepath_,
      vector<const string*>      &paths)
 {
+  string fusepath(fusepath_);
+
   if(type == Category::Enum::create)
-    return _mfs_create(basepaths,paths);
+    return _mfs_create(basepaths,fusepath,paths);
 
   return _mfs_other(basepaths,fusepath,paths);
 }

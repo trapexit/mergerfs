@@ -70,8 +70,7 @@ namespace fs
     if((relative == NULL) || (relative[0] == '\0'))
       return 0;
 
-    dirname = relative;
-    fs::path::dirname(dirname);
+    dirname = fs::path::dirname(relative);
     if(!dirname.empty())
       {
         rv = fs::clonepath(fromsrc,tosrc,dirname);

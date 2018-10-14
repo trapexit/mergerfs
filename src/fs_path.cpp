@@ -29,24 +29,37 @@ namespace fs
 {
   namespace path
   {
-    void
-    dirname(string &path)
+    string
+    dirname(const char *path_)
     {
+      string path(path_);
+
+      return fs::path::dirname(&path);
+    }
+
+    string
+    dirname(const string *path_)
+    {
+      string rv;
       string::reverse_iterator i;
-      string::reverse_iterator bi;
+      string::reverse_iterator ei;
 
-      bi = path.rend();
-      i  = path.rbegin();
-      while(*i == '/' && i != bi)
+      rv = *path_;
+
+      i  = rv.rbegin();
+      ei = rv.rend();
+      while(*i == '/' && i != ei)
         i++;
 
-      while(*i != '/' && i != bi)
+      while(*i != '/' && i != ei)
         i++;
 
-      while(*i == '/' && i != bi)
+      while(*i == '/' && i != ei)
         i++;
 
-      path.erase(i.base(),path.end());
+      rv.erase(i.base(),rv.end());
+
+      return rv;
     }
 
     string

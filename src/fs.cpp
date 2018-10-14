@@ -31,7 +31,6 @@
 #include "fs_xattr.hpp"
 #include "statvfs_util.hpp"
 #include "str.hpp"
-#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -46,7 +45,7 @@ namespace fs
 
     rv = fs::lstat(path,st);
 
-    return LSTAT_SUCCEEDED(rv);
+    return (rv == 0);
   }
 
   bool
@@ -57,63 +56,46 @@ namespace fs
     return exists(path,st);
   }
 
-  bool
-  info(const string &path,
-       bool         &readonly,
-       uint64_t     &spaceavail,
-       uint64_t     &spaceused)
+  int
+  readonly(const string *path_,
+           bool         *readonly_)
   {
     int rv;
     struct statvfs st;
 
-    rv = fs::statvfs(path,st);
-    if(STATVFS_SUCCEEDED(rv))
-      {
-        readonly   = StatVFS::readonly(st);
-        spaceavail = StatVFS::spaceavail(st);
-        spaceused  = StatVFS::spaceused(st);
-      }
+    rv = fs::lstatvfs(path_,&st);
+    if(rv == 0)
+      *readonly_ = StatVFS::readonly(st);
 
-    return STATVFS_SUCCEEDED(rv);
+    return rv;
   }
 
-  bool
-  readonly(const string &path)
+  int
+  spaceavail(const string *path_,
+             uint64_t     *spaceavail_)
   {
     int rv;
     struct statvfs st;
 
-    rv = fs::statvfs(path,st);
+    rv = fs::lstatvfs(path_,&st);
+    if(rv == 0)
+      *spaceavail_ = StatVFS::spaceavail(st);
 
-    return (STATVFS_SUCCEEDED(rv) && StatVFS::readonly(st));
+    return rv;
   }
 
-  bool
-  spaceavail(const string &path,
-             uint64_t       &spaceavail)
+  int
+  spaceused(const string *path_,
+            uint64_t     *spaceused_)
   {
     int rv;
     struct statvfs st;
 
-    rv = fs::statvfs(path,st);
-    if(STATVFS_SUCCEEDED(rv))
-      spaceavail = StatVFS::spaceavail(st);
+    rv = fs::lstatvfs(path_,&st);
+    if(rv == 0)
+      *spaceused_ = StatVFS::spaceused(st);
 
-    return STATVFS_SUCCEEDED(rv);
-  }
-
-  bool
-  spaceused(const string &path,
-            uint64_t     &spaceused)
-  {
-    int rv;
-    struct statvfs st;
-
-    rv = fs::statvfs(path,st);
-    if(STATVFS_SUCCEEDED(rv))
-      spaceused = StatVFS::spaceused(st);
-
-    return STATVFS_SUCCEEDED(rv);
+    return rv;
   }
 
   void
@@ -146,7 +128,7 @@ namespace fs
     struct stat st;
 
     rv = fs::fstat(fd,st);
-    if(FSTAT_FAILED(rv))
+    if(rv == -1)
       return -1;
 
     dev = st.st_dev;
@@ -155,7 +137,7 @@ namespace fs
         fs::path::make(&srcmounts[i],fusepath,fullpath);
 
         rv = fs::lstat(fullpath,st);
-        if(FSTAT_FAILED(rv))
+        if(rv == -1)
           continue;
 
         if(st.st_dev != dev)
@@ -204,19 +186,21 @@ namespace fs
       const uint64_t        minfreespace,
       string               &path)
   {
+    int rv;
     uint64_t mfs;
+    uint64_t spaceavail;
+    const string *basepath;
     const string *mfsbasepath;
 
     mfs = 0;
     mfsbasepath = NULL;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        uint64_t spaceavail;
-        const string &basepath = basepaths[i];
+        basepath = &basepaths[i];
 
-        if(!fs::spaceavail(basepath,spaceavail))
+        rv = fs::spaceavail(basepath,&spaceavail);
+        if(rv == -1)
           continue;
-
         if(spaceavail < minfreespace)
           continue;
         if(spaceavail <= mfs)

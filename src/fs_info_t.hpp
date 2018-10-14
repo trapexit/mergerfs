@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,24 +16,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
-#include "policy.hpp"
+#pragma once
 
-#include <string>
-#include <vector>
+#include <stdint.h>
 
-using std::string;
-using std::vector;
-
-namespace mergerfs
+namespace fs
 {
-  int
-  Policy::Func::invalid(const Category::Enum::Type  type,
-                        const vector<string>       &basepaths,
-                        const char                 *fusepath,
-                        const uint64_t              minfreespace,
-                        vector<const string*>      &paths)
+  struct info_t
   {
-    return (errno=EINVAL,-1);
-  }
+    bool     readonly;
+    uint64_t spaceavail;
+    uint64_t spaceused;
+  };
 }

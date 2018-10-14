@@ -14,13 +14,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "errno.hpp"
 #include "fs.hpp"
+#include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -28,26 +29,28 @@ using std::vector;
 static
 int
 _ff_create(const vector<string>  &basepaths,
+           const string          &fusepath,
            const uint64_t         minfreespace,
            vector<const string*> &paths)
 {
+  int rv;
+  fs::info_t info;
+  const string *basepath;
   const string *fallback;
 
   fallback = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t _spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      rv = fs::r_info(basepath,&fusepath,&info);
+      if(rv == -1)
         continue;
-      if(readonly)
+      if(info.readonly)
         continue;
       if(fallback == NULL)
         fallback = basepath;
-      if(spaceavail < minfreespace)
+      if(info.spaceavail < minfreespace)
         continue;
 
       paths.push_back(basepath);
@@ -66,16 +69,17 @@ _ff_create(const vector<string>  &basepaths,
 static
 int
 _ff_other(const vector<string>  &basepaths,
-          const char            *fusepath,
+          const string          &fusepath,
           vector<const string*> &paths)
 {
   string fullpath;
+  const string *basepath;
 
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,&fusepath);
 
       if(!fs::exists(fullpath))
         continue;
@@ -93,12 +97,14 @@ namespace mergerfs
   int
   Policy::Func::ff(const Category::Enum::Type  type,
                    const vector<string>       &basepaths,
-                   const char                 *fusepath,
+                   const char                 *fusepath_,
                    const uint64_t              minfreespace,
                    vector<const string*>      &paths)
   {
+    string fusepath(fusepath_);
+
     if(type == Category::Enum::create)
-      return _ff_create(basepaths,minfreespace,paths);
+      return _ff_create(basepaths,fusepath,minfreespace,paths);
 
     return _ff_other(basepaths,fusepath,paths);
   }

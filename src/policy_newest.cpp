@@ -24,7 +24,6 @@
 #include "fs.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
-#include "success_fail.hpp"
 
 using std::string;
 using std::vector;
@@ -35,25 +34,30 @@ _newest_create(const vector<string>  &basepaths,
                const char            *fusepath,
                vector<const string*> &paths)
 {
+  int rv;
+  bool readonly;
   time_t newest;
   string fullpath;
+  struct stat st;
+  const string *basepath;
   const string *newestbasepath;
 
   newest = std::numeric_limits<time_t>::min();
   newestbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
+      basepath = &basepaths[i];
 
-      struct stat st;
-      const string *basepath = &basepaths[i];
-
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       if(!fs::exists(fullpath,st))
         continue;
       if(st.st_mtime < newest)
         continue;
-      if(fs::readonly(*basepath))
+      rv = fs::readonly(basepath,&readonly);
+      if(rv == -1)
+        continue;
+      if(readonly)
         continue;
 
       newest = st.st_mtime;
@@ -75,17 +79,18 @@ _newest_other(const vector<string>  &basepaths,
               vector<const string*> &paths)
 {
   time_t newest;
+  struct stat st;
   string fullpath;
+  const string *basepath;
   const string *newestbasepath;
 
   newest = std::numeric_limits<time_t>::min();
   newestbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      struct stat st;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
+      fullpath = fs::path::make(basepath,fusepath);
 
       if(!fs::exists(fullpath,st))
         continue;

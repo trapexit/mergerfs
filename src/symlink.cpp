@@ -92,8 +92,7 @@ _symlink(Policy::Func::Search  searchFunc,
   vector<const string*> newbasepaths;
   vector<const string*> existingpaths;
 
-  newdirpath = newpath;
-  fs::path::dirname(newdirpath);
+  newdirpath = fs::path::dirname(newpath);
 
   rv = searchFunc(srcmounts,newdirpath,minfreespace,existingpaths);
   if(rv == -1)

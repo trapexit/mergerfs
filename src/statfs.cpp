@@ -27,7 +27,6 @@
 #include "fs_base_stat.hpp"
 #include "fs_base_statvfs.hpp"
 #include "rwlock.hpp"
-#include "success_fail.hpp"
 #include "ugid.hpp"
 
 using std::string;
@@ -76,11 +75,11 @@ _statfs_core(const char                *srcmount,
   struct statvfs fsstat;
 
   rv = fs::statvfs(srcmount,fsstat);
-  if(STATVFS_FAILED(rv))
+  if(rv == -1)
     return;
 
   rv = fs::stat(srcmount,st);
-  if(STAT_FAILED(rv))
+  if(rv == -1)
     return;
 
   if(fsstat.f_bsize   && (min_bsize > fsstat.f_bsize))
