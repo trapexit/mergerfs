@@ -14,14 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_exists.hpp"
+#include "fs_info.hpp"
+#include "fs_path.hpp"
+#include "policy.hpp"
+
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_path.hpp"
-#include "policy.hpp"
 
 using std::string;
 using std::vector;
@@ -33,29 +35,29 @@ _lus_create(const vector<string>  &basepaths,
             const uint64_t         minfreespace,
             vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t lus;
+  fs::info_t info;
+  const string *basepath;
   const string *lusbasepath;
 
   lus = std::numeric_limits<uint64_t>::max();
   lusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceused;
-      uint64_t spaceavail;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      if(!fs::info(*basepath,readonly,spaceavail,spaceused))
+      rv = fs::info(basepath,&info);
+      if(rv == -1)
         continue;
-      if(readonly)
+      if(info.readonly)
         continue;
-      if(spaceavail < minfreespace)
+      if(info.spaceavail < minfreespace)
         continue;
-      if(spaceused >= lus)
+      if(info.spaceused >= lus)
         continue;
 
-      lus = spaceused;
+      lus = info.spaceused;
       lusbasepath = basepath;
     }
 
@@ -73,22 +75,22 @@ _lus_other(const vector<string>  &basepaths,
            const char            *fusepath,
            vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t lus;
+  uint64_t spaceused;
+  const string *basepath;
   const string *lusbasepath;
 
   lus = 0;
   lusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      uint64_t spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
-
-      if(!fs::exists(fullpath))
+      if(!fs::exists(*basepath,fusepath))
         continue;
-      if(!fs::spaceused(*basepath,spaceused))
+      rv = fs::spaceused(basepath,&spaceused);
+      if(rv == -1)
         continue;
       if(spaceused >= lus)
         continue;

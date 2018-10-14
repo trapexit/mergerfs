@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <string.h>
-
 #include "khash.h"
+
+#include <string.h>
 
 KHASH_SET_INIT_STR(strset);
 
@@ -36,7 +36,7 @@ public:
   {
     for(khint_t k = kh_begin(_set), ek = kh_end(_set); k != ek; k++)
       if(kh_exist(_set,k))
-        free((char*)kh_key(_set,k));
+        ::free((char*)kh_key(_set,k));
 
     kh_destroy(strset,_set);
   }
@@ -52,7 +52,7 @@ public:
     if(rv == 0)
       return 0;
 
-    kh_key(_set,key) = strdup(str);
+    kh_key(_set,key) = ::strdup(str);
 
     return rv;
   }
