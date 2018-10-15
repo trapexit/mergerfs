@@ -16,19 +16,12 @@
 
 #pragma once
 
+#include "category.hpp"
+#include "fs.hpp"
+
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
-
-#include "fs.hpp"
-#include "category.hpp"
-
-#define POLICY_SUCCESS 0
-#define POLICY_FAIL -1
-#define POLICY_SUCCEEDED(RV) ((RV) == POLICY_SUCCESS)
-#define POLICY_FAILED(RV) ((RV) == POLICY_FAIL)
-#define POLICY_FAIL_ERRNO(ERRNO) (errno=ERRNO,POLICY_FAIL)
-#define POLICY_FAIL_ENOENT POLICY_FAIL_ERRNO(ENOENT)
 
 namespace mergerfs
 {
@@ -86,6 +79,12 @@ namespace mergerfs
         operator()(cstrvec &b,const char *c,cuint64_t d,cstrptrvec &e)
         {
           return func(T,b,c,d,e);
+        }
+
+        int
+        operator()(cstrvec &b,const string &c,cuint64_t d,cstrptrvec &e)
+        {
+          return func(T,b,c.c_str(),d,e);
         }
 
       private:

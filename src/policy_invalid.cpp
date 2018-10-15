@@ -32,6 +32,6 @@ namespace mergerfs
                         const uint64_t              minfreespace,
                         vector<const string*>      &paths)
   {
-    return POLICY_FAIL_ERRNO(EINVAL);
+    return (errno=EINVAL,-1);
   }
 }

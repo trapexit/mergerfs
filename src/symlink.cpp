@@ -57,7 +57,7 @@ _symlink_loop(const string                &existingpath,
               const vector<const string*>  newbasepaths,
               const char                  *oldpath,
               const char                  *newpath,
-              const char                  *newdirpath)
+              const string                &newdirpath)
 {
   int rv;
   int error;
@@ -89,24 +89,22 @@ _symlink(Policy::Func::Search  searchFunc,
 {
   int rv;
   string newdirpath;
-  const char *newdirpathcstr;
   vector<const string*> newbasepaths;
   vector<const string*> existingpaths;
 
   newdirpath = newpath;
   fs::path::dirname(newdirpath);
-  newdirpathcstr = newdirpath.c_str();
 
-  rv = searchFunc(srcmounts,newdirpathcstr,minfreespace,existingpaths);
+  rv = searchFunc(srcmounts,newdirpath,minfreespace,existingpaths);
   if(rv == -1)
     return -errno;
 
-  rv = createFunc(srcmounts,newdirpathcstr,minfreespace,newbasepaths);
+  rv = createFunc(srcmounts,newdirpath,minfreespace,newbasepaths);
   if(rv == -1)
     return -errno;
 
   return _symlink_loop(*existingpaths[0],newbasepaths,
-                       oldpath,newpath,newdirpathcstr);
+                       oldpath,newpath,newdirpath);
 }
 
 namespace mergerfs

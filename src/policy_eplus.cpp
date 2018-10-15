@@ -65,11 +65,11 @@ _eplus_create(const vector<string>  &basepaths,
     }
 
   if(eplusbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(eplusbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -103,11 +103,11 @@ _eplus_other(const vector<string>  &basepaths,
     }
 
   if(eplusbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(eplusbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -136,7 +136,7 @@ namespace mergerfs
     int rv;
 
     rv = _eplus(type,basepaths,fusepath,minfreespace,paths);
-    if(POLICY_FAILED(rv))
+    if(rv == -1)
       rv = Policy::Func::lus(type,basepaths,fusepath,minfreespace,paths);
 
     return rv;

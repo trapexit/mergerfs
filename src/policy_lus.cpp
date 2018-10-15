@@ -60,11 +60,11 @@ _lus_create(const vector<string>  &basepaths,
     }
 
   if(lusbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(lusbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -98,11 +98,11 @@ _lus_other(const vector<string>  &basepaths,
     }
 
   if(lusbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(lusbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -131,7 +131,7 @@ namespace mergerfs
     int rv;
 
     rv = _lus(type,basepaths,fusepath,minfreespace,paths);
-    if(POLICY_FAILED(rv))
+    if(rv == -1)
       rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
 
     return rv;

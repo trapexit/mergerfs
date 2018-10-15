@@ -68,7 +68,7 @@ int
 _mkdir_loop(const string                &existingpath,
             const vector<const string*> &createpaths,
             const char                  *fusepath,
-            const char                  *fusedirpath,
+            const string                &fusedirpath,
             const mode_t                 mode,
             const mode_t                 umask)
 {
@@ -102,24 +102,22 @@ _mkdir(Policy::Func::Search  searchFunc,
 {
   int rv;
   string fusedirpath;
-  const char *fusedirpathcstr;
   vector<const string*> createpaths;
   vector<const string*> existingpaths;
 
   fusedirpath = fusepath;
   fs::path::dirname(fusedirpath);
-  fusedirpathcstr = fusedirpath.c_str();
 
-  rv = searchFunc(srcmounts,fusedirpathcstr,minfreespace,existingpaths);
+  rv = searchFunc(srcmounts,fusedirpath,minfreespace,existingpaths);
   if(rv == -1)
     return -errno;
 
-  rv = createFunc(srcmounts,fusedirpathcstr,minfreespace,createpaths);
+  rv = createFunc(srcmounts,fusedirpath,minfreespace,createpaths);
   if(rv == -1)
     return -errno;
 
   return _mkdir_loop(*existingpaths[0],createpaths,
-                     fusepath,fusedirpathcstr,mode,umask);
+                     fusepath,fusedirpath,mode,umask);
 }
 
 namespace mergerfs

@@ -295,8 +295,8 @@ namespace fs
         const string &value,
         const int     flags)
     {
-      return fs::lsetxattr(path.c_str(),
-                           key.c_str(),
+      return fs::lsetxattr(path,
+                           key,
                            value.data(),
                            value.size(),
                            flags);

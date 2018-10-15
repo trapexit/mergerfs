@@ -99,7 +99,8 @@ _link_create_path(Policy::Func::Search  searchFunc,
 
   newfusedirpath = newfusepath;
   fs::path::dirname(newfusedirpath);
-  rv = searchFunc(srcmounts,newfusedirpath.c_str(),minfreespace,newbasepaths);
+
+  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepaths);
   if(rv == -1)
     return -errno;
 
@@ -120,25 +121,23 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 {
   int rv;
   string newfusedirpath;
-  const char *newfusedirpathcstr;
   vector<const string*> newbasepath;
 
   newfusedirpath = newfusepath;
   fs::path::dirname(newfusedirpath);
-  newfusedirpathcstr = newfusedirpath.c_str();
 
-  rv = createFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
+  rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return -1;
 
   if(oldbasepath != *newbasepath[0])
     return (errno=EXDEV,-1);
 
-  rv = searchFunc(srcmounts,newfusedirpathcstr,minfreespace,newbasepath);
+  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return -1;
 
-  return fs::clonepath_as_root(*newbasepath[0],oldbasepath,newfusedirpathcstr);
+  return fs::clonepath_as_root(*newbasepath[0],oldbasepath,newfusedirpath);
 }
 
 static

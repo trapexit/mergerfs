@@ -61,11 +61,11 @@ _newest_create(const vector<string>  &basepaths,
     }
 
   if(newestbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(newestbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -97,11 +97,11 @@ _newest_other(const vector<string>  &basepaths,
     }
 
   if(newestbasepath == NULL)
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
   paths.push_back(newestbasepath);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 namespace mergerfs

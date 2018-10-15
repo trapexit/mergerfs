@@ -49,9 +49,9 @@ _all_create(const vector<string>  &basepaths,
     }
 
   if(paths.empty())
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 static
@@ -75,9 +75,9 @@ _all_other(const vector<string>  &basepaths,
     }
 
   if(paths.empty())
-    return POLICY_FAIL_ENOENT;
+    return (errno=ENOENT,-1);
 
-  return POLICY_SUCCESS;
+  return 0;
 }
 
 namespace mergerfs

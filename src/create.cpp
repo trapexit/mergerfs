@@ -84,19 +84,17 @@ _create(Policy::Func::Search  searchFunc,
   int rv;
   string fullpath;
   string fusedirpath;
-  const char *fusedirpathcstr;
   vector<const string*> createpaths;
   vector<const string*> existingpaths;
 
   fusedirpath = fusepath;
   fs::path::dirname(fusedirpath);
-  fusedirpathcstr = fusedirpath.c_str();
 
-  rv = searchFunc(srcmounts,fusedirpathcstr,minfreespace,existingpaths);
+  rv = searchFunc(srcmounts,fusedirpath,minfreespace,existingpaths);
   if(rv == -1)
     return -errno;
 
-  rv = createFunc(srcmounts,fusedirpathcstr,minfreespace,createpaths);
+  rv = createFunc(srcmounts,fusedirpath,minfreespace,createpaths);
   if(rv == -1)
     return -errno;
 

@@ -37,7 +37,7 @@ namespace mergerfs
     int rv;
 
     rv = Policy::Func::all(type,basepaths,fusepath,minfreespace,paths);
-    if(POLICY_SUCCEEDED(rv))
+    if(rv == 0)
       std::random_shuffle(paths.begin(),paths.end());
 
     return rv;
