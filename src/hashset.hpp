@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -19,44 +19,49 @@
 #pragma once
 
 #include "khash.h"
+#include "fasthash.h"
 
-#include <string.h>
+KHASH_SET_INIT_INT64(hashset);
 
-KHASH_SET_INIT_STR(strset);
-
-class StrSet
+class HashSet
 {
 public:
-  StrSet()
+  HashSet()
   {
-    _set = kh_init(strset);
+    _set = kh_init(hashset);
   }
 
-  ~StrSet()
+  ~HashSet()
   {
-    for(khint_t k = kh_begin(_set), ek = kh_end(_set); k != ek; k++)
-      if(kh_exist(_set,k))
-        ::free((char*)kh_key(_set,k));
-
-    kh_destroy(strset,_set);
+    kh_destroy(hashset,_set);
   }
 
   inline
   int
-  put(const char *str)
+  put(const char *str_)
   {
     int rv;
+    uint64_t h;
     khint_t key;
 
-    key = kh_put(strset,_set,str,&rv);
+    h = fasthash64(str_,strlen(str_),0x7472617065786974);
+
+    key = kh_put(hashset,_set,h,&rv);
     if(rv == 0)
       return 0;
 
-    kh_key(_set,key) = ::strdup(str);
+    kh_key(_set,key) = h;
 
     return rv;
   }
 
+  inline
+  int
+  size(void)
+  {
+    return kh_size(_set);
+  }
+
 private:
-  khash_t(strset) *_set;
+  khash_t(hashset) *_set;
 };
