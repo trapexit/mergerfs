@@ -20,6 +20,7 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "policy_error.hpp"
 
 #include <limits>
 #include <string>
@@ -29,114 +30,65 @@ using std::string;
 using std::vector;
 using mergerfs::Category;
 
-static
-int
-_lfs_create(const vector<string>  &basepaths,
-            const uint64_t         minfreespace,
-            vector<const string*> &paths)
+namespace lfs
 {
-  int rv;
-  uint64_t lfs;
-  fs::info_t info;
-  const string *basepath;
-  const string *lfsbasepath;
+  static
+  int
+  create(const Branches        &branches_,
+         const uint64_t         minfreespace,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    uint64_t lfs;
+    fs::info_t info;
+    const Branch *branch;
+    const string *lfsbasepath;
 
-  lfs = std::numeric_limits<uint64_t>::max();
-  lfsbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    lfs = std::numeric_limits<uint64_t>::max();
+    lfsbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      rv = fs::info(basepath,&info);
-      if(rv == -1)
-        continue;
-      if(info.readonly)
-        continue;
-      if(info.spaceavail < minfreespace)
-        continue;
-      if(info.spaceavail > lfs)
-        continue;
+        if(branch->ro_or_nw())
+          error_and_continue(error,EROFS);
+        rv = fs::info(&branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceavail < minfreespace)
+          error_and_continue(error,ENOSPC);
+        if(info.spaceavail > lfs)
+          continue;
 
-      lfs = info.spaceavail;
-      lfsbasepath = basepath;
-    }
+        lfs = info.spaceavail;
+        lfsbasepath = &branch->path;
+      }
 
-  if(lfsbasepath == NULL)
-    return (errno=ENOENT,-1);
+    if(lfsbasepath == NULL)
+      return (errno=error,-1);
 
-  paths.push_back(lfsbasepath);
+    paths.push_back(lfsbasepath);
 
-  return 0;
+    return 0;
+  }
 }
-
-static
-int
-_lfs_other(const vector<string>  &basepaths,
-           const char            *fusepath,
-           vector<const string*> &paths)
-{
-  int rv;
-  uint64_t lfs;
-  uint64_t spaceavail;
-  const string *basepath;
-  const string *lfsbasepath;
-
-  lfs = std::numeric_limits<uint64_t>::max();
-  lfsbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
-
-      if(!fs::exists(*basepath,fusepath))
-        continue;
-      rv = fs::spaceavail(basepath,&spaceavail);
-      if(rv == -1)
-        continue;
-      if(spaceavail > lfs)
-        continue;
-
-      lfs = spaceavail;
-      lfsbasepath = basepath;
-    }
-
-  if(lfsbasepath == NULL)
-    return (errno=ENOENT,-1);
-
-  paths.push_back(lfsbasepath);
-
-  return 0;
-}
-
-static
-int
-_lfs(const Category::Enum::Type  type,
-     const vector<string>       &basepaths,
-     const char                 *fusepath,
-     const uint64_t              minfreespace,
-     vector<const string*>      &paths)
-{
-  if(type == Category::Enum::create)
-    return _lfs_create(basepaths,minfreespace,paths);
-
-  return _lfs_other(basepaths,fusepath,paths);
-}
-
 
 namespace mergerfs
 {
   int
   Policy::Func::lfs(const Category::Enum::Type  type,
-                    const vector<string>       &basepaths,
+                    const Branches             &branches_,
                     const char                 *fusepath,
                     const uint64_t              minfreespace,
                     vector<const string*>      &paths)
   {
-    int rv;
+    if(type == Category::Enum::create)
+      return lfs::create(branches_,minfreespace,paths);
 
-    rv = _lfs(type,basepaths,fusepath,minfreespace,paths);
-    if(rv == -1)
-      rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
-
-    return rv;
+    return Policy::Func::eplfs(type,branches_,fusepath,minfreespace,paths);
   }
 }

@@ -70,7 +70,7 @@ _utimens_loop(const vector<const string*> &basepaths,
 static
 int
 _utimens(Policy::Func::Action  actionFunc,
-         const vector<string> &srcmounts,
+         const Branches       &branches_,
          const uint64_t        minfreespace,
          const char           *fusepath,
          const timespec        ts[2])
@@ -78,7 +78,7 @@ _utimens(Policy::Func::Action  actionFunc,
   int rv;
   vector<const string*> basepaths;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -96,10 +96,10 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       return _utimens(config.utimens,
-                      config.srcmounts,
+                      config.branches,
                       config.minfreespace,
                       fusepath,
                       ts);

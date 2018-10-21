@@ -20,6 +20,7 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "policy_error.hpp"
 
 #include <limits>
 #include <string>
@@ -29,113 +30,65 @@ using std::string;
 using std::vector;
 using mergerfs::Category;
 
-static
-int
-_lus_create(const vector<string>  &basepaths,
-            const uint64_t         minfreespace,
-            vector<const string*> &paths)
+namespace lus
 {
-  int rv;
-  uint64_t lus;
-  fs::info_t info;
-  const string *basepath;
-  const string *lusbasepath;
+  static
+  int
+  create(const Branches        &branches_,
+         const uint64_t         minfreespace,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    uint64_t lus;
+    fs::info_t info;
+    const Branch *branch;
+    const string *lusbasepath;
 
-  lus = std::numeric_limits<uint64_t>::max();
-  lusbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    lus = std::numeric_limits<uint64_t>::max();
+    lusbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      rv = fs::info(basepath,&info);
-      if(rv == -1)
-        continue;
-      if(info.readonly)
-        continue;
-      if(info.spaceavail < minfreespace)
-        continue;
-      if(info.spaceused >= lus)
-        continue;
+        if(branch->ro_or_nw())
+          error_and_continue(error,EROFS);
+        rv = fs::info(&branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceavail < minfreespace)
+          error_and_continue(error,ENOSPC);
+        if(info.spaceused >= lus)
+          continue;
 
-      lus = info.spaceused;
-      lusbasepath = basepath;
-    }
+        lus = info.spaceused;
+        lusbasepath = &branch->path;
+      }
 
-  if(lusbasepath == NULL)
-    return (errno=ENOENT,-1);
+    if(lusbasepath == NULL)
+      return (errno=error,-1);
 
-  paths.push_back(lusbasepath);
+    paths.push_back(lusbasepath);
 
-  return 0;
-}
-
-static
-int
-_lus_other(const vector<string>  &basepaths,
-           const char            *fusepath,
-           vector<const string*> &paths)
-{
-  int rv;
-  uint64_t lus;
-  uint64_t spaceused;
-  const string *basepath;
-  const string *lusbasepath;
-
-  lus = 0;
-  lusbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
-
-      if(!fs::exists(*basepath,fusepath))
-        continue;
-      rv = fs::spaceused(basepath,&spaceused);
-      if(rv == -1)
-        continue;
-      if(spaceused >= lus)
-        continue;
-
-      lus = spaceused;
-      lusbasepath = basepath;
-    }
-
-  if(lusbasepath == NULL)
-    return (errno=ENOENT,-1);
-
-  paths.push_back(lusbasepath);
-
-  return 0;
-}
-
-static
-int
-_lus(const Category::Enum::Type  type,
-     const vector<string>       &basepaths,
-     const char                 *fusepath,
-     const uint64_t              minfreespace,
-     vector<const string*>      &paths)
-{
-  if(type == Category::Enum::create)
-    return _lus_create(basepaths,minfreespace,paths);
-
-  return _lus_other(basepaths,fusepath,paths);
+    return 0;
+  }
 }
 
 namespace mergerfs
 {
   int
   Policy::Func::lus(const Category::Enum::Type  type,
-                    const vector<string>       &basepaths,
+                    const Branches             &branches_,
                     const char                 *fusepath,
                     const uint64_t              minfreespace,
                     vector<const string*>      &paths)
   {
-    int rv;
+    if(type == Category::Enum::create)
+      return lus::create(branches_,minfreespace,paths);
 
-    rv = _lus(type,basepaths,fusepath,minfreespace,paths);
-    if(rv == -1)
-      rv = Policy::Func::mfs(type,basepaths,fusepath,minfreespace,paths);
-
-    return rv;
+    return Policy::Func::eplus(type,branches_,fusepath,minfreespace,paths);
   }
 }

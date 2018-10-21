@@ -82,7 +82,7 @@ static
 int
 _symlink(Policy::Func::Search  searchFunc,
          Policy::Func::Create  createFunc,
-         const vector<string> &srcmounts,
+         const Branches       &branches_,
          const uint64_t        minfreespace,
          const char           *oldpath,
          const char           *newpath)
@@ -94,11 +94,11 @@ _symlink(Policy::Func::Search  searchFunc,
 
   newdirpath = fs::path::dirname(newpath);
 
-  rv = searchFunc(srcmounts,newdirpath,minfreespace,existingpaths);
+  rv = searchFunc(branches_,newdirpath,minfreespace,existingpaths);
   if(rv == -1)
     return -errno;
 
-  rv = createFunc(srcmounts,newdirpath,minfreespace,newbasepaths);
+  rv = createFunc(branches_,newdirpath,minfreespace,newbasepaths);
   if(rv == -1)
     return -errno;
 
@@ -117,11 +117,11 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       return _symlink(config.getattr,
                       config.symlink,
-                      config.srcmounts,
+                      config.branches,
                       config.minfreespace,
                       oldpath,
                       newpath);

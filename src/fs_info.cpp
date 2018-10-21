@@ -47,22 +47,4 @@ namespace fs
 
     return rv;
   }
-
-  int
-  info(const string *basepath_,
-       const char   *relpath_,
-       fs::info_t   *info_)
-  {
-    int rv;
-    string fullpath;
-    struct stat st;
-
-    fullpath = fs::path::make(basepath_,relpath_);
-
-    rv = fs::lstat(fullpath,st);
-    if(rv == -1)
-      return -1;
-
-    return fs::info(basepath_,info_);
-  }
 }

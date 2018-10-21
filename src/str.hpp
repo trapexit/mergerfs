@@ -56,4 +56,8 @@ namespace str
   bool
   isprefix(const std::string &s0,
            const std::string &s1);
+
+  bool
+  ends_with(const std::string &str_,
+            const std::string &suffix_);
 }

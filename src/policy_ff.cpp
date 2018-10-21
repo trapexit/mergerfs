@@ -20,6 +20,7 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "policy_error.hpp"
 
 #include <string>
 #include <vector>
@@ -27,80 +28,55 @@
 using std::string;
 using std::vector;
 
-static
-int
-_ff_create(const vector<string>  &basepaths,
-           const uint64_t         minfreespace,
-           vector<const string*> &paths)
+namespace ff
 {
-  int rv;
-  fs::info_t info;
-  const string *basepath;
-  const string *fallback;
+  static
+  int
+  create(const Branches        &branches_,
+         const uint64_t         minfreespace,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    fs::info_t info;
+    const Branch *branch;
 
-  fallback = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      rv = fs::info(basepath,&info);
-      if(rv == -1)
-        continue;
-      if(info.readonly)
-        continue;
-      if(fallback == NULL)
-        fallback = basepath;
-      if(info.spaceavail < minfreespace)
-        continue;
+        if(branch->ro_or_nw())
+          error_and_continue(error,EROFS);
+        rv = fs::info(&branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceavail < minfreespace)
+          error_and_continue(error,ENOSPC);
 
-      paths.push_back(basepath);
+        paths.push_back(&branch->path);
 
-      return 0;
-    }
+        return 0;
+      }
 
-  if(fallback == NULL)
-    return (errno=ENOENT,-1);
-
-  paths.push_back(fallback);
-
-  return 0;
-}
-
-static
-int
-_ff_other(const vector<string>  &basepaths,
-          const char            *fusepath,
-          vector<const string*> &paths)
-{
-  const string *basepath;
-
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
-
-      if(!fs::exists(*basepath,fusepath))
-        continue;
-
-      paths.push_back(basepath);
-
-      return 0;
-    }
-
-  return (errno=ENOENT,-1);
+    return (errno=error,-1);
+  }
 }
 
 namespace mergerfs
 {
   int
   Policy::Func::ff(const Category::Enum::Type  type,
-                   const vector<string>       &basepaths,
+                   const Branches             &branches_,
                    const char                 *fusepath,
                    const uint64_t              minfreespace,
                    vector<const string*>      &paths)
   {
     if(type == Category::Enum::create)
-      return _ff_create(basepaths,minfreespace,paths);
+      return ff::create(branches_,minfreespace,paths);
 
-    return _ff_other(basepaths,fusepath,paths);
+    return Policy::Func::epff(type,branches_,fusepath,minfreespace,paths);
   }
 }

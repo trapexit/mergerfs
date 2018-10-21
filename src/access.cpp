@@ -32,7 +32,7 @@ using mergerfs::Category;
 static
 int
 _access(Policy::Func::Search  searchFunc,
-        const vector<string> &srcmounts,
+        const Branches       &branches_,
         const uint64_t        minfreespace,
         const char           *fusepath,
         const int             mask)
@@ -41,7 +41,7 @@ _access(Policy::Func::Search  searchFunc,
   string fullpath;
   vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -63,10 +63,10 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       return _access(config.access,
-                     config.srcmounts,
+                     config.branches,
                      config.minfreespace,
                      fusepath,
                      mask);

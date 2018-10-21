@@ -105,7 +105,15 @@ void
 _getxattr_controlfile_srcmounts(const Config &config,
                                 string       &attrvalue)
 {
-  attrvalue = str::join(config.srcmounts,':');
+  attrvalue = config.branches.to_string();
+}
+
+static
+void
+_getxattr_controlfile_branches(const Config &config,
+                               string       &attrvalue)
+{
+  attrvalue = config.branches.to_string(true);
 }
 
 static
@@ -216,6 +224,8 @@ _getxattr_controlfile(const Config &config,
     case 3:
       if(attr[2] == "srcmounts")
         _getxattr_controlfile_srcmounts(config,attrvalue);
+      else if(attr[2] == "branches")
+        _getxattr_controlfile_branches(config,attrvalue);
       else if(attr[2] == "minfreespace")
         _getxattr_controlfile_uint64_t(config.minfreespace,attrvalue);
       else if(attr[2] == "moveonenospc")
@@ -289,15 +299,18 @@ _getxattr_from_string(char         *destbuf,
 
 static
 int
-_getxattr_user_mergerfs_allpaths(const vector<string> &srcmounts,
-                                 const char           *fusepath,
-                                 char                 *buf,
-                                 const size_t          count)
+_getxattr_user_mergerfs_allpaths(const Branches &branches_,
+                                 const char     *fusepath,
+                                 char           *buf,
+                                 const size_t    count)
 {
   string concated;
   vector<string> paths;
+  vector<string> branches;
 
-  fs::findallfiles(srcmounts,fusepath,paths);
+  branches_.to_paths(branches);
+
+  fs::findallfiles(branches,fusepath,paths);
 
   concated = str::join(paths,'\0');
 
@@ -309,7 +322,7 @@ int
 _getxattr_user_mergerfs(const string         &basepath,
                         const char           *fusepath,
                         const string         &fullpath,
-                        const vector<string> &srcmounts,
+                        const Branches       &branches_,
                         const char           *attrname,
                         char                 *buf,
                         const size_t          count)
@@ -325,7 +338,7 @@ _getxattr_user_mergerfs(const string         &basepath,
   else if(attr[2] == "fullpath")
     return _getxattr_from_string(buf,count,fullpath);
   else if(attr[2] == "allpaths")
-    return _getxattr_user_mergerfs_allpaths(srcmounts,fusepath,buf,count);
+    return _getxattr_user_mergerfs_allpaths(branches_,fusepath,buf,count);
 
   return -ENOATTR;
 }
@@ -333,7 +346,7 @@ _getxattr_user_mergerfs(const string         &basepath,
 static
 int
 _getxattr(Policy::Func::Search  searchFunc,
-          const vector<string> &srcmounts,
+          const Branches       &branches_,
           const size_t          minfreespace,
           const char           *fusepath,
           const char           *attrname,
@@ -344,14 +357,14 @@ _getxattr(Policy::Func::Search  searchFunc,
   string fullpath;
   vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
   if(str::isprefix(attrname,"user.mergerfs."))
-    rv = _getxattr_user_mergerfs(*basepaths[0],fusepath,fullpath,srcmounts,attrname,buf,count);
+    rv = _getxattr_user_mergerfs(*basepaths[0],fusepath,fullpath,branches_,attrname,buf,count);
   else
     rv = _lgetxattr(fullpath,attrname,buf,count);
 
@@ -385,10 +398,10 @@ namespace mergerfs
         return -config.xattr;
 
       const ugid::Set         ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard readlock(&config.srcmountslock);
+      const rwlock::ReadGuard readlock(&config.branches_lock);
 
       return _getxattr(config.getxattr,
-                       config.srcmounts,
+                       config.branches,
                        config.minfreespace,
                        fusepath,
                        attrname,

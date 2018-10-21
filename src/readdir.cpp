@@ -45,7 +45,7 @@ using std::vector;
 
 static
 int
-_readdir(const vector<string>  &srcmounts,
+_readdir(const Branches        &branches_,
          const char            *dirname,
          void                  *buf,
          const fuse_fill_dir_t  filler)
@@ -54,13 +54,13 @@ _readdir(const vector<string>  &srcmounts,
   string basepath;
   struct stat st = {0};
 
-  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+  for(size_t i = 0, ei = branches_.size(); i != ei; i++)
     {
       int rv;
       int dirfd;
       DIR *dh;
 
-      fs::path::make(&srcmounts[i],dirname,basepath);
+      basepath = fs::path::make(&branches_[i].path,dirname);
 
       dh = fs::opendir(basepath);
       if(!dh)
@@ -109,9 +109,9 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return ::_readdir(config.srcmounts,
+      return ::_readdir(config.branches,
                         di->fusepath.c_str(),
                         buf,
                         filler);

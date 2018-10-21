@@ -64,7 +64,7 @@ _merge_statvfs(struct statvfs       * const out,
 
 static
 void
-_statfs_core(const char                *srcmount,
+_statfs_core(const string              &path_,
              unsigned long             &min_bsize,
              unsigned long             &min_frsize,
              unsigned long             &min_namemax,
@@ -74,11 +74,11 @@ _statfs_core(const char                *srcmount,
   struct stat st;
   struct statvfs fsstat;
 
-  rv = fs::statvfs(srcmount,fsstat);
+  rv = fs::statvfs(path_,fsstat);
   if(rv == -1)
     return;
 
-  rv = fs::stat(srcmount,st);
+  rv = fs::stat(path_,st);
   if(rv == -1)
     return;
 
@@ -94,17 +94,17 @@ _statfs_core(const char                *srcmount,
 
 static
 int
-_statfs(const vector<string> &srcmounts,
-        struct statvfs       &fsstat)
+_statfs(const Branches &branches_,
+        struct statvfs &fsstat)
 {
   map<dev_t,struct statvfs> fsstats;
   unsigned long min_bsize   = ULONG_MAX;
   unsigned long min_frsize  = ULONG_MAX;
   unsigned long min_namemax = ULONG_MAX;
 
-  for(size_t i = 0, ei = srcmounts.size(); i < ei; i++)
+  for(size_t i = 0, ei = branches_.size(); i < ei; i++)
     {
-      _statfs_core(srcmounts[i].c_str(),min_bsize,min_frsize,min_namemax,fsstats);
+      _statfs_core(branches_[i].path,min_bsize,min_frsize,min_namemax,fsstats);
     }
 
   map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
@@ -135,9 +135,9 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _statfs(config.srcmounts,
+      return _statfs(config.branches,
                      *stat);
     }
   }

@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
@@ -24,7 +22,14 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using namespace mergerfs;
+using std::string;
+using std::vector;
 
 typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
 
@@ -96,10 +101,13 @@ namespace mergerfs
 
           if(config.moveonenospc)
             {
-              const ugid::Set         ugid(0,0);
-              const rwlock::ReadGuard readlock(&config.srcmountslock);
+              vector<string> paths;
+              const ugid::Set ugid(0,0);
+              const rwlock::ReadGuard readlock(&config.branches_lock);
 
-              rv = fs::movefile(config.srcmounts,fi->fusepath,count,fi->fd);
+              config.branches.to_paths(paths);
+
+              rv = fs::movefile(paths,fi->fusepath,count,fi->fd);
               if(rv == -1)
                 return -ENOSPC;
 

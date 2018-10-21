@@ -23,6 +23,6 @@ namespace fs
   using std::vector;
 
   void
-  glob(const vector<string> &patterns_,
-       vector<string>       &strs_);
+  glob(const string   &pattern_,
+       vector<string> &strs_);
 }

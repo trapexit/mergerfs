@@ -62,7 +62,7 @@ _open_core(const string *basepath_,
 static
 int
 _open(Policy::Func::Search  searchFunc_,
-      const vector<string> &srcmounts_,
+      const Branches       &branches_,
       const uint64_t        minfreespace_,
       const char           *fusepath_,
       const int             flags_,
@@ -72,7 +72,7 @@ _open(Policy::Func::Search  searchFunc_,
   int rv;
   vector<const string*> basepaths;
 
-  rv = searchFunc_(srcmounts_,fusepath_,minfreespace_,basepaths);
+  rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -90,10 +90,10 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       return _open(config.open,
-                   config.srcmounts,
+                   config.branches,
                    config.minfreespace,
                    fusepath_,
                    ffi_->flags,

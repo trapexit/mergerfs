@@ -35,8 +35,8 @@ namespace mergerfs
 {
   Config::Config()
     : destmount(),
-      srcmounts(),
-      srcmountslock(),
+      branches(),
+      branches_lock(),
       minfreespace(MINFREESPACE_DEFAULT),
       moveonenospc(false),
       direct_io(false),
@@ -70,9 +70,9 @@ namespace mergerfs
       POLICYINIT(utimens),
       controlfile("/.mergerfs")
   {
-    pthread_rwlock_init(&srcmountslock,NULL);
+    pthread_rwlock_init(&branches_lock,NULL);
 
-    set_category_policy("action","all");
+    set_category_policy("action","epall");
     set_category_policy("create","epmfs");
     set_category_policy("search","ff");
   }

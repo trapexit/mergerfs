@@ -20,6 +20,7 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "policy_error.hpp"
 
 #include <limits>
 #include <string>
@@ -29,114 +30,156 @@ using std::string;
 using std::vector;
 using mergerfs::Category;
 
-static
-int
-_eplus_create(const vector<string>  &basepaths,
-              const char            *fusepath,
-              const uint64_t         minfreespace,
-              vector<const string*> &paths)
+namespace eplus
 {
-  int rv;
-  uint64_t eplus;
-  fs::info_t info;
-  const string *basepath;
-  const string *eplusbasepath;
+  static
+  int
+  create(const Branches        &branches_,
+         const char            *fusepath,
+         const uint64_t         minfreespace,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    uint64_t eplus;
+    fs::info_t info;
+    const Branch *branch;
+    const string *eplusbasepath;
 
-  eplus = std::numeric_limits<uint64_t>::max();
-  eplusbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    eplus = std::numeric_limits<uint64_t>::max();
+    eplusbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      rv = fs::info(basepath,fusepath,&info);
-      if(rv == -1)
-        continue;
-      if(info.readonly)
-        continue;
-      if(info.spaceavail < minfreespace)
-        continue;
-      if(info.spaceused >= eplus)
-        continue;
+        if(!fs::exists(branch->path,fusepath))
+          error_and_continue(error,ENOENT);
+        if(branch->ro_or_nw())
+          error_and_continue(error,EROFS);
+        rv = fs::info(&branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceavail < minfreespace)
+          error_and_continue(error,ENOSPC);
+        if(info.spaceused >= eplus)
+          continue;
 
-      eplus = info.spaceused;
-      eplusbasepath = basepath;
-    }
+        eplus = info.spaceused;
+        eplusbasepath = &branch->path;
+      }
 
-  if(eplusbasepath == NULL)
-    return (errno=ENOENT,-1);
+    if(eplusbasepath == NULL)
+      return (errno=error,-1);
 
-  paths.push_back(eplusbasepath);
+    paths.push_back(eplusbasepath);
 
-  return 0;
-}
+    return 0;
+  }
 
-static
-int
-_eplus_other(const vector<string>  &basepaths,
-             const char            *fusepath,
-             vector<const string*> &paths)
-{
-  int rv;
-  uint64_t eplus;
-  uint64_t spaceused;
-  const string *basepath;
-  const string *eplusbasepath;
+  static
+  int
+  action(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    uint64_t eplus;
+    fs::info_t info;
+    const Branch *branch;
+    const string *eplusbasepath;
 
-  eplus = 0;
-  eplusbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    eplus = std::numeric_limits<uint64_t>::max();
+    eplusbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      if(!fs::exists(*basepath,fusepath))
-        continue;
-      rv = fs::spaceused(basepath,&spaceused);
-      if(rv == -1)
-        continue;
-      if(spaceused >= eplus)
-        continue;
+        if(!fs::exists(branch->path,fusepath))
+          error_and_continue(error,ENOENT);
+        if(branch->ro())
+          error_and_continue(error,EROFS);
+        rv = fs::info(&branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceused >= eplus)
+          continue;
 
-      eplus = spaceused;
-      eplusbasepath = basepath;
-    }
+        eplus = info.spaceused;
+        eplusbasepath = &branch->path;
+      }
 
-  if(eplusbasepath == NULL)
-    return (errno=ENOENT,-1);
+    if(eplusbasepath == NULL)
+      return (errno=error,-1);
 
-  paths.push_back(eplusbasepath);
+    paths.push_back(eplusbasepath);
 
-  return 0;
-}
+    return 0;
+  }
 
-static
-int
-_eplus(const Category::Enum::Type  type,
-       const vector<string>       &basepaths,
-       const char                 *fusepath,
-       const uint64_t              minfreespace,
-       vector<const string*>      &paths)
-{
-  if(type == Category::Enum::create)
-    return _eplus_create(basepaths,fusepath,minfreespace,paths);
+  static
+  int
+  search(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    int rv;
+    uint64_t eplus;
+    uint64_t spaceused;
+    const Branch *branch;
+    const string *eplusbasepath;
 
-  return _eplus_other(basepaths,fusepath,paths);
+    eplus = 0;
+    eplusbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
+
+        if(!fs::exists(branch->path,fusepath))
+          continue;
+        rv = fs::spaceused(&branch->path,&spaceused);
+        if(rv == -1)
+          continue;
+        if(spaceused >= eplus)
+          continue;
+
+        eplus = spaceused;
+        eplusbasepath = &branch->path;
+      }
+
+    if(eplusbasepath == NULL)
+      return (errno=ENOENT,-1);
+
+    paths.push_back(eplusbasepath);
+
+    return 0;
+  }
 }
 
 namespace mergerfs
 {
   int
   Policy::Func::eplus(const Category::Enum::Type  type,
-                      const vector<string>       &basepaths,
+                      const Branches             &branches_,
                       const char                 *fusepath,
                       const uint64_t              minfreespace,
                       vector<const string*>      &paths)
   {
-    int rv;
-
-    rv = _eplus(type,basepaths,fusepath,minfreespace,paths);
-    if(rv == -1)
-      rv = Policy::Func::lus(type,basepaths,fusepath,minfreespace,paths);
-
-    return rv;
+    switch(type)
+      {
+      case Category::Enum::create:
+        return eplus::create(branches_,fusepath,minfreespace,paths);
+      case Category::Enum::action:
+        return eplus::action(branches_,fusepath,paths);
+      case Category::Enum::search:
+      default:
+        return eplus::search(branches_,fusepath,paths);
+      }
   }
 }

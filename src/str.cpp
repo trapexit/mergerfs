@@ -147,4 +147,16 @@ namespace str
     return ((s0.size() >= s1.size()) &&
             (s0.compare(0,s1.size(),s1) == 0));
   }
+
+  bool
+  ends_with(const string &str_,
+            const string &suffix_)
+  {
+    if(suffix_.size() > str_.size())
+      return false;
+
+    return std::equal(suffix_.rbegin(),
+                      suffix_.rend(),
+                      str_.rbegin());
+  }
 }

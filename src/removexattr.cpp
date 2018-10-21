@@ -69,7 +69,7 @@ _removexattr_loop(const vector<const string*> &basepaths,
 static
 int
 _removexattr(Policy::Func::Action  actionFunc,
-             const vector<string> &srcmounts,
+             const Branches       &branches_,
              const uint64_t        minfreespace,
              const char           *fusepath,
              const char           *attrname)
@@ -77,7 +77,7 @@ _removexattr(Policy::Func::Action  actionFunc,
   int rv;
   vector<const string*> basepaths;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -101,10 +101,10 @@ namespace mergerfs
         return -config.xattr;
 
       const ugid::Set         ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard readlock(&config.srcmountslock);
+      const rwlock::ReadGuard readlock(&config.branches_lock);
 
       return _removexattr(config.removexattr,
-                          config.srcmounts,
+                          config.branches,
                           config.minfreespace,
                           fusepath,
                           attrname);

@@ -8,7 +8,7 @@
 mergerfs \- a featureful union filesystem
 .SH SYNOPSIS
 .PP
-mergerfs \-o<options> <srcmounts> <mountpoint>
+mergerfs \-o<options> <branches> <mountpoint>
 .SH DESCRIPTION
 .PP
 \f[B]mergerfs\f[] is a union filesystem geared towards simplifying
@@ -202,10 +202,10 @@ Example: \f[B]category.create=mfs\f[]
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
 \f[B]action\f[] category setting will override the \f[B]rmdir\f[]
 setting.
-.SS srcmounts
+.SS branches
 .PP
-The srcmounts (source mounts) argument is a colon (\[aq]:\[aq])
-delimited list of paths to be included in the pool.
+The \[aq]branches\[aq] (formerly \[aq]srcmounts\[aq]) argument is a
+colon (\[aq]:\[aq]) delimited list of paths to be pooled together.
 It does not matter if the paths are on the same or different drives nor
 does it matter the filesystem.
 Used and available space will not be duplicated for paths on the same
@@ -213,10 +213,22 @@ device and any features which aren\[aq]t supported by the underlying
 filesystem (such as file attributes or extended attributes) will return
 the appropriate errors.
 .PP
-To make it easier to include multiple source mounts mergerfs supports
+To make it easier to include multiple branches mergerfs supports
 globbing (http://linux.die.net/man/7/glob).
 \f[B]The globbing tokens MUST be escaped when using via the shell else
-the shell itself will expand it.\f[]
+the shell itself will apply the glob itself.\f[]
+.PP
+Each branch can have a suffix of \f[C]=RW\f[] (read / write),
+\f[C]=RO\f[] (read only), or \f[C]=NW\f[] (no writes).
+These suffixes work with globs as well and will apply to each path
+found.
+\f[C]RW\f[] is the default behavior and those paths will be eligible for
+all policy categories.
+\f[C]RO\f[] will exclude those paths from \f[C]create\f[] and
+\f[C]action\f[] policies (just as a filesystem being mounted \f[C]ro\f[]
+would).
+\f[C]NW\f[] will exclude those paths from \f[C]create\f[] policies (you
+can\[aq]t create but you can change / delete).
 .IP
 .nf
 \f[C]
@@ -413,12 +425,20 @@ All policies which start with \f[C]ep\f[] (\f[B]epff\f[],
 \f[C]path\ preserving\f[].
 \f[C]ep\f[] stands for \f[C]existing\ path\f[].
 .PP
-As the descriptions explain a path preserving policy will only consider
-drives where the relative path being accessed already exists.
+A path preserving policy will only consider drives where the relative
+path being accessed already exists.
 .PP
 When using non\-path preserving policies paths will be cloned to target
 drives as necessary.
 .SS Policy descriptions
+.PP
+All \f[B]create\f[] policies will filter out branches which are mounted
+\f[B]read only\f[] or tagged as \f[B]read only\f[] or \f[B]no write\f[].
+All \f[B]action\f[] policies will filter out branches which are mounted
+or tagged as \f[B]read only\f[].
+.PP
+If all branches are filtered an error will be returned.
+Typically EROFS or ENOSPC.
 .PP
 .TS
 tab(@);
@@ -435,9 +455,9 @@ T}@T{
 Search category: acts like \f[B]ff\f[].
 Action category: apply to all found.
 Create category: for \f[B]mkdir\f[], \f[B]mknod\f[], and
-\f[B]symlink\f[] it will apply to all found.
+\f[B]symlink\f[] it will apply to all branches.
 \f[B]create\f[] works like \f[B]ff\f[].
-It will exclude readonly drives and those with free space less than
+It will exclude branches with free space less than
 \f[B]minfreespace\f[].
 T}
 T{
@@ -448,8 +468,7 @@ Action category: apply to all found.
 Create category: for \f[B]mkdir\f[], \f[B]mknod\f[], and
 \f[B]symlink\f[] it will apply to all existing paths found.
 \f[B]create\f[] works like \f[B]epff\f[].
-Excludes readonly drives and those with free space less than
-\f[B]minfreespace\f[].
+Excludes branches with free space less than \f[B]minfreespace\f[].
 T}
 T{
 epff (existing path, first found)
@@ -457,37 +476,32 @@ T}@T{
 Given the order of the drives, as defined at mount time or configured at
 runtime, act on the first one found where the relative path already
 exists.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[] (unless there
-is no other option).
-Falls back to \f[B]ff\f[].
+For \f[B]create\f[] category functions it will exclude branches with
+free space less than \f[B]minfreespace\f[].
 T}
 T{
 eplfs (existing path, least free space)
 T}@T{
 Of all the drives on which the relative path exists choose the drive
 with the least free space.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[].
-Falls back to \f[B]lfs\f[].
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 eplus (existing path, least used space)
 T}@T{
 Of all the drives on which the relative path exists choose the drive
 with the least used space.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[].
-Falls back to \f[B]lus\f[].
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 epmfs (existing path, most free space)
 T}@T{
 Of all the drives on which the relative path exists choose the drive
 with the most free space.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[].
-Falls back to \f[B]mfs\f[].
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 eprand (existing path, random)
@@ -500,48 +514,40 @@ erofs
 T}@T{
 Exclusively return \f[B]\-1\f[] with \f[B]errno\f[] set to
 \f[B]EROFS\f[] (Read\-only filesystem).
-By setting \f[B]create\f[] functions to this you can in effect turn the
-filesystem mostly readonly.
 T}
 T{
 ff (first found)
 T}@T{
 Given the order of the drives, as defined at mount time or configured at
 runtime, act on the first one found.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[] (unless there
-is no other option).
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 lfs (least free space)
 T}@T{
 Pick the drive with the least available free space.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[].
-Falls back to \f[B]mfs\f[].
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 lus (least used space)
 T}@T{
 Pick the drive with the least used space.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[].
-Falls back to \f[B]mfs\f[].
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 mfs (most free space)
 T}@T{
 Pick the drive with the most available free space.
-For \f[B]create\f[] category functions it will exclude readonly drives.
-Falls back to \f[B]ff\f[].
 T}
 T{
 newest
 T}@T{
 Pick the file / directory with the largest mtime.
-For \f[B]create\f[] category functions it will exclude readonly drives
-and those with free space less than \f[B]minfreespace\f[] (unless there
-is no other option).
+For \f[B]create\f[] category functions it will exclude those with free
+space less than \f[B]minfreespace\f[].
 T}
 T{
 rand (random)
@@ -563,7 +569,7 @@ _
 T{
 action
 T}@T{
-all
+epall
 T}
 T{
 create
@@ -694,7 +700,7 @@ This means you will see the combined space of all sources.
 Total, used, and free.
 The sources however are dedupped based on the drive so multiple sources
 on the same drive will not result in double counting it\[aq]s space.
-Filesystems mounted further down the tree of the src mounts will not be
+Filesystems mounted further down the tree of the branch will not be
 included.
 .SH BUILDING
 .PP
@@ -787,7 +793,10 @@ wherever you configure the mounting of mergerfs (/etc/fstab).
 Use \f[C]xattr\ \-l\ /mount/point/.mergerfs\f[] to see all supported
 keys.
 Some are informational and therefore readonly.
-.SS user.mergerfs.srcmounts
+.SS user.mergerfs.branches
+.PP
+\f[B]NOTE:\f[] formerly \f[C]user.mergerfs.srcmounts\f[] but said key is
+still supported.
 .PP
 Used to query or modify the list of source mounts.
 When modifying there are several shortcuts to easy manipulation of the
@@ -834,7 +843,7 @@ remove last in list
 T}
 .TE
 .PP
-\f[C]xattr\ \-w\ user.mergerfs.srcmounts\ +</mnt/drive3\ /mnt/pool/.mergerfs\f[]
+\f[C]xattr\ \-w\ user.mergerfs.branches\ +</mnt/drive3\ /mnt/pool/.mergerfs\f[]
 .SS minfreespace
 .PP
 Input: interger with an optional multiplier suffix.
@@ -858,7 +867,7 @@ In that case it will be a comma separated list
 .nf
 \f[C]
 [trapexit:/mnt/mergerfs]\ $\ xattr\ \-l\ .mergerfs
-user.mergerfs.srcmounts:\ /mnt/a:/mnt/b
+user.mergerfs.branches:\ /mnt/a:/mnt/b
 user.mergerfs.minfreespace:\ 4294967295
 user.mergerfs.moveonenospc:\ false
 \&...
@@ -870,16 +879,16 @@ ff
 [trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.category.search\ .mergerfs
 newest
 
-[trapexit:/mnt/mergerfs]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ +/mnt/c\ .mergerfs
-[trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+[trapexit:/mnt/mergerfs]\ $\ xattr\ \-w\ user.mergerfs.branches\ +/mnt/c\ .mergerfs
+[trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.branches\ .mergerfs
 /mnt/a:/mnt/b:/mnt/c
 
-[trapexit:/mnt/mergerfs]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ =/mnt/c\ .mergerfs
-[trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+[trapexit:/mnt/mergerfs]\ $\ xattr\ \-w\ user.mergerfs.branches\ =/mnt/c\ .mergerfs
+[trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.branches\ .mergerfs
 /mnt/c
 
-[trapexit:/mnt/mergerfs]\ $\ xattr\ \-w\ user.mergerfs.srcmounts\ \[aq]+</mnt/a:/mnt/b\[aq]\ .mergerfs
-[trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.srcmounts\ .mergerfs
+[trapexit:/mnt/mergerfs]\ $\ xattr\ \-w\ user.mergerfs.branches\ \[aq]+</mnt/a:/mnt/b\[aq]\ .mergerfs
+[trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.branches\ .mergerfs
 /mnt/a:/mnt/b:/mnt/c
 \f[]
 .fi

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "branch.hpp"
 #include "fusefunc.hpp"
 #include "policy.hpp"
 
@@ -42,8 +43,8 @@ namespace mergerfs
 
   public:
     std::string              destmount;
-    std::vector<std::string> srcmounts;
-    mutable pthread_rwlock_t srcmountslock;
+    Branches                 branches;
+    mutable pthread_rwlock_t branches_lock;
     uint64_t                 minfreespace;
     bool                     moveonenospc;
     bool                     direct_io;
