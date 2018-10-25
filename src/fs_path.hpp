@@ -25,7 +25,8 @@ namespace fs
   {
     using std::string;
 
-    void dirname(string &path);
+    string dirname(const char *path_);
+    string dirname(const string *path_);
 
     string basename(const string &path);
 
@@ -63,6 +64,23 @@ namespace fs
     {
       output  = *base;
       output += suffix;
+    }
+
+    inline
+    string
+    make(const string *base_,
+         const char   *suffix_)
+    {
+      return (*base_ + suffix_);
+    }
+
+    static
+    inline
+    string
+    make(const string *base_,
+         const string *suffix_)
+    {
+      return (*base_ + *suffix_);
     }
   }
 };

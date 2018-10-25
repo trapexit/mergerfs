@@ -87,8 +87,7 @@ _create(Policy::Func::Search  searchFunc,
   vector<const string*> createpaths;
   vector<const string*> existingpaths;
 
-  fusedirpath = fusepath;
-  fs::path::dirname(fusedirpath);
+  fusedirpath = fs::path::dirname(fusepath);
 
   rv = searchFunc(srcmounts,fusedirpath,minfreespace,existingpaths);
   if(rv == -1)

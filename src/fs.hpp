@@ -27,22 +27,14 @@ namespace fs
   using std::string;
   using std::vector;
 
-  bool exists(const string &path,
-              struct stat  &st);
-  bool exists(const string &path);
+  int readonly(const string *path_,
+               bool         *readonly_);
 
-  bool info(const string &path,
-            bool         &readonly,
-            uint64_t     &spaceavail,
-            uint64_t     &spaceused);
+  int spaceavail(const string *path_,
+                 uint64_t     *spaceavail_);
 
-  bool readonly(const string &path);
-
-  bool spaceavail(const string &path,
-                  uint64_t     &spaceavail);
-
-  bool spaceused(const string &path,
-                 uint64_t     &spaceavail);
+  int spaceused(const string *path_,
+                uint64_t     *spaceavail_);
 
   void findallfiles(const vector<string> &srcmounts,
                     const char           *fusepath,

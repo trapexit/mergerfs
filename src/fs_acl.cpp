@@ -28,12 +28,12 @@ namespace fs
   namespace acl
   {
     bool
-    dir_has_defaults(const std::string &fullpath)
+    dir_has_defaults(const std::string &fullpath_)
     {
       int rv;
-      std::string dirpath = fullpath;
+      std::string dirpath;
 
-      fs::path::dirname(dirpath);
+      dirpath = fs::path::dirname(&fullpath_);
 
       rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 

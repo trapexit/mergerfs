@@ -14,14 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_exists.hpp"
+#include "fs_info.hpp"
+#include "fs_path.hpp"
+#include "policy.hpp"
+
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_path.hpp"
-#include "policy.hpp"
 
 using std::string;
 using std::vector;
@@ -34,33 +36,29 @@ _eplus_create(const vector<string>  &basepaths,
               const uint64_t         minfreespace,
               vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t eplus;
+  fs::info_t info;
+  const string *basepath;
   const string *eplusbasepath;
 
   eplus = std::numeric_limits<uint64_t>::max();
   eplusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
-
-      if(!fs::exists(fullpath))
+      rv = fs::info(basepath,fusepath,&info);
+      if(rv == -1)
         continue;
-      if(!fs::info(*basepath,readonly,spaceavail,spaceused))
+      if(info.readonly)
         continue;
-      if(readonly)
+      if(info.spaceavail < minfreespace)
         continue;
-      if(spaceavail < minfreespace)
-        continue;
-      if(spaceused >= eplus)
+      if(info.spaceused >= eplus)
         continue;
 
-      eplus = spaceused;
+      eplus = info.spaceused;
       eplusbasepath = basepath;
     }
 
@@ -78,22 +76,22 @@ _eplus_other(const vector<string>  &basepaths,
              const char            *fusepath,
              vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t eplus;
+  uint64_t spaceused;
+  const string *basepath;
   const string *eplusbasepath;
 
   eplus = 0;
   eplusbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      uint64_t spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
-
-      if(!fs::exists(fullpath))
+      if(!fs::exists(*basepath,fusepath))
         continue;
-      if(!fs::spaceused(*basepath,spaceused))
+      rv = fs::spaceused(basepath,&spaceused);
+      if(rv == -1)
         continue;
       if(spaceused >= eplus)
         continue;

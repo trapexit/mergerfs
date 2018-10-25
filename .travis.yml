@@ -18,13 +18,6 @@ matrix:
       dist: trusty
       compiler: clang
       sudo: required
-    - os: osx
-      compiler: clang
-
-before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew tap caskroom/cask; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install osxfuse; fi
 
 script:
   - sudo -E make install-build-pkgs

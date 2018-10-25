@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 
 #include <fuse.h>
 

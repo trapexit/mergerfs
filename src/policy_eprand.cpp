@@ -14,13 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "policy.hpp"
+
 #include <algorithm>
 #include <string>
 #include <vector>
-
-#include "errno.hpp"
-#include "policy.hpp"
-#include "success_fail.hpp"
 
 using std::string;
 using std::vector;

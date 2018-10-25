@@ -107,6 +107,7 @@ _rename_create_path(Policy::Func::Search  searchFunc,
 {
   int rv;
   int error;
+  string newfusedirpath;
   vector<string> toremove;
   vector<const string*> newbasepath;
   vector<const string*> oldbasepaths;
@@ -115,8 +116,8 @@ _rename_create_path(Policy::Func::Search  searchFunc,
   if(rv == -1)
     return -errno;
 
-  string newfusedirpath = newfusepath;
-  fs::path::dirname(newfusedirpath);
+  newfusedirpath = fs::path::dirname(newfusepath);
+
   rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return -errno;
@@ -174,8 +175,8 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
   string newfusedirpath;
   vector<const string*> newbasepath;
 
-  newfusedirpath = newfusepath;
-  fs::path::dirname(newfusedirpath);
+  newfusedirpath = fs::path::dirname(newfusepath);
+
   rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return rv;

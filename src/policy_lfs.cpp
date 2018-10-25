@@ -14,14 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_exists.hpp"
+#include "fs_info.hpp"
+#include "fs_path.hpp"
+#include "policy.hpp"
+
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_path.hpp"
-#include "policy.hpp"
 
 using std::string;
 using std::vector;
@@ -33,29 +35,29 @@ _lfs_create(const vector<string>  &basepaths,
             const uint64_t         minfreespace,
             vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t lfs;
+  fs::info_t info;
+  const string *basepath;
   const string *lfsbasepath;
 
   lfs = std::numeric_limits<uint64_t>::max();
   lfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      bool readonly;
-      uint64_t spaceavail;
-      uint64_t _spaceused;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      if(!fs::info(*basepath,readonly,spaceavail,_spaceused))
+      rv = fs::info(basepath,&info);
+      if(rv == -1)
         continue;
-      if(readonly)
+      if(info.readonly)
         continue;
-      if(spaceavail < minfreespace)
+      if(info.spaceavail < minfreespace)
         continue;
-      if(spaceavail > lfs)
+      if(info.spaceavail > lfs)
         continue;
 
-      lfs = spaceavail;
+      lfs = info.spaceavail;
       lfsbasepath = basepath;
     }
 
@@ -73,22 +75,22 @@ _lfs_other(const vector<string>  &basepaths,
            const char            *fusepath,
            vector<const string*> &paths)
 {
-  string fullpath;
+  int rv;
   uint64_t lfs;
+  uint64_t spaceavail;
+  const string *basepath;
   const string *lfsbasepath;
 
   lfs = std::numeric_limits<uint64_t>::max();
   lfsbasepath = NULL;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      uint64_t spaceavail;
-      const string *basepath = &basepaths[i];
+      basepath = &basepaths[i];
 
-      fs::path::make(basepath,fusepath,fullpath);
-
-      if(!fs::exists(fullpath))
+      if(!fs::exists(*basepath,fusepath))
         continue;
-      if(!fs::spaceavail(*basepath,spaceavail))
+      rv = fs::spaceavail(basepath,&spaceavail);
+      if(rv == -1)
         continue;
       if(spaceavail > lfs)
         continue;

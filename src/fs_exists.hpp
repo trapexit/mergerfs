@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,9 +18,8 @@
 
 #pragma once
 
-#include "errno.hpp"
-
-#include <sys/statvfs.h>
+#include "fs_base_stat.hpp"
+#include "fs_path.hpp"
 
 #include <string>
 
@@ -28,19 +27,50 @@ namespace fs
 {
   static
   inline
-  int
-  statvfs(const char     *path,
-          struct statvfs &st)
+  bool
+  exists(const std::string &path_,
+         struct stat       &st_)
   {
-    return ::statvfs(path,&st);
+    int rv;
+
+    rv = fs::lstat(path_,st_);
+
+    return (rv == 0);
   }
 
   static
   inline
-  int
-  statvfs(const std::string &path,
-          struct statvfs    &st)
+  bool
+  exists(const std::string &path_)
   {
-    return fs::statvfs(path.c_str(),st);
+    struct stat st;
+
+    return fs::exists(path_,st);
+  }
+
+
+  static
+  inline
+  bool
+  exists(const std::string &basepath_,
+         const char        *relpath_,
+         struct stat       &st_)
+  {
+    std::string fullpath;
+
+    fullpath = fs::path::make(&basepath_,relpath_);
+
+    return fs::exists(fullpath,st_);
+  }
+
+  static
+  inline
+  bool
+  exists(const std::string &basepath_,
+         const char        *relpath_)
+  {
+    struct stat st;
+
+    return fs::exists(basepath_,relpath_,st);
   }
 }
