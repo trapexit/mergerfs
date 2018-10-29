@@ -74,6 +74,8 @@ _readdir(const vector<string>  &srcmounts,
       rv = 0;
       for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
         {
+          if(!strncmp(de->d_name,".fuse_hidden",12))
+            continue;
           rv = names.put(de->d_name);
           if(rv == 0)
             continue;
