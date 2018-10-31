@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-10-08
+% 2018-10-31
 
 # NAME
 
@@ -65,7 +65,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
-* **hard_remove**: force libfuse to immedately remove files when unlinked. This can have a very minor performance impact in some cases but is generally recommended since there are subtle race conditions which can occur when removing large sets of files & directories.
+* **hard_remove**: force libfuse to immedately remove files when unlinked. This will keep the `.fuse_hidden` files from showing up but if software uses an opened but unlinked file in certain ways it could result in errors.
 * **dropcacheonclose=true|false**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
 * **symlinkify=true|false**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
 * **symlinkify_timeout=value**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
@@ -96,8 +96,8 @@ The above line will use all mount points in /mnt prefixed with **disk** and the 
 To have the pool mounted at boot or otherwise accessable from related tools use **/etc/fstab**.
 
 ```
-# <file system>        <mount point>  <type>         <options>                                 <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other,use_ino,hard_remove  0       0
+# <file system>        <mount point>  <type>         <options>                      <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other,use_ino   0       0
 ```
 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
@@ -157,6 +157,8 @@ The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown
 
 Policies, when called to create, will ignore drives which are readonly. This allows for readonly and read/write drives to be mixed together. Note that the drive must be explicitly mounted with the **ro** mount option for this to work.
 
+When using policies which are based on a device's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
+
 #### Function / Category classifications
 
 | Category | FUSE Functions                                                                      |
@@ -176,7 +178,7 @@ All policies which start with `ep` (**epff**, **eplfs**, **eplus**, **epmfs**, *
 
 As the descriptions explain a path preserving policy will only consider drives where the relative path being accessed already exists.
 
-When using non-path preserving policies where something is created paths will be copied to target drives as necessary.
+When using non-path preserving policies paths will be cloned to target drives as necessary.
 
 #### Policy descriptions
 
@@ -251,7 +253,7 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 
 #### statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the src mounts will not be included.
 
 # BUILDING
 
@@ -492,7 +494,7 @@ done
 
 # TIPS / NOTES
 
-* The recommended base options are **defaults,allow_other,direct_io,use_ino,hard_remove**. (**use_ino** will only work when used with mergerfs 2.18.0 and above.)
+* The recommended base options are **defaults,allow_other,direct_io,use_ino**. (**use_ino** will only work when used with mergerfs 2.18.0 and above.)
 * Run mergerfs as `root` unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
@@ -632,7 +634,7 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 
 Not *really* a bug. The FUSE library will move files when asked to delete them as a way to deal with certain edge cases and then later delete that file when its clear the file is no longer needed. This however can lead to two issues. One is that these hidden files are noticed by `rm -rf` or `find` when scanning directories and they may try to remove them and they might have disappeared already. There is nothing *wrong* about this happening but it can be annoying. The second issue is that a directory might not be able to removed on account of the hidden file being still there.
 
-Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately.
+Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately. That has a side effect however. Files which are unlinked and then they are still used (in certain forms) will result in an error.
 
 # FAQ
 
@@ -755,6 +757,12 @@ Due to how NFS works and interacts with FUSE when not using `direct_io` its poss
 
 You could also set `xattr` to `noattr` or `notsup` to short circuit or stop all xattr requests.
 
+#### What are these .fuse_hidden files?
+
+When not using `hard_remove` libfuse will create .fuse_hiddenXXXXXXXX files when an opened file is unlinked. This is to simplify "use after unlink" usecases. There is a possibility these files end up being picked up by software scanning directories and not ignoring hidden files. This is rarely a problem but a solution is in the works.
+
+The files are cleaned up once the file is finally closed. Only if mergerfs crashes or is killed would they be left around.
+
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
 [mhddfs](https://github.com/trapexit/mhddfs) manages running as **root** by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns **0** then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle many other situations. Rather than attempting to simulate POSIX ACL behavior the proper way to manage this is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), in effect becoming the user making the original call, and perform the action as them. This is what mergerfs does.
@@ -762,6 +770,18 @@ You could also set `xattr` to `noattr` or `notsup` to short circuit or stop all 
 In Linux setreuid syscalls apply only to the thread. GLIBC hides this away by using realtime signals to inform all threads to change credentials. Taking after **Samba**, mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths between drives).
 
 For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allowing multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well assuming there are few users.
+
+# PERFORMANCE TWEAKING
+
+* try adding (or removing) `direct_io`
+* try adding (or removing) `auto_cache` / `noauto_cache` (included in `defaults`)
+* try adding (or removing) `kernel_cache` (don't use the underlying filesystems directly if enabling `kernel_cache`)
+* try adding (or removing) `splice_move`, `splice_read`, and `splice_write` (all three included in `defaults`)
+* try changing the number of worker threads
+* try disabling `security_capability` or `xattr`
+* test theoretical performance using `nullrw` or mounting a ram disk
+* use `symlinkify` if your data is largely static and you need native speed reads
+* use lvm and lvm cache to place a SSD in front of your HDDs (howto coming)
 
 # SUPPORT
 
