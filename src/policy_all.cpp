@@ -45,7 +45,7 @@ namespace all
       {
         branch = &branches_[i];
 
-        if(branch->ro_or_nw())
+        if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
         rv = fs::info(&branch->path,&info);
         if(rv == -1)

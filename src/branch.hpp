@@ -28,14 +28,14 @@ struct Branch
       INVALID,
       RO,
       RW,
-      NW
+      NC
     };
 
   Mode        mode;
   std::string path;
 
   bool ro(void) const;
-  bool ro_or_nw(void) const;
+  bool ro_or_nc(void) const;
 };
 
 class Branches : public std::vector<Branch>

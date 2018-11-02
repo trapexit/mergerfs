@@ -87,7 +87,7 @@ The 'branches' (formerly 'srcmounts') argument is a colon (':') delimited list o
 
 To make it easier to include multiple branches mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will apply the glob itself.**
 
-Each branch can have a suffix of `=RW` (read / write), `=RO` (read only), or `=NW` (no writes). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NW` will exclude those paths from `create` policies (you can't create but you can change / delete).
+Each branch can have a suffix of `=RW` (read / write), `=RO` (read only), or `=NC` (no create). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NC` will exclude those paths from `create` policies (you can't create but you can change / delete).
 
 ```
 $ mergerfs -o defaults,allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
@@ -184,7 +184,7 @@ When using non-path preserving policies paths will be cloned to target drives as
 
 #### Policy descriptions
 
-All **create** policies will filter out branches which are mounted **read only** or tagged as **read only** or **no write**. All **action** policies will filter out branches which are mounted or tagged as **read only**.
+All **create** policies will filter out branches which are mounted **read only** or tagged as **read only** or **no create**. All **action** policies will filter out branches which are mounted or tagged as **read only**.
 
 If all branches are filtered an error will be returned. Typically EROFS or ENOSPC.
 

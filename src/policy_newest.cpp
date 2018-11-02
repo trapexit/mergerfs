@@ -55,7 +55,7 @@ namespace newest
 
         if(!fs::exists(branch->path,fusepath,st))
           error_and_continue(error,ENOENT);
-        if(branch->ro_or_nw())
+        if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
         if(st.st_mtime < newest)
           continue;
