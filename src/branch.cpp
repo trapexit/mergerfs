@@ -35,10 +35,10 @@ Branch::ro(void) const
 }
 
 bool
-Branch::ro_or_nw(void) const
+Branch::ro_or_nc(void) const
 {
   return ((mode == Branch::RO) ||
-          (mode == Branch::NW));
+          (mode == Branch::NC));
 }
 
 string
@@ -64,8 +64,8 @@ Branches::to_string(const bool mode_) const
             case Branch::RO:
               tmp += "RO";
               break;
-            case Branch::NW:
-              tmp += "NW";
+            case Branch::NC:
+              tmp += "NC";
               break;
             }
         }
@@ -105,8 +105,8 @@ parse(const string &str_,
     branch.mode = Branch::RO;
   else if(str::ends_with(str,"=RW"))
     branch.mode = Branch::RW;
-  else if(str::ends_with(str,"=NW"))
-    branch.mode = Branch::NW;
+  else if(str::ends_with(str,"=NC"))
+    branch.mode = Branch::NC;
 
   if(branch.mode != Branch::INVALID)
     str.resize(str.size() - 3);
