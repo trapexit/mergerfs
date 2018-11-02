@@ -158,6 +158,67 @@ _setxattr_bool(const string &attrval,
 
 static
 int
+_setxattr_xattr(const string &attrval_,
+                const int     flags_,
+                int           xattr_)
+{
+  if((flags_ & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  if(attrval_ == "passthrough")
+    xattr_ = 0;
+  else if(attrval_ == "noattr")
+    xattr_ = ENOATTR;
+  else if(attrval_ == "notsup")
+    xattr_ = ENOTSUP;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+static
+int
+_setxattr_statfs(const string         &attrval_,
+                 const int             flags_,
+                 Config::StatFS::Enum &enum_)
+{
+  if((flags_ & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  if(attrval_ == "base")
+    enum_ = Config::StatFS::BASE;
+  else if(attrval_ == "full")
+    enum_ = Config::StatFS::FULL;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+static
+int
+_setxattr_statfsignore(const string               &attrval_,
+                       const int                   flags_,
+                       Config::StatFSIgnore::Enum &enum_)
+{
+  if((flags_ & XATTR_CREATE) == XATTR_CREATE)
+    return -EEXIST;
+
+  if(attrval_ == "none")
+    enum_ = Config::StatFSIgnore::NONE;
+  else if(attrval_ == "ro")
+    enum_ = Config::StatFSIgnore::RO;
+  else if(attrval_ == "nc")
+    enum_ = Config::StatFSIgnore::NC;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+static
+int
 _setxattr_controlfile_func_policy(Config       &config,
                                   const string &funcname,
                                   const string &attrval,
@@ -246,10 +307,22 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_bool(attrval,
                               flags,
                               config.security_capability);
+      else if(attr[2] == "xattr")
+        return _setxattr_xattr(attrval,
+                               flags,
+                               config.xattr);
       else if(attr[2] == "link_cow")
         return _setxattr_bool(attrval,
                               flags,
                               config.link_cow);
+      else if(attr[2] == "statfs")
+        return _setxattr_statfs(attrval,
+                                flags,
+                                config.statfs);
+      else if(attr[2] == "statfs_ignore")
+        return _setxattr_statfsignore(attrval,
+                                      flags,
+                                      config.statfs_ignore);
       break;
 
     case 4:

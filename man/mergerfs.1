@@ -170,6 +170,20 @@ Breaking the link and providing a basic copy\-on\-write function similar
 to cow\-shell.
 (default: false)
 .IP \[bu] 2
+\f[B]statfs=base|full\f[]: Controls how statfs works.
+\[aq]base\[aq] means it will always use all branches in statfs
+calculations.
+\[aq]full\[aq] is in effect path preserving and only includes drives
+where the path exists.
+(default: base)
+.IP \[bu] 2
+\f[B]statfs_ignore=none|ro|nc\f[]: \[aq]ro\[aq] will cause statfs
+calculations to ignore available space for branches mounted or tagged as
+\[aq]read only\[aq] or \[aq]no create\[aq].
+\[aq]nc\[aq] will ignore available space for branches tagged as \[aq]no
+create\[aq].
+(default: none)
+.IP \[bu] 2
 \f[B]threads=num\f[]: number of threads to use in multithreaded mode.
 When set to zero (the default) it will attempt to discover and use the
 number of logical cores.
@@ -219,7 +233,7 @@ globbing (http://linux.die.net/man/7/glob).
 the shell itself will apply the glob itself.\f[]
 .PP
 Each branch can have a suffix of \f[C]=RW\f[] (read / write),
-\f[C]=RO\f[] (read only), or \f[C]=NW\f[] (no writes).
+\f[C]=RO\f[] (read only), or \f[C]=NC\f[] (no create).
 These suffixes work with globs as well and will apply to each path
 found.
 \f[C]RW\f[] is the default behavior and those paths will be eligible for
@@ -227,7 +241,7 @@ all policy categories.
 \f[C]RO\f[] will exclude those paths from \f[C]create\f[] and
 \f[C]action\f[] policies (just as a filesystem being mounted \f[C]ro\f[]
 would).
-\f[C]NW\f[] will exclude those paths from \f[C]create\f[] policies (you
+\f[C]NC\f[] will exclude those paths from \f[C]create\f[] policies (you
 can\[aq]t create but you can change / delete).
 .IP
 .nf
@@ -433,7 +447,8 @@ drives as necessary.
 .SS Policy descriptions
 .PP
 All \f[B]create\f[] policies will filter out branches which are mounted
-\f[B]read only\f[] or tagged as \f[B]read only\f[] or \f[B]no write\f[].
+\f[B]read only\f[] or tagged as \f[B]read only\f[] or \f[B]no
+create\f[].
 All \f[B]action\f[] policies will filter out branches which are mounted
 or tagged as \f[B]read only\f[].
 .PP

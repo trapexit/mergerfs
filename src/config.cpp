@@ -48,6 +48,8 @@ namespace mergerfs
       security_capability(true),
       link_cow(false),
       xattr(0),
+      statfs(StatFS::BASE),
+      statfs_ignore(StatFSIgnore::NONE),
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),

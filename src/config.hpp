@@ -33,6 +33,26 @@ namespace mergerfs
   class Config
   {
   public:
+    struct StatFS
+    {
+      enum Enum
+        {
+          BASE,
+          FULL
+        };
+    };
+
+    struct StatFSIgnore
+    {
+      enum Enum
+        {
+          NONE,
+          RO,
+          NC
+        };
+    };
+
+  public:
     Config();
 
   public:
@@ -56,6 +76,8 @@ namespace mergerfs
     bool                     security_capability;
     bool                     link_cow;
     int                      xattr;
+    StatFS::Enum             statfs;
+    StatFSIgnore::Enum       statfs_ignore;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];
