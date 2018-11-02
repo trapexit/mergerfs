@@ -73,14 +73,18 @@ set_kv_option(fuse_args         &args,
 
 static
 void
-set_fsname(fuse_args            &args,
-           const vector<string> &srcmounts)
+set_fsname(fuse_args      &args,
+           const Branches &branches_)
 {
-  if(srcmounts.size() > 0)
+  vector<string> branches;
+
+  branches_.to_paths(branches);
+
+  if(branches.size() > 0)
     {
       std::string fsname;
 
-      fsname = str::remove_common_prefix_and_join(srcmounts,':');
+      fsname = str::remove_common_prefix_and_join(branches,':');
 
       set_kv_option(args,"fsname",fsname);
     }
@@ -257,16 +261,10 @@ process_opt(Config            &config,
 
 static
 int
-process_srcmounts(const char *arg,
-                  Config     &config)
+process_branches(const char *arg,
+                 Config     &config)
 {
-  vector<string> paths;
-
-  str::split(paths,arg,':');
-
-  fs::glob(paths,config.srcmounts);
-
-  fs::realpathize(config.srcmounts);
+  config.branches.set(arg);
 
   return 0;
 }
@@ -356,8 +354,8 @@ option_processor(void       *data,
       break;
 
     case FUSE_OPT_KEY_NONOPT:
-      rv = config.srcmounts.empty() ?
-        process_srcmounts(arg,config) :
+      rv = config.branches.empty() ?
+        process_branches(arg,config) :
         process_destmounts(arg,config);
       break;
 
@@ -406,7 +404,7 @@ namespace mergerfs
                      opts,
                      ::option_processor);
 
-      set_fsname(args,config.srcmounts);
+      set_fsname(args,config.branches);
       set_subtype(args);
     }
   }

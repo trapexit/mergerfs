@@ -8,7 +8,7 @@ mergerfs - a featureful union filesystem
 
 # SYNOPSIS
 
-mergerfs -o&lt;options&gt; &lt;srcmounts&gt; &lt;mountpoint&gt;
+mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
@@ -81,11 +81,13 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
-### srcmounts
+### branches
 
-The srcmounts (source mounts) argument is a colon (':') delimited list of paths to be included in the pool. It does not matter if the paths are on the same or different drives nor does it matter the filesystem. Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
+The 'branches' (formerly 'srcmounts') argument is a colon (':') delimited list of paths to be pooled together. It does not matter if the paths are on the same or different drives nor does it matter the filesystem. Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
 
-To make it easier to include multiple source mounts mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will expand it.**
+To make it easier to include multiple branches mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will apply the glob itself.**
+
+Each branch can have a suffix of `=RW` (read / write), `=RO` (read only), or `=NW` (no writes). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NW` will exclude those paths from `create` policies (you can't create but you can change / delete).
 
 ```
 $ mergerfs -o defaults,allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
@@ -176,34 +178,38 @@ Policies, as described below, are of two core types. `path preserving` and `non-
 
 All policies which start with `ep` (**epff**, **eplfs**, **eplus**, **epmfs**, **eprand**) are `path preserving`. `ep` stands for `existing path`.
 
-As the descriptions explain a path preserving policy will only consider drives where the relative path being accessed already exists.
+A path preserving policy will only consider drives where the relative path being accessed already exists.
 
 When using non-path preserving policies paths will be cloned to target drives as necessary.
 
 #### Policy descriptions
 
+All **create** policies will filter out branches which are mounted **read only** or tagged as **read only** or **no write**. All **action** policies will filter out branches which are mounted or tagged as **read only**.
+
+If all branches are filtered an error will be returned. Typically EROFS or ENOSPC.
+
 | Policy           | Description                                                |
 |------------------|------------------------------------------------------------|
-| all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **ff**. It will exclude readonly drives and those with free space less than **minfreespace**. |
-| epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. Excludes readonly drives and those with free space less than **minfreespace**. |
-| epff (existing path, first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found where the relative path already exists. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). Falls back to **ff**. |
-| eplfs (existing path, least free space) | Of all the drives on which the relative path exists choose the drive with the least free space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lfs**. |
-| eplus (existing path, least used space) | Of all the drives on which the relative path exists choose the drive with the least used space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **lus**. |
-| epmfs (existing path, most free space) | Of all the drives on which the relative path exists choose the drive with the most free space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
+| all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. It will exclude branches with free space less than **minfreespace**. |
+| epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. Excludes branches with free space less than **minfreespace**. |
+| epff (existing path, first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found where the relative path already exists. For **create** category functions it will exclude branches with free space less than **minfreespace**. |
+| eplfs (existing path, least free space) | Of all the drives on which the relative path exists choose the drive with the least free space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
+| eplus (existing path, least used space) | Of all the drives on which the relative path exists choose the drive with the least used space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
+| epmfs (existing path, most free space) | Of all the drives on which the relative path exists choose the drive with the most free space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
 | eprand (existing path, random) | Calls **epall** and then randomizes. Otherwise behaves the same as **epall**. |
-| erofs | Exclusively return **-1** with **errno** set to **EROFS** (Read-only filesystem). By setting **create** functions to this you can in effect turn the filesystem mostly readonly. |
-| ff (first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
-| lfs (least free space) | Pick the drive with the least available free space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
-| lus (least used space) | Pick the drive with the least used space. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace**. Falls back to **mfs**. |
-| mfs (most free space) | Pick the drive with the most available free space. For **create** category functions it will exclude readonly drives. Falls back to **ff**. |
-| newest | Pick the file / directory with the largest mtime. For **create** category functions it will exclude readonly drives and those with free space less than **minfreespace** (unless there is no other option). |
+| erofs | Exclusively return **-1** with **errno** set to **EROFS** (Read-only filesystem). |
+| ff (first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. For **create** category functions it will exclude those with free space less than **minfreespace**. |
+| lfs (least free space) | Pick the drive with the least available free space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
+| lus (least used space) | Pick the drive with the least used space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
+| mfs (most free space) | Pick the drive with the most available free space. |
+| newest | Pick the file / directory with the largest mtime. For **create** category functions it will exclude those with free space less than **minfreespace**. |
 | rand (random) | Calls **all** and then randomizes. |
 
 #### Defaults ####
 
 | Category | Policy |
 |----------|--------|
-| action   | all    |
+| action   | epall  |
 | create   | epmfs  |
 | search   | ff     |
 
@@ -253,7 +259,7 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 
 #### statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the src mounts will not be included.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the branch will not be included.
 
 # BUILDING
 
@@ -328,7 +334,9 @@ Any changes made at runtime are **not** persisted. If you wish for values to per
 
 Use `xattr -l /mount/point/.mergerfs` to see all supported keys. Some are informational and therefore readonly.
 
-###### user.mergerfs.srcmounts ######
+###### user.mergerfs.branches ######
+
+**NOTE:** formerly `user.mergerfs.srcmounts` but said key is still supported.
 
 Used to query or modify the list of source mounts. When modifying there are several shortcuts to easy manipulation of the list.
 
@@ -341,7 +349,7 @@ Used to query or modify the list of source mounts. When modifying there are seve
 | -<           | remove first in list |
 | ->           | remove last in list |
 
-`xattr -w user.mergerfs.srcmounts +</mnt/drive3 /mnt/pool/.mergerfs`
+`xattr -w user.mergerfs.branches +</mnt/drive3 /mnt/pool/.mergerfs`
 
 ###### minfreespace ######
 
@@ -365,7 +373,7 @@ Output: the policy string except for categories where its funcs have multiple ty
 
 ```
 [trapexit:/mnt/mergerfs] $ xattr -l .mergerfs
-user.mergerfs.srcmounts: /mnt/a:/mnt/b
+user.mergerfs.branches: /mnt/a:/mnt/b
 user.mergerfs.minfreespace: 4294967295
 user.mergerfs.moveonenospc: false
 ...
@@ -377,16 +385,16 @@ ff
 [trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.category.search .mergerfs
 newest
 
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.srcmounts +/mnt/c .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.srcmounts .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.branches +/mnt/c .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.branches .mergerfs
 /mnt/a:/mnt/b:/mnt/c
 
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.srcmounts =/mnt/c .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.srcmounts .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.branches =/mnt/c .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.branches .mergerfs
 /mnt/c
 
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.srcmounts '+</mnt/a:/mnt/b' .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.srcmounts .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.branches '+</mnt/a:/mnt/b' .mergerfs
+[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.branches .mergerfs
 /mnt/a:/mnt/b:/mnt/c
 ```
 

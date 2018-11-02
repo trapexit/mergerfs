@@ -36,11 +36,11 @@ namespace fs
   int spaceused(const string *path_,
                 uint64_t     *spaceavail_);
 
-  void findallfiles(const vector<string> &srcmounts,
+  void findallfiles(const vector<string> &basepaths,
                     const char           *fusepath,
                     vector<string>       &paths);
 
-  int findonfs(const vector<string> &srcmounts,
+  int findonfs(const vector<string> &basepaths,
                const string         &fusepath,
                const int             fd,
                string               &basepath);

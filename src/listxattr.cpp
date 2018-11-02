@@ -44,6 +44,7 @@ _listxattr_controlfile(char         *list,
   const vector<string> strs =
     buildvector<string>
     ("user.mergerfs.srcmounts")
+    ("user.mergerfs.branches")
     ("user.mergerfs.minfreespace")
     ("user.mergerfs.moveonenospc")
     ("user.mergerfs.dropcacheonclose")
@@ -80,7 +81,7 @@ _listxattr_controlfile(char         *list,
 static
 int
 _listxattr(Policy::Func::Search  searchFunc,
-           const vector<string> &srcmounts,
+           const Branches       &branches_,
            const uint64_t        minfreespace,
            const char           *fusepath,
            char                 *list,
@@ -90,7 +91,7 @@ _listxattr(Policy::Func::Search  searchFunc,
   string fullpath;
   vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -127,10 +128,10 @@ namespace mergerfs
         }
 
       const ugid::Set         ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard readlock(&config.srcmountslock);
+      const rwlock::ReadGuard readlock(&config.branches_lock);
 
       return _listxattr(config.listxattr,
-                        config.srcmounts,
+                        config.branches,
                         config.minfreespace,
                         fusepath,
                         list,

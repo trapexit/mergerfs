@@ -83,7 +83,7 @@ static
 int
 _link_create_path(Policy::Func::Search  searchFunc,
                   Policy::Func::Action  actionFunc,
-                  const vector<string> &srcmounts,
+                  const Branches       &branches_,
                   const uint64_t        minfreespace,
                   const char           *oldfusepath,
                   const char           *newfusepath)
@@ -93,13 +93,13 @@ _link_create_path(Policy::Func::Search  searchFunc,
   vector<const string*> oldbasepaths;
   vector<const string*> newbasepaths;
 
-  rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepaths);
+  rv = searchFunc(branches_,newfusedirpath,minfreespace,newbasepaths);
   if(rv == -1)
     return -errno;
 
@@ -112,7 +112,7 @@ static
 int
 _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
-                           const vector<string> &srcmounts,
+                           const Branches       &branches_,
                            const uint64_t        minfreespace,
                            const string         &oldbasepath,
                            const char           *oldfusepath,
@@ -124,14 +124,14 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  rv = createFunc(branches_,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return -1;
 
   if(oldbasepath != *newbasepath[0])
     return (errno=EXDEV,-1);
 
-  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  rv = searchFunc(branches_,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return -1;
 
@@ -142,7 +142,7 @@ static
 int
 _link_preserve_path_core(Policy::Func::Search  searchFunc,
                          Policy::Func::Create  createFunc,
-                         const vector<string> &srcmounts,
+                         const Branches       &branches_,
                          const uint64_t        minfreespace,
                          const string         &oldbasepath,
                          const char           *oldfusepath,
@@ -160,7 +160,7 @@ _link_preserve_path_core(Policy::Func::Search  searchFunc,
   if((rv == -1) && (errno == ENOENT))
     {
       rv = _clonepath_if_would_create(searchFunc,createFunc,
-                                      srcmounts,minfreespace,
+                                      branches_,minfreespace,
                                       oldbasepath,
                                       oldfusepath,newfusepath);
       if(rv != -1)
@@ -174,7 +174,7 @@ static
 int
 _link_preserve_path_loop(Policy::Func::Search         searchFunc,
                          Policy::Func::Create         createFunc,
-                         const vector<string>        &srcmounts,
+                         const Branches              &branches_,
                          const uint64_t               minfreespace,
                          const char                  *oldfusepath,
                          const char                  *newfusepath,
@@ -186,7 +186,7 @@ _link_preserve_path_loop(Policy::Func::Search         searchFunc,
   for(size_t i = 0, ei = oldbasepaths.size(); i != ei; i++)
     {
       error = _link_preserve_path_core(searchFunc,createFunc,
-                                       srcmounts,minfreespace,
+                                       branches_,minfreespace,
                                        *oldbasepaths[i],
                                        oldfusepath,newfusepath,
                                        error);
@@ -200,7 +200,7 @@ int
 _link_preserve_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
                     Policy::Func::Create  createFunc,
-                    const vector<string> &srcmounts,
+                    const Branches       &branches_,
                     const uint64_t        minfreespace,
                     const char           *oldfusepath,
                     const char           *newfusepath)
@@ -208,12 +208,12 @@ _link_preserve_path(Policy::Func::Search  searchFunc,
   int rv;
   vector<const string*> oldbasepaths;
 
-  rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
   return _link_preserve_path_loop(searchFunc,createFunc,
-                                  srcmounts,minfreespace,
+                                  branches_,minfreespace,
                                   oldfusepath,newfusepath,
                                   oldbasepaths);
 }
@@ -229,20 +229,20 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       if(config.create->path_preserving() && !config.ignorepponrename)
         return _link_preserve_path(config.getattr,
                                    config.link,
                                    config.create,
-                                   config.srcmounts,
+                                   config.branches,
                                    config.minfreespace,
                                    from,
                                    to);
 
       return _link_create_path(config.link,
                                config.create,
-                               config.srcmounts,
+                               config.branches,
                                config.minfreespace,
                                from,
                                to);

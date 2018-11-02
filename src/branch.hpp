@@ -18,13 +18,38 @@
 
 #pragma once
 
-#include "fs_info_t.hpp"
-
 #include <string>
+#include <vector>
 
-namespace fs
+struct Branch
 {
-  int
-  info(const std::string *path_,
-       fs::info_t        *info_);
-}
+  enum Mode
+    {
+      INVALID,
+      RO,
+      RW,
+      NW
+    };
+
+  Mode        mode;
+  std::string path;
+
+  bool ro(void) const;
+  bool ro_or_nw(void) const;
+};
+
+class Branches : public std::vector<Branch>
+{
+public:
+  std::string to_string(const bool mode_ = false) const;
+
+  void to_paths(std::vector<std::string> &vec_) const;
+
+public:
+  void set(const std::string &str_);
+  void add_begin(const std::string &str_);
+  void add_end(const std::string &str_);
+  void erase_begin(void);
+  void erase_end(void);
+  void erase_fnmatch(const std::string &str_);
+};

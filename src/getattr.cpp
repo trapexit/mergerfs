@@ -60,7 +60,7 @@ _getattr_controlfile(struct stat &st)
 static
 int
 _getattr(Policy::Func::Search  searchFunc,
-         const vector<string> &srcmounts,
+         const Branches       &branches_,
          const uint64_t        minfreespace,
          const char           *fusepath,
          struct stat          &st,
@@ -71,7 +71,7 @@ _getattr(Policy::Func::Search  searchFunc,
   string fullpath;
   vector<const string*> basepaths;
 
-  rv = searchFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -104,10 +104,10 @@ namespace mergerfs
         return _getattr_controlfile(*st);
 
       const ugid::Set         ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard readlock(&config.srcmountslock);
+      const rwlock::ReadGuard readlock(&config.branches_lock);
 
       return _getattr(config.getattr,
-                      config.srcmounts,
+                      config.branches,
                       config.minfreespace,
                       fusepath,
                       *st,

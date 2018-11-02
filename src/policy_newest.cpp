@@ -14,12 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-
 #include "errno.hpp"
 #include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "policy_error.hpp"
 
 #include <string>
 #include <vector>
@@ -30,93 +30,151 @@
 using std::string;
 using std::vector;
 
-static
-int
-_newest_create(const vector<string>  &basepaths,
-               const char            *fusepath,
-               vector<const string*> &paths)
+namespace newest
 {
-  int rv;
-  bool readonly;
-  time_t newest;
-  struct stat st;
-  const string *basepath;
-  const string *newestbasepath;
+  static
+  int
+  create(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    bool readonly;
+    time_t newest;
+    struct stat st;
+    const Branch *branch;
+    const string *newestbasepath;
 
-  newest = std::numeric_limits<time_t>::min();
-  newestbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    newest = std::numeric_limits<time_t>::min();
+    newestbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      if(!fs::exists(*basepath,fusepath,st))
-        continue;
-      if(st.st_mtime < newest)
-        continue;
-      rv = fs::readonly(basepath,&readonly);
-      if(rv == -1)
-        continue;
-      if(readonly)
-        continue;
+        if(!fs::exists(branch->path,fusepath,st))
+          error_and_continue(error,ENOENT);
+        if(branch->ro_or_nw())
+          error_and_continue(error,EROFS);
+        if(st.st_mtime < newest)
+          continue;
+        rv = fs::readonly(&branch->path,&readonly);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(readonly)
+          error_and_continue(error,EROFS);
 
-      newest = st.st_mtime;
-      newestbasepath = basepath;
-    }
+        newest = st.st_mtime;
+        newestbasepath = &branch->path;
+      }
 
-  if(newestbasepath == NULL)
-    return (errno=ENOENT,-1);
+    if(newestbasepath == NULL)
+      return (errno=error,-1);
 
-  paths.push_back(newestbasepath);
+    paths.push_back(newestbasepath);
 
-  return 0;
-}
+    return 0;
+  }
 
-static
-int
-_newest_other(const vector<string>  &basepaths,
-              const char            *fusepath,
-              vector<const string*> &paths)
-{
-  time_t newest;
-  struct stat st;
-  const string *basepath;
-  const string *newestbasepath;
+  static
+  int
+  action(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    bool readonly;
+    time_t newest;
+    struct stat st;
+    const Branch *branch;
+    const string *newestbasepath;
 
-  newest = std::numeric_limits<time_t>::min();
-  newestbasepath = NULL;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    newest = std::numeric_limits<time_t>::min();
+    newestbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      if(!fs::exists(*basepath,fusepath,st))
-        continue;
-      if(st.st_mtime < newest)
-        continue;
+        if(!fs::exists(branch->path,fusepath,st))
+          error_and_continue(error,ENOENT);
+        if(branch->ro())
+          error_and_continue(error,EROFS);
+        if(st.st_mtime < newest)
+          continue;
+        rv = fs::readonly(&branch->path,&readonly);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(readonly)
+          error_and_continue(error,EROFS);
 
-      newest = st.st_mtime;
-      newestbasepath = basepath;
-    }
+        newest = st.st_mtime;
+        newestbasepath = &branch->path;
+      }
 
-  if(newestbasepath == NULL)
-    return (errno=ENOENT,-1);
+    if(newestbasepath == NULL)
+      return (errno=error,-1);
 
-  paths.push_back(newestbasepath);
+    paths.push_back(newestbasepath);
 
-  return 0;
+    return 0;
+  }
+
+  static
+  int
+  search(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    time_t newest;
+    struct stat st;
+    const Branch *branch;
+    const string *newestbasepath;
+
+    newest = std::numeric_limits<time_t>::min();
+    newestbasepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
+
+        if(!fs::exists(branch->path,fusepath,st))
+          continue;
+        if(st.st_mtime < newest)
+          continue;
+
+        newest = st.st_mtime;
+        newestbasepath = &branch->path;
+      }
+
+    if(newestbasepath == NULL)
+      return (errno=ENOENT,-1);
+
+    paths.push_back(newestbasepath);
+
+    return 0;
+  }
 }
 
 namespace mergerfs
 {
   int
   Policy::Func::newest(const Category::Enum::Type  type,
-                       const vector<string>       &basepaths,
+                       const Branches             &branches_,
                        const char                 *fusepath,
                        const uint64_t              minfreespace,
                        vector<const string*>      &paths)
   {
-    if(type == Category::Enum::create)
-      return _newest_create(basepaths,fusepath,paths);
-
-    return _newest_other(basepaths,fusepath,paths);
+    switch(type)
+      {
+      case Category::Enum::create:
+        return newest::create(branches_,fusepath,paths);
+      case Category::Enum::action:
+        return newest::action(branches_,fusepath,paths);
+      case Category::Enum::search:
+      default:
+        return newest::search(branches_,fusepath,paths);
+      }
   }
 }

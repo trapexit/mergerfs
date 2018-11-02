@@ -49,78 +49,6 @@ _is_attrname_security_capability(const char *attrname_)
 }
 
 static
-int
-_add_srcmounts(vector<string>           &srcmounts,
-               pthread_rwlock_t         &srcmountslock,
-               const string             &destmount,
-               const string             &values,
-               vector<string>::iterator  pos)
-{
-  vector<string> patterns;
-  vector<string> additions;
-
-  str::split(patterns,values,':');
-  fs::glob(patterns,additions);
-  fs::realpathize(additions);
-
-  if(!additions.empty())
-    {
-      const rwlock::WriteGuard wrg(&srcmountslock);
-
-      srcmounts.insert(pos,
-                       additions.begin(),
-                       additions.end());
-    }
-
-  return 0;
-}
-
-static
-int
-_erase_srcmounts(vector<string>   &srcmounts,
-                 pthread_rwlock_t &srcmountslock,
-                 const string     &values)
-{
-  if(srcmounts.empty())
-    return 0;
-
-  vector<string> patterns;
-
-  str::split(patterns,values,':');
-
-  {
-    const rwlock::WriteGuard wrg(&srcmountslock);
-
-    str::erase_fnmatches(patterns,srcmounts);
-  }
-
-  return 0;
-}
-
-static
-int
-_replace_srcmounts(vector<string>   &srcmounts,
-                   pthread_rwlock_t &srcmountslock,
-                   const string     &destmount,
-                   const string     &values)
-{
-  vector<string> patterns;
-  vector<string> newmounts;
-
-  str::split(patterns,values,':');
-  fs::glob(patterns,newmounts);
-  fs::realpathize(newmounts);
-
-  {
-    const rwlock::WriteGuard wrg(&srcmountslock);
-
-    srcmounts.swap(newmounts);
-  }
-
-  return 0;
-}
-
-static
 void
 _split_attrval(const string &attrval,
                string       &instruction,
@@ -138,10 +66,11 @@ static
 int
 _setxattr_srcmounts(const string     &attrval,
                     const int         flags,
-                    vector<string>   &srcmounts,
-                    pthread_rwlock_t &srcmountslock,
-                    const string     &destmount)
+                    Branches         &branches_,
+                    pthread_rwlock_t &branches_lock)
 {
+  const rwlock::WriteGuard wrg(&branches_lock);
+
   string instruction;
   string values;
 
@@ -151,23 +80,25 @@ _setxattr_srcmounts(const string     &attrval,
   _split_attrval(attrval,instruction,values);
 
   if(instruction == "+")
-    return _add_srcmounts(srcmounts,srcmountslock,destmount,values,srcmounts.end());
+    branches_.add_end(values);
   else if(instruction == "+<")
-    return _add_srcmounts(srcmounts,srcmountslock,destmount,values,srcmounts.begin());
+    branches_.add_begin(values);
   else if(instruction == "+>")
-    return _add_srcmounts(srcmounts,srcmountslock,destmount,values,srcmounts.end());
+    branches_.add_end(values);
   else if(instruction == "-")
-    return _erase_srcmounts(srcmounts,srcmountslock,values);
+    branches_.erase_fnmatch(values);
   else if(instruction == "-<")
-    return _erase_srcmounts(srcmounts,srcmountslock,srcmounts.front());
+    branches_.erase_begin();
   else if(instruction == "->")
-    return _erase_srcmounts(srcmounts,srcmountslock,srcmounts.back());
+    branches_.erase_end();
   else if(instruction == "=")
-    return _replace_srcmounts(srcmounts,srcmountslock,destmount,values);
+    branches_.set(values);
   else if(instruction.empty())
-    return _replace_srcmounts(srcmounts,srcmountslock,destmount,values);
+    branches_.set(values);
+  else
+    return -EINVAL;
 
-  return -EINVAL;
+  return 0;
 }
 
 static
@@ -280,9 +211,13 @@ _setxattr_controlfile(Config       &config,
       if(attr[2] == "srcmounts")
         return _setxattr_srcmounts(attrval,
                                    flags,
-                                   config.srcmounts,
-                                   config.srcmountslock,
-                                   config.destmount);
+                                   config.branches,
+                                   config.branches_lock);
+      else if(attr[2] == "branches")
+        return _setxattr_srcmounts(attrval,
+                                   flags,
+                                   config.branches,
+                                   config.branches_lock);
       else if(attr[2] == "minfreespace")
         return _setxattr_uint64_t(attrval,
                                   flags,
@@ -382,7 +317,7 @@ _setxattr_loop(const vector<const string*> &basepaths,
 static
 int
 _setxattr(Policy::Func::Action  actionFunc,
-          const vector<string> &srcmounts,
+          const Branches       &branches_,
           const uint64_t        minfreespace,
           const char           *fusepath,
           const char           *attrname,
@@ -393,7 +328,7 @@ _setxattr(Policy::Func::Action  actionFunc,
   int rv;
   vector<const string*> basepaths;
 
-  rv = actionFunc(srcmounts,fusepath,minfreespace,basepaths);
+  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
   if(rv == -1)
     return -errno;
 
@@ -428,10 +363,10 @@ namespace mergerfs
         return -config.xattr;
 
       const ugid::Set         ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard readlock(&config.srcmountslock);
+      const rwlock::ReadGuard readlock(&config.branches_lock);
 
       return _setxattr(config.setxattr,
-                       config.srcmounts,
+                       config.branches,
                        config.minfreespace,
                        fusepath,
                        attrname,

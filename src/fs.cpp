@@ -81,15 +81,15 @@ namespace fs
   }
 
   void
-  findallfiles(const vector<string> &srcmounts,
+  findallfiles(const vector<string> &basepaths,
                const char           *fusepath,
                vector<string>       &paths)
   {
     string fullpath;
 
-    for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        fs::path::make(&srcmounts[i],fusepath,fullpath);
+        fs::path::make(&basepaths[i],fusepath,fullpath);
 
         if(!fs::exists(fullpath))
           continue;
@@ -99,7 +99,7 @@ namespace fs
   }
 
   int
-  findonfs(const vector<string> &srcmounts,
+  findonfs(const vector<string> &basepaths,
            const string         &fusepath,
            const int             fd,
            string               &basepath)
@@ -114,9 +114,9 @@ namespace fs
       return -1;
 
     dev = st.st_dev;
-    for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        fs::path::make(&srcmounts[i],fusepath,fullpath);
+        fs::path::make(&basepaths[i],fusepath,fullpath);
 
         rv = fs::lstat(fullpath,st);
         if(rv == -1)
@@ -125,7 +125,7 @@ namespace fs
         if(st.st_dev != dev)
           continue;
 
-        basepath = srcmounts[i];
+        basepath = basepaths[i];
 
         return 0;
       }

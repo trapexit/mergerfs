@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "branch.hpp"
 #include "category.hpp"
 #include "fs.hpp"
 
@@ -65,7 +66,7 @@ namespace mergerfs
       typedef const strvec cstrvec;
       typedef const Category::Enum::Type CType;
 
-      typedef int (*Ptr)(CType,cstrvec &,const char *,cuint64_t,cstrptrvec &);
+      typedef int (*Ptr)(CType,const Branches &,const char *,cuint64_t,cstrptrvec &);
 
       template <CType T>
       class Base
@@ -76,13 +77,13 @@ namespace mergerfs
         {}
 
         int
-        operator()(cstrvec &b,const char *c,cuint64_t d,cstrptrvec &e)
+        operator()(const Branches &b,const char *c,cuint64_t d,cstrptrvec &e)
         {
           return func(T,b,c,d,e);
         }
 
         int
-        operator()(cstrvec &b,const string &c,cuint64_t d,cstrptrvec &e)
+        operator()(const Branches &b,const string &c,cuint64_t d,cstrptrvec &e)
         {
           return func(T,b,c.c_str(),d,e);
         }
@@ -95,21 +96,21 @@ namespace mergerfs
       typedef Base<Category::Enum::create> Create;
       typedef Base<Category::Enum::search> Search;
 
-      static int invalid(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int all(CType,cstrvec&,const char*,cuint64_t,cstrptrvec&);
-      static int epall(CType,cstrvec&,const char*,cuint64_t,cstrptrvec&);
-      static int epff(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int eplfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int eplus(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int epmfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int eprand(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int erofs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int ff(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int lfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int lus(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int mfs(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int newest(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
-      static int rand(CType,cstrvec&,const char *,cuint64_t,cstrptrvec&);
+      static int invalid(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int all(CType,const Branches&,const char*,cuint64_t,cstrptrvec&);
+      static int epall(CType,const Branches&,const char*,cuint64_t,cstrptrvec&);
+      static int epff(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int eplfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int eplus(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int epmfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int eprand(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int erofs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int ff(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int lfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int lus(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int mfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int newest(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+      static int rand(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
     };
 
   private:

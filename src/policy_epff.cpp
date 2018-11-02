@@ -20,6 +20,7 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
+#include "policy_error.hpp"
 
 #include <string>
 #include <vector>
@@ -28,89 +29,121 @@ using std::string;
 using std::vector;
 using mergerfs::Category;
 
-static
-int
-_epff_create(const vector<string>  &basepaths,
-             const char            *fusepath,
-             const uint64_t         minfreespace,
-             vector<const string*> &paths)
+namespace epff
 {
-  int rv;
-  fs::info_t info;
-  const string *basepath;
+  static
+  int
+  create(const Branches        &branches_,
+         const char            *fusepath,
+         const uint64_t         minfreespace,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    fs::info_t info;
+    const Branch *branch;
 
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      rv = fs::info(basepath,fusepath,&info);
-      if(rv == -1)
-        continue;
-      if(info.readonly)
-        continue;
-      if(info.spaceavail < minfreespace)
-        continue;
+        if(!fs::exists(branch->path,fusepath))
+          error_and_continue(error,ENOENT);
+        if(branch->ro_or_nw())
+          error_and_continue(error,EROFS);
+        rv = fs::info(&branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceavail < minfreespace)
+          error_and_continue(error,ENOSPC);
 
-      paths.push_back(basepath);
+        paths.push_back(&branch->path);
 
-      return 0;
-    }
+        return 0;
+      }
 
-  return (errno=ENOENT,-1);
-}
+    return (errno=error,-1);
+  }
 
-static
-int
-_epff_other(const vector<string>  &basepaths,
-            const char            *fusepath,
-            vector<const string*> &paths)
-{
-  const string *basepath;
+  static
+  int
+  action(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    int rv;
+    int error;
+    bool readonly;
+    const Branch *branch;
 
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      basepath = &basepaths[i];
+    error = ENOENT;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
 
-      if(!fs::exists(*basepath,fusepath))
-        continue;
+        if(!fs::exists(branch->path,fusepath))
+          error_and_continue(error,ENOENT);
+        if(branch->ro())
+          error_and_continue(error,EROFS);
+        rv = fs::readonly(&branch->path,&readonly);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(readonly)
+          error_and_continue(error,EROFS);
 
-      paths.push_back(basepath);
+        paths.push_back(&branch->path);
 
-      return 0;
-    }
+        return 0;
+      }
 
-  return (errno=ENOENT,-1);
-}
+    return (errno=error,-1);
+  }
 
-static
-int
-_epff(const Category::Enum::Type  type,
-      const vector<string>       &basepaths,
-      const char                 *fusepath,
-      const uint64_t              minfreespace,
-      vector<const string*>      &paths)
-{
-  if(type == Category::Enum::create)
-    return _epff_create(basepaths,fusepath,minfreespace,paths);
+  static
+  int
+  search(const Branches        &branches_,
+         const char            *fusepath,
+         vector<const string*> &paths)
+  {
+    const Branch *branch;
 
-  return _epff_other(basepaths,fusepath,paths);
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
+
+        if(!fs::exists(branch->path,fusepath))
+          continue;
+
+        paths.push_back(&branch->path);
+
+        return 0;
+      }
+
+    return (errno=ENOENT,-1);
+  }
 }
 
 namespace mergerfs
 {
   int
   Policy::Func::epff(const Category::Enum::Type  type,
-                     const vector<string>       &basepaths,
+                     const Branches             &branches_,
                      const char                 *fusepath,
                      const uint64_t              minfreespace,
                      vector<const string*>      &paths)
   {
-    int rv;
-
-    rv = _epff(type,basepaths,fusepath,minfreespace,paths);
-    if(rv == -1)
-      rv = Policy::Func::ff(type,basepaths,fusepath,minfreespace,paths);
-
-    return rv;
+    switch(type)
+      {
+      case Category::Enum::create:
+        return epff::create(branches_,fusepath,minfreespace,paths);
+      case Category::Enum::action:
+        return epff::action(branches_,fusepath,paths);
+      case Category::Enum::search:
+      default:
+        return epff::search(branches_,fusepath,paths);
+      }
   }
 }

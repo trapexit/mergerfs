@@ -100,7 +100,7 @@ static
 int
 _rename_create_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
-                    const vector<string> &srcmounts,
+                    const Branches       &branches_,
                     const uint64_t        minfreespace,
                     const char           *oldfusepath,
                     const char           *newfusepath)
@@ -112,20 +112,20 @@ _rename_create_path(Policy::Func::Search  searchFunc,
   vector<const string*> newbasepath;
   vector<const string*> oldbasepaths;
 
-  rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = searchFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  rv = searchFunc(branches_,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return -errno;
 
   error = -1;
-  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+  for(size_t i = 0, ei = branches_.size(); i != ei; i++)
     {
-      const string &oldbasepath = srcmounts[i];
+      const string &oldbasepath = branches_[i].path;
 
       _rename_create_path_core(oldbasepaths,
                                oldbasepath,*newbasepath[0],
@@ -144,7 +144,7 @@ _rename_create_path(Policy::Func::Search  searchFunc,
 static
 int
 _clonepath(Policy::Func::Search  searchFunc,
-           const vector<string> &srcmounts,
+           const Branches       &branches_,
            const uint64_t        minfreespace,
            const string         &dstbasepath,
            const string         &fusedirpath)
@@ -152,7 +152,7 @@ _clonepath(Policy::Func::Search  searchFunc,
   int rv;
   vector<const string*> srcbasepath;
 
-  rv = searchFunc(srcmounts,fusedirpath,minfreespace,srcbasepath);
+  rv = searchFunc(branches_,fusedirpath,minfreespace,srcbasepath);
   if(rv == -1)
     return -errno;
 
@@ -165,7 +165,7 @@ static
 int
 _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
-                           const vector<string> &srcmounts,
+                           const Branches       &branches_,
                            const uint64_t        minfreespace,
                            const string         &oldbasepath,
                            const char           *oldfusepath,
@@ -177,12 +177,12 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = createFunc(srcmounts,newfusedirpath,minfreespace,newbasepath);
+  rv = createFunc(branches_,newfusedirpath,minfreespace,newbasepath);
   if(rv == -1)
     return rv;
 
   if(oldbasepath == *newbasepath[0])
-    return _clonepath(searchFunc,srcmounts,minfreespace,oldbasepath,newfusedirpath);
+    return _clonepath(searchFunc,branches_,minfreespace,oldbasepath,newfusedirpath);
 
   return (errno=EXDEV,-1);
 }
@@ -191,7 +191,7 @@ static
 void
 _rename_preserve_path_core(Policy::Func::Search         searchFunc,
                            Policy::Func::Create         createFunc,
-                           const vector<string>        &srcmounts,
+                           const Branches              &branches_,
                            const uint64_t               minfreespace,
                            const vector<const string*> &oldbasepaths,
                            const string                &oldbasepath,
@@ -217,7 +217,7 @@ _rename_preserve_path_core(Policy::Func::Search         searchFunc,
       if((rv == -1) && (errno == ENOENT))
         {
           rv = _clonepath_if_would_create(searchFunc,createFunc,
-                                          srcmounts,minfreespace,
+                                          branches_,minfreespace,
                                           oldbasepath,oldfusepath,newfusepath);
           if(rv == 0)
             rv = fs::rename(oldfullpath,newfullpath);
@@ -238,7 +238,7 @@ int
 _rename_preserve_path(Policy::Func::Search  searchFunc,
                       Policy::Func::Action  actionFunc,
                       Policy::Func::Create  createFunc,
-                      const vector<string> &srcmounts,
+                      const Branches       &branches_,
                       const uint64_t        minfreespace,
                       const char           *oldfusepath,
                       const char           *newfusepath)
@@ -248,17 +248,17 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
   vector<string> toremove;
   vector<const string*> oldbasepaths;
 
-  rv = actionFunc(srcmounts,oldfusepath,minfreespace,oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,minfreespace,oldbasepaths);
   if(rv == -1)
     return -errno;
 
   error = -1;
-  for(size_t i = 0, ei = srcmounts.size(); i != ei; i++)
+  for(size_t i = 0, ei = branches_.size(); i != ei; i++)
     {
-      const string &oldbasepath = srcmounts[i];
+      const string &oldbasepath = branches_[i].path;
 
       _rename_preserve_path_core(searchFunc,createFunc,
-                                 srcmounts,minfreespace,
+                                 branches_,minfreespace,
                                  oldbasepaths,oldbasepath,
                                  oldfusepath,newfusepath,
                                  error,toremove);
@@ -281,20 +281,20 @@ namespace mergerfs
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.srcmountslock);
+      const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       if(config.create->path_preserving() && !config.ignorepponrename)
         return _rename_preserve_path(config.getattr,
                                      config.rename,
                                      config.create,
-                                     config.srcmounts,
+                                     config.branches,
                                      config.minfreespace,
                                      oldpath,
                                      newpath);
 
       return _rename_create_path(config.getattr,
                                  config.rename,
-                                 config.srcmounts,
+                                 config.branches,
                                  config.minfreespace,
                                  oldpath,
                                  newpath);

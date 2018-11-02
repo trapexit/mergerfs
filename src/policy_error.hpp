@@ -18,13 +18,34 @@
 
 #pragma once
 
-#include "fs_info_t.hpp"
+#define error_and_continue(CUR,ERR)             \
+  {                                             \
+    policy::calc_error(CUR,ERR);                \
+    continue;                                   \
+  }
 
-#include <string>
-
-namespace fs
+namespace policy
 {
-  int
-  info(const std::string *path_,
-       fs::info_t        *info_);
+  static
+  inline
+  void
+  calc_error(int &cur_,
+             int  err_)
+  {
+    switch(cur_)
+      {
+      default:
+      case ENOENT:
+        cur_ = err_;
+        break;
+      case ENOSPC:
+        if(err_ != ENOENT)
+          cur_ = err_;
+        break;
+      case EROFS:
+        if((err_ != ENOENT) && (err_ != ENOSPC))
+          cur_ = err_;
+        break;
+      }
+  }
 }
