@@ -172,6 +172,47 @@ _getxattr_controlfile_errno(const int  errno_,
 
 static
 void
+_getxattr_controlfile_statfs(const Config::StatFS::Enum  enum_,
+                             string                     &attrvalue_)
+{
+  switch(enum_)
+    {
+    case Config::StatFS::BASE:
+      attrvalue_ = "base";
+      break;
+    case Config::StatFS::FULL:
+      attrvalue_ = "full";
+      break;
+    default:
+      attrvalue_ = "ERROR";
+      break;
+    }
+}
+
+static
+void
+_getxattr_controlfile_statfsignore(const Config::StatFSIgnore::Enum  enum_,
+                                   string                           &attrvalue_)
+{
+  switch(enum_)
+    {
+    case Config::StatFSIgnore::NONE:
+      attrvalue_ = "none";
+      break;
+    case Config::StatFSIgnore::RO:
+      attrvalue_ = "ro";
+      break;
+    case Config::StatFSIgnore::NC:
+      attrvalue_ = "nc";
+      break;
+    default:
+      attrvalue_ = "ERROR";
+      break;
+    }
+}
+
+static
+void
 _getxattr_controlfile_policies(const Config &config,
                                string       &attrvalue)
 {
@@ -246,6 +287,10 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_errno(config.xattr,attrvalue);
       else if(attr[2] == "link_cow")
         _getxattr_controlfile_bool(config.link_cow,attrvalue);
+      else if(attr[2] == "statfs")
+        _getxattr_controlfile_statfs(config.statfs,attrvalue);
+      else if(attr[2] == "statfs_ignore")
+        _getxattr_controlfile_statfsignore(config.statfs_ignore,attrvalue);
       else if(attr[2] == "policies")
         _getxattr_controlfile_policies(config,attrvalue);
       else if(attr[2] == "version")

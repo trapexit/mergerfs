@@ -35,6 +35,12 @@ Branch::ro(void) const
 }
 
 bool
+Branch::nc(void) const
+{
+  return (mode == Branch::NC);
+}
+
+bool
 Branch::ro_or_nc(void) const
 {
   return ((mode == Branch::RO) ||

@@ -35,6 +35,7 @@ struct Branch
   std::string path;
 
   bool ro(void) const;
+  bool nc(void) const;
   bool ro_or_nc(void) const;
 };
 

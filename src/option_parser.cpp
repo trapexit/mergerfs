@@ -172,6 +172,38 @@ parse_and_process_errno(const std::string &value_,
 
 static
 int
+parse_and_process_statfs(const std::string    &value_,
+                         Config::StatFS::Enum &enum_)
+{
+  if(value_ == "base")
+    enum_ = Config::StatFS::BASE;
+  else if(value_ == "full")
+    enum_ = Config::StatFS::FULL;
+  else
+    return 1;
+
+  return 0;
+}
+
+static
+int
+parse_and_process_statfsignore(const std::string          &value_,
+                               Config::StatFSIgnore::Enum &enum_)
+{
+  if(value_ == "none")
+    enum_ = Config::StatFSIgnore::NONE;
+  else if(value_ == "ro")
+    enum_ = Config::StatFSIgnore::RO;
+  else if(value_ == "nc")
+    enum_ = Config::StatFSIgnore::NC;
+  else
+    return 1;
+
+  return 0;
+}
+
+static
+int
 parse_and_process_arg(Config            &config,
                       const std::string &arg,
                       fuse_args         *outargs)
@@ -190,9 +222,10 @@ parse_and_process_kv_arg(Config            &config,
                          const std::string &key,
                          const std::string &value)
 {
-  int rv = -1;
+  int rv;
   std::vector<std::string> keypart;
 
+  rv = -1;
   str::split(keypart,key,'.');
   if(keypart.size() == 2)
     {
@@ -223,6 +256,10 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.link_cow);
       else if(key == "xattr")
         rv = parse_and_process_errno(value,config.xattr);
+      else if(key == "statfs")
+        rv = parse_and_process_statfs(value,config.statfs);
+      else if(key == "statfs_ignore")
+        rv = parse_and_process_statfsignore(value,config.statfs_ignore);
     }
 
   if(rv == -1)
@@ -334,6 +371,16 @@ usage(void)
     "                           filesystems. notattr will short circuit as if\n"
     "                           nothing exists. notsup will respond as if not\n"
     "                           supported or disabled. default = passthrough\n"
+    "    -o statfs=base|full    When set to 'base' statfs will use all branches\n"
+    "                           when performing statfs calculations. 'full' will\n"
+    "                           only include branches on which that path is\n"
+    "                           available. default = base\n"
+    "    -o statfs_ignore=none|ro|nc\n"
+    "                           'ro' will cause statfs calculations to ignore\n"
+    "                           available space for branches mounted or tagged\n"
+    "                           as 'read only' or 'no create'. 'nc' will ignore\n"
+    "                           available space for branches tagged as\n"
+    "                           'no create'. default = none\n"
             << std::endl;
 }
 

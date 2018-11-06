@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -17,7 +17,7 @@
 #include <fuse.h>
 
 #include <algorithm>
-#include <climits>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -26,12 +26,17 @@
 #include "errno.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_base_statvfs.hpp"
+#include "fs_path.hpp"
 #include "rwlock.hpp"
+#include "statvfs_util.hpp"
 #include "ugid.hpp"
 
 using std::string;
 using std::map;
 using std::vector;
+using mergerfs::Config;
+typedef Config::StatFS StatFS;
+typedef Config::StatFSIgnore StatFSIgnore;
 
 static
 void
@@ -41,7 +46,7 @@ _normalize_statvfs(struct statvfs      *fsstat,
                    const unsigned long  min_namemax)
 {
   fsstat->f_blocks  = (fsblkcnt_t)((fsstat->f_blocks * fsstat->f_frsize) / min_frsize);
-  fsstat->f_bfree   = (fsblkcnt_t)((fsstat->f_bfree * fsstat->f_frsize) / min_frsize);
+  fsstat->f_bfree   = (fsblkcnt_t)((fsstat->f_bfree  * fsstat->f_frsize) / min_frsize);
   fsstat->f_bavail  = (fsblkcnt_t)((fsstat->f_bavail * fsstat->f_frsize) / min_frsize);
   fsstat->f_bsize   = min_bsize;
   fsstat->f_frsize  = min_frsize;
@@ -63,48 +68,64 @@ _merge_statvfs(struct statvfs       * const out,
 }
 
 static
-void
-_statfs_core(const string              &path_,
-             unsigned long             &min_bsize,
-             unsigned long             &min_frsize,
-             unsigned long             &min_namemax,
-             map<dev_t,struct statvfs> &fsstats)
+bool
+_should_ignore(const StatFSIgnore::Enum  ignore_,
+               const Branch             *branch_,
+               const bool                readonly_)
 {
-  int rv;
-  struct stat st;
-  struct statvfs fsstat;
-
-  rv = fs::statvfs(path_,fsstat);
-  if(rv == -1)
-    return;
-
-  rv = fs::stat(path_,st);
-  if(rv == -1)
-    return;
-
-  if(fsstat.f_bsize   && (min_bsize > fsstat.f_bsize))
-    min_bsize = fsstat.f_bsize;
-  if(fsstat.f_frsize  && (min_frsize > fsstat.f_frsize))
-    min_frsize = fsstat.f_frsize;
-  if(fsstat.f_namemax && (min_namemax > fsstat.f_namemax))
-    min_namemax = fsstat.f_namemax;
-
-  fsstats.insert(std::make_pair(st.st_dev,fsstat));
+  return ((((ignore_ == StatFSIgnore::RO) || readonly_) &&
+           (branch_->ro_or_nc())) ||
+          ((ignore_ == StatFSIgnore::NC) && (branch_->nc())));
 }
 
 static
 int
-_statfs(const Branches &branches_,
-        struct statvfs &fsstat)
+_statfs(const Branches           &branches_,
+        const char               *fusepath,
+        const StatFS::Enum        mode,
+        const StatFSIgnore::Enum  ignore,
+        struct statvfs           &fsstat)
 {
+  int rv;
+  string fullpath;
+  struct stat st;
+  struct statvfs stvfs;
+  unsigned long min_bsize;
+  unsigned long min_frsize;
+  unsigned long min_namemax;
   map<dev_t,struct statvfs> fsstats;
-  unsigned long min_bsize   = ULONG_MAX;
-  unsigned long min_frsize  = ULONG_MAX;
-  unsigned long min_namemax = ULONG_MAX;
 
+  min_bsize   = std::numeric_limits<unsigned long>::max();
+  min_frsize  = std::numeric_limits<unsigned long>::max();
+  min_namemax = std::numeric_limits<unsigned long>::max();
   for(size_t i = 0, ei = branches_.size(); i < ei; i++)
     {
-      _statfs_core(branches_[i].path,min_bsize,min_frsize,min_namemax,fsstats);
+      fullpath = ((mode == StatFS::FULL) ?
+                  fs::path::make(&branches_[i].path,fusepath) :
+                  branches_[i].path);
+
+      rv = fs::lstat(fullpath,st);
+      if(rv == -1)
+        continue;
+
+      rv = fs::lstatvfs(fullpath,stvfs);
+      if(rv == -1)
+        continue;
+
+      if(stvfs.f_bsize   && (min_bsize   > stvfs.f_bsize))
+        min_bsize = stvfs.f_bsize;
+      if(stvfs.f_frsize  && (min_frsize  > stvfs.f_frsize))
+        min_frsize = stvfs.f_frsize;
+      if(stvfs.f_namemax && (min_namemax > stvfs.f_namemax))
+        min_namemax = stvfs.f_namemax;
+
+      if(_should_ignore(ignore,&branches_[i],StatVFS::readonly(stvfs)))
+        {
+          stvfs.f_bavail = 0;
+          stvfs.f_favail = 0;
+        }
+
+      fsstats.insert(std::make_pair(st.st_dev,stvfs));
     }
 
   map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
@@ -138,6 +159,9 @@ namespace mergerfs
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       return _statfs(config.branches,
+                     fusepath,
+                     config.statfs,
+                     config.statfs_ignore,
                      *stat);
     }
   }
