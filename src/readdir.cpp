@@ -19,7 +19,6 @@
 #include <fuse.h>
 
 #include <string>
-#include <set>
 #include <vector>
 
 #include "config.hpp"
@@ -33,9 +32,9 @@
 #include "fs_devid.hpp"
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
+#include "hashset.hpp"
 #include "readdir.hpp"
 #include "rwlock.hpp"
-#include "strset.hpp"
 #include "ugid.hpp"
 
 using std::string;
@@ -50,7 +49,7 @@ _readdir(const Branches        &branches_,
          void                  *buf,
          const fuse_fill_dir_t  filler)
 {
-  StrSet names;
+  HashSet names;
   string basepath;
   struct stat st = {0};
 

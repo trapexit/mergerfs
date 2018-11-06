@@ -130,7 +130,6 @@ int main() {
 #include <limits.h>
 
 /* compiler specific configuration */
-typedef unsigned char khint8_t;
 
 #if UINT_MAX == 0xffffffffu
 typedef unsigned int khint32_t;
@@ -163,17 +162,15 @@ typedef unsigned long long khint64_t;
 typedef khint32_t khint_t;
 typedef khint_t khiter_t;
 
-#define __ac_bit_empty 0b00000010
-#define __ac_bit_deleted 0b00000001
-#define __ac_bit_any 0b11111111
+#define __ac_isempty(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&2)
+#define __ac_isdel(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&1)
+#define __ac_iseither(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&3)
+#define __ac_set_isdel_false(flag, i) (flag[i>>4]&=~(1ul<<((i&0xfU)<<1)))
+#define __ac_set_isempty_false(flag, i) (flag[i>>4]&=~(2ul<<((i&0xfU)<<1)))
+#define __ac_set_isboth_false(flag, i) (flag[i>>4]&=~(3ul<<((i&0xfU)<<1)))
+#define __ac_set_isdel_true(flag, i) (flag[i>>4]|=1ul<<((i&0xfU)<<1))
 
-#define __ac_isempty(flag, i) (flag[i]&__ac_bit_empty)
-#define __ac_isdel(flag, i) (flag[i]&__ac_bit_deleted)
-#define __ac_iseither(flag, i) (flag[i]&__ac_bit_any)
-#define __ac_set_isdel_false(flag, i) (flag[i]&=~__ac_bit_deleted)
-#define __ac_set_isempty_false(flag, i) (flag[i]&=~__ac_bit_empty)
-#define __ac_set_isboth_false(flag, i) (flag[i]=0)
-#define __ac_set_isdel_true(flag, i) (flag[i]|=__ac_bit_deleted)
+#define __ac_fsize(m) ((m) < 16? 1 : (m)>>4)
 
 #ifndef kroundup32
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
@@ -197,7 +194,7 @@ static const double __ac_HASH_UPPER = 0.77;
 #define __KHASH_TYPE(name, khkey_t, khval_t) \
 	typedef struct kh_##name##_s { \
 		khint_t n_buckets, size, n_occupied, upper_bound; \
-		khint8_t *flags; \
+		khint32_t *flags; \
 		khkey_t *keys; \
 		khval_t *vals; \
 	} kh_##name##_t;
@@ -226,7 +223,7 @@ static const double __ac_HASH_UPPER = 0.77;
 	SCOPE void kh_clear_##name(kh_##name##_t *h)						\
 	{																	\
 		if (h && h->flags) {											\
-			memset(h->flags, __ac_bit_empty, h->n_buckets);				\
+			memset(h->flags, 0xaa, __ac_fsize(h->n_buckets) * sizeof(khint32_t)); \
 			h->size = h->n_occupied = 0;								\
 		}																\
 	}																	\
@@ -246,16 +243,16 @@ static const double __ac_HASH_UPPER = 0.77;
 	}																	\
 	SCOPE int kh_resize_##name(kh_##name##_t *h, khint_t new_n_buckets) \
 	{ /* This function uses 0.25*n_buckets bytes of working space instead of [sizeof(key_t+val_t)+.25]*n_buckets. */ \
-		khint8_t *new_flags = 0;										\
+		khint32_t *new_flags = 0;										\
 		khint_t j = 1;													\
 		{																\
 			kroundup32(new_n_buckets); 									\
 			if (new_n_buckets < 4) new_n_buckets = 4;					\
 			if (h->size >= (khint_t)(new_n_buckets * __ac_HASH_UPPER + 0.5)) j = 0;	/* requested size is too small */ \
 			else { /* hash table size to be changed (shrink or expand); rehash */ \
-				new_flags = (khint8_t*)kmalloc(new_n_buckets);	\
+				new_flags = (khint32_t*)kmalloc(__ac_fsize(new_n_buckets) * sizeof(khint32_t));	\
 				if (!new_flags) return -1;								\
-				memset(new_flags, __ac_bit_empty, new_n_buckets); \
+				memset(new_flags, 0xaa, __ac_fsize(new_n_buckets) * sizeof(khint32_t)); \
 				if (h->n_buckets < new_n_buckets) {	/* expand */		\
 					khkey_t *new_keys = (khkey_t*)krealloc((void *)h->keys, new_n_buckets * sizeof(khkey_t)); \
 					if (!new_keys) { kfree(new_flags); return -1; }		\
@@ -322,16 +319,19 @@ static const double __ac_HASH_UPPER = 0.77;
 		{																\
 			khint_t k, i, site, last, mask = h->n_buckets - 1, step = 0; \
 			x = site = h->n_buckets; k = __hash_func(key); i = k & mask; \
-			last = i; \
-			while (!__ac_isempty(h->flags, i) && (__ac_isdel(h->flags, i) || !__hash_equal(h->keys[i], key))) { \
-				if (__ac_isdel(h->flags, i)) site = i;				\
-				i = (i + (++step)) & mask; \
-				if (i == last) { x = site; break; }					\
-			}														\
-			if (x == h->n_buckets) {								\
-				if (__ac_isempty(h->flags, i) && site != h->n_buckets) x = site; \
-				else x = i;											\
-			}														\
+			if (__ac_isempty(h->flags, i)) x = i; /* for speed up */	\
+			else {														\
+				last = i; \
+				while (!__ac_isempty(h->flags, i) && (__ac_isdel(h->flags, i) || !__hash_equal(h->keys[i], key))) { \
+					if (__ac_isdel(h->flags, i)) site = i;				\
+					i = (i + (++step)) & mask; \
+					if (i == last) { x = site; break; }					\
+				}														\
+				if (x == h->n_buckets) {								\
+					if (__ac_isempty(h->flags, i) && site != h->n_buckets) x = site; \
+					else x = i;											\
+				}														\
+			}															\
 		}																\
 		if (__ac_isempty(h->flags, x)) { /* not present at all */		\
 			h->keys[x] = key;											\
@@ -576,7 +576,7 @@ static kh_inline khint_t __ac_Wang_hash(khint_t key)
 		code;												\
 	} }
 
-/* More conenient interfaces */
+/* More convenient interfaces */
 
 /*! @function
   @abstract     Instantiate a hash set containing integer keys
@@ -594,7 +594,7 @@ static kh_inline khint_t __ac_Wang_hash(khint_t key)
 	KHASH_INIT(name, khint32_t, khval_t, 1, kh_int_hash_func, kh_int_hash_equal)
 
 /*! @function
-  @abstract     Instantiate a hash map containing 64-bit integer keys
+  @abstract     Instantiate a hash set containing 64-bit integer keys
   @param  name  Name of the hash table [symbol]
  */
 #define KHASH_SET_INIT_INT64(name)										\
