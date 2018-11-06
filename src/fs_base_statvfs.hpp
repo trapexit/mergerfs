@@ -26,6 +26,10 @@
 
 #include <string>
 
+#ifndef O_PATH
+# define O_PATH 0
+#endif
+
 namespace fs
 {
   static
