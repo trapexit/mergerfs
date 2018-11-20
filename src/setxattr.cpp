@@ -169,8 +169,8 @@ _setxattr_xattr(const string &attrval_,
     xattr_ = 0;
   else if(attrval_ == "noattr")
     xattr_ = ENOATTR;
-  else if(attrval_ == "notsup")
-    xattr_ = ENOTSUP;
+  else if(attrval_ == "nosys")
+    xattr_ = ENOSYS;
   else
     return -EINVAL;
 

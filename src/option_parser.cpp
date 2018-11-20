@@ -160,8 +160,8 @@ parse_and_process_errno(const std::string &value_,
 {
   if(value_ == "passthrough")
     errno_ = 0;
-  else if(value_ == "notsup")
-    errno_ = ENOTSUP;
+  else if(value_ == "nosys")
+    errno_ = ENOSYS;
   else if(value_ == "noattr")
     errno_ = ENOATTR;
   else
@@ -365,11 +365,11 @@ usage(void)
     "    -o security_capability=<bool>\n"
     "                           When disabled return ENOATTR when the xattr\n"
     "                           security.capability is queried. default = true\n"
-    "    -o xattr=passthrough|noattr|notsup\n"
+    "    -o xattr=passthrough|noattr|nosys\n"
     "                           Runtime control of xattrs. By default xattr\n"
     "                           requests will pass through to the underlying\n"
     "                           filesystems. notattr will short circuit as if\n"
-    "                           nothing exists. notsup will respond as if not\n"
+    "                           nothing exists. nosys will respond as if not\n"
     "                           supported or disabled. default = passthrough\n"
     "    -o statfs=base|full    When set to 'base' statfs will use all branches\n"
     "                           when performing statfs calculations. 'full' will\n"
