@@ -72,7 +72,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **nullrw=true|false**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
 * **ignorepponrename=true|false**: ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
 * **security_capability=true|false**: If false return ENOATTR when xattr security.capability is queried. (default: true)
-* **xattr=passthrough|noattr|notsup**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'notsup' will respond with ENOTSUP as if xattrs are not supported or disabled. (default: passthrough)
+* **xattr=passthrough|noattr|nosys**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'nosys' will respond with ENOSYS as if xattrs are not supported or disabled. (default: passthrough)
 * **link_cow=true|false**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
@@ -153,7 +153,7 @@ Runtime extended attribute support can be managed via the `xattr` option. By def
 
 `noattr` will cause mergerfs to short circuit all xattr calls and return ENOATTR where appropriate. mergerfs still gets all the requests but they will not be forwarded on to the underlying filesystems. The runtime control will still function in this mode.
 
-`notsup` will cause mergerfs to return ENOTSUP for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This will be more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
+`nosys` will cause mergerfs to return ENOSYS for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This will be more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
@@ -765,7 +765,7 @@ and the kernel use internally (also called the "nodeid").
 
 Due to how NFS works and interacts with FUSE when not using `direct_io` its possible that a getxattr for `security.capability` will be issued prior to any write. This will usually result in a massive slowdown for writes. Using `direct_io` will keep this from happening (and generally good to enable unless you need the features it disables) but the `security_capability` option can also help by short circuiting the call and returning `ENOATTR`.
 
-You could also set `xattr` to `noattr` or `notsup` to short circuit or stop all xattr requests.
+You could also set `xattr` to `noattr` or `nosys` to short circuit or stop all xattr requests.
 
 #### What are these .fuse_hidden files?
 

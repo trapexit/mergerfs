@@ -161,8 +161,8 @@ _getxattr_controlfile_errno(const int  errno_,
     case ENOATTR:
       attrvalue = "noattr";
       break;
-    case ENOTSUP:
-      attrvalue = "notsup";
+    case ENOSYS:
+      attrvalue = "nosys";
       break;
     default:
       attrvalue = "ERROR";

@@ -156,11 +156,11 @@ This means files, when renamed or linked, will stay on the same drive.
 xattr security.capability is queried.
 (default: true)
 .IP \[bu] 2
-\f[B]xattr=passthrough|noattr|notsup\f[]: Runtime control of xattrs.
+\f[B]xattr=passthrough|noattr|nosys\f[]: Runtime control of xattrs.
 Default is to passthrough xattr requests.
 \[aq]noattr\[aq] will short circuit as if nothing exists.
-\[aq]notsup\[aq] will respond with ENOTSUP as if xattrs are not
-supported or disabled.
+\[aq]nosys\[aq] will respond with ENOSYS as if xattrs are not supported
+or disabled.
 (default: passthrough)
 .IP \[bu] 2
 \f[B]link_cow=true|false\f[]: When enabled if a regular file is opened
@@ -356,8 +356,7 @@ mergerfs still gets all the requests but they will not be forwarded on
 to the underlying filesystems.
 The runtime control will still function in this mode.
 .PP
-\f[C]notsup\f[] will cause mergerfs to return ENOTSUP for any xattr
-call.
+\f[C]nosys\f[] will cause mergerfs to return ENOSYS for any xattr call.
 The difference with \f[C]noattr\f[] is that the kernel will cache this
 fact and itself short circuit future calls.
 This will be more efficient than \f[C]noattr\f[] but will cause
@@ -1629,7 +1628,7 @@ good to enable unless you need the features it disables) but the
 \f[C]security_capability\f[] option can also help by short circuiting
 the call and returning \f[C]ENOATTR\f[].
 .PP
-You could also set \f[C]xattr\f[] to \f[C]noattr\f[] or \f[C]notsup\f[]
+You could also set \f[C]xattr\f[] to \f[C]noattr\f[] or \f[C]nosys\f[]
 to short circuit or stop all xattr requests.
 .SS What are these .fuse_hidden files?
 .PP
