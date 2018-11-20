@@ -62,7 +62,7 @@ _truncate_loop(const vector<const string*> &basepaths,
   error = -1;
   for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
     {
-      error = _truncate_loop_core(basepaths[0],fusepath,size,error);
+      error = _truncate_loop_core(basepaths[i],fusepath,size,error);
     }
 
   return -error;
