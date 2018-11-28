@@ -25,7 +25,8 @@
 #endif
 
 #ifdef USE_XATTR
-# ifdef __GLIBC__
+# ifdef __linux__
+#  include <sys/types.h>
 #  include <sys/xattr.h>
 # else
 #  undef USE_XATTR
