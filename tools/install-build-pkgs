@@ -1,0 +1,25 @@
+#!/bin/sh
+
+if [ -e /usr/bin/apt-get ]; then
+    apt-get -qy update
+    apt-get -qy --no-install-suggests --no-install-recommends --force-yes \
+	    install \
+            build-essential git g++ debhelper \
+            python \
+            automake libtool lsb-release
+elif [ -e /usr/bin/dnf ]; then
+    dnf -y update
+    dnf -y install \
+        git rpm-build gcc-c++ make which python automake \
+        libtool gettext-devel
+elif [ -e /usr/bin/yum ]; then
+    yum -y update
+    yum -y install \
+        git rpm-build gcc-c++ make which \
+        python python-argparse \
+        automake libtool gettext-devel
+elif [ -e /sbin/apk ]; then
+    apk add \
+        abuild git gcc g++ make autoconf \
+        automake libtool gettext-dev linux-headers
+fi

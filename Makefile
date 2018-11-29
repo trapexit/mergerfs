@@ -12,33 +12,28 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-GIT 	  = 	$(shell which git)
-TAR 	  = 	$(shell which tar)
-MKDIR     = 	$(shell which mkdir)
-TOUCH 	  = 	$(shell which touch)
-CP        = 	$(shell which cp)
-RM 	  = 	$(shell which rm)
-LN        =     $(shell which ln)
-FIND 	  = 	$(shell which find)
-INSTALL   = 	$(shell which install)
-MKTEMP    = 	$(shell which mktemp)
-STRIP     = 	$(shell which strip)
-PANDOC    =	$(shell which pandoc)
-SED       =     $(shell which sed)
-GZIP      =     $(shell which gzip)
-RPMBUILD  =     $(shell which rpmbuild)
-GIT2DEBCL =     ./tools/git2debcl
-PKGCONFIG =     pkg-config
+GIT 	  = git
+TAR 	  = tar
+MKDIR     = mkdir
+TOUCH 	  = touch
+CP        = cp
+RM 	  = rm
+LN        = ln
+FIND 	  = find
+INSTALL   = install
+MKTEMP    = mktemp
+STRIP     = strip
+PANDOC    = pandoc
+SED       = sed
+RPMBUILD  = rpmbuild
+GIT2DEBCL = ./tools/git2debcl
+PKGCONFIG = pkg-config
 
 GIT_REPO = 0
-ifneq ($(GIT),)
+ifneq ($(shell $(GIT) --version 2> /dev/null),)
 ifeq  ($(shell test -e .git; echo $$?),0)
 GIT_REPO = 1
 endif
-endif
-
-ifeq ($(PANDOC),)
-$(warning "pandoc does not appear available: manpage won't be buildable")
 endif
 
 USE_XATTR = 1
@@ -59,16 +54,30 @@ $(error "Use of external FUSE requested, but no libfuse >= $(EXTERNAL_FUSE_MIN_R
 endif
 endif
 
+ifeq ($(STATIC),1)
+STATIC_FLAG := -static
+else
+STATIC_FLAG :=
+endif
+
+ifeq ($(LTO),1)
+LTO_FLAG := -flto
+else
+LTO_FLAG :=
+endif
+
 UGID_USE_RWLOCK = 0
 
-OPTS 	    = -O2
+OPTS 	    = -O2 -g
 SRC	    = $(wildcard src/*.cpp)
 OBJ         = $(SRC:src/%.cpp=obj/%.o)
 DEPS        = $(OBJ:obj/%.o=obj/%.d)
 TARGET      = mergerfs
 MANPAGE     = $(TARGET).1
-CFLAGS      = -g -Wall \
-	      $(OPTS) \
+CXXFLAGS    = $(OPTS) \
+              $(STATIC_FLAG) \
+              $(LTO_FLAG) \
+              -Wall \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
               -DFUSE_USE_VERSION=29 \
@@ -92,12 +101,14 @@ INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 all: $(TARGET)
 
 help:
-	@echo "usage: make"
+	@echo "usage: make\n"
 	@echo "make USE_XATTR=0      - build program without xattrs functionality"
 	@echo "make INTERNAL_FUSE=0  - to build program with external (system) libfuse rather than the bundled one ('-o threads=' option will be unavailable)"
+	@echo "make STATIC=1         - build static binary"
+	@echo "make LTO=1            - build with link time optimization"
 
 $(TARGET): version obj/obj-stamp $(FUSE_TARGET) $(OBJ)
-	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"
@@ -105,11 +116,15 @@ mount.mergerfs: $(TARGET)
 changelog:
 ifeq ($(GIT_REPO),1)
 	$(GIT2DEBCL) --name $(TARGET) > ChangeLog
+else
+	@echo "WARNING: need git repo to generate ChangeLog"
 endif
 
 authors:
 ifeq ($(GIT_REPO),1)
 	$(GIT) log --format='%aN <%aE>' | sort -f | uniq > AUTHORS
+else
+	@echo "WARNING: need git repo to generate AUTHORS"
 endif
 
 version:
@@ -120,7 +135,7 @@ obj/obj-stamp:
 	$(TOUCH) $@
 
 obj/%.o: src/%.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
 clean: rpm-clean libfuse_Makefile
 	$(RM) -f src/version.hpp
@@ -137,6 +152,11 @@ ifeq ($(INTERNAL_FUSE),1)
 endif
 ifeq ($(GIT_REPO),1)
 	$(GIT) clean -fd
+endif
+
+superclean: distclean
+ifeq ($(GIT_REPO),1)
+	$(GIT) clean -xfd
 endif
 
 install: install-base install-mount.mergerfs install-man
@@ -168,13 +188,15 @@ uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 $(MANPAGE): README.md
-ifneq ($(PANDOC),)
+ifneq ($(shell $(PANDOC) --version 2> /dev/null),)
 	$(PANDOC) -s -t man -o "man/$(MANPAGE)" README.md
+else
+	$(warning "pandoc does not appear available: unable to build manpage")
 endif
 
 man: $(MANPAGE)
 
-tarball: distclean man changelog authors version
+tarball: superclean man changelog authors version
 	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
@@ -211,17 +233,7 @@ rpm: tarball
 		--define "_topdir $(CURDIR)/rpmbuild"
 
 install-build-pkgs:
-ifeq ($(shell test -e /usr/bin/apt-get; echo $$?),0)
-	apt-get -qy update
-	apt-get -qy --no-install-suggests --no-install-recommends --force-yes \
-		install build-essential git g++ debhelper python automake libtool lsb-release
-else ifeq ($(shell test -e /usr/bin/dnf; echo $$?),0)
-	dnf -y update
-	dnf -y install git rpm-build gcc-c++ make which python automake libtool gettext-devel
-else ifeq ($(shell test -e /usr/bin/yum; echo $$?),0)
-	yum -y update
-	yum -y install git rpm-build gcc-c++ make which python automake libtool gettext-devel
-endif
+	tools/install-build-pkgs
 
 unexport CFLAGS
 .PHONY: libfuse_Makefile
