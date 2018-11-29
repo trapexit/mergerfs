@@ -22,6 +22,7 @@
 
 #include "errno.hpp"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
