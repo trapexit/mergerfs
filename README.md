@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-10-31
+% 2018-12-12
 
 # NAME
 
@@ -124,22 +124,22 @@ By enabling `nullrw` mergerfs will work as it always does **except** that all re
 
 Example:
 ```
-$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=512 count=1024
+$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=512 count=1024 conv=fdatasync
 1024+0 records in
 2097152+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 15.4067 s, 69.7 MB/s
 
-$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=1M count=1024
+$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=1M count=1024 conv=fdatasync
 1024+0 records in
 1024+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.219585 s, 4.9 GB/s
 
-$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=512 count=102400
+$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=512 count=102400 conv=fdatasync
 102400+0 records in
 102400+0 records out
 52428800 bytes (52 MB, 50 MiB) copied, 0.757991 s, 69.2 MB/s
 
-$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024
+$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024 conv=fdatasync
 1024+0 records in
 1024+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.18405 s, 5.8 GB/s
@@ -163,6 +163,7 @@ Policies, when called to create, will ignore drives which are readonly. This all
 
 When using policies which are based on a device's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
 
+
 #### Function / Category classifications
 
 | Category | FUSE Functions                                                                      |
@@ -174,6 +175,7 @@ When using policies which are based on a device's available space the base path 
 
 Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will also be used.
 
+
 #### Path Preservation
 
 Policies, as described below, are of two core types. `path preserving` and `non-path preserving`.
@@ -184,28 +186,37 @@ A path preserving policy will only consider drives where the relative path being
 
 When using non-path preserving policies paths will be cloned to target drives as necessary.
 
+
+#### Filters
+
+Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. The policy type defines the sorting but filtering is mostly uniform as described below.
+
+* No **search** policies filter.
+* All **action** policies will filter out branches which are mounted **readonly** or tagged as **RO (readonly)**.
+* All **create** policies will filter out branches which are mounted **readonly**, tagged **RO (readonly)** or **NC (no create)**, or has available space less than **minfreespace**.
+
+If all branches are filtered an error will be returned. Typically **EROFS** or **ENOSPC** depending on the reasons.
+
+
 #### Policy descriptions
-
-All **create** policies will filter out branches which are mounted **read only** or tagged as **read only** or **no create**. All **action** policies will filter out branches which are mounted or tagged as **read only**.
-
-If all branches are filtered an error will be returned. Typically EROFS or ENOSPC.
 
 | Policy           | Description                                                |
 |------------------|------------------------------------------------------------|
-| all | Search category: acts like **ff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. It will exclude branches with free space less than **minfreespace**. |
-| epall (existing path, all) | Search category: acts like **epff**. Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all existing paths found. **create** works like **epff**. Excludes branches with free space less than **minfreespace**. |
-| epff (existing path, first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found where the relative path already exists. For **create** category functions it will exclude branches with free space less than **minfreespace**. |
-| eplfs (existing path, least free space) | Of all the drives on which the relative path exists choose the drive with the least free space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
-| eplus (existing path, least used space) | Of all the drives on which the relative path exists choose the drive with the least used space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
-| epmfs (existing path, most free space) | Of all the drives on which the relative path exists choose the drive with the most free space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
-| eprand (existing path, random) | Calls **epall** and then randomizes. Otherwise behaves the same as **epall**. |
-| erofs | Exclusively return **-1** with **errno** set to **EROFS** (Read-only filesystem). |
-| ff (first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. For **create** category functions it will exclude those with free space less than **minfreespace**. |
-| lfs (least free space) | Pick the drive with the least available free space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
-| lus (least used space) | Pick the drive with the least used space. For **create** category functions it will exclude those with free space less than **minfreespace**. |
-| mfs (most free space) | Pick the drive with the most available free space. |
-| newest | Pick the file / directory with the largest mtime. For **create** category functions it will exclude those with free space less than **minfreespace**. |
+| all | Search category: same as **epall**. Action category: same as **epall**. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
+| epall (existing path, all) | Search category: same as **epff** (but more expensive because it doesn't stop after finding a valid branch). Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
+| epff (existing path, first found) | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists. |
+| eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the drive with the least free space. |
+| eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
+| epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
+| eprand (existing path, random) | Calls **epall** and then randomizes. |
+| erofs | Exclusively return **-1** with **errno** set to **EROFS** (readonly filesystem). |
+| ff (first found) | Search category: same as **epff**. Action category: same as **epff**. Create category: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
+| lfs (least free space) | Search category: same as **eplfs**. Action category: same as **eplfs**. Create category: Pick the drive with the least available free space. |
+| lus (least used space) | Search category: same as **eplus**. Action category: same as **eplus**. Create category: Pick the drive with the least used space. |
+| mfs (most free space) | Search category: same as **epmfs**. Action category: same as **epmfs**. Create category: Pick the drive with the most available free space. |
+| newest | Pick the file / directory with the largest mtime. |
 | rand (random) | Calls **all** and then randomizes. |
+
 
 #### Defaults ####
 
@@ -214,6 +225,7 @@ If all branches are filtered an error will be returned. Typically EROFS or ENOSP
 | action   | epall  |
 | create   | epmfs  |
 | search   | ff     |
+
 
 #### rename & link ####
 
@@ -255,19 +267,22 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 
 **link** uses the same basic strategy.
 
+
 #### readdir ####
 
 [readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. While it could have it's own set of policies to tweak its behavior at this time it provides a simple union of files and directories found. Remember that any action or information queried about these files and directories come from the respective function. For instance: an **ls** is a **readdir** and for each file/directory returned **getattr** is called. Meaning the policy of **getattr** is responsible for choosing the file/directory which is the source of the metadata you see in an **ls**.
+
 
 #### statvfs ####
 
 [statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the branch will not be included.
 
+
 # BUILDING
 
 **NOTE:** Prebuilt packages can be found at: https://github.com/trapexit/mergerfs/releases
 
-First get the code from [github](http://github.com/trapexit/mergerfs).
+First get the code from [github](https://github.com/trapexit/mergerfs).
 
 ```
 $ git clone https://github.com/trapexit/mergerfs.git
@@ -277,11 +292,8 @@ $ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ve
 
 #### Debian / Ubuntu
 ```
-$ sudo apt-get -y update
-$ sudo apt-get -y install git make
 $ cd mergerfs
-$ make install-build-pkgs
-$ # build-essential git g++ debhelper python automake libtool lsb-release
+$ sudo tools/install-build-pkgs
 $ make deb
 $ sudo dpkg -i ../mergerfs_version_arch.deb
 ```
@@ -289,11 +301,8 @@ $ sudo dpkg -i ../mergerfs_version_arch.deb
 #### Fedora
 ```
 $ su -
-# dnf -y update
-# dnf -y install git make
 # cd mergerfs
-# make install-build-pkgs
-# # rpm-build gcc-c++ which python automake libtool gettext-devel
+# tools/install-build-pkgs
 # make rpm
 # rpm -i rpmbuild/RPMS/<arch>/mergerfs-<verion>.<arch>.rpm
 ```
@@ -819,17 +828,21 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 
 This software is free to use and released under a very liberal license. That said if you like this software and would like to support its development donations are welcome.
 
+* PayPal: trapexit@spawn.link
+* Patreon: https://www.patreon.com/trapexit
+* SubscribeStar: https://www.subscribestar.com/trapexit
 * Bitcoin (BTC): 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
 * Bitcoin Cash (BCH): 1AjPqZZhu7GVEs6JFPjHmtsvmDL4euzMzp
 * Ethereum (ETH): 0x09A166B11fCC127324C7fc5f1B572255b3046E94
 * Litecoin (LTC): LXAsq6yc6zYU3EbcqyWtHBrH1Ypx4GjUjm
 * Ripple (XRP): rNACR2hqGjpbHuCKwmJ4pDpd2zRfuRATcE
-* PayPal: trapexit@spawn.link
-* Patreon: https://www.patreon.com/trapexit
+
 
 # LINKS
 
-* http://github.com/trapexit/mergerfs
-* http://github.com/trapexit/mergerfs-tools
-* http://github.com/trapexit/scorch
-* http://github.com/trapexit/backup-and-recovery-howtos
+* https://spawn.link
+* https://github.com/trapexit/mergerfs
+* https://github.com/trapexit/mergerfs-tools
+* https://github.com/trapexit/scorch
+* https://github.com/trapexit/bbf
+* https://github.com/trapexit/backup-and-recovery-howtos
