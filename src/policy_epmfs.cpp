@@ -19,6 +19,7 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
 
@@ -142,7 +143,7 @@ namespace epmfs
 
         if(!fs::exists(branch->path,fusepath))
           continue;
-        rv = fs::spaceavail(&branch->path,&spaceavail);
+        rv = fs::statvfs_cache_spaceavail(branch->path,&spaceavail);
         if(rv == -1)
           continue;
         if(spaceavail < epmfs)

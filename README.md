@@ -85,6 +85,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
 * **cache.open=<int>**: 'open' policy cache timeout in seconds. (default: 0)
+* **cache.statfs=<int>**: 'statfs' cache timeout in seconds. (default: 0)
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -499,6 +500,13 @@ Policies are run every time a function is called. These policies can be expensiv
 The `open` policy cache will cache the result of an `open` policy for a particular input for `cache.open` seconds or until the file is unlinked. Each file close (release) will randomly chose to clean up the cache of expired entries.
 
 This cache is useful in cases like that of **Transmission** which has a "open, read/write, close" pattern (which is much more costly due to the FUSE overhead than normal.)
+
+
+#### statfs caching
+
+Of the syscalls used by mergerfs in policies the `statfs` / `statvfs` call is perhaps the most expensive. It's used to find out the available space of a drive and whether it is mounted read-only. Depending on the setup and usage pattern these queries can be relatively costly. When `cache.statfs` is enabled all calls to `statfs` by a policy will be cached for the number of seconds its set to.
+
+Example: If the create policy is `mfs` and the timeout is 60 then for that 60 seconds the same drive will be returned as the target for creates because the available space won't be updated for that time.
 
 
 #### writeback caching

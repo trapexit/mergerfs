@@ -214,6 +214,9 @@ Example: \f[B]category.create=mfs\f[]
 .IP \[bu] 2
 \f[B]cache.open=\f[]: \[aq]open\[aq] policy cache timeout in seconds.
 (default: 0)
+.IP \[bu] 2
+\f[B]cache.statfs=\f[]: \[aq]statfs\[aq] cache timeout in seconds.
+(default: 0)
 .PP
 \f[B]NOTE:\f[] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
@@ -1054,6 +1057,20 @@ expired entries.
 This cache is useful in cases like that of \f[B]Transmission\f[] which
 has a "open, read/write, close" pattern (which is much more costly due
 to the FUSE overhead than normal.)
+.SS statfs caching
+.PP
+Of the syscalls used by mergerfs in policies the \f[C]statfs\f[] /
+\f[C]statvfs\f[] call is perhaps the most expensive.
+It\[aq]s used to find out the available space of a drive and whether it
+is mounted read\-only.
+Depending on the setup and usage pattern these queries can be relatively
+costly.
+When \f[C]cache.statfs\f[] is enabled all calls to \f[C]statfs\f[] by a
+policy will be cached for the number of seconds its set to.
+.PP
+Example: If the create policy is \f[C]mfs\f[] and the timeout is 60 then
+for that 60 seconds the same drive will be returned as the target for
+creates because the available space won\[aq]t be updated for that time.
 .SS writeback caching
 .PP
 writeback caching is a technique for improving write speeds by batching

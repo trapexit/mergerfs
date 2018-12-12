@@ -27,15 +27,6 @@ namespace fs
   using std::string;
   using std::vector;
 
-  int readonly(const string *path_,
-               bool         *readonly_);
-
-  int spaceavail(const string *path_,
-                 uint64_t     *spaceavail_);
-
-  int spaceused(const string *path_,
-                uint64_t     *spaceavail_);
-
   void findallfiles(const vector<string> &basepaths,
                     const char           *fusepath,
                     vector<string>       &paths);

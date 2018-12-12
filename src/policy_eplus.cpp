@@ -19,6 +19,7 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
 
@@ -142,7 +143,7 @@ namespace eplus
 
         if(!fs::exists(branch->path,fusepath))
           continue;
-        rv = fs::spaceused(&branch->path,&spaceused);
+        rv = fs::statvfs_cache_spaceused(branch->path,&spaceused);
         if(rv == -1)
           continue;
         if(spaceused >= eplus)

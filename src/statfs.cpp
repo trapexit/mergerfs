@@ -14,14 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <algorithm>
-#include <limits>
-#include <map>
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_stat.hpp"
@@ -30,6 +22,14 @@
 #include "rwlock.hpp"
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
+
+#include <fuse.h>
+
+#include <algorithm>
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
 
 using std::string;
 using std::map;
@@ -108,7 +108,7 @@ _statfs(const Branches           &branches_,
       if(rv == -1)
         continue;
 
-      rv = fs::lstatvfs(fullpath,stvfs);
+      rv = fs::lstatvfs(fullpath,&stvfs);
       if(rv == -1)
         continue;
 

@@ -58,7 +58,8 @@ namespace mergerfs
       const Config &config = Config::get();
       FileInfo     *fi     = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      config.open_cache.cleanup(10);
+      if(config.open_cache.timeout)
+        config.open_cache.cleanup(10);
 
       return local::release(fi,config.dropcacheonclose);
     }
