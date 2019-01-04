@@ -61,12 +61,22 @@ namespace fs
   namespace cow
   {
     bool
+    is_eligible(const int flags_)
+    {
+      return ((flags_ & O_RDWR) || (flags_ & O_WRONLY));
+    }
+
+    bool
+    is_eligible(const struct stat &st_)
+    {
+      return ((S_ISREG(st_.st_mode)) && (st_.st_nlink > 1));
+    }
+
+    bool
     is_eligible(const int          flags_,
                 const struct stat &st_)
     {
-      return (((flags_ & O_RDWR) || (flags_ & O_WRONLY))  &&
-              (S_ISREG(st_.st_mode))                      &&
-              (st_.st_nlink > 1));
+      return (is_eligible(flags_) && is_eligible(st_));
     }
 
     bool
@@ -76,11 +86,14 @@ namespace fs
       int rv;
       struct stat st;
 
-      rv = fs::stat(fullpath_,st);
+      if(!is_eligible(flags_))
+        return false;
+
+      rv = fs::lstat(fullpath_,st);
       if(rv == -1)
         return false;
 
-      return fs::cow::is_eligible(flags_,st);
+      return fs::cow::is_eligible(st);
     }
 
     int
