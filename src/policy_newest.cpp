@@ -161,24 +161,21 @@ namespace newest
   }
 }
 
-namespace mergerfs
+int
+Policy::Func::newest(const Category::Enum::Type  type,
+                     const Branches             &branches_,
+                     const char                 *fusepath,
+                     const uint64_t              minfreespace,
+                     vector<const string*>      &paths)
 {
-  int
-  Policy::Func::newest(const Category::Enum::Type  type,
-                       const Branches             &branches_,
-                       const char                 *fusepath,
-                       const uint64_t              minfreespace,
-                       vector<const string*>      &paths)
-  {
-    switch(type)
-      {
-      case Category::Enum::create:
-        return newest::create(branches_,fusepath,minfreespace,paths);
-      case Category::Enum::action:
-        return newest::action(branches_,fusepath,paths);
-      case Category::Enum::search:
-      default:
-        return newest::search(branches_,fusepath,paths);
-      }
-  }
+  switch(type)
+    {
+    case Category::Enum::create:
+      return newest::create(branches_,fusepath,minfreespace,paths);
+    case Category::Enum::action:
+      return newest::action(branches_,fusepath,paths);
+    case Category::Enum::search:
+    default:
+      return newest::search(branches_,fusepath,paths);
+    }
 }

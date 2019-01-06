@@ -283,6 +283,8 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
+      config.open_cache.erase(oldpath);
+
       if(config.create->path_preserving() && !config.ignorepponrename)
         return _rename_preserve_path(config.getattr,
                                      config.rename,

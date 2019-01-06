@@ -27,7 +27,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Category;
 
 namespace mfs
 {
@@ -76,18 +75,15 @@ namespace mfs
   }
 }
 
-namespace mergerfs
+int
+Policy::Func::mfs(const Category::Enum::Type  type,
+                  const Branches             &branches_,
+                  const char                 *fusepath,
+                  const uint64_t              minfreespace,
+                  vector<const string*>      &paths)
 {
-  int
-  Policy::Func::mfs(const Category::Enum::Type  type,
-                    const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<const string*>      &paths)
-  {
-    if(type == Category::Enum::create)
-      return mfs::create(branches_,minfreespace,paths);
+  if(type == Category::Enum::create)
+    return mfs::create(branches_,minfreespace,paths);
 
-    return Policy::Func::epmfs(type,branches_,fusepath,minfreespace,paths);
-  }
+  return Policy::Func::epmfs(type,branches_,fusepath,minfreespace,paths);
 }

@@ -26,8 +26,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
-using mergerfs::Category;
 
 static
 int

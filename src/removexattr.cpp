@@ -29,7 +29,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 
 static
 int

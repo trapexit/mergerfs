@@ -24,65 +24,63 @@
 #define PRESERVES_PATH true
 #define DOESNT_PRESERVE_PATH false
 
-namespace mergerfs
-{
-  const std::vector<Policy> Policy::_policies_ =
-    buildvector<Policy,true>
-    (POLICY(invalid,DOESNT_PRESERVE_PATH))
-    (POLICY(all,DOESNT_PRESERVE_PATH))
-    (POLICY(epall,PRESERVES_PATH))
-    (POLICY(epff,PRESERVES_PATH))
-    (POLICY(eplfs,PRESERVES_PATH))
-    (POLICY(eplus,PRESERVES_PATH))
-    (POLICY(epmfs,PRESERVES_PATH))
-    (POLICY(eprand,PRESERVES_PATH))
-    (POLICY(erofs,DOESNT_PRESERVE_PATH))
-    (POLICY(ff,DOESNT_PRESERVE_PATH))
-    (POLICY(lfs,DOESNT_PRESERVE_PATH))
-    (POLICY(lus,DOESNT_PRESERVE_PATH))
-    (POLICY(mfs,DOESNT_PRESERVE_PATH))
-    (POLICY(newest,DOESNT_PRESERVE_PATH))
-    (POLICY(rand,DOESNT_PRESERVE_PATH));
+const std::vector<Policy> Policy::_policies_ =
+  buildvector<Policy,true>
+  (POLICY(invalid,DOESNT_PRESERVE_PATH))
+  (POLICY(all,DOESNT_PRESERVE_PATH))
+  (POLICY(epall,PRESERVES_PATH))
+  (POLICY(epff,PRESERVES_PATH))
+  (POLICY(eplfs,PRESERVES_PATH))
+  (POLICY(eplus,PRESERVES_PATH))
+  (POLICY(epmfs,PRESERVES_PATH))
+  (POLICY(eprand,PRESERVES_PATH))
+  (POLICY(erofs,DOESNT_PRESERVE_PATH))
+  (POLICY(ff,DOESNT_PRESERVE_PATH))
+  (POLICY(lfs,DOESNT_PRESERVE_PATH))
+  (POLICY(lus,DOESNT_PRESERVE_PATH))
+  (POLICY(mfs,DOESNT_PRESERVE_PATH))
+  (POLICY(newest,DOESNT_PRESERVE_PATH))
+  (POLICY(rand,DOESNT_PRESERVE_PATH));
 
-  const Policy * const Policy::policies = &_policies_[1];
+const Policy * const Policy::policies = &_policies_[1];
 
 #define CONST_POLICY(X) const Policy &Policy::X = Policy::policies[Policy::Enum::X]
 
-  CONST_POLICY(invalid);
-  CONST_POLICY(all);
-  CONST_POLICY(epall);
-  CONST_POLICY(epff);
-  CONST_POLICY(eplfs);
-  CONST_POLICY(eplus);
-  CONST_POLICY(epmfs);
-  CONST_POLICY(eprand);
-  CONST_POLICY(erofs);
-  CONST_POLICY(ff);
-  CONST_POLICY(lfs);
-  CONST_POLICY(lus);
-  CONST_POLICY(mfs);
-  CONST_POLICY(newest);
-  CONST_POLICY(rand);
+CONST_POLICY(invalid);
+CONST_POLICY(all);
+CONST_POLICY(epall);
+CONST_POLICY(epff);
+CONST_POLICY(eplfs);
+CONST_POLICY(eplus);
+CONST_POLICY(epmfs);
+CONST_POLICY(eprand);
+CONST_POLICY(erofs);
+CONST_POLICY(ff);
+CONST_POLICY(lfs);
+CONST_POLICY(lus);
+CONST_POLICY(mfs);
+CONST_POLICY(newest);
+CONST_POLICY(rand);
 
-  const Policy&
-  Policy::find(const std::string &str)
+const Policy&
+Policy::find(const std::string &str)
+{
+for(int i = Enum::BEGIN; i != Enum::END; ++i)
   {
-    for(int i = Enum::BEGIN; i != Enum::END; ++i)
-      {
-        if(policies[i] == str)
-          return policies[i];
-      }
-
-    return invalid;
-  }
-
-  const Policy&
-  Policy::find(const Policy::Enum::Type i)
-  {
-    if(i >= Policy::Enum::BEGIN &&
-       i  < Policy::Enum::END)
+    if(policies[i] == str)
       return policies[i];
-
-    return invalid;
   }
+
+ return invalid;
 }
+
+const Policy&
+Policy::find(const Policy::Enum::Type i)
+{
+  if(i >= Policy::Enum::BEGIN &&
+     i  < Policy::Enum::END)
+    return policies[i];
+
+  return invalid;
+}
+

@@ -22,41 +22,38 @@
 
 #define CATEGORY(X) Category(Category::Enum::X,#X)
 
-namespace mergerfs
+const std::vector<Category> Category::_categories_ =
+  buildvector<Category,true>
+  (CATEGORY(invalid))
+  (CATEGORY(action))
+  (CATEGORY(create))
+  (CATEGORY(search));
+
+const Category * const Category::categories = &_categories_[1];
+
+const Category &Category::invalid = Category::categories[Category::Enum::invalid];
+const Category &Category::action  = Category::categories[Category::Enum::action];
+const Category &Category::create  = Category::categories[Category::Enum::create];
+const Category &Category::search  = Category::categories[Category::Enum::search];
+
+const Category&
+Category::find(const std::string &str)
 {
-  const std::vector<Category> Category::_categories_ =
-    buildvector<Category,true>
-    (CATEGORY(invalid))
-    (CATEGORY(action))
-    (CATEGORY(create))
-    (CATEGORY(search));
+  for(int i = Enum::BEGIN; i != Enum::END; ++i)
+    {
+      if(categories[i] == str)
+        return categories[i];
+    }
 
-  const Category * const Category::categories = &_categories_[1];
+  return invalid;
+}
 
-  const Category &Category::invalid = Category::categories[Category::Enum::invalid];
-  const Category &Category::action  = Category::categories[Category::Enum::action];
-  const Category &Category::create  = Category::categories[Category::Enum::create];
-  const Category &Category::search  = Category::categories[Category::Enum::search];
+const Category&
+Category::find(const Category::Enum::Type i)
+{
+  if(i >= Category::Enum::BEGIN &&
+     i  < Category::Enum::END)
+    return categories[i];
 
-  const Category&
-  Category::find(const std::string &str)
-  {
-    for(int i = Enum::BEGIN; i != Enum::END; ++i)
-      {
-        if(categories[i] == str)
-          return categories[i];
-      }
-
-    return invalid;
-  }
-
-  const Category&
-  Category::find(const Category::Enum::Type i)
-  {
-    if(i >= Category::Enum::BEGIN &&
-       i  < Category::Enum::END)
-      return categories[i];
-
-    return invalid;
-  }
+  return invalid;
 }

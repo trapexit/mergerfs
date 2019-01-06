@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,13 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <unistd.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_unlink.hpp"
@@ -29,57 +22,66 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
+#include <unistd.h>
+
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 
-static
-int
-_unlink_loop_core(const string *basepath,
-                  const char   *fusepath,
-                  const int     error)
+namespace local
 {
-  int rv;
-  string fullpath;
+  static
+  int
+  unlink_loop_core(const string *basepath_,
+                   const char   *fusepath_,
+                   const int     error_)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(basepath,fusepath,fullpath);
+    fs::path::make(basepath_,fusepath_,fullpath);
 
-  rv = fs::unlink(fullpath);
+    rv = fs::unlink(fullpath);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error_,errno);
+  }
 
-static
-int
-_unlink_loop(const vector<const string*> &basepaths,
-             const char *fusepath)
-{
-  int error;
+  static
+  int
+  unlink_loop(const vector<const string*> &basepaths_,
+              const char                  *fusepath_)
+  {
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      error = _unlink_loop_core(basepaths[i],fusepath,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+      {
+        error = local::unlink_loop_core(basepaths_[i],fusepath_,error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_unlink(Policy::Func::Action  actionFunc,
-        const Branches       &branches_,
-        const uint64_t        minfreespace,
-        const char           *fusepath)
-{
-  int rv;
-  vector<const string*> basepaths;
+  static
+  int
+  unlink(Policy::Func::Action  actionFunc_,
+         const Branches       &branches_,
+         const uint64_t        minfreespace_,
+         const char           *fusepath_)
+  {
+    int rv;
+    vector<const string*> basepaths;
 
-  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  return _unlink_loop(basepaths,fusepath);
+    return local::unlink_loop(basepaths,fusepath_);
+  }
 }
 
 namespace mergerfs
@@ -87,17 +89,19 @@ namespace mergerfs
   namespace fuse
   {
     int
-    unlink(const char *fusepath)
+    unlink(const char *fusepath_)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _unlink(config.unlink,
-                     config.branches,
-                     config.minfreespace,
-                     fusepath);
+      config.open_cache.erase(fusepath_);
+
+      return local::unlink(config.unlink,
+                           config.branches,
+                           config.minfreespace,
+                           fusepath_);
     }
   }
 }

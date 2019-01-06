@@ -306,6 +306,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_category_policy(config,attr[3],attrvalue);
       else if(attr[2] == "func")
         _getxattr_controlfile_fusefunc_policy(config,attr[3],attrvalue);
+      else if((attr[2] == "cache") && (attr[3] == "open"))
+        _getxattr_controlfile_uint64_t(config.open_cache.timeout,attrvalue);
       break;
     }
 

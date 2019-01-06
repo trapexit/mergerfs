@@ -211,6 +211,9 @@ Example: \f[B]func.getattr=newest\f[]
 \f[B]category.<category>=<policy>\f[]: Sets policy of all FUSE functions
 in the provided category.
 Example: \f[B]category.create=mfs\f[]
+.IP \[bu] 2
+\f[B]cache.open=\f[]: \[aq]open\[aq] policy cache timeout in seconds.
+(default: 0)
 .PP
 \f[B]NOTE:\f[] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
@@ -1034,6 +1037,23 @@ The options for setting these are \f[C]entry_timeout\f[] and
 for the attributes cache.
 \f[C]negative_timeout\f[] refers to the timeout for negative responses
 to lookups (non\-existant files).
+.SS policy caching
+.PP
+Policies are run every time a function is called.
+These policies can be expensive depending on the setup and usage
+patterns.
+Generally we wouldn\[aq]t want to cache policy results because it may
+result in stale responses if the underlying drives are used directly.
+.PP
+The \f[C]open\f[] policy cache will cache the result of an \f[C]open\f[]
+policy for a particular input for \f[C]cache.open\f[] seconds or until
+the file is unlinked.
+Each file close (release) will randomly chose to clean up the cache of
+expired entries.
+.PP
+This cache is useful in cases like that of \f[B]Transmission\f[] which
+has a "open, read/write, close" pattern (which is much more costly due
+to the FUSE overhead than normal.)
 .SS writeback caching
 .PP
 writeback caching is a technique for improving write speeds by batching

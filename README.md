@@ -84,6 +84,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
+* **cache.open=<int>**: 'open' policy cache timeout in seconds. (default: 0)
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -489,6 +490,15 @@ It's a difficult balance between memory usage, cache bloat & duplication, and pe
 #### entry & attribute caching
 
 Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `entry_timeout` and `negative_timeout` for the entry cache and `attr_timeout` for the attributes cache. `negative_timeout` refers to the timeout for negative responses to lookups (non-existant files).
+
+
+#### policy caching
+
+Policies are run every time a function is called. These policies can be expensive depending on the setup and usage patterns. Generally we wouldn't want to cache policy results because it may result in stale responses if the underlying drives are used directly.
+
+The `open` policy cache will cache the result of an `open` policy for a particular input for `cache.open` seconds or until the file is unlinked. Each file close (release) will randomly chose to clean up the cache of expired entries.
+
+This cache is useful in cases like that of **Transmission** which has a "open, read/write, close" pattern (which is much more costly due to the FUSE overhead than normal.)
 
 
 #### writeback caching
