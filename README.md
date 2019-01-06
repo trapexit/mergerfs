@@ -533,6 +533,24 @@ The reason this is the default is because any other policy would be far more exp
 
 If you always want the directory information from the one with the most recent mtime then use the `newest` policy for `getattr`.
 
+#### `mv /mnt/pool/foo /mnt/disk1/foo` removes `foo`
+
+This is not a bug.
+
+Run in verbose mode to better undertand what's happening: `mv -v /mnt/pool/foo /mnt/disk1/foo`
+
+```
+$ mv -v /mnt/pool/foo /mnt/disk1/foo
+copied '/mnt/pool/foo' -> '/mnt/disk1/foo'
+removed '/mnt/pool/foo'
+$ ls /mnt/pool/foo
+ls: cannot access '/mnt/pool/foo': No such file or directory
+```
+
+`mv`, when working across devices, is copying the source to target and then removing the source. Since the source **is** the target in this case, depending on the unlink policy, it will remove the just copied file and other files across the branches.
+
+If you want to move files to one drive just copy them there and use mergerfs.dedup to clean up the old paths or manually remove them from the branches directly.
+
 #### cached memory appears greater than it should be
 
 Use the `direct_io` option as described above. Due to what mergerfs is doing there ends up being two caches of a file under normal usage. One from the underlying filesystem and one from mergerfs. Enabling `direct_io` removes the mergerfs cache. This saves on memory but means the kernel needs to communicate with mergerfs more often and can therefore result in slower speeds.
