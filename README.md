@@ -749,15 +749,17 @@ MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to pr
 
 Yes. It will be represented immediately in the pool as the policies perscribe.
 
-#### Why do I get an "out of space" error even though the system says there's lots of space left?
+#### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
 
-First make sure you've read the sections above about policies, path preserving, and the **moveonenospc** option.
+First make sure you've read the sections above about policies, path preservation, branch filtering, and the options **minfreespace**, **moveonenospc**, **statfs**, and **statfs_ignore**.
 
-Remember that mergerfs is simply presenting a logical merging of the contents of the pooled drives. The reported free space is the aggregate space available **not** the contiguous space available. MergerFS does not split files across drives. If the writing of a file fills an underlying drive and **moveonenospc** is disabled it will return an ENOSPC (No space left on device) error.
+mergerfs is simply presenting a union of the content within multiple branches. The reported free space is an aggregate of space available within the pool (behavior modified by **statfs** and **statfs_ignore**). It does not represent a contiguous space. In the same way that readonly filesystems, those with quotas, or reserved space report the full theoretical space available.
 
-If **moveonenospc** is enabled but there exists no drives with enough space for the file and the data to be written (or the drive happened to fill up as the file was being moved) it will error indicating there isn't enough space.
+Due to path preservation, branch tagging, readonly status, and **minfreespace** settings it is perfectly valid that `ENOSPC` / "out of space" / "no space left on device" be returned. It is doing what was asked of it: filtering possible branches due to those settings. Only one error can be returned and if one of the reasons for filtering a branch was **minfreespace** then it will be returned as such. **moveonenospc** is only relevant to writing a file which is too large for the drive its currently on.
 
-It is also possible that the filesystem selected has run out of inodes. Use `df -i` to list the total and available inodes per filesystem. In the future it might be worth considering the number of inodes available when making placement decisions in order to minimize this situation.
+It is also possible that the filesystem selected has run out of inodes. Use `df -i` to list the total and available inodes per filesystem.
+
+If you don't care about path preservation then simply change the `create` policy to one which isn't. `mfs` is probably what most are looking for. The reason its not default is because it was originally set to `epmfs` and changing it now would change people's setup. Such a setting change will likely occur in mergerfs 3.
 
 #### Can mergerfs mounts be exported over NFS?
 

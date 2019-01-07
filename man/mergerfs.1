@@ -1159,9 +1159,9 @@ ls:\ cannot\ access\ \[aq]/mnt/pool/foo\[aq]:\ No\ such\ file\ or\ directory
 .PP
 \f[C]mv\f[], when working across devices, is copying the source to
 target and then removing the source.
-Since the source \f[B]is\f[] the target in this case then when the
-remove happens it can, depending on the unlink policy, remove the just
-copied file and other files across the branches.
+Since the source \f[B]is\f[] the target in this case, depending on the
+unlink policy, it will remove the just copied file and other files
+across the branches.
 .PP
 If you want to move files to one drive just copy them there and use
 mergerfs.dedup to clean up the old paths or manually remove them from
@@ -1564,32 +1564,42 @@ here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html
 Yes.
 It will be represented immediately in the pool as the policies
 perscribe.
-.SS Why do I get an "out of space" error even though the system says
-there\[aq]s lots of space left?
+.SS Why do I get an "out of space" / "no space left on device" / ENOSPC
+error even though there appears to be lots of space available?
 .PP
 First make sure you\[aq]ve read the sections above about policies, path
-preserving, and the \f[B]moveonenospc\f[] option.
+preservation, branch filtering, and the options \f[B]minfreespace\f[],
+\f[B]moveonenospc\f[], \f[B]statfs\f[], and \f[B]statfs_ignore\f[].
 .PP
-Remember that mergerfs is simply presenting a logical merging of the
-contents of the pooled drives.
-The reported free space is the aggregate space available \f[B]not\f[]
-the contiguous space available.
-MergerFS does not split files across drives.
-If the writing of a file fills an underlying drive and
-\f[B]moveonenospc\f[] is disabled it will return an ENOSPC (No space
-left on device) error.
+mergerfs is simply presenting a union of the content within multiple
+branches.
+The reported free space is an aggregate of space available within the
+pool (behavior modified by \f[B]statfs\f[] and \f[B]statfs_ignore\f[]).
+It does not represent a contiguous space.
+In the same way that readonly filesystems, those with quotas, or
+reserved space report the full theoretical space available.
 .PP
-If \f[B]moveonenospc\f[] is enabled but there exists no drives with
-enough space for the file and the data to be written (or the drive
-happened to fill up as the file was being moved) it will error
-indicating there isn\[aq]t enough space.
+Due to path preservation, branch tagging, readonly status, and
+\f[B]minfreespace\f[] settings it is perfectly valid that
+\f[C]ENOSPC\f[] / "out of space" / "no space left on device" be
+returned.
+It is doing what was asked of it: filtering possible branches due to
+those settings.
+Only one error can be returned and if one of the reasons for filtering a
+branch was \f[B]minfreespace\f[] then it will be returned as such.
+\f[B]moveonenospc\f[] is only relevant to writing a file which is too
+large for the drive its currently on.
 .PP
 It is also possible that the filesystem selected has run out of inodes.
 Use \f[C]df\ \-i\f[] to list the total and available inodes per
 filesystem.
-In the future it might be worth considering the number of inodes
-available when making placement decisions in order to minimize this
-situation.
+.PP
+If you don\[aq]t care about path preservation then simply change the
+\f[C]create\f[] policy to one which isn\[aq]t.
+\f[C]mfs\f[] is probably what most are looking for.
+The reason its not default is because it was originally set to
+\f[C]epmfs\f[] and changing it now would change people\[aq]s setup.
+Such a setting change will likely occur in mergerfs 3.
 .SS Can mergerfs mounts be exported over NFS?
 .PP
 Yes.
