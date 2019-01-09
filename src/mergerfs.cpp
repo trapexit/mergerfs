@@ -70,7 +70,6 @@ namespace local
   static
   void
   get_fuse_operations(struct fuse_operations &ops,
-                      const bool              direct_io,
                       const bool              nullrw)
   {
     ops.flag_nullpath_ok   = true;
@@ -105,9 +104,7 @@ namespace local
     ops.poll        = NULL;
     ops.read        = (nullrw ?
                        mergerfs::fuse::read_null :
-                       (direct_io ?
-                        mergerfs::fuse::read_direct_io :
-                        mergerfs::fuse::read));
+                       mergerfs::fuse::read);
     ops.read_buf    = (nullrw ?
                        NULL :
                        mergerfs::fuse::read_buf);
@@ -127,9 +124,7 @@ namespace local
     ops.utimens     = mergerfs::fuse::utimens;
     ops.write       = (nullrw ?
                        mergerfs::fuse::write_null :
-                       (direct_io ?
-                        mergerfs::fuse::write_direct_io :
-                        mergerfs::fuse::write));
+                       mergerfs::fuse::write);
     ops.write_buf   = (nullrw ?
                        mergerfs::fuse::write_buf_null :
                        mergerfs::fuse::write_buf);
@@ -168,9 +163,7 @@ namespace mergerfs
     mergerfs::options::parse(args,config);
 
     local::setup_resources();
-    local::get_fuse_operations(ops,
-                               config.direct_io,
-                               config.nullrw);
+    local::get_fuse_operations(ops,config.nullrw);
 
     return fuse_main(args.argc,
                      args.argv,

@@ -70,7 +70,6 @@ struct fuse_config {
 	int set_mode;
 	int set_uid;
 	int set_gid;
-	int direct_io;
 	int kernel_cache;
 	int auto_cache;
 	int intr;
@@ -3138,8 +3137,6 @@ static void fuse_lib_create(fuse_req_t req, fuse_ino_t parent,
 				fuse_fs_release(f->fs, path, fi);
 				forget_node(f, e.ino, 1);
 			} else {
-				if (f->conf.direct_io)
-					fi->direct_io = 1;
 				if (f->conf.kernel_cache)
 					fi->keep_cache = 1;
 
@@ -3215,8 +3212,6 @@ static void fuse_lib_open(fuse_req_t req, fuse_ino_t ino,
 		fuse_prepare_interrupt(f, req, &d);
 		err = fuse_fs_open(f->fs, path, fi);
 		if (!err) {
-			if (f->conf.direct_io)
-				fi->direct_io = 1;
 			if (f->conf.kernel_cache)
 				fi->keep_cache = 1;
 
@@ -4385,7 +4380,6 @@ static const struct fuse_opt fuse_lib_opts[] = {
 	FUSE_LIB_OPT("hard_remove",	      hard_remove, 1),
 	FUSE_LIB_OPT("use_ino",		      use_ino, 1),
 	FUSE_LIB_OPT("readdir_ino",	      readdir_ino, 1),
-	FUSE_LIB_OPT("direct_io",	      direct_io, 1),
 	FUSE_LIB_OPT("kernel_cache",	      kernel_cache, 1),
 	FUSE_LIB_OPT("auto_cache",	      auto_cache, 1),
 	FUSE_LIB_OPT("noauto_cache",	      auto_cache, 0),
@@ -4416,7 +4410,6 @@ static void fuse_lib_help(void)
 "    -o hard_remove         immediate removal (don't hide files)\n"
 "    -o use_ino             let filesystem set inode numbers\n"
 "    -o readdir_ino         try to fill in d_ino in readdir\n"
-"    -o direct_io           use direct I/O\n"
 "    -o kernel_cache        cache files in kernel\n"
 "    -o [no]auto_cache      enable caching based on modification times (off)\n"
 "    -o umask=M             set file permissions (octal)\n"

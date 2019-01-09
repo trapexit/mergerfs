@@ -14,19 +14,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
 #include "dirinfo.hpp"
+
+#include <fuse.h>
 
 namespace mergerfs
 {
   namespace fuse
   {
     int
-    opendir(const char     *fusepath,
-            fuse_file_info *ffi)
+    opendir(const char     *fusepath_,
+            fuse_file_info *ffi_)
     {
-      ffi->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath));
+      ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
 
       return 0;
     }

@@ -14,14 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string.h>
-
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_setxattr.hpp"
@@ -32,6 +24,14 @@
 #include "rwlock.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
+
+#include <fuse.h>
+
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <string.h>
 
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
@@ -323,6 +323,10 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_statfsignore(attrval,
                                       flags,
                                       config.statfs_ignore);
+      else if(attr[2] == "direct_io")
+        return _setxattr_bool(attrval,
+                              flags,
+                              config.direct_io);
       break;
 
     case 4:

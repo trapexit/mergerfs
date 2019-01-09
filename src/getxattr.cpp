@@ -14,17 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <stdio.h>
-#include <string.h>
-
-#include <algorithm>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_getxattr.hpp"
@@ -33,6 +22,17 @@
 #include "str.hpp"
 #include "ugid.hpp"
 #include "version.hpp"
+
+#include <fuse.h>
+
+#include <algorithm>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <stdio.h>
+#include <string.h>
 
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
@@ -297,6 +297,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_version(attrvalue);
       else if(attr[2] == "pid")
         _getxattr_pid(attrvalue);
+      else if(attr[2] == "direct_io")
+        _getxattr_controlfile_bool(config.direct_io,attrvalue);
       break;
 
     case 4:

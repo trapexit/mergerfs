@@ -33,119 +33,116 @@ using std::vector;
 
 typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
 
-static
-bool
-_out_of_space(const int error)
+namespace local
 {
-  return ((error == ENOSPC) ||
-          (error == EDQUOT));
+  static
+  bool
+  out_of_space(const int error_)
+  {
+    return ((error_ == ENOSPC) ||
+            (error_ == EDQUOT));
+  }
+
+  static
+  int
+  write_regular(const int     fd_,
+                const void   *buf_,
+                const size_t  count_,
+                const off_t   offset_)
+  {
+    int rv;
+
+    rv = fs::pwrite(fd_,buf_,count_,offset_);
+    if(rv == -1)
+      return -errno;
+    if(rv == 0)
+      return 0;
+
+    return count_;
+  }
+
+  static
+  int
+  write_direct_io(const int     fd_,
+                  const void   *buf_,
+                  const size_t  count_,
+                  const off_t   offset_)
+  {
+    int rv;
+
+    rv = fs::pwrite(fd_,buf_,count_,offset_);
+    if(rv == -1)
+      return -errno;
+
+    return rv;
+  }
+
+  static
+  int
+  write(WriteFunc       func_,
+        const char     *buf_,
+        const size_t    count_,
+        const off_t     offset_,
+        fuse_file_info *ffi_)
+  {
+    int rv;
+    FileInfo* fi;
+
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    rv = func_(fi->fd,buf_,count_,offset_);
+    if(local::out_of_space(-rv))
+      {
+        const fuse_context *fc     = fuse_get_context();
+        const Config       &config = Config::get(fc);
+
+        if(config.moveonenospc)
+          {
+            vector<string> paths;
+            const ugid::Set ugid(0,0);
+            const rwlock::ReadGuard readlock(&config.branches_lock);
+
+            config.branches.to_paths(paths);
+
+            rv = fs::movefile(paths,fi->fusepath,count_,fi->fd);
+            if(rv == -1)
+              return -ENOSPC;
+
+            rv = func_(fi->fd,buf_,count_,offset_);
+          }
+      }
+
+    return rv;
+  }
 }
-
-static
-inline
-int
-_write(const int     fd,
-       const void   *buf,
-       const size_t  count,
-       const off_t   offset)
-{
-  int rv;
-
-  rv = fs::pwrite(fd,buf,count,offset);
-  if(rv == -1)
-    return -errno;
-  if(rv == 0)
-    return 0;
-
-  return count;
-}
-
-static
-inline
-int
-_write_direct_io(const int     fd,
-                 const void   *buf,
-                 const size_t  count,
-                 const off_t   offset)
-{
-  int rv;
-
-  rv = fs::pwrite(fd,buf,count,offset);
-  if(rv == -1)
-    return -errno;
-
-  return rv;
-}
-
 namespace mergerfs
 {
   namespace fuse
   {
-    static
-    inline
     int
-    write(WriteFunc       func,
-          const char     *buf,
-          const size_t    count,
-          const off_t     offset,
-          fuse_file_info *ffi)
+    write(const char     *fusepath_,
+          const char     *buf_,
+          size_t          count_,
+          off_t           offset_,
+          fuse_file_info *ffi_)
     {
-      int rv;
-      FileInfo* fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      WriteFunc wf;
 
-      rv = func(fi->fd,buf,count,offset);
-      if(_out_of_space(-rv))
-        {
-          const fuse_context *fc     = fuse_get_context();
-          const Config       &config = Config::get(fc);
+      wf = ((ffi_->direct_io) ?
+            local::write_direct_io :
+            local::write_regular);
 
-          if(config.moveonenospc)
-            {
-              vector<string> paths;
-              const ugid::Set ugid(0,0);
-              const rwlock::ReadGuard readlock(&config.branches_lock);
-
-              config.branches.to_paths(paths);
-
-              rv = fs::movefile(paths,fi->fusepath,count,fi->fd);
-              if(rv == -1)
-                return -ENOSPC;
-
-              rv = func(fi->fd,buf,count,offset);
-            }
-        }
-
-      return rv;
+      return local::write(wf,buf_,count_,offset_,ffi_);
     }
 
     int
-    write(const char     *fusepath,
-          const char     *buf,
-          size_t          count,
-          off_t           offset,
-          fuse_file_info *ffi)
+    write_null(const char     *fusepath_,
+               const char     *buf_,
+               size_t          count_,
+               off_t           offset_,
+               fuse_file_info *ffi_)
     {
-      return write(_write,buf,count,offset,ffi);
-    }
-
-    int
-    write_direct_io(const char     *fusepath,
-                    const char     *buf,
-                    size_t          count,
-                    off_t           offset,
-                    fuse_file_info *ffi)
-    {
-      return write(_write_direct_io,buf,count,offset,ffi);
-    }
-
-    int
-    write_null(const char     *fusepath,
-               const char     *buf,
-               size_t          count,
-               off_t           offset,
-               fuse_file_info *ffi)
-    {
-      return count;
+      return count_;
     }
   }
 }
