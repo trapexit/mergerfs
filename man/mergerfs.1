@@ -342,6 +342,7 @@ As you can see above the size of a read or write can massively impact
 theoretical performance.
 If an application performs much worse through mergerfs it could very
 well be that it doesn\[aq]t optimally size its read and write requests.
+In such cases contact the mergerfs author so it can be investigated.
 .SS xattr
 .PP
 Runtime extended attribute support can be managed via the \f[C]xattr\f[]
@@ -367,18 +368,13 @@ The POSIX filesystem API has a number of functions.
 \f[B]creat\f[], \f[B]stat\f[], \f[B]chown\f[], etc.
 In mergerfs these functions are grouped into 3 categories:
 \f[B]action\f[], \f[B]create\f[], and \f[B]search\f[].
-Functions and categories can be assigned a policy which dictates how
-\f[B]mergerfs\f[] behaves.
+Functions and categories can be assigned a policy which dictates what
+file or directory is chosen when performing that behavior.
 Any policy can be assigned to a function or category though some may not
 be very useful in practice.
 For instance: \f[B]rand\f[] (random) may be useful for file creation
 (create) but could lead to very odd behavior if used for \f[C]chmod\f[]
 (though only if there were more than one copy of the file).
-.PP
-Policies, when called to create, will ignore drives which are readonly.
-This allows for readonly and read/write drives to be mixed together.
-Note that the drive must be explicitly mounted with the \f[B]ro\f[]
-mount option for this to work.
 .PP
 When using policies which are based on a device\[aq]s available space
 the base path provided is used.
@@ -598,18 +594,19 @@ T}
 .SS rename & link
 .PP
 \f[B]NOTE:\f[] If you\[aq]re receiving errors from software when files
-are moved / renamed then you should consider changing the create policy
-to one which is \f[B]not\f[] path preserving, enabling
+are moved / renamed / linked then you should consider changing the
+create policy to one which is \f[B]not\f[] path preserving, enabling
 \f[C]ignorepponrename\f[], or contacting the author of the offending
 software and requesting that \f[C]EXDEV\f[] be properly handled.
 .PP
-rename (http://man7.org/linux/man-pages/man2/rename.2.html) is a tricky
-function in a merged system.
-Under normal situations rename only works within a single filesystem or
-device.
+\f[C]rename\f[] and \f[C]link\f[] are tricky functions in a union
+filesystem.
+\f[C]rename\f[] only works within a single filesystem or device.
 If a rename can\[aq]t be done atomically due to the source and
 destination paths existing on different mount points it will return
 \f[B]\-1\f[] with \f[B]errno = EXDEV\f[] (cross device).
+So if a \f[C]rename\f[]\[aq]s source and target are on different drives
+within the pool it creates an issue.
 .PP
 Originally mergerfs would return EXDEV whenever a rename was requested
 which was cross directory in any way.
@@ -622,7 +619,7 @@ client in Apple OSX 10.9+, NZBGet, Samba\[aq]s recycling bin feature.
 .PP
 As a result a compromise was made in order to get most software to work
 while still obeying mergerfs\[aq] policies.
-Below is the rather complicated logic.
+Below is the basic logic.
 .IP \[bu] 2
 If using a \f[B]create\f[] policy which tries to preserve directory
 paths (epff,eplfs,eplus,epmfs)
@@ -690,7 +687,7 @@ The the removals are subject to normal entitlement checks.
 The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 .PP
-\f[B]link\f[] uses the same basic strategy.
+\f[B]link\f[] uses the same strategy but without the removals.
 .SS readdir
 .PP
 readdir (http://linux.die.net/man/3/readdir) is different from all other
@@ -777,7 +774,15 @@ $\ make\ INTERNAL_FUSE=0
 $\ sudo\ make\ INTERNAL_FUSE=0\ install
 \f[]
 .fi
-.SH RUNTIME
+.SS Other build options
+.IP
+.nf
+\f[C]
+$\ make\ STATIC=1\ #\ builds\ a\ static\ binary
+$\ make\ LTO=1\ \ \ \ #\ perform\ link\ time\ optimization
+\f[]
+.fi
+.SH RUNTIME CONFIG
 .SS .mergerfs pseudo file
 .IP
 .nf
@@ -797,7 +802,7 @@ If you wish for values to persist they must be included as options
 wherever you configure the mounting of mergerfs (/etc/fstab).
 .SS Keys
 .PP
-Use \f[C]xattr\ \-l\ /mount/point/.mergerfs\f[] to see all supported
+Use \f[C]xattr\ \-l\ /mountpoint/.mergerfs\f[] to see all supported
 keys.
 Some are informational and therefore readonly.
 .SS user.mergerfs.branches
@@ -805,7 +810,7 @@ Some are informational and therefore readonly.
 \f[B]NOTE:\f[] formerly \f[C]user.mergerfs.srcmounts\f[] but said key is
 still supported.
 .PP
-Used to query or modify the list of source mounts.
+Used to query or modify the list of branches.
 When modifying there are several shortcuts to easy manipulation of the
 list.
 .PP
@@ -851,6 +856,9 @@ T}
 .TE
 .PP
 \f[C]xattr\ \-w\ user.mergerfs.branches\ +</mnt/drive3\ /mnt/pool/.mergerfs\f[]
+.PP
+The \f[C]=NC\f[], \f[C]=RO\f[], \f[C]=RW\f[] syntax works just as on the
+command line.
 .SS minfreespace
 .PP
 Input: interger with an optional multiplier suffix.
@@ -967,9 +975,9 @@ bbf (bad block finder): a tool to scan for and \[aq]fix\[aq] hard drive
 bad blocks and find the files using those blocks
 .SH CACHING
 .PP
-MergerFS does not natively support any sort of caching.
-Most users have no use for such a feature and it would greatly
-complicate the code.
+MergerFS does not natively support any sort of tiered caching.
+Most users have no use for such a feature and it would complicate the
+code.
 However, there are a few situations where a cache drive could help with
 a typical mergerfs setup.
 .IP "1." 3
@@ -1145,7 +1153,6 @@ recent mtime then use the \f[C]newest\f[] policy for \f[C]getattr\f[].
 This is not a bug.
 .PP
 Run in verbose mode to better undertand what\[aq]s happening:
-\f[C]mv\ \-v\ /mnt/pool/foo\ /mnt/disk1/foo\f[]
 .IP
 .nf
 \f[C]
@@ -1195,12 +1202,14 @@ rtorrent and some other applications use
 mmap (http://linux.die.net/man/2/mmap) to read and write to files and
 offer no failback to traditional methods.
 FUSE does not currently support mmap while using \f[C]direct_io\f[].
-There will be a performance penalty on writes with \f[C]direct_io\f[]
-off as well as the problem of double caching but it\[aq]s the only way
-to get such applications to work.
+There may be a performance penalty on writes with \f[C]direct_io\f[] off
+as well as the problem of double caching but it\[aq]s the only way to
+get such applications to work.
 If the performance loss is too high for other apps you can mount
 mergerfs twice.
 Once with \f[C]direct_io\f[] enabled and one without it.
+Be sure to set \f[C]dropcacheonclose=true\f[] if not using
+\f[C]direct_io\f[].
 .SS Plex doesn\[aq]t work with mergerfs
 .PP
 It does.
@@ -1208,6 +1217,8 @@ If you\[aq]re trying to put Plex\[aq]s config / metadata on mergerfs you
 have to leave \f[C]direct_io\f[] off because Plex is using sqlite which
 apparently needs mmap.
 mmap doesn\[aq]t work with \f[C]direct_io\f[].
+To fix this place the data elsewhere or disable \f[C]direct_io\f[] (with
+\f[C]dropcacheonclose=true\f[]).
 .PP
 If the issue is that scanning doesn\[aq]t seem to pick up media then be
 sure to set \f[C]func.getattr=newest\f[] as mentioned above.
@@ -1418,6 +1429,8 @@ files are not used and files are deleted immedately.
 That has a side effect however.
 Files which are unlinked and then they are still used (in certain forms)
 will result in an error.
+.PP
+A fix is in the works for this.
 .SH FAQ
 .SS How well does mergerfs scale? Is it "production ready?"
 .PP
@@ -1446,14 +1459,16 @@ See the previous question\[aq]s answer.
 .PP
 Yes.
 You need to use \f[C]use_ino\f[] to support proper reporting of inodes.
-Read the section "rename & link" for caveats.
+.PP
+What mergerfs does not do is fake hard links across branches.
+Read the section "rename & link" for how it.
 .SS Does mergerfs support CoW / copy\-on\-write?
 .PP
 Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs
 or aufs sense.
 It does offer a
 cow\-shell (http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html)
-like hardlink breaking (copy to temp file then rename over original)
+like hard link breaking (copy to temp file then rename over original)
 which can be useful when wanting to save space by hardlinking duplicate
 files but wish to treat each name as if it were a unique and separate
 file.
@@ -1501,10 +1516,12 @@ external source.
 If you do want path preservation you\[aq]ll need to perform the manual
 act of creating paths on the drives you want the data to land on before
 transfering your data.
+Setting \f[C]func.mkdir=epall\f[] can simplify managing path
+perservation for \f[C]create\f[].
 .SS Why was libfuse embedded into mergerfs?
 .PP
-A significant number of users use mergerfs on distros with very old
-versions of libfuse which have serious bugs.
+A significant number of users use mergerfs on distros with old versions
+of libfuse which have serious bugs.
 Requiring updated versions of libfuse on those distros isn\[aq]t
 pratical (no package offered, user inexperience, etc.).
 The only practical way to provide a stable runtime on those systems was
@@ -1561,9 +1578,10 @@ described
 here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 .SS Can drives be written to directly? Outside of mergerfs while pooled?
 .PP
-Yes.
-It will be represented immediately in the pool as the policies
-perscribe.
+Yes, however its not recommended to use the same file from within the
+pool and from without at the same time.
+Especially if using caching of any kind (entry_timeout, attr_timeout,
+ac_attr_timeout, negative_timeout, auto_cache, kernel_cache).
 .SS Why do I get an "out of space" / "no space left on device" / ENOSPC
 error even though there appears to be lots of space available?
 .PP
@@ -1670,6 +1688,7 @@ This is rarely a problem but a solution is in the works.
 .PP
 The files are cleaned up once the file is finally closed.
 Only if mergerfs crashes or is killed would they be left around.
+They are safe to remove as they are already unlinked files.
 .SS It\[aq]s mentioned that there are some security issues with mhddfs.
 What are they? How does mergerfs address them?
 .PP
@@ -1678,13 +1697,13 @@ mhddfs (https://github.com/trapexit/mhddfs) manages running as
 getuid() (https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319)
 and if it returns \f[B]0\f[] then it will
 chown (http://linux.die.net/man/1/chown) the file.
-Not only is that a race condition but it doesn\[aq]t handle many other
+Not only is that a race condition but it doesn\[aq]t handle other
 situations.
 Rather than attempting to simulate POSIX ACL behavior the proper way to
 manage this is to use seteuid (http://linux.die.net/man/2/seteuid) and
 setegid (http://linux.die.net/man/2/setegid), in effect becoming the
 user making the original call, and perform the action as them.
-This is what mergerfs does.
+This is what mergerfs does and why mergerfs should always run as root.
 .PP
 In Linux setreuid syscalls apply only to the thread.
 GLIBC hides this away by using realtime signals to inform all threads to
@@ -1719,6 +1738,10 @@ underlying filesystems directly if enabling \f[C]kernel_cache\f[])
 .IP \[bu] 2
 try adding (or removing) \f[C]splice_move\f[], \f[C]splice_read\f[], and
 \f[C]splice_write\f[] (all three included in \f[C]defaults\f[])
+.IP \[bu] 2
+try increasing cache timeouts \f[C]attr_timeout\f[],
+\f[C]entry_timeout\f[], \f[C]ac_attr_timeout\f[],
+\f[C]negative_timeout\f[]
 .IP \[bu] 2
 try changing the number of worker threads
 .IP \[bu] 2
@@ -1776,6 +1799,8 @@ github.com: https://github.com/trapexit/mergerfs/issues
 email: trapexit\@spawn.link
 .IP \[bu] 2
 twitter: https://twitter.com/_trapexit
+.IP \[bu] 2
+reddit: https://www.reddit.com/user/trapexit
 .SS Support development
 .PP
 This software is free to use and released under a very liberal license.
