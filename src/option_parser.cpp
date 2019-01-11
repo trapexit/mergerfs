@@ -14,20 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <stddef.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_glob.hpp"
@@ -35,6 +21,20 @@
 #include "policy.hpp"
 #include "str.hpp"
 #include "version.hpp"
+
+#include <fuse.h>
+
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 using std::string;
 using std::vector;
@@ -211,7 +211,7 @@ parse_and_process_arg(Config            &config,
   if(arg == "defaults")
     return (set_default_options(*outargs),0);
   else if(arg == "direct_io")
-    return (config.direct_io=true,1);
+    return (config.direct_io=true,0);
 
   return 1;
 }
@@ -336,7 +336,7 @@ usage(void)
     "                           splice_write, splice_move\n"
     "    -o func.<f>=<p>        Set function <f> to policy <p>\n"
     "    -o category.<c>=<p>    Set functions in category <c> to <p>\n"
-    "    -o direct_io           Bypass additional caching, increases write\n"
+    "    -o direct_io           Bypass page caching, may increase write\n"
     "                           speeds at the cost of reads. Please read docs\n"
     "                           for more details as there are tradeoffs.\n"
     "    -o use_ino             Have mergerfs generate inode values rather than\n"

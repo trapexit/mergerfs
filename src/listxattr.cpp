@@ -57,6 +57,7 @@ _listxattr_controlfile(char         *list,
     ("user.mergerfs.xattr")
     ("user.mergerfs.statfs")
     ("user.mergerfs.statfs_ignore")
+    ("user.mergerfs.direct_io")
     ("user.mergerfs.policies")
     ("user.mergerfs.version")
     ("user.mergerfs.pid");

@@ -48,6 +48,16 @@ namespace fs
 
     inline
     void
+    make(const string &base_,
+         const char   *suffix_,
+         string       *output_)
+    {
+      *output_  = base_;
+      *output_ += suffix_;
+    }
+
+    inline
+    void
     make(const string *base,
          const char   *suffix,
          string       &output)
