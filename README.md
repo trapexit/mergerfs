@@ -473,25 +473,50 @@ A B C
 
 # CACHING
 
-MergerFS does not natively support any sort of tiered caching. Most users have no use for such a feature and it would complicate the code. However, there are a few situations where a cache drive could help with a typical mergerfs setup.
+#### page caching
+
+The kernel performs caching of data pages on all files not opened with `O_DIRECT`. Due to mergerfs using FUSE and therefore being a userland process the kernel can double cache the content being read through mergerfs. Once from the underlying filesystem and once for mergerfs. Using `direct_io` and/or `dropcacheonclose` help minimize the double caching. `direct_io` will instruct the kernel to bypass the page cache for files opened through mergerfs. `dropcacheonclose` will cause mergerfs to instruct the kernel to flush a file's page cache for which it had opened when closed. If most data is read once its probably best to enable both (read above for details and limitations).
+
+If a cache is desired for mergerfs do not enable `direct_io` and instead possibly use `auto_cache` or `kernel_cache`. By default FUSE will invalidate cached pages when a file is opened. By using `auto_cache` it will instead use `getattr` to check if a file has changed when the file is opened and if so will flush the cache. `ac_attr_timeout` is the timeout for keeping said cache. Alternatively `kernel_cache` will keep the cache across opens unless invalidated through other means. You should only uses these if you do not plan to write/modify the same files through mergerfs and the underlying filesystem at the same time. It could lead to corruption. Then again doing so without caching can also cause issues.
+
+It's a difficult balance between memory usage, cache bloat & duplication, and performance. Ideally mergerfs would be able to disable caching for the files it reads/writes but allow page caching for itself. That would limit the FUSE overhead. However, there isn't good way to achieve this.
+
+
+#### entry & attribute caching
+
+Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `entry_timeout` and `negative_timeout` for the entry cache and `attr_timeout` for the attributes cache. `negative_timeout` refers to the timeout for negative responses to lookups (non-existant files).
+
+
+#### writeback caching
+
+writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a slightly modified and vendored libfuse 2.9.7 which does not support writeback caching. However, a prototype port to libfuse 3.x has been made and the writeback cache appears to work as expected (though performance improvements greatly depend on the way the client app writes data). Once the port is complete and thoroughly tested writeback caching will be available.
+
+
+#### tiered caching
+
+Some storage technologies support what some call "tiered" caching. The placing of usually smaller, faster storage as a transparent cache to larger, slower storage. NVMe, SSD, Optane in front of traditional HDDs for instance.
+
+MergerFS does not natively support any sort of tiered caching. Most users have no use for such a feature and its inclusion would complicate the code. However, there are a few situations where a cache drive could help with a typical mergerfs setup.
 
 1. Fast network, slow drives, many readers: You've a 10+Gbps network with many readers and your regular drives can't keep up.
 2. Fast network, slow drives, small'ish bursty writes: You have a 10+Gbps network and wish to transfer amounts of data less than your cache drive but wish to do so quickly.
 
-The below will mostly address usecase #2. It will also work for #1 assuming the data is regularly accessed and was placed into the system via this method. Otherwise a similar script may need to be written to populate the cache from the backing pool.
+With #1 its arguable if you should be using mergerfs at all. RAID would probably be the better solution. If you're going to use mergerfs there are other tactics that may help: spreading the data across drives (see the mergerfs.dup tool) and setting `func.open=rand`, using `symlinkify`, or using dm-cache or a similar technology to add tiered cache to the underlying device.
 
-1. Create 2 mergerfs pools. One which includes just the backing drives and one which has both the cache drives (SSD,NVME,etc.) and backing drives.
+With #2 one could use dm-cache as well but there is another solution which requires only mergerfs and a cronjob.
+
+1. Create 2 mergerfs pools. One which includes just the slow drives and one which has both the fast drives (SSD,NVME,etc.) and slow drives.
 2. The 'cache' pool should have the cache drives listed first.
-3. The best policies to use for the 'cache' pool would probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under the assumption that the cache drive(s) are far smaller than the backing drives. If using path preserving policies remember that you'll need to manually create the core directories of those paths you wish to be cached. (Be sure the permissions are in sync. Use `mergerfs.fsck` to check / correct them.)
-4. Enable `moveonenospc` and set `minfreespace` appropriately.
+3. The best `create` policies to use for the 'cache' pool would probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under the assumption that the cache drive(s) are far smaller than the backing drives. If using path preserving policies remember that you'll need to manually create the core directories of those paths you wish to be cached. Be sure the permissions are in sync. Use `mergerfs.fsck` to check / correct them. You could also tag the slow drives as `=NC` though that'd mean if the cache drives fill you'd get "out of space" errors.
+4. Enable `moveonenospc` and set `minfreespace` appropriately. Perhaps setting `minfreespace` to the size of the largest cache drive.
 5. Set your programs to use the cache pool.
-6. Save one of the below scripts.
-7. Use `crontab` (as root) to schedule the command at whatever frequency is appropriate for your workflow.
+6. Save one of the below scripts or create you're own.
+7. Use `cron` (as root) to schedule the command at whatever frequency is appropriate for your workflow.
 
 
-### Time based expiring
+##### time based expiring
 
-Move files from cache to backing pool based only on the last time the file was accessed.
+Move files from cache to backing pool based only on the last time the file was accessed. Replace `-atime` with `-amin` if you want minutes rather than days. May want to use the `fadvise` / `--drop-cache` version of rsync or run rsync with the tool "nocache".
 
 ```
 #!/bin/bash
@@ -506,11 +531,11 @@ BACKING="${2}"
 N=${3}
 
 find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
-  rsync --files-from=- -aq --remove-source-files "${CACHE}/" "${BACKING}/"
+  rsync --files-from=- -axqHAXWES --preallocate --remove-source-files "${CACHE}/" "${BACKING}/"
 ```
 
 
-### Percentage full expiring
+##### percentage full expiring
 
 Move the oldest file from the cache to the backing pool. Continue till below percentage threshold.
 
@@ -534,7 +559,7 @@ do
                   head -n 1 | \
                   cut -d' ' -f2-)
     test -n "${FILE}"
-    rsync -aq --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
+    rsync -axqHAXWES --preallocate --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
 done
 ```
 

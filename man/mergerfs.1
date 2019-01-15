@@ -974,10 +974,82 @@ https://github.com/trapexit/bbf
 bbf (bad block finder): a tool to scan for and \[aq]fix\[aq] hard drive
 bad blocks and find the files using those blocks
 .SH CACHING
+.SS page caching
+.PP
+The kernel performs caching of data pages on all files not opened with
+\f[C]O_DIRECT\f[].
+Due to mergerfs using FUSE and therefore being a userland process the
+kernel can double cache the content being read through mergerfs.
+Once from the underlying filesystem and once for mergerfs.
+Using \f[C]direct_io\f[] and/or \f[C]dropcacheonclose\f[] help minimize
+the double caching.
+\f[C]direct_io\f[] will instruct the kernel to bypass the page cache for
+files opened through mergerfs.
+\f[C]dropcacheonclose\f[] will cause mergerfs to instruct the kernel to
+flush a file\[aq]s page cache for which it had opened when closed.
+If most data is read once its probably best to enable both (read above
+for details and limitations).
+.PP
+If a cache is desired for mergerfs do not enable \f[C]direct_io\f[] and
+instead possibly use \f[C]auto_cache\f[] or \f[C]kernel_cache\f[].
+By default FUSE will invalidate cached pages when a file is opened.
+By using \f[C]auto_cache\f[] it will instead use \f[C]getattr\f[] to
+check if a file has changed when the file is opened and if so will flush
+the cache.
+\f[C]ac_attr_timeout\f[] is the timeout for keeping said cache.
+Alternatively \f[C]kernel_cache\f[] will keep the cache across opens
+unless invalidated through other means.
+You should only uses these if you do not plan to write/modify the same
+files through mergerfs and the underlying filesystem at the same time.
+It could lead to corruption.
+Then again doing so without caching can also cause issues.
+.PP
+It\[aq]s a difficult balance between memory usage, cache bloat &
+duplication, and performance.
+Ideally mergerfs would be able to disable caching for the files it
+reads/writes but allow page caching for itself.
+That would limit the FUSE overhead.
+However, there isn\[aq]t good way to achieve this.
+.SS entry & attribute caching
+.PP
+Given the relatively high cost of FUSE due to the kernel <\-> userspace
+round trips there are kernel side caches for file entries and
+attributes.
+The entry cache limits the \f[C]lookup\f[] calls to mergerfs which ask
+if a file exists.
+The attribute cache limits the need to make \f[C]getattr\f[] calls to
+mergerfs which provide file attributes (mode, size, type, etc.).
+As with the page cache these should not be used if the underlying
+filesystems are being manipulated at the same time as it could lead to
+odd behavior or data corruption.
+The options for setting these are \f[C]entry_timeout\f[] and
+\f[C]negative_timeout\f[] for the entry cache and \f[C]attr_timeout\f[]
+for the attributes cache.
+\f[C]negative_timeout\f[] refers to the timeout for negative responses
+to lookups (non\-existant files).
+.SS writeback caching
+.PP
+writeback caching is a technique for improving write speeds by batching
+writes at a faster device and then bulk writing to the slower device.
+With FUSE the kernel will wait for a number of writes to be made and
+then send it to the filesystem as one request.
+mergerfs currently uses a slightly modified and vendored libfuse 2.9.7
+which does not support writeback caching.
+However, a prototype port to libfuse 3.x has been made and the writeback
+cache appears to work as expected (though performance improvements
+greatly depend on the way the client app writes data).
+Once the port is complete and thoroughly tested writeback caching will
+be available.
+.SS tiered caching
+.PP
+Some storage technologies support what some call "tiered" caching.
+The placing of usually smaller, faster storage as a transparent cache to
+larger, slower storage.
+NVMe, SSD, Optane in front of traditional HDDs for instance.
 .PP
 MergerFS does not natively support any sort of tiered caching.
-Most users have no use for such a feature and it would complicate the
-code.
+Most users have no use for such a feature and its inclusion would
+complicate the code.
 However, there are a few situations where a cache drive could help with
 a typical mergerfs setup.
 .IP "1." 3
@@ -988,41 +1060,55 @@ Fast network, slow drives, small\[aq]ish bursty writes: You have a
 10+Gbps network and wish to transfer amounts of data less than your
 cache drive but wish to do so quickly.
 .PP
-The below will mostly address usecase #2.
-It will also work for #1 assuming the data is regularly accessed and was
-placed into the system via this method.
-Otherwise a similar script may need to be written to populate the cache
-from the backing pool.
+With #1 its arguable if you should be using mergerfs at all.
+RAID would probably be the better solution.
+If you\[aq]re going to use mergerfs there are other tactics that may
+help: spreading the data across drives (see the mergerfs.dup tool) and
+setting \f[C]func.open=rand\f[], using \f[C]symlinkify\f[], or using
+dm\-cache or a similar technology to add tiered cache to the underlying
+device.
+.PP
+With #2 one could use dm\-cache as well but there is another solution
+which requires only mergerfs and a cronjob.
 .IP "1." 3
 Create 2 mergerfs pools.
-One which includes just the backing drives and one which has both the
-cache drives (SSD,NVME,etc.) and backing drives.
+One which includes just the slow drives and one which has both the fast
+drives (SSD,NVME,etc.) and slow drives.
 .IP "2." 3
 The \[aq]cache\[aq] pool should have the cache drives listed first.
 .IP "3." 3
-The best policies to use for the \[aq]cache\[aq] pool would probably be
-\f[C]ff\f[], \f[C]epff\f[], \f[C]lfs\f[], or \f[C]eplfs\f[].
+The best \f[C]create\f[] policies to use for the \[aq]cache\[aq] pool
+would probably be \f[C]ff\f[], \f[C]epff\f[], \f[C]lfs\f[], or
+\f[C]eplfs\f[].
 The latter two under the assumption that the cache drive(s) are far
 smaller than the backing drives.
 If using path preserving policies remember that you\[aq]ll need to
 manually create the core directories of those paths you wish to be
 cached.
-(Be sure the permissions are in sync.
-Use \f[C]mergerfs.fsck\f[] to check / correct them.)
+Be sure the permissions are in sync.
+Use \f[C]mergerfs.fsck\f[] to check / correct them.
+You could also tag the slow drives as \f[C]=NC\f[] though that\[aq]d
+mean if the cache drives fill you\[aq]d get "out of space" errors.
 .IP "4." 3
 Enable \f[C]moveonenospc\f[] and set \f[C]minfreespace\f[]
 appropriately.
+Perhaps setting \f[C]minfreespace\f[] to the size of the largest cache
+drive.
 .IP "5." 3
 Set your programs to use the cache pool.
 .IP "6." 3
-Save one of the below scripts.
+Save one of the below scripts or create you\[aq]re own.
 .IP "7." 3
-Use \f[C]crontab\f[] (as root) to schedule the command at whatever
+Use \f[C]cron\f[] (as root) to schedule the command at whatever
 frequency is appropriate for your workflow.
-.SS Time based expiring
+.SS time based expiring
 .PP
 Move files from cache to backing pool based only on the last time the
 file was accessed.
+Replace \f[C]\-atime\f[] with \f[C]\-amin\f[] if you want minutes rather
+than days.
+May want to use the \f[C]fadvise\f[] / \f[C]\-\-drop\-cache\f[] version
+of rsync or run rsync with the tool "nocache".
 .IP
 .nf
 \f[C]
@@ -1038,10 +1124,10 @@ BACKING="${2}"
 N=${3}
 
 find\ "${CACHE}"\ \-type\ f\ \-atime\ +${N}\ \-printf\ \[aq]%P\\n\[aq]\ |\ \\
-\ \ rsync\ \-\-files\-from=\-\ \-aq\ \-\-remove\-source\-files\ "${CACHE}/"\ "${BACKING}/"
+\ \ rsync\ \-\-files\-from=\-\ \-axqHAXWES\ \-\-preallocate\ \-\-remove\-source\-files\ "${CACHE}/"\ "${BACKING}/"
 \f[]
 .fi
-.SS Percentage full expiring
+.SS percentage full expiring
 .PP
 Move the oldest file from the cache to the backing pool.
 Continue till below percentage threshold.
@@ -1067,7 +1153,7 @@ do
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ head\ \-n\ 1\ |\ \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cut\ \-d\[aq]\ \[aq]\ \-f2\-)
 \ \ \ \ test\ \-n\ "${FILE}"
-\ \ \ \ rsync\ \-aq\ \-\-remove\-source\-files\ "${CACHE}/./${FILE}"\ "${BACKING}/"
+\ \ \ \ rsync\ \-axqHAXWES\ \-\-preallocate\ \-\-remove\-source\-files\ "${CACHE}/./${FILE}"\ "${BACKING}/"
 done
 \f[]
 .fi
