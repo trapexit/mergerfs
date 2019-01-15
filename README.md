@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2018-12-12
+% 2019-01-15
 
 # NAME
 
@@ -27,7 +27,7 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 * Opportunistic credential caching
 * Works with heterogeneous filesystem types
 * Handling of writes to full drives (transparently move file to drive with capacity)
-* Handles pool of readonly and read/write drives
+* Handles pool of read-only and read/write drives
 * Turn read-only files into symlinks to increase read performance
 
 
@@ -79,7 +79,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **xattr=passthrough|noattr|nosys**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'nosys' will respond with ENOSYS as if xattrs are not supported or disabled. (default: passthrough)
 * **link_cow=true|false**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
-* **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
+* **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
 * **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores) *NOTE2:* the option is unavailable when built with system libfuse.
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
@@ -94,7 +94,7 @@ The 'branches' (formerly 'srcmounts') argument is a colon (':') delimited list o
 
 To make it easier to include multiple branches mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will apply the glob itself.**
 
-Each branch can have a suffix of `=RW` (read / write), `=RO` (read only), or `=NC` (no create). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NC` will exclude those paths from `create` policies (you can't create but you can change / delete).
+Each branch can have a suffix of `=RW` (read / write), `=RO` (read-only), or `=NC` (no create). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NC` will exclude those paths from `create` policies (you can't create but you can change / delete).
 
 ```
 $ mergerfs -o defaults,allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
@@ -166,9 +166,11 @@ Runtime extended attribute support can be managed via the `xattr` option. By def
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
-The POSIX filesystem API has a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs these functions are grouped into 3 categories: **action**, **create**, and **search**. Functions and categories can be assigned a policy which dictates what file or directory is chosen when performing that behavior.  Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` (though only if there were more than one copy of the file).
+The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates what file or directory is chosen when performing that behavior. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
 
-When using policies which are based on a device's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
+Some functions, listed in the category `N/A` below, can not be assigned the normal policies. All functions which work on file handles use the handle which was acquired by `open` or `create`. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options.
+
+When using policies which are based on a branch's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
 
 #### Function / Category classifications
 
@@ -184,7 +186,7 @@ Due to FUSE limitations **ioctl** behaves differently if its acting on a directo
 
 #### Path Preservation
 
-Policies, as described below, are of two core types. `path preserving` and `non-path preserving`.
+Policies, as described below, are of two basic types. `path preserving` and `non-path preserving`.
 
 All policies which start with `ep` (**epff**, **eplfs**, **eplus**, **epmfs**, **eprand**) are `path preserving`. `ep` stands for `existing path`.
 
@@ -198,8 +200,8 @@ When using non-path preserving policies paths will be cloned to target drives as
 Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. The policy type defines the sorting but filtering is mostly uniform as described below.
 
 * No **search** policies filter.
-* All **action** policies will filter out branches which are mounted **readonly** or tagged as **RO (readonly)**.
-* All **create** policies will filter out branches which are mounted **readonly**, tagged **RO (readonly)** or **NC (no create)**, or has available space less than **minfreespace**.
+* All **action** policies will filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.
+* All **create** policies will filter out branches which are mounted **read-only**, tagged **RO (read-only)** or **NC (no create)**, or has available space less than `minfreespace`.
 
 If all branches are filtered an error will be returned. Typically **EROFS** or **ENOSPC** depending on the reasons.
 
@@ -215,7 +217,7 @@ If all branches are filtered an error will be returned. Typically **EROFS** or *
 | eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
 | epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
 | eprand (existing path, random) | Calls **epall** and then randomizes. |
-| erofs | Exclusively return **-1** with **errno** set to **EROFS** (readonly filesystem). |
+| erofs | Exclusively return **-1** with **errno** set to **EROFS** (read-only filesystem). |
 | ff (first found) | Search category: same as **epff**. Action category: same as **epff**. Create category: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
 | lfs (least free space) | Search category: same as **eplfs**. Action category: same as **eplfs**. Create category: Pick the drive with the least available free space. |
 | lus (least used space) | Search category: same as **eplus**. Action category: same as **eplus**. Create category: Pick the drive with the least used space. |
@@ -279,9 +281,11 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 [readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. While it could have it's own set of policies to tweak its behavior at this time it provides a simple union of files and directories found. Remember that any action or information queried about these files and directories come from the respective function. For instance: an **ls** is a **readdir** and for each file/directory returned **getattr** is called. Meaning the policy of **getattr** is responsible for choosing the file/directory which is the source of the metadata you see in an **ls**.
 
 
-#### statvfs ####
+#### statfs / statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the branch will not be included.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the branch will not be included when checking the mount's stats.
+
+The options `statfs` and `statfs_ignore` can be used to modify `statfs` behavior.
 
 
 # BUILDING
@@ -358,7 +362,7 @@ Any changes made at runtime are **not** persisted. If you wish for values to per
 
 ##### Keys #####
 
-Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore readonly.
+Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only.
 
 
 ###### user.mergerfs.branches ######
@@ -839,9 +843,9 @@ Yes, however its not recommended to use the same file from within the pool and f
 
 First make sure you've read the sections above about policies, path preservation, branch filtering, and the options **minfreespace**, **moveonenospc**, **statfs**, and **statfs_ignore**.
 
-mergerfs is simply presenting a union of the content within multiple branches. The reported free space is an aggregate of space available within the pool (behavior modified by **statfs** and **statfs_ignore**). It does not represent a contiguous space. In the same way that readonly filesystems, those with quotas, or reserved space report the full theoretical space available.
+mergerfs is simply presenting a union of the content within multiple branches. The reported free space is an aggregate of space available within the pool (behavior modified by **statfs** and **statfs_ignore**). It does not represent a contiguous space. In the same way that read-only filesystems, those with quotas, or reserved space report the full theoretical space available.
 
-Due to path preservation, branch tagging, readonly status, and **minfreespace** settings it is perfectly valid that `ENOSPC` / "out of space" / "no space left on device" be returned. It is doing what was asked of it: filtering possible branches due to those settings. Only one error can be returned and if one of the reasons for filtering a branch was **minfreespace** then it will be returned as such. **moveonenospc** is only relevant to writing a file which is too large for the drive its currently on.
+Due to path preservation, branch tagging, read-only status, and **minfreespace** settings it is perfectly valid that `ENOSPC` / "out of space" / "no space left on device" be returned. It is doing what was asked of it: filtering possible branches due to those settings. Only one error can be returned and if one of the reasons for filtering a branch was **minfreespace** then it will be returned as such. **moveonenospc** is only relevant to writing a file which is too large for the drive its currently on.
 
 It is also possible that the filesystem selected has run out of inodes. Use `df -i` to list the total and available inodes per filesystem.
 
