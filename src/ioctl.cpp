@@ -14,13 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
-#include <fcntl.h>
-
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "errno.hpp"
@@ -32,33 +25,42 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
+#include <fcntl.h>
+
 using std::string;
 using std::vector;
 using namespace mergerfs;
 
-static
-int
-_ioctl(const int            fd,
-       const unsigned long  cmd,
-       void                *data)
+namespace local
 {
-  int rv;
+  static
+  int
+  ioctl(const int            fd_,
+        const unsigned long  cmd_,
+        void                *data_)
+  {
+    int rv;
 
-  rv = fs::ioctl(fd,cmd,data);
+    rv = fs::ioctl(fd_,cmd_,data_);
 
-  return ((rv == -1) ? -errno : rv);
-}
+    return ((rv == -1) ? -errno : rv);
+  }
 
-static
-int
-_ioctl_file(fuse_file_info      *ffi,
-            const unsigned long  cmd,
-            void                *data)
-{
-  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+  static
+  int
+  ioctl_file(fuse_file_info      *ffi_,
+             const unsigned long  cmd_,
+             void                *data_)
+  {
+    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-  return _ioctl(fi->fd,cmd,data);
-}
+    return local::ioctl(fi->fd,cmd_,data_);
+  }
 
 #ifdef FUSE_IOCTL_DIR
 
@@ -66,77 +68,78 @@ _ioctl_file(fuse_file_info      *ffi,
 #define O_NOATIME 0
 #endif
 
-static
-int
-_ioctl_dir_base(Policy::Func::Search  searchFunc,
-                const Branches       &branches_,
-                const uint64_t        minfreespace,
-                const char           *fusepath,
-                const unsigned long   cmd,
-                void                 *data)
-{
-  int fd;
-  int rv;
-  string fullpath;
-  vector<const string*> basepaths;
+  static
+  int
+  ioctl_dir_base(Policy::Func::Search  searchFunc_,
+                 const Branches       &branches_,
+                 const uint64_t        minfreespace_,
+                 const char           *fusepath_,
+                 const unsigned long   cmd_,
+                 void                 *data_)
+  {
+    int fd;
+    int rv;
+    string fullpath;
+    vector<const string*> basepaths;
 
-  rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  fs::path::make(basepaths[0],fusepath,fullpath);
+    fs::path::make(basepaths[0],fusepath_,fullpath);
 
-  const int flags = O_RDONLY | O_NOATIME | O_NONBLOCK;
-  fd = fs::open(fullpath,flags);
-  if(fd == -1)
-    return -errno;
+    const int flags = O_RDONLY | O_NOATIME | O_NONBLOCK;
+    fd = fs::open(fullpath,flags);
+    if(fd == -1)
+      return -errno;
 
-  rv = _ioctl(fd,cmd,data);
+    rv = local::ioctl(fd,cmd_,data_);
 
-  fs::close(fd);
+    fs::close(fd);
 
-  return rv;
-}
+    return rv;
+  }
 
-static
-int
-_ioctl_dir(fuse_file_info      *ffi,
-           const unsigned long  cmd,
-           void                *data)
-{
-  DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi->fh);
-  const fuse_context      *fc     = fuse_get_context();
-  const Config            &config = Config::get(fc);
-  const ugid::Set          ugid(fc->uid,fc->gid);
-  const rwlock::ReadGuard  readlock(&config.branches_lock);
+  static
+  int
+  ioctl_dir(fuse_file_info      *ffi_,
+            const unsigned long  cmd_,
+            void                *data_)
+  {
+    DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
+    const fuse_context      *fc     = fuse_get_context();
+    const Config            &config = Config::get(fc);
+    const ugid::Set          ugid(fc->uid,fc->gid);
+    const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-  return _ioctl_dir_base(config.getattr,
-                         config.branches,
-                         config.minfreespace,
-                         di->fusepath.c_str(),
-                         cmd,
-                         data);
-}
+    return local::ioctl_dir_base(config.open,
+                                 config.branches,
+                                 config.minfreespace,
+                                 di->fusepath.c_str(),
+                                 cmd_,
+                                 data_);
+  }
 #endif
+}
 
 namespace mergerfs
 {
   namespace fuse
   {
     int
-    ioctl(const char     *fusepath,
-          int             cmd,
-          void           *arg,
-          fuse_file_info *ffi,
-          unsigned int    flags,
-          void           *data)
+    ioctl(const char     *fusepath_,
+          int             cmd_,
+          void           *arg_,
+          fuse_file_info *ffi_,
+          unsigned int    flags_,
+          void           *data_)
     {
 #ifdef FUSE_IOCTL_DIR
-      if(flags & FUSE_IOCTL_DIR)
-        return ::_ioctl_dir(ffi,cmd,data);
+      if(flags_ & FUSE_IOCTL_DIR)
+        return local::ioctl_dir(ffi_,cmd_,data_);
 #endif
 
-      return ::_ioctl_file(ffi,cmd,data);
+      return local::ioctl_file(ffi_,cmd_,data_);
     }
   }
 }
