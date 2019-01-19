@@ -181,7 +181,7 @@ When using policies which are based on a branch's available space the base path 
 | search   | access, getattr, getxattr, ioctl, listxattr, open, readlink                         |
 | N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, release, statfs, write |
 
-Due to FUSE limitations **ioctl** behaves differently if its acting on a directory. It'll use the **getattr** policy to find and open the directory before issuing the **ioctl**. In other cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will also be used.
+In cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will be used.
 
 
 #### Path Preservation

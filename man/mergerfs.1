@@ -426,12 +426,8 @@ statfs, write
 T}
 .TE
 .PP
-Due to FUSE limitations \f[B]ioctl\f[] behaves differently if its acting
-on a directory.
-It\[aq]ll use the \f[B]getattr\f[] policy to find and open the directory
-before issuing the \f[B]ioctl\f[].
-In other cases where something may be searched (to confirm a directory
-exists across all source mounts) \f[B]getattr\f[] will also be used.
+In cases where something may be searched (to confirm a directory exists
+across all source mounts) \f[B]getattr\f[] will be used.
 .SS Path Preservation
 .PP
 Policies, as described below, are of two basic types.
