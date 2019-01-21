@@ -1281,6 +1281,9 @@ ideal situation however write speeds should be increased.
 .PP
 If \f[C]direct_io\f[] is disabled it is probably a good idea to enable
 \f[C]dropcacheonclose\f[] to minimize double caching.
+.SS NFS clients returning ESTALE / Stale file handle
+.PP
+Be sure to use \f[C]noforget\f[] and \f[C]use_ino\f[] arguments.
 .SS NFS clients don\[aq]t work
 .PP
 Some NFS clients appear to fail when a mergerfs mount is exported.
@@ -1714,6 +1717,10 @@ Such a setting change will likely occur in mergerfs 3.
 .SS Can mergerfs mounts be exported over NFS?
 .PP
 Yes.
+Due to current usage of libfuse by mergerfs and how NFS interacts with
+it it is necessary to add \f[C]noforget\f[] to mergerfs options to keep
+from getting "stale file handle" errors.
+.PP
 Some clients (Kodi) have issues in which the contents of the NFS mount
 will not be presented but users have found that enabling the
 \f[C]use_ino\f[] option often fixes that problem.
