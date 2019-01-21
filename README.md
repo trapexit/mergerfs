@@ -620,6 +620,11 @@ Since enabling `direct_io` disables `mmap` this is not an ideal situation howeve
 If `direct_io` is disabled it is probably a good idea to enable `dropcacheonclose` to minimize double caching.
 
 
+#### NFS clients returning ESTALE / Stale file handle
+
+Be sure to use `noforget` and `use_ino` arguments.
+
+
 #### NFS clients don't work
 
 Some NFS clients appear to fail when a mergerfs mount is exported. Kodi in particular seems to have issues.
@@ -854,7 +859,9 @@ If you don't care about path preservation then simply change the `create` policy
 
 #### Can mergerfs mounts be exported over NFS?
 
-Yes. Some clients (Kodi) have issues in which the contents of the NFS mount will not be presented but users have found that enabling the `use_ino` option often fixes that problem.
+Yes. Due to current usage of libfuse by mergerfs and how NFS interacts with it it is necessary to add `noforget` to mergerfs options to keep from getting "stale file handle" errors.
+
+Some clients (Kodi) have issues in which the contents of the NFS mount will not be presented but users have found that enabling the `use_ino` option often fixes that problem.
 
 
 #### Can mergerfs mounts be exported over Samba / SMB?
