@@ -128,24 +128,21 @@ namespace epall
   }
 }
 
-namespace mergerfs
+int
+Policy::Func::epall(const Category::Enum::Type  type,
+                    const Branches             &branches_,
+                    const char                 *fusepath,
+                    const uint64_t              minfreespace,
+                    vector<const string*>      &paths)
 {
-  int
-  Policy::Func::epall(const Category::Enum::Type  type,
-                      const Branches             &branches_,
-                      const char                 *fusepath,
-                      const uint64_t              minfreespace,
-                      vector<const string*>      &paths)
-  {
-    switch(type)
-      {
-      case Category::Enum::create:
-        return epall::create(branches_,fusepath,minfreespace,paths);
-      case Category::Enum::action:
-        return epall::action(branches_,fusepath,paths);
-      case Category::Enum::search:
-      default:
-        return epall::search(branches_,fusepath,paths);
-      }
-  }
+  switch(type)
+    {
+    case Category::Enum::create:
+      return epall::create(branches_,fusepath,minfreespace,paths);
+    case Category::Enum::action:
+      return epall::action(branches_,fusepath,paths);
+    case Category::Enum::search:
+    default:
+      return epall::search(branches_,fusepath,paths);
+    }
 }

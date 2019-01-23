@@ -14,17 +14,21 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
+#include "config.hpp"
 #include "dirinfo.hpp"
 
-static
-int
-_releasedir(DirInfo *di)
-{
-  delete di;
+#include <fuse.h>
 
-  return 0;
+namespace local
+{
+  static
+  int
+  releasedir(DirInfo *di_)
+  {
+    delete di_;
+
+    return 0;
+  }
 }
 
 namespace mergerfs
@@ -32,12 +36,15 @@ namespace mergerfs
   namespace fuse
   {
     int
-    releasedir(const char     *fusepath,
-               fuse_file_info *ffi)
+    releasedir(const char     *fusepath_,
+               fuse_file_info *ffi_)
     {
-      DirInfo *di = reinterpret_cast<DirInfo*>(ffi->fh);
+      const Config &config = Config::get();
+      DirInfo      *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
 
-      return ::_releasedir(di);
+      config.open_cache.cleanup(10);
+
+      return local::releasedir(di);
     }
   }
 }

@@ -14,34 +14,37 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_base_close.hpp"
 #include "fs_base_fadvise.hpp"
 
-static
-int
-_release(FileInfo   *fi,
-         const bool  dropcacheonclose)
+#include <fuse.h>
+
+#include <string>
+
+namespace local
 {
-  // according to Feh of nocache calling it once doesn't always work
-  // https://github.com/Feh/nocache
-  if(dropcacheonclose)
-    {
-      fs::fadvise_dontneed(fi->fd);
-      fs::fadvise_dontneed(fi->fd);
-    }
+  static
+  int
+  release(FileInfo   *fi_,
+          const bool  dropcacheonclose_)
+  {
+    // according to Feh of nocache calling it once doesn't always work
+    // https://github.com/Feh/nocache
+    if(dropcacheonclose_)
+      {
+        fs::fadvise_dontneed(fi_->fd);
+        fs::fadvise_dontneed(fi_->fd);
+      }
 
-  fs::close(fi->fd);
+    fs::close(fi_->fd);
 
-  delete fi;
+    delete fi_;
 
-  return 0;
+    return 0;
+  }
 }
 
 namespace mergerfs
@@ -49,13 +52,15 @@ namespace mergerfs
   namespace fuse
   {
     int
-    release(const char     *fusepath,
-            fuse_file_info *ffi)
+    release(const char     *fusepath_,
+            fuse_file_info *ffi_)
     {
       const Config &config = Config::get();
-      FileInfo     *fi     = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo     *fi     = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return _release(fi,config.dropcacheonclose);
+      config.open_cache.cleanup(10);
+
+      return local::release(fi,config.dropcacheonclose);
     }
   }
 }

@@ -28,7 +28,6 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Category;
 
 namespace eplus
 {
@@ -162,24 +161,21 @@ namespace eplus
   }
 }
 
-namespace mergerfs
+int
+Policy::Func::eplus(const Category::Enum::Type  type,
+                    const Branches             &branches_,
+                    const char                 *fusepath,
+                    const uint64_t              minfreespace,
+                    vector<const string*>      &paths)
 {
-  int
-  Policy::Func::eplus(const Category::Enum::Type  type,
-                      const Branches             &branches_,
-                      const char                 *fusepath,
-                      const uint64_t              minfreespace,
-                      vector<const string*>      &paths)
-  {
-    switch(type)
-      {
-      case Category::Enum::create:
-        return eplus::create(branches_,fusepath,minfreespace,paths);
-      case Category::Enum::action:
-        return eplus::action(branches_,fusepath,paths);
-      case Category::Enum::search:
-      default:
-        return eplus::search(branches_,fusepath,paths);
-      }
-  }
+  switch(type)
+    {
+    case Category::Enum::create:
+      return eplus::create(branches_,fusepath,minfreespace,paths);
+    case Category::Enum::action:
+      return eplus::action(branches_,fusepath,paths);
+    case Category::Enum::search:
+    default:
+      return eplus::search(branches_,fusepath,paths);
+    }
 }

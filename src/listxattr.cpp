@@ -43,24 +43,26 @@ _listxattr_controlfile(char         *list,
   string xattrs;
   const vector<string> strs =
     buildvector<string>
-    ("user.mergerfs.srcmounts")
     ("user.mergerfs.branches")
-    ("user.mergerfs.minfreespace")
-    ("user.mergerfs.moveonenospc")
+    ("user.mergerfs.cache.open")
+    ("user.mergerfs.direct_io")
     ("user.mergerfs.dropcacheonclose")
-    ("user.mergerfs.symlinkify")
-    ("user.mergerfs.symlinkify_timeout")
-    ("user.mergerfs.nullrw")
     ("user.mergerfs.ignorepponrename")
     ("user.mergerfs.link_cow")
+    ("user.mergerfs.minfreespace")
+    ("user.mergerfs.moveonenospc")
+    ("user.mergerfs.nullrw")
+    ("user.mergerfs.pid")
+    ("user.mergerfs.policies")
     ("user.mergerfs.security_capability")
-    ("user.mergerfs.xattr")
+    ("user.mergerfs.srcmounts")
     ("user.mergerfs.statfs")
     ("user.mergerfs.statfs_ignore")
-    ("user.mergerfs.direct_io")
-    ("user.mergerfs.policies")
+    ("user.mergerfs.symlinkify")
+    ("user.mergerfs.symlinkify_timeout")
     ("user.mergerfs.version")
-    ("user.mergerfs.pid");
+    ("user.mergerfs.xattr")
+    ;
 
   xattrs.reserve(1024);
   for(size_t i = 0; i < strs.size(); i++)

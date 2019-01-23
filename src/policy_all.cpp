@@ -65,18 +65,15 @@ namespace all
   }
 }
 
-namespace mergerfs
+int
+Policy::Func::all(const Category::Enum::Type  type,
+                  const Branches             &branches_,
+                  const char                 *fusepath,
+                  const uint64_t              minfreespace,
+                  vector<const string*>      &paths)
 {
-  int
-  Policy::Func::all(const Category::Enum::Type  type,
-                    const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<const string*>      &paths)
-  {
-    if(type == Category::Enum::create)
-      return all::create(branches_,minfreespace,paths);
+  if(type == Category::Enum::create)
+    return all::create(branches_,minfreespace,paths);
 
-    return Policy::Func::epall(type,branches_,fusepath,minfreespace,paths);
-  }
+  return Policy::Func::epall(type,branches_,fusepath,minfreespace,paths);
 }

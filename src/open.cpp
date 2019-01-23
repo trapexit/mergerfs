@@ -20,6 +20,7 @@
 #include "fs_base_open.hpp"
 #include "fs_cow.hpp"
 #include "fs_path.hpp"
+#include "policy_cache.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
@@ -28,11 +29,8 @@
 #include <string>
 #include <vector>
 
-#include <fcntl.h>
-
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 
 namespace local
 {
@@ -64,6 +62,7 @@ namespace local
   static
   int
   open(Policy::Func::Search  searchFunc_,
+       PolicyCache          &cache,
        const Branches       &branches_,
        const uint64_t        minfreespace_,
        const char           *fusepath_,
@@ -72,13 +71,13 @@ namespace local
        uint64_t             *fh_)
   {
     int rv;
-    vector<const string*> basepaths;
+    string basepath;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = cache(searchFunc_,branches_,fusepath_,minfreespace_,&basepath);
     if(rv == -1)
       return -errno;
 
-    return local::open_core(*basepaths[0],fusepath_,flags_,link_cow_,fh_);
+    return local::open_core(basepath,fusepath_,flags_,link_cow_,fh_);
   }
 }
 
@@ -97,6 +96,7 @@ namespace mergerfs
 
       ffi_->direct_io = config.direct_io;
       return local::open(config.open,
+                         config.open_cache,
                          config.branches,
                          config.minfreespace,
                          fusepath_,

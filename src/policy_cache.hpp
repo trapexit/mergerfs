@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,21 +16,46 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
+#pragma once
+
 #include "policy.hpp"
 
 #include <string>
-#include <vector>
+#include <map>
 
-using std::string;
-using std::vector;
+#include <pthread.h>
+#include <stdint.h>
 
-int
-Policy::Func::invalid(const Category::Enum::Type  type,
-                      const Branches             &branches_,
-                      const char                 *fusepath,
-                      const uint64_t              minfreespace,
-                      vector<const string*>      &paths)
+class PolicyCache
 {
-  return (errno=EINVAL,-1);
-}
+public:
+  struct Value
+  {
+    Value();
+
+    uint64_t    time;
+    std::string path;
+  };
+
+public:
+  PolicyCache(void);
+
+public:
+  void erase(const char *fusepath_);
+  void cleanup(const int prob_ = 1);
+  void clear(void);
+
+public:
+  int operator()(Policy::Func::Search &func_,
+                 const Branches       &branches_,
+                 const char           *fusepath_,
+                 const uint64_t        minfreespace_,
+                 std::string          *branch_);
+
+public:
+  uint64_t timeout;
+
+private:
+  pthread_mutex_t             _lock;
+  std::map<std::string,Value> _cache;
+};

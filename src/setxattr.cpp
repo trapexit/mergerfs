@@ -37,7 +37,6 @@ static const char SECURITY_CAPABILITY[] = "security.capability";
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
 using mergerfs::FuseFunc;
 using namespace mergerfs;
 
@@ -229,6 +228,9 @@ _setxattr_controlfile_func_policy(Config       &config,
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
+  if(funcname == "open")
+    config.open_cache.clear();
+
   rv = config.set_func_policy(funcname,attrval);
   if(rv == -1)
     return -errno;
@@ -247,6 +249,9 @@ _setxattr_controlfile_category_policy(Config       &config,
 
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
+
+  if(categoryname == "search")
+    config.open_cache.clear();
 
   rv = config.set_category_policy(categoryname,attrval);
   if(rv == -1)
@@ -340,6 +345,10 @@ _setxattr_controlfile(Config       &config,
                                                  attr[3],
                                                  attrval,
                                                  flags);
+      else if((attr[2] == "cache") && (attr[3] == "open"))
+        return _setxattr_uint64_t(attrval,
+                                  flags,
+                                  config.open_cache.timeout);
       break;
 
     default:

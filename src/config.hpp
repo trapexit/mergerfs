@@ -19,6 +19,7 @@
 #include "branch.hpp"
 #include "fusefunc.hpp"
 #include "policy.hpp"
+#include "policy_cache.hpp"
 
 #include <fuse.h>
 
@@ -101,6 +102,9 @@ namespace mergerfs
     const Policy *&truncate;
     const Policy *&unlink;
     const Policy *&utimens;
+
+  public:
+    mutable PolicyCache open_cache;
 
   public:
     const std::string controlfile;

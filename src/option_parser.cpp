@@ -204,6 +204,18 @@ parse_and_process_statfsignore(const std::string          &value_,
 
 static
 int
+parse_and_process_cache(Config &config_,
+                        const string &func_,
+                        const string &value_)
+{
+  if(func_ == "open")
+    return parse_and_process(value_,config_.open_cache.timeout);
+
+  return 1;
+}
+
+static
+int
 parse_and_process_arg(Config            &config,
                       const std::string &arg,
                       fuse_args         *outargs)
@@ -233,6 +245,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = config.set_func_policy(keypart[1],value);
       else if(keypart[0] == "category")
         rv = config.set_category_policy(keypart[1],value);
+      else if(keypart[0] == "cache")
+        rv = parse_and_process_cache(config,keypart[1],value);
     }
   else
     {
@@ -336,6 +350,8 @@ usage(void)
     "                           splice_write, splice_move\n"
     "    -o func.<f>=<p>        Set function <f> to policy <p>\n"
     "    -o category.<c>=<p>    Set functions in category <c> to <p>\n"
+    "    -o cache.open=<int>    'open' policy cache timeout in seconds.\n"
+    "                           default = 0 (disabled)\n"
     "    -o direct_io           Bypass page caching, may increase write\n"
     "                           speeds at the cost of reads. Please read docs\n"
     "                           for more details as there are tradeoffs.\n"
