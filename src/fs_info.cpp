@@ -20,6 +20,7 @@
 #include "fs_base_statvfs.hpp"
 #include "fs_info_t.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "statvfs_util.hpp"
 
 #include <stdint.h>
@@ -37,7 +38,7 @@ namespace fs
     int rv;
     struct statvfs st;
 
-    rv = fs::statvfs(*path_,st);
+    rv = fs::statvfs_cache(path_->c_str(),&st);
     if(rv == 0)
       {
         info_->readonly   = StatVFS::readonly(st);

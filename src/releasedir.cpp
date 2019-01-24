@@ -39,10 +39,7 @@ namespace mergerfs
     releasedir(const char     *fusepath_,
                fuse_file_info *ffi_)
     {
-      const Config &config = Config::get();
-      DirInfo      *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
-
-      config.open_cache.cleanup(10);
+      DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
 
       return local::releasedir(di);
     }

@@ -26,11 +26,10 @@
 #include "fs_attr.hpp"
 #include "fs_base_realpath.hpp"
 #include "fs_base_stat.hpp"
-#include "fs_base_statvfs.hpp"
 #include "fs_exists.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "fs_xattr.hpp"
-#include "statvfs_util.hpp"
 #include "str.hpp"
 
 using std::string;
@@ -38,48 +37,6 @@ using std::vector;
 
 namespace fs
 {
-  int
-  readonly(const string *path_,
-           bool         *readonly_)
-  {
-    int rv;
-    struct statvfs st;
-
-    rv = fs::statvfs(*path_,st);
-    if(rv == 0)
-      *readonly_ = StatVFS::readonly(st);
-
-    return rv;
-  }
-
-  int
-  spaceavail(const string *path_,
-             uint64_t     *spaceavail_)
-  {
-    int rv;
-    struct statvfs st;
-
-    rv = fs::statvfs(*path_,st);
-    if(rv == 0)
-      *spaceavail_ = StatVFS::spaceavail(st);
-
-    return rv;
-  }
-
-  int
-  spaceused(const string *path_,
-            uint64_t     *spaceused_)
-  {
-    int rv;
-    struct statvfs st;
-
-    rv = fs::statvfs(*path_,st);
-    if(rv == 0)
-      *spaceused_ = StatVFS::spaceused(st);
-
-    return rv;
-  }
-
   void
   findallfiles(const vector<string> &basepaths,
                const char           *fusepath,
@@ -171,16 +128,13 @@ namespace fs
     int rv;
     uint64_t mfs;
     uint64_t spaceavail;
-    const string *basepath;
     const string *mfsbasepath;
 
     mfs = 0;
     mfsbasepath = NULL;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        basepath = &basepaths[i];
-
-        rv = fs::spaceavail(basepath,&spaceavail);
+        rv = fs::statvfs_cache_spaceavail(basepaths[i],&spaceavail);
         if(rv == -1)
           continue;
         if(spaceavail < minfreespace)

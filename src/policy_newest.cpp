@@ -19,6 +19,7 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
 
@@ -108,7 +109,7 @@ namespace newest
           error_and_continue(error,EROFS);
         if(st.st_mtime < newest)
           continue;
-        rv = fs::readonly(&branch->path,&readonly);
+        rv = fs::statvfs_cache_readonly(branch->path,&readonly);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(readonly)

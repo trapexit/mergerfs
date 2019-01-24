@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -35,35 +35,35 @@ namespace fs
   static
   inline
   int
-  statvfs(const char     *path,
-          struct statvfs &st)
+  statvfs(const char     *path_,
+          struct statvfs *st_)
   {
-    return ::statvfs(path,&st);
+    return ::statvfs(path_,st_);
   }
 
   static
   inline
   int
-  statvfs(const std::string &path,
-          struct statvfs    &st)
+  statvfs(const std::string &path_,
+          struct statvfs    *st_)
   {
-    return fs::statvfs(path.c_str(),st);
+    return fs::statvfs(path_.c_str(),st_);
   }
 
   static
   inline
   int
   fstatvfs(const int       fd_,
-           struct statvfs &st_)
+           struct statvfs *st_)
   {
-    return ::fstatvfs(fd_,&st_);
+    return ::fstatvfs(fd_,st_);
   }
 
   static
   inline
   int
   lstatvfs(const std::string &path_,
-           struct statvfs    &st_)
+           struct statvfs    *st_)
   {
     int fd;
     int rv;

@@ -19,6 +19,7 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
 
@@ -87,7 +88,7 @@ namespace epff
           error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
-        rv = fs::readonly(&branch->path,&readonly);
+        rv = fs::statvfs_cache_readonly(branch->path,&readonly);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(readonly)

@@ -45,6 +45,7 @@ _listxattr_controlfile(char         *list,
     buildvector<string>
     ("user.mergerfs.branches")
     ("user.mergerfs.cache.open")
+    ("user.mergerfs.cache.statfs")
     ("user.mergerfs.direct_io")
     ("user.mergerfs.dropcacheonclose")
     ("user.mergerfs.ignorepponrename")

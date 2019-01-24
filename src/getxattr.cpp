@@ -18,6 +18,7 @@
 #include "errno.hpp"
 #include "fs_base_getxattr.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "rwlock.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
@@ -308,6 +309,8 @@ _getxattr_controlfile(const Config &config,
         _getxattr_controlfile_fusefunc_policy(config,attr[3],attrvalue);
       else if((attr[2] == "cache") && (attr[3] == "open"))
         _getxattr_controlfile_uint64_t(config.open_cache.timeout,attrvalue);
+      else if((attr[2] == "cache") && (attr[3] == "statfs"))
+        _getxattr_controlfile_uint64_t(fs::statvfs_cache_timeout(),attrvalue);
       break;
     }
 

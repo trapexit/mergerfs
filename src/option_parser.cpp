@@ -17,6 +17,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_glob.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "num.hpp"
 #include "policy.hpp"
 #include "str.hpp"
@@ -112,12 +113,12 @@ set_default_options(fuse_args &args)
 
 static
 int
-parse_and_process(const std::string &value,
-                  uint64_t          &minfreespace)
+parse_and_process(const std::string &value_,
+                  uint64_t          &int_)
 {
   int rv;
 
-  rv = num::to_uint64_t(value,minfreespace);
+  rv = num::to_uint64_t(value_,int_);
   if(rv == -1)
     return 1;
 
@@ -204,12 +205,30 @@ parse_and_process_statfsignore(const std::string          &value_,
 
 static
 int
-parse_and_process_cache(Config &config_,
+parse_and_process_statfs_cache(const std::string &value_)
+{
+  int rv;
+  uint64_t timeout;
+
+  rv = num::to_uint64_t(value_,timeout);
+  if(rv == -1)
+    return 1;
+
+  fs::statvfs_cache_timeout(timeout);
+
+  return 0;
+}
+
+static
+int
+parse_and_process_cache(Config       &config_,
                         const string &func_,
                         const string &value_)
 {
   if(func_ == "open")
     return parse_and_process(value_,config_.open_cache.timeout);
+  else if(func_ == "statfs")
+    return parse_and_process_statfs_cache(value_);
 
   return 1;
 }
@@ -352,6 +371,8 @@ usage(void)
     "    -o category.<c>=<p>    Set functions in category <c> to <p>\n"
     "    -o cache.open=<int>    'open' policy cache timeout in seconds.\n"
     "                           default = 0 (disabled)\n"
+    "    -o cache.statfs=<int>  'statfs' cache timeout in seconds. Used by\n"
+    "                           policies. default = 0 (disabled)\n"
     "    -o direct_io           Bypass page caching, may increase write\n"
     "                           speeds at the cost of reads. Please read docs\n"
     "                           for more details as there are tradeoffs.\n"

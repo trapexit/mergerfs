@@ -19,6 +19,7 @@
 #include "fs_base_setxattr.hpp"
 #include "fs_glob.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "num.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
@@ -262,6 +263,21 @@ _setxattr_controlfile_category_policy(Config       &config,
 
 static
 int
+_setxattr_statfs_timeout(const string &attrval_,
+                         const int     flags_)
+{
+  int rv;
+  uint64_t timeout;
+
+  rv = _setxattr_uint64_t(attrval_,flags_,timeout);
+  if(rv >= 0)
+    fs::statvfs_cache_timeout(timeout);
+
+  return rv;
+}
+
+static
+int
 _setxattr_controlfile(Config       &config,
                       const string &attrname,
                       const string &attrval,
@@ -349,6 +365,8 @@ _setxattr_controlfile(Config       &config,
         return _setxattr_uint64_t(attrval,
                                   flags,
                                   config.open_cache.timeout);
+      else if((attr[2] == "cache") && (attr[3] == "statfs"))
+        return _setxattr_statfs_timeout(attrval,flags);
       break;
 
     default:
