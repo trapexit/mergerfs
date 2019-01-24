@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-01-15
+% 2019-01-24
 
 # NAME
 
@@ -84,8 +84,8 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
-* **cache.open=<int>**: 'open' policy cache timeout in seconds. (default: 0)
-* **cache.statfs=<int>**: 'statfs' cache timeout in seconds. (default: 0)
+* **cache.open=&lt;int&gt;**: 'open' policy cache timeout in seconds. (default: 0)
+* **cache.statfs=&lt;int&gt;**: 'statfs' cache timeout in seconds. (default: 0)
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
