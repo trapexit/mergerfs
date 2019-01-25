@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include <fuse.h>
-
 #include "config.hpp"
 
-namespace mergerfs
+#include <fuse.h>
+
+namespace options
 {
-  namespace options
-  {
-    void
-    parse(fuse_args &args,
-          Config    &config);
-  }
+  void
+  parse(fuse_args &args,
+        Config    &config);
 }

@@ -26,8 +26,8 @@ namespace fs
   static
   inline
   int
-  closedir(DIR *dirp)
+  closedir(DIR *dirp_)
   {
-    return ::closedir(dirp);
+    return ::closedir(dirp_);
   }
 }

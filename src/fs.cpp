@@ -46,7 +46,7 @@ namespace fs
 
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        fs::path::make(&basepaths[i],fusepath,fullpath);
+        fullpath = fs::path::make(basepaths[i],fusepath);
 
         if(!fs::exists(fullpath))
           continue;
@@ -66,16 +66,16 @@ namespace fs
     string fullpath;
     struct stat st;
 
-    rv = fs::fstat(fd,st);
+    rv = fs::fstat(fd,&st);
     if(rv == -1)
       return -1;
 
     dev = st.st_dev;
     for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
       {
-        fs::path::make(&basepaths[i],fusepath,fullpath);
+        fullpath = fs::path::make(basepaths[i],fusepath);
 
-        rv = fs::lstat(fullpath,st);
+        rv = fs::lstat(fullpath,&st);
         if(rv == -1)
           continue;
 

@@ -27,10 +27,10 @@ namespace fs
   static
   inline
   int
-  readlink(const std::string &path,
-           char              *buf,
-           const size_t       bufsiz)
+  readlink(const std::string &path_,
+           char              *buf_,
+           const size_t       bufsiz_)
   {
-    return ::readlink(path.c_str(),buf,bufsiz);
+    return ::readlink(path_.c_str(),buf_,bufsiz_);
   }
 }

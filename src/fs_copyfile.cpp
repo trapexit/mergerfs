@@ -98,7 +98,7 @@ namespace fs
     int rv;
     struct stat st;
 
-    rv = fs::fstat(src_fd_,st);
+    rv = fs::fstat(src_fd_,&st);
     if(rv == -1)
       return rv;
 

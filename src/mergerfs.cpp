@@ -14,58 +14,59 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-#include <string.h>
-
-#include <cstdlib>
-#include <iostream>
-
 #include "fs_path.hpp"
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
 #include "resources.hpp"
 
-#include "access.hpp"
-#include "chmod.hpp"
-#include "chown.hpp"
-#include "create.hpp"
-#include "destroy.hpp"
-#include "fallocate.hpp"
-#include "fgetattr.hpp"
-#include "flock.hpp"
-#include "flush.hpp"
-#include "fsync.hpp"
-#include "fsyncdir.hpp"
-#include "ftruncate.hpp"
-#include "getattr.hpp"
-#include "getxattr.hpp"
-#include "init.hpp"
-#include "ioctl.hpp"
-#include "link.hpp"
-#include "listxattr.hpp"
-#include "mkdir.hpp"
-#include "mknod.hpp"
-#include "open.hpp"
-#include "opendir.hpp"
-#include "read.hpp"
-#include "read_buf.hpp"
-#include "readdir.hpp"
-#include "readlink.hpp"
-#include "release.hpp"
-#include "releasedir.hpp"
-#include "removexattr.hpp"
-#include "rename.hpp"
-#include "rmdir.hpp"
-#include "setxattr.hpp"
-#include "statfs.hpp"
-#include "symlink.hpp"
-#include "truncate.hpp"
-#include "unlink.hpp"
-#include "utimens.hpp"
-#include "write.hpp"
-#include "write_buf.hpp"
+#include "fuse_access.hpp"
+#include "fuse_chmod.hpp"
+#include "fuse_chown.hpp"
+#include "fuse_create.hpp"
+#include "fuse_destroy.hpp"
+#include "fuse_fallocate.hpp"
+#include "fuse_fgetattr.hpp"
+#include "fuse_flock.hpp"
+#include "fuse_flush.hpp"
+#include "fuse_fsync.hpp"
+#include "fuse_fsyncdir.hpp"
+#include "fuse_ftruncate.hpp"
+#include "fuse_getattr.hpp"
+#include "fuse_getxattr.hpp"
+#include "fuse_init.hpp"
+#include "fuse_ioctl.hpp"
+#include "fuse_link.hpp"
+#include "fuse_listxattr.hpp"
+#include "fuse_mkdir.hpp"
+#include "fuse_mknod.hpp"
+#include "fuse_open.hpp"
+#include "fuse_opendir.hpp"
+#include "fuse_read.hpp"
+#include "fuse_read_buf.hpp"
+#include "fuse_readdir.hpp"
+#include "fuse_readlink.hpp"
+#include "fuse_release.hpp"
+#include "fuse_releasedir.hpp"
+#include "fuse_removexattr.hpp"
+#include "fuse_rename.hpp"
+#include "fuse_rmdir.hpp"
+#include "fuse_setxattr.hpp"
+#include "fuse_statfs.hpp"
+#include "fuse_symlink.hpp"
+#include "fuse_truncate.hpp"
+#include "fuse_unlink.hpp"
+#include "fuse_utimens.hpp"
+#include "fuse_write.hpp"
+#include "fuse_write_buf.hpp"
 
-namespace local
+#include <fuse.h>
+
+#include <cstdlib>
+#include <iostream>
+
+#include <string.h>
+
+namespace l
 {
   static
   void
@@ -76,58 +77,58 @@ namespace local
     ops.flag_nopath        = true;
     ops.flag_utime_omit_ok = true;
 
-    ops.access      = mergerfs::fuse::access;
+    ops.access      = FUSE::access;
     ops.bmap        = NULL;
-    ops.chmod       = mergerfs::fuse::chmod;
-    ops.chown       = mergerfs::fuse::chown;
-    ops.create      = mergerfs::fuse::create;
-    ops.destroy     = mergerfs::fuse::destroy;
-    ops.fallocate   = mergerfs::fuse::fallocate;
-    ops.fgetattr    = mergerfs::fuse::fgetattr;
-    ops.flock       = mergerfs::fuse::flock;
-    ops.flush       = mergerfs::fuse::flush;
-    ops.fsync       = mergerfs::fuse::fsync;
-    ops.fsyncdir    = mergerfs::fuse::fsyncdir;
-    ops.ftruncate   = mergerfs::fuse::ftruncate;
-    ops.getattr     = mergerfs::fuse::getattr;
+    ops.chmod       = FUSE::chmod;
+    ops.chown       = FUSE::chown;
+    ops.create      = FUSE::create;
+    ops.destroy     = FUSE::destroy;
+    ops.fallocate   = FUSE::fallocate;
+    ops.fgetattr    = FUSE::fgetattr;
+    ops.flock       = FUSE::flock;
+    ops.flush       = FUSE::flush;
+    ops.fsync       = FUSE::fsync;
+    ops.fsyncdir    = FUSE::fsyncdir;
+    ops.ftruncate   = FUSE::ftruncate;
+    ops.getattr     = FUSE::getattr;
     ops.getdir      = NULL;       /* deprecated; use readdir */
-    ops.getxattr    = mergerfs::fuse::getxattr;
-    ops.init        = mergerfs::fuse::init;
-    ops.ioctl       = mergerfs::fuse::ioctl;
-    ops.link        = mergerfs::fuse::link;
-    ops.listxattr   = mergerfs::fuse::listxattr;
+    ops.getxattr    = FUSE::getxattr;
+    ops.init        = FUSE::init;
+    ops.ioctl       = FUSE::ioctl;
+    ops.link        = FUSE::link;
+    ops.listxattr   = FUSE::listxattr;
     ops.lock        = NULL;
-    ops.mkdir       = mergerfs::fuse::mkdir;
-    ops.mknod       = mergerfs::fuse::mknod;
-    ops.open        = mergerfs::fuse::open;
-    ops.opendir     = mergerfs::fuse::opendir;
+    ops.mkdir       = FUSE::mkdir;
+    ops.mknod       = FUSE::mknod;
+    ops.open        = FUSE::open;
+    ops.opendir     = FUSE::opendir;
     ops.poll        = NULL;
     ops.read        = (nullrw ?
-                       mergerfs::fuse::read_null :
-                       mergerfs::fuse::read);
+                       FUSE::read_null :
+                       FUSE::read);
     ops.read_buf    = (nullrw ?
                        NULL :
-                       mergerfs::fuse::read_buf);
-    ops.readdir     = mergerfs::fuse::readdir;
-    ops.readlink    = mergerfs::fuse::readlink;
-    ops.release     = mergerfs::fuse::release;
-    ops.releasedir  = mergerfs::fuse::releasedir;
-    ops.removexattr = mergerfs::fuse::removexattr;
-    ops.rename      = mergerfs::fuse::rename;
-    ops.rmdir       = mergerfs::fuse::rmdir;
-    ops.setxattr    = mergerfs::fuse::setxattr;
-    ops.statfs      = mergerfs::fuse::statfs;
-    ops.symlink     = mergerfs::fuse::symlink;
-    ops.truncate    = mergerfs::fuse::truncate;
-    ops.unlink      = mergerfs::fuse::unlink;
+                       FUSE::read_buf);
+    ops.readdir     = FUSE::readdir;
+    ops.readlink    = FUSE::readlink;
+    ops.release     = FUSE::release;
+    ops.releasedir  = FUSE::releasedir;
+    ops.removexattr = FUSE::removexattr;
+    ops.rename      = FUSE::rename;
+    ops.rmdir       = FUSE::rmdir;
+    ops.setxattr    = FUSE::setxattr;
+    ops.statfs      = FUSE::statfs;
+    ops.symlink     = FUSE::symlink;
+    ops.truncate    = FUSE::truncate;
+    ops.unlink      = FUSE::unlink;
     ops.utime       = NULL;       /* deprecated; use utimens() */
-    ops.utimens     = mergerfs::fuse::utimens;
+    ops.utimens     = FUSE::utimens;
     ops.write       = (nullrw ?
-                       mergerfs::fuse::write_null :
-                       mergerfs::fuse::write);
+                       FUSE::write_null :
+                       FUSE::write);
     ops.write_buf   = (nullrw ?
-                       mergerfs::fuse::write_buf_null :
-                       mergerfs::fuse::write_buf);
+                       FUSE::write_buf_null :
+                       FUSE::write_buf);
 
     return;
   }
@@ -139,31 +140,28 @@ namespace local
     const int prio = -10;
 
     std::srand(time(NULL));
-    mergerfs::resources::reset_umask();
-    mergerfs::resources::maxout_rlimit_nofile();
-    mergerfs::resources::maxout_rlimit_fsize();
-    mergerfs::resources::setpriority(prio);
+    resources::reset_umask();
+    resources::maxout_rlimit_nofile();
+    resources::maxout_rlimit_fsize();
+    resources::setpriority(prio);
   }
-}
 
-namespace mergerfs
-{
   int
-  main(const int   argc,
-       char      **argv)
+  main(const int   argc_,
+       char      **argv_)
   {
     fuse_args       args;
     fuse_operations ops = {0};
     Config          config;
 
-    args.argc      = argc;
-    args.argv      = argv;
+    args.argc      = argc_;
+    args.argv      = argv_;
     args.allocated = 0;
 
-    mergerfs::options::parse(args,config);
+    options::parse(args,config);
 
-    local::setup_resources();
-    local::get_fuse_operations(ops,config.nullrw);
+    l::setup_resources();
+    l::get_fuse_operations(ops,config.nullrw);
 
     return fuse_main(args.argc,
                      args.argv,
@@ -176,5 +174,5 @@ int
 main(int    argc,
      char **argv)
 {
-  return mergerfs::main(argc,argv);
+  return l::main(argc,argv);
 }

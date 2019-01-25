@@ -22,9 +22,9 @@
 #include "fs_base_close.hpp"
 #include "fs_base_open.hpp"
 
-#include <sys/statvfs.h>
-
 #include <string>
+
+#include <sys/statvfs.h>
 
 #ifndef O_PATH
 # define O_PATH 0

@@ -29,48 +29,57 @@ namespace fs
   static
   inline
   int
-  stat(const char  *path,
-       struct stat &st)
+  stat(const char  *path_,
+       struct stat *st_)
   {
-    return ::stat(path,&st);
+    return ::stat(path_,st_);
   }
 
   static
   inline
   int
-  stat(const std::string &path,
-       struct stat       &st)
+  stat(const std::string &path_,
+       struct stat       *st_)
   {
-    return fs::stat(path.c_str(),st);
+    return fs::stat(path_.c_str(),st_);
   }
 
   static
   inline
   int
-  lstat(const std::string &path,
-        struct stat       &st)
+  lstat(const char  *path_,
+        struct stat *st_)
   {
-    return ::lstat(path.c_str(),&st);
+    return ::lstat(path_,st_);
   }
 
   static
   inline
   int
-  fstat(const int    fd,
-        struct stat &st)
+  lstat(const std::string &path_,
+        struct stat       *st_)
   {
-    return ::fstat(fd,&st);
+    return fs::lstat(path_.c_str(),st_);
+  }
+
+  static
+  inline
+  int
+  fstat(const int    fd_,
+        struct stat *st_)
+  {
+    return ::fstat(fd_,st_);
   }
 
   static
   inline
   timespec *
-  stat_atime(struct stat &st)
+  stat_atime(struct stat *st_)
   {
 #if __APPLE__
-    return &st.st_atimespec;
+    return &st_->st_atimespec;
 #else
-    return &st.st_atim;
+    return &st_->st_atim;
 #endif
   }
 
@@ -78,24 +87,24 @@ namespace fs
   inline
   const
   timespec *
-  stat_atime(const struct stat &st)
+  stat_atime(const struct stat *st_)
   {
 #if __APPLE__
-    return &st.st_atimespec;
+    return &st_->st_atimespec;
 #else
-    return &st.st_atim;
+    return &st_->st_atim;
 #endif
   }
 
   static
   inline
   timespec *
-  stat_mtime(struct stat &st)
+  stat_mtime(struct stat *st_)
   {
 #if __APPLE__
-    return &st.st_mtimespec;
+    return &st_->st_mtimespec;
 #else
-    return &st.st_mtim;
+    return &st_->st_mtim;
 #endif
   }
 
@@ -103,12 +112,12 @@ namespace fs
   inline
   const
   timespec *
-  stat_mtime(const struct stat &st)
+  stat_mtime(const struct stat *st_)
   {
 #if __APPLE__
-    return &st.st_mtimespec;
+    return &st_->st_mtimespec;
 #else
-    return &st.st_mtim;
+    return &st_->st_mtim;
 #endif
   }
 }

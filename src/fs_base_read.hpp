@@ -25,21 +25,21 @@ namespace fs
   static
   inline
   ssize_t
-  read(const int     fd,
-       void         *buf,
-       const size_t  count)
+  read(const int     fd_,
+       void         *buf_,
+       const size_t  count_)
   {
-    return ::read(fd,buf,count);
+    return ::read(fd_,buf_,count_);
   }
 
   static
   inline
   ssize_t
-  pread(const int     fd,
-        void         *buf,
-        const size_t  count,
-        const off_t   offset)
+  pread(const int     fd_,
+        void         *buf_,
+        const size_t  count_,
+        const off_t   offset_)
   {
-    return ::pread(fd,buf,count,offset);
+    return ::pread(fd_,buf_,count_,offset_);
   }
 }

@@ -21,9 +21,9 @@
 #include "errno.hpp"
 #include "xattr.hpp"
 
-#include <sys/types.h>
-
 #include <string>
+
+#include <sys/types.h>
 
 namespace fs
 {

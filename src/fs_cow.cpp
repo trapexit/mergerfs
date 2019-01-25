@@ -89,7 +89,7 @@ namespace fs
       if(!is_eligible(flags_))
         return false;
 
-      rv = fs::lstat(fullpath_,st);
+      rv = fs::lstat(fullpath_,&st);
       if(rv == -1)
         return false;
 

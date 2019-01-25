@@ -58,7 +58,7 @@ namespace fs
 
     fdin = origfd;
 
-    rv = fs::fstat(fdin,fdin_st);
+    rv = fs::fstat(fdin,&fdin_st);
     if(rv == -1)
       return -1;
 

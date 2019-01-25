@@ -22,11 +22,9 @@ namespace fs
 {
   namespace attr
   {
-    using std::string;
-
-    int copy(const int fdin,
-             const int fdout);
-    int copy(const string &from,
-             const string &to);
+    int copy(const int fdin_,
+             const int fdout_);
+    int copy(const std::string &from_,
+             const std::string &to_);
   }
 }

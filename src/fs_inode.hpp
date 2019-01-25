@@ -25,20 +25,17 @@ namespace fs
 {
   namespace inode
   {
-    enum
-      {
-        MAGIC = 0x7472617065786974
-      };
+    static const uint64_t MAGIC = 0x7472617065786974;
 
     inline
     void
-    recompute(struct stat &st)
+    recompute(struct stat *st_)
     {
-      // not ideal to do this at runtime but likely gets optimized out
-      if(sizeof(st.st_ino) == 4)
-        st.st_ino |= ((uint32_t)st.st_dev << 16);
+      /* not ideal to do this at runtime but likely gets optimized out */
+      if(sizeof(st_->st_ino) == 4)
+        st_->st_ino |= ((uint32_t)st_->st_dev << 16);
       else
-        st.st_ino |= ((uint64_t)st.st_dev << 32);
+        st_->st_ino |= ((uint64_t)st_->st_dev << 32);
     }
   }
 }

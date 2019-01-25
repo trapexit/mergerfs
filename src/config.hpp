@@ -23,115 +23,112 @@
 
 #include <fuse.h>
 
-#include <stdint.h>
-#include <sys/stat.h>
-
 #include <string>
 #include <vector>
 
-namespace mergerfs
+#include <stdint.h>
+#include <sys/stat.h>
+
+class Config
 {
-  class Config
+public:
+  struct StatFS
   {
-  public:
-    struct StatFS
-    {
-      enum Enum
-        {
-          BASE,
-          FULL
-        };
-    };
-
-    struct StatFSIgnore
-    {
-      enum Enum
-        {
-          NONE,
-          RO,
-          NC
-        };
-    };
-
-  public:
-    Config();
-
-  public:
-    int set_func_policy(const std::string &fusefunc_,
-                        const std::string &policy_);
-    int set_category_policy(const std::string &category_,
-                            const std::string &policy_);
-
-  public:
-    std::string              destmount;
-    Branches                 branches;
-    mutable pthread_rwlock_t branches_lock;
-    uint64_t                 minfreespace;
-    bool                     moveonenospc;
-    bool                     direct_io;
-    bool                     dropcacheonclose;
-    bool                     symlinkify;
-    time_t                   symlinkify_timeout;
-    bool                     nullrw;
-    bool                     ignorepponrename;
-    bool                     security_capability;
-    bool                     link_cow;
-    int                      xattr;
-    StatFS::Enum             statfs;
-    StatFSIgnore::Enum       statfs_ignore;
-
-  public:
-    const Policy  *policies[FuseFunc::Enum::END];
-    const Policy *&access;
-    const Policy *&chmod;
-    const Policy *&chown;
-    const Policy *&create;
-    const Policy *&getattr;
-    const Policy *&getxattr;
-    const Policy *&link;
-    const Policy *&listxattr;
-    const Policy *&mkdir;
-    const Policy *&mknod;
-    const Policy *&open;
-    const Policy *&readlink;
-    const Policy *&removexattr;
-    const Policy *&rename;
-    const Policy *&rmdir;
-    const Policy *&setxattr;
-    const Policy *&symlink;
-    const Policy *&truncate;
-    const Policy *&unlink;
-    const Policy *&utimens;
-
-  public:
-    mutable PolicyCache open_cache;
-
-  public:
-    const std::string controlfile;
-
-  public:
-    static
-    const
-    Config &
-    get(void)
-    {
-      const fuse_context *fc = fuse_get_context();
-
-      return get(fc);
-    }
-
-    static
-    const Config &
-    get(const fuse_context *fc)
-    {
-      return *((Config*)fc->private_data);
-    }
-
-    static
-    Config &
-    get_writable(void)
-    {
-      return (*((Config*)fuse_get_context()->private_data));
-    }
+    enum Enum
+      {
+        BASE,
+        FULL
+      };
   };
-}
+
+  struct StatFSIgnore
+  {
+    enum Enum
+      {
+        NONE,
+        RO,
+        NC
+      };
+  };
+
+public:
+  Config();
+
+public:
+  int set_func_policy(const std::string &fusefunc_,
+                      const std::string &policy_);
+  int set_category_policy(const std::string &category_,
+                          const std::string &policy_);
+
+public:
+  std::string              destmount;
+  Branches                 branches;
+  mutable pthread_rwlock_t branches_lock;
+  uint64_t                 minfreespace;
+  bool                     moveonenospc;
+  bool                     direct_io;
+  bool                     dropcacheonclose;
+  bool                     symlinkify;
+  time_t                   symlinkify_timeout;
+  bool                     nullrw;
+  bool                     ignorepponrename;
+  bool                     security_capability;
+  bool                     link_cow;
+  int                      xattr;
+  StatFS::Enum             statfs;
+  StatFSIgnore::Enum       statfs_ignore;
+
+public:
+  const Policy  *policies[FuseFunc::Enum::END];
+  const Policy *&access;
+  const Policy *&chmod;
+  const Policy *&chown;
+  const Policy *&create;
+  const Policy *&getattr;
+  const Policy *&getxattr;
+  const Policy *&link;
+  const Policy *&listxattr;
+  const Policy *&mkdir;
+  const Policy *&mknod;
+  const Policy *&open;
+  const Policy *&readlink;
+  const Policy *&removexattr;
+  const Policy *&rename;
+  const Policy *&rmdir;
+  const Policy *&setxattr;
+  const Policy *&symlink;
+  const Policy *&truncate;
+  const Policy *&unlink;
+  const Policy *&utimens;
+
+public:
+  mutable PolicyCache open_cache;
+
+public:
+  const std::string controlfile;
+
+public:
+  static
+  const
+  Config &
+  get(void)
+  {
+    const fuse_context *fc = fuse_get_context();
+
+    return get(fc);
+  }
+
+  static
+  const Config &
+  get(const fuse_context *fc)
+  {
+    return *((Config*)fc->private_data);
+  }
+
+  static
+  Config &
+  get_writable(void)
+  {
+    return (*((Config*)fuse_get_context()->private_data));
+  }
+};

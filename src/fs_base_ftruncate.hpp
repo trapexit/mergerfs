@@ -26,9 +26,9 @@ namespace fs
   static
   inline
   int
-  ftruncate(const int   fd,
-            const off_t size)
+  ftruncate(const int   fd_,
+            const off_t size_)
   {
-    return ::ftruncate(fd,size);
+    return ::ftruncate(fd_,size_);
   }
 }

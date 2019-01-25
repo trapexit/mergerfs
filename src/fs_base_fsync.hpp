@@ -31,18 +31,18 @@ namespace fs
   static
   inline
   int
-  fsync(const int fd)
+  fsync(const int fd_)
   {
-    return ::fsync(fd);
+    return ::fsync(fd_);
   }
 
   static
   inline
   int
-  fdatasync(const int fd)
+  fdatasync(const int fd_)
   {
 #if _POSIX_SYNCHRONIZED_IO > 0
-    return ::fdatasync(fd);
+    return ::fdatasync(fd_);
 #else
     return (errno=ENOSYS,-1);
 #endif

@@ -39,7 +39,6 @@
 
 using std::string;
 using std::vector;
-using namespace mergerfs;
 
 enum
   {
@@ -454,33 +453,29 @@ option_processor(void       *data,
   return rv;
 }
 
-namespace mergerfs
+namespace options
 {
-  namespace options
+  void
+  parse(fuse_args &args,
+        Config    &config)
   {
-    void
-    parse(fuse_args &args,
-          Config    &config)
-    {
-      const struct fuse_opt opts[] =
-        {
-          FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
-          FUSE_OPT_KEY("--help",MERGERFS_OPT_HELP),
-          FUSE_OPT_KEY("-v",MERGERFS_OPT_VERSION),
-          FUSE_OPT_KEY("-V",MERGERFS_OPT_VERSION),
-          FUSE_OPT_KEY("--version",MERGERFS_OPT_VERSION),
-          {NULL,-1U,0}
-        };
+    const struct fuse_opt opts[] =
+      {
+        FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
+        FUSE_OPT_KEY("--help",MERGERFS_OPT_HELP),
+        FUSE_OPT_KEY("-v",MERGERFS_OPT_VERSION),
+        FUSE_OPT_KEY("-V",MERGERFS_OPT_VERSION),
+        FUSE_OPT_KEY("--version",MERGERFS_OPT_VERSION),
+        {NULL,-1U,0}
+      };
 
+    fuse_opt_parse(&args,
+                   &config,
+                   opts,
+                   ::option_processor);
 
-      fuse_opt_parse(&args,
-                     &config,
-                     opts,
-                     ::option_processor);
-
-      set_default_options(args);
-      set_fsname(args,config.branches);
-      set_subtype(args);
-    }
+    set_default_options(args);
+    set_fsname(args,config.branches);
+    set_subtype(args);
   }
 }

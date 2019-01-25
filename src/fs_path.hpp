@@ -30,6 +30,7 @@ namespace fs
 
     string basename(const string &path);
 
+    static
     inline
     void
     append(string     &base,
@@ -38,6 +39,7 @@ namespace fs
       base += suffix;
     }
 
+    static
     inline
     void
     append(string       &base,
@@ -46,36 +48,16 @@ namespace fs
       base += suffix;
     }
 
+    static
     inline
-    void
+    string
     make(const string &base_,
-         const char   *suffix_,
-         string       *output_)
+         const char   *suffix_)
     {
-      *output_  = base_;
-      *output_ += suffix_;
+      return (base_ + suffix_);
     }
 
-    inline
-    void
-    make(const string *base,
-         const char   *suffix,
-         string       &output)
-    {
-      output  = *base;
-      output += suffix;
-    }
-
-    inline
-    void
-    make(const string *base,
-         const string &suffix,
-         string       &output)
-    {
-      output  = *base;
-      output += suffix;
-    }
-
+    static
     inline
     string
     make(const string *base_,
@@ -91,6 +73,15 @@ namespace fs
          const string *suffix_)
     {
       return (*base_ + *suffix_);
+    }
+
+    static
+    inline
+    string
+    make(const string &base_,
+         const string &suffix_)
+    {
+      return (base_ + suffix_);
     }
   }
 };

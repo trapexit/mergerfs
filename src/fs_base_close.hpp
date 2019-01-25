@@ -25,8 +25,8 @@ namespace fs
   static
   inline
   int
-  close(const int fd)
+  close(const int fd_)
   {
-    return ::close(fd);
+    return ::close(fd_);
   }
 }

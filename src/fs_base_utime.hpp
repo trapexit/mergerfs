@@ -31,37 +31,37 @@ namespace fs
   static
   inline
   int
-  utime(const std::string &path,
-        const struct stat &st)
+  utime(const std::string &path_,
+        const struct stat &st_)
   {
     struct timespec times[2];
 
-    times[0] = *fs::stat_atime(st);
-    times[1] = *fs::stat_mtime(st);
+    times[0] = *fs::stat_atime(&st_);
+    times[1] = *fs::stat_mtime(&st_);
 
-    return fs::utime(AT_FDCWD,path,times,0);
+    return fs::utime(AT_FDCWD,path_,times,0);
   }
 
   static
   inline
   int
-  utime(const int          fd,
-        const struct stat &st)
+  utime(const int          fd_,
+        const struct stat &st_)
   {
     struct timespec times[2];
 
-    times[0] = *fs::stat_atime(st);
-    times[1] = *fs::stat_mtime(st);
+    times[0] = *fs::stat_atime(&st_);
+    times[1] = *fs::stat_mtime(&st_);
 
-    return fs::utime(fd,times);
+    return fs::utime(fd_,times);
   }
 
   static
   inline
   int
-  lutime(const std::string     &path,
-         const struct timespec  times[2])
+  lutime(const std::string     &path_,
+         const struct timespec  times_[2])
   {
-    return fs::utime(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
+    return fs::utime(AT_FDCWD,path_,times_,AT_SYMLINK_NOFOLLOW);
   }
 }

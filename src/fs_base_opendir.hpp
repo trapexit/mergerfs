@@ -28,8 +28,8 @@ namespace fs
   static
   inline
   DIR *
-  opendir(const std::string &name)
+  opendir(const std::string &name_)
   {
-    return ::opendir(name.c_str());
+    return ::opendir(name_.c_str());
   }
 }

@@ -25,8 +25,8 @@ namespace fs
   static
   inline
   struct dirent *
-  readdir(DIR *dirp)
+  readdir(DIR *dirp_)
   {
-    return ::readdir(dirp);
+    return ::readdir(dirp_);
   }
 }

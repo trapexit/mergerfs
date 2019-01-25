@@ -29,7 +29,7 @@ namespace fs
   inline
   bool
   exists(const std::string &path_,
-         struct stat       &st_)
+         struct stat       *st_)
   {
     int rv;
 
@@ -45,7 +45,7 @@ namespace fs
   {
     struct stat st;
 
-    return fs::exists(path_,st);
+    return fs::exists(path_,&st);
   }
 
 
@@ -54,7 +54,7 @@ namespace fs
   bool
   exists(const std::string &basepath_,
          const char        *relpath_,
-         struct stat       &st_)
+         struct stat       *st_)
   {
     std::string fullpath;
 
@@ -71,6 +71,6 @@ namespace fs
   {
     struct stat st;
 
-    return fs::exists(basepath_,relpath_,st);
+    return fs::exists(basepath_,relpath_,&st);
   }
 }

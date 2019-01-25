@@ -39,7 +39,7 @@ static uint64_t        g_timeout    = 0;
 static statvfs_cache   g_cache;
 static pthread_mutex_t g_cache_lock = PTHREAD_MUTEX_INITIALIZER;
 
-namespace local
+namespace l
 {
   static
   uint64_t
@@ -82,7 +82,7 @@ namespace fs
       return fs::statvfs(path_,st_);
 
     rv = 0;
-    now = local::get_time();
+    now = l::get_time();
 
     pthread_mutex_lock(&g_cache_lock);
 
