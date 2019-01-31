@@ -52,11 +52,9 @@ void
 set_option(fuse_args         &args,
            const std::string &option_)
 {
-  string option;
 
-  option = "-o" + option_;
-
-  fuse_opt_insert_arg(&args,1,option.c_str());
+  fuse_opt_add_arg(&args,"-o");
+  fuse_opt_add_arg(&args,option_.c_str());
 }
 
 static
@@ -103,12 +101,8 @@ void
 set_default_options(fuse_args &args)
 {
   set_option(args,"atomic_o_trunc");
-  set_option(args,"auto_cache");
   set_option(args,"big_writes");
   set_option(args,"default_permissions");
-  set_option(args,"splice_move");
-  set_option(args,"splice_read");
-  set_option(args,"splice_write");
 }
 
 static
@@ -240,7 +234,7 @@ parse_and_process_arg(Config            &config,
                       fuse_args         *outargs)
 {
   if(arg == "defaults")
-    return (set_default_options(*outargs),0);
+    return 0;
   else if(arg == "direct_io")
     return (config.direct_io=true,0);
 
@@ -363,10 +357,6 @@ usage(void)
     "mergerfs options:\n"
     "    <srcpaths>             ':' delimited list of directories. Supports\n"
     "                           shell globbing (must be escaped in shell)\n"
-    "    -o defaults            Default FUSE options which seem to provide the\n"
-    "                           best performance: atomic_o_trunc, auto_cache,\n"
-    "                           big_writes, default_permissions, splice_read,\n"
-    "                           splice_write, splice_move\n"
     "    -o func.<f>=<p>        Set function <f> to policy <p>\n"
     "    -o category.<c>=<p>    Set functions in category <c> to <p>\n"
     "    -o cache.open=<int>    'open' policy cache timeout in seconds.\n"
@@ -488,6 +478,7 @@ namespace mergerfs
                      opts,
                      ::option_processor);
 
+      set_default_options(args);
       set_fsname(args,config.branches);
       set_subtype(args);
     }

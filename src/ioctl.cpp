@@ -62,7 +62,6 @@ namespace local
     return local::ioctl(fi->fd,cmd_,data_);
   }
 
-#ifdef FUSE_IOCTL_DIR
 
 #ifndef O_NOATIME
 #define O_NOATIME 0
@@ -119,7 +118,6 @@ namespace local
                                  cmd_,
                                  data_);
   }
-#endif
 }
 
 namespace mergerfs
@@ -134,10 +132,8 @@ namespace mergerfs
           unsigned int    flags_,
           void           *data_)
     {
-#ifdef FUSE_IOCTL_DIR
       if(flags_ & FUSE_IOCTL_DIR)
         return local::ioctl_dir(ffi_,cmd_,data_);
-#endif
 
       return local::ioctl_file(ffi_,cmd_,data_);
     }

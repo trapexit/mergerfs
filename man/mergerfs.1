@@ -78,11 +78,6 @@ so you can mix rw and ro drives.
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
-\f[B]defaults\f[]: a shortcut for FUSE\[aq]s \f[B]atomic_o_trunc\f[],
-\f[B]auto_cache\f[], \f[B]big_writes\f[], \f[B]default_permissions\f[],
-\f[B]splice_move\f[], \f[B]splice_read\f[], and \f[B]splice_write\f[].
-These options seem to provide the best performance.
-.IP \[bu] 2
 \f[B]allow_other\f[]: a libfuse option which allows users besides the
 one which ran mergerfs to see the filesystem.
 This is required for most use\-cases.
@@ -112,8 +107,8 @@ write retried.
 .IP \[bu] 2
 \f[B]use_ino\f[]: causes mergerfs to supply file/directory inodes rather
 than libfuse.
-While not a default it is generally recommended it be enabled so that
-hard linked files share the same inode value.
+While not a default it is recommended it be enabled so that linked files
+share the same inode value.
 .IP \[bu] 2
 \f[B]hard_remove\f[]: force libfuse to immedately remove files when
 unlinked.
@@ -253,7 +248,7 @@ can\[aq]t create but you can change / delete).
 .IP
 .nf
 \f[C]
-$\ mergerfs\ \-o\ defaults,allow_other,use_ino\ /mnt/disk\\*:/mnt/cdrom\ /media/drives
+#\ mergerfs\ \-o\ allow_other,use_ino\ /mnt/disk\\*:/mnt/cdrom\ /media/drives
 \f[]
 .fi
 .PP
@@ -265,8 +260,8 @@ tools use \f[B]/etc/fstab\f[].
 .IP
 .nf
 \f[C]
-#\ <file\ system>\ \ \ \ \ \ \ \ <mount\ point>\ \ <type>\ \ \ \ \ \ \ \ \ <options>\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <dump>\ \ <pass>
-/mnt/disk*:/mnt/cdrom\ \ /media/drives\ \ fuse.mergerfs\ \ defaults,allow_other,use_ino\ \ \ 0\ \ \ \ \ \ \ 0
+#\ <file\ system>\ \ \ \ \ \ \ \ <mount\ point>\ \ <type>\ \ \ \ \ \ \ \ \ <options>\ \ \ \ \ \ \ \ \ \ \ \ \ <dump>\ \ <pass>
+/mnt/disk*:/mnt/cdrom\ \ /media/drives\ \ fuse.mergerfs\ \ allow_other,use_ino\ \ \ 0\ \ \ \ \ \ \ 0
 \f[]
 .fi
 .PP
@@ -1204,13 +1199,12 @@ done
 .fi
 .SH TIPS / NOTES
 .IP \[bu] 2
-The recommended base options are
-\f[B]defaults,allow_other,direct_io,use_ino\f[].
-(\f[B]use_ino\f[] will only work when used with mergerfs 2.18.0 and
-above.)
+\f[B]use_ino\f[] will only work when used with mergerfs 2.18.0 and
+above.
 .IP \[bu] 2
-Run mergerfs as \f[C]root\f[] unless you\[aq]re merging paths which are
-owned by the same user otherwise strange permission issues may arise.
+Run mergerfs as \f[C]root\f[] (with \f[B]allow_other\f[]) unless
+you\[aq]re merging paths which are owned by the same user otherwise
+strange permission issues may arise.
 .IP \[bu] 2
 https://github.com/trapexit/backup\-and\-recovery\-howtos : A set of
 guides / howtos on creating a data storage system, backing it up,
@@ -1538,11 +1532,9 @@ https://lkml.org/lkml/2016/9/14/527
 .PP
 There is a bug in the kernel.
 A work around appears to be turning off \f[C]splice\f[].
-Add \f[C]no_splice_write,no_splice_move,no_splice_read\f[] to
-mergerfs\[aq] options.
-Should be placed after \f[C]defaults\f[] if it is used since it will
-turn them on.
-This however is not guaranteed to work.
+Don\[aq]t add the \f[C]splice_*\f[] arguments or add
+\f[C]no_splice_write,no_splice_move,no_splice_read\f[].
+This, however, is not guaranteed to work.
 .SS rm: fts_read failed: No such file or directory
 .PP
 Not \f[I]really\f[] a bug.
@@ -1671,7 +1663,7 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 .PP
 \f[C]mhddfs\ \-o\ mlimit=4G,allow_other\ /mnt/drive1,/mnt/drive2\ /mnt/pool\f[]
 .PP
-\f[C]mergerfs\ \-o\ minfreespace=4G,defaults,allow_other,category.create=ff\ /mnt/drive1:/mnt/drive2\ /mnt/pool\f[]
+\f[C]mergerfs\ \-o\ minfreespace=4G,allow_other,category.create=ff\ /mnt/drive1:/mnt/drive2\ /mnt/pool\f[]
 .SS Why use mergerfs over aufs?
 .PP
 aufs is mostly abandoned and no longer available in many distros.
@@ -1868,14 +1860,12 @@ assuming there are few users.
 .IP \[bu] 2
 try adding (or removing) \f[C]direct_io\f[]
 .IP \[bu] 2
-try adding (or removing) \f[C]auto_cache\f[] / \f[C]noauto_cache\f[]
-(included in \f[C]defaults\f[])
+try adding (or removing) \f[C]auto_cache\f[]
 .IP \[bu] 2
-try adding (or removing) \f[C]kernel_cache\f[] (don\[aq]t use the
-underlying filesystems directly if enabling \f[C]kernel_cache\f[])
+try adding (or removing) \f[C]kernel_cache\f[]
 .IP \[bu] 2
 try adding (or removing) \f[C]splice_move\f[], \f[C]splice_read\f[], and
-\f[C]splice_write\f[] (all three included in \f[C]defaults\f[])
+\f[C]splice_write\f[]
 .IP \[bu] 2
 try increasing cache timeouts \f[C]attr_timeout\f[],
 \f[C]entry_timeout\f[], \f[C]ac_attr_timeout\f[],
