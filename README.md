@@ -63,12 +63,11 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 
 ### mount options
 
-* **defaults**: a shortcut for FUSE's **atomic_o_trunc**, **auto_cache**, **big_writes**, **default_permissions**, **splice_move**, **splice_read**, and **splice_write**. These options seem to provide the best performance.
 * **allow_other**: a libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
 * **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally (enable **dropcacheonclose** to help with this problem). However, `mmap` does not work when `direct_io` is enabled.
 * **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
-* **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is generally recommended it be enabled so that hard linked files share the same inode value.
+* **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
 * **hard_remove**: force libfuse to immedately remove files when unlinked. This will keep the `.fuse_hidden` files from showing up but if software uses an opened but unlinked file in certain ways it could result in errors.
 * **dropcacheonclose=true|false**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
 * **symlinkify=true|false**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
@@ -99,7 +98,7 @@ To make it easier to include multiple branches mergerfs supports [globbing](http
 Each branch can have a suffix of `=RW` (read / write), `=RO` (read-only), or `=NC` (no create). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NC` will exclude those paths from `create` policies (you can't create but you can change / delete).
 
 ```
-$ mergerfs -o defaults,allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
+# mergerfs -o allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
 The above line will use all mount points in /mnt prefixed with **disk** and the **cdrom**.
@@ -107,8 +106,8 @@ The above line will use all mount points in /mnt prefixed with **disk** and the 
 To have the pool mounted at boot or otherwise accessable from related tools use **/etc/fstab**.
 
 ```
-# <file system>        <mount point>  <type>         <options>                      <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  defaults,allow_other,use_ino   0       0
+# <file system>        <mount point>  <type>         <options>             <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  allow_other,use_ino   0       0
 ```
 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
@@ -588,8 +587,8 @@ done
 
 # TIPS / NOTES
 
-* The recommended base options are **defaults,allow_other,direct_io,use_ino**. (**use_ino** will only work when used with mergerfs 2.18.0 and above.)
-* Run mergerfs as `root` unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
+* **use_ino** will only work when used with mergerfs 2.18.0 and above.
+* Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do **not** use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `direct_io` is disabled.
@@ -758,7 +757,7 @@ https://lkml.org/lkml/2016/9/14/527
 [25192.603193]  [<ffffffff810a0730>] ? kthread_create_on_node+0x1e0/0x1e0
 ```
 
-There is a bug in the kernel. A work around appears to be turning off `splice`. Add `no_splice_write,no_splice_move,no_splice_read` to mergerfs' options. Should be placed after `defaults` if it is used since it will turn them on. This however is not guaranteed to work.
+There is a bug in the kernel. A work around appears to be turning off `splice`. Don't add the `splice_*` arguments or add `no_splice_write,no_splice_move,no_splice_read`. This, however, is not guaranteed to work.
 
 
 #### rm: fts_read failed: No such file or directory
@@ -830,7 +829,7 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 
 `mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool`
 
-`mergerfs -o minfreespace=4G,defaults,allow_other,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
+`mergerfs -o minfreespace=4G,allow_other,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
 
 
 #### Why use mergerfs over aufs?
@@ -935,9 +934,9 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 # PERFORMANCE TWEAKING
 
 * try adding (or removing) `direct_io`
-* try adding (or removing) `auto_cache` / `noauto_cache` (included in `defaults`)
-* try adding (or removing) `kernel_cache` (don't use the underlying filesystems directly if enabling `kernel_cache`)
-* try adding (or removing) `splice_move`, `splice_read`, and `splice_write` (all three included in `defaults`)
+* try adding (or removing) `auto_cache`
+* try adding (or removing) `kernel_cache`
+* try adding (or removing) `splice_move`, `splice_read`, and `splice_write`
 * try increasing cache timeouts `attr_timeout`, `entry_timeout`, `ac_attr_timeout`, `negative_timeout`
 * try changing the number of worker threads
 * try disabling `security_capability` or `xattr`

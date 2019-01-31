@@ -28,10 +28,11 @@ namespace mergerfs
     {
       ugid::init();
 
+      conn->want |= FUSE_CAP_ASYNC_READ;
+      conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
+      conn->want |= FUSE_CAP_BIG_WRITES;
       conn->want |= FUSE_CAP_DONT_MASK;
-#ifdef FUSE_CAP_IOCTL_DIR
       conn->want |= FUSE_CAP_IOCTL_DIR;
-#endif
 
       return &Config::get_writable();
     }
