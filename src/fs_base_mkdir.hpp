@@ -28,9 +28,9 @@ namespace fs
   static
   inline
   int
-  mkdir(const std::string &path,
-        const mode_t       mode)
+  mkdir(const std::string &path_,
+        const mode_t       mode_)
   {
-    return ::mkdir(path.c_str(),mode);
+    return ::mkdir(path_.c_str(),mode_);
   }
 }

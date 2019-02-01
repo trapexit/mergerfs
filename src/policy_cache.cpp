@@ -13,7 +13,7 @@ using std::vector;
 
 static const uint64_t DEFAULT_TIMEOUT = 0;
 
-namespace local
+namespace l
 {
   static
   uint64_t
@@ -62,7 +62,7 @@ PolicyCache::cleanup(const int prob_)
   if(rand() % prob_)
     return;
 
-  now = local::get_time();
+  now = l::get_time();
 
   pthread_mutex_lock(&_lock);
 
@@ -103,7 +103,7 @@ PolicyCache::operator()(Policy::Func::Search &func_,
   if(timeout == 0)
     return func_(branches_,fusepath_,minfreespace_,branch_);
 
-  now = local::get_time();
+  now = l::get_time();
 
   pthread_mutex_lock(&_lock);
   v = &_cache[fusepath_];

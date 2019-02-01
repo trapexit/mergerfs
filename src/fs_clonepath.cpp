@@ -78,14 +78,14 @@ namespace fs
           return -1;
       }
 
-    fs::path::make(&fromsrc,relative,frompath);
-    rv = fs::stat(frompath,st);
+    frompath = fs::path::make(fromsrc,relative);
+    rv = fs::stat(frompath,&st);
     if(rv == -1)
       return -1;
     else if(!S_ISDIR(st.st_mode))
       return (errno=ENOTDIR,-1);
 
-    fs::path::make(&tosrc,relative,topath);
+    topath = fs::path::make(tosrc,relative);
     rv = fs::mkdir(topath,st.st_mode);
     if(rv == -1)
       {
@@ -117,10 +117,10 @@ namespace fs
   }
 
   int
-  clonepath(const std::string &from,
-            const std::string &to,
-            const std::string &relative,
-            const bool         return_metadata_errors)
+  clonepath(const string &from,
+            const string &to,
+            const string &relative,
+            const bool    return_metadata_errors)
   {
     return fs::clonepath(from,to,relative.c_str(),return_metadata_errors);
   }
@@ -144,10 +144,10 @@ namespace fs
   }
 
   int
-  clonepath_as_root(const std::string &from,
-                    const std::string &to,
-                    const std::string &relative,
-                    const bool         return_metadata_errors)
+  clonepath_as_root(const string &from,
+                    const string &to,
+                    const string &relative,
+                    const bool    return_metadata_errors)
   {
     return fs::clonepath_as_root(from,to,relative.c_str(),return_metadata_errors);
   }

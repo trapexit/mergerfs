@@ -19,10 +19,7 @@
 
 namespace fs
 {
-  using std::string;
-  using std::vector;
-
   void
-  glob(const string   &pattern_,
-       vector<string> &strs_);
+  glob(const std::string        &pattern_,
+       std::vector<std::string> &strs_);
 }

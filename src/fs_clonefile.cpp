@@ -84,7 +84,7 @@ namespace fs
     int rv;
     struct stat src_st;
 
-    rv = fs::fstat(src_fd_,src_st);
+    rv = fs::fstat(src_fd_,&src_st);
     if(rv == -1)
       return -1;
 

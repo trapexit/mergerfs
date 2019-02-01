@@ -18,50 +18,47 @@
 
 #include <pthread.h>
 
-namespace mergerfs
+namespace rwlock
 {
-  namespace rwlock
+  class ReadGuard
   {
-    class ReadGuard
+  public:
+    ReadGuard(pthread_rwlock_t *lock_)
+      : _lock(lock_)
     {
-    public:
-      ReadGuard(pthread_rwlock_t *lock)
-      {
-        _lock = lock;
-        pthread_rwlock_rdlock(_lock);
-      }
+      pthread_rwlock_rdlock(_lock);
+    }
 
-      ~ReadGuard()
-      {
-        pthread_rwlock_unlock(_lock);
-      }
-
-    private:
-      ReadGuard();
-
-    private:
-      pthread_rwlock_t *_lock;
-    };
-
-    class WriteGuard
+    ~ReadGuard()
     {
-    public:
-      WriteGuard(pthread_rwlock_t *lock)
-      {
-        _lock = lock;
-        pthread_rwlock_wrlock(_lock);
-      }
+      pthread_rwlock_unlock(_lock);
+    }
 
-      ~WriteGuard()
-      {
-        pthread_rwlock_unlock(_lock);
-      }
+  private:
+    ReadGuard();
 
-    private:
-      WriteGuard();
+  private:
+    pthread_rwlock_t *_lock;
+  };
 
-    private:
-      pthread_rwlock_t *_lock;
-    };
-  }
+  class WriteGuard
+  {
+  public:
+    WriteGuard(pthread_rwlock_t *lock_)
+      : _lock(lock_)
+    {
+      pthread_rwlock_wrlock(_lock);
+    }
+
+    ~WriteGuard()
+    {
+      pthread_rwlock_unlock(_lock);
+    }
+
+  private:
+    WriteGuard();
+
+  private:
+    pthread_rwlock_t *_lock;
+  };
 }

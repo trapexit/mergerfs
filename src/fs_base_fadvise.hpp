@@ -19,17 +19,17 @@
 namespace fs
 {
   int
-  fadvise_dontneed(const int   fd,
-                   const off_t offset = 0,
-                   const off_t len    = 0);
+  fadvise_dontneed(const int   fd_,
+                   const off_t offset_ = 0,
+                   const off_t len_    = 0);
 
   int
-  fadvise_willneed(const int   fd,
-                   const off_t offset = 0,
-                   const off_t len    = 0);
+  fadvise_willneed(const int   fd_,
+                   const off_t offset_ = 0,
+                   const off_t len_    = 0);
 
   int
-  fadvise_sequential(const int   fd,
-                     const off_t offset = 0,
-                     const off_t len    = 0);
+  fadvise_sequential(const int   fd_,
+                     const off_t offset_ = 0,
+                     const off_t len_    = 0);
 }

@@ -18,10 +18,12 @@
 
 #pragma once
 
+#include <sys/time.h>
+
 namespace fs
 {
   int
-  futimesat(const int             dirfd,
-            const char           *pathname,
-            const struct timeval  times[2]);
+  futimesat(const int             dirfd_,
+            const char           *pathname_,
+            const struct timeval  times_[2]);
 }

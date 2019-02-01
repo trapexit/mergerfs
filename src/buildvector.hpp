@@ -17,6 +17,7 @@
 #pragma once
 
 #include <algorithm>
+#include <vector>
 
 template<typename V, bool SORT = false>
 class buildvector

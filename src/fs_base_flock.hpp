@@ -25,9 +25,9 @@ namespace fs
   static
   inline
   int
-  flock(const int fd,
-        const int operation)
+  flock(const int fd_,
+        const int operation_)
   {
-    return ::flock(fd,operation);
+    return ::flock(fd_,operation_);
   }
 }

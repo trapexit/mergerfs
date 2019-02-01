@@ -27,12 +27,12 @@ namespace fs
   static
   inline
   dev_t
-  devid(const int fd)
+  devid(const int fd_)
   {
     int rv;
     struct stat st;
 
-    rv = ::fstat(fd,&st);
+    rv = ::fstat(fd_,&st);
     if(rv == -1)
       return -1;
 

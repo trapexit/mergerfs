@@ -27,18 +27,30 @@ namespace fs
   static
   inline
   int
-  symlink(const std::string &oldpath,
-          const std::string &newpath)
+  symlink(const char *oldpath_,
+          const char *newpath_)
   {
-    return ::symlink(oldpath.c_str(),newpath.c_str());
+    return ::symlink(oldpath_,
+                     newpath_);
   }
 
   static
   inline
   int
-  symlink(const char        *oldpath,
-          const std::string &newpath)
+  symlink(const std::string &oldpath_,
+          const std::string &newpath_)
   {
-    return ::symlink(oldpath,newpath.c_str());
+    return fs::symlink(oldpath_.c_str(),
+                       newpath_.c_str());
+  }
+
+  static
+  inline
+  int
+  symlink(const char        *oldpath_,
+          const std::string &newpath_)
+  {
+    return fs::symlink(oldpath_,
+                       newpath_.c_str());
   }
 }

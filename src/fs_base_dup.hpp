@@ -25,8 +25,8 @@ namespace fs
   static
   inline
   int
-  dup(const int fd)
+  dup(const int fd_)
   {
-    return ::dup(fd);
+    return ::dup(fd_);
   }
 }

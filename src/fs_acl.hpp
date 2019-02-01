@@ -25,6 +25,6 @@ namespace fs
   namespace acl
   {
     bool
-    dir_has_defaults(const std::string &fullpath);
+    dir_has_defaults(const std::string &fullpath_);
   }
 }

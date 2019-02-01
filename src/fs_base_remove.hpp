@@ -27,8 +27,16 @@ namespace fs
   static
   inline
   int
-  remove(const std::string &pathname)
+  remove(const char *pathname_)
   {
-    return ::remove(pathname.c_str());
+    return ::remove(pathname_);
+  }
+
+  static
+  inline
+  int
+  remove(const std::string &pathname_)
+  {
+    return fs::remove(pathname_.c_str());
   }
 }

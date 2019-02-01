@@ -56,7 +56,7 @@ namespace newest
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath,st))
+        if(!fs::exists(branch->path,fusepath,&st))
           error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
@@ -103,7 +103,7 @@ namespace newest
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath,st))
+        if(!fs::exists(branch->path,fusepath,&st))
           error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
@@ -144,7 +144,7 @@ namespace newest
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath,st))
+        if(!fs::exists(branch->path,fusepath,&st))
           continue;
         if(st.st_mtime < newest)
           continue;

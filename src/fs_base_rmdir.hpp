@@ -27,8 +27,16 @@ namespace fs
   static
   inline
   int
-  rmdir(const std::string &path)
+  rmdir(const char *path_)
   {
-    return ::rmdir(path.c_str());
+    return ::rmdir(path_);
+  }
+
+  static
+  inline
+  int
+  rmdir(const std::string &path_)
+  {
+    return fs::rmdir(path_.c_str());
   }
 }

@@ -20,63 +20,60 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-namespace mergerfs
+namespace resources
 {
-  namespace resources
+  int
+  reset_umask(void)
   {
-    int
-    reset_umask(void)
-    {
-      umask(0);
+    umask(0);
+    return 0;
+  }
+
+  int
+  maxout_rlimit(const int resource)
+  {
+    int rv;
+    struct rlimit rlim;
+
+    rlim.rlim_cur = RLIM_INFINITY;
+    rlim.rlim_max = RLIM_INFINITY;
+    rv = ::setrlimit(resource,&rlim);
+    if(rv == 0)
       return 0;
-    }
 
-    int
-    maxout_rlimit(const int resource)
-    {
-      int rv;
-      struct rlimit rlim;
+    rv = ::getrlimit(resource,&rlim);
+    if(rv == -1)
+      return -1;
 
-      rlim.rlim_cur = RLIM_INFINITY;
-      rlim.rlim_max = RLIM_INFINITY;
-      rv = ::setrlimit(resource,&rlim);
-      if(rv == 0)
-        return 0;
+    rv = 0;
+    rlim.rlim_cur = rlim.rlim_max;
+    while(rv == 0)
+      {
+        rv = ::setrlimit(resource,&rlim);
+        rlim.rlim_max *= 2;
+        rlim.rlim_cur  = rlim.rlim_max;
+      }
 
-      rv = ::getrlimit(resource,&rlim);
-      if(rv == -1)
-        return -1;
+    return rv;
+  }
 
-      rv = 0;
-      rlim.rlim_cur = rlim.rlim_max;
-      while(rv == 0)
-        {
-          rv = ::setrlimit(resource,&rlim);
-          rlim.rlim_max *= 2;
-          rlim.rlim_cur  = rlim.rlim_max;
-        }
+  int
+  maxout_rlimit_nofile(void)
+  {
+    return maxout_rlimit(RLIMIT_NOFILE);
+  }
 
-      return rv;
-    }
+  int
+  maxout_rlimit_fsize(void)
+  {
+    return maxout_rlimit(RLIMIT_FSIZE);
+  }
 
-    int
-    maxout_rlimit_nofile(void)
-    {
-      return maxout_rlimit(RLIMIT_NOFILE);
-    }
+  int
+  setpriority(const int prio)
+  {
+    const int SELF = 0;
 
-    int
-    maxout_rlimit_fsize(void)
-    {
-      return maxout_rlimit(RLIMIT_FSIZE);
-    }
-
-    int
-    setpriority(const int prio)
-    {
-      const int SELF = 0;
-
-      return ::setpriority(PRIO_PROCESS,SELF,prio);
-    }
+    return ::setpriority(PRIO_PROCESS,SELF,prio);
   }
 }
