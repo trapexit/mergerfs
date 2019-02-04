@@ -701,7 +701,17 @@ int fuse_loop(struct fuse *f);
  */
 void fuse_exit(struct fuse *f);
 
-int fuse_config_num_threads(const struct fuse *f);
+void fuse_config_set_entry_timeout(struct fuse  *fuse_,
+                                   const double  entry_timeout_);
+void fuse_config_set_negative_entry_timeout(struct fuse  *fuse_,
+                                            const double  entry_timeout_);
+void fuse_config_set_attr_timeout(struct fuse  *fuse_,
+                                  const double  attr_timeout_);
+
+int    fuse_config_num_threads(const struct fuse *fuse_);
+double fuse_config_get_entry_timeout(const struct fuse *fuse_);
+double fuse_config_get_negative_entry_timeout(const struct fuse *fuse_);
+double fuse_config_get_attr_timeout(const struct fuse *fuse_);
 
 /**
  * FUSE event loop with multiple threads

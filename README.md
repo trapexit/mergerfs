@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-02-17
+% 2019-02-22
 
 # NAME
 
@@ -85,6 +85,9 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
 * **cache.open=&lt;int&gt;**: 'open' policy cache timeout in seconds. (default: 0)
 * **cache.statfs=&lt;int&gt;**: 'statfs' cache timeout in seconds. (default: 0)
+* **cache.attr=&lt;int&gt;**: file attribute cache timeout in seconds. (default: 1)
+* **cache.entry=&lt;int&gt;**: file name lookup cache timeout in seconds. (default: 1)
+* **cache.negative_entry=&lt;int&gt;**: negative file name lookup cache timeout in seconds. (default: 0)
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 

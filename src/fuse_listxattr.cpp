@@ -45,6 +45,9 @@ namespace l
     const vector<string> strs =
       buildvector<string>
       ("user.mergerfs.branches")
+      ("user.mergerfs.cache.attr")
+      ("user.mergerfs.cache.entry")
+      ("user.mergerfs.cache.negative_entry")
       ("user.mergerfs.cache.open")
       ("user.mergerfs.cache.statfs")
       ("user.mergerfs.direct_io")

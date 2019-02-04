@@ -158,7 +158,7 @@ namespace l
     args.argv      = argv_;
     args.allocated = 0;
 
-    options::parse(args,config);
+    options::parse(&args,&config);
 
     l::setup_resources();
     l::get_fuse_operations(ops,config.nullrw);

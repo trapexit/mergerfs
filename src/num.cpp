@@ -47,6 +47,11 @@ namespace num
         tmp *= (1024 * 1024 * 1024);
         break;
 
+      case 't':
+      case 'T':
+        tmp *= (1024ULL * 1024 * 1024 * 1024);
+        break;
+
       case '\0':
         break;
 
@@ -55,6 +60,22 @@ namespace num
       }
 
     value = tmp;
+
+    return 0;
+  }
+
+  int
+  to_double(const std::string &str_,
+            double            *d_)
+  {
+    double tmp;
+    char *endptr;
+
+    tmp = strtod(str_.c_str(),&endptr);
+    if(*endptr != '\0')
+      return -1;
+
+    *d_ = tmp;
 
     return 0;
   }

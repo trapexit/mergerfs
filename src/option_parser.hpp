@@ -23,6 +23,6 @@
 namespace options
 {
   void
-  parse(fuse_args &args,
-        Config    &config);
+  parse(fuse_args *args,
+        Config    *config);
 }
