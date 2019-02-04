@@ -75,13 +75,11 @@ struct fuse_config {
 	int intr;
 	int intr_signal;
 	int help;
-	char *modules;
         int threads;
 };
 
 struct fuse_fs {
 	struct fuse_operations op;
-	struct fuse_module *m;
 	void *user_data;
 	int compat;
 	int debug;
@@ -222,104 +220,6 @@ struct fuse_context_i {
 static pthread_key_t fuse_context_key;
 static pthread_mutex_t fuse_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static int fuse_context_ref;
-static struct fusemod_so *fuse_current_so;
-static struct fuse_module *fuse_modules;
-
-static int fuse_load_so_name(const char *soname)
-{
-	struct fusemod_so *so;
-
-	so = calloc(1, sizeof(struct fusemod_so));
-	if (!so) {
-		fprintf(stderr, "fuse: memory allocation failed\n");
-		return -1;
-	}
-
-	fuse_current_so = so;
-	so->handle = dlopen(soname, RTLD_NOW);
-	fuse_current_so = NULL;
-	if (!so->handle) {
-		fprintf(stderr, "fuse: %s\n", dlerror());
-		goto err;
-	}
-	if (!so->ctr) {
-		fprintf(stderr, "fuse: %s did not register any modules\n",
-			soname);
-		goto err;
-	}
-	return 0;
-
-err:
-	if (so->handle)
-		dlclose(so->handle);
-	free(so);
-	return -1;
-}
-
-static int fuse_load_so_module(const char *module)
-{
-	int res;
-	char *soname = malloc(strlen(module) + 64);
-	if (!soname) {
-		fprintf(stderr, "fuse: memory allocation failed\n");
-		return -1;
-	}
-	sprintf(soname, "libfusemod_%s.so", module);
-	res = fuse_load_so_name(soname);
-	free(soname);
-	return res;
-}
-
-static struct fuse_module *fuse_find_module(const char *module)
-{
-	struct fuse_module *m;
-	for (m = fuse_modules; m; m = m->next) {
-		if (strcmp(module, m->name) == 0) {
-			m->ctr++;
-			break;
-		}
-	}
-	return m;
-}
-
-static struct fuse_module *fuse_get_module(const char *module)
-{
-	struct fuse_module *m;
-
-	pthread_mutex_lock(&fuse_context_lock);
-	m = fuse_find_module(module);
-	if (!m) {
-		int err = fuse_load_so_module(module);
-		if (!err)
-			m = fuse_find_module(module);
-	}
-	pthread_mutex_unlock(&fuse_context_lock);
-	return m;
-}
-
-static void fuse_put_module(struct fuse_module *m)
-{
-	pthread_mutex_lock(&fuse_context_lock);
-	assert(m->ctr > 0);
-	m->ctr--;
-	if (!m->ctr && m->so) {
-		struct fusemod_so *so = m->so;
-		assert(so->ctr > 0);
-		so->ctr--;
-		if (!so->ctr) {
-			struct fuse_module **mp;
-			for (mp = &fuse_modules; *mp;) {
-				if ((*mp)->so == so)
-					*mp = (*mp)->next;
-				else
-					mp = &(*mp)->next;
-			}
-			dlclose(so->handle);
-			free(so);
-		}
-	}
-	pthread_mutex_unlock(&fuse_context_lock);
-}
 
 static void init_list_head(struct list_head *list)
 {
@@ -2612,8 +2512,6 @@ void fuse_fs_destroy(struct fuse_fs *fs)
 	fuse_get_context()->private_data = fs->user_data;
 	if (fs->op.destroy)
 		fs->op.destroy(fs->user_data);
-	if (fs->m)
-		fuse_put_module(fs->m);
 	free(fs);
 }
 
@@ -4399,7 +4297,6 @@ static const struct fuse_opt fuse_lib_opts[] = {
 	FUSE_LIB_OPT("nopath",                nopath, 1),
 	FUSE_LIB_OPT("intr",		      intr, 1),
 	FUSE_LIB_OPT("intr_signal=%d",	      intr_signal, 0),
-	FUSE_LIB_OPT("modules=%s",	      modules, 0),
         FUSE_LIB_OPT("threads=%d",            threads, 0),
 	FUSE_OPT_END
 };
@@ -4424,31 +4321,10 @@ static void fuse_lib_help(void)
 "    -o nopath              don't supply path if not necessary\n"
 "    -o intr                allow requests to be interrupted\n"
 "    -o intr_signal=NUM     signal to send on interrupt (%i)\n"
-"    -o modules=M1[:M2...]  names of modules to push onto filesystem stack\n"
 "    -o threads=NUM         number of worker threads. 0 = autodetect.\n"
 "                           Negative values autodetect then divide by\n"
 "                           absolute value. default = 0\n"
 "\n", FUSE_DEFAULT_INTR_SIGNAL);
-}
-
-static void fuse_lib_help_modules(void)
-{
-	struct fuse_module *m;
-	fprintf(stderr, "\nModule options:\n");
-	pthread_mutex_lock(&fuse_context_lock);
-	for (m = fuse_modules; m; m = m->next) {
-		struct fuse_fs *fs = NULL;
-		struct fuse_fs *newfs;
-		struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
-		if (fuse_opt_add_arg(&args, "") != -1 &&
-		    fuse_opt_add_arg(&args, "-h") != -1) {
-			fprintf(stderr, "\n[%s]\n", m->name);
-			newfs = m->factory(&args, &fs);
-			assert(newfs == NULL);
-		}
-		fuse_opt_free_args(&args);
-	}
-	pthread_mutex_unlock(&fuse_context_lock);
 }
 
 static int fuse_lib_opt_proc(void *data, const char *arg, int key,
@@ -4505,29 +4381,6 @@ static void fuse_restore_intr_signal(int signum)
 	sigaction(signum, &sa, NULL);
 }
 
-
-static int fuse_push_module(struct fuse *f, const char *module,
-			    struct fuse_args *args)
-{
-	struct fuse_fs *fs[2] = { f->fs, NULL };
-	struct fuse_fs *newfs;
-	struct fuse_module *m = fuse_get_module(module);
-
-	if (!m)
-		return -1;
-
-	newfs = m->factory(args, fs);
-	if (!newfs) {
-		fuse_put_module(m);
-		return -1;
-	}
-	newfs->m = m;
-	f->fs = newfs;
-	f->nullpath_ok = newfs->op.flag_nullpath_ok && f->nullpath_ok;
-	f->conf.nopath = newfs->op.flag_nopath && f->conf.nopath;
-	f->utime_omit_ok = newfs->op.flag_utime_omit_ok && f->utime_omit_ok;
-	return 0;
-}
 
 struct fuse_fs *fuse_fs_new(const struct fuse_operations *op, size_t op_size,
 			    void *user_data)
@@ -4643,21 +4496,6 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 			   fuse_lib_opt_proc) == -1)
 		goto out_free_fs;
 
-	if (f->conf.modules) {
-		char *module;
-		char *next;
-
-		for (module = f->conf.modules; module; module = next) {
-			char *p;
-			for (p = module; *p && *p != ':'; p++);
-			next = *p ? p + 1 : NULL;
-			*p = '\0';
-			if (module[0] &&
-			    fuse_push_module(f, module, args) == -1)
-				goto out_free_fs;
-		}
-	}
-
 	if (!f->conf.ac_attr_timeout_set)
 		f->conf.ac_attr_timeout = f->conf.attr_timeout;
 
@@ -4676,8 +4514,6 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 
 	f->se = fuse_lowlevel_new_common(args, &llop, sizeof(llop), f);
 	if (f->se == NULL) {
-		if (f->conf.help)
-			fuse_lib_help_modules();
 		goto out_free_fs;
 	}
 
@@ -4739,7 +4575,6 @@ out_free_fs:
 	   called on the filesystem without init being called first */
 	fs->op.destroy = NULL;
 	fuse_fs_destroy(f->fs);
-	free(f->conf.modules);
 out_free:
 	free(f);
 out_delete_context_key:
@@ -4800,7 +4635,6 @@ void fuse_destroy(struct fuse *f)
 	free(f->name_table.array);
 	pthread_mutex_destroy(&f->lock);
 	fuse_session_destroy(f->se);
-	free(f->conf.modules);
 	free(f);
 	fuse_delete_context_key();
 }
@@ -4816,18 +4650,6 @@ static struct fuse *fuse_new_common_compat25(int fd, struct fuse_args *args,
 		f = fuse_new_common(ch, args, op, op_size, NULL, compat);
 
 	return f;
-}
-
-/* called with fuse_context_lock held or during initialization (before
-   main() has been called) */
-void fuse_register_module(struct fuse_module *mod)
-{
-	mod->ctr = 0;
-	mod->so = fuse_current_so;
-	if (mod->so)
-		mod->so->ctr++;
-	mod->next = fuse_modules;
-	fuse_modules = mod;
 }
 
 #if !defined(__FreeBSD__) && !defined(__NetBSD__)
