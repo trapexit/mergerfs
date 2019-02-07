@@ -22,4 +22,8 @@ elif [ -e /sbin/apk ]; then
     apk add \
         abuild git gcc g++ make autoconf \
         automake libtool gettext-dev linux-headers
+elif [ -e /usr/sbin/pkg ]; then
+    pkg install \
+        git gmake gcc autoconf automake libtool \
+        gettext-tools
 fi
