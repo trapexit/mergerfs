@@ -23,49 +23,67 @@
 #include "errno.hpp"
 
 #include <fcntl.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-static
-loff_t
-copy_file_range_(int           fd_in_,
-                 loff_t       *off_in_,
-                 int           fd_out_,
-                 loff_t       *off_out_,
-                 size_t        len_,
-                 unsigned int  flags_)
+namespace l
 {
+  static
+  ssize_t
+  copy_file_range_(int           fd_in_,
+                   int64_t      *off_in_,
+                   int           fd_out_,
+                   int64_t      *off_out_,
+                   size_t        len_,
+                   unsigned int  flags_)
+  {
 #ifdef SYS_copy_file_range
-  return ::syscall(SYS_copy_file_range,
+    ssize_t rv;
+    loff_t  off_in;
+    loff_t  off_out;
+
+    off_in  = *off_in_;
+    off_out = *off_out_;
+    rv = ::syscall(SYS_copy_file_range,
                    fd_in_,
-                   off_in_,
+                   &off_in,
                    fd_out_,
-                   off_out_,
+                   &off_out,
                    len_,
                    flags_);
+
+    if(rv != -1)
+      {
+        *off_in_  = off_in;
+        *off_out_ = off_out;
+      }
+
+    return rv;
 #else
-  return (errno=EOPNOTSUPP,-1);
+    return (errno=EOPNOTSUPP,-1);
 #endif
+  }
 }
 
 namespace fs
 {
   ssize_t
   copy_file_range(const int           fd_in_,
-                  loff_t             *off_in_,
+                  int64_t            *off_in_,
                   const int           fd_out_,
-                  loff_t             *off_out_,
+                  int64_t            *off_out_,
                   const size_t        len_,
                   const unsigned int  flags_)
   {
-    return ::copy_file_range_(fd_in_,
-                              off_in_,
-                              fd_out_,
-                              off_out_,
-                              len_,
-                              flags_);
+    return l::copy_file_range_(fd_in_,
+                               off_in_,
+                               fd_out_,
+                               off_out_,
+                               len_,
+                               flags_);
   }
 
   ssize_t
@@ -74,8 +92,8 @@ namespace fs
                   const size_t        len_,
                   const unsigned int  flags_)
   {
-    loff_t off_in;
-    loff_t off_out;
+    int64_t off_in;
+    int64_t off_out;
 
     off_in  = 0;
     off_out = 0;

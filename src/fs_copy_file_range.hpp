@@ -18,17 +18,17 @@
 
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
 #include <sys/types.h>
-
-#include <cstddef>
 
 namespace fs
 {
   ssize_t
   copy_file_range(const int           fd_in_,
-                  loff_t             *off_in_,
+                  int64_t            *off_in_,
                   const int           fd_out_,
-                  loff_t             *off_out_,
+                  int64_t            *off_out_,
                   const size_t        len_,
                   const unsigned int  flags_);
 
