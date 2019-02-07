@@ -104,13 +104,13 @@ namespace fs
       int dst_fd;
       string dst_fullpath;
 
-      src_fd = fs::open(src_fullpath_,O_RDONLY|O_NOFOLLOW|O_LARGEFILE);
+      src_fd = fs::open(src_fullpath_,O_RDONLY|O_NOFOLLOW);
       if(src_fd == -1)
         return -1;
 
       dst_fullpath = src_fullpath_;
 
-      dst_fd = fs::mktemp(dst_fullpath,O_WRONLY|O_LARGEFILE);
+      dst_fd = fs::mktemp(dst_fullpath,O_WRONLY);
       if(dst_fd == -1)
         return cleanup_on_error(src_fd);
 
