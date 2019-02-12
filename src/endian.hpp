@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,16 +18,15 @@
 
 #pragma once
 
-#include <fuse.h>
-
-namespace FUSE
+namespace endian
 {
-  int
-  ioctl(const char     *fusepath_,
-        int             cmd_,
-        void           *arg_,
-        fuse_file_info *ffi_,
-        unsigned int    flags_,
-        void           *data_,
-        uint32_t       *out_bufsz_);
-}
+  static
+  inline
+  bool
+  is_big(void)
+  {
+    const union { uint32_t i; char c[4]; } u = { 0x01000000 };
+
+    return u.c[0];
+  }
+};
