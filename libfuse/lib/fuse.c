@@ -2202,7 +2202,8 @@ int fuse_fs_removexattr(struct fuse_fs *fs, const char *path, const char *name)
 }
 
 int fuse_fs_ioctl(struct fuse_fs *fs, const char *path, int cmd, void *arg,
-		  struct fuse_file_info *fi, unsigned int flags, void *data)
+		  struct fuse_file_info *fi, unsigned int flags,
+                  void *data, uint32_t *out_size)
 {
 	fuse_get_context()->private_data = fs->user_data;
 	if (fs->op.ioctl) {
@@ -2210,7 +2211,7 @@ int fuse_fs_ioctl(struct fuse_fs *fs, const char *path, int cmd, void *arg,
 			fprintf(stderr, "ioctl[%llu] 0x%x flags: 0x%x\n",
 				(unsigned long long) fi->fh, cmd, flags);
 
-		return fs->op.ioctl(path, cmd, arg, fi, flags, data);
+		return fs->op.ioctl(path, cmd, arg, fi, flags, data, out_size);
 	} else
 		return -ENOSYS;
 }
@@ -3896,13 +3897,14 @@ static void fuse_lib_bmap(fuse_req_t req, fuse_ino_t ino, size_t blocksize,
 static void fuse_lib_ioctl(fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
 			   struct fuse_file_info *llfi, unsigned int flags,
 			   const void *in_buf, size_t in_bufsz,
-			   size_t out_bufsz)
+			   size_t out_bufsz_)
 {
 	struct fuse *f = req_fuse_prepare(req);
 	struct fuse_intr_data d;
 	struct fuse_file_info fi;
 	char *path, *out_buf = NULL;
 	int err;
+        uint32_t out_bufsz = out_bufsz_;
 
 	err = -EPERM;
 	if (flags & FUSE_IOCTL_UNRESTRICTED)
@@ -3931,7 +3933,7 @@ static void fuse_lib_ioctl(fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
 	fuse_prepare_interrupt(f, req, &d);
 
 	err = fuse_fs_ioctl(f->fs, path, cmd, arg, &fi, flags,
-			    out_buf ?: (void *)in_buf);
+			    out_buf ?: (void *)in_buf, &out_bufsz);
 
 	fuse_finish_interrupt(f, req, &d);
 	free_path(f, ino, path);

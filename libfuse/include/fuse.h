@@ -505,8 +505,13 @@ struct fuse_operations {
 	 *
 	 * Introduced in version 2.8
 	 */
-	int (*ioctl) (const char *, int cmd, void *arg,
-		      struct fuse_file_info *, unsigned int flags, void *data);
+	int (*ioctl) (const char *fusepath,
+                      int cmd,
+                      void *arg,
+		      struct fuse_file_info *ffi,
+                      unsigned int flags,
+                      void *data,
+                      uint32_t *out_bufsz);
 
 	/**
 	 * Poll for IO readiness events
@@ -884,7 +889,8 @@ int fuse_fs_removexattr(struct fuse_fs *fs, const char *path,
 int fuse_fs_bmap(struct fuse_fs *fs, const char *path, size_t blocksize,
 		 uint64_t *idx);
 int fuse_fs_ioctl(struct fuse_fs *fs, const char *path, int cmd, void *arg,
-		  struct fuse_file_info *fi, unsigned int flags, void *data);
+		  struct fuse_file_info *fi, unsigned int flags,
+                  void *data, uint32_t *out_bufsz);
 int fuse_fs_poll(struct fuse_fs *fs, const char *path,
 		 struct fuse_file_info *fi, struct fuse_pollhandle *ph,
 		 unsigned *reventsp);
