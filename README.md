@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-01-24
+% 2019-02-17
 
 # NAME
 
@@ -971,6 +971,7 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 * email: trapexit@spawn.link
 * twitter: https://twitter.com/_trapexit
 * reddit: https://www.reddit.com/user/trapexit
+* discord: https://discord.gg/MpAr69V
 
 
 #### Support development
@@ -995,3 +996,4 @@ This software is free to use and released under a very liberal license. That sai
 * https://github.com/trapexit/scorch
 * https://github.com/trapexit/bbf
 * https://github.com/trapexit/backup-and-recovery-howtos
+* https://discord.gg/MpAr69V
