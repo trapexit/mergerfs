@@ -38,21 +38,9 @@ endif
 
 USE_XATTR = 1
 
-INTERNAL_FUSE = 1
-EXTERNAL_FUSE_MIN_REQ = 2.9.7
-
-ifeq ($(INTERNAL_FUSE),1)
 FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
-FUSE_LIBS   = libfuse/lib/.libs/libfuse.a
+FUSE_LIBS   = libfuse/obj/libfuse.a
 FUSE_TARGET = $(FUSE_LIBS)
-else
-FUSE_CFLAGS := $(shell $(PKGCONFIG) --cflags 'fuse >= $(EXTERNAL_FUSE_MIN_REQ)')
-FUSE_LIBS   := $(shell $(PKGCONFIG) --libs   'fuse >= $(EXTERNAL_FUSE_MIN_REQ)')
-FUSE_TARGET :=
-ifeq ($(FUSE_CFLAGS)$(FUSE_LIBS),)
-$(error "Use of external FUSE requested, but no libfuse >= $(EXTERNAL_FUSE_MIN_REQ) found.")
-endif
-endif
 
 ifeq ($(STATIC),1)
 STATIC_FLAG := -static
@@ -103,7 +91,6 @@ all: $(TARGET)
 help:
 	@echo "usage: make\n"
 	@echo "make USE_XATTR=0      - build program without xattrs functionality"
-	@echo "make INTERNAL_FUSE=0  - to build program with external (system) libfuse rather than the bundled one ('-o threads=' option will be unavailable)"
 	@echo "make STATIC=1         - build static binary"
 	@echo "make LTO=1            - build with link time optimization"
 
@@ -137,24 +124,14 @@ obj/obj-stamp:
 obj/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
-clean: rpm-clean libfuse_Makefile
+clean: rpm-clean
 	$(RM) -f src/version.hpp
 	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
-ifeq ($(INTERNAL_FUSE),1)
 	cd libfuse && $(MAKE) clean
-endif
 
-distclean: clean libfuse_Makefile
-ifeq ($(INTERNAL_FUSE),1)
-	cd libfuse && $(MAKE) distclean
-endif
-ifeq ($(GIT_REPO),1)
-	$(GIT) clean -fd
-endif
-
-superclean: distclean
+distclean: clean
 ifeq ($(GIT_REPO),1)
 	$(GIT) clean -xfd
 endif
@@ -236,19 +213,8 @@ install-build-pkgs:
 	tools/install-build-pkgs
 
 unexport CFLAGS
-.PHONY: libfuse_Makefile
-libfuse_Makefile:
-ifeq ($(INTERNAL_FUSE),1)
-ifeq ($(shell test -e libfuse/Makefile; echo $$?),1)
-	cd libfuse && \
-	$(MKDIR) -p m4 && \
-	autoreconf --force --install && \
-        ./configure --enable-lib --disable-util --disable-example
-endif
-endif
-
-libfuse/lib/.libs/libfuse.a: libfuse_Makefile
-	cd libfuse && $(MAKE)
+libfuse/obj/libfuse.a:
+	cd libfuse && $(MAKE) libfuse.a
 
 .PHONY: all clean install help version
 

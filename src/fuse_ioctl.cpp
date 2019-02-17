@@ -75,10 +75,10 @@ namespace l
 {
   static
   int
-  ioctl(const int  fd_,
-        const int  cmd_,
-        void      *data_,
-        uint32_t  *out_bufsz_)
+  ioctl(const int       fd_,
+        const uint32_t  cmd_,
+        void           *data_,
+        uint32_t       *out_bufsz_)
   {
     int rv;
 
@@ -94,9 +94,7 @@ namespace l
         break;
       }
 
-    rv = ((_IOC_DIR(cmd_) == _IOC_NONE) ?
-          fs::ioctl(fd_,cmd_) :
-          fs::ioctl(fd_,cmd_,data_));
+    rv = fs::ioctl(fd_,cmd_,data_);
 
     return ((rv == -1) ? -errno : rv);
   }
@@ -104,7 +102,7 @@ namespace l
   static
   int
   ioctl_file(fuse_file_info *ffi_,
-             const int       cmd_,
+             const uint32_t  cmd_,
              void           *data_,
              uint32_t       *out_bufsz_)
   {
@@ -124,7 +122,7 @@ namespace l
                  const Branches       &branches_,
                  const uint64_t        minfreespace_,
                  const char           *fusepath_,
-                 const int             cmd_,
+                 const uint32_t        cmd_,
                  void                 *data_,
                  uint32_t             *out_bufsz_)
   {
@@ -154,7 +152,7 @@ namespace l
   static
   int
   ioctl_dir(fuse_file_info *ffi_,
-            const int       cmd_,
+            const uint32_t  cmd_,
             void           *data_,
             uint32_t       *out_bufsz_)
   {
