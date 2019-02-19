@@ -1,0 +1,32 @@
+#!/bin/sh
+
+PWD=$(pwd)
+BASEPATH="${PWD}/${0%/*}"
+
+CC=${CC:-cc}
+OUTPUT="/dev/null"
+
+echo "#ifndef CONFIG_H_INCLUDED"
+echo "#define CONFIG_H_INCLUDED"
+echo
+
+IFS=
+for file in "${BASEPATH}/tests/"*.c
+do
+    binary="${file%.c}"
+    basename=$(basename ${binary})
+
+    ${CC} -o "${binary}" "${file}" 1>&2
+    if [ $? -eq 0 ]; then
+        STDOUT=$(${binary})
+        if [ "${STDOUT}" != "" ]; then
+            echo "#define ${basename} ${STDOUT}"
+        else
+            echo "#define ${basename}"
+        fi
+        rm -f "${binary}"
+    fi
+done
+
+echo
+echo "#endif"
