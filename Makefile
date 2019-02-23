@@ -190,11 +190,11 @@ else
 	cp ChangeLog debian/changelog
 endif
 
-signed-deb: debian-changelog
-	dpkg-buildpackage
+signed-deb: distclean debian-changelog
+	dpkg-buildpackage -nc
 
-deb: debian-changelog
-	dpkg-buildpackage -uc -us
+deb: distclean debian-changelog
+	dpkg-buildpackage -nc -uc -us
 
 rpm-clean:
 	$(RM) -rf rpmbuild
