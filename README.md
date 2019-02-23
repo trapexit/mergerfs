@@ -492,7 +492,7 @@ It's a difficult balance between memory usage, cache bloat & duplication, and pe
 
 #### entry & attribute caching
 
-Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `entry_timeout` and `negative_timeout` for the entry cache and `attr_timeout` for the attributes cache. `negative_timeout` refers to the timeout for negative responses to lookups (non-existant files).
+Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `cache.entry` and `cache.negative_entry` for the entry cache and `cache.attr` for the attributes cache. `cache.negative_entry` refers to the timeout for negative responses to lookups (non-existant files).
 
 
 #### policy caching
@@ -861,7 +861,7 @@ MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to pr
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (entry_timeout, attr_timeout, ac_attr_timeout, negative_timeout, auto_cache, kernel_cache).
+Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.entry, cache.attr, ac_attr_timeout, cache.negative_entry, auto_cache, kernel_cache).
 
 
 #### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
@@ -940,7 +940,7 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 * try adding (or removing) `auto_cache`
 * try adding (or removing) `kernel_cache`
 * try adding (or removing) `splice_move`, `splice_read`, and `splice_write`
-* try increasing cache timeouts `attr_timeout`, `entry_timeout`, `ac_attr_timeout`, `negative_timeout`
+* try increasing cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * try changing the number of worker threads
 * try disabling `security_capability` or `xattr`
 * test theoretical performance using `nullrw` or mounting a ram disk
