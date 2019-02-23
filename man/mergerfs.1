@@ -1041,11 +1041,11 @@ mergerfs which provide file attributes (mode, size, type, etc.).
 As with the page cache these should not be used if the underlying
 filesystems are being manipulated at the same time as it could lead to
 odd behavior or data corruption.
-The options for setting these are \f[C]entry_timeout\f[] and
-\f[C]negative_timeout\f[] for the entry cache and \f[C]attr_timeout\f[]
-for the attributes cache.
-\f[C]negative_timeout\f[] refers to the timeout for negative responses
-to lookups (non\-existant files).
+The options for setting these are \f[C]cache.entry\f[] and
+\f[C]cache.negative_entry\f[] for the entry cache and
+\f[C]cache.attr\f[] for the attributes cache.
+\f[C]cache.negative_entry\f[] refers to the timeout for negative
+responses to lookups (non\-existant files).
 .SS policy caching
 .PP
 Policies are run every time a function is called.
@@ -1716,8 +1716,8 @@ here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html
 .PP
 Yes, however its not recommended to use the same file from within the
 pool and from without at the same time.
-Especially if using caching of any kind (entry_timeout, attr_timeout,
-ac_attr_timeout, negative_timeout, auto_cache, kernel_cache).
+Especially if using caching of any kind (cache.entry, cache.attr,
+ac_attr_timeout, cache.negative_entry, auto_cache, kernel_cache).
 .SS Why do I get an "out of space" / "no space left on device" / ENOSPC
 error even though there appears to be lots of space available?
 .PP
@@ -1877,9 +1877,8 @@ try adding (or removing) \f[C]kernel_cache\f[]
 try adding (or removing) \f[C]splice_move\f[], \f[C]splice_read\f[], and
 \f[C]splice_write\f[]
 .IP \[bu] 2
-try increasing cache timeouts \f[C]attr_timeout\f[],
-\f[C]entry_timeout\f[], \f[C]ac_attr_timeout\f[],
-\f[C]negative_timeout\f[]
+try increasing cache timeouts \f[C]cache.attr\f[], \f[C]cache.entry\f[],
+\f[C]cache.negative_entry\f[]
 .IP \[bu] 2
 try changing the number of worker threads
 .IP \[bu] 2
