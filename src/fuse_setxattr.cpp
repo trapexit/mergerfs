@@ -121,6 +121,24 @@ namespace l
 
   static
   int
+  setxattr_double(const string &attrval_,
+                  const int     flags_,
+                  double       *d_)
+  {
+    int rv;
+
+    if((flags_ & XATTR_CREATE) == XATTR_CREATE)
+      return -EEXIST;
+
+    rv = num::to_double(attrval_,d_);
+    if(rv == -1)
+      return -EINVAL;
+
+    return 0;
+  }
+
+  static
+  int
   setxattr_time_t(const string &attrval,
                   const int     flags,
                   time_t       &time)
@@ -278,6 +296,51 @@ namespace l
 
   static
   int
+  setxattr_controlfile_cache_attr(const string &attrval_,
+                                  const int     flags_)
+  {
+    int rv;
+    double d;
+
+    rv = l::setxattr_double(attrval_,flags_,&d);
+    if(rv >= 0)
+      fuse_config_set_attr_timeout(fuse_get_context()->fuse,d);
+
+    return rv;
+  }
+
+  static
+  int
+  setxattr_controlfile_cache_entry(const string &attrval_,
+                                   const int     flags_)
+  {
+    int rv;
+    double d;
+
+    rv = l::setxattr_double(attrval_,flags_,&d);
+    if(rv >= 0)
+      fuse_config_set_entry_timeout(fuse_get_context()->fuse,d);
+
+    return rv;
+  }
+
+  static
+  int
+  setxattr_controlfile_cache_negative_entry(const string &attrval_,
+                                            const int     flags_)
+  {
+    int rv;
+    double d;
+
+    rv = l::setxattr_double(attrval_,flags_,&d);
+    if(rv >= 0)
+      fuse_config_set_negative_entry_timeout(fuse_get_context()->fuse,d);
+
+    return rv;
+  }
+
+  static
+  int
   setxattr_controlfile(Config       &config,
                        const string &attrname,
                        const string &attrval,
@@ -367,6 +430,12 @@ namespace l
                                       config.open_cache.timeout);
         else if((attr[2] == "cache") && (attr[3] == "statfs"))
           return l::setxattr_statfs_timeout(attrval,flags);
+        else if((attr[2] == "cache") && (attr[3] == "attr"))
+          return l::setxattr_controlfile_cache_attr(attrval,flags);
+        else if((attr[2] == "cache") && (attr[3] == "entry"))
+          return l::setxattr_controlfile_cache_entry(attrval,flags);
+        else if((attr[2] == "cache") && (attr[3] == "negative_entry"))
+          return l::setxattr_controlfile_cache_negative_entry(attrval,flags);
         break;
 
       default:

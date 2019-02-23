@@ -4723,7 +4723,47 @@ struct fuse *fuse_new_compat25(int fd, struct fuse_args *args,
 
 FUSE_SYMVER(".symver fuse_new_compat25,fuse_new@FUSE_2.5");
 
-int fuse_config_num_threads(const struct fuse *f)
+int
+fuse_config_num_threads(const struct fuse *fuse_)
 {
-  return f->conf.threads;
+  return fuse_->conf.threads;
+}
+
+void
+fuse_config_set_entry_timeout(struct fuse  *fuse_,
+                              const double  entry_timeout_)
+{
+  fuse_->conf.entry_timeout = entry_timeout_;
+}
+
+double
+fuse_config_get_entry_timeout(const struct fuse *fuse_)
+{
+  return fuse_->conf.entry_timeout;
+}
+
+void
+fuse_config_set_negative_entry_timeout(struct fuse *fuse_,
+                                       const double entry_timeout_)
+{
+  fuse_->conf.negative_timeout = entry_timeout_;
+}
+
+double
+fuse_config_get_negative_entry_timeout(const struct fuse *fuse_)
+{
+  return fuse_->conf.negative_timeout;
+}
+
+void
+fuse_config_set_attr_timeout(struct fuse  *fuse_,
+                             const double  attr_timeout_)
+{
+  fuse_->conf.attr_timeout = attr_timeout_;
+}
+
+double
+fuse_config_get_attr_timeout(const struct fuse *fuse_)
+{
+  return fuse_->conf.attr_timeout;
 }

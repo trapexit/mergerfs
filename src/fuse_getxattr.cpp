@@ -132,6 +132,18 @@ namespace l
 
   static
   void
+  getxattr_controlfile_double(const double  d_,
+                              string       &attrvalue_)
+  {
+    std::ostringstream os;
+
+    os << d_;
+
+    attrvalue_ = os.str();
+  }
+
+  static
+  void
   getxattr_controlfile_time_t(const time_t  time,
                               string       &attrvalue)
   {
@@ -236,7 +248,7 @@ namespace l
 
   static
   void
-  getxattr_pid(string &attrvalue)
+  getxattr_controlfile_pid(string &attrvalue)
   {
     int pid;
     char buf[32];
@@ -245,6 +257,39 @@ namespace l
     snprintf(buf,sizeof(buf),"%d",pid);
 
     attrvalue = buf;
+  }
+
+  static
+  void
+  getxattr_controlfile_cache_attr(string &attrvalue)
+  {
+    double d;
+
+    d = fuse_config_get_attr_timeout(fuse_get_context()->fuse);
+
+    l::getxattr_controlfile_double(d,attrvalue);
+  }
+
+  static
+  void
+  getxattr_controlfile_cache_entry(string &attrvalue)
+  {
+    double d;
+
+    d = fuse_config_get_entry_timeout(fuse_get_context()->fuse);
+
+    l::getxattr_controlfile_double(d,attrvalue);
+  }
+
+  static
+  void
+  getxattr_controlfile_cache_negative_entry(string &attrvalue)
+  {
+    double d;
+
+    d = fuse_config_get_negative_entry_timeout(fuse_get_context()->fuse);
+
+    l::getxattr_controlfile_double(d,attrvalue);
   }
 
   static
@@ -298,7 +343,7 @@ namespace l
         else if(attr[2] == "version")
           l::getxattr_controlfile_version(attrvalue);
         else if(attr[2] == "pid")
-          l::getxattr_pid(attrvalue);
+          l::getxattr_controlfile_pid(attrvalue);
         else if(attr[2] == "direct_io")
           l::getxattr_controlfile_bool(config.direct_io,attrvalue);
         break;
@@ -312,6 +357,12 @@ namespace l
           l::getxattr_controlfile_uint64_t(config.open_cache.timeout,attrvalue);
         else if((attr[2] == "cache") && (attr[3] == "statfs"))
           l::getxattr_controlfile_uint64_t(fs::statvfs_cache_timeout(),attrvalue);
+        else if((attr[2] == "cache") && (attr[3] == "attr"))
+          l::getxattr_controlfile_cache_attr(attrvalue);
+        else if((attr[2] == "cache") && (attr[3] == "entry"))
+          l::getxattr_controlfile_cache_entry(attrvalue);
+        else if((attr[2] == "cache") && (attr[3] == "negative_entry"))
+          l::getxattr_controlfile_cache_negative_entry(attrvalue);
         break;
       }
 

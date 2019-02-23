@@ -48,17 +48,17 @@ enum
 
 static
 void
-set_option(fuse_args         &args,
+set_option(fuse_args         *args,
            const std::string &option_)
 {
 
-  fuse_opt_add_arg(&args,"-o");
-  fuse_opt_add_arg(&args,option_.c_str());
+  fuse_opt_add_arg(args,"-o");
+  fuse_opt_add_arg(args,option_.c_str());
 }
 
 static
 void
-set_kv_option(fuse_args         &args,
+set_kv_option(fuse_args         *args,
               const std::string &key,
               const std::string &value)
 {
@@ -71,7 +71,7 @@ set_kv_option(fuse_args         &args,
 
 static
 void
-set_fsname(fuse_args      &args,
+set_fsname(fuse_args      *args,
            const Branches &branches_)
 {
   vector<string> branches;
@@ -90,14 +90,14 @@ set_fsname(fuse_args      &args,
 
 static
 void
-set_subtype(fuse_args &args)
+set_subtype(fuse_args *args)
 {
   set_kv_option(args,"subtype","mergerfs");
 }
 
 static
 void
-set_default_options(fuse_args &args)
+set_default_options(fuse_args *args)
 {
   set_option(args,"atomic_o_trunc");
   set_option(args,"big_writes");
@@ -216,12 +216,19 @@ static
 int
 parse_and_process_cache(Config       &config_,
                         const string &func_,
-                        const string &value_)
+                        const string &value_,
+                        fuse_args    *outargs)
 {
   if(func_ == "open")
     return parse_and_process(value_,config_.open_cache.timeout);
   else if(func_ == "statfs")
     return parse_and_process_statfs_cache(value_);
+  else if(func_ == "entry")
+    return (set_kv_option(outargs,"entry_timeout",value_),0);
+  else if(func_ == "negative_entry")
+    return (set_kv_option(outargs,"negative_timeout",value_),0);
+  else if(func_ == "attr")
+    return (set_kv_option(outargs,"attr_timeout",value_),0);
 
   return 1;
 }
@@ -229,8 +236,7 @@ parse_and_process_cache(Config       &config_,
 static
 int
 parse_and_process_arg(Config            &config,
-                      const std::string &arg,
-                      fuse_args         *outargs)
+                      const std::string &arg)
 {
   if(arg == "defaults")
     return 0;
@@ -244,7 +250,8 @@ static
 int
 parse_and_process_kv_arg(Config            &config,
                          const std::string &key,
-                         const std::string &value)
+                         const std::string &value,
+                         fuse_args         *outargs)
 {
   int rv;
   std::vector<std::string> keypart;
@@ -258,7 +265,7 @@ parse_and_process_kv_arg(Config            &config,
       else if(keypart[0] == "category")
         rv = config.set_category_policy(keypart[1],value);
       else if(keypart[0] == "cache")
-        rv = parse_and_process_cache(config,keypart[1],value);
+        rv = parse_and_process_cache(config,keypart[1],value,outargs);
     }
   else
     {
@@ -307,11 +314,11 @@ process_opt(Config            &config,
   switch(argvalue.size())
     {
     case 1:
-      rv = parse_and_process_arg(config,argvalue[0],outargs);
+      rv = parse_and_process_arg(config,argvalue[0]);
       break;
 
     case 2:
-      rv = parse_and_process_kv_arg(config,argvalue[0],argvalue[1]);
+      rv = parse_and_process_kv_arg(config,argvalue[0],argvalue[1],outargs);
       break;
 
     default:
@@ -362,6 +369,13 @@ usage(void)
     "                           default = 0 (disabled)\n"
     "    -o cache.statfs=<int>  'statfs' cache timeout in seconds. Used by\n"
     "                           policies. default = 0 (disabled)\n"
+    "    -o cache.attr=<int>    file attribute cache timeout in seconds.\n"
+    "                           default = 1\n"
+    "    -o cache.entry=<int>   file name lookup cache timeout in seconds.\n"
+    "                           default = 1\n"
+    "    -o cache.negative_entry=<int>\n"
+    "                           negative file name lookup cache timeout in\n"
+    "                           seconds. default = 0\n"
     "    -o direct_io           Bypass page caching, may increase write\n"
     "                           speeds at the cost of reads. Please read docs\n"
     "                           for more details as there are tradeoffs.\n"
@@ -456,8 +470,8 @@ option_processor(void       *data,
 namespace options
 {
   void
-  parse(fuse_args &args,
-        Config    &config)
+  parse(fuse_args *args,
+        Config    *config)
   {
     const struct fuse_opt opts[] =
       {
@@ -469,13 +483,13 @@ namespace options
         {NULL,-1U,0}
       };
 
-    fuse_opt_parse(&args,
-                   &config,
+    fuse_opt_parse(args,
+                   config,
                    opts,
                    ::option_processor);
 
     set_default_options(args);
-    set_fsname(args,config.branches);
+    set_fsname(args,config->branches);
     set_subtype(args);
   }
 }
