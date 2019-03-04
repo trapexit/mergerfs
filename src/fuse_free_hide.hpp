@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,30 +18,10 @@
 
 #pragma once
 
-#include <string>
+#include <stdint.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
-
-namespace fs
+namespace FUSE
 {
-  static
-  inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  times[2],
-        const int              flags)
-  {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
-  }
-
-  static
-  inline
-  int
-  futimens(const int             fd_,
-           const struct timespec ts_[2])
-  {
-    return ::futimens(fd_,ts_);
-  }
+  free_hide(const uint64_t fh_);
 }

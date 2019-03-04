@@ -69,25 +69,6 @@ namespace fs
   static
   inline
   int
-  fchown(const int   fd_,
-         const uid_t uid_,
-         const gid_t gid_)
-  {
-    return ::fchown(fd_,uid_,gid_);
-  }
-
-  static
-  inline
-  int
-  fchown(const int          fd_,
-         const struct stat &st_)
-  {
-    return fs::fchown(fd_,st_.st_uid,st_.st_gid);
-  }
-
-  static
-  inline
-  int
   lchown_check_on_error(const std::string &path_,
                         const struct stat &st_)
   {
@@ -101,33 +82,6 @@ namespace fs
 
         error = errno;
         rv = fs::lstat(path_,&tmpst);
-        if(rv == -1)
-          return -1;
-
-        if((st_.st_uid != tmpst.st_uid) ||
-           (st_.st_gid != tmpst.st_gid))
-          return (errno=error,-1);
-      }
-
-    return 0;
-  }
-
-  static
-  inline
-  int
-  fchown_check_on_error(const int          fd_,
-                        const struct stat &st_)
-  {
-    int rv;
-
-    rv = fs::fchown(fd_,st_);
-    if(rv == -1)
-      {
-        int error;
-        struct stat tmpst;
-
-        error = errno;
-        rv = fs::fstat(fd_,&tmpst);
         if(rv == -1)
           return -1;
 

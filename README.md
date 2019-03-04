@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-02-22
+% 2019-03-21
 
 # NAME
 
@@ -68,7 +68,6 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
-* **hard_remove**: force libfuse to immedately remove files when unlinked. This will keep the `.fuse_hidden` files from showing up but if software uses an opened but unlinked file in certain ways it could result in errors.
 * **dropcacheonclose=true|false**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
 * **symlinkify=true|false**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
 * **symlinkify_timeout=value**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
@@ -172,7 +171,7 @@ Runtime extended attribute support can be managed via the `xattr` option. By def
 
 The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates what file or directory is chosen when performing that behavior. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
 
-Some functions, listed in the category `N/A` below, can not be assigned the normal policies. All functions which work on file handles use the handle which was acquired by `open` or `create`. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options.
+Some functions, listed in the category `N/A` below, can not be assigned the normal policies. All functions which work on file handles use the handle which was acquired by `open` or `create`. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options. That said many times the current FUSE kernel driver will not always provide the file handle when a client calls `fgetattr`, `fchown`, `fchmod`, `futimens`, `ftruncate`, etc. This means it will call the regular, path based, versions.
 
 When using policies which are based on a branch's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
 
@@ -182,8 +181,8 @@ When using policies which are based on a branch's available space the base path 
 |----------|-------------------------------------------------------------------------------------|
 | action   | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
 | create   | create, mkdir, mknod, symlink                                                       |
-| search   | access, getattr, getxattr, ioctl, listxattr, open, readlink                         |
-| N/A      | fallocate, fgetattr, fsync, ftruncate, ioctl, read, readdir, release, statfs, write |
+| search   | access, getattr, getxattr, ioctl (directories), listxattr, open, readlink                         |
+| N/A      | fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl (files), read, readdir, release, statfs, write |
 
 In cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will be used.
 
@@ -237,6 +236,24 @@ If all branches are filtered an error will be returned. Typically **EROFS** or *
 | action   | epall  |
 | create   | epmfs  |
 | search   | ff     |
+
+
+#### ioctl
+
+When `ioctl` is used with an open file then it will use the file handle which was created at the original `open` call. However, when using `ioctl` with a directory mergerfs will use the `open` policy to find the directory to act on.
+
+
+#### unlink
+
+In FUSE there is an opaque "file handle" which is created by `open`, `create`, or `opendir`, passed to the kernel, and then is passed back to the FUSE userland application by the kernel. Unfortunately, the FUSE kernel driver does not always send the file handle when it theoretically could/should. This complicates certain behaviors / workflows particularly in the high level API. As a result mergerfs is currently doing a few hacky things.
+
+libfuse2 and libfuse3, when using the high level API, will rename names to `.fuse_hiddenXXXXXX` if the file is open when unlinked or renamed over. It does this so the file is still available when a request referencing the now missing file is made. This file however keeps a `rmdir` from succeeding and can be picked up by software reading directories.
+
+The change mergerfs has done is that if a file is open when an unlink or rename happens it will open the file and keep it open till closed by all those who opened it prior. When a request comes in referencing that file and it doesn't include a file handle it will instead use the file handle created at unlink/rename time.
+
+This won't result in technically proper behavior but close enough for many usecases.
+
+The plan is to rewrite mergerfs to use the low level API so these invasive libfuse changes are no longer necessary.
 
 
 #### rename & link ####
@@ -765,11 +782,11 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 
 #### rm: fts_read failed: No such file or directory
 
+NOTE: This is only relevant to mergerfs versions at or below v2.25.x and should not occur in more recent versions. See the notes on `unlink`.
+
 Not *really* a bug. The FUSE library will move files when asked to delete them as a way to deal with certain edge cases and then later delete that file when its clear the file is no longer needed. This however can lead to two issues. One is that these hidden files are noticed by `rm -rf` or `find` when scanning directories and they may try to remove them and they might have disappeared already. There is nothing *wrong* about this happening but it can be annoying. The second issue is that a directory might not be able to removed on account of the hidden file being still there.
 
-Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately. That has a side effect however. Files which are unlinked and then they are still used (in certain forms) will result in an error.
-
-A fix is in the works for this.
+Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately. That has a side effect however. Files which are unlinked and then they are still used (in certain forms) will result in an error (ENOENT).
 
 
 # FAQ
@@ -821,7 +838,15 @@ This can be especially apparent when filling an empty pool from an external sour
 
 #### Why was libfuse embedded into mergerfs?
 
-A significant number of users use mergerfs on distros with old versions of libfuse which have serious bugs. Requiring updated versions of libfuse on those distros isn't pratical (no package offered, user inexperience, etc.). The only practical way to provide a stable runtime on those systems was to "vendor" the library into the project.
+1. A significant number of users use mergerfs on distros with old versions of libfuse which have serious bugs. Requiring updated versions of libfuse on those distros isn't pratical (no package offered, user inexperience, etc.). The only practical way to provide a stable runtime on those systems was to "vendor" / embed the library into the project.
+2. mergerfs was written to use the high level API. There are a number of limitations in the HLAPI that make certain features difficult or impossible to implement. While some of these features could be patched into newer versions of libfuse without breaking the public API some of them would require hacky code to provide backwards compatibility. While it may still be worth working with upstream to address these issues in future versions, since the library needs to be vendored for stability and compatibility reasons it is preferable / easier to modify the API. Longer term the plan is to rewrite mergerfs to use the low level API.
+
+
+#### Why did support for system libfuse get removed?
+
+See above first.
+
+If/when mergerfs is rewritten to use the low-level API then it'll be plausible to support system libfuse but till then its simply too much work to manage the differences across the versions.
 
 
 #### Why use mergerfs over mhddfs?
@@ -920,7 +945,9 @@ You could also set `xattr` to `noattr` or `nosys` to short circuit or stop all x
 
 #### What are these .fuse_hidden files?
 
-When not using `hard_remove` libfuse will create .fuse_hiddenXXXXXXXX files when an opened file is unlinked. This is to simplify "use after unlink" usecases. There is a possibility these files end up being picked up by software scanning directories and not ignoring hidden files. This is rarely a problem but a solution is in the works.
+NOTE: mergerfs >= 2.26.0 will not have these temporary files. See the notes on `unlink`.
+
+When not using **hard_remove** libfuse will create .fuse_hiddenXXXXXXXX files when an opened file is unlinked. This is to simplify "use after unlink" usecases. There is a possibility these files end up being picked up by software scanning directories and not ignoring hidden files. This is rarely a problem but a solution is in the works.
 
 The files are cleaned up once the file is finally closed. Only if mergerfs crashes or is killed would they be left around. They are safe to remove as they are already unlinked files.
 

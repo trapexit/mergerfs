@@ -1,7 +1,5 @@
 /*
-  ISC License
-
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,32 +14,39 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "errno.hpp"
+#include "fileinfo.hpp"
+#include "fs_base_fchmod.hpp"
 
-#include <string>
+#include <fuse.h>
 
-#include <fcntl.h>
 #include <sys/stat.h>
 
-namespace fs
+namespace l
 {
   static
-  inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  times[2],
-        const int              flags)
+  fchmod(const int    fd_,
+         const mode_t mode_)
   {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
-  }
+    int rv;
 
-  static
-  inline
+    rv = fs::fchmod(fd_,mode_);
+    if(rv == -1)
+      return -errno;
+
+    return rv;
+  }
+}
+
+namespace FUSE
+{
   int
-  futimens(const int             fd_,
-           const struct timespec ts_[2])
+  fchmod(const struct fuse_file_info *ffi_,
+         const mode_t                 mode_)
   {
-    return ::futimens(fd_,ts_);
+    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    return l::fchmod(fi->fd,mode_);
   }
 }

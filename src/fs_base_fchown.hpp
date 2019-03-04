@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,52 +18,57 @@
 
 #pragma once
 
-#ifdef __linux__
-# include "fs_base_utime_utimensat.hpp"
-#elif __FreeBSD__ >= 11
-# include "fs_base_utime_utimensat.hpp"
-#else
-# include "fs_base_utime_generic.hpp"
-#endif
-
 #include "fs_base_stat.hpp"
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 namespace fs
 {
   static
   inline
   int
-  utime(const std::string &path_,
-        const struct stat &st_)
+  fchown(const int   fd_,
+         const uid_t uid_,
+         const gid_t gid_)
   {
-    struct timespec times[2];
-
-    times[0] = *fs::stat_atime(&st_);
-    times[1] = *fs::stat_mtime(&st_);
-
-    return fs::utime(AT_FDCWD,path_,times,0);
+    return ::fchown(fd_,uid_,gid_);
   }
 
   static
   inline
   int
-  futime(const int          fd_,
+  fchown(const int          fd_,
          const struct stat &st_)
   {
-    struct timespec ts[2];
-
-    ts[0] = *fs::stat_atime(&st_);
-    ts[1] = *fs::stat_mtime(&st_);
-
-    return fs::futimens(fd_,ts);
+    return fs::fchown(fd_,st_.st_uid,st_.st_gid);
   }
 
   static
   inline
   int
-  lutime(const std::string     &path_,
-         const struct timespec  times_[2])
+  fchown_check_on_error(const int          fd_,
+                        const struct stat &st_)
   {
-    return fs::utime(AT_FDCWD,path_,times_,AT_SYMLINK_NOFOLLOW);
+    int rv;
+
+    rv = fs::fchown(fd_,st_);
+    if(rv == -1)
+      {
+        int error;
+        struct stat tmpst;
+
+        error = errno;
+        rv = fs::fstat(fd_,&tmpst);
+        if(rv == -1)
+          return -1;
+
+        if((st_.st_uid != tmpst.st_uid) ||
+           (st_.st_gid != tmpst.st_gid))
+          return (errno=error,-1);
+      }
+
+    return 0;
   }
 }

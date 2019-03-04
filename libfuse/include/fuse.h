@@ -123,8 +123,17 @@ struct fuse_operations {
 	 * */
 	int (*mkdir) (const char *, mode_t);
 
+       /** Hide files unlinked / renamed over
+        *
+        * Allows storing of a file handle when a file is unlinked
+        * while open. Helps manage the fact the kernel usually does
+        * not send fh with getattr requests.
+        */
+        int (*prepare_hide)(const char *name_, uint64_t *fh_, int type_);
+        int (*free_hide)(const uint64_t fh_);
+
 	/** Remove a file */
-	int (*unlink) (const char *);
+        int (*unlink) (const char *);
 
 	/** Remove a directory */
 	int (*rmdir) (const char *);
@@ -140,9 +149,11 @@ struct fuse_operations {
 
 	/** Change the permission bits of a file */
 	int (*chmod) (const char *, mode_t);
+        int (*fchmod)(const struct fuse_file_info *, const mode_t);
 
 	/** Change the owner and group of a file */
 	int (*chown) (const char *, uid_t, gid_t);
+        int (*fchown)(const struct fuse_file_info *, const uid_t, const gid_t);
 
 	/** Change the size of a file */
 	int (*truncate) (const char *, off_t);
@@ -441,7 +452,8 @@ struct fuse_operations {
 	 *
 	 * Introduced in version 2.6
 	 */
-	int (*utimens) (const char *, const struct timespec tv[2]);
+	int (*utimens)(const char *, const struct timespec tv[2]);
+        int (*futimens)(const struct fuse_file_info *ffi_, const struct timespec tv_[2]);
 
 	/**
 	 * Map block index within file to block index within device
