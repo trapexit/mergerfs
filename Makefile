@@ -42,29 +42,36 @@ FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
 FUSE_LIBS   = libfuse/obj/libfuse.a
 FUSE_TARGET = $(FUSE_LIBS)
 
-ifeq ($(STATIC),1)
-STATIC_FLAG := -static
+ifeq ($(DEBUG),1)
+DEBUG_FLAGS := -g
 else
-STATIC_FLAG :=
+DEBUG_FLAGS :=
+endif
+
+ifeq ($(STATIC),1)
+STATIC_FLAGS := -static
+else
+STATIC_FLAGS :=
 endif
 
 ifeq ($(LTO),1)
-LTO_FLAG := -flto
+LTO_FLAGS := -flto
 else
-LTO_FLAG :=
+LTO_FLAGS :=
 endif
 
 UGID_USE_RWLOCK = 0
 
-OPTS 	    = -O2 -g
+OPTS 	    = -O2
 SRC	    = $(wildcard src/*.cpp)
 OBJ         = $(SRC:src/%.cpp=obj/%.o)
 DEPS        = $(OBJ:obj/%.o=obj/%.d)
 TARGET      = mergerfs
 MANPAGE     = $(TARGET).1
 CXXFLAGS    = $(OPTS) \
-              $(STATIC_FLAG) \
-              $(LTO_FLAG) \
+              $(DEBUG_FLAGS) \
+              $(STATIC_FLAGS) \
+              $(LTO_FLAGS) \
               -Wall \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
@@ -95,7 +102,7 @@ help:
 	@echo "make LTO=1            - build with link time optimization"
 
 $(TARGET): version obj/obj-stamp $(FUSE_TARGET) $(OBJ)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -ldl -pthread -lrt
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -pthread -lrt
 
 mount.mergerfs: $(TARGET)
 	$(LN) -fs "$<" "$@"

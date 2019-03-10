@@ -1,6 +1,12 @@
 VERSION = "2.9.7-mergerfs_2.26.0"
 OPT = -O2
 
+ifeq ($(DEBUG),1)
+DEBUG_FLAGS := -g
+else
+DEBUG_FLAGS :=
+endif
+
 DESTDIR = "/"
 BINDIR = "/bin"
 SBINDIR = "/sbin"
@@ -22,7 +28,7 @@ SRC   = \
 OBJ  = $(SRC:lib/%.c=obj/%.o)
 DEPS = $(OBJ:obj/%.o=obj/%.d)
 CFLAGS = $(OPT) \
-	 -g \
+	 $(DEBUG_FLAGS) \
 	 -Wall \
 	 -pipe \
 	 '-D_FILE_OFFSET_BITS=64' \
@@ -33,18 +39,24 @@ CFLAGS = $(OPT) \
 	 -Iinclude \
 	 -MMD
 LDFLAGS = \
-	-ldl \
 	-lrt \
 	-pthread
 
-all: obj/libfuse.a mergerfs-mount mount.mergerfs
+all: obj/libfuse.a
 
 libfuse.a: obj/libfuse.a
 
 include/config.h:
 	ecfd/build | tee include/config.h
 
-obj/libfuse.a: obj/obj-stamp include/config.h $(OBJ)
+obj/obj-stamp:
+	mkdir -p obj
+	touch $@
+
+obj/libfuse.a:
+	$(MAKE) obj/obj-stamp
+	$(MAKE) include/config.h
+	$(MAKE) $(OBJ)
 	ar rcs obj/libfuse.a $(OBJ)
 
 mergerfs-mount: include/config.h util/fusermount.c lib/mount_util.c
@@ -52,10 +64,6 @@ mergerfs-mount: include/config.h util/fusermount.c lib/mount_util.c
 
 mount.mergerfs: obj/libfuse.a util/mount.fuse.c
 	$(CC) $(CFLAGS) -o mount.mergerfs util/mount.fuse.c obj/libfuse.a $(LDFLAGS)
-
-obj/obj-stamp:
-	mkdir -p obj
-	touch $@
 
 obj/%.o: lib/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
