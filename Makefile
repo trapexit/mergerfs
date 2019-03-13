@@ -200,7 +200,9 @@ endif
 signed-deb: distclean debian-changelog
 	dpkg-buildpackage -nc
 
-deb: distclean debian-changelog
+deb:
+	$(MAKE) distclean
+	$(MAKE) debian-changelog
 	dpkg-buildpackage -nc -uc -us
 
 rpm-clean:
