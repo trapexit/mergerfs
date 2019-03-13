@@ -180,7 +180,7 @@ endif
 
 man: $(MANPAGE)
 
-tarball: superclean man changelog authors version
+tarball: man changelog authors version
 	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(eval FILENAME := $(TARGET)-$(VERSION))
