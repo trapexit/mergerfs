@@ -3896,8 +3896,8 @@ static void fuse_lib_bmap(fuse_req_t req, fuse_ino_t ino, size_t blocksize,
 
 static void fuse_lib_ioctl(fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
 			   struct fuse_file_info *llfi, unsigned int flags,
-			   const void *in_buf, size_t in_bufsz,
-			   size_t out_bufsz_)
+			   const void *in_buf, uint32_t in_bufsz,
+			   uint32_t out_bufsz_)
 {
 	struct fuse *f = req_fuse_prepare(req);
 	struct fuse_intr_data d;

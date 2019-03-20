@@ -916,23 +916,28 @@ enomem:
 	goto out;
 }
 
-int fuse_reply_ioctl(fuse_req_t req, int result, const void *buf, size_t size)
+int fuse_reply_ioctl(fuse_req_t req, int result, const void *buf, uint32_t size)
 {
-	struct fuse_ioctl_out arg;
+	int count;
 	struct iovec iov[3];
-	size_t count = 1;
+        struct fuse_ioctl_out arg;
 
-	memset(&arg, 0, sizeof(arg));
-	arg.result = result;
+	arg.result   = result;
+        arg.flags    = 0;
+        arg.in_iovs  = 0;
+        arg.out_iovs = 0;
+
+        count = 1;
 	iov[count].iov_base = &arg;
-	iov[count].iov_len = sizeof(arg);
+	iov[count].iov_len  = sizeof(arg);
 	count++;
 
-	if (size) {
-		iov[count].iov_base = (char *) buf;
-		iov[count].iov_len = size;
-		count++;
-	}
+	if(size)
+          {
+            iov[count].iov_base = (char*)buf;
+            iov[count].iov_len  = size;
+            count++;
+          }
 
 	return send_reply_iov(req, 0, iov, count);
 }

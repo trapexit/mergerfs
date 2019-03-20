@@ -90,7 +90,8 @@ namespace l
       case FS_IOC_SETVERSION:
         if(endian::is_big() && (sizeof(long) != sizeof(int)))
           return -ENOTTY;
-        *out_bufsz_ = 4;
+        if((data_ != NULL) && (*out_bufsz_ > 4))
+          *out_bufsz_ = 4;
         break;
       }
 

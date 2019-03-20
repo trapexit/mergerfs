@@ -888,7 +888,7 @@ struct fuse_lowlevel_ops {
 	 */
 	void (*ioctl) (fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
 		       struct fuse_file_info *fi, unsigned flags,
-		       const void *in_buf, size_t in_bufsz, size_t out_bufsz);
+		       const void *in_buf, uint32_t in_bufsz, uint32_t out_bufsz);
 
 	/**
 	 * Poll for IO readiness
@@ -1286,7 +1286,7 @@ int fuse_reply_ioctl_retry(fuse_req_t req,
  * @param buf buffer containing output data
  * @param size length of output data
  */
-int fuse_reply_ioctl(fuse_req_t req, int result, const void *buf, size_t size);
+int fuse_reply_ioctl(fuse_req_t req, int result, const void *buf, uint32_t size);
 
 /**
  * Reply to finish ioctl with iov buffer
