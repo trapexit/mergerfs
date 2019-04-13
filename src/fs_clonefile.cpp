@@ -37,22 +37,23 @@ copydata(const int    src_fd_,
 {
   int rv;
 
+  rv = fs::ftruncate(dst_fd_,count_);
+  if(rv == -1)
+    return -1;
+
+  rv = fs::ficlone(src_fd_,dst_fd_);
+  if(rv != -1)
+    return rv;
+
   fs::fadvise_willneed(src_fd_,0,count_);
   fs::fadvise_sequential(src_fd_,0,count_);
 
-  fs::fallocate(dst_fd_,0,0,count_);
-  fs::ftruncate(dst_fd_,count_);
-
-  rv = fs::ficlone(src_fd_,dst_fd_);
-  if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
-    return rv;
-
   rv = fs::copy_file_range(src_fd_,dst_fd_,count_);
-  if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
+  if(rv != -1)
     return rv;
 
   rv = fs::sendfile(src_fd_,dst_fd_,count_);
-  if((rv != -1) || ((rv == -1) && (errno != EINVAL) && (errno != ENOSYS)))
+  if(rv != -1)
     return rv;
 
   return fs::copyfile(src_fd_,dst_fd_);
