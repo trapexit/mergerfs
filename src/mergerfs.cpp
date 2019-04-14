@@ -25,12 +25,16 @@
 #include "fuse_create.hpp"
 #include "fuse_destroy.hpp"
 #include "fuse_fallocate.hpp"
+#include "fuse_fchmod.hpp"
+#include "fuse_fchown.hpp"
 #include "fuse_fgetattr.hpp"
 #include "fuse_flock.hpp"
 #include "fuse_flush.hpp"
+#include "fuse_free_hide.hpp"
 #include "fuse_fsync.hpp"
 #include "fuse_fsyncdir.hpp"
 #include "fuse_ftruncate.hpp"
+#include "fuse_futimens.hpp"
 #include "fuse_getattr.hpp"
 #include "fuse_getxattr.hpp"
 #include "fuse_init.hpp"
@@ -41,6 +45,7 @@
 #include "fuse_mknod.hpp"
 #include "fuse_open.hpp"
 #include "fuse_opendir.hpp"
+#include "fuse_prepare_hide.hpp"
 #include "fuse_read.hpp"
 #include "fuse_read_buf.hpp"
 #include "fuse_readdir.hpp"
@@ -76,6 +81,12 @@ namespace l
     ops.flag_nullpath_ok   = true;
     ops.flag_nopath        = true;
     ops.flag_utime_omit_ok = true;
+
+    ops.prepare_hide = FUSE::prepare_hide;
+    ops.free_hide    = FUSE::free_hide;
+    ops.fchown       = FUSE::fchown;
+    ops.fchmod       = FUSE::fchmod;
+    ops.futimens     = FUSE::futimens;
 
     ops.access      = FUSE::access;
     ops.bmap        = NULL;

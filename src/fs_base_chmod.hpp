@@ -38,24 +38,6 @@ namespace fs
   static
   inline
   int
-  fchmod(const int    fd_,
-         const mode_t mode_)
-  {
-    return ::fchmod(fd_,mode_);
-  }
-
-  static
-  inline
-  int
-  fchmod(const int          fd_,
-         const struct stat &st_)
-  {
-    return ::fchmod(fd_,st_.st_mode);
-  }
-
-  static
-  inline
-  int
   chmod_check_on_error(const std::string &path_,
                        const mode_t       mode_)
   {
@@ -73,32 +55,6 @@ namespace fs
           return -1;
 
         if((st.st_mode & MODE_BITS) != (mode_ & MODE_BITS))
-          return (errno=error,-1);
-      }
-
-    return 0;
-  }
-
-  static
-  inline
-  int
-  fchmod_check_on_error(const int          fd_,
-                        const struct stat &st_)
-  {
-    int rv;
-
-    rv = fs::fchmod(fd_,st_);
-    if(rv == -1)
-      {
-        int error;
-        struct stat tmpst;
-
-        error = errno;
-        rv = fs::fstat(fd_,&tmpst);
-        if(rv == -1)
-          return -1;
-
-        if((st_.st_mode & MODE_BITS) != (tmpst.st_mode & MODE_BITS))
           return (errno=error,-1);
       }
 

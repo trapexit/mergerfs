@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,32 +16,29 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fuse_open.hpp"
 
-#include <string>
+#include <stdint.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <stdio.h>
 
-namespace fs
+namespace FUSE
 {
-  static
-  inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  times[2],
-        const int              flags)
+  prepare_hide(const char *fusepath_,
+               uint64_t   *fh_,
+               int         type_)
   {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
-  }
+    int rv;
+    struct fuse_file_info ffi = {0};
 
-  static
-  inline
-  int
-  futimens(const int             fd_,
-           const struct timespec ts_[2])
-  {
-    return ::futimens(fd_,ts_);
+    ffi.flags = O_RDONLY|O_NOFOLLOW;
+    rv = FUSE::open(fusepath_,&ffi);
+    if(rv < 0)
+      return rv;
+
+    *fh_ = ffi.fh;
+
+    return 0;
   }
 }

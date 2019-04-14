@@ -292,8 +292,8 @@ namespace fs
   static
   inline
   int
-  utime(const int             fd_,
-        const struct timespec ts_[2])
+  futimens(const int             fd_,
+           const struct timespec ts_[2])
   {
     int rv;
     struct timeval  tv[2];

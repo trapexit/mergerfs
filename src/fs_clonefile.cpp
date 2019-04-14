@@ -20,6 +20,8 @@
 #include "fs_base_chown.hpp"
 #include "fs_base_fadvise.hpp"
 #include "fs_base_fallocate.hpp"
+#include "fs_base_fchmod.hpp"
+#include "fs_base_fchown.hpp"
 #include "fs_base_ftruncate.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_base_utime.hpp"
@@ -109,7 +111,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    rv = fs::utime(dst_fd_,src_st);
+    rv = fs::futime(dst_fd_,src_st);
     if(rv == -1)
       return -1;
 

@@ -1,7 +1,5 @@
 /*
-  ISC License
-
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,32 +14,41 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "errno.hpp"
+#include "fileinfo.hpp"
+#include "fs_base_fchown.hpp"
 
-#include <string>
+#include <fuse.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <unistd.h>
 
-namespace fs
+namespace l
 {
   static
-  inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  times[2],
-        const int              flags)
+  fchown(const int   fd_,
+         const uid_t uid_,
+         const gid_t gid_)
   {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
-  }
+    int rv;
 
-  static
-  inline
+    rv = fs::fchown(fd_,uid_,gid_);
+    if(rv == -1)
+      return -errno;
+
+    return rv;
+  }
+}
+
+namespace FUSE
+{
   int
-  futimens(const int             fd_,
-           const struct timespec ts_[2])
+  fchown(const struct fuse_file_info *ffi_,
+         const uid_t                  uid_,
+         const gid_t                  gid_)
   {
-    return ::futimens(fd_,ts_);
+    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    return l::fchown(fi->fd,uid_,gid_);
   }
 }

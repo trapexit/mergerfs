@@ -64,7 +64,7 @@ struct fuse_config {
 	int remember;
 	int nopath;
 	int debug;
-	int hard_remove;
+        int hard_remove; /* not used */
 	int use_ino;
 	int readdir_ino;
 	int set_mode;
@@ -176,8 +176,9 @@ struct node {
 	struct timespec mtime;
 	off_t size;
 	struct lock *locks;
-	unsigned int is_hidden : 1;
-	unsigned int cache_valid : 1;
+        uint64_t hidden_fh;
+        char is_hidden;
+        char cache_valid;
 	int treelock;
 	char inline_name[32];
 };
@@ -1244,35 +1245,27 @@ static void remove_node(struct fuse *f, fuse_ino_t dir, const char *name)
 }
 
 static int rename_node(struct fuse *f, fuse_ino_t olddir, const char *oldname,
-		       fuse_ino_t newdir, const char *newname, int hide)
+		       fuse_ino_t newdir, const char *newname)
 {
 	struct node *node;
 	struct node *newnode;
 	int err = 0;
 
 	pthread_mutex_lock(&f->lock);
-	node  = lookup_node(f, olddir, oldname);
-	newnode	 = lookup_node(f, newdir, newname);
+	node = lookup_node(f, olddir, oldname);
+	newnode	= lookup_node(f, newdir, newname);
 	if (node == NULL)
 		goto out;
 
-	if (newnode != NULL) {
-		if (hide) {
-			fprintf(stderr, "fuse: hidden file got created during hiding\n");
-			err = -EBUSY;
-			goto out;
-		}
+	if (newnode != NULL)
 		unlink_node(f, newnode);
-	}
+
 
 	unhash_name(f, node);
 	if (hash_name(f, node, newdir, newname) == -1) {
 		err = -ENOMEM;
 		goto out;
 	}
-
-	if (hide)
-		node->is_hidden = 1;
 
 out:
 	pthread_mutex_unlock(&f->lock);
@@ -1532,6 +1525,32 @@ int fuse_fs_rename(struct fuse_fs *fs, const char *oldpath,
 	} else {
 		return -ENOSYS;
 	}
+}
+
+int
+fuse_fs_prepare_hide(struct fuse_fs *fs_,
+                     const char     *path_,
+                     uint64_t       *fh_,
+                     int             type_)
+{
+  fuse_get_context()->private_data = fs_->user_data;
+
+  if(fs_->op.prepare_hide)
+    return fs_->op.prepare_hide(path_,fh_,type_);
+
+  return -ENOSYS;
+}
+
+int
+fuse_fs_free_hide(struct fuse_fs *fs_,
+                  uint64_t        fh_)
+{
+  fuse_get_context()->private_data = fs_->user_data;
+
+  if(fs_->op.free_hide)
+    return fs_->op.free_hide(fh_);
+
+  return -ENOSYS;
 }
 
 int fuse_fs_unlink(struct fuse_fs *fs, const char *path)
@@ -2007,6 +2026,20 @@ int fuse_fs_chown(struct fuse_fs *fs, const char *path, uid_t uid, gid_t gid)
 	}
 }
 
+int
+fuse_fs_fchown(struct fuse_fs              *fs_,
+               const struct fuse_file_info *ffi_,
+               const uid_t                  uid_,
+               const gid_t                  gid_)
+{
+  fuse_get_context()->private_data = fs_->user_data;
+
+  if(fs_->op.fchown)
+    return fs_->op.fchown(ffi_,uid_,gid_);
+
+  return -ENOSYS;
+}
+
 int fuse_fs_truncate(struct fuse_fs *fs, const char *path, off_t size)
 {
 	fuse_get_context()->private_data = fs->user_data;
@@ -2067,6 +2100,19 @@ int fuse_fs_utimens(struct fuse_fs *fs, const char *path,
 	} else {
 		return -ENOSYS;
 	}
+}
+
+int
+fuse_fs_futimens(struct fuse_fs *fs_,
+                 const struct fuse_file_info *ffi_,
+                 const struct timespec tv_[2])
+{
+  fuse_get_context()->private_data = fs_->user_data;
+
+  if(fs_->op.futimens)
+    return fs_->op.futimens(ffi_,tv_);
+
+  return -ENOSYS;
 }
 
 int fuse_fs_access(struct fuse_fs *fs, const char *path, int mask)
@@ -2256,73 +2302,11 @@ int fuse_fs_fallocate(struct fuse_fs *fs, const char *path, int mode,
 		return -ENOSYS;
 }
 
-static int is_open(struct fuse *f, fuse_ino_t dir, const char *name)
+static
+int
+is_node_open(const struct node *node_)
 {
-	struct node *node;
-	int isopen = 0;
-	pthread_mutex_lock(&f->lock);
-	node = lookup_node(f, dir, name);
-	if (node && node->open_count > 0)
-		isopen = 1;
-	pthread_mutex_unlock(&f->lock);
-	return isopen;
-}
-
-static char *hidden_name(struct fuse *f, fuse_ino_t dir, const char *oldname,
-			 char *newname, size_t bufsize)
-{
-	struct stat buf;
-	struct node *node;
-	struct node *newnode;
-	char *newpath;
-	int res;
-	int failctr = 10;
-
-	do {
-		pthread_mutex_lock(&f->lock);
-		node = lookup_node(f, dir, oldname);
-		if (node == NULL) {
-			pthread_mutex_unlock(&f->lock);
-			return NULL;
-		}
-		do {
-			f->hidectr ++;
-			snprintf(newname, bufsize, ".fuse_hidden%08x%08x",
-				 (unsigned int) node->nodeid, f->hidectr);
-			newnode = lookup_node(f, dir, newname);
-		} while(newnode);
-
-		res = try_get_path(f, dir, newname, &newpath, NULL, false);
-		pthread_mutex_unlock(&f->lock);
-		if (res)
-			break;
-
-		memset(&buf, 0, sizeof(buf));
-		res = fuse_fs_getattr(f->fs, newpath, &buf);
-		if (res == -ENOENT)
-			break;
-		free(newpath);
-		newpath = NULL;
-	} while(res == 0 && --failctr);
-
-	return newpath;
-}
-
-static int hide_node(struct fuse *f, const char *oldpath,
-		     fuse_ino_t dir, const char *oldname)
-{
-	char newname[64];
-	char *newpath;
-	int err = -EBUSY;
-
-	newpath = hidden_name(f, dir, oldname, newname, sizeof(newname));
-	if (newpath) {
-		err = fuse_fs_rename(f->fs, oldpath, newpath);
-		if (!err)
-			err = rename_node(f, dir, oldname, dir, newname, 1);
-		free(newpath);
-	}
-	return err;
+  return (node_ && (node_->open_count > 0));
 }
 
 static int mtime_eq(const struct stat *stbuf, const struct timespec *ts)
@@ -2619,30 +2603,42 @@ static void fuse_lib_getattr(fuse_req_t req, fuse_ino_t ino,
 	struct stat buf;
 	char *path;
 	int err;
+        struct node *node;
+        struct fuse_file_info ffi = {0};
+
+        if(fi == NULL)
+          {
+            pthread_mutex_lock(&f->lock);
+            node = get_node(f,ino);
+            if(node->is_hidden)
+              {
+                fi = &ffi;
+                fi->fh = node->hidden_fh;
+              }
+            pthread_mutex_unlock(&f->lock);
+          }
 
 	memset(&buf, 0, sizeof(buf));
 
-	if (fi != NULL && f->fs->op.fgetattr)
-		err = get_path_nullok(f, ino, &path);
-	else
-		err = get_path(f, ino, &path);
+        err = (((fi == NULL) || (f->fs->op.fgetattr == NULL)) ?
+               get_path(f,ino,&path) :
+               get_path_nullok(f,ino,&path));
+
 	if (!err) {
 		struct fuse_intr_data d;
 		fuse_prepare_interrupt(f, req, &d);
-		if (fi)
-			err = fuse_fs_fgetattr(f->fs, path, &buf, fi);
-		else
-			err = fuse_fs_getattr(f->fs, path, &buf);
+
+                err = ((fi == NULL) ?
+                       fuse_fs_getattr(f->fs,path,&buf) :
+                       fuse_fs_fgetattr(f->fs,path,&buf,fi));
+
 		fuse_finish_interrupt(f, req, &d);
 		free_path(f, ino, path);
 	}
-	if (!err) {
-		struct node *node;
 
+	if (!err) {
 		pthread_mutex_lock(&f->lock);
-		node = get_node(f, ino);
-		if (node->is_hidden && buf.st_nlink > 0)
-			buf.st_nlink--;
+                node = get_node(f, ino);
 		if (f->conf.auto_cache)
 			update_stat(node, &buf);
 		pthread_mutex_unlock(&f->lock);
@@ -2661,6 +2657,19 @@ int fuse_fs_chmod(struct fuse_fs *fs, const char *path, mode_t mode)
 		return -ENOSYS;
 }
 
+int
+fuse_fs_fchmod(struct fuse_fs              *fs_,
+               const struct fuse_file_info *ffi_,
+               const mode_t                 mode_)
+{
+  fuse_get_context()->private_data = fs_->user_data;
+
+  if(fs_->op.fchmod)
+    return fs_->op.fchmod(ffi_,mode_);
+
+  return -ENOSYS;
+}
+
 static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 			     int valid, struct fuse_file_info *fi)
 {
@@ -2668,34 +2677,56 @@ static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 	struct stat buf;
 	char *path;
 	int err;
+        struct node *node;
+        struct fuse_file_info ffi = {0};
+
+        if(fi == NULL)
+          {
+            pthread_mutex_lock(&f->lock);
+            node = get_node(f,ino);
+            if(node->is_hidden)
+              {
+                fi = &ffi;
+                fi->fh = node->hidden_fh;
+              }
+            pthread_mutex_unlock(&f->lock);
+          }
 
 	memset(&buf, 0, sizeof(buf));
-	if (valid == FUSE_SET_ATTR_SIZE && fi != NULL &&
-	    f->fs->op.ftruncate && f->fs->op.fgetattr)
-		err = get_path_nullok(f, ino, &path);
-	else
-		err = get_path(f, ino, &path);
+
+        err = ((fi == NULL) ?
+               get_path(f,ino,&path) :
+               get_path_nullok(f, ino, &path));
+
 	if (!err) {
 		struct fuse_intr_data d;
+
 		fuse_prepare_interrupt(f, req, &d);
-		err = 0;
+
+                err = 0;
 		if (!err && (valid & FUSE_SET_ATTR_MODE))
-			err = fuse_fs_chmod(f->fs, path, attr->st_mode);
-		if (!err && (valid & (FUSE_SET_ATTR_UID | FUSE_SET_ATTR_GID))) {
-			uid_t uid = (valid & FUSE_SET_ATTR_UID) ?
-				attr->st_uid : (uid_t) -1;
-			gid_t gid = (valid & FUSE_SET_ATTR_GID) ?
-				attr->st_gid : (gid_t) -1;
-			err = fuse_fs_chown(f->fs, path, uid, gid);
-		}
-		if (!err && (valid & FUSE_SET_ATTR_SIZE)) {
-			if (fi)
-				err = fuse_fs_ftruncate(f->fs, path,
-							attr->st_size, fi);
-			else
-				err = fuse_fs_truncate(f->fs, path,
-						       attr->st_size);
-		}
+                  err = ((fi == NULL) ?
+                         fuse_fs_chmod(f->fs, path, attr->st_mode) :
+                         fuse_fs_fchmod(f->fs, fi, attr->st_mode));
+
+		if (!err && (valid & (FUSE_SET_ATTR_UID | FUSE_SET_ATTR_GID)))
+                  {
+                    uid_t uid = (valid & FUSE_SET_ATTR_UID) ?
+                      attr->st_uid : (uid_t) -1;
+                    gid_t gid = (valid & FUSE_SET_ATTR_GID) ?
+                      attr->st_gid : (gid_t) -1;
+
+                    err = ((fi == NULL) ?
+                           fuse_fs_chown(f->fs, path, uid, gid) :
+                           fuse_fs_fchown(f->fs, fi, uid, gid));
+                  }
+
+		if (!err && (valid & FUSE_SET_ATTR_SIZE))
+                  {
+                    err = ((fi == NULL) ?
+                           fuse_fs_truncate(f->fs, path, attr->st_size) :
+                           fuse_fs_ftruncate(f->fs, path, attr->st_size, fi));
+                  }
 #ifdef HAVE_UTIMENSAT
 		if (!err && f->utime_omit_ok &&
 		    (valid & (FUSE_SET_ATTR_ATIME | FUSE_SET_ATTR_MTIME))) {
@@ -2716,7 +2747,9 @@ static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 			else if (valid & FUSE_SET_ATTR_MTIME)
 				tv[1] = attr->st_mtim;
 
-			err = fuse_fs_utimens(f->fs, path, tv);
+                        err = ((fi == NULL) ?
+                               fuse_fs_utimens(f->fs, path, tv) :
+                               fuse_fs_futimens(f->fs, fi, tv));
 		} else
 #endif
 		if (!err &&
@@ -2727,17 +2760,20 @@ static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 			tv[0].tv_nsec = ST_ATIM_NSEC(attr);
 			tv[1].tv_sec = attr->st_mtime;
 			tv[1].tv_nsec = ST_MTIM_NSEC(attr);
-			err = fuse_fs_utimens(f->fs, path, tv);
+			err = ((fi == NULL) ?
+                               fuse_fs_utimens(f->fs, path, tv) :
+                               fuse_fs_futimens(f->fs, fi, tv));
 		}
-		if (!err) {
-			if (fi)
-				err = fuse_fs_fgetattr(f->fs, path, &buf, fi);
-			else
-				err = fuse_fs_getattr(f->fs, path, &buf);
-		}
+
+                if (!err)
+                  err = ((fi == NULL) ?
+                         fuse_fs_getattr(f->fs, path, &buf) :
+                         fuse_fs_fgetattr(f->fs, path, &buf, fi));
+
 		fuse_finish_interrupt(f, req, &d);
 		free_path(f, ino, path);
 	}
+
 	if (!err) {
 		if (f->conf.auto_cache) {
 			pthread_mutex_lock(&f->lock);
@@ -2746,8 +2782,9 @@ static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 		}
 		set_stat(f, ino, &buf);
 		fuse_reply_attr(req, &buf, f->conf.attr_timeout);
-	} else
+	} else {
 		reply_err(req, err);
+        }
 }
 
 static void fuse_lib_access(fuse_req_t req, fuse_ino_t ino, int mask)
@@ -2859,17 +2896,23 @@ static void fuse_lib_unlink(fuse_req_t req, fuse_ino_t parent,
 	int err;
 
 	err = get_path_wrlock(f, parent, name, &path, &wnode);
+
 	if (!err) {
 		struct fuse_intr_data d;
 
 		fuse_prepare_interrupt(f, req, &d);
-		if (!f->conf.hard_remove && is_open(f, parent, name)) {
-			err = hide_node(f, path, parent, name);
-		} else {
-			err = fuse_fs_unlink(f->fs, path);
-			if (!err)
-				remove_node(f, parent, name);
-		}
+
+		if(is_node_open(wnode))
+                  {
+                    err = fuse_fs_prepare_hide(f->fs, path, &wnode->hidden_fh, 0);
+                    if(!err)
+                      wnode->is_hidden = 1;
+                  }
+
+                err = fuse_fs_unlink(f->fs, path);
+                if(!err && !wnode->is_hidden)
+                  remove_node(f, parent, name);
+
 		fuse_finish_interrupt(f, req, &d);
 		free_path_wrlock(f, parent, wnode, path);
 	}
@@ -2936,13 +2979,12 @@ static void fuse_lib_rename(fuse_req_t req, fuse_ino_t olddir,
 		struct fuse_intr_data d;
 		err = 0;
 		fuse_prepare_interrupt(f, req, &d);
-		if (!f->conf.hard_remove && is_open(f, newdir, newname))
-			err = hide_node(f, newpath, newdir, newname);
+		if (is_node_open(wnode2))
+                  err = fuse_fs_prepare_hide(f->fs, newpath, &wnode2->hidden_fh, 1);
 		if (!err) {
-			err = fuse_fs_rename(f->fs, oldpath, newpath);
-			if (!err)
-				err = rename_node(f, olddir, oldname, newdir,
-						  newname, 0);
+                  err = fuse_fs_rename(f->fs, oldpath, newpath);
+                  if (!err)
+                    err = rename_node(f, olddir, oldname, newdir, newname);
 		}
 		fuse_finish_interrupt(f, req, &d);
 		free_path2(f, olddir, newdir, wnode1, wnode2, oldpath, newpath);
@@ -2979,9 +3021,11 @@ static void fuse_do_release(struct fuse *f, fuse_ino_t ino, const char *path,
 			    struct fuse_file_info *fi)
 {
 	struct node *node;
-	int unlink_hidden = 0;
+        uint64_t fh;
+        int was_hidden;
 	const char *compatpath;
 
+        fh = 0;
 	if (path != NULL || f->nullpath_ok || f->conf.nopath)
 		compatpath = path;
 	else
@@ -2992,25 +3036,17 @@ static void fuse_do_release(struct fuse *f, fuse_ino_t ino, const char *path,
 	pthread_mutex_lock(&f->lock);
 	node = get_node(f, ino);
 	assert(node->open_count > 0);
-	--node->open_count;
-	if (node->is_hidden && !node->open_count) {
-		unlink_hidden = 1;
-		node->is_hidden = 0;
+	node->open_count--;
+        was_hidden = 0;
+	if (node->is_hidden && (node->open_count == 0)) {
+          was_hidden = 1;
+          node->is_hidden = 0;
+          fh = node->hidden_fh;
 	}
 	pthread_mutex_unlock(&f->lock);
 
-	if(unlink_hidden) {
-		if (path) {
-			fuse_fs_unlink(f->fs, path);
-		} else if (f->conf.nopath) {
-			char *unlinkpath;
-
-			if (get_path(f, ino, &unlinkpath) == 0)
-				fuse_fs_unlink(f->fs, unlinkpath);
-
-			free_path(f, ino, unlinkpath);
-		}
-	}
+        if(was_hidden)
+          fuse_fs_free_hide(f->fs,fh);
 }
 
 static void fuse_lib_create(fuse_req_t req, fuse_ino_t parent,
@@ -3045,8 +3081,10 @@ static void fuse_lib_create(fuse_req_t req, fuse_ino_t parent,
 	}
 	if (!err) {
 		pthread_mutex_lock(&f->lock);
-		get_node(f, e.ino)->open_count++;
+                struct node *n = get_node(f,e.ino);
+                n->open_count++;
 		pthread_mutex_unlock(&f->lock);
+
 		if (fuse_reply_create(req, &e, fi) == -ENOENT) {
 			/* The open syscall was interrupted, so it
 			   must be cancelled */
@@ -3121,7 +3159,8 @@ static void fuse_lib_open(fuse_req_t req, fuse_ino_t ino,
 	}
 	if (!err) {
 		pthread_mutex_lock(&f->lock);
-		get_node(f, ino)->open_count++;
+                struct node *n = get_node(f,ino);
+                n->open_count++;
 		pthread_mutex_unlock(&f->lock);
 		if (fuse_reply_open(req, fi) == -ENOENT) {
 			/* The open syscall was interrupted, so it
@@ -4306,7 +4345,6 @@ static const struct fuse_opt fuse_lib_opts[] = {
 static void fuse_lib_help(void)
 {
 	fprintf(stderr,
-"    -o hard_remove         immediate removal (don't hide files)\n"
 "    -o use_ino             let filesystem set inode numbers\n"
 "    -o readdir_ino         try to fill in d_ino in readdir\n"
 "    -o kernel_cache        cache files in kernel\n"
@@ -4608,16 +4646,11 @@ void fuse_destroy(struct fuse *f)
 		for (i = 0; i < f->id_table.size; i++) {
 			struct node *node;
 
-			for (node = f->id_table.array[i]; node != NULL;
-			     node = node->id_next) {
-				if (node->is_hidden) {
-					char *path;
-					if (try_get_path(f, node->nodeid, NULL, &path, NULL, false) == 0) {
-						fuse_fs_unlink(f->fs, path);
-						free(path);
-					}
-				}
-			}
+			for (node = f->id_table.array[i]; node != NULL; node = node->id_next)
+                          {
+                            if (node->is_hidden)
+                              fuse_fs_free_hide(f->fs,node->hidden_fh);
+                          }
 		}
 	}
 	for (i = 0; i < f->id_table.size; i++) {
