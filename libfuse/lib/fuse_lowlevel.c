@@ -1889,7 +1889,15 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		        outarg.congestion_threshold);
 	}
 
-	send_reply_ok(req, &outarg, arg->minor < 5 ? 8 : sizeof(outarg));
+        size_t outargsize;
+        if(arg->minor < 5)
+          outargsize = FUSE_COMPAT_INIT_OUT_SIZE;
+        else if(arg->minor < 23)
+          outargsize = FUSE_COMPAT_22_INIT_OUT_SIZE;
+        else
+          outargsize = sizeof(outarg);
+
+	send_reply_ok(req, &outarg, outargsize);
 }
 
 static void do_destroy(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
