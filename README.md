@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-03-21
+% 2019-04-23
 
 # NAME
 
@@ -672,6 +672,13 @@ Try enabling the `use_ino` option. Some have reported that it fixes the issue.
 #### rtorrent fails with ENODEV (No such device)
 
 Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
+
+
+#### rtorrent fails with files >= 4GiB
+
+This is a kernel bug with mmap and FUSE on 32bit platforms. A fix should become available for all LTS releases.
+
+https://marc.info/?l=linux-fsdevel&m=155550785230874&w=2
 
 
 #### Plex doesn't work with mergerfs
