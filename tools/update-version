@@ -1,10 +1,5 @@
 #!/bin/sh
 
-GIT=$(which git)
-if [ "${GIT}" = "" ]; then
-    exit 0
-fi
-
 VERSION=$(git describe --always --tags --dirty)
 if [ $? -ne 0 ]; then
     VERSION=$(cat VERSION)

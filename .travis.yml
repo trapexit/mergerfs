@@ -18,7 +18,17 @@ matrix:
       dist: trusty
       compiler: clang
       sudo: required
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      sudo: required
+    - os: linux
+      dist: xenial
+      compiler: clang
+      sudo: required
 
 script:
+  - sudo -E apt-get install fakeroot
   - sudo -E make install-build-pkgs
   - make
+  - make deb

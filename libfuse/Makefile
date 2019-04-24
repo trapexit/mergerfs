@@ -24,60 +24,61 @@ SRC   = \
 	lib/fuse_signals.c \
 	lib/helper.c \
 	lib/mount.c
+OBJS = $(SRC:lib/%.c=build/%.o)
+DEPS = $(SRC:lib/%.c=build/%.d)
 
-OBJ  = $(SRC:lib/%.c=obj/%.o)
-DEPS = $(OBJ:obj/%.o=obj/%.d)
-CFLAGS = $(OPT) \
-	 $(DEBUG_FLAGS) \
-	 -Wall \
-	 -pipe \
-	 '-D_FILE_OFFSET_BITS=64' \
-	 '-D_REENTRANT' \
-	 '-DFUSE_USE_VERSION=29' \
-	 '-DFUSERMOUNT_DIR="/usr/local/bin"' \
-	 '-DPACKAGE_VERSION=$(VERSION)' \
-	 -Iinclude \
-	 -MMD
-LDFLAGS = \
+CFLAGS += \
+	$(OPT) \
+	$(DEBUG_FLAGS) \
+	-Wall \
+	-pipe \
+	'-D_FILE_OFFSET_BITS=64' \
+	'-D_REENTRANT' \
+	'-DFUSE_USE_VERSION=29' \
+	'-DFUSERMOUNT_DIR="/usr/local/bin"' \
+	'-DPACKAGE_VERSION=$(VERSION)' \
+	-Iinclude \
+	-Ibuild \
+	-MMD
+LDFLAGS += \
 	-lrt \
 	-pthread
 
-all: obj/libfuse.a
+all: build/libfuse.a
 
-libfuse.a: obj/libfuse.a
+build/config.h: build/stamp
+	ecfd/build | tee build/config.h
 
-include/config.h:
-	ecfd/build | tee include/config.h
-
-obj/obj-stamp:
-	mkdir -p obj
+build/stamp:
+	mkdir -p build
 	touch $@
 
-obj/libfuse.a:
-	$(MAKE) obj/obj-stamp
-	$(MAKE) include/config.h
-	$(MAKE) $(OBJ)
-	ar rcs obj/libfuse.a $(OBJ)
+objects: build/config.h
+	$(MAKE) $(OBJS)
 
-mergerfs-mount: include/config.h util/fusermount.c lib/mount_util.c
+build/libfuse.a: objects
+	ar rcs build/libfuse.a $(OBJS)
+
+build/mergerfs-mount: build/config.h util/fusermount.c lib/mount_util.c
 	$(CC) $(CFLAGS) -Ilib -o mergerfs-mount util/fusermount.c lib/mount_util.c
 
-mount.mergerfs: obj/libfuse.a util/mount.fuse.c
-	$(CC) $(CFLAGS) -o mount.mergerfs util/mount.fuse.c obj/libfuse.a $(LDFLAGS)
+build/mount.mergerfs: build/libfuse.a util/mount.fuse.c
+	$(CC) $(CFLAGS) -o mount.mergerfs util/mount.fuse.c build/libfuse.a $(LDFLAGS)
 
-obj/%.o: lib/%.c
+build/%.o: lib/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf obj include/config.h mergerfs-mount mount.mergerfs
+	rm -rf build
 
 distclean: clean
-	git clean -fdx
 
-install:
-	install -D mergerfs-mount "$(DESTDIR)$(BINDIR)/mergerfs-mount"
+install: build/mergerfs-mount build/mount.mergerfs
+	install -D build/mergerfs-mount "$(DESTDIR)$(BINDIR)/mergerfs-mount"
 	chown root:root "$(DESTDIR)$(BINDIR)/mergerfs-mount"
 	chmod u+s "$(DESTDIR)$(BINDIR)/mergerfs-mount"
-	install -D mount.mergerfs "$(DESTDIR)$(SBINDIR)/mount.mergerfs"
+	install -D build/mount.mergerfs "$(DESTDIR)$(SBINDIR)/mount.mergerfs"
+
+.PHONY: objects
 
 -include $(DEPS)
