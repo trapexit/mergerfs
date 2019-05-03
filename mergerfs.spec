@@ -15,13 +15,15 @@ BuildRequires:	git
 
 Requires:	fuse
 
+%global debug_package %{nil}
+
 %prep
 %setup -q
 
 %description
-mergerfs is similar to mhddfs, unionfs, and aufs. Like mhddfs in that it too
-uses FUSE. Like aufs in that it provides multiple policies for how to handle
-behavior.
+mergerfs is a union filesystem geared towards simplifying storage and
+management of files across numerous commodity storage devices. It is
+similar to mhddfs, unionfs, and aufs.
 
 %build
 make %{?_smp_mflags}
@@ -34,6 +36,9 @@ make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 %doc %{_mandir}/*
 
 %changelog
+* Fri Apr 26 2019 Antonio SJ Musumeci <trapexit@spawn.link>
+- Update description
+
 * Mon Jan 25 2016 Antonio SJ Musumeci <trapexit@spawn.link>
 - Remove sbin files
 

@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-04-23
+% 2019-05-03
 
 # NAME
 
@@ -19,7 +19,7 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 # FEATURES
 
 * Runs in userspace (FUSE)
-* Configurable behaviors
+* Configurable behaviors / file placement
 * Support for extended attributes (xattrs)
 * Support for file attributes (chattr)
 * Runtime configurable (via xattrs)
@@ -28,7 +28,8 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 * Works with heterogeneous filesystem types
 * Handling of writes to full drives (transparently move file to drive with capacity)
 * Handles pool of read-only and read/write drives
-* Turn read-only files into symlinks to increase read performance
+* Can turn read-only files into symlinks to underlying file
+* Hard link copy-on-write / CoW
 
 
 # How it works
@@ -56,7 +57,7 @@ A         +      B        =       C
                                   +-- file6
 ```
 
-mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix rw and ro drives.
+mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives.
 
 
 # OPTIONS
@@ -348,30 +349,22 @@ $ make
 $ sudo make install
 ```
 
-#### Generically with system libfuse
-
-**NOTE:** Configurable threading and thus `-o threads=num` option will be unavailable when built with system libfuse.
-
-Have git, g++, make, python, pkg-config installed.
-Also, install libfuse >= 2.9.7 (but not libfuse-3.x) and matching libfuse-dev (or libfuse-devel).
+#### Build options
 
 ```
-$ cd mergerfs
-$ make INTERNAL_FUSE=0
-$ sudo make INTERNAL_FUSE=0 install
-```
+$ make help
+usage: make
 
-#### Other build options
-
-```
-$ make STATIC=1 # builds a static binary
-$ make LTO=1    # perform link time optimization
+make USE_XATTR=0      - build program without xattrs functionality
+make STATIC=1         - build static binary
+make LTO=1            - build with link time optimization
 ```
 
 
 # RUNTIME CONFIG
 
 #### .mergerfs pseudo file ####
+
 ```
 <mountpoint>/.mergerfs
 ```

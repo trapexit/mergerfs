@@ -39,8 +39,6 @@ endif
 USE_XATTR = 1
 
 FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
-FUSE_LIBS   = libfuse/obj/libfuse.a
-FUSE_TARGET = $(FUSE_LIBS)
 
 ifeq ($(DEBUG),1)
 DEBUG_FLAGS := -g
@@ -64,11 +62,11 @@ UGID_USE_RWLOCK = 0
 
 OPTS 	    = -O2
 SRC	    = $(wildcard src/*.cpp)
-OBJ         = $(SRC:src/%.cpp=obj/%.o)
-DEPS        = $(OBJ:obj/%.o=obj/%.d)
-TARGET      = mergerfs
-MANPAGE     = $(TARGET).1
-CXXFLAGS    = $(OPTS) \
+OBJS        = $(SRC:src/%.cpp=build/%.o)
+DEPS        = $(SRC:src/%.cpp=build/%.d)
+MANPAGE     = mergerfs.1
+CXXFLAGS   += \
+	      $(OPTS) \
               $(DEBUG_FLAGS) \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
@@ -79,6 +77,9 @@ CXXFLAGS    = $(OPTS) \
               -MMD \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
+LDFLAGS    += \
+	      -pthread \
+              -lrt
 
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
@@ -93,77 +94,79 @@ INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
 INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
 INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
-all: $(TARGET)
+.PHONY: all
+all: mergerfs
 
+.PHONY: help
 help:
 	@echo "usage: make\n"
 	@echo "make USE_XATTR=0      - build program without xattrs functionality"
 	@echo "make STATIC=1         - build static binary"
 	@echo "make LTO=1            - build with link time optimization"
 
-$(TARGET): version obj/obj-stamp $(FUSE_TARGET) $(OBJ)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(FUSE_LIBS) -pthread -lrt
+objects: version build/stamp
+	$(MAKE) $(OBJS)
 
-mount.mergerfs: $(TARGET)
+build/mergerfs: libfuse objects
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
+
+mergerfs: build/mergerfs
+
+build/mount.mergerfs: build/mergerfs
 	$(LN) -fs "$<" "$@"
 
 changelog:
 ifeq ($(GIT_REPO),1)
-	$(GIT2DEBCL) --name $(TARGET) > ChangeLog
+	$(GIT2DEBCL) --name mergerfs > ChangeLog
 else
 	@echo "WARNING: need git repo to generate ChangeLog"
 endif
 
-authors:
-ifeq ($(GIT_REPO),1)
-	$(GIT) log --format='%aN <%aE>' | sort -f | uniq > AUTHORS
-else
-	@echo "WARNING: need git repo to generate AUTHORS"
-endif
-
+.PHONY: version
 version:
 	tools/update-version
 
-obj/obj-stamp:
-	$(MKDIR) -p obj
+build/stamp:
+	$(MKDIR) -p build
 	$(TOUCH) $@
 
-obj/%.o: src/%.cpp
+build/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
+.PHONY: clean
 clean: rpm-clean
-	$(RM) -f src/version.hpp
-	$(RM) -rf obj
-	$(RM) -f "$(TARGET)" mount.mergerfs
+	$(RM) -rf build
 	$(FIND) . -name "*~" -delete
-	cd libfuse && $(MAKE) clean
+	$(MAKE) -C libfuse clean
 
 distclean: clean
 ifeq ($(GIT_REPO),1)
 	$(GIT) clean -xfd
 endif
 
+.PHONY: install
 install: install-base install-mount.mergerfs install-man
 
-install-base: $(TARGET)
+install-base: build/mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(INSTALL) -v -m 0755 "$(TARGET)" "$(INSTALLBINDIR)/$(TARGET)"
+	$(INSTALL) -v -m 0755 build/mergerfs "$(INSTALLBINDIR)/mergerfs"
 
-install-mount.mergerfs: mount.mergerfs
+install-mount.mergerfs: build/mount.mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(CP) -a "$<" "$(INSTALLBINDIR)/$<"
+	$(CP) -a build/mount.mergerfs "$(INSTALLBINDIR)/mount.mergerfs"
 
 install-man: $(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"
 	$(INSTALL) -v -m 0644 "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
 install-strip: install-base
-	$(STRIP) "$(INSTALLBINDIR)/$(TARGET)"
+	$(STRIP) "$(INSTALLBINDIR)/mergerfs"
 
+.PHONY: uninstall
 uninstall: uninstall-base uninstall-mount.mergerfs uninstall-man
 
 uninstall-base:
-	$(RM) -f "$(INSTALLBINDIR)/$(TARGET)"
+	$(RM) -f "$(INSTALLBINDIR)/mergerfs"
 
 uninstall-mount.mergerfs:
 	$(RM) -f "$(INSTALLBINDIR)/mount.mergerfs"
@@ -180,10 +183,11 @@ endif
 
 man: $(MANPAGE)
 
-tarball: man changelog authors version
+.PHONY: tarball
+tarball: man changelog version
 	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
-	$(eval FILENAME := $(TARGET)-$(VERSION))
+	$(eval FILENAME := mergerfs-$(VERSION))
 	$(eval TMPDIR := $(shell $(MKTEMP) --tmpdir -d .$(FILENAME).XXXXXXXX))
 	$(MKDIR) $(TMPDIR)/$(FILENAME)
 	$(CP) -ar . $(TMPDIR)/$(FILENAME)
@@ -192,19 +196,24 @@ tarball: man changelog authors version
 
 debian-changelog:
 ifeq ($(GIT_REPO),1)
-	$(GIT2DEBCL) --name $(TARGET) > debian/changelog
+	$(GIT2DEBCL) --name mergerfs > debian/changelog
 else
 	cp ChangeLog debian/changelog
 endif
 
-signed-deb: distclean debian-changelog
+signed-deb:
+	$(MAKE) distclean
+	$(MAKE) debian-changelog
+	dpkg-source -b .
 	dpkg-buildpackage -nc
 
 deb:
 	$(MAKE) distclean
 	$(MAKE) debian-changelog
+	dpkg-source -b .
 	dpkg-buildpackage -nc -uc -us
 
+.PHONY: rpm-clean
 rpm-clean:
 	$(RM) -rf rpmbuild
 
@@ -212,19 +221,18 @@ rpm: tarball
 	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(MKDIR) -p rpmbuild/BUILD rpmbuild/RPMS rpmbuild/SOURCES
-	$(SED) 's/__VERSION__/$(VERSION)/g' $(TARGET).spec > \
-		rpmbuild/SOURCES/$(TARGET).spec
-	cp -ar $(TARGET)-$(VERSION).tar.gz rpmbuild/SOURCES
-	$(RPMBUILD) -ba rpmbuild/SOURCES/$(TARGET).spec \
+	$(SED) 's/__VERSION__/$(VERSION)/g' mergerfs.spec > \
+		rpmbuild/SOURCES/mergerfs.spec
+	cp -ar mergerfs-$(VERSION).tar.gz rpmbuild/SOURCES
+	$(RPMBUILD) -ba rpmbuild/SOURCES/mergerfs.spec \
 		--define "_topdir $(CURDIR)/rpmbuild"
 
+.PHONY: install-build-pkgs
 install-build-pkgs:
 	tools/install-build-pkgs
 
-unexport CFLAGS
-libfuse/obj/libfuse.a:
-	cd libfuse && $(MAKE) libfuse.a
-
-.PHONY: all clean install help version
+.PHONY: libfuse
+libfuse:
+	$(MAKE) -C libfuse
 
 -include $(DEPS)
