@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
+
+ino = os.fstat(fd).st_ino
+
+os.unlink(filepath)
+
+for entry in os.scandir(sys.argv[1]):
+    if entry.inode() == ino:
+        print("found .fuse_hidden file {}".format(entry.name),end='')
+        os.close(fd)
+        sys.exit(1)
+
+os.close(fd)

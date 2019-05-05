@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
+
+os.fchmod(fd,0o777)
+
+os.unlink(filepath)
+
+os.fchmod(fd,0o777)
+
+os.close(fd)
