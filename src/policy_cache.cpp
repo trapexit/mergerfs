@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <sys/time.h>
+#include <time.h>
 
 using std::map;
 using std::string;
@@ -20,11 +20,8 @@ namespace l
   get_time(void)
   {
     uint64_t rv;
-    struct timeval now;
 
-    ::gettimeofday(&now,NULL);
-
-    rv = now.tv_sec;
+    rv = ::time(NULL);
 
     return rv;
   }
