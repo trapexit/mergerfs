@@ -25,7 +25,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/statvfs.h>
-#include <sys/time.h>
+#include <time.h>
 
 struct Element
 {
@@ -46,11 +46,8 @@ namespace l
   get_time(void)
   {
     uint64_t rv;
-    struct timeval now;
 
-    ::gettimeofday(&now,NULL);
-
-    rv = now.tv_sec;
+    rv = ::time(NULL);
 
     return rv;
   }

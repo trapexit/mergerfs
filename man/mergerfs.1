@@ -1076,9 +1076,10 @@ The options for setting these are \f[C]cache.entry\f[] and
 responses to lookups (non\-existant files).
 .SS policy caching
 .PP
-Policies are run every time a function is called.
-These policies can be expensive depending on the setup and usage
-patterns.
+Policies are run every time a function (with a policy as mentioned
+above) is called.
+These policies can be expensive depending on mergerfs\[aq] setup and
+client usage patterns.
 Generally we wouldn\[aq]t want to cache policy results because it may
 result in stale responses if the underlying drives are used directly.
 .PP
@@ -1088,9 +1089,10 @@ the file is unlinked.
 Each file close (release) will randomly chose to clean up the cache of
 expired entries.
 .PP
-This cache is useful in cases like that of \f[B]Transmission\f[] which
-has a "open, read/write, close" pattern (which is much more costly due
-to the FUSE overhead than normal.)
+This cache is really only useful in cases where you have a large number
+of branches and \f[C]open\f[] is called on the same files repeatedly
+(like \f[B]Transmission\f[] which opens and closes a file on every
+read/write presumably to keep file handle usage low).
 .SS statfs caching
 .PP
 Of the syscalls used by mergerfs in policies the \f[C]statfs\f[] /
@@ -1260,9 +1262,9 @@ It is not currently supported in FUSE w/ \f[C]direct_io\f[] enabled.
 Enabling \f[C]dropcacheonclose\f[] is recommended when
 \f[C]direct_io\f[] is disabled.
 .IP \[bu] 2
-Since POSIX gives you only error or success on calls its difficult to
-determine the proper behavior when applying the behavior to multiple
-targets.
+Since POSIX functions give only a singular error or success its
+difficult to determine the proper behavior when applying the function to
+multiple targets.
 \f[B]mergerfs\f[] will return an error only if all attempts of an action
 fail.
 Any success will lead to a success returned.
@@ -1302,12 +1304,10 @@ The information for the first directory found will be returned.
 If it wasn\[aq]t the directory which had been updated then it will
 appear outdated.
 .PP
-The reason this is the default is because any other policy would be far
-more expensive and for many applications it is unnecessary.
+The reason this is the default is because any other policy would be more
+expensive and for many applications it is unnecessary.
 To always return the directory with the most recent mtime or a faked
 value based on all found would require a scan of all drives.
-That alone is far more expensive than \f[C]ff\f[] but would also
-possibly spin up sleeping drives.
 .PP
 If you always want the directory information from the one with the most
 recent mtime then use the \f[C]newest\f[] policy for \f[C]getattr\f[].

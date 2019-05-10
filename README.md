@@ -507,11 +507,11 @@ Given the relatively high cost of FUSE due to the kernel <-> userspace round tri
 
 #### policy caching
 
-Policies are run every time a function is called. These policies can be expensive depending on the setup and usage patterns. Generally we wouldn't want to cache policy results because it may result in stale responses if the underlying drives are used directly.
+Policies are run every time a function (with a policy as mentioned above) is called. These policies can be expensive depending on mergerfs' setup and client usage patterns. Generally we wouldn't want to cache policy results because it may result in stale responses if the underlying drives are used directly.
 
 The `open` policy cache will cache the result of an `open` policy for a particular input for `cache.open` seconds or until the file is unlinked. Each file close (release) will randomly chose to clean up the cache of expired entries.
 
-This cache is useful in cases like that of **Transmission** which has a "open, read/write, close" pattern (which is much more costly due to the FUSE overhead than normal.)
+This cache is really only useful in cases where you have a large number of branches and `open` is called on the same files repeatedly (like **Transmission** which opens and closes a file on every read/write presumably to keep file handle usage low).
 
 
 #### statfs caching
@@ -605,7 +605,7 @@ done
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do **not** use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `direct_io` is disabled.
-* Since POSIX gives you only error or success on calls its difficult to determine the proper behavior when applying the behavior to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
+* Since POSIX functions give only a singular error or success its difficult to determine the proper behavior when applying the function to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
@@ -617,7 +617,7 @@ done
 
 Remember that the default policy for `getattr` is `ff`. The information for the first directory found will be returned. If it wasn't the directory which had been updated then it will appear outdated.
 
-The reason this is the default is because any other policy would be far more expensive and for many applications it is unnecessary. To always return the directory with the most recent mtime or a faked value based on all found would require a scan of all drives. That alone is far more expensive than `ff` but would also possibly spin up sleeping drives.
+The reason this is the default is because any other policy would be more expensive and for many applications it is unnecessary. To always return the directory with the most recent mtime or a faked value based on all found would require a scan of all drives.
 
 If you always want the directory information from the one with the most recent mtime then use the `newest` policy for `getattr`.
 
