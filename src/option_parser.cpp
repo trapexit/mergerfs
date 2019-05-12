@@ -46,6 +46,7 @@ enum
     MERGERFS_OPT_VERSION
   };
 
+
 static
 void
 set_option(fuse_args         *args,
@@ -71,21 +72,20 @@ set_kv_option(fuse_args         *args,
 
 static
 void
-set_fsname(fuse_args      *args,
-           const Branches &branches_)
+set_fsname(fuse_args *args_,
+           Config    *config_)
 {
-  vector<string> branches;
-
-  branches_.to_paths(branches);
-
-  if(branches.size() > 0)
+  if(config_->fsname.empty())
     {
-      std::string fsname;
+      vector<string> branches;
 
-      fsname = str::remove_common_prefix_and_join(branches,':');
+      config_->branches.to_paths(branches);
 
-      set_kv_option(args,"fsname",fsname);
+      if(branches.size() > 0)
+        config_->fsname = str::remove_common_prefix_and_join(branches,':');
     }
+
+  set_kv_option(args_,"fsname",config_->fsname);
 }
 
 static
@@ -143,6 +143,16 @@ parse_and_process(const std::string &value,
     boolean = true;
   else
     return 1;
+
+  return 0;
+}
+
+static
+int
+parse_and_process(const std::string &value_,
+                  std::string       &str_)
+{
+  str_ = value_;
 
   return 0;
 }
@@ -293,6 +303,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process_statfs(value,config.statfs);
       else if(key == "statfs_ignore")
         rv = parse_and_process_statfsignore(value,config.statfs_ignore);
+      else if(key == "fsname")
+        rv = parse_and_process(value,config.fsname);
     }
 
   if(rv == -1)
@@ -470,8 +482,8 @@ option_processor(void       *data,
 namespace options
 {
   void
-  parse(fuse_args *args,
-        Config    *config)
+  parse(fuse_args *args_,
+        Config    *config_)
   {
     const struct fuse_opt opts[] =
       {
@@ -483,13 +495,13 @@ namespace options
         {NULL,-1U,0}
       };
 
-    fuse_opt_parse(args,
-                   config,
+    fuse_opt_parse(args_,
+                   config_,
                    opts,
                    ::option_processor);
 
-    set_default_options(args);
-    set_fsname(args,config->branches);
-    set_subtype(args);
+    set_default_options(args_);
+    set_fsname(args_,config_);
+    set_subtype(args_);
   }
 }
