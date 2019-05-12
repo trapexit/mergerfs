@@ -61,6 +61,7 @@ public:
                           const std::string &policy_);
 
 public:
+  std::string              fsname;
   std::string              destmount;
   Branches                 branches;
   mutable pthread_rwlock_t branches_lock;
