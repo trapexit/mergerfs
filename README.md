@@ -1,10 +1,11 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-05-03
+% 2019-05-12
 
 # NAME
 
 mergerfs - a featureful union filesystem
+
 
 # SYNOPSIS
 
@@ -1008,14 +1009,13 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 
 This software is free to use and released under a very liberal license. That said if you like this software and would like to support its development donations are welcome.
 
-* PayPal: trapexit@spawn.link
+* PayPal: https://paypal.me/trapexit
 * Patreon: https://www.patreon.com/trapexit
 * SubscribeStar: https://www.subscribestar.com/trapexit
 * Bitcoin (BTC): 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
 * Bitcoin Cash (BCH): 1AjPqZZhu7GVEs6JFPjHmtsvmDL4euzMzp
 * Ethereum (ETH): 0x09A166B11fCC127324C7fc5f1B572255b3046E94
 * Litecoin (LTC): LXAsq6yc6zYU3EbcqyWtHBrH1Ypx4GjUjm
-* Ripple (XRP): rNACR2hqGjpbHuCKwmJ4pDpd2zRfuRATcE
 
 
 # LINKS
@@ -1026,4 +1026,3 @@ This software is free to use and released under a very liberal license. That sai
 * https://github.com/trapexit/scorch
 * https://github.com/trapexit/bbf
 * https://github.com/trapexit/backup-and-recovery-howtos
-* https://discord.gg/MpAr69V
