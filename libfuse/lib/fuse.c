@@ -1513,18 +1513,17 @@ int fuse_fs_fgetattr(struct fuse_fs *fs, const char *path, struct stat *buf,
 	}
 }
 
-int fuse_fs_rename(struct fuse_fs *fs, const char *oldpath,
-		   const char *newpath)
+int
+fuse_fs_rename(struct fuse_fs *fs,
+               const char     *oldpath,
+               const char     *newpath)
 {
-	fuse_get_context()->private_data = fs->user_data;
-	if (fs->op.rename) {
-		if (fs->debug)
-			fprintf(stderr, "rename %s %s\n", oldpath, newpath);
+  fuse_get_context()->private_data = fs->user_data;
 
-		return fs->op.rename(oldpath, newpath);
-	} else {
-		return -ENOSYS;
-	}
+  if(fs->op.rename)
+    return fs->op.rename(oldpath, newpath);
+
+  return -ENOSYS;
 }
 
 int
@@ -2304,9 +2303,11 @@ int fuse_fs_fallocate(struct fuse_fs *fs, const char *path, int mode,
 
 static
 int
-is_node_open(const struct node *node_)
+node_open_and_visible(const struct node *node_)
 {
-  return (node_ && (node_->open_count > 0));
+  return ((node_ != NULL)         &&
+          (node_->open_count > 0) &&
+          (node_->is_hidden == 0));
 }
 
 static int mtime_eq(const struct stat *stbuf, const struct timespec *ts)
@@ -2901,8 +2902,7 @@ static void fuse_lib_unlink(fuse_req_t req, fuse_ino_t parent,
 		struct fuse_intr_data d;
 
 		fuse_prepare_interrupt(f, req, &d);
-
-		if(is_node_open(wnode))
+                if(node_open_and_visible(wnode))
                   {
                     err = fuse_fs_prepare_hide(f->fs, path, &wnode->hidden_fh, 0);
                     if(!err)
@@ -2975,17 +2975,21 @@ static void fuse_lib_rename(fuse_req_t req, fuse_ino_t olddir,
 
 	err = get_path2(f, olddir, oldname, newdir, newname,
 			&oldpath, &newpath, &wnode1, &wnode2);
+
 	if (!err) {
 		struct fuse_intr_data d;
 		err = 0;
 		fuse_prepare_interrupt(f, req, &d);
-		if (is_node_open(wnode2))
+                if(node_open_and_visible(wnode2))
                   err = fuse_fs_prepare_hide(f->fs, newpath, &wnode2->hidden_fh, 1);
-		if (!err) {
-                  err = fuse_fs_rename(f->fs, oldpath, newpath);
-                  if (!err)
-                    err = rename_node(f, olddir, oldname, newdir, newname);
-		}
+
+		if (!err)
+                  {
+                    err = fuse_fs_rename(f->fs, oldpath, newpath);
+                    if (!err)
+                      err = rename_node(f, olddir, oldname, newdir, newname);
+                  }
+
 		fuse_finish_interrupt(f, req, &d);
 		free_path2(f, olddir, newdir, wnode1, wnode2, oldpath, newpath);
 	}

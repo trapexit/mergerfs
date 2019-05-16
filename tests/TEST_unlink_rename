@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+(srcfd,src) = tempfile.mkstemp(dir=sys.argv[1])
+(tgtfd,tgt) = tempfile.mkstemp(dir=sys.argv[1])
+
+os.unlink(tgt)
+os.rename(src,tgt)
+
+os.close(srcfd)
+os.close(tgtfd)
