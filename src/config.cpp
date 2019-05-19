@@ -14,16 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
-#include <unistd.h>
-#include <sys/stat.h>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs.hpp"
 #include "rwlock.hpp"
+
+#include <unistd.h>
+#include <sys/stat.h>
+
+#include <string>
+#include <vector>
 
 #define MINFREESPACE_DEFAULT (4294967295ULL)
 #define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
@@ -48,6 +48,7 @@ Config::Config()
     xattr(0),
     statfs(StatFS::BASE),
     statfs_ignore(StatFSIgnore::NONE),
+    posix_acl(false),
     POLICYINIT(access),
     POLICYINIT(chmod),
     POLICYINIT(chown),

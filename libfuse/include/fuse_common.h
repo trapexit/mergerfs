@@ -112,6 +112,8 @@ struct fuse_file_info {
 #define FUSE_CAP_SPLICE_READ	(1 << 9)
 #define FUSE_CAP_FLOCK_LOCKS	(1 << 10)
 #define FUSE_CAP_IOCTL_DIR	(1 << 11)
+#define FUSE_CAP_POSIX_ACL      (1 << 19)
+
 
 /**
  * Ioctl flags

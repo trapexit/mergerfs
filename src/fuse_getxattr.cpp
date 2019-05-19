@@ -346,6 +346,8 @@ namespace l
           l::getxattr_controlfile_pid(attrvalue);
         else if(attr[2] == "direct_io")
           l::getxattr_controlfile_bool(config.direct_io,attrvalue);
+        else if(attr[2] == "posix_acl")
+          l::getxattr_controlfile_bool(config.posix_acl,attrvalue);
         break;
 
       case 4:
