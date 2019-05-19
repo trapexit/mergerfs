@@ -78,6 +78,7 @@ public:
   int                      xattr;
   StatFS::Enum             statfs;
   StatFSIgnore::Enum       statfs_ignore;
+  bool                     posix_acl;
 
 public:
   const Policy  *policies[FuseFunc::Enum::END];

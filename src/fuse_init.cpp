@@ -19,6 +19,17 @@
 
 #include <fuse.h>
 
+namespace l
+{
+  void
+  want_if_capable(fuse_conn_info *conn_,
+                  const int       flag_)
+  {
+    if(conn_->capable & flag_)
+      conn_->want |= flag_;
+  }
+}
+
 namespace FUSE
 {
   void *
@@ -26,11 +37,13 @@ namespace FUSE
   {
     ugid::init();
 
-    conn_->want |= FUSE_CAP_ASYNC_READ;
-    conn_->want |= FUSE_CAP_ATOMIC_O_TRUNC;
-    conn_->want |= FUSE_CAP_BIG_WRITES;
-    conn_->want |= FUSE_CAP_DONT_MASK;
-    conn_->want |= FUSE_CAP_IOCTL_DIR;
+    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ);
+    l::want_if_capable(conn_,FUSE_CAP_ATOMIC_O_TRUNC);
+    l::want_if_capable(conn_,FUSE_CAP_BIG_WRITES);
+    l::want_if_capable(conn_,FUSE_CAP_DONT_MASK);
+    l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
+    if(Config::get().posix_acl)
+      l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL);
 
     return &Config::get_writable();
   }

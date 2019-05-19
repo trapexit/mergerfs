@@ -305,6 +305,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process_statfsignore(value,config.statfs_ignore);
       else if(key == "fsname")
         rv = parse_and_process(value,config.fsname);
+      else if(key == "posix_acl")
+        rv = parse_and_process(value,config.posix_acl);
     }
 
   if(rv == -1)
@@ -433,6 +435,7 @@ usage(void)
     "                           as 'read only' or 'no create'. 'nc' will ignore\n"
     "                           available space for branches tagged as\n"
     "                           'no create'. default = none\n"
+    "    -o posix_acl=<bool>    enable POSIX ACL support\n"
             << std::endl;
 }
 
