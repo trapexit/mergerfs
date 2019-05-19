@@ -96,7 +96,7 @@ namespace l
     ops.destroy     = FUSE::destroy;
     ops.fallocate   = FUSE::fallocate;
     ops.fgetattr    = FUSE::fgetattr;
-    ops.flock       = FUSE::flock;
+    ops.flock       = NULL; // FUSE::flock;
     ops.flush       = FUSE::flush;
     ops.fsync       = FUSE::fsync;
     ops.fsyncdir    = FUSE::fsyncdir;
