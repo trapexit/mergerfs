@@ -2888,35 +2888,40 @@ static void fuse_lib_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 	reply_entry(req, &e, err);
 }
 
-static void fuse_lib_unlink(fuse_req_t req, fuse_ino_t parent,
-			    const char *name)
+static
+void
+fuse_lib_unlink(fuse_req_t  req,
+                fuse_ino_t  parent,
+                const char *name)
 {
-	struct fuse *f = req_fuse_prepare(req);
-	struct node *wnode;
-	char *path;
-	int err;
+  int err;
+  char *path;
+  struct fuse *f;
+  struct node *wnode;
+  struct fuse_intr_data d;
 
-	err = get_path_wrlock(f, parent, name, &path, &wnode);
+  f = req_fuse_prepare(req);
+  err = get_path_wrlock(f,parent,name,&path,&wnode);
 
-	if (!err) {
-		struct fuse_intr_data d;
+  if(!err)
+    {
+      fuse_prepare_interrupt(f,req,&d);
+      if(node_open_and_visible(wnode))
+        {
+          err = fuse_fs_prepare_hide(f->fs,path,&wnode->hidden_fh,0);
+          if(!err)
+            wnode->is_hidden = 1;
+        }
 
-		fuse_prepare_interrupt(f, req, &d);
-                if(node_open_and_visible(wnode))
-                  {
-                    err = fuse_fs_prepare_hide(f->fs, path, &wnode->hidden_fh, 0);
-                    if(!err)
-                      wnode->is_hidden = 1;
-                  }
+      err = fuse_fs_unlink(f->fs,path);
+      if(!err && !wnode->is_hidden)
+        remove_node(f,parent,name);
 
-                err = fuse_fs_unlink(f->fs, path);
-                if(!err && !wnode->is_hidden)
-                  remove_node(f, parent, name);
+      fuse_finish_interrupt(f,req,&d);
+      free_path_wrlock(f,parent,wnode,path);
+    }
 
-		fuse_finish_interrupt(f, req, &d);
-		free_path_wrlock(f, parent, wnode, path);
-	}
-	reply_err(req, err);
+  reply_err(req,err);
 }
 
 static void fuse_lib_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
@@ -2962,38 +2967,45 @@ static void fuse_lib_symlink(fuse_req_t req, const char *linkname,
 	reply_entry(req, &e, err);
 }
 
-static void fuse_lib_rename(fuse_req_t req, fuse_ino_t olddir,
-			    const char *oldname, fuse_ino_t newdir,
-			    const char *newname)
+static
+void
+fuse_lib_rename(fuse_req_t  req,
+                fuse_ino_t  olddir,
+                const char *oldname,
+                fuse_ino_t  newdir,
+                const char *newname)
 {
-	struct fuse *f = req_fuse_prepare(req);
-	char *oldpath;
-	char *newpath;
-	struct node *wnode1;
-	struct node *wnode2;
-	int err;
+  int err;
+  struct fuse *f;
+  char *oldpath;
+  char *newpath;
+  struct node *wnode1;
+  struct node *wnode2;
+  struct fuse_intr_data d;
 
-	err = get_path2(f, olddir, oldname, newdir, newname,
-			&oldpath, &newpath, &wnode1, &wnode2);
+  f = req_fuse_prepare(req);
+  err = get_path2(f,olddir,oldname,newdir,newname,
+                  &oldpath,&newpath,&wnode1,&wnode2);
 
-	if (!err) {
-		struct fuse_intr_data d;
-		err = 0;
-		fuse_prepare_interrupt(f, req, &d);
-                if(node_open_and_visible(wnode2))
-                  err = fuse_fs_prepare_hide(f->fs, newpath, &wnode2->hidden_fh, 1);
+  if(!err)
+    {
+      fuse_prepare_interrupt(f,req,&d);
+      if(node_open_and_visible(wnode2))
+        {
+          err = fuse_fs_prepare_hide(f->fs,newpath,&wnode2->hidden_fh,1);
+          if(!err)
+            wnode2->is_hidden = 1;
+        }
 
-		if (!err)
-                  {
-                    err = fuse_fs_rename(f->fs, oldpath, newpath);
-                    if (!err)
-                      err = rename_node(f, olddir, oldname, newdir, newname);
-                  }
+      err = fuse_fs_rename(f->fs,oldpath,newpath);
+      if(!err)
+        err = rename_node(f,olddir,oldname,newdir,newname);
 
-		fuse_finish_interrupt(f, req, &d);
-		free_path2(f, olddir, newdir, wnode1, wnode2, oldpath, newpath);
-	}
-	reply_err(req, err);
+      fuse_finish_interrupt(f,req,&d);
+      free_path2(f,olddir,newdir,wnode1,wnode2,oldpath,newpath);
+    }
+
+  reply_err(req,err);
 }
 
 static void fuse_lib_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
