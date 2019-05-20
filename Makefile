@@ -112,9 +112,6 @@ build/mergerfs: libfuse objects
 
 mergerfs: build/mergerfs
 
-build/mount.mergerfs: build/mergerfs
-	$(LN) -fs "$<" "$@"
-
 changelog:
 ifeq ($(GIT_REPO),1)
 	$(GIT2DEBCL) --name mergerfs > ChangeLog
@@ -151,9 +148,9 @@ install-base: build/mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(INSTALL) -v -m 0755 build/mergerfs "$(INSTALLBINDIR)/mergerfs"
 
-install-mount.mergerfs: build/mount.mergerfs
+install-mount.mergerfs: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(CP) -a build/mount.mergerfs "$(INSTALLBINDIR)/mount.mergerfs"
+	$(LN) -s "mergerfs" "$(INSTALLBINDIR)/mount.mergerfs"
 
 install-man: $(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"
