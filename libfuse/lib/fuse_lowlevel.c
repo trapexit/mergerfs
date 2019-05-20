@@ -1799,6 +1799,8 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
                         f->conn.capable |= FUSE_CAP_POSIX_ACL;
                 if (arg->flags & FUSE_ASYNC_DIO)
                         f->conn.capable |= FUSE_CAP_ASYNC_DIO;
+                if (arg->flags & FUSE_PARALLEL_DIROPS)
+                        f->conn.capable |= FUSE_CAP_PARALLEL_DIROPS;
 	} else {
 		f->conn.async_read = 0;
 		f->conn.max_readahead = 0;
@@ -1869,6 +1871,8 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
                 outarg.flags |= FUSE_POSIX_ACL;
         if (f->conn.want & FUSE_CAP_ASYNC_DIO)
                 outarg.flags |= FUSE_ASYNC_DIO;
+        if (f->conn.want & FUSE_CAP_PARALLEL_DIROPS)
+                outarg.flags |= FUSE_PARALLEL_DIROPS;
 	outarg.max_readahead = f->conn.max_readahead;
 	outarg.max_write = f->conn.max_write;
 	if (f->conn.proto_minor >= 13) {

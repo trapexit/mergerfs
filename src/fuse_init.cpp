@@ -43,6 +43,7 @@ namespace FUSE
     l::want_if_capable(conn_,FUSE_CAP_DONT_MASK);
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
+    l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
     if(Config::get().posix_acl)
       l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL);
 
