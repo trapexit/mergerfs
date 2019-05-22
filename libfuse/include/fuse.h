@@ -129,7 +129,7 @@ struct fuse_operations {
         * while open. Helps manage the fact the kernel usually does
         * not send fh with getattr requests.
         */
-        int (*prepare_hide)(const char *name_, uint64_t *fh_, int type_);
+        int (*prepare_hide)(const char *name_, uint64_t *fh_);
         int (*free_hide)(const uint64_t fh_);
 
 	/** Remove a file */
@@ -920,6 +920,9 @@ int fuse_fs_fallocate(struct fuse_fs *fs, const char *path, int mode,
 		 off_t offset, off_t length, struct fuse_file_info *fi);
 void fuse_fs_init(struct fuse_fs *fs, struct fuse_conn_info *conn);
 void fuse_fs_destroy(struct fuse_fs *fs);
+
+int fuse_fs_prepare_hide(struct fuse_fs *fs, const char *path, uint64_t *fh);
+int fuse_fs_free_hide(struct fuse_fs *fs, uint64_t fh);
 
 int fuse_notify_poll(struct fuse_pollhandle *ph);
 

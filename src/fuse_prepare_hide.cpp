@@ -26,8 +26,7 @@ namespace FUSE
 {
   int
   prepare_hide(const char *fusepath_,
-               uint64_t   *fh_,
-               int         type_)
+               uint64_t   *fh_)
   {
     int rv;
     struct fuse_file_info ffi = {0};
