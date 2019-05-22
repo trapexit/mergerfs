@@ -365,6 +365,8 @@ namespace l
           l::getxattr_controlfile_cache_entry(attrvalue);
         else if((attr[2] == "cache") && (attr[3] == "negative_entry"))
           l::getxattr_controlfile_cache_negative_entry(attrvalue);
+        else if((attr[2] == "cache") && (attr[3] == "symlinks"))
+          l::getxattr_controlfile_bool(config.cache_symlinks,attrvalue);
         break;
       }
 

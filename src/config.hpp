@@ -79,6 +79,7 @@ public:
   StatFS::Enum             statfs;
   StatFSIgnore::Enum       statfs_ignore;
   bool                     posix_acl;
+  bool                     cache_symlinks;
 
 public:
   const Policy  *policies[FuseFunc::Enum::END];

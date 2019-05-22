@@ -239,6 +239,8 @@ parse_and_process_cache(Config       &config_,
     return (set_kv_option(outargs,"negative_timeout",value_),0);
   else if(func_ == "attr")
     return (set_kv_option(outargs,"attr_timeout",value_),0);
+  else if(func_ == "symlinks")
+    return parse_and_process(value_,config_.cache_symlinks);
 
   return 1;
 }
@@ -383,6 +385,9 @@ usage(void)
     "                           default = 0 (disabled)\n"
     "    -o cache.statfs=<int>  'statfs' cache timeout in seconds. Used by\n"
     "                           policies. default = 0 (disabled)\n"
+    "    -o cache.symlinks=<bool>\n"
+    "                           enable kernel caching of symlinks (if supported)\n"
+    "                           default = false\n"
     "    -o cache.attr=<int>    file attribute cache timeout in seconds.\n"
     "                           default = 1\n"
     "    -o cache.entry=<int>   file name lookup cache timeout in seconds.\n"

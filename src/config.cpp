@@ -49,6 +49,7 @@ Config::Config()
     statfs(StatFS::BASE),
     statfs_ignore(StatFSIgnore::NONE),
     posix_acl(false),
+    cache_symlinks(false),
     POLICYINIT(access),
     POLICYINIT(chmod),
     POLICYINIT(chown),
