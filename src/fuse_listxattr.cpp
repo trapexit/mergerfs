@@ -50,6 +50,7 @@ namespace l
       ("user.mergerfs.cache.negative_entry")
       ("user.mergerfs.cache.open")
       ("user.mergerfs.cache.statfs")
+      ("user.mergerfs.cache.symlinks")
       ("user.mergerfs.direct_io")
       ("user.mergerfs.dropcacheonclose")
       ("user.mergerfs.ignorepponrename")

@@ -100,6 +100,7 @@ struct fuse_file_info {
  * FUSE_CAP_SPLICE_MOVE: ability to move data to the fuse device with splice()
  * FUSE_CAP_SPLICE_READ: ability to use splice() to read from the fuse device
  * FUSE_CAP_IOCTL_DIR: ioctl support on directories
+ * FUSE_CAP_CACHE_SYMLINKS: cache READLINK responses
  */
 #define FUSE_CAP_ASYNC_READ      (1 << 0)
 #define FUSE_CAP_POSIX_LOCKS     (1 << 1)
@@ -115,6 +116,7 @@ struct fuse_file_info {
 #define FUSE_CAP_ASYNC_DIO       (1 << 15)
 #define FUSE_CAP_PARALLEL_DIROPS (1 << 18)
 #define FUSE_CAP_POSIX_ACL       (1 << 19)
+#define FUSE_CAP_CACHE_SYMLINKS  (1 << 20)
 
 
 /**

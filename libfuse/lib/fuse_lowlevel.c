@@ -1797,6 +1797,8 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 			f->conn.capable |= FUSE_CAP_FLOCK_LOCKS;
                 if (arg->flags & FUSE_POSIX_ACL)
                         f->conn.capable |= FUSE_CAP_POSIX_ACL;
+                if (arg->flags & FUSE_CACHE_SYMLINKS)
+                        f->conn.capable |= FUSE_CAP_CACHE_SYMLINKS;
                 if (arg->flags & FUSE_ASYNC_DIO)
                         f->conn.capable |= FUSE_CAP_ASYNC_DIO;
                 if (arg->flags & FUSE_PARALLEL_DIROPS)
@@ -1869,6 +1871,8 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		outarg.flags |= FUSE_FLOCK_LOCKS;
         if (f->conn.want & FUSE_CAP_POSIX_ACL)
                 outarg.flags |= FUSE_POSIX_ACL;
+        if (f->conn.want & FUSE_CAP_CACHE_SYMLINKS)
+                outarg.flags |= FUSE_CACHE_SYMLINKS;
         if (f->conn.want & FUSE_CAP_ASYNC_DIO)
                 outarg.flags |= FUSE_ASYNC_DIO;
         if (f->conn.want & FUSE_CAP_PARALLEL_DIROPS)

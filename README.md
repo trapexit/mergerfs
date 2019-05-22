@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-05-18
+% 2019-05-22
 
 # NAME
 
@@ -91,6 +91,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **cache.attr=&lt;int&gt;**: file attribute cache timeout in seconds. (default: 1)
 * **cache.entry=&lt;int&gt;**: file name lookup cache timeout in seconds. (default: 1)
 * **cache.negative_entry=&lt;int&gt;**: negative file name lookup cache timeout in seconds. (default: 0)
+* **cache.symlinks=&lt;bool&gt;**: cache symlinks (if supported by kernel) (default: false)
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -524,6 +525,11 @@ Of the syscalls used by mergerfs in policies the `statfs` / `statvfs` call is pe
 Example: If the create policy is `mfs` and the timeout is 60 then for that 60 seconds the same drive will be returned as the target for creates because the available space won't be updated for that time.
 
 
+#### symlink caching
+
+As of version 4.20 Linux supports symlink caching. Significant performance increases can be had in workloads which use a lot of symlinks. Setting `cache.symlinks=true` will result in requesting symlink caching from the kernel only if supported. As a result its safe to enable it on systems prior to 4.20. That said it is disabled by default for now. You can see if caching is enabled by querying the xattr `user.mergerfs.cache.symlinks`.
+
+
 #### writeback caching
 
 writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a slightly modified and vendored libfuse 2.9.7 which does not support writeback caching. However, a prototype port to libfuse 3.x has been made and the writeback cache appears to work as expected (though performance improvements greatly depend on the way the client app writes data). Once the port is complete and thoroughly tested writeback caching will be available.
@@ -889,7 +895,7 @@ MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to pr
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.entry, cache.attr, ac_attr_timeout, cache.negative_entry, auto_cache, kernel_cache).
+Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.entry, cache.attr, ac_attr_timeout, cache.negative_entry, cache.symlinks, auto_cache, kernel_cache).
 
 
 #### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
@@ -974,6 +980,7 @@ NOTE: be sure to read about these features before changing them
 * add (or remove) `splice_move`, `splice_read`, and `splice_write`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable `cache.open` and/or `cache.statfs`
+* enable `cache.symlinks`
 * change the number opf worker threads
 * disable `security_capability` and/or `xattr`
 * disable `posix_acl`
