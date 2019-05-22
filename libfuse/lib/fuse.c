@@ -438,11 +438,18 @@ static void set_forget_time(struct fuse *f, struct node *node)
 	curr_time(&lnode->forget_time);
 }
 
-static void free_node(struct fuse *f, struct node *node)
+static
+void
+free_node(struct fuse *f_,
+          struct node *node_)
 {
-	if (node->name != node->inline_name)
-		free(node->name);
-	free_node_mem(f, node);
+  if(node_->name != node_->inline_name)
+    free(node_->name);
+
+  if(node_->is_hidden)
+    fuse_fs_free_hide(f_->fs,node_->hidden_fh);
+
+  free_node_mem(f_,node_);
 }
 
 static void node_table_reduce(struct node_table *t)
@@ -1529,13 +1536,12 @@ fuse_fs_rename(struct fuse_fs *fs,
 int
 fuse_fs_prepare_hide(struct fuse_fs *fs_,
                      const char     *path_,
-                     uint64_t       *fh_,
-                     int             type_)
+                     uint64_t       *fh_)
 {
   fuse_get_context()->private_data = fs_->user_data;
 
   if(fs_->op.prepare_hide)
-    return fs_->op.prepare_hide(path_,fh_,type_);
+    return fs_->op.prepare_hide(path_,fh_);
 
   return -ENOSYS;
 }
@@ -2303,11 +2309,10 @@ int fuse_fs_fallocate(struct fuse_fs *fs, const char *path, int mode,
 
 static
 int
-node_open_and_visible(const struct node *node_)
+node_open(const struct node *node_)
 {
-  return ((node_ != NULL)         &&
-          (node_->open_count > 0) &&
-          (node_->is_hidden == 0));
+  return ((node_ != NULL) &&
+          (node_->open_count > 0));
 }
 
 static int mtime_eq(const struct stat *stbuf, const struct timespec *ts)
@@ -2906,15 +2911,18 @@ fuse_lib_unlink(fuse_req_t  req,
   if(!err)
     {
       fuse_prepare_interrupt(f,req,&d);
-      if(node_open_and_visible(wnode))
+
+      pthread_mutex_lock(&f->lock);
+      if(node_open(wnode))
         {
-          err = fuse_fs_prepare_hide(f->fs,path,&wnode->hidden_fh,0);
+          err = fuse_fs_prepare_hide(f->fs,path,&wnode->hidden_fh);
           if(!err)
             wnode->is_hidden = 1;
         }
+      pthread_mutex_unlock(&f->lock);
 
       err = fuse_fs_unlink(f->fs,path);
-      if(!err && !wnode->is_hidden)
+      if(!err)
         remove_node(f,parent,name);
 
       fuse_finish_interrupt(f,req,&d);
@@ -2990,12 +2998,15 @@ fuse_lib_rename(fuse_req_t  req,
   if(!err)
     {
       fuse_prepare_interrupt(f,req,&d);
-      if(node_open_and_visible(wnode2))
+
+      pthread_mutex_lock(&f->lock);
+      if(node_open(wnode2))
         {
-          err = fuse_fs_prepare_hide(f->fs,newpath,&wnode2->hidden_fh,1);
+          err = fuse_fs_prepare_hide(f->fs,newpath,&wnode2->hidden_fh);
           if(!err)
             wnode2->is_hidden = 1;
         }
+      pthread_mutex_unlock(&f->lock);
 
       err = fuse_fs_rename(f->fs,oldpath,newpath);
       if(!err)
