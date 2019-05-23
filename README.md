@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-05-22
+% 2019-05-23
 
 # NAME
 
@@ -92,6 +92,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **cache.entry=&lt;int&gt;**: file name lookup cache timeout in seconds. (default: 1)
 * **cache.negative_entry=&lt;int&gt;**: negative file name lookup cache timeout in seconds. (default: 0)
 * **cache.symlinks=&lt;bool&gt;**: cache symlinks (if supported by kernel) (default: false)
+* **cache.readdir=&lt;bool&gt;**: cache readdir (if supported by kernel) (default: false)
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -527,7 +528,12 @@ Example: If the create policy is `mfs` and the timeout is 60 then for that 60 se
 
 #### symlink caching
 
-As of version 4.20 Linux supports symlink caching. Significant performance increases can be had in workloads which use a lot of symlinks. Setting `cache.symlinks=true` will result in requesting symlink caching from the kernel only if supported. As a result its safe to enable it on systems prior to 4.20. That said it is disabled by default for now. You can see if caching is enabled by querying the xattr `user.mergerfs.cache.symlinks`.
+As of version 4.20 Linux supports symlink caching. Significant performance increases can be had in workloads which use a lot of symlinks. Setting `cache.symlinks=true` will result in requesting symlink caching from the kernel only if supported. As a result its safe to enable it on systems prior to 4.20. That said it is disabled by default for now. You can see if caching is enabled by querying the xattr `user.mergerfs.cache.symlinks` but given it must be requested at startup you can not change it at runtime.
+
+
+#### readdir caching
+
+As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute ('cache.attr') caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configuarable at runtime via xattr `user.mergerfs.cache.readdir`.
 
 
 #### writeback caching

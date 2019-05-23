@@ -241,6 +241,8 @@ parse_and_process_cache(Config       &config_,
     return (set_kv_option(outargs,"attr_timeout",value_),0);
   else if(func_ == "symlinks")
     return parse_and_process(value_,config_.cache_symlinks);
+  else if(func_ == "readdir")
+    return parse_and_process(value_,config_.cache_readdir);
 
   return 1;
 }
@@ -395,6 +397,8 @@ usage(void)
     "    -o cache.negative_entry=<int>\n"
     "                           negative file name lookup cache timeout in\n"
     "                           seconds. default = 0\n"
+    "    -o cache.readdir=<bool>\n"
+    "                           enable kernel caching readdir (if supported)\n"
     "    -o direct_io           Bypass page caching, may increase write\n"
     "                           speeds at the cost of reads. Please read docs\n"
     "                           for more details as there are tradeoffs.\n"

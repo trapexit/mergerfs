@@ -80,6 +80,7 @@ public:
   StatFSIgnore::Enum       statfs_ignore;
   bool                     posix_acl;
   bool                     cache_symlinks;
+  bool                     cache_readdir;
 
 public:
   const Policy  *policies[FuseFunc::Enum::END];
