@@ -352,6 +352,8 @@ static void fill_open(struct fuse_open_out *arg,
 		arg->open_flags |= FOPEN_KEEP_CACHE;
 	if (f->nonseekable)
 		arg->open_flags |= FOPEN_NONSEEKABLE;
+        if (f->cache_readdir)
+                arg->open_flags |= FOPEN_CACHE_DIR;
 }
 
 int fuse_reply_entry(fuse_req_t req, const struct fuse_entry_param *e)
@@ -1041,7 +1043,6 @@ static void do_getattr(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		if (arg->getattr_flags & FUSE_GETATTR_FH) {
 			memset(&fi, 0, sizeof(fi));
 			fi.fh = arg->fh;
-			fi.fh_old = fi.fh;
 			fip = &fi;
 		}
 	}
@@ -1067,7 +1068,6 @@ static void do_setattr(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 			memset(&fi_store, 0, sizeof(fi_store));
 			fi = &fi_store;
 			fi->fh = arg->fh;
-			fi->fh_old = fi->fh;
 		}
 		arg->valid &=
 			FUSE_SET_ATTR_MODE	|
@@ -1230,7 +1230,6 @@ static void do_read(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 		memset(&fi, 0, sizeof(fi));
 		fi.fh = arg->fh;
-		fi.fh_old = fi.fh;
 		if (req->f->conn.proto_minor >= 9) {
 			fi.lock_owner = arg->lock_owner;
 			fi.flags = arg->flags;
@@ -1248,7 +1247,6 @@ static void do_write(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 	fi.writepage = arg->write_flags & 1;
 
 	if (req->f->conn.proto_minor < 9) {
@@ -1279,7 +1277,6 @@ static void do_write_buf(fuse_req_t req, fuse_ino_t nodeid, const void *inarg,
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 	fi.writepage = arg->write_flags & 1;
 
 	if (req->f->conn.proto_minor < 9) {
@@ -1318,7 +1315,6 @@ static void do_flush(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 	fi.flush = 1;
 	if (req->f->conn.proto_minor >= 7)
 		fi.lock_owner = arg->lock_owner;
@@ -1337,7 +1333,6 @@ static void do_release(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	memset(&fi, 0, sizeof(fi));
 	fi.flags = arg->flags;
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 	if (req->f->conn.proto_minor >= 8) {
 		fi.flush = (arg->release_flags & FUSE_RELEASE_FLUSH) ? 1 : 0;
 		fi.lock_owner = arg->lock_owner;
@@ -1360,7 +1355,6 @@ static void do_fsync(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 
 	if (req->f->op.fsync)
 		req->f->op.fsync(req, nodeid, arg->fsync_flags & 1, &fi);
@@ -1389,7 +1383,6 @@ static void do_readdir(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 
 	if (req->f->op.readdir)
 		req->f->op.readdir(req, nodeid, arg->size, arg->offset, &fi);
@@ -1405,7 +1398,6 @@ static void do_releasedir(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	memset(&fi, 0, sizeof(fi));
 	fi.flags = arg->flags;
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 
 	if (req->f->op.releasedir)
 		req->f->op.releasedir(req, nodeid, &fi);
@@ -1420,7 +1412,6 @@ static void do_fsyncdir(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 
 	if (req->f->op.fsyncdir)
 		req->f->op.fsyncdir(req, nodeid, arg->fsync_flags & 1, &fi);
@@ -1675,7 +1666,6 @@ static void do_ioctl(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 
 	if (sizeof(void *) == 4 && req->f->conn.proto_minor >= 16 &&
 	    !(flags & FUSE_IOCTL_32BIT)) {
@@ -1702,7 +1692,6 @@ static void do_poll(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 	memset(&fi, 0, sizeof(fi));
 	fi.fh = arg->fh;
-	fi.fh_old = fi.fh;
 
 	if (req->f->op.poll) {
 		struct fuse_pollhandle *ph = NULL;

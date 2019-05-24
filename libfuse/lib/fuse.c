@@ -3275,7 +3275,6 @@ static struct fuse_dh *get_dirhandle(const struct fuse_file_info *llfi,
 	struct fuse_dh *dh = (struct fuse_dh *) (uintptr_t) llfi->fh;
 	memset(fi, 0, sizeof(struct fuse_file_info));
 	fi->fh = dh->fh;
-	fi->fh_old = dh->fh;
 	return dh;
 }
 
@@ -3294,6 +3293,7 @@ static void fuse_lib_opendir(fuse_req_t req, fuse_ino_t ino,
 		reply_err(req, -ENOMEM);
 		return;
 	}
+
 	memset(dh, 0, sizeof(struct fuse_dh));
 	dh->fuse = f;
 	dh->contents = NULL;
@@ -3313,7 +3313,10 @@ static void fuse_lib_opendir(fuse_req_t req, fuse_ino_t ino,
 		err = fuse_fs_opendir(f->fs, path, &fi);
 		fuse_finish_interrupt(f, req, &d);
 		dh->fh = fi.fh;
+                llfi->keep_cache    = fi.keep_cache;
+                llfi->cache_readdir = fi.cache_readdir;
 	}
+
 	if (!err) {
 		if (fuse_reply_open(req, llfi) == -ENOENT) {
 			/* The opendir syscall was interrupted, so it

@@ -178,7 +178,7 @@ namespace l
   int
   setxattr_xattr(const string &attrval_,
                  const int     flags_,
-                 int           xattr_)
+                 int          &xattr_)
   {
     if((flags_ & XATTR_CREATE) == XATTR_CREATE)
       return -EEXIST;
@@ -436,6 +436,8 @@ namespace l
           return l::setxattr_controlfile_cache_entry(attrval,flags);
         else if((attr[2] == "cache") && (attr[3] == "negative_entry"))
           return l::setxattr_controlfile_cache_negative_entry(attrval,flags);
+        else if((attr[2] == "cache") && (attr[3] == "readdir"))
+          return l::setxattr_bool(attrval,flags,config.cache_readdir);
         break;
 
       default:

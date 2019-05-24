@@ -49,6 +49,7 @@ namespace l
       ("user.mergerfs.cache.entry")
       ("user.mergerfs.cache.negative_entry")
       ("user.mergerfs.cache.open")
+      ("user.mergerfs.cache.readdir")
       ("user.mergerfs.cache.statfs")
       ("user.mergerfs.cache.symlinks")
       ("user.mergerfs.direct_io")
