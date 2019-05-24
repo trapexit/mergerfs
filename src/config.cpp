@@ -52,6 +52,7 @@ Config::Config()
     cache_symlinks(false),
     cache_readdir(false),
     async_read(true),
+    cache_files(CacheFiles::LIBFUSE),
     POLICYINIT(access),
     POLICYINIT(chmod),
     POLICYINIT(chown),
@@ -123,4 +124,75 @@ Config::set_category_policy(const string &category_,
     }
 
   return 0;
+}
+
+Config::CacheFiles::operator int() const
+{
+  return _data;
+}
+
+Config::CacheFiles::operator std::string() const
+{
+  switch(_data)
+    {
+    case OFF:
+      return "off";
+    case PARTIAL:
+      return "partial";
+    case FULL:
+      return "full";
+    case AUTO_FULL:
+      return "auto-full";
+    case LIBFUSE:
+      return "libfuse";
+    case INVALID:
+      break;
+    }
+
+  return "";
+}
+
+Config::CacheFiles::CacheFiles()
+  : _data(INVALID)
+{
+
+}
+
+Config::CacheFiles::CacheFiles(Config::CacheFiles::Enum data_)
+  : _data(data_)
+{
+
+}
+
+bool
+Config::CacheFiles::valid() const
+{
+  return (_data != INVALID);
+}
+
+Config::CacheFiles&
+Config::CacheFiles::operator=(const Config::CacheFiles::Enum data_)
+{
+  _data = data_;
+
+  return *this;
+}
+
+Config::CacheFiles&
+Config::CacheFiles::operator=(const std::string &data_)
+{
+  if(data_ == "off")
+    _data = OFF;
+  else if(data_ == "partial")
+    _data = PARTIAL;
+  else if(data_ == "full")
+    _data = FULL;
+  else if(data_ == "auto-full")
+    _data = AUTO_FULL;
+  else if(data_ == "libfuse")
+    _data = LIBFUSE;
+  else
+    _data = INVALID;
+
+  return *this;
 }

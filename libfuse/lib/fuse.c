@@ -59,19 +59,14 @@ struct fuse_config {
 	double entry_timeout;
 	double negative_timeout;
 	double attr_timeout;
-	double ac_attr_timeout;
-	int ac_attr_timeout_set;
 	int remember;
 	int nopath;
 	int debug;
-        int hard_remove; /* not used */
 	int use_ino;
 	int readdir_ino;
 	int set_mode;
 	int set_uid;
 	int set_gid;
-	int kernel_cache;
-	int auto_cache;
 	int intr;
 	int intr_signal;
 	int help;
@@ -83,11 +78,6 @@ struct fuse_fs {
 	void *user_data;
 	int compat;
 	int debug;
-};
-
-struct fusemod_so {
-	void *handle;
-	int ctr;
 };
 
 struct lock_queue_element {
@@ -162,25 +152,24 @@ struct lock {
 	struct lock *next;
 };
 
-struct node {
-	struct node *name_next;
-	struct node *id_next;
-	fuse_ino_t nodeid;
-	unsigned int generation;
-	int refctr;
-	struct node *parent;
-	char *name;
-	uint64_t nlookup;
-	int open_count;
-	struct timespec stat_updated;
-	struct timespec mtime;
-	off_t size;
-	struct lock *locks;
-        uint64_t hidden_fh;
-        char is_hidden;
-        char cache_valid;
-	int treelock;
-	char inline_name[32];
+struct node
+{
+  struct node *name_next;
+  struct node *id_next;
+  fuse_ino_t nodeid;
+  unsigned int generation;
+  int refctr;
+  struct node *parent;
+  char *name;
+  uint64_t nlookup;
+  int open_count;
+  struct lock *locks;
+  uint64_t hidden_fh;
+  char is_hidden;
+  int treelock;
+  struct stat stat_cache;
+  char stat_cache_valid;
+  char inline_name[32];
 };
 
 #define TREELOCK_WRITE -1
@@ -2315,12 +2304,6 @@ node_open(const struct node *node_)
           (node_->open_count > 0));
 }
 
-static int mtime_eq(const struct stat *stbuf, const struct timespec *ts)
-{
-	return stbuf->st_mtime == ts->tv_sec &&
-		ST_MTIM_NSEC(stbuf) == ts->tv_nsec;
-}
-
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
@@ -2339,15 +2322,21 @@ static void curr_time(struct timespec *now)
 	}
 }
 
-static void update_stat(struct node *node, const struct stat *stbuf)
+static
+void
+update_stat(struct node       *node_,
+            const struct stat *stnew_)
 {
-	if (node->cache_valid && (!mtime_eq(stbuf, &node->mtime) ||
-				  stbuf->st_size != node->size))
-		node->cache_valid = 0;
-	node->mtime.tv_sec = stbuf->st_mtime;
-	node->mtime.tv_nsec = ST_MTIM_NSEC(stbuf);
-	node->size = stbuf->st_size;
-	curr_time(&node->stat_updated);
+  struct stat *stold;
+
+  stold = &node_->stat_cache;
+  if((node_->stat_cache_valid) &&
+     ((stold->st_mtim.tv_sec  != stnew_->st_mtim.tv_sec)  ||
+      (stold->st_mtim.tv_nsec != stnew_->st_mtim.tv_nsec) ||
+      (stold->st_size         != stnew_->st_size)))
+    node_->stat_cache_valid = 0;
+
+  *stold = *stnew_;
 }
 
 static int lookup_path(struct fuse *f, fuse_ino_t nodeid,
@@ -2372,11 +2361,9 @@ static int lookup_path(struct fuse *f, fuse_ino_t nodeid,
 			e->generation = node->generation;
 			e->entry_timeout = f->conf.entry_timeout;
 			e->attr_timeout = f->conf.attr_timeout;
-			if (f->conf.auto_cache) {
-				pthread_mutex_lock(&f->lock);
-				update_stat(node, &e->attr);
-				pthread_mutex_unlock(&f->lock);
-			}
+                        pthread_mutex_lock(&f->lock);
+                        update_stat(node, &e->attr);
+                        pthread_mutex_unlock(&f->lock);
 			set_stat(f, e->ino, &e->attr);
 			if (f->conf.debug)
 				fprintf(stderr, "   NODEID: %lu\n",
@@ -2645,8 +2632,7 @@ static void fuse_lib_getattr(fuse_req_t req, fuse_ino_t ino,
 	if (!err) {
 		pthread_mutex_lock(&f->lock);
                 node = get_node(f, ino);
-		if (f->conf.auto_cache)
-			update_stat(node, &buf);
+                update_stat(node, &buf);
 		pthread_mutex_unlock(&f->lock);
 		set_stat(f, ino, &buf);
 		fuse_reply_attr(req, &buf, f->conf.attr_timeout);
@@ -2781,15 +2767,13 @@ static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 	}
 
 	if (!err) {
-		if (f->conf.auto_cache) {
-			pthread_mutex_lock(&f->lock);
-			update_stat(get_node(f, ino), &buf);
-			pthread_mutex_unlock(&f->lock);
-		}
-		set_stat(f, ino, &buf);
-		fuse_reply_attr(req, &buf, f->conf.attr_timeout);
+          pthread_mutex_lock(&f->lock);
+          update_stat(get_node(f, ino), &buf);
+          pthread_mutex_unlock(&f->lock);
+          set_stat(f, ino, &buf);
+          fuse_reply_attr(req, &buf, f->conf.attr_timeout);
 	} else {
-		reply_err(req, err);
+          reply_err(req, err);
         }
 }
 
@@ -3076,53 +3060,62 @@ static void fuse_do_release(struct fuse *f, fuse_ino_t ino, const char *path,
           fuse_fs_free_hide(f->fs,fh);
 }
 
-static void fuse_lib_create(fuse_req_t req, fuse_ino_t parent,
-			    const char *name, mode_t mode,
-			    struct fuse_file_info *fi)
+static
+void
+fuse_lib_create(fuse_req_t             req,
+                fuse_ino_t             parent,
+                const char            *name,
+                mode_t                 mode,
+                struct fuse_file_info *fi)
 {
-	struct fuse *f = req_fuse_prepare(req);
-	struct fuse_intr_data d;
-	struct fuse_entry_param e;
-	char *path;
-	int err;
+  int err;
+  char *path;
+  struct fuse *f;
+  struct fuse_intr_data d;
+  struct fuse_entry_param e;
 
-	err = get_path_name(f, parent, name, &path);
-	if (!err) {
-		fuse_prepare_interrupt(f, req, &d);
-		err = fuse_fs_create(f->fs, path, mode, fi);
-		if (!err) {
-			err = lookup_path(f, parent, name, path, &e, fi);
-			if (err)
-				fuse_fs_release(f->fs, path, fi);
-			else if (!S_ISREG(e.attr.st_mode)) {
-				err = -EIO;
-				fuse_fs_release(f->fs, path, fi);
-				forget_node(f, e.ino, 1);
-			} else {
-				if (f->conf.kernel_cache)
-					fi->keep_cache = 1;
+  f = req_fuse_prepare(req);
+  err = get_path_name(f, parent, name, &path);
+  if(!err)
+    {
+      fuse_prepare_interrupt(f, req, &d);
+      err = fuse_fs_create(f->fs, path, mode, fi);
+      if(!err)
+        {
+          err = lookup_path(f, parent, name, path, &e, fi);
+          if(err)
+            {
+              fuse_fs_release(f->fs, path, fi);
+            }
+          else if(!S_ISREG(e.attr.st_mode))
+            {
+              err = -EIO;
+              fuse_fs_release(f->fs, path, fi);
+              forget_node(f, e.ino, 1);
+            }
+        }
+      fuse_finish_interrupt(f, req, &d);
+    }
 
-			}
-		}
-		fuse_finish_interrupt(f, req, &d);
-	}
-	if (!err) {
-		pthread_mutex_lock(&f->lock);
-                struct node *n = get_node(f,e.ino);
-                n->open_count++;
-		pthread_mutex_unlock(&f->lock);
+  if(!err)
+    {
+      pthread_mutex_lock(&f->lock);
+      get_node(f,e.ino)->open_count++;
+      pthread_mutex_unlock(&f->lock);
 
-		if (fuse_reply_create(req, &e, fi) == -ENOENT) {
-			/* The open syscall was interrupted, so it
-			   must be cancelled */
-			fuse_do_release(f, e.ino, path, fi);
-			forget_node(f, e.ino, 1);
-		}
-	} else {
-		reply_err(req, err);
-	}
+      if (fuse_reply_create(req, &e, fi) == -ENOENT) {
+        /* The open syscall was interrupted, so it
+           must be cancelled */
+        fuse_do_release(f, e.ino, path, fi);
+        forget_node(f, e.ino, 1);
+      }
+    }
+  else
+    {
+      reply_err(req, err);
+    }
 
-	free_path(f, parent, path);
+  free_path(f, parent, path);
 }
 
 static double diff_timespec(const struct timespec *t1,
@@ -3132,72 +3125,81 @@ static double diff_timespec(const struct timespec *t1,
 		((double) t1->tv_nsec - (double) t2->tv_nsec) / 1000000000.0;
 }
 
-static void open_auto_cache(struct fuse *f, fuse_ino_t ino, const char *path,
-			    struct fuse_file_info *fi)
+static
+void
+open_auto_cache(struct fuse           *f,
+                fuse_ino_t             ino,
+                const char            *path,
+                struct fuse_file_info *fi)
 {
-	struct node *node;
+  struct node *node;
 
-	pthread_mutex_lock(&f->lock);
-	node = get_node(f, ino);
-	if (node->cache_valid) {
-		struct timespec now;
+  pthread_mutex_lock(&f->lock);
 
-		curr_time(&now);
-		if (diff_timespec(&now, &node->stat_updated) >
-		    f->conf.ac_attr_timeout) {
-			struct stat stbuf;
-			int err;
-			pthread_mutex_unlock(&f->lock);
-			err = fuse_fs_fgetattr(f->fs, path, &stbuf, fi);
-			pthread_mutex_lock(&f->lock);
-			if (!err)
-				update_stat(node, &stbuf);
-			else
-				node->cache_valid = 0;
-		}
-	}
-	if (node->cache_valid)
-		fi->keep_cache = 1;
+  node = get_node(f,ino);
+  if(node->stat_cache_valid)
+    {
+      int err;
+      struct stat stbuf;
 
-	node->cache_valid = 1;
-	pthread_mutex_unlock(&f->lock);
+      pthread_mutex_unlock(&f->lock);
+      err = fuse_fs_fgetattr(f->fs,path,&stbuf,fi);
+      pthread_mutex_lock(&f->lock);
+
+      if(!err)
+        update_stat(node,&stbuf);
+      else
+        node->stat_cache_valid = 0;
+    }
+
+  if(node->stat_cache_valid)
+    fi->keep_cache = 1;
+
+  node->stat_cache_valid = 1;
+
+  pthread_mutex_unlock(&f->lock);
 }
 
-static void fuse_lib_open(fuse_req_t req, fuse_ino_t ino,
-			  struct fuse_file_info *fi)
+static
+void
+fuse_lib_open(fuse_req_t             req,
+              fuse_ino_t             ino,
+              struct fuse_file_info *fi)
 {
-	struct fuse *f = req_fuse_prepare(req);
-	struct fuse_intr_data d;
-	char *path;
-	int err;
+  int err;
+  char *path;
+  struct fuse *f;
+  struct fuse_intr_data d;
 
-	err = get_path(f, ino, &path);
-	if (!err) {
-		fuse_prepare_interrupt(f, req, &d);
-		err = fuse_fs_open(f->fs, path, fi);
-		if (!err) {
-			if (f->conf.kernel_cache)
-				fi->keep_cache = 1;
+  f = req_fuse_prepare(req);
+  err = get_path(f, ino, &path);
+  if(!err)
+    {
+      fuse_prepare_interrupt(f, req, &d);
+      err = fuse_fs_open(f->fs, path, fi);
+      if(!err)
+        {
+          if (fi && fi->auto_cache)
+            open_auto_cache(f, ino, path, fi);
+        }
+      fuse_finish_interrupt(f, req, &d);
+    }
 
-			if (f->conf.auto_cache)
-				open_auto_cache(f, ino, path, fi);
-		}
-		fuse_finish_interrupt(f, req, &d);
-	}
-	if (!err) {
-		pthread_mutex_lock(&f->lock);
-                struct node *n = get_node(f,ino);
-                n->open_count++;
-		pthread_mutex_unlock(&f->lock);
-		if (fuse_reply_open(req, fi) == -ENOENT) {
-			/* The open syscall was interrupted, so it
-			   must be cancelled */
-			fuse_do_release(f, ino, path, fi);
-		}
-	} else
-		reply_err(req, err);
+  if(!err)
+    {
+      pthread_mutex_lock(&f->lock);
+      get_node(f,ino)->open_count++;
+      pthread_mutex_unlock(&f->lock);
+      /* The open syscall was interrupted, so it must be cancelled */
+      if(fuse_reply_open(req, fi) == -ENOENT)
+        fuse_do_release(f, ino, path, fi);
+    }
+  else
+    {
+      reply_err(req, err);
+    }
 
-	free_path(f, ino, path);
+  free_path(f, ino, path);
 }
 
 static void fuse_lib_read(fuse_req_t req, fuse_ino_t ino, size_t size,
@@ -4346,12 +4348,8 @@ static const struct fuse_opt fuse_lib_opts[] = {
 	FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
 	FUSE_LIB_OPT("debug",		      debug, 1),
 	FUSE_LIB_OPT("-d",		      debug, 1),
-	FUSE_LIB_OPT("hard_remove",	      hard_remove, 1),
 	FUSE_LIB_OPT("use_ino",		      use_ino, 1),
 	FUSE_LIB_OPT("readdir_ino",	      readdir_ino, 1),
-	FUSE_LIB_OPT("kernel_cache",	      kernel_cache, 1),
-	FUSE_LIB_OPT("auto_cache",	      auto_cache, 1),
-	FUSE_LIB_OPT("noauto_cache",	      auto_cache, 0),
 	FUSE_LIB_OPT("umask=",		      set_mode, 1),
 	FUSE_LIB_OPT("umask=%o",	      umask, 0),
 	FUSE_LIB_OPT("uid=",		      set_uid, 1),
@@ -4360,8 +4358,6 @@ static const struct fuse_opt fuse_lib_opts[] = {
 	FUSE_LIB_OPT("gid=%d",		      gid, 0),
 	FUSE_LIB_OPT("entry_timeout=%lf",     entry_timeout, 0),
 	FUSE_LIB_OPT("attr_timeout=%lf",      attr_timeout, 0),
-	FUSE_LIB_OPT("ac_attr_timeout=%lf",   ac_attr_timeout, 0),
-	FUSE_LIB_OPT("ac_attr_timeout=",      ac_attr_timeout_set, 1),
 	FUSE_LIB_OPT("negative_timeout=%lf",  negative_timeout, 0),
 	FUSE_LIB_OPT("noforget",              remember, -1),
 	FUSE_LIB_OPT("remember=%u",           remember, 0),
@@ -4377,15 +4373,12 @@ static void fuse_lib_help(void)
 	fprintf(stderr,
 "    -o use_ino             let filesystem set inode numbers\n"
 "    -o readdir_ino         try to fill in d_ino in readdir\n"
-"    -o kernel_cache        cache files in kernel\n"
-"    -o [no]auto_cache      enable caching based on modification times (off)\n"
 "    -o umask=M             set file permissions (octal)\n"
 "    -o uid=N               set file owner\n"
 "    -o gid=N               set file group\n"
 "    -o entry_timeout=T     cache timeout for names (1.0s)\n"
 "    -o negative_timeout=T  cache timeout for deleted names (0.0s)\n"
 "    -o attr_timeout=T      cache timeout for attributes (1.0s)\n"
-"    -o ac_attr_timeout=T   auto cache timeout for attributes (attr_timeout)\n"
 "    -o noforget            never forget cached inodes\n"
 "    -o remember=T          remember cached inodes for T seconds (0s)\n"
 "    -o nopath              don't supply path if not necessary\n"
@@ -4565,9 +4558,6 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 	if (fuse_opt_parse(args, &f->conf, fuse_lib_opts,
 			   fuse_lib_opt_proc) == -1)
 		goto out_free_fs;
-
-	if (!f->conf.ac_attr_timeout_set)
-		f->conf.ac_attr_timeout = f->conf.attr_timeout;
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 	/*

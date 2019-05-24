@@ -31,6 +31,7 @@
 
 using std::string;
 using std::vector;
+typedef Config::CacheFiles CacheFiles;
 
 namespace l
 {
@@ -92,7 +93,35 @@ namespace FUSE
     const ugid::Set          ugid(fc->uid,fc->gid);
     const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-    ffi_->direct_io = config.direct_io;
+    switch(config.cache_files)
+      {
+      case CacheFiles::LIBFUSE:
+        ffi_->direct_io  = config.direct_io;
+        ffi_->keep_cache = config.kernel_cache;
+        ffi_->auto_cache = config.auto_cache;
+        break;
+      case CacheFiles::OFF:
+        ffi_->direct_io  = 1;
+        ffi_->keep_cache = 0;
+        ffi_->auto_cache = 0;
+        break;
+      case CacheFiles::PARTIAL:
+        ffi_->direct_io  = 0;
+        ffi_->keep_cache = 0;
+        ffi_->auto_cache = 0;
+        break;
+      case CacheFiles::FULL:
+        ffi_->direct_io  = 0;
+        ffi_->keep_cache = 1;
+        ffi_->auto_cache = 0;
+        break;
+      case CacheFiles::AUTO_FULL:
+        ffi_->direct_io  = 0;
+        ffi_->keep_cache = 0;
+        ffi_->auto_cache = 1;
+        break;
+      }
+
     return l::open(config.open,
                    config.open_cache,
                    config.branches,

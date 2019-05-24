@@ -227,6 +227,14 @@ namespace l
 
   static
   void
+  getxattr_controlfile(const Config::CacheFiles &cache_files_,
+                       string                   &attrvalue_)
+  {
+    attrvalue_ = (string)cache_files_;
+  }
+
+  static
+  void
   getxattr_controlfile_policies(const Config &config,
                                 string       &attrvalue)
   {
@@ -371,6 +379,8 @@ namespace l
           l::getxattr_controlfile_bool(config.cache_symlinks,attrvalue);
         else if((attr[2] == "cache") && (attr[3] == "readdir"))
           l::getxattr_controlfile_bool(config.cache_readdir,attrvalue);
+        else if((attr[2] == "cache") && (attr[3] == "files"))
+          l::getxattr_controlfile(config.cache_files,attrvalue);
         break;
       }
 

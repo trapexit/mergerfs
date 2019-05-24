@@ -237,6 +237,26 @@ namespace l
 
   static
   int
+  setxattr(const string       &attrval_,
+           const int           flags_,
+           Config::CacheFiles &cache_files_)
+  {
+    Config::CacheFiles tmp;
+
+    if((flags_ & XATTR_CREATE) == XATTR_CREATE)
+      return -EEXIST;
+
+    tmp = attrval_;
+    if(!tmp.valid())
+      return -EINVAL;
+
+    cache_files_ = tmp;
+
+    return 0;
+  }
+
+  static
+  int
   setxattr_controlfile_func_policy(Config       &config,
                                    const string &funcname,
                                    const string &attrval,
@@ -438,6 +458,8 @@ namespace l
           return l::setxattr_controlfile_cache_negative_entry(attrval,flags);
         else if((attr[2] == "cache") && (attr[3] == "readdir"))
           return l::setxattr_bool(attrval,flags,config.cache_readdir);
+        else if((attr[2] == "cache") && (attr[3] == "files"))
+          return l::setxattr(attrval,flags,config.cache_files);
         break;
 
       default:
