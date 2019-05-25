@@ -195,7 +195,7 @@ When using policies which are based on a branch's available space the base path 
 | action   | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
 | create   | create, mkdir, mknod, symlink                                                       |
 | search   | access, getattr, getxattr, ioctl (directories), listxattr, open, readlink                         |
-| N/A      | fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl (files), read, readdir, release, statfs, write |
+| N/A      | fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl (files), read, readdir, release, statfs, write, copy_file_range |
 
 In cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will be used.
 

@@ -1962,6 +1962,34 @@ static void do_notify_reply(fuse_req_t req, fuse_ino_t nodeid,
 		nreq->reply(nreq, req, nodeid, inarg, buf);
 }
 
+static
+void
+do_copy_file_range(fuse_req_t  req_,
+                   fuse_ino_t  nodeid_in_,
+                   const void *arg_)
+
+{
+  struct fuse_file_info ffi_in  = {0};
+  struct fuse_file_info ffi_out = {0};
+  struct fuse_copy_file_range_in *arg = (struct fuse_copy_file_range_in*)arg_;
+
+  ffi_in.fh  = arg->fh_in;
+  ffi_out.fh = arg->fh_out;
+
+  if(req_->f->op.copy_file_range == NULL)
+    fuse_reply_err(req_,ENOSYS);
+  else
+    req_->f->op.copy_file_range(req_,
+                                nodeid_in_,
+                                arg->off_in,
+                                &ffi_in,
+                                arg->nodeid_out,
+                                arg->off_out,
+                                &ffi_out,
+                                arg->len,
+                                arg->flags);
+}
+
 static int send_notify_iov(struct fuse_ll *f, struct fuse_chan *ch,
 			   int notify_code, struct iovec *iov, int count)
 {
@@ -2262,50 +2290,52 @@ int fuse_req_interrupted(fuse_req_t req)
 static struct {
 	void (*func)(fuse_req_t, fuse_ino_t, const void *);
 	const char *name;
-} fuse_ll_ops[] = {
-	[FUSE_LOOKUP]	   = { do_lookup,      "LOOKUP"	     },
-	[FUSE_FORGET]	   = { do_forget,      "FORGET"	     },
-	[FUSE_GETATTR]	   = { do_getattr,     "GETATTR"     },
-	[FUSE_SETATTR]	   = { do_setattr,     "SETATTR"     },
-	[FUSE_READLINK]	   = { do_readlink,    "READLINK"    },
-	[FUSE_SYMLINK]	   = { do_symlink,     "SYMLINK"     },
-	[FUSE_MKNOD]	   = { do_mknod,       "MKNOD"	     },
-	[FUSE_MKDIR]	   = { do_mkdir,       "MKDIR"	     },
-	[FUSE_UNLINK]	   = { do_unlink,      "UNLINK"	     },
-	[FUSE_RMDIR]	   = { do_rmdir,       "RMDIR"	     },
-	[FUSE_RENAME]	   = { do_rename,      "RENAME"	     },
-	[FUSE_LINK]	   = { do_link,	       "LINK"	     },
-	[FUSE_OPEN]	   = { do_open,	       "OPEN"	     },
-	[FUSE_READ]	   = { do_read,	       "READ"	     },
-	[FUSE_WRITE]	   = { do_write,       "WRITE"	     },
-	[FUSE_STATFS]	   = { do_statfs,      "STATFS"	     },
-	[FUSE_RELEASE]	   = { do_release,     "RELEASE"     },
-	[FUSE_FSYNC]	   = { do_fsync,       "FSYNC"	     },
-	[FUSE_SETXATTR]	   = { do_setxattr,    "SETXATTR"    },
-	[FUSE_GETXATTR]	   = { do_getxattr,    "GETXATTR"    },
-	[FUSE_LISTXATTR]   = { do_listxattr,   "LISTXATTR"   },
-	[FUSE_REMOVEXATTR] = { do_removexattr, "REMOVEXATTR" },
-	[FUSE_FLUSH]	   = { do_flush,       "FLUSH"	     },
-	[FUSE_INIT]	   = { do_init,	       "INIT"	     },
-	[FUSE_OPENDIR]	   = { do_opendir,     "OPENDIR"     },
-	[FUSE_READDIR]	   = { do_readdir,     "READDIR"     },
-	[FUSE_RELEASEDIR]  = { do_releasedir,  "RELEASEDIR"  },
-	[FUSE_FSYNCDIR]	   = { do_fsyncdir,    "FSYNCDIR"    },
-	[FUSE_GETLK]	   = { do_getlk,       "GETLK"	     },
-	[FUSE_SETLK]	   = { do_setlk,       "SETLK"	     },
-	[FUSE_SETLKW]	   = { do_setlkw,      "SETLKW"	     },
-	[FUSE_ACCESS]	   = { do_access,      "ACCESS"	     },
-	[FUSE_CREATE]	   = { do_create,      "CREATE"	     },
-	[FUSE_INTERRUPT]   = { do_interrupt,   "INTERRUPT"   },
-	[FUSE_BMAP]	   = { do_bmap,	       "BMAP"	     },
-	[FUSE_IOCTL]	   = { do_ioctl,       "IOCTL"	     },
-	[FUSE_POLL]	   = { do_poll,        "POLL"	     },
-	[FUSE_FALLOCATE]   = { do_fallocate,   "FALLOCATE"   },
-	[FUSE_DESTROY]	   = { do_destroy,     "DESTROY"     },
-	[FUSE_NOTIFY_REPLY] = { (void *) 1,    "NOTIFY_REPLY" },
-	[FUSE_BATCH_FORGET] = { do_batch_forget, "BATCH_FORGET" },
-	[CUSE_INIT]	   = { cuse_lowlevel_init, "CUSE_INIT"   },
-};
+} fuse_ll_ops[] =
+  {
+    [FUSE_LOOKUP]          = { do_lookup,          "LOOKUP"	     },
+    [FUSE_FORGET]          = { do_forget,          "FORGET"	     },
+    [FUSE_GETATTR]         = { do_getattr,         "GETATTR"         },
+    [FUSE_SETATTR]         = { do_setattr,         "SETATTR"         },
+    [FUSE_READLINK]        = { do_readlink,        "READLINK"        },
+    [FUSE_SYMLINK]         = { do_symlink,         "SYMLINK"         },
+    [FUSE_MKNOD]           = { do_mknod,           "MKNOD"	     },
+    [FUSE_MKDIR]           = { do_mkdir,           "MKDIR"	     },
+    [FUSE_UNLINK]          = { do_unlink,          "UNLINK"	     },
+    [FUSE_RMDIR]           = { do_rmdir,           "RMDIR"	     },
+    [FUSE_RENAME]          = { do_rename,          "RENAME"	     },
+    [FUSE_LINK]            = { do_link,	           "LINK"	     },
+    [FUSE_OPEN]            = { do_open,	           "OPEN"	     },
+    [FUSE_READ]            = { do_read,	           "READ"	     },
+    [FUSE_WRITE]           = { do_write,           "WRITE"	     },
+    [FUSE_STATFS]          = { do_statfs,          "STATFS"	     },
+    [FUSE_RELEASE]         = { do_release,         "RELEASE"         },
+    [FUSE_FSYNC]           = { do_fsync,           "FSYNC"	     },
+    [FUSE_SETXATTR]        = { do_setxattr,        "SETXATTR"        },
+    [FUSE_GETXATTR]        = { do_getxattr,        "GETXATTR"        },
+    [FUSE_LISTXATTR]       = { do_listxattr,       "LISTXATTR"       },
+    [FUSE_REMOVEXATTR]     = { do_removexattr,     "REMOVEXATTR"     },
+    [FUSE_FLUSH]           = { do_flush,           "FLUSH"	     },
+    [FUSE_INIT]            = { do_init,	           "INIT"	     },
+    [FUSE_OPENDIR]         = { do_opendir,         "OPENDIR"         },
+    [FUSE_READDIR]         = { do_readdir,         "READDIR"         },
+    [FUSE_RELEASEDIR]      = { do_releasedir,      "RELEASEDIR"      },
+    [FUSE_FSYNCDIR]        = { do_fsyncdir,        "FSYNCDIR"        },
+    [FUSE_GETLK]           = { do_getlk,           "GETLK"	     },
+    [FUSE_SETLK]           = { do_setlk,           "SETLK"	     },
+    [FUSE_SETLKW]          = { do_setlkw,          "SETLKW"	     },
+    [FUSE_ACCESS]          = { do_access,          "ACCESS"	     },
+    [FUSE_CREATE]          = { do_create,          "CREATE"	     },
+    [FUSE_INTERRUPT]       = { do_interrupt,       "INTERRUPT"       },
+    [FUSE_BMAP]            = { do_bmap,	           "BMAP"	     },
+    [FUSE_IOCTL]           = { do_ioctl,           "IOCTL"	     },
+    [FUSE_POLL]            = { do_poll,            "POLL"	     },
+    [FUSE_FALLOCATE]       = { do_fallocate,       "FALLOCATE"       },
+    [FUSE_DESTROY]         = { do_destroy,         "DESTROY"         },
+    [FUSE_NOTIFY_REPLY]    = { (void *) 1,         "NOTIFY_REPLY"    },
+    [FUSE_BATCH_FORGET]    = { do_batch_forget,    "BATCH_FORGET"    },
+    [FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
+    [CUSE_INIT]            = { cuse_lowlevel_init, "CUSE_INIT"       },
+  };
 
 #define FUSE_MAXOP (sizeof(fuse_ll_ops) / sizeof(fuse_ll_ops[0]))
 
