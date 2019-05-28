@@ -181,6 +181,12 @@ create\[aq].
 kernel and underlying filesystem).
 (default: false)
 .IP \[bu] 2
+\f[B]async_read=true|false:\f[] Perform reads asynchronously.
+If disabled or unavailable the kernel will ensure there is at most one
+pending read request per file handle and will attempt to order requests
+by offset.
+(default: true)
+.IP \[bu] 2
 \f[B]threads=num\f[]: number of threads to use in multithreaded mode.
 When set to zero (the default) it will attempt to discover and use the
 number of logical cores.
@@ -1965,19 +1971,21 @@ assuming there are few users.
 .PP
 NOTE: be sure to read about these features before changing them
 .IP \[bu] 2
-add (or remove) \f[C]direct_io\f[]
+enable (or disable) \f[C]direct_io\f[]
 .IP \[bu] 2
-add (or remove) \f[C]auto_cache\f[]
+enable (or disable) \f[C]auto_cache\f[]
 .IP \[bu] 2
-add (or remove) \f[C]kernel_cache\f[]
+enable (or disable) \f[C]kernel_cache\f[]
 .IP \[bu] 2
-add (or remove) \f[C]splice_move\f[], \f[C]splice_read\f[], and
+enable (or disable) \f[C]splice_move\f[], \f[C]splice_read\f[], and
 \f[C]splice_write\f[]
 .IP \[bu] 2
 increase cache timeouts \f[C]cache.attr\f[], \f[C]cache.entry\f[],
 \f[C]cache.negative_entry\f[]
 .IP \[bu] 2
-enable \f[C]cache.open\f[] and/or \f[C]cache.statfs\f[]
+enable \f[C]cache.open\f[]
+.IP \[bu] 2
+enable \f[C]cache.statfs\f[]
 .IP \[bu] 2
 enable \f[C]cache.symlinks\f[]
 .IP \[bu] 2
@@ -1986,6 +1994,8 @@ change the number opf worker threads
 disable \f[C]security_capability\f[] and/or \f[C]xattr\f[]
 .IP \[bu] 2
 disable \f[C]posix_acl\f[]
+.IP \[bu] 2
+disable \f[C]async_read\f[]
 .IP \[bu] 2
 test theoretical performance using \f[C]nullrw\f[] or mounting a ram
 disk

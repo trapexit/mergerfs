@@ -348,6 +348,8 @@ namespace l
           l::getxattr_controlfile_bool(config.direct_io,attrvalue);
         else if(attr[2] == "posix_acl")
           l::getxattr_controlfile_bool(config.posix_acl,attrvalue);
+        else if(attr[2] == "async_read")
+          l::getxattr_controlfile_bool(config.async_read,attrvalue);
         break;
 
       case 4:

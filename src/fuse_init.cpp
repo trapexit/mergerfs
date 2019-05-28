@@ -34,7 +34,7 @@ namespace l
   capable(fuse_conn_info *conn_,
           const int       flag_)
   {
-    return (conn_->capable & flag_);
+    return !!(conn_->capable & flag_);
   }
 
   static
@@ -44,6 +44,21 @@ namespace l
   {
     if(capable(conn_,flag_))
       want(conn_,flag_);
+  }
+
+  static
+  void
+  want_if_capable(fuse_conn_info *conn_,
+                  const int       flag_,
+                  bool           *want_)
+  {
+    if(*want_ && l::capable(conn_,flag_))
+      {
+        l::want(conn_,flag_);
+        return;
+      }
+
+    *want_ = false;
   }
 }
 
@@ -56,23 +71,15 @@ namespace FUSE
 
     ugid::init();
 
-    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ);
+    l::want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
+    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&c.async_read);
     l::want_if_capable(conn_,FUSE_CAP_ATOMIC_O_TRUNC);
     l::want_if_capable(conn_,FUSE_CAP_BIG_WRITES);
+    l::want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&c.cache_symlinks);
     l::want_if_capable(conn_,FUSE_CAP_DONT_MASK);
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
-    l::want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
-
-    if(c.posix_acl && l::capable(conn_,FUSE_CAP_POSIX_ACL))
-      l::want(conn_,FUSE_CAP_POSIX_ACL);
-    else
-      c.posix_acl = false;
-
-    if(c.cache_symlinks && l::capable(conn_,FUSE_CAP_CACHE_SYMLINKS))
-      l::want(conn_,FUSE_CAP_CACHE_SYMLINKS);
-    else
-      c.cache_symlinks = false;
+    l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&c.posix_acl);
 
     return &c;
   }

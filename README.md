@@ -82,6 +82,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
 * **posix_acl=true|false:** enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
+* **async_read=true|false:** Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
 * **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores) *NOTE2:* the option is unavailable when built with system libfuse.
 * **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
@@ -980,16 +981,18 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 NOTE: be sure to read about these features before changing them
 
-* add (or remove) `direct_io`
-* add (or remove) `auto_cache`
-* add (or remove) `kernel_cache`
-* add (or remove) `splice_move`, `splice_read`, and `splice_write`
+* enable (or disable) `direct_io`
+* enable (or disable) `auto_cache`
+* enable (or disable) `kernel_cache`
+* enable (or disable) `splice_move`, `splice_read`, and `splice_write`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
-* enable `cache.open` and/or `cache.statfs`
+* enable `cache.open`
+* enable `cache.statfs`
 * enable `cache.symlinks`
 * change the number opf worker threads
 * disable `security_capability` and/or `xattr`
 * disable `posix_acl`
+* disable `async_read`
 * test theoretical performance using `nullrw` or mounting a ram disk
 * use `symlinkify` if your data is largely static
 * use tiered cache drives

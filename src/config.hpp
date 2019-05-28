@@ -81,6 +81,7 @@ public:
   bool                     posix_acl;
   bool                     cache_symlinks;
   bool                     cache_readdir;
+  bool                     async_read;
 
 public:
   const Policy  *policies[FuseFunc::Enum::END];
