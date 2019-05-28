@@ -44,6 +44,7 @@ namespace l
     string xattrs;
     const vector<string> strs =
       buildvector<string>
+      ("user.mergerfs.async_read")
       ("user.mergerfs.branches")
       ("user.mergerfs.cache.attr")
       ("user.mergerfs.cache.entry")

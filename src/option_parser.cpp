@@ -99,8 +99,6 @@ static
 void
 set_default_options(fuse_args *args)
 {
-  set_option(args,"atomic_o_trunc");
-  set_option(args,"big_writes");
   set_option(args,"default_permissions");
 }
 
@@ -256,6 +254,10 @@ parse_and_process_arg(Config            &config,
     return 0;
   else if(arg == "direct_io")
     return (config.direct_io=true,0);
+  else if(arg == "async_read")
+    return (config.async_read=true,0);
+  else if(arg == "sync_read")
+    return (config.async_read=false,0);
 
   return 1;
 }
@@ -311,6 +313,10 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.fsname);
       else if(key == "posix_acl")
         rv = parse_and_process(value,config.posix_acl);
+      else if(key == "direct_io")
+        rv = parse_and_process(value,config.direct_io);
+      else if(key == "async_read")
+        rv = parse_and_process(value,config.async_read);
     }
 
   if(rv == -1)
@@ -444,7 +450,11 @@ usage(void)
     "                           as 'read only' or 'no create'. 'nc' will ignore\n"
     "                           available space for branches tagged as\n"
     "                           'no create'. default = none\n"
-    "    -o posix_acl=<bool>    enable POSIX ACL support\n"
+    "    -o posix_acl=<bool>    Enable POSIX ACL support. default = false\n"
+    "    -o async_read=<bool>   If disabled or unavailable the kernel will\n"
+    "                           ensure there is at most one pending read \n"
+    "                           request per file and will attempt to order\n"
+    "                           requests by offset. default = true\n"
             << std::endl;
 }
 

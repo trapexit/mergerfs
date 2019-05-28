@@ -1766,8 +1766,6 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	}
 
 	if (arg->minor >= 6) {
-		if (f->conn.async_read)
-			f->conn.async_read = arg->flags & FUSE_ASYNC_READ;
 		if (arg->max_readahead < f->conn.max_readahead)
 			f->conn.max_readahead = arg->max_readahead;
 		if (arg->flags & FUSE_ASYNC_READ)
@@ -1793,7 +1791,7 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
                 if (arg->flags & FUSE_PARALLEL_DIROPS)
                         f->conn.capable |= FUSE_CAP_PARALLEL_DIROPS;
 	} else {
-		f->conn.async_read = 0;
+                f->conn.want &= ~FUSE_CAP_ASYNC_READ;
 		f->conn.max_readahead = 0;
 	}
 
@@ -1844,7 +1842,7 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	if (f->no_splice_move)
 		f->conn.want &= ~FUSE_CAP_SPLICE_MOVE;
 
-	if (f->conn.async_read || (f->conn.want & FUSE_CAP_ASYNC_READ))
+	if (f->conn.want & FUSE_CAP_ASYNC_READ)
 		outarg.flags |= FUSE_ASYNC_READ;
 	if (f->conn.want & FUSE_CAP_POSIX_LOCKS)
 		outarg.flags |= FUSE_POSIX_LOCKS;
@@ -2497,8 +2495,6 @@ static const struct fuse_opt fuse_ll_opts[] = {
 	{ "max_background=%u", offsetof(struct fuse_ll, conn.max_background), 0 },
 	{ "congestion_threshold=%u",
 	  offsetof(struct fuse_ll, conn.congestion_threshold), 0 },
-	{ "async_read", offsetof(struct fuse_ll, conn.async_read), 1 },
-	{ "sync_read", offsetof(struct fuse_ll, conn.async_read), 0 },
 	{ "atomic_o_trunc", offsetof(struct fuse_ll, atomic_o_trunc), 1},
 	{ "no_remote_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
 	{ "no_remote_lock", offsetof(struct fuse_ll, no_remote_flock), 1},
@@ -2532,8 +2528,6 @@ static void fuse_ll_help(void)
 "    -o max_readahead=N     set maximum readahead\n"
 "    -o max_background=N    set number of maximum background requests\n"
 "    -o congestion_threshold=N  set kernel's congestion threshold\n"
-"    -o async_read          perform reads asynchronously (default)\n"
-"    -o sync_read           perform reads synchronously\n"
 "    -o atomic_o_trunc      enable atomic open+truncate support\n"
 "    -o big_writes          enable larger than 4kB writes\n"
 "    -o no_remote_lock      disable remote file locking\n"
@@ -2738,7 +2732,6 @@ struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
 		goto out;
 	}
 
-	f->conn.async_read = 1;
 	f->conn.max_write = UINT_MAX;
 	f->conn.max_readahead = UINT_MAX;
 	f->atomic_o_trunc = 0;

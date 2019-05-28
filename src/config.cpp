@@ -19,11 +19,11 @@
 #include "fs.hpp"
 #include "rwlock.hpp"
 
-#include <unistd.h>
-#include <sys/stat.h>
-
 #include <string>
 #include <vector>
+
+#include <unistd.h>
+#include <sys/stat.h>
 
 #define MINFREESPACE_DEFAULT (4294967295ULL)
 #define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
@@ -50,6 +50,8 @@ Config::Config()
     statfs_ignore(StatFSIgnore::NONE),
     posix_acl(false),
     cache_symlinks(false),
+    cache_readdir(false),
+    async_read(true),
     POLICYINIT(access),
     POLICYINIT(chmod),
     POLICYINIT(chown),
