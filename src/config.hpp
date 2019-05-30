@@ -51,6 +51,34 @@ public:
       };
   };
 
+  class CacheFiles
+  {
+  public:
+    enum Enum
+      {
+        INVALID = -1,
+        LIBFUSE,
+        OFF,
+        PARTIAL,
+        FULL,
+        AUTO_FULL
+      };
+
+    CacheFiles();
+    CacheFiles(Enum);
+
+    operator int() const;
+    operator std::string() const;
+
+    CacheFiles& operator=(const Enum);
+    CacheFiles& operator=(const std::string&);
+
+    bool valid() const;
+
+  private:
+    Enum _data;
+  };
+
 public:
   Config();
 
@@ -68,6 +96,8 @@ public:
   uint64_t                 minfreespace;
   bool                     moveonenospc;
   bool                     direct_io;
+  bool                     kernel_cache;
+  bool                     auto_cache;
   bool                     dropcacheonclose;
   bool                     symlinkify;
   time_t                   symlinkify_timeout;
@@ -82,6 +112,7 @@ public:
   bool                     cache_symlinks;
   bool                     cache_readdir;
   bool                     async_read;
+  CacheFiles               cache_files;
 
 public:
   const Policy  *policies[FuseFunc::Enum::END];

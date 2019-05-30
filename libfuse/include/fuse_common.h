@@ -78,8 +78,10 @@ fuse_file_info
   /* Requests the kernel to cache entries returned by readdir */
   uint32_t cache_readdir : 1;
 
+  uint32_t auto_cache : 1;
+
   /** Padding.  Do not use*/
-  uint32_t padding : 25;
+  uint32_t padding : 24;
 
   /** File handle.  May be filled in by filesystem in open().
       Available in all other file operations */

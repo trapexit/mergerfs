@@ -48,6 +48,7 @@ namespace l
       ("user.mergerfs.branches")
       ("user.mergerfs.cache.attr")
       ("user.mergerfs.cache.entry")
+      ("user.mergerfs.cache.files")
       ("user.mergerfs.cache.negative_entry")
       ("user.mergerfs.cache.open")
       ("user.mergerfs.cache.readdir")

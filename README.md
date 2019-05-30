@@ -66,34 +66,40 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 
 ### mount options
 
-* **allow_other**: a libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
-* **direct_io**: causes FUSE to bypass caching which can increase write speeds at the detriment of reads. Note that not enabling `direct_io` will cause double caching of files and therefore less memory for caching generally (enable **dropcacheonclose** to help with this problem). However, `mmap` does not work when `direct_io` is enabled.
-* **minfreespace=value**: the minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
-* **moveonenospc=true|false**: when enabled (set to **true**) if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
-* **use_ino**: causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
-* **dropcacheonclose=true|false**: when a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **direct_io** is not enabled to limit double caching. (default: false)
-* **symlinkify=true|false**: when enabled (set to **true**) and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
-* **symlinkify_timeout=value**: time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
-* **nullrw=true|false**: turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
-* **ignorepponrename=true|false**: ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
+* **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
+* **minfreespace=value**: The minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
+* **moveonenospc=true|false**: When enabled if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
+* **use_ino**: Causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
+* **dropcacheonclose=true|false**: When a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **cache.files=partial|full|auto-full** to limit double caching. (default: false)
+* **symlinkify=true|false**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
+* **symlinkify_timeout=value**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
+* **nullrw=true|false**: Turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
+* **ignorepponrename=true|false**: Ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
 * **security_capability=true|false**: If false return ENOATTR when xattr security.capability is queried. (default: true)
 * **xattr=passthrough|noattr|nosys**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'nosys' will respond with ENOSYS as if xattrs are not supported or disabled. (default: passthrough)
 * **link_cow=true|false**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
-* **posix_acl=true|false:** enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
+* **posix_acl=true|false:** Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
 * **async_read=true|false:** Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
-* **threads=num**: number of threads to use in multithreaded mode. When set to zero (the default) it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: number of cores) *NOTE2:* the option is unavailable when built with system libfuse.
-* **fsname=name**: sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
-* **func.&lt;func&gt;=&lt;policy&gt;**: sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
+* **threads=num**: Number of threads to use in multithreaded mode. When set to zero it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: 0)
+* **fsname=name**: Sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
+* **func.&lt;func&gt;=&lt;policy&gt;**: Sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
 * **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
 * **cache.open=&lt;int&gt;**: 'open' policy cache timeout in seconds. (default: 0)
 * **cache.statfs=&lt;int&gt;**: 'statfs' cache timeout in seconds. (default: 0)
-* **cache.attr=&lt;int&gt;**: file attribute cache timeout in seconds. (default: 1)
-* **cache.entry=&lt;int&gt;**: file name lookup cache timeout in seconds. (default: 1)
-* **cache.negative_entry=&lt;int&gt;**: negative file name lookup cache timeout in seconds. (default: 0)
-* **cache.symlinks=&lt;bool&gt;**: cache symlinks (if supported by kernel) (default: false)
-* **cache.readdir=&lt;bool&gt;**: cache readdir (if supported by kernel) (default: false)
+* **cache.attr=&lt;int&gt;**: File attribute cache timeout in seconds. (default: 1)
+* **cache.entry=&lt;int&gt;**: File name lookup cache timeout in seconds. (default: 1)
+* **cache.negative_entry=&lt;int&gt;**: Negative file name lookup cache timeout in seconds. (default: 0)
+* **cache.files=libfuse|off|partial|full|auto-full**: File page caching mode (default: libfuse)
+* **cache.symlinks=&lt;bool&gt;**: Cache symlinks (if supported by kernel) (default: false)
+* **cache.readdir=&lt;bool&gt;**: Cache readdir (if supported by kernel) (default: false)
+* **direct_io**: deprecated - Bypass page cache. Use `cache.files=off` instead. (default: false)
+* **kernel_cache**: deprecated - Do not invalidate data cache on file open. Use `cache.files=full` instead. (default: false)
+* **auto_cache**: deprecated - Invalidate data cache if file mtime or size change. Use `cache.files=auto-full` instead. (default: false)
+* **async_read**: deprecated - Perform reads asynchronously. Use `async_read=true` instead.
+* **sync_read**: deprecated - Perform reads synchronously. Use `async_read=false` instead.
+
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
 
@@ -347,7 +353,7 @@ $ su -
 
 #### Generically
 
-Have git, g++, make, python, automake, libtool installed.
+Have git, g++, make, python installed.
 
 ```
 $ cd mergerfs
@@ -499,11 +505,27 @@ A B C
 
 #### page caching
 
-The kernel performs caching of data pages on all files not opened with `O_DIRECT`. Due to mergerfs using FUSE and therefore being a userland process the kernel can double cache the content being read through mergerfs. Once from the underlying filesystem and once for mergerfs. Using `direct_io` and/or `dropcacheonclose` help minimize the double caching. `direct_io` will instruct the kernel to bypass the page cache for files opened through mergerfs. `dropcacheonclose` will cause mergerfs to instruct the kernel to flush a file's page cache for which it had opened when closed. If most data is read once its probably best to enable both (read above for details and limitations).
+https://en.wikipedia.org/wiki/Page_cache
 
-If a cache is desired for mergerfs do not enable `direct_io` and instead possibly use `auto_cache` or `kernel_cache`. By default FUSE will invalidate cached pages when a file is opened. By using `auto_cache` it will instead use `getattr` to check if a file has changed when the file is opened and if so will flush the cache. `ac_attr_timeout` is the timeout for keeping said cache. Alternatively `kernel_cache` will keep the cache across opens unless invalidated through other means. You should only uses these if you do not plan to write/modify the same files through mergerfs and the underlying filesystem at the same time. It could lead to corruption. Then again doing so without caching can also cause issues.
+tl;dr:
+* cache.files=off: Disables page caching. Underlying files cached, mergerfs files are not.
+* cache.files=partial: Enables page caching. Underlying files cached, mergerfs files cached while open.
+* cache.files=full: Enables page caching. Underlying files cached, mergerfs files cached across opens.
+* cache.files=auto-full: Enables page caching. Underlying files cached, mergerfs files cached across opens if mtime and size are unchanged since previous open.
+* cache.files=libfuse: follow traditional libfuse `direct_io`, 'kernel_cache`, and `auto_cache` arguments.
 
-It's a difficult balance between memory usage, cache bloat & duplication, and performance. Ideally mergerfs would be able to disable caching for the files it reads/writes but allow page caching for itself. That would limit the FUSE overhead. However, there isn't good way to achieve this.
+
+FUSE, which mergerfs uses, offers a number of page caching modes. mergerfs tries to simplify their use via the `cache.files` option. It can and should replace usage of `direct_io`, `kernel_cache`, and `auto_cache`.
+
+Due to mergerfs using FUSE and therefore being a userland process proxying existing filesystems the kernel will double cache the content being read and written through mergerfs. Once from the underlying filesystem and once from mergerfs (it sees them as two separate entities). Using `cache.files=off` will keep the double caching from happening by disabling caching of mergerfs but this has the side effect that *all* read and write calls will be passed to mergerfs which may be slower than enabling caching, you lose shared `mmap` support which can affect apps such as rtorrent, and no read-ahead will take place. The kernel will still cache the underlying filesystem data but that only helps so much given mergerfs will still process all requests.
+
+If you do enable file page caching, `cache.files=partial|full|auto-full`, you should also enable `dropcacheonclose` which will cause mergerfs to instruct the kernel to flush the underlying file's page cache when the file is closed. This behavior is the same as the rsync fadvise / drop cache patch and Feh's nocache project.
+
+If most files are read once through and closed (like media) it is best to enable `dropcacheonclose` regardless of caching mode in order to minimize buffer bloat.
+
+It is difficult to balance memory usage, cache bloat & duplication, and performance. Ideally mergerfs would be able to disable caching for the files it reads/writes but allow page caching for itself. That would limit the FUSE overhead. However, there isn't a good way to achieve this. It would need to open all files with O_DIRECT which places limitations on the what underlying filesystems would be supported and complicates the code.
+
+kernel documenation: https://www.kernel.org/doc/Documentation/filesystems/fuse-io.txt
 
 
 #### entry & attribute caching
@@ -534,7 +556,7 @@ As of version 4.20 Linux supports symlink caching. Significant performance incre
 
 #### readdir caching
 
-As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute ('cache.attr') caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configuarable at runtime via xattr `user.mergerfs.cache.readdir`.
+As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute (`cache.attr`) caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configuarable at runtime via xattr `user.mergerfs.cache.readdir`.
 
 
 #### writeback caching
@@ -620,7 +642,7 @@ done
 * Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
-* Do **not** use `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. It is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `direct_io` is disabled.
+* Do **not** use `cache.files=off` or `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full` or `direct_io=false`.
 * Since POSIX functions give only a singular error or success its difficult to determine the proper behavior when applying the function to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
@@ -659,11 +681,7 @@ If you want to move files to one drive just copy them there and use mergerfs.ded
 
 #### cached memory appears greater than it should be
 
-Use the `direct_io` option as described above. Due to what mergerfs is doing there ends up being two caches of a file under normal usage. One from the underlying filesystem and one from mergerfs. Enabling `direct_io` removes the mergerfs cache. This saves on memory but means the kernel needs to communicate with mergerfs more often and can therefore result in slower speeds.
-
-Since enabling `direct_io` disables `mmap` this is not an ideal situation however write speeds should be increased.
-
-If `direct_io` is disabled it is probably a good idea to enable `dropcacheonclose` to minimize double caching.
+Use `cache.files=off` or `direct_io=true`. See the section on page caching.
 
 
 #### NFS clients returning ESTALE / Stale file handle
@@ -680,7 +698,7 @@ Try enabling the `use_ino` option. Some have reported that it fixes the issue.
 
 #### rtorrent fails with ENODEV (No such device)
 
-Be sure to turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
+Be sure to set `cache.files=partial|full|auto-full` or turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
 
 
 #### rtorrent fails with files >= 4GiB
@@ -828,7 +846,7 @@ See the previous question's answer.
 
 Yes. You need to use `use_ino` to support proper reporting of inodes.
 
-What mergerfs does not do is fake hard links across branches.  Read the section "rename & link" for how it.
+What mergerfs does not do is fake hard links across branches.  Read the section "rename & link" for how it works.
 
 
 #### Does mergerfs support CoW / copy-on-write?
@@ -902,7 +920,7 @@ MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to pr
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.entry, cache.attr, ac_attr_timeout, cache.negative_entry, cache.symlinks, auto_cache, kernel_cache).
+Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.).
 
 
 #### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
@@ -954,7 +972,7 @@ and the kernel use internally (also called the "nodeid").
 
 #### I notice massive slowdowns of writes over NFS
 
-Due to how NFS works and interacts with FUSE when not using `direct_io` its possible that a getxattr for `security.capability` will be issued prior to any write. This will usually result in a massive slowdown for writes. Using `direct_io` will keep this from happening (and generally good to enable unless you need the features it disables) but the `security_capability` option can also help by short circuiting the call and returning `ENOATTR`.
+Due to how NFS works and interacts with FUSE when not using `cache.files=off` or `direct_io` its possible that a getxattr for `security.capability` will be issued prior to any write. This will usually result in a massive slowdown for writes. Using `cache.files=off` or `direct_io` will keep this from happening (and generally good to enable unless you need the features it disables) but the `security_capability` option can also help by short circuiting the call and returning `ENOATTR`.
 
 You could also set `xattr` to `noattr` or `nosys` to short circuit or stop all xattr requests.
 
@@ -981,15 +999,14 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 NOTE: be sure to read about these features before changing them
 
-* enable (or disable) `direct_io`
-* enable (or disable) `auto_cache`
-* enable (or disable) `kernel_cache`
 * enable (or disable) `splice_move`, `splice_read`, and `splice_write`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
+* enable (or disable) page caching (`cache.files`)
 * enable `cache.open`
 * enable `cache.statfs`
 * enable `cache.symlinks`
-* change the number opf worker threads
+* enable `cache.readdir`
+* change the number of worker threads
 * disable `security_capability` and/or `xattr`
 * disable `posix_acl`
 * disable `async_read`

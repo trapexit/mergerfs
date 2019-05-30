@@ -1,4 +1,4 @@
-VERSION = "2.9.7-mergerfs_2.27.0"
+VERSION = "2.9.7-mergerfs_2.28.0"
 OPT = -O2
 
 ifeq ($(DEBUG),1)

@@ -132,13 +132,13 @@ parse_and_process(const std::string &value,
 
 static
 int
-parse_and_process(const std::string &value,
-                  bool              &boolean)
+parse_and_process(const std::string &value_,
+                  bool              &boolean_)
 {
-  if(value == "false")
-    boolean = false;
-  else if(value == "true")
-    boolean = true;
+  if((value_ == "false") || (value_ == "0") || (value_ == "off"))
+    boolean_ = false;
+  else if((value_ == "true") || (value_ == "1") || (value_ == "on"))
+    boolean_ = true;
   else
     return 1;
 
@@ -151,6 +151,22 @@ parse_and_process(const std::string &value_,
                   std::string       &str_)
 {
   str_ = value_;
+
+  return 0;
+}
+
+static
+int
+parse_and_process(const std::string  &value_,
+                  Config::CacheFiles &cache_files_)
+{
+  Config::CacheFiles tmp;
+
+  tmp = value_;
+  if(!tmp.valid())
+    return 1;
+
+  cache_files_ = tmp;
 
   return 0;
 }
@@ -241,6 +257,8 @@ parse_and_process_cache(Config       &config_,
     return parse_and_process(value_,config_.cache_symlinks);
   else if(func_ == "readdir")
     return parse_and_process(value_,config_.cache_readdir);
+  else if(func_ == "files")
+    return parse_and_process(value_,config_.cache_files);
 
   return 1;
 }
@@ -252,8 +270,14 @@ parse_and_process_arg(Config            &config,
 {
   if(arg == "defaults")
     return 0;
+  else if(arg == "hard_remove")
+    return 0;
   else if(arg == "direct_io")
     return (config.direct_io=true,0);
+  else if(arg == "kernel_cache")
+    return (config.kernel_cache=true,0);
+  else if(arg == "auto_cache")
+    return (config.auto_cache=true,0);
   else if(arg == "async_read")
     return (config.async_read=true,0);
   else if(arg == "sync_read")
@@ -315,6 +339,10 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.posix_acl);
       else if(key == "direct_io")
         rv = parse_and_process(value,config.direct_io);
+      else if(key == "kernel_cache")
+        rv = parse_and_process(value,config.kernel_cache);
+      else if(key == "auto_cache")
+        rv = parse_and_process(value,config.auto_cache);
       else if(key == "async_read")
         rv = parse_and_process(value,config.async_read);
     }
@@ -378,14 +406,14 @@ void
 usage(void)
 {
   std::cout <<
-    "Usage: mergerfs [options] <srcpaths> <destpath>\n"
+    "Usage: mergerfs [options] <branches> <destpath>\n"
     "\n"
     "    -o [opt,...]           mount options\n"
     "    -h --help              print help\n"
     "    -v --version           print version\n"
     "\n"
     "mergerfs options:\n"
-    "    <srcpaths>             ':' delimited list of directories. Supports\n"
+    "    <branches>             ':' delimited list of directories. Supports\n"
     "                           shell globbing (must be escaped in shell)\n"
     "    -o func.<f>=<p>        Set function <f> to policy <p>\n"
     "    -o category.<c>=<p>    Set functions in category <c> to <p>\n"
@@ -393,43 +421,49 @@ usage(void)
     "                           default = 0 (disabled)\n"
     "    -o cache.statfs=<int>  'statfs' cache timeout in seconds. Used by\n"
     "                           policies. default = 0 (disabled)\n"
+    "    -o cache.files=libfuse|off|partial|full|auto-full\n"
+    "                           * libfuse: Use direct_io, kernel_cache, auto_cache\n"
+    "                             values directly\n"
+    "                           * off: Disable page caching\n"
+    "                           * partial: Clear page cache on file open\n"
+    "                           * full: Keep cache on file open\n"
+    "                           * auto-full: Keep cache if mtime & size not changed\n"
+    "                           default = libfuse\n"
     "    -o cache.symlinks=<bool>\n"
-    "                           enable kernel caching of symlinks (if supported)\n"
+    "                           Enable kernel caching of symlinks (if supported)\n"
     "                           default = false\n"
-    "    -o cache.attr=<int>    file attribute cache timeout in seconds.\n"
+    "    -o cache.readdir=<bool>\n"
+    "                           Enable kernel caching readdir (if supported)\n"
+    "                           default = false\n"
+    "    -o cache.attr=<int>    File attribute cache timeout in seconds.\n"
     "                           default = 1\n"
-    "    -o cache.entry=<int>   file name lookup cache timeout in seconds.\n"
+    "    -o cache.entry=<int>   File name lookup cache timeout in seconds.\n"
     "                           default = 1\n"
     "    -o cache.negative_entry=<int>\n"
-    "                           negative file name lookup cache timeout in\n"
+    "                           Negative file name lookup cache timeout in\n"
     "                           seconds. default = 0\n"
-    "    -o cache.readdir=<bool>\n"
-    "                           enable kernel caching readdir (if supported)\n"
-    "    -o direct_io           Bypass page caching, may increase write\n"
-    "                           speeds at the cost of reads. Please read docs\n"
-    "                           for more details as there are tradeoffs.\n"
     "    -o use_ino             Have mergerfs generate inode values rather than\n"
     "                           autogenerated by libfuse. Suggested.\n"
-    "    -o minfreespace=<int>  minimum free space needed for certain policies.\n"
+    "    -o minfreespace=<int>  Minimum free space needed for certain policies.\n"
     "                           default = 4G\n"
     "    -o moveonenospc=<bool> Try to move file to another drive when ENOSPC\n"
     "                           on write. default = false\n"
     "    -o dropcacheonclose=<bool>\n"
     "                           When a file is closed suggest to OS it drop\n"
-    "                           the file's cache. This is useful when direct_io\n"
-    "                           is disabled. default = false\n"
+    "                           the file's cache. This is useful when using\n"
+    "                           'cache.files'. default = false\n"
     "    -o symlinkify=<bool>   Read-only files, after a timeout, will be turned\n"
     "                           into symlinks. Read docs for limitations and\n"
     "                           possible issues. default = false\n"
     "    -o symlinkify_timeout=<int>\n"
-    "                           timeout in seconds before will turn to symlinks.\n"
+    "                           Timeout in seconds before files turn to symlinks.\n"
     "                           default = 3600\n"
     "    -o nullrw=<bool>       Disables reads and writes. For benchmarking.\n"
     "                           default = false\n"
     "    -o ignorepponrename=<bool>\n"
     "                           Ignore path preserving when performing renames\n"
     "                           and links. default = false\n"
-    "    -o link_cow=<bool>     delink/clone file on open to simulate CoW.\n"
+    "    -o link_cow=<bool>     Delink/clone file on open to simulate CoW.\n"
     "                           default = false\n"
     "    -o security_capability=<bool>\n"
     "                           When disabled return ENOATTR when the xattr\n"

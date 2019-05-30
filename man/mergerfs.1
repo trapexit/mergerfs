@@ -82,62 +82,53 @@ so you can mix read\-write and read\-only drives.
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
-\f[B]allow_other\f[]: a libfuse option which allows users besides the
+\f[B]allow_other\f[]: A libfuse option which allows users besides the
 one which ran mergerfs to see the filesystem.
 This is required for most use\-cases.
 .IP \[bu] 2
-\f[B]direct_io\f[]: causes FUSE to bypass caching which can increase
-write speeds at the detriment of reads.
-Note that not enabling \f[C]direct_io\f[] will cause double caching of
-files and therefore less memory for caching generally (enable
-\f[B]dropcacheonclose\f[] to help with this problem).
-However, \f[C]mmap\f[] does not work when \f[C]direct_io\f[] is enabled.
-.IP \[bu] 2
-\f[B]minfreespace=value\f[]: the minimum space value used for creation
+\f[B]minfreespace=value\f[]: The minimum space value used for creation
 policies.
 Understands \[aq]K\[aq], \[aq]M\[aq], and \[aq]G\[aq] to represent
 kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
 .IP \[bu] 2
-\f[B]moveonenospc=true|false\f[]: when enabled (set to \f[B]true\f[]) if
-a \f[B]write\f[] fails with \f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of
-all drives will be done looking for the drive with the most free space
-which is at least the size of the file plus the amount which failed to
-write.
+\f[B]moveonenospc=true|false\f[]: When enabled if a \f[B]write\f[] fails
+with \f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of all drives will be
+done looking for the drive with the most free space which is at least
+the size of the file plus the amount which failed to write.
 An attempt to move the file to that drive will occur (keeping all
 metadata possible) and if successful the original is unlinked and the
 write retried.
 (default: false)
 .IP \[bu] 2
-\f[B]use_ino\f[]: causes mergerfs to supply file/directory inodes rather
+\f[B]use_ino\f[]: Causes mergerfs to supply file/directory inodes rather
 than libfuse.
 While not a default it is recommended it be enabled so that linked files
 share the same inode value.
 .IP \[bu] 2
-\f[B]dropcacheonclose=true|false\f[]: when a file is requested to be
+\f[B]dropcacheonclose=true|false\f[]: When a file is requested to be
 closed call \f[C]posix_fadvise\f[] on it first to instruct the kernel
 that we no longer need the data and it can drop its cache.
-Recommended when \f[B]direct_io\f[] is not enabled to limit double
-caching.
+Recommended when \f[B]cache.files=partial|full|auto\-full\f[] to limit
+double caching.
 (default: false)
 .IP \[bu] 2
-\f[B]symlinkify=true|false\f[]: when enabled (set to \f[B]true\f[]) and
-a file is not writable and its mtime or ctime is older than
-\f[B]symlinkify_timeout\f[] files will be reported as symlinks to the
-original files.
+\f[B]symlinkify=true|false\f[]: When enabled and a file is not writable
+and its mtime or ctime is older than \f[B]symlinkify_timeout\f[] files
+will be reported as symlinks to the original files.
 Please read more below before using.
 (default: false)
 .IP \[bu] 2
-\f[B]symlinkify_timeout=value\f[]: time to wait, in seconds, to activate
+\f[B]symlinkify_timeout=value\f[]: Time to wait, in seconds, to activate
 the \f[B]symlinkify\f[] behavior.
 (default: 3600)
 .IP \[bu] 2
-\f[B]nullrw=true|false\f[]: turns reads and writes into no\-ops.
+\f[B]nullrw=true|false\f[]: Turns reads and writes into no\-ops.
 The request will succeed but do nothing.
 Useful for benchmarking mergerfs.
 (default: false)
 .IP \[bu] 2
-\f[B]ignorepponrename=true|false\f[]: ignore path preserving on rename.
+\f[B]ignorepponrename=true|false\f[]: Ignore path preserving on rename.
 Typically rename and link act differently depending on the policy of
 \f[C]create\f[] (read below).
 Enabling this will cause rename and link to always use the non\-path
@@ -177,7 +168,7 @@ calculations to ignore available space for branches mounted or tagged as
 create\[aq].
 (default: none)
 .IP \[bu] 2
-\f[B]posix_acl=true|false:\f[] enable POSIX ACL support (if supported by
+\f[B]posix_acl=true|false:\f[] Enable POSIX ACL support (if supported by
 kernel and underlying filesystem).
 (default: false)
 .IP \[bu] 2
@@ -187,9 +178,9 @@ pending read request per file handle and will attempt to order requests
 by offset.
 (default: true)
 .IP \[bu] 2
-\f[B]threads=num\f[]: number of threads to use in multithreaded mode.
-When set to zero (the default) it will attempt to discover and use the
-number of logical cores.
+\f[B]threads=num\f[]: Number of threads to use in multithreaded mode.
+When set to zero it will attempt to discover and use the number of
+logical cores.
 If the lookup fails it will fall back to using 4.
 If the thread count is set negative it will look up the number of cores
 then divide by the absolute value.
@@ -198,15 +189,14 @@ threads=\-2 on an 8 core machine will result in 8 / 2 = 4 threads.
 There will always be at least 1 thread.
 NOTE: higher number of threads increases parallelism but usually
 decreases throughput.
-(default: number of cores) \f[I]NOTE2:\f[] the option is unavailable
-when built with system libfuse.
+(default: 0)
 .IP \[bu] 2
-\f[B]fsname=name\f[]: sets the name of the filesystem as seen in
+\f[B]fsname=name\f[]: Sets the name of the filesystem as seen in
 \f[B]mount\f[], \f[B]df\f[], etc.
 Defaults to a list of the source paths concatenated together with the
 longest common prefix removed.
 .IP \[bu] 2
-\f[B]func.<func>=<policy>\f[]: sets the specific FUSE function\[aq]s
+\f[B]func.<func>=<policy>\f[]: Sets the specific FUSE function\[aq]s
 policy.
 See below for the list of value types.
 Example: \f[B]func.getattr=newest\f[]
@@ -222,21 +212,44 @@ seconds.
 \f[B]cache.statfs=<int>\f[]: \[aq]statfs\[aq] cache timeout in seconds.
 (default: 0)
 .IP \[bu] 2
-\f[B]cache.attr=<int>\f[]: file attribute cache timeout in seconds.
+\f[B]cache.attr=<int>\f[]: File attribute cache timeout in seconds.
 (default: 1)
 .IP \[bu] 2
-\f[B]cache.entry=<int>\f[]: file name lookup cache timeout in seconds.
+\f[B]cache.entry=<int>\f[]: File name lookup cache timeout in seconds.
 (default: 1)
 .IP \[bu] 2
-\f[B]cache.negative_entry=<int>\f[]: negative file name lookup cache
+\f[B]cache.negative_entry=<int>\f[]: Negative file name lookup cache
 timeout in seconds.
 (default: 0)
 .IP \[bu] 2
-\f[B]cache.symlinks=<bool>\f[]: cache symlinks (if supported by kernel)
+\f[B]cache.files=libfuse|off|partial|full|auto\-full\f[]: File page
+caching mode (default: libfuse)
+.IP \[bu] 2
+\f[B]cache.symlinks=<bool>\f[]: Cache symlinks (if supported by kernel)
 (default: false)
 .IP \[bu] 2
-\f[B]cache.readdir=<bool>\f[]: cache readdir (if supported by kernel)
+\f[B]cache.readdir=<bool>\f[]: Cache readdir (if supported by kernel)
 (default: false)
+.IP \[bu] 2
+\f[B]direct_io\f[]: deprecated \- Bypass page cache.
+Use \f[C]cache.files=off\f[] instead.
+(default: false)
+.IP \[bu] 2
+\f[B]kernel_cache\f[]: deprecated \- Do not invalidate data cache on
+file open.
+Use \f[C]cache.files=full\f[] instead.
+(default: false)
+.IP \[bu] 2
+\f[B]auto_cache\f[]: deprecated \- Invalidate data cache if file mtime
+or size change.
+Use \f[C]cache.files=auto\-full\f[] instead.
+(default: false)
+.IP \[bu] 2
+\f[B]async_read\f[]: deprecated \- Perform reads asynchronously.
+Use \f[C]async_read=true\f[] instead.
+.IP \[bu] 2
+\f[B]sync_read\f[]: deprecated \- Perform reads synchronously.
+Use \f[C]async_read=false\f[] instead.
 .PP
 \f[B]NOTE:\f[] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[] the
@@ -826,7 +839,7 @@ $\ su\ \-
 .fi
 .SS Generically
 .PP
-Have git, g++, make, python, automake, libtool installed.
+Have git, g++, make, python installed.
 .IP
 .nf
 \f[C]
@@ -1041,40 +1054,64 @@ bad blocks and find the files using those blocks
 .SH CACHING
 .SS page caching
 .PP
-The kernel performs caching of data pages on all files not opened with
-\f[C]O_DIRECT\f[].
-Due to mergerfs using FUSE and therefore being a userland process the
-kernel can double cache the content being read through mergerfs.
-Once from the underlying filesystem and once for mergerfs.
-Using \f[C]direct_io\f[] and/or \f[C]dropcacheonclose\f[] help minimize
-the double caching.
-\f[C]direct_io\f[] will instruct the kernel to bypass the page cache for
-files opened through mergerfs.
-\f[C]dropcacheonclose\f[] will cause mergerfs to instruct the kernel to
-flush a file\[aq]s page cache for which it had opened when closed.
-If most data is read once its probably best to enable both (read above
-for details and limitations).
+https://en.wikipedia.org/wiki/Page_cache
 .PP
-If a cache is desired for mergerfs do not enable \f[C]direct_io\f[] and
-instead possibly use \f[C]auto_cache\f[] or \f[C]kernel_cache\f[].
-By default FUSE will invalidate cached pages when a file is opened.
-By using \f[C]auto_cache\f[] it will instead use \f[C]getattr\f[] to
-check if a file has changed when the file is opened and if so will flush
-the cache.
-\f[C]ac_attr_timeout\f[] is the timeout for keeping said cache.
-Alternatively \f[C]kernel_cache\f[] will keep the cache across opens
-unless invalidated through other means.
-You should only uses these if you do not plan to write/modify the same
-files through mergerfs and the underlying filesystem at the same time.
-It could lead to corruption.
-Then again doing so without caching can also cause issues.
+tl;dr: * cache.files=off: Disables page caching.
+Underlying files cached, mergerfs files are not.
+* cache.files=partial: Enables page caching.
+Underlying files cached, mergerfs files cached while open.
+* cache.files=full: Enables page caching.
+Underlying files cached, mergerfs files cached across opens.
+* cache.files=auto\-full: Enables page caching.
+Underlying files cached, mergerfs files cached across opens if mtime and
+size are unchanged since previous open.
+* cache.files=libfuse: follow traditional libfuse \f[C]direct_io\f[],
+\[aq]kernel_cache\f[C],\ and\f[]auto_cache` arguments.
 .PP
-It\[aq]s a difficult balance between memory usage, cache bloat &
-duplication, and performance.
+FUSE, which mergerfs uses, offers a number of page caching modes.
+mergerfs tries to simplify their use via the \f[C]cache.files\f[]
+option.
+It can and should replace usage of \f[C]direct_io\f[],
+\f[C]kernel_cache\f[], and \f[C]auto_cache\f[].
+.PP
+Due to mergerfs using FUSE and therefore being a userland process
+proxying existing filesystems the kernel will double cache the content
+being read and written through mergerfs.
+Once from the underlying filesystem and once from mergerfs (it sees them
+as two separate entities).
+Using \f[C]cache.files=off\f[] will keep the double caching from
+happening by disabling caching of mergerfs but this has the side effect
+that \f[I]all\f[] read and write calls will be passed to mergerfs which
+may be slower than enabling caching, you lose shared \f[C]mmap\f[]
+support which can affect apps such as rtorrent, and no read\-ahead will
+take place.
+The kernel will still cache the underlying filesystem data but that only
+helps so much given mergerfs will still process all requests.
+.PP
+If you do enable file page caching,
+\f[C]cache.files=partial|full|auto\-full\f[], you should also enable
+\f[C]dropcacheonclose\f[] which will cause mergerfs to instruct the
+kernel to flush the underlying file\[aq]s page cache when the file is
+closed.
+This behavior is the same as the rsync fadvise / drop cache patch and
+Feh\[aq]s nocache project.
+.PP
+If most files are read once through and closed (like media) it is best
+to enable \f[C]dropcacheonclose\f[] regardless of caching mode in order
+to minimize buffer bloat.
+.PP
+It is difficult to balance memory usage, cache bloat & duplication, and
+performance.
 Ideally mergerfs would be able to disable caching for the files it
 reads/writes but allow page caching for itself.
 That would limit the FUSE overhead.
-However, there isn\[aq]t good way to achieve this.
+However, there isn\[aq]t a good way to achieve this.
+It would need to open all files with O_DIRECT which places limitations
+on the what underlying filesystems would be supported and complicates
+the code.
+.PP
+kernel documenation:
+https://www.kernel.org/doc/Documentation/filesystems/fuse\-io.txt
 .SS entry & attribute caching
 .PP
 Given the relatively high cost of FUSE due to the kernel <\-> userspace
@@ -1142,7 +1179,7 @@ startup you can not change it at runtime.
 As of version 4.20 Linux supports readdir caching.
 This can have a significant impact on directory traversal.
 Especially when combined with entry (\f[C]cache.entry\f[]) and attribute
-(\[aq]cache.attr\[aq]) caching.
+(\f[C]cache.attr\f[]) caching.
 Setting \f[C]cache.readdir=true\f[] will result in requesting readdir
 caching from the kernel on each \f[C]opendir\f[].
 If the kernel doesn\[aq]t support readdir caching setting the option to
@@ -1298,11 +1335,14 @@ all the underlying directories.
 Use \f[C]mergerfs.fsck\f[] to audit the drive for out of sync
 permissions.
 .IP \[bu] 2
-Do \f[B]not\f[] use \f[C]direct_io\f[] if you expect applications (such
-as rtorrent) to mmap (http://linux.die.net/man/2/mmap) files.
-It is not currently supported in FUSE w/ \f[C]direct_io\f[] enabled.
+Do \f[B]not\f[] use \f[C]cache.files=off\f[] or \f[C]direct_io\f[] if
+you expect applications (such as rtorrent) to
+mmap (http://linux.die.net/man/2/mmap) files.
+Shared mmap is not currently supported in FUSE w/ \f[C]direct_io\f[]
+enabled.
 Enabling \f[C]dropcacheonclose\f[] is recommended when
-\f[C]direct_io\f[] is disabled.
+\f[C]cache.files=partial|full|auto\-full\f[] or
+\f[C]direct_io=false\f[].
 .IP \[bu] 2
 Since POSIX functions give only a singular error or success its
 difficult to determine the proper behavior when applying the function to
@@ -1380,19 +1420,8 @@ mergerfs.dedup to clean up the old paths or manually remove them from
 the branches directly.
 .SS cached memory appears greater than it should be
 .PP
-Use the \f[C]direct_io\f[] option as described above.
-Due to what mergerfs is doing there ends up being two caches of a file
-under normal usage.
-One from the underlying filesystem and one from mergerfs.
-Enabling \f[C]direct_io\f[] removes the mergerfs cache.
-This saves on memory but means the kernel needs to communicate with
-mergerfs more often and can therefore result in slower speeds.
-.PP
-Since enabling \f[C]direct_io\f[] disables \f[C]mmap\f[] this is not an
-ideal situation however write speeds should be increased.
-.PP
-If \f[C]direct_io\f[] is disabled it is probably a good idea to enable
-\f[C]dropcacheonclose\f[] to minimize double caching.
+Use \f[C]cache.files=off\f[] or \f[C]direct_io=true\f[].
+See the section on page caching.
 .SS NFS clients returning ESTALE / Stale file handle
 .PP
 Be sure to use \f[C]noforget\f[] and \f[C]use_ino\f[] arguments.
@@ -1405,7 +1434,8 @@ Try enabling the \f[C]use_ino\f[] option.
 Some have reported that it fixes the issue.
 .SS rtorrent fails with ENODEV (No such device)
 .PP
-Be sure to turn off \f[C]direct_io\f[].
+Be sure to set \f[C]cache.files=partial|full|auto\-full\f[] or turn off
+\f[C]direct_io\f[].
 rtorrent and some other applications use
 mmap (http://linux.die.net/man/2/mmap) to read and write to files and
 offer no failback to traditional methods.
@@ -1675,7 +1705,7 @@ Yes.
 You need to use \f[C]use_ino\f[] to support proper reporting of inodes.
 .PP
 What mergerfs does not do is fake hard links across branches.
-Read the section "rename & link" for how it.
+Read the section "rename & link" for how it works.
 .SS Does mergerfs support CoW / copy\-on\-write?
 .PP
 Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs
@@ -1813,9 +1843,8 @@ here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html
 .PP
 Yes, however its not recommended to use the same file from within the
 pool and from without at the same time.
-Especially if using caching of any kind (cache.entry, cache.attr,
-ac_attr_timeout, cache.negative_entry, cache.symlinks, auto_cache,
-kernel_cache).
+Especially if using caching of any kind (cache.files, cache.entry,
+cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.).
 .SS Why do I get an "out of space" / "no space left on device" / ENOSPC
 error even though there appears to be lots of space available?
 .PP
@@ -1905,13 +1934,14 @@ and\ the\ kernel\ use\ internally\ (also\ called\ the\ "nodeid").
 .SS I notice massive slowdowns of writes over NFS
 .PP
 Due to how NFS works and interacts with FUSE when not using
-\f[C]direct_io\f[] its possible that a getxattr for
-\f[C]security.capability\f[] will be issued prior to any write.
+\f[C]cache.files=off\f[] or \f[C]direct_io\f[] its possible that a
+getxattr for \f[C]security.capability\f[] will be issued prior to any
+write.
 This will usually result in a massive slowdown for writes.
-Using \f[C]direct_io\f[] will keep this from happening (and generally
-good to enable unless you need the features it disables) but the
-\f[C]security_capability\f[] option can also help by short circuiting
-the call and returning \f[C]ENOATTR\f[].
+Using \f[C]cache.files=off\f[] or \f[C]direct_io\f[] will keep this from
+happening (and generally good to enable unless you need the features it
+disables) but the \f[C]security_capability\f[] option can also help by
+short circuiting the call and returning \f[C]ENOATTR\f[].
 .PP
 You could also set \f[C]xattr\f[] to \f[C]noattr\f[] or \f[C]nosys\f[]
 to short circuit or stop all xattr requests.
@@ -1971,17 +2001,13 @@ assuming there are few users.
 .PP
 NOTE: be sure to read about these features before changing them
 .IP \[bu] 2
-enable (or disable) \f[C]direct_io\f[]
-.IP \[bu] 2
-enable (or disable) \f[C]auto_cache\f[]
-.IP \[bu] 2
-enable (or disable) \f[C]kernel_cache\f[]
-.IP \[bu] 2
 enable (or disable) \f[C]splice_move\f[], \f[C]splice_read\f[], and
 \f[C]splice_write\f[]
 .IP \[bu] 2
 increase cache timeouts \f[C]cache.attr\f[], \f[C]cache.entry\f[],
 \f[C]cache.negative_entry\f[]
+.IP \[bu] 2
+enable (or disable) page caching (\f[C]cache.files\f[])
 .IP \[bu] 2
 enable \f[C]cache.open\f[]
 .IP \[bu] 2
@@ -1989,7 +2015,9 @@ enable \f[C]cache.statfs\f[]
 .IP \[bu] 2
 enable \f[C]cache.symlinks\f[]
 .IP \[bu] 2
-change the number opf worker threads
+enable \f[C]cache.readdir\f[]
+.IP \[bu] 2
+change the number of worker threads
 .IP \[bu] 2
 disable \f[C]security_capability\f[] and/or \f[C]xattr\f[]
 .IP \[bu] 2
