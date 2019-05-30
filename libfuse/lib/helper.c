@@ -28,23 +28,26 @@ enum  {
 	KEY_VERSION,
 };
 
-struct helper_opts {
-	int singlethread;
-	int foreground;
-	int nodefault_subtype;
-	char *mountpoint;
+struct helper_opts
+{
+  int singlethread;
+  int foreground;
+  int nodefault_subtype;
+  char *mountpoint;
 };
 
 #define FUSE_HELPER_OPT(t, p) { t, offsetof(struct helper_opts, p), 1 }
 
-static const struct fuse_opt fuse_helper_opts[] = {
+static
+const
+struct fuse_opt fuse_helper_opts[] =
+  {
 	FUSE_HELPER_OPT("-d",		foreground),
 	FUSE_HELPER_OPT("debug",	foreground),
 	FUSE_HELPER_OPT("-f",		foreground),
 	FUSE_HELPER_OPT("-s",		singlethread),
 	FUSE_HELPER_OPT("fsname=",	nodefault_subtype),
 	FUSE_HELPER_OPT("subtype=",	nodefault_subtype),
-
 	FUSE_OPT_KEY("-h",		KEY_HELP),
 	FUSE_OPT_KEY("--help",		KEY_HELP),
 	FUSE_OPT_KEY("-ho",		KEY_HELP_NOHEADER),
@@ -144,37 +147,46 @@ static int add_default_subtype(const char *progname, struct fuse_args *args)
 	return res;
 }
 
-int fuse_parse_cmdline(struct fuse_args *args, char **mountpoint,
-		       int *multithreaded, int *foreground)
+int
+fuse_parse_cmdline(struct fuse_args  *args_,
+                   char             **mountpoint_,
+                   int               *multithreaded_,
+                   int               *foreground_)
 {
-	int res;
-	struct helper_opts hopts;
+  int res;
+  struct helper_opts hopts;
 
-	memset(&hopts, 0, sizeof(hopts));
-	res = fuse_opt_parse(args, &hopts, fuse_helper_opts,
-			     fuse_helper_opt_proc);
-	if (res == -1)
-		return -1;
+  memset(&hopts, 0, sizeof(hopts));
 
-	if (!hopts.nodefault_subtype) {
-		res = add_default_subtype(args->argv[0], args);
-		if (res == -1)
-			goto err;
-	}
-	if (mountpoint)
-		*mountpoint = hopts.mountpoint;
-	else
-		free(hopts.mountpoint);
+  res = fuse_opt_parse(args_,
+                       &hopts,
+                       fuse_helper_opts,
+                       fuse_helper_opt_proc);
+  if(res == -1)
+    return -1;
 
-	if (multithreaded)
-		*multithreaded = !hopts.singlethread;
-	if (foreground)
-		*foreground = hopts.foreground;
-	return 0;
+  if(!hopts.nodefault_subtype)
+    {
+      res = add_default_subtype(args_->argv[0], args_);
+      if(res == -1)
+        goto err;
+    }
 
-err:
-	free(hopts.mountpoint);
-	return -1;
+  if(mountpoint_)
+    *mountpoint_ = hopts.mountpoint;
+  else
+    free(hopts.mountpoint);
+
+  if(multithreaded_)
+    *multithreaded_ = !hopts.singlethread;
+  if(foreground_)
+    *foreground_ = hopts.foreground;
+
+  return 0;
+
+ err:
+  free(hopts.mountpoint);
+  return -1;
 }
 
 int fuse_daemonize(int foreground)
@@ -229,36 +241,41 @@ int fuse_daemonize(int foreground)
 	return 0;
 }
 
-static struct fuse_chan *fuse_mount_common(const char *mountpoint,
-					   struct fuse_args *args)
+static
+struct fuse_chan *
+fuse_mount_common(const char       *mountpoint_,
+                  struct fuse_args *args_)
 {
-	struct fuse_chan *ch;
-	int fd;
+  struct fuse_chan *ch;
+  int fd;
 
-	/*
-	 * Make sure file descriptors 0, 1 and 2 are open, otherwise chaos
-	 * would ensue.
-	 */
-	do {
-		fd = open("/dev/null", O_RDWR);
-		if (fd > 2)
-			close(fd);
-	} while (fd >= 0 && fd <= 2);
+  /*
+   * Make sure file descriptors 0, 1 and 2 are open, otherwise chaos
+   * would ensue.
+   */
+  do
+    {
+      fd = open("/dev/null", O_RDWR);
+      if(fd > 2)
+        close(fd);
+    } while(fd >= 0 && fd <= 2);
 
-	fd = fuse_mount_compat25(mountpoint, args);
-	if (fd == -1)
-		return NULL;
+  fd = fuse_mount_compat25(mountpoint_, args_);
+  if(fd == -1)
+    return NULL;
 
-	ch = fuse_kern_chan_new(fd);
-	if (!ch)
-		fuse_kern_unmount(mountpoint, fd);
+  ch = fuse_kern_chan_new(fd);
+  if(!ch)
+    fuse_kern_unmount(mountpoint_, fd);
 
-	return ch;
+  return ch;
 }
 
-struct fuse_chan *fuse_mount(const char *mountpoint, struct fuse_args *args)
+struct fuse_chan *
+fuse_mount(const char       *mountpoint_,
+           struct fuse_args *args_)
 {
-	return fuse_mount_common(mountpoint, args);
+  return fuse_mount_common(mountpoint_,args_);
 }
 
 static void fuse_unmount_common(const char *mountpoint, struct fuse_chan *ch)

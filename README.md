@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-05-23
+% 2019-06-03
 
 # NAME
 
@@ -67,33 +67,34 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 ### mount options
 
 * **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
-* **minfreespace=value**: The minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
-* **moveonenospc=true|false**: When enabled if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
+* **minfreespace=SIZE**: The minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
+* **moveonenospc=BOOL**: When enabled if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: Causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
-* **dropcacheonclose=true|false**: When a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **cache.files=partial|full|auto-full** to limit double caching. (default: false)
-* **symlinkify=true|false**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
-* **symlinkify_timeout=value**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
-* **nullrw=true|false**: Turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
-* **ignorepponrename=true|false**: Ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
-* **security_capability=true|false**: If false return ENOATTR when xattr security.capability is queried. (default: true)
+* **dropcacheonclose=BOOL**: When a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **cache.files=partial|full|auto-full** to limit double caching. (default: false)
+* **symlinkify=BOOL**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
+* **symlinkify_timeout=INT**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
+* **nullrw=BOOL**: Turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
+* **ignorepponrename=BOOL**: Ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
+* **security_capability=BOOL**: If false return ENOATTR when xattr security.capability is queried. (default: true)
 * **xattr=passthrough|noattr|nosys**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'nosys' will respond with ENOSYS as if xattrs are not supported or disabled. (default: passthrough)
-* **link_cow=true|false**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
+* **link_cow=BOOL**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
-* **posix_acl=true|false:** Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
-* **async_read=true|false:** Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
-* **threads=num**: Number of threads to use in multithreaded mode. When set to zero it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: 0)
-* **fsname=name**: Sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
-* **func.&lt;func&gt;=&lt;policy&gt;**: Sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
-* **category.&lt;category&gt;=&lt;policy&gt;**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
-* **cache.open=&lt;int&gt;**: 'open' policy cache timeout in seconds. (default: 0)
-* **cache.statfs=&lt;int&gt;**: 'statfs' cache timeout in seconds. (default: 0)
-* **cache.attr=&lt;int&gt;**: File attribute cache timeout in seconds. (default: 1)
-* **cache.entry=&lt;int&gt;**: File name lookup cache timeout in seconds. (default: 1)
-* **cache.negative_entry=&lt;int&gt;**: Negative file name lookup cache timeout in seconds. (default: 0)
+* **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
+* **async_read=BOOL**: Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
+* **fuse_msg_size=INT**: Set the max number of pages per FUSE message. Only available on Linux >= 4.20 and ignored otherwise. (min: 1; max: 256; default: 256)
+* **threads=INT**: Number of threads to use in multithreaded mode. When set to zero it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: 0)
+* **fsname=STR**: Sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
+* **func.FUNC=POLICY**: Sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
+* **category.CATEGORY=POLICY**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
+* **cache.open=INT**: 'open' policy cache timeout in seconds. (default: 0)
+* **cache.statfs=INT**: 'statfs' cache timeout in seconds. (default: 0)
+* **cache.attr=INT**: File attribute cache timeout in seconds. (default: 1)
+* **cache.entry=INT**: File name lookup cache timeout in seconds. (default: 1)
+* **cache.negative_entry=INT**: Negative file name lookup cache timeout in seconds. (default: 0)
 * **cache.files=libfuse|off|partial|full|auto-full**: File page caching mode (default: libfuse)
-* **cache.symlinks=&lt;bool&gt;**: Cache symlinks (if supported by kernel) (default: false)
-* **cache.readdir=&lt;bool&gt;**: Cache readdir (if supported by kernel) (default: false)
+* **cache.symlinks=BOOL**: Cache symlinks (if supported by kernel) (default: false)
+* **cache.readdir=BOOL**: Cache readdir (if supported by kernel) (default: false)
 * **direct_io**: deprecated - Bypass page cache. Use `cache.files=off` instead. (default: false)
 * **kernel_cache**: deprecated - Do not invalidate data cache on file open. Use `cache.files=full` instead. (default: false)
 * **auto_cache**: deprecated - Invalidate data cache if file mtime or size change. Use `cache.files=auto-full` instead. (default: false)
@@ -102,6 +103,17 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
+
+
+#### Value Types
+
+* BOOL = 'true' | 'false'
+* INT = [0,MAX_INT]
+* SIZE = 'NNM'; NN = INT, M = 'K' | 'M' | 'G' | 'T'
+* STR = string
+* FUNC = FUSE function
+* CATEGORY = FUSE function category
+* POLICY = mergerfs function policy
 
 
 ### branches
@@ -130,6 +142,15 @@ To have the pool mounted at boot or otherwise accessable from related tools use 
 **NOTE:** for mounting via **fstab** to work you must have **mount.fuse** installed. For Ubuntu/Debian it is included in the **fuse** package.
 
 
+### fuse_msg_size
+
+FUSE applications communicate with the kernel over a special character device: `/dev/fuse`. A large portion of the overhead associated with FUSE is the cost of going back and forth from user space and kernel space over that device. Generally speaking the fewer trips needed the better the performance will be. Reducing the number of trips can be done a number of ways. Kernel level caching and increasing message sizes being two significant ones. When it comes to reads and writes if the message size is doubled the number of trips are appoximately halved.
+
+In Linux 4.20 a new feature was added allowing the negotiation of the max message size. Since the size is in multiples of [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the feature is called `max_pages`. There is a maximum `max_pages` value of 256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20, and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its referred to as `fuse_msg_size` to make it clear what it impacts and provide some abstraction.
+
+Since there should be no downsides to increasing `fuse_msg_size` / `max_pages`, outside a minor bump in RAM usage due to larger message buffers, mergerfs defaults the value to 256. On kernels before 4.20 the value has no effect. The reason the value is configurable is to enable experimentation and benchmarking. See the `nullrw` section for benchmarking examples.
+
+
 ### symlinkify
 
 Due to the levels of indirection introduced by mergerfs and the underlying technology FUSE there can be varying levels of performance degredation. This feature will turn non-directories which are not writable into symlinks to the original file found by the `readlink` policy after the mtime and ctime are older than the timeout.
@@ -147,22 +168,22 @@ By enabling `nullrw` mergerfs will work as it always does **except** that all re
 
 Example:
 ```
-$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=512 count=1024 conv=fdatasync
+$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=512 count=1024 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
 1024+0 records in
 2097152+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 15.4067 s, 69.7 MB/s
 
-$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=1M count=1024 conv=fdatasync
+$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=1M count=1024 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
 1024+0 records in
 1024+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.219585 s, 4.9 GB/s
 
-$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=512 count=102400 conv=fdatasync
+$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=512 count=102400 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
 102400+0 records in
 102400+0 records out
 52428800 bytes (52 MB, 50 MiB) copied, 0.757991 s, 69.2 MB/s
 
-$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024 conv=fdatasync
+$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
 1024+0 records in
 1024+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.18405 s, 5.8 GB/s
@@ -388,7 +409,12 @@ Any changes made at runtime are **not** persisted. If you wish for values to per
 
 ##### Keys #####
 
-Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only.
+Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only. `setxattr` will return EINVAL on read-only keys.
+
+
+##### Values #####
+
+Same as the command line.
 
 
 ###### user.mergerfs.branches ######
@@ -411,32 +437,11 @@ Used to query or modify the list of branches. When modifying there are several s
 The `=NC`, `=RO`, `=RW` syntax works just as on the command line.
 
 
-###### minfreespace ######
-
-Input: interger with an optional multiplier suffix. **K**, **M**, or **G**.
-
-Output: value in bytes
-
-
-###### moveonenospc ######
-
-Input: **true** and **false**
-
-Ouput: **true** or **false**
-
-
-###### categories / funcs ######
-
-Input: short policy string as described elsewhere in this document
-
-Output: the policy string except for categories where its funcs have multiple types. In that case it will be a comma separated list
-
-
 ##### Example #####
 
 ```
 [trapexit:/mnt/mergerfs] $ xattr -l .mergerfs
-user.mergerfs.branches: /mnt/a:/mnt/b
+user.mergerfs.branches: /mnt/a=RW:/mnt/b=RW
 user.mergerfs.minfreespace: 4294967295
 user.mergerfs.moveonenospc: false
 ...
@@ -466,10 +471,10 @@ newest
 
 While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) **mergerfs** offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
 
-* **user.mergerfs.basepath:** the base mount point for the file given the current getattr policy
-* **user.mergerfs.relpath:** the relative path of the file from the perspective of the mount point
-* **user.mergerfs.fullpath:** the full path of the original file given the getattr policy
-* **user.mergerfs.allpaths:** a NUL ('\0') separated list of full paths to all files found
+* **user.mergerfs.basepath**: the base mount point for the file given the current getattr policy
+* **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
+* **user.mergerfs.fullpath**: the full path of the original file given the getattr policy
+* **user.mergerfs.allpaths**: a NUL ('\0') separated list of full paths to all files found
 
 ```
 [trapexit:/mnt/mergerfs] $ ls
@@ -561,7 +566,7 @@ As of version 4.20 Linux supports readdir caching. This can have a significant i
 
 #### writeback caching
 
-writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a slightly modified and vendored libfuse 2.9.7 which does not support writeback caching. However, a prototype port to libfuse 3.x has been made and the writeback cache appears to work as expected (though performance improvements greatly depend on the way the client app writes data). Once the port is complete and thoroughly tested writeback caching will be available.
+writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a  modified and vendored libfuse 2.9.7 which does not support writeback caching. Adding said feature should not be difficult but benchmarking needs to be done to see if what effect it will have.
 
 
 #### tiered caching

@@ -4775,9 +4775,11 @@ void fuse_destroy(struct fuse *f)
 	fuse_delete_context_key();
 }
 
-static struct fuse *fuse_new_common_compat25(int fd, struct fuse_args *args,
-					     const struct fuse_operations *op,
-					     size_t op_size, int compat)
+static
+struct fuse *
+fuse_new_common_compat25(int fd, struct fuse_args *args,
+                         const struct fuse_operations *op,
+                         size_t op_size, int compat)
 {
 	struct fuse *f = NULL;
 	struct fuse_chan *ch = fuse_kern_chan_new(fd);
@@ -4805,6 +4807,7 @@ static struct fuse *fuse_new_common_compat(int fd, const char *opts,
 		fuse_opt_free_args(&args);
 		return NULL;
 	}
+
 	f = fuse_new_common_compat25(fd, &args, op, op_size, compat);
 	fuse_opt_free_args(&args);
 

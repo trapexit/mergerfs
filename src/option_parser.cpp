@@ -105,6 +105,28 @@ set_default_options(fuse_args *args)
 static
 int
 parse_and_process(const std::string &value_,
+                  uint16_t          &uint16_,
+                  uint16_t           min_,
+                  uint16_t           max_)
+{
+  int rv;
+  uint64_t uint64;
+
+  rv = num::to_uint64_t(value_,uint64);
+  if(rv == -1)
+    return 1;
+
+  if((uint64 > max_) || (uint64 < min_))
+    return 1;
+
+  uint16_ = uint64;
+
+  return 0;
+}
+
+static
+int
+parse_and_process(const std::string &value_,
                   uint64_t          &int_)
 {
   int rv;
@@ -345,6 +367,10 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.auto_cache);
       else if(key == "async_read")
         rv = parse_and_process(value,config.async_read);
+      else if(key == "fuse_msg_size")
+        rv = parse_and_process(value,config.fuse_msg_size,
+                               1,
+                               FUSE_MAX_MAX_PAGES);
     }
 
   if(rv == -1)

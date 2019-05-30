@@ -1749,8 +1749,10 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	f->conn.want = 0;
 
 	memset(&outarg, 0, sizeof(outarg));
-	outarg.major = FUSE_KERNEL_VERSION;
-	outarg.minor = FUSE_KERNEL_MINOR_VERSION;
+
+	outarg.major     = FUSE_KERNEL_VERSION;
+	outarg.minor     = FUSE_KERNEL_MINOR_VERSION;
+        outarg.max_pages = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
 
 	if (arg->major < 7) {
 		fprintf(stderr, "fuse: unsupported protocol version: %u.%u\n",
@@ -1790,6 +1792,8 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
                         f->conn.capable |= FUSE_CAP_ASYNC_DIO;
                 if (arg->flags & FUSE_PARALLEL_DIROPS)
                         f->conn.capable |= FUSE_CAP_PARALLEL_DIROPS;
+                if (arg->flags & FUSE_MAX_PAGES)
+                        f->conn.capable |= FUSE_CAP_MAX_PAGES;
 	} else {
                 f->conn.want &= ~FUSE_CAP_ASYNC_READ;
 		f->conn.max_readahead = 0;
@@ -1812,14 +1816,10 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	if (req->f->conn.proto_minor >= 18)
 		f->conn.capable |= FUSE_CAP_IOCTL_DIR;
 
-	if (f->atomic_o_trunc)
-		f->conn.want |= FUSE_CAP_ATOMIC_O_TRUNC;
 	if (f->op.getlk && f->op.setlk && !f->no_remote_posix_lock)
 		f->conn.want |= FUSE_CAP_POSIX_LOCKS;
 	if (f->op.flock && !f->no_remote_flock)
 		f->conn.want |= FUSE_CAP_FLOCK_LOCKS;
-	if (f->big_writes)
-		f->conn.want |= FUSE_CAP_BIG_WRITES;
 
 	if (bufsize < FUSE_MIN_READ_BUFFER) {
 		fprintf(stderr, "fuse: warning: buffer size too small: %zu\n",
@@ -1841,6 +1841,12 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		f->conn.want &= ~FUSE_CAP_SPLICE_WRITE;
 	if (f->no_splice_move)
 		f->conn.want &= ~FUSE_CAP_SPLICE_MOVE;
+
+        if ((arg->flags & FUSE_MAX_PAGES) && (f->conn.want & FUSE_CAP_MAX_PAGES))
+          {
+            outarg.flags     |= FUSE_MAX_PAGES;
+            outarg.max_pages  = f->conn.max_pages;
+          }
 
 	if (f->conn.want & FUSE_CAP_ASYNC_READ)
 		outarg.flags |= FUSE_ASYNC_READ;
@@ -1890,6 +1896,7 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 			outarg.max_background);
 		fprintf(stderr, "   congestion_threshold=%i\n",
 		        outarg.congestion_threshold);
+                fprintf(stderr, "   max_pages=%d\n",outarg.max_pages);
 	}
 
         size_t outargsize;
@@ -2520,17 +2527,14 @@ static const struct fuse_opt fuse_ll_opts[] = {
 	{ "debug", offsetof(struct fuse_ll, debug), 1 },
 	{ "-d", offsetof(struct fuse_ll, debug), 1 },
 	{ "allow_root", offsetof(struct fuse_ll, allow_root), 1 },
-	{ "max_write=%u", offsetof(struct fuse_ll, conn.max_write), 0 },
 	{ "max_readahead=%u", offsetof(struct fuse_ll, conn.max_readahead), 0 },
 	{ "max_background=%u", offsetof(struct fuse_ll, conn.max_background), 0 },
 	{ "congestion_threshold=%u",
 	  offsetof(struct fuse_ll, conn.congestion_threshold), 0 },
-	{ "atomic_o_trunc", offsetof(struct fuse_ll, atomic_o_trunc), 1},
 	{ "no_remote_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
 	{ "no_remote_lock", offsetof(struct fuse_ll, no_remote_flock), 1},
 	{ "no_remote_flock", offsetof(struct fuse_ll, no_remote_flock), 1},
 	{ "no_remote_posix_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
-	{ "big_writes", offsetof(struct fuse_ll, big_writes), 1},
 	{ "splice_write", offsetof(struct fuse_ll, splice_write), 1},
 	{ "no_splice_write", offsetof(struct fuse_ll, no_splice_write), 1},
 	{ "splice_move", offsetof(struct fuse_ll, splice_move), 1},
@@ -2554,12 +2558,9 @@ static void fuse_ll_version(void)
 static void fuse_ll_help(void)
 {
 	fprintf(stderr,
-"    -o max_write=N         set maximum size of write requests\n"
 "    -o max_readahead=N     set maximum readahead\n"
 "    -o max_background=N    set number of maximum background requests\n"
 "    -o congestion_threshold=N  set kernel's congestion threshold\n"
-"    -o atomic_o_trunc      enable atomic open+truncate support\n"
-"    -o big_writes          enable larger than 4kB writes\n"
 "    -o no_remote_lock      disable remote file locking\n"
 "    -o no_remote_flock     disable remote file locking (BSD)\n"
 "    -o no_remote_posix_lock disable remove file locking (POSIX)\n"
@@ -2764,7 +2765,6 @@ struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
 
 	f->conn.max_write = UINT_MAX;
 	f->conn.max_readahead = UINT_MAX;
-	f->atomic_o_trunc = 0;
 	list_init_req(&f->list);
 	list_init_req(&f->interrupts);
 	list_init_nreq(&f->notify_list);

@@ -113,6 +113,7 @@ public:
   bool                     cache_readdir;
   bool                     async_read;
   CacheFiles               cache_files;
+  uint16_t                 fuse_msg_size;
 
 public:
   const Policy  *policies[FuseFunc::Enum::END];
