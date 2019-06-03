@@ -2296,7 +2296,32 @@ int fuse_fs_fallocate(struct fuse_fs *fs, const char *path, int mode,
 		return -ENOSYS;
 }
 
-static
+ssize_t
+fuse_fs_copy_file_range(struct fuse_fs        *fs_,
+                        const char            *path_in_,
+                        struct fuse_file_info *ffi_in_,
+                        off_t                  off_in_,
+                        const char            *path_out_,
+                        struct fuse_file_info *ffi_out_,
+                        off_t                  off_out_,
+                        size_t                 len_,
+                        int                    flags_)
+{
+  fuse_get_context()->private_data = fs_->user_data;
+
+  if(fs_->op.copy_file_range == NULL)
+    return -ENOSYS;
+
+  return fs_->op.copy_file_range(path_in_,
+                                 ffi_in_,
+                                 off_in_,
+                                 path_out_,
+                                 ffi_out_,
+                                 off_out_,
+                                 len_,
+                                 flags_);
+}
+
 int
 node_open(const struct node *node_)
 {
@@ -3675,6 +3700,61 @@ static void fuse_lib_removexattr(fuse_req_t req, fuse_ino_t ino,
 	reply_err(req, err);
 }
 
+static
+void
+fuse_lib_copy_file_range(fuse_req_t             req_,
+                         fuse_ino_t             nodeid_in_,
+                         off_t                  off_in_,
+                         struct fuse_file_info *ffi_in_,
+                         fuse_ino_t             nodeid_out_,
+                         off_t                  off_out_,
+                         struct fuse_file_info *ffi_out_,
+                         size_t                 len_,
+                         int                    flags_)
+{
+  int err;
+  ssize_t rv;
+  char *path_in;
+  char *path_out;
+  struct fuse *f;
+  struct fuse_intr_data d;
+
+  f = req_fuse_prepare(req_);
+
+  err = get_path_nullok(f,nodeid_in_,&path_in);
+  if(err)
+    return reply_err(req_,err);
+
+  err = get_path_nullok(f,nodeid_out_,&path_out);
+  if(err)
+    {
+      free_path(f,nodeid_in_,path_in);
+      return reply_err(req_,err);
+    }
+
+  fuse_prepare_interrupt(f,req_,&d);
+
+  rv = fuse_fs_copy_file_range(f->fs,
+                               path_in,
+                               ffi_in_,
+                               off_in_,
+                               path_out,
+                               ffi_out_,
+                               off_out_,
+                               len_,
+                               flags_);
+
+  fuse_finish_interrupt(f,req_,&d);
+
+  if(rv >= 0)
+    fuse_reply_write(req_,rv);
+  else
+    reply_err(req_,rv);
+
+  free_path(f,nodeid_in_,path_in);
+  free_path(f,nodeid_out_,path_out);
+}
+
 static struct lock *locks_conflict(struct node *node, const struct lock *lock)
 {
 	struct lock *l;
@@ -4113,45 +4193,46 @@ int fuse_clean_cache(struct fuse *f)
 }
 
 static struct fuse_lowlevel_ops fuse_path_ops = {
-	.init = fuse_lib_init,
-	.destroy = fuse_lib_destroy,
-	.lookup = fuse_lib_lookup,
-	.forget = fuse_lib_forget,
-	.forget_multi = fuse_lib_forget_multi,
-	.getattr = fuse_lib_getattr,
-	.setattr = fuse_lib_setattr,
-	.access = fuse_lib_access,
-	.readlink = fuse_lib_readlink,
-	.mknod = fuse_lib_mknod,
-	.mkdir = fuse_lib_mkdir,
-	.unlink = fuse_lib_unlink,
-	.rmdir = fuse_lib_rmdir,
-	.symlink = fuse_lib_symlink,
-	.rename = fuse_lib_rename,
-	.link = fuse_lib_link,
-	.create = fuse_lib_create,
-	.open = fuse_lib_open,
-	.read = fuse_lib_read,
-	.write_buf = fuse_lib_write_buf,
-	.flush = fuse_lib_flush,
-	.release = fuse_lib_release,
-	.fsync = fuse_lib_fsync,
-	.opendir = fuse_lib_opendir,
-	.readdir = fuse_lib_readdir,
-	.releasedir = fuse_lib_releasedir,
-	.fsyncdir = fuse_lib_fsyncdir,
-	.statfs = fuse_lib_statfs,
-	.setxattr = fuse_lib_setxattr,
-	.getxattr = fuse_lib_getxattr,
-	.listxattr = fuse_lib_listxattr,
-	.removexattr = fuse_lib_removexattr,
-	.getlk = fuse_lib_getlk,
-	.setlk = fuse_lib_setlk,
-	.flock = fuse_lib_flock,
-	.bmap = fuse_lib_bmap,
-	.ioctl = fuse_lib_ioctl,
-	.poll = fuse_lib_poll,
-	.fallocate = fuse_lib_fallocate,
+	.init            = fuse_lib_init,
+	.destroy         = fuse_lib_destroy,
+	.lookup          = fuse_lib_lookup,
+	.forget          = fuse_lib_forget,
+	.forget_multi    = fuse_lib_forget_multi,
+	.getattr         = fuse_lib_getattr,
+	.setattr         = fuse_lib_setattr,
+	.access          = fuse_lib_access,
+	.readlink        = fuse_lib_readlink,
+	.mknod           = fuse_lib_mknod,
+	.mkdir           = fuse_lib_mkdir,
+	.unlink          = fuse_lib_unlink,
+	.rmdir           = fuse_lib_rmdir,
+	.symlink         = fuse_lib_symlink,
+	.rename          = fuse_lib_rename,
+	.link            = fuse_lib_link,
+	.create          = fuse_lib_create,
+	.open            = fuse_lib_open,
+	.read            = fuse_lib_read,
+	.write_buf       = fuse_lib_write_buf,
+	.flush           = fuse_lib_flush,
+	.release         = fuse_lib_release,
+	.fsync           = fuse_lib_fsync,
+	.opendir         = fuse_lib_opendir,
+	.readdir         = fuse_lib_readdir,
+	.releasedir      = fuse_lib_releasedir,
+	.fsyncdir        = fuse_lib_fsyncdir,
+	.statfs          = fuse_lib_statfs,
+	.setxattr        = fuse_lib_setxattr,
+	.getxattr        = fuse_lib_getxattr,
+	.listxattr       = fuse_lib_listxattr,
+	.removexattr     = fuse_lib_removexattr,
+	.getlk           = fuse_lib_getlk,
+	.setlk           = fuse_lib_setlk,
+	.flock           = fuse_lib_flock,
+	.bmap            = fuse_lib_bmap,
+	.ioctl           = fuse_lib_ioctl,
+	.poll            = fuse_lib_poll,
+	.fallocate       = fuse_lib_fallocate,
+        .copy_file_range = fuse_lib_copy_file_range,
 };
 
 int fuse_notify_poll(struct fuse_pollhandle *ph)

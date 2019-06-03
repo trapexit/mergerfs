@@ -22,6 +22,7 @@
 #include "fuse_access.hpp"
 #include "fuse_chmod.hpp"
 #include "fuse_chown.hpp"
+#include "fuse_copy_file_range.hpp"
 #include "fuse_create.hpp"
 #include "fuse_destroy.hpp"
 #include "fuse_fallocate.hpp"
@@ -82,64 +83,56 @@ namespace l
     ops.flag_nopath        = true;
     ops.flag_utime_omit_ok = true;
 
-    ops.prepare_hide = FUSE::prepare_hide;
-    ops.free_hide    = FUSE::free_hide;
-    ops.fchown       = FUSE::fchown;
-    ops.fchmod       = FUSE::fchmod;
-    ops.futimens     = FUSE::futimens;
-
-    ops.access      = FUSE::access;
-    ops.bmap        = NULL;
-    ops.chmod       = FUSE::chmod;
-    ops.chown       = FUSE::chown;
-    ops.create      = FUSE::create;
-    ops.destroy     = FUSE::destroy;
-    ops.fallocate   = FUSE::fallocate;
-    ops.fgetattr    = FUSE::fgetattr;
-    ops.flock       = NULL; // FUSE::flock;
-    ops.flush       = FUSE::flush;
-    ops.fsync       = FUSE::fsync;
-    ops.fsyncdir    = FUSE::fsyncdir;
-    ops.ftruncate   = FUSE::ftruncate;
-    ops.getattr     = FUSE::getattr;
-    ops.getdir      = NULL;       /* deprecated; use readdir */
-    ops.getxattr    = FUSE::getxattr;
-    ops.init        = FUSE::init;
-    ops.ioctl       = FUSE::ioctl;
-    ops.link        = FUSE::link;
-    ops.listxattr   = FUSE::listxattr;
-    ops.lock        = NULL;
-    ops.mkdir       = FUSE::mkdir;
-    ops.mknod       = FUSE::mknod;
-    ops.open        = FUSE::open;
-    ops.opendir     = FUSE::opendir;
-    ops.poll        = NULL;
-    ops.read        = (nullrw ?
-                       FUSE::read_null :
-                       FUSE::read);
-    ops.read_buf    = (nullrw ?
-                       NULL :
-                       FUSE::read_buf);
-    ops.readdir     = FUSE::readdir;
-    ops.readlink    = FUSE::readlink;
-    ops.release     = FUSE::release;
-    ops.releasedir  = FUSE::releasedir;
-    ops.removexattr = FUSE::removexattr;
-    ops.rename      = FUSE::rename;
-    ops.rmdir       = FUSE::rmdir;
-    ops.setxattr    = FUSE::setxattr;
-    ops.statfs      = FUSE::statfs;
-    ops.symlink     = FUSE::symlink;
-    ops.truncate    = FUSE::truncate;
-    ops.unlink      = FUSE::unlink;
-    ops.utime       = NULL;       /* deprecated; use utimens() */
-    ops.utimens     = FUSE::utimens;
-    ops.write       = (nullrw ?
-                       FUSE::write_null :
-                       FUSE::write);
-    ops.write_buf   = (nullrw ?
-                       FUSE::write_buf_null :
-                       FUSE::write_buf);
+    ops.access          = FUSE::access;
+    ops.bmap            = NULL;
+    ops.chmod           = FUSE::chmod;
+    ops.chown           = FUSE::chown;
+    ops.copy_file_range = FUSE::copy_file_range;
+    ops.create          = FUSE::create;
+    ops.destroy         = FUSE::destroy;
+    ops.fallocate       = FUSE::fallocate;
+    ops.fchmod          = FUSE::fchmod;
+    ops.fchown          = FUSE::fchown;
+    ops.fgetattr        = FUSE::fgetattr;
+    ops.flock           = NULL; // FUSE::flock;
+    ops.flush           = FUSE::flush;
+    ops.free_hide       = FUSE::free_hide;
+    ops.fsync           = FUSE::fsync;
+    ops.fsyncdir        = FUSE::fsyncdir;
+    ops.ftruncate       = FUSE::ftruncate;
+    ops.futimens        = FUSE::futimens;
+    ops.getattr         = FUSE::getattr;
+    ops.getdir          = NULL; /* deprecated; use readdir */
+    ops.getxattr        = FUSE::getxattr;
+    ops.init            = FUSE::init;
+    ops.ioctl           = FUSE::ioctl;
+    ops.link            = FUSE::link;
+    ops.listxattr       = FUSE::listxattr;
+    ops.lock            = NULL;
+    ops.mkdir           = FUSE::mkdir;
+    ops.mknod           = FUSE::mknod;
+    ops.open            = FUSE::open;
+    ops.opendir         = FUSE::opendir;
+    ops.poll            = NULL;
+    ops.prepare_hide    = FUSE::prepare_hide;
+    ops.read            = (nullrw ? FUSE::read_null : FUSE::read);
+    ops.read_buf        = (nullrw ? NULL : FUSE::read_buf);
+    ops.readdir         = FUSE::readdir;
+    ops.readlink        = FUSE::readlink;
+    ops.release         = FUSE::release;
+    ops.releasedir      = FUSE::releasedir;
+    ops.removexattr     = FUSE::removexattr;
+    ops.rename          = FUSE::rename;
+    ops.rmdir           = FUSE::rmdir;
+    ops.setxattr        = FUSE::setxattr;
+    ops.statfs          = FUSE::statfs;
+    ops.symlink         = FUSE::symlink;
+    ops.truncate        = FUSE::truncate;
+    ops.unlink          = FUSE::unlink;
+    ops.utime           = NULL; /* deprecated; use utimens() */
+    ops.utimens         = FUSE::utimens;
+    ops.write           = (nullrw ? FUSE::write_null : FUSE::write);
+    ops.write_buf       = (nullrw ? FUSE::write_buf_null : FUSE::write_buf);
 
     return;
   }
