@@ -83,16 +83,21 @@ static void fuse_kern_chan_destroy(struct fuse_chan *ch)
 		close(fd);
 }
 
-#define MIN_BUFSIZE 0x21000
-
-struct fuse_chan *fuse_kern_chan_new(int fd)
+struct fuse_chan *
+fuse_kern_chan_new(int fd_)
 {
-	struct fuse_chan_ops op = {
-		.receive = fuse_kern_chan_receive,
-		.send = fuse_kern_chan_send,
-		.destroy = fuse_kern_chan_destroy,
-	};
-	size_t bufsize = getpagesize() + 0x1000;
-	bufsize = bufsize < MIN_BUFSIZE ? MIN_BUFSIZE : bufsize;
-	return fuse_chan_new(&op, fd, bufsize, NULL);
+  long pagesize;
+  size_t bufsize;
+  struct fuse_chan_ops op =
+    {
+      .receive = fuse_kern_chan_receive,
+      .send    = fuse_kern_chan_send,
+      .destroy = fuse_kern_chan_destroy,
+    };
+
+  pagesize = sysconf(_SC_PAGESIZE);
+
+  bufsize = ((FUSE_MAX_MAX_PAGES * pagesize) + 0x1000);
+
+  return fuse_chan_new(&op, fd_, bufsize, NULL);
 }

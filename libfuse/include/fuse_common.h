@@ -33,6 +33,9 @@
 #error Please add -D_FILE_OFFSET_BITS=64 to your compile flags!
 #endif
 
+#define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
+#define FUSE_MAX_MAX_PAGES 256
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -121,6 +124,7 @@ fuse_file_info
 #define FUSE_CAP_PARALLEL_DIROPS (1 << 18)
 #define FUSE_CAP_POSIX_ACL       (1 << 19)
 #define FUSE_CAP_CACHE_SYMLINKS  (1 << 20)
+#define FUSE_CAP_MAX_PAGES       (1 << 21)
 
 
 /**
@@ -188,10 +192,15 @@ struct fuse_conn_info {
 	 */
 	unsigned congestion_threshold;
 
+        /**
+         * Max pages
+         */
+        uint16_t max_pages;
+
 	/**
 	 * For future use.
 	 */
-	unsigned reserved[23];
+	unsigned reserved[22];
 };
 
 struct fuse_session;
@@ -208,7 +217,8 @@ struct fuse_pollhandle;
  * @param args argument vector
  * @return the communication channel on success, NULL on failure
  */
-struct fuse_chan *fuse_mount(const char *mountpoint, struct fuse_args *args);
+struct fuse_chan *fuse_mount(const char       *mountpoint,
+                             struct fuse_args *args);
 
 /**
  * Umount a FUSE mountpoint

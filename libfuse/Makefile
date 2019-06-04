@@ -1,5 +1,5 @@
 VERSION = "2.9.7-mergerfs_2.28.0"
-OPT = -O2
+OPTS = -O2
 
 ifeq ($(DEBUG),1)
 DEBUG_FLAGS := -g
@@ -28,7 +28,7 @@ OBJS = $(SRC:lib/%.c=build/%.o)
 DEPS = $(SRC:lib/%.c=build/%.d)
 
 CFLAGS += \
-	$(OPT) \
+	$(OPTS) \
 	$(DEBUG_FLAGS) \
 	-Wall \
 	-pipe \

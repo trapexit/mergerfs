@@ -60,6 +60,22 @@ namespace l
 
     *want_ = false;
   }
+
+  static
+  void
+  want_if_capable_max_pages(fuse_conn_info *conn_,
+                            Config         &c_)
+  {
+    if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
+      {
+        l::want(conn_,FUSE_CAP_MAX_PAGES);
+        conn_->max_pages = c_.fuse_msg_size;
+      }
+    else
+      {
+        c_.fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
+      }
+  }
 }
 
 namespace FUSE
@@ -80,6 +96,7 @@ namespace FUSE
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
     l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&c.posix_acl);
+    l::want_if_capable_max_pages(conn_,c);
 
     return &c;
   }

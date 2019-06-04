@@ -56,6 +56,7 @@ namespace l
       ("user.mergerfs.cache.symlinks")
       ("user.mergerfs.direct_io")
       ("user.mergerfs.dropcacheonclose")
+      ("user.mergerfs.fuse_msg_size")
       ("user.mergerfs.ignorepponrename")
       ("user.mergerfs.link_cow")
       ("user.mergerfs.minfreespace")

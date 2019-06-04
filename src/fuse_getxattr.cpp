@@ -235,6 +235,18 @@ namespace l
 
   static
   void
+  getxattr_controlfile(const uint16_t &uint16_,
+                       string         &attrvalue_)
+  {
+    std::ostringstream os;
+
+    os << uint16_;
+
+    attrvalue_ = os.str();
+  }
+
+  static
+  void
   getxattr_controlfile_policies(const Config &config,
                                 string       &attrvalue)
   {
@@ -358,6 +370,8 @@ namespace l
           l::getxattr_controlfile_bool(config.posix_acl,attrvalue);
         else if(attr[2] == "async_read")
           l::getxattr_controlfile_bool(config.async_read,attrvalue);
+        else if(attr[2] == "fuse_msg_size")
+          l::getxattr_controlfile(config.fuse_msg_size,attrvalue);
         break;
 
       case 4:
