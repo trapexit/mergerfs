@@ -304,6 +304,10 @@ parse_and_process_arg(Config            &config,
     return (config.async_read=true,0);
   else if(arg == "sync_read")
     return (config.async_read=false,0);
+  else if(arg == "atomic_o_trunc")
+    return 0;
+  else if(arg == "big_writes")
+    return 0;
 
   return 1;
 }
@@ -367,6 +371,8 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process(value,config.auto_cache);
       else if(key == "async_read")
         rv = parse_and_process(value,config.async_read);
+      else if(key == "max_write")
+        rv = 0;
       else if(key == "fuse_msg_size")
         rv = parse_and_process(value,config.fuse_msg_size,
                                1,
