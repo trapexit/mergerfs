@@ -38,13 +38,14 @@ public:
 
   inline
   int
-  put(const char *str_)
+  put(const char     *str_,
+      const uint64_t  len_)
   {
     int rv;
     uint64_t h;
     khint_t key;
 
-    h = fasthash64(str_,strlen(str_),0x7472617065786974);
+    h = fasthash64(str_,len_,0x7472617065786974);
 
     key = kh_put(hashset,_set,h,&rv);
     if(rv == 0)

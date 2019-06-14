@@ -113,6 +113,7 @@ public:
   bool                     cache_readdir;
   bool                     async_read;
   bool                     writeback_cache;
+  bool                     readdirplus;
   CacheFiles               cache_files;
   uint16_t                 fuse_msg_size;
 

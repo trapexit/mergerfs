@@ -605,7 +605,11 @@ struct fuse_lowlevel_ops {
 	 * @param fi file information
 	 */
 	void (*readdir) (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
-			 struct fuse_file_info *fi);
+			 struct fuse_file_info *llffi);
+
+        void (*readdir_plus)(fuse_req_t req, fuse_ino_t ino,
+                             size_t size, off_t off,
+                             struct fuse_file_info *ffi);
 
 	/**
 	 * Release an open directory
@@ -1261,38 +1265,6 @@ int fuse_reply_lock(fuse_req_t req, const struct flock *lock);
  * @return zero for success, -errno for failure to send reply
  */
 int fuse_reply_bmap(fuse_req_t req, uint64_t idx);
-
-/* ----------------------------------------------------------- *
- * Filling a buffer in readdir				       *
- * ----------------------------------------------------------- */
-
-/**
- * Add a directory entry to the buffer
- *
- * Buffer needs to be large enough to hold the entry.  If it's not,
- * then the entry is not filled in but the size of the entry is still
- * returned.  The caller can check this by comparing the bufsize
- * parameter with the returned entry size.  If the entry size is
- * larger than the buffer size, the operation failed.
- *
- * From the 'stbuf' argument the st_ino field and bits 12-15 of the
- * st_mode field are used.  The other fields are ignored.
- *
- * Note: offsets do not necessarily represent physical offsets, and
- * could be any marker, that enables the implementation to find a
- * specific point in the directory stream.
- *
- * @param req request handle
- * @param buf the point where the new entry will be added to the buffer
- * @param bufsize remaining size of the buffer
- * @param name the name of the entry
- * @param stbuf the file attributes
- * @param off the offset of the next entry
- * @return the space needed for the entry
- */
-size_t fuse_add_direntry(fuse_req_t req, char *buf, size_t bufsize,
-			 const char *name, const struct stat *stbuf,
-			 off_t off);
 
 /**
  * Reply to ask for data fetch and output buffer preparation.  ioctl

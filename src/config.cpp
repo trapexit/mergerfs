@@ -53,6 +53,7 @@ Config::Config()
     cache_readdir(false),
     async_read(true),
     writeback_cache(false),
+    readdirplus(false),
     cache_files(CacheFiles::LIBFUSE),
     fuse_msg_size(FUSE_MAX_MAX_PAGES),
     POLICYINIT(access),

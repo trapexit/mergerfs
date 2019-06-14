@@ -15,3 +15,39 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+namespace fs
+{
+  static
+  inline
+  int
+  fstatat(const int    dirfd,
+          const char  *pathname,
+          struct stat *statbuf,
+          const int    flags)
+  {
+    return ::fstatat(dirfd,
+                     pathname,
+                     statbuf,
+                     flags);
+  }
+
+  static
+  inline
+  int
+  fstatat_nofollow(const int    dirfd,
+                   const char  *pathname,
+                   struct stat *statbuf)
+  {
+    return fs::fstatat(dirfd,
+                       pathname,
+                       statbuf,
+                       AT_SYMLINK_NOFOLLOW);
+  }
+}

@@ -1,7 +1,5 @@
 /*
-  ISC License
-
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -15,3 +13,18 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+#pragma once
+
+#include <fuse.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+namespace FUSE
+{
+  int
+  readdir_plus(fuse_file_info *ffi_,
+               fuse_dirents_t *buf_);
+}
