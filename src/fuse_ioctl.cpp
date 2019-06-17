@@ -107,11 +107,12 @@ namespace l
              void           *data_,
              uint32_t       *out_bufsz_)
   {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    FileInfo           *fi     = reinterpret_cast<FileInfo*>(ffi_->fh);
+    const fuse_context *fc     = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     return l::ioctl(fi->fd,cmd_,data_,out_bufsz_);
   }
-
 
 #ifndef O_NOATIME
 #define O_NOATIME 0
