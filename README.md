@@ -333,12 +333,12 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 
 #### readdir ####
 
-[readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. While it could have it's own set of policies to tweak its behavior at this time it provides a simple union of files and directories found. Remember that any action or information queried about these files and directories come from the respective function. For instance: an **ls** is a **readdir** and for each file/directory returned **getattr** is called. Meaning the policy of **getattr** is responsible for choosing the file/directory which is the source of the metadata you see in an **ls**.
+[readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. While it could have its own set of policies to tweak its behavior at this time it provides a simple union of files and directories found. Remember that any action or information queried about these files and directories come from the respective function. For instance: an **ls** is a **readdir** and for each file/directory returned **getattr** is called. Meaning the policy of **getattr** is responsible for choosing the file/directory which is the source of the metadata you see in an **ls**.
 
 
 #### statfs / statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting it's space. Filesystems mounted further down the tree of the branch will not be included when checking the mount's stats.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting its space. Filesystems mounted further down the tree of the branch will not be included when checking the mount's stats.
 
 The options `statfs` and `statfs_ignore` can be used to modify `statfs` behavior.
 
@@ -738,7 +738,7 @@ Ideally the offending software would be fixed and it is recommended that if you 
 
 Workaround: Copy the file/directory and then remove the original rather than move.
 
-This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed to handle certain error codes correctly. Particularly **STATUS_NOT_SAME_DEVICE** which comes from the **EXDEV** which is returned by **rename** when the call is crossing mount points. When a program gets an **EXDEV** it needs to explicitly take an alternate action to accomplish it's goal. In the case of **mv** or similar it tries **rename** and on **EXDEV** falls back to a manual copying of data between the two locations and unlinking the source. In these older versions of GVFS-fuse if it received **EXDEV** it would translate that into **EIO**. This would cause **mv** or most any application attempting to move files around on that SMB share to fail with a IO error.
+This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed to handle certain error codes correctly. Particularly **STATUS_NOT_SAME_DEVICE** which comes from the **EXDEV** which is returned by **rename** when the call is crossing mount points. When a program gets an **EXDEV** it needs to explicitly take an alternate action to accomplish its goal. In the case of **mv** or similar it tries **rename** and on **EXDEV** falls back to a manual copying of data between the two locations and unlinking the source. In these older versions of GVFS-fuse if it received **EXDEV** it would translate that into **EIO**. This would cause **mv** or most any application attempting to move files around on that SMB share to fail with a IO error.
 
 [GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568) and above fixed this issue but a large number of systems use the older release. On Ubuntu the version can be checked by issuing `apt-cache showpkg gvfs-fuse`. Most distros released in 2015 seem to have the updated release and will work fine but older systems may not. Upgrading gvfs-fuse or the distro in general will address the problem.
 
@@ -832,7 +832,7 @@ Using the **hard_remove** option will make it so these temporary files are not u
 
 #### How well does mergerfs scale? Is it "production ready?"
 
-Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs is it's sole solution for pooling drives.
+Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives.
 
 
 #### Can mergerfs be used with drives which already have data / are in use?
@@ -861,7 +861,7 @@ Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs 
 
 #### Why can't I see my files / directories?
 
-It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes it's credentials to that of the caller. This means that if the user does not have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
+It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes its credentials to that of the caller. This means that if the user does not have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
 
 Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
 
