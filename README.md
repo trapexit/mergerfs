@@ -517,7 +517,7 @@ tl;dr:
 * cache.files=partial: Enables page caching. Underlying files cached, mergerfs files cached while open.
 * cache.files=full: Enables page caching. Underlying files cached, mergerfs files cached across opens.
 * cache.files=auto-full: Enables page caching. Underlying files cached, mergerfs files cached across opens if mtime and size are unchanged since previous open.
-* cache.files=libfuse: follow traditional libfuse `direct_io`, 'kernel_cache`, and `auto_cache` arguments.
+* cache.files=libfuse: follow traditional libfuse `direct_io`, `kernel_cache`, and `auto_cache` arguments.
 
 
 FUSE, which mergerfs uses, offers a number of page caching modes. mergerfs tries to simplify their use via the `cache.files` option. It can and should replace usage of `direct_io`, `kernel_cache`, and `auto_cache`.
