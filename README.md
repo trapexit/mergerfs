@@ -59,7 +59,7 @@ A         +      B        =       C
                                   +-- file6
 ```
 
-mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives.
+mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives. It also does **not** split data across drives. It is not RAID0 / striping. It is simply a union.
 
 
 # OPTIONS
@@ -86,7 +86,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **threads=INT**: Number of threads to use in multithreaded mode. When set to zero it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: 0)
 * **fsname=STR**: Sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.FUNC=POLICY**: Sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
-* **category.CATEGORY=POLICY**: Sets policy of all FUSE functions in the provided category. Example: **category.create=mfs**
+* **category.CATEGORY=POLICY**: Sets policy of all FUSE functions in the provided category. See POLICIES section for defaults. Example: **category.create=mfs**
 * **cache.open=INT**: 'open' policy cache timeout in seconds. (default: 0)
 * **cache.statfs=INT**: 'statfs' cache timeout in seconds. (default: 0)
 * **cache.attr=INT**: File attribute cache timeout in seconds. (default: 1)

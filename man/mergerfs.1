@@ -79,6 +79,9 @@ found in \f[B]aufs\f[] and \f[B]overlayfs\f[].
 You can \f[B]not\f[] mount a read\-only filesystem and write to it.
 However, mergerfs will ignore read\-only drives when creating new files
 so you can mix read\-write and read\-only drives.
+It also does \f[B]not\f[] split data across drives.
+It is not RAID0 / striping.
+It is simply a union.
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
@@ -207,6 +210,7 @@ Example: \f[B]func.getattr=newest\f[]
 .IP \[bu] 2
 \f[B]category.CATEGORY=POLICY\f[]: Sets policy of all FUSE functions in
 the provided category.
+See POLICIES section for defaults.
 Example: \f[B]category.create=mfs\f[]
 .IP \[bu] 2
 \f[B]cache.open=INT\f[]: \[aq]open\[aq] policy cache timeout in seconds.
@@ -831,8 +835,8 @@ returned but it will still be possible.
 .PP
 readdir (http://linux.die.net/man/3/readdir) is different from all other
 filesystem functions.
-While it could have it\[aq]s own set of policies to tweak its behavior
-at this time it provides a simple union of files and directories found.
+While it could have its own set of policies to tweak its behavior at
+this time it provides a simple union of files and directories found.
 Remember that any action or information queried about these files and
 directories come from the respective function.
 For instance: an \f[B]ls\f[] is a \f[B]readdir\f[] and for each
@@ -848,7 +852,7 @@ and inodes.
 This means you will see the combined space of all sources.
 Total, used, and free.
 The sources however are dedupped based on the drive so multiple sources
-on the same drive will not result in double counting it\[aq]s space.
+on the same drive will not result in double counting its space.
 Filesystems mounted further down the tree of the branch will not be
 included when checking the mount\[aq]s stats.
 .PP
@@ -1104,7 +1108,7 @@ Underlying files cached, mergerfs files cached across opens.
 Underlying files cached, mergerfs files cached across opens if mtime and
 size are unchanged since previous open.
 * cache.files=libfuse: follow traditional libfuse \f[C]direct_io\f[],
-\[aq]kernel_cache\f[C],\ and\f[]auto_cache` arguments.
+\f[C]kernel_cache\f[], and \f[C]auto_cache\f[] arguments.
 .PP
 FUSE, which mergerfs uses, offers a number of page caching modes.
 mergerfs tries to simplify their use via the \f[C]cache.files\f[]
@@ -1535,7 +1539,7 @@ Particularly \f[B]STATUS_NOT_SAME_DEVICE\f[] which comes from the
 \f[B]EXDEV\f[] which is returned by \f[B]rename\f[] when the call is
 crossing mount points.
 When a program gets an \f[B]EXDEV\f[] it needs to explicitly take an
-alternate action to accomplish it\[aq]s goal.
+alternate action to accomplish its goal.
 In the case of \f[B]mv\f[] or similar it tries \f[B]rename\f[] and on
 \f[B]EXDEV\f[] falls back to a manual copying of data between the two
 locations and unlinking the source.
@@ -1717,8 +1721,8 @@ Users have reported running mergerfs on everything from a Raspberry Pi
 to dual socket Xeon systems with >20 cores.
 I\[aq]m aware of at least a few companies which use mergerfs in
 production.
-Open Media Vault (https://www.openmediavault.org) includes mergerfs is
-it\[aq]s sole solution for pooling drives.
+Open Media Vault (https://www.openmediavault.org) includes mergerfs as
+its sole solution for pooling drives.
 .SS Can mergerfs be used with drives which already have data / are in
 use?
 .PP
@@ -1755,8 +1759,7 @@ file.
 .PP
 It\[aq]s almost always a permissions issue.
 Unlike mhddfs, which runs as root and attempts to access content as
-such, mergerfs always changes it\[aq]s credentials to that of the
-caller.
+such, mergerfs always changes its credentials to that of the caller.
 This means that if the user does not have access to a file or directory
 than neither will mergerfs.
 However, because mergerfs is creating a union of paths it may be able to
