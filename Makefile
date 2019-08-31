@@ -150,7 +150,7 @@ install-base: build/mergerfs
 
 install-mount.mergerfs: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(LN) -s "mergerfs" "$(INSTALLBINDIR)/mount.mergerfs"
+	$(LN) -fs "mergerfs" "$(INSTALLBINDIR)/mount.mergerfs"
 
 install-man: $(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"
