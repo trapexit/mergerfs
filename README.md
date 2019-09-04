@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-06-03
+% 2019-09-03
 
 # NAME
 
@@ -491,6 +491,20 @@ A B C
 ```
 
 
+# UPGRADE
+
+mergerfs can be upgraded live by mounting on top of the previous version. Simply install the new version of mergerfs and follow the instructions below.
+
+Add `nonempty` to your mergerfs option list and call mergerfs again or if using `/etc/fstab` call for it to mount again. Existing open files and such will continue to work fine though they won't see runtime changes since any such change would be the new mount. If you plan on changing settings with the new mount you should / could apply those before mounting the new version.
+
+```
+$ sudo mount /mnt/mergerfs
+$ mount | grep mergerfs
+media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+```
+
+
 # TOOLING
 
 * https://github.com/trapexit/mergerfs-tools
@@ -499,6 +513,7 @@ A B C
   * mergerfs.dedup: Will help identify and optionally remove duplicate files
   * mergerfs.dup: Ensure there are at least N copies of a file across the pool
   * mergerfs.balance: Rebalance files across drives by moving them from the most filled to the least filled
+  * mergerfs.consolidate: move files within a single mergerfs directory to the drive with most free space
   * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 * https://github.com/trapexit/scorch
   * scorch: A tool to help discover silent corruption of files and keep track of files
