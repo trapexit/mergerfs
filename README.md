@@ -253,14 +253,14 @@ If all branches are filtered an error will be returned. Typically **EROFS** or *
 | eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the drive with the least free space. |
 | eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
 | epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
-| eprand (existing path, random) | Calls **epall** and then randomizes. |
+| eprand (existing path, random) | Calls **epall** and then randomizes. Returns 1. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS** (read-only filesystem). |
 | ff (first found) | Search category: same as **epff**. Action category: same as **epff**. Create category: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
 | lfs (least free space) | Search category: same as **eplfs**. Action category: same as **eplfs**. Create category: Pick the drive with the least available free space. |
 | lus (least used space) | Search category: same as **eplus**. Action category: same as **eplus**. Create category: Pick the drive with the least used space. |
 | mfs (most free space) | Search category: same as **epmfs**. Action category: same as **epmfs**. Create category: Pick the drive with the most available free space. |
 | newest | Pick the file / directory with the largest mtime. |
-| rand (random) | Calls **all** and then randomizes. |
+| rand (random) | Calls **all** and then randomizes. Returns 1. |
 
 
 #### Defaults ####
