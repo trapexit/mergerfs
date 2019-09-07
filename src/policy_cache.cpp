@@ -38,11 +38,15 @@ PolicyCache::Value::Value()
 PolicyCache::PolicyCache(void)
   : timeout(DEFAULT_TIMEOUT)
 {
+  pthread_mutex_init(&_lock,NULL);
 }
 
 void
 PolicyCache::erase(const char *fusepath_)
 {
+  if(timeout == 0)
+    return;
+
   pthread_mutex_lock(&_lock);
 
   _cache.erase(fusepath_);
@@ -55,6 +59,9 @@ PolicyCache::cleanup(const int prob_)
 {
   uint64_t now;
   map<string,Value>::iterator i;
+
+  if(timeout == 0)
+    return;
 
   if(rand() % prob_)
     return;
