@@ -2638,6 +2638,7 @@ static void fuse_lib_getattr(fuse_req_t req, fuse_ino_t ino,
 
 	memset(&buf, 0, sizeof(buf));
 
+        path = NULL;
         err = (((fi == NULL) || (f->fs->op.fgetattr == NULL)) ?
                get_path(f,ino,&path) :
                get_path_nullok(f,ino,&path));
@@ -2711,9 +2712,10 @@ static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 
 	memset(&buf, 0, sizeof(buf));
 
+        path = NULL;
         err = ((fi == NULL) ?
                get_path(f,ino,&path) :
-               get_path_nullok(f, ino, &path));
+               get_path_nullok(f,ino,&path));
 
 	if (!err) {
 		struct fuse_intr_data d;

@@ -19,7 +19,7 @@
 size_t fuse_buf_size(const struct fuse_bufvec *bufv)
 {
 	size_t i;
-	size_t size = 0;
+        size_t size = 0;
 
 	for (i = 0; i < bufv->count; i++) {
 		if (bufv->buf[i].size == SIZE_MAX)
@@ -229,8 +229,8 @@ static ssize_t fuse_buf_copy_one(const struct fuse_buf *dst, size_t dst_off,
 	int dst_is_fd = dst->flags & FUSE_BUF_IS_FD;
 
 	if (!src_is_fd && !dst_is_fd) {
-		void *dstmem = dst->mem + dst_off;
-		void *srcmem = src->mem + src_off;
+		char *dstmem = dst->mem + dst_off;
+		char *srcmem = src->mem + src_off;
 
 		if (dstmem != srcmem) {
 			if (dstmem + len <= srcmem || srcmem + len <= dstmem)
