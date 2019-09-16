@@ -26,9 +26,17 @@ matrix:
       dist: xenial
       compiler: clang
       sudo: required
+    - os: linux
+      dist: bionic
+      compiler: gcc
+      sudo: required
+    - os: linux
+      dist: bionic
+      compiler: clang
+      sudo: required
 
 script:
   - sudo -E apt-get install fakeroot
   - sudo -E make install-build-pkgs
-  - make
+  - make -j$(($(nproc) + 1))
   - make deb
