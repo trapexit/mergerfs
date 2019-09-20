@@ -923,7 +923,7 @@ While aufs can offer better peak performance mergerfs provides more configurabil
 
 #### Why use mergerfs over unionfs?
 
-UnionFS is more like aufs then mergerfs in that it offers overlay / CoW features. If you're just looking to create a union of drives and want flexibility in file/directory placement then mergerfs offers that whereas unionfs is more for overlaying RW filesystems over RO ones.
+UnionFS is more like aufs than mergerfs in that it offers overlay / CoW features. If you're just looking to create a union of drives and want flexibility in file/directory placement then mergerfs offers that whereas unionfs is more for overlaying RW filesystems over RO ones.
 
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
