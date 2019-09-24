@@ -19,7 +19,6 @@
 #include "fs_base_removexattr.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -34,7 +33,7 @@ namespace l
 {
   static
   int
-  removexattr_loop_core(const string *basepath_,
+  removexattr_loop_core(const string &basepath_,
                         const char   *fusepath_,
                         const char   *attrname_,
                         const int     error_)
@@ -51,9 +50,9 @@ namespace l
 
   static
   int
-  removexattr_loop(const vector<const string*> &basepaths_,
-                   const char                  *fusepath_,
-                   const char                  *attrname_)
+  removexattr_loop(const vector<string> &basepaths_,
+                   const char           *fusepath_,
+                   const char           *attrname_)
   {
     int error;
 
@@ -76,9 +75,9 @@ namespace l
               const char           *attrname_)
   {
     int rv;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -92,18 +91,17 @@ namespace FUSE
   removexattr(const char *fusepath_,
               const char *attrname_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::get(fc);
+    const Config &config = Config::ro();
 
     if(fusepath_ == config.controlfile)
       return -ENOATTR;
-    if(config.xattr)
-      return -config.xattr;
+    if(config.xattr.to_int())
+      return -config.xattr.to_int();
 
-    const ugid::Set         ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard readlock(&config.branches_lock);
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::removexattr(config.removexattr,
+    return l::removexattr(config.func.removexattr.policy,
                           config.branches,
                           config.minfreespace,
                           fusepath_,

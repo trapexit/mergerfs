@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <string>
 #include <vector>
@@ -36,11 +37,13 @@ namespace newest
 {
   static
   int
-  create(const Branches        &branches_,
-         const char            *fusepath,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const char     *fusepath,
+         const uint64_t  minfreespace,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     time_t newest;
@@ -77,17 +80,19 @@ namespace newest
     if(newestbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(newestbasepath);
+    paths->push_back(*newestbasepath);
 
     return 0;
   }
 
   static
   int
-  action(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  action(const Branches &branches_,
+         const char     *fusepath,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     bool readonly;
@@ -122,17 +127,19 @@ namespace newest
     if(newestbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(newestbasepath);
+    paths->push_back(*newestbasepath);
 
     return 0;
   }
 
   static
   int
-  search(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  search(const Branches &branches_,
+         const char     *fusepath,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     time_t newest;
     struct stat st;
     const Branch *branch;
@@ -156,7 +163,7 @@ namespace newest
     if(newestbasepath == NULL)
       return (errno=ENOENT,-1);
 
-    paths.push_back(newestbasepath);
+    paths->push_back(*newestbasepath);
 
     return 0;
   }
@@ -167,7 +174,7 @@ Policy::Func::newest(const Category::Enum::Type  type,
                      const Branches             &branches_,
                      const char                 *fusepath,
                      const uint64_t              minfreespace,
-                     vector<const string*>      &paths)
+                     vector<string>             *paths)
 {
   switch(type)
     {

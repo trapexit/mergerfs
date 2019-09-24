@@ -21,7 +21,6 @@
 #include "fs_base_open.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -61,27 +60,27 @@ namespace l
   {
     switch(config_.cache_files)
       {
-      case CacheFiles::LIBFUSE:
+      case CacheFiles::ENUM::LIBFUSE:
         ffi_->direct_io  = config_.direct_io;
         ffi_->keep_cache = config_.kernel_cache;
         ffi_->auto_cache = config_.auto_cache;
         break;
-      case CacheFiles::OFF:
+      case CacheFiles::ENUM::OFF:
         ffi_->direct_io  = 1;
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 0;
         break;
-      case CacheFiles::PARTIAL:
+      case CacheFiles::ENUM::PARTIAL:
         ffi_->direct_io  = 0;
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 0;
         break;
-      case CacheFiles::FULL:
+      case CacheFiles::ENUM::FULL:
         ffi_->direct_io  = 0;
         ffi_->keep_cache = 1;
         ffi_->auto_cache = 0;
         break;
-      case CacheFiles::AUTO_FULL:
+      case CacheFiles::ENUM::AUTO_FULL:
         ffi_->direct_io  = 0;
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 1;
@@ -140,24 +139,24 @@ namespace l
     int rv;
     string fullpath;
     string fusedirpath;
-    vector<const string*> createpaths;
-    vector<const string*> existingpaths;
+    vector<string> createpaths;
+    vector<string> existingpaths;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,minfreespace_,existingpaths);
+    rv = searchFunc_(branches_,fusedirpath,minfreespace_,&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,minfreespace_,createpaths);
+    rv = createFunc_(branches_,fusedirpath,minfreespace_,&createpaths);
     if(rv == -1)
       return -errno;
 
-    rv = fs::clonepath_as_root(*existingpaths[0],*createpaths[0],fusedirpath);
+    rv = fs::clonepath_as_root(existingpaths[0],createpaths[0],fusedirpath);
     if(rv == -1)
       return -errno;
 
-    return l::create_core(*createpaths[0],
+    return l::create_core(createpaths[0],
                           fusepath_,
                           mode_,
                           umask_,
@@ -173,18 +172,17 @@ namespace FUSE
          mode_t          mode_,
          fuse_file_info *ffi_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     l::config_to_ffi_flags(config,ffi_);
 
     if(config.writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return l::create(config.getattr,
-                     config.create,
+    return l::create(config.func.getattr.policy,
+                     config.func.create.policy,
                      config.branches,
                      config.minfreespace,
                      fusepath_,

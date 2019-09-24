@@ -15,9 +15,11 @@
 */
 
 #include "config.hpp"
+#include "ef.hpp"
 #include "errno.hpp"
 #include "fs_glob.hpp"
 #include "fs_statvfs_cache.hpp"
+#include "hw_cpu.hpp"
 #include "num.hpp"
 #include "policy.hpp"
 #include "str.hpp"
@@ -25,9 +27,9 @@
 
 #include <fuse.h>
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -46,6 +48,92 @@ enum
     MERGERFS_OPT_VERSION
   };
 
+struct Data
+{
+  Config         *config;
+  vector<string> *errs;
+};
+
+
+namespace l
+{
+  static
+  int
+  calculate_thread_count(int threads_)
+  {
+    int tc;
+
+    if(threads_ > 0)
+      return threads_;
+
+    tc = hw::cpu::logical_core_count();
+    if(threads_ < 0)
+      tc /= -threads_;
+    if(tc == 0)
+      tc = 1;
+
+    return tc;
+  }
+
+  static
+  void
+  read_config(Data         *data_,
+              std::istream &is_)
+  {
+    int rv;
+    std::string key;
+    std::string val;
+    std::string line;
+
+    rv = 0;
+    while(std::getline(is_,line,'\n'))
+      {
+        line = str::trim(line);
+        if(!line.empty() && (line[0] == '#'))
+          continue;
+
+        str::splitkv(line,'=',&key,&val);
+        key = str::trim(key);
+        val = str::trim(val);
+
+        if(key.empty() || val.empty())
+          continue;
+
+        rv = data_->config->set_raw(key,val);
+        switch(rv)
+          {
+          case -EINVAL:
+            data_->errs->push_back("invalid argument - " + line);
+            break;
+          case -ENOATTR:
+            data_->errs->push_back("unknown option - " + line);
+            break;
+          default:
+            break;
+          }
+      }
+  }
+
+  static
+  void
+  read_config(Data              *data_,
+              const std::string &filepath_)
+  {
+    std::ifstream is;
+
+    is.open(filepath_);
+    if(is.bad())
+      {
+        data_->errs->push_back("unable to open config - " + filepath_);
+      }
+    else
+      {
+        l::read_config(data_,is);
+
+        is.close();
+      }
+  }
+}
 
 static
 void
@@ -72,10 +160,24 @@ set_kv_option(fuse_args         *args,
 
 static
 void
+set_threads(fuse_args *args_,
+            Config    *config_)
+{
+  int threads;
+
+  threads = l::calculate_thread_count(config_->threads);
+
+  config_->threads = threads;
+
+  set_kv_option(args_,"threads",config_->threads.to_string());
+}
+
+static
+void
 set_fsname(fuse_args *args_,
            Config    *config_)
 {
-  if(config_->fsname.empty())
+  if(config_->fsname->empty())
     {
       vector<string> branches;
 
@@ -104,337 +206,95 @@ set_default_options(fuse_args *args)
 
 static
 int
-parse_and_process(const std::string &value_,
-                  uint16_t          &uint16_,
-                  uint16_t           min_,
-                  uint16_t           max_)
+parse_and_process_kv_arg(Data              *data_,
+                         const std::string &key_,
+                         const std::string &val_)
 {
   int rv;
-  uint64_t uint64;
+  std::string key(key_);
+  std::string val(val_);
 
-  rv = num::to_uint64_t(value_,uint64);
-  if(rv == -1)
-    return 1;
-
-  if((uint64 > max_) || (uint64 < min_))
-    return 1;
-
-  uint16_ = uint64;
-
-  return 0;
-}
-
-static
-int
-parse_and_process(const std::string &value_,
-                  uint64_t          &int_)
-{
-  int rv;
-
-  rv = num::to_uint64_t(value_,int_);
-  if(rv == -1)
-    return 1;
-
-  return 0;
-}
-
-static
-int
-parse_and_process(const std::string &value,
-                  time_t            &time)
-{
-  int rv;
-
-  rv = num::to_time_t(value,time);
-  if(rv == -1)
-    return 1;
-
-  return 0;
-}
-
-static
-int
-parse_and_process(const std::string &value_,
-                  bool              &boolean_)
-{
-  if((value_ == "false") || (value_ == "0") || (value_ == "off"))
-    boolean_ = false;
-  else if((value_ == "true") || (value_ == "1") || (value_ == "on"))
-    boolean_ = true;
-  else
-    return 1;
-
-  return 0;
-}
-
-static
-int
-parse_and_process(const std::string &value_,
-                  std::string       &str_)
-{
-  str_ = value_;
-
-  return 0;
-}
-
-static
-int
-parse_and_process(const std::string  &value_,
-                  Config::CacheFiles &cache_files_)
-{
-  Config::CacheFiles tmp;
-
-  tmp = value_;
-  if(!tmp.valid())
-    return 1;
-
-  cache_files_ = tmp;
-
-  return 0;
-}
-
-static
-int
-parse_and_process_errno(const std::string &value_,
-                        int               &errno_)
-{
-  if(value_ == "passthrough")
-    errno_ = 0;
-  else if(value_ == "nosys")
-    errno_ = ENOSYS;
-  else if(value_ == "noattr")
-    errno_ = ENOATTR;
-  else
-    return 1;
-
-  return 0;
-}
-
-static
-int
-parse_and_process_statfs(const std::string    &value_,
-                         Config::StatFS::Enum &enum_)
-{
-  if(value_ == "base")
-    enum_ = Config::StatFS::BASE;
-  else if(value_ == "full")
-    enum_ = Config::StatFS::FULL;
-  else
-    return 1;
-
-  return 0;
-}
-
-static
-int
-parse_and_process_statfsignore(const std::string          &value_,
-                               Config::StatFSIgnore::Enum &enum_)
-{
-  if(value_ == "none")
-    enum_ = Config::StatFSIgnore::NONE;
-  else if(value_ == "ro")
-    enum_ = Config::StatFSIgnore::RO;
-  else if(value_ == "nc")
-    enum_ = Config::StatFSIgnore::NC;
-  else
-    return 1;
-
-  return 0;
-}
-
-static
-int
-parse_and_process_statfs_cache(const std::string &value_)
-{
-  int rv;
-  uint64_t timeout;
-
-  rv = num::to_uint64_t(value_,timeout);
-  if(rv == -1)
-    return 1;
-
-  fs::statvfs_cache_timeout(timeout);
-
-  return 0;
-}
-
-static
-int
-parse_and_process_cache(Config       &config_,
-                        const string &func_,
-                        const string &value_,
-                        fuse_args    *outargs)
-{
-  if(func_ == "open")
-    return parse_and_process(value_,config_.open_cache.timeout);
-  else if(func_ == "statfs")
-    return parse_and_process_statfs_cache(value_);
-  else if(func_ == "entry")
-    return (set_kv_option(outargs,"entry_timeout",value_),0);
-  else if(func_ == "negative_entry")
-    return (set_kv_option(outargs,"negative_timeout",value_),0);
-  else if(func_ == "attr")
-    return (set_kv_option(outargs,"attr_timeout",value_),0);
-  else if(func_ == "symlinks")
-    return parse_and_process(value_,config_.cache_symlinks);
-  else if(func_ == "readdir")
-    return parse_and_process(value_,config_.cache_readdir);
-  else if(func_ == "files")
-    return parse_and_process(value_,config_.cache_files);
-  else if(func_ == "writeback")
-    return parse_and_process(value_,config_.writeback_cache);
-
-  return 1;
-}
-
-static
-int
-parse_and_process_arg(Config            &config,
-                      const std::string &arg)
-{
-  if(arg == "defaults")
+  rv = 0;
+  if(key == "config")
+    return (l::read_config(data_,val_),0);
+  ef(key == "attr_timeout")
+    key = "cache.attr";
+  ef(key == "entry_timeout")
+    key = "cache.entry";
+  ef(key == "negative_entry")
+    key = "cache.negative_entry";
+  ef(key == "direct_io" && val.empty())
+    val = "true";
+  ef(key == "kernel_cache" && val.empty())
+    val = "true";
+  ef(key == "auto_cache" && val.empty())
+    val = "true";
+  ef(key == "async_read" && val.empty())
+    val = "true";
+  ef(key == "sync_read" && val.empty())
+    {key = "async_read", val = "false";}
+  ef(key == "defaults")
     return 0;
-  else if(arg == "hard_remove")
+  ef(key == "hard_remove")
     return 0;
-  else if(arg == "direct_io")
-    return (config.direct_io=true,0);
-  else if(arg == "kernel_cache")
-    return (config.kernel_cache=true,0);
-  else if(arg == "auto_cache")
-    return (config.auto_cache=true,0);
-  else if(arg == "async_read")
-    return (config.async_read=true,0);
-  else if(arg == "sync_read")
-    return (config.async_read=false,0);
-  else if(arg == "atomic_o_trunc")
+  ef(key == "atomic_o_trunc")
     return 0;
-  else if(arg == "big_writes")
+  ef(key == "big_writes")
     return 0;
-  else if(arg == "readdir_ino")
+  ef(key == "cache.open")
     return 0;
 
-  return 1;
-}
+  if(data_->config->has_key(key) == false)
+    return 1;
 
-static
-int
-parse_and_process_kv_arg(Config            &config,
-                         const std::string &key,
-                         const std::string &value,
-                         fuse_args         *outargs)
-{
-  int rv;
-  std::vector<std::string> keypart;
-
-  rv = -1;
-  str::split(keypart,key,'.');
-  if(keypart.size() == 2)
-    {
-      if(keypart[0] == "func")
-        rv = config.set_func_policy(keypart[1],value);
-      else if(keypart[0] == "category")
-        rv = config.set_category_policy(keypart[1],value);
-      else if(keypart[0] == "cache")
-        rv = parse_and_process_cache(config,keypart[1],value,outargs);
-    }
-  else
-    {
-      if(key == "minfreespace")
-        rv = parse_and_process(value,config.minfreespace);
-      else if(key == "moveonenospc")
-        rv = parse_and_process(value,config.moveonenospc);
-      else if(key == "dropcacheonclose")
-        rv = parse_and_process(value,config.dropcacheonclose);
-      else if(key == "symlinkify")
-        rv = parse_and_process(value,config.symlinkify);
-      else if(key == "symlinkify_timeout")
-        rv = parse_and_process(value,config.symlinkify_timeout);
-      else if(key == "nullrw")
-        rv = parse_and_process(value,config.nullrw);
-      else if(key == "ignorepponrename")
-        rv = parse_and_process(value,config.ignorepponrename);
-      else if(key == "security_capability")
-        rv = parse_and_process(value,config.security_capability);
-      else if(key == "link_cow")
-        rv = parse_and_process(value,config.link_cow);
-      else if(key == "xattr")
-        rv = parse_and_process_errno(value,config.xattr);
-      else if(key == "statfs")
-        rv = parse_and_process_statfs(value,config.statfs);
-      else if(key == "statfs_ignore")
-        rv = parse_and_process_statfsignore(value,config.statfs_ignore);
-      else if(key == "fsname")
-        rv = parse_and_process(value,config.fsname);
-      else if(key == "posix_acl")
-        rv = parse_and_process(value,config.posix_acl);
-      else if(key == "direct_io")
-        rv = parse_and_process(value,config.direct_io);
-      else if(key == "kernel_cache")
-        rv = parse_and_process(value,config.kernel_cache);
-      else if(key == "auto_cache")
-        rv = parse_and_process(value,config.auto_cache);
-      else if(key == "async_read")
-        rv = parse_and_process(value,config.async_read);
-      else if(key == "readdirplus")
-        rv = parse_and_process(value,config.readdirplus);
-      else if(key == "max_write")
-        rv = 0;
-      else if(key == "fuse_msg_size")
-        rv = parse_and_process(value,config.fuse_msg_size,
-                               1,
-                               FUSE_MAX_MAX_PAGES);
-    }
-
-  if(rv == -1)
-    rv = 1;
-
-  return rv;
-}
-
-static
-int
-process_opt(Config            &config,
-            const std::string &arg,
-            fuse_args         *outargs)
-{
-  int rv;
-  std::vector<std::string> argvalue;
-
-  str::split(argvalue,arg,'=');
-  switch(argvalue.size())
-    {
-    case 1:
-      rv = parse_and_process_arg(config,argvalue[0]);
-      break;
-
-    case 2:
-      rv = parse_and_process_kv_arg(config,argvalue[0],argvalue[1],outargs);
-      break;
-
-    default:
-      rv = 1;
-      break;
-    };
-
-  return rv;
-}
-
-static
-int
-process_branches(const char *arg,
-                 Config     &config)
-{
-  config.branches.set(arg);
+  rv = data_->config->set_raw(key,val);
+  if(rv)
+    data_->errs->push_back("invalid argument - " + key_ + '=' + val_);
 
   return 0;
 }
 
 static
 int
-process_destmounts(const char *arg,
-                   Config     &config)
+process_opt(Data              *data_,
+            const std::string &arg_)
 {
-  config.destmount = arg;
+  std::string key;
+  std::string val;
+
+  str::splitkv(arg_,'=',&key,&val);
+
+  return parse_and_process_kv_arg(data_,key,val);
+}
+
+static
+int
+process_branches(Data       *data_,
+                 const char *arg_)
+{
+  int rv;
+  string arg;
+
+  arg = arg_;
+  rv = data_->config->set_raw("branches",arg);
+  if(rv)
+    data_->errs->push_back("unable to parse 'branches' - " + arg);
+
+  return 0;
+}
+
+static
+int
+process_mount(Data       *data_,
+              const char *arg_)
+{
+  int rv;
+  string arg;
+
+  arg = arg_;
+  rv = data_->config->set_raw("mount",arg);
+  if(rv)
+    data_->errs->push_back("unable to set 'mount' - " + arg);
 
   return 1;
 }
@@ -453,6 +313,7 @@ usage(void)
     "mergerfs options:\n"
     "    <branches>             ':' delimited list of directories. Supports\n"
     "                           shell globbing (must be escaped in shell)\n"
+    "    -o config=<file>       Read options from file in key=val format\n"
     "    -o func.<f>=<p>        Set function <f> to policy <p>\n"
     "    -o category.<c>=<p>    Set functions in category <c> to <p>\n"
     "    -o cache.open=<int>    'open' policy cache timeout in seconds.\n"
@@ -536,53 +397,53 @@ usage(void)
 
 static
 int
-option_processor(void       *data,
-                 const char *arg,
-                 int         key,
-                 fuse_args  *outargs)
+option_processor(void       *data_,
+                 const char *arg_,
+                 int         key_,
+                 fuse_args  *outargs_)
 {
-  int     rv     = 0;
-  Config &config = *(Config*)data;
+  Data *data = (Data*)data_;
 
-  switch(key)
+  switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      rv = process_opt(config,arg,outargs);
-      break;
+      return process_opt(data,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
-      rv = config.branches.empty() ?
-        process_branches(arg,config) :
-        process_destmounts(arg,config);
-      break;
+      if(data->config->branches.empty())
+        return process_branches(data,arg_);
+      else
+        return process_mount(data,arg_);
 
     case MERGERFS_OPT_HELP:
       usage();
       close(2);
       dup(1);
-      fuse_opt_add_arg(outargs,"-ho");
+      fuse_opt_add_arg(outargs_,"-ho");
       break;
 
     case MERGERFS_OPT_VERSION:
       std::cout << "mergerfs version: "
                 << (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown")
                 << std::endl;
-      fuse_opt_add_arg(outargs,"--version");
+      fuse_opt_add_arg(outargs_,"--version");
       break;
 
     default:
       break;
     }
 
-  return rv;
+  return 0;
 }
 
 namespace options
 {
   void
-  parse(fuse_args *args_,
-        Config    *config_)
+  parse(fuse_args                *args_,
+        Config                   *config_,
+        std::vector<std::string> *errs_)
   {
+    Data data;
     const struct fuse_opt opts[] =
       {
         FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
@@ -593,13 +454,16 @@ namespace options
         {NULL,-1U,0}
       };
 
+    data.config = config_;
+    data.errs   = errs_;
     fuse_opt_parse(args_,
-                   config_,
+                   &data,
                    opts,
                    ::option_processor);
 
     set_default_options(args_);
     set_fsname(args_,config_);
     set_subtype(args_);
+    set_threads(args_,config_);
   }
 }

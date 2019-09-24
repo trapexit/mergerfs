@@ -25,7 +25,8 @@
 namespace FUSE
 {
   int
-  fgetattr(const char     *fusepath_,
-           struct stat    *st_,
-           fuse_file_info *ffi_);
+  fgetattr(const char      *fusepath,
+           struct stat     *st,
+           fuse_file_info  *ffi,
+           fuse_timeouts_t *timeout);
 }

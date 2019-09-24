@@ -69,6 +69,8 @@ namespace l
   int
   readdir_plus(const Branches &branches_,
                const char     *dirname_,
+               const uint64_t  entry_timeout_,
+               const uint64_t  attr_timeout_,
                fuse_dirents_t *buf_)
   {
     int rv;
@@ -85,8 +87,8 @@ namespace l
 
     entry.nodeid           = 0;
     entry.generation       = 0;
-    entry.entry_valid      = 1;
-    entry.attr_valid       = 1;
+    entry.entry_valid      = entry_timeout_;
+    entry.attr_valid       = attr_timeout_;
     entry.entry_valid_nsec = 0;
     entry.attr_valid_nsec  = 0;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
@@ -151,12 +153,14 @@ namespace FUSE
   {
     DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
     const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
+    const Config            &config = Config::ro();
     const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const rwlock::ReadGuard  guard(&config.branches.lock);
 
     return l::readdir_plus(config.branches,
                            di->fusepath.c_str(),
+                           config.cache_entry,
+                           config.cache_attr,
                            buf_);
   }
 }

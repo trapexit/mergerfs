@@ -21,7 +21,6 @@
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -69,13 +68,13 @@ namespace l
 
   static
   int
-  mknod_loop(const string                &existingpath_,
-             const vector<const string*> &createpaths_,
-             const char                  *fusepath_,
-             const string                &fusedirpath_,
-             const mode_t                 mode_,
-             const mode_t                 umask_,
-             const dev_t                  dev_)
+  mknod_loop(const string         &existingpath_,
+             const vector<string> &createpaths_,
+             const char           *fusepath_,
+             const string         &fusedirpath_,
+             const mode_t          mode_,
+             const mode_t          umask_,
+             const dev_t           dev_)
   {
     int rv;
     int error;
@@ -83,11 +82,11 @@ namespace l
     error = -1;
     for(size_t i = 0, ei = createpaths_.size(); i != ei; i++)
       {
-        rv = fs::clonepath_as_root(existingpath_,*createpaths_[i],fusedirpath_);
+        rv = fs::clonepath_as_root(existingpath_,createpaths_[i],fusedirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::mknod_loop_core(*createpaths_[i],
+          error = l::mknod_loop_core(createpaths_[i],
                                      fusepath_,
                                      mode_,umask_,dev_,error);
       }
@@ -108,20 +107,20 @@ namespace l
   {
     int rv;
     string fusedirpath;
-    vector<const string*> createpaths;
-    vector<const string*> existingpaths;
+    vector<string> createpaths;
+    vector<string> existingpaths;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,minfreespace_,existingpaths);
+    rv = searchFunc_(branches_,fusedirpath,minfreespace_,&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,minfreespace_,createpaths);
+    rv = createFunc_(branches_,fusedirpath,minfreespace_,&createpaths);
     if(rv == -1)
       return -errno;
 
-    return l::mknod_loop(*existingpaths[0],createpaths,
+    return l::mknod_loop(existingpaths[0],createpaths,
                          fusepath_,fusedirpath,
                          mode_,umask_,dev_);
   }
@@ -134,13 +133,12 @@ namespace FUSE
         mode_t      mode_,
         dev_t       rdev_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::mknod(config.getattr,
-                    config.mknod,
+    return l::mknod(config.func.getattr.policy,
+                    config.func.mknod.policy,
                     config.branches,
                     config.minfreespace,
                     fusepath_,

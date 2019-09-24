@@ -17,13 +17,15 @@
 */
 
 #include "branch.hpp"
+#include "ef.hpp"
 #include "fs.hpp"
 #include "fs_glob.hpp"
 #include "str.hpp"
 
-#include <fnmatch.h>
-
 #include <string>
+
+#include <errno.h>
+#include <fnmatch.h>
 
 using std::string;
 using std::vector;
@@ -47,53 +49,23 @@ Branch::ro_or_nc(void) const
           (mode == Branch::NC));
 }
 
-string
-Branches::to_string(const bool mode_) const
+static
+void
+split(const std::string &s_,
+      std::string       *instr_,
+      std::string       *values_)
 {
-  string tmp;
+  uint64_t offset;
 
-  for(size_t i = 0; i < size(); i++)
-    {
-      const Branch &branch = (*this)[i];
-
-      tmp += branch.path;
-
-      if(mode_)
-        {
-          tmp += '=';
-          switch(branch.mode)
-            {
-            default:
-            case Branch::RW:
-              tmp += "RW";
-              break;
-            case Branch::RO:
-              tmp += "RO";
-              break;
-            case Branch::NC:
-              tmp += "NC";
-              break;
-            }
-        }
-
-      tmp += ':';
-    }
-
-  if(*tmp.rbegin() == ':')
-    tmp.erase(tmp.size() - 1);
-
-  return tmp;
+  offset = s_.find_first_of('/');
+  *instr_ = s_.substr(0,offset);
+  if(offset != std::string::npos)
+    *values_ = s_.substr(offset);
 }
 
-void
-Branches::to_paths(vector<string> &vec_) const
+Branches::Branches()
 {
-  for(size_t i = 0; i < size(); i++)
-    {
-      const Branch &branch = (*this)[i];
-
-      vec_.push_back(branch.path);
-    }
+  pthread_rwlock_init(&lock,NULL);
 }
 
 static
@@ -107,11 +79,11 @@ parse(const string &str_,
 
   str = str_;
   branch.mode = Branch::INVALID;
-  if(str::ends_with(str,"=RO"))
+  if(str::endswith(str,"=RO"))
     branch.mode = Branch::RO;
-  else if(str::ends_with(str,"=RW"))
+  ef(str::endswith(str,"=RW"))
     branch.mode = Branch::RW;
-  else if(str::ends_with(str,"=NC"))
+  ef(str::endswith(str,"=NC"))
     branch.mode = Branch::NC;
 
   if(branch.mode != Branch::INVALID)
@@ -128,48 +100,33 @@ parse(const string &str_,
     }
 }
 
+static
 void
-Branches::set(const std::string &str_)
+set(Branches          &branches_,
+    const std::string &str_)
 {
   vector<string> paths;
 
-  clear();
+  branches_.clear();
 
   str::split(paths,str_,':');
 
   for(size_t i = 0; i < paths.size(); i++)
     {
-      Branches branches;
+      Branches tmp;
 
-      parse(paths[i],branches);
+      parse(paths[i],tmp);
 
-      insert(end(),
-             branches.begin(),
-             branches.end());
+      branches_.insert(branches_.end(),
+                       tmp.begin(),
+                       tmp.end());
     }
 }
 
+static
 void
-Branches::add_begin(const std::string &str_)
-{
-  vector<string> paths;
-
-  str::split(paths,str_,':');
-
-  for(size_t i = 0; i < paths.size(); i++)
-    {
-      Branches branches;
-
-      parse(paths[i],branches);
-
-      insert(begin(),
-             branches.begin(),
-             branches.end());
-    }
-}
-
-void
-Branches::add_end(const std::string &str_)
+add_begin(Branches          &branches_,
+          const std::string &str_)
 {
   vector<string> paths;
 
@@ -177,36 +134,62 @@ Branches::add_end(const std::string &str_)
 
   for(size_t i = 0; i < paths.size(); i++)
     {
-      Branches branches;
+      Branches tmp;
 
-      parse(paths[i],branches);
+      parse(paths[i],tmp);
 
-      insert(end(),
-             branches.begin(),
-             branches.end());
+      branches_.insert(branches_.begin(),
+                       tmp.begin(),
+                       tmp.end());
     }
 }
 
+static
 void
-Branches::erase_begin(void)
+add_end(Branches          &branches_,
+        const std::string &str_)
 {
-  erase(begin());
+  vector<string> paths;
+
+  str::split(paths,str_,':');
+
+  for(size_t i = 0; i < paths.size(); i++)
+    {
+      Branches tmp;
+
+      parse(paths[i],tmp);
+
+      branches_.insert(branches_.end(),
+                       tmp.begin(),
+                       tmp.end());
+    }
 }
 
+static
 void
-Branches::erase_end(void)
+erase_begin(Branches &branches_)
 {
-  pop_back();
+  branches_.erase(branches_.begin());
 }
 
+static
 void
-Branches::erase_fnmatch(const std::string &str_)
+erase_end(Branches &branches_)
+{
+  branches_.pop_back();
+}
+
+static
+void
+erase_fnmatch(Branches          &branches_,
+              const std::string &str_)
 {
   vector<string> patterns;
 
   str::split(patterns,str_,':');
 
-  for(iterator i = begin(); i != end();)
+  for(Branches::iterator i = branches_.begin();
+      i != branches_.end();)
     {
       int match = FNM_NOMATCH;
 
@@ -217,6 +200,116 @@ Branches::erase_fnmatch(const std::string &str_)
           match = ::fnmatch(pi->c_str(),i->path.c_str(),0);
         }
 
-      i = ((match == 0) ? erase(i) : (i+1));
+      i = ((match == 0) ? branches_.erase(i) : (i+1));
     }
+}
+
+int
+Branches::from_string(const std::string &s_)
+{
+  rwlock::WriteGuard guard(&lock);
+  std::string instr;
+  std::string values;
+
+  ::split(s_,&instr,&values);
+
+  if(instr == "+")
+    ::add_end(*this,values);
+  ef(instr == "+<")
+    ::add_begin(*this,values);
+  ef(instr == "+>")
+    ::add_end(*this,values);
+  ef(instr == "-")
+    ::erase_fnmatch(*this,values);
+  ef(instr == "-<")
+    ::erase_begin(*this);
+  ef(instr == "->")
+    ::erase_end(*this);
+  ef(instr == "=")
+    ::set(*this,values);
+  ef(instr.empty())
+    ::set(*this,values);
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+string
+Branches::to_string(void) const
+{
+  rwlock::ReadGuard guard(&lock);
+  string tmp;
+
+  for(size_t i = 0; i < size(); i++)
+    {
+      const Branch &branch = (*this)[i];
+
+      tmp += branch.path;
+
+      tmp += '=';
+      switch(branch.mode)
+        {
+        default:
+        case Branch::RW:
+          tmp += "RW";
+          break;
+        case Branch::RO:
+          tmp += "RO";
+          break;
+        case Branch::NC:
+          tmp += "NC";
+          break;
+        }
+
+      tmp += ':';
+    }
+
+  if(*tmp.rbegin() == ':')
+    tmp.erase(tmp.size() - 1);
+
+  return tmp;
+}
+
+void
+Branches::to_paths(vector<string> &vec_) const
+{
+  rwlock::ReadGuard guard(&lock);
+
+  for(size_t i = 0; i < size(); i++)
+    {
+      const Branch &branch = (*this)[i];
+
+      vec_.push_back(branch.path);
+    }
+}
+
+SrcMounts::SrcMounts(Branches &b_)
+  : _branches(b_)
+{
+
+}
+
+int
+SrcMounts::from_string(const std::string &s_)
+{
+  return _branches.from_string(s_);
+}
+
+std::string
+SrcMounts::to_string(void) const
+{
+  rwlock::ReadGuard guard(&_branches.lock);
+  std::string rv;
+
+  for(uint64_t i = 0; i < _branches.size(); i++)
+    {
+      rv += _branches[i].path;
+      rv += ':';
+    }
+
+  if(*rv.rbegin() == ':')
+    rv.erase(rv.size() - 1);
+
+  return rv;
 }

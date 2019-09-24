@@ -58,30 +58,33 @@ public:
   {
     typedef std::string string;
     typedef std::vector<string> strvec;
-    typedef std::vector<const string*> cstrptrvec;
     typedef const string cstring;
     typedef const uint64_t cuint64_t;
     typedef const strvec cstrvec;
     typedef const Category::Enum::Type CType;
 
-    typedef int (*Ptr)(CType,const Branches &,const char *,cuint64_t,cstrptrvec &);
+    typedef int (*Ptr)(CType,const Branches &,const char *,cuint64_t,strvec *);
 
     template <CType T>
     class Base
     {
     public:
-      Base(const Policy *p)
-        : func(p->_func)
+      Base(const Policy &p_)
+        : func(p_._func)
+      {}
+
+      Base(const Policy *p_)
+        : func(p_->_func)
       {}
 
       int
-      operator()(const Branches &b,const char *c,cuint64_t d,cstrptrvec &e)
+      operator()(const Branches &b,const char *c,cuint64_t d,strvec *e)
       {
         return func(T,b,c,d,e);
       }
 
       int
-      operator()(const Branches &b,const string &c,cuint64_t d,cstrptrvec &e)
+      operator()(const Branches &b,const string &c,cuint64_t d,strvec *e)
       {
         return func(T,b,c.c_str(),d,e);
       }
@@ -90,11 +93,11 @@ public:
       operator()(const Branches &b,const char *c,cuint64_t d,string *e)
       {
         int rv;
-        cstrptrvec v;
+        strvec v;
 
-        rv = func(T,b,c,d,v);
+        rv = func(T,b,c,d,&v);
         if(!v.empty())
-          *e = *v[0];
+          *e = v[0];
 
         return rv;
       }
@@ -107,21 +110,21 @@ public:
     typedef Base<Category::Enum::create> Create;
     typedef Base<Category::Enum::search> Search;
 
-    static int invalid(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int all(CType,const Branches&,const char*,cuint64_t,cstrptrvec&);
-    static int epall(CType,const Branches&,const char*,cuint64_t,cstrptrvec&);
-    static int epff(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int eplfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int eplus(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int epmfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int eprand(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int erofs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int ff(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int lfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int lus(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int mfs(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int newest(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
-    static int rand(CType,const Branches&,const char *,cuint64_t,cstrptrvec&);
+    static int invalid(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int all(CType,const Branches&,const char*,cuint64_t,strvec*);
+    static int epall(CType,const Branches&,const char*,cuint64_t,strvec*);
+    static int epff(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int eplfs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int eplus(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int epmfs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int eprand(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int erofs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int ff(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int lfs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int lus(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int mfs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int newest(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int rand(CType,const Branches&,const char *,cuint64_t,strvec*);
   };
 
 private:
@@ -161,6 +164,7 @@ public:
   operator const std::string&() const { return _str; }
   operator const Func::Ptr() const { return _func; }
   operator const Policy*() const { return this; }
+  const std::string& to_string() const { return _str; }
 
   bool operator==(const Enum::Type enum_) const
   { return _enum == enum_; }
@@ -180,6 +184,7 @@ public:
   static const Policy &find(const Enum::Type);
 
 public:
+
   static const std::vector<Policy> _policies_;
   static const Policy * const      policies;
 
@@ -199,3 +204,14 @@ public:
   static const Policy &newest;
   static const Policy &rand;
 };
+
+namespace std
+{
+  static
+  inline
+  string
+  to_string(const Policy &p_)
+  {
+    return p_.to_string();
+  }
+}

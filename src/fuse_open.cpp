@@ -21,7 +21,6 @@
 #include "fs_cow.hpp"
 #include "fs_path.hpp"
 #include "policy_cache.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -61,27 +60,27 @@ namespace l
   {
     switch(config_.cache_files)
       {
-      case CacheFiles::LIBFUSE:
+      case CacheFiles::ENUM::LIBFUSE:
         ffi_->direct_io  = config_.direct_io;
         ffi_->keep_cache = config_.kernel_cache;
         ffi_->auto_cache = config_.auto_cache;
         break;
-      case CacheFiles::OFF:
+      case CacheFiles::ENUM::OFF:
         ffi_->direct_io  = 1;
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 0;
         break;
-      case CacheFiles::PARTIAL:
+      case CacheFiles::ENUM::PARTIAL:
         ffi_->direct_io  = 0;
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 0;
         break;
-      case CacheFiles::FULL:
+      case CacheFiles::ENUM::FULL:
         ffi_->direct_io  = 0;
         ffi_->keep_cache = 1;
         ffi_->auto_cache = 0;
         break;
-      case CacheFiles::AUTO_FULL:
+      case CacheFiles::ENUM::AUTO_FULL:
         ffi_->direct_io  = 0;
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 1;
@@ -142,17 +141,16 @@ namespace FUSE
   open(const char     *fusepath_,
        fuse_file_info *ffi_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     l::config_to_ffi_flags(config,ffi_);
 
     if(config.writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return l::open(config.open,
+    return l::open(config.func.open.policy,
                    config.open_cache,
                    config.branches,
                    config.minfreespace,

@@ -53,8 +53,8 @@ namespace FUSE
   release(const char     *fusepath_,
           fuse_file_info *ffi_)
   {
-    const Config &config = Config::get();
-    FileInfo     *fi     = reinterpret_cast<FileInfo*>(ffi_->fh);
+    const Config &config = Config::ro();
+    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
     if(config.open_cache.timeout)
       config.open_cache.cleanup(10);

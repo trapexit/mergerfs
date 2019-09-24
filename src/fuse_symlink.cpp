@@ -20,7 +20,6 @@
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -54,11 +53,11 @@ namespace l
 
   static
   int
-  symlink_loop(const string                &existingpath_,
-               const vector<const string*>  newbasepaths_,
-               const char                  *oldpath_,
-               const char                  *newpath_,
-               const string                &newdirpath_)
+  symlink_loop(const string         &existingpath_,
+               const vector<string> &newbasepaths_,
+               const char           *oldpath_,
+               const char           *newpath_,
+               const string         &newdirpath_)
   {
     int rv;
     int error;
@@ -66,11 +65,11 @@ namespace l
     error = -1;
     for(size_t i = 0, ei = newbasepaths_.size(); i != ei; i++)
       {
-        rv = fs::clonepath_as_root(existingpath_,*newbasepaths_[i],newdirpath_);
+        rv = fs::clonepath_as_root(existingpath_,newbasepaths_[i],newdirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::symlink_loop_core(*newbasepaths_[i],
+          error = l::symlink_loop_core(newbasepaths_[i],
                                        oldpath_,
                                        newpath_,
                                        error);
@@ -90,20 +89,20 @@ namespace l
   {
     int rv;
     string newdirpath;
-    vector<const string*> newbasepaths;
-    vector<const string*> existingpaths;
+    vector<string> newbasepaths;
+    vector<string> existingpaths;
 
     newdirpath = fs::path::dirname(newpath_);
 
-    rv = searchFunc_(branches_,newdirpath,minfreespace_,existingpaths);
+    rv = searchFunc_(branches_,newdirpath,minfreespace_,&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,newdirpath,minfreespace_,newbasepaths);
+    rv = createFunc_(branches_,newdirpath,minfreespace_,&newbasepaths);
     if(rv == -1)
       return -errno;
 
-    return l::symlink_loop(*existingpaths[0],newbasepaths,
+    return l::symlink_loop(existingpaths[0],newbasepaths,
                            oldpath_,newpath_,newdirpath);
   }
 }
@@ -114,13 +113,12 @@ namespace FUSE
   symlink(const char *oldpath_,
           const char *newpath_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::symlink(config.getattr,
-                      config.symlink,
+    return l::symlink(config.func.getattr.policy,
+                      config.func.symlink.policy,
                       config.branches,
                       config.minfreespace,
                       oldpath_,

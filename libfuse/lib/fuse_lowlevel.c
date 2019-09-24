@@ -319,37 +319,18 @@ void fuse_reply_none(fuse_req_t req)
 	fuse_free_req(req);
 }
 
-static unsigned long calc_timeout_sec(double t)
+static
+void
+fill_entry(struct fuse_entry_out         *arg,
+           const struct fuse_entry_param *e)
 {
-	if (t > (double) ULONG_MAX)
-		return ULONG_MAX;
-	else if (t < 0.0)
-		return 0;
-	else
-		return (unsigned long) t;
-}
-
-static unsigned int calc_timeout_nsec(double t)
-{
-	double f = t - (double) calc_timeout_sec(t);
-	if (f < 0.0)
-		return 0;
-	else if (f >= 0.999999999)
-		return 999999999;
-	else
-		return (unsigned int) (f * 1.0e9);
-}
-
-static void fill_entry(struct fuse_entry_out *arg,
-		       const struct fuse_entry_param *e)
-{
-	arg->nodeid = e->ino;
-	arg->generation = e->generation;
-	arg->entry_valid = calc_timeout_sec(e->entry_timeout);
-	arg->entry_valid_nsec = calc_timeout_nsec(e->entry_timeout);
-	arg->attr_valid = calc_timeout_sec(e->attr_timeout);
-	arg->attr_valid_nsec = calc_timeout_nsec(e->attr_timeout);
-	convert_stat(&e->attr, &arg->attr);
+  arg->nodeid           = e->ino;
+  arg->generation       = e->generation;
+  arg->entry_valid      = e->timeout.entry;
+  arg->entry_valid_nsec = 0;
+  arg->attr_valid       = e->timeout.attr;
+  arg->attr_valid_nsec  = 0;
+  convert_stat(&e->attr,&arg->attr);
 }
 
 static void fill_open(struct fuse_open_out *arg,
@@ -398,19 +379,21 @@ int fuse_reply_create(fuse_req_t req, const struct fuse_entry_param *e,
 			     entrysize + sizeof(struct fuse_open_out));
 }
 
-int fuse_reply_attr(fuse_req_t req, const struct stat *attr,
-		    double attr_timeout)
+int
+fuse_reply_attr(fuse_req_t         req,
+                const struct stat *attr,
+                const uint64_t     timeout)
 {
-	struct fuse_attr_out arg;
-	size_t size = req->f->conn.proto_minor < 9 ?
-		FUSE_COMPAT_ATTR_OUT_SIZE : sizeof(arg);
+  struct fuse_attr_out arg;
+  size_t size = req->f->conn.proto_minor < 9 ?
+    FUSE_COMPAT_ATTR_OUT_SIZE : sizeof(arg);
 
-	memset(&arg, 0, sizeof(arg));
-	arg.attr_valid = calc_timeout_sec(attr_timeout);
-	arg.attr_valid_nsec = calc_timeout_nsec(attr_timeout);
-	convert_stat(attr, &arg.attr);
+  memset(&arg,0,sizeof(arg));
+  arg.attr_valid      = timeout;
+  arg.attr_valid_nsec = 0;
+  convert_stat(attr,&arg.attr);
 
-	return send_reply_ok(req, &arg, size);
+  return send_reply_ok(req,&arg,size);
 }
 
 int fuse_reply_readlink(fuse_req_t req, const char *linkname)
@@ -1712,9 +1695,9 @@ static void do_ioctl(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	}
 
 	if (req->f->op.ioctl)
-		req->f->op.ioctl(req, nodeid, arg->cmd,
-				 (void *)(uintptr_t)arg->arg, &fi, flags,
-				 in_buf, arg->in_size, arg->out_size);
+                req->f->op.ioctl(req, nodeid, (unsigned long)arg->cmd,
+                                 (void *)(uintptr_t)arg->arg, &fi, flags,
+                                 in_buf, arg->in_size, arg->out_size);
 	else
 		fuse_reply_err(req, ENOSYS);
 }

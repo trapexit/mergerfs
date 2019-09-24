@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <string>
 #include <vector>
@@ -33,11 +34,13 @@ namespace epff
 {
   static
   int
-  create(const Branches        &branches_,
-         const char            *fusepath,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const char     *fusepath_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     fs::info_t info;
@@ -48,7 +51,7 @@ namespace epff
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
@@ -57,10 +60,10 @@ namespace epff
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
 
-        paths.push_back(&branch->path);
+        paths_->push_back(branch->path);
 
         return 0;
       }
@@ -70,10 +73,12 @@ namespace epff
 
   static
   int
-  action(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  action(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     bool readonly;
@@ -84,7 +89,7 @@ namespace epff
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
@@ -94,7 +99,7 @@ namespace epff
         if(readonly)
           error_and_continue(error,EROFS);
 
-        paths.push_back(&branch->path);
+        paths_->push_back(branch->path);
 
         return 0;
       }
@@ -104,20 +109,22 @@ namespace epff
 
   static
   int
-  search(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  search(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     const Branch *branch;
 
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           continue;
 
-        paths.push_back(&branch->path);
+        paths_->push_back(branch->path);
 
         return 0;
       }
@@ -127,20 +134,20 @@ namespace epff
 }
 
 int
-Policy::Func::epff(const Category::Enum::Type  type,
+Policy::Func::epff(const Category::Enum::Type  type_,
                    const Branches             &branches_,
-                   const char                 *fusepath,
-                   const uint64_t              minfreespace,
-                   vector<const string*>      &paths)
+                   const char                 *fusepath_,
+                   const uint64_t              minfreespace_,
+                   vector<string>             *paths_)
 {
-  switch(type)
+  switch(type_)
     {
     case Category::Enum::create:
-      return epff::create(branches_,fusepath,minfreespace,paths);
+      return epff::create(branches_,fusepath_,minfreespace_,paths_);
     case Category::Enum::action:
-      return epff::action(branches_,fusepath,paths);
+      return epff::action(branches_,fusepath_,paths_);
     case Category::Enum::search:
     default:
-      return epff::search(branches_,fusepath,paths);
+      return epff::search(branches_,fusepath_,paths_);
     }
 }

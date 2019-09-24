@@ -28,7 +28,7 @@ Policy::Func::invalid(const Category::Enum::Type  type,
                       const Branches             &branches_,
                       const char                 *fusepath,
                       const uint64_t              minfreespace,
-                      vector<const string*>      &paths)
+                      vector<string>             *paths)
 {
   return (errno=EINVAL,-1);
 }

@@ -15,187 +15,393 @@
 */
 
 #include "config.hpp"
+#include "ef.hpp"
 #include "errno.hpp"
+#include "from_string.hpp"
 #include "fs.hpp"
+#include "num.hpp"
 #include "rwlock.hpp"
+#include "to_string.hpp"
+#include "version.hpp"
 
+#include <algorithm>
 #include <string>
-#include <vector>
+#include <iostream>
 
-#include <unistd.h>
+#include <stdint.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define MINFREESPACE_DEFAULT (4294967295ULL)
-#define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
 
 using std::string;
-using std::vector;
+
+#define IFERT(S) if(S == s_) return true
+
+namespace l
+{
+  static
+  bool
+  readonly(const std::string &s_)
+  {
+    IFERT("async_read");
+    IFERT("cache.symlinks");
+    IFERT("cache.writeback");
+    IFERT("fsname");
+    IFERT("fuse_msg_size");
+    IFERT("mount");
+    IFERT("nullrw");
+    IFERT("pid");
+    IFERT("readdirplus");
+    IFERT("threads");
+    IFERT("version");
+
+    return false;
+  }
+}
 
 Config::Config()
-  : destmount(),
-    branches(),
-    branches_lock(),
-    minfreespace(MINFREESPACE_DEFAULT),
-    moveonenospc(false),
-    direct_io(false),
-    dropcacheonclose(false),
-    symlinkify(false),
-    symlinkify_timeout(3600),
-    nullrw(false),
-    ignorepponrename(false),
-    security_capability(true),
-    link_cow(false),
-    xattr(0),
-    statfs(StatFS::BASE),
-    statfs_ignore(StatFSIgnore::NONE),
-    posix_acl(false),
-    cache_symlinks(false),
-    cache_readdir(false),
-    async_read(true),
-    writeback_cache(false),
-    readdirplus(false),
-    cache_files(CacheFiles::LIBFUSE),
-    fuse_msg_size(FUSE_MAX_MAX_PAGES),
-    POLICYINIT(access),
-    POLICYINIT(chmod),
-    POLICYINIT(chown),
-    POLICYINIT(create),
-    POLICYINIT(getattr),
-    POLICYINIT(getxattr),
-    POLICYINIT(link),
-    POLICYINIT(listxattr),
-    POLICYINIT(mkdir),
-    POLICYINIT(mknod),
-    POLICYINIT(open),
-    POLICYINIT(readlink),
-    POLICYINIT(removexattr),
-    POLICYINIT(rename),
-    POLICYINIT(rmdir),
-    POLICYINIT(setxattr),
-    POLICYINIT(symlink),
-    POLICYINIT(truncate),
-    POLICYINIT(unlink),
-    POLICYINIT(utimens),
-    controlfile("/.mergerfs")
-{
-  pthread_rwlock_init(&branches_lock,NULL);
+  :
+  open_cache(),
 
-  set_category_policy("action","epall");
-  set_category_policy("create","epmfs");
-  set_category_policy("search","ff");
+  controlfile("/.mergerfs"),
+
+  async_read(true),
+  auto_cache(false),
+  branches(),
+  cache_attr(1),
+  cache_entry(1),
+  cache_files(CacheFiles::ENUM::LIBFUSE),
+  cache_negative_entry(0),
+  cache_readdir(false),
+  cache_statfs(0),
+  cache_symlinks(false),
+  category(func),
+  direct_io(false),
+  dropcacheonclose(false),
+  fsname(),
+  func(),
+  fuse_msg_size(FUSE_MAX_MAX_PAGES),
+  ignorepponrename(false),
+  link_cow(false),
+  minfreespace(MINFREESPACE_DEFAULT),
+  mount(),
+  moveonenospc(false),
+  nullrw(false),
+  pid(::getpid()),
+  posix_acl(false),
+  readdirplus(false),
+  security_capability(true),
+  srcmounts(branches),
+  statfs(StatFS::ENUM::BASE),
+  statfs_ignore(StatFSIgnore::ENUM::NONE),
+  symlinkify(false),
+  symlinkify_timeout(3600),
+  threads(0),
+  version(MERGERFS_VERSION),
+  writeback_cache(false),
+  xattr(XAttr::ENUM::PASSTHROUGH)
+{
+  _map["async_read"]           = &async_read;
+  _map["auto_cache"]           = &auto_cache;
+  _map["branches"]             = &branches;
+  _map["cache.attr"]           = &cache_attr;
+  _map["cache.entry"]          = &cache_entry;
+  _map["cache.files"]          = &cache_files;
+  _map["cache.negative_entry"] = &cache_negative_entry;
+  _map["cache.readdir"]        = &cache_readdir;
+  _map["cache.statfs"]         = &cache_statfs;
+  _map["cache.symlinks"]       = &cache_symlinks;
+  _map["cache.writeback"]      = &writeback_cache;
+  _map["category.action"]      = &category.action;
+  _map["category.create"]      = &category.create;
+  _map["category.search"]      = &category.search;
+  _map["direct_io"]            = &direct_io;
+  _map["dropcacheonclose"]     = &dropcacheonclose;
+  _map["fsname"]               = &fsname;
+  _map["func.access"]          = &func.access;
+  _map["func.chmod"]           = &func.chmod;
+  _map["func.chown"]           = &func.chown;
+  _map["func.create"]          = &func.create;
+  _map["func.getattr"]         = &func.getattr;
+  _map["func.getxattr"]        = &func.getxattr;
+  _map["func.link"]            = &func.link;
+  _map["func.listxattr"]       = &func.listxattr;
+  _map["func.mkdir"]           = &func.mkdir;
+  _map["func.mknod"]           = &func.mknod;
+  _map["func.open"]            = &func.open;
+  _map["func.readlink"]        = &func.readlink;
+  _map["func.removexattr"]     = &func.removexattr;
+  _map["func.rename"]          = &func.rename;
+  _map["func.rmdir"]           = &func.rmdir;
+  _map["func.setxattr"]        = &func.setxattr;
+  _map["func.symlink"]         = &func.symlink;
+  _map["func.truncate"]        = &func.truncate;
+  _map["func.unlink"]          = &func.unlink;
+  _map["func.utimens"]         = &func.utimens;
+  _map["fuse_msg_size"]        = &fuse_msg_size;
+  _map["ignorepponrename"]     = &ignorepponrename;
+  _map["kernel_cache"]         = &kernel_cache;
+  _map["link_cow"]             = &link_cow;
+  _map["minfreespace"]         = &minfreespace;
+  _map["mount"]                = &mount;
+  _map["moveonenospc"]         = &moveonenospc;
+  _map["nullrw"]               = &nullrw;
+  _map["pid"]                  = &pid;
+  _map["posix_acl"]            = &posix_acl;
+  _map["readdirplus"]          = &readdirplus;
+  _map["security_capability"]  = &security_capability;
+  _map["srcmounts"]            = &srcmounts;
+  _map["statfs"]               = &statfs;
+  _map["statfs_ignore"]        = &statfs_ignore;
+  _map["symlinkify"]           = &symlinkify;
+  _map["symlinkify_timeout"]   = &symlinkify_timeout;
+  _map["threads"]              = &threads;
+  _map["version"]              = &version;
+  _map["xattr"]                = &xattr;
 }
 
-int
-Config::set_func_policy(const string &fusefunc_,
-                        const string &policy_)
+const
+Config&
+Config::ro(void)
 {
-  const Policy   *policy;
-  const FuseFunc *fusefunc;
-
-  fusefunc = FuseFunc::find(fusefunc_);
-  if(fusefunc == FuseFunc::invalid)
-    return (errno=ENODATA,-1);
-
-  policy = Policy::find(policy_);
-  if(policy == Policy::invalid)
-    return (errno=EINVAL,-1);
-
-  policies[(FuseFunc::Enum::Type)*fusefunc] = policy;
-
-  return 0;
+  return *((Config*)fuse_get_context()->private_data);
 }
 
-int
-Config::set_category_policy(const string &category_,
-                            const string &policy_)
+Config&
+Config::rw(void)
 {
-  const Policy   *policy;
-  const Category *category;
-
-  category = Category::find(category_);
-  if(category == Category::invalid)
-    return (errno=ENODATA,-1);
-
-  policy = Policy::find(policy_);
-  if(policy == Policy::invalid)
-    return (errno=EINVAL,-1);
-
-  for(int i = 0; i < FuseFunc::Enum::END; i++)
-    {
-      if(FuseFunc::fusefuncs[i] == (Category::Enum::Type)*category)
-        policies[(FuseFunc::Enum::Type)FuseFunc::fusefuncs[i]] = policy;
-    }
-
-  return 0;
-}
-
-Config::CacheFiles::operator int() const
-{
-  return _data;
-}
-
-Config::CacheFiles::operator std::string() const
-{
-  switch(_data)
-    {
-    case OFF:
-      return "off";
-    case PARTIAL:
-      return "partial";
-    case FULL:
-      return "full";
-    case AUTO_FULL:
-      return "auto-full";
-    case LIBFUSE:
-      return "libfuse";
-    case INVALID:
-      break;
-    }
-
-  return "";
-}
-
-Config::CacheFiles::CacheFiles()
-  : _data(INVALID)
-{
-
-}
-
-Config::CacheFiles::CacheFiles(Config::CacheFiles::Enum data_)
-  : _data(data_)
-{
-
+  return *((Config*)fuse_get_context()->private_data);
 }
 
 bool
-Config::CacheFiles::valid() const
+Config::has_key(const std::string &key_) const
 {
-  return (_data != INVALID);
+  return _map.count(key_);
 }
 
-Config::CacheFiles&
-Config::CacheFiles::operator=(const Config::CacheFiles::Enum data_)
+void
+Config::keys(std::string &s_) const
 {
-  _data = data_;
+  Str2TFStrMap::const_iterator i;
+  Str2TFStrMap::const_iterator ei;
 
-  return *this;
+  s_.reserve(512);
+
+  i  = _map.begin();
+  ei = _map.end();
+
+  for(; i != ei; ++i)
+    {
+      s_ += i->first;
+      s_ += '\0';
+    }
+
+  s_.resize(s_.size() - 1);
 }
 
-Config::CacheFiles&
-Config::CacheFiles::operator=(const std::string &data_)
+
+void
+Config::keys_xattr(std::string &s_) const
 {
-  if(data_ == "off")
-    _data = OFF;
-  else if(data_ == "partial")
-    _data = PARTIAL;
-  else if(data_ == "full")
-    _data = FULL;
-  else if(data_ == "auto-full")
-    _data = AUTO_FULL;
-  else if(data_ == "libfuse")
-    _data = LIBFUSE;
+  Str2TFStrMap::const_iterator i;
+  Str2TFStrMap::const_iterator ei;
+
+  s_.reserve(1024);
+  for(i = _map.begin(), ei = _map.end(); i != ei; ++i)
+    {
+      s_ += "user.mergerfs.";
+      s_ += i->first;
+      s_ += '\0';
+    }
+}
+
+int
+Config::get(const std::string &key_,
+            std::string       *val_) const
+{
+  Str2TFStrMap::const_iterator i;
+
+  i = _map.find(key_);
+  if(i == _map.end())
+    return -ENOATTR;
+
+  *val_ = i->second->to_string();
+
+  return 0;
+}
+
+template<>
+std::string
+Config::StatFS::to_string() const
+{
+  switch(_data)
+    {
+    case Config::StatFS::ENUM::BASE:
+      return "base";
+    case Config::StatFS::ENUM::FULL:
+      return "full";
+    }
+
+  return "invalid";
+}
+
+template<>
+int
+Config::StatFS::from_string(const std::string &s_)
+{
+  if(s_ == "base")
+    _data = Config::StatFS::ENUM::BASE;
+  ef(s_ == "full")
+    _data = Config::StatFS::ENUM::FULL;
   else
-    _data = INVALID;
+    return -EINVAL;
 
-  return *this;
+  return 0;
+}
+
+template<>
+std::string
+Config::StatFSIgnore::to_string() const
+{
+  switch(_data)
+    {
+    case Config::StatFSIgnore::ENUM::NONE:
+      return "none";
+    case Config::StatFSIgnore::ENUM::RO:
+      return "ro";
+    case Config::StatFSIgnore::ENUM::NC:
+      return "nc";
+    }
+
+  return "invalid";
+}
+
+template<>
+int
+Config::StatFSIgnore::from_string(const std::string &s_)
+{
+  if(s_ == "none")
+    _data = Config::StatFSIgnore::ENUM::NONE;
+  ef(s_ == "ro")
+    _data = Config::StatFSIgnore::ENUM::RO;
+  ef(s_ == "nc")
+    _data = Config::StatFSIgnore::ENUM::NC;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+template<>
+std::string
+Config::CacheFiles::to_string() const
+{
+  switch(_data)
+    {
+    case Config::CacheFiles::ENUM::LIBFUSE:
+      return "libfuse";
+    case Config::CacheFiles::ENUM::OFF:
+      return "off";
+    case Config::CacheFiles::ENUM::PARTIAL:
+      return "partial";
+    case Config::CacheFiles::ENUM::FULL:
+      return "full";
+    case Config::CacheFiles::ENUM::AUTO_FULL:
+      return "auto-full";
+    }
+
+  return "invalid";
+}
+
+template<>
+int
+Config::CacheFiles::from_string(const std::string &s_)
+{
+  if(s_ == "libfuse")
+    _data = Config::CacheFiles::ENUM::LIBFUSE;
+  ef(s_ == "off")
+    _data = Config::CacheFiles::ENUM::OFF;
+  ef(s_ == "partial")
+    _data = Config::CacheFiles::ENUM::PARTIAL;
+  ef(s_ == "full")
+    _data = Config::CacheFiles::ENUM::FULL;
+  ef(s_ == "auto-full")
+    _data = Config::CacheFiles::ENUM::AUTO_FULL;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+template<>
+std::string
+Config::XAttr::to_string() const
+{
+  switch(_data)
+    {
+    case Config::XAttr::ENUM::PASSTHROUGH:
+      return "passthrough";
+    case Config::XAttr::ENUM::NOSYS:
+      return "nosys";
+    case Config::XAttr::ENUM::NOATTR:
+      return "noattr";
+    }
+
+  return "invalid";
+}
+
+template<>
+int
+Config::XAttr::from_string(const std::string &s_)
+{
+  if(s_ == "passthrough")
+    _data = Config::XAttr::ENUM::PASSTHROUGH;
+  ef(s_ == "nosys")
+    _data = Config::XAttr::ENUM::NOSYS;
+  ef(s_ == "noattr")
+    _data = Config::XAttr::ENUM::NOATTR;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+int
+Config::set_raw(const std::string &key_,
+                const std::string &value_)
+{
+  Str2TFStrMap::iterator i;
+
+  i = _map.find(key_);
+  if(i == _map.end())
+    return -ENOATTR;
+
+  return i->second->from_string(value_);
+}
+
+int
+Config::set(const std::string &key_,
+            const std::string &value_)
+{
+  if(l::readonly(key_))
+    return -EINVAL;
+
+  return set_raw(key_,value_);
+}
+
+
+std::ostream&
+operator<<(std::ostream &os_,
+           const Config &c_)
+{
+  Str2TFStrMap::const_iterator i;
+  Str2TFStrMap::const_iterator ei;
+
+  for(i = c_._map.begin(), ei = c_._map.end(); i != ei; ++i)
+    {
+      os_ << i->first << '=' << i->second << '\n';
+    }
+
+  return os_;
 }

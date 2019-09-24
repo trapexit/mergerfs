@@ -19,7 +19,6 @@
 #include "fs_base_truncate.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -37,7 +36,7 @@ namespace l
 {
   static
   int
-  truncate_loop_core(const string *basepath_,
+  truncate_loop_core(const string &basepath_,
                      const char   *fusepath_,
                      const off_t   size_,
                      const int     error_)
@@ -54,9 +53,9 @@ namespace l
 
   static
   int
-  truncate_loop(const vector<const string*> &basepaths_,
-                const char                  *fusepath_,
-                const off_t                  size_)
+  truncate_loop(const vector<string> &basepaths_,
+                const char           *fusepath_,
+                const off_t           size_)
   {
     int error;
 
@@ -78,9 +77,9 @@ namespace l
            const off_t           size_)
   {
     int rv;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -94,12 +93,11 @@ namespace FUSE
   truncate(const char *fusepath_,
            off_t       size_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::truncate(config.truncate,
+    return l::truncate(config.func.truncate.policy,
                        config.branches,
                        config.minfreespace,
                        fusepath_,

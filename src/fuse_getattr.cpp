@@ -19,7 +19,6 @@
 #include "fs_base_stat.hpp"
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
-#include "rwlock.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
 
@@ -70,9 +69,9 @@ namespace l
   {
     int rv;
     string fullpath;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -94,24 +93,32 @@ namespace l
 namespace FUSE
 {
   int
-  getattr(const char  *fusepath_,
-          struct stat *st_)
+  getattr(const char      *fusepath_,
+          struct stat     *st_,
+          fuse_timeouts_t *timeout_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::get(fc);
+    int rv;
+    const Config &config = Config::ro();
 
     if(fusepath_ == config.controlfile)
       return l::getattr_controlfile(st_);
 
-    const ugid::Set         ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard readlock(&config.branches_lock);
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::getattr(config.getattr,
-                      config.branches,
-                      config.minfreespace,
-                      fusepath_,
-                      st_,
-                      config.symlinkify,
-                      config.symlinkify_timeout);
+    rv = l::getattr(config.func.getattr.policy,
+                    config.branches,
+                    config.minfreespace,
+                    fusepath_,
+                    st_,
+                    config.symlinkify,
+                    config.symlinkify_timeout);
+
+    timeout_->entry = ((rv >= 0) ?
+                       config.cache_entry :
+                       config.cache_negative_entry);
+    timeout_->attr  = config.cache_attr;
+
+    return rv;
   }
 }

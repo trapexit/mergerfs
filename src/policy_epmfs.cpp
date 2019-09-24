@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <limits>
 #include <string>
@@ -34,11 +35,13 @@ namespace epmfs
 {
   static
   int
-  create(const Branches        &branches_,
-         const char            *fusepath,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const char     *fusepath_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     uint64_t epmfs;
@@ -53,7 +56,7 @@ namespace epmfs
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
@@ -62,7 +65,7 @@ namespace epmfs
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
         if(info.spaceavail < epmfs)
           continue;
@@ -74,17 +77,19 @@ namespace epmfs
     if(epmfsbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(epmfsbasepath);
+    paths_->push_back(*epmfsbasepath);
 
     return 0;
   }
 
   static
   int
-  action(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  action(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     uint64_t epmfs;
@@ -99,7 +104,7 @@ namespace epmfs
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
@@ -118,17 +123,19 @@ namespace epmfs
     if(epmfsbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(epmfsbasepath);
+    paths_->push_back(*epmfsbasepath);
 
     return 0;
   }
 
   static
   int
-  search(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  search(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     uint64_t epmfs;
     uint64_t spaceavail;
@@ -141,7 +148,7 @@ namespace epmfs
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           continue;
         rv = fs::statvfs_cache_spaceavail(branch->path,&spaceavail);
         if(rv == -1)
@@ -156,27 +163,27 @@ namespace epmfs
     if(epmfsbasepath == NULL)
       return (errno=ENOENT,-1);
 
-    paths.push_back(epmfsbasepath);
+    paths_->push_back(*epmfsbasepath);
 
     return 0;
   }
 }
 
 int
-Policy::Func::epmfs(const Category::Enum::Type  type,
+Policy::Func::epmfs(const Category::Enum::Type  type_,
                     const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<const string*>      &paths)
+                    const char                 *fusepath_,
+                    const uint64_t              minfreespace_,
+                    vector<string>             *paths_)
 {
-  switch(type)
+  switch(type_)
     {
     case Category::Enum::create:
-      return epmfs::create(branches_,fusepath,minfreespace,paths);
+      return epmfs::create(branches_,fusepath_,minfreespace_,paths_);
     case Category::Enum::action:
-      return epmfs::action(branches_,fusepath,paths);
+      return epmfs::action(branches_,fusepath_,paths_);
     case Category::Enum::search:
     default:
-      return epmfs::search(branches_,fusepath,paths);
+      return epmfs::search(branches_,fusepath_,paths_);
     }
 }

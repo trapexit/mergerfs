@@ -16,19 +16,20 @@
 
 #pragma once
 
+#include "fh.hpp"
+
 #include <string>
 
-class FileInfo
+class FileInfo : public FH
 {
 public:
   FileInfo(const int   fd_,
            const char *fusepath_)
-    : fd(fd_),
-      fusepath(fusepath_)
+    : FH(fusepath_),
+      fd(fd_)
   {
   }
 
 public:
   int fd;
-  std::string fusepath;
 };

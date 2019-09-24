@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <limits>
 #include <string>
@@ -34,11 +35,13 @@ namespace eplfs
 {
   static
   int
-  create(const Branches        &branches_,
-         const char            *fusepath,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const char     *fusepath,
+         const uint64_t  minfreespace,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     uint64_t eplfs;
@@ -74,17 +77,19 @@ namespace eplfs
     if(eplfsbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(eplfsbasepath);
+    paths->push_back(*eplfsbasepath);
 
     return 0;
   }
 
   static
   int
-  action(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  action(const Branches &branches_,
+         const char     *fusepath,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     uint64_t eplfs;
@@ -118,7 +123,7 @@ namespace eplfs
     if(eplfsbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(eplfsbasepath);
+    paths->push_back(*eplfsbasepath);
 
     return 0;
   }
@@ -127,8 +132,10 @@ namespace eplfs
   int
   search(const Branches        &branches_,
          const char            *fusepath,
-         vector<const string*> &paths)
+         vector<string>        *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     uint64_t eplfs;
     uint64_t spaceavail;
@@ -156,7 +163,7 @@ namespace eplfs
     if(eplfsbasepath == NULL)
       return (errno=ENOENT,-1);
 
-    paths.push_back(eplfsbasepath);
+    paths->push_back(*eplfsbasepath);
 
     return 0;
   }
@@ -167,7 +174,7 @@ Policy::Func::eplfs(const Category::Enum::Type  type,
                     const Branches             &branches_,
                     const char                 *fusepath,
                     const uint64_t              minfreespace,
-                    vector<const string*>      &paths)
+                    vector<string>             *paths)
 {
   switch(type)
     {

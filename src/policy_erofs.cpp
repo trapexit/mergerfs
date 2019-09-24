@@ -24,11 +24,11 @@ using std::string;
 using std::vector;
 
 int
-Policy::Func::erofs(const Category::Enum::Type  type,
+Policy::Func::erofs(const Category::Enum::Type  type_,
                     const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<const string*>      &paths)
+                    const char                 *fusepath_,
+                    const uint64_t              minfreespace_,
+                    vector<string>             *paths)
 {
   return (errno=EROFS,-1);
 }
