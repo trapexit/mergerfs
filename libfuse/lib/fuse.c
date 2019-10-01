@@ -19,25 +19,26 @@
 #include "fuse_compat.h"
 #include "fuse_kernel.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <time.h>
+#include <assert.h>
+#include <dlfcn.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <errno.h>
-#include <signal.h>
-#include <dlfcn.h>
-#include <assert.h>
 #include <poll.h>
-#include <sys/param.h>
-#include <sys/uio.h>
-#include <sys/time.h>
-#include <sys/mman.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/file.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <sys/time.h>
+#include <sys/uio.h>
+#include <time.h>
+#include <unistd.h>
 
 #define FUSE_NODE_SLAB 1
 
@@ -47,7 +48,7 @@
 
 #define FUSE_DEFAULT_INTR_SIGNAL SIGUSR1
 
-#define FUSE_UNKNOWN_INO 0xffffffff
+#define FUSE_UNKNOWN_INO UINT64_MAX
 #define OFFSET_MAX 0x7fffffffffffffffLL
 
 #define NODE_TABLE_MIN_SIZE 8192
@@ -122,25 +123,26 @@ struct node_slab {
 	int used;
 };
 
-struct fuse {
-	struct fuse_session *se;
-	struct node_table name_table;
-	struct node_table id_table;
-	struct list_head lru_table;
-	fuse_ino_t ctr;
-	unsigned int generation;
-	unsigned int hidectr;
-	pthread_mutex_t lock;
-	struct fuse_config conf;
-	int intr_installed;
-	struct fuse_fs *fs;
-	int nullpath_ok;
-	int utime_omit_ok;
-	struct lock_queue_element *lockq;
-	int pagesize;
-	struct list_head partial_slabs;
-	struct list_head full_slabs;
-	pthread_t prune_thread;
+struct fuse
+{
+  struct fuse_session *se;
+  struct node_table name_table;
+  struct node_table id_table;
+  struct list_head lru_table;
+  fuse_ino_t ctr;
+  uint64_t generation;
+  unsigned int hidectr;
+  pthread_mutex_t lock;
+  struct fuse_config conf;
+  int intr_installed;
+  struct fuse_fs *fs;
+  int nullpath_ok;
+  int utime_omit_ok;
+  struct lock_queue_element *lockq;
+  int pagesize;
+  struct list_head partial_slabs;
+  struct list_head full_slabs;
+  pthread_t prune_thread;
 };
 
 struct lock {
@@ -157,7 +159,7 @@ struct node
   struct node *name_next;
   struct node *id_next;
   fuse_ino_t nodeid;
-  unsigned int generation;
+  uint64_t generation;
   int refctr;
   struct node *parent;
   char *name;
@@ -396,15 +398,21 @@ static struct node *get_node_nocheck(struct fuse *f, fuse_ino_t nodeid)
 	return NULL;
 }
 
-static struct node *get_node(struct fuse *f, fuse_ino_t nodeid)
+static
+struct node*
+get_node(struct fuse      *f,
+         const fuse_ino_t  nodeid)
 {
-	struct node *node = get_node_nocheck(f, nodeid);
-	if (!node) {
-		fprintf(stderr, "fuse internal error: node %llu not found\n",
-			(unsigned long long) nodeid);
-		abort();
-	}
-	return node;
+  struct node *node = get_node_nocheck(f, nodeid);
+
+  if(!node)
+    {
+      fprintf(stderr, "fuse internal error: node %llu not found\n",
+              (unsigned long long) nodeid);
+      abort();
+    }
+
+  return node;
 }
 
 static void curr_time(struct timespec *now);
@@ -705,15 +713,33 @@ static void unref_node(struct fuse *f, struct node *node)
 		delete_node(f, node);
 }
 
-static fuse_ino_t next_id(struct fuse *f)
+static
+uint64_t
+rand64(void)
 {
-	do {
-		f->ctr = (f->ctr + 1) & 0xffffffff;
-		if (!f->ctr)
-			f->generation ++;
-	} while (f->ctr == 0 || f->ctr == FUSE_UNKNOWN_INO ||
-		 get_node_nocheck(f, f->ctr) != NULL);
-	return f->ctr;
+  uint64_t rv;
+
+  rv   = rand();
+  rv <<= 32;
+  rv  |= rand();
+
+  return rv;
+}
+
+static
+fuse_ino_t
+next_id(struct fuse *f)
+{
+  do
+    {
+      f->ctr = ((f->ctr + 1) & UINT64_MAX);
+      if(f->ctr == 0)
+        f->generation++;
+    } while((f->ctr == 0)                ||
+            (f->ctr == FUSE_UNKNOWN_INO) ||
+            (get_node_nocheck(f, f->ctr) != NULL));
+
+  return f->ctr;
 }
 
 static struct node *lookup_node(struct fuse *f, fuse_ino_t parent,
@@ -1182,42 +1208,51 @@ static void free_path2(struct fuse *f, fuse_ino_t nodeid1, fuse_ino_t nodeid2,
 	free(path2);
 }
 
-static void forget_node(struct fuse *f, fuse_ino_t nodeid, uint64_t nlookup)
+static
+void
+forget_node(struct fuse      *f,
+            const fuse_ino_t  nodeid,
+            const uint64_t    nlookup)
 {
-	struct node *node;
-	if (nodeid == FUSE_ROOT_ID)
-		return;
-	pthread_mutex_lock(&f->lock);
-	node = get_node(f, nodeid);
+  struct node *node;
 
-	/*
-	 * Node may still be locked due to interrupt idiocy in open,
-	 * create and opendir
-	 */
-	while (node->nlookup == nlookup && node->treelock) {
-		struct lock_queue_element qe = {
-			.nodeid1 = nodeid,
-		};
+  if(nodeid == FUSE_ROOT_ID)
+    return;
 
-		debug_path(f, "QUEUE PATH (forget)", nodeid, NULL, false);
-		queue_path(f, &qe);
+  pthread_mutex_lock(&f->lock);
+  node = get_node(f, nodeid);
 
-		do {
-			pthread_cond_wait(&qe.cond, &f->lock);
-		} while (node->nlookup == nlookup && node->treelock);
+  /*
+   * Node may still be locked due to interrupt idiocy in open,
+   * create and opendir
+   */
+  while(node->nlookup == nlookup && node->treelock)
+    {
+      struct lock_queue_element qe = {
+        .nodeid1 = nodeid,
+      };
 
-		dequeue_path(f, &qe);
-		debug_path(f, "DEQUEUE_PATH (forget)", nodeid, NULL, false);
-	}
+      debug_path(f, "QUEUE PATH (forget)", nodeid, NULL, false);
+      queue_path(f, &qe);
 
-	assert(node->nlookup >= nlookup);
-	node->nlookup -= nlookup;
-	if (!node->nlookup) {
-		unref_node(f, node);
-	} else if (lru_enabled(f) && node->nlookup == 1) {
-		set_forget_time(f, node);
-	}
-	pthread_mutex_unlock(&f->lock);
+      do
+        {
+          pthread_cond_wait(&qe.cond, &f->lock);
+        }
+      while((node->nlookup == nlookup) && node->treelock);
+
+      dequeue_path(f, &qe);
+      debug_path(f, "DEQUEUE_PATH (forget)", nodeid, NULL, false);
+    }
+
+  assert(node->nlookup >= nlookup);
+  node->nlookup -= nlookup;
+  if(!node->nlookup)
+    unref_node(f, node);
+  else if(lru_enabled(f) && node->nlookup == 1)
+    set_forget_time(f, node);
+
+  pthread_mutex_unlock(&f->lock);
 }
 
 static void unlink_node(struct fuse *f, struct node *node)
@@ -2390,9 +2425,12 @@ static int lookup_path(struct fuse *f, fuse_ino_t nodeid,
                         update_stat(node, &e->attr);
                         pthread_mutex_unlock(&f->lock);
 			set_stat(f, e->ino, &e->attr);
-			if (f->conf.debug)
-				fprintf(stderr, "   NODEID: %lu\n",
-					(unsigned long) e->ino);
+			if(f->conf.debug)
+                          fprintf(stderr,
+                                  "   NODEID: %llu\n"
+                                  "   GEN: %llu\n",
+                                  (unsigned long long)e->ino,
+                                  (unsigned long long)e->generation);
 		}
 	}
 	return res;
@@ -2586,19 +2624,28 @@ static void fuse_lib_lookup(fuse_req_t req, fuse_ino_t parent,
 	reply_entry(req, &e, err);
 }
 
-static void do_forget(struct fuse *f, fuse_ino_t ino, uint64_t nlookup)
+static
+void
+do_forget(struct fuse *f,
+          const fuse_ino_t ino,
+          const uint64_t nlookup)
 {
-	if (f->conf.debug)
-		fprintf(stderr, "FORGET %llu/%llu\n", (unsigned long long)ino,
-			(unsigned long long) nlookup);
-	forget_node(f, ino, nlookup);
+  if(f->conf.debug)
+    fprintf(stderr,
+            "FORGET %llu/%llu\n",
+            (unsigned long long)ino,
+            (unsigned long long)nlookup);
+  forget_node(f, ino, nlookup);
 }
 
-static void fuse_lib_forget(fuse_req_t req, fuse_ino_t ino,
-			    unsigned long nlookup)
+static
+void
+fuse_lib_forget(fuse_req_t req,
+                const fuse_ino_t ino,
+                const uint64_t nlookup)
 {
-	do_forget(req_fuse(req), ino, nlookup);
-	fuse_reply_none(req);
+  do_forget(req_fuse(req), ino, nlookup);
+  fuse_reply_none(req);
 }
 
 static void fuse_lib_forget_multi(fuse_req_t req, size_t count,
@@ -4669,9 +4716,10 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 	}
 
 	/* Trace topmost layer by default */
+        srand(time(NULL));
 	f->fs->debug = f->conf.debug;
 	f->ctr = 0;
-	f->generation = 0;
+	f->generation = rand64();
 	if (node_table_init(&f->name_table) == -1)
 		goto out_free_session;
 
