@@ -1,7 +1,5 @@
 /*
-  ISC License
-
-  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +16,9 @@
 
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
-#include <sys/types.h>
-
 namespace fs
 {
-  int64_t
-  copy_file_range(const int           fd_in,
-                  int64_t            *off_in,
-                  const int           fd_out,
-                  int64_t            *off_out,
-                  const uint64_t      len,
-                  const unsigned int  flags);
+  int
+  copydata_copy_file_range(const int src_fd,
+                           const int dst_fd);
 }

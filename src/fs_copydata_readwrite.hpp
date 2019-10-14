@@ -19,6 +19,6 @@
 namespace fs
 {
   int
-  copyfile(const int src_fd_,
-           const int dst_fd_);
+  copydata_readwrite(const int src_fd,
+                     const int dst_fd);
 }
