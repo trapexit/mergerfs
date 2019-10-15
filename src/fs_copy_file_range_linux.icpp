@@ -32,33 +32,39 @@
 namespace l
 {
   static
-  ssize_t
-  copy_file_range_(int           fd_in_,
-                   int64_t      *off_in_,
-                   int           fd_out_,
-                   int64_t      *off_out_,
-                   size_t        len_,
-                   unsigned int  flags_)
+  int64_t
+  copy_file_range_(int                 src_fd_,
+                   int64_t            *src_off_,
+                   int                 tgt_fd_,
+                   int64_t            *tgt_off_,
+                   const uint64_t      len_,
+                   const unsigned int  flags_)
   {
 #ifdef SYS_copy_file_range
-    ssize_t rv;
-    loff_t  off_in;
-    loff_t  off_out;
+    int64_t rv;
+    loff_t  src_off;
+    loff_t  tgt_off;
+    loff_t *src_off_ptr;
+    loff_t *tgt_off_ptr;
 
-    off_in  = *off_in_;
-    off_out = *off_out_;
+    src_off     = ((src_off_ == NULL) ?    0 : *src_off_);
+    tgt_off     = ((tgt_off_ == NULL) ?    0 : *tgt_off_);
+    src_off_ptr = ((src_off_ == NULL) ? NULL : &src_off);
+    tgt_off_ptr = ((tgt_off_ == NULL) ? NULL : &tgt_off);
     rv = ::syscall(SYS_copy_file_range,
-                   fd_in_,
-                   &off_in,
-                   fd_out_,
-                   &off_out,
+                   src_fd_,
+                   src_off_ptr,
+                   tgt_fd_,
+                   tgt_off_ptr,
                    len_,
                    flags_);
 
     if(rv != -1)
       {
-        *off_in_  = off_in;
-        *off_out_ = off_out;
+        if(src_off_ != NULL)
+          *src_off_ = src_off;
+        if(tgt_off_ != NULL)
+          *tgt_off_ = tgt_off;
       }
 
     return rv;
@@ -70,38 +76,18 @@ namespace l
 
 namespace fs
 {
-  ssize_t
-  copy_file_range(const int           fd_in_,
-                  int64_t            *off_in_,
-                  const int           fd_out_,
-                  int64_t            *off_out_,
-                  const size_t        len_,
+  int64_t
+  copy_file_range(const int           src_fd_,
+                  int64_t            *src_off_,
+                  const int           tgt_fd_,
+                  int64_t            *tgt_off_,
+                  const uint64_t      len_,
                   const unsigned int  flags_)
   {
-    return l::copy_file_range_(fd_in_,
-                               off_in_,
-                               fd_out_,
-                               off_out_,
-                               len_,
-                               flags_);
-  }
-
-  ssize_t
-  copy_file_range(const int           fd_in_,
-                  const int           fd_out_,
-                  const size_t        len_,
-                  const unsigned int  flags_)
-  {
-    int64_t off_in;
-    int64_t off_out;
-
-    off_in  = 0;
-    off_out = 0;
-
-    return fs::copy_file_range(fd_in_,
-                               &off_in,
-                               fd_out_,
-                               &off_out,
+    return l::copy_file_range_(src_fd_,
+                               src_off_,
+                               tgt_fd_,
+                               tgt_off_,
                                len_,
                                flags_);
   }
