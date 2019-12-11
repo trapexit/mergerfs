@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-09-03
+% 2019-12-10
 
 # NAME
 
@@ -728,6 +728,11 @@ This is a kernel bug with mmap and FUSE on 32bit platforms. A fix should become 
 https://marc.info/?l=linux-fsdevel&m=155550785230874&w=2
 
 
+#### Crashing on OpenVZ
+
+There appears to be a bug in the OpenVZ kernel with regard to how it handles ioctl calls. It is making invalid requests which leads to a crash. As of 2019-12-10 there is a bug report filed with OpenVZ but it is not yet fixed.
+
+
 #### Plex doesn't work with mergerfs
 
 It does. If you're trying to put Plex's config / metadata on mergerfs you have to leave `direct_io` off because Plex is using sqlite which apparently needs mmap. mmap doesn't work with `direct_io`. To fix this place the data elsewhere or disable `direct_io` (with `dropcacheonclose=true`).
@@ -1070,12 +1075,15 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 This software is free to use and released under a very liberal license. That said if you like this software and would like to support its development donations are welcome.
 
 * PayPal: https://paypal.me/trapexit
+* GitHub Sponsors: https://github.com/sponsors/trapexit
 * Patreon: https://www.patreon.com/trapexit
 * SubscribeStar: https://www.subscribestar.com/trapexit
+* Ko-Fi: https://ko-fi.com/trapexit
 * Bitcoin (BTC): 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
 * Bitcoin Cash (BCH): 1AjPqZZhu7GVEs6JFPjHmtsvmDL4euzMzp
 * Ethereum (ETH): 0x09A166B11fCC127324C7fc5f1B572255b3046E94
 * Litecoin (LTC): LXAsq6yc6zYU3EbcqyWtHBrH1Ypx4GjUjm
+* ZCoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
 
 
 # LINKS
