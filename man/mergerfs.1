@@ -315,7 +315,7 @@ can\[aq]t create but you can change / delete).
 The above line will use all mount points in /mnt prefixed with
 \f[B]disk\f[] and the \f[B]cdrom\f[].
 .PP
-To have the pool mounted at boot or otherwise accessable from related
+To have the pool mounted at boot or otherwise accessible from related
 tools use \f[B]/etc/fstab\f[].
 .IP
 .nf
@@ -345,7 +345,7 @@ Reducing the number of trips can be done a number of ways.
 Kernel level caching and increasing message sizes being two significant
 ones.
 When it comes to reads and writes if the message size is doubled the
-number of trips are appoximately halved.
+number of trips are approximately halved.
 .PP
 In Linux 4.20 a new feature was added allowing the negotiation of the
 max message size.
@@ -370,7 +370,7 @@ See the \f[C]nullrw\f[] section for benchmarking examples.
 .PP
 Due to the levels of indirection introduced by mergerfs and the
 underlying technology FUSE there can be varying levels of performance
-degredation.
+degradation.
 This feature will turn non\-directories which are not writable into
 symlinks to the original file found by the \f[C]readlink\f[] policy
 after the mtime and ctime are older than the timeout.
@@ -396,7 +396,7 @@ Meaning that even a simple passthrough will have some slowdown.
 However, generally the overhead is minimal in comparison to the cost of
 the underlying I/O.
 By disabling the underlying I/O we can test the theoretical performance
-boundries.
+boundaries.
 .PP
 By enabling \f[C]nullrw\f[] mergerfs will work as it always does
 \f[B]except\f[] that all reads and writes will be no\-ops.
@@ -755,7 +755,7 @@ within the pool it creates an issue.
 .PP
 Originally mergerfs would return EXDEV whenever a rename was requested
 which was cross directory in any way.
-This made the code simple and was technically complient with POSIX
+This made the code simple and was technically compliant with POSIX
 requirements.
 However, many applications fail to handle EXDEV at all and treat it as a
 normal error or otherwise handle it poorly.
@@ -1180,7 +1180,7 @@ It would need to open all files with O_DIRECT which places limitations
 on the what underlying filesystems would be supported and complicates
 the code.
 .PP
-kernel documenation:
+kernel documentation:
 https://www.kernel.org/doc/Documentation/filesystems/fuse\-io.txt
 .SS entry & attribute caching
 .PP
@@ -1198,7 +1198,7 @@ The options for setting these are \f[C]cache.entry\f[] and
 \f[C]cache.negative_entry\f[] for the entry cache and
 \f[C]cache.attr\f[] for the attributes cache.
 \f[C]cache.negative_entry\f[] refers to the timeout for negative
-responses to lookups (non\-existant files).
+responses to lookups (non\-existent files).
 .SS policy caching
 .PP
 Policies are run every time a function (with a policy as mentioned
@@ -1254,7 +1254,7 @@ Setting \f[C]cache.readdir=true\f[] will result in requesting readdir
 caching from the kernel on each \f[C]opendir\f[].
 If the kernel doesn\[aq]t support readdir caching setting the option to
 \f[C]true\f[] has no effect.
-This option is configuarable at runtime via xattr
+This option is configurable at runtime via xattr
 \f[C]user.mergerfs.cache.readdir\f[].
 .SS writeback caching
 .PP
@@ -1262,8 +1262,8 @@ writeback caching is a technique for improving write speeds by batching
 writes at a faster device and then bulk writing to the slower device.
 With FUSE the kernel will wait for a number of writes to be made and
 then send it to the filesystem as one request.
-mergerfs currently uses a modified and vendored libfuse 2.9.7 which does
-not support writeback caching.
+mergerfs currently uses a modified and vendor ed libfuse 2.9.7 which
+does not support writeback caching.
 Adding said feature should not be difficult but benchmarking needs to be
 done to see if what effect it will have.
 .SS tiered caching
@@ -1464,7 +1464,7 @@ recent mtime then use the \f[C]newest\f[] policy for \f[C]getattr\f[].
 .PP
 This is not a bug.
 .PP
-Run in verbose mode to better undertand what\[aq]s happening:
+Run in verbose mode to better understand what\[aq]s happening:
 .IP
 .nf
 \f[C]
@@ -1505,7 +1505,7 @@ Be sure to set \f[C]cache.files=partial|full|auto\-full\f[] or turn off
 \f[C]direct_io\f[].
 rtorrent and some other applications use
 mmap (http://linux.die.net/man/2/mmap) to read and write to files and
-offer no failback to traditional methods.
+offer no fallback to traditional methods.
 FUSE does not currently support mmap while using \f[C]direct_io\f[].
 There may be a performance penalty on writes with \f[C]direct_io\f[] off
 as well as the problem of double caching but it\[aq]s the only way to
@@ -1601,7 +1601,7 @@ responds similar to older release of gvfs on Linux.
 This is the same issue as with Samba.
 \f[C]rename\f[] returns \f[C]EXDEV\f[] (in our case that will really
 only happen with path preserving policies like \f[C]epmfs\f[]) and the
-software doesn\[aq]t handle the situtation well.
+software doesn\[aq]t handle the situation well.
 This is unfortunately a common failure of software which moves files
 around.
 The standard indicates that an implementation \f[C]MAY\f[] choose to
@@ -1635,8 +1635,8 @@ cache will start and query the new data.
 The gid cache uses fixed storage to simplify the design and be
 compatible with older systems which may not have C++11 compilers.
 There is enough storage for 256 users\[aq] supplemental groups.
-Each user is allowed upto 32 supplemental groups.
-Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs
+Each user is allowed up to 32 supplemental groups.
+Linux >= 2.6.3 allows up to 65535 groups per user but most other *nixs
 allow far less.
 NFS allowing only 16.
 The system does handle overflow gracefully.
@@ -1678,7 +1678,7 @@ No messages will be printed in any logs as its not a proper crash.
 Debugging of the issue is still ongoing and can be followed via the
 fuse\-devel
 thread (https://sourceforge.net/p/fuse/mailman/message/35662577).
-.SS mergerfs under heavy load and memory preasure leads to kernel panic
+.SS mergerfs under heavy load and memory pressure leads to kernel panic
 .PP
 https://lkml.org/lkml/2016/9/14/527
 .IP
@@ -1745,7 +1745,7 @@ The second issue is that a directory might not be able to removed on
 account of the hidden file being still there.
 .PP
 Using the \f[B]hard_remove\f[] option will make it so these temporary
-files are not used and files are deleted immedately.
+files are not used and files are deleted immediately.
 That has a side effect however.
 Files which are unlinked and then they are still used (in certain forms)
 will result in an error (ENOENT).
@@ -1773,6 +1773,41 @@ It merely shards some \f[B]behavior\f[] and aggregates others.
 .SS Can mergerfs be removed without affecting the data?
 .PP
 See the previous question\[aq]s answer.
+.SS What policies should I use?
+.PP
+Unless you\[aq]re doing something more niche the average user is
+probably best off using \f[C]mfs\f[] for \f[C]category.create\f[].
+It will spread files out across your branches based on available space.
+You may want to use \f[C]lus\f[] if you prefer a slightly different
+distribution of data if you have a mix of smaller and larger drives.
+Generally though \f[C]mfs\f[], \f[C]lus\f[], or even \f[C]rand\f[] are
+good for the general use case.
+If you are starting with an imbalanced pool you can use the tool
+\f[B]mergerfs.balance\f[] to redistribute files across the pool.
+.PP
+If you really wish to try to colocate files based on directory you can
+set \f[C]func.create\f[] to \f[C]epmfs\f[] or similar and
+\f[C]func.mkdir\f[] to \f[C]rand\f[] or \f[C]eprand\f[] depending on if
+you just want to colocate generally or on specific branches.
+Either way the \f[I]need\f[] to colocate is rare.
+For instance: if you wish to remove the drive regularly and want the
+data to predictably be on that drive or if you don\[aq]t use backup at
+all and don\[aq]t wish to replace that data piecemeal.
+In which case using path preservation can help but will require some
+manual attention.
+Colocating after the fact can be accomplished using the
+\f[B]mergerfs.consolidate\f[] tool.
+.PP
+Ultimately there is no correct answer.
+It is a preference or based on some particular need.
+mergerfs is very easy to test and experiment with.
+I suggest creating a test setup and experimenting to get a sense of what
+you want.
+.PP
+The reason \f[C]mfs\f[] is not the default \f[C]category.create\f[]
+policy is historical.
+When/if a 3.X gets released it will be changed to minimize confusion
+people often have with path preserving policies.
 .SS Do hard links work?
 .PP
 Yes.
@@ -1832,15 +1867,15 @@ This can be especially apparent when filling an empty pool from an
 external source.
 If you do want path preservation you\[aq]ll need to perform the manual
 act of creating paths on the drives you want the data to land on before
-transfering your data.
+transferring your data.
 Setting \f[C]func.mkdir=epall\f[] can simplify managing path
-perservation for \f[C]create\f[].
+preservation for \f[C]create\f[].
 .SS Why was libfuse embedded into mergerfs?
 .IP "1." 3
 A significant number of users use mergerfs on distros with old versions
 of libfuse which have serious bugs.
 Requiring updated versions of libfuse on those distros isn\[aq]t
-pratical (no package offered, user inexperience, etc.).
+practical (no package offered, user inexperience, etc.).
 The only practical way to provide a stable runtime on those systems was
 to "vendor" / embed the library into the project.
 .IP "2." 3
@@ -1896,10 +1931,10 @@ With simple JBOD / drive concatenation / stripping / RAID0 a single
 drive failure will result in full pool failure.
 mergerfs performs a similar behavior without the possibility of
 catastrophic failure and the difficulties in recovery.
-Drives may fail however all other data will continue to be accessable.
+Drives may fail however all other data will continue to be accessible.
 .PP
 When combined with something like SnapRaid (http://www.snapraid.it)
-and/or an offsite backup solution you can have the flexibilty of JBOD
+and/or an offsite backup solution you can have the flexibility of JBOD
 without the single point of failure.
 .SS Why use mergerfs over ZFS?
 .PP
@@ -1909,8 +1944,8 @@ MergerFS is intended to provide flexible pooling of arbitrary drives
 For \f[C]write\ once,\ read\ many\f[] usecases such as bulk media
 storage.
 Where data integrity and backup is managed in other ways.
-In that situation ZFS can introduce major maintance and cost burdens as
-described
+In that situation ZFS can introduce major maintenance and cost burdens
+as described
 here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 .SS Can drives be written to directly? Outside of mergerfs while pooled?
 .PP
@@ -1978,7 +2013,7 @@ Similarly, while \f[C]dev_t\f[] is also 64 bits it was traditionally 16
 bits.
 Bitwise or\[aq]ing them together should work most of the time.
 While totally unique inodes are preferred the overhead which would be
-needed does not seem to outweighted by the benefits.
+needed does not seem to out weighted by the benefits.
 .PP
 While atypical, yes, inodes can be reused and not refer to the same
 file.
