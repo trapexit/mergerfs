@@ -130,7 +130,7 @@ Each branch can have a suffix of `=RW` (read / write), `=RO` (read-only), or `=N
 
 The above line will use all mount points in /mnt prefixed with **disk** and the **cdrom**.
 
-To have the pool mounted at boot or otherwise accessable from related tools use **/etc/fstab**.
+To have the pool mounted at boot or otherwise accessible from related tools use **/etc/fstab**.
 
 ```
 # <file system>        <mount point>  <type>         <options>             <dump>  <pass>
@@ -144,7 +144,7 @@ To have the pool mounted at boot or otherwise accessable from related tools use 
 
 ### fuse_msg_size
 
-FUSE applications communicate with the kernel over a special character device: `/dev/fuse`. A large portion of the overhead associated with FUSE is the cost of going back and forth from user space and kernel space over that device. Generally speaking the fewer trips needed the better the performance will be. Reducing the number of trips can be done a number of ways. Kernel level caching and increasing message sizes being two significant ones. When it comes to reads and writes if the message size is doubled the number of trips are appoximately halved.
+FUSE applications communicate with the kernel over a special character device: `/dev/fuse`. A large portion of the overhead associated with FUSE is the cost of going back and forth from user space and kernel space over that device. Generally speaking the fewer trips needed the better the performance will be. Reducing the number of trips can be done a number of ways. Kernel level caching and increasing message sizes being two significant ones. When it comes to reads and writes if the message size is doubled the number of trips are approximately halved.
 
 In Linux 4.20 a new feature was added allowing the negotiation of the max message size. Since the size is in multiples of [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the feature is called `max_pages`. There is a maximum `max_pages` value of 256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20, and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its referred to as `fuse_msg_size` to make it clear what it impacts and provide some abstraction.
 
@@ -153,7 +153,7 @@ Since there should be no downsides to increasing `fuse_msg_size` / `max_pages`, 
 
 ### symlinkify
 
-Due to the levels of indirection introduced by mergerfs and the underlying technology FUSE there can be varying levels of performance degredation. This feature will turn non-directories which are not writable into symlinks to the original file found by the `readlink` policy after the mtime and ctime are older than the timeout.
+Due to the levels of indirection introduced by mergerfs and the underlying technology FUSE there can be varying levels of performance degradation. This feature will turn non-directories which are not writable into symlinks to the original file found by the `readlink` policy after the mtime and ctime are older than the timeout.
 
 **WARNING:** The current implementation has a known issue in which if the file is open and being used when the file is converted to a symlink then the application which has that file open will receive an error when using it. This is unlikely to occur in practice but is something to keep in mind.
 
@@ -162,7 +162,7 @@ Due to the levels of indirection introduced by mergerfs and the underlying techn
 
 ### nullrw
 
-Due to how FUSE works there is an overhead to all requests made to a FUSE filesystem. Meaning that even a simple passthrough will have some slowdown. However, generally the overhead is minimal in comparison to the cost of the underlying I/O. By disabling the underlying I/O we can test the theoretical performance boundries.
+Due to how FUSE works there is an overhead to all requests made to a FUSE filesystem. Meaning that even a simple passthrough will have some slowdown. However, generally the overhead is minimal in comparison to the cost of the underlying I/O. By disabling the underlying I/O we can test the theoretical performance boundaries.
 
 By enabling `nullrw` mergerfs will work as it always does **except** that all reads and writes will be no-ops. A write will succeed (the size of the write will be returned as if it were successful) but mergerfs does nothing with the data it was given. Similarly a read will return the size requested but won't touch the buffer.
 
@@ -296,7 +296,7 @@ The plan is to rewrite mergerfs to use the low level API so these invasive libfu
 
 `rename` and `link` are tricky functions in a union filesystem. `rename` only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device). So if a `rename`'s source and target are on different drives within the pool it creates an issue.
 
-Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically complient with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or otherwise handle it poorly. Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
+Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically compliant with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or otherwise handle it poorly. Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
 
 As a result a compromise was made in order to get most software to work while still obeying mergerfs' policies. Below is the basic logic.
 
@@ -545,12 +545,12 @@ If most files are read once through and closed (like media) it is best to enable
 
 It is difficult to balance memory usage, cache bloat & duplication, and performance. Ideally mergerfs would be able to disable caching for the files it reads/writes but allow page caching for itself. That would limit the FUSE overhead. However, there isn't a good way to achieve this. It would need to open all files with O_DIRECT which places limitations on the what underlying filesystems would be supported and complicates the code.
 
-kernel documenation: https://www.kernel.org/doc/Documentation/filesystems/fuse-io.txt
+kernel documentation: https://www.kernel.org/doc/Documentation/filesystems/fuse-io.txt
 
 
 #### entry & attribute caching
 
-Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `cache.entry` and `cache.negative_entry` for the entry cache and `cache.attr` for the attributes cache. `cache.negative_entry` refers to the timeout for negative responses to lookups (non-existant files).
+Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `cache.entry` and `cache.negative_entry` for the entry cache and `cache.attr` for the attributes cache. `cache.negative_entry` refers to the timeout for negative responses to lookups (non-existent files).
 
 
 #### policy caching
@@ -576,12 +576,12 @@ As of version 4.20 Linux supports symlink caching. Significant performance incre
 
 #### readdir caching
 
-As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute (`cache.attr`) caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configuarable at runtime via xattr `user.mergerfs.cache.readdir`.
+As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute (`cache.attr`) caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configurable at runtime via xattr `user.mergerfs.cache.readdir`.
 
 
 #### writeback caching
 
-writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a  modified and vendored libfuse 2.9.7 which does not support writeback caching. Adding said feature should not be difficult but benchmarking needs to be done to see if what effect it will have.
+writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a  modified and vendor ed libfuse 2.9.7 which does not support writeback caching. Adding said feature should not be difficult but benchmarking needs to be done to see if what effect it will have.
 
 
 #### tiered caching
@@ -684,7 +684,7 @@ If you always want the directory information from the one with the most recent m
 
 This is not a bug.
 
-Run in verbose mode to better undertand what's happening:
+Run in verbose mode to better understand what's happening:
 
 ```
 $ mv -v /mnt/pool/foo /mnt/disk1/foo
@@ -718,7 +718,7 @@ Try enabling the `use_ino` option. Some have reported that it fixes the issue.
 
 #### rtorrent fails with ENODEV (No such device)
 
-Be sure to set `cache.files=partial|full|auto-full` or turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no failback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
+Be sure to set `cache.files=partial|full|auto-full` or turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no fallback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
 
 
 #### rtorrent fails with files >= 4GiB
@@ -767,7 +767,7 @@ In Apple's MacOSX 10.9 they replaced Samba (client and server) with their own pr
 
 #### Trashing files occasionally fails
 
-This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situtation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
+This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
 
 To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
 
@@ -780,7 +780,7 @@ Make sure to use the `use_ino` option.
 
 Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs utilizes a cache. This cache is opportunistic and per thread. Each thread will query the supplemental groups for a user when that particular thread needs to change credentials and will keep that data for the lifetime of the thread. This means that if a user is added to a group it may not be picked up without the restart of mergerfs. However, since the high level FUSE API's (at least the standard version) thread pool dynamically grows and shrinks it's possible that over time a thread will be killed and later a new thread with no cache will start and query the new data.
 
-The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers. There is enough storage for 256 users' supplemental groups. Each user is allowed upto 32 supplemental groups. Linux >= 2.6.3 allows upto 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
+The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers. There is enough storage for 256 users' supplemental groups. Each user is allowed up to 32 supplemental groups. Linux >= 2.6.3 allows up to 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
 
 
 #### mergerfs or libfuse crashing
@@ -796,7 +796,7 @@ In order to fix this please install newer versions of libfuse. If using a Debian
 
 There seems to be an issue with Linux version `4.9.0` and above in which an invalid message appears to be transmitted to libfuse (used by mergerfs) causing it to exit. No messages will be printed in any logs as its not a proper crash. Debugging of the issue is still ongoing and can be followed via the [fuse-devel thread](https://sourceforge.net/p/fuse/mailman/message/35662577).
 
-#### mergerfs under heavy load and memory preasure leads to kernel panic
+#### mergerfs under heavy load and memory pressure leads to kernel panic
 
 https://lkml.org/lkml/2016/9/14/527
 
@@ -845,7 +845,7 @@ NOTE: This is only relevant to mergerfs versions at or below v2.25.x and should 
 
 Not *really* a bug. The FUSE library will move files when asked to delete them as a way to deal with certain edge cases and then later delete that file when its clear the file is no longer needed. This however can lead to two issues. One is that these hidden files are noticed by `rm -rf` or `find` when scanning directories and they may try to remove them and they might have disappeared already. There is nothing *wrong* about this happening but it can be annoying. The second issue is that a directory might not be able to removed on account of the hidden file being still there.
 
-Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immedately. That has a side effect however. Files which are unlinked and then they are still used (in certain forms) will result in an error (ENOENT).
+Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immediately. That has a side effect however. Files which are unlinked and then they are still used (in certain forms) will result in an error (ENOENT).
 
 
 # FAQ
@@ -865,6 +865,17 @@ MergerFS is **not** a traditional filesystem. MergerFS is **not** RAID. It does 
 #### Can mergerfs be removed without affecting the data?
 
 See the previous question's answer.
+
+
+#### What policies should I use?
+
+Unless you're doing something more niche the average user is probably best off using `mfs` for `category.create`. It will spread files out across your branches based on available space. You may want to use `lus` if you prefer a slightly different distribution of data if you have a mix of smaller and larger drives. Generally though `mfs`, `lus`, or even `rand` are good for the general use case. If you are starting with an imbalanced pool you can use the tool **mergerfs.balance** to redistribute files across the pool.
+
+If you really wish to try to colocate files based on directory you can set `func.create` to `epmfs` or similar and `func.mkdir` to `rand` or `eprand` depending on if you just want to colocate generally or on specific branches. Either way the *need* to colocate is rare. For instance: if you wish to remove the drive regularly and want the data to predictably be on that drive or if you don't use backup at all and don't wish to replace that data piecemeal. In which case using path preservation can help but will require some manual attention. Colocating after the fact can be accomplished using the **mergerfs.consolidate** tool.
+
+Ultimately there is no correct answer. It is a preference or based on some particular need. mergerfs is very easy to test and experiment with. I suggest creating a test setup and experimenting to get a sense of what you want.
+
+The reason `mfs` is not the default `category.create` policy is historical. When/if a 3.X gets released it will be changed to minimize confusion people often have with path preserving policies.
 
 
 #### Do hard links work?
@@ -892,12 +903,12 @@ If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay clos
 
 Are you using a path preserving policy? The default policy for file creation is `epmfs`. That means only the drives with the path preexisting will be considered when creating a file. If you don't care about where files and directories are created you likely shouldn't be using a path preserving policy and instead something like `mfs`.
 
-This can be especially apparent when filling an empty pool from an external source. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transfering your data. Setting `func.mkdir=epall` can simplify managing path perservation for `create`.
+This can be especially apparent when filling an empty pool from an external source. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`.
 
 
 #### Why was libfuse embedded into mergerfs?
 
-1. A significant number of users use mergerfs on distros with old versions of libfuse which have serious bugs. Requiring updated versions of libfuse on those distros isn't pratical (no package offered, user inexperience, etc.). The only practical way to provide a stable runtime on those systems was to "vendor" / embed the library into the project.
+1. A significant number of users use mergerfs on distros with old versions of libfuse which have serious bugs. Requiring updated versions of libfuse on those distros isn't practical (no package offered, user inexperience, etc.). The only practical way to provide a stable runtime on those systems was to "vendor" / embed the library into the project.
 2. mergerfs was written to use the high level API. There are a number of limitations in the HLAPI that make certain features difficult or impossible to implement. While some of these features could be patched into newer versions of libfuse without breaking the public API some of them would require hacky code to provide backwards compatibility. While it may still be worth working with upstream to address these issues in future versions, since the library needs to be vendored for stability and compatibility reasons it is preferable / easier to modify the API. Longer term the plan is to rewrite mergerfs to use the low level API.
 
 
@@ -933,14 +944,14 @@ UnionFS is more like aufs than mergerfs in that it offers overlay / CoW features
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar behavior without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail however all other data will continue to be accessable.
+With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar behavior without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail however all other data will continue to be accessible.
 
-When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite backup solution you can have the flexibilty of JBOD without the single point of failure.
+When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite backup solution you can have the flexibility of JBOD without the single point of failure.
 
 
 #### Why use mergerfs over ZFS?
 
-MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce major maintance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
+MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce major maintenance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
@@ -977,7 +988,7 @@ Yes. While some users have reported problems it appears to always be related to 
 
 mergerfs-inode = (original-inode | (device-id << 32))
 
-While `ino_t` is 64 bits only a few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. While totally unique inodes are preferred the overhead which would be needed does not seem to outweighted by the benefits.
+While `ino_t` is 64 bits only a few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. While totally unique inodes are preferred the overhead which would be needed does not seem to out weighted by the benefits.
 
 While atypical, yes, inodes can be reused and not refer to the same file. The internal id used to reference a file in FUSE is different from the inode value presented. The former is the `nodeid` and is actually a tuple of (nodeid,generation). That tuple is not user facing. The inode is merely metadata passed through the kernel and found using the `stat` family of calls or `readdir`.
 
