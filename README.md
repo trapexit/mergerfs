@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2019-12-10
+% 2020-01-19
 
 # NAME
 
@@ -133,8 +133,8 @@ The above line will use all mount points in /mnt prefixed with **disk** and the 
 To have the pool mounted at boot or otherwise accessible from related tools use **/etc/fstab**.
 
 ```
-# <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /media/drives  fuse.mergerfs  allow_other,use_ino   0       0
+# <file system>        <mount point>  <type>    <options>             <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /media/drives  mergerfs  allow_other,use_ino   0       0
 ```
 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
@@ -162,7 +162,7 @@ Due to the levels of indirection introduced by mergerfs and the underlying techn
 
 ### nullrw
 
-Due to how FUSE works there is an overhead to all requests made to a FUSE filesystem. Meaning that even a simple passthrough will have some slowdown. However, generally the overhead is minimal in comparison to the cost of the underlying I/O. By disabling the underlying I/O we can test the theoretical performance boundaries.
+Due to how FUSE works there is an overhead to all requests made to a FUSE filesystem that wouldn't exist for an in kernel one. Meaning that even a simple passthrough will have some slowdown. However, generally the overhead is minimal in comparison to the cost of the underlying I/O. By disabling the underlying I/O we can test the theoretical performance boundaries.
 
 By enabling `nullrw` mergerfs will work as it always does **except** that all reads and writes will be no-ops. A write will succeed (the size of the write will be returned as if it were successful) but mergerfs does nothing with the data it was given. Similarly a read will return the size requested but won't touch the buffer.
 
@@ -363,7 +363,7 @@ $ make deb
 $ sudo dpkg -i ../mergerfs_version_arch.deb
 ```
 
-#### Fedora
+#### RHEL / CentOS /Fedora
 ```
 $ su -
 # cd mergerfs
@@ -852,7 +852,7 @@ Using the **hard_remove** option will make it so these temporary files are not u
 
 #### How well does mergerfs scale? Is it "production ready?"
 
-Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives.
+Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives. The only reports of data corruption have been due to a kernel bug.
 
 
 #### Can mergerfs be used with drives which already have data / are in use?
@@ -878,6 +878,15 @@ Ultimately there is no correct answer. It is a preference or based on some parti
 The reason `mfs` is not the default `category.create` policy is historical. When/if a 3.X gets released it will be changed to minimize confusion people often have with path preserving policies.
 
 
+#### What settings should I use?
+
+Depends on what features you want. Generally speaking there are no "wrong" settings. All settings are performance or feature related. The best bet is to read over the available options and choose what fits your situation. If something isn't clear from the documentation please reach out and the documentation will be improved.
+
+That said, for the average person, the following should be fine:
+
+`-o use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
+
+
 #### Do hard links work?
 
 Yes. You need to use `use_ino` to support proper reporting of inodes.
@@ -892,7 +901,7 @@ Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs 
 
 #### Why can't I see my files / directories?
 
-It's almost always a permissions issue. Unlike mhddfs, which runs as root and attempts to access content as such, mergerfs always changes its credentials to that of the caller. This means that if the user does not have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
+It's almost always a permissions issue. Unlike mhddfs and unionfs-fuse, which runs as root and attempts to access content as such, mergerfs always changes its credentials to that of the caller. This means that if the user does not have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
 
 Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
 
@@ -904,6 +913,11 @@ If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay clos
 Are you using a path preserving policy? The default policy for file creation is `epmfs`. That means only the drives with the path preexisting will be considered when creating a file. If you don't care about where files and directories are created you likely shouldn't be using a path preserving policy and instead something like `mfs`.
 
 This can be especially apparent when filling an empty pool from an external source. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`.
+
+
+#### Is my OS's libfuse needed for mergerfs to work?
+
+No. Normally `mount.fuse` is needed to get mergerfs (or any FUSE filesystem to mount using the `mount` command but in vendoring the libfuse library the `mount.fuse` app has been renamed to `mount.mergerfs` meaning the filesystem type in `fstab` can simply be `mergerfs`.
 
 
 #### Why was libfuse embedded into mergerfs?
@@ -944,7 +958,7 @@ UnionFS is more like aufs than mergerfs in that it offers overlay / CoW features
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar behavior without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail however all other data will continue to be accessible.
+With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar function without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail, however, all other data will continue to be accessible.
 
 When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite backup solution you can have the flexibility of JBOD without the single point of failure.
 
@@ -1031,7 +1045,9 @@ In Linux setreuid syscalls apply only to the thread. GLIBC hides this away by us
 For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allowing multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well assuming there are few users.
 
 
-# PERFORMANCE TWEAKING
+# PERFORMANCE
+
+mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and lattices, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below.
 
 NOTE: be sure to read about these features before changing them
 
