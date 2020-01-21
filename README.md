@@ -148,7 +148,7 @@ FUSE applications communicate with the kernel over a special character device: `
 
 In Linux 4.20 a new feature was added allowing the negotiation of the max message size. Since the size is in multiples of [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the feature is called `max_pages`. There is a maximum `max_pages` value of 256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20, and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its referred to as `fuse_msg_size` to make it clear what it impacts and provide some abstraction.
 
-Since there should be no downsides to increasing `fuse_msg_size` / `max_pages`, outside a minor bump in RAM usage due to larger message buffers, mergerfs defaults the value to 256. On kernels before 4.20 the value has no effect. The reason the value is configurable is to enable experimentation and benchmarking. See the `nullrw` section for benchmarking examples.
+Since there should be no downsides to increasing `fuse_msg_size` / `max_pages`, outside a minor bump in RAM usage due to larger message buffers, mergerfs defaults the value to 256. On kernels before 4.20 the value has no effect. The reason the value is configurable is to enable experimentation and benchmarking. See the BENCHMARKING section for examples.
 
 
 ### symlinkify
@@ -166,30 +166,7 @@ Due to how FUSE works there is an overhead to all requests made to a FUSE filesy
 
 By enabling `nullrw` mergerfs will work as it always does **except** that all reads and writes will be no-ops. A write will succeed (the size of the write will be returned as if it were successful) but mergerfs does nothing with the data it was given. Similarly a read will return the size requested but won't touch the buffer.
 
-Example:
-```
-$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=512 count=1024 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
-1024+0 records in
-2097152+0 records out
-1073741824 bytes (1.1 GB, 1.0 GiB) copied, 15.4067 s, 69.7 MB/s
-
-$ dd if=/dev/zero of=/path/to/mergerfs/mount/benchmark ibs=1M obs=1M count=1024 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.219585 s, 4.9 GB/s
-
-$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=512 count=102400 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
-102400+0 records in
-102400+0 records out
-52428800 bytes (52 MB, 50 MiB) copied, 0.757991 s, 69.2 MB/s
-
-$ dd if=/path/to/mergerfs/mount/benchmark of=/dev/null bs=1M count=1024 iflag=dsync,nocache oflag=dsync,nocache conv=fdatasync status=progress
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.18405 s, 5.8 GB/s
-```
-
-It's important to test with different `obs` (output block size) values since the relative overhead is greater with smaller values. As you can see above the size of a read or write can massively impact theoretical performance. If an application performs much worse through mergerfs it could very well be that it doesn't optimally size its read and write requests. In such cases contact the mergerfs author so it can be investigated.
+See the BENCHMARKING section for suggestions on how to test.
 
 
 ### xattr
@@ -656,13 +633,75 @@ done
 ```
 
 
+# PERFORMANCE
+
+mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and lattices, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below.
+
+NOTE: be sure to read about these features before changing them
+
+* enable (or disable) `splice_move`, `splice_read`, and `splice_write`
+* increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
+* enable (or disable) page caching (`cache.files`)
+* enable `cache.open`
+* enable `cache.statfs`
+* enable `cache.symlinks`
+* enable `cache.readdir`
+* change the number of worker threads
+* disable `security_capability` and/or `xattr`
+* disable `posix_acl`
+* disable `async_read`
+* test theoretical performance using `nullrw` or mounting a ram disk
+* use `symlinkify` if your data is largely static
+* use tiered cache drives
+* use lvm and lvm cache to place a SSD in front of your HDDs (howto coming)
+
+If you come across a setting that significantly impacts performance please contact trapexit so he may investigate further.
+
+
+# BENCHMARKING
+
+Filesystems are complicated. They do many things and many of those are interconnected. Additionally, the OS, drivers, hardware, etc. all can impact performance. Therefore, when benchmarking, it is **necessary** that the test focus as narrowly as possible.
+
+For most throughput is the key benchmark. To test throughput `dd` is useful but **must** be used with the correct settings in order to ensure the filesystem or device is actually being tested. The OS can and will cache data. Without forcing synchronous reads and writes and/or disabling caching the values returned will not be representative of the device's true performance.
+
+When benchmarking through mergerfs ensure you only use 1 branch to remove any possibility of the policies complicating the situation. Benchmark the underlying filesystem first and then mount mergerfs over it and test again. If you're experience speeds below your expectation you will need to narrow down precisely which component is leading to the slowdown. Preferably test the following in the order listed (but not combined).
+
+1. Enable `nullrw` mode with `nullrw=true`. This will effectively make reads and writes no-ops. Removing the underlying device / filesystem from the equation. This will give us the top theoretical speeds.
+2. Mount mergerfs over `tmpfs`. `tmpfs` is a RAM disk. Extremely high speed and very low latency. This is a more realistic best case scenario. Example: `mount -t tmpfs -o size=2G tmpfs /tmp/tmpfs`
+3. Mount mergerfs over a local drive. NVMe, SSD, HDD, etc. If you have more than one I'd suggest testing each of them as drives and/or controllers (their drivers) could impact performance.
+4. Finally, if you intend to use mergerfs with a network filesystem, either as the source of data or to combine with another through mergerfs, test each of those alone as above.
+
+Once you find the component which has the performance issue you can do further testing with different options to see if they impact performance. For reads and writes the most relevant would be: `cache.files`, `async_read`, `splice_move`, `splice_read`, `splice_write`. Less likely but relevant when using NFS or with certain filesystems would be `security_capability`, `xattr`, and `posix_acl`. If you find a specific system, drive, filesystem, controller, etc. that performs poorly contact trapexit so he may investigate further.
+
+Sometimes the problem is really the application accessing or writing data through mergerfs. Some software use small buffer sizes which can lead to more requests and therefore greater overhead. You can test this out yourself by replace `bs=1M` in the examples below with `ibs` or `obs` and using a size of `512` instead of `1M`. In one example test using `nullrw` the write speed dropped from 4.9GB/s to 69.7MB/s when moving from `1M` to `512`. Similar results were had when testing reads. Small writes overhead may be improved by leveraging a write cache but in casual tests little gain was found. More tests will need to be done before this feature would become available. If you have an app that appears slow with mergerfs it could be due to this. Contact trapexit so he may investigate further.
+
+
+### write benchmark
+
+With synchronized IO
+```
+$ dd if=/dev/zero of=/mnt/mergerfs/1GB.file bs=1M count=1024 oflag=dsync,nocache conv=fdatasync status=progress
+```
+
+Without synchronized IO
+```
+$ dd if=/dev/zero of=/mnt/mergerfs/1GB.file bs=1M count=1024 oflag=nocache conv=fdatasync status=progress
+```
+
+### read benchmark
+
+```
+$ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=fdatasync status=progress
+```
+
+
 # TIPS / NOTES
 
 * **use_ino** will only work when used with mergerfs 2.18.0 and above.
 * Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
-* Do **not** use `cache.files=off` or `direct_io` if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full` or `direct_io=false`.
+* Do **not** use `cache.files=off` (or `direct_io`) if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full` or `direct_io=false`.
 * Since POSIX functions give only a singular error or success its difficult to determine the proper behavior when applying the function to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
@@ -680,7 +719,7 @@ The reason this is the default is because any other policy would be more expensi
 If you always want the directory information from the one with the most recent mtime then use the `newest` policy for `getattr`.
 
 
-#### `mv /mnt/pool/foo /mnt/disk1/foo` removes `foo`
+#### 'mv /mnt/pool/foo /mnt/disk1/foo' removes 'foo'
 
 This is not a bug.
 
@@ -735,14 +774,14 @@ There appears to be a bug in the OpenVZ kernel with regard to how it handles ioc
 
 #### Plex doesn't work with mergerfs
 
-It does. If you're trying to put Plex's config / metadata on mergerfs you have to leave `direct_io` off because Plex is using sqlite which apparently needs mmap. mmap doesn't work with `direct_io`. To fix this place the data elsewhere or disable `direct_io` (with `dropcacheonclose=true`).
+It does. If you're trying to put Plex's config / metadata on mergerfs you have to leave `direct_io` off because Plex is using sqlite3 which apparently needs mmap. mmap doesn't work with `direct_io`. To fix this place the data elsewhere or disable `direct_io` (with `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer needs to fall back to standard IO if mmap fails.
 
 If the issue is that scanning doesn't seem to pick up media then be sure to set `func.getattr=newest` as mentioned above.
 
 
 #### mmap performance is really bad
 
-There [is a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59).
+There [is/was a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59).
 
 
 #### When a program tries to move or rename a file it fails
@@ -782,14 +821,22 @@ Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroup
 
 The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers. There is enough storage for 256 users' supplemental groups. Each user is allowed up to 32 supplemental groups. Linux >= 2.6.3 allows up to 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
 
+While not a bug some users have found when using containers that supplemental groups defined inside the container don't work properly with regard to permissions. This is expected as mergerfs lives outside the container and therefore is querying the host's group database. There might be a hack to work around this (make mergerfs read the /etc/group file in the container) but it is not yet implemented and would be limited to Linux and the /etc/group DB. Preferably users would mount in the host group file into the containers or use a standard shared user & groups technology like NIS or LDAP.
+
 
 #### mergerfs or libfuse crashing
 
-**NOTE:** as of mergerfs 2.22.0 it includes the most recent version of libfuse (or requires libfuse-2.9.7) so any crash should be reported. For older releases continue reading...
+First... always upgrade to the latest version unless told otherwise.
+
+If using mergerfs below 2.22.0:
 
 If suddenly the mergerfs mount point disappears and `Transport endpoint is not connected` is returned when attempting to perform actions within the mount directory **and** the version of libfuse (use `mergerfs -v` to find the version) is older than `2.9.4` its likely due to a bug in libfuse. Affected versions of libfuse can be found in Debian Wheezy, Ubuntu Precise and others.
 
 In order to fix this please install newer versions of libfuse. If using a Debian based distro (Debian,Ubuntu,Mint) you can likely just install newer versions of [libfuse](https://packages.debian.org/unstable/libfuse2) and [fuse](https://packages.debian.org/unstable/fuse) from the repo of a newer release.
+
+If using mergerfs at or above 2.22.0:
+
+First upgrade if possible, check the known bugs section, and contact trapexit.
 
 
 #### mergerfs appears to be crashing or exiting
@@ -852,7 +899,7 @@ Using the **hard_remove** option will make it so these temporary files are not u
 
 #### How well does mergerfs scale? Is it "production ready?"
 
-Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives. The only reports of data corruption have been due to a kernel bug.
+Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives.
 
 
 #### Can mergerfs be used with drives which already have data / are in use?
@@ -968,6 +1015,15 @@ When combined with something like [SnapRaid](http://www.snapraid.it) and/or an o
 MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce major maintenance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
 
 
+#### What should mergerfs NOT be used for?
+
+* databases: Even if the database stored data in separate files (mergerfs wouldn't offer much otherwise) the higher latency of the indirection will kill performance. If it is a lightly used SQLITE database then it may be fine but you'll need to test.
+
+* VM images: For the same reasons as databases. VM images are accessed very aggressively and mergerfs will introduce too much latency (if it works at all).
+
+* As replacement for RAID: mergerfs is just for pooling branches. If you need that kind of device performance aggregation or high availability you should stick with RAID.
+
+
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
 Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.).
@@ -1043,29 +1099,6 @@ The files are cleaned up once the file is finally closed. Only if mergerfs crash
 In Linux setreuid syscalls apply only to the thread. GLIBC hides this away by using realtime signals to inform all threads to change credentials. Taking after **Samba**, mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths between drives).
 
 For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allowing multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well assuming there are few users.
-
-
-# PERFORMANCE
-
-mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and lattices, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below.
-
-NOTE: be sure to read about these features before changing them
-
-* enable (or disable) `splice_move`, `splice_read`, and `splice_write`
-* increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
-* enable (or disable) page caching (`cache.files`)
-* enable `cache.open`
-* enable `cache.statfs`
-* enable `cache.symlinks`
-* enable `cache.readdir`
-* change the number of worker threads
-* disable `security_capability` and/or `xattr`
-* disable `posix_acl`
-* disable `async_read`
-* test theoretical performance using `nullrw` or mounting a ram disk
-* use `symlinkify` if your data is largely static
-* use tiered cache drives
-* use lvm and lvm cache to place a SSD in front of your HDDs (howto coming)
 
 
 # SUPPORT
