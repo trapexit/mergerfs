@@ -365,7 +365,7 @@ message buffers, mergerfs defaults the value to 256.
 On kernels before 4.20 the value has no effect.
 The reason the value is configurable is to enable experimentation and
 benchmarking.
-See the \f[C]nullrw\f[] section for benchmarking examples.
+See the BENCHMARKING section for examples.
 .SS symlinkify
 .PP
 Due to the levels of indirection introduced by mergerfs and the
@@ -405,39 +405,7 @@ were successful) but mergerfs does nothing with the data it was given.
 Similarly a read will return the size requested but won\[aq]t touch the
 buffer.
 .PP
-Example:
-.IP
-.nf
-\f[C]
-$\ dd\ if=/dev/zero\ of=/path/to/mergerfs/mount/benchmark\ ibs=1M\ obs=512\ count=1024\ iflag=dsync,nocache\ oflag=dsync,nocache\ conv=fdatasync\ status=progress
-1024+0\ records\ in
-2097152+0\ records\ out
-1073741824\ bytes\ (1.1\ GB,\ 1.0\ GiB)\ copied,\ 15.4067\ s,\ 69.7\ MB/s
-
-$\ dd\ if=/dev/zero\ of=/path/to/mergerfs/mount/benchmark\ ibs=1M\ obs=1M\ count=1024\ iflag=dsync,nocache\ oflag=dsync,nocache\ conv=fdatasync\ status=progress
-1024+0\ records\ in
-1024+0\ records\ out
-1073741824\ bytes\ (1.1\ GB,\ 1.0\ GiB)\ copied,\ 0.219585\ s,\ 4.9\ GB/s
-
-$\ dd\ if=/path/to/mergerfs/mount/benchmark\ of=/dev/null\ bs=512\ count=102400\ iflag=dsync,nocache\ oflag=dsync,nocache\ conv=fdatasync\ status=progress
-102400+0\ records\ in
-102400+0\ records\ out
-52428800\ bytes\ (52\ MB,\ 50\ MiB)\ copied,\ 0.757991\ s,\ 69.2\ MB/s
-
-$\ dd\ if=/path/to/mergerfs/mount/benchmark\ of=/dev/null\ bs=1M\ count=1024\ iflag=dsync,nocache\ oflag=dsync,nocache\ conv=fdatasync\ status=progress
-1024+0\ records\ in
-1024+0\ records\ out
-1073741824\ bytes\ (1.1\ GB,\ 1.0\ GiB)\ copied,\ 0.18405\ s,\ 5.8\ GB/s
-\f[]
-.fi
-.PP
-It\[aq]s important to test with different \f[C]obs\f[] (output block
-size) values since the relative overhead is greater with smaller values.
-As you can see above the size of a read or write can massively impact
-theoretical performance.
-If an application performs much worse through mergerfs it could very
-well be that it doesn\[aq]t optimally size its read and write requests.
-In such cases contact the mergerfs author so it can be investigated.
+See the BENCHMARKING section for suggestions on how to test.
 .SS xattr
 .PP
 Runtime extended attribute support can be managed via the \f[C]xattr\f[]
@@ -1383,6 +1351,160 @@ do
 done
 \f[]
 .fi
+.SH PERFORMANCE
+.PP
+mergerfs is at its core just a proxy and therefore its theoretical max
+performance is that of the underlying devices.
+However, given it is a FUSE filesystem working from userspace there is
+an increase in overhead relative to kernel based solutions.
+That said the performance can match the theoretical max but it depends
+greatly on the system\[aq]s configuration.
+Especially when adding network filesystems into the mix there are many
+variables which can impact performance.
+Drive speeds and latency, network speeds and lattices, general
+concurrency, read/write sizes, etc.
+Unfortunately, given the number of variables it has been difficult to
+find a single set of settings which provide optimal performance.
+If you\[aq]re having performance issues please look over the suggestions
+below.
+.PP
+NOTE: be sure to read about these features before changing them
+.IP \[bu] 2
+enable (or disable) \f[C]splice_move\f[], \f[C]splice_read\f[], and
+\f[C]splice_write\f[]
+.IP \[bu] 2
+increase cache timeouts \f[C]cache.attr\f[], \f[C]cache.entry\f[],
+\f[C]cache.negative_entry\f[]
+.IP \[bu] 2
+enable (or disable) page caching (\f[C]cache.files\f[])
+.IP \[bu] 2
+enable \f[C]cache.open\f[]
+.IP \[bu] 2
+enable \f[C]cache.statfs\f[]
+.IP \[bu] 2
+enable \f[C]cache.symlinks\f[]
+.IP \[bu] 2
+enable \f[C]cache.readdir\f[]
+.IP \[bu] 2
+change the number of worker threads
+.IP \[bu] 2
+disable \f[C]security_capability\f[] and/or \f[C]xattr\f[]
+.IP \[bu] 2
+disable \f[C]posix_acl\f[]
+.IP \[bu] 2
+disable \f[C]async_read\f[]
+.IP \[bu] 2
+test theoretical performance using \f[C]nullrw\f[] or mounting a ram
+disk
+.IP \[bu] 2
+use \f[C]symlinkify\f[] if your data is largely static
+.IP \[bu] 2
+use tiered cache drives
+.IP \[bu] 2
+use lvm and lvm cache to place a SSD in front of your HDDs (howto
+coming)
+.PP
+If you come across a setting that significantly impacts performance
+please contact trapexit so he may investigate further.
+.SH BENCHMARKING
+.PP
+Filesystems are complicated.
+They do many things and many of those are interconnected.
+Additionally, the OS, drivers, hardware, etc.
+all can impact performance.
+Therefore, when benchmarking, it is \f[B]necessary\f[] that the test
+focus as narrowly as possible.
+.PP
+For most throughput is the key benchmark.
+To test throughput \f[C]dd\f[] is useful but \f[B]must\f[] be used with
+the correct settings in order to ensure the filesystem or device is
+actually being tested.
+The OS can and will cache data.
+Without forcing synchronous reads and writes and/or disabling caching
+the values returned will not be representative of the device\[aq]s true
+performance.
+.PP
+When benchmarking through mergerfs ensure you only use 1 branch to
+remove any possibility of the policies complicating the situation.
+Benchmark the underlying filesystem first and then mount mergerfs over
+it and test again.
+If you\[aq]re experience speeds below your expectation you will need to
+narrow down precisely which component is leading to the slowdown.
+Preferably test the following in the order listed (but not combined).
+.IP "1." 3
+Enable \f[C]nullrw\f[] mode with \f[C]nullrw=true\f[].
+This will effectively make reads and writes no\-ops.
+Removing the underlying device / filesystem from the equation.
+This will give us the top theoretical speeds.
+.IP "2." 3
+Mount mergerfs over \f[C]tmpfs\f[].
+\f[C]tmpfs\f[] is a RAM disk.
+Extremely high speed and very low latency.
+This is a more realistic best case scenario.
+Example: \f[C]mount\ \-t\ tmpfs\ \-o\ size=2G\ tmpfs\ /tmp/tmpfs\f[]
+.IP "3." 3
+Mount mergerfs over a local drive.
+NVMe, SSD, HDD, etc.
+If you have more than one I\[aq]d suggest testing each of them as drives
+and/or controllers (their drivers) could impact performance.
+.IP "4." 3
+Finally, if you intend to use mergerfs with a network filesystem, either
+as the source of data or to combine with another through mergerfs, test
+each of those alone as above.
+.PP
+Once you find the component which has the performance issue you can do
+further testing with different options to see if they impact
+performance.
+For reads and writes the most relevant would be: \f[C]cache.files\f[],
+\f[C]async_read\f[], \f[C]splice_move\f[], \f[C]splice_read\f[],
+\f[C]splice_write\f[].
+Less likely but relevant when using NFS or with certain filesystems
+would be \f[C]security_capability\f[], \f[C]xattr\f[], and
+\f[C]posix_acl\f[].
+If you find a specific system, drive, filesystem, controller, etc.
+that performs poorly contact trapexit so he may investigate further.
+.PP
+Sometimes the problem is really the application accessing or writing
+data through mergerfs.
+Some software use small buffer sizes which can lead to more requests and
+therefore greater overhead.
+You can test this out yourself by replace \f[C]bs=1M\f[] in the examples
+below with \f[C]ibs\f[] or \f[C]obs\f[] and using a size of \f[C]512\f[]
+instead of \f[C]1M\f[].
+In one example test using \f[C]nullrw\f[] the write speed dropped from
+4.9GB/s to 69.7MB/s when moving from \f[C]1M\f[] to \f[C]512\f[].
+Similar results were had when testing reads.
+Small writes overhead may be improved by leveraging a write cache but in
+casual tests little gain was found.
+More tests will need to be done before this feature would become
+available.
+If you have an app that appears slow with mergerfs it could be due to
+this.
+Contact trapexit so he may investigate further.
+.SS write benchmark
+.PP
+With synchronized IO
+.IP
+.nf
+\f[C]
+$\ dd\ if=/dev/zero\ of=/mnt/mergerfs/1GB.file\ bs=1M\ count=1024\ oflag=dsync,nocache\ conv=fdatasync\ status=progress
+\f[]
+.fi
+.PP
+Without synchronized IO
+.IP
+.nf
+\f[C]
+$\ dd\ if=/dev/zero\ of=/mnt/mergerfs/1GB.file\ bs=1M\ count=1024\ oflag=nocache\ conv=fdatasync\ status=progress
+\f[]
+.fi
+.SS read benchmark
+.IP
+.nf
+\f[C]
+$\ dd\ if=/mnt/mergerfs/1GB.file\ of=/dev/null\ bs=1M\ count=1024\ iflag=nocache\ conv=fdatasync\ status=progress
+\f[]
+.fi
 .SH TIPS / NOTES
 .IP \[bu] 2
 \f[B]use_ino\f[] will only work when used with mergerfs 2.18.0 and
@@ -1402,7 +1524,7 @@ all the underlying directories.
 Use \f[C]mergerfs.fsck\f[] to audit the drive for out of sync
 permissions.
 .IP \[bu] 2
-Do \f[B]not\f[] use \f[C]cache.files=off\f[] or \f[C]direct_io\f[] if
+Do \f[B]not\f[] use \f[C]cache.files=off\f[] (or \f[C]direct_io\f[]) if
 you expect applications (such as rtorrent) to
 mmap (http://linux.die.net/man/2/mmap) files.
 Shared mmap is not currently supported in FUSE w/ \f[C]direct_io\f[]
@@ -1460,7 +1582,7 @@ value based on all found would require a scan of all drives.
 .PP
 If you always want the directory information from the one with the most
 recent mtime then use the \f[C]newest\f[] policy for \f[C]getattr\f[].
-.SS \f[C]mv\ /mnt/pool/foo\ /mnt/disk1/foo\f[] removes \f[C]foo\f[]
+.SS \[aq]mv /mnt/pool/foo /mnt/disk1/foo\[aq] removes \[aq]foo\[aq]
 .PP
 This is not a bug.
 .PP
@@ -1532,18 +1654,21 @@ yet fixed.
 .PP
 It does.
 If you\[aq]re trying to put Plex\[aq]s config / metadata on mergerfs you
-have to leave \f[C]direct_io\f[] off because Plex is using sqlite which
+have to leave \f[C]direct_io\f[] off because Plex is using sqlite3 which
 apparently needs mmap.
 mmap doesn\[aq]t work with \f[C]direct_io\f[].
 To fix this place the data elsewhere or disable \f[C]direct_io\f[] (with
 \f[C]dropcacheonclose=true\f[]).
+Sqlite3 does not need mmap but the developer needs to fall back to
+standard IO if mmap fails.
 .PP
 If the issue is that scanning doesn\[aq]t seem to pick up media then be
 sure to set \f[C]func.getattr=newest\f[] as mentioned above.
 .SS mmap performance is really bad
 .PP
-There is a bug (https://lkml.org/lkml/2016/3/16/260) in caching which
-affects overall performance of mmap through FUSE in Linux 4.x kernels.
+There is/was a bug (https://lkml.org/lkml/2016/3/16/260) in caching
+which affects overall performance of mmap through FUSE in Linux 4.x
+kernels.
 It is fixed in 4.4.10 and 4.5.4 (https://lkml.org/lkml/2016/5/11/59).
 .SS When a program tries to move or rename a file it fails
 .PP
@@ -1649,11 +1774,23 @@ fine.
 If either value is too low for your needs you will have to modify
 \f[C]gidcache.hpp\f[] to increase the values.
 Note that doing so will increase the memory needed by each thread.
+.PP
+While not a bug some users have found when using containers that
+supplemental groups defined inside the container don\[aq]t work properly
+with regard to permissions.
+This is expected as mergerfs lives outside the container and therefore
+is querying the host\[aq]s group database.
+There might be a hack to work around this (make mergerfs read the
+/etc/group file in the container) but it is not yet implemented and
+would be limited to Linux and the /etc/group DB.
+Preferably users would mount in the host group file into the containers
+or use a standard shared user & groups technology like NIS or LDAP.
 .SS mergerfs or libfuse crashing
 .PP
-\f[B]NOTE:\f[] as of mergerfs 2.22.0 it includes the most recent version
-of libfuse (or requires libfuse\-2.9.7) so any crash should be reported.
-For older releases continue reading...
+First...
+always upgrade to the latest version unless told otherwise.
+.PP
+If using mergerfs below 2.22.0:
 .PP
 If suddenly the mergerfs mount point disappears and
 \f[C]Transport\ endpoint\ is\ not\ connected\f[] is returned when
@@ -1669,6 +1806,11 @@ install newer versions of
 libfuse (https://packages.debian.org/unstable/libfuse2) and
 fuse (https://packages.debian.org/unstable/fuse) from the repo of a
 newer release.
+.PP
+If using mergerfs at or above 2.22.0:
+.PP
+First upgrade if possible, check the known bugs section, and contact
+trapexit.
 .SS mergerfs appears to be crashing or exiting
 .PP
 There seems to be an issue with Linux version \f[C]4.9.0\f[] and above
@@ -1758,7 +1900,6 @@ I\[aq]m aware of at least a few companies which use mergerfs in
 production.
 Open Media Vault (https://www.openmediavault.org) includes mergerfs as
 its sole solution for pooling drives.
-The only reports of data corruption have been due to a kernel bug.
 .SS Can mergerfs be used with drives which already have data / are in
 use?
 .PP
@@ -1970,6 +2111,21 @@ Where data integrity and backup is managed in other ways.
 In that situation ZFS can introduce major maintenance and cost burdens
 as described
 here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
+.SS What should mergerfs NOT be used for?
+.IP \[bu] 2
+databases: Even if the database stored data in separate files (mergerfs
+wouldn\[aq]t offer much otherwise) the higher latency of the indirection
+will kill performance.
+If it is a lightly used SQLITE database then it may be fine but
+you\[aq]ll need to test.
+.IP \[bu] 2
+VM images: For the same reasons as databases.
+VM images are accessed very aggressively and mergerfs will introduce too
+much latency (if it works at all).
+.IP \[bu] 2
+As replacement for RAID: mergerfs is just for pooling branches.
+If you need that kind of device performance aggregation or high
+availability you should stick with RAID.
 .SS Can drives be written to directly? Outside of mergerfs while pooled?
 .PP
 Yes, however its not recommended to use the same file from within the
@@ -2128,58 +2284,6 @@ If the ability to give writers priority is supported then that flag will
 be used so threads trying to change credentials don\[aq]t starve.
 This isn\[aq]t the best solution but should work reasonably well
 assuming there are few users.
-.SH PERFORMANCE
-.PP
-mergerfs is at its core just a proxy and therefore its theoretical max
-performance is that of the underlying devices.
-However, given it is a FUSE filesystem working from userspace there is
-an increase in overhead relative to kernel based solutions.
-That said the performance can match the theoretical max but it depends
-greatly on the system\[aq]s configuration.
-Especially when adding network filesystems into the mix there are many
-variables which can impact performance.
-Drive speeds and latency, network speeds and lattices, general
-concurrency, read/write sizes, etc.
-Unfortunately, given the number of variables it has been difficult to
-find a single set of settings which provide optimal performance.
-If you\[aq]re having performance issues please look over the suggestions
-below.
-.PP
-NOTE: be sure to read about these features before changing them
-.IP \[bu] 2
-enable (or disable) \f[C]splice_move\f[], \f[C]splice_read\f[], and
-\f[C]splice_write\f[]
-.IP \[bu] 2
-increase cache timeouts \f[C]cache.attr\f[], \f[C]cache.entry\f[],
-\f[C]cache.negative_entry\f[]
-.IP \[bu] 2
-enable (or disable) page caching (\f[C]cache.files\f[])
-.IP \[bu] 2
-enable \f[C]cache.open\f[]
-.IP \[bu] 2
-enable \f[C]cache.statfs\f[]
-.IP \[bu] 2
-enable \f[C]cache.symlinks\f[]
-.IP \[bu] 2
-enable \f[C]cache.readdir\f[]
-.IP \[bu] 2
-change the number of worker threads
-.IP \[bu] 2
-disable \f[C]security_capability\f[] and/or \f[C]xattr\f[]
-.IP \[bu] 2
-disable \f[C]posix_acl\f[]
-.IP \[bu] 2
-disable \f[C]async_read\f[]
-.IP \[bu] 2
-test theoretical performance using \f[C]nullrw\f[] or mounting a ram
-disk
-.IP \[bu] 2
-use \f[C]symlinkify\f[] if your data is largely static
-.IP \[bu] 2
-use tiered cache drives
-.IP \[bu] 2
-use lvm and lvm cache to place a SSD in front of your HDDs (howto
-coming)
 .SH SUPPORT
 .PP
 Filesystems are very complex and difficult to debug.
