@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
@@ -18,9 +18,12 @@ import sys
 import subprocess
 import argparse
 
+def call(args):
+    return subprocess.Popen(args,stdout=subprocess.PIPE).communicate()[0].decode()
+
 def git_tags():
     args = ["git", "tag", '-l']
-    tags = subprocess.check_output(args)
+    tags = call(args)
     tags = [[int(X) for X in tag.split(".")] for tag in tags.split()]
     tags.sort()
     tags.reverse()
@@ -29,20 +32,20 @@ def git_tags():
 
 def git_log(fromtag,totag):
     args = ['git','log','--no-merges','--oneline',fromtag+'...'+totag]
-    return subprocess.check_output(args).strip().split('\n')
+    return call(args).strip().split('\n')
 
 def git_author_and_time(tag):
     args = ['git','log','-1','--format=-- %an <%ae>  %cD',tag]
-    return subprocess.check_output(args).strip()
+    return call(args).strip()
 
 def git_version():
     args = ['git','describe','--always','--tags','--dirty']
-    return subprocess.check_output(args).strip()
+    return call(args).strip()
 
 def guess_distro():
     try:
         args = ['lsb_release','-i','-s']
-        return subprocess.check_output(args).strip().lower()
+        return call(args).strip().lower()
     except:
         return 'unknown'
 
@@ -50,38 +53,12 @@ def guess_distro():
 def guess_codename():
     try:
         args = ['lsb_release','-c','-s']
-        return subprocess.check_output(args).strip().lower()
+        return call(args).strip().lower()
     except:
         return 'unknown'
 
 
-def patch_subprocess():
-    if "check_output"  not in dir( subprocess ): # duck punch it in!
-        def check_output(*popenargs, **kwargs):
-            r"""Run command with arguments and return its output as a byte string.
-
-            Backported from Python 2.7 as it's implemented as pure python on stdlib.
-
-            >>> check_output(['/usr/bin/python', '--version'])
-            Python 2.6.2
-            """
-            process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-            output, unused_err = process.communicate()
-            retcode = process.poll()
-            if retcode:
-                cmd = kwargs.get("args")
-                if cmd is None:
-                    cmd = popenargs[0]
-                error = subprocess.CalledProcessError(retcode, cmd)
-                error.output = output
-                raise error
-            return output
-
-        subprocess.check_output = check_output
-
 def main():
-    patch_subprocess()
-
     parser = argparse.ArgumentParser(description='Generated debian/changelog from git log')
     parser.add_argument('--name',type=str,help='Name of package',required=True)
     parser.add_argument('--version',type=str,help='Place in git history to include upto',default='::guess::')
@@ -107,12 +84,12 @@ def main():
     if args.version in tags:
         idx = tags.index(args.version)
         tags = tags[idx:]
-        tags = zip(tags,tags)
+        tags = list(zip(tags,tags))
     else:
-        tags = zip(tags,tags)
+        tags = list(zip(tags,tags))
         tags.insert(0,(args.version,'HEAD'))
 
-    for i in xrange(0,len(tags)):
+    for i in range(0,len(tags)):
         tags[i] = (tags[i][0] + versuffix,tags[i][1])
 
     tag = tags[0]
@@ -122,13 +99,13 @@ def main():
             tag = prev
             continue
 
-        print('%s (%s) %s; urgency=%s\n' % (args.name,tag[0],args.codename,args.urgency))
+        print('{} ({}) {}; urgency={}\n'.format(args.name,tag[0],args.codename,args.urgency))
 
         for line in lines:
-            print "  * " + line
+            print("  * " + line)
 
         authorandtime = git_author_and_time(tag[1])
-        print(' %s\n' % authorandtime)
+        print(' {}\n'.format(authorandtime))
 
         tag = prev
 
