@@ -99,13 +99,13 @@ def main():
             tag = prev
             continue
 
-        print('{} ({}) {}; urgency={}\n'.format(args.name,tag[0],args.codename,args.urgency))
+        print('{0} ({1}) {2}; urgency={3}\n'.format(args.name,tag[0],args.codename,args.urgency))
 
         for line in lines:
             print("  * " + line)
 
         authorandtime = git_author_and_time(tag[1])
-        print(' {}\n'.format(authorandtime))
+        print(' {0}\n'.format(authorandtime))
 
         tag = prev
 
