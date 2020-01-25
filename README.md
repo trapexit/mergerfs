@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-01-19
+% 2020-01-24
 
 # NAME
 
@@ -932,6 +932,15 @@ Depends on what features you want. Generally speaking there are no "wrong" setti
 That said, for the average person, the following should be fine:
 
 `-o use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
+
+
+#### Why are all my files ending up on 1 drive?!
+
+Did you start with empty drives? Did you explicitly configure a `category.create` policy?
+
+The default create policy is `epmfs`. That is a path preserving algorithm. With such a policy for `mkdir` and `create` with a set of empty drives it will naturally select only 1 drive when the first directory is created. Anything, files or directories, created in that first directory will be placed on the same branch because it is preserving paths.
+
+This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above.
 
 
 #### Do hard links work?
