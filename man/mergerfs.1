@@ -2126,9 +2126,11 @@ MergerFS is intended to provide flexible pooling of arbitrary drives
 For \f[C]write\ once,\ read\ many\f[] usecases such as bulk media
 storage.
 Where data integrity and backup is managed in other ways.
-In that situation ZFS can introduce major maintenance and cost burdens
-as described
-here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
+In that situation ZFS can introduce a number of costs and limitations as
+described
+here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
+here (https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
+here (https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
 .SS What should mergerfs NOT be used for?
 .IP \[bu] 2
 databases: Even if the database stored data in separate files (mergerfs

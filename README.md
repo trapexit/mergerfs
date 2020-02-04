@@ -1021,7 +1021,7 @@ When combined with something like [SnapRaid](http://www.snapraid.it) and/or an o
 
 #### Why use mergerfs over ZFS?
 
-MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce major maintenance and cost burdens as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html).
+MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce a number of costs and limitations as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html), [here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and [here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
 
 
 #### What should mergerfs NOT be used for?
