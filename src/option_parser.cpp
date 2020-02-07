@@ -281,6 +281,8 @@ parse_and_process_cache(Config       &config_,
     return parse_and_process(value_,config_.cache_readdir);
   else if(func_ == "files")
     return parse_and_process(value_,config_.cache_files);
+  else if(func_ == "writeback")
+    return parse_and_process(value_,config_.writeback_cache);
 
   return 1;
 }
@@ -461,6 +463,10 @@ usage(void)
     "                           * full: Keep cache on file open\n"
     "                           * auto-full: Keep cache if mtime & size not changed\n"
     "                           default = libfuse\n"
+    "    -o cache.writeback=<bool>\n"
+    "                           Enable kernel writeback caching (if supported)\n"
+    "                           cache.files must must be enabled as well.\n"
+    "                           default = false\n"
     "    -o cache.symlinks=<bool>\n"
     "                           Enable kernel caching of symlinks (if supported)\n"
     "                           default = false\n"

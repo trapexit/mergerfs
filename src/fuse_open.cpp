@@ -37,6 +37,21 @@ namespace l
 {
   static
   int
+  tweak_flags_writeback_cache(const int flags_)
+  {
+    int flags;
+
+    flags = flags_;
+    if((flags & O_ACCMODE) == O_WRONLY)
+      flags = ((flags & ~O_ACCMODE) | O_RDWR);
+    if(flags & O_APPEND)
+      flags &= ~O_APPEND;
+
+    return flags;
+  }
+
+  static
+  int
   open_core(const string &basepath_,
             const char   *fusepath_,
             const int     flags_,
@@ -121,6 +136,9 @@ namespace FUSE
         ffi_->auto_cache = 1;
         break;
       }
+
+    if(config.writeback_cache)
+      ffi_->flags = l::tweak_flags_writeback_cache(ffi_->flags);
 
     return l::open(config.open,
                    config.open_cache,
