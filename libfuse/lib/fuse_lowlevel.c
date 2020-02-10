@@ -54,35 +54,43 @@ static __attribute__((constructor)) void fuse_ll_init_pagesize(void)
 	pagesize = getpagesize();
 }
 
-static void convert_stat(const struct stat *stbuf, struct fuse_attr *attr)
+static
+void
+convert_stat(const struct stat *stbuf_,
+             struct fuse_attr  *attr_)
 {
-	attr->ino	= stbuf->st_ino;
-	attr->mode	= stbuf->st_mode;
-	attr->nlink	= stbuf->st_nlink;
-	attr->uid	= stbuf->st_uid;
-	attr->gid	= stbuf->st_gid;
-	attr->rdev	= stbuf->st_rdev;
-	attr->size	= stbuf->st_size;
-	attr->blksize	= stbuf->st_blksize;
-	attr->blocks	= stbuf->st_blocks;
-	attr->atime	= stbuf->st_atime;
-	attr->mtime	= stbuf->st_mtime;
-	attr->ctime	= stbuf->st_ctime;
-	attr->atimensec = ST_ATIM_NSEC(stbuf);
-	attr->mtimensec = ST_MTIM_NSEC(stbuf);
-	attr->ctimensec = ST_CTIM_NSEC(stbuf);
+  attr_->ino       = stbuf_->st_ino;
+  attr_->mode      = stbuf_->st_mode;
+  attr_->nlink     = stbuf_->st_nlink;
+  attr_->uid       = stbuf_->st_uid;
+  attr_->gid       = stbuf_->st_gid;
+  attr_->rdev      = stbuf_->st_rdev;
+  attr_->size      = stbuf_->st_size;
+  attr_->blksize   = stbuf_->st_blksize;
+  attr_->blocks    = stbuf_->st_blocks;
+  attr_->atime     = stbuf_->st_atime;
+  attr_->mtime     = stbuf_->st_mtime;
+  attr_->ctime     = stbuf_->st_ctime;
+  attr_->atimensec = ST_ATIM_NSEC(stbuf_);
+  attr_->mtimensec = ST_MTIM_NSEC(stbuf_);
+  attr_->ctimensec = ST_CTIM_NSEC(stbuf_);
 }
 
-static void convert_attr(const struct fuse_setattr_in *attr, struct stat *stbuf)
+static
+void
+convert_attr(const struct fuse_setattr_in *attr_,
+             struct stat                  *stbuf_)
 {
-	stbuf->st_mode	       = attr->mode;
-	stbuf->st_uid	       = attr->uid;
-	stbuf->st_gid	       = attr->gid;
-	stbuf->st_size	       = attr->size;
-	stbuf->st_atime	       = attr->atime;
-	stbuf->st_mtime	       = attr->mtime;
-	ST_ATIM_NSEC_SET(stbuf, attr->atimensec);
-	ST_MTIM_NSEC_SET(stbuf, attr->mtimensec);
+  stbuf_->st_mode  = attr_->mode;
+  stbuf_->st_uid   = attr_->uid;
+  stbuf_->st_gid   = attr_->gid;
+  stbuf_->st_size  = attr_->size;
+  stbuf_->st_atime = attr_->atime;
+  stbuf_->st_mtime = attr_->mtime;
+  stbuf_->st_ctime = attr_->ctime;
+  ST_ATIM_NSEC_SET(stbuf_,attr_->atimensec);
+  ST_MTIM_NSEC_SET(stbuf_,attr_->mtimensec);
+  ST_CTIM_NSEC_SET(stbuf_,attr_->ctimensec);
 }
 
 static	size_t iov_length(const struct iovec *iov, size_t count)
@@ -297,9 +305,11 @@ static int send_reply_ok(fuse_req_t req, const void *arg, size_t argsize)
 	return send_reply(req, 0, arg, argsize);
 }
 
-int fuse_reply_err(fuse_req_t req, int err)
+int
+fuse_reply_err(fuse_req_t req_,
+               int        err_)
 {
-	return send_reply(req, -err, NULL, 0);
+  return send_reply(req_,-err_,NULL,0);
 }
 
 void fuse_reply_none(fuse_req_t req)
@@ -1053,35 +1063,46 @@ static void do_getattr(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		fuse_reply_err(req, ENOSYS);
 }
 
-static void do_setattr(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
+static
+void
+do_setattr(fuse_req_t  req_,
+           fuse_ino_t  nodeid_,
+           const void *inarg_)
 {
-	struct fuse_setattr_in *arg = (struct fuse_setattr_in *) inarg;
+  struct stat stbuf;
+  struct fuse_file_info *fi;
+  struct fuse_file_info fi_store;
+  struct fuse_setattr_in *arg;
 
-	if (req->f->op.setattr) {
-		struct fuse_file_info *fi = NULL;
-		struct fuse_file_info fi_store;
-		struct stat stbuf;
-		memset(&stbuf, 0, sizeof(stbuf));
-		convert_attr(arg, &stbuf);
-		if (arg->valid & FATTR_FH) {
-			arg->valid &= ~FATTR_FH;
-			memset(&fi_store, 0, sizeof(fi_store));
-			fi = &fi_store;
-			fi->fh = arg->fh;
-		}
-		arg->valid &=
-			FUSE_SET_ATTR_MODE	|
-			FUSE_SET_ATTR_UID	|
-			FUSE_SET_ATTR_GID	|
-			FUSE_SET_ATTR_SIZE	|
-			FUSE_SET_ATTR_ATIME	|
-			FUSE_SET_ATTR_MTIME	|
-			FUSE_SET_ATTR_ATIME_NOW	|
-			FUSE_SET_ATTR_MTIME_NOW;
+  if(req_->f->op.setattr == NULL)
+    return (void)fuse_reply_err(req_,ENOSYS);
 
-		req->f->op.setattr(req, nodeid, &stbuf, arg->valid, fi);
-	} else
-		fuse_reply_err(req, ENOSYS);
+  fi = NULL;
+  arg = (struct fuse_setattr_in*)inarg_;
+
+  memset(&stbuf,0,sizeof(stbuf));
+  convert_attr(arg,&stbuf);
+
+  if(arg->valid & FATTR_FH)
+    {
+      arg->valid &= ~FATTR_FH;
+      memset(&fi_store,0,sizeof(fi_store));
+      fi = &fi_store;
+      fi->fh = arg->fh;
+    }
+
+  arg->valid &=
+    (FATTR_MODE      |
+     FATTR_UID       |
+     FATTR_GID       |
+     FATTR_SIZE      |
+     FATTR_ATIME     |
+     FATTR_MTIME     |
+     FATTR_CTIME     |
+     FATTR_ATIME_NOW |
+     FATTR_MTIME_NOW);
+
+  req_->f->op.setattr(req_,nodeid_,&stbuf,arg->valid,fi);
 }
 
 static void do_access(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)

@@ -128,16 +128,6 @@ struct fuse_forget_data {
 	uint64_t nlookup;
 };
 
-/* 'to_set' flags in setattr */
-#define FUSE_SET_ATTR_MODE	(1 << 0)
-#define FUSE_SET_ATTR_UID	(1 << 1)
-#define FUSE_SET_ATTR_GID	(1 << 2)
-#define FUSE_SET_ATTR_SIZE	(1 << 3)
-#define FUSE_SET_ATTR_ATIME	(1 << 4)
-#define FUSE_SET_ATTR_MTIME	(1 << 5)
-#define FUSE_SET_ATTR_ATIME_NOW	(1 << 7)
-#define FUSE_SET_ATTR_MTIME_NOW	(1 << 8)
-
 /* ----------------------------------------------------------- *
  * Request methods and replies				       *
  * ----------------------------------------------------------- */
