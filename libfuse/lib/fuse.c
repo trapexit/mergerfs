@@ -2735,120 +2735,126 @@ fuse_fs_fchmod(struct fuse_fs              *fs_,
   return -ENOSYS;
 }
 
-static void fuse_lib_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
-			     int valid, struct fuse_file_info *fi)
+static
+void
+fuse_lib_setattr(fuse_req_t             req,
+                 fuse_ino_t             ino,
+                 struct stat           *attr,
+                 int                    valid,
+                 struct fuse_file_info *fi)
 {
-	struct fuse *f = req_fuse_prepare(req);
-	struct stat buf;
-	char *path;
-	int err;
-        struct node *node;
-        struct fuse_file_info ffi = {0};
+  struct fuse *f = req_fuse_prepare(req);
+  struct stat buf;
+  char *path;
+  int err;
+  struct node *node;
+  struct fuse_file_info ffi = {0};
 
-        if(fi == NULL)
+  if(fi == NULL)
+    {
+      pthread_mutex_lock(&f->lock);
+      node = get_node(f,ino);
+      if(node->is_hidden)
+        {
+          fi = &ffi;
+          fi->fh = node->hidden_fh;
+        }
+      pthread_mutex_unlock(&f->lock);
+    }
+
+  memset(&buf,0,sizeof(buf));
+
+  path = NULL;
+  err = ((fi == NULL) ?
+         get_path(f,ino,&path) :
+         get_path_nullok(f,ino,&path));
+
+  if(!err)
+    {
+      struct fuse_intr_data d;
+
+      fuse_prepare_interrupt(f,req,&d);
+
+      err = 0;
+      if (!err && (valid & FATTR_MODE))
+        err = ((fi == NULL) ?
+               fuse_fs_chmod(f->fs,path,attr->st_mode) :
+               fuse_fs_fchmod(f->fs,fi,attr->st_mode));
+
+      if(!err && (valid & (FATTR_UID | FATTR_GID)))
+        {
+          uid_t uid = ((valid & FATTR_UID) ? attr->st_uid : (uid_t) -1);
+          gid_t gid = ((valid & FATTR_GID) ? attr->st_gid : (gid_t) -1);
+
+          err = ((fi == NULL) ?
+                 fuse_fs_chown(f->fs,path,uid,gid) :
+                 fuse_fs_fchown(f->fs,fi,uid,gid));
+        }
+
+      if(!err && (valid & FATTR_SIZE))
+        err = ((fi == NULL) ?
+               fuse_fs_truncate(f->fs,path,attr->st_size) :
+               fuse_fs_ftruncate(f->fs,path,attr->st_size,fi));
+
+#ifdef HAVE_UTIMENSAT
+      if(!err && f->utime_omit_ok && (valid & (FATTR_ATIME | FATTR_MTIME)))
+        {
+          struct timespec tv[2];
+
+          tv[0].tv_sec = 0;
+          tv[1].tv_sec = 0;
+          tv[0].tv_nsec = UTIME_OMIT;
+          tv[1].tv_nsec = UTIME_OMIT;
+
+          if(valid & FATTR_ATIME_NOW)
+            tv[0].tv_nsec = UTIME_NOW;
+          else if(valid & FATTR_ATIME)
+            tv[0] = attr->st_atim;
+
+          if(valid & FATTR_MTIME_NOW)
+            tv[1].tv_nsec = UTIME_NOW;
+          else if(valid & FATTR_MTIME)
+            tv[1] = attr->st_mtim;
+
+          err = ((fi == NULL) ?
+                 fuse_fs_utimens(f->fs,path,tv) :
+                 fuse_fs_futimens(f->fs,fi,tv));
+        }
+      else
+#endif
+        if(!err && ((valid & (FATTR_ATIME|FATTR_MTIME)) == (FATTR_ATIME|FATTR_MTIME)))
           {
-            pthread_mutex_lock(&f->lock);
-            node = get_node(f,ino);
-            if(node->is_hidden)
-              {
-                fi = &ffi;
-                fi->fh = node->hidden_fh;
-              }
-            pthread_mutex_unlock(&f->lock);
+            struct timespec tv[2];
+            tv[0].tv_sec = attr->st_atime;
+            tv[0].tv_nsec = ST_ATIM_NSEC(attr);
+            tv[1].tv_sec = attr->st_mtime;
+            tv[1].tv_nsec = ST_MTIM_NSEC(attr);
+            err = ((fi == NULL) ?
+                   fuse_fs_utimens(f->fs,path,tv) :
+                   fuse_fs_futimens(f->fs,fi,tv));
           }
 
-	memset(&buf, 0, sizeof(buf));
-
-        path = NULL;
+      if(!err)
         err = ((fi == NULL) ?
-               get_path(f,ino,&path) :
-               get_path_nullok(f,ino,&path));
+               fuse_fs_getattr(f->fs,path,&buf) :
+               fuse_fs_fgetattr(f->fs,path,&buf,fi));
 
-	if (!err) {
-		struct fuse_intr_data d;
+      fuse_finish_interrupt(f,req,&d);
+      free_path(f,ino,path);
+    }
 
-		fuse_prepare_interrupt(f, req, &d);
-
-                err = 0;
-		if (!err && (valid & FUSE_SET_ATTR_MODE))
-                  err = ((fi == NULL) ?
-                         fuse_fs_chmod(f->fs, path, attr->st_mode) :
-                         fuse_fs_fchmod(f->fs, fi, attr->st_mode));
-
-		if (!err && (valid & (FUSE_SET_ATTR_UID | FUSE_SET_ATTR_GID)))
-                  {
-                    uid_t uid = (valid & FUSE_SET_ATTR_UID) ?
-                      attr->st_uid : (uid_t) -1;
-                    gid_t gid = (valid & FUSE_SET_ATTR_GID) ?
-                      attr->st_gid : (gid_t) -1;
-
-                    err = ((fi == NULL) ?
-                           fuse_fs_chown(f->fs, path, uid, gid) :
-                           fuse_fs_fchown(f->fs, fi, uid, gid));
-                  }
-
-		if (!err && (valid & FUSE_SET_ATTR_SIZE))
-                  {
-                    err = ((fi == NULL) ?
-                           fuse_fs_truncate(f->fs, path, attr->st_size) :
-                           fuse_fs_ftruncate(f->fs, path, attr->st_size, fi));
-                  }
-#ifdef HAVE_UTIMENSAT
-		if (!err && f->utime_omit_ok &&
-		    (valid & (FUSE_SET_ATTR_ATIME | FUSE_SET_ATTR_MTIME))) {
-			struct timespec tv[2];
-
-			tv[0].tv_sec = 0;
-			tv[1].tv_sec = 0;
-			tv[0].tv_nsec = UTIME_OMIT;
-			tv[1].tv_nsec = UTIME_OMIT;
-
-			if (valid & FUSE_SET_ATTR_ATIME_NOW)
-				tv[0].tv_nsec = UTIME_NOW;
-			else if (valid & FUSE_SET_ATTR_ATIME)
-				tv[0] = attr->st_atim;
-
-			if (valid & FUSE_SET_ATTR_MTIME_NOW)
-				tv[1].tv_nsec = UTIME_NOW;
-			else if (valid & FUSE_SET_ATTR_MTIME)
-				tv[1] = attr->st_mtim;
-
-                        err = ((fi == NULL) ?
-                               fuse_fs_utimens(f->fs, path, tv) :
-                               fuse_fs_futimens(f->fs, fi, tv));
-		} else
-#endif
-		if (!err &&
-		    (valid & (FUSE_SET_ATTR_ATIME | FUSE_SET_ATTR_MTIME)) ==
-		    (FUSE_SET_ATTR_ATIME | FUSE_SET_ATTR_MTIME)) {
-			struct timespec tv[2];
-			tv[0].tv_sec = attr->st_atime;
-			tv[0].tv_nsec = ST_ATIM_NSEC(attr);
-			tv[1].tv_sec = attr->st_mtime;
-			tv[1].tv_nsec = ST_MTIM_NSEC(attr);
-			err = ((fi == NULL) ?
-                               fuse_fs_utimens(f->fs, path, tv) :
-                               fuse_fs_futimens(f->fs, fi, tv));
-		}
-
-                if (!err)
-                  err = ((fi == NULL) ?
-                         fuse_fs_getattr(f->fs, path, &buf) :
-                         fuse_fs_fgetattr(f->fs, path, &buf, fi));
-
-		fuse_finish_interrupt(f, req, &d);
-		free_path(f, ino, path);
-	}
-
-	if (!err) {
-          pthread_mutex_lock(&f->lock);
-          update_stat(get_node(f, ino), &buf);
-          pthread_mutex_unlock(&f->lock);
-          set_stat(f, ino, &buf);
-          fuse_reply_attr(req, &buf, f->conf.attr_timeout);
-	} else {
-          reply_err(req, err);
-        }
+  if(!err)
+    {
+      pthread_mutex_lock(&f->lock);
+      update_stat(get_node(f,ino),&buf);
+      pthread_mutex_unlock(&f->lock);
+      set_stat(f,ino,&buf);
+      fuse_reply_attr(req,&buf,f->conf.attr_timeout);
+    }
+  else
+    {
+      reply_err(req,err);
+    }
 }
 
 static void fuse_lib_access(fuse_req_t req, fuse_ino_t ino, int mask)
