@@ -121,6 +121,7 @@ fuse_file_info
 #define FUSE_CAP_FLOCK_LOCKS     (1 << 10)
 #define FUSE_CAP_IOCTL_DIR       (1 << 11)
 #define FUSE_CAP_ASYNC_DIO       (1 << 15)
+#define FUSE_CAP_WRITEBACK_CACHE (1 << 16)
 #define FUSE_CAP_PARALLEL_DIROPS (1 << 18)
 #define FUSE_CAP_POSIX_ACL       (1 << 19)
 #define FUSE_CAP_CACHE_SYMLINKS  (1 << 20)

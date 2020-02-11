@@ -35,6 +35,30 @@ typedef Config::CacheFiles CacheFiles;
 
 namespace l
 {
+  /*
+    The kernel expects being able to issue read requests when running
+    with writeback caching enabled so we must change O_WRONLY to
+    O_RDWR.
+
+    With writeback caching enabled the kernel handles O_APPEND. Could
+    be an issue if the underlying file changes out of band but that is
+    true of any caching.
+  */
+  static
+  int
+  tweak_flags_writeback_cache(const int flags_)
+  {
+    int flags;
+
+    flags = flags_;
+    if((flags & O_ACCMODE) == O_WRONLY)
+      flags = ((flags & ~O_ACCMODE) | O_RDWR);
+    if(flags & O_APPEND)
+      flags &= ~O_APPEND;
+
+    return flags;
+  }
+
   static
   int
   create_core(const string &fullpath_,
@@ -152,6 +176,9 @@ namespace FUSE
         ffi_->auto_cache = 1;
         break;
       }
+
+    if(config.writeback_cache)
+      ffi_->flags = l::tweak_flags_writeback_cache(ffi_->flags);
 
     return l::create(config.getattr,
                      config.create,

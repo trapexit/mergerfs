@@ -96,6 +96,7 @@ namespace FUSE
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
     l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&c.posix_acl);
+    l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&c.writeback_cache);
     l::want_if_capable_max_pages(conn_,c);
 
     return &c;

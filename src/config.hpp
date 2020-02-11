@@ -112,6 +112,7 @@ public:
   bool                     cache_symlinks;
   bool                     cache_readdir;
   bool                     async_read;
+  bool                     writeback_cache;
   CacheFiles               cache_files;
   uint16_t                 fuse_msg_size;
 

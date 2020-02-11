@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-01-24
+% 2020-02-09
 
 # NAME
 
@@ -93,6 +93,7 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * **cache.entry=INT**: File name lookup cache timeout in seconds. (default: 1)
 * **cache.negative_entry=INT**: Negative file name lookup cache timeout in seconds. (default: 0)
 * **cache.files=libfuse|off|partial|full|auto-full**: File page caching mode (default: libfuse)
+* **cache.writeback=BOOL**: Enable kernel writeback caching (default: false)
 * **cache.symlinks=BOOL**: Cache symlinks (if supported by kernel) (default: false)
 * **cache.readdir=BOOL**: Cache readdir (if supported by kernel) (default: false)
 * **direct_io**: deprecated - Bypass page cache. Use `cache.files=off` instead. (default: false)
@@ -530,6 +531,15 @@ kernel documentation: https://www.kernel.org/doc/Documentation/filesystems/fuse-
 Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `cache.entry` and `cache.negative_entry` for the entry cache and `cache.attr` for the attributes cache. `cache.negative_entry` refers to the timeout for negative responses to lookups (non-existent files).
 
 
+#### writeback caching
+
+When `cache.files` is enabled the default is for it to perform writethrough caching. This behavior won't help improve performance as each write still goes one for one through the filesystem. By enabling the FUSE writeback cache small writes may be aggregated by the kernel and then sent to mergerfs as one larger request. This can greatly improve the throughput for apps which write to files inefficiently. The amount the kernel can aggregate is limited by the size of a FUSE message. Read the `fuse_msg_size` section for more details.
+
+There is a small side effect as a result of enabling wrtieback caching. Underlying files won't ever be opened with O_APPEND or O_WRONLY. The former because the kernel then manages append mode and the latter because the kernel may request file data from mergerfs to populate the write cache. The O_APPEND change means that if a file is changed outside of mergerfs it could lead to corruption as the kernel won't know the end of the file has changed. That said any time you use caching you should keep from using the same file outside of mergerfs at the same time.
+
+Note that if an application is properly sizing writes then writeback caching will have little or no effect. It will only help with writes of sizes below the FUSE message size (128K on older kernels, 1M on newer).
+
+
 #### policy caching
 
 Policies are run every time a function (with a policy as mentioned above) is called. These policies can be expensive depending on mergerfs' setup and client usage patterns. Generally we wouldn't want to cache policy results because it may result in stale responses if the underlying drives are used directly.
@@ -554,11 +564,6 @@ As of version 4.20 Linux supports symlink caching. Significant performance incre
 #### readdir caching
 
 As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute (`cache.attr`) caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configurable at runtime via xattr `user.mergerfs.cache.readdir`.
-
-
-#### writeback caching
-
-writeback caching is a technique for improving write speeds by batching writes at a faster device and then bulk writing to the slower device. With FUSE the kernel will wait for a number of writes to be made and then send it to the filesystem as one request. mergerfs currently uses a  modified and vendor ed libfuse 2.9.7 which does not support writeback caching. Adding said feature should not be difficult but benchmarking needs to be done to see if what effect it will have.
 
 
 #### tiered caching
