@@ -45,18 +45,48 @@ namespace l
     true of any caching.
   */
   static
-  int
-  tweak_flags_writeback_cache(const int flags_)
+  void
+  tweak_flags_writeback_cache(int *flags_)
   {
-    int flags;
+    if((*flags_ & O_ACCMODE) == O_WRONLY)
+      *flags_ = ((*flags_ & ~O_ACCMODE) | O_RDWR);
+    if(*flags_ & O_APPEND)
+      *flags_ &= ~O_APPEND;
+  }
 
-    flags = flags_;
-    if((flags & O_ACCMODE) == O_WRONLY)
-      flags = ((flags & ~O_ACCMODE) | O_RDWR);
-    if(flags & O_APPEND)
-      flags &= ~O_APPEND;
-
-    return flags;
+  static
+  void
+  config_to_ffi_flags(const Config   &config_,
+                      fuse_file_info *ffi_)
+  {
+    switch(config_.cache_files)
+      {
+      case CacheFiles::LIBFUSE:
+        ffi_->direct_io  = config_.direct_io;
+        ffi_->keep_cache = config_.kernel_cache;
+        ffi_->auto_cache = config_.auto_cache;
+        break;
+      case CacheFiles::OFF:
+        ffi_->direct_io  = 1;
+        ffi_->keep_cache = 0;
+        ffi_->auto_cache = 0;
+        break;
+      case CacheFiles::PARTIAL:
+        ffi_->direct_io  = 0;
+        ffi_->keep_cache = 0;
+        ffi_->auto_cache = 0;
+        break;
+      case CacheFiles::FULL:
+        ffi_->direct_io  = 0;
+        ffi_->keep_cache = 1;
+        ffi_->auto_cache = 0;
+        break;
+      case CacheFiles::AUTO_FULL:
+        ffi_->direct_io  = 0;
+        ffi_->keep_cache = 0;
+        ffi_->auto_cache = 1;
+        break;
+      }
   }
 
   static
@@ -148,37 +178,10 @@ namespace FUSE
     const ugid::Set          ugid(fc->uid,fc->gid);
     const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-    switch(config.cache_files)
-      {
-      case CacheFiles::LIBFUSE:
-        ffi_->direct_io  = config.direct_io;
-        ffi_->keep_cache = config.kernel_cache;
-        ffi_->auto_cache = config.auto_cache;
-        break;
-      case CacheFiles::OFF:
-        ffi_->direct_io  = 1;
-        ffi_->keep_cache = 0;
-        ffi_->auto_cache = 0;
-        break;
-      case CacheFiles::PARTIAL:
-        ffi_->direct_io  = 0;
-        ffi_->keep_cache = 0;
-        ffi_->auto_cache = 0;
-        break;
-      case CacheFiles::FULL:
-        ffi_->direct_io  = 0;
-        ffi_->keep_cache = 1;
-        ffi_->auto_cache = 0;
-        break;
-      case CacheFiles::AUTO_FULL:
-        ffi_->direct_io  = 0;
-        ffi_->keep_cache = 0;
-        ffi_->auto_cache = 1;
-        break;
-      }
+    l::config_to_ffi_flags(config,ffi_);
 
     if(config.writeback_cache)
-      ffi_->flags = l::tweak_flags_writeback_cache(ffi_->flags);
+      l::tweak_flags_writeback_cache(&ffi_->flags);
 
     return l::create(config.getattr,
                      config.create,
