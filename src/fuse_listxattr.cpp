@@ -54,6 +54,7 @@ namespace l
       ("user.mergerfs.cache.readdir")
       ("user.mergerfs.cache.statfs")
       ("user.mergerfs.cache.symlinks")
+      ("user.mergerfs.cache.writeback")
       ("user.mergerfs.direct_io")
       ("user.mergerfs.dropcacheonclose")
       ("user.mergerfs.fuse_msg_size")

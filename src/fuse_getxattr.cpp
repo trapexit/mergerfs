@@ -395,6 +395,8 @@ namespace l
           l::getxattr_controlfile_bool(config.cache_readdir,attrvalue);
         else if((attr[2] == "cache") && (attr[3] == "files"))
           l::getxattr_controlfile(config.cache_files,attrvalue);
+        else if((attr[2] == "cache") && (attr[3] == "writeback"))
+          l::getxattr_controlfile_bool(config.writeback_cache,attrvalue);
         break;
       }
 
