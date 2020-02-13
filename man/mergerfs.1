@@ -2227,14 +2227,18 @@ While some users have reported problems it appears to always be related
 to how Samba is setup in relation to permissions.
 .SS How are inodes calculated?
 .PP
-mergerfs\-inode = (original\-inode | (device\-id << 32))
+https://github.com/trapexit/mergerfs/blob/master/src/fs_inode.hpp
 .PP
-While \f[C]ino_t\f[] is 64 bits only a few filesystems use more than 32.
-Similarly, while \f[C]dev_t\f[] is also 64 bits it was traditionally 16
-bits.
-Bitwise or\[aq]ing them together should work most of the time.
+Originally tried to simply OR st_ino and (st_dev << 32) for 64bit
+systems.
+After a number of years someone finally ran into a collision that lead
+to some problems.
+Traditionally \f[C]dev_t\f[] was 16bit and \f[C]ino_t\f[] was 32bit so
+merging into one 64bit value worked but with both types being able to be
+up to 64bit that is no longer as simple.
+A proper hash seems like the best compromise.
 While totally unique inodes are preferred the overhead which would be
-needed does not seem to out weighted by the benefits.
+needed does not seem to be outweighed by the benefits.
 .PP
 While atypical, yes, inodes can be reused and not refer to the same
 file.
@@ -2260,6 +2264,11 @@ Note\ that\ this\ does\ *not*\ affect\ the\ inode\ that\ libfuse
 and\ the\ kernel\ use\ internally\ (also\ called\ the\ "nodeid").
 \f[]
 .fi
+.PP
+Generally collision, if it occurs, shouldn\[aq]t be a problem.
+You can turn off the calculation by not using \f[C]use_ino\f[].
+In the future it might be worth creating different strategies for users
+to select from.
 .SS I notice massive slowdowns of writes over NFS
 .PP
 Due to how NFS works and interacts with FUSE when not using
