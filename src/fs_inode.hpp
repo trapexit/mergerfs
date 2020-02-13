@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fasthash.h"
+
 #include <stdint.h>
 #include <sys/stat.h>
 
@@ -31,11 +33,15 @@ namespace fs
     void
     recompute(struct stat *st_)
     {
-      /* not ideal to do this at runtime but likely gets optimized out */
-      if(sizeof(st_->st_ino) == 4)
-        st_->st_ino |= ((uint32_t)st_->st_dev << 16);
-      else
-        st_->st_ino |= ((uint64_t)st_->st_dev << 32);
+      uint64_t buf[5];
+
+      buf[0] = st_->st_ino;
+      buf[1] = st_->st_dev;
+      buf[2] = buf[0] ^ buf[1];
+      buf[3] = buf[0] & buf[1];
+      buf[4] = buf[0] | buf[1];
+
+      st_->st_ino = fasthash64(&buf[0],sizeof(buf),MAGIC);
     }
   }
 }

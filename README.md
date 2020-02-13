@@ -1070,9 +1070,9 @@ Yes. While some users have reported problems it appears to always be related to 
 
 #### How are inodes calculated?
 
-mergerfs-inode = (original-inode | (device-id << 32))
+https://github.com/trapexit/mergerfs/blob/master/src/fs_inode.hpp
 
-While `ino_t` is 64 bits only a few filesystems use more than 32. Similarly, while `dev_t` is also 64 bits it was traditionally 16 bits. Bitwise or'ing them together should work most of the time. While totally unique inodes are preferred the overhead which would be needed does not seem to out weighted by the benefits.
+Originally tried to simply OR st_ino and (st_dev << 32) for 64bit systems. After a number of years someone finally ran into a collision that lead to some problems. Traditionally `dev_t` was 16bit and `ino_t` was 32bit so merging into one 64bit value worked but with both types being able to be up to 64bit that is no longer as simple. A proper hash seems like the best compromise. While totally unique inodes are preferred the overhead which would be needed does not seem to be outweighed by the benefits.
 
 While atypical, yes, inodes can be reused and not refer to the same file. The internal id used to reference a file in FUSE is different from the inode value presented. The former is the `nodeid` and is actually a tuple of (nodeid,generation). That tuple is not user facing. The inode is merely metadata passed through the kernel and found using the `stat` family of calls or `readdir`.
 
@@ -1089,6 +1089,7 @@ Note that this does *not* affect the inode that libfuse
 and the kernel use internally (also called the "nodeid").
 ```
 
+Generally collision, if it occurs, shouldn't be a problem. You can turn off the calculation by not using `use_ino`. In the future it might be worth creating different strategies for users to select from.
 
 #### I notice massive slowdowns of writes over NFS
 
