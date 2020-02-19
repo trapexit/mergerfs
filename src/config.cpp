@@ -55,7 +55,7 @@ Config::Config()
     writeback_cache(false),
     readdirplus(false),
     cache_files(CacheFiles::LIBFUSE),
-    fuse_msg_size(FUSE_MAX_MAX_PAGES),
+    fuse_msg_size(FUSE_MSG_MAX_PAGES),
     POLICYINIT(access),
     POLICYINIT(chmod),
     POLICYINIT(chown),

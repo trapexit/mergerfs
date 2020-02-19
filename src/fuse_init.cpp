@@ -73,7 +73,7 @@ namespace l
       }
     else
       {
-        c_.fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
+        c_.fuse_msg_size = FUSE_MSG_DEFAULT_PAGES;
       }
   }
 }

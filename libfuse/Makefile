@@ -22,11 +22,9 @@ INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
 SRC   = \
 	lib/buffer.c \
-	lib/cuse_lowlevel.c \
-	lib/fuse_dirents.c \
 	lib/fuse.c \
-	lib/fuse_kern_chan.c \
-	lib/fuse_loop.c \
+	lib/fuse_chan.c \
+	lib/fuse_dirents.c \
 	lib/fuse_loop_mt.c \
 	lib/fuse_lowlevel.c \
 	lib/fuse_mt.c \
@@ -34,7 +32,8 @@ SRC   = \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \
 	lib/helper.c \
-	lib/mount.c
+	lib/mount.c \
+	lib/sys.c
 OBJS = $(SRC:lib/%.c=build/%.o)
 DEPS = $(SRC:lib/%.c=build/%.d)
 

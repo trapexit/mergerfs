@@ -9,6 +9,8 @@
 /* these definitions provide source compatibility to prior versions.
    Do not include this file directly! */
 
+#include "fuse_opt.h"
+
 struct fuse_file_info_compat {
 	int flags;
 	unsigned long fh;

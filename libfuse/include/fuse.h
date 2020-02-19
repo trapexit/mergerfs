@@ -9,20 +9,6 @@
 #ifndef _FUSE_H_
 #define _FUSE_H_
 
-/** @file
- *
- * This file defines the library interface of FUSE
- *
- * IMPORTANT: you should define FUSE_USE_VERSION before including this
- * header.  To use the newest API define it to 26 (recommended for any
- * new application), to use the old API define it to 21 (default) 22
- * or 25, to use the even older 1.X API define it to 11.
- */
-
-#ifndef FUSE_USE_VERSION
-#define FUSE_USE_VERSION 21
-#endif
-
 #include "fuse_common.h"
 #include "fuse_dirents.h"
 
@@ -668,12 +654,11 @@ struct fuse_context {
  * @param user_data user data supplied in the context during the init() method
  * @return 0 on success, nonzero on failure
  */
-/*
-  int fuse_main(int argc, char *argv[], const struct fuse_operations *op,
-  void *user_data);
-*/
-#define fuse_main(argc, argv, op, user_data)				\
-	fuse_main_real(argc, argv, op, sizeof(*(op)), user_data)
+
+int fuse_main(int argc,
+              char *argv[],
+              const struct fuse_operations *op,
+              void *user_data);
 
 /* ----------------------------------------------------------- *
  * More detailed API					       *
@@ -689,7 +674,7 @@ struct fuse_context {
  * @param user_data user data supplied in the context during the init() method
  * @return the created FUSE handle
  */
-struct fuse *fuse_new(struct fuse_chan *ch, struct fuse_args *args,
+struct fuse *fuse_new(int devfuse_fd, struct fuse_args *args,
 		      const struct fuse_operations *op, size_t op_size,
 		      void *user_data);
 
@@ -704,17 +689,6 @@ struct fuse *fuse_new(struct fuse_chan *ch, struct fuse_args *args,
  * @param f the FUSE handle
  */
 void fuse_destroy(struct fuse *f);
-
-/**
- * FUSE event loop.
- *
- * Requests from the kernel are processed, and the appropriate
- * operations are called.
- *
- * @param f the FUSE handle
- * @return 0 if no error occurred, -1 otherwise
- */
-int fuse_loop(struct fuse *f);
 
 /**
  * Exit from event loop
@@ -761,41 +735,11 @@ int fuse_loop_mt(struct fuse *f);
 struct fuse_context *fuse_get_context(void);
 
 /**
- * Get the current supplementary group IDs for the current request
- *
- * Similar to the getgroups(2) system call, except the return value is
- * always the total number of group IDs, even if it is larger than the
- * specified size.
- *
- * The current fuse kernel module in linux (as of 2.6.30) doesn't pass
- * the group list to userspace, hence this function needs to parse
- * "/proc/$TID/task/$TID/status" to get the group IDs.
- *
- * This feature may not be supported on all operating systems.  In
- * such a case this function will return -ENOSYS.
- *
- * @param size size of given array
- * @param list array of group IDs to be filled in
- * @return the total number of supplementary group IDs or -errno on failure
- */
-int fuse_getgroups(int size, gid_t list[]);
-
-/**
  * Check if the current request has already been interrupted
  *
  * @return 1 if the request has been interrupted, 0 otherwise
  */
 int fuse_interrupted(void);
-
-/**
- * Obsolete, doesn't do anything
- *
- * @return -EINVAL
- */
-int fuse_invalidate(struct fuse *f, const char *path);
-
-/* Deprecated, don't use */
-int fuse_is_lib_option(const char *opt);
 
 /**
  * The real main function
@@ -1030,17 +974,11 @@ typedef void (*fuse_processor_t)(struct fuse *, struct fuse_cmd *, void *);
 /** This is the part of fuse_main() before the event loop */
 struct fuse *fuse_setup(int argc, char *argv[],
 			const struct fuse_operations *op, size_t op_size,
-			char **mountpoint, int *multithreaded,
+			char **mountpoint,
 			void *user_data);
 
 /** This is the part of fuse_main() after the event loop */
 void fuse_teardown(struct fuse *fuse, char *mountpoint);
-
-/** Read a single command.  If none are read, return NULL */
-struct fuse_cmd *fuse_read_cmd(struct fuse *f);
-
-/** Process a single command */
-void fuse_process_cmd(struct fuse *f, struct fuse_cmd *cmd);
 
 /** Multi threaded event loop, which calls the custom command
     processor function */
@@ -1055,53 +993,6 @@ void fuse_set_getcontext_func(struct fuse_context *(*func)(void));
 
 /** Get session from fuse object */
 struct fuse_session *fuse_get_session(struct fuse *f);
-
-/* ----------------------------------------------------------- *
- * Compatibility stuff					       *
- * ----------------------------------------------------------- */
-
-#if FUSE_USE_VERSION < 26
-#  include "fuse_compat.h"
-#  undef fuse_main
-#  if FUSE_USE_VERSION == 25
-#    define fuse_main(argc, argv, op)				\
-	fuse_main_real_compat25(argc, argv, op, sizeof(*(op)))
-#    define fuse_new fuse_new_compat25
-#    define fuse_setup fuse_setup_compat25
-#    define fuse_teardown fuse_teardown_compat22
-#    define fuse_operations fuse_operations_compat25
-#  elif FUSE_USE_VERSION == 22
-#    define fuse_main(argc, argv, op)				\
-	fuse_main_real_compat22(argc, argv, op, sizeof(*(op)))
-#    define fuse_new fuse_new_compat22
-#    define fuse_setup fuse_setup_compat22
-#    define fuse_teardown fuse_teardown_compat22
-#    define fuse_operations fuse_operations_compat22
-#    define fuse_file_info fuse_file_info_compat
-#  elif FUSE_USE_VERSION == 24
-#    error Compatibility with high-level API version 24 not supported
-#  else
-#    define fuse_dirfil_t fuse_dirfil_t_compat
-#    define __fuse_read_cmd fuse_read_cmd
-#    define __fuse_process_cmd fuse_process_cmd
-#    define __fuse_loop_mt fuse_loop_mt_proc
-#    if FUSE_USE_VERSION == 21
-#      define fuse_operations fuse_operations_compat2
-#      define fuse_main fuse_main_compat2
-#      define fuse_new fuse_new_compat2
-#      define __fuse_setup fuse_setup_compat2
-#      define __fuse_teardown fuse_teardown_compat22
-#      define __fuse_exited fuse_exited
-#      define __fuse_set_getcontext_func fuse_set_getcontext_func
-#    else
-#      define fuse_statfs fuse_statfs_compat1
-#      define fuse_operations fuse_operations_compat1
-#      define fuse_main fuse_main_compat1
-#      define fuse_new fuse_new_compat1
-#      define FUSE_DEBUG FUSE_DEBUG_COMPAT1
-#    endif
-#  endif
-#endif
 
 #ifdef __cplusplus
 }

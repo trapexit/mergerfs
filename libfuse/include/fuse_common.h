@@ -33,8 +33,8 @@
 #error Please add -D_FILE_OFFSET_BITS=64 to your compile flags!
 #endif
 
-#define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
-#define FUSE_MAX_MAX_PAGES 256
+#define FUSE_MSG_DEFAULT_PAGES 32
+#define FUSE_MSG_MAX_PAGES 256
 
 #ifdef __cplusplus
 extern "C" {
@@ -206,7 +206,7 @@ struct fuse_conn_info {
 };
 
 struct fuse_session;
-struct fuse_chan;
+typedef struct fuse_chan_t fuse_chan_t;
 struct fuse_pollhandle;
 
 /**
@@ -219,8 +219,8 @@ struct fuse_pollhandle;
  * @param args argument vector
  * @return the communication channel on success, NULL on failure
  */
-struct fuse_chan *fuse_mount(const char       *mountpoint,
-                             struct fuse_args *args);
+int fuse_mount(const char       *mountpoint,
+               struct fuse_args *args);
 
 /**
  * Umount a FUSE mountpoint
@@ -228,7 +228,8 @@ struct fuse_chan *fuse_mount(const char       *mountpoint,
  * @param mountpoint the mount point path
  * @param ch the communication channel
  */
-void fuse_unmount(const char *mountpoint, struct fuse_chan *ch);
+void fuse_unmount(const char *mountpoint,
+                  int         devfuse_fd);
 
 /**
  * Parse common options
@@ -247,12 +248,12 @@ void fuse_unmount(const char *mountpoint, struct fuse_chan *ch);
  *
  * @param args argument vector
  * @param mountpoint the returned mountpoint, should be freed after use
- * @param multithreaded set to 1 unless the '-s' option is present
  * @param foreground set to 1 if one of the relevant options is present
  * @return 0 on success, -1 on failure
  */
-int fuse_parse_cmdline(struct fuse_args *args, char **mountpoint,
-		       int *multithreaded, int *foreground);
+int fuse_parse_cmdline(struct fuse_args *args,
+                       char **mountpoint,
+		       int *foreground);
 
 /**
  * Go into the background

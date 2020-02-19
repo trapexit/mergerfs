@@ -382,7 +382,7 @@ parse_and_process_kv_arg(Config            &config,
       else if(key == "fuse_msg_size")
         rv = parse_and_process(value,config.fuse_msg_size,
                                1,
-                               FUSE_MAX_MAX_PAGES);
+                               FUSE_MSG_MAX_PAGES);
     }
 
   if(rv == -1)
