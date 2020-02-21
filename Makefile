@@ -37,8 +37,7 @@ endif
 endif
 
 USE_XATTR = 1
-
-FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
+UGID_USE_RWLOCK = 0
 
 ifeq ($(DEBUG),1)
 DEBUG_FLAGS := -g
@@ -58,29 +57,30 @@ else
 LTO_FLAGS :=
 endif
 
-UGID_USE_RWLOCK = 0
-
-OPTS 	    = -O2
 SRC	    = $(wildcard src/*.cpp)
 OBJS        = $(SRC:src/%.cpp=build/%.o)
 DEPS        = $(SRC:src/%.cpp=build/%.d)
 MANPAGE     = mergerfs.1
-CXXFLAGS   += \
-	      $(OPTS) \
+CXXFLAGS    = \
+              -O2 \
               $(DEBUG_FLAGS) \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
               -Wall \
 	      -Wno-unused-result \
-              $(FUSE_CFLAGS) \
-              -DFUSE_USE_VERSION=29 \
-              -MMD \
+              -MMD
+FUSE_FLAGS = \
+              -Ilibfuse/include \
+              -D_FILE_OFFSET_BITS=64 \
+              -DFUSE_USE_VERSION=29
+MFS_FLAGS  = \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
-LDFLAGS    += \
+LDFLAGS    = \
 	      -pthread \
               -lrt
 
+DESTDIR       =
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
 DATAROOTDIR   = $(PREFIX)/share
@@ -108,7 +108,7 @@ objects: version build/stamp
 	$(MAKE) $(OBJS)
 
 build/mergerfs: libfuse objects
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
 
 mergerfs: build/mergerfs
 
@@ -128,7 +128,7 @@ build/stamp:
 	$(TOUCH) $@
 
 build/%.o: src/%.cpp
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean: rpm-clean
@@ -142,15 +142,15 @@ ifeq ($(GIT_REPO),1)
 endif
 
 .PHONY: install
-install: install-base install-mount.mergerfs install-man
+install: install-base install-mount-tools install-man
 
 install-base: build/mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(INSTALL) -v -m 0755 build/mergerfs "$(INSTALLBINDIR)/mergerfs"
 
-install-mount.mergerfs: install-base
+install-mount-tools: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(LN) -fs "mergerfs" "$(INSTALLBINDIR)/mount.mergerfs"
+	$(MAKE) -C libfuse install
 
 install-man: $(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"

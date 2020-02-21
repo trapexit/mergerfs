@@ -1293,7 +1293,7 @@ int main(int argc, char *argv[])
 		return 0;
 
 	/* Become a daemon and wait for the parent to exit or die.
-	   ie For the control socket to get closed. 
+	   ie For the control socket to get closed.
 	   btw We don't want to use daemon() function here because
 	   it forks and messes with the file descriptors. */
 	setsid();

@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
 	else
 		basename = argv[0];
 
+        type = "mergerfs";
 	if (strncmp(basename, "mount.fuse.", 11) == 0)
 		type = basename + 11;
 	if (strncmp(basename, "mount.fuseblk.", 14) == 0)

@@ -1,7 +1,7 @@
 Name:		mergerfs
 Version:	__VERSION__
 Release:	1%{?dist}
-Summary:	A FUSE union filesystem
+Summary:	A featureful FUSE based union filesystem
 
 Group:		Applications/System
 License:	ISC
@@ -33,6 +33,7 @@ make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 
 %files
 %{_bindir}/*
+%{_sbindir}/*
 %doc %{_mandir}/*
 
 %changelog
