@@ -143,7 +143,9 @@ static void mount_help(void)
 
 static void exec_fusermount(const char *argv[])
 {
-	execv(FUSERMOUNT_DIR "/" FUSERMOUNT_PROG, (char **) argv);
+        execv(FUSERMOUNT_DIR "/mergerfs-" FUSERMOUNT_PROG, (char **) argv);
+        execvp("mergerfs-" FUSERMOUNT_PROG, (char **) argv);
+        execv(FUSERMOUNT_DIR "/" FUSERMOUNT_PROG, (char **) argv);
 	execvp(FUSERMOUNT_PROG, (char **) argv);
 }
 
@@ -407,7 +409,7 @@ static int fuse_mount_fusermount(const char *mountpoint, struct mount_opts *mo,
 	rv = receive_fd(fds[1]);
 
 	if (!mo->auto_unmount) {
-		/* with auto_unmount option fusermount will not exit until 
+		/* with auto_unmount option fusermount will not exit until
 		   this socket is closed */
 		close(fds[1]);
 		waitpid(pid, NULL, 0); /* bury zombie */
