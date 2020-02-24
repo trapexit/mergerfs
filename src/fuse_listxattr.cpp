@@ -66,6 +66,7 @@ namespace l
       ("user.mergerfs.pid")
       ("user.mergerfs.policies")
       ("user.mergerfs.posix_acl")
+      ("user.mergerfs.readdirplus")
       ("user.mergerfs.security_capability")
       ("user.mergerfs.srcmounts")
       ("user.mergerfs.statfs")

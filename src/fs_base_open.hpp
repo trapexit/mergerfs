@@ -63,4 +63,12 @@ namespace fs
   {
     return fs::open(path_.c_str(),flags_,mode_);
   }
+
+  static
+  inline
+  int
+  open_dir_ro(const std::string &path_)
+  {
+    return fs::open(path_,O_RDONLY|O_DIRECTORY);
+  }
 }

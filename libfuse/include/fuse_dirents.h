@@ -54,12 +54,21 @@ int  fuse_dirents_init(fuse_dirents_t *d);
 void fuse_dirents_free(fuse_dirents_t *d);
 void fuse_dirents_reset(fuse_dirents_t *d);
 
-int  fuse_dirents_add(fuse_dirents_t *d,
-                      struct dirent  *de);
+int  fuse_dirents_add(fuse_dirents_t      *d,
+                      const struct dirent *de);
 int  fuse_dirents_add_plus(fuse_dirents_t      *d,
                            const struct dirent *de,
                            const fuse_entry_t  *entry,
                            const struct stat   *st);
+#ifdef __linux__
+struct linux_dirent64;
+int  fuse_dirents_add_linux(fuse_dirents_t            *d,
+                            const struct linux_dirent64 *de);
+int  fuse_dirents_add_linux_plus(fuse_dirents_t              *d,
+                                 const struct linux_dirent64 *de,
+                                 const fuse_entry_t          *entry,
+                                 const struct stat           *st);
+#endif
 
 void *fuse_dirents_find(fuse_dirents_t *d,
                         const uint64_t  ino);

@@ -16,8 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fuse_readdir_plus_linux.icpp"
-#else
-# include "fuse_readdir_plus_posix.icpp"
-#endif
+#pragma once
+
+#include "locked_fixed_mem_pool.hpp"
+
+extern LockedFixedMemPool<128 * 1024> g_DENTS_BUF_POOL;
