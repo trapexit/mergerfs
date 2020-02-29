@@ -1,6 +1,4 @@
 /*
-  ISC License
-
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -18,57 +16,15 @@
 
 #pragma once
 
-#include <string>
+#include <fuse.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-namespace fs
+namespace FUSE
 {
-  static
-  inline
   int
-  open(const char *path_,
-       const int   flags_)
-  {
-    return ::open(path_,flags_);
-  }
-
-  static
-  inline
-  int
-  open(const char   *path_,
-       const int     flags_,
-       const mode_t  mode_)
-  {
-    return ::open(path_,flags_,mode_);
-  }
-
-  static
-  inline
-  int
-  open(const std::string &path_,
-       const int          flags_)
-  {
-    return fs::open(path_.c_str(),flags_);
-  }
-
-  static
-  inline
-  int
-  open(const std::string &path_,
-       const int          flags_,
-       const mode_t       mode_)
-  {
-    return fs::open(path_.c_str(),flags_,mode_);
-  }
-
-  static
-  inline
-  int
-  open_dir_ro(const std::string &path_)
-  {
-    return fs::open(path_,O_RDONLY|O_DIRECTORY);
-  }
+  readdir_plus(fuse_file_info *ffi_,
+               fuse_dirents_t *buf_);
 }

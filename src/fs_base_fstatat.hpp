@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,59 +16,38 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
-
-#include <string>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 namespace fs
 {
   static
   inline
   int
-  open(const char *path_,
-       const int   flags_)
+  fstatat(const int    dirfd,
+          const char  *pathname,
+          struct stat *statbuf,
+          const int    flags)
   {
-    return ::open(path_,flags_);
+    return ::fstatat(dirfd,
+                     pathname,
+                     statbuf,
+                     flags);
   }
 
   static
   inline
   int
-  open(const char   *path_,
-       const int     flags_,
-       const mode_t  mode_)
+  fstatat_nofollow(const int    dirfd,
+                   const char  *pathname,
+                   struct stat *statbuf)
   {
-    return ::open(path_,flags_,mode_);
-  }
-
-  static
-  inline
-  int
-  open(const std::string &path_,
-       const int          flags_)
-  {
-    return fs::open(path_.c_str(),flags_);
-  }
-
-  static
-  inline
-  int
-  open(const std::string &path_,
-       const int          flags_,
-       const mode_t       mode_)
-  {
-    return fs::open(path_.c_str(),flags_,mode_);
-  }
-
-  static
-  inline
-  int
-  open_dir_ro(const std::string &path_)
-  {
-    return fs::open(path_,O_RDONLY|O_DIRECTORY);
+    return fs::fstatat(dirfd,
+                       pathname,
+                       statbuf,
+                       AT_SYMLINK_NOFOLLOW);
   }
 }

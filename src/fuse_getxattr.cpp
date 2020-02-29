@@ -372,6 +372,8 @@ namespace l
           l::getxattr_controlfile_bool(config.async_read,attrvalue);
         else if(attr[2] == "fuse_msg_size")
           l::getxattr_controlfile(config.fuse_msg_size,attrvalue);
+        else if(attr[2] == "readdirplus")
+          l::getxattr_controlfile_bool(config.readdirplus,attrvalue);
         break;
 
       case 4:

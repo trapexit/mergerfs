@@ -12,7 +12,6 @@
 struct fuse_operations_compat25 {
 	int (*getattr) (const char *, struct stat *);
 	int (*readlink) (const char *, char *, size_t);
-	int (*getdir) (const char *, fuse_dirh_t, fuse_dirfil_t);
 	int (*mknod) (const char *, mode_t, dev_t);
 	int (*mkdir) (const char *, mode_t);
 	int (*unlink) (const char *);
@@ -38,7 +37,7 @@ struct fuse_operations_compat25 {
 	int (*listxattr) (const char *, char *, size_t);
 	int (*removexattr) (const char *, const char *);
 	int (*opendir) (const char *, struct fuse_file_info *);
-	int (*readdir) (const char *, void *, fuse_fill_dir_t, off_t,
+	int (*readdir) (const char *, void *, off_t,
 			struct fuse_file_info *);
 	int (*releasedir) (const char *, struct fuse_file_info *);
 	int (*fsyncdir) (const char *, int, struct fuse_file_info *);
@@ -71,7 +70,6 @@ void fuse_teardown_compat22(struct fuse *fuse, int fd, char *mountpoint);
 struct fuse_operations_compat22 {
 	int (*getattr) (const char *, struct stat *);
 	int (*readlink) (const char *, char *, size_t);
-	int (*getdir) (const char *, fuse_dirh_t, fuse_dirfil_t);
 	int (*mknod) (const char *, mode_t, dev_t);
 	int (*mkdir) (const char *, mode_t);
 	int (*unlink) (const char *);
@@ -97,7 +95,7 @@ struct fuse_operations_compat22 {
 	int (*listxattr) (const char *, char *, size_t);
 	int (*removexattr) (const char *, const char *);
 	int (*opendir) (const char *, struct fuse_file_info_compat *);
-	int (*readdir) (const char *, void *, fuse_fill_dir_t, off_t,
+	int (*readdir) (const char *, void *, off_t,
 			struct fuse_file_info_compat *);
 	int (*releasedir) (const char *, struct fuse_file_info_compat *);
 	int (*fsyncdir) (const char *, int, struct fuse_file_info_compat *);
@@ -118,11 +116,9 @@ int fuse_main_real_compat22(int argc, char *argv[],
 			    const struct fuse_operations_compat22 *op,
 			    size_t op_size);
 
-typedef int (*fuse_dirfil_t_compat) (fuse_dirh_t h, const char *name, int type);
 struct fuse_operations_compat2 {
 	int (*getattr)	   (const char *, struct stat *);
 	int (*readlink)	   (const char *, char *, size_t);
-	int (*getdir)	   (const char *, fuse_dirh_t, fuse_dirfil_t_compat);
 	int (*mknod)	   (const char *, mode_t, dev_t);
 	int (*mkdir)	   (const char *, mode_t);
 	int (*unlink)	   (const char *);
@@ -170,7 +166,6 @@ struct fuse_statfs_compat1 {
 struct fuse_operations_compat1 {
 	int (*getattr)	(const char *, struct stat *);
 	int (*readlink) (const char *, char *, size_t);
-	int (*getdir)	(const char *, fuse_dirh_t, fuse_dirfil_t_compat);
 	int (*mknod)	(const char *, mode_t, dev_t);
 	int (*mkdir)	(const char *, mode_t);
 	int (*unlink)	(const char *);

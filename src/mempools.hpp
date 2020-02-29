@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -15,3 +15,9 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+#pragma once
+
+#include "locked_fixed_mem_pool.hpp"
+
+extern LockedFixedMemPool<128 * 1024> g_DENTS_BUF_POOL;

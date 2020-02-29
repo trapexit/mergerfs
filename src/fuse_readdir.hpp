@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,16 +18,9 @@
 
 #include <fuse.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 namespace FUSE
 {
   int
-  readdir(const char      *fusepath_,
-          void            *buf_,
-          fuse_fill_dir_t  filler_,
-          off_t            offset_,
-          fuse_file_info  *ffi_);
+  readdir(fuse_file_info *ffi_,
+          fuse_dirents_t *buf_);
 }

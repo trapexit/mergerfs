@@ -141,7 +141,7 @@ static int fuse_loop_start_thread(struct fuse_mt *mt)
 	}
 	memset(w, 0, sizeof(struct fuse_worker));
 	w->bufsize = fuse_chan_bufsize(mt->prevch);
-	w->buf = malloc(w->bufsize);
+	w->buf = calloc(w->bufsize,1);
 	w->mt = mt;
 	if (!w->buf) {
 		fprintf(stderr, "fuse: failed to allocate read buffer\n");

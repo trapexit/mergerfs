@@ -30,18 +30,26 @@ namespace fs
     static const uint64_t MAGIC = 0x7472617065786974;
 
     inline
-    void
-    recompute(struct stat *st_)
+    uint64_t
+    recompute(ino_t ino_,
+              dev_t dev_)
     {
       uint64_t buf[5];
 
-      buf[0] = st_->st_ino;
-      buf[1] = st_->st_dev;
+      buf[0] = ino_;
+      buf[1] = dev_;
       buf[2] = buf[0] ^ buf[1];
       buf[3] = buf[0] & buf[1];
       buf[4] = buf[0] | buf[1];
 
-      st_->st_ino = fasthash64(&buf[0],sizeof(buf),MAGIC);
+      return fasthash64(&buf[0],sizeof(buf),MAGIC);
+    }
+
+    inline
+    void
+    recompute(struct stat *st_)
+    {
+      st_->st_ino = recompute(st_->st_ino,st_->st_dev);
     }
   }
 }

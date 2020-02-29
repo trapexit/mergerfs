@@ -17,7 +17,7 @@ int fuse_session_loop(struct fuse_session *se)
 	int res = 0;
 	struct fuse_chan *ch = fuse_session_next_chan(se, NULL);
 	size_t bufsize = fuse_chan_bufsize(ch);
-	char *buf = (char *) malloc(bufsize);
+	char *buf = (char*)calloc(bufsize,1);
 	if (!buf) {
 		fprintf(stderr, "fuse: failed to allocate read buffer\n");
 		return -1;

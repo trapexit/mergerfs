@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2018, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,51 +18,70 @@
 
 #pragma once
 
-#include "khash.h"
-#include "fasthash.h"
+#include <stdlib.h>
+#include <stdint.h>
 
-KHASH_SET_INIT_INT64(hashset);
+typedef struct fixed_mem_pool_t fixed_mem_pool_t;
+struct fixed_mem_pool_t
+{
+  fixed_mem_pool_t *next;
+};
 
-class HashSet
+template<uint64_t SIZE>
+class FixedMemPool
 {
 public:
-  HashSet()
+  FixedMemPool()
   {
-    _set = kh_init(hashset);
+    list.next = NULL;
   }
 
-  ~HashSet()
+  ~FixedMemPool()
   {
-    kh_destroy(hashset,_set);
+    void *mem;
+    while(!empty())
+      {
+        mem = alloc();
+        ::free(mem);
+      }
   }
 
-  inline
-  int
-  put(const char     *str_,
-      const uint64_t  len_)
+  bool
+  empty(void)
   {
-    int rv;
-    uint64_t h;
-    khint_t key;
+    return (list.next == NULL);
+  }
 
-    h = fasthash64(str_,len_,0x7472617065786974);
+  uint64_t
+  size(void)
+  {
+    return SIZE;
+  }
 
-    key = kh_put(hashset,_set,h,&rv);
-    if(rv == 0)
-      return 0;
+  void*
+  alloc(void)
+  {
+    void *rv;
 
-    kh_key(_set,key) = h;
+    if(list.next == NULL)
+      return malloc(SIZE);
+
+    rv = (void*)list.next;
+    list.next = list.next->next;
 
     return rv;
   }
 
-  inline
-  int
-  size(void)
+  void
+  free(void *mem_)
   {
-    return kh_size(_set);
+    fixed_mem_pool_t *next;
+
+    next = (fixed_mem_pool_t*)mem_;
+    next->next = list.next;
+    list.next = next;
   }
 
 private:
-  khash_t(hashset) *_set;
+  fixed_mem_pool_t list;
 };

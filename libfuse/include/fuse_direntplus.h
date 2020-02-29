@@ -15,3 +15,17 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+#pragma once
+
+#include "fuse_attr.h"
+#include "fuse_dirent.h"
+#include "fuse_entry.h"
+
+typedef struct fuse_direntplus_s fuse_direntplus_t;
+struct fuse_direntplus_s
+{
+  fuse_entry_t  entry;
+  fuse_attr_t   attr;
+  fuse_dirent_t dirent;
+};

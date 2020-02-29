@@ -16,8 +16,54 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fuse_readdir_linux.icpp"
-#else
-# include "fuse_readdir_posix.icpp"
-#endif
+#pragma once
+
+#include "fixed_mem_pool.hpp"
+
+#include <pthread.h>
+
+template<size_t SIZE>
+class LockedFixedMemPool
+{
+public:
+  LockedFixedMemPool()
+  {
+    pthread_mutex_init(&_mutex,NULL);
+  }
+
+  ~LockedFixedMemPool()
+  {
+    pthread_mutex_destroy(&_mutex);
+  }
+
+public:
+  void*
+  alloc(void)
+  {
+    void *mem;
+
+    pthread_mutex_lock(&_mutex);
+    mem = _fmp.alloc();
+    pthread_mutex_unlock(&_mutex);
+
+    return mem;
+  }
+
+  void
+  free(void *mem_)
+  {
+    pthread_mutex_lock(&_mutex);
+    _fmp.free(mem_);
+    pthread_mutex_unlock(&_mutex);
+  }
+
+  uint64_t
+  size(void)
+  {
+    return _fmp.size();
+  }
+
+private:
+  FixedMemPool<SIZE> _fmp;
+  pthread_mutex_t    _mutex;
+};

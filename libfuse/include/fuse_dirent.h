@@ -15,3 +15,17 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+#pragma once
+
+#include <stdint.h>
+
+typedef struct fuse_dirent_s fuse_dirent_t;
+struct fuse_dirent_s
+{
+  uint64_t ino;
+  uint64_t off;
+  uint32_t namelen;
+  uint32_t type;
+  char     name[];
+};

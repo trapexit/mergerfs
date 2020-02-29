@@ -50,6 +50,7 @@
 #include "fuse_read.hpp"
 #include "fuse_read_buf.hpp"
 #include "fuse_readdir.hpp"
+#include "fuse_readdir_plus.hpp"
 #include "fuse_readlink.hpp"
 #include "fuse_release.hpp"
 #include "fuse_releasedir.hpp"
@@ -102,7 +103,6 @@ namespace l
     ops.ftruncate       = FUSE::ftruncate;
     ops.futimens        = FUSE::futimens;
     ops.getattr         = FUSE::getattr;
-    ops.getdir          = NULL; /* deprecated; use readdir */
     ops.getxattr        = FUSE::getxattr;
     ops.init            = FUSE::init;
     ops.ioctl           = FUSE::ioctl;
@@ -118,6 +118,7 @@ namespace l
     ops.read            = (nullrw ? FUSE::read_null : FUSE::read);
     ops.read_buf        = (nullrw ? NULL : FUSE::read_buf);
     ops.readdir         = FUSE::readdir;
+    ops.readdir_plus    = FUSE::readdir_plus;
     ops.readlink        = FUSE::readlink;
     ops.release         = FUSE::release;
     ops.releasedir      = FUSE::releasedir;
