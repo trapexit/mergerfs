@@ -19,6 +19,26 @@
 
 static
 uint64_t
+dirent_exact_namelen(const struct dirent *d_)
+{
+#ifdef _D_EXACT_NAMELEN
+  return _D_EXACT_NAMELEN(d_);
+#elif defined _DIRENT_HAVE_D_NAMLEN
+  return d_->d_namlen;
+#else
+  return strlen(d_->d_name);
+#endif
+}
+
+static
+uint64_t
+dirent_alloc_namelen(const struct dirent *d_)
+{
+  return (dirent_exact_namelen(d_) + 1);
+}
+
+static
+uint64_t
 align_uint64_t(uint64_t v_)
 {
   return ((v_ + sizeof(uint64_t) - 1) & ~(sizeof(uint64_t) - 1));
@@ -251,7 +271,7 @@ fuse_dirents_add(fuse_dirents_t      *d_,
       return -EINVAL;
     }
 
-  namelen = _D_ALLOC_NAMLEN(dirent_);
+  namelen = dirent_alloc_namelen(dirent_);
   size    = fuse_dirent_size(namelen);
 
   d = fuse_dirents_alloc(d_,size);
@@ -288,7 +308,7 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
       break;
     }
 
-  namelen = _D_ALLOC_NAMLEN(dirent_);
+  namelen = dirent_alloc_namelen(dirent_);
   size    = fuse_direntplus_size(namelen);
 
   d = fuse_dirents_alloc(d_,size);
