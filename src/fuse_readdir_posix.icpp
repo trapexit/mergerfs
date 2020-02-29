@@ -45,6 +45,19 @@ using std::vector;
 namespace l
 {
   static
+  uint64_t
+  dirent_exact_namelen(const struct dirent *d_)
+  {
+#ifdef _D_EXACT_NAMELEN
+    return _D_EXACT_NAMELEN(d_);
+#elif defined _DIRENT_HAVE_D_NAMLEN
+    return d_->d_namlen;
+#else
+    return strlen(d_->d_name);
+#endif
+  }
+
+  static
   int
   readdir(const Branches &branches_,
           const char     *dirname_,
@@ -74,7 +87,7 @@ namespace l
         rv = 0;
         for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
           {
-            rv = names.put(de->d_name,_D_EXACT_NAMLEN(de));
+            rv = names.put(de->d_name,l::dirent_exact_namelen(de));
             if(rv == 0)
               continue;
 
