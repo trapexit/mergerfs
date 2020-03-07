@@ -100,7 +100,6 @@ namespace l
       {
         int dirfd;
         int64_t nread;
-        uint64_t namelen;
 
         basepath = fs::path::make(&branches_[i].path,dirname_);
 
@@ -120,12 +119,11 @@ namespace l
             if(nread == 0)
               break;
 
-            for(int64_t pos = 0; pos < nread;)
+            for(int64_t pos = 0; pos < nread; pos += d->d_reclen)
               {
                 d = (struct linux_dirent64*)(buf + pos);
-                namelen = (d->d_reclen - offsetof(struct linux_dirent64,d_name));
 
-                rv = names.put(d->d_name,namelen);
+                rv = names.put(d->d_name);
                 if(rv == 0)
                   continue;
 
@@ -139,8 +137,6 @@ namespace l
                 rv = fuse_dirents_add_linux_plus(buf_,d,&entry,&st);
                 if(rv)
                   return close_free_ret_enomem(dirfd,buf);
-
-                pos += d->d_reclen;
               }
           }
 
