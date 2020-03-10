@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-02-09
+% 2020-03-10
 
 # NAME
 
@@ -239,6 +239,8 @@ If all branches are filtered an error will be returned. Typically **EROFS** or *
 | mfs (most free space) | Search category: same as **epmfs**. Action category: same as **epmfs**. Create category: Pick the drive with the most available free space. |
 | newest | Pick the file / directory with the largest mtime. |
 | rand (random) | Calls **all** and then randomizes. Returns 1. |
+
+**NOTE:** If you are using an underlying filesystem that reserves blocks such as ext2, ext3, or ext4 be aware that mergerfs respects the reservation by using `f_bavail` (number of free blocks for unprivileged users) rather than `f_bfree` (number of free blocks) in policy calculations. **df** does NOT use `f_bavail`, it uses `f_bfree`, so direct comparisons between **df** output and mergerfs' policies is not appropriate.
 
 
 #### Defaults ####
