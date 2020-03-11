@@ -172,11 +172,11 @@ See the BENCHMARKING section for suggestions on how to test.
 
 ### xattr
 
-Runtime extended attribute support can be managed via the `xattr` option. By default it will passthrough any xattr calls. Given xattr support is rarely used and can have significant performance implications mergerfs allows it to be disabled at runtime.
+Runtime extended attribute support can be managed via the `xattr` option. By default it will passthrough any xattr calls. Given xattr support is rarely used and can have significant performance implications mergerfs allows it to be disabled at runtime. The performance problems mostly comes when file caching is enabled. The kernel will send a `getxattr` for `security.capability` *before every single write*. It doesn't cache the responses to any `getxattr`. This might be addressed in the future but for now mergerfs can really only offer the following workarounds.
 
 `noattr` will cause mergerfs to short circuit all xattr calls and return ENOATTR where appropriate. mergerfs still gets all the requests but they will not be forwarded on to the underlying filesystems. The runtime control will still function in this mode.
 
-`nosys` will cause mergerfs to return ENOSYS for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This will be more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
+`nosys` will cause mergerfs to return ENOSYS for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This is more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
 
 
 # FUNCTIONS / POLICIES / CATEGORIES
@@ -584,7 +584,7 @@ With #2 one could use dm-cache as well but there is another solution which requi
 1. Create 2 mergerfs pools. One which includes just the slow drives and one which has both the fast drives (SSD,NVME,etc.) and slow drives.
 2. The 'cache' pool should have the cache drives listed first.
 3. The best `create` policies to use for the 'cache' pool would probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under the assumption that the cache drive(s) are far smaller than the backing drives. If using path preserving policies remember that you'll need to manually create the core directories of those paths you wish to be cached. Be sure the permissions are in sync. Use `mergerfs.fsck` to check / correct them. You could also tag the slow drives as `=NC` though that'd mean if the cache drives fill you'd get "out of space" errors.
-4. Enable `moveonenospc` and set `minfreespace` appropriately. Perhaps setting `minfreespace` to the size of the largest cache drive.
+4. Enable `moveonenospc` and set `minfreespace` appropriately. To make sure there is enough room on the "slow" pool you might want to set `minfreespace` to at least as large as the size of the largest cache drive if not larger. This way in the worst case the whole of the cache drive(s) can be moved to the other drives.
 5. Set your programs to use the cache pool.
 6. Save one of the below scripts or create you're own.
 7. Use `cron` (as root) to schedule the command at whatever frequency is appropriate for your workflow.
@@ -642,13 +642,14 @@ done
 
 # PERFORMANCE
 
-mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and lattices, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below.
+mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and latency, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below.
 
 NOTE: be sure to read about these features before changing them
 
 * enable (or disable) `splice_move`, `splice_read`, and `splice_write`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable (or disable) page caching (`cache.files`)
+* enable `cache.writeback`
 * enable `cache.open`
 * enable `cache.statfs`
 * enable `cache.symlinks`
@@ -660,7 +661,7 @@ NOTE: be sure to read about these features before changing them
 * test theoretical performance using `nullrw` or mounting a ram disk
 * use `symlinkify` if your data is largely static
 * use tiered cache drives
-* use lvm and lvm cache to place a SSD in front of your HDDs (howto coming)
+* use lvm and lvm cache to place a SSD in front of your HDDs
 
 If you come across a setting that significantly impacts performance please contact trapexit so he may investigate further.
 
@@ -685,12 +686,6 @@ Sometimes the problem is really the application accessing or writing data throug
 
 ### write benchmark
 
-With synchronized IO
-```
-$ dd if=/dev/zero of=/mnt/mergerfs/1GB.file bs=1M count=1024 oflag=dsync,nocache conv=fdatasync status=progress
-```
-
-Without synchronized IO
 ```
 $ dd if=/dev/zero of=/mnt/mergerfs/1GB.file bs=1M count=1024 oflag=nocache conv=fdatasync status=progress
 ```
@@ -943,11 +938,11 @@ That said, for the average person, the following should be fine:
 
 #### Why are all my files ending up on 1 drive?!
 
-Did you start with empty drives? Did you explicitly configure a `category.create` policy?
+Did you start with empty drives? Did you explicitly configure a `category.create` policy? Are you using a path preserving policy?
 
-The default create policy is `epmfs`. That is a path preserving algorithm. With such a policy for `mkdir` and `create` with a set of empty drives it will naturally select only 1 drive when the first directory is created. Anything, files or directories, created in that first directory will be placed on the same branch because it is preserving paths.
+The default create policy is `epmfs`. That is a path preserving algorithm. With such a policy for `mkdir` and `create` with a set of empty drives it will select only 1 drive when the first directory is created. Anything, files or directories, created in that first directory will be placed on the same branch because it is preserving paths.
 
-This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above.
+This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`. Or use `func.mkdir=rand` if you're intersted in just grouping together directory content by drive.
 
 
 #### Do hard links work?
@@ -969,13 +964,6 @@ It's almost always a permissions issue. Unlike mhddfs and unionfs-fuse, which ru
 Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
 
 If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay close attention to anything regarding permissioning and users. Root squashing and user translation for instance has bitten a few mergerfs users. Some of these also affect the use of mergerfs from container platforms such as Docker.
-
-
-#### Why is only one drive being used?
-
-Are you using a path preserving policy? The default policy for file creation is `epmfs`. That means only the drives with the path preexisting will be considered when creating a file. If you don't care about where files and directories are created you likely shouldn't be using a path preserving policy and instead something like `mfs`.
-
-This can be especially apparent when filling an empty pool from an external source. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`.
 
 
 #### Is my OS's libfuse needed for mergerfs to work?
@@ -1042,7 +1030,7 @@ MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to pr
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes, however its not recommended to use the same file from within the pool and from without at the same time. Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.).
+Yes, however its not recommended to use the same file from within the pool and from without at the same time (particularly writing). Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.) as there could be a conflict between cached data and not.
 
 
 #### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
@@ -1093,11 +1081,17 @@ and the kernel use internally (also called the "nodeid").
 
 Generally collision, if it occurs, shouldn't be a problem. You can turn off the calculation by not using `use_ino`. In the future it might be worth creating different strategies for users to select from.
 
-#### I notice massive slowdowns of writes over NFS
 
-Due to how NFS works and interacts with FUSE when not using `cache.files=off` or `direct_io` its possible that a getxattr for `security.capability` will be issued prior to any write. This will usually result in a massive slowdown for writes. Using `cache.files=off` or `direct_io` will keep this from happening (and generally good to enable unless you need the features it disables) but the `security_capability` option can also help by short circuiting the call and returning `ENOATTR`.
+#### I notice massive slowdowns of writes when enabling cache.files.
 
-You could also set `xattr` to `noattr` or `nosys` to short circuit or stop all xattr requests.
+When file caching is enabled in any form (`cache.files!=off` or `direct_io=false`) it will issue `getxattr` requests for `security.capability` prior to *every single write*. This will usually result in a performance degregation, especially when using a network filesystem (such as NFS or CIFS/SMB/Samba.) Unfortunately at this moment the kernel is not caching the response.
+
+To work around this situation mergerfs offers a few solutions.
+
+1. Set `security_capability=false`. It will short curcuit any call and return `ENOATTR`. This still means though that mergerfs will receive the request before every write but at least it doesn't get passed through to the underlying filesystem.
+2. Set `xattr=noattr`. Same as above but applies to *all* calls to getxattr. Not just `security.capability`. This will not be cached by the kernel either but mergerfs' runtime config system will still function.
+3. Set `xattr=nosys`. Results in mergerfs returning `ENOSYS` which *will* be cached by the kernel. No future xattr calls will be forwarded to mergerfs. The downside is that also means the xattr based config and query functionality won't work either.
+4. Disable file caching. If you aren't using applications which use `mmap` it's probably simplier to just disable it all together. The kernel won't send the requests when caching is disabled.
 
 
 #### What are these .fuse_hidden files?
