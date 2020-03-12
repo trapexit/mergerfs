@@ -26,6 +26,7 @@
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "hashset.hpp"
+#include "linux_dirent64.h"
 #include "mempools.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
@@ -41,15 +42,6 @@
 
 using std::string;
 using std::vector;
-
-struct linux_dirent64
-{
-  uint64_t d_ino;
-  int64_t  d_off;
-  uint16_t d_reclen;
-  uint8_t  d_type;
-  char     d_name[];
-};
 
 namespace l
 {
@@ -84,6 +76,7 @@ namespace l
     char *buf;
     HashSet names;
     string basepath;
+    uint64_t namelen;
     struct linux_dirent64 *d;
 
     buf = (char*)g_DENTS_BUF_POOL.alloc();
@@ -116,14 +109,15 @@ namespace l
             for(int64_t pos = 0; pos < nread; pos += d->d_reclen)
               {
                 d = (struct linux_dirent64*)(buf + pos);
+                namelen = (strlen(d->d_name) + 1);
 
-                rv = names.put(d->d_name);
+                rv = names.put(d->d_name,namelen);
                 if(rv == 0)
                   continue;
 
                 d->d_ino = fs::inode::recompute(d->d_ino,dev);
 
-                rv = fuse_dirents_add_linux(buf_,d);
+                rv = fuse_dirents_add_linux(buf_,d,namelen);
                 if(rv)
                   return close_free_ret_enomem(dirfd,buf);
               }

@@ -45,6 +45,26 @@ using std::vector;
 namespace l
 {
   static
+  uint64_t
+  dirent_exact_namelen(const struct dirent *d_)
+  {
+#ifdef _D_EXACT_NAMLEN
+    return _D_EXACT_NAMLEN(d_);
+#elif defined _DIRENT_HAVE_D_NAMLEN
+    return d_->d_namlen;
+#else
+    return strlen(d_->d_name);
+#endif
+  }
+
+  static
+  uint64_t
+  dirent_alloc_namelen(const struct dirent *d_)
+  {
+    return (dirent_exact_namelen(d_) + 1);
+  }
+
+  static
   int
   readdir(const Branches &branches_,
           const char     *dirname_,
@@ -53,6 +73,7 @@ namespace l
     dev_t dev;
     HashSet names;
     string basepath;
+    uint64_t namelen;
 
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
@@ -74,13 +95,15 @@ namespace l
         rv = 0;
         for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
           {
-            rv = names.put(de->d_name);
+            namelen = l::dirent_alloc_namelen(de);
+
+            rv = names.put(de->d_name,namelen);
             if(rv == 0)
               continue;
 
             de->d_ino = fs::inode::recompute(de->d_ino,dev);
 
-            rv = fuse_dirents_add(buf_,de);
+            rv = fuse_dirents_add(buf_,de,namelen);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }

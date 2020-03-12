@@ -5,6 +5,7 @@
 #include "fuse_direntplus.h"
 #include "fuse_dirents.h"
 #include "fuse_entry.h"
+#include "linux_dirent64.h"
 #include "stat_utils.h"
 
 #include <dirent.h>
@@ -16,26 +17,6 @@
 #include <string.h>
 
 #define DEFAULT_SIZE (1024 * 16)
-
-static
-uint64_t
-dirent_exact_namelen(const struct dirent *d_)
-{
-#ifdef _D_EXACT_NAMELEN
-  return _D_EXACT_NAMELEN(d_);
-#elif defined _DIRENT_HAVE_D_NAMLEN
-  return d_->d_namlen;
-#else
-  return strlen(d_->d_name);
-#endif
-}
-
-static
-uint64_t
-dirent_alloc_namelen(const struct dirent *d_)
-{
-  return (dirent_exact_namelen(d_) + 1);
-}
 
 static
 uint64_t
@@ -254,10 +235,10 @@ fuse_dirents_convert_plus2normal(fuse_dirents_t *d_)
 
 int
 fuse_dirents_add(fuse_dirents_t      *d_,
-                 const struct dirent *dirent_)
+                 const struct dirent *dirent_,
+                 const uint64_t       namelen_)
 {
   uint64_t size;
-  uint64_t namelen;
   fuse_dirent_t *d;
 
   switch(d_->type)
@@ -271,8 +252,7 @@ fuse_dirents_add(fuse_dirents_t      *d_,
       return -EINVAL;
     }
 
-  namelen = dirent_alloc_namelen(dirent_);
-  size    = fuse_dirent_size(namelen);
+  size = fuse_dirent_size(namelen_);
 
   d = fuse_dirents_alloc(d_,size);
   if(d == NULL)
@@ -280,9 +260,9 @@ fuse_dirents_add(fuse_dirents_t      *d_,
 
   d->ino     = dirent_->d_ino;
   d->off     = d_->data_len;
-  d->namelen = namelen;
+  d->namelen = namelen_;
   d->type    = dirent_->d_type;
-  memcpy(d->name,dirent_->d_name,namelen);
+  memcpy(d->name,dirent_->d_name,namelen_);
 
   return 0;
 }
@@ -290,11 +270,11 @@ fuse_dirents_add(fuse_dirents_t      *d_,
 int
 fuse_dirents_add_plus(fuse_dirents_t      *d_,
                       const struct dirent *dirent_,
+                      const uint64_t       namelen_,
                       const fuse_entry_t  *entry_,
                       const struct stat   *st_)
 {
   uint64_t size;
-  uint64_t namelen;
   fuse_direntplus_t *d;
 
   switch(d_->type)
@@ -308,8 +288,7 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
       break;
     }
 
-  namelen = dirent_alloc_namelen(dirent_);
-  size    = fuse_direntplus_size(namelen);
+  size = fuse_direntplus_size(namelen_);
 
   d = fuse_dirents_alloc(d_,size);
   if(d == NULL)
@@ -317,9 +296,9 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
 
   d->dirent.ino     = dirent_->d_ino;
   d->dirent.off     = d_->data_len;
-  d->dirent.namelen = namelen;
+  d->dirent.namelen = namelen_;
   d->dirent.type    = dirent_->d_type;
-  memcpy(d->dirent.name,dirent_->d_name,namelen);
+  memcpy(d->dirent.name,dirent_->d_name,namelen_);
 
   d->entry = *entry_;
 
@@ -328,22 +307,12 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
   return 0;
 }
 
-#ifdef __linux__
-struct linux_dirent64
-{
-  uint64_t d_ino;
-  int64_t  d_off;
-  uint16_t d_reclen;
-  uint8_t  d_type;
-  char     d_name[];
-};
-
 int
 fuse_dirents_add_linux(fuse_dirents_t              *d_,
-                       const struct linux_dirent64 *dirent_)
+                       const struct linux_dirent64 *dirent_,
+                       const uint64_t               namelen_)
 {
   uint64_t size;
-  uint64_t namelen;
   fuse_dirent_t *d;
 
   switch(d_->type)
@@ -357,8 +326,7 @@ fuse_dirents_add_linux(fuse_dirents_t              *d_,
       return -EINVAL;
     }
 
-  namelen = (dirent_->d_reclen - offsetof(struct linux_dirent64,d_name));
-  size    = fuse_dirent_size(namelen);
+  size = fuse_dirent_size(namelen_);
 
   d = fuse_dirents_alloc(d_,size);
   if(d == NULL)
@@ -366,9 +334,9 @@ fuse_dirents_add_linux(fuse_dirents_t              *d_,
 
   d->ino     = dirent_->d_ino;
   d->off     = d_->data_len;
-  d->namelen = namelen;
+  d->namelen = namelen_;
   d->type    = dirent_->d_type;
-  memcpy(d->name,dirent_->d_name,namelen);
+  memcpy(d->name,dirent_->d_name,namelen_);
 
   return 0;
 }
@@ -376,11 +344,11 @@ fuse_dirents_add_linux(fuse_dirents_t              *d_,
 int
 fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
                             const struct linux_dirent64 *dirent_,
+                            const uint64_t               namelen_,
                             const fuse_entry_t          *entry_,
                             const struct stat           *st_)
 {
   uint64_t size;
-  uint64_t namelen;
   fuse_direntplus_t *d;
 
   switch(d_->type)
@@ -394,8 +362,7 @@ fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
       break;
     }
 
-  namelen = (dirent_->d_reclen - offsetof(struct linux_dirent64,d_name));
-  size    = fuse_direntplus_size(namelen);
+  size = fuse_direntplus_size(namelen_);
 
   d = fuse_dirents_alloc(d_,size);
   if(d == NULL)
@@ -403,9 +370,9 @@ fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
 
   d->dirent.ino     = dirent_->d_ino;
   d->dirent.off     = d_->data_len;
-  d->dirent.namelen = namelen;
+  d->dirent.namelen = namelen_;
   d->dirent.type    = dirent_->d_type;
-  memcpy(d->dirent.name,dirent_->d_name,namelen);
+  memcpy(d->dirent.name,dirent_->d_name,namelen_);
 
   d->entry = *entry_;
 
@@ -413,7 +380,6 @@ fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
 
   return 0;
 }
-#endif
 
 void
 fuse_dirents_reset(fuse_dirents_t *d_)
