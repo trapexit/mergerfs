@@ -1,7 +1,7 @@
 VERSION = 2.9.7-mergerfs_2.29.0
 
 ifeq ($(DEBUG),1)
-DEBUG_FLAGS := -g
+DEBUG_FLAGS := -O0 -g
 else
 DEBUG_FLAGS :=
 endif

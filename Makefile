@@ -40,7 +40,7 @@ USE_XATTR = 1
 UGID_USE_RWLOCK = 0
 
 ifeq ($(DEBUG),1)
-DEBUG_FLAGS := -g
+DEBUG_FLAGS := -O0 -g
 else
 DEBUG_FLAGS :=
 endif
