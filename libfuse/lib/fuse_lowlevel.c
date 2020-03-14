@@ -360,6 +360,12 @@ fuse_reply_err(fuse_req_t req_,
   return send_reply(req_,-err_,NULL,0);
 }
 
+int
+fuse_reply_err_ENOSYS(fuse_req_t req_)
+{
+  return fuse_reply_err(req_,ENOSYS);
+}
+
 void fuse_reply_none(fuse_req_t req)
 {
   if(req->ch)
@@ -1041,22 +1047,24 @@ static void do_open(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
     fuse_reply_open(req, &fi);
 }
 
-static void do_read(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
+static
+void
+do_read(fuse_req_t  req,
+        fuse_ino_t  nodeid,
+        const void *inarg)
 {
-  struct fuse_read_in *arg = (struct fuse_read_in *) inarg;
+  struct fuse_file_info fi;
+  struct fuse_read_in *arg = (struct fuse_read_in *)inarg;
 
-  if(req->f->op.read) {
-    struct fuse_file_info fi;
+  if(req->f->op.read == NULL)
+    return (void)fuse_reply_err_ENOSYS(req);
 
-    memset(&fi, 0, sizeof(fi));
-    fi.fh = arg->fh;
-    if(req->f->conn.proto_minor >= 9) {
-      fi.lock_owner = arg->lock_owner;
-      fi.flags = arg->flags;
-    }
-    req->f->op.read(req, nodeid, arg->size, arg->offset, &fi);
-  } else
-    fuse_reply_err(req, ENOSYS);
+  memset(&fi,0,sizeof(fi));
+  fi.fh = arg->fh;
+  fi.lock_owner = arg->lock_owner;
+  fi.flags = arg->flags;
+
+  req->f->op.read(req,nodeid,arg->size,arg->offset,&fi);
 }
 
 static void do_write(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
