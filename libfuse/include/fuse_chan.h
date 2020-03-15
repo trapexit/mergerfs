@@ -20,3 +20,4 @@ fuse_chan_t *fuse_chan_new(int32_t fd, uint32_t flags);
 void         fuse_chan_destroy(fuse_chan_t *ch);
 int64_t      fuse_chan_recv(fuse_chan_t *ch, char *buf, uint64_t size);
 int64_t      fuse_chan_send(fuse_chan_t *ch, const struct iovec iov[], uint64_t count);
+

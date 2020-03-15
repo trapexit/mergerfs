@@ -234,6 +234,181 @@ fuse_chan_send(fuse_chan_t        *ch,
   return fuse_chan_send_write(ch,iov,count);
 }
 
+static
+int
+retryable_error(const int errno_)
+{
+  switch(errno_)
+    {
+    case EINTR:
+    case EAGAIN:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+static
+int
+retry_error(const int rv_,
+            const int errno_)
+{
+  if(rv_ == -1)
+    return retryable_error(errno_);
+  return 0;
+}
+
+static
+int64_t
+writen(const int       fd_,
+       void           *buf_,
+       const uint64_t  count_)
+{
+  char *buf;
+  uint64_t n_left;
+  int64_t  n_written;
+
+  buf = buf_;
+  n_left = count_;
+  do
+    {
+      n_written = write(fd_,buf,n_left);
+      if(retry_error(n_written,errno))
+        continue;
+      if(n_written == -1)
+        return -1;
+
+      n_left -= n_written;
+      buf    += n_written;
+    }
+  while(n_left > 0);
+
+  return count_;
+}
+
+static
+int64_t
+readn(const int       fd_,
+      char           *buf_,
+      const uint64_t  count_)
+{
+  uint64_t n_left;
+  int64_t  n_read;
+
+  n_left = count_;
+  do
+    {
+      n_read = read(fd_,buf_,n_left);
+      if(n_read == 0)
+        return 0;
+      if(retry_error(n_read,errno))
+        continue;
+      if(n_read == -1)
+        return -1;
+
+      n_left -= n_read;
+    }
+  while(n_left > 0);
+
+  return count_;
+}
+
+static
+int64_t
+splicen_seek(const int      fd_in_,
+             const loff_t   off_in_,
+             const int      fd_out_,
+             const uint64_t len_)
+{
+  uint64_t n_left;
+  int64_t  n_written;
+  loff_t   off_in;
+
+  n_left = len_;
+  off_in = off_in_;
+  do
+    {
+      n_written = splice(fd_in_,&off_in,fd_out_,NULL,n_left,SPLICE_F_MOVE);
+      if(retry_error(n_written,errno))
+        continue;
+      if(n_written == -1)
+        return -1;
+
+      n_left -= n_written;
+      off_in += n_written;
+    }
+  while(n_left > 0);
+
+  return len_;
+}
+
+static
+int64_t
+splicen_noseek(const int      fd_in_,
+               const int      fd_out_,
+               const uint64_t len_)
+{
+  uint64_t n_left;
+  int64_t  n_written;
+
+  n_left = len_;
+  do
+    {
+      n_written = splice(fd_in_,NULL,fd_out_,NULL,n_left,SPLICE_F_MOVE);
+      if(retry_error(n_written,errno))
+        continue;
+      if(n_written == -1)
+        return -1;
+
+      n_left -= n_written;
+    }
+  while(n_left > 0);
+
+  return len_;
+}
+
+int64_t
+fuse_chan_send_data_splice(fuse_chan_t            *ch_,
+                           struct fuse_out_header *hdr_,
+                           const int               data_fd_,
+                           const loff_t            data_off_,
+                           const int               data_len_)
+{
+  int64_t rv;
+
+  rv = writen(ch_->splice_pipe[1],hdr_,sizeof(struct fuse_out_header));
+  if(rv == -1)
+    return -1;
+
+  rv = splicen_seek(data_fd_,data_off_,ch_->splice_pipe[1],data_len_);
+  if(rv == -1)
+    return -1;
+
+  rv = splicen_noseek(ch_->splice_pipe[0],ch_->fd,(sizeof(struct fuse_out_header)+data_len_));
+
+  return rv;
+}
+
+int64_t
+fuse_chan_send_data(fuse_chan_t            *ch_,
+                    struct fuse_out_header *hdr_,
+                    const int               data_fd_,
+                    const int               data_len_)
+{
+  int64_t rv;
+
+  memcpy(ch_->buf,hdr_,sizeof(struct fuse_out_header));
+  rv = readn(data_fd_,
+             &ch_->buf[sizeof(struct fuse_out_header)],
+             data_len_);
+  if(rv == -1)
+    return -1;
+
+  rv = write(ch_->fd,ch_->buf,(sizeof(struct fuse_out_header) + data_len_));
+
+  return rv;
+}
+
 void
 fuse_chan_destroy(fuse_chan_t *ch)
 {
