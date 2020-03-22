@@ -56,7 +56,7 @@ clone_devfuse_fd(const int devfuse_fd_)
 
   return clone_fd;
 #else
-  return devfuse_fd_;
+  return dup(devfuse_fd_);
 #endif
 }
 
