@@ -396,15 +396,17 @@ fuse_chan_send_data(fuse_chan_t            *ch_,
                     const int               data_len_)
 {
   int64_t rv;
+  char *buf;
 
-  memcpy(ch_->buf,hdr_,sizeof(struct fuse_out_header));
+  buf = ch_->buf;
+  memcpy(buf,hdr_,sizeof(struct fuse_out_header));
   rv = readn(data_fd_,
-             &ch_->buf[sizeof(struct fuse_out_header)],
+             &buf[sizeof(struct fuse_out_header)],
              data_len_);
   if(rv == -1)
     return -1;
 
-  rv = write(ch_->fd,ch_->buf,(sizeof(struct fuse_out_header) + data_len_));
+  rv = write(ch_->fd,buf,(sizeof(struct fuse_out_header) + data_len_));
 
   return rv;
 }
