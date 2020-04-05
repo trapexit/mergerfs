@@ -43,7 +43,7 @@ Can turn read\-only files into symlinks to underlying file
 Hard link copy\-on\-write / CoW
 .IP \[bu] 2
 supports POSIX ACLs
-.SH How it works
+.SH HOW IT WORKS
 .PP
 mergerfs logically merges multiple paths together.
 Think a union of sets.
@@ -82,6 +82,20 @@ so you can mix read\-write and read\-only drives.
 It also does \f[B]not\f[] split data across drives.
 It is not RAID0 / striping.
 It is simply a union.
+.SH BASIC SETUP
+.PP
+If you don\[aq]t already know that you have a special use case then just
+start with one of the following option sets.
+.SS You don\[aq]t need \f[C]mmap\f[]
+.PP
+\f[C]use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs\f[]
+.SS You do need \f[C]mmap\f[] (used by rtorrent and some other programs)
+.PP
+\f[C]use_ino,cache.files=partial,dropcacheonclose=true,allow_other,category.create=mfs\f[]
+.PP
+See the mergerfs wiki for real world
+deployments (https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments)
+for comparisons / ideas.
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
@@ -1406,12 +1420,15 @@ concurrency, read/write sizes, etc.
 Unfortunately, given the number of variables it has been difficult to
 find a single set of settings which provide optimal performance.
 If you\[aq]re having performance issues please look over the suggestions
-below.
+below (including the benchmarking section.)
 .PP
-NOTE: be sure to read about these features before changing them
+NOTE: be sure to read about these features before changing them to
+understand what behaviors it may impact
 .IP \[bu] 2
 enable (or disable) \f[C]splice_move\f[], \f[C]splice_read\f[], and
 \f[C]splice_write\f[]
+.IP \[bu] 2
+disable \f[C]security_capability\f[] and/or \f[C]xattr\f[]
 .IP \[bu] 2
 increase cache timeouts \f[C]cache.attr\f[], \f[C]cache.entry\f[],
 \f[C]cache.negative_entry\f[]
@@ -1430,8 +1447,6 @@ enable \f[C]cache.readdir\f[]
 .IP \[bu] 2
 change the number of worker threads
 .IP \[bu] 2
-disable \f[C]security_capability\f[] and/or \f[C]xattr\f[]
-.IP \[bu] 2
 disable \f[C]posix_acl\f[]
 .IP \[bu] 2
 disable \f[C]async_read\f[]
@@ -1439,11 +1454,11 @@ disable \f[C]async_read\f[]
 test theoretical performance using \f[C]nullrw\f[] or mounting a ram
 disk
 .IP \[bu] 2
-use \f[C]symlinkify\f[] if your data is largely static
+use \f[C]symlinkify\f[] if your data is largely static and read\-only
 .IP \[bu] 2
 use tiered cache drives
 .IP \[bu] 2
-use lvm and lvm cache to place a SSD in front of your HDDs
+use LVM and LVM cache to place a SSD in front of your HDDs
 .PP
 If you come across a setting that significantly impacts performance
 please contact trapexit so he may investigate further.
