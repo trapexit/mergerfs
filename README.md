@@ -34,7 +34,7 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 * supports POSIX ACLs
 
 
-# How it works
+# HOW IT WORKS
 
 mergerfs logically merges multiple paths together. Think a union of sets. The file/s or directory/s acted on or presented through mergerfs are based on the policy chosen for that particular action. Read more about policies below.
 
@@ -60,6 +60,21 @@ A         +      B        =       C
 ```
 
 mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives. It also does **not** split data across drives. It is not RAID0 / striping. It is simply a union.
+
+
+# BASIC SETUP
+
+If you don't already know that you have a special use case then just start with one of the following option sets.
+
+#### You don't need `mmap`
+
+`use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
+
+#### You do need `mmap` (used by rtorrent and some other programs)
+
+`use_ino,cache.files=partial,dropcacheonclose=true,allow_other,category.create=mfs`
+
+See the mergerfs [wiki for real world deployments](https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments) for comparisons / ideas.
 
 
 # OPTIONS
@@ -642,11 +657,12 @@ done
 
 # PERFORMANCE
 
-mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and latency, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below.
+mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and latency, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below (including the benchmarking section.)
 
-NOTE: be sure to read about these features before changing them
+NOTE: be sure to read about these features before changing them to understand what behaviors it may impact
 
 * enable (or disable) `splice_move`, `splice_read`, and `splice_write`
+* disable `security_capability` and/or `xattr`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable (or disable) page caching (`cache.files`)
 * enable `cache.writeback`
@@ -655,13 +671,12 @@ NOTE: be sure to read about these features before changing them
 * enable `cache.symlinks`
 * enable `cache.readdir`
 * change the number of worker threads
-* disable `security_capability` and/or `xattr`
 * disable `posix_acl`
 * disable `async_read`
 * test theoretical performance using `nullrw` or mounting a ram disk
-* use `symlinkify` if your data is largely static
+* use `symlinkify` if your data is largely static and read-only
 * use tiered cache drives
-* use lvm and lvm cache to place a SSD in front of your HDDs
+* use LVM and LVM cache to place a SSD in front of your HDDs
 
 If you come across a setting that significantly impacts performance please contact trapexit so he may investigate further.
 
