@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-03-10
+% 2020-04-20
 
 # NAME
 
@@ -338,7 +338,7 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 The options `statfs` and `statfs_ignore` can be used to modify `statfs` behavior.
 
 
-# BUILDING
+# BUILD / UPDATE
 
 **NOTE:** Prebuilt packages can be found at: https://github.com/trapexit/mergerfs/releases
 
@@ -1129,7 +1129,9 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 # SUPPORT
 
-Filesystems are very complex and difficult to debug. mergerfs, while being just a proxy of sorts, is also very difficult to debug given the large number of possible settings it can have itself and the massive number of environments it can run in. When reporting on a suspected issue **please, please** include as much of the below information as possible otherwise it will be difficult or impossible to diagnose. Also please make sure to read all of the above documentation as it includes nearly every known system or user issue previously encountered.
+Filesystems are complex and difficult to debug. mergerfs, while being just a proxy of sorts, is also very difficult to debug given the large number of possible settings it can have itself and the massive number of environments it can run in. When reporting on a suspected issue **please, please** include as much of the below information as possible otherwise it will be difficult or impossible to diagnose. Also please make sure to read all of the above documentation as it includes nearly every known system or user issue previously encountered.
+
+**Please make sure you are using the [latest release](https://github.com/trapexit/mergerfs/releases) or have tried it in comparison. Old versions, which are often included in distros like Debian and Ubuntu, are not ever going to be updated and your bug may have been addressed already.**
 
 
 #### Information to include in bug reports
@@ -1139,6 +1141,7 @@ Filesystems are very complex and difficult to debug. mergerfs, while being just 
 * Version of Linux: `uname -a`
 * Versions of any additional software being used
 * List of drives, their filesystems, and sizes (before and after issue): `df -h`
+* **All** information about the relevant branches and paths: permissions, etc.
 * A `strace` of the app having problems:
   * `strace -f -o /tmp/app.strace.txt <cmd>`
 * A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
