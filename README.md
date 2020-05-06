@@ -83,7 +83,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 
 * **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
 * **minfreespace=SIZE**: The minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
-* **moveonenospc=BOOL**: When enabled if a **write** fails with **ENOSPC** or **EDQUOT** a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
+* **moveonenospc=BOOL**: When enabled if a **write** fails with **ENOSPC** (no space left on device) or **EDQUOT** (disk quota exceeded) a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
 * **use_ino**: Causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
 * **dropcacheonclose=BOOL**: When a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **cache.files=partial|full|auto-full** to limit double caching. (default: false)
 * **symlinkify=BOOL**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
@@ -233,7 +233,7 @@ Policies basically search branches and create a list of files / paths for functi
 * All **action** policies will filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.
 * All **create** policies will filter out branches which are mounted **read-only**, tagged **RO (read-only)** or **NC (no create)**, or has available space less than `minfreespace`.
 
-If all branches are filtered an error will be returned. Typically **EROFS** or **ENOSPC** depending on the reasons.
+If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the reasons.
 
 
 #### Policy descriptions
@@ -287,9 +287,9 @@ The plan is to rewrite mergerfs to use the low level API so these invasive libfu
 
 #### rename & link ####
 
-**NOTE:** If you're receiving errors from software when files are moved / renamed / linked then you should consider changing the create policy to one which is **not** path preserving, enabling `ignorepponrename`, or contacting the author of the offending software and requesting that `EXDEV` be properly handled.
+**NOTE:** If you're receiving errors from software when files are moved / renamed / linked then you should consider changing the create policy to one which is **not** path preserving, enabling `ignorepponrename`, or contacting the author of the offending software and requesting that `EXDEV` (cross device / improper link) be properly handled.
 
-`rename` and `link` are tricky functions in a union filesystem. `rename` only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device). So if a `rename`'s source and target are on different drives within the pool it creates an issue.
+`rename` and `link` are tricky functions in a union filesystem. `rename` only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device / improper link). So if a `rename`'s source and target are on different drives within the pool it creates an issue.
 
 Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically compliant with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or otherwise handle it poorly. Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
 
@@ -298,7 +298,7 @@ As a result a compromise was made in order to get most software to work while st
 * If using a **create** policy which tries to preserve directory paths (epff,eplfs,eplus,epmfs)
   * Using the **rename** policy get the list of files to rename
   * For each file attempt rename:
-    * If failure with ENOENT run **create** policy
+    * If failure with ENOENT (no such file or directory) run **create** policy
     * If create policy returns the same drive as currently evaluating then clone the path
     * Re-attempt rename
   * If **any** of the renames succeed the higher level rename is considered a success
@@ -404,7 +404,7 @@ Any changes made at runtime are **not** persisted. If you wish for values to per
 
 ##### Keys #####
 
-Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only. `setxattr` will return EINVAL on read-only keys.
+Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only. `setxattr` will return EINVAL (invalid argument) on read-only keys.
 
 
 ##### Values #####
@@ -1022,6 +1022,11 @@ While aufs can offer better peak performance mergerfs provides more configurabil
 UnionFS is more like aufs than mergerfs in that it offers overlay / CoW features. If you're just looking to create a union of drives and want flexibility in file/directory placement then mergerfs offers that whereas unionfs is more for overlaying RW filesystems over RO ones.
 
 
+#### Why use mergerfs over overlayfs?
+
+Same reasons as with unionfs.
+
+
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
 With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar function without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail, however, all other data will continue to be accessible.
@@ -1032,6 +1037,13 @@ When combined with something like [SnapRaid](http://www.snapraid.it) and/or an o
 #### Why use mergerfs over ZFS?
 
 MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce a number of costs and limitations as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html), [here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and [here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
+
+
+#### Why use mergerfs over UnRAID?
+
+UnRAID is a full OS and its storage layer, as I understand, is proprietary and closed source. Users who have experience with both have said they perfer the flexibilty offered by mergerfs and for some the fact it is free and open source is important.
+
+There are a number of UnRAID users who use mergerfs as well though I'm not entirely familiar with the use case.
 
 
 #### What should mergerfs NOT be used for?
