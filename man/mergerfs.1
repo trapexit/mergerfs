@@ -110,9 +110,10 @@ kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
 .IP \[bu] 2
 \f[B]moveonenospc=BOOL\f[]: When enabled if a \f[B]write\f[] fails with
-\f[B]ENOSPC\f[] or \f[B]EDQUOT\f[] a scan of all drives will be done
-looking for the drive with the most free space which is at least the
-size of the file plus the amount which failed to write.
+\f[B]ENOSPC\f[] (no space left on device) or \f[B]EDQUOT\f[] (disk quota
+exceeded) a scan of all drives will be done looking for the drive with
+the most free space which is at least the size of the file plus the
+amount which failed to write.
 An attempt to move the file to that drive will occur (keeping all
 metadata possible) and if successful the original is unlinked and the
 write retried.
@@ -553,7 +554,8 @@ All \f[B]create\f[] policies will filter out branches which are mounted
 create)\f[], or has available space less than \f[C]minfreespace\f[].
 .PP
 If all branches are filtered an error will be returned.
-Typically \f[B]EROFS\f[] or \f[B]ENOSPC\f[] depending on the reasons.
+Typically \f[B]EROFS\f[] (read\-only filesystem) or \f[B]ENOSPC\f[] (no
+space left on device) depending on the reasons.
 .SS Policy descriptions
 .PP
 .TS
@@ -742,14 +744,15 @@ invasive libfuse changes are no longer necessary.
 are moved / renamed / linked then you should consider changing the
 create policy to one which is \f[B]not\f[] path preserving, enabling
 \f[C]ignorepponrename\f[], or contacting the author of the offending
-software and requesting that \f[C]EXDEV\f[] be properly handled.
+software and requesting that \f[C]EXDEV\f[] (cross device / improper
+link) be properly handled.
 .PP
 \f[C]rename\f[] and \f[C]link\f[] are tricky functions in a union
 filesystem.
 \f[C]rename\f[] only works within a single filesystem or device.
 If a rename can\[aq]t be done atomically due to the source and
 destination paths existing on different mount points it will return
-\f[B]\-1\f[] with \f[B]errno = EXDEV\f[] (cross device).
+\f[B]\-1\f[] with \f[B]errno = EXDEV\f[] (cross device / improper link).
 So if a \f[C]rename\f[]\[aq]s source and target are on different drives
 within the pool it creates an issue.
 .PP
@@ -774,7 +777,8 @@ Using the \f[B]rename\f[] policy get the list of files to rename
 For each file attempt rename:
 .RS 2
 .IP \[bu] 2
-If failure with ENOENT run \f[B]create\f[] policy
+If failure with ENOENT (no such file or directory) run \f[B]create\f[]
+policy
 .IP \[bu] 2
 If create policy returns the same drive as currently evaluating then
 clone the path
@@ -941,7 +945,8 @@ wherever you configure the mounting of mergerfs (/etc/fstab).
 Use \f[C]xattr\ \-l\ /mountpoint/.mergerfs\f[] to see all supported
 keys.
 Some are informational and therefore read\-only.
-\f[C]setxattr\f[] will return EINVAL on read\-only keys.
+\f[C]setxattr\f[] will return EINVAL (invalid argument) on read\-only
+keys.
 .SS Values
 .PP
 Same as the command line.
@@ -2143,6 +2148,9 @@ features.
 If you\[aq]re just looking to create a union of drives and want
 flexibility in file/directory placement then mergerfs offers that
 whereas unionfs is more for overlaying RW filesystems over RO ones.
+.SS Why use mergerfs over overlayfs?
+.PP
+Same reasons as with unionfs.
 .SS Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation /
 striping?
 .PP
@@ -2168,6 +2176,16 @@ described
 here (http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
 here (https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
 here (https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
+.SS Why use mergerfs over UnRAID?
+.PP
+UnRAID is a full OS and its storage layer, as I understand, is
+proprietary and closed source.
+Users who have experience with both have said they perfer the flexibilty
+offered by mergerfs and for some the fact it is free and open source is
+important.
+.PP
+There are a number of UnRAID users who use mergerfs as well though
+I\[aq]m not entirely familiar with the use case.
 .SS What should mergerfs NOT be used for?
 .IP \[bu] 2
 databases: Even if the database stored data in separate files (mergerfs
