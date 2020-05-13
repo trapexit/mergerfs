@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+    configure)
+        chmod 4755 /bin/mergerfs-fusermount
+        ;;
+esac
