@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-04-20
+% 2020-05-18
 
 # NAME
 
@@ -1180,11 +1180,13 @@ This software is free to use and released under a very liberal license. That sai
 * Patreon: https://www.patreon.com/trapexit
 * SubscribeStar: https://www.subscribestar.com/trapexit
 * Ko-Fi: https://ko-fi.com/trapexit
-* Bitcoin (BTC): 12CdMhEPQVmjz3SSynkAEuD5q9JmhTDCZA
-* Bitcoin Cash (BCH): 1AjPqZZhu7GVEs6JFPjHmtsvmDL4euzMzp
-* Ethereum (ETH): 0x09A166B11fCC127324C7fc5f1B572255b3046E94
-* Litecoin (LTC): LXAsq6yc6zYU3EbcqyWtHBrH1Ypx4GjUjm
-* ZCoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
+* Bitcoin (BTC): 1DfoUd2m5WCxJAMvcFuvDpT4DR2gWX2PWb
+* Bitcoin Cash (BCH): qrf257j0l09yxty4kur8dk2uma8p5vntdcpks72l8z
+* Ethereum (ETH): 0xb486C0270fF75872Fc51d85879b9c15C380E66CA
+* Litecoin (LTC): LW1rvHRPWtm2NUEMhJpP4DjHZY1FaJ1WYs
+* Basic Attention Token (BAT): 0xE651d4900B4C305284Da43E2e182e9abE149A87A
+* Zcash (ZEC): t1ZwTgmbQF23DJrzqbAmw8kXWvU2xUkkhTt
+* Zcoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
 
 
 # LINKS
