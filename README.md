@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-05-18
+% 2020-05-25
 
 # NAME
 
@@ -60,6 +60,17 @@ A         +      B        =       C
 ```
 
 mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives. It also does **not** split data across drives. It is not RAID0 / striping. It is simply a union.
+
+
+# TERMINOLOGY
+
+* branch: A base path used in the pool.
+* pool: The mergerfs mount. The union of the branches.
+* relative path: The path in the pool relative to the branch and mount.
+* policy: The algorithm used to select a file when performing a function.
+* function: A filesystem call (open, unlink, create, getattr, etc.)
+* category: A collection of functions (action, create, search).
+* path preservation: Aspect of some policies which includes checking the path for which a file would be created.
 
 
 # BASIC SETUP
@@ -757,7 +768,7 @@ If you want to move files to one drive just copy them there and use mergerfs.ded
 
 #### cached memory appears greater than it should be
 
-Use `cache.files=off` or `direct_io=true`. See the section on page caching.
+Use `cache.files=off` and/or `dropcacheonclose=true`. See the section on page caching.
 
 
 #### NFS clients returning ESTALE / Stale file handle
@@ -905,11 +916,7 @@ There is a bug in the kernel. A work around appears to be turning off `splice`. 
 
 #### rm: fts_read failed: No such file or directory
 
-NOTE: This is only relevant to mergerfs versions at or below v2.25.x and should not occur in more recent versions. See the notes on `unlink`.
-
-Not *really* a bug. The FUSE library will move files when asked to delete them as a way to deal with certain edge cases and then later delete that file when its clear the file is no longer needed. This however can lead to two issues. One is that these hidden files are noticed by `rm -rf` or `find` when scanning directories and they may try to remove them and they might have disappeared already. There is nothing *wrong* about this happening but it can be annoying. The second issue is that a directory might not be able to removed on account of the hidden file being still there.
-
-Using the **hard_remove** option will make it so these temporary files are not used and files are deleted immediately. That has a side effect however. Files which are unlinked and then they are still used (in certain forms) will result in an error (ENOENT).
+Please update. This is only happened to mergerfs versions at or below v2.25.x and will not occur in more recent versions.
 
 
 # FAQ
@@ -1073,6 +1080,11 @@ It is also possible that the filesystem selected has run out of inodes. Use `df 
 If you don't care about path preservation then simply change the `create` policy to one which isn't. `mfs` is probably what most are looking for. The reason its not default is because it was originally set to `epmfs` and changing it now would change people's setup. Such a setting change will likely occur in mergerfs 3.
 
 
+#### Why does the total available space in mergerfs not equal outside?
+
+Are you using ext4? With reserve for root? mergerfs uses available space for statfs calculations. If you've reserved space for root then it won't show up.
+
+
 #### Can mergerfs mounts be exported over NFS?
 
 Yes. Due to current usage of libfuse by mergerfs and how NFS interacts with it it is necessary to add `noforget` to mergerfs options to keep from getting "stale file handle" errors.
@@ -1123,11 +1135,7 @@ To work around this situation mergerfs offers a few solutions.
 
 #### What are these .fuse_hidden files?
 
-NOTE: mergerfs >= 2.26.0 will not have these temporary files. See the notes on `unlink`.
-
-When not using **hard_remove** libfuse will create .fuse_hiddenXXXXXXXX files when an opened file is unlinked. This is to simplify "use after unlink" usecases. There is a possibility these files end up being picked up by software scanning directories and not ignoring hidden files. This is rarely a problem but a solution is in the works.
-
-The files are cleaned up once the file is finally closed. Only if mergerfs crashes or is killed would they be left around. They are safe to remove as they are already unlinked files.
+Please upgrade. mergerfs >= 2.26.0 will not have these temporary files. See the notes on `unlink`.
 
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
