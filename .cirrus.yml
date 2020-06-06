@@ -1,0 +1,10 @@
+freebsd_instance:
+  image_family: freebsd-12-1
+
+task:
+  name: compile
+  env:
+    ASSUME_ALWAYS_YES: yes
+  script:
+    - ./tools/install-build-pkgs
+    - gmake
