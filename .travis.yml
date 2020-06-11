@@ -40,3 +40,5 @@ script:
   - sudo -E make install-build-pkgs
   - make -j$(($(nproc) + 1))
   - make deb
+  - sudo -E dpkg -i ../*.deb
+  - mergerfs -v || true
