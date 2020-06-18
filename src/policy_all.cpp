@@ -20,6 +20,7 @@
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <string>
 #include <vector>
@@ -31,10 +32,12 @@ namespace all
 {
   static
   int
-  create(const Branches        &branches_,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     fs::info_t info;
@@ -52,13 +55,13 @@ namespace all
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
 
-        paths.push_back(&branch->path);
+        paths_->push_back(branch->path);
       }
 
-    if(paths.empty())
+    if(paths_->empty())
       return (errno=error,-1);
 
     return 0;
@@ -66,14 +69,14 @@ namespace all
 }
 
 int
-Policy::Func::all(const Category::Enum::Type  type,
+Policy::Func::all(const Category::Enum::Type  type_,
                   const Branches             &branches_,
-                  const char                 *fusepath,
-                  const uint64_t              minfreespace,
-                  vector<const string*>      &paths)
+                  const char                 *fusepath_,
+                  const uint64_t              minfreespace_,
+                  vector<string>             *paths_)
 {
-  if(type == Category::Enum::create)
-    return all::create(branches_,minfreespace,paths);
+  if(type_ == Category::Enum::create)
+    return all::create(branches_,minfreespace_,paths_);
 
-  return Policy::Func::epall(type,branches_,fusepath,minfreespace,paths);
+  return Policy::Func::epall(type_,branches_,fusepath_,minfreespace_,paths_);
 }

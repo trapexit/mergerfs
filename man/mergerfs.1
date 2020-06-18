@@ -116,6 +116,11 @@ for comparisons / ideas.
 .SH OPTIONS
 .SS mount options
 .IP \[bu] 2
+\f[B]config\f[]: Path to a config file.
+Same arguments as below in key=val format.
+.IP \[bu] 2
+\f[B]branches\f[]: Colon delimited list of branches.
+.IP \[bu] 2
 \f[B]allow_other\f[]: A libfuse option which allows users besides the
 one which ran mergerfs to see the filesystem.
 This is required for most use\-cases.
@@ -940,7 +945,69 @@ make\ LTO=1\ \ \ \ \ \ \ \ \ \ \ \ \-\ build\ with\ link\ time\ optimization
 \f[]
 .fi
 .SH RUNTIME CONFIG
-.SS .mergerfs pseudo file
+.SS ioctl
+.PP
+The original runtime config API was via xattr calls.
+This however became an issue when needing to disable xattr.
+While slightly less convenient ioctl does not have the same problems and
+will be the main API going forward.
+.PP
+The keys are the same as the command line option arguments as well as
+the config file.
+.SS requests / commands
+.PP
+All commands take a 4096 byte char buffer.
+.IP \[bu] 2
+read keys: get a nul \[aq]\[aq] delimited list of option keys
+.IP \[bu] 2
+_IOWR(0xDF,0,char[4096]) = 0xD000DF00
+.IP \[bu] 2
+on success ioctl return value is the total length
+.IP \[bu] 2
+read value: get an option value
+.IP \[bu] 2
+_IOWR(0xDF,1,char[4096]) = 0xD000DF01
+.IP \[bu] 2
+the key is passed in via the char buffer as a nul \[aq]\[aq] terminated
+string
+.IP \[bu] 2
+on success ioctl return value is the total length
+.IP \[bu] 2
+write value: set an option value
+.IP \[bu] 2
+_IOW(0xDF,2,char[4096]) = 0x5000DF02
+.IP \[bu] 2
+the key and value is passed in via the char buffer as a nul \[aq]\[aq]
+terminated string in the format of \f[C]key=value\f[]
+.IP \[bu] 2
+on success ioctl return value is 0
+.IP \[bu] 2
+file info: get mergerfs metadata info for a file
+.IP \[bu] 2
+_IOWR(0xDF,3,char[4096]) = 0xD000DF03
+.IP \[bu] 2
+the key is passed in via the char buffer as a nul \[aq]\[aq] terminated
+string
+.IP \[bu] 2
+on success the ioctl return value is the total length
+.IP \[bu] 2
+keys:
+.RS 2
+.IP \[bu] 2
+basepath: the base mount point for the file according to the getattr
+policy
+.IP \[bu] 2
+relpath: the relative path of the file from the mount point
+.IP \[bu] 2
+fullpath: the full path of the underlying file according to the getattr
+policy
+.IP \[bu] 2
+allpaths: a NUL \[aq]\[aq] delimited list of full paths to all files
+found
+.RE
+.SS .mergerfs pseudo file (deprecated)
+.PP
+NOTE: this interface will be removed in mergerfs 3.0
 .IP
 .nf
 \f[C]

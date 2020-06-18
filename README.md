@@ -92,6 +92,8 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 
 ### mount options
 
+* **config**: Path to a config file. Same arguments as below in key=val format.
+* **branches**: Colon delimited list of branches.
 * **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
 * **minfreespace=SIZE**: The minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=BOOL**: When enabled if a **write** fails with **ENOSPC** (no space left on device) or **EDQUOT** (disk quota exceeded) a scan of all drives will be done looking for the drive with the most free space which is at least the size of the file plus the amount which failed to write. An attempt to move the file to that drive will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false)
@@ -402,7 +404,41 @@ make LTO=1            - build with link time optimization
 
 # RUNTIME CONFIG
 
-#### .mergerfs pseudo file ####
+#### ioctl
+
+The original runtime config API was via xattr calls. This however became an issue when needing to disable xattr. While slightly less convenient ioctl does not have the same problems and will be the main API going forward.
+
+The keys are the same as the command line option arguments as well as the config file.
+
+##### requests / commands
+
+All commands take a 4096 byte char buffer.
+
+* read keys: get a nul '\0' delimited list of option keys
+  * _IOWR(0xDF,0,char[4096]) = 0xD000DF00
+  * on success ioctl return value is the total length
+* read value: get an option value
+  * _IOWR(0xDF,1,char[4096]) = 0xD000DF01
+  * the key is passed in via the char buffer as a nul '\0' terminated string
+  * on success ioctl return value is the total length
+* write value: set an option value
+  * _IOW(0xDF,2,char[4096]) = 0x5000DF02
+  * the key and value is passed in via the char buffer as a nul '\0' terminated string in the format of `key=value`
+  * on success ioctl return value is 0
+* file info: get mergerfs metadata info for a file
+  * _IOWR(0xDF,3,char[4096]) = 0xD000DF03
+  * the key is passed in via the char buffer as a nul '\0' terminated string
+  * on success the ioctl return value is the total length
+  * keys:
+    * basepath: the base mount point for the file according to the getattr policy
+    * relpath: the relative path of the file from the mount point
+    * fullpath: the full path of the underlying file according to the getattr policy
+    * allpaths: a NUL '\0' delimited list of full paths to all files found
+
+
+#### .mergerfs pseudo file (deprecated) ####
+
+NOTE: this interface will be removed in mergerfs 3.0
 
 ```
 <mountpoint>/.mergerfs

@@ -25,7 +25,7 @@ namespace FUSE
   opendir(const char     *fusepath_,
           fuse_file_info *ffi_)
   {
-    const Config &config = Config::get();
+    const Config &config = Config::ro();
 
     ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
 

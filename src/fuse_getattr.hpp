@@ -23,6 +23,7 @@
 namespace FUSE
 {
   int
-  getattr(const char  *fusepath_,
-          struct stat *buf_);
+  getattr(const char      *fusepath,
+          struct stat     *buf,
+          fuse_timeouts_t *timeout);
 }

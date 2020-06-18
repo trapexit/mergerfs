@@ -14,11 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
@@ -26,8 +21,12 @@
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
+
+#include <fuse.h>
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -66,12 +65,12 @@ namespace l
 
   static
   int
-  mkdir_loop(const string                &existingpath_,
-             const vector<const string*> &createpaths_,
-             const char                  *fusepath_,
-             const string                &fusedirpath_,
-             const mode_t                 mode_,
-             const mode_t                 umask_)
+  mkdir_loop(const string         &existingpath_,
+             const vector<string> &createpaths_,
+             const char           *fusepath_,
+             const string         &fusedirpath_,
+             const mode_t          mode_,
+             const mode_t          umask_)
   {
     int rv;
     int error;
@@ -79,11 +78,11 @@ namespace l
     error = -1;
     for(size_t i = 0, ei = createpaths_.size(); i != ei; i++)
       {
-        rv = fs::clonepath_as_root(existingpath_,*createpaths_[i],fusedirpath_);
+        rv = fs::clonepath_as_root(existingpath_,createpaths_[i],fusedirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::mkdir_loop_core(*createpaths_[i],
+          error = l::mkdir_loop_core(createpaths_[i],
                                      fusepath_,
                                      mode_,
                                      umask_,
@@ -105,20 +104,20 @@ namespace l
   {
     int rv;
     string fusedirpath;
-    vector<const string*> createpaths;
-    vector<const string*> existingpaths;
+    vector<string> createpaths;
+    vector<string> existingpaths;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,minfreespace_,existingpaths);
+    rv = searchFunc_(branches_,fusedirpath,minfreespace_,&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,minfreespace_,createpaths);
+    rv = createFunc_(branches_,fusedirpath,minfreespace_,&createpaths);
     if(rv == -1)
       return -errno;
 
-    return l::mkdir_loop(*existingpaths[0],
+    return l::mkdir_loop(existingpaths[0],
                          createpaths,
                          fusepath_,
                          fusedirpath,
@@ -133,13 +132,12 @@ namespace FUSE
   mkdir(const char *fusepath_,
         mode_t      mode_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::mkdir(config.getattr,
-                    config.mkdir,
+    return l::mkdir(config.func.getattr.policy,
+                    config.func.mkdir.policy,
                     config.branches,
                     config.minfreespace,
                     fusepath_,

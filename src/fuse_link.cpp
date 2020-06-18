@@ -20,7 +20,6 @@
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -55,11 +54,11 @@ namespace l
 
   static
   int
-  link_create_path_loop(const vector<const string*> &oldbasepaths_,
-                        const string                &newbasepath_,
-                        const char                  *oldfusepath_,
-                        const char                  *newfusepath_,
-                        const string                &newfusedirpath_)
+  link_create_path_loop(const vector<string> &oldbasepaths_,
+                        const string         &newbasepath_,
+                        const char           *oldfusepath_,
+                        const char           *newfusepath_,
+                        const string         &newfusedirpath_)
   {
     int rv;
     int error;
@@ -67,11 +66,11 @@ namespace l
     error = -1;
     for(size_t i = 0, ei = oldbasepaths_.size(); i != ei; i++)
       {
-        rv = fs::clonepath_as_root(newbasepath_,*oldbasepaths_[i],newfusedirpath_);
+        rv = fs::clonepath_as_root(newbasepath_,oldbasepaths_[i],newfusedirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::link_create_path_core(*oldbasepaths_[i],newbasepath_,
+          error = l::link_create_path_core(oldbasepaths_[i],newbasepath_,
                                            oldfusepath_,newfusepath_,
                                            error);
       }
@@ -90,20 +89,20 @@ namespace l
   {
     int rv;
     string newfusedirpath;
-    vector<const string*> oldbasepaths;
-    vector<const string*> newbasepaths;
+    vector<string> oldbasepaths;
+    vector<string> newbasepaths;
 
-    rv = actionFunc_(branches_,oldfusepath_,minfreespace_,oldbasepaths);
+    rv = actionFunc_(branches_,oldfusepath_,minfreespace_,&oldbasepaths);
     if(rv == -1)
       return -errno;
 
     newfusedirpath = fs::path::dirname(newfusepath_);
 
-    rv = searchFunc_(branches_,newfusedirpath,minfreespace_,newbasepaths);
+    rv = searchFunc_(branches_,newfusedirpath,minfreespace_,&newbasepaths);
     if(rv == -1)
       return -errno;
 
-    return l::link_create_path_loop(oldbasepaths,*newbasepaths[0],
+    return l::link_create_path_loop(oldbasepaths,newbasepaths[0],
                                     oldfusepath_,newfusepath_,
                                     newfusedirpath);
   }
@@ -120,22 +119,22 @@ namespace l
   {
     int rv;
     string newfusedirpath;
-    vector<const string*> newbasepath;
+    vector<string> newbasepath;
 
     newfusedirpath = fs::path::dirname(newfusepath_);
 
-    rv = createFunc_(branches_,newfusedirpath,minfreespace_,newbasepath);
+    rv = createFunc_(branches_,newfusedirpath,minfreespace_,&newbasepath);
     if(rv == -1)
       return -1;
 
-    if(oldbasepath_ != *newbasepath[0])
+    if(oldbasepath_ != newbasepath[0])
       return (errno=EXDEV,-1);
 
-    rv = searchFunc_(branches_,newfusedirpath,minfreespace_,newbasepath);
+    rv = searchFunc_(branches_,newfusedirpath,minfreespace_,&newbasepath);
     if(rv == -1)
       return -1;
 
-    return fs::clonepath_as_root(*newbasepath[0],oldbasepath_,newfusedirpath);
+    return fs::clonepath_as_root(newbasepath[0],oldbasepath_,newfusedirpath);
   }
 
   static
@@ -172,13 +171,13 @@ namespace l
 
   static
   int
-  link_preserve_path_loop(Policy::Func::Search         searchFunc_,
-                          Policy::Func::Create         createFunc_,
-                          const Branches              &branches_,
-                          const uint64_t               minfreespace_,
-                          const char                  *oldfusepath_,
-                          const char                  *newfusepath_,
-                          const vector<const string*> &oldbasepaths_)
+  link_preserve_path_loop(Policy::Func::Search  searchFunc_,
+                          Policy::Func::Create  createFunc_,
+                          const Branches       &branches_,
+                          const uint64_t        minfreespace_,
+                          const char           *oldfusepath_,
+                          const char           *newfusepath_,
+                          const vector<string> &oldbasepaths_)
   {
     int error;
 
@@ -187,7 +186,7 @@ namespace l
       {
         error = l::link_preserve_path_core(searchFunc_,createFunc_,
                                            branches_,minfreespace_,
-                                           *oldbasepaths_[i],
+                                           oldbasepaths_[i],
                                            oldfusepath_,newfusepath_,
                                            error);
       }
@@ -206,9 +205,9 @@ namespace l
                      const char           *newfusepath_)
   {
     int rv;
-    vector<const string*> oldbasepaths;
+    vector<string> oldbasepaths;
 
-    rv = actionFunc_(branches_,oldfusepath_,minfreespace_,oldbasepaths);
+    rv = actionFunc_(branches_,oldfusepath_,minfreespace_,&oldbasepaths);
     if(rv == -1)
       return -errno;
 
@@ -225,22 +224,21 @@ namespace FUSE
   link(const char *from_,
        const char *to_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    if(config.create->path_preserving() && !config.ignorepponrename)
-      return l::link_preserve_path(config.getattr,
-                                   config.link,
-                                   config.create,
+    if(config.func.create.policy->path_preserving() && !config.ignorepponrename)
+      return l::link_preserve_path(config.func.getattr.policy,
+                                   config.func.link.policy,
+                                   config.func.create.policy,
                                    config.branches,
                                    config.minfreespace,
                                    from_,
                                    to_);
 
-    return l::link_create_path(config.link,
-                               config.create,
+    return l::link_create_path(config.func.link.policy,
+                               config.func.create.policy,
                                config.branches,
                                config.minfreespace,
                                from_,

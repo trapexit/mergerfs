@@ -21,6 +21,7 @@
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <limits>
 #include <string>
@@ -33,10 +34,12 @@ namespace lfs
 {
   static
   int
-  create(const Branches        &branches_,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     uint64_t lfs;
@@ -58,7 +61,7 @@ namespace lfs
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
         if(info.spaceavail > lfs)
           continue;
@@ -70,7 +73,7 @@ namespace lfs
     if(lfsbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(lfsbasepath);
+    paths_->push_back(*lfsbasepath);
 
     return 0;
   }
@@ -81,7 +84,7 @@ Policy::Func::lfs(const Category::Enum::Type  type,
                   const Branches             &branches_,
                   const char                 *fusepath,
                   const uint64_t              minfreespace,
-                  vector<const string*>      &paths)
+                  vector<string>             *paths)
 {
   if(type == Category::Enum::create)
     return lfs::create(branches_,minfreespace,paths);

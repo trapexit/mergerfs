@@ -29,15 +29,15 @@ Policy::Func::eprand(const Category::Enum::Type  type_,
                      const Branches             &branches_,
                      const char                 *fusepath_,
                      const uint64_t              minfreespace_,
-                     vector<const string*>      &paths_)
+                     vector<string>             *paths_)
 {
   int rv;
 
   rv = Policy::Func::epall(type_,branches_,fusepath_,minfreespace_,paths_);
   if(rv == 0)
     {
-      std::random_shuffle(paths_.begin(),paths_.end());
-      paths_.resize(1);
+      std::random_shuffle(paths_->begin(),paths_->end());
+      paths_->resize(1);
     }
 
   return rv;

@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <string>
 #include <vector>
@@ -33,11 +34,13 @@ namespace epall
 {
   static
   int
-  create(const Branches        &branches_,
-         const char            *fusepath,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const char     *fusepath,
+         const uint64_t  minfreespace,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     fs::info_t info;
@@ -60,10 +63,10 @@ namespace epall
         if(info.spaceavail < minfreespace)
           error_and_continue(error,ENOSPC);
 
-        paths.push_back(&branch->path);
+        paths->push_back(branch->path);
       }
 
-    if(paths.empty())
+    if(paths->empty())
       return (errno=error,-1);
 
     return 0;
@@ -71,10 +74,12 @@ namespace epall
 
   static
   int
-  action(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  action(const Branches &branches_,
+         const char     *fusepath,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     bool readonly;
@@ -95,10 +100,10 @@ namespace epall
         if(readonly)
           error_and_continue(error,EROFS);
 
-        paths.push_back(&branch->path);
+        paths->push_back(branch->path);
       }
 
-    if(paths.empty())
+    if(paths->empty())
       return (errno=error,-1);
 
     return 0;
@@ -106,10 +111,12 @@ namespace epall
 
   static
   int
-  search(const Branches        &branches_,
-         const char            *fusepath,
-         vector<const string*> &paths)
+  search(const Branches &branches_,
+         const char     *fusepath,
+         vector<string> *paths)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     const Branch *branch;
 
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
@@ -119,10 +126,10 @@ namespace epall
         if(!fs::exists(branch->path,fusepath))
           continue;
 
-        paths.push_back(&branch->path);
+        paths->push_back(branch->path);
       }
 
-    if(paths.empty())
+    if(paths->empty())
       return (errno=ENOENT,-1);
 
     return 0;
@@ -134,7 +141,7 @@ Policy::Func::epall(const Category::Enum::Type  type,
                     const Branches             &branches_,
                     const char                 *fusepath,
                     const uint64_t              minfreespace,
-                    vector<const string*>      &paths)
+                    vector<string>             *paths)
 {
   switch(type)
     {

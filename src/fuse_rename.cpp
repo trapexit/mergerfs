@@ -14,11 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <algorithm>
-#include <set>
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_remove.hpp"
@@ -26,8 +21,12 @@
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
+
+#include <algorithm>
+#include <set>
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -35,12 +34,12 @@ using std::set;
 
 static
 bool
-member(const vector<const string*> &haystack,
-       const string                &needle)
+member(const vector<string> &haystack,
+       const string         &needle)
 {
   for(size_t i = 0, ei = haystack.size(); i != ei; i++)
     {
-      if(*haystack[i] == needle)
+      if(haystack[i] == needle)
         return true;
     }
 
@@ -57,14 +56,14 @@ _remove(const vector<string> &toremove)
 
 static
 void
-_rename_create_path_core(const vector<const string*> &oldbasepaths,
-                         const string                &oldbasepath,
-                         const string                &newbasepath,
-                         const char                  *oldfusepath,
-                         const char                  *newfusepath,
-                         const string                &newfusedirpath,
-                         int                         &error,
-                         vector<string>              &tounlink)
+_rename_create_path_core(const vector<string> &oldbasepaths,
+                         const string         &oldbasepath,
+                         const string         &newbasepath,
+                         const char           *oldfusepath,
+                         const char           *newfusepath,
+                         const string         &newfusedirpath,
+                         int                  &error,
+                         vector<string>       &tounlink)
 {
   int rv;
   bool ismember;
@@ -108,26 +107,29 @@ _rename_create_path(Policy::Func::Search  searchFunc,
   int error;
   string newfusedirpath;
   vector<string> toremove;
-  vector<const string*> newbasepath;
-  vector<const string*> oldbasepaths;
+  vector<string> newbasepath;
+  vector<string> oldbasepaths;
+  vector<string> branches;
 
-  rv = actionFunc(branches_,oldfusepath,minfreespace,oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,minfreespace,&oldbasepaths);
   if(rv == -1)
     return -errno;
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = searchFunc(branches_,newfusedirpath,minfreespace,newbasepath);
+  rv = searchFunc(branches_,newfusedirpath,minfreespace,&newbasepath);
   if(rv == -1)
     return -errno;
 
+  branches_.to_paths(branches);
+
   error = -1;
-  for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+  for(size_t i = 0, ei = branches.size(); i != ei; i++)
     {
-      const string &oldbasepath = branches_[i].path;
+      const string &oldbasepath = branches[i];
 
       _rename_create_path_core(oldbasepaths,
-                               oldbasepath,*newbasepath[0],
+                               oldbasepath,newbasepath[0],
                                oldfusepath,newfusepath,
                                newfusedirpath,
                                error,toremove);
@@ -149,13 +151,13 @@ _clonepath(Policy::Func::Search  searchFunc,
            const string         &fusedirpath)
 {
   int rv;
-  vector<const string*> srcbasepath;
+  vector<string> srcbasepath;
 
-  rv = searchFunc(branches_,fusedirpath,minfreespace,srcbasepath);
+  rv = searchFunc(branches_,fusedirpath,minfreespace,&srcbasepath);
   if(rv == -1)
     return -errno;
 
-  fs::clonepath_as_root(*srcbasepath[0],dstbasepath,fusedirpath);
+  fs::clonepath_as_root(srcbasepath[0],dstbasepath,fusedirpath);
 
   return 0;
 }
@@ -172,15 +174,15 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 {
   int rv;
   string newfusedirpath;
-  vector<const string*> newbasepath;
+  vector<string> newbasepath;
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = createFunc(branches_,newfusedirpath,minfreespace,newbasepath);
+  rv = createFunc(branches_,newfusedirpath,minfreespace,&newbasepath);
   if(rv == -1)
     return rv;
 
-  if(oldbasepath == *newbasepath[0])
+  if(oldbasepath == newbasepath[0])
     return _clonepath(searchFunc,branches_,minfreespace,oldbasepath,newfusedirpath);
 
   return (errno=EXDEV,-1);
@@ -188,16 +190,16 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
 static
 void
-_rename_preserve_path_core(Policy::Func::Search         searchFunc,
-                           Policy::Func::Create         createFunc,
-                           const Branches              &branches_,
-                           const uint64_t               minfreespace,
-                           const vector<const string*> &oldbasepaths,
-                           const string                &oldbasepath,
-                           const char                  *oldfusepath,
-                           const char                  *newfusepath,
-                           int                         &error,
-                           vector<string>              &toremove)
+_rename_preserve_path_core(Policy::Func::Search  searchFunc,
+                           Policy::Func::Create  createFunc,
+                           const Branches       &branches_,
+                           const uint64_t        minfreespace,
+                           const vector<string> &oldbasepaths,
+                           const string         &oldbasepath,
+                           const char           *oldfusepath,
+                           const char           *newfusepath,
+                           int                  &error,
+                           vector<string>       &toremove)
 {
   int rv;
   bool ismember;
@@ -245,16 +247,19 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
   int rv;
   int error;
   vector<string> toremove;
-  vector<const string*> oldbasepaths;
+  vector<string> oldbasepaths;
+  vector<string> branches;
 
-  rv = actionFunc(branches_,oldfusepath,minfreespace,oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,minfreespace,&oldbasepaths);
   if(rv == -1)
     return -errno;
 
+  branches_.to_paths(branches);
+
   error = -1;
-  for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+  for(size_t i = 0, ei = branches.size(); i != ei; i++)
     {
-      const string &oldbasepath = branches_[i].path;
+      const string &oldbasepath = branches[i];
 
       _rename_preserve_path_core(searchFunc,createFunc,
                                  branches_,minfreespace,
@@ -275,24 +280,23 @@ namespace FUSE
   rename(const char *oldpath,
          const char *newpath)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    Config             &config = Config::rw();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     config.open_cache.erase(oldpath);
 
-    if(config.create->path_preserving() && !config.ignorepponrename)
-      return _rename_preserve_path(config.getattr,
-                                   config.rename,
-                                   config.create,
+    if(config.func.create.policy->path_preserving() && !config.ignorepponrename)
+      return _rename_preserve_path(config.func.getattr.policy,
+                                   config.func.rename.policy,
+                                   config.func.create.policy,
                                    config.branches,
                                    config.minfreespace,
                                    oldpath,
                                    newpath);
 
-    return _rename_create_path(config.getattr,
-                               config.rename,
+    return _rename_create_path(config.func.getattr.policy,
+                               config.func.rename.policy,
                                config.branches,
                                config.minfreespace,
                                oldpath,

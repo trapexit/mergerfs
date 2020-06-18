@@ -21,6 +21,7 @@
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "rwlock.hpp"
 
 #include <string>
 #include <vector>
@@ -32,10 +33,12 @@ namespace mfs
 {
   static
   int
-  create(const Branches        &branches_,
-         const uint64_t         minfreespace,
-         vector<const string*> &paths)
+  create(const Branches &branches_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
+    rwlock::ReadGuard guard(&branches_.lock);
+
     int rv;
     int error;
     uint64_t mfs;
@@ -57,7 +60,7 @@ namespace mfs
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
         if(info.spaceavail < mfs)
           continue;
@@ -69,7 +72,7 @@ namespace mfs
     if(mfsbasepath == NULL)
       return (errno=error,-1);
 
-    paths.push_back(mfsbasepath);
+    paths_->push_back(*mfsbasepath);
 
     return 0;
   }
@@ -80,7 +83,7 @@ Policy::Func::mfs(const Category::Enum::Type  type,
                   const Branches             &branches_,
                   const char                 *fusepath,
                   const uint64_t              minfreespace,
-                  vector<const string*>      &paths)
+                  vector<string>             *paths)
 {
   if(type == Category::Enum::create)
     return mfs::create(branches_,minfreespace,paths);

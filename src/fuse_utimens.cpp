@@ -19,8 +19,8 @@
 #include "fs_base_utime.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
+
 #include <fuse.h>
 
 #include <string>
@@ -35,7 +35,7 @@ namespace l
 {
   static
   int
-  utimens_loop_core(const string   *basepath_,
+  utimens_loop_core(const string   &basepath_,
                     const char     *fusepath_,
                     const timespec  ts_[2],
                     const int       error_)
@@ -52,9 +52,9 @@ namespace l
 
   static
   int
-  utimens_loop(const vector<const string*> &basepaths_,
-               const char                  *fusepath_,
-               const timespec               ts_[2])
+  utimens_loop(const vector<string> &basepaths_,
+               const char           *fusepath_,
+               const timespec        ts_[2])
   {
     int error;
 
@@ -76,9 +76,9 @@ namespace l
           const timespec        ts_[2])
   {
     int rv;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -92,12 +92,11 @@ namespace FUSE
   utimens(const char     *fusepath_,
           const timespec  ts_[2])
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::utimens(config.utimens,
+    return l::utimens(config.func.utimens.policy,
                       config.branches,
                       config.minfreespace,
                       fusepath_,

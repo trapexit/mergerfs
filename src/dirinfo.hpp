@@ -16,16 +16,15 @@
 
 #pragma once
 
+#include "fh.hpp"
+
 #include <string>
 
-class DirInfo
+class DirInfo : public FH
 {
 public:
   DirInfo(const char *fusepath_)
-    : fusepath(fusepath_)
+    : FH(fusepath_)
   {
   }
-
-public:
-  std::string fusepath;
 };

@@ -43,7 +43,25 @@ namespace str
         const string   &str,
         const char      delimiter)
   {
-    return split(result,str.c_str(),delimiter);
+    return str::split(result,str.c_str(),delimiter);
+  }
+
+  void
+  splitkv(const string &str_,
+          const char    delimiter_,
+          string       *key_,
+          string       *val_)
+  {
+    istringstream iss;
+    std::string key;
+    std::string val;
+
+    iss.str(str_);
+    std::getline(iss,key,delimiter_);
+    std::getline(iss,val,'\0');
+
+    *key_ = key;
+    *val_ = val;
   }
 
   string
@@ -149,8 +167,16 @@ namespace str
   }
 
   bool
-  ends_with(const string &str_,
-            const string &suffix_)
+  startswith(const string &str_,
+             const string &prefix_)
+  {
+    return ((str_.size() >= prefix_.size()) &&
+            (str_.compare(0,prefix_.size(),prefix_) == 0));
+  }
+
+  bool
+  endswith(const string &str_,
+           const string &suffix_)
   {
     if(suffix_.size() > str_.size())
       return false;
@@ -158,5 +184,20 @@ namespace str
     return std::equal(suffix_.rbegin(),
                       suffix_.rend(),
                       str_.rbegin());
+  }
+
+  std::string
+  trim(const std::string &str_)
+  {
+    std::string rv;
+
+    rv = str_;
+
+    while(!rv.empty() && (rv[0] == ' '))
+      rv.erase(0);
+    while(!rv.empty() && (rv[rv.size()-1] == ' '))
+      rv.erase(rv.size()-1);
+
+    return rv;
   }
 }

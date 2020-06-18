@@ -23,7 +23,7 @@
 #include "fs_base_ioctl.hpp"
 #include "fs_base_open.hpp"
 #include "fs_path.hpp"
-#include "rwlock.hpp"
+#include "str.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -32,9 +32,22 @@
 #include <vector>
 
 #include <fcntl.h>
+#include <string.h>
 
 using std::string;
 using std::vector;
+
+typedef char IOCTL_BUF[4096];
+#define IOCTL_APP_TYPE 0xDF
+//#define IOCTL_READ_KEYS 0xD000DF00
+//#define IOCTL_READ_VAL  0xD000DF01
+//#define IOCTL_WRITE_VAL 0x5000DF02
+//#define IOCTL_FILE_INFO 0xD000DF03
+#define IOCTL_READ_KEYS _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_READ_VAL  _IOWR(IOCTL_APP_TYPE,1,IOCTL_BUF)
+#define IOCTL_WRITE_VAL _IOW(IOCTL_APP_TYPE,2,IOCTL_BUF)
+#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,3,IOCTL_BUF)
+
 
 #ifndef FS_IOC_GETFLAGS
 # define FS_IOC_GETFLAGS _IOR('f',1,long)
@@ -69,7 +82,7 @@ using std::vector;
   is not possible to safely handle the situation.
 
   https://lwn.net/Articles/575846/
- */
+*/
 
 namespace l
 {
@@ -107,8 +120,8 @@ namespace l
              void           *data_,
              uint32_t       *out_bufsz_)
   {
-    FileInfo           *fi     = reinterpret_cast<FileInfo*>(ffi_->fh);
-    const fuse_context *fc     = fuse_get_context();
+    FileInfo           *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     return l::ioctl(fi->fd,cmd_,data_,out_bufsz_);
@@ -131,16 +144,15 @@ namespace l
     int fd;
     int rv;
     string fullpath;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
     fullpath = fs::path::make(basepaths[0],fusepath_);
 
-    const int flags = O_RDONLY | O_NOATIME | O_NONBLOCK;
-    fd = fs::open(fullpath,flags);
+    fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
     if(fd == -1)
       return -errno;
 
@@ -158,13 +170,12 @@ namespace l
             void           *data_,
             uint32_t       *out_bufsz_)
   {
-    DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    DirInfo            *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::ioctl_dir_base(config.open,
+    return l::ioctl_dir_base(config.func.open.policy,
                              config.branches,
                              config.minfreespace,
                              di->fusepath.c_str(),
@@ -172,19 +183,217 @@ namespace l
                              data_,
                              out_bufsz_);
   }
+
+  static
+  int
+  strcpy(const std::string &s_,
+         void              *data_)
+  {
+    char *data = (char*)data_;
+
+    if(s_.size() >= (sizeof(IOCTL_BUF) - 1))
+      return -ERANGE;
+
+    memcpy(data,s_.c_str(),s_.size());
+    data[s_.size()] = '\0';
+
+    return s_.size();
+  }
+
+  static
+  int
+  read_keys(void *data_)
+  {
+    std::string   keys;
+    const Config &config = Config::ro();
+
+    config.keys(keys);
+
+    return l::strcpy(keys,data_);
+  }
+
+  static
+  int
+  read_val(void *data_)
+  {
+    int rv;
+    char *data;
+    std::string key;
+    std::string val;
+    const Config &config = Config::ro();
+
+    data = (char*)data_;
+    data[sizeof(IOCTL_BUF) - 1] = '\0';
+
+    key = data;
+    rv = config.get(key,&val);
+    if(rv < 0)
+      return rv;
+
+    return l::strcpy(val,data_);
+  }
+
+  static
+  int
+  write_val(void *data_)
+  {
+    char *data;
+    std::string kv;
+    std::string key;
+    std::string val;
+    Config &config = Config::rw();
+
+    data = (char*)data_;
+    data[sizeof(IOCTL_BUF) - 1] = '\0';
+
+    kv = data;
+    str::splitkv(kv,'=',&key,&val);
+
+    return config.set(key,val);
+  }
+
+  static
+  int
+  file_basepath(Policy::Func::Search  searchFunc_,
+                const Branches       &branches_,
+                const uint64_t        minfreespace_,
+                const char           *fusepath_,
+                void                 *data_)
+  {
+    int rv;
+    vector<string> basepaths;
+
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    if(rv == -1)
+      return -errno;
+
+    return l::strcpy(basepaths[0],data_);
+  }
+
+  static
+  int
+  file_basepath(fuse_file_info *ffi_,
+                void           *data_)
+  {
+    const Config &config   = Config::ro();
+    std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+
+    return l::file_basepath(config.func.open.policy,
+                            config.branches,
+                            config.minfreespace,
+                            fusepath.c_str(),
+                            data_);
+  }
+
+  static
+  int
+  file_relpath(fuse_file_info *ffi_,
+               void           *data_)
+  {
+    std::string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+
+    return l::strcpy(fusepath,data_);
+  }
+
+  static
+  int
+  file_fullpath(Policy::Func::Search  searchFunc_,
+                const Branches       &branches_,
+                const uint64_t        minfreespace_,
+                const string         &fusepath_,
+                void                 *data_)
+  {
+    int rv;
+    string fullpath;
+    vector<string> basepaths;
+
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    if(rv == -1)
+      return -errno;
+
+    fullpath = fs::path::make(basepaths[0],fusepath_);
+
+    return l::strcpy(fullpath,data_);
+  }
+
+  static
+  int
+  file_fullpath(fuse_file_info *ffi_,
+                void           *data_)
+  {
+    const Config &config   = Config::ro();
+    std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+
+    return l::file_fullpath(config.func.open.policy,
+                            config.branches,
+                            config.minfreespace,
+                            fusepath,
+                            data_);
+  }
+
+  static
+  int
+  file_allpaths(fuse_file_info *ffi_,
+                void           *data_)
+  {
+    string concated;
+    vector<string> paths;
+    vector<string> branches;
+    string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+    const Config &config = Config::ro();
+
+    config.branches.to_paths(branches);
+
+    fs::findallfiles(branches,fusepath.c_str(),paths);
+
+    concated = str::join(paths,'\0');
+
+    return l::strcpy(concated,data_);
+  }
+
+  static
+  int
+  file_info(fuse_file_info *ffi_,
+            void           *data_)
+  {
+    char *key = (char*)data_;
+
+    if(!strcmp("basepath",key))
+      return l::file_basepath(ffi_,data_);
+    if(!strcmp("relpath",key))
+      return l::file_relpath(ffi_,data_);
+    if(!strcmp("fullpath",key))
+      return l::file_fullpath(ffi_,data_);
+    if(!strcmp("allpaths",key))
+      return l::file_allpaths(ffi_,data_);
+
+    return -ENOATTR;
+  }
 }
 
 namespace FUSE
 {
   int
   ioctl(const char     *fusepath_,
-        int             cmd_,
+        unsigned long   cmd_,
         void           *arg_,
         fuse_file_info *ffi_,
         unsigned int    flags_,
         void           *data_,
         uint32_t       *out_bufsz_)
   {
+    switch(cmd_)
+      {
+      case IOCTL_READ_KEYS:
+        return l::read_keys(data_);
+      case IOCTL_READ_VAL:
+        return l::read_val(data_);
+      case IOCTL_WRITE_VAL:
+        return l::write_val(data_);
+      case IOCTL_FILE_INFO:
+        return l::file_info(ffi_,data_);
+      }
+
     if(flags_ & FUSE_IOCTL_DIR)
       return l::ioctl_dir(ffi_,cmd_,data_,out_bufsz_);
 

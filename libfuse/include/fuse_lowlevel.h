@@ -101,11 +101,7 @@ struct fuse_entry_param {
 	 */
 	struct stat attr;
 
-	/** Validity timeout (in seconds) for the attributes */
-	double attr_timeout;
-
-	/** Validity timeout (in seconds) for the name */
-	double entry_timeout;
+        fuse_timeouts_t timeout;
 };
 
 /** Additional context associated with requests */
@@ -882,7 +878,7 @@ struct fuse_lowlevel_ops {
 	 * @param in_bufsz number of fetched bytes
 	 * @param out_bufsz maximum size of output data
 	 */
-	void (*ioctl) (fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
+	void (*ioctl) (fuse_req_t req, fuse_ino_t ino, unsigned long cmd, void *arg,
 		       struct fuse_file_info *fi, unsigned flags,
 		       const void *in_buf, uint32_t in_bufsz, uint32_t out_bufsz);
 
@@ -1136,8 +1132,9 @@ int fuse_reply_create(fuse_req_t req, const struct fuse_entry_param *e,
  * @param attr_timeout	validity timeout (in seconds) for the attributes
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_attr(fuse_req_t req, const struct stat *attr,
-		    double attr_timeout);
+int fuse_reply_attr(fuse_req_t         req,
+                    const struct stat *attr,
+                    const uint64_t     timeout);
 
 /**
  * Reply with the contents of a symbolic link

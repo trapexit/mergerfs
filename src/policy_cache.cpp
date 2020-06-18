@@ -3,13 +3,11 @@
 #include <cstdlib>
 #include <map>
 #include <string>
-#include <vector>
 
 #include <time.h>
 
 using std::map;
 using std::string;
-using std::vector;
 
 static const uint64_t DEFAULT_TIMEOUT = 0;
 

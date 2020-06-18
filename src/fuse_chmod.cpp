@@ -19,7 +19,6 @@
 #include "fs_base_chmod.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -34,7 +33,7 @@ namespace l
 {
   static
   int
-  chmod_loop_core(const string *basepath_,
+  chmod_loop_core(const string &basepath_,
                   const char   *fusepath_,
                   const mode_t  mode_,
                   const int     error_)
@@ -51,9 +50,9 @@ namespace l
 
   static
   int
-  chmod_loop(const vector<const string*> &basepaths_,
-             const char                  *fusepath_,
-             const mode_t                 mode_)
+  chmod_loop(const vector<string> &basepaths_,
+             const char           *fusepath_,
+             const mode_t          mode_)
   {
     int error;
 
@@ -75,9 +74,9 @@ namespace l
         const mode_t          mode_)
   {
     int rv;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -91,12 +90,11 @@ namespace FUSE
   chmod(const char *fusepath_,
         mode_t      mode_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::chmod(config.chmod,
+    return l::chmod(config.func.chmod.policy,
                     config.branches,
                     config.minfreespace,
                     fusepath_,

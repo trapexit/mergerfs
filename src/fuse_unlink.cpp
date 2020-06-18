@@ -19,7 +19,6 @@
 #include "fs_base_unlink.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -36,7 +35,7 @@ namespace l
 {
   static
   int
-  unlink_loop_core(const string *basepath_,
+  unlink_loop_core(const string &basepath_,
                    const char   *fusepath_,
                    const int     error_)
   {
@@ -52,8 +51,8 @@ namespace l
 
   static
   int
-  unlink_loop(const vector<const string*> &basepaths_,
-              const char                  *fusepath_)
+  unlink_loop(const vector<string> &basepaths_,
+              const char           *fusepath_)
   {
     int error;
 
@@ -74,9 +73,9 @@ namespace l
          const char           *fusepath_)
   {
     int rv;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -89,14 +88,13 @@ namespace FUSE
   int
   unlink(const char *fusepath_)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     config.open_cache.erase(fusepath_);
 
-    return l::unlink(config.unlink,
+    return l::unlink(config.func.unlink.policy,
                      config.branches,
                      config.minfreespace,
                      fusepath_);

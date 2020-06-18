@@ -50,7 +50,7 @@ namespace l
   void
   want_if_capable(fuse_conn_info *conn_,
                   const int       flag_,
-                  bool           *want_)
+                  ConfigBOOL     *want_)
   {
     if(*want_ && l::capable(conn_,flag_))
       {
@@ -83,24 +83,24 @@ namespace FUSE
   void *
   init(fuse_conn_info *conn_)
   {
-    Config &c = Config::get_writable();
+    Config &config = Config::rw();
 
     ugid::init();
 
     l::want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
-    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&c.async_read);
+    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&config.async_read);
     l::want_if_capable(conn_,FUSE_CAP_ATOMIC_O_TRUNC);
     l::want_if_capable(conn_,FUSE_CAP_BIG_WRITES);
-    l::want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&c.cache_symlinks);
+    l::want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&config.cache_symlinks);
     l::want_if_capable(conn_,FUSE_CAP_DONT_MASK);
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
-    l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&c.readdirplus);
+    l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&config.readdirplus);
     //l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS_AUTO);
-    l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&c.posix_acl);
-    l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&c.writeback_cache);
-    l::want_if_capable_max_pages(conn_,c);
+    l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&config.posix_acl);
+    l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&config.writeback_cache);
+    l::want_if_capable_max_pages(conn_,config);
 
-    return &c;
+    return &config;
   }
 }

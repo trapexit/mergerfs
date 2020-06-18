@@ -40,9 +40,9 @@ USE_XATTR = 1
 UGID_USE_RWLOCK = 0
 
 ifeq ($(DEBUG),1)
-DEBUG_FLAGS := -O0 -g
+OPT_FLAGS := -O0 -g
 else
-DEBUG_FLAGS :=
+OPT_FLAGS := -O2
 endif
 
 ifeq ($(STATIC),1)
@@ -62,8 +62,8 @@ OBJS        = $(SRC:src/%.cpp=build/%.o)
 DEPS        = $(SRC:src/%.cpp=build/%.d)
 MANPAGE     = mergerfs.1
 CXXFLAGS    = \
-              -O2 \
-              $(DEBUG_FLAGS) \
+              -std=c++0x \
+              $(OPT_FLAGS) \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
               -Wall \
@@ -230,6 +230,6 @@ install-build-pkgs:
 
 .PHONY: libfuse
 libfuse:
-	$(MAKE) -C libfuse
+	$(MAKE) DEBUG=$(DEBUG) -C libfuse
 
 -include $(DEPS)

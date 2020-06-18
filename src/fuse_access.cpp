@@ -14,15 +14,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_access.hpp"
 #include "fs_path.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -39,9 +38,9 @@ namespace l
   {
     int rv;
     string fullpath;
-    vector<const string*> basepaths;
+    vector<string> basepaths;
 
-    rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
+    rv = searchFunc(branches_,fusepath,minfreespace,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -59,12 +58,11 @@ namespace FUSE
   access(const char *fusepath,
          int         mask)
   {
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::get(fc);
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::access(config.access,
+    return l::access(config.func.access.policy,
                      config.branches,
                      config.minfreespace,
                      fusepath,

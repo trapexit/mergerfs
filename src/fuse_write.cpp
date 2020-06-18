@@ -19,7 +19,6 @@
 #include "fileinfo.hpp"
 #include "fs_base_write.hpp"
 #include "fs_movefile.hpp"
-#include "rwlock.hpp"
 #include "ugid.hpp"
 
 #include <string>
@@ -92,14 +91,12 @@ namespace l
     rv = func_(fi->fd,buf_,count_,offset_);
     if(l::out_of_space(-rv))
       {
-        const fuse_context *fc     = fuse_get_context();
-        const Config       &config = Config::get(fc);
+        const Config &config = Config::ro();
 
         if(config.moveonenospc)
           {
             vector<string> paths;
             const ugid::Set ugid(0,0);
-            const rwlock::ReadGuard readlock(&config.branches_lock);
 
             config.branches.to_paths(paths);
 
