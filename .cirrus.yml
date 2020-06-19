@@ -1,0 +1,44 @@
+freebsd_task:
+  name: "freebsd:12.1"
+  freebsd_instance:
+    image_family: freebsd-12-1
+  env:
+    ASSUME_ALWAYS_YES: yes
+  script:
+    - tools/install-build-pkgs
+    - gmake
+
+linux_task:
+  name: "alpine:3.11"
+  container:
+    image: alpine:3.11
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "centos:7"
+  container:
+    image: centos:7
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "centos:8"
+  container:
+    image: centos:8
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
