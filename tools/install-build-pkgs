@@ -1,16 +1,24 @@
 #!/bin/sh
 
 if [ -e /usr/bin/apt-get ]; then
+    export DEBIAN_FRONTEND=noninteractive
     apt-get -qy update
-    apt-get -qy --no-install-suggests --no-install-recommends --force-yes \
+    apt-get -qy --no-install-suggests --no-install-recommends \
 	    install \
-            build-essential git g++ debhelper \
-            python \
-            automake libtool lsb-release
+            ca-certificates \
+            build-essential \
+            git \
+            g++ \
+            debhelper \
+            automake \
+            libtool \
+            lsb-release
+    apt-get -qy --no-install-suggests --no-install-recommends install python
+    apt-get -qy --no-install-suggests --no-install-recommends install python3
 elif [ -e /usr/bin/dnf ]; then
     dnf -y update
     dnf -y install \
-        git rpm-build gcc-c++ make which python automake \
+        git rpm-build gcc-c++ make which python3 automake \
         libtool gettext-devel
 elif [ -e /usr/bin/yum ]; then
     yum -y update
@@ -26,4 +34,12 @@ elif [ -e /usr/sbin/pkg ]; then
     pkg install \
         git gmake gcc autoconf automake libtool \
         gettext-tools
+fi
+
+if [ ! -e /usr/bin/python ]; then
+    if [ -e /usr/bin/python3 ]; then
+        ln -s /usr/bin/python3 /usr/bin/python
+    elif [ -e /usr/bin/python2 ]; then
+        ln -s /usr/bin/python2 /usr/bin/python
+    fi
 fi
