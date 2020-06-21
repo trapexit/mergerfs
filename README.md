@@ -110,6 +110,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
 * **nfsopenhack=off|git|all**: A workaround for exporting mergerfs over NFS where there are issues with creating files for write while setting the mode to read-only. (default: off)
+* **followsymlinks=never|directory|regular|all**: Turns symlinks into what they point to. (default: never)
 * **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
 * **async_read=BOOL**: Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
 * **fuse_msg_size=INT**: Set the max number of pages per FUSE message. Only available on Linux >= 4.20 and ignored otherwise. (min: 1; max: 256; default: 256)
@@ -216,6 +217,15 @@ FUSE applications communicate with the kernel over a special character device: `
 In Linux 4.20 a new feature was added allowing the negotiation of the max message size. Since the size is in multiples of [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the feature is called `max_pages`. There is a maximum `max_pages` value of 256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20, and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its referred to as `fuse_msg_size` to make it clear what it impacts and provide some abstraction.
 
 Since there should be no downsides to increasing `fuse_msg_size` / `max_pages`, outside a minor bump in RAM usage due to larger message buffers, mergerfs defaults the value to 256. On kernels before 4.20 the value has no effect. The reason the value is configurable is to enable experimentation and benchmarking. See the BENCHMARKING section for examples.
+
+
+### followsymlinks
+
+This feature, when enabled, will cause symlinks to be interpreted by mergerfs as their target (depending on the mode).
+
+When there is a getattr/stat request for a file mergerfs will check if the file is a symlink and depending on the `followsymlinks` setting will replace the information about the symlink with that of that which it points to.
+
+When unlink'ing or rmdir'ing the followed symlink it will remove the symlink itself and not that which it points to.
 
 
 ### symlinkify

@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -16,15 +18,13 @@
 
 #pragma once
 
-#include "fuse.h"
+#include "enum.hpp"
 
-#include <sys/stat.h>
-
-namespace FUSE
-{
-  int
-  symlink(const char      *oldpath_,
-          const char      *newpath_,
-          struct stat     *st_,
-          fuse_timeouts_t *timeouts_);
-}
+enum class FollowSymlinksEnum
+  {
+    NEVER,
+    DIRECTORY,
+    REGULAR,
+    ALL
+  };
+typedef Enum<FollowSymlinksEnum> FollowSymlinks;

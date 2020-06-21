@@ -216,6 +216,10 @@ over NFS where there are issues with creating files for write while
 setting the mode to read\-only.
 (default: off)
 .IP \[bu] 2
+\f[B]followsymlinks=never|directory|regular|all\f[]: Turns symlinks into
+what they point to.
+(default: never)
+.IP \[bu] 2
 \f[B]posix_acl=BOOL\f[]: Enable POSIX ACL support (if supported by
 kernel and underlying filesystem).
 (default: false)
@@ -513,6 +517,18 @@ On kernels before 4.20 the value has no effect.
 The reason the value is configurable is to enable experimentation and
 benchmarking.
 See the BENCHMARKING section for examples.
+.SS followsymlinks
+.PP
+This feature, when enabled, will cause symlinks to be interpreted by
+mergerfs as their target (depending on the mode).
+.PP
+When there is a getattr/stat request for a file mergerfs will check if
+the file is a symlink and depending on the \f[C]followsymlinks\f[]
+setting will replace the information about the symlink with that of that
+which it points to.
+.PP
+When unlink\[aq]ing or rmdir\[aq]ing the followed symlink it will remove
+the symlink itself and not that which it points to.
 .SS symlinkify
 .PP
 Due to the levels of indirection introduced by mergerfs and the

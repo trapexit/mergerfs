@@ -1518,17 +1518,22 @@ int fuse_fs_rmdir(struct fuse_fs *fs, const char *path)
   }
 }
 
-int fuse_fs_symlink(struct fuse_fs *fs, const char *linkname, const char *path)
+int
+fuse_fs_symlink(struct fuse_fs  *fs_,
+                const char      *linkname_,
+                const char      *path_,
+                struct stat     *st_,
+                fuse_timeouts_t *timeouts_)
 {
-  fuse_get_context()->private_data = fs->user_data;
-  if (fs->op.symlink) {
-    if (fs->debug)
-      fprintf(stderr, "symlink %s %s\n", linkname, path);
+  fuse_get_context()->private_data = fs_->user_data;
 
-    return fs->op.symlink(linkname, path);
-  } else {
+  if(fs_->op.symlink == NULL)
     return -ENOSYS;
-  }
+
+  if(fs_->debug)
+    fprintf(stderr,"symlink %s %s\n",linkname_,path_);
+
+  return fs_->op.symlink(linkname_,path_,st_,timeouts_);
 }
 
 int fuse_fs_link(struct fuse_fs *fs, const char *oldpath, const char *newpath)
@@ -2281,6 +2286,37 @@ update_stat(struct node       *node_,
 
 static
 int
+set_path_info(struct fuse             *f,
+              fuse_ino_t               nodeid,
+              const char              *name,
+              struct fuse_entry_param *e)
+{
+  struct node *node;
+
+  node = find_node(f,nodeid,name);
+  if(node == NULL)
+    return -ENOMEM;
+
+  e->ino        = node->nodeid;
+  e->generation = node->generation;
+
+  pthread_mutex_lock(&f->lock);
+  update_stat(node,&e->attr);
+  pthread_mutex_unlock(&f->lock);
+
+  set_stat(f,e->ino,&e->attr);
+  if(f->conf.debug)
+    fprintf(stderr,
+            "   NODEID: %llu\n"
+            "   GEN: %llu\n",
+            (unsigned long long)e->ino,
+            (unsigned long long)e->generation);
+
+  return 0;
+}
+
+static
+int
 lookup_path(struct fuse             *f,
             fuse_ino_t               nodeid,
             const char              *name,
@@ -2288,44 +2324,18 @@ lookup_path(struct fuse             *f,
             struct fuse_entry_param *e,
             struct fuse_file_info   *fi)
 {
-  int res;
+  int rv;
 
   memset(e,0,sizeof(struct fuse_entry_param));
 
-  if(fi)
-    res = fuse_fs_fgetattr(f->fs,&e->attr,fi,&e->timeout);
-  else
-    res = fuse_fs_getattr(f->fs,path,&e->attr,&e->timeout);
+  rv = ((fi == NULL) ?
+        fuse_fs_getattr(f->fs,path,&e->attr,&e->timeout) :
+        fuse_fs_fgetattr(f->fs,&e->attr,fi,&e->timeout));
 
-  if(res == 0)
-    {
-      struct node *node;
+  if(rv)
+    return rv;
 
-      node = find_node(f,nodeid,name);
-      if(node == NULL)
-        {
-          res = -ENOMEM;
-        }
-      else
-        {
-          e->ino        = node->nodeid;
-          e->generation = node->generation;
-
-          pthread_mutex_lock(&f->lock);
-          update_stat(node,&e->attr);
-          pthread_mutex_unlock(&f->lock);
-
-          set_stat(f,e->ino,&e->attr);
-          if(f->conf.debug)
-            fprintf(stderr,
-                    "   NODEID: %llu\n"
-                    "   GEN: %llu\n",
-                    (unsigned long long)e->ino,
-                    (unsigned long long)e->generation);
-        }
-    }
-
-  return res;
+  return set_path_info(f,nodeid,name,e);
 }
 
 static struct fuse_context_i *fuse_get_context_internal(void)
@@ -2926,26 +2936,34 @@ static void fuse_lib_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
   reply_err(req, err);
 }
 
-static void fuse_lib_symlink(fuse_req_t req, const char *linkname,
-			     fuse_ino_t parent, const char *name)
+static
+void
+fuse_lib_symlink(fuse_req_t  req_,
+                 const char *linkname_,
+                 fuse_ino_t  parent_,
+                 const char *name_)
 {
-  struct fuse *f = req_fuse_prepare(req);
-  struct fuse_entry_param e;
+  int rv;
   char *path;
-  int err;
+  struct fuse *f;
+  struct fuse_entry_param e;
 
-  err = get_path_name(f, parent, name, &path);
-  if (!err) {
-    struct fuse_intr_data d;
+  f = req_fuse_prepare(req_);
 
-    fuse_prepare_interrupt(f, req, &d);
-    err = fuse_fs_symlink(f->fs, linkname, path);
-    if (!err)
-      err = lookup_path(f, parent, name, path, &e, NULL);
-    fuse_finish_interrupt(f, req, &d);
-    free_path(f, parent, path);
-  }
-  reply_entry(req, &e, err);
+  rv = get_path_name(f,parent_,name_,&path);
+  if(!rv)
+    {
+      struct fuse_intr_data d;
+
+      fuse_prepare_interrupt(f,req_,&d);
+      rv = fuse_fs_symlink(f->fs,linkname_,path,&e.attr,&e.timeout);
+      if(rv == 0)
+        rv = set_path_info(f,parent_,name_,&e);
+      fuse_finish_interrupt(f,req_,&d);
+      free_path(f,parent_,path);
+    }
+
+  reply_entry(req_,&e,rv);
 }
 
 static

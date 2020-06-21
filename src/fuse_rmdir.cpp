@@ -16,8 +16,9 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_rmdir.hpp"
 #include "fs_path.hpp"
+#include "fs_rmdir.hpp"
+#include "fs_unlink.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -50,9 +51,21 @@ namespace l
 {
   static
   int
-  rmdir_loop_core(const string &basepath_,
-                  const char   *fusepath_,
-                  const int     error_)
+  should_unlink(int rv_,
+                int errno_,
+                FollowSymlinks followsymlinks_)
+  {
+    return ((rv_ == -1) &&
+            (errno_ == ENOTDIR) &&
+            (followsymlinks_ != FollowSymlinks::ENUM::NEVER));
+  }
+
+  static
+  int
+  rmdir_core(const string         &basepath_,
+             const char           *fusepath_,
+             const FollowSymlinks  followsymlinks_,
+             const int             error_)
   {
     int rv;
     string fullpath;
@@ -60,6 +73,8 @@ namespace l
     fullpath = fs::path::make(basepath_,fusepath_);
 
     rv = fs::rmdir(fullpath);
+    if(l::should_unlink(rv,errno,followsymlinks_))
+      rv = fs::unlink(fullpath);
 
     return error::calc(rv,error_,errno);
   }
@@ -67,14 +82,15 @@ namespace l
   static
   int
   rmdir_loop(const vector<string> &basepaths_,
-             const char           *fusepath_)
+             const char           *fusepath_,
+             const FollowSymlinks  followsymlinks_)
   {
     int error;
 
     error = 0;
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = l::rmdir_loop_core(basepaths_[i],fusepath_,error);
+        error = l::rmdir_core(basepaths_[i],fusepath_,followsymlinks_,error);
       }
 
     return -error;
@@ -84,6 +100,7 @@ namespace l
   int
   rmdir(Policy::Func::Action  actionFunc_,
         const Branches       &branches_,
+        const FollowSymlinks  followsymlinks_,
         const char           *fusepath_)
   {
     int rv;
@@ -93,7 +110,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    return l::rmdir_loop(basepaths,fusepath_);
+    return l::rmdir_loop(basepaths,fusepath_,followsymlinks_);
   }
 }
 
@@ -108,6 +125,7 @@ namespace FUSE
 
     return l::rmdir(config.func.rmdir.policy,
                     config.branches,
+                    config.followsymlinks,
                     fusepath_);
   }
 }
