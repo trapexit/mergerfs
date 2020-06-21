@@ -17,16 +17,26 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_link.hpp"
+#include "fs_mkdir_as_root.hpp"
 #include "fs_path.hpp"
 #include "fs_remove.hpp"
 #include "fs_rename.hpp"
+#include "fs_symlink.hpp"
+#include "fs_unlink.hpp"
+#include "fuse_symlink.hpp"
 #include "ugid.hpp"
+
+#include "ghc/filesystem.hpp"
 
 #include <algorithm>
 #include <string>
+#include <vector>
+
+#include <iostream>
 
 using std::string;
-
+namespace gfs = ghc::filesystem;
 
 namespace error
 {
@@ -48,265 +58,351 @@ namespace error
   }
 }
 
-static
-bool
-member(const StrVec &haystack,
-       const string &needle)
+namespace l
 {
-  for(size_t i = 0, ei = haystack.size(); i != ei; i++)
-    {
-      if(haystack[i] == needle)
-        return true;
-    }
+  static
+  bool
+  contains(const StrVec &haystack_,
+           const char   *needle_)
+  {
+    for(auto &hay : haystack_)
+      {
+        if(hay == needle_)
+          return true;
+      }
 
-  return false;
-}
+    return false;
+  }
 
-static
-void
-_remove(const StrVec &toremove)
-{
-  for(size_t i = 0, ei = toremove.size(); i != ei; i++)
-    fs::remove(toremove[i]);
-}
+  static
+  bool
+  contains(const StrVec &haystack_,
+           const string &needle_)
+  {
+    return l::contains(haystack_,needle_.c_str());
+  }
 
-static
-void
-_rename_create_path_core(const StrVec &oldbasepaths,
-                         const string &oldbasepath,
-                         const string &newbasepath,
-                         const char   *oldfusepath,
-                         const char   *newfusepath,
-                         const string &newfusedirpath,
-                         int          &error,
-                         StrVec       &tounlink)
-{
-  int rv;
-  bool ismember;
-  string oldfullpath;
-  string newfullpath;
+  static
+  void
+  remove(const StrVec &toremove_)
+  {
+    for(auto &path : toremove_)
+      fs::remove(path);
+  }
 
-  ismember = member(oldbasepaths,oldbasepath);
-  if(ismember)
-    {
-      rv = fs::clonepath_as_root(newbasepath,oldbasepath,newfusedirpath);
-      if(rv != -1)
-        {
-          oldfullpath = fs::path::make(oldbasepath,oldfusepath);
-          newfullpath = fs::path::make(oldbasepath,newfusepath);
+  static
+  void
+  remove(const Branches::CPtr &branches_,
+         const std::string    &relpath_)
+  {
+    std::string fullpath;
 
-          rv = fs::rename(oldfullpath,newfullpath);
-        }
+    for(auto &branch : *branches_)
+      {
+        fullpath = fs::path::make(branch.path,relpath_);
+        fs::remove(fullpath);
+      }
+  }
 
-      error = error::calc(rv,error,errno);
-      if(rv == -1)
-        tounlink.push_back(oldfullpath);
-    }
-  else
-    {
-      newfullpath = fs::path::make(oldbasepath,newfusepath);
+  static
+  int
+  rename_create_path(const Policy::Search &searchPolicy_,
+                     const Policy::Action &actionPolicy_,
+                     const Branches::CPtr &branches_,
+                     const gfs::path      &oldfusepath_,
+                     const gfs::path      &newfusepath_)
+  {
+    int rv;
+    int error;
+    StrVec toremove;
+    StrVec newbasepath;
+    StrVec oldbasepaths;
+    gfs::path oldfullpath;
+    gfs::path newfullpath;
 
-      tounlink.push_back(newfullpath);
-    }
-}
+    rv = actionPolicy_(branches_,oldfusepath_,&oldbasepaths);
+    if(rv == -1)
+      return -errno;
 
-static
-int
-_rename_create_path(const Policy::Search &searchFunc,
-                    const Policy::Action &actionFunc,
-                    const Branches::CPtr &branches_,
-                    const char           *oldfusepath,
-                    const char           *newfusepath)
-{
-  int rv;
-  int error;
-  string newfusedirpath;
-  StrVec toremove;
-  StrVec newbasepath;
-  StrVec oldbasepaths;
-  StrVec branches;
+    rv = searchPolicy_(branches_,newfusepath_.parent_path(),&newbasepath);
+    if(rv == -1)
+      return -errno;
 
-  rv = actionFunc(branches_,oldfusepath,&oldbasepaths);
-  if(rv == -1)
-    return -errno;
+    error = -1;
+    for(auto &branch : *branches_)
+      {
+        newfullpath  = branch.path;
+        newfullpath += newfusepath_;
 
-  newfusedirpath = fs::path::dirname(newfusepath);
+        if(!l::contains(oldbasepaths,branch.path))
+          {
+            toremove.push_back(newfullpath);
+            continue;
+          }
 
-  rv = searchFunc(branches_,newfusedirpath.c_str(),&newbasepath);
-  if(rv == -1)
-    return -errno;
+        oldfullpath  = branch.path;
+        oldfullpath += oldfusepath_;
 
-  branches_->to_paths(branches);
+        rv = fs::rename(oldfullpath,newfullpath);
+        if(rv == -1)
+          {
+            rv = fs::clonepath_as_root(newbasepath[0],branch.path,newfusepath_.parent_path());
+            if(rv == 0)
+              rv = fs::rename(oldfullpath,newfullpath);
+          }
 
-  error = -1;
-  for(size_t i = 0, ei = branches.size(); i != ei; i++)
-    {
-      const string &oldbasepath = branches[i];
+        error = error::calc(rv,error,errno);
+        if(rv == -1)
+          toremove.push_back(oldfullpath);
+      }
 
-      _rename_create_path_core(oldbasepaths,
-                               oldbasepath,newbasepath[0],
-                               oldfusepath,newfusepath,
-                               newfusedirpath,
-                               error,toremove);
-    }
+    if(error == 0)
+      l::remove(toremove);
 
+    return -error;
+  }
 
-  if(error == 0)
-    _remove(toremove);
+  static
+  int
+  rename_preserve_path(const Policy::Action &actionPolicy_,
+                       const Branches::CPtr &branches_,
+                       const gfs::path      &oldfusepath_,
+                       const gfs::path      &newfusepath_)
+  {
+    int rv;
+    bool success;
+    StrVec toremove;
+    StrVec oldbasepaths;
+    gfs::path oldfullpath;
+    gfs::path newfullpath;
 
-  return -error;
-}
+    rv = actionPolicy_(branches_,oldfusepath_,&oldbasepaths);
+    if(rv == -1)
+      return -errno;
 
-static
-int
-_clonepath(const Policy::Search &searchFunc,
-           const Branches::CPtr &branches_,
-           const string         &dstbasepath,
-           const string         &fusedirpath)
-{
-  int rv;
-  StrVec srcbasepath;
+    success = false;
+    for(auto &branch : *branches_)
+      {
+        newfullpath  = branch.path;
+        newfullpath += newfusepath_;
 
-  rv = searchFunc(branches_,fusedirpath.c_str(),&srcbasepath);
-  if(rv == -1)
-    return -errno;
+        if(!l::contains(oldbasepaths,branch.path))
+          {
+            toremove.push_back(newfullpath);
+            continue;
+          }
 
-  fs::clonepath_as_root(srcbasepath[0],dstbasepath,fusedirpath);
+        oldfullpath  = branch.path;
+        oldfullpath += oldfusepath_;
 
-  return 0;
-}
+        rv = fs::rename(oldfullpath,newfullpath);
+        if(rv == -1)
+          {
+            toremove.push_back(oldfullpath);
+            continue;
+          }
 
-static
-int
-_clonepath_if_would_create(const Policy::Search &searchFunc,
-                           const Policy::Create &createFunc,
+        success = true;
+      }
+
+    // TODO: probably should try to be nuanced here.
+    if(success == false)
+      return -EXDEV;
+
+    l::remove(toremove);
+
+    return 0;
+  }
+
+  static
+  void
+  rename_exdev_rename_back(const StrVec    &basepaths_,
+                           const gfs::path &oldfusepath_)
+  {
+    gfs::path oldpath;
+    gfs::path newpath;
+
+    for(auto &basepath : basepaths_)
+      {
+        oldpath  = basepath;
+        oldpath /= ".mergerfs_rename_exdev";
+        oldpath += oldfusepath_;
+
+        newpath  = basepath;
+        newpath += oldfusepath_;
+
+        fs::rename(oldpath,newpath);
+      }
+  }
+
+  static
+  int
+  rename_exdev_rename_target(const Policy::Action &actionPolicy_,
+                             const Branches::CPtr &branches_,
+                             const gfs::path      &oldfusepath_,
+                             StrVec               *basepaths_)
+  {
+    int rv;
+    gfs::path clonesrc;
+    gfs::path clonetgt;
+
+    rv = actionPolicy_(branches_,oldfusepath_,basepaths_);
+    if(rv == -1)
+      return -errno;
+
+    ugid::SetRootGuard ugidGuard;
+    for(auto &basepath : *basepaths_)
+      {
+        clonesrc  = basepath;
+        clonetgt  = basepath;
+        clonetgt /= ".mergerfs_rename_exdev";
+
+        rv = fs::clonepath(clonesrc,clonetgt,oldfusepath_.parent_path());
+        if((rv == -1) && (errno == ENOENT))
+          {
+            fs::mkdir(clonetgt,01777);
+            rv = fs::clonepath(clonesrc,clonetgt,oldfusepath_.parent_path());
+          }
+
+        if(rv == -1)
+          goto error;
+
+        clonesrc += oldfusepath_;
+        clonetgt += oldfusepath_;
+
+        rv = fs::rename(clonesrc,clonetgt);
+        if(rv == -1)
+          goto error;
+      }
+
+    return 0;
+
+  error:
+    l::rename_exdev_rename_back(*basepaths_,oldfusepath_);
+
+    return -EXDEV;
+  }
+
+  static
+  int
+  rename_exdev_rel_symlink(const Policy::Action &actionPolicy_,
                            const Branches::CPtr &branches_,
-                           const string         &oldbasepath,
-                           const char           *oldfusepath,
-                           const char           *newfusepath)
-{
-  int rv;
-  string newfusedirpath;
-  StrVec newbasepath;
+                           const gfs::path      &oldfusepath_,
+                           const gfs::path      &newfusepath_)
+  {
+    int rv;
+    StrVec basepaths;
+    gfs::path target;
+    gfs::path linkpath;
 
-  newfusedirpath = fs::path::dirname(newfusepath);
+    rv = l::rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,&basepaths);
+    if(rv < 0)
+      return rv;
 
-  rv = createFunc(branches_,newfusedirpath.c_str(),&newbasepath);
-  if(rv == -1)
+    linkpath  = newfusepath_;
+    target    = "/.mergerfs_rename_exdev";
+    target   += oldfusepath_;
+    target    = target.lexically_relative(linkpath.parent_path());
+
+    rv = FUSE::symlink(target.c_str(),linkpath.c_str());
+    if(rv < 0)
+      l::rename_exdev_rename_back(basepaths,oldfusepath_);
+
     return rv;
+  }
 
-  if(oldbasepath == newbasepath[0])
-    return _clonepath(searchFunc,branches_,oldbasepath,newfusedirpath);
-
-  return (errno=EXDEV,-1);
-}
-
-static
-void
-_rename_preserve_path_core(const Policy::Search &searchFunc,
-                           const Policy::Create &createFunc,
+  static
+  int
+  rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
                            const Branches::CPtr &branches_,
-                           const StrVec         &oldbasepaths,
-                           const string         &oldbasepath,
-                           const char           *oldfusepath,
-                           const char           *newfusepath,
-                           int                  &error,
-                           StrVec               &toremove)
-{
-  int rv;
-  bool ismember;
-  string newfullpath;
+                           const std::string    &mount_,
+                           const gfs::path      &oldfusepath_,
+                           const gfs::path      &newfusepath_)
+  {
+    int rv;
+    StrVec basepaths;
+    gfs::path target;
+    gfs::path linkpath;
 
-  newfullpath = fs::path::make(oldbasepath,newfusepath);
+    rv = l::rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,&basepaths);
+    if(rv < 0)
+      return rv;
 
-  ismember = member(oldbasepaths,oldbasepath);
-  if(ismember)
-    {
-      string oldfullpath;
+    linkpath  = newfusepath_;
+    target    = mount_;
+    target   /= ".mergerfs_rename_exdev";
+    target   += oldfusepath_;
 
-      oldfullpath = fs::path::make(oldbasepath,oldfusepath);
+    rv = FUSE::symlink(target.c_str(),linkpath.c_str());
+    if(rv < 0)
+      l::rename_exdev_rename_back(basepaths,oldfusepath_);
 
-      rv = fs::rename(oldfullpath,newfullpath);
-      if((rv == -1) && (errno == ENOENT))
-        {
-          rv = _clonepath_if_would_create(searchFunc,createFunc,
-                                          branches_,oldbasepath,
-                                          oldfusepath,newfusepath);
-          if(rv == 0)
-            rv = fs::rename(oldfullpath,newfullpath);
-        }
+    return rv;
+  }
 
-      error = error::calc(rv,error,errno);
-      if(rv == -1)
-        toremove.push_back(oldfullpath);
-    }
-  else
-    {
-      toremove.push_back(newfullpath);
-    }
-}
+  static
+  int
+  rename_exdev(Config::Read    &cfg_,
+               const gfs::path &oldfusepath_,
+               const gfs::path &newfusepath_)
+  {
+    switch(cfg_->rename_exdev)
+      {
+      case RenameEXDEV::ENUM::PASSTHROUGH:
+        return -EXDEV;
+      case RenameEXDEV::ENUM::REL_SYMLINK:
+        return l::rename_exdev_rel_symlink(cfg_->func.rename.policy,
+                                           cfg_->branches,
+                                           oldfusepath_,
+                                           newfusepath_);
+      case RenameEXDEV::ENUM::ABS_SYMLINK:
+        return l::rename_exdev_abs_symlink(cfg_->func.rename.policy,
+                                           cfg_->branches,
+                                           cfg_->mount,
+                                           oldfusepath_,
+                                           newfusepath_);
+      }
 
-static
-int
-_rename_preserve_path(const Policy::Search &searchFunc,
-                      const Policy::Action &actionFunc,
-                      const Policy::Create &createFunc,
-                      const Branches::CPtr &branches_,
-                      const char           *oldfusepath,
-                      const char           *newfusepath)
-{
-  int rv;
-  int error;
-  StrVec toremove;
-  StrVec oldbasepaths;
-  StrVec branches;
+    return -EXDEV;
+  }
 
-  rv = actionFunc(branches_,oldfusepath,&oldbasepaths);
-  if(rv == -1)
-    return -errno;
+  static
+  int
+  rename(Config::Read    &cfg_,
+         const gfs::path &oldpath_,
+         const gfs::path &newpath_)
+  {
+    if(cfg_->func.create.policy.path_preserving() && !cfg_->ignorepponrename)
+      return l::rename_preserve_path(cfg_->func.rename.policy,
+                                     cfg_->branches,
+                                     oldpath_,
+                                     newpath_);
 
-  branches_->to_paths(branches);
-
-  error = -1;
-  for(size_t i = 0, ei = branches.size(); i != ei; i++)
-    {
-      const string &oldbasepath = branches[i];
-
-      _rename_preserve_path_core(searchFunc,createFunc,
-                                 branches_,
-                                 oldbasepaths,oldbasepath,
-                                 oldfusepath,newfusepath,
-                                 error,toremove);
-    }
-
-  if(error == 0)
-    _remove(toremove);
-
-  return -error;
+    return l::rename_create_path(cfg_->func.getattr.policy,
+                                 cfg_->func.rename.policy,
+                                 cfg_->branches,
+                                 oldpath_,
+                                 newpath_);
+  }
 }
 
 namespace FUSE
 {
   int
-  rename(const char *oldpath,
-         const char *newpath)
+  rename(const char *oldfusepath_,
+         const char *newfusepath_)
   {
+    int rv;
     Config::Read cfg;
+    gfs::path oldfusepath(oldfusepath_);
+    gfs::path newfusepath(newfusepath_);
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    if(cfg->func.create.policy.path_preserving() && !cfg->ignorepponrename)
-      return _rename_preserve_path(cfg->func.getattr.policy,
-                                   cfg->func.rename.policy,
-                                   cfg->func.create.policy,
-                                   cfg->branches,
-                                   oldpath,
-                                   newpath);
+    rv = l::rename(cfg,oldfusepath,newfusepath);
+    if(rv == -EXDEV)
+      return l::rename_exdev(cfg,oldfusepath,newfusepath);
 
-    return _rename_create_path(cfg->func.getattr.policy,
-                               cfg->func.rename.policy,
-                               cfg->branches,
-                               oldpath,
-                               newpath);
+    return rv;
   }
 }

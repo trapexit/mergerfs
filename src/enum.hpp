@@ -67,8 +67,8 @@ public:
   }
 
 public:
-  std::string to_string() const;
-  int from_string(const std::string &);
+  std::string to_string() const final;
+  int from_string(const std::string &) final;
 
 public:
   int to_int() const

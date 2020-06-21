@@ -121,13 +121,13 @@ struct fuse_operations
   int (*rmdir) (const char *);
 
   /** Create a symbolic link */
-  int (*symlink) (const char *, const char *);
+  int (*symlink) (const char *, const char *, struct stat *, fuse_timeouts_t *);
 
   /** Rename a file */
   int (*rename) (const char *, const char *);
 
   /** Create a hard link to a file */
-  int (*link) (const char *, const char *);
+  int (*link) (const char *, const char *, struct stat *, fuse_timeouts_t *);
 
   /** Change the permission bits of a file */
   int (*chmod) (const char *, mode_t);
@@ -794,9 +794,16 @@ int fuse_fs_rename(struct fuse_fs *fs, const char *oldpath,
                    const char *newpath);
 int fuse_fs_unlink(struct fuse_fs *fs, const char *path);
 int fuse_fs_rmdir(struct fuse_fs *fs, const char *path);
-int fuse_fs_symlink(struct fuse_fs *fs, const char *linkname,
-                    const char *path);
-int fuse_fs_link(struct fuse_fs *fs, const char *oldpath, const char *newpath);
+int fuse_fs_symlink(struct fuse_fs *fs,
+                    const char *linkname,
+		    const char *path,
+                    struct stat *st,
+                    fuse_timeouts_t *timeouts);
+int fuse_fs_link(struct fuse_fs *fs,
+                 const char *oldpath,
+                 const char *newpath,
+                 struct stat *st,
+                 fuse_timeouts_t *timeouts);
 int fuse_fs_release(struct fuse_fs *fs,
                     fuse_file_info_t *fi);
 int fuse_fs_open(struct fuse_fs *fs, const char *path,

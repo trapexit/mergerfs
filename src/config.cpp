@@ -71,6 +71,7 @@ namespace l
 Config::Config()
   : async_read(true),
     auto_cache(false),
+    minfreespace(MINFREESPACE_DEFAULT),
     branches(minfreespace),
     cache_attr(1),
     cache_entry(1),
@@ -83,12 +84,13 @@ Config::Config()
     direct_io(false),
     dropcacheonclose(false),
     fsname(),
+    follow_symlinks(FollowSymlinks::ENUM::NEVER),
     func(),
     fuse_msg_size(FUSE_MAX_MAX_PAGES),
     ignorepponrename(false),
     inodecalc("hybrid-hash"),
     link_cow(false),
-    minfreespace(MINFREESPACE_DEFAULT),
+    link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
     mount(),
     moveonenospc(false),
     nfsopenhack(NFSOpenHack::ENUM::OFF),
@@ -97,6 +99,7 @@ Config::Config()
     posix_acl(false),
     readdir(ReadDir::ENUM::POSIX),
     readdirplus(false),
+    rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
     security_capability(true),
     srcmounts(branches),
     statfs(StatFS::ENUM::BASE),
@@ -124,6 +127,7 @@ Config::Config()
   _map["category.search"]      = &category.search;
   _map["direct_io"]            = &direct_io;
   _map["dropcacheonclose"]     = &dropcacheonclose;
+  _map["follow-symlinks"]      = &follow_symlinks;
   _map["fsname"]               = &fsname;
   _map["func.access"]          = &func.access;
   _map["func.chmod"]           = &func.chmod;
@@ -150,6 +154,7 @@ Config::Config()
   _map["inodecalc"]            = &inodecalc;
   _map["kernel_cache"]         = &kernel_cache;
   _map["link_cow"]             = &link_cow;
+  _map["link-exdev"]           = &link_exdev;
   _map["minfreespace"]         = &minfreespace;
   _map["mount"]                = &mount;
   _map["moveonenospc"]         = &moveonenospc;
@@ -159,6 +164,7 @@ Config::Config()
   _map["posix_acl"]            = &posix_acl;
   //  _map["readdir"]              = &readdir;
   _map["readdirplus"]          = &readdirplus;
+  _map["rename-exdev"]         = &rename_exdev;
   _map["security_capability"]  = &security_capability;
   _map["srcmounts"]            = &srcmounts;
   _map["statfs"]               = &statfs;
