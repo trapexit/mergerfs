@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -41,6 +41,13 @@ using std::vector;
 namespace l
 {
   static
+  char
+  denttype(struct linux_dirent *d_)
+  {
+    return *((char*)d_ + d_->reclen - 1);
+  }
+
+  static
   int
   close_free_ret_enomem(int   fd_,
                         void *buf_)
@@ -61,6 +68,7 @@ namespace l
     char *buf;
     HashSet names;
     string basepath;
+    string fullpath;
     uint64_t namelen;
     struct linux_dirent *d;
 
@@ -100,7 +108,12 @@ namespace l
                 if(rv == 0)
                   continue;
 
-                d->ino = fs::inode::recompute(d->ino,dev);
+                fullpath = fs::path::make(dirname_,d->name);
+                d->ino = fs::inode::calc(fullpath.c_str(),
+                                         fullpath.size(),
+                                         DTTOIF(l::denttype(d)),
+                                         dev,
+                                         d->ino);
 
                 rv = fuse_dirents_add_linux(buf_,d,namelen);
                 if(rv)

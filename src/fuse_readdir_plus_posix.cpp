@@ -66,6 +66,7 @@ namespace l
     dev_t dev;
     HashSet names;
     string basepath;
+    string fullpath;
     struct stat st;
     uint64_t namelen;
     fuse_entry_t entry;
@@ -104,10 +105,16 @@ namespace l
 
             rv = fs::fstatat_nofollow(dirfd,de->d_name,&st);
             if(rv == -1)
-              memset(&st,0,sizeof(st));
+              {
+                memset(&st,0,sizeof(st));
+                st.st_ino  = de->d_ino;
+                st.st_dev  = dev;
+                st.st_mode = DTTOIF(de->d_type);
+              }
 
-            de->d_ino = fs::inode::recompute(de->d_ino,dev);
-            st.st_ino = de->d_ino;
+            fullpath = fs::path::make(dirname_,de->d_name);
+            fs::inode::calc(fullpath,&st);
+            de->d_ino = st.st_ino;
 
             rv = fuse_dirents_add_plus(buf_,de,namelen,&entry,&st);
             if(rv)

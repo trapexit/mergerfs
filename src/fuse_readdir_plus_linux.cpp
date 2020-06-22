@@ -41,6 +41,14 @@ using std::vector;
 
 namespace l
 {
+  static
+  char
+  denttype(struct linux_dirent *d_)
+  {
+    return *((char*)d_ + d_->reclen - 1);
+  }
+
+  static
   int
   close_free_ret_enomem(int   fd_,
                         void *buf_)
@@ -63,6 +71,7 @@ namespace l
     char *buf;
     HashSet names;
     string basepath;
+    string fullpath;
     uint64_t namelen;
     struct stat st;
     fuse_entry_t entry;
@@ -110,10 +119,16 @@ namespace l
 
                 rv = fs::fstatat_nofollow(dirfd,d->name,&st);
                 if(rv == -1)
-                  memset(&st,0,sizeof(st));
+                  {
+                    memset(&st,0,sizeof(st));
+                    st.st_ino  = d->ino;
+                    st.st_dev  = dev;
+                    st.st_mode = DTTOIF(l::denttype(d));
+                  }
 
-                d->ino  = fs::inode::recompute(d->ino,dev);
-                st.st_ino = d->ino;
+                fullpath = fs::path::make(dirname_,d->name);
+                fs::inode::calc(fullpath,&st);
+                d->ino = st.st_ino;
 
                 rv = fuse_dirents_add_linux_plus(buf_,d,namelen,&entry,&st);
                 if(rv)
