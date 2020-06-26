@@ -5,7 +5,7 @@
 #include "fuse_direntplus.h"
 #include "fuse_dirents.h"
 #include "fuse_entry.h"
-#include "linux_dirent64.h"
+#include "linux_dirent.h"
 #include "stat_utils.h"
 
 #include <dirent.h>
@@ -16,7 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEFAULT_SIZE (1024 * 16)
+/* 32KB - same as glibc getdents buffer size */
+#define DEFAULT_SIZE (1024 * 32)
 
 static
 uint64_t
@@ -308,9 +309,9 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
 }
 
 int
-fuse_dirents_add_linux(fuse_dirents_t              *d_,
-                       const struct linux_dirent64 *dirent_,
-                       const uint64_t               namelen_)
+fuse_dirents_add_linux(fuse_dirents_t            *d_,
+                       const struct linux_dirent *dirent_,
+                       const uint64_t             namelen_)
 {
   uint64_t size;
   fuse_dirent_t *d;
@@ -332,21 +333,21 @@ fuse_dirents_add_linux(fuse_dirents_t              *d_,
   if(d == NULL)
     return -ENOMEM;
 
-  d->ino     = dirent_->d_ino;
+  d->ino     = dirent_->ino;
   d->off     = d_->data_len;
   d->namelen = namelen_;
-  d->type    = dirent_->d_type;
-  memcpy(d->name,dirent_->d_name,namelen_);
+  d->type    = *((char*)dirent_ + dirent_->reclen - 1);
+  memcpy(d->name,dirent_->name,namelen_);
 
   return 0;
 }
 
 int
-fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
-                            const struct linux_dirent64 *dirent_,
-                            const uint64_t               namelen_,
-                            const fuse_entry_t          *entry_,
-                            const struct stat           *st_)
+fuse_dirents_add_linux_plus(fuse_dirents_t            *d_,
+                            const struct linux_dirent *dirent_,
+                            const uint64_t             namelen_,
+                            const fuse_entry_t        *entry_,
+                            const struct stat         *st_)
 {
   uint64_t size;
   fuse_direntplus_t *d;
@@ -368,11 +369,11 @@ fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
   if(d == NULL)
     return -ENOMEM;
 
-  d->dirent.ino     = dirent_->d_ino;
+  d->dirent.ino     = dirent_->ino;
   d->dirent.off     = d_->data_len;
   d->dirent.namelen = namelen_;
-  d->dirent.type    = dirent_->d_type;
-  memcpy(d->dirent.name,dirent_->d_name,namelen_);
+  d->dirent.type    = *((char*)dirent_ + dirent_->reclen - 1);
+  memcpy(d->dirent.name,dirent_->name,namelen_);
 
   d->entry = *entry_;
 

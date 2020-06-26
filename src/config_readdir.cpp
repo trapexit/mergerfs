@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,13 +16,34 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "config_readdir.hpp"
+#include "ef.hpp"
 
-#include <fuse.h>
-
-namespace FUSE
+template<>
+int
+ReadDir::from_string(const std::string &s_)
 {
-  int
-  readdir_plus(fuse_file_info *ffi_,
-               fuse_dirents_t *buf_);
+  if(s_ == "posix")
+    _data = ReadDir::ENUM::POSIX;
+  ef(s_ == "linux")
+    _data = ReadDir::ENUM::LINUX;
+  else
+    return -EINVAL;
+
+  return 0;
+}
+
+template<>
+std::string
+ReadDir::to_string(void) const
+{
+  switch(_data)
+    {
+    case ReadDir::ENUM::POSIX:
+      return "posix";
+    case ReadDir::ENUM::LINUX:
+      return "linux";
+    }
+
+  return "invalid";
 }

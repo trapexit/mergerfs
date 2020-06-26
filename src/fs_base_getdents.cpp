@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,13 +16,22 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#if defined __linux__
+#include <unistd.h>
+#include <sys/syscall.h>
+#endif
 
-#include <fuse.h>
-
-namespace FUSE
+namespace fs
 {
   int
-  readdir_plus(fuse_file_info *ffi_,
-               fuse_dirents_t *buf_);
+  getdents(unsigned int  fd_,
+           void         *dirp_,
+           unsigned int  count_)
+  {
+#if defined SYS_getdents64
+    return ::syscall(SYS_getdents,fd_,dirp_,count_);
+#else
+    return (errno=ENOTSUP,-1);
+#endif
+  }
 }

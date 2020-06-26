@@ -14,22 +14,18 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _DEFAULT_SOURCE
-
-#include "config.hpp"
-#include "dirinfo.hpp"
+#include "branch.hpp"
 #include "errno.hpp"
 #include "fs_base_close.hpp"
+#include "fs_base_getdents.hpp"
 #include "fs_base_open.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_devid.hpp"
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "hashset.hpp"
-#include "linux_dirent64.h"
+#include "linux_dirent.h"
 #include "mempools.hpp"
-#include "rwlock.hpp"
-#include "ugid.hpp"
 
 #include <fuse.h>
 #include <fuse_dirents.h>
@@ -38,23 +34,12 @@
 #include <vector>
 
 #include <stddef.h>
-#include <sys/syscall.h>
 
 using std::string;
 using std::vector;
 
 namespace l
 {
-  static
-  inline
-  int
-  getdents64(unsigned int  fd_,
-             char         *dirp_,
-             unsigned int  count_)
-  {
-    return syscall(SYS_getdents64,fd_,dirp_,count_);
-  }
-
   static
   int
   close_free_ret_enomem(int   fd_,
@@ -77,7 +62,7 @@ namespace l
     HashSet names;
     string basepath;
     uint64_t namelen;
-    struct linux_dirent64 *d;
+    struct linux_dirent *d;
 
     buf = (char*)g_DENTS_BUF_POOL.alloc();
     if(buf == NULL)
@@ -100,22 +85,22 @@ namespace l
 
         for(;;)
           {
-            nread = l::getdents64(dirfd,buf,g_DENTS_BUF_POOL.size());
+            nread = fs::getdents(dirfd,buf,g_DENTS_BUF_POOL.size());
             if(nread == -1)
               break;
             if(nread == 0)
               break;
 
-            for(int64_t pos = 0; pos < nread; pos += d->d_reclen)
+            for(int64_t pos = 0; pos < nread; pos += d->reclen)
               {
-                d = (struct linux_dirent64*)(buf + pos);
-                namelen = (strlen(d->d_name) + 1);
+                d = (struct linux_dirent*)(buf + pos);
+                namelen = strlen(d->name);
 
-                rv = names.put(d->d_name,namelen);
+                rv = names.put(d->name,namelen);
                 if(rv == 0)
                   continue;
 
-                d->d_ino = fs::inode::recompute(d->d_ino,dev);
+                d->ino = fs::inode::recompute(d->ino,dev);
 
                 rv = fuse_dirents_add_linux(buf_,d,namelen);
                 if(rv)
@@ -135,17 +120,10 @@ namespace l
 namespace FUSE
 {
   int
-  readdir(fuse_file_info *ffi_,
-          fuse_dirents_t *buf_)
+  readdir_linux(const Branches &branches_,
+                const char     *dirname_,
+                fuse_dirents_t *buf_)
   {
-    DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::ro();
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  readlock(&config.branches.lock);
-
-    return l::readdir(config.branches,
-                      di->fusepath.c_str(),
-                      buf_);
+    return l::readdir(branches_,dirname_,buf_);
   }
 }

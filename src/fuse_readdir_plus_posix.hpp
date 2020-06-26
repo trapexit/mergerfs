@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,11 +18,18 @@
 
 #pragma once
 
+#include "branch.hpp"
+
 #include <fuse.h>
+
+#include <stdint.h>
 
 namespace FUSE
 {
   int
-  readdir_plus(fuse_file_info *ffi_,
-               fuse_dirents_t *buf_);
+  readdir_plus_posix(const Branches &branches_,
+                     const char     *dirname_,
+                     const uint64_t  entry_timeout_,
+                     const uint64_t  attr_timeout_,
+                     fuse_dirents_t *buf_);
 }

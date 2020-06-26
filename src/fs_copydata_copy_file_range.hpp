@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <stdint.h>
+
 namespace fs
 {
-  int
+  int64_t
   copydata_copy_file_range(const int src_fd,
                            const int dst_fd);
 }
