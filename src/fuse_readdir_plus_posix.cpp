@@ -16,20 +16,18 @@
 
 #define _DEFAULT_SOURCE
 
-#include "config.hpp"
-#include "dirinfo.hpp"
+#include "branch.hpp"
 #include "errno.hpp"
 #include "fs_base_closedir.hpp"
 #include "fs_base_dirfd.hpp"
 #include "fs_base_opendir.hpp"
 #include "fs_base_readdir.hpp"
+#include "fs_base_fstatat.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_devid.hpp"
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "hashset.hpp"
-#include "rwlock.hpp"
-#include "ugid.hpp"
 
 #include <fuse.h>
 #include <fuse_dirents.h>
@@ -58,23 +56,26 @@ namespace l
   }
 
   static
-  uint64_t
-  dirent_alloc_namelen(const struct dirent *d_)
-  {
-    return (dirent_exact_namelen(d_) + 1);
-  }
-
-  static
   int
-  readdir(const Branches &branches_,
-          const char     *dirname_,
-          fuse_dirents_t *buf_)
+  readdir_plus(const Branches &branches_,
+               const char     *dirname_,
+               const uint64_t  entry_timeout_,
+               const uint64_t  attr_timeout_,
+               fuse_dirents_t *buf_)
   {
     dev_t dev;
     HashSet names;
     string basepath;
+    struct stat st;
     uint64_t namelen;
+    fuse_entry_t entry;
 
+    entry.nodeid           = 0;
+    entry.generation       = 0;
+    entry.entry_valid      = entry_timeout_;
+    entry.attr_valid       = attr_timeout_;
+    entry.entry_valid_nsec = 0;
+    entry.attr_valid_nsec  = 0;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         int rv;
@@ -95,15 +96,20 @@ namespace l
         rv = 0;
         for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
           {
-            namelen = l::dirent_alloc_namelen(de);
+            namelen = l::dirent_exact_namelen(de);
 
             rv = names.put(de->d_name,namelen);
             if(rv == 0)
               continue;
 
-            de->d_ino = fs::inode::recompute(de->d_ino,dev);
+            rv = fs::fstatat_nofollow(dirfd,de->d_name,&st);
+            if(rv == -1)
+              memset(&st,0,sizeof(st));
 
-            rv = fuse_dirents_add(buf_,de,namelen);
+            de->d_ino = fs::inode::recompute(de->d_ino,dev);
+            st.st_ino = de->d_ino;
+
+            rv = fuse_dirents_add_plus(buf_,de,namelen,&entry,&st);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }
@@ -118,17 +124,12 @@ namespace l
 namespace FUSE
 {
   int
-  readdir(fuse_file_info *ffi_,
-          fuse_dirents_t *buf_)
+  readdir_plus_posix(const Branches &branches_,
+                     const char     *dirname_,
+                     const uint64_t  entry_timeout_,
+                     const uint64_t  attr_timeout_,
+                     fuse_dirents_t *buf_)
   {
-    DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::ro();
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  guard(&config.branches.lock);
-
-    return l::readdir(config.branches,
-                      di->fusepath.c_str(),
-                      buf_);
+    return l::readdir_plus(branches_,dirname_,entry_timeout_,attr_timeout_,buf_);
   }
 }

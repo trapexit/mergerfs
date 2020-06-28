@@ -16,8 +16,43 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifdef __linux__
-# include "fuse_readdir_plus_linux.icpp"
-#else
-# include "fuse_readdir_plus_posix.icpp"
-#endif
+#include "fuse_readdir_plus_linux.hpp"
+#include "fuse_readdir_plus_posix.hpp"
+
+#include "config.hpp"
+#include "dirinfo.hpp"
+#include "rwlock.hpp"
+#include "ugid.hpp"
+
+#include <fuse.h>
+
+namespace FUSE
+{
+  int
+  readdir_plus(fuse_file_info *ffi_,
+               fuse_dirents_t *buf_)
+  {
+    DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
+    const fuse_context      *fc     = fuse_get_context();
+    const Config            &config = Config::ro();
+    const ugid::Set          ugid(fc->uid,fc->gid);
+    const rwlock::ReadGuard  guard(&config.branches.lock);
+
+    switch(config.readdir)
+      {
+      case ReadDir::ENUM::LINUX:
+        return FUSE::readdir_plus_linux(config.branches,
+                                        di->fusepath.c_str(),
+                                        config.cache_entry,
+                                        config.cache_attr,
+                                        buf_);
+      default:
+      case ReadDir::ENUM::POSIX:
+        return FUSE::readdir_plus_posix(config.branches,
+                                        di->fusepath.c_str(),
+                                        config.cache_entry,
+                                        config.cache_attr,
+                                        buf_);
+      }
+  }
+}

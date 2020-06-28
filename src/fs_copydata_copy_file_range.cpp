@@ -18,6 +18,8 @@
 #include "fs_base_stat.hpp"
 #include "fs_copy_file_range.hpp"
 
+#include <stdint.h>
+
 namespace l
 {
   int64_t

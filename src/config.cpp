@@ -90,6 +90,7 @@ Config::Config()
   nullrw(false),
   pid(::getpid()),
   posix_acl(false),
+  readdir(ReadDir::ENUM::POSIX),
   readdirplus(false),
   security_capability(true),
   srcmounts(branches),
@@ -149,6 +150,7 @@ Config::Config()
   _map["nullrw"]               = &nullrw;
   _map["pid"]                  = &pid;
   _map["posix_acl"]            = &posix_acl;
+  //  _map["readdir"]              = &readdir;
   _map["readdirplus"]          = &readdirplus;
   _map["security_capability"]  = &security_capability;
   _map["srcmounts"]            = &srcmounts;

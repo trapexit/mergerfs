@@ -17,6 +17,7 @@
 #pragma once
 
 #include "branch.hpp"
+#include "config_readdir.hpp"
 #include "enum.hpp"
 #include "errno.hpp"
 #include "func_category.hpp"
@@ -110,6 +111,7 @@ public:
   ConfigBOOL     nullrw;
   ConfigUINT64   pid;
   ConfigBOOL     posix_acl;
+  ReadDir        readdir;
   ConfigBOOL     readdirplus;
   ConfigBOOL     security_capability;
   SrcMounts      srcmounts;
