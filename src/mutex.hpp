@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,21 +18,25 @@
 
 #pragma once
 
-#include <fuse.h>
+#include <pthread.h>
 
-#include <sys/types.h>
-
-namespace FUSE
+namespace mutex
 {
-  int
-  read_buf(struct fuse_bufvec **buf,
-           size_t               size,
-           off_t                offset,
-           fuse_file_info      *ffi);
+  class Guard
+  {
+  public:
+    Guard(pthread_mutex_t &lock_)
+      : _lock(lock_)
+    {
+      pthread_mutex_lock(&_lock);
+    }
 
-  int
-  read_buf_null(struct fuse_bufvec **buf,
-                size_t               size,
-                off_t                offset,
-                fuse_file_info      *ffi);
+    ~Guard()
+    {
+      pthread_mutex_unlock(&_lock);
+    }
+
+  private:
+    pthread_mutex_t &_lock;
+  };
 }

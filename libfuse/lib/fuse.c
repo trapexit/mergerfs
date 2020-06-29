@@ -1617,77 +1617,41 @@ static void fuse_free_buf(struct fuse_bufvec *buf)
   }
 }
 
-int fuse_fs_read_buf(struct fuse_fs *fs,
-		     struct fuse_bufvec **bufp, size_t size, off_t off,
-		     struct fuse_file_info *fi)
-{
-  fuse_get_context()->private_data = fs->user_data;
-  if (fs->op.read || fs->op.read_buf) {
-    int res;
-
-    if (fs->debug)
-      fprintf(stderr,
-              "read[%llu] %zu bytes from %llu flags: 0x%x\n",
-              (unsigned long long) fi->fh,
-              size, (unsigned long long) off, fi->flags);
-
-    if (fs->op.read_buf) {
-      res = fs->op.read_buf(bufp, size, off, fi);
-    } else {
-      struct fuse_bufvec *buf;
-      void *mem;
-
-      buf = malloc(sizeof(struct fuse_bufvec));
-      if (buf == NULL)
-        return -ENOMEM;
-
-      mem = malloc(size);
-      if (mem == NULL) {
-        free(buf);
-        return -ENOMEM;
-      }
-      *buf = FUSE_BUFVEC_INIT(size);
-      buf->buf[0].mem = mem;
-      *bufp = buf;
-
-      res = fs->op.read(mem, size, off, fi);
-      if (res >= 0)
-        buf->buf[0].size = res;
-    }
-
-    if (fs->debug && res >= 0)
-      fprintf(stderr, "   read[%llu] %zu bytes from %llu\n",
-              (unsigned long long) fi->fh,
-              fuse_buf_size(*bufp),
-              (unsigned long long) off);
-    if (res >= 0 && fuse_buf_size(*bufp) > (int) size)
-      fprintf(stderr, "fuse: read too many bytes\n");
-
-    if (res < 0)
-      return res;
-
-    return 0;
-  } else {
-    return -ENOSYS;
-  }
-}
-
-int fuse_fs_read(struct fuse_fs *fs, char *mem, size_t size,
-		 off_t off, struct fuse_file_info *fi)
+int
+fuse_fs_read_buf(struct fuse_fs         *fs_,
+                 struct fuse_bufvec    **bufp_,
+                 size_t                  size_,
+                 off_t                   off_,
+                 struct fuse_file_info  *ffi_)
 {
   int res;
-  struct fuse_bufvec *buf = NULL;
 
-  res = fuse_fs_read_buf(fs, &buf, size, off, fi);
-  if (res == 0) {
-    struct fuse_bufvec dst = FUSE_BUFVEC_INIT(size);
+  fuse_get_context()->private_data = fs_->user_data;
+  if(fs_->op.read_buf == NULL)
+    return -ENOSYS;
 
-    dst.buf[0].mem = mem;
-    res = fuse_buf_copy(&dst, buf, 0);
-  }
-  fuse_free_buf(buf);
+  if(fs_->debug)
+    fprintf(stderr,
+            "read[%llu] %zu bytes from %llu flags: 0x%x\n",
+            (unsigned long long)ffi_->fh,
+            size_,
+            (unsigned long long)off_,
+            ffi_->flags);
 
-  return res;
+  res = fs_->op.read_buf(bufp_,size_,off_,ffi_);
+
+  if(fs_->debug && (res >= 0))
+    fprintf(stderr, "   read[%llu] %zu bytes from %llu\n",
+            (unsigned long long)ffi_->fh,
+            fuse_buf_size(*bufp_),
+            (unsigned long long)off_);
+  if((res >= 0) && (fuse_buf_size(*bufp_) > (int)size_))
+    fprintf(stderr,"fuse: read too many bytes\n");
+
+  if(res < 0)
+    return res;
+
+  return 0;
 }
 
 int fuse_fs_write_buf(struct fuse_fs *fs,

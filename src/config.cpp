@@ -93,6 +93,7 @@ Config::Config()
   posix_acl(false),
   readdir(ReadDir::ENUM::POSIX),
   readdirplus(false),
+  readfailover(false),
   security_capability(true),
   srcmounts(branches),
   statfs(StatFS::ENUM::BASE),
@@ -155,6 +156,7 @@ Config::Config()
   _map["posix_acl"]            = &posix_acl;
   //  _map["readdir"]              = &readdir;
   _map["readdirplus"]          = &readdirplus;
+  _map["readfailover"]         = &readfailover;
   _map["security_capability"]  = &security_capability;
   _map["srcmounts"]            = &srcmounts;
   _map["statfs"]               = &statfs;

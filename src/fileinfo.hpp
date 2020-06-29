@@ -24,12 +24,15 @@ class FileInfo : public FH
 {
 public:
   FileInfo(const int   fd_,
-           const char *fusepath_)
+           const char *fusepath_,
+           const int   flags_)
     : FH(fusepath_),
-      fd(fd_)
+      fd(fd_),
+      flags(flags_)
   {
   }
 
 public:
   int fd;
+  int flags;
 };

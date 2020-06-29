@@ -111,8 +111,7 @@ namespace l
     ops_.opendir         = FUSE::opendir;
     ops_.poll            = NULL;
     ops_.prepare_hide    = FUSE::prepare_hide;
-    ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
-    ops_.read_buf        = (nullrw_ ? NULL : FUSE::read_buf);
+    ops_.read_buf        = (nullrw_ ? FUSE::read_buf_null : FUSE::read_buf);
     ops_.readdir         = FUSE::readdir;
     ops_.readdir_plus    = FUSE::readdir_plus;
     ops_.readlink        = FUSE::readlink;

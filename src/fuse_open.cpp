@@ -173,7 +173,7 @@ namespace l
     if(fd == -1)
       return -errno;
 
-    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_));
+    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_,flags_));
 
     return 0;
   }

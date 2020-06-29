@@ -118,7 +118,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(rv,fusepath_));
+    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(rv,fusepath_,flags_));
 
     return 0;
   }

@@ -165,20 +165,6 @@ struct fuse_operations
    */
   int (*open) (const char *, struct fuse_file_info *);
 
-  /** Read data from an open file
-   *
-   * Read should return exactly the number of bytes requested except
-   * on EOF or error, otherwise the rest of the data will be
-   * substituted with zeroes.	 An exception to this is when the
-   * 'direct_io' mount option is specified, in which case the return
-   * value of the read system call will reflect the return value of
-   * this operation.
-   *
-   * Changed in version 2.2
-   */
-  int (*read) (char *, size_t, off_t,
-               struct fuse_file_info *);
-
   /** Write data to an open file
    *
    * Write should return exactly the number of bytes requested
@@ -791,8 +777,6 @@ int fuse_fs_release(struct fuse_fs *fs,
                     struct fuse_file_info *fi);
 int fuse_fs_open(struct fuse_fs *fs, const char *path,
                  struct fuse_file_info *fi);
-int fuse_fs_read(struct fuse_fs *fs, char *buf, size_t size,
-                 off_t off, struct fuse_file_info *fi);
 int fuse_fs_read_buf(struct fuse_fs *fs,
                      struct fuse_bufvec **bufp, size_t size, off_t off,
                      struct fuse_file_info *fi);

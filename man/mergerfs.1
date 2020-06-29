@@ -171,6 +171,10 @@ The request will succeed but do nothing.
 Useful for benchmarking mergerfs.
 (default: false)
 .IP \[bu] 2
+\f[B]readfailover=BOOL\f[]: Should a \f[C]read\f[] fail search other
+branches for the same file and use that going forward.
+(default: false)
+.IP \[bu] 2
 \f[B]ignorepponrename=BOOL\f[]: Ignore path preserving on rename.
 Typically rename and link act differently depending on the policy of
 \f[C]create\f[] (read below).
@@ -381,6 +385,23 @@ be automatically included.
 \f[B]NOTE:\f[] for mounting via \f[B]fstab\f[] to work you must have
 \f[B]mount.fuse\f[] installed.
 For Ubuntu/Debian it is included in the \f[B]fuse\f[] package.
+.SS readfailover
+.PP
+One usecase of mergerfs is to create a union of mirrored files as a
+means to provide reliability.
+Often with networked filesysems such as NFS, sshfs, or rclone.
+This feature helps with situations where the device or mount of the file
+currently in use fails.
+If \f[C]read\f[] returns \f[C]EIO\f[] or \f[C]ENOTCONN\f[] mergerfs will
+cycle through branches searching for the same relative path.
+It will \f[C]open\f[] and attempt a \f[C]read\f[].
+Should that succeed the file will be used going forward.
+Otherwise the original error will be returned.
+Sometimes when an error occurs the \f[C]read\f[] will still succeed but
+be a "short read." In those cases the kernel will issue a \f[C]fstat\f[]
+to find out the length of the file.
+As a result this feature also performs a similar search and replacement
+behavior should \f[C]fstat\f[] fail with the same errors.
 .SS inodecalc
 .PP
 Inodes (st_ino) are unique identifiers within a filesystem.

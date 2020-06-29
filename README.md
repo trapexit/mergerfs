@@ -103,6 +103,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 * **symlinkify=BOOL**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
 * **symlinkify_timeout=INT**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **nullrw=BOOL**: Turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
+* **readfailover=BOOL**: Should a `read` fail search other branches for the same file and use that going forward. (default: false)
 * **ignorepponrename=BOOL**: Ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
 * **security_capability=BOOL**: If false return ENOATTR when xattr security.capability is queried. (default: true)
 * **xattr=passthrough|noattr|nosys**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'nosys' will respond with ENOSYS as if xattrs are not supported or disabled. (default: passthrough)
@@ -171,6 +172,11 @@ To have the pool mounted at boot or otherwise accessible from related tools use 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
 
 **NOTE:** for mounting via **fstab** to work you must have **mount.fuse** installed. For Ubuntu/Debian it is included in the **fuse** package.
+
+
+### readfailover
+
+One usecase of mergerfs is to create a union of mirrored files as a means to provide reliability. Often with networked filesysems such as NFS, sshfs, or rclone. This feature helps with situations where the device or mount of the file currently in use fails. If `read` returns `EIO` or `ENOTCONN` mergerfs will cycle through branches searching for the same relative path. It will `open` and attempt a `read`. Should that succeed the file will be used going forward. Otherwise the original error will be returned. Sometimes when an error occurs the `read` will still succeed but be a "short read." In those cases the kernel will issue a `fstat` to find out the length of the file. As a result this feature also performs a similar search and replacement behavior should `fstat` fail with the same errors.
 
 
 ### inodecalc

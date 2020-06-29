@@ -88,6 +88,7 @@ public:
   ConfigBOOL     posix_acl;
   ReadDir        readdir;
   ConfigBOOL     readdirplus;
+  ConfigBOOL     readfailover;
   ConfigBOOL     security_capability;
   SrcMounts      srcmounts;
   StatFS         statfs;
