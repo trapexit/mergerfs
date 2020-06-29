@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include "fasthash.h"
+#include <string>
 
 #include <stdint.h>
 #include <sys/stat.h>
+
 
 namespace fs
 {
@@ -29,27 +30,21 @@ namespace fs
   {
     static const uint64_t MAGIC = 0x7472617065786974;
 
-    inline
-    uint64_t
-    recompute(ino_t ino_,
-              dev_t dev_)
-    {
-      uint64_t buf[5];
+    int set_algo(const std::string &s);
+    std::string get_algo(void);
 
-      buf[0] = ino_;
-      buf[1] = dev_;
-      buf[2] = buf[0] ^ buf[1];
-      buf[3] = buf[0] & buf[1];
-      buf[4] = buf[0] | buf[1];
+    uint64_t calc(const char     *fusepath,
+                  const uint64_t  fusepath_len,
+                  const mode_t    mode,
+                  const dev_t     dev,
+                  const ino_t     ion);
+    void calc(const char     *fusepath,
+              const uint64_t  fusepath_len,
+              struct stat    *st);
+    void calc(const char  *fusepath,
+              struct stat *st);
+    void calc(const std::string &fusepath,
+              struct stat       *st);
 
-      return fasthash64(&buf[0],sizeof(buf),MAGIC);
-    }
-
-    inline
-    void
-    recompute(struct stat *st_)
-    {
-      st_->st_ino = recompute(st_->st_ino,st_->st_dev);
-    }
   }
 }

@@ -63,6 +63,7 @@ namespace l
     dev_t dev;
     HashSet names;
     string basepath;
+    string fullpath;
     uint64_t namelen;
 
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
@@ -91,7 +92,12 @@ namespace l
             if(rv == 0)
               continue;
 
-            de->d_ino = fs::inode::recompute(de->d_ino,dev);
+            fullpath = fs::path::make(dirname_,de->d_name);
+            de->d_ino = fs::inode::calc(fullpath.c_str(),
+                                        fullpath.size(),
+                                        DTTOIF(de->d_type),
+                                        dev,
+                                        de->d_ino);
 
             rv = fuse_dirents_add(buf_,de,namelen);
             if(rv)
