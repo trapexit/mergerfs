@@ -32,8 +32,9 @@ make %{?_smp_mflags}
 make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 
 %files
-%{_bindir}/*
-%{_sbindir}/*
+/usr/bin/mergerfs
+/usr/bin/mergerfs-fusermount
+/sbin/mount.mergerfs
 %doc %{_mandir}/*
 
 %changelog
