@@ -8,5 +8,4 @@ export DH_VERBOSE=1
 	dh $@ --parallel
 
 override_dh_auto_install:
-	$(MAKE) DESTDIR=$(CURDIR)/debian/mergerfs PREFIX=/usr install-base
-	$(MAKE) DESTDIR=$(CURDIR)/debian/mergerfs PREFIX= install-mount-tools
+	$(MAKE) DESTDIR=$(CURDIR)/debian/mergerfs PREFIX=/usr install
