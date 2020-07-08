@@ -3498,7 +3498,7 @@ fuse_lib_readdir(fuse_req_t             req_,
   pthread_mutex_lock(&dh->lock);
 
   rv = 0;
-  if(off_ == 0)
+  if((off_ == 0) || (d->data_len == 0))
     rv = readdir_fill(f,req_,d,&fi);
 
   if(rv)
@@ -3544,7 +3544,7 @@ fuse_lib_readdir_plus(fuse_req_t             req_,
   pthread_mutex_lock(&dh->lock);
 
   rv = 0;
-  if(off_ == 0)
+  if((off_ == 0) || (d->data_len == 0))
     rv = readdir_plus_fill(f,req_,d,&fi);
 
   if(rv)
