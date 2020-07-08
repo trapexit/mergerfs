@@ -21,6 +21,5 @@
 namespace FUSE
 {
   int
-  release(const char     *fusepath_,
-          fuse_file_info *ffi_);
+  release(fuse_file_info *ffi_);
 }

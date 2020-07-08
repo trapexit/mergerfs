@@ -34,8 +34,7 @@ namespace l
 namespace FUSE
 {
   int
-  releasedir(const char     *fusepath_,
-             fuse_file_info *ffi_)
+  releasedir(fuse_file_info *ffi_)
   {
     DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
 

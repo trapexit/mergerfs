@@ -21,15 +21,13 @@
 namespace FUSE
 {
   int
-  read(const char     *fusepath_,
-       char           *buf_,
+  read(char           *buf_,
        size_t          count_,
        off_t           offset_,
        fuse_file_info *ffi_);
 
   int
-  read_null(const char     *fusepath_,
-            char           *buf_,
+  read_null(char           *buf_,
             size_t          count_,
             off_t           offset_,
             fuse_file_info *ffi_);

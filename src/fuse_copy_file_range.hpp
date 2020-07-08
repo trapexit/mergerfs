@@ -19,10 +19,8 @@
 namespace FUSE
 {
   ssize_t
-  copy_file_range(const char            *path_in,
-                  struct fuse_file_info *ffi_in,
+  copy_file_range(struct fuse_file_info *ffi_in,
                   off_t                  offset_in,
-                  const char            *path_out,
                   struct fuse_file_info *ffi_out,
                   off_t                  offset_out,
                   size_t                 size,

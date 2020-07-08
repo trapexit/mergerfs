@@ -24,7 +24,6 @@
 namespace FUSE
 {
   int
-  ftruncate(const char     *fusepath_,
-            off_t           size_,
+  ftruncate(off_t           size_,
             fuse_file_info *ffi_);
 }

@@ -45,8 +45,7 @@ namespace l
 namespace FUSE
 {
   int
-  fgetattr(const char      *fusepath_,
-           struct stat     *st_,
+  fgetattr(struct stat     *st_,
            fuse_file_info  *ffi_,
            fuse_timeouts_t *timeout_)
   {

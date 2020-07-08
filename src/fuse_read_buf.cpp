@@ -54,8 +54,7 @@ namespace l
 namespace FUSE
 {
   int
-  read_buf(const char      *fusepath_,
-           fuse_bufvec    **bufp_,
+  read_buf(fuse_bufvec    **bufp_,
            size_t           size_,
            off_t            offset_,
            fuse_file_info  *ffi_)

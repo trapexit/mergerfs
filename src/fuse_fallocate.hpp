@@ -19,8 +19,7 @@
 namespace FUSE
 {
   int
-  fallocate(const char     *fusepath_,
-            int             mode_,
+  fallocate(int             mode_,
             off_t           offset_,
             off_t           len_,
             fuse_file_info *ffi_);
