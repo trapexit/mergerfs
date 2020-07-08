@@ -50,8 +50,7 @@ namespace l
 namespace FUSE
 {
   int
-  release(const char     *fusepath_,
-          fuse_file_info *ffi_)
+  release(fuse_file_info *ffi_)
   {
     const Config &config = Config::ro();
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);

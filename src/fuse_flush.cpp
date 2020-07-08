@@ -42,8 +42,7 @@ namespace l
 namespace FUSE
 {
   int
-  flush(const char     *fusepath_,
-        fuse_file_info *ffi_)
+  flush(fuse_file_info *ffi_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

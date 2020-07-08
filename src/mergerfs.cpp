@@ -80,10 +80,6 @@ namespace l
   get_fuse_operations(struct fuse_operations &ops,
                       const bool              nullrw)
   {
-    ops.flag_nullpath_ok   = true;
-    ops.flag_nopath        = true;
-    ops.flag_utime_omit_ok = true;
-
     ops.access          = FUSE::access;
     ops.bmap            = NULL;
     ops.chmod           = FUSE::chmod;

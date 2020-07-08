@@ -87,8 +87,7 @@ namespace l
 namespace FUSE
 {
   int
-  write_buf(const char     *fusepath_,
-            fuse_bufvec    *src_,
+  write_buf(fuse_bufvec    *src_,
             off_t           offset_,
             fuse_file_info *ffi_)
   {
@@ -103,8 +102,7 @@ namespace FUSE
   }
 
   int
-  write_buf_null(const char     *fusepath_,
-                 fuse_bufvec    *src_,
+  write_buf_null(fuse_bufvec    *src_,
                  off_t           offset_,
                  fuse_file_info *ffi_)
   {

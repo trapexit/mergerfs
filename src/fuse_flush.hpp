@@ -21,6 +21,5 @@
 namespace FUSE
 {
   int
-  flush(const char     *path_,
-        fuse_file_info *ffi_);
+  flush(fuse_file_info *ffi_);
 }

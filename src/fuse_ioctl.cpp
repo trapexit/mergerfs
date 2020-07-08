@@ -374,8 +374,7 @@ namespace l
 namespace FUSE
 {
   int
-  ioctl(const char     *fusepath_,
-        unsigned long   cmd_,
+  ioctl(unsigned long   cmd_,
         void           *arg_,
         fuse_file_info *ffi_,
         unsigned int    flags_,
