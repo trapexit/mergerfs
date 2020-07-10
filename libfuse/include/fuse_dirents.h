@@ -22,6 +22,7 @@
 extern "C" {
 #endif
 
+#include "kvec.h"
 #include "fuse_dirent.h"
 #include "fuse_direntplus.h"
 #include "fuse_entry.h"
@@ -48,6 +49,7 @@ struct fuse_dirents_s
   char                *buf;
   uint64_t             buf_len;
   uint64_t             data_len;
+  kvec_t(uint32_t)     offs;
   fuse_dirents_type_t  type;
 };
 
