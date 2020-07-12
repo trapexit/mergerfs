@@ -3387,20 +3387,24 @@ readdir_plus_fill(struct fuse           *f_,
 }
 
 static
-uint64_t
-convert_plus2normal(fuse_dirents_t *d_,
-                    uint64_t        off_)
+size_t
+readdir_buf_size(fuse_dirents_t *d_,
+                 size_t          size_,
+                 off_t           off_)
 {
-  uint64_t ino;
-  fuse_dirent_t *d;
-  fuse_direntplus_t *dp;
+  if(off_ >= kv_size(d_->offs))
+    return 0;
+  if((kv_A(d_->offs,off_) + size_) > d_->data_len)
+    return (d_->data_len - kv_A(d_->offs,off_));
+  return size_;
+}
 
-  dp  = (fuse_direntplus_t*)&d_->buf[off_];
-  ino = dp->dirent.ino;
-  fuse_dirents_convert_plus2normal(d_);
-  d   = fuse_dirents_find(d_,ino);
-
-  return d->off;
+static
+char*
+readdir_buf(fuse_dirents_t *d_,
+            off_t           off_)
+{
+  return &d_->buf[kv_A(d_->offs,off_)];
 }
 
 static
@@ -3433,16 +3437,10 @@ fuse_lib_readdir(fuse_req_t             req_,
       goto out;
     }
 
-  if(off_ >= d->data_len)
-    size_ = 0;
-  else if((off_ + size_) > d->data_len)
-    size_ = (d->data_len - off_);
-
-  /* if((size_ > 0) && (d->type == PLUS)) */
-  /*   off_ = convert_plus2normal(d,off_); */
+  size_ = readdir_buf_size(d,size_,off_);
 
   fuse_reply_buf(req_,
-                 &d->buf[off_],
+                 readdir_buf(d,off_),
                  size_);
 
  out:
@@ -3479,13 +3477,10 @@ fuse_lib_readdir_plus(fuse_req_t             req_,
       goto out;
     }
 
-  if(off_ >= d->data_len)
-    size_ = 0;
-  else if((off_ + size_) > d->data_len)
-    size_ = (d->data_len - off_);
+  size_ = readdir_buf_size(d,size_,off_);
 
   fuse_reply_buf(req_,
-                 &d->buf[off_],
+                 readdir_buf(d,off_),
                  size_);
 
  out:
