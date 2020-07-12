@@ -29,22 +29,22 @@ namespace fs
 {
   namespace path
   {
-    string
+     string
     dirname(const char *path_)
     {
       string path(path_);
 
-      return fs::path::dirname(&path);
+      return fs::path::dirname(path);
     }
 
     string
-    dirname(const string *path_)
+    dirname(const string &path_)
     {
       string rv;
       string::reverse_iterator i;
       string::reverse_iterator ei;
 
-      rv = *path_;
+      rv = path_;
 
       i  = rv.rbegin();
       ei = rv.rend();

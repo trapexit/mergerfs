@@ -33,7 +33,7 @@ namespace fs
       int rv;
       std::string dirpath;
 
-      dirpath = fs::path::dirname(&fullpath_);
+      dirpath = fs::path::dirname(fullpath_);
 
       rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 

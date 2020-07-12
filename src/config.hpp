@@ -19,6 +19,7 @@
 #include "branch.hpp"
 #include "config_inodecalc.hpp"
 #include "config_readdir.hpp"
+#include "config_moveonenospc.hpp"
 #include "enum.hpp"
 #include "errno.hpp"
 #include "func_category.hpp"
@@ -109,7 +110,7 @@ public:
   ConfigBOOL     link_cow;
   ConfigUINT64   minfreespace;
   ConfigSTR      mount;
-  ConfigBOOL     moveonenospc;
+  MoveOnENOSPC   moveonenospc;
   ConfigBOOL     nullrw;
   ConfigUINT64   pid;
   ConfigBOOL     posix_acl;

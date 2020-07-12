@@ -19,10 +19,8 @@
 #include "fileinfo.hpp"
 #include "fs_movefile.hpp"
 #include "fuse_write.hpp"
-#include "policy.hpp"
-#include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
@@ -63,22 +61,24 @@ namespace l
 
   static
   int
-  move_and_write_buf(fuse_bufvec *src_,
+  move_and_write_buf(FileInfo    *fi_,
+                     fuse_bufvec *src_,
                      off_t        offset_,
-                     FileInfo    *fi_)
+                     int          err_)
   {
     int rv;
-    uint64_t extra;
-    vector<string> paths;
-    const ugid::Set ugid(0,0);
     const Config &config = Config::ro();
 
-    config.branches.to_paths(paths);
+    if(config.moveonenospc.enabled == false)
+      return err_;
 
-    extra = fuse_buf_size(src_);
-    rv = fs::movefile(paths,fi_->fusepath,extra,fi_->fd);
+    rv = fs::movefile_as_root(config.moveonenospc.policy,
+                              config.branches,
+                              config.minfreespace,
+                              fi_->fusepath,
+                              &fi_->fd);
     if(rv == -1)
-      return -ENOSPC;
+      return err_;
 
     return l::write_buf(fi_->fd,src_,offset_);
   }
@@ -96,7 +96,7 @@ namespace FUSE
 
     rv = l::write_buf(fi->fd,src_,offset_);
     if(l::out_of_space(-rv))
-      rv = l::move_and_write_buf(src_,offset_,fi);
+      rv = l::move_and_write_buf(fi,src_,offset_,rv);
 
     return rv;
   }
