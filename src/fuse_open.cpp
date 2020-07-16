@@ -17,13 +17,17 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_base_chmod.hpp"
+#include "fs_base_fchmod.hpp"
 #include "fs_base_open.hpp"
+#include "fs_base_stat.hpp"
 #include "fs_cow.hpp"
 #include "fs_path.hpp"
 #include "policy_cache.hpp"
+#include "stat_util.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
@@ -34,6 +38,65 @@ typedef Config::CacheFiles CacheFiles;
 
 namespace l
 {
+  static
+  bool
+  rdonly(const int flags_)
+  {
+    return ((flags_ & O_ACCMODE) == O_RDONLY);
+  }
+
+  static
+  int
+  chmod_and_open_if_not_writable_and_empty(const string &fullpath_,
+                                           const int     flags_)
+  {
+    int rv;
+    struct stat st;
+
+    rv = fs::lstat(fullpath_,&st);
+    if(rv == -1)
+      return (errno=EACCES,-1);
+
+    if(StatUtil::writable_or_not_empty(st))
+      return (errno=EACCES,-1);
+
+    rv = fs::chmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
+    if(rv == -1)
+      return (errno=EACCES,-1);
+
+    rv = fs::open(fullpath_,flags_);
+    if(rv == -1)
+      return (errno=EACCES,-1);
+
+    fs::fchmod(rv,st.st_mode);
+
+    return rv;
+  }
+
+  static
+  int
+  nfsopenhack(const std::string &fullpath_,
+              const int          flags_,
+              const NFSOpenHack  nfsopenhack_)
+  {
+    switch(nfsopenhack_)
+      {
+      default:
+      case NFSOpenHack::ENUM::OFF:
+        return (errno=EACCES,-1);
+      case NFSOpenHack::ENUM::GIT:
+        if(l::rdonly(flags_))
+          return (errno=EACCES,-1);
+        if(fullpath_.find("/.git/") == string::npos)
+          return (errno=EACCES,-1);
+        return l::chmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+      case NFSOpenHack::ENUM::ALL:
+        if(l::rdonly(flags_))
+          return (errno=EACCES,-1);
+        return l::chmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+      }
+  }
+
   /*
     The kernel expects being able to issue read requests when running
     with writeback caching enabled so we must change O_WRONLY to
@@ -90,11 +153,12 @@ namespace l
 
   static
   int
-  open_core(const string &basepath_,
-            const char   *fusepath_,
-            const int     flags_,
-            const bool    link_cow_,
-            uint64_t     *fh_)
+  open_core(const string      &basepath_,
+            const char        *fusepath_,
+            const int          flags_,
+            const bool         link_cow_,
+            const NFSOpenHack  nfsopenhack_,
+            uint64_t          *fh_)
   {
     int fd;
     string fullpath;
@@ -105,6 +169,8 @@ namespace l
       fs::cow::break_link(fullpath.c_str());
 
     fd = fs::open(fullpath,flags_);
+    if((fd == -1) && (errno == EACCES))
+      fd = l::nfsopenhack(fullpath,flags_,nfsopenhack_);
     if(fd == -1)
       return -errno;
 
@@ -122,6 +188,7 @@ namespace l
        const char           *fusepath_,
        const int             flags_,
        const bool            link_cow_,
+       const NFSOpenHack     nfsopenhack_,
        uint64_t             *fh_)
   {
     int rv;
@@ -131,7 +198,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    return l::open_core(basepath,fusepath_,flags_,link_cow_,fh_);
+    return l::open_core(basepath,fusepath_,flags_,link_cow_,nfsopenhack_,fh_);
   }
 }
 
@@ -157,6 +224,7 @@ namespace FUSE
                    fusepath_,
                    ffi_->flags,
                    config.link_cow,
+                   config.nfsopenhack,
                    &ffi_->fh);
   }
 }

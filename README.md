@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-07-21
+% 2020-07-22
 
 # NAME
 
@@ -109,6 +109,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 * **link_cow=BOOL**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
 * **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
+* **nfsopenhack=off|git|all**: A workaround for exporting mergerfs over NFS where there are issues with creating files for write while setting the mode to read-only. (default: off)
 * **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
 * **async_read=BOOL**: Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
 * **fuse_msg_size=INT**: Set the max number of pages per FUSE message. Only available on Linux >= 4.20 and ignored otherwise. (min: 1; max: 256; default: 256)
@@ -239,6 +240,15 @@ Runtime extended attribute support can be managed via the `xattr` option. By def
 `nosys` will cause mergerfs to return ENOSYS for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This is more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
 
 
+### nfsopenhack
+
+NFS is not fully POSIX compliant and historically certain behaviors, such as opening files with O_EXCL, are not or not well supported. When mergerfs (or any FUSE filesystem) is exported over NFS some of these issues come up due to how NFS and FUSE interact.
+
+This hack addresses the issue where the creation of a file with a read-only mode but with a read/write or write only flag. Normally this is perfectly valid but NFS chops the one open call into multiple calls. Exactly how it is translated depends on the configuration and versions of the NFS server and clients but it results in a permission error because a normal user is not allowed to open a read-only file as writable.
+
+Even though it's a more niche stituation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it it applying anytime a readonly file which is empty is opened for writing.
+
+
 # FUNCTIONS / POLICIES / CATEGORIES
 
 The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which underlying branch/file/directory is chosen when performing that behavior. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
@@ -275,7 +285,7 @@ With the `msp` or `most shared path` policies they are defined as `path preservi
 
 #### Filters
 
-Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. Filters include **minfreespace**, whether or not a branch is mounted read only, and the branch tagging (RO,NC,RW). The policy defines the sorting but filtering is mostly uniform as described below.
+Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. Filters include **minfreespace**, whether or not a branch is mounted read-only, and the branch tagging (RO,NC,RW). The policy defines the sorting but filtering is mostly uniform as described below.
 
 * No **search** policies filter.
 * All **action** policies will filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.

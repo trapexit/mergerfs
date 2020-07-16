@@ -25,13 +25,13 @@
 #include "fs_base_stat.hpp"
 #include "fs_base_unlink.hpp"
 
+#include <string>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <string>
 
 using std::string;
 
@@ -63,7 +63,12 @@ namespace fs
     bool
     is_eligible(const int flags_)
     {
-      return ((flags_ & O_RDWR) || (flags_ & O_WRONLY));
+      int accmode;
+
+      accmode = (flags_ & O_ACCMODE);
+
+      return ((accmode == O_RDWR) ||
+              (accmode == O_WRONLY));
     }
 
     bool

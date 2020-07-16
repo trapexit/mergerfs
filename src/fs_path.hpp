@@ -51,6 +51,23 @@ namespace fs
     static
     inline
     string
+    make(const char *base_,
+         const char *suffix_)
+    {
+      char back;
+      string path(base_);
+
+      back = *path.rbegin();
+      if((back != '/') && (suffix_[0] != '/'))
+        path.push_back('/');
+      path += suffix_;
+
+      return path;
+    }
+
+    static
+    inline
+    string
     make(const string &base_,
          const char   *suffix_)
     {

@@ -88,6 +88,7 @@ Config::Config()
   minfreespace(MINFREESPACE_DEFAULT),
   mount(),
   moveonenospc(false),
+  nfsopenhack(NFSOpenHack::ENUM::OFF),
   nullrw(false),
   pid(::getpid()),
   posix_acl(false),
@@ -149,6 +150,7 @@ Config::Config()
   _map["minfreespace"]         = &minfreespace;
   _map["mount"]                = &mount;
   _map["moveonenospc"]         = &moveonenospc;
+  _map["nfsopenhack"]          = &nfsopenhack;
   _map["nullrw"]               = &nullrw;
   _map["pid"]                  = &pid;
   _map["posix_acl"]            = &posix_acl;

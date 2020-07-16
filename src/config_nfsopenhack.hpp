@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,37 +16,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
-#include "fileinfo.hpp"
-#include "fs_base_fchmod.hpp"
+#pragma once
 
-#include <fuse.h>
+#include "enum.hpp"
 
-namespace l
-{
-  static
-  int
-  fchmod(const int    fd_,
-         const mode_t mode_)
+enum class NFSOpenHackEnum
   {
-    int rv;
+    OFF,
+    GIT,
+    ALL
+  };
 
-    rv = fs::fchmod(fd_,mode_);
-    if(rv == -1)
-      return -errno;
-
-    return rv;
-  }
-}
-
-namespace FUSE
-{
-  int
-  fchmod(const struct fuse_file_info *ffi_,
-         const mode_t                 mode_)
-  {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-
-    return l::fchmod(fi->fd,mode_);
-  }
-}
+typedef Enum<NFSOpenHackEnum> NFSOpenHack;
