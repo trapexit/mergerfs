@@ -16,14 +16,24 @@
 
 #pragma once
 
+#include "branch.hpp"
+#include "policy.hpp"
+
 #include <string>
-#include <vector>
 
 namespace fs
 {
   int
-  movefile(const std::vector<std::string> &basepaths,
-           const std::string              &fusepath,
-           const size_t                    additional_size,
-           int                            &origfd);
+  movefile(const Policy      *policy,
+           const Branches    &branches,
+           const uint64_t     minfreepsace,
+           const std::string &fusepath,
+           int               *origfd);
+
+  int
+  movefile_as_root(const Policy      *policy,
+                   const Branches    &branches,
+                   const uint64_t     minfreepsace,
+                   const std::string &fusepath,
+                   int               *origfd);
 }

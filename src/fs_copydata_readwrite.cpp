@@ -30,26 +30,26 @@ namespace l
   int
   writen(const int     fd_,
          const char   *buf_,
-         const size_t  count_)
+         const size_t  size_)
   {
+    ssize_t rv;
     size_t nleft;
-    ssize_t nwritten;
 
-    nleft = count_;
+    nleft = size_;
     do
       {
-        nwritten = fs::write(fd_,buf_,nleft);
-        if((nwritten == -1) && (errno == EINTR))
+        rv = fs::write(fd_,buf_,nleft);
+        if((rv == -1) && (errno == EINTR))
           continue;
-        if(nwritten == -1)
+        if(rv == -1)
           return -1;
 
-        nleft -= nwritten;
-        buf_  += nwritten;
+        nleft -= rv;
+        buf_  += rv;
       }
     while(nleft > 0);
 
-    return count_;
+    return size_;
   }
 
   static

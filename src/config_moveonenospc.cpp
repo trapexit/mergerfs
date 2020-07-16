@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,36 +16,39 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "ef.hpp"
+#include "from_string.hpp"
+#include "config_moveonenospc.hpp"
 
-#include <string>
-
-#include <stdint.h>
-#include <sys/statvfs.h>
-
-namespace StatVFS
+int
+MoveOnENOSPC::from_string(const std::string &s_)
 {
-  static
-  inline
-  bool
-  readonly(const struct statvfs &st)
-  {
-    return (st.f_flag & ST_RDONLY);
-  }
+  int rv;
+  std::string s;
+  const Policy *tmp;
 
-  static
-  inline
-  int64_t
-  spaceavail(const struct statvfs &st)
-  {
-    return (st.f_frsize * st.f_bavail);
-  }
+  rv = str::from(s_,&enabled);
+  if((rv == 0) && (enabled == true))
+    s = "mfs";
+  ef(rv != 0)
+    s = s_;
+  else
+    return 0;
 
-  static
-  inline
-  int64_t
-  spaceused(const struct statvfs &st)
-  {
-    return (st.f_frsize * (st.f_blocks - st.f_bavail));
-  }
+  tmp = &Policy::find(s);
+  if(tmp == Policy::invalid)
+    return -EINVAL;
+
+  policy  = tmp;
+  enabled = true;
+
+  return 0;
+}
+
+std::string
+MoveOnENOSPC::to_string(void) const
+{
+  if(enabled)
+    return policy->to_string();
+  return "false";
 }

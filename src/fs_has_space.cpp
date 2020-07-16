@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,36 +16,26 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fs_base_statvfs.hpp"
+#include "statvfs_util.hpp"
 
 #include <string>
 
 #include <stdint.h>
-#include <sys/statvfs.h>
 
-namespace StatVFS
+namespace fs
 {
-  static
-  inline
   bool
-  readonly(const struct statvfs &st)
+  has_space(const std::string &str_,
+            const int64_t      size_)
   {
-    return (st.f_flag & ST_RDONLY);
-  }
+    int rv;
+    struct statvfs st;
 
-  static
-  inline
-  int64_t
-  spaceavail(const struct statvfs &st)
-  {
-    return (st.f_frsize * st.f_bavail);
-  }
+    rv = fs::statvfs(str_,&st);
+    if(rv == -1)
+      return false;
 
-  static
-  inline
-  int64_t
-  spaceused(const struct statvfs &st)
-  {
-    return (st.f_frsize * (st.f_blocks - st.f_bavail));
+    return (StatVFS::spaceavail(st) > size_);
   }
 }

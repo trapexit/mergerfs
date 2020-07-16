@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,34 +18,27 @@
 
 #pragma once
 
+#include "policy.hpp"
+#include "tofrom_string.hpp"
+
 #include <string>
 
-#include <stdint.h>
-#include <sys/statvfs.h>
-
-namespace StatVFS
+class MoveOnENOSPC : public ToFromString
 {
-  static
-  inline
-  bool
-  readonly(const struct statvfs &st)
+public:
+  MoveOnENOSPC(const bool enabled_)
+    : enabled(enabled_)
   {
-    return (st.f_flag & ST_RDONLY);
+    policy = (enabled ?
+              &Policy::mfs :
+              &Policy::invalid);
   }
 
-  static
-  inline
-  int64_t
-  spaceavail(const struct statvfs &st)
-  {
-    return (st.f_frsize * st.f_bavail);
-  }
+public:
+  int from_string(const std::string &s);
+  std::string to_string() const;
 
-  static
-  inline
-  int64_t
-  spaceused(const struct statvfs &st)
-  {
-    return (st.f_frsize * (st.f_blocks - st.f_bavail));
-  }
-}
+public:
+  bool enabled;
+  const Policy *policy;
+};

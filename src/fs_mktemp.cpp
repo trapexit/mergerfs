@@ -19,12 +19,15 @@
 #include "errno.hpp"
 #include "fs_base_open.hpp"
 
-#include <fcntl.h>
-#include <string.h>
-
 #include <cstdlib>
+#include <string>
+
+#include <limits.h>
 
 using std::string;
+
+#define PADLEN 6
+#define MAX_ATTEMPTS 10
 
 static
 string
@@ -33,8 +36,10 @@ generate_tmp_path(const string &base_)
   string tmp;
 
   tmp = base_;
-  tmp += '_';
-  for(int i = 0; i < 6; i++)
+  if((tmp.size() + PADLEN + 1) > PATH_MAX)
+    tmp.resize(tmp.size() - PADLEN - 1);
+  tmp += '.';
+  for(int i = 0; i < PADLEN; i++)
     tmp += ('A' + (std::rand() % 26));
 
   return tmp;
@@ -52,7 +57,7 @@ namespace fs
     string tmppath;
 
     fd    = -1;
-    count = 10;
+    count = MAX_ATTEMPTS;
     flags = (flags_ | O_EXCL | O_CREAT);
     while(count-- > 0)
       {

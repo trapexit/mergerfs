@@ -25,8 +25,8 @@ namespace fs
   {
     using std::string;
 
-    string dirname(const char *path_);
-    string dirname(const string *path_);
+    string dirname(const char *path);
+    string dirname(const string &path);
 
     string basename(const string &path);
 

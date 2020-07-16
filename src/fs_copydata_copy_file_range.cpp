@@ -28,22 +28,24 @@ namespace l
                            uint64_t  size_)
   {
     int64_t  rv;
-    uint64_t len;
+    uint64_t nleft;
     int64_t  src_off;
     int64_t  dst_off;
 
     src_off = 0;
     dst_off = 0;
-    len     = size_;
+    nleft   = size_;
     do
       {
-        rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,len,0);
+        rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,nleft,0);
+        if((rv == -1) && (errno == EINTR))
+          continue;
         if(rv == -1)
           return -1;
 
-        len -= rv;
+        nleft -= rv;
       }
-    while((len > 0) && (rv > 0));
+    while(nleft > 0);
 
     return size_;
   }

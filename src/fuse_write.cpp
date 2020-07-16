@@ -77,6 +77,32 @@ namespace l
 
   static
   int
+  move_and_write(WriteFunc     func_,
+                 const char   *buf_,
+                 const size_t  count_,
+                 const off_t   offset_,
+                 FileInfo     *fi_,
+                 int           err_)
+  {
+    int rv;
+    const Config &config = Config::ro();
+
+    if(config.moveonenospc.enabled == false)
+      return err_;
+
+    rv = fs::movefile_as_root(config.moveonenospc.policy,
+                              config.branches,
+                              config.minfreespace,
+                              fi_->fusepath,
+                              &fi_->fd);
+    if(rv == -1)
+      return err_;
+
+    return func_(fi_->fd,buf_,count_,offset_);
+  }
+
+  static
+  int
   write(WriteFunc       func_,
         const char     *buf_,
         const size_t    count_,
@@ -90,23 +116,7 @@ namespace l
 
     rv = func_(fi->fd,buf_,count_,offset_);
     if(l::out_of_space(-rv))
-      {
-        const Config &config = Config::ro();
-
-        if(config.moveonenospc)
-          {
-            vector<string> paths;
-            const ugid::Set ugid(0,0);
-
-            config.branches.to_paths(paths);
-
-            rv = fs::movefile(paths,fi->fusepath,count_,fi->fd);
-            if(rv == -1)
-              return -ENOSPC;
-
-            rv = func_(fi->fd,buf_,count_,offset_);
-          }
-      }
+      rv = l::move_and_write(func_,buf_,count_,offset_,fi,rv);
 
     return rv;
   }

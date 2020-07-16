@@ -14,81 +14,90 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_open.hpp"
+#include "fs_base_rename.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_base_unlink.hpp"
+#include "fs_clonefile.hpp"
+#include "fs_clonepath.hpp"
+#include "fs_file_size.hpp"
+#include "fs_findonfs.hpp"
+#include "fs_has_space.hpp"
+#include "fs_mktemp.hpp"
+#include "fs_path.hpp"
+#include "policy.hpp"
+#include "ugid.hpp"
+
+#include <string>
+#include <vector>
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <string>
-#include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_mkstemp.hpp"
-#include "fs_base_rename.hpp"
-#include "fs_base_unlink.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_clonefile.hpp"
-#include "fs_clonepath.hpp"
-#include "fs_path.hpp"
-
 using std::string;
 using std::vector;
 
-namespace fs
+namespace l
 {
+  static
   int
-  movefile(const vector<string> &basepaths,
-           const string         &fusepath,
-           const size_t          additional_size,
-           int                  &origfd)
+  movefile(Policy::Func::Create  createFunc_,
+           const Branches       &branches_,
+           const uint64_t        minfreepsace_,
+           const string         &fusepath_,
+           int                  *origfd_)
   {
     int rv;
     int fdin;
     int fdout;
     int fdin_flags;
+    int64_t fdin_size;
     string fusedir;
     string fdin_path;
-    string fdout_path;
     string fdout_temp;
-    struct stat fdin_st;
+    vector<string> fdout_path;
 
-    fdin = origfd;
-
-    rv = fs::fstat(fdin,&fdin_st);
-    if(rv == -1)
-      return -1;
+    fdin = *origfd_;
 
     fdin_flags = fs::getfl(fdin);
+    if(fdin_flags == -1)
+      return -1;
+
+    rv = fs::findonfs(branches_,fusepath_,fdin,&fdin_path);
     if(rv == -1)
       return -1;
 
-    rv = fs::findonfs(basepaths,fusepath,fdin,fdin_path);
+    rv = createFunc_(branches_,fusepath_,minfreepsace_,&fdout_path);
     if(rv == -1)
       return -1;
 
-    fdin_st.st_size += additional_size;
-    rv = fs::mfs(basepaths,fdin_st.st_size,fdout_path);
+    fdin_size = fs::file_size(fdin);
+    if(fdin_size == -1)
+      return -1;
+
+    if(fs::has_space(fdout_path[0],fdin_size) == false)
+      return (errno=ENOSPC,-1);
+
+    fusedir = fs::path::dirname(fusepath_);
+
+    rv = fs::clonepath(fdin_path,fdout_path[0],fusedir);
     if(rv == -1)
       return -1;
 
-    fusedir = fs::path::dirname(&fusepath);
-
-    rv = fs::clonepath(fdin_path,fdout_path,fusedir);
-    if(rv == -1)
-      return -1;
-
-    fs::path::append(fdin_path,fusepath);
+    fs::path::append(fdin_path,fusepath_);
     fdin = fs::open(fdin_path,O_RDONLY);
     if(fdin == -1)
       return -1;
 
-    fs::path::append(fdout_path,fusepath);
-    fdout_temp = fdout_path;
-    fdout = fs::mkstemp(fdout_temp);
+    fs::path::append(fdout_path[0],fusepath_);
+    fdout_temp = fdout_path[0];
+    fdout = fs::mktemp(fdout_temp,fdin_flags);
     if(fdout == -1)
       return -1;
 
@@ -96,18 +105,14 @@ namespace fs
     if(rv == -1)
       goto cleanup;
 
-    rv = fs::setfl(fdout,fdin_flags);
-    if(rv == -1)
-      goto cleanup;
-
-    rv = fs::rename(fdout_temp,fdout_path);
+    rv = fs::rename(fdout_temp,fdout_path[0]);
     if(rv == -1)
       goto cleanup;
 
     // should we care if it fails?
     fs::unlink(fdin_path);
 
-    std::swap(origfd,fdout);
+    std::swap(*origfd_,fdout);
     fs::close(fdin);
     fs::close(fdout);
 
@@ -122,5 +127,30 @@ namespace fs
     fs::unlink(fdout_temp);
     errno = rv;
     return -1;
+  }
+}
+
+namespace fs
+{
+  int
+  movefile(const Policy   *policy_,
+           const Branches &basepaths_,
+           const uint64_t  minfreepsace_,
+           const string   &fusepath_,
+           int            *origfd_)
+  {
+    return l::movefile(policy_,basepaths_,minfreepsace_,fusepath_,origfd_);
+  }
+
+  int
+  movefile_as_root(const Policy   *policy_,
+                   const Branches &basepaths_,
+                   const uint64_t  minfreepsace_,
+                   const string   &fusepath_,
+                   int            *origfd_)
+  {
+    const ugid::Set ugid(0,0);
+
+    return fs::movefile(policy_,basepaths_,minfreepsace_,fusepath_,origfd_);
   }
 }

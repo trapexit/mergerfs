@@ -31,11 +31,6 @@ namespace fs
                     const char           *fusepath_,
                     vector<string>       &paths_);
 
-  int findonfs(const vector<string> &basepaths_,
-               const string         &fusepath_,
-               const int             fd_,
-               string               &basepath_);
-
   void realpathize(vector<string> &strs_);
 
   int getfl(const int fd_);
