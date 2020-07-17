@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-07-14
+% 2020-07-21
 
 # NAME
 
@@ -241,13 +241,14 @@ Runtime extended attribute support can be managed via the `xattr` option. By def
 
 # FUNCTIONS / POLICIES / CATEGORIES
 
-The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. In mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates what file or directory is chosen when performing that behavior. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
+The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which underlying branch/file/directory is chosen when performing that behavior. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
 
 Some functions, listed in the category `N/A` below, can not be assigned the normal policies. All functions which work on file handles use the handle which was acquired by `open` or `create`. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options. That said many times the current FUSE kernel driver will not always provide the file handle when a client calls `fgetattr`, `fchown`, `fchmod`, `futimens`, `ftruncate`, etc. This means it will call the regular, path based, versions.
 
 When using policies which are based on a branch's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
 
-#### Function / Category classifications
+
+#### Functions and their Category classifications
 
 | Category | FUSE Functions                                                                      |
 |----------|-------------------------------------------------------------------------------------|
@@ -269,34 +270,42 @@ A path preserving policy will only consider drives where the relative path being
 
 When using non-path preserving policies paths will be cloned to target drives as necessary.
 
+With the `msp` or `most shared path` policies they are defined as `path preserving` for the purpose of controlling `link` and `rename`'s behaviors since `ignorepponrename` is available to disable that behavior. In mergerfs v3.0 the path preserving behavior of rename and link will likely be separated from the policy all together.
+
 
 #### Filters
 
-Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. The policy type defines the sorting but filtering is mostly uniform as described below.
+Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. Filters include **minfreespace**, whether or not a branch is mounted read only, and the branch tagging (RO,NC,RW). The policy defines the sorting but filtering is mostly uniform as described below.
 
 * No **search** policies filter.
 * All **action** policies will filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.
 * All **create** policies will filter out branches which are mounted **read-only**, tagged **RO (read-only)** or **NC (no create)**, or has available space less than `minfreespace`.
 
-If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the reasons.
+If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the most recent reason for filtering a branch.
 
 
 #### Policy descriptions
 
+Because of the nature of the behavior the policies act diffierently depending on the function it is used with (based on the category).
+
+
 | Policy           | Description                                                |
 |------------------|------------------------------------------------------------|
-| all | Search category: same as **epall**. Action category: same as **epall**. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
-| epall (existing path, all) | Search category: same as **epff** (but more expensive because it doesn't stop after finding a valid branch). Action category: apply to all found. Create category: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
+| all | Search: same as **epall**. Action: same as **epall**. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
+| epall (existing path, all) | Search: same as **epff** (but more expensive because it doesn't stop after finding a valid branch). Action: apply to all found. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
 | epff (existing path, first found) | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists. |
 | eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the drive with the least free space. |
 | eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
 | epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
 | eprand (existing path, random) | Calls **epall** and then randomizes. Returns 1. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS** (read-only filesystem). |
-| ff (first found) | Search category: same as **epff**. Action category: same as **epff**. Create category: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
-| lfs (least free space) | Search category: same as **eplfs**. Action category: same as **eplfs**. Create category: Pick the drive with the least available free space. |
-| lus (least used space) | Search category: same as **eplus**. Action category: same as **eplus**. Create category: Pick the drive with the least used space. |
-| mfs (most free space) | Search category: same as **epmfs**. Action category: same as **epmfs**. Create category: Pick the drive with the most available free space. |
+| ff (first found) | Search: same as **epff**. Action: same as **epff**. Create: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
+| lfs (least free space) | Search: same as **eplfs**. Action: same as **eplfs**. Create: Pick the drive with the least available free space. |
+| lus (least used space) | Search: same as **eplus**. Action: same as **eplus**. Create: Pick the drive with the least used space. |
+| mfs (most free space) | Search: same as **epmfs**. Action: same as **epmfs**. Create: Pick the drive with the most available free space. |
+| msplfs (most shared path, least free space) | Search: same as **eplfs**. Action: same as **eplfs**. Create: like **eplfs** but walk back the path if it fails to find a branch at that level. |
+| msplus (most shared path, least used space) | Search: same as **eplus**. Action: same as **eplus**. Create: like **eplus** but walk back the path if it fails to find a branch at that level. |
+| mspmfs (most shared path, most free space) | Search: same as **epmfss**. Action: same as **epmfs**. Create: like **eplmfs** but walk back the path if it fails to find a branch at that level. |
 | newest | Pick the file / directory with the largest mtime. |
 | rand (random) | Calls **all** and then randomizes. Returns 1. |
 
@@ -990,7 +999,9 @@ Please update. This is only happened to mergerfs versions at or below v2.25.x an
 
 #### How well does mergerfs scale? Is it "production ready?"
 
-Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives.
+Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives. The author of mergerfs had it running for over 300 days managing 16+ drives with reasonably heavy 24/7 read and write usage. Stopping only after the machine's power supply died.
+
+Most serious issues (crashes or data corruption) have been due to kernel bugs. All of which are fixed in stable releases.
 
 
 #### Can mergerfs be used with drives which already have data / are in use?
@@ -1007,9 +1018,9 @@ See the previous question's answer.
 
 #### What policies should I use?
 
-Unless you're doing something more niche the average user is probably best off using `mfs` for `category.create`. It will spread files out across your branches based on available space. You may want to use `lus` if you prefer a slightly different distribution of data if you have a mix of smaller and larger drives. Generally though `mfs`, `lus`, or even `rand` are good for the general use case. If you are starting with an imbalanced pool you can use the tool **mergerfs.balance** to redistribute files across the pool.
+Unless you're doing something more niche the average user is probably best off using `mfs` for `category.create`. It will spread files out across your branches based on available space. Use `mspmfs` if you want to try to colocate the data a bit more. You may want to use `lus` if you prefer a slightly different distribution of data if you have a mix of smaller and larger drives. Generally though `mfs`, `lus`, or even `rand` are good for the general use case. If you are starting with an imbalanced pool you can use the tool **mergerfs.balance** to redistribute files across the pool.
 
-If you really wish to try to colocate files based on directory you can set `func.create` to `epmfs` or similar and `func.mkdir` to `rand` or `eprand` depending on if you just want to colocate generally or on specific branches. Either way the *need* to colocate is rare. For instance: if you wish to remove the drive regularly and want the data to predictably be on that drive or if you don't use backup at all and don't wish to replace that data piecemeal. In which case using path preservation can help but will require some manual attention. Colocating after the fact can be accomplished using the **mergerfs.consolidate** tool.
+If you really wish to try to colocate files based on directory you can set `func.create` to `epmfs` or similar and `func.mkdir` to `rand` or `eprand` depending on if you just want to colocate generally or on specific branches. Either way the *need* to colocate is rare. For instance: if you wish to remove the drive regularly and want the data to predictably be on that drive or if you don't use backup at all and don't wish to replace that data piecemeal. In which case using path preservation can help but will require some manual attention. Colocating after the fact can be accomplished using the **mergerfs.consolidate** tool. If you don't need strict colocation which the `ep` policies provide then you can use the `msp` based policies which will walk back the path till finding a branch that works.
 
 Ultimately there is no correct answer. It is a preference or based on some particular need. mergerfs is very easy to test and experiment with. I suggest creating a test setup and experimenting to get a sense of what you want.
 
@@ -1027,7 +1038,7 @@ That said, for the average person, the following should be fine:
 
 #### Why are all my files ending up on 1 drive?!
 
-Did you start with empty drives? Did you explicitly configure a `category.create` policy? Are you using a path preserving policy?
+Did you start with empty drives? Did you explicitly configure a `category.create` policy? Are you using an `existing path` / `path preserving` policy?
 
 The default create policy is `epmfs`. That is a path preserving algorithm. With such a policy for `mkdir` and `create` with a set of empty drives it will select only 1 drive when the first directory is created. Anything, files or directories, created in that first directory will be placed on the same branch because it is preserving paths.
 
@@ -1057,7 +1068,9 @@ If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay clos
 
 #### Is my OS's libfuse needed for mergerfs to work?
 
-No. Normally `mount.fuse` is needed to get mergerfs (or any FUSE filesystem to mount using the `mount` command but in vendoring the libfuse library the `mount.fuse` app has been renamed to `mount.mergerfs` meaning the filesystem type in `fstab` can simply be `mergerfs`.
+No. Normally `mount.fuse` is needed to get mergerfs (or any FUSE filesystem to mount using the `mount` command but in vendoring the libfuse library the `mount.fuse` app has been renamed to `mount.mergerfs` meaning the filesystem type in `fstab` can simply be `mergerfs`. That said there should be no harm in having it installed and continuing to using `fuse.mergerfs` as the type in `/etc/fstab`.
+
+If `mergerfs` doesn't work as a type it could be due to how the `mount.mergerfs` tool was installed. Must be in `/sbin/` with proper permissions.
 
 
 #### Why was libfuse embedded into mergerfs?
@@ -1149,12 +1162,14 @@ If you don't care about path preservation then simply change the `create` policy
 
 #### Why does the total available space in mergerfs not equal outside?
 
-Are you using ext4? With reserve for root? mergerfs uses available space for statfs calculations. If you've reserved space for root then it won't show up.
+Are you using ext2/3/4? With reserve for root? mergerfs uses available space for statfs calculations. If you've reserved space for root then it won't show up.
+
+You can remove the reserve by running: `tune2fs -m 0 <device>`
 
 
 #### Can mergerfs mounts be exported over NFS?
 
-Yes, however if you do anything which may changes files out of band (including for example using the `newest` policy) it will result in "stale file handle" errors.
+Yes, however if you do anything which may changes files out of band (including for example using the `newest` policy) it will result in "stale file handle" errors unless properly setup.
 
 Be sure to use the following options:
 
@@ -1166,6 +1181,11 @@ Be sure to use the following options:
 #### Can mergerfs mounts be exported over Samba / SMB?
 
 Yes. While some users have reported problems it appears to always be related to how Samba is setup in relation to permissions.
+
+
+#### Can mergerfs mounts be used over SSHFS?
+
+Yes.
 
 
 #### I notice massive slowdowns of writes when enabling cache.files.
@@ -1248,6 +1268,7 @@ This software is free to use and released under a very liberal license. That sai
 
 * https://spawn.link
 * https://github.com/trapexit/mergerfs
+* https://github.com/trapexit/mergerfs/wiki
 * https://github.com/trapexit/mergerfs-tools
 * https://github.com/trapexit/scorch
 * https://github.com/trapexit/bbf

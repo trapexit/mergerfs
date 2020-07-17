@@ -29,7 +29,7 @@ namespace fs
 {
   namespace path
   {
-     string
+    string
     dirname(const char *path_)
     {
       string path(path_);
