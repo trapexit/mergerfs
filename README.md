@@ -409,7 +409,7 @@ $ su -
 # cd mergerfs
 # tools/install-build-pkgs
 # make rpm
-# rpm -i rpmbuild/RPMS/<arch>/mergerfs-<verion>.<arch>.rpm
+# rpm -i rpmbuild/RPMS/<arch>/mergerfs-<version>.<arch>.rpm
 ```
 
 #### Generically
@@ -799,7 +799,7 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do **not** use `cache.files=off` (or `direct_io`) if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full` or `direct_io=false`.
 * Since POSIX functions give only a singular error or success its difficult to determine the proper behavior when applying the function to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
-* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** its possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
+* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
 
@@ -936,7 +936,7 @@ First upgrade if possible, check the known bugs section, and contact trapexit.
 
 #### mergerfs appears to be crashing or exiting
 
-There seems to be an issue with Linux version `4.9.0` and above in which an invalid message appears to be transmitted to libfuse (used by mergerfs) causing it to exit. No messages will be printed in any logs as its not a proper crash. Debugging of the issue is still ongoing and can be followed via the [fuse-devel thread](https://sourceforge.net/p/fuse/mailman/message/35662577).
+There seems to be an issue with Linux version `4.9.0` and above in which an invalid message appears to be transmitted to libfuse (used by mergerfs) causing it to exit. No messages will be printed in any logs as it's not a proper crash. Debugging of the issue is still ongoing and can be followed via the [fuse-devel thread](https://sourceforge.net/p/fuse/mailman/message/35662577).
 
 #### mergerfs under heavy load and memory pressure leads to kernel panic
 
@@ -1031,7 +1031,7 @@ Did you start with empty drives? Did you explicitly configure a `category.create
 
 The default create policy is `epmfs`. That is a path preserving algorithm. With such a policy for `mkdir` and `create` with a set of empty drives it will select only 1 drive when the first directory is created. Anything, files or directories, created in that first directory will be placed on the same branch because it is preserving paths.
 
-This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`. Or use `func.mkdir=rand` if you're intersted in just grouping together directory content by drive.
+This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`. Or use `func.mkdir=rand` if you're interested in just grouping together directory content by drive.
 
 
 #### Do hard links work?
@@ -1115,7 +1115,7 @@ MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to pr
 
 #### Why use mergerfs over UnRAID?
 
-UnRAID is a full OS and its storage layer, as I understand, is proprietary and closed source. Users who have experience with both have said they perfer the flexibilty offered by mergerfs and for some the fact it is free and open source is important.
+UnRAID is a full OS and its storage layer, as I understand, is proprietary and closed source. Users who have experience with both have said they prefer the flexibility offered by mergerfs and for some the fact it is free and open source is important.
 
 There are a number of UnRAID users who use mergerfs as well though I'm not entirely familiar with the use case.
 
@@ -1131,7 +1131,7 @@ There are a number of UnRAID users who use mergerfs as well though I'm not entir
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes, however its not recommended to use the same file from within the pool and from without at the same time (particularly writing). Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.) as there could be a conflict between cached data and not.
+Yes, however it's not recommended to use the same file from within the pool and from without at the same time (particularly writing). Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.) as there could be a conflict between cached data and not.
 
 
 #### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
@@ -1144,7 +1144,7 @@ Due to path preservation, branch tagging, read-only status, and **minfreespace**
 
 It is also possible that the filesystem selected has run out of inodes. Use `df -i` to list the total and available inodes per filesystem.
 
-If you don't care about path preservation then simply change the `create` policy to one which isn't. `mfs` is probably what most are looking for. The reason its not default is because it was originally set to `epmfs` and changing it now would change people's setup. Such a setting change will likely occur in mergerfs 3.
+If you don't care about path preservation then simply change the `create` policy to one which isn't. `mfs` is probably what most are looking for. The reason it's not default is because it was originally set to `epmfs` and changing it now would change people's setup. Such a setting change will likely occur in mergerfs 3.
 
 
 #### Why does the total available space in mergerfs not equal outside?
@@ -1174,10 +1174,10 @@ When file caching is enabled in any form (`cache.files!=off` or `direct_io=false
 
 To work around this situation mergerfs offers a few solutions.
 
-1. Set `security_capability=false`. It will short curcuit any call and return `ENOATTR`. This still means though that mergerfs will receive the request before every write but at least it doesn't get passed through to the underlying filesystem.
+1. Set `security_capability=false`. It will short circuit any call and return `ENOATTR`. This still means though that mergerfs will receive the request before every write but at least it doesn't get passed through to the underlying filesystem.
 2. Set `xattr=noattr`. Same as above but applies to *all* calls to getxattr. Not just `security.capability`. This will not be cached by the kernel either but mergerfs' runtime config system will still function.
 3. Set `xattr=nosys`. Results in mergerfs returning `ENOSYS` which *will* be cached by the kernel. No future xattr calls will be forwarded to mergerfs. The downside is that also means the xattr based config and query functionality won't work either.
-4. Disable file caching. If you aren't using applications which use `mmap` it's probably simplier to just disable it all together. The kernel won't send the requests when caching is disabled.
+4. Disable file caching. If you aren't using applications which use `mmap` it's probably simpler to just disable it all together. The kernel won't send the requests when caching is disabled.
 
 
 #### What are these .fuse_hidden files?
