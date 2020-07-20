@@ -78,7 +78,7 @@ typedef char IOCTL_BUF[4096];
   I've modified the API to allow changing of the output buffer
   size. This fixes the issue on little endian systems because the
   lower 4 bytes are the same regardless of what the user
-  allocated. However, on big endian systems thats not the case and it
+  allocated. However, on big endian systems that's not the case and it
   is not possible to safely handle the situation.
 
   https://lwn.net/Articles/575846/

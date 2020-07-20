@@ -330,7 +330,7 @@ usage(void)
     "                           default = libfuse\n"
     "    -o cache.writeback=<bool>\n"
     "                           Enable kernel writeback caching (if supported)\n"
-    "                           cache.files must must be enabled as well.\n"
+    "                           cache.files must be enabled as well.\n"
     "                           default = false\n"
     "    -o cache.symlinks=<bool>\n"
     "                           Enable kernel caching of symlinks (if supported)\n"
