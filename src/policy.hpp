@@ -20,7 +20,6 @@
 #include "category.hpp"
 #include "fs.hpp"
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -45,6 +44,9 @@ public:
         lfs,
         lus,
         mfs,
+        msplfs,
+        msplus,
+        mspmfs,
         newest,
         rand,
         END
@@ -123,6 +125,9 @@ public:
     static int lfs(CType,const Branches&,const char *,cuint64_t,strvec*);
     static int lus(CType,const Branches&,const char *,cuint64_t,strvec*);
     static int mfs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int msplfs(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int msplus(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int mspmfs(CType,const Branches&,const char *,cuint64_t,strvec*);
     static int newest(CType,const Branches&,const char *,cuint64_t,strvec*);
     static int rand(CType,const Branches&,const char *,cuint64_t,strvec*);
   };
@@ -201,6 +206,9 @@ public:
   static const Policy &lfs;
   static const Policy &lus;
   static const Policy &mfs;
+  static const Policy &msplfs;
+  static const Policy &msplus;
+  static const Policy &mspmfs;
   static const Policy &newest;
   static const Policy &rand;
 };

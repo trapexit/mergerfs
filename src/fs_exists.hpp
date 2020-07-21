@@ -48,6 +48,18 @@ namespace fs
     return fs::exists(path_,&st);
   }
 
+  static
+  inline
+  bool
+  exists(const std::string &basepath_,
+         const std::string &relpath_)
+  {
+    std::string fullpath;
+
+    fullpath = fs::path::make(basepath_,relpath_);
+
+    return fs::exists(fullpath);
+  }
 
   static
   inline

@@ -39,6 +39,9 @@ const std::vector<Policy> Policy::_policies_ =
   (POLICY(lfs,DOESNT_PRESERVE_PATH))
   (POLICY(lus,DOESNT_PRESERVE_PATH))
   (POLICY(mfs,DOESNT_PRESERVE_PATH))
+  (POLICY(msplfs,PRESERVES_PATH))
+  (POLICY(msplus,PRESERVES_PATH))
+  (POLICY(mspmfs,PRESERVES_PATH))
   (POLICY(newest,DOESNT_PRESERVE_PATH))
   (POLICY(rand,DOESNT_PRESERVE_PATH));
 
@@ -59,6 +62,9 @@ CONST_POLICY(ff);
 CONST_POLICY(lfs);
 CONST_POLICY(lus);
 CONST_POLICY(mfs);
+CONST_POLICY(msplfs);
+CONST_POLICY(msplus);
+CONST_POLICY(mspmfs);
 CONST_POLICY(newest);
 CONST_POLICY(rand);
 
@@ -83,4 +89,3 @@ Policy::find(const Policy::Enum::Type i)
 
   return invalid;
 }
-

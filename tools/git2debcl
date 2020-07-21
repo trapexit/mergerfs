@@ -80,7 +80,6 @@ def main():
         args.version = git_version()
 
     tags = git_tags()
-
     if args.version in tags:
         idx = tags.index(args.version)
         tags = tags[idx:]

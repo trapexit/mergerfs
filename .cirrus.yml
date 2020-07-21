@@ -20,6 +20,18 @@ linux_task:
     - make STATIC=1 LTO=1
 
 linux_task:
+  name: "centos:6"
+  container:
+    image: centos:6
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
   name: "centos:7"
   container:
     image: centos:7
@@ -42,3 +54,138 @@ linux_task:
     - tools/install-build-pkgs
     - make
     - make rpm
+
+linux_task:
+  name: "ubuntu:20.04"
+  container:
+    image: ubuntu:20.04
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu:19.10"
+  container:
+    image: ubuntu:19.10
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu:18.04"
+  container:
+    image: ubuntu:18.04
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu:16.04"
+  container:
+    image: ubuntu:16.04
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu:14.04"
+  container:
+    image: ubuntu:14.04
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:10"
+  container:
+    image: debian:10
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:9"
+  container:
+    image: debian:9
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:8"
+  container:
+    image: debian:8
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:7"
+  container:
+    image: debian:8
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
