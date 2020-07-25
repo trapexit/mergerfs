@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,37 +16,33 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
-#include "fileinfo.hpp"
-#include "fs_base_fchmod.hpp"
+#pragma once
 
-#include <fuse.h>
+#include <sys/stat.h>
 
-namespace l
+namespace StatUtil
 {
   static
-  int
-  fchmod(const int    fd_,
-         const mode_t mode_)
+  inline
+  bool
+  empty(const struct stat &st_)
   {
-    int rv;
-
-    rv = fs::fchmod(fd_,mode_);
-    if(rv == -1)
-      return -errno;
-
-    return rv;
+    return (st_.st_size == 0);
   }
-}
 
-namespace FUSE
-{
-  int
-  fchmod(const struct fuse_file_info *ffi_,
-         const mode_t                 mode_)
+  static
+  inline
+  bool
+  writable(const struct stat &st_)
   {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    return (st_.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
+  }
 
-    return l::fchmod(fi->fd,mode_);
+  static
+  inline
+  bool
+  writable_or_not_empty(const struct stat &st_)
+  {
+    return (StatUtil::writable(st_) || !StatUtil::empty(st_));
   }
 }

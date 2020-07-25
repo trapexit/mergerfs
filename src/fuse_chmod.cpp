@@ -21,10 +21,12 @@
 #include "rv.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
+
+#include <string.h>
 
 using std::string;
 using std::vector;
