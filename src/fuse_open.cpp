@@ -57,7 +57,7 @@ namespace l
     if(rv == -1)
       return (errno=EACCES,-1);
 
-    if(StatUtil::writable_or_not_empty(st))
+    if(StatUtil::writable(st))
       return (errno=EACCES,-1);
 
     rv = fs::chmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
