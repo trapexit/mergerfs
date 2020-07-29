@@ -368,8 +368,8 @@ tools use \f[B]/etc/fstab\f[].
 .IP
 .nf
 \f[C]
-#\ <file\ system>\ \ \ \ \ \ \ \ <mount\ point>\ \ <type>\ \ \ \ <options>\ \ \ \ \ \ \ \ \ \ \ \ \ <dump>\ \ <pass>
-/mnt/disk*:/mnt/cdrom\ \ /media/drives\ \ mergerfs\ \ allow_other,use_ino\ \ \ 0\ \ \ \ \ \ \ 0
+#\ <file\ system>\ \ \ \ \ \ \ \ <mount\ point>\ \ <type>\ \ \ \ \ \ \ \ \ <options>\ \ \ \ \ \ \ \ \ \ \ \ \ <dump>\ \ <pass>
+/mnt/disk*:/mnt/cdrom\ \ /mnt/pool\ \ \ \ \ \ fuse.mergerfs\ \ allow_other,use_ino\ \ \ 0\ \ \ \ \ \ \ 0
 \f[]
 .fi
 .PP

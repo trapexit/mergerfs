@@ -164,8 +164,8 @@ The above line will use all mount points in /mnt prefixed with **disk** and the 
 To have the pool mounted at boot or otherwise accessible from related tools use **/etc/fstab**.
 
 ```
-# <file system>        <mount point>  <type>    <options>             <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /media/drives  mergerfs  allow_other,use_ino   0       0
+# <file system>        <mount point>  <type>         <options>             <dump>  <pass>
+/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other,use_ino   0       0
 ```
 
 **NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
