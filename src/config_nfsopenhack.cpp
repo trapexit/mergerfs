@@ -18,6 +18,7 @@
 
 #include "config_nfsopenhack.hpp"
 #include "ef.hpp"
+#include "errno.hpp"
 
 template<>
 int

@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+
 #if defined __linux__
 #include <unistd.h>
 #include <sys/syscall.h>

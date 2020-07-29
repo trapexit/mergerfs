@@ -17,6 +17,7 @@
 */
 
 #include "branch.hpp"
+#include "errno.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_path.hpp"
 

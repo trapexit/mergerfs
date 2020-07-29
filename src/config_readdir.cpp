@@ -18,6 +18,7 @@
 
 #include "config_readdir.hpp"
 #include "ef.hpp"
+#include "errno.hpp"
 
 template<>
 int
