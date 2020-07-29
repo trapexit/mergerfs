@@ -1,4 +1,13 @@
-VERSION = 2.9.7-mergerfs_2.29.0
+VERSION = 2.9.7-mergerfs_2.30.0
+
+OS := $(shell uname -s)
+ifeq ($(OS),Linux)
+UTILS := utils
+INSTALLUTILS := install-utils
+else
+UTILS :=
+INSTALLUTILS :=
+endif
 
 ifeq ($(DEBUG),1)
 OPT_FLAGS := -O0 -g
@@ -56,7 +65,7 @@ LDFLAGS = \
 	-lrt \
 	-pthread
 
-all: build/libfuse.a mount.mergerfs mergerfs-fusermount
+all: build/libfuse.a $(UTILS)
 
 build/config.h: build/stamp
 	ecfd/build | tee build/config.h
@@ -70,6 +79,8 @@ objects: build/config.h
 
 build/libfuse.a: objects
 	ar rcs build/libfuse.a $(OBJS)
+
+utils: mergerfs-fusermount mount.mergerfs
 
 build/mergerfs-fusermount: build/config.h util/fusermount.c lib/mount_util.c
 	$(CC) $(CFLAGS) $(FUSE_FLAGS) -Ilib -o build/mergerfs-fusermount util/fusermount.c lib/mount_util.c
@@ -93,12 +104,14 @@ strip:
 	strip --strip-all build/mount.mergerfs
 	strip --strip-all build/mergerfs-fusermount
 
-install: mergerfs-fusermount mount.mergerfs strip
+install-utils: mergerfs-fusermount mount.mergerfs strip
 	install -D build/mergerfs-fusermount "$(INSTALLBINDIR)/mergerfs-fusermount"
 	install -D build/mount.mergerfs "$(INSTALLSBINDIR)/mount.mergerfs"
-	chown root:root "$(INSTALLBINDIR)/mergerfs-fusermount"
+	chown root "$(INSTALLBINDIR)/mergerfs-fusermount"
 	chmod u+s "$(INSTALLBINDIR)/mergerfs-fusermount"
 
-.PHONY: objects strip
+install: $(INSTALLUTILS)
+
+.PHONY: objects strip utils install install-utils
 
 -include $(DEPS)

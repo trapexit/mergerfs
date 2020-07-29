@@ -16,9 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "ef.hpp"
-#include "from_string.hpp"
 #include "config_moveonenospc.hpp"
+#include "ef.hpp"
+#include "errno.hpp"
+#include "from_string.hpp"
 
 int
 MoveOnENOSPC::from_string(const std::string &s_)

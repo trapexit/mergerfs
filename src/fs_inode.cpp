@@ -17,6 +17,7 @@
 */
 
 #include "ef.hpp"
+#include "errno.hpp"
 #include "fasthash.h"
 #include "fs_inode.hpp"
 
