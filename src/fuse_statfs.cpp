@@ -33,8 +33,6 @@
 using std::string;
 using std::map;
 using std::vector;
-typedef Config::StatFS StatFS;
-typedef Config::StatFSIgnore StatFSIgnore;
 
 namespace l
 {
