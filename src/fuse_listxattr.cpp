@@ -94,11 +94,11 @@ namespace FUSE
 
     switch(config.xattr)
       {
-      case Config::XAttr::ENUM::PASSTHROUGH:
+      case XAttr::ENUM::PASSTHROUGH:
         break;
-      case Config::XAttr::ENUM::NOATTR:
+      case XAttr::ENUM::NOATTR:
         return 0;
-      case Config::XAttr::ENUM::NOSYS:
+      case XAttr::ENUM::NOSYS:
         return -ENOSYS;
       }
 

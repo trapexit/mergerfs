@@ -34,7 +34,6 @@
 
 using std::string;
 using std::vector;
-typedef Config::CacheFiles CacheFiles;
 
 namespace l
 {
