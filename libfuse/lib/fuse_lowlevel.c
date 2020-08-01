@@ -2377,7 +2377,6 @@ static struct {
     [FUSE_NOTIFY_REPLY]    = { (void *) 1,         "NOTIFY_REPLY"    },
     [FUSE_BATCH_FORGET]    = { do_batch_forget,    "BATCH_FORGET"    },
     [FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
-    [CUSE_INIT]            = { cuse_lowlevel_init, "CUSE_INIT"       },
   };
 
 #define FUSE_MAXOP (sizeof(fuse_ll_ops) / sizeof(fuse_ll_ops[0]))
@@ -2470,13 +2469,15 @@ static void fuse_ll_process_buf(void *data, const struct fuse_buf *buf,
   req->ch = ch;
 
   err = EIO;
-  if (!f->got_init) {
-    enum fuse_opcode expected;
+  if(!f->got_init)
+    {
+      enum fuse_opcode expected;
 
-    expected = f->cuse_data ? CUSE_INIT : FUSE_INIT;
-    if (in->opcode != expected)
-      goto reply_err;
-  } else if (in->opcode == FUSE_INIT || in->opcode == CUSE_INIT)
+      expected = FUSE_INIT;
+      if (in->opcode != expected)
+        goto reply_err;
+    }
+  else if(in->opcode == FUSE_INIT)
     goto reply_err;
 
   err = EACCES;
@@ -2653,7 +2654,6 @@ static void fuse_ll_destroy(void *data)
     fuse_ll_pipe_free(llp);
   pthread_key_delete(f->pipe_key);
   pthread_mutex_destroy(&f->lock);
-  free(f->cuse_data);
   free(f);
 }
 
@@ -2856,75 +2856,6 @@ struct fuse_session *fuse_lowlevel_new(struct fuse_args *args,
 {
   return fuse_lowlevel_new_common(args, op, op_size, userdata);
 }
-
-#ifdef linux
-int fuse_req_getgroups(fuse_req_t req, int size, gid_t list[])
-{
-  char *buf;
-  size_t bufsize = 1024;
-  char path[128];
-  int ret;
-  int fd;
-  unsigned long pid = req->ctx.pid;
-  char *s;
-
-  sprintf(path, "/proc/%lu/task/%lu/status", pid, pid);
-
- retry:
-  buf = malloc(bufsize);
-  if (buf == NULL)
-    return -ENOMEM;
-
-  ret = -EIO;
-  fd = open(path, O_RDONLY);
-  if (fd == -1)
-    goto out_free;
-
-  ret = read(fd, buf, bufsize);
-  close(fd);
-  if (ret == -1) {
-    ret = -EIO;
-    goto out_free;
-  }
-
-  if (ret == bufsize) {
-    free(buf);
-    bufsize *= 4;
-    goto retry;
-  }
-
-  ret = -EIO;
-  s = strstr(buf, "\nGroups:");
-  if (s == NULL)
-    goto out_free;
-
-  s += 8;
-  ret = 0;
-  while (1) {
-    char *end;
-    unsigned long val = strtoul(s, &end, 0);
-    if (end == s)
-      break;
-
-    s = end;
-    if (ret < size)
-      list[ret] = val;
-    ret++;
-  }
-
- out_free:
-  free(buf);
-  return ret;
-}
-#else /* linux */
-/*
- * This is currently not implemented on other than Linux...
- */
-int fuse_req_getgroups(fuse_req_t req, int size, gid_t list[])
-{
-  return -ENOSYS;
-}
-#endif
 
 #if !defined(__FreeBSD__) && !defined(__NetBSD__)
 

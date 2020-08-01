@@ -76,7 +76,6 @@ struct fuse_ll
   int no_splice_read;
   struct fuse_lowlevel_ops op;
   int got_init;
-  struct cuse_data *cuse_data;
   void *userdata;
   uid_t owner;
   struct fuse_conn_info conn;
@@ -128,7 +127,5 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       int *fd,
 			       void *user_data,
 			       int compat);
-
-void cuse_lowlevel_init(fuse_req_t req, fuse_ino_t nodeide, const void *inarg);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
