@@ -28,57 +28,57 @@ extern "C" {
 
 #define CUSE_UNRESTRICTED_IOCTL		(1 << 0) /* use unrestricted ioctl */
 
-struct fuse_session;
+  struct fuse_session;
 
-struct cuse_info {
-	unsigned	dev_major;
-	unsigned	dev_minor;
-	unsigned	dev_info_argc;
-	const char	**dev_info_argv;
-	unsigned	flags;
-};
+  struct cuse_info {
+    unsigned	dev_major;
+    unsigned	dev_minor;
+    unsigned	dev_info_argc;
+    const char	**dev_info_argv;
+    unsigned	flags;
+  };
 
-/*
- * Most ops behave almost identically to the matching fuse_lowlevel
- * ops except that they don't take @ino.
- *
- * init_done	: called after initialization is complete
- * read/write	: always direct IO, simultaneous operations allowed
- * ioctl	: might be in unrestricted mode depending on ci->flags
- */
-struct cuse_lowlevel_ops {
-	void (*init) (void *userdata, struct fuse_conn_info *conn);
-	void (*init_done) (void *userdata);
-	void (*destroy) (void *userdata);
-	void (*open) (fuse_req_t req, struct fuse_file_info *fi);
-	void (*read) (fuse_req_t req, size_t size, off_t off,
-		      struct fuse_file_info *fi);
-	void (*write) (fuse_req_t req, const char *buf, size_t size, off_t off,
-		       struct fuse_file_info *fi);
-	void (*flush) (fuse_req_t req, struct fuse_file_info *fi);
-	void (*release) (fuse_req_t req, struct fuse_file_info *fi);
-	void (*fsync) (fuse_req_t req, int datasync, struct fuse_file_info *fi);
-	void (*ioctl) (fuse_req_t req, int cmd, void *arg,
-		       struct fuse_file_info *fi, unsigned int flags,
-		       const void *in_buf, size_t in_bufsz, size_t out_bufsz);
-	void (*poll) (fuse_req_t req, struct fuse_file_info *fi,
-		      struct fuse_pollhandle *ph);
-};
+  /*
+   * Most ops behave almost identically to the matching fuse_lowlevel
+   * ops except that they don't take @ino.
+   *
+   * init_done	: called after initialization is complete
+   * read/write	: always direct IO, simultaneous operations allowed
+   * ioctl	: might be in unrestricted mode depending on ci->flags
+   */
+  struct cuse_lowlevel_ops {
+    void (*init) (void *userdata, struct fuse_conn_info *conn);
+    void (*init_done) (void *userdata);
+    void (*destroy) (void *userdata);
+    void (*open) (fuse_req_t req, struct fuse_file_info *fi);
+    void (*read) (fuse_req_t req, size_t size, off_t off,
+                  struct fuse_file_info *fi);
+    void (*write) (fuse_req_t req, const char *buf, size_t size, off_t off,
+                   struct fuse_file_info *fi);
+    void (*flush) (fuse_req_t req, struct fuse_file_info *fi);
+    void (*release) (fuse_req_t req, struct fuse_file_info *fi);
+    void (*fsync) (fuse_req_t req, int datasync, struct fuse_file_info *fi);
+    void (*ioctl) (fuse_req_t req, int cmd, void *arg,
+                   struct fuse_file_info *fi, unsigned int flags,
+                   const void *in_buf, size_t in_bufsz, size_t out_bufsz);
+    void (*poll) (fuse_req_t req, struct fuse_file_info *fi,
+                  struct fuse_pollhandle *ph);
+  };
 
-struct fuse_session *cuse_lowlevel_new(struct fuse_args *args,
-				       const struct cuse_info *ci,
-				       const struct cuse_lowlevel_ops *clop,
-				       void *userdata);
+  struct fuse_session *cuse_lowlevel_new(struct fuse_args *args,
+                                         const struct cuse_info *ci,
+                                         const struct cuse_lowlevel_ops *clop,
+                                         void *userdata);
 
-struct fuse_session *cuse_lowlevel_setup(int argc, char *argv[],
-					 const struct cuse_info *ci,
-					 const struct cuse_lowlevel_ops *clop,
-					 int *multithreaded, void *userdata);
+  struct fuse_session *cuse_lowlevel_setup(int argc, char *argv[],
+                                           const struct cuse_info *ci,
+                                           const struct cuse_lowlevel_ops *clop,
+                                           int *multithreaded, void *userdata);
 
-void cuse_lowlevel_teardown(struct fuse_session *se);
+  void cuse_lowlevel_teardown(struct fuse_session *se);
 
-int cuse_lowlevel_main(int argc, char *argv[], const struct cuse_info *ci,
-		       const struct cuse_lowlevel_ops *clop, void *userdata);
+  int cuse_lowlevel_main(int argc, char *argv[], const struct cuse_info *ci,
+                         const struct cuse_lowlevel_ops *clop, void *userdata);
 
 #ifdef __cplusplus
 }
