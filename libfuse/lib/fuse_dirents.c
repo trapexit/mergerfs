@@ -5,7 +5,7 @@
 #include "fuse_direntplus.h"
 #include "fuse_dirents.h"
 #include "fuse_entry.h"
-#include "linux_dirent.h"
+#include "linux_dirent64.h"
 #include "stat_utils.h"
 
 #include <dirent.h>
@@ -299,9 +299,9 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
 }
 
 int
-fuse_dirents_add_linux(fuse_dirents_t            *d_,
-                       const struct linux_dirent *dirent_,
-                       const uint64_t             namelen_)
+fuse_dirents_add_linux(fuse_dirents_t              *d_,
+                       const struct linux_dirent64 *dirent_,
+                       const uint64_t               namelen_)
 {
   fuse_dirent_t *d;
 
@@ -324,18 +324,18 @@ fuse_dirents_add_linux(fuse_dirents_t            *d_,
   kv_push(uint32_t,d_->offs,d_->data_len);
   d->ino     = dirent_->ino;
   d->namelen = namelen_;
-  d->type    = *((char*)dirent_ + dirent_->reclen - 1);
+  d->type    = dirent_->type;
   memcpy(d->name,dirent_->name,namelen_);
 
   return 0;
 }
 
 int
-fuse_dirents_add_linux_plus(fuse_dirents_t            *d_,
-                            const struct linux_dirent *dirent_,
-                            const uint64_t             namelen_,
-                            const fuse_entry_t        *entry_,
-                            const struct stat         *st_)
+fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
+                            const struct linux_dirent64 *dirent_,
+                            const uint64_t               namelen_,
+                            const fuse_entry_t          *entry_,
+                            const struct stat           *st_)
 {
   fuse_direntplus_t *d;
 
@@ -358,7 +358,7 @@ fuse_dirents_add_linux_plus(fuse_dirents_t            *d_,
   kv_push(uint32_t,d_->offs,d_->data_len);
   d->dirent.ino     = dirent_->ino;
   d->dirent.namelen = namelen_;
-  d->dirent.type    = *((char*)dirent_ + dirent_->reclen - 1);
+  d->dirent.type    = dirent_->type;
   memcpy(d->dirent.name,dirent_->name,namelen_);
 
   d->entry = *entry_;

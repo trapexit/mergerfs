@@ -31,7 +31,7 @@ namespace fs
            unsigned int  count_)
   {
 #if defined SYS_getdents64
-    return ::syscall(SYS_getdents,fd_,dirp_,count_);
+    return ::syscall(SYS_getdents64,fd_,dirp_,count_);
 #else
     return (errno=ENOTSUP,-1);
 #endif
