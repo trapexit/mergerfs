@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-07-22
+% 2020-08-02
 
 # NAME
 
@@ -816,7 +816,7 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 * Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
-* Do **not** use `cache.files=off` (or `direct_io`) if you expect applications (such as rtorrent) to [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ `direct_io` enabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full` or `direct_io=false`.
+* Do **not** use `cache.files=off` if you expect applications (such as rtorrent) to use [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ page caching disabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full`.
 * Since POSIX functions give only a singular error or success its difficult to determine the proper behavior when applying the function to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
@@ -888,9 +888,9 @@ There appears to be a bug in the OpenVZ kernel with regard to how it handles ioc
 
 #### Plex doesn't work with mergerfs
 
-It does. If you're trying to put Plex's config / metadata on mergerfs you have to leave `direct_io` off because Plex is using sqlite3 which apparently needs mmap. mmap doesn't work with `direct_io`. To fix this place the data elsewhere or disable `direct_io` (with `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer needs to fall back to standard IO if mmap fails.
+It does. If you're trying to put Plex's config / metadata / database on mergerfs you can't set `cache.fles=off` because Plex is using sqlite3 with mmap enabled. Shared mmap is not supported by Linux's FUSE implementation when page caching is disabled. To fix this place the data elsewhere (preferable) or enable `cache.files` (with `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer needs to fall back to standard IO if mmap fails.
 
-If the issue is that scanning doesn't seem to pick up media then be sure to set `func.getattr=newest` as mentioned above.
+If the issue is that scanning doesn't seem to pick up media then be sure to set `func.getattr=newest` though generally a full scan will pick up all media anyway.
 
 
 #### mmap performance is really bad
