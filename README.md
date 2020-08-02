@@ -825,6 +825,10 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 
 # KNOWN ISSUES / BUGS
 
+#### kernel issues & bugs
+
+[https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
+
 #### directory mtime is not being updated
 
 Remember that the default policy for `getattr` is `ff`. The information for the first directory found will be returned. If it wasn't the directory which had been updated then it will appear outdated.
@@ -874,28 +878,11 @@ Be sure to use the following options:
 Be sure to set `cache.files=partial|full|auto-full` or turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no fallback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
 
 
-#### rtorrent fails with files >= 4GiB
-
-This is a kernel bug with mmap and FUSE on 32bit platforms. A fix should become available for all LTS releases.
-
-https://marc.info/?l=linux-fsdevel&m=155550785230874&w=2
-
-
-#### Crashing on OpenVZ
-
-There appears to be a bug in the OpenVZ kernel with regard to how it handles ioctl calls. It is making invalid requests which leads to a crash. As of 2019-12-10 there is a bug report filed with OpenVZ but it is not yet fixed.
-
-
 #### Plex doesn't work with mergerfs
 
-It does. If you're trying to put Plex's config / metadata / database on mergerfs you can't set `cache.fles=off` because Plex is using sqlite3 with mmap enabled. Shared mmap is not supported by Linux's FUSE implementation when page caching is disabled. To fix this place the data elsewhere (preferable) or enable `cache.files` (with `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer needs to fall back to standard IO if mmap fails.
+It does. If you're trying to put Plex's config / metadata / database on mergerfs you can't set `cache.files=off` because Plex is using sqlite3 with mmap enabled. Shared mmap is not supported by Linux's FUSE implementation when page caching is disabled. To fix this place the data elsewhere (preferable) or enable `cache.files` (with `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer needs to fall back to standard IO if mmap fails.
 
 If the issue is that scanning doesn't seem to pick up media then be sure to set `func.getattr=newest` though generally a full scan will pick up all media anyway.
-
-
-#### mmap performance is really bad
-
-There [is/was a bug](https://lkml.org/lkml/2016/3/16/260) in caching which affects overall performance of mmap through FUSE in Linux 4.x kernels. It is fixed in [4.4.10 and 4.5.4](https://lkml.org/lkml/2016/5/11/59).
 
 
 #### When a program tries to move or rename a file it fails
@@ -957,48 +944,6 @@ First upgrade if possible, check the known bugs section, and contact trapexit.
 
 There seems to be an issue with Linux version `4.9.0` and above in which an invalid message appears to be transmitted to libfuse (used by mergerfs) causing it to exit. No messages will be printed in any logs as it's not a proper crash. Debugging of the issue is still ongoing and can be followed via the [fuse-devel thread](https://sourceforge.net/p/fuse/mailman/message/35662577).
 
-#### mergerfs under heavy load and memory pressure leads to kernel panic
-
-https://lkml.org/lkml/2016/9/14/527
-
-```
-[25192.515454] kernel BUG at /build/linux-a2WvEb/linux-4.4.0/mm/workingset.c:346!
-[25192.517521] invalid opcode: 0000 [#1] SMP
-[25192.519602] Modules linked in: netconsole ip6t_REJECT nf_reject_ipv6 ipt_REJECT nf_reject_ipv4 configfs binfmt_misc veth bridge stp llc nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack ip6table_filter ip6_tables xt_multiport iptable_filter ipt_MASQUERADE nf_nat_masquerade_ipv4 xt_comment xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack xt_CHECKSUM xt_tcpudp iptable_mangle ip_tables x_tables intel_rapl x86_pkg_temp_thermal intel_powerclamp eeepc_wmi asus_wmi coretemp sparse_keymap kvm_intel ppdev kvm irqbypass mei_me 8250_fintek input_leds serio_raw parport_pc tpm_infineon mei shpchp mac_hid parport lpc_ich autofs4 drbg ansi_cprng dm_crypt algif_skcipher af_alg btrfs raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq libcrc32c raid0 multipath linear raid10 raid1 i915 crct10dif_pclmul crc32_pclmul aesni_intel i2c_algo_bit aes_x86_64 drm_kms_helper lrw gf128mul glue_helper ablk_helper syscopyarea cryptd sysfillrect sysimgblt fb_sys_fops drm ahci r8169 libahci mii wmi fjes video [last unloaded: netconsole]
-[25192.540910] CPU: 2 PID: 63 Comm: kswapd0 Not tainted 4.4.0-36-generic #55-Ubuntu
-[25192.543411] Hardware name: System manufacturer System Product Name/P8H67-M PRO, BIOS 3904 04/27/2013
-[25192.545840] task: ffff88040cae6040 ti: ffff880407488000 task.ti: ffff880407488000
-[25192.548277] RIP: 0010:[<ffffffff811ba501>]  [<ffffffff811ba501>] shadow_lru_isolate+0x181/0x190
-[25192.550706] RSP: 0018:ffff88040748bbe0  EFLAGS: 00010002
-[25192.553127] RAX: 0000000000001c81 RBX: ffff8802f91ee928 RCX: ffff8802f91eeb38
-[25192.555544] RDX: ffff8802f91ee938 RSI: ffff8802f91ee928 RDI: ffff8804099ba2c0
-[25192.557914] RBP: ffff88040748bc08 R08: 000000000001a7b6 R09: 000000000000003f
-[25192.560237] R10: 000000000001a750 R11: 0000000000000000 R12: ffff8804099ba2c0
-[25192.562512] R13: ffff8803157e9680 R14: ffff8803157e9668 R15: ffff8804099ba2c8
-[25192.564724] FS:  0000000000000000(0000) GS:ffff88041f280000(0000) knlGS:0000000000000000
-[25192.566990] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[25192.569201] CR2: 00007ffabb690000 CR3: 0000000001e0a000 CR4: 00000000000406e0
-[25192.571419] Stack:
-[25192.573550]  ffff8804099ba2c0 ffff88039e4f86f0 ffff8802f91ee928 ffff8804099ba2c8
-[25192.575695]  ffff88040748bd08 ffff88040748bc58 ffffffff811b99bf 0000000000000052
-[25192.577814]  0000000000000000 ffffffff811ba380 000000000000008a 0000000000000080
-[25192.579947] Call Trace:
-[25192.582022]  [<ffffffff811b99bf>] __list_lru_walk_one.isra.3+0x8f/0x130
-[25192.584137]  [<ffffffff811ba380>] ? memcg_drain_all_list_lrus+0x190/0x190
-[25192.586165]  [<ffffffff811b9a83>] list_lru_walk_one+0x23/0x30
-[25192.588145]  [<ffffffff811ba544>] scan_shadow_nodes+0x34/0x50
-[25192.590074]  [<ffffffff811a0e9d>] shrink_slab.part.40+0x1ed/0x3d0
-[25192.591985]  [<ffffffff811a53da>] shrink_zone+0x2ca/0x2e0
-[25192.593863]  [<ffffffff811a64ce>] kswapd+0x51e/0x990
-[25192.595737]  [<ffffffff811a5fb0>] ? mem_cgroup_shrink_node_zone+0x1c0/0x1c0
-[25192.597613]  [<ffffffff810a0808>] kthread+0xd8/0xf0
-[25192.599495]  [<ffffffff810a0730>] ? kthread_create_on_node+0x1e0/0x1e0
-[25192.601335]  [<ffffffff8182e34f>] ret_from_fork+0x3f/0x70
-[25192.603193]  [<ffffffff810a0730>] ? kthread_create_on_node+0x1e0/0x1e0
-```
-
-There is a bug in the kernel. A work around appears to be turning off `splice`. Don't add the `splice_*` arguments or add `no_splice_write,no_splice_move,no_splice_read`. This, however, is not guaranteed to work.
-
 
 #### rm: fts_read failed: No such file or directory
 
@@ -1011,7 +956,7 @@ Please update. This is only happened to mergerfs versions at or below v2.25.x an
 
 Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives. The author of mergerfs had it running for over 300 days managing 16+ drives with reasonably heavy 24/7 read and write usage. Stopping only after the machine's power supply died.
 
-Most serious issues (crashes or data corruption) have been due to kernel bugs. All of which are fixed in stable releases.
+Most serious issues (crashes or data corruption) have been due to [kernel bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs). All of which are fixed in stable releases.
 
 
 #### Can mergerfs be used with drives which already have data / are in use?
