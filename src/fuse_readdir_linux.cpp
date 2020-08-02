@@ -24,7 +24,7 @@
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "hashset.hpp"
-#include "linux_dirent.h"
+#include "linux_dirent64.h"
 #include "mempools.hpp"
 
 #include <fuse.h>
@@ -40,13 +40,6 @@ using std::vector;
 
 namespace l
 {
-  static
-  char
-  denttype(struct linux_dirent *d_)
-  {
-    return *((char*)d_ + d_->reclen - 1);
-  }
-
   static
   int
   close_free_ret_enomem(int   fd_,
@@ -70,7 +63,7 @@ namespace l
     string basepath;
     string fullpath;
     uint64_t namelen;
-    struct linux_dirent *d;
+    struct linux_dirent64 *d;
 
     buf = (char*)g_DENTS_BUF_POOL.alloc();
     if(buf == NULL)
@@ -101,7 +94,7 @@ namespace l
 
             for(int64_t pos = 0; pos < nread; pos += d->reclen)
               {
-                d = (struct linux_dirent*)(buf + pos);
+                d = (struct linux_dirent64*)(buf + pos);
                 namelen = strlen(d->name);
 
                 rv = names.put(d->name,namelen);
@@ -111,7 +104,7 @@ namespace l
                 fullpath = fs::path::make(dirname_,d->name);
                 d->ino = fs::inode::calc(fullpath.c_str(),
                                          fullpath.size(),
-                                         DTTOIF(l::denttype(d)),
+                                         DTTOIF(d->type),
                                          dev,
                                          d->ino);
 

@@ -26,7 +26,7 @@ extern "C" {
 #include "fuse_dirent.h"
 #include "fuse_direntplus.h"
 #include "fuse_entry.h"
-#include "linux_dirent.h"
+#include "linux_dirent64.h"
 
 #include <dirent.h>
 #include <stdint.h>
@@ -65,14 +65,14 @@ int  fuse_dirents_add_plus(fuse_dirents_t      *d,
                            const uint64_t       namelen,
                            const fuse_entry_t  *entry,
                            const struct stat   *st);
-int  fuse_dirents_add_linux(fuse_dirents_t            *d,
-                            const struct linux_dirent *de,
-                            const uint64_t             namelen);
-int  fuse_dirents_add_linux_plus(fuse_dirents_t            *d,
-                                 const struct linux_dirent *de,
-                                 const uint64_t             namelen,
-                                 const fuse_entry_t        *entry,
-                                 const struct stat         *st);
+int  fuse_dirents_add_linux(fuse_dirents_t              *d,
+                            const struct linux_dirent64 *de,
+                            const uint64_t               namelen);
+int  fuse_dirents_add_linux_plus(fuse_dirents_t              *d,
+                                 const struct linux_dirent64 *de,
+                                 const uint64_t               namelen,
+                                 const fuse_entry_t          *entry,
+                                 const struct stat           *st);
 
 void *fuse_dirents_find(fuse_dirents_t *d,
                         const uint64_t  ino);
