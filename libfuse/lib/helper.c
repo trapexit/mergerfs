@@ -11,7 +11,6 @@
 #include "fuse_misc.h"
 #include "fuse_opt.h"
 #include "fuse_lowlevel.h"
-#include "fuse_common_compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -260,7 +259,7 @@ fuse_mount_common(const char       *mountpoint_,
         close(fd);
     } while(fd >= 0 && fd <= 2);
 
-  fd = fuse_mount_compat25(mountpoint_, args_);
+  fd = fuse_kern_mount(mountpoint_,args_);
   if(fd == -1)
     return NULL;
 
@@ -299,8 +298,7 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       char **mountpoint,
 			       int *multithreaded,
 			       int *fd,
-			       void *user_data,
-			       int compat)
+			       void *user_data)
 {
   struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
   struct fuse_chan *ch;
@@ -318,7 +316,7 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
     goto err_free;
   }
 
-  fuse = fuse_new_common(ch, &args, op, op_size, user_data, compat);
+  fuse = fuse_new_common(ch, &args, op, op_size, user_data);
   fuse_opt_free_args(&args);
   if (fuse == NULL)
     goto err_unmount;
@@ -350,7 +348,7 @@ struct fuse *fuse_setup(int argc, char *argv[],
 			char **mountpoint, int *multithreaded, void *user_data)
 {
   return fuse_setup_common(argc, argv, op, op_size, mountpoint,
-                           multithreaded, NULL, user_data, 0);
+                           multithreaded, NULL, user_data);
 }
 
 static void fuse_teardown_common(struct fuse *fuse, char *mountpoint)
@@ -370,7 +368,7 @@ void fuse_teardown(struct fuse *fuse, char *mountpoint)
 
 static int fuse_main_common(int argc, char *argv[],
 			    const struct fuse_operations *op, size_t op_size,
-			    void *user_data, int compat)
+			    void *user_data)
 {
   struct fuse *fuse;
   char *mountpoint;
@@ -378,7 +376,7 @@ static int fuse_main_common(int argc, char *argv[],
   int res;
 
   fuse = fuse_setup_common(argc, argv, op, op_size, &mountpoint,
-                           &multithreaded, NULL, user_data, compat);
+                           &multithreaded, NULL, user_data);
   if (fuse == NULL)
     return 1;
 
@@ -397,7 +395,7 @@ static int fuse_main_common(int argc, char *argv[],
 int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
 		   size_t op_size, void *user_data)
 {
-  return fuse_main_common(argc, argv, op, op_size, user_data, 0);
+  return fuse_main_common(argc, argv, op, op_size, user_data);
 }
 
 #undef fuse_main
@@ -412,100 +410,3 @@ int fuse_version(void)
 {
   return FUSE_VERSION;
 }
-
-#include "fuse_compat.h"
-
-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
-
-struct fuse *fuse_setup_compat22(int argc, char *argv[],
-				 const struct fuse_operations_compat22 *op,
-				 size_t op_size, char **mountpoint,
-				 int *multithreaded, int *fd)
-{
-  return fuse_setup_common(argc, argv, (struct fuse_operations *) op,
-                           op_size, mountpoint, multithreaded, fd, NULL,
-                           22);
-}
-
-struct fuse *fuse_setup_compat2(int argc, char *argv[],
-				const struct fuse_operations_compat2 *op,
-				char **mountpoint, int *multithreaded,
-				int *fd)
-{
-  return fuse_setup_common(argc, argv, (struct fuse_operations *) op,
-                           sizeof(struct fuse_operations_compat2),
-                           mountpoint, multithreaded, fd, NULL, 21);
-}
-
-int fuse_main_real_compat22(int argc, char *argv[],
-			    const struct fuse_operations_compat22 *op,
-			    size_t op_size)
-{
-  return fuse_main_common(argc, argv, (struct fuse_operations *) op,
-                          op_size, NULL, 22);
-}
-
-void fuse_main_compat1(int argc, char *argv[],
-		       const struct fuse_operations_compat1 *op)
-{
-  fuse_main_common(argc, argv, (struct fuse_operations *) op,
-                   sizeof(struct fuse_operations_compat1), NULL, 11);
-}
-
-int fuse_main_compat2(int argc, char *argv[],
-		      const struct fuse_operations_compat2 *op)
-{
-  return fuse_main_common(argc, argv, (struct fuse_operations *) op,
-                          sizeof(struct fuse_operations_compat2), NULL,
-                          21);
-}
-
-int fuse_mount_compat1(const char *mountpoint, const char *args[])
-{
-  /* just ignore mount args for now */
-  (void) args;
-  return fuse_mount_compat22(mountpoint, NULL);
-}
-
-FUSE_SYMVER(".symver fuse_setup_compat2,__fuse_setup@");
-FUSE_SYMVER(".symver fuse_setup_compat22,fuse_setup@FUSE_2.2");
-FUSE_SYMVER(".symver fuse_teardown,__fuse_teardown@");
-FUSE_SYMVER(".symver fuse_main_compat2,fuse_main@");
-FUSE_SYMVER(".symver fuse_main_real_compat22,fuse_main_real@FUSE_2.2");
-
-#endif /* __FreeBSD__ || __NetBSD__ */
-
-
-struct fuse *fuse_setup_compat25(int argc, char *argv[],
-				 const struct fuse_operations_compat25 *op,
-				 size_t op_size, char **mountpoint,
-				 int *multithreaded, int *fd)
-{
-  return fuse_setup_common(argc, argv, (struct fuse_operations *) op,
-                           op_size, mountpoint, multithreaded, fd, NULL,
-                           25);
-}
-
-int fuse_main_real_compat25(int argc, char *argv[],
-			    const struct fuse_operations_compat25 *op,
-			    size_t op_size)
-{
-  return fuse_main_common(argc, argv, (struct fuse_operations *) op,
-                          op_size, NULL, 25);
-}
-
-void fuse_teardown_compat22(struct fuse *fuse, int fd, char *mountpoint)
-{
-  (void) fd;
-  fuse_teardown_common(fuse, mountpoint);
-}
-
-int fuse_mount_compat25(const char *mountpoint, struct fuse_args *args)
-{
-  return fuse_kern_mount(mountpoint, args);
-}
-
-FUSE_SYMVER(".symver fuse_setup_compat25,fuse_setup@FUSE_2.5");
-FUSE_SYMVER(".symver fuse_teardown_compat22,fuse_teardown@FUSE_2.2");
-FUSE_SYMVER(".symver fuse_main_real_compat25,fuse_main_real@FUSE_2.5");
-FUSE_SYMVER(".symver fuse_mount_compat25,fuse_mount@FUSE_2.5");

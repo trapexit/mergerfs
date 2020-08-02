@@ -98,9 +98,7 @@ struct fuse_cmd
 
 struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 			     const struct fuse_operations *op,
-			     size_t op_size, void *user_data, int compat);
-
-int fuse_sync_compat_args(struct fuse_args *args);
+			     size_t op_size, void *user_data);
 
 struct fuse_chan *fuse_kern_chan_new(int fd);
 
@@ -108,7 +106,6 @@ struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
                                               const struct fuse_lowlevel_ops *op,
                                               size_t op_size, void *userdata);
 
-void fuse_kern_unmount_compat22(const char *mountpoint);
 int fuse_chan_clearfd(struct fuse_chan *ch);
 
 void fuse_kern_unmount(const char *mountpoint, int fd);
@@ -125,7 +122,6 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       char **mountpoint,
 			       int *multithreaded,
 			       int *fd,
-			       void *user_data,
-			       int compat);
+			       void *user_data);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
