@@ -34,7 +34,6 @@ SRC   = \
 	lib/fuse_dirents.c \
 	lib/fuse.c \
 	lib/fuse_kern_chan.c \
-	lib/fuse_loop.c \
 	lib/fuse_loop_mt.c \
 	lib/fuse_lowlevel.c \
 	lib/fuse_mt.c \

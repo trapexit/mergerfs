@@ -665,17 +665,6 @@ extern "C" {
   void fuse_destroy(struct fuse *f);
 
   /**
-   * FUSE event loop.
-   *
-   * Requests from the kernel are processed, and the appropriate
-   * operations are called.
-   *
-   * @param f the FUSE handle
-   * @return 0 if no error occurred, -1 otherwise
-   */
-  int fuse_loop(struct fuse *f);
-
-  /**
    * Exit from event loop
    *
    * @param f the FUSE handle
@@ -903,7 +892,7 @@ extern "C" {
   /** This is the part of fuse_main() before the event loop */
   struct fuse *fuse_setup(int argc, char *argv[],
                           const struct fuse_operations *op, size_t op_size,
-                          char **mountpoint, int *multithreaded,
+                          char **mountpoint,
                           void *user_data);
 
   /** This is the part of fuse_main() after the event loop */

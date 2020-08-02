@@ -29,7 +29,6 @@ enum  {
 
 struct helper_opts
 {
-  int singlethread;
   int foreground;
   int nodefault_subtype;
   char *mountpoint;
@@ -41,20 +40,19 @@ static
 const
 struct fuse_opt fuse_helper_opts[] =
   {
-    FUSE_HELPER_OPT("-d",		foreground),
+    FUSE_HELPER_OPT("-d",	foreground),
     FUSE_HELPER_OPT("debug",	foreground),
-    FUSE_HELPER_OPT("-f",		foreground),
-    FUSE_HELPER_OPT("-s",		singlethread),
+    FUSE_HELPER_OPT("-f",	foreground),
     FUSE_HELPER_OPT("fsname=",	nodefault_subtype),
     FUSE_HELPER_OPT("subtype=",	nodefault_subtype),
     FUSE_OPT_KEY("-h",		KEY_HELP),
-    FUSE_OPT_KEY("--help",		KEY_HELP),
+    FUSE_OPT_KEY("--help",	KEY_HELP),
     FUSE_OPT_KEY("-ho",		KEY_HELP_NOHEADER),
     FUSE_OPT_KEY("-V",		KEY_VERSION),
     FUSE_OPT_KEY("--version",	KEY_VERSION),
     FUSE_OPT_KEY("-d",		FUSE_OPT_KEY_KEEP),
-    FUSE_OPT_KEY("debug",		FUSE_OPT_KEY_KEEP),
-    FUSE_OPT_KEY("fsname=",		FUSE_OPT_KEY_KEEP),
+    FUSE_OPT_KEY("debug",	FUSE_OPT_KEY_KEEP),
+    FUSE_OPT_KEY("fsname=",	FUSE_OPT_KEY_KEEP),
     FUSE_OPT_KEY("subtype=",	FUSE_OPT_KEY_KEEP),
     FUSE_OPT_END
   };
@@ -77,7 +75,6 @@ static void helper_help(void)
           "FUSE options:\n"
           "    -d   -o debug          enable debug output (implies -f)\n"
           "    -f                     foreground operation\n"
-          "    -s                     disable multi-threaded operation\n"
           "\n"
           );
 }
@@ -149,7 +146,6 @@ static int add_default_subtype(const char *progname, struct fuse_args *args)
 int
 fuse_parse_cmdline(struct fuse_args  *args_,
                    char             **mountpoint_,
-                   int               *multithreaded_,
                    int               *foreground_)
 {
   int res;
@@ -176,8 +172,6 @@ fuse_parse_cmdline(struct fuse_args  *args_,
   else
     free(hopts.mountpoint);
 
-  if(multithreaded_)
-    *multithreaded_ = !hopts.singlethread;
   if(foreground_)
     *foreground_ = hopts.foreground;
 
@@ -296,7 +290,6 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       const struct fuse_operations *op,
 			       size_t op_size,
 			       char **mountpoint,
-			       int *multithreaded,
 			       int *fd,
 			       void *user_data)
 {
@@ -306,7 +299,7 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
   int foreground;
   int res;
 
-  res = fuse_parse_cmdline(&args, mountpoint, multithreaded, &foreground);
+  res = fuse_parse_cmdline(&args, mountpoint, &foreground);
   if (res == -1)
     return NULL;
 
@@ -345,10 +338,10 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 
 struct fuse *fuse_setup(int argc, char *argv[],
 			const struct fuse_operations *op, size_t op_size,
-			char **mountpoint, int *multithreaded, void *user_data)
+			char **mountpoint, void *user_data)
 {
   return fuse_setup_common(argc, argv, op, op_size, mountpoint,
-                           multithreaded, NULL, user_data);
+                           NULL, user_data);
 }
 
 static void fuse_teardown_common(struct fuse *fuse, char *mountpoint)
@@ -372,18 +365,15 @@ static int fuse_main_common(int argc, char *argv[],
 {
   struct fuse *fuse;
   char *mountpoint;
-  int multithreaded;
   int res;
 
-  fuse = fuse_setup_common(argc, argv, op, op_size, &mountpoint,
-                           &multithreaded, NULL, user_data);
+  fuse = fuse_setup_common(argc, argv, op, op_size,
+                           &mountpoint,
+                           NULL, user_data);
   if (fuse == NULL)
     return 1;
 
-  if (multithreaded)
-    res = fuse_loop_mt(fuse);
-  else
-    res = fuse_loop(fuse);
+  res = fuse_loop_mt(fuse);
 
   fuse_teardown_common(fuse, mountpoint);
   if (res == -1)

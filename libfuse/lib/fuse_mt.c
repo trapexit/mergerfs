@@ -62,7 +62,7 @@ static int mt_chan_receive(struct fuse_chan **chp, char *buf, size_t size)
   if (cmd == NULL)
     return 0;
 
-  *(struct fuse_cmd **) buf = cmd;
+  *(struct fuse_cmd **)buf = cmd;
 
   return sizeof(cmd);
 }
@@ -121,5 +121,3 @@ int fuse_loop_mt(struct fuse *f)
   fuse_stop_cleanup_thread(f);
   return res;
 }
-
-FUSE_SYMVER(".symver fuse_loop_mt_proc,__fuse_loop_mt@");

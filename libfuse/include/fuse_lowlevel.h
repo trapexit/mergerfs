@@ -1699,14 +1699,6 @@ extern "C" {
   void *fuse_session_data(struct fuse_session *se);
 
   /**
-   * Enter a single threaded event loop
-   *
-   * @param se the session
-   * @return 0 on success, -1 on error
-   */
-  int fuse_session_loop(struct fuse_session *se);
-
-  /**
    * Enter a multi-threaded event loop
    *
    * @param se the session

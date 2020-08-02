@@ -235,7 +235,6 @@ extern "C" {
    *
    *   '-f'	     foreground
    *   '-d' '-odebug'  foreground, but keep the debug option
-   *   '-s'	     single threaded
    *   '-h' '--help'   help
    *   '-ho'	     help without header
    *   '-ofsname=..'   file system name, if not present, then set to the program
@@ -245,12 +244,12 @@ extern "C" {
    *
    * @param args argument vector
    * @param mountpoint the returned mountpoint, should be freed after use
-   * @param multithreaded set to 1 unless the '-s' option is present
    * @param foreground set to 1 if one of the relevant options is present
    * @return 0 on success, -1 on failure
    */
-  int fuse_parse_cmdline(struct fuse_args *args, char **mountpoint,
-                         int *multithreaded, int *foreground);
+  int fuse_parse_cmdline(struct fuse_args  *args,
+                         char             **mountpoint,
+                         int               *foreground);
 
   /**
    * Go into the background

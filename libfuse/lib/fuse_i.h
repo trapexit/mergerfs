@@ -120,7 +120,6 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       const struct fuse_operations *op,
 			       size_t op_size,
 			       char **mountpoint,
-			       int *multithreaded,
 			       int *fd,
 			       void *user_data);
 
