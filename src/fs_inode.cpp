@@ -34,6 +34,14 @@ static uint64_t hybrid_hash(const char*,const uint64_t,const mode_t,const dev_t,
 
 static inodefunc_t g_func = hybrid_hash;
 
+
+static
+uint32_t
+h64_to_h32(uint64_t h_)
+{
+  return (h_ - (h_ >> 32));
+}
+
 static
 uint64_t
 passthrough(const char     *fusepath_,
@@ -60,6 +68,25 @@ path_hash(const char     *fusepath_,
 
 static
 uint64_t
+path_hash32(const char     *fusepath_,
+            const uint64_t  fusepath_len_,
+            const mode_t    mode_,
+            const dev_t     dev_,
+            const ino_t     ino_)
+{
+  uint64_t h;
+
+  h = path_hash(fusepath_,
+                fusepath_len_,
+                mode_,
+                dev_,
+                ino_);
+
+  return h64_to_h32(h);
+}
+
+static
+uint64_t
 devino_hash(const char     *fusepath_,
             const uint64_t  fusepath_len_,
             const mode_t    mode_,
@@ -78,6 +105,25 @@ devino_hash(const char     *fusepath_,
 
 static
 uint64_t
+devino_hash32(const char     *fusepath_,
+              const uint64_t  fusepath_len_,
+              const mode_t    mode_,
+              const dev_t     dev_,
+              const ino_t     ino_)
+{
+  uint64_t h;
+
+  h = devino_hash(fusepath_,
+                  fusepath_len_,
+                  mode_,
+                  dev_,
+                  ino_);
+
+  return h64_to_h32(h);
+}
+
+static
+uint64_t
 hybrid_hash(const char     *fusepath_,
             const uint64_t  fusepath_len_,
             const mode_t    mode_,
@@ -89,6 +135,18 @@ hybrid_hash(const char     *fusepath_,
           devino_hash(fusepath_,fusepath_len_,mode_,dev_,ino_));
 }
 
+static
+uint64_t
+hybrid_hash32(const char     *fusepath_,
+              const uint64_t  fusepath_len_,
+              const mode_t    mode_,
+              const dev_t     dev_,
+              const ino_t     ino_)
+{
+  return (S_ISDIR(mode_) ?
+          path_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_) :
+          devino_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_));
+}
 
 namespace fs
 {
@@ -101,10 +159,16 @@ namespace fs
         g_func = passthrough;
       ef(algo_ == "path-hash")
         g_func = path_hash;
+      ef(algo_ == "path-hash32")
+        g_func = path_hash32;
       ef(algo_ == "devino-hash")
         g_func = devino_hash;
+      ef(algo_ == "devino-hash32")
+        g_func = devino_hash32;
       ef(algo_ == "hybrid-hash")
         g_func = hybrid_hash;
+      ef(algo_ == "hybrid-hash32")
+        g_func = hybrid_hash32;
       else
         return -EINVAL;
 

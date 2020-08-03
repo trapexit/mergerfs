@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-02
+% 2020-08-03
 
 # NAME
 
@@ -183,8 +183,13 @@ mergerfs offers multiple ways to calculate the inode in hopes of covering differ
 
 * passthrough: Passes through the underlying inode value. Mostly intended for testing as using this does not address any of the problems mentioned above and could confuse file deduplication software as inodes from different filesystems can be the same.
 * path-hash: Hashes the relative path of the entry in question. The underlying file's values are completely ignored. This means the inode value will always be the same for that file path. This is useful when using NFS and you make changes out of band such as copy data between branches. This also means that entries that do point to the same file will not be recognizable via inodes. That **does not** mean hard links don't work. They will.
+* path-hash32: 32bit version of path-hash.
 * devino-hash: Hashes the device id and inode of the underlying entry. This won't prevent issues with NFS should the policy pick a different file or files move out of band but will present the same inode for underlying files that do too.
+* devino-hash32: 32bit version of devino-hash.
 * hybrid-hash: Performs `path-hash` on directories and `devino-hash` on other file types. Since directories can't have hard links the static value won't make a difference and the files will get values useful for finding duplicates. Probably the best to use if not using NFS. As such it is the default.
+* hybrid-hash32: 32bit version of hybrid-hash.
+
+32bit versions are provided as there is some software which does not handle 64bit inodes well.
 
 While there is a risk of hash collision in tests of a couple million entries there were zero collisions. Unlike a typical filesystem FUSE filesystems can reuse inodes and not refer to the same entry. The internal identifier used to reference a file in FUSE is different from the inode value presented. The former is the `nodeid` and is actually a tuple of 2 64bit values: `nodeid` and `generation`. This tuple is not client facing. The inode that is presented to the client is passed through the kernel uninterpreted.
 
@@ -892,6 +897,11 @@ Please read the section above regarding [rename & link](#rename--link).
 The problem is that many applications do not properly handle `EXDEV` errors which `rename` and `link` may return even though they are perfectly valid situations which do not indicate actual drive or OS errors. The error will only be returned by mergerfs if using a path preserving policy as described in the policy section above. If you do not care about path preservation simply change the mergerfs policy to the non-path preserving version. For example: `-o category.create=mfs`
 
 Ideally the offending software would be fixed and it is recommended that if you run into this problem you contact the software's author and request proper handling of `EXDEV` errors.
+
+
+#### my 32bit software has problems
+
+Some software have problems with 64bit inode values. The symptoms can include EOVERFLOW errors when trying to list files. You can address this by setting `inodecalc` to one of the 32bit based algos as described in the relevant section.
 
 
 #### Samba: Moving files / directories fails
