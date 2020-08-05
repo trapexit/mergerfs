@@ -11,6 +11,7 @@ if [ -e /usr/bin/apt-get ]; then
             g++ \
             debhelper \
             automake \
+	    fakeroot \
             libtool \
             lsb-release
     apt-get -qy --no-install-suggests --no-install-recommends install python
