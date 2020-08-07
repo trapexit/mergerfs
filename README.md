@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-03
+% 2020-08-07
 
 # NAME
 
@@ -1227,10 +1227,12 @@ At the moment my preference would be GitHub Sponsors only because I am part of t
 * Bitcoin Cash (BCH): qrf257j0l09yxty4kur8dk2uma8p5vntdcpks72l8z
 * Ethereum (ETH): 0xb486C0270fF75872Fc51d85879b9c15C380E66CA
 * Litecoin (LTC): LW1rvHRPWtm2NUEMhJpP4DjHZY1FaJ1WYs
+* Monero (XMR): 8AuU7PeK1fVhGP9yug8fdgKBssvUQoBVFKGhtT5DzWQt7fcTKC1SUx3Eb7xCAiVt3McWJp2Z9gX2wU7SPhh1GfWYBTCs6SS
 * Basic Attention Token (BAT): 0xE651d4900B4C305284Da43E2e182e9abE149A87A
 * LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
 * Zcash (ZEC): t1ZwTgmbQF23DJrzqbAmw8kXWvU2xUkkhTt
 * Zcoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
+* Other crypto currencies: contact me for address
 
 
 # LINKS
