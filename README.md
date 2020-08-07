@@ -1213,18 +1213,22 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 
 #### Support development
 
-This software is free to use and released under a very liberal license. That said if you like this software and would like to support its development donations are welcome.
+This software is free to use and released under a very liberal license (ISC). That said if you like this software and would like to support its development donations are welcome.
+
+At the moment my preference would be GitHub Sponsors only because I am part of the matching program. That said please use whatever platform you prefer.
 
 * PayPal: https://paypal.me/trapexit
 * GitHub Sponsors: https://github.com/sponsors/trapexit
 * Patreon: https://www.patreon.com/trapexit
 * SubscribeStar: https://www.subscribestar.com/trapexit
 * Ko-Fi: https://ko-fi.com/trapexit
+* Open Collective: https://opencollective.com/trapexit
 * Bitcoin (BTC): 1DfoUd2m5WCxJAMvcFuvDpT4DR2gWX2PWb
 * Bitcoin Cash (BCH): qrf257j0l09yxty4kur8dk2uma8p5vntdcpks72l8z
 * Ethereum (ETH): 0xb486C0270fF75872Fc51d85879b9c15C380E66CA
 * Litecoin (LTC): LW1rvHRPWtm2NUEMhJpP4DjHZY1FaJ1WYs
 * Basic Attention Token (BAT): 0xE651d4900B4C305284Da43E2e182e9abE149A87A
+* LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
 * Zcash (ZEC): t1ZwTgmbQF23DJrzqbAmw8kXWvU2xUkkhTt
 * Zcoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
 
