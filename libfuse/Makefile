@@ -29,6 +29,8 @@ INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
 INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
 INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
+AR ?= ar
+
 SRC   = \
 	lib/buffer.c \
 	lib/cuse_lowlevel.c \
@@ -78,7 +80,7 @@ objects: build/config.h
 	$(MAKE) $(OBJS)
 
 build/libfuse.a: objects
-	ar rcs build/libfuse.a $(OBJS)
+	${AR} rcs build/libfuse.a $(OBJS)
 
 utils: mergerfs-fusermount mount.mergerfs
 
