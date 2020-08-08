@@ -18,9 +18,9 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "extern_c.h"
+
+EXTERN_C_BEGIN
 
 #include "kvec.h"
 #include "fuse_dirent.h"
@@ -36,11 +36,11 @@ extern "C" {
 #include <unistd.h>
 
 enum fuse_dirents_type_e
-  {
-    UNSET = 0,
-    NORMAL,
-    PLUS
-  };
+{
+  UNSET = 0,
+  NORMAL,
+  PLUS
+};
 typedef enum fuse_dirents_type_e fuse_dirents_type_t;
 
 typedef struct fuse_dirents_s fuse_dirents_t;
@@ -79,6 +79,4 @@ void *fuse_dirents_find(fuse_dirents_t *d,
 
 int fuse_dirents_convert_plus2normal(fuse_dirents_t *d);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END

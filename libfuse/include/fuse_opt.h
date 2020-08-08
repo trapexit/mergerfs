@@ -9,14 +9,14 @@
 #ifndef _FUSE_OPT_H_
 #define _FUSE_OPT_H_
 
+#include "extern_c.h"
+
 /** @file
  *
  * This file defines the option parsing interface of FUSE
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+EXTERN_C_BEGIN
 
 /**
  * Option description
@@ -73,21 +73,22 @@ extern "C" {
  * If the format is "%s", memory is allocated for the string unlike
  * with scanf().
  */
-struct fuse_opt {
-	/** Matching template and optional parameter formatting */
-	const char *templ;
+struct fuse_opt
+{
+  /** Matching template and optional parameter formatting */
+  const char *templ;
 
-	/**
-	 * Offset of variable within 'data' parameter of fuse_opt_parse()
-	 * or -1
-	 */
-	unsigned long offset;
+  /**
+   * Offset of variable within 'data' parameter of fuse_opt_parse()
+   * or -1
+   */
+  unsigned long offset;
 
-	/**
-	 * Value to set the variable to, or to be passed as 'key' to the
-	 * processing function.	 Ignored if template has a format
-	 */
-	int value;
+  /**
+   * Value to set the variable to, or to be passed as 'key' to the
+   * processing function.	 Ignored if template has a format
+   */
+  int value;
 };
 
 /**
@@ -105,15 +106,16 @@ struct fuse_opt {
 /**
  * Argument list
  */
-struct fuse_args {
-	/** Argument count */
-	int argc;
+struct fuse_args
+{
+  /** Argument count */
+  int argc;
 
-	/** Argument vector.  NULL terminated */
-	char **argv;
+  /** Argument vector.  NULL terminated */
+  char **argv;
 
-	/** Is 'argv' allocated? */
-	int allocated;
+  /** Is 'argv' allocated? */
+  int allocated;
 };
 
 /**
@@ -177,7 +179,7 @@ struct fuse_args {
  * @return -1 on error, 0 if arg is to be discarded, 1 if arg should be kept
  */
 typedef int (*fuse_opt_proc_t)(void *data, const char *arg, int key,
-			       struct fuse_args *outargs);
+                               struct fuse_args *outargs);
 
 /**
  * Option parsing function
@@ -200,7 +202,7 @@ typedef int (*fuse_opt_proc_t)(void *data, const char *arg, int key,
  * @return -1 on error, 0 on success
  */
 int fuse_opt_parse(struct fuse_args *args, void *data,
-		   const struct fuse_opt opts[], fuse_opt_proc_t proc);
+                   const struct fuse_opt opts[], fuse_opt_proc_t proc);
 
 /**
  * Add an option to a comma separated option list
@@ -263,8 +265,6 @@ void fuse_opt_free_args(struct fuse_args *args);
  */
 int fuse_opt_match(const struct fuse_opt opts[], const char *opt);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif /* _FUSE_OPT_H_ */

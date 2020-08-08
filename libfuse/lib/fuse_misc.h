@@ -11,8 +11,8 @@
 
 /*
   Versioned symbols cannot be used in some cases because it
-    - confuse the dynamic linker in uClibc
-    - not supported on MacOSX (in MachO binary format)
+  - confuse the dynamic linker in uClibc
+  - not supported on MacOSX (in MachO binary format)
 */
 #if (!defined(__UCLIBC__) && !defined(__APPLE__))
 #define FUSE_SYMVER(x) __asm__(x)
@@ -26,11 +26,11 @@
 /* Is this hack still needed? */
 static inline void fuse_mutex_init(pthread_mutex_t *mut)
 {
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
-	pthread_mutex_init(mut, &attr);
-	pthread_mutexattr_destroy(&attr);
+  pthread_mutexattr_t attr;
+  pthread_mutexattr_init(&attr);
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+  pthread_mutex_init(mut, &attr);
+  pthread_mutexattr_destroy(&attr);
 }
 #endif
 

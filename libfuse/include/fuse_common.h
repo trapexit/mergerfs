@@ -15,7 +15,10 @@
 #ifndef _FUSE_COMMON_H_
 #define _FUSE_COMMON_H_
 
+#include "extern_c.h"
 #include "fuse_opt.h"
+#include "fuse_timeouts.h"
+
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -36,16 +39,7 @@
 #define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
 #define FUSE_MAX_MAX_PAGES 256
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct fuse_timeouts_s fuse_timeouts_t;
-struct fuse_timeouts_s
-{
-  uint64_t entry;
-  uint64_t attr;
-};
+EXTERN_C_BEGIN
 
 /**
  * Information about open files
@@ -158,55 +152,55 @@ fuse_file_info
  * value must usually be smaller than the indicated value.
  */
 struct fuse_conn_info {
-	/**
-	 * Major version of the protocol (read-only)
-	 */
-	unsigned proto_major;
+  /**
+   * Major version of the protocol (read-only)
+   */
+  unsigned proto_major;
 
-	/**
-	 * Minor version of the protocol (read-only)
-	 */
-	unsigned proto_minor;
+  /**
+   * Minor version of the protocol (read-only)
+   */
+  unsigned proto_minor;
 
-	/**
-	 * Maximum size of the write buffer
-	 */
-	unsigned max_write;
+  /**
+   * Maximum size of the write buffer
+   */
+  unsigned max_write;
 
-	/**
-	 * Maximum readahead
-	 */
-	unsigned max_readahead;
+  /**
+   * Maximum readahead
+   */
+  unsigned max_readahead;
 
-	/**
-	 * Capability flags, that the kernel supports
-	 */
-	unsigned capable;
+  /**
+   * Capability flags, that the kernel supports
+   */
+  unsigned capable;
 
-	/**
-	 * Capability flags, that the filesystem wants to enable
-	 */
-	unsigned want;
+  /**
+   * Capability flags, that the filesystem wants to enable
+   */
+  unsigned want;
 
-	/**
-	 * Maximum number of backgrounded requests
-	 */
-	unsigned max_background;
+  /**
+   * Maximum number of backgrounded requests
+   */
+  unsigned max_background;
 
-	/**
-	 * Kernel congestion threshold parameter
-	 */
-	unsigned congestion_threshold;
+  /**
+   * Kernel congestion threshold parameter
+   */
+  unsigned congestion_threshold;
 
-        /**
-         * Max pages
-         */
-        uint16_t max_pages;
+  /**
+   * Max pages
+   */
+  uint16_t max_pages;
 
-	/**
-	 * For future use.
-	 */
-	unsigned reserved[22];
+  /**
+   * For future use.
+   */
+  unsigned reserved[22];
 };
 
 struct fuse_session;
@@ -241,7 +235,6 @@ void fuse_unmount(const char *mountpoint, struct fuse_chan *ch);
  *
  *   '-f'	     foreground
  *   '-d' '-odebug'  foreground, but keep the debug option
- *   '-s'	     single threaded
  *   '-h' '--help'   help
  *   '-ho'	     help without header
  *   '-ofsname=..'   file system name, if not present, then set to the program
@@ -251,12 +244,12 @@ void fuse_unmount(const char *mountpoint, struct fuse_chan *ch);
  *
  * @param args argument vector
  * @param mountpoint the returned mountpoint, should be freed after use
- * @param multithreaded set to 1 unless the '-s' option is present
  * @param foreground set to 1 if one of the relevant options is present
  * @return 0 on success, -1 on failure
  */
-int fuse_parse_cmdline(struct fuse_args *args, char **mountpoint,
-		       int *multithreaded, int *foreground);
+int fuse_parse_cmdline(struct fuse_args  *args,
+                       char             **mountpoint,
+                       int               *foreground);
 
 /**
  * Go into the background
@@ -288,73 +281,73 @@ void fuse_pollhandle_destroy(struct fuse_pollhandle *ph);
  * Buffer flags
  */
 enum fuse_buf_flags {
-	/**
-	 * Buffer contains a file descriptor
-	 *
-	 * If this flag is set, the .fd field is valid, otherwise the
-	 * .mem fields is valid.
-	 */
-	FUSE_BUF_IS_FD		= (1 << 1),
+  /**
+   * Buffer contains a file descriptor
+   *
+   * If this flag is set, the .fd field is valid, otherwise the
+   * .mem fields is valid.
+   */
+  FUSE_BUF_IS_FD		= (1 << 1),
 
-	/**
-	 * Seek on the file descriptor
-	 *
-	 * If this flag is set then the .pos field is valid and is
-	 * used to seek to the given offset before performing
-	 * operation on file descriptor.
-	 */
-	FUSE_BUF_FD_SEEK	= (1 << 2),
+  /**
+   * Seek on the file descriptor
+   *
+   * If this flag is set then the .pos field is valid and is
+   * used to seek to the given offset before performing
+   * operation on file descriptor.
+   */
+  FUSE_BUF_FD_SEEK	= (1 << 2),
 
-	/**
-	 * Retry operation on file descriptor
-	 *
-	 * If this flag is set then retry operation on file descriptor
-	 * until .size bytes have been copied or an error or EOF is
-	 * detected.
-	 */
-	FUSE_BUF_FD_RETRY	= (1 << 3),
+  /**
+   * Retry operation on file descriptor
+   *
+   * If this flag is set then retry operation on file descriptor
+   * until .size bytes have been copied or an error or EOF is
+   * detected.
+   */
+  FUSE_BUF_FD_RETRY	= (1 << 3),
 };
 
 /**
  * Buffer copy flags
  */
 enum fuse_buf_copy_flags {
-	/**
-	 * Don't use splice(2)
-	 *
-	 * Always fall back to using read and write instead of
-	 * splice(2) to copy data from one file descriptor to another.
-	 *
-	 * If this flag is not set, then only fall back if splice is
-	 * unavailable.
-	 */
-	FUSE_BUF_NO_SPLICE	= (1 << 1),
+  /**
+   * Don't use splice(2)
+   *
+   * Always fall back to using read and write instead of
+   * splice(2) to copy data from one file descriptor to another.
+   *
+   * If this flag is not set, then only fall back if splice is
+   * unavailable.
+   */
+  FUSE_BUF_NO_SPLICE	= (1 << 1),
 
-	/**
-	 * Force splice
-	 *
-	 * Always use splice(2) to copy data from one file descriptor
-	 * to another.  If splice is not available, return -EINVAL.
-	 */
-	FUSE_BUF_FORCE_SPLICE	= (1 << 2),
+  /**
+   * Force splice
+   *
+   * Always use splice(2) to copy data from one file descriptor
+   * to another.  If splice is not available, return -EINVAL.
+   */
+  FUSE_BUF_FORCE_SPLICE	= (1 << 2),
 
-	/**
-	 * Try to move data with splice.
-	 *
-	 * If splice is used, try to move pages from the source to the
-	 * destination instead of copying.  See documentation of
-	 * SPLICE_F_MOVE in splice(2) man page.
-	 */
-	FUSE_BUF_SPLICE_MOVE	= (1 << 3),
+  /**
+   * Try to move data with splice.
+   *
+   * If splice is used, try to move pages from the source to the
+   * destination instead of copying.  See documentation of
+   * SPLICE_F_MOVE in splice(2) man page.
+   */
+  FUSE_BUF_SPLICE_MOVE	= (1 << 3),
 
-	/**
-	 * Don't block on the pipe when copying data with splice
-	 *
-	 * Makes the operations on the pipe non-blocking (if the pipe
-	 * is full or empty).  See SPLICE_F_NONBLOCK in the splice(2)
-	 * man page.
-	 */
-	FUSE_BUF_SPLICE_NONBLOCK= (1 << 4),
+  /**
+   * Don't block on the pipe when copying data with splice
+   *
+   * Makes the operations on the pipe non-blocking (if the pipe
+   * is full or empty).  See SPLICE_F_NONBLOCK in the splice(2)
+   * man page.
+   */
+  FUSE_BUF_SPLICE_NONBLOCK= (1 << 4),
 };
 
 /**
@@ -364,36 +357,36 @@ enum fuse_buf_copy_flags {
  * be supplied as a memory pointer or as a file descriptor
  */
 struct fuse_buf {
-	/**
-	 * Size of data in bytes
-	 */
-	size_t size;
+  /**
+   * Size of data in bytes
+   */
+  size_t size;
 
-	/**
-	 * Buffer flags
-	 */
-	enum fuse_buf_flags flags;
+  /**
+   * Buffer flags
+   */
+  enum fuse_buf_flags flags;
 
-	/**
-	 * Memory pointer
-	 *
-	 * Used unless FUSE_BUF_IS_FD flag is set.
-	 */
-	void *mem;
+  /**
+   * Memory pointer
+   *
+   * Used unless FUSE_BUF_IS_FD flag is set.
+   */
+  void *mem;
 
-	/**
-	 * File descriptor
-	 *
-	 * Used if FUSE_BUF_IS_FD flag is set.
-	 */
-	int fd;
+  /**
+   * File descriptor
+   *
+   * Used if FUSE_BUF_IS_FD flag is set.
+   */
+  int fd;
 
-	/**
-	 * File position
-	 *
-	 * Used if FUSE_BUF_FD_SEEK flag is set.
-	 */
-	off_t pos;
+  /**
+   * File position
+   *
+   * Used if FUSE_BUF_FD_SEEK flag is set.
+   */
+  off_t pos;
 };
 
 /**
@@ -405,41 +398,41 @@ struct fuse_buf {
  * Allocate dynamically to add more than one buffer.
  */
 struct fuse_bufvec {
-	/**
-	 * Number of buffers in the array
-	 */
-	size_t count;
+  /**
+   * Number of buffers in the array
+   */
+  size_t count;
 
-	/**
-	 * Index of current buffer within the array
-	 */
-	size_t idx;
+  /**
+   * Index of current buffer within the array
+   */
+  size_t idx;
 
-	/**
-	 * Current offset within the current buffer
-	 */
-	size_t off;
+  /**
+   * Current offset within the current buffer
+   */
+  size_t off;
 
-	/**
-	 * Array of buffers
-	 */
-	struct fuse_buf buf[1];
+  /**
+   * Array of buffers
+   */
+  struct fuse_buf buf[1];
 };
 
 /* Initialize bufvec with a single buffer of given size */
-#define FUSE_BUFVEC_INIT(size__) 				\
-	((struct fuse_bufvec) {					\
-		/* .count= */ 1,				\
-		/* .idx =  */ 0,				\
-		/* .off =  */ 0,				\
-		/* .buf =  */ { /* [0] = */ {			\
-			/* .size =  */ (size__),		\
-			/* .flags = */ (enum fuse_buf_flags) 0,	\
-			/* .mem =   */ NULL,			\
-			/* .fd =    */ -1,			\
-			/* .pos =   */ 0,			\
-		} }						\
-	} )
+#define FUSE_BUFVEC_INIT(size__)                        \
+  ((struct fuse_bufvec) {                               \
+    /* .count= */ 1,                                    \
+      /* .idx =  */ 0,                                  \
+      /* .off =  */ 0,                                  \
+      /* .buf =  */ { /* [0] = */ {			\
+        /* .size =  */ (size__),                        \
+          /* .flags = */ (enum fuse_buf_flags) 0,	\
+          /* .mem =   */ NULL,                          \
+          /* .fd =    */ -1,                            \
+          /* .pos =   */ 0,                             \
+          } }						\
+  } )
 
 /**
  * Get total size of data in a fuse buffer vector
@@ -458,7 +451,7 @@ size_t fuse_buf_size(const struct fuse_bufvec *bufv);
  * @return actual number of bytes copied or -errno on error
  */
 ssize_t fuse_buf_copy(struct fuse_bufvec *dst, struct fuse_bufvec *src,
-		      enum fuse_buf_copy_flags flags);
+                      enum fuse_buf_copy_flags flags);
 
 /* ----------------------------------------------------------- *
  * Signal handling					       *
@@ -485,42 +478,6 @@ int fuse_set_signal_handlers(struct fuse_session *se);
  */
 void fuse_remove_signal_handlers(struct fuse_session *se);
 
-/* ----------------------------------------------------------- *
- * Compatibility stuff					       *
- * ----------------------------------------------------------- */
-
-#if FUSE_USE_VERSION < 26
-#    ifdef __FreeBSD__
-#	 if FUSE_USE_VERSION < 25
-#	     error On FreeBSD API version 25 or greater must be used
-#	 endif
-#    endif
-#    include "fuse_common_compat.h"
-#    undef FUSE_MINOR_VERSION
-#    undef fuse_main
-#    define fuse_unmount fuse_unmount_compat22
-#    if FUSE_USE_VERSION == 25
-#	 define FUSE_MINOR_VERSION 5
-#	 define fuse_mount fuse_mount_compat25
-#    elif FUSE_USE_VERSION == 24 || FUSE_USE_VERSION == 22
-#	 define FUSE_MINOR_VERSION 4
-#	 define fuse_mount fuse_mount_compat22
-#    elif FUSE_USE_VERSION == 21
-#	 define FUSE_MINOR_VERSION 1
-#	 define fuse_mount fuse_mount_compat22
-#    elif FUSE_USE_VERSION == 11
-#	 warning Compatibility with API version 11 is deprecated
-#	 undef FUSE_MAJOR_VERSION
-#	 define FUSE_MAJOR_VERSION 1
-#	 define FUSE_MINOR_VERSION 1
-#	 define fuse_mount fuse_mount_compat1
-#    else
-#	 error Compatibility with API version other than 21, 22, 24, 25 and 11 not supported
-#    endif
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif /* _FUSE_COMMON_H_ */
