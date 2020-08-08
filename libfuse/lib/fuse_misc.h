@@ -6,7 +6,10 @@
   See the file COPYING.LIB
 */
 
+#pragma once
+
 #include "config.h"
+
 #include <pthread.h>
 
 /*

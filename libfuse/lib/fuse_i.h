@@ -6,6 +6,8 @@
   See the file COPYING.LIB
 */
 
+#pragma once
+
 #include "fuse.h"
 #include "fuse_lowlevel.h"
 
