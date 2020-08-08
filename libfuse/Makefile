@@ -29,6 +29,8 @@ INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
 INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
 INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
+AR ?= ar
+
 SRC   = \
 	lib/buffer.c \
 	lib/cuse_lowlevel.c \
@@ -46,9 +48,10 @@ SRC   = \
 	lib/mount.c
 OBJS = $(SRC:lib/%.c=build/%.o)
 DEPS = $(SRC:lib/%.c=build/%.d)
-
-CFLAGS = \
-	$(OPT_FLAGS) \
+CFLAGS ?= \
+	$(OPT_FLAGS)
+CFLAGS := \
+    ${CFLAGS} \
 	-Wall \
 	-pipe \
 	-MMD
@@ -61,7 +64,8 @@ FUSE_FLAGS = \
 	-DFUSE_USE_VERSION=29 \
 	-DPACKAGE_VERSION=\"$(VERSION)\" \
 	-DFUSERMOUNT_DIR=\"$(FUSERMOUNT_DIR)\"
-LDFLAGS = \
+LDFLAGS := \
+	${LDFLAGS} \
 	-lrt \
 	-pthread
 
@@ -78,7 +82,7 @@ objects: build/config.h
 	$(MAKE) $(OBJS)
 
 build/libfuse.a: objects
-	ar rcs build/libfuse.a $(OBJS)
+	${AR} rcs build/libfuse.a $(OBJS)
 
 utils: mergerfs-fusermount mount.mergerfs
 

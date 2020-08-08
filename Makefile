@@ -61,13 +61,14 @@ SRC	    = $(wildcard src/*.cpp)
 OBJS        = $(SRC:src/%.cpp=build/%.o)
 DEPS        = $(SRC:src/%.cpp=build/%.d)
 MANPAGE     = mergerfs.1
-CXXFLAGS    = \
+CXXFLAGS    ?= ${OPT_FLAGS}
+CXXFLAGS    := \
+              ${CXXFLAGS} \
               -std=c++0x \
-              $(OPT_FLAGS) \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
               -Wall \
-	      -Wno-unused-result \
+              -Wno-unused-result \
               -MMD
 FUSE_FLAGS = \
               -Ilibfuse/include \
@@ -76,9 +77,11 @@ FUSE_FLAGS = \
 MFS_FLAGS  = \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
-LDFLAGS    = \
-	      -pthread \
-              -lrt
+
+LDFLAGS := \
+    ${LDFLAGS} \
+    -pthread \
+    -lrt
 
 DESTDIR       =
 PREFIX        = /usr/local
