@@ -48,9 +48,10 @@ SRC   = \
 	lib/mount.c
 OBJS = $(SRC:lib/%.c=build/%.o)
 DEPS = $(SRC:lib/%.c=build/%.d)
-
-CFLAGS = \
-	$(OPT_FLAGS) \
+CFLAGS ?= \
+	$(OPT_FLAGS)
+CFLAGS := \
+    ${CFLAGS} \
 	-Wall \
 	-pipe \
 	-MMD
@@ -63,7 +64,8 @@ FUSE_FLAGS = \
 	-DFUSE_USE_VERSION=29 \
 	-DPACKAGE_VERSION=\"$(VERSION)\" \
 	-DFUSERMOUNT_DIR=\"$(FUSERMOUNT_DIR)\"
-LDFLAGS = \
+LDFLAGS := \
+	${LDFLAGS} \
 	-lrt \
 	-pthread
 
