@@ -35,17 +35,13 @@ namespace l
   static
   int
   rmdir_loop_core(const string &basepath_,
-                  const char   *fusepath_,
-                  const int     error_)
+                  const char   *fusepath_)
   {
-    int rv;
     string fullpath;
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::rmdir(fullpath);
-
-    return error::calc(rv,error_,errno);
+    return fs::rmdir(fullpath);
   }
 
 
@@ -54,12 +50,19 @@ namespace l
   rmdir_loop(const vector<string> &basepaths_,
              const char           *fusepath_)
   {
+    int rv;
     int error;
 
     error = -1;
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = l::rmdir_loop_core(basepaths_[i],fusepath_,error);
+        rv = l::rmdir_loop_core(basepaths_[i],fusepath_);
+        if((rv == -1) && (errno != ENOENT))
+          return rv;
+        if((rv == -1) && (errno == ENOENT))
+          error = ((error == -1) ? ENOENT : 0);
+        else
+          error = 0;
       }
 
     return -error;
