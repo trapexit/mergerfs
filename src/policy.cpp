@@ -43,7 +43,8 @@ const std::vector<Policy> Policy::_policies_ =
   (POLICY(msplus,PRESERVES_PATH))
   (POLICY(mspmfs,PRESERVES_PATH))
   (POLICY(newest,DOESNT_PRESERVE_PATH))
-  (POLICY(rand,DOESNT_PRESERVE_PATH));
+  (POLICY(rand,DOESNT_PRESERVE_PATH))
+  (POLICY(fair,DOESNT_PRESERVE_PATH));
 
 const Policy * const Policy::policies = &_policies_[1];
 
@@ -67,6 +68,7 @@ CONST_POLICY(msplus);
 CONST_POLICY(mspmfs);
 CONST_POLICY(newest);
 CONST_POLICY(rand);
+CONST_POLICY(fair);
 
 const Policy&
 Policy::find(const std::string &str)
