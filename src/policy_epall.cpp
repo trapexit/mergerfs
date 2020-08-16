@@ -137,19 +137,19 @@ namespace epall
 }
 
 int
-Policy::Func::epall(const Category::Enum::Type  type,
-                    const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<string>             *paths)
+Policy::Func::epall(const Category  type,
+                    const Branches &branches_,
+                    const char     *fusepath,
+                    const uint64_t  minfreespace,
+                    vector<string> *paths)
 {
   switch(type)
     {
-    case Category::Enum::create:
+    case Category::CREATE:
       return epall::create(branches_,fusepath,minfreespace,paths);
-    case Category::Enum::action:
+    case Category::ACTION:
       return epall::action(branches_,fusepath,paths);
-    case Category::Enum::search:
+    case Category::SEARCH:
     default:
       return epall::search(branches_,fusepath,paths);
     }

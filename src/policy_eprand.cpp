@@ -25,11 +25,11 @@ using std::string;
 using std::vector;
 
 int
-Policy::Func::eprand(const Category::Enum::Type  type_,
-                     const Branches             &branches_,
-                     const char                 *fusepath_,
-                     const uint64_t              minfreespace_,
-                     vector<string>             *paths_)
+Policy::Func::eprand(const Category  type_,
+                     const Branches &branches_,
+                     const char     *fusepath_,
+                     const uint64_t  minfreespace_,
+                     vector<string> *paths_)
 {
   int rv;
 

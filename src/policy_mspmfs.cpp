@@ -110,13 +110,13 @@ namespace mspmfs
 }
 
 int
-Policy::Func::mspmfs(const Category::Enum::Type  type_,
-                     const Branches             &branches_,
-                     const char                 *fusepath_,
-                     const uint64_t              minfreespace_,
-                     vector<string>             *paths_)
+Policy::Func::mspmfs(const Category  type_,
+                     const Branches &branches_,
+                     const char     *fusepath_,
+                     const uint64_t  minfreespace_,
+                     vector<string> *paths_)
 {
-  if(type_ == Category::Enum::create)
+  if(type_ == Category::CREATE)
     return mspmfs::create(branches_,fusepath_,minfreespace_,paths_);
 
   return Policy::Func::epmfs(type_,branches_,fusepath_,minfreespace_,paths_);

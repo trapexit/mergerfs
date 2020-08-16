@@ -110,13 +110,13 @@ namespace msplus
 }
 
 int
-Policy::Func::msplus(const Category::Enum::Type  type_,
-                     const Branches             &branches_,
-                     const char                 *fusepath_,
-                     const uint64_t              minfreespace_,
-                     vector<string>             *paths_)
+Policy::Func::msplus(const Category  type_,
+                     const Branches &branches_,
+                     const char     *fusepath_,
+                     const uint64_t  minfreespace_,
+                     vector<string> *paths_)
 {
-  if(type_ == Category::Enum::create)
+  if(type_ == Category::CREATE)
     return msplus::create(branches_,fusepath_,minfreespace_,paths_);
 
   return Policy::Func::eplus(type_,branches_,fusepath_,minfreespace_,paths_);

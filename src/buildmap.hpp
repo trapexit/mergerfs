@@ -17,6 +17,7 @@
 #pragma once
 
 #include <algorithm>
+#include <map>
 
 template<typename K,typename V>
 class buildmap

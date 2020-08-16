@@ -79,13 +79,13 @@ namespace mfs
 }
 
 int
-Policy::Func::mfs(const Category::Enum::Type  type,
-                  const Branches             &branches_,
-                  const char                 *fusepath,
-                  const uint64_t              minfreespace,
-                  vector<string>             *paths)
+Policy::Func::mfs(const Category  type,
+                  const Branches &branches_,
+                  const char     *fusepath,
+                  const uint64_t  minfreespace,
+                  vector<string> *paths)
 {
-  if(type == Category::Enum::create)
+  if(type == Category::CREATE)
     return mfs::create(branches_,minfreespace,paths);
 
   return Policy::Func::epmfs(type,branches_,fusepath,minfreespace,paths);

@@ -170,19 +170,19 @@ namespace newest
 }
 
 int
-Policy::Func::newest(const Category::Enum::Type  type,
-                     const Branches             &branches_,
-                     const char                 *fusepath,
-                     const uint64_t              minfreespace,
-                     vector<string>             *paths)
+Policy::Func::newest(const Category  type,
+                     const Branches &branches_,
+                     const char     *fusepath,
+                     const uint64_t  minfreespace,
+                     vector<string> *paths)
 {
   switch(type)
     {
-    case Category::Enum::create:
+    case Category::CREATE:
       return newest::create(branches_,fusepath,minfreespace,paths);
-    case Category::Enum::action:
+    case Category::ACTION:
       return newest::action(branches_,fusepath,paths);
-    case Category::Enum::search:
+    case Category::SEARCH:
     default:
       return newest::search(branches_,fusepath,paths);
     }

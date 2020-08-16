@@ -69,13 +69,13 @@ namespace ff
 }
 
 int
-Policy::Func::ff(const Category::Enum::Type  type,
-                 const Branches             &branches_,
-                 const char                 *fusepath,
-                 const uint64_t              minfreespace,
-                 vector<string>             *paths)
+Policy::Func::ff(const Category  type,
+                 const Branches &branches_,
+                 const char     *fusepath,
+                 const uint64_t  minfreespace,
+                 vector<string> *paths)
 {
-  if(type == Category::Enum::create)
+  if(type == Category::CREATE)
     return ff::create(branches_,minfreespace,paths);
 
   return Policy::Func::epff(type,branches_,fusepath,minfreespace,paths);

@@ -80,13 +80,13 @@ namespace lfs
 }
 
 int
-Policy::Func::lfs(const Category::Enum::Type  type,
-                  const Branches             &branches_,
-                  const char                 *fusepath,
-                  const uint64_t              minfreespace,
-                  vector<string>             *paths)
+Policy::Func::lfs(const Category  type,
+                  const Branches &branches_,
+                  const char     *fusepath,
+                  const uint64_t  minfreespace,
+                  vector<string> *paths)
 {
-  if(type == Category::Enum::create)
+  if(type == Category::CREATE)
     return lfs::create(branches_,minfreespace,paths);
 
   return Policy::Func::eplfs(type,branches_,fusepath,minfreespace,paths);

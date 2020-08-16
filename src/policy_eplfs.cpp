@@ -170,19 +170,19 @@ namespace eplfs
 }
 
 int
-Policy::Func::eplfs(const Category::Enum::Type  type,
-                    const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<string>             *paths)
+Policy::Func::eplfs(const Category  type,
+                    const Branches &branches_,
+                    const char     *fusepath,
+                    const uint64_t  minfreespace,
+                    vector<string> *paths)
 {
   switch(type)
     {
-    case Category::Enum::create:
+    case Category::CREATE:
       return eplfs::create(branches_,fusepath,minfreespace,paths);
-    case Category::Enum::action:
+    case Category::ACTION:
       return eplfs::action(branches_,fusepath,paths);
-    case Category::Enum::search:
+    case Category::SEARCH:
     default:
       return eplfs::search(branches_,fusepath,paths);
     }
