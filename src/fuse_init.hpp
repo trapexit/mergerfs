@@ -21,5 +21,5 @@
 namespace FUSE
 {
   void *
-  init(fuse_conn_info *conn_);
+  init(fuse_conn_info *conn);
 }

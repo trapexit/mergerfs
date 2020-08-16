@@ -21,5 +21,5 @@
 namespace FUSE
 {
   int
-  flush(fuse_file_info *ffi_);
+  flush(fuse_file_info *ffi);
 }

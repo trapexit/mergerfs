@@ -23,6 +23,6 @@
 namespace fs
 {
   int
-  mktemp(std::string &base_,
-         const int    flags_);
+  mktemp(std::string *base,
+         const int    flags);
 }

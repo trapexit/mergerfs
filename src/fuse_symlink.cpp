@@ -44,7 +44,7 @@ namespace l
     int rv;
     string fullnewpath;
 
-    fullnewpath = fs::path::make(&newbasepath_,newpath_);
+    fullnewpath = fs::path::make(newbasepath_,newpath_);
 
     rv = fs::symlink(oldpath_,fullnewpath);
 

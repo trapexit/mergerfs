@@ -25,6 +25,6 @@
 namespace fs
 {
   int
-  info(const std::string *path_,
-       fs::info_t        *info_);
+  info(const std::string &path,
+       fs::info_t        *info);
 }

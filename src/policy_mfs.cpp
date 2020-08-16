@@ -55,7 +55,7 @@ namespace mfs
 
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -79,14 +79,14 @@ namespace mfs
 }
 
 int
-Policy::Func::mfs(const Category  type,
+Policy::Func::mfs(const Category  type_,
                   const Branches &branches_,
-                  const char     *fusepath,
-                  const uint64_t  minfreespace,
-                  vector<string> *paths)
+                  const char     *fusepath_,
+                  const uint64_t  minfreespace_,
+                  vector<string> *paths_)
 {
-  if(type == Category::CREATE)
-    return mfs::create(branches_,minfreespace,paths);
+  if(type_ == Category::CREATE)
+    return mfs::create(branches_,minfreespace_,paths_);
 
-  return Policy::Func::epmfs(type,branches_,fusepath,minfreespace,paths);
+  return Policy::Func::epmfs(type_,branches_,fusepath_,minfreespace_,paths_);
 }

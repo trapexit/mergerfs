@@ -59,7 +59,7 @@ namespace l
     int rv;
     string fullpath;
 
-    fullpath = fs::path::make(&createpath_,fusepath_);
+    fullpath = fs::path::make(createpath_,fusepath_);
 
     rv = l::mknod_core(fullpath,mode_,umask_,dev_);
 

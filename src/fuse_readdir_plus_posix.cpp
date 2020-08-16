@@ -83,7 +83,7 @@ namespace l
         int dirfd;
         DIR *dh;
 
-        basepath = fs::path::make(&branches_[i].path,dirname_);
+        basepath = fs::path::make(branches_[i].path,dirname_);
 
         dh = fs::opendir(basepath);
         if(!dh)

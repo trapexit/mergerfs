@@ -115,7 +115,7 @@ namespace fs
 
       dst_fullpath = src_fullpath_;
 
-      dst_fd = fs::mktemp(dst_fullpath,O_WRONLY);
+      dst_fd = fs::mktemp(&dst_fullpath,O_WRONLY);
       if(dst_fd == -1)
         return cleanup_on_error(src_fd);
 

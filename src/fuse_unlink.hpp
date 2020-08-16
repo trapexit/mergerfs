@@ -19,5 +19,5 @@
 namespace FUSE
 {
   int
-  unlink(const char *fusepath_);
+  unlink(const char *fusepath);
 }

@@ -83,7 +83,7 @@ namespace l
         int dirfd;
         int64_t nread;
 
-        basepath = fs::path::make(&branches_[i].path,dirname_);
+        basepath = fs::path::make(branches_[i].path,dirname_);
 
         dirfd = fs::open_dir_ro(basepath);
         if(dirfd == -1)
@@ -95,7 +95,7 @@ namespace l
 
         for(;;)
           {
-            nread = fs::getdents(dirfd,buf,g_DENTS_BUF_POOL.size());
+            nread = fs::getdents64(dirfd,buf,g_DENTS_BUF_POOL.size());
             if(nread == -1)
               break;
             if(nread == 0)

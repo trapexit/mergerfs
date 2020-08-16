@@ -19,6 +19,6 @@
 namespace FUSE
 {
   int
-  removexattr(const char *fusepath_,
-              const char *attrname_);
+  removexattr(const char *fusepath,
+              const char *attrname);
 }

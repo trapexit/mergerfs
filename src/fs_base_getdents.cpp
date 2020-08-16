@@ -26,9 +26,9 @@
 namespace fs
 {
   int
-  getdents(unsigned int  fd_,
-           void         *dirp_,
-           unsigned int  count_)
+  getdents64(unsigned int  fd_,
+             void         *dirp_,
+             unsigned int  count_)
   {
 #if defined SYS_getdents64
     return ::syscall(SYS_getdents64,fd_,dirp_,count_);

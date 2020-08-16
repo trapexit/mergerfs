@@ -44,8 +44,8 @@ namespace l
     string oldfullpath;
     string newfullpath;
 
-    oldfullpath = fs::path::make(&oldbasepath_,oldfusepath_);
-    newfullpath = fs::path::make(&oldbasepath_,newfusepath_);
+    oldfullpath = fs::path::make(oldbasepath_,oldfusepath_);
+    newfullpath = fs::path::make(oldbasepath_,newfusepath_);
 
     rv = fs::link(oldfullpath,newfullpath);
 
@@ -152,8 +152,8 @@ namespace l
     string oldfullpath;
     string newfullpath;
 
-    oldfullpath = fs::path::make(&oldbasepath_,oldfusepath_);
-    newfullpath = fs::path::make(&oldbasepath_,newfusepath_);
+    oldfullpath = fs::path::make(oldbasepath_,oldfusepath_);
+    newfullpath = fs::path::make(oldbasepath_,newfusepath_);
 
     rv = fs::link(oldfullpath,newfullpath);
     if((rv == -1) && (errno == ENOENT))

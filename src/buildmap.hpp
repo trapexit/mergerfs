@@ -23,16 +23,16 @@ template<typename K,typename V>
 class buildmap
 {
 public:
-  buildmap(const K &key,
-           const V &val)
+  buildmap(const K &key_,
+           const V &val_)
   {
-    _map.insert(std::make_pair(key,val));
+    _map.insert(std::make_pair(key_,val_));
   }
 
-  buildmap<K,V> &operator()(const K &key,
-                            const V &val)
+  buildmap<K,V> &operator()(const K &key_,
+                            const V &val_)
   {
-    _map.insert(std::make_pair(key,val));
+    _map.insert(std::make_pair(key_,val_));
     return *this;
   }
 

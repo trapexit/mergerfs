@@ -28,12 +28,12 @@ namespace fs
   static
   inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  times[2],
-        const int              flags)
+  utime(const int              dirfd_,
+        const std::string     &path_,
+        const struct timespec  times_[2],
+        const int              flags_)
   {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
+    return ::utimensat(dirfd_,path_.c_str(),times_,flags_);
   }
 
   static

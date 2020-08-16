@@ -21,7 +21,7 @@
 namespace fs
 {
   int
-  getdents(unsigned int  fd,
-           void         *dirp,
-           unsigned int  count);
+  getdents64(unsigned int  fd,
+             void         *dirp,
+             unsigned int  count);
 }

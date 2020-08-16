@@ -344,7 +344,7 @@ namespace l
 
     config.branches.to_paths(branches);
 
-    fs::findallfiles(branches,fusepath.c_str(),paths);
+    fs::findallfiles(branches,fusepath.c_str(),&paths);
 
     concated = str::join(paths,'\0');
 

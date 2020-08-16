@@ -24,20 +24,13 @@
 
 namespace fs
 {
-  using std::string;
-  using std::vector;
+  void findallfiles(const std::vector<std::string> &basepaths,
+                    const char                     *fusepath,
+                    std::vector<std::string>       *paths);
 
-  void findallfiles(const vector<string> &basepaths_,
-                    const char           *fusepath_,
-                    vector<string>       &paths_);
+  void realpathize(std::vector<std::string> *strs);
 
-  void realpathize(vector<string> &strs_);
-
-  int getfl(const int fd_);
-  int setfl(const int    fd_,
-            const mode_t mode_);
-
-  int mfs(const vector<string> &srcs_,
-          const uint64_t        minfreespace_,
-          string               &path_);
+  int getfl(const int fd);
+  int setfl(const int    fd,
+            const mode_t mode);
 }

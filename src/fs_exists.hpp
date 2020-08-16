@@ -70,7 +70,7 @@ namespace fs
   {
     std::string fullpath;
 
-    fullpath = fs::path::make(&basepath_,relpath_);
+    fullpath = fs::path::make(basepath_,relpath_);
 
     return fs::exists(fullpath,st_);
   }

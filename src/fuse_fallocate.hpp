@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include "fuse.h"
+
 namespace FUSE
 {
   int
-  fallocate(int             mode_,
-            off_t           offset_,
-            off_t           len_,
-            fuse_file_info *ffi_);
+  fallocate(int             mode,
+            off_t           offset,
+            off_t           len,
+            fuse_file_info *ffi);
 }

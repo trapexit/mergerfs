@@ -25,12 +25,12 @@ namespace fs
 {
   namespace cow
   {
-    bool is_eligible(const int flags_);
-    bool is_eligible(const struct stat &st_);
-    bool is_eligible(const int flags_, const struct stat &st_);
+    bool is_eligible(const int flags);
+    bool is_eligible(const struct stat &st);
+    bool is_eligible(const int flags, const struct stat &st);
 
-    bool is_eligible(const char *fullpath_, const int flags_);
+    bool is_eligible(const char *fullpath, const int flags);
 
-    int  break_link(const char *fullpath_);
+    int  break_link(const char *fullpath);
   }
 }

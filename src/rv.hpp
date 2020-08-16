@@ -21,15 +21,15 @@ namespace error
   static
   inline
   int
-  calc(const int rv,
-       const int prev,
-       const int cur)
+  calc(const int rv_,
+       const int prev_,
+       const int cur_)
   {
-    if(rv == -1)
+    if(rv_ == -1)
       {
-        if(prev == 0)
+        if(prev_ == 0)
           return 0;
-        return cur;
+        return cur_;
       }
 
     return 0;

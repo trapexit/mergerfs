@@ -28,27 +28,27 @@ namespace fs
   static
   inline
   int
-  fstatat(const int    dirfd,
-          const char  *pathname,
-          struct stat *statbuf,
-          const int    flags)
+  fstatat(const int    dirfd_,
+          const char  *pathname_,
+          struct stat *statbuf_,
+          const int    flags_)
   {
-    return ::fstatat(dirfd,
-                     pathname,
-                     statbuf,
-                     flags);
+    return ::fstatat(dirfd_,
+                     pathname_,
+                     statbuf_,
+                     flags_);
   }
 
   static
   inline
   int
-  fstatat_nofollow(const int    dirfd,
-                   const char  *pathname,
-                   struct stat *statbuf)
+  fstatat_nofollow(const int    dirfd_,
+                   const char  *pathname_,
+                   struct stat *statbuf_)
   {
-    return fs::fstatat(dirfd,
-                       pathname,
-                       statbuf,
+    return fs::fstatat(dirfd_,
+                       pathname_,
+                       statbuf_,
                        AT_SYMLINK_NOFOLLOW);
   }
 }

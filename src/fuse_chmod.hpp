@@ -19,6 +19,6 @@
 namespace FUSE
 {
   int
-  chmod(const char *fusepath_,
-        mode_t      mode_);
+  chmod(const char *fusepath,
+        mode_t      mode);
 }

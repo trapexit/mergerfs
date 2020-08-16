@@ -25,21 +25,21 @@ namespace fs
   static
   inline
   ssize_t
-  write(const int     fd,
-        const void   *buf,
-        const size_t  count)
+  write(const int     fd_,
+        const void   *buf_,
+        const size_t  count_)
   {
-    return ::write(fd,buf,count);
+    return ::write(fd_,buf_,count_);
   }
 
   static
   inline
   ssize_t
-  pwrite(const int     fd,
-         const void   *buf,
-         const size_t  count,
-         const off_t   offset)
+  pwrite(const int     fd_,
+         const void   *buf_,
+         const size_t  count_,
+         const off_t   offset_)
   {
-    return ::pwrite(fd,buf,count,offset);
+    return ::pwrite(fd_,buf_,count_,offset_);
   }
 }

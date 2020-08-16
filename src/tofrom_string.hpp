@@ -26,22 +26,3 @@ public:
   virtual std::string to_string() const = 0;
   virtual int from_string(const std::string &) = 0;
 };
-
-namespace std
-{
-  inline
-  static
-  std::string
-  to_string(const ToFromString *o_)
-  {
-    return o_->to_string();
-  }
-
-  inline
-  static
-  std::string
-  to_string(const ToFromString &o_)
-  {
-    return o_.to_string();
-  }
-}

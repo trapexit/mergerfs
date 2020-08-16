@@ -19,6 +19,6 @@
 namespace FUSE
 {
   int
-  mkdir(const char *fusepath_,
-        mode_t      mode_);
+  mkdir(const char *fusepath,
+        mode_t      mode);
 }

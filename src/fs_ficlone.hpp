@@ -21,6 +21,6 @@
 namespace fs
 {
   int
-  ficlone(const int src_fd_,
-          const int dst_fd_);
+  ficlone(const int src_fd,
+          const int dst_fd);
 }

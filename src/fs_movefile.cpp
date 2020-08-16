@@ -97,7 +97,7 @@ namespace l
 
     fs::path::append(fdout_path[0],fusepath_);
     fdout_temp = fdout_path[0];
-    fdout = fs::mktemp(fdout_temp,fdin_flags);
+    fdout = fs::mktemp(&fdout_temp,fdin_flags);
     if(fdout == -1)
       return -1;
 

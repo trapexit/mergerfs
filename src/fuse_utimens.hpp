@@ -21,6 +21,6 @@
 namespace FUSE
 {
   int
-  utimens(const char     *fusepath_,
-          const timespec  ts_[2]);
+  utimens(const char     *fusepath,
+          const timespec  ts[2]);
 }

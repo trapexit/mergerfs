@@ -36,9 +36,9 @@ namespace eplus
   static
   int
   create(const Branches &branches_,
-         const char     *fusepath,
-         const uint64_t  minfreespace,
-         vector<string> *paths)
+         const char     *fusepath_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -56,16 +56,16 @@ namespace eplus
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
         if(info.spaceused >= eplus)
           continue;
@@ -77,7 +77,7 @@ namespace eplus
     if(eplusbasepath == NULL)
       return (errno=error,-1);
 
-    paths->push_back(*eplusbasepath);
+    paths_->push_back(*eplusbasepath);
 
     return 0;
   }
@@ -85,8 +85,8 @@ namespace eplus
   static
   int
   action(const Branches &branches_,
-         const char     *fusepath,
-         vector<string> *paths)
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -104,11 +104,11 @@ namespace eplus
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -123,7 +123,7 @@ namespace eplus
     if(eplusbasepath == NULL)
       return (errno=error,-1);
 
-    paths->push_back(*eplusbasepath);
+    paths_->push_back(*eplusbasepath);
 
     return 0;
   }
@@ -131,8 +131,8 @@ namespace eplus
   static
   int
   search(const Branches &branches_,
-         const char     *fusepath,
-         vector<string> *paths)
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -148,7 +148,7 @@ namespace eplus
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           continue;
         rv = fs::statvfs_cache_spaceused(branch->path,&spaceused);
         if(rv == -1)
@@ -163,27 +163,27 @@ namespace eplus
     if(eplusbasepath == NULL)
       return (errno=ENOENT,-1);
 
-    paths->push_back(*eplusbasepath);
+    paths_->push_back(*eplusbasepath);
 
     return 0;
   }
 }
 
 int
-Policy::Func::eplus(const Category  type,
+Policy::Func::eplus(const Category  type_,
                     const Branches &branches_,
-                    const char     *fusepath,
-                    const uint64_t  minfreespace,
-                    vector<string> *paths)
+                    const char     *fusepath_,
+                    const uint64_t  minfreespace_,
+                    vector<string> *paths_)
 {
-  switch(type)
+  switch(type_)
     {
     case Category::CREATE:
-      return eplus::create(branches_,fusepath,minfreespace,paths);
+      return eplus::create(branches_,fusepath_,minfreespace_,paths_);
     case Category::ACTION:
-      return eplus::action(branches_,fusepath,paths);
+      return eplus::action(branches_,fusepath_,paths_);
     case Category::SEARCH:
     default:
-      return eplus::search(branches_,fusepath,paths);
+      return eplus::search(branches_,fusepath_,paths_);
     }
 }

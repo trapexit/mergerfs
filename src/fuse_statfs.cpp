@@ -99,7 +99,7 @@ namespace l
     for(size_t i = 0, ei = branches_.size(); i < ei; i++)
       {
         fullpath = ((mode_ == StatFS::ENUM::FULL) ?
-                    fs::path::make(&branches_[i].path,fusepath_) :
+                    fs::path::make(branches_[i].path,fusepath_) :
                     branches_[i].path);
 
         rv = fs::lstat(fullpath,&st);

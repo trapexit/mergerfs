@@ -38,20 +38,20 @@ using std::vector;
 namespace fs
 {
   void
-  findallfiles(const vector<string> &basepaths,
-               const char           *fusepath,
-               vector<string>       &paths)
+  findallfiles(const vector<string> &basepaths_,
+               const char           *fusepath_,
+               vector<string>       *paths_)
   {
     string fullpath;
 
-    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        fullpath = fs::path::make(basepaths[i],fusepath);
+        fullpath = fs::path::make(basepaths_[i],fusepath_);
 
         if(!fs::exists(fullpath))
           continue;
 
-        paths.push_back(fullpath);
+        paths_->push_back(fullpath);
       }
   }
 
@@ -91,17 +91,17 @@ namespace fs
   }
 
   void
-  realpathize(vector<string> &strs)
+  realpathize(vector<string> *strs_)
   {
     char *rv;
 
-    for(size_t i = 0; i < strs.size(); i++)
+    for(size_t i = 0; i < strs_->size(); i++)
       {
-        rv = fs::realpath(strs[i]);
+        rv = fs::realpath((*strs_)[i]);
         if(rv == NULL)
           continue;
 
-        strs[i] = rv;
+        (*strs_)[i] = rv;
 
         ::free(rv);
       }
@@ -118,39 +118,5 @@ namespace fs
         const mode_t mode)
   {
     return ::fcntl(fd,F_SETFL,mode);
-  }
-
-  int
-  mfs(const vector<string> &basepaths,
-      const uint64_t        minfreespace,
-      string               &path)
-  {
-    int rv;
-    uint64_t mfs;
-    uint64_t spaceavail;
-    const string *mfsbasepath;
-
-    mfs = 0;
-    mfsbasepath = NULL;
-    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-      {
-        rv = fs::statvfs_cache_spaceavail(basepaths[i],&spaceavail);
-        if(rv == -1)
-          continue;
-        if(spaceavail < minfreespace)
-          continue;
-        if(spaceavail <= mfs)
-          continue;
-
-        mfs         = spaceavail;
-        mfsbasepath = &basepaths[i];
-      }
-
-    if(mfsbasepath == NULL)
-      return (errno=ENOENT,-1);
-
-    path = *mfsbasepath;
-
-    return 0;
   }
 };

@@ -19,6 +19,6 @@
 namespace fs
 {
   int
-  clonefile(const int src_fd_,
-            const int dst_fd_);
+  clonefile(const int src_fd,
+            const int dst_fd);
 }

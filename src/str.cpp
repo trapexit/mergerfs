@@ -27,23 +27,23 @@ using std::istringstream;
 namespace str
 {
   void
-  split(vector<string> &result,
-        const char     *str,
-        const char      delimiter)
+  split(const char     *str_,
+        const char      delimiter_,
+        vector<string> *result_)
   {
     string part;
-    istringstream ss(str);
+    istringstream ss(str_);
 
-    while(std::getline(ss,part,delimiter))
-      result.push_back(part);
+    while(std::getline(ss,part,delimiter_))
+      result_->push_back(part);
   }
 
   void
-  split(vector<string> &result,
-        const string   &str,
-        const char      delimiter)
+  split(const string   &str_,
+        const char      delimiter_,
+        vector<string> *result_)
   {
-    return str::split(result,str.c_str(),delimiter);
+    return str::split(str_.c_str(),delimiter_,result_);
   }
 
   void
@@ -65,41 +65,41 @@ namespace str
   }
 
   string
-  join(const vector<string> &vec,
-       const size_t          substridx,
-       const char            sep)
+  join(const vector<string> &vec_,
+       const size_t          substridx_,
+       const char            sep_)
   {
-    if(vec.empty())
+    if(vec_.empty())
       return string();
 
-    string rv = vec[0].substr(substridx);
-    for(size_t i = 1; i < vec.size(); i++)
-      rv += sep + vec[i].substr(substridx);
+    string rv = vec_[0].substr(substridx_);
+    for(size_t i = 1; i < vec_.size(); i++)
+      rv += sep_ + vec_[i].substr(substridx_);
 
     return rv;
   }
 
   string
-  join(const vector<string> &vec,
-       const char            sep)
+  join(const vector<string> &vec_,
+       const char            sep_)
   {
-    return str::join(vec,0,sep);
+    return str::join(vec_,0,sep_);
   }
 
   size_t
-  longest_common_prefix_index(const vector<string> &vec)
+  longest_common_prefix_index(const vector<string> &vec_)
   {
-    if(vec.empty())
+    if(vec_.empty())
       return string::npos;
 
-    for(size_t n = 0; n < vec[0].size(); n++)
+    for(size_t n = 0; n < vec_[0].size(); n++)
       {
-        char chr = vec[0][n];
-        for(size_t i = 1; i < vec.size(); i++)
+        char chr = vec_[0][n];
+        for(size_t i = 1; i < vec_.size(); i++)
           {
-            if(n >= vec[i].size())
+            if(n >= vec_[i].size())
               return n;
-            if(vec[i][n] != chr)
+            if(vec_[i][n] != chr)
               return n;
           }
       }
@@ -108,62 +108,62 @@ namespace str
   }
 
   string
-  longest_common_prefix(const vector<string> &vec)
+  longest_common_prefix(const vector<string> &vec_)
   {
     size_t idx;
 
-    idx = longest_common_prefix_index(vec);
+    idx = longest_common_prefix_index(vec_);
     if(idx != string::npos)
-      return vec[0].substr(0,idx);
+      return vec_[0].substr(0,idx);
 
     return string();
   }
 
   string
-  remove_common_prefix_and_join(const vector<string> &vec,
-                                const char            sep)
+  remove_common_prefix_and_join(const vector<string> &vec_,
+                                const char            sep_)
   {
     size_t idx;
 
-    idx = str::longest_common_prefix_index(vec);
+    idx = str::longest_common_prefix_index(vec_);
     if(idx == string::npos)
       idx = 0;
 
-    return str::join(vec,idx,sep);
+    return str::join(vec_,idx,sep_);
   }
 
   void
-  erase_fnmatches(const vector<string> &patterns,
-                  vector<string>       &strs)
+  erase_fnmatches(const vector<string> &patterns_,
+                  vector<string>       &strs_)
   {
     vector<string>::iterator si;
     vector<string>::const_iterator pi;
 
-    si = strs.begin();
-    while(si != strs.end())
+    si = strs_.begin();
+    while(si != strs_.end())
       {
         int match = FNM_NOMATCH;
 
-        for(pi = patterns.begin();
-            pi != patterns.end() && match != 0;
+        for(pi = patterns_.begin();
+            pi != patterns_.end() && match != 0;
             ++pi)
           {
             match = fnmatch(pi->c_str(),si->c_str(),0);
           }
 
         if(match == 0)
-          si = strs.erase(si);
+          si = strs_.erase(si);
         else
           ++si;
       }
   }
 
   bool
-  isprefix(const string &s0,
-           const string &s1)
+  isprefix(const string &s0_,
+           const string &s1_)
   {
-    return ((s0.size() >= s1.size()) &&
-            (s0.compare(0,s1.size(),s1) == 0));
+    return ((s0_.size() >= s1_.size()) &&
+            (s0_.compare(0,s1_.size(),s1_) == 0));
   }
 
   bool

@@ -22,13 +22,13 @@
 namespace str
 {
   void
-  split(std::vector<std::string> &result,
-        const char               *str,
-        const char                delimiter);
+  split(const char               *str,
+        const char                delimiter,
+        std::vector<std::string> *result);
   void
-  split(std::vector<std::string> &result,
-        const std::string        &str,
-        const char                delimiter);
+  split(const std::string        &str,
+        const char                delimiter,
+        std::vector<std::string> *result);
 
   void
   splitkv(const std::string &str,

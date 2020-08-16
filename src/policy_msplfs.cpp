@@ -59,7 +59,7 @@ namespace msplfs
           error_and_continue(*err_,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(*err_,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(*err_,ENOENT);
         if(info.readonly)
