@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"

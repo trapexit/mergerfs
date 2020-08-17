@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,22 +16,29 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "gidcache.hpp"
+#include "fs_exists.hpp"
+#include "fs_path.hpp"
 
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#include "ugid_linux.icpp"
-#else
-#include "ugid_rwlock.icpp"
-#endif
+#include <string>
+#include <vector>
 
-namespace ugid
+namespace fs
 {
   void
-  initgroups(const uid_t uid_,
-             const gid_t gid_)
+  findallfiles(const std::vector<std::string> &basepaths_,
+               const char                     *fusepath_,
+               std::vector<std::string>       *paths_)
   {
-    static __thread gid_t_cache cache = {0};
+    std::string fullpath;
 
-    cache.initgroups(uid_,gid_);
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+      {
+        fullpath = fs::path::make(basepaths_[i],fusepath_);
+
+        if(!fs::exists(fullpath))
+          continue;
+
+        paths_->push_back(fullpath);
+      }
   }
 }

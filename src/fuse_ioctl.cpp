@@ -22,6 +22,7 @@
 #include "fs_base_close.hpp"
 #include "fs_base_ioctl.hpp"
 #include "fs_base_open.hpp"
+#include "fs_findallfiles.hpp"
 #include "fs_path.hpp"
 #include "str.hpp"
 #include "ugid.hpp"

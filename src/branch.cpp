@@ -18,8 +18,8 @@
 
 #include "branch.hpp"
 #include "ef.hpp"
-#include "fs.hpp"
 #include "fs_glob.hpp"
+#include "fs_realpathize.hpp"
 #include "str.hpp"
 
 #include <string>

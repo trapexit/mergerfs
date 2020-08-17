@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,23 +16,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
-
-#include <string>
-#include <vector>
-
 #include <fcntl.h>
-#include <stdint.h>
 
 namespace fs
 {
-  void findallfiles(const std::vector<std::string> &basepaths,
-                    const char                     *fusepath,
-                    std::vector<std::string>       *paths);
-
-  void realpathize(std::vector<std::string> *strs);
-
-  int getfl(const int fd);
-  int setfl(const int    fd,
-            const mode_t mode);
+  int
+  getfl(const int fd_)
+  {
+    return ::fcntl(fd_,F_GETFL,0);
+  }
 }

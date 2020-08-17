@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_base_close.hpp"
 #include "fs_base_open.hpp"
 #include "fs_base_rename.hpp"
@@ -25,6 +24,7 @@
 #include "fs_clonepath.hpp"
 #include "fs_file_size.hpp"
 #include "fs_findonfs.hpp"
+#include "fs_getfl.hpp"
 #include "fs_has_space.hpp"
 #include "fs_mktemp.hpp"
 #include "fs_path.hpp"
