@@ -16,10 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_base_stat.hpp"
-#include "fs_base_statvfs.hpp"
 #include "fs_info_t.hpp"
 #include "fs_path.hpp"
+#include "fs_stat.hpp"
+#include "fs_statvfs.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "statvfs_util.hpp"
 

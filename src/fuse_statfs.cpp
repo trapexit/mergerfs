@@ -16,9 +16,9 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_base_statvfs.hpp"
+#include "fs_lstat.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
 

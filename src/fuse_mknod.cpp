@@ -17,7 +17,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
-#include "fs_base_mknod.hpp"
+#include "fs_mknod.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"

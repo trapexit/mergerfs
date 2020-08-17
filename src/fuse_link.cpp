@@ -16,8 +16,8 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_link.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_link.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "ugid.hpp"

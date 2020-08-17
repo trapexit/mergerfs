@@ -16,7 +16,7 @@
 
 #include "errno.hpp"
 #include "dirinfo.hpp"
-#include "fs_base_fsync.hpp"
+#include "fs_fsync.hpp"
 
 #include <fuse.h>
 

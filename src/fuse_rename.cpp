@@ -16,10 +16,10 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_remove.hpp"
-#include "fs_base_rename.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
+#include "fs_remove.hpp"
+#include "fs_rename.hpp"
 #include "rv.hpp"
 #include "ugid.hpp"
 

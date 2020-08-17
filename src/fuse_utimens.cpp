@@ -16,7 +16,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_utime.hpp"
+#include "fs_lutimens.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "ugid.hpp"
@@ -45,7 +45,7 @@ namespace l
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::lutime(fullpath,ts_);
+    rv = fs::lutimens(fullpath,ts_);
 
     return error::calc(rv,error_,errno);
   }

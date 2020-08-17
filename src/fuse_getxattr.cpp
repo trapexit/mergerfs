@@ -16,8 +16,8 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_getxattr.hpp"
 #include "fs_findallfiles.hpp"
+#include "fs_lgetxattr.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "str.hpp"

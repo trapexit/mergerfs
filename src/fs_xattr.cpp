@@ -15,18 +15,21 @@
 */
 
 #include "errno.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_getxattr.hpp"
-#include "fs_base_listxattr.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_removexattr.hpp"
-#include "fs_base_setxattr.hpp"
+#include "fs_close.hpp"
+#include "fs_fgetxattr.hpp"
+#include "fs_flistxattr.hpp"
+#include "fs_fsetxattr.hpp"
+#include "fs_lgetxattr.hpp"
+#include "fs_llistxattr.hpp"
+#include "fs_lremovexattr.hpp"
+#include "fs_lsetxattr.hpp"
+#include "fs_open.hpp"
 #include "str.hpp"
 
-#include <string>
-#include <vector>
 #include <map>
 #include <sstream>
+#include <string>
+#include <vector>
 
 
 using std::string;
@@ -283,7 +286,7 @@ namespace fs
         const int     flags_)
     {
       return fs::fsetxattr(fd_,
-                           key_.c_str(),
+                           key_,
                            value_.data(),
                            value_.size(),
                            flags_);

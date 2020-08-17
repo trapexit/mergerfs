@@ -17,8 +17,8 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_write.hpp"
 #include "fs_movefile.hpp"
+#include "fs_write.hpp"
 #include "ugid.hpp"
 
 #include <string>

@@ -16,7 +16,7 @@
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_read.hpp"
+#include "fs_read.hpp"
 
 #include <fuse.h>
 
