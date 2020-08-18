@@ -21,6 +21,6 @@
 namespace FUSE
 {
   int
-  statfs(const char     *fusepath_,
-         struct statvfs *fsstat_);
+  statfs(const char     *fusepath,
+         struct statvfs *fsstat);
 }

@@ -20,7 +20,7 @@
 namespace FUSE
 {
   int
-  mknod(const char *fusepath_,
-        mode_t      mode_,
-        dev_t       rdev_);
+  mknod(const char *fusepath,
+        mode_t      mode,
+        dev_t       rdev);
 }

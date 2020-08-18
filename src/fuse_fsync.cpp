@@ -16,7 +16,8 @@
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_fsync.hpp"
+#include "fs_fdatasync.hpp"
+#include "fs_fsync.hpp"
 
 #include <fuse.h>
 

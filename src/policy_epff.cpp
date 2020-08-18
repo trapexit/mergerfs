@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
@@ -55,7 +54,7 @@ namespace epff
           error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -134,19 +133,19 @@ namespace epff
 }
 
 int
-Policy::Func::epff(const Category::Enum::Type  type_,
-                   const Branches             &branches_,
-                   const char                 *fusepath_,
-                   const uint64_t              minfreespace_,
-                   vector<string>             *paths_)
+Policy::Func::epff(const Category  type_,
+                   const Branches &branches_,
+                   const char     *fusepath_,
+                   const uint64_t  minfreespace_,
+                   vector<string> *paths_)
 {
   switch(type_)
     {
-    case Category::Enum::create:
+    case Category::CREATE:
       return epff::create(branches_,fusepath_,minfreespace_,paths_);
-    case Category::Enum::action:
+    case Category::ACTION:
       return epff::action(branches_,fusepath_,paths_);
-    case Category::Enum::search:
+    case Category::SEARCH:
     default:
       return epff::search(branches_,fusepath_,paths_);
     }

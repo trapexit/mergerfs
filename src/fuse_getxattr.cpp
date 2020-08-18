@@ -16,7 +16,8 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_getxattr.hpp"
+#include "fs_findallfiles.hpp"
+#include "fs_lgetxattr.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "str.hpp"
@@ -63,10 +64,10 @@ namespace l
 
   static
   int
-  getxattr_controlfile(const Config &config,
-                       const char   *attrname,
-                       char         *buf,
-                       const size_t  count)
+  getxattr_controlfile(const Config &config_,
+                       const char   *attrname_,
+                       char         *buf_,
+                       const size_t  count_)
   {
     int rv;
     size_t len;
@@ -74,42 +75,42 @@ namespace l
     string val;
     vector<string> attr;
 
-    if(!str::startswith(attrname,"user.mergerfs."))
+    if(!str::startswith(attrname_,"user.mergerfs."))
       return -ENOATTR;
 
-    key = &attrname[14];
-    rv = config.get(key,&val);
+    key = &attrname_[14];
+    rv = config_.get(key,&val);
     if(rv < 0)
       return rv;
 
     len = val.size();
 
-    if(count == 0)
+    if(count_ == 0)
       return len;
 
-    if(count < len)
+    if(count_ < len)
       return -ERANGE;
 
-    memcpy(buf,val.c_str(),len);
+    memcpy(buf_,val.c_str(),len);
 
     return (int)len;
   }
 
   static
   int
-  getxattr_from_string(char         *destbuf,
-                       const size_t  destbufsize,
-                       const string &src)
+  getxattr_from_string(char         *destbuf_,
+                       const size_t  destbufsize_,
+                       const string &src_)
   {
-    const size_t srcbufsize = src.size();
+    const size_t srcbufsize = src_.size();
 
-    if(destbufsize == 0)
+    if(destbufsize_ == 0)
       return srcbufsize;
 
-    if(srcbufsize > destbufsize)
+    if(srcbufsize > destbufsize_)
       return -ERANGE;
 
-    memcpy(destbuf,src.data(),srcbufsize);
+    memcpy(destbuf_,src_.data(),srcbufsize);
 
     return srcbufsize;
   }
@@ -117,9 +118,9 @@ namespace l
   static
   int
   getxattr_user_mergerfs_allpaths(const Branches &branches_,
-                                  const char     *fusepath,
-                                  char           *buf,
-                                  const size_t    count)
+                                  const char     *fusepath_,
+                                  char           *buf_,
+                                  const size_t    count_)
   {
     string concated;
     vector<string> paths;
@@ -127,90 +128,90 @@ namespace l
 
     branches_.to_paths(branches);
 
-    fs::findallfiles(branches,fusepath,paths);
+    fs::findallfiles(branches,fusepath_,&paths);
 
     concated = str::join(paths,'\0');
 
-    return l::getxattr_from_string(buf,count,concated);
+    return l::getxattr_from_string(buf_,count_,concated);
   }
 
   static
   int
-  getxattr_user_mergerfs(const string         &basepath,
-                         const char           *fusepath,
-                         const string         &fullpath,
+  getxattr_user_mergerfs(const string         &basepath_,
+                         const char           *fusepath_,
+                         const string         &fullpath_,
                          const Branches       &branches_,
-                         const char           *attrname,
-                         char                 *buf,
-                         const size_t          count)
+                         const char           *attrname_,
+                         char                 *buf_,
+                         const size_t          count_)
   {
     vector<string> attr;
 
-    str::split(attr,attrname,'.');
+    str::split(attrname_,'.',&attr);
 
     if(attr[2] == "basepath")
-      return l::getxattr_from_string(buf,count,basepath);
+      return l::getxattr_from_string(buf_,count_,basepath_);
     else if(attr[2] ==  "relpath")
-      return l::getxattr_from_string(buf,count,fusepath);
+      return l::getxattr_from_string(buf_,count_,fusepath_);
     else if(attr[2] == "fullpath")
-      return l::getxattr_from_string(buf,count,fullpath);
+      return l::getxattr_from_string(buf_,count_,fullpath_);
     else if(attr[2] == "allpaths")
-      return l::getxattr_user_mergerfs_allpaths(branches_,fusepath,buf,count);
+      return l::getxattr_user_mergerfs_allpaths(branches_,fusepath_,buf_,count_);
 
     return -ENOATTR;
   }
 
   static
   int
-  getxattr(Policy::Func::Search  searchFunc,
+  getxattr(Policy::Func::Search  searchFunc_,
            const Branches       &branches_,
-           const size_t          minfreespace,
-           const char           *fusepath,
-           const char           *attrname,
-           char                 *buf,
-           const size_t          count)
+           const size_t          minfreespace_,
+           const char           *fusepath_,
+           const char           *attrname_,
+           char                 *buf_,
+           const size_t          count_)
   {
     int rv;
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc(branches_,fusepath,minfreespace,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath);
+    fullpath = fs::path::make(basepaths[0],fusepath_);
 
-    if(str::startswith(attrname,"user.mergerfs."))
+    if(str::startswith(attrname_,"user.mergerfs."))
       return l::getxattr_user_mergerfs(basepaths[0],
-                                       fusepath,
+                                       fusepath_,
                                        fullpath,
                                        branches_,
-                                       attrname,
-                                       buf,
-                                       count);
+                                       attrname_,
+                                       buf_,
+                                       count_);
 
-    return l::lgetxattr(fullpath,attrname,buf,count);
+    return l::lgetxattr(fullpath,attrname_,buf_,count_);
   }
 }
 
 namespace FUSE
 {
   int
-  getxattr(const char *fusepath,
-           const char *attrname,
-           char       *buf,
-           size_t      count)
+  getxattr(const char *fusepath_,
+           const char *attrname_,
+           char       *buf_,
+           size_t      count_)
   {
     const Config &config = Config::ro();
 
-    if(fusepath == config.controlfile)
+    if(fusepath_ == config.controlfile)
       return l::getxattr_controlfile(config,
-                                     attrname,
-                                     buf,
-                                     count);
+                                     attrname_,
+                                     buf_,
+                                     count_);
 
     if((config.security_capability == false) &&
-       l::is_attrname_security_capability(attrname))
+       l::is_attrname_security_capability(attrname_))
       return -ENOATTR;
 
     if(config.xattr.to_int())
@@ -222,9 +223,9 @@ namespace FUSE
     return l::getxattr(config.func.getxattr.policy,
                        config.branches,
                        config.minfreespace,
-                       fusepath,
-                       attrname,
-                       buf,
-                       count);
+                       fusepath_,
+                       attrname_,
+                       buf_,
+                       count_);
   }
 }

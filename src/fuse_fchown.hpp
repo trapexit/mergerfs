@@ -21,7 +21,7 @@
 namespace FUSE
 {
   int
-  fchown(const struct fuse_file_info *ffi_,
-         uid_t                        uid_,
-         gid_t                        gid_);
+  fchown(const fuse_file_info *ffi,
+         uid_t                 uid,
+         gid_t                 gid);
 }

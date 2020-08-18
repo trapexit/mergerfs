@@ -23,14 +23,14 @@ template<typename V, bool SORT = false>
 class buildvector
 {
 public:
-  buildvector(const V &val)
+  buildvector(const V &val_)
   {
-    _vector.push_back(val);
+    _vector.push_back(val_);
   }
 
-  buildvector<V,SORT> &operator()(const V &val)
+  buildvector<V,SORT> &operator()(const V &val_)
   {
-    _vector.push_back(val);
+    _vector.push_back(val_);
     return *this;
   }
 

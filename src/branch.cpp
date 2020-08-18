@@ -18,8 +18,8 @@
 
 #include "branch.hpp"
 #include "ef.hpp"
-#include "fs.hpp"
 #include "fs_glob.hpp"
+#include "fs_realpathize.hpp"
 #include "str.hpp"
 
 #include <string>
@@ -91,8 +91,8 @@ parse(const string &str_,
   else
     branch.mode = Branch::RW;
 
-  fs::glob(str,globbed);
-  fs::realpathize(globbed);
+  fs::glob(str,&globbed);
+  fs::realpathize(&globbed);
   for(size_t i = 0; i < globbed.size(); i++)
     {
       branch.path = globbed[i];
@@ -109,7 +109,7 @@ set(Branches          &branches_,
 
   branches_.clear();
 
-  str::split(paths,str_,':');
+  str::split(str_,':',&paths);
 
   for(size_t i = 0; i < paths.size(); i++)
     {
@@ -130,7 +130,7 @@ add_begin(Branches          &branches_,
 {
   vector<string> paths;
 
-  str::split(paths,str_,':');
+  str::split(str_,':',&paths);
 
   for(size_t i = 0; i < paths.size(); i++)
     {
@@ -151,7 +151,7 @@ add_end(Branches          &branches_,
 {
   vector<string> paths;
 
-  str::split(paths,str_,':');
+  str::split(str_,':',&paths);
 
   for(size_t i = 0; i < paths.size(); i++)
     {
@@ -186,7 +186,7 @@ erase_fnmatch(Branches          &branches_,
 {
   vector<string> patterns;
 
-  str::split(patterns,str_,':');
+  str::split(str_,':',&patterns);
 
   for(Branches::iterator i = branches_.begin();
       i != branches_.end();)

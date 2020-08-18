@@ -16,7 +16,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_symlink.hpp"
+#include "fs_symlink.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -44,7 +44,7 @@ namespace l
     int rv;
     string fullnewpath;
 
-    fullnewpath = fs::path::make(&newbasepath_,newpath_);
+    fullnewpath = fs::path::make(newbasepath_,newpath_);
 
     rv = fs::symlink(oldpath_,fullnewpath);
 

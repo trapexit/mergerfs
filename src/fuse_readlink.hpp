@@ -19,7 +19,7 @@
 namespace FUSE
 {
   int
-  readlink(const char *fusepath_,
-           char       *buf_,
-           size_t      size_);
+  readlink(const char *fusepath,
+           char       *buf,
+           size_t      size);
 }

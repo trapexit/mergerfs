@@ -17,12 +17,12 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_chmod.hpp"
-#include "fs_base_fchmod.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_stat.hpp"
+#include "fs_lchmod.hpp"
 #include "fs_cow.hpp"
+#include "fs_fchmod.hpp"
+#include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "fs_stat.hpp"
 #include "policy_cache.hpp"
 #include "stat_util.hpp"
 #include "ugid.hpp"
@@ -46,8 +46,8 @@ namespace l
 
   static
   int
-  chmod_and_open_if_not_writable_and_empty(const string &fullpath_,
-                                           const int     flags_)
+  lchmod_and_open_if_not_writable_and_empty(const string &fullpath_,
+                                            const int     flags_)
   {
     int rv;
     struct stat st;
@@ -59,7 +59,7 @@ namespace l
     if(StatUtil::writable(st))
       return (errno=EACCES,-1);
 
-    rv = fs::chmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
+    rv = fs::lchmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
     if(rv == -1)
       return (errno=EACCES,-1);
 
@@ -88,11 +88,11 @@ namespace l
           return (errno=EACCES,-1);
         if(fullpath_.find("/.git/") == string::npos)
           return (errno=EACCES,-1);
-        return l::chmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+        return l::lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
       case NFSOpenHack::ENUM::ALL:
         if(l::rdonly(flags_))
           return (errno=EACCES,-1);
-        return l::chmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+        return l::lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
       }
   }
 

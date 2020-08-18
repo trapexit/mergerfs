@@ -16,8 +16,8 @@
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_dup.hpp"
+#include "fs_close.hpp"
+#include "fs_dup.hpp"
 
 #include <fuse.h>
 

@@ -19,7 +19,7 @@
 namespace FUSE
 {
   int
-  chown(const char *fusepath_,
-        uid_t       uid_,
-        gid_t       gid_);
+  chown(const char *fusepath,
+        uid_t       uid,
+        gid_t       gid);
 }

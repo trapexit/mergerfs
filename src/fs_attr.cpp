@@ -15,7 +15,9 @@
 */
 
 #ifdef __linux__
-# include "fs_attr_linux.icpp"
+#warning "using fs_attr_linux.icpp"
+#include "fs_attr_linux.icpp"
 #else
-# include "fs_attr_unsupported.icpp"
+#warning "using fs_attr_unsupported.icpp"
+#include "fs_attr_unsupported.icpp"
 #endif

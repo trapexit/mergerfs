@@ -16,7 +16,7 @@
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_flock.hpp"
+#include "fs_flock.hpp"
 
 #include <fuse.h>
 

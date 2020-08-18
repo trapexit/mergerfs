@@ -17,7 +17,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_stat.hpp"
+#include "fs_fstat.hpp"
 #include "fs_inode.hpp"
 
 #include <fuse.h>

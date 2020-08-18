@@ -19,9 +19,9 @@
 namespace FUSE
 {
   int
-  setxattr(const char *fusepath_,
-           const char *attrname_,
-           const char *attrval_,
-           size_t      attrvalsize_,
-           int         flags_);
+  setxattr(const char *fusepath,
+           const char *attrname,
+           const char *attrval,
+           size_t      attrvalize,
+           int         flags);
 }

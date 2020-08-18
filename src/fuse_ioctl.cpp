@@ -19,9 +19,10 @@
 #include "endian.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_ioctl.hpp"
-#include "fs_base_open.hpp"
+#include "fs_close.hpp"
+#include "fs_findallfiles.hpp"
+#include "fs_ioctl.hpp"
+#include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
@@ -344,7 +345,7 @@ namespace l
 
     config.branches.to_paths(branches);
 
-    fs::findallfiles(branches,fusepath.c_str(),paths);
+    fs::findallfiles(branches,fusepath.c_str(),&paths);
 
     concated = str::join(paths,'\0');
 

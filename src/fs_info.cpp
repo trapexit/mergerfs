@@ -16,10 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_base_stat.hpp"
-#include "fs_base_statvfs.hpp"
 #include "fs_info_t.hpp"
 #include "fs_path.hpp"
+#include "fs_stat.hpp"
+#include "fs_statvfs.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "statvfs_util.hpp"
 
@@ -32,13 +32,13 @@ using std::string;
 namespace fs
 {
   int
-  info(const string *path_,
+  info(const string &path_,
        fs::info_t   *info_)
   {
     int rv;
     struct statvfs st;
 
-    rv = fs::statvfs_cache(path_->c_str(),&st);
+    rv = fs::statvfs_cache(path_.c_str(),&st);
     if(rv == 0)
       {
         info_->readonly   = StatVFS::readonly(st);

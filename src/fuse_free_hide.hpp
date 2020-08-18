@@ -23,5 +23,5 @@
 namespace FUSE
 {
   int
-  free_hide(const uint64_t fh_);
+  free_hide(const uint64_t fh);
 }

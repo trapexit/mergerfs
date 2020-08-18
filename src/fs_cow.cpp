@@ -16,18 +16,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
 #include "fs_clonefile.hpp"
+#include "fs_close.hpp"
+#include "fs_lstat.hpp"
 #include "fs_mktemp.hpp"
-
-#include "fs_base_close.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_rename.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_base_unlink.hpp"
+#include "fs_open.hpp"
+#include "fs_rename.hpp"
+#include "fs_unlink.hpp"
 
 #include <string>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -35,26 +34,28 @@
 
 using std::string;
 
-static
-int
-cleanup_on_error(const int     src_fd_,
-                 const int     dst_fd_       = -1,
-                 const string &dst_fullpath_ = string())
+namespace l
 {
-  int error = errno;
+  static
+  int
+  cleanup_on_error(const int     src_fd_,
+                   const int     dst_fd_       = -1,
+                   const string &dst_fullpath_ = string())
+  {
+    int error = errno;
 
-  if(src_fd_ >= 0)
-    fs::close(src_fd_);
-  if(dst_fd_ >= 0)
-    fs::close(dst_fd_);
-  if(!dst_fullpath_.empty())
-    fs::unlink(dst_fullpath_);
+    if(src_fd_ >= 0)
+      fs::close(src_fd_);
+    if(dst_fd_ >= 0)
+      fs::close(dst_fd_);
+    if(!dst_fullpath_.empty())
+      fs::unlink(dst_fullpath_);
 
-  errno = error;
+    errno = error;
 
-  return -1;
+    return -1;
+  }
 }
-
 
 namespace fs
 {
@@ -91,7 +92,7 @@ namespace fs
       int rv;
       struct stat st;
 
-      if(!is_eligible(flags_))
+      if(!fs::cow::is_eligible(flags_))
         return false;
 
       rv = fs::lstat(fullpath_,&st);
@@ -115,17 +116,17 @@ namespace fs
 
       dst_fullpath = src_fullpath_;
 
-      dst_fd = fs::mktemp(dst_fullpath,O_WRONLY);
+      dst_fd = fs::mktemp(&dst_fullpath,O_WRONLY);
       if(dst_fd == -1)
-        return cleanup_on_error(src_fd);
+        return l::cleanup_on_error(src_fd);
 
       rv = fs::clonefile(src_fd,dst_fd);
       if(rv == -1)
-        return cleanup_on_error(src_fd,dst_fd,dst_fullpath);
+        return l::cleanup_on_error(src_fd,dst_fd,dst_fullpath);
 
       rv = fs::rename(dst_fullpath,src_fullpath_);
       if(rv == -1)
-        return cleanup_on_error(src_fd,dst_fd,dst_fullpath);
+        return l::cleanup_on_error(src_fd,dst_fd,dst_fullpath);
 
       fs::close(src_fd);
       fs::close(dst_fd);

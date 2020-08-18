@@ -1,0 +1,87 @@
+/*
+  ISC License
+
+  Copyright (c) 2017, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include <err.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/errno.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+namespace l
+{
+  static
+  int
+  getpath(const int   dirfd_,
+          const char *path_,
+          char       *fullpath_)
+  {
+    int rv;
+    struct stat st;
+
+    rv = ::fstat(dirfd_,&st);
+    if(rv == -1)
+      return -1;
+
+    if(!S_ISDIR(st.st_mode))
+      return (errno=ENOTDIR,-1);
+
+    rv = ::fcntl(dirfd_,F_GETPATH,fullpath);
+    if(rv == -1)
+      return -1;
+
+    rv = ::strlcat(fullpath_,"/",MAXPATHLEN);
+    if(rv > MAXPATHLEN)
+      return (errno=ENAMETOOLONG,-1);
+
+    rv = ::strlcat(fullpath_,path_,MAXPATHLEN);
+    if(rv > MAXPATHLEN)
+      return (errno=ENAMETOOLONG,-1);
+
+    return 0;
+  }
+}
+
+namespace fs
+{
+  int
+  futimesat(const int             dirfd_,
+            const char           *pathname_,
+            const struct timeval  times_[2])
+  {
+    int rv;
+    char fullpath[MAXPATHLEN];
+
+    if((dirfd_ == AT_FDCWD) ||
+       ((pathname_ != NULL) &&
+        (pathname_[0] == '/')))
+      return ::utimes(pathname_,times_);
+
+    if(dirfd_ < 0)
+      return (errno=EBADF,-1);
+
+    rv = l::getpath(dirfd_,pathname_,fullpath);
+    if(rv == -1)
+      return -1;
+
+    return ::utimes(fullpath,times_);
+  }
+}

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "fs_base_stat.hpp"
+#include "fs_lstat.hpp"
 #include "fs_path.hpp"
 
 #include <string>
@@ -70,7 +70,7 @@ namespace fs
   {
     std::string fullpath;
 
-    fullpath = fs::path::make(&basepath_,relpath_);
+    fullpath = fs::path::make(basepath_,relpath_);
 
     return fs::exists(fullpath,st_);
   }

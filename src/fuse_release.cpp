@@ -17,8 +17,8 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_fadvise.hpp"
+#include "fs_close.hpp"
+#include "fs_fadvise.hpp"
 
 #include <fuse.h>
 

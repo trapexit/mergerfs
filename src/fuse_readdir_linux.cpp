@@ -16,13 +16,13 @@
 
 #include "branch.hpp"
 #include "errno.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_getdents.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_stat.hpp"
+#include "fs_close.hpp"
 #include "fs_devid.hpp"
+#include "fs_getdents64.hpp"
 #include "fs_inode.hpp"
+#include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "fs_stat.hpp"
 #include "hashset.hpp"
 #include "linux_dirent64.h"
 #include "mempools.hpp"
@@ -74,7 +74,7 @@ namespace l
         int dirfd;
         int64_t nread;
 
-        basepath = fs::path::make(&branches_[i].path,dirname_);
+        basepath = fs::path::make(branches_[i].path,dirname_);
 
         dirfd = fs::open_dir_ro(basepath);
         if(dirfd == -1)
@@ -86,7 +86,7 @@ namespace l
 
         for(;;)
           {
-            nread = fs::getdents(dirfd,buf,g_DENTS_BUF_POOL.size());
+            nread = fs::getdents_64(dirfd,buf,g_DENTS_BUF_POOL.size());
             if(nread == -1)
               break;
             if(nread == 0)

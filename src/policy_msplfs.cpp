@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
@@ -59,7 +58,7 @@ namespace msplfs
           error_and_continue(*err_,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(*err_,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(*err_,ENOENT);
         if(info.readonly)
@@ -110,13 +109,13 @@ namespace msplfs
 }
 
 int
-Policy::Func::msplfs(const Category::Enum::Type  type_,
-                     const Branches             &branches_,
-                     const char                 *fusepath_,
-                     const uint64_t              minfreespace_,
-                     vector<string>             *paths_)
+Policy::Func::msplfs(const Category  type_,
+                     const Branches &branches_,
+                     const char     *fusepath_,
+                     const uint64_t  minfreespace_,
+                     vector<string> *paths_)
 {
-  if(type_ == Category::Enum::create)
+  if(type_ == Category::CREATE)
     return msplfs::create(branches_,fusepath_,minfreespace_,paths_);
 
   return Policy::Func::eplfs(type_,branches_,fusepath_,minfreespace_,paths_);

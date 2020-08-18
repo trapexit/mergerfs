@@ -27,9 +27,9 @@
 namespace FUSE
 {
   int
-  readdir_plus_posix(const Branches &branches_,
-                     const char     *dirname_,
-                     const uint64_t  entry_timeout_,
-                     const uint64_t  attr_timeout_,
-                     fuse_dirents_t *buf_);
+  readdir_plus_posix(const Branches &branches,
+                     const char     *dirname,
+                     const uint64_t  entry_timeout,
+                     const uint64_t  attr_timeout,
+                     fuse_dirents_t *buf);
 }

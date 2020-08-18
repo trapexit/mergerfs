@@ -26,24 +26,24 @@ namespace StatVFS
   static
   inline
   bool
-  readonly(const struct statvfs &st)
+  readonly(const struct statvfs &st_)
   {
-    return (st.f_flag & ST_RDONLY);
+    return (st_.f_flag & ST_RDONLY);
   }
 
   static
   inline
   int64_t
-  spaceavail(const struct statvfs &st)
+  spaceavail(const struct statvfs &st_)
   {
-    return (st.f_frsize * st.f_bavail);
+    return (st_.f_frsize * st_.f_bavail);
   }
 
   static
   inline
   int64_t
-  spaceused(const struct statvfs &st)
+  spaceused(const struct statvfs &st_)
   {
-    return (st.f_frsize * (st.f_blocks - st.f_bavail));
+    return (st_.f_frsize * (st_.f_blocks - st_.f_bavail));
   }
 }

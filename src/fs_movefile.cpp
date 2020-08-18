@@ -15,19 +15,19 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_rename.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_base_unlink.hpp"
 #include "fs_clonefile.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_close.hpp"
 #include "fs_file_size.hpp"
 #include "fs_findonfs.hpp"
+#include "fs_getfl.hpp"
 #include "fs_has_space.hpp"
 #include "fs_mktemp.hpp"
+#include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "fs_rename.hpp"
+#include "fs_stat.hpp"
+#include "fs_unlink.hpp"
 #include "policy.hpp"
 #include "ugid.hpp"
 
@@ -97,7 +97,7 @@ namespace l
 
     fs::path::append(fdout_path[0],fusepath_);
     fdout_temp = fdout_path[0];
-    fdout = fs::mktemp(fdout_temp,fdin_flags);
+    fdout = fs::mktemp(&fdout_temp,fdin_flags);
     if(fdout == -1)
       return -1;
 

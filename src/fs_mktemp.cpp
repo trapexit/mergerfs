@@ -17,7 +17,7 @@
 */
 
 #include "errno.hpp"
-#include "fs_base_open.hpp"
+#include "fs_open.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -48,7 +48,7 @@ generate_tmp_path(const string &base_)
 namespace fs
 {
   int
-  mktemp(string    &base_,
+  mktemp(string    *base_,
          const int  flags_)
   {
     int fd;
@@ -61,13 +61,13 @@ namespace fs
     flags = (flags_ | O_EXCL | O_CREAT);
     while(count-- > 0)
       {
-        tmppath = generate_tmp_path(base_);
+        tmppath = generate_tmp_path(*base_);
 
         fd = fs::open(tmppath,flags,S_IWUSR);
         if((fd == -1) && (errno == EEXIST))
           continue;
         else if(fd != -1)
-          base_ = tmppath;
+          *base_ = tmppath;
 
         return fd;
       }

@@ -19,7 +19,7 @@
 namespace FUSE
 {
   int
-  listxattr(const char *fusepath_,
-            char       *buf_,
-            size_t      count_);
+  listxattr(const char *fusepath,
+            char       *buf,
+            size_t      count);
 }

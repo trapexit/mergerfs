@@ -19,5 +19,5 @@
 namespace FUSE
 {
   int
-  rmdir(const char *fusepath_);
+  rmdir(const char *fusepath);
 }

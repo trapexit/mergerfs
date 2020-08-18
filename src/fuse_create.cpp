@@ -18,8 +18,8 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_acl.hpp"
-#include "fs_base_open.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "ugid.hpp"
 

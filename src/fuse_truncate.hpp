@@ -21,6 +21,6 @@
 namespace FUSE
 {
   int
-  truncate(const char *fusepath_,
-           off_t       size_);
+  truncate(const char *fusepath,
+           off_t       size);
 }

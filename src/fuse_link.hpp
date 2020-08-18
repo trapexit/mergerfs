@@ -19,6 +19,6 @@
 namespace FUSE
 {
   int
-  link(const char *from_,
-       const char *to_);
+  link(const char *from,
+       const char *to);
 }

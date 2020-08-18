@@ -21,6 +21,6 @@
 namespace FUSE
 {
   int
-  readdir_plus(fuse_file_info *ffi_,
-               fuse_dirents_t *buf_);
+  readdir_plus(fuse_file_info *ffi,
+               fuse_dirents_t *buf);
 }

@@ -17,7 +17,9 @@
 */
 
 #ifdef __linux__
-# include "fs_copy_file_range_linux.icpp"
+#warning "using fs_copy_file_range_linux.icpp"
+#include "fs_copy_file_range_linux.icpp"
 #else
-# include "fs_copy_file_range_unsupported.icpp"
+#warning "using fs_copy_file_range_unsupported.icpp"
+#include "fs_copy_file_range_unsupported.icpp"
 #endif

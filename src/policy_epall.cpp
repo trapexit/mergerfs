@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
@@ -35,9 +34,9 @@ namespace epall
   static
   int
   create(const Branches &branches_,
-         const char     *fusepath,
-         const uint64_t  minfreespace,
-         vector<string> *paths)
+         const char     *fusepath_,
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -51,22 +50,22 @@ namespace epall
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
 
-        paths->push_back(branch->path);
+        paths_->push_back(branch->path);
       }
 
-    if(paths->empty())
+    if(paths_->empty())
       return (errno=error,-1);
 
     return 0;
@@ -75,8 +74,8 @@ namespace epall
   static
   int
   action(const Branches &branches_,
-         const char     *fusepath,
-         vector<string> *paths)
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -90,7 +89,7 @@ namespace epall
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
@@ -100,10 +99,10 @@ namespace epall
         if(readonly)
           error_and_continue(error,EROFS);
 
-        paths->push_back(branch->path);
+        paths_->push_back(branch->path);
       }
 
-    if(paths->empty())
+    if(paths_->empty())
       return (errno=error,-1);
 
     return 0;
@@ -112,8 +111,8 @@ namespace epall
   static
   int
   search(const Branches &branches_,
-         const char     *fusepath,
-         vector<string> *paths)
+         const char     *fusepath_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -123,13 +122,13 @@ namespace epall
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           continue;
 
-        paths->push_back(branch->path);
+        paths_->push_back(branch->path);
       }
 
-    if(paths->empty())
+    if(paths_->empty())
       return (errno=ENOENT,-1);
 
     return 0;
@@ -137,20 +136,20 @@ namespace epall
 }
 
 int
-Policy::Func::epall(const Category::Enum::Type  type,
-                    const Branches             &branches_,
-                    const char                 *fusepath,
-                    const uint64_t              minfreespace,
-                    vector<string>             *paths)
+Policy::Func::epall(const Category  type_,
+                    const Branches &branches_,
+                    const char     *fusepath_,
+                    const uint64_t  minfreespace_,
+                    vector<string> *paths_)
 {
-  switch(type)
+  switch(type_)
     {
-    case Category::Enum::create:
-      return epall::create(branches_,fusepath,minfreespace,paths);
-    case Category::Enum::action:
-      return epall::action(branches_,fusepath,paths);
-    case Category::Enum::search:
+    case Category::CREATE:
+      return epall::create(branches_,fusepath_,minfreespace_,paths_);
+    case Category::ACTION:
+      return epall::action(branches_,fusepath_,paths_);
+    case Category::SEARCH:
     default:
-      return epall::search(branches_,fusepath,paths);
+      return epall::search(branches_,fusepath_,paths_);
     }
 }

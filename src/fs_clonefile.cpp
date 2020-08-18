@@ -14,52 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
+#include "fs_fstat.hpp"
+#include "fs_copydata.hpp"
 #include "fs_attr.hpp"
-#include "fs_base_chmod.hpp"
-#include "fs_base_chown.hpp"
-#include "fs_base_fadvise.hpp"
-#include "fs_base_fallocate.hpp"
-#include "fs_base_fchmod.hpp"
-#include "fs_base_fchown.hpp"
-#include "fs_base_ftruncate.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_base_utime.hpp"
-#include "fs_copy_file_range.hpp"
-#include "fs_copydata_copy_file_range.hpp"
-#include "fs_copydata_readwrite.hpp"
-#include "fs_ficlone.hpp"
-#include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
+#include "fs_fchown.hpp"
+#include "fs_fchmod.hpp"
+#include "fs_futimens.hpp"
 
 namespace l
 {
-  static
-  int
-  copydata(const int    src_fd_,
-           const int    dst_fd_,
-           const size_t count_)
-  {
-    int rv;
-
-    rv = fs::ftruncate(dst_fd_,count_);
-    if(rv == -1)
-      return -1;
-
-    rv = fs::ficlone(src_fd_,dst_fd_);
-    if(rv != -1)
-      return rv;
-
-    fs::fadvise_willneed(src_fd_,0,count_);
-    fs::fadvise_sequential(src_fd_,0,count_);
-
-    rv = fs::copydata_copy_file_range(src_fd_,dst_fd_);
-    if(rv != -1)
-      return rv;
-
-    return fs::copydata_readwrite(src_fd_,dst_fd_);
-  }
-
   static
   bool
   ignorable_error(const int err_)
@@ -91,7 +55,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    rv = l::copydata(src_fd_,dst_fd_,src_st.st_size);
+    rv = fs::copydata(src_fd_,dst_fd_,src_st.st_size);
     if(rv == -1)
       return -1;
 
@@ -111,7 +75,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    rv = fs::futime(dst_fd_,src_st);
+    rv = fs::futimens(dst_fd_,src_st);
     if(rv == -1)
       return -1;
 
