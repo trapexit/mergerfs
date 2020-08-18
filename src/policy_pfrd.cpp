@@ -31,6 +31,11 @@ using std::vector;
 
 namespace pfrd
 {
+  struct branch_info {
+    uint64_t spaceavail;
+    const string *basepath;
+  };
+
   uint64_t get_int64_rand(uint64_t const& min, uint64_t const& max)
   {
     return (((uint64_t)(unsigned int)rand() << 32) + (uint64_t)(unsigned int)rand()) % (max - min) + min;
@@ -51,10 +56,9 @@ namespace pfrd
     fs::info_t info;
     const Branch *branch;
     const string *pfrdbasepath;
-    uint64_t cache_spaceavail_branches[256];
-    bool useable_branches[256];
-    const string *cache_basepath_branches[256];
     size_t branch_count = branches_.size();
+    bool useable_branches[branch_count];
+    branch_info branches_cache[branch_count];
 
     error = ENOENT;
     pfrdbasepath = NULL;
@@ -73,9 +77,9 @@ namespace pfrd
         if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
 
-        cache_spaceavail_branches[i] = info.spaceavail;
         useable_branches[i] = true;
-        cache_basepath_branches[i] = &branch->path;
+        branches_cache[i].spaceavail = info.spaceavail;
+        branches_cache[i].basepath = &branch->path;
 
         sum += info.spaceavail;
       }
@@ -87,10 +91,10 @@ namespace pfrd
         if (!useable_branches[i])
           continue;
 
-        index += cache_spaceavail_branches[i];
+        index += branches_cache[i].spaceavail;
 
         if(index > byte_index) {
-          pfrdbasepath = cache_basepath_branches[i];
+          pfrdbasepath = branches_cache[i].basepath;
           break;
         }
       }
