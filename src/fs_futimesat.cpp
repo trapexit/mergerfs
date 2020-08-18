@@ -17,7 +17,9 @@
 */
 
 #if __APPLE__
-# include "fs_futimesat_osx.icpp"
+#warning "using fs_futimesat_osx.icpp"
+#include "fs_futimesat_osx.icpp"
 #else
-# include "fs_futimesat_generic.icpp"
+#warning "using fs_futimesat_generic.icpp"
+#include "fs_futimesat_generic.icpp"
 #endif
