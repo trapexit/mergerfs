@@ -57,7 +57,6 @@ namespace pfrd
     const Branch *branch;
     const string *pfrdbasepath;
     size_t branch_count = branches_.size();
-    bool useable_branches[branch_count];
     branch_info branches_cache[branch_count];
 
     error = ENOENT;
@@ -66,6 +65,7 @@ namespace pfrd
     for(size_t i = 0; i != branch_count; i++)
       {
         branch = &branches_[i];
+        branches_cache[i].basepath = NULL;
 
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
@@ -77,7 +77,6 @@ namespace pfrd
         if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
 
-        useable_branches[i] = true;
         branches_cache[i].spaceavail = info.spaceavail;
         branches_cache[i].basepath = &branch->path;
 
@@ -88,7 +87,7 @@ namespace pfrd
 
     for(size_t i = 0; i != branch_count; i++)
       {
-        if (!useable_branches[i])
+        if (!branches_cache[i].basepath)
           continue;
 
         index += branches_cache[i].spaceavail;
