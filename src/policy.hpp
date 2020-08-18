@@ -49,7 +49,7 @@ public:
         mspmfs,
         newest,
         rand,
-        fair,
+        pfrd,
         END
       };
 
@@ -131,7 +131,7 @@ public:
     static int mspmfs(CType,const Branches&,const char *,cuint64_t,strvec*);
     static int newest(CType,const Branches&,const char *,cuint64_t,strvec*);
     static int rand(CType,const Branches&,const char *,cuint64_t,strvec*);
-    static int fair(CType,const Branches&,const char *,cuint64_t,strvec*);
+    static int pfrd(CType,const Branches&,const char *,cuint64_t,strvec*);
   };
 
 private:
@@ -213,7 +213,7 @@ public:
   static const Policy &mspmfs;
   static const Policy &newest;
   static const Policy &rand;
-  static const Policy &fair;
+  static const Policy &pfrd;
 };
 
 namespace std

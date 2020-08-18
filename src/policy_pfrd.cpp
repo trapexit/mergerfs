@@ -29,7 +29,7 @@
 using std::string;
 using std::vector;
 
-namespace fair
+namespace pfrd
 {
   uint64_t get_int64_rand(uint64_t const& min, uint64_t const& max)
   {
@@ -47,15 +47,19 @@ namespace fair
     int rv;
     int error;
     uint64_t sum, index;
-    uint64_t random_byte;
+    uint64_t byte_index;
     fs::info_t info;
     const Branch *branch;
-    const string *fairbasepath;
+    const string *pfrdbasepath;
+    uint64_t cache_spaceavail_branches[256];
+    bool useable_branches[256];
+    const string *cache_basepath_branches[256];
+    size_t branch_count = branches_.size();
 
     error = ENOENT;
-    fairbasepath = NULL;
+    pfrdbasepath = NULL;
     sum = 0, index = 0;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(size_t i = 0; i != branch_count; i++)
       {
         branch = &branches_[i];
 
@@ -68,52 +72,47 @@ namespace fair
           error_and_continue(error,EROFS);
         if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
+
+        cache_spaceavail_branches[i] = info.spaceavail;
+        useable_branches[i] = true;
+        cache_basepath_branches[i] = &branch->path;
 
         sum += info.spaceavail;
       }
 
-    random_byte = get_int64_rand(0, sum);
+    byte_index = get_int64_rand(0, sum);
 
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(size_t i = 0; i != branch_count; i++)
       {
-        branch = &branches_[i];
+        if (!useable_branches[i])
+          continue;
 
-        if(branch->ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
-          error_and_continue(error,ENOSPC);
+        index += cache_spaceavail_branches[i];
 
-        index += info.spaceavail;
-
-        if(index > random_byte) {
-          fairbasepath = &branch->path;
+        if(index > byte_index) {
+          pfrdbasepath = cache_basepath_branches[i];
           break;
         }
       }
 
-    if(fairbasepath == NULL)
+    if(pfrdbasepath == NULL)
       return (errno=error,-1);
 
-    paths_->push_back(*fairbasepath);
+    paths_->push_back(*pfrdbasepath);
 
     return 0;
   }
 }
 
 int
-Policy::Func::fair(const Category::Enum::Type  type,
+Policy::Func::pfrd(const Category::Enum::Type  type,
                   const Branches             &branches_,
                   const char                 *fusepath,
                   const uint64_t              minfreespace,
                   vector<string>             *paths)
 {
   if(type == Category::Enum::create)
-    return fair::create(branches_,minfreespace,paths);
+    return pfrd::create(branches_,minfreespace,paths);
 
   return Policy::Func::epmfs(type,branches_,fusepath,minfreespace,paths);
 }
