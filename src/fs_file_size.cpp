@@ -16,7 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_base_stat.hpp"
+#include "fs_fstat.hpp"
 
 #include <stdint.h>
 

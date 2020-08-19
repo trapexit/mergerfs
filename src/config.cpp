@@ -18,7 +18,6 @@
 #include "ef.hpp"
 #include "errno.hpp"
 #include "from_string.hpp"
-#include "fs.hpp"
 #include "num.hpp"
 #include "rwlock.hpp"
 #include "to_string.hpp"

@@ -59,8 +59,8 @@ namespace ugid
 
   struct Set
   {
-    Set(const uid_t newuid,
-        const gid_t newgid)
+    Set(const uid_t newuid_,
+        const gid_t newgid_)
     {
       if(!initialized)
         {
@@ -69,7 +69,7 @@ namespace ugid
           initialized = true;
         }
 
-      if(newuid == currentuid && newgid == currentgid)
+      if((newuid_ == currentuid) && (newgid_ == currentgid))
         return;
 
       if(currentuid != 0)
@@ -78,17 +78,17 @@ namespace ugid
           SETREGID(-1,0);
         }
 
-      if(newgid)
+      if(newgid_)
         {
-          SETREGID(-1,newgid);
-          initgroups(newuid,newgid);
+          SETREGID(-1,newgid_);
+          initgroups(newuid_,newgid_);
         }
 
-      if(newuid)
-        SETREUID(-1,newuid);
+      if(newuid_)
+        SETREUID(-1,newuid_);
 
-      currentuid = newuid;
-      currentgid = newgid;
+      currentuid = newuid_;
+      currentgid = newgid_;
     }
   };
 

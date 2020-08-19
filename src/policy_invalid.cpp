@@ -24,11 +24,11 @@ using std::string;
 using std::vector;
 
 int
-Policy::Func::invalid(const Category::Enum::Type  type,
-                      const Branches             &branches_,
-                      const char                 *fusepath,
-                      const uint64_t              minfreespace,
-                      vector<string>             *paths)
+Policy::Func::invalid(const Category  type_,
+                      const Branches &branches_,
+                      const char     *fusepath_,
+                      const uint64_t  minfreespace_,
+                      vector<string> *paths_)
 {
   return (errno=EINVAL,-1);
 }

@@ -16,9 +16,9 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_base_statvfs.hpp"
+#include "fs_lstat.hpp"
 #include "fs_path.hpp"
+#include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
 
@@ -99,7 +99,7 @@ namespace l
     for(size_t i = 0, ei = branches_.size(); i < ei; i++)
       {
         fullpath = ((mode_ == StatFS::ENUM::FULL) ?
-                    fs::path::make(&branches_[i].path,fusepath_) :
+                    fs::path::make(branches_[i].path,fusepath_) :
                     branches_[i].path);
 
         rv = fs::lstat(fullpath,&st);

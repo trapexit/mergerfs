@@ -18,15 +18,15 @@
 
 #include "branch.hpp"
 #include "errno.hpp"
-#include "fs_base_closedir.hpp"
-#include "fs_base_dirfd.hpp"
-#include "fs_base_opendir.hpp"
-#include "fs_base_readdir.hpp"
-#include "fs_base_fstatat.hpp"
-#include "fs_base_stat.hpp"
+#include "fs_closedir.hpp"
 #include "fs_devid.hpp"
+#include "fs_dirfd.hpp"
+#include "fs_fstatat.hpp"
 #include "fs_inode.hpp"
+#include "fs_opendir.hpp"
 #include "fs_path.hpp"
+#include "fs_readdir.hpp"
+#include "fs_stat.hpp"
 #include "hashset.hpp"
 
 #include <fuse.h>
@@ -83,7 +83,7 @@ namespace l
         int dirfd;
         DIR *dh;
 
-        basepath = fs::path::make(&branches_[i].path,dirname_);
+        basepath = fs::path::make(branches_[i].path,dirname_);
 
         dh = fs::opendir(basepath);
         if(!dh)

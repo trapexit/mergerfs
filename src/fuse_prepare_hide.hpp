@@ -23,6 +23,6 @@
 namespace FUSE
 {
   int
-  prepare_hide(const char *name_,
-               uint64_t   *fh_);
+  prepare_hide(const char *name,
+               uint64_t   *fh);
 }

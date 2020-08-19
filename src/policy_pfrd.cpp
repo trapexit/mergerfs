@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
@@ -69,7 +68,7 @@ namespace pfrd
 
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -108,14 +107,14 @@ namespace pfrd
 }
 
 int
-Policy::Func::pfrd(const Category::Enum::Type  type,
+Policy::Func::pfrd(const Category  type_,
                   const Branches             &branches_,
                   const char                 *fusepath,
                   const uint64_t              minfreespace,
                   vector<string>             *paths)
 {
-  if(type == Category::Enum::create)
+  if(type_ == Category::CREATE)
     return pfrd::create(branches_,minfreespace,paths);
 
-  return Policy::Func::epmfs(type,branches_,fusepath,minfreespace,paths);
+  return Policy::Func::epmfs(type_,branches_,fusepath,minfreespace,paths);
 }

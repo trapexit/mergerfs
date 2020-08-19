@@ -26,24 +26,24 @@ namespace symlinkify
   static
   inline
   bool
-  can_be_symlink(const struct stat &st,
-                 const time_t       timeout)
+  can_be_symlink(const struct stat &st_,
+                 const time_t       timeout_)
   {
-    if(S_ISDIR(st.st_mode) ||
-       (st.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
+    if(S_ISDIR(st_.st_mode) ||
+       (st_.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
       return false;
 
     const time_t now = ::time(NULL);
 
-    return (((now - st.st_mtime) > timeout) &&
-            ((now - st.st_ctime) > timeout));
+    return (((now - st_.st_mtime) > timeout_) &&
+            ((now - st_.st_ctime) > timeout_));
   }
 
   static
   inline
   mode_t
-  convert(const mode_t mode)
+  convert(const mode_t mode_)
   {
-    return ((mode & ~S_IFMT) | S_IFLNK);
+    return ((mode_ & ~S_IFMT) | S_IFLNK);
   }
 }

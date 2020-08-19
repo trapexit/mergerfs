@@ -18,9 +18,7 @@
 
 #pragma once
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include "fs_fstat.hpp"
 
 namespace fs
 {
@@ -32,7 +30,7 @@ namespace fs
     int rv;
     struct stat st;
 
-    rv = ::fstat(fd_,&st);
+    rv = fs::fstat(fd_,&st);
     if(rv == -1)
       return -1;
 

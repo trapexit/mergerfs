@@ -26,21 +26,21 @@ namespace fs
   uint64_t
   statvfs_cache_timeout(void);
   void
-  statvfs_cache_timeout(const uint64_t timeout_);
+  statvfs_cache_timeout(const uint64_t timeout);
 
   int
-  statvfs_cache(const char     *path_,
-                struct statvfs *st_);
+  statvfs_cache(const char     *path,
+                struct statvfs *st);
 
   int
-  statvfs_cache_readonly(const std::string &path_,
-                         bool              *readonly_);
+  statvfs_cache_readonly(const std::string &path,
+                         bool              *readonly);
 
   int
-  statvfs_cache_spaceavail(const std::string &path_,
-                           uint64_t          *spaceavail_);
+  statvfs_cache_spaceavail(const std::string &path,
+                           uint64_t          *spaceavail);
 
   int
-  statvfs_cache_spaceused(const std::string &path_,
-                          uint64_t          *spaceused_);
+  statvfs_cache_spaceused(const std::string &path,
+                          uint64_t          *spaceused);
 }

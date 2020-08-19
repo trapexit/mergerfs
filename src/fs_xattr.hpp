@@ -30,21 +30,21 @@ namespace fs
 
 
     int list(const string   &path,
-             vector<char>   &attrs);
+             vector<char>   *attrs);
     int list(const string   &path,
-             string         &attrs);
+             string         *attrs);
     int list(const string   &path,
-             vector<string> &attrs);
+             vector<string> *attrs);
 
     int get(const string &path,
             const string &attr,
-            vector<char> &value);
+            vector<char> *value);
     int get(const string &path,
             const string &attr,
-            string       &value);
+            string       *value);
 
     int get(const string       &path,
-            map<string,string> &attrs);
+            map<string,string> *attrs);
 
     int set(const string &path,
             const string &key,

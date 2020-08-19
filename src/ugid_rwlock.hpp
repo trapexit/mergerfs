@@ -29,18 +29,18 @@ namespace ugid
 
   static
   void
-  ugid_set(const uid_t newuid,
-           const gid_t newgid)
+  ugid_set(const uid_t newuid_,
+           const gid_t newgid_)
   {
     pthread_rwlock_rdlock(&rwlock);
 
-    if(newuid == currentuid && newgid == currentgid)
+    if((newuid_ == currentuid) && (newgid_ == currentgid))
       return;
 
     pthread_rwlock_unlock(&rwlock);
     pthread_rwlock_wrlock(&rwlock);
 
-    if(newuid == currentuid && newgid == currentgid)
+    if((newuid_ == currentuid) && (newgid_ == currentgid))
       return;
 
     if(currentuid != 0)
@@ -49,25 +49,25 @@ namespace ugid
         ::setegid(0);
       }
 
-    if(newgid)
+    if(newgid_)
       {
-        ::setegid(newgid);
-        initgroups(newuid,newgid);
+        ::setegid(newgid_);
+        initgroups(newuid_,newgid_);
       }
 
-    if(newuid)
-      ::seteuid(newuid);
+    if(newuid_)
+      ::seteuid(newuid_);
 
-    currentuid = newuid;
-    currentgid = newgid;
+    currentuid = newuid_;
+    currentgid = newgid_;
   }
 
   struct Set
   {
-    Set(const uid_t newuid,
-        const gid_t newgid)
+    Set(const uid_t newuid_,
+        const gid_t newgid_)
     {
-      ugid_set(newuid,newgid);
+      ugid_set(newuid_,newgid_);
     }
 
     ~Set()

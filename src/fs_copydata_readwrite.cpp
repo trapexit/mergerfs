@@ -15,10 +15,10 @@
 */
 
 #include "errno.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_base_lseek.hpp"
-#include "fs_base_read.hpp"
-#include "fs_base_write.hpp"
+#include "fs_fstat.hpp"
+#include "fs_lseek.hpp"
+#include "fs_read.hpp"
+#include "fs_write.hpp"
 
 #include <vector>
 

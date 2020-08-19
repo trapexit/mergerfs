@@ -22,6 +22,6 @@
 namespace fs
 {
   void
-  glob(const std::string        &pattern_,
-       std::vector<std::string> &strs_);
+  glob(const std::string        &pattern,
+       std::vector<std::string> *strs);
 }

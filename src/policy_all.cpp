@@ -50,7 +50,7 @@ namespace all
 
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -69,13 +69,13 @@ namespace all
 }
 
 int
-Policy::Func::all(const Category::Enum::Type  type_,
-                  const Branches             &branches_,
-                  const char                 *fusepath_,
-                  const uint64_t              minfreespace_,
-                  vector<string>             *paths_)
+Policy::Func::all(const Category  type_,
+                  const Branches &branches_,
+                  const char     *fusepath_,
+                  const uint64_t  minfreespace_,
+                  vector<string> *paths_)
 {
-  if(type_ == Category::Enum::create)
+  if(type_ == Category::CREATE)
     return all::create(branches_,minfreespace_,paths_);
 
   return Policy::Func::epall(type_,branches_,fusepath_,minfreespace_,paths_);

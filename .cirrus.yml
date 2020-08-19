@@ -6,7 +6,14 @@ freebsd_task:
     ASSUME_ALWAYS_YES: yes
   script:
     - tools/install-build-pkgs
-    - gmake
+    - gmake -j4
+
+#macos_task:
+#  osx_instance:
+#    image: catalina-base
+#  script:
+#    - tools/install-build-pkgs
+#    - gmake -j4
 
 linux_task:
   name: "alpine:3.11"
@@ -56,39 +63,45 @@ linux_task:
     - make rpm
 
 linux_task:
-  name: "ubuntu:20.04"
+  name: "fedora:30"
   container:
-    image: ubuntu:20.04
+    image: fedora:30
     cpu: 4
     memory: 2G
   timeout_in: 10m
   script:
     - tools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
+    - make
+    - make rpm
 
 linux_task:
-  name: "ubuntu:19.10"
+  name: "fedora:31"
   container:
-    image: ubuntu:19.10
+    image: fedora:31
     cpu: 4
     memory: 2G
   timeout_in: 10m
   script:
     - tools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
+    - make
+    - make rpm
 
 linux_task:
-  name: "ubuntu:18.04"
+  name: "fedora:32"
   container:
-    image: ubuntu:18.04
+    image: fedora:32
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "ubuntu:14.04"
+  container:
+    image: ubuntu:14.04
     cpu: 4
     memory: 2G
   timeout_in: 10m
@@ -116,9 +129,9 @@ linux_task:
     - mergerfs -v || true
 
 linux_task:
-  name: "ubuntu:14.04"
+  name: "ubuntu:18.04"
   container:
-    image: ubuntu:14.04
+    image: ubuntu:18.04
     cpu: 4
     memory: 2G
   timeout_in: 10m
@@ -131,9 +144,9 @@ linux_task:
     - mergerfs -v || true
 
 linux_task:
-  name: "debian:10"
+  name: "ubuntu:19.10"
   container:
-    image: debian:10
+    image: ubuntu:19.10
     cpu: 4
     memory: 2G
   timeout_in: 10m
@@ -146,9 +159,24 @@ linux_task:
     - mergerfs -v || true
 
 linux_task:
-  name: "debian:9"
+  name: "ubuntu:20.04"
   container:
-    image: debian:9
+    image: ubuntu:20.04
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:7"
+  container:
+    image: debian:8
     cpu: 4
     memory: 2G
   timeout_in: 10m
@@ -176,9 +204,24 @@ linux_task:
     - mergerfs -v || true
 
 linux_task:
-  name: "debian:7"
+  name: "debian:9"
   container:
-    image: debian:8
+    image: debian:9
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:10"
+  container:
+    image: debian:10
     cpu: 4
     memory: 2G
   timeout_in: 10m

@@ -16,7 +16,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_removexattr.hpp"
+#include "fs_lremovexattr.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "ugid.hpp"

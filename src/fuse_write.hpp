@@ -21,14 +21,14 @@
 namespace FUSE
 {
   int
-  write(const char     *buf_,
-        size_t          count_,
-        off_t           offset_,
-        fuse_file_info *ffi_);
+  write(const char     *buf,
+        size_t          count,
+        off_t           offset,
+        fuse_file_info *ffi);
 
   int
-  write_null(const char     *buf_,
-             size_t          count_,
-             off_t           offset_,
-             fuse_file_info *ffi_);
+  write_null(const char     *buf,
+             size_t          count,
+             off_t           offset,
+             fuse_file_info *ffi);
 }

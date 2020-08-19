@@ -17,7 +17,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
-#include "fs_base_mknod.hpp"
+#include "fs_mknod.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
@@ -59,7 +59,7 @@ namespace l
     int rv;
     string fullpath;
 
-    fullpath = fs::path::make(&createpath_,fusepath_);
+    fullpath = fs::path::make(createpath_,fusepath_);
 
     rv = l::mknod_core(fullpath,mode_,umask_,dev_);
 

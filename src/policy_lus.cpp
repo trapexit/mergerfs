@@ -15,7 +15,6 @@
 */
 
 #include "errno.hpp"
-#include "fs.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
@@ -35,8 +34,8 @@ namespace lus
   static
   int
   create(const Branches &branches_,
-         const uint64_t  minfreespace,
-         vector<string> *paths)
+         const uint64_t  minfreespace_,
+         vector<string> *paths_)
   {
     rwlock::ReadGuard guard(&branches_.lock);
 
@@ -56,12 +55,12 @@ namespace lus
 
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(&branch->path,&info);
+        rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace)
+        if(info.spaceavail < minfreespace_)
           error_and_continue(error,ENOSPC);
         if(info.spaceused >= lus)
           continue;
@@ -73,21 +72,21 @@ namespace lus
     if(lusbasepath == NULL)
       return (errno=error,-1);
 
-    paths->push_back(*lusbasepath);
+    paths_->push_back(*lusbasepath);
 
     return 0;
   }
 }
 
 int
-Policy::Func::lus(const Category::Enum::Type  type,
-                  const Branches             &branches_,
-                  const char                 *fusepath,
-                  const uint64_t              minfreespace,
-                  vector<string>             *paths)
+Policy::Func::lus(const Category  type_,
+                  const Branches &branches_,
+                  const char     *fusepath_,
+                  const uint64_t  minfreespace_,
+                  vector<string> *paths_)
 {
-  if(type == Category::Enum::create)
-    return lus::create(branches_,minfreespace,paths);
+  if(type_ == Category::CREATE)
+    return lus::create(branches_,minfreespace_,paths_);
 
-  return Policy::Func::eplus(type,branches_,fusepath,minfreespace,paths);
+  return Policy::Func::eplus(type_,branches_,fusepath_,minfreespace_,paths_);
 }

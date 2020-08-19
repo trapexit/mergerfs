@@ -16,8 +16,8 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_stat.hpp"
 #include "fs_inode.hpp"
+#include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"

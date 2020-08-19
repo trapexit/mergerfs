@@ -16,7 +16,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_chmod.hpp"
+#include "fs_lchmod.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "ugid.hpp"
@@ -45,7 +45,7 @@ namespace l
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::chmod(fullpath,mode_);
+    rv = fs::lchmod(fullpath,mode_);
 
     return error::calc(rv,error_,errno);
   }

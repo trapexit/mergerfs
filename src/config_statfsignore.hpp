@@ -26,4 +26,5 @@ enum class StatFSIgnoreEnum
     RO,
     NC
   };
+
 typedef Enum<StatFSIgnoreEnum> StatFSIgnore;

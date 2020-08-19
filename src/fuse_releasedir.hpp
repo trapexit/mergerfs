@@ -21,5 +21,5 @@
 namespace FUSE
 {
   int
-  releasedir(fuse_file_info *ffi_);
+  releasedir(fuse_file_info *ffi);
 }

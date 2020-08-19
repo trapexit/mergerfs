@@ -18,7 +18,7 @@
 #include "category.hpp"
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_listxattr.hpp"
+#include "fs_llistxattr.hpp"
 #include "fs_path.hpp"
 #include "ugid.hpp"
 #include "xattr.hpp"

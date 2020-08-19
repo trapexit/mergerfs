@@ -16,7 +16,7 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_base_rmdir.hpp"
+#include "fs_rmdir.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "ugid.hpp"

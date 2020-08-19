@@ -28,7 +28,7 @@ namespace fs
 {
   void
   glob(const string   &pattern_,
-       vector<string> &strs_)
+       vector<string> *strs_)
   {
     int flags;
     glob_t gbuf = {0};
@@ -37,7 +37,7 @@ namespace fs
     ::glob(pattern_.c_str(),flags,NULL,&gbuf);
 
     for(size_t i = 0; i < gbuf.gl_pathc; i++)
-      strs_.push_back(gbuf.gl_pathv[i]);
+      strs_->push_back(gbuf.gl_pathv[i]);
 
     ::globfree(&gbuf);
   }

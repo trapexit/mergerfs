@@ -19,6 +19,6 @@
 namespace FUSE
 {
   int
-  symlink(const char *oldpath_,
-          const char *newpath_);
+  symlink(const char *oldpath,
+          const char *newpath);
 }

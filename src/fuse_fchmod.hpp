@@ -23,6 +23,6 @@
 namespace FUSE
 {
   int
-  fchmod(const struct fuse_file_info *ffi_,
-         const mode_t                 mode_);
+  fchmod(const fuse_file_info *ffi,
+         const mode_t          mode);
 }

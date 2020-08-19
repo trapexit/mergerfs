@@ -15,8 +15,8 @@
 */
 
 #include "errno.hpp"
-#include "fs_base_stat.hpp"
 #include "fs_copy_file_range.hpp"
+#include "fs_fstat.hpp"
 
 #include <stdint.h>
 

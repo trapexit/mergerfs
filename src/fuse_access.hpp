@@ -19,6 +19,6 @@
 namespace FUSE
 {
   int
-  access(const char *fusepath_,
-         int         mask_);
+  access(const char *fusepath,
+         int         mask);
 }

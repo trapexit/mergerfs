@@ -19,8 +19,8 @@
 namespace FUSE
 {
   int
-  getxattr(const char *fusepath_,
-           const char *attrname_,
-           char       *buf_,
-           size_t      count_);
+  getxattr(const char *fusepath,
+           const char *attrname,
+           char       *buf,
+           size_t      count);
 }

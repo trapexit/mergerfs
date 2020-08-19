@@ -23,39 +23,37 @@ namespace fs
 {
   namespace path
   {
-    using std::string;
+    std::string dirname(const char *path);
+    std::string dirname(const std::string &path);
 
-    string dirname(const char *path);
-    string dirname(const string &path);
-
-    string basename(const string &path);
+    std::string basename(const std::string &path);
 
     static
     inline
     void
-    append(string     &base,
-           const char *suffix)
+    append(std::string &base_,
+           const char  *suffix_)
     {
-      base += suffix;
+      base_ += suffix_;
     }
 
     static
     inline
     void
-    append(string       &base,
-           const string &suffix)
+    append(std::string       &base_,
+           const std::string &suffix_)
     {
-      base += suffix;
+      base_ += suffix_;
     }
 
     static
     inline
-    string
+    std::string
     make(const char *base_,
          const char *suffix_)
     {
       char back;
-      string path(base_);
+      std::string path(base_);
 
       back = *path.rbegin();
       if((back != '/') && (suffix_[0] != '/'))
@@ -67,36 +65,18 @@ namespace fs
 
     static
     inline
-    string
-    make(const string &base_,
-         const char   *suffix_)
+    std::string
+    make(const std::string &base_,
+         const char        *suffix_)
     {
       return (base_ + suffix_);
     }
 
     static
     inline
-    string
-    make(const string *base_,
-         const char   *suffix_)
-    {
-      return (*base_ + suffix_);
-    }
-
-    static
-    inline
-    string
-    make(const string *base_,
-         const string *suffix_)
-    {
-      return (*base_ + *suffix_);
-    }
-
-    static
-    inline
-    string
-    make(const string &base_,
-         const string &suffix_)
+    std::string
+    make(const std::string &base_,
+         const std::string &suffix_)
     {
       return (base_ + suffix_);
     }

@@ -23,12 +23,12 @@
 namespace FUSE
 {
   int
-  write_buf(struct fuse_bufvec *buf_,
-            off_t               offset_,
-            fuse_file_info     *ffi_);
+  write_buf(struct fuse_bufvec *buf,
+            off_t               offset,
+            fuse_file_info     *ffi);
 
   int
-  write_buf_null(struct fuse_bufvec *buf_,
-                 off_t               offset_,
-                 fuse_file_info     *ffi_);
+  write_buf_null(struct fuse_bufvec *buf,
+                 off_t               offset,
+                 fuse_file_info     *ffi);
 }

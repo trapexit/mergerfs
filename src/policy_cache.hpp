@@ -41,16 +41,16 @@ public:
   PolicyCache(void);
 
 public:
-  void erase(const char *fusepath_);
-  void cleanup(const int prob_ = 1);
+  void erase(const char *fusepath);
+  void cleanup(const int prob = 1);
   void clear(void);
 
 public:
-  int operator()(Policy::Func::Search &func_,
-                 const Branches       &branches_,
-                 const char           *fusepath_,
-                 const uint64_t        minfreespace_,
-                 std::string          *branch_);
+  int operator()(Policy::Func::Search &func,
+                 const Branches       &branches,
+                 const char           *fusepath,
+                 const uint64_t        minfreespace,
+                 std::string          *branch);
 
 public:
   uint64_t timeout;

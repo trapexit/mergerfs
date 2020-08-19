@@ -16,7 +16,7 @@
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_fchown.hpp"
+#include "fs_fchown.hpp"
 
 #include <fuse.h>
 

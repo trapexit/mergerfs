@@ -16,7 +16,7 @@
 
 #include "errno.hpp"
 #include "fileinfo.hpp"
-#include "fs_base_ftruncate.hpp"
+#include "fs_ftruncate.hpp"
 
 #include <fuse.h>
 
