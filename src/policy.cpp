@@ -32,6 +32,7 @@ const std::vector<Policy> Policy::_policies_ =
   (POLICY(eplfs,PRESERVES_PATH))
   (POLICY(eplus,PRESERVES_PATH))
   (POLICY(epmfs,PRESERVES_PATH))
+  (POLICY(eppfrd,PRESERVES_PATH))
   (POLICY(eprand,PRESERVES_PATH))
   (POLICY(erofs,DOESNT_PRESERVE_PATH))
   (POLICY(ff,DOESNT_PRESERVE_PATH))
@@ -41,7 +42,9 @@ const std::vector<Policy> Policy::_policies_ =
   (POLICY(msplfs,PRESERVES_PATH))
   (POLICY(msplus,PRESERVES_PATH))
   (POLICY(mspmfs,PRESERVES_PATH))
+  (POLICY(msppfrd,PRESERVES_PATH))
   (POLICY(newest,DOESNT_PRESERVE_PATH))
+  (POLICY(pfrd,DOESNT_PRESERVE_PATH))
   (POLICY(rand,DOESNT_PRESERVE_PATH));
 
 const Policy * const Policy::policies = &_policies_[1];
@@ -55,6 +58,7 @@ CONST_POLICY(epff);
 CONST_POLICY(eplfs);
 CONST_POLICY(eplus);
 CONST_POLICY(epmfs);
+CONST_POLICY(eppfrd);
 CONST_POLICY(eprand);
 CONST_POLICY(erofs);
 CONST_POLICY(ff);
@@ -64,19 +68,21 @@ CONST_POLICY(mfs);
 CONST_POLICY(msplfs);
 CONST_POLICY(msplus);
 CONST_POLICY(mspmfs);
+CONST_POLICY(msppfrd);
 CONST_POLICY(newest);
+CONST_POLICY(pfrd);
 CONST_POLICY(rand);
 
 const Policy&
 Policy::find(const std::string &str)
 {
-for(int i = Enum::BEGIN; i != Enum::END; ++i)
-  {
-    if(policies[i] == str)
-      return policies[i];
-  }
+  for(int i = Enum::BEGIN; i != Enum::END; ++i)
+    {
+      if(policies[i] == str)
+        return policies[i];
+    }
 
- return invalid;
+  return invalid;
 }
 
 const Policy&

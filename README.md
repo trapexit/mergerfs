@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-07
+% 2020-08-20
 
 # NAME
 
@@ -306,22 +306,25 @@ Because of the nature of the behavior the policies act diffierently depending on
 
 | Policy           | Description                                                |
 |------------------|------------------------------------------------------------|
-| all | Search: same as **epall**. Action: same as **epall**. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
-| epall (existing path, all) | Search: same as **epff** (but more expensive because it doesn't stop after finding a valid branch). Action: apply to all found. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
+| all | Search: Same as **epall**. Action: Same as **epall**. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
+| epall (existing path, all) | Search: Same as **epff** (but more expensive because it doesn't stop after finding a valid branch). Action: apply to all found. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
 | epff (existing path, first found) | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists. |
 | eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the drive with the least free space. |
 | eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
 | epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
+| eppfrd (existing path, percentage free random distribution) | Like **pfrd** but limited to existing paths.  |
 | eprand (existing path, random) | Calls **epall** and then randomizes. Returns 1. |
 | erofs | Exclusively return **-1** with **errno** set to **EROFS** (read-only filesystem). |
-| ff (first found) | Search: same as **epff**. Action: same as **epff**. Create: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
-| lfs (least free space) | Search: same as **eplfs**. Action: same as **eplfs**. Create: Pick the drive with the least available free space. |
-| lus (least used space) | Search: same as **eplus**. Action: same as **eplus**. Create: Pick the drive with the least used space. |
-| mfs (most free space) | Search: same as **epmfs**. Action: same as **epmfs**. Create: Pick the drive with the most available free space. |
-| msplfs (most shared path, least free space) | Search: same as **eplfs**. Action: same as **eplfs**. Create: like **eplfs** but walk back the path if it fails to find a branch at that level. |
-| msplus (most shared path, least used space) | Search: same as **eplus**. Action: same as **eplus**. Create: like **eplus** but walk back the path if it fails to find a branch at that level. |
-| mspmfs (most shared path, most free space) | Search: same as **epmfss**. Action: same as **epmfs**. Create: like **eplmfs** but walk back the path if it fails to find a branch at that level. |
+| ff (first found) | Search: Same as **epff**. Action: Same as **epff**. Create: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
+| lfs (least free space) | Search: Same as **eplfs**. Action: Same as **eplfs**. Create: Pick the drive with the least available free space. |
+| lus (least used space) | Search: Same as **eplus**. Action: Same as **eplus**. Create: Pick the drive with the least used space. |
+| mfs (most free space) | Search: Same as **epmfs**. Action: Same as **epmfs**. Create: Pick the drive with the most available free space. |
+| msplfs (most shared path, least free space) | Search: Same as **eplfs**. Action: Same as **eplfs**. Create: like **eplfs** but walk back the path if it fails to find a branch at that level. |
+| msplus (most shared path, least used space) | Search: Same as **eplus**. Action: Same as **eplus**. Create: like **eplus** but walk back the path if it fails to find a branch at that level. |
+| mspmfs (most shared path, most free space) | Search: Same as **epmfss**. Action: Same as **epmfs**. Create: like **eplmfs** but walk back the path if it fails to find a branch at that level. |
+| msppfrd (most shared path, percentage free random distribution) | Search: Same as **eppfrd**. Action: Same as **eppfrd**. Create: Like **eppfrd** but will walk back the path if it fails to find a branch at that level. |
 | newest | Pick the file / directory with the largest mtime. |
+| pfrd (percentage free random distribution) | Search: Same as **eppfrd**. Action: Same as **eppfrd**. Create: Chooses a branch at random with the likelihood of selection based on a branch's available space relative to the total. |
 | rand (random) | Calls **all** and then randomizes. Returns 1. |
 
 **NOTE:** If you are using an underlying filesystem that reserves blocks such as ext2, ext3, or ext4 be aware that mergerfs respects the reservation by using `f_bavail` (number of free blocks for unprivileged users) rather than `f_bfree` (number of free blocks) in policy calculations. **df** does NOT use `f_bavail`, it uses `f_bfree`, so direct comparisons between **df** output and mergerfs' policies is not appropriate.
