@@ -32,11 +32,10 @@ namespace FUSE
   readdir(fuse_file_info *ffi_,
           fuse_dirents_t *buf_)
   {
-    DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context      *fc     = fuse_get_context();
-    const Config            &config = Config::ro();
-    const ugid::Set          ugid(fc->uid,fc->gid);
-    const rwlock::ReadGuard  guard(&config.branches.lock);
+    DirInfo            *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::ro();
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     switch(config.readdir)
       {

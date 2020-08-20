@@ -32,22 +32,19 @@ namespace mfs
 {
   static
   int
-  create(const Branches &branches_,
-         const uint64_t  minfreespace_,
-         vector<string> *paths_)
+  create(const BranchVec &branches_,
+         vector<string>  *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
-
     int rv;
     int error;
     uint64_t mfs;
     fs::info_t info;
     const Branch *branch;
-    const string *mfsbasepath;
+    const string *basepath;
 
     error = ENOENT;
     mfs = 0;
-    mfsbasepath = NULL;
+    basepath = NULL;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         branch = &branches_[i];
@@ -59,21 +56,31 @@ namespace mfs
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
         if(info.spaceavail < mfs)
           continue;
 
         mfs = info.spaceavail;
-        mfsbasepath = &branch->path;
+        basepath = &branch->path;
       }
 
-    if(mfsbasepath == NULL)
+    if(basepath == NULL)
       return (errno=error,-1);
 
-    paths_->push_back(*mfsbasepath);
+    paths_->push_back(*basepath);
 
     return 0;
+  }
+
+  static
+  int
+  create(const Branches &branches_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return mfs::create(branches_.vec,paths_);
   }
 }
 
@@ -81,11 +88,10 @@ int
 Policy::Func::mfs(const Category  type_,
                   const Branches &branches_,
                   const char     *fusepath_,
-                  const uint64_t  minfreespace_,
                   vector<string> *paths_)
 {
   if(type_ == Category::CREATE)
-    return mfs::create(branches_,minfreespace_,paths_);
+    return mfs::create(branches_,paths_);
 
-  return Policy::Func::epmfs(type_,branches_,fusepath_,minfreespace_,paths_);
+  return Policy::Func::epmfs(type_,branches_,fusepath_,paths_);
 }

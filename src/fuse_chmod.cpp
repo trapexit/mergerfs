@@ -71,14 +71,13 @@ namespace l
   int
   chmod(Policy::Func::Action  actionFunc_,
         const Branches       &branches_,
-        const uint64_t        minfreespace_,
         const char           *fusepath_,
         const mode_t          mode_)
   {
     int rv;
     vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -98,7 +97,6 @@ namespace FUSE
 
     return l::chmod(config.func.chmod.policy,
                     config.branches,
-                    config.minfreespace,
                     fusepath_,
                     mode_);
   }

@@ -94,7 +94,6 @@ int
 PolicyCache::operator()(Policy::Func::Search &func_,
                         const Branches       &branches_,
                         const char           *fusepath_,
-                        const uint64_t        minfreespace_,
                         std::string          *branch_)
 {
   int rv;
@@ -103,7 +102,7 @@ PolicyCache::operator()(Policy::Func::Search &func_,
   string branch;
 
   if(timeout == 0)
-    return func_(branches_,fusepath_,minfreespace_,branch_);
+    return func_(branches_,fusepath_,branch_);
 
   now = l::get_time();
 
@@ -113,7 +112,7 @@ PolicyCache::operator()(Policy::Func::Search &func_,
   if((now - v->time) >= timeout)
     {
       pthread_mutex_unlock(&_lock);
-      rv = func_(branches_,fusepath_,minfreespace_,&branch);
+      rv = func_(branches_,fusepath_,&branch);
       if(rv == -1)
         return -1;
 

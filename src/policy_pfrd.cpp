@@ -40,17 +40,15 @@ namespace pfrd
 {
   static
   int
-  get_branchinfo(const Branches &branches_,
-                 const uint64_t  minfreespace_,
-                 BranchInfoVec  *branchinfo_,
-                 uint64_t       *sum_)
+  get_branchinfo(const BranchVec &branches_,
+                 BranchInfoVec   *branchinfo_,
+                 uint64_t        *sum_)
   {
     int rv;
     int error;
     BranchInfo bi;
     fs::info_t info;
     const Branch *branch;
-    rwlock::ReadGuard guard(&branches_.lock);
 
     *sum_ = 0;
     error = ENOENT;
@@ -65,7 +63,7 @@ namespace pfrd
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
 
         *sum_ += info.spaceavail;
@@ -76,6 +74,19 @@ namespace pfrd
       }
 
     return error;
+  }
+
+  static
+  int
+  get_branchinfo(const Branches &branches_,
+                 BranchInfoVec  *branchinfo_,
+                 uint64_t       *sum_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    branchinfo_->reserve(branches_.vec.size());
+
+    return pfrd::get_branchinfo(branches_.vec,branchinfo_,sum_);
   }
 
   static
@@ -106,7 +117,6 @@ namespace pfrd
   int
   create(const Branches &branches_,
          const char     *fusepath_,
-         const uint64_t  minfreespace_,
          vector<string> *paths_)
   {
     int error;
@@ -114,8 +124,7 @@ namespace pfrd
     const string *basepath;
     BranchInfoVec branchinfo;
 
-    branchinfo.reserve(branches_.size());
-    error    = pfrd::get_branchinfo(branches_,minfreespace_,&branchinfo,&sum);
+    error    = pfrd::get_branchinfo(branches_,&branchinfo,&sum);
     basepath = pfrd::get_branch(branchinfo,sum);
     if(basepath == NULL)
       return (errno=error,-1);
@@ -130,11 +139,10 @@ int
 Policy::Func::pfrd(const Category  type_,
                    const Branches &branches_,
                    const char     *fusepath_,
-                   const uint64_t  minfreespace_,
                    vector<string> *paths_)
 {
   if(type_ == Category::CREATE)
-    return pfrd::create(branches_,fusepath_,minfreespace_,paths_);
+    return pfrd::create(branches_,fusepath_,paths_);
 
-  return Policy::Func::eppfrd(type_,branches_,fusepath_,minfreespace_,paths_);
+  return Policy::Func::eppfrd(type_,branches_,fusepath_,paths_);
 }

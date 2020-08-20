@@ -33,13 +33,10 @@ namespace epff
 {
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         const uint64_t  minfreespace_,
-         vector<string> *paths_)
+  create(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
-
     int rv;
     int error;
     fs::info_t info;
@@ -50,16 +47,16 @@ namespace epff
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath_))
-          error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
+        if(!fs::exists(branch->path,fusepath_))
+          error_and_continue(error,ENOENT);
         rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
 
         paths_->push_back(branch->path);
@@ -72,12 +69,21 @@ namespace epff
 
   static
   int
-  action(const Branches &branches_,
+  create(const Branches &branches_,
          const char     *fusepath_,
          vector<string> *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
+    rwlock::ReadGuard guard(branches_.lock);
 
+    return epff::create(branches_.vec,fusepath_,paths_);
+  }
+
+  static
+  int
+  action(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
+  {
     int rv;
     int error;
     bool readonly;
@@ -88,10 +94,10 @@ namespace epff
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath_))
-          error_and_continue(error,ENOENT);
         if(branch->ro())
           error_and_continue(error,EROFS);
+        if(!fs::exists(branch->path,fusepath_))
+          error_and_continue(error,ENOENT);
         rv = fs::statvfs_cache_readonly(branch->path,&readonly);
         if(rv == -1)
           error_and_continue(error,ENOENT);
@@ -108,12 +114,21 @@ namespace epff
 
   static
   int
-  search(const Branches &branches_,
+  action(const Branches &branches_,
          const char     *fusepath_,
          vector<string> *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
+    rwlock::ReadGuard guard(branches_.lock);
 
+    return epff::action(branches_.vec,fusepath_,paths_);
+  }
+
+  static
+  int
+  search(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
+  {
     const Branch *branch;
 
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
@@ -130,19 +145,29 @@ namespace epff
 
     return (errno=ENOENT,-1);
   }
+
+  static
+  int
+  search(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return epff::search(branches_.vec,fusepath_,paths_);
+  }
 }
 
 int
 Policy::Func::epff(const Category  type_,
                    const Branches &branches_,
                    const char     *fusepath_,
-                   const uint64_t  minfreespace_,
                    vector<string> *paths_)
 {
   switch(type_)
     {
     case Category::CREATE:
-      return epff::create(branches_,fusepath_,minfreespace_,paths_);
+      return epff::create(branches_,fusepath_,paths_);
     case Category::ACTION:
       return epff::action(branches_,fusepath_,paths_);
     case Category::SEARCH:

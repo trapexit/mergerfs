@@ -136,7 +136,6 @@ namespace l
   int
   ioctl_dir_base(Policy::Func::Search  searchFunc_,
                  const Branches       &branches_,
-                 const uint64_t        minfreespace_,
                  const char           *fusepath_,
                  const uint32_t        cmd_,
                  void                 *data_,
@@ -147,7 +146,7 @@ namespace l
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -178,7 +177,6 @@ namespace l
 
     return l::ioctl_dir_base(config.func.open.policy,
                              config.branches,
-                             config.minfreespace,
                              di->fusepath.c_str(),
                              cmd_,
                              data_,
@@ -257,14 +255,13 @@ namespace l
   int
   file_basepath(Policy::Func::Search  searchFunc_,
                 const Branches       &branches_,
-                const uint64_t        minfreespace_,
                 const char           *fusepath_,
                 void                 *data_)
   {
     int rv;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -281,7 +278,6 @@ namespace l
 
     return l::file_basepath(config.func.open.policy,
                             config.branches,
-                            config.minfreespace,
                             fusepath.c_str(),
                             data_);
   }
@@ -300,7 +296,6 @@ namespace l
   int
   file_fullpath(Policy::Func::Search  searchFunc_,
                 const Branches       &branches_,
-                const uint64_t        minfreespace_,
                 const string         &fusepath_,
                 void                 *data_)
   {
@@ -308,7 +303,7 @@ namespace l
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -327,7 +322,6 @@ namespace l
 
     return l::file_fullpath(config.func.open.policy,
                             config.branches,
-                            config.minfreespace,
                             fusepath,
                             data_);
   }

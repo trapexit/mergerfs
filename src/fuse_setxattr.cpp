@@ -124,7 +124,6 @@ namespace l
   int
   setxattr(Policy::Func::Action  actionFunc,
            const Branches       &branches_,
-           const uint64_t        minfreespace,
            const char           *fusepath,
            const char           *attrname,
            const char           *attrval,
@@ -134,7 +133,7 @@ namespace l
     int rv;
     vector<string> basepaths;
 
-    rv = actionFunc(branches_,fusepath,minfreespace,&basepaths);
+    rv = actionFunc(branches_,fusepath,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -171,7 +170,6 @@ namespace FUSE
 
     return l::setxattr(config.func.setxattr.policy,
                        config.branches,
-                       config.minfreespace,
                        fusepath,
                        attrname,
                        attrval,

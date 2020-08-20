@@ -47,6 +47,25 @@ namespace str
   }
 
   void
+  rsplit1(const string   &str_,
+          const char      delimiter_,
+          vector<string> *result_)
+  {
+    std::size_t off;
+
+    off = str_.rfind('=');
+    if(off == std::string::npos)
+      {
+        result_->push_back(str_);
+      }
+    else
+      {
+        result_->push_back(str_.substr(0,off));
+        result_->push_back(str_.substr(off+1));
+      }
+  }
+
+  void
   splitkv(const string &str_,
           const char    delimiter_,
           string       *key_,

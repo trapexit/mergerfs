@@ -24,10 +24,11 @@
 
 #include <string>
 
-namespace fs
+namespace l
 {
+  static
   int
-  findonfs(const Branches    &branches_,
+  findonfs(const BranchVec   &branches_,
            const std::string &fusepath_,
            const int          fd_,
            std::string       *basepath_)
@@ -37,7 +38,6 @@ namespace fs
     struct stat st;
     std::string fullpath;
     const Branch *branch;
-    const rwlock::ReadGuard guard(&branches_.lock);
 
     rv = fs::fstat(fd_,&st);
     if(rv == -1)
@@ -63,5 +63,19 @@ namespace fs
       }
 
     return (errno=ENOENT,-1);
+  }
+}
+
+namespace fs
+{
+  int
+  findonfs(const Branches    &branches_,
+           const std::string &fusepath_,
+           const int          fd_,
+           std::string       *basepath_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return l::findonfs(branches_.vec,fusepath_,fd_,basepath_);
   }
 }

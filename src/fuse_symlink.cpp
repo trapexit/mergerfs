@@ -83,7 +83,6 @@ namespace l
   symlink(Policy::Func::Search  searchFunc_,
           Policy::Func::Create  createFunc_,
           const Branches       &branches_,
-          const uint64_t        minfreespace_,
           const char           *oldpath_,
           const char           *newpath_)
   {
@@ -94,11 +93,11 @@ namespace l
 
     newdirpath = fs::path::dirname(newpath_);
 
-    rv = searchFunc_(branches_,newdirpath,minfreespace_,&existingpaths);
+    rv = searchFunc_(branches_,newdirpath,&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,newdirpath,minfreespace_,&newbasepaths);
+    rv = createFunc_(branches_,newdirpath,&newbasepaths);
     if(rv == -1)
       return -errno;
 
@@ -120,7 +119,6 @@ namespace FUSE
     return l::symlink(config.func.getattr.policy,
                       config.func.symlink.policy,
                       config.branches,
-                      config.minfreespace,
                       oldpath_,
                       newpath_);
   }

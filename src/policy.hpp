@@ -66,7 +66,7 @@ public:
     typedef const uint64_t cuint64_t;
     typedef const strvec cstrvec;
 
-    typedef int (*Ptr)(Category,const Branches &,const char *,cuint64_t,strvec *);
+    typedef int (*Ptr)(Category,const Branches&,const char*,strvec *);
 
     template <Category T>
     class Base
@@ -81,26 +81,26 @@ public:
       {}
 
       int
-      operator()(const Branches &b,const char *c,cuint64_t d,strvec *e)
+      operator()(const Branches &a,const char *b,strvec *c)
       {
-        return func(T,b,c,d,e);
+        return func(T,a,b,c);
       }
 
       int
-      operator()(const Branches &b,const string &c,cuint64_t d,strvec *e)
+      operator()(const Branches &a,const string &b,strvec *c)
       {
-        return func(T,b,c.c_str(),d,e);
+        return func(T,a,b.c_str(),c);
       }
 
       int
-      operator()(const Branches &b,const char *c,cuint64_t d,string *e)
+      operator()(const Branches &a,const char *b,string *c)
       {
         int rv;
         strvec v;
 
-        rv = func(T,b,c,d,&v);
+        rv = func(T,a,b,&v);
         if(!v.empty())
-          *e = v[0];
+          *c = v[0];
 
         return rv;
       }
@@ -113,27 +113,27 @@ public:
     typedef Base<Category::CREATE> Create;
     typedef Base<Category::SEARCH> Search;
 
-    static int invalid(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int all(Category,const Branches&,const char*,cuint64_t,strvec*);
-    static int epall(Category,const Branches&,const char*,cuint64_t,strvec*);
-    static int epff(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int eplfs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int eplus(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int epmfs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int eppfrd(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int eprand(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int erofs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int ff(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int lfs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int lus(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int mfs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int msplfs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int msplus(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int mspmfs(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int msppfrd(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int newest(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int pfrd(Category,const Branches&,const char *,cuint64_t,strvec*);
-    static int rand(Category,const Branches&,const char *,cuint64_t,strvec*);
+    static int invalid(Category,const Branches&,const char *,strvec*);
+    static int all(Category,const Branches&,const char*,strvec*);
+    static int epall(Category,const Branches&,const char*,strvec*);
+    static int epff(Category,const Branches&,const char *,strvec*);
+    static int eplfs(Category,const Branches&,const char *,strvec*);
+    static int eplus(Category,const Branches&,const char *,strvec*);
+    static int epmfs(Category,const Branches&,const char *,strvec*);
+    static int eppfrd(Category,const Branches&,const char *,strvec*);
+    static int eprand(Category,const Branches&,const char *,strvec*);
+    static int erofs(Category,const Branches&,const char *,strvec*);
+    static int ff(Category,const Branches&,const char *,strvec*);
+    static int lfs(Category,const Branches&,const char *,strvec*);
+    static int lus(Category,const Branches&,const char *,strvec*);
+    static int mfs(Category,const Branches&,const char *,strvec*);
+    static int msplfs(Category,const Branches&,const char *,strvec*);
+    static int msplus(Category,const Branches&,const char *,strvec*);
+    static int mspmfs(Category,const Branches&,const char *,strvec*);
+    static int msppfrd(Category,const Branches&,const char *,strvec*);
+    static int newest(Category,const Branches&,const char *,strvec*);
+    static int pfrd(Category,const Branches&,const char *,strvec*);
+    static int rand(Category,const Branches&,const char *,strvec*);
   };
 
 private:

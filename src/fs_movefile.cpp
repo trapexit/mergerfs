@@ -49,7 +49,6 @@ namespace l
   int
   movefile(Policy::Func::Create  createFunc_,
            const Branches       &branches_,
-           const uint64_t        minfreepsace_,
            const string         &fusepath_,
            int                  *origfd_)
   {
@@ -73,7 +72,7 @@ namespace l
     if(rv == -1)
       return -1;
 
-    rv = createFunc_(branches_,fusepath_,minfreepsace_,&fdout_path);
+    rv = createFunc_(branches_,fusepath_,&fdout_path);
     if(rv == -1)
       return -1;
 
@@ -135,22 +134,20 @@ namespace fs
   int
   movefile(const Policy   *policy_,
            const Branches &basepaths_,
-           const uint64_t  minfreepsace_,
            const string   &fusepath_,
            int            *origfd_)
   {
-    return l::movefile(policy_,basepaths_,minfreepsace_,fusepath_,origfd_);
+    return l::movefile(policy_,basepaths_,fusepath_,origfd_);
   }
 
   int
   movefile_as_root(const Policy   *policy_,
                    const Branches &basepaths_,
-                   const uint64_t  minfreepsace_,
                    const string   &fusepath_,
                    int            *origfd_)
   {
     const ugid::Set ugid(0,0);
 
-    return fs::movefile(policy_,basepaths_,minfreepsace_,fusepath_,origfd_);
+    return fs::movefile(policy_,basepaths_,fusepath_,origfd_);
   }
 }

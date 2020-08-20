@@ -32,7 +32,6 @@ namespace l
   int
   access(Policy::Func::Search  searchFunc,
          const Branches       &branches_,
-         const uint64_t        minfreespace,
          const char           *fusepath,
          const int             mask)
   {
@@ -40,7 +39,7 @@ namespace l
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc(branches_,fusepath,minfreespace,&basepaths);
+    rv = searchFunc(branches_,fusepath,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -64,7 +63,6 @@ namespace FUSE
 
     return l::access(config.func.access.policy,
                      config.branches,
-                     config.minfreespace,
                      fusepath,
                      mask);
   }

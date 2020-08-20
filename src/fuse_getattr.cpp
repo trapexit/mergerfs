@@ -61,7 +61,6 @@ namespace l
   int
   getattr(Policy::Func::Search  searchFunc_,
           const Branches       &branches_,
-          const uint64_t        minfreespace_,
           const char           *fusepath_,
           struct stat          *st_,
           const bool            symlinkify_,
@@ -71,7 +70,7 @@ namespace l
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -108,7 +107,6 @@ namespace FUSE
 
     rv = l::getattr(config.func.getattr.policy,
                     config.branches,
-                    config.minfreespace,
                     fusepath_,
                     st_,
                     config.symlinkify,

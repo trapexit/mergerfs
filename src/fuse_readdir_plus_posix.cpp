@@ -28,6 +28,7 @@
 #include "fs_readdir.hpp"
 #include "fs_stat.hpp"
 #include "hashset.hpp"
+#include "rwlock.hpp"
 
 #include <fuse.h>
 #include <fuse_dirents.h>
@@ -57,11 +58,11 @@ namespace l
 
   static
   int
-  readdir_plus(const Branches &branches_,
-               const char     *dirname_,
-               const uint64_t  entry_timeout_,
-               const uint64_t  attr_timeout_,
-               fuse_dirents_t *buf_)
+  readdir_plus(const BranchVec &branches_,
+               const char      *dirname_,
+               const uint64_t   entry_timeout_,
+               const uint64_t   attr_timeout_,
+               fuse_dirents_t  *buf_)
   {
     dev_t dev;
     HashSet names;
@@ -125,6 +126,23 @@ namespace l
       }
 
     return 0;
+  }
+
+  static
+  int
+  readdir_plus(const Branches &branches_,
+               const char     *dirname_,
+               const uint64_t  entry_timeout_,
+               const uint64_t  attr_timeout_,
+               fuse_dirents_t *buf_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return l::readdir_plus(branches_.vec,
+                           dirname_,
+                           entry_timeout_,
+                           attr_timeout_,
+                           buf_);
   }
 }
 

@@ -67,7 +67,7 @@ Config::Config()
 
   async_read(true),
   auto_cache(false),
-  branches(),
+  branches(minfreespace),
   cache_attr(1),
   cache_entry(1),
   cache_files(CacheFiles::ENUM::LIBFUSE),

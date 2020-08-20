@@ -19,14 +19,15 @@
 #include "branch.hpp"
 #include "errno.hpp"
 #include "fs_closedir.hpp"
+#include "fs_devid.hpp"
 #include "fs_dirfd.hpp"
+#include "fs_inode.hpp"
 #include "fs_opendir.hpp"
+#include "fs_path.hpp"
 #include "fs_readdir.hpp"
 #include "fs_stat.hpp"
-#include "fs_devid.hpp"
-#include "fs_inode.hpp"
-#include "fs_path.hpp"
 #include "hashset.hpp"
+#include "rwlock.hpp"
 
 #include <fuse.h>
 #include <fuse_dirents.h>
@@ -56,9 +57,9 @@ namespace l
 
   static
   int
-  readdir(const Branches &branches_,
-          const char     *dirname_,
-          fuse_dirents_t *buf_)
+  readdir(const BranchVec &branches_,
+          const char      *dirname_,
+          fuse_dirents_t  *buf_)
   {
     dev_t dev;
     HashSet names;
@@ -108,6 +109,17 @@ namespace l
       }
 
     return 0;
+  }
+
+  static
+  int
+  readdir(const Branches &branches_,
+          const char     *dirname_,
+          fuse_dirents_t *buf_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return l::readdir(branches_.vec,dirname_,buf_);
   }
 }
 
