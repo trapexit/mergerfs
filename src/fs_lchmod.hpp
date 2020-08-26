@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include "fs_fchmodat.hpp"
 #include "fs_lstat.hpp"
 
 #include <string>
+
+#include <sys/stat.h>
 
 #define MODE_BITS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
 
@@ -33,7 +34,11 @@ namespace fs
   lchmod(const char   *pathname_,
          const mode_t  mode_)
   {
-    return fs::fchmodat(AT_FDCWD,pathname_,mode_,AT_SYMLINK_NOFOLLOW);
+#if defined __linux__
+    return ::chmod(pathname_,mode_);
+#else
+    return ::lchmod(pathname_,mode_);
+#endif
   }
 
   static
