@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-20
+% 2020-08-26
 
 # NAME
 
@@ -412,7 +412,8 @@ The options `statfs` and `statfs_ignore` can be used to modify `statfs` behavior
 
 # BUILD / UPDATE
 
-**NOTE:** Prebuilt packages can be found at: https://github.com/trapexit/mergerfs/releases
+**NOTE:** Prebuilt packages can be found at and recommended for most users: https://github.com/trapexit/mergerfs/releases
+**NOTE:** Only tagged releases are supported. `master` and other branches should be considered works in progress.
 
 First get the code from [github](https://github.com/trapexit/mergerfs).
 
