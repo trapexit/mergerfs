@@ -37,6 +37,7 @@ public:
         eplfs,
         eplus,
         epmfs,
+        eppfrd,
         eprand,
         erofs,
         ff,
@@ -46,7 +47,9 @@ public:
         msplfs,
         msplus,
         mspmfs,
+        msppfrd,
         newest,
+        pfrd,
         rand,
         END
       };
@@ -117,6 +120,7 @@ public:
     static int eplfs(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int eplus(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int epmfs(Category,const Branches&,const char *,cuint64_t,strvec*);
+    static int eppfrd(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int eprand(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int erofs(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int ff(Category,const Branches&,const char *,cuint64_t,strvec*);
@@ -126,7 +130,9 @@ public:
     static int msplfs(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int msplus(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int mspmfs(Category,const Branches&,const char *,cuint64_t,strvec*);
+    static int msppfrd(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int newest(Category,const Branches&,const char *,cuint64_t,strvec*);
+    static int pfrd(Category,const Branches&,const char *,cuint64_t,strvec*);
     static int rand(Category,const Branches&,const char *,cuint64_t,strvec*);
   };
 
@@ -198,6 +204,7 @@ public:
   static const Policy &eplfs;
   static const Policy &eplus;
   static const Policy &epmfs;
+  static const Policy &eppfrd;
   static const Policy &eprand;
   static const Policy &erofs;
   static const Policy &ff;
@@ -207,7 +214,9 @@ public:
   static const Policy &msplfs;
   static const Policy &msplus;
   static const Policy &mspmfs;
+  static const Policy &msppfrd;
   static const Policy &newest;
+  static const Policy &pfrd;
   static const Policy &rand;
 };
 
