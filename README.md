@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-26
+% 2020-08-30
 
 # NAME
 
@@ -251,7 +251,7 @@ NFS is not fully POSIX compliant and historically certain behaviors, such as ope
 
 This hack addresses the issue where the creation of a file with a read-only mode but with a read/write or write only flag. Normally this is perfectly valid but NFS chops the one open call into multiple calls. Exactly how it is translated depends on the configuration and versions of the NFS server and clients but it results in a permission error because a normal user is not allowed to open a read-only file as writable.
 
-Even though it's a more niche stituation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it it applying anytime a readonly file which is empty is opened for writing.
+Even though it's a more niche situation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it it applying anytime a readonly file which is empty is opened for writing.
 
 
 # FUNCTIONS / POLICIES / CATEGORIES
@@ -301,7 +301,7 @@ If all branches are filtered an error will be returned. Typically **EROFS** (rea
 
 #### Policy descriptions
 
-Because of the nature of the behavior the policies act diffierently depending on the function it is used with (based on the category).
+Because of the nature of the behavior the policies act differently depending on the function it is used with (based on the category).
 
 
 | Policy           | Description                                                |
@@ -321,7 +321,7 @@ Because of the nature of the behavior the policies act diffierently depending on
 | mfs (most free space) | Search: Same as **epmfs**. Action: Same as **epmfs**. Create: Pick the drive with the most available free space. |
 | msplfs (most shared path, least free space) | Search: Same as **eplfs**. Action: Same as **eplfs**. Create: like **eplfs** but walk back the path if it fails to find a branch at that level. |
 | msplus (most shared path, least used space) | Search: Same as **eplus**. Action: Same as **eplus**. Create: like **eplus** but walk back the path if it fails to find a branch at that level. |
-| mspmfs (most shared path, most free space) | Search: Same as **epmfss**. Action: Same as **epmfs**. Create: like **eplmfs** but walk back the path if it fails to find a branch at that level. |
+| mspmfs (most shared path, most free space) | Search: Same as **epmfs**. Action: Same as **epmfs**. Create: like **epmfs** but walk back the path if it fails to find a branch at that level. |
 | msppfrd (most shared path, percentage free random distribution) | Search: Same as **eppfrd**. Action: Same as **eppfrd**. Create: Like **eppfrd** but will walk back the path if it fails to find a branch at that level. |
 | newest | Pick the file / directory with the largest mtime. |
 | pfrd (percentage free random distribution) | Search: Same as **eppfrd**. Action: Same as **eppfrd**. Create: Chooses a branch at random with the likelihood of selection based on a branch's available space relative to the total. |
@@ -659,7 +659,7 @@ Given the relatively high cost of FUSE due to the kernel <-> userspace round tri
 
 When `cache.files` is enabled the default is for it to perform writethrough caching. This behavior won't help improve performance as each write still goes one for one through the filesystem. By enabling the FUSE writeback cache small writes may be aggregated by the kernel and then sent to mergerfs as one larger request. This can greatly improve the throughput for apps which write to files inefficiently. The amount the kernel can aggregate is limited by the size of a FUSE message. Read the `fuse_msg_size` section for more details.
 
-There is a small side effect as a result of enabling wrtieback caching. Underlying files won't ever be opened with O_APPEND or O_WRONLY. The former because the kernel then manages append mode and the latter because the kernel may request file data from mergerfs to populate the write cache. The O_APPEND change means that if a file is changed outside of mergerfs it could lead to corruption as the kernel won't know the end of the file has changed. That said any time you use caching you should keep from using the same file outside of mergerfs at the same time.
+There is a small side effect as a result of enabling writeback caching. Underlying files won't ever be opened with O_APPEND or O_WRONLY. The former because the kernel then manages append mode and the latter because the kernel may request file data from mergerfs to populate the write cache. The O_APPEND change means that if a file is changed outside of mergerfs it could lead to corruption as the kernel won't know the end of the file has changed. That said any time you use caching you should keep from using the same file outside of mergerfs at the same time.
 
 Note that if an application is properly sizing writes then writeback caching will have little or no effect. It will only help with writes of sizes below the FUSE message size (128K on older kernels, 1M on newer).
 
@@ -1159,7 +1159,7 @@ Yes.
 
 #### I notice massive slowdowns of writes when enabling cache.files.
 
-When file caching is enabled in any form (`cache.files!=off` or `direct_io=false`) it will issue `getxattr` requests for `security.capability` prior to *every single write*. This will usually result in a performance degregation, especially when using a network filesystem (such as NFS or CIFS/SMB/Samba.) Unfortunately at this moment the kernel is not caching the response.
+When file caching is enabled in any form (`cache.files!=off` or `direct_io=false`) it will issue `getxattr` requests for `security.capability` prior to *every single write*. This will usually result in a performance degradation, especially when using a network filesystem (such as NFS or CIFS/SMB/Samba.) Unfortunately at this moment the kernel is not caching the response.
 
 To work around this situation mergerfs offers a few solutions.
 
@@ -1203,7 +1203,7 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 * A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
   * `strace -f -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
 * **Precise** directions on replicating the issue. Do not leave **anything** out.
-* Try to recreate the problem in the simplist way using standard programs.
+* Try to recreate the problem in the simplest way using standard programs.
 
 
 #### Contact / Issue submission
