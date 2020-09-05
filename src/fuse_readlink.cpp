@@ -94,7 +94,6 @@ namespace l
   int
   readlink(Policy::Func::Search  searchFunc_,
            const Branches       &branches_,
-           const uint64_t        minfreespace_,
            const char           *fusepath_,
            char                 *buf_,
            const size_t          size_,
@@ -104,7 +103,7 @@ namespace l
     int rv;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -126,7 +125,6 @@ namespace FUSE
 
     return l::readlink(config.func.readlink.policy,
                        config.branches,
-                       config.minfreespace,
                        fusepath_,
                        buf_,
                        size_,

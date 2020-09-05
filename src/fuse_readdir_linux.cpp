@@ -26,6 +26,7 @@
 #include "hashset.hpp"
 #include "linux_dirent64.h"
 #include "mempools.hpp"
+#include "rwlock.hpp"
 
 #include <fuse.h>
 #include <fuse_dirents.h>
@@ -52,9 +53,9 @@ namespace l
 
   static
   int
-  readdir(const Branches &branches_,
-          const char     *dirname_,
-          fuse_dirents_t *buf_)
+  readdir(const BranchVec &branches_,
+          const char      *dirname_,
+          fuse_dirents_t  *buf_)
   {
     int rv;
     dev_t dev;
@@ -120,6 +121,17 @@ namespace l
     g_DENTS_BUF_POOL.free(buf);
 
     return 0;
+  }
+
+  static
+  int
+  readdir(const Branches &branches_,
+          const char     *dirname_,
+          fuse_dirents_t *buf_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return l::readdir(branches_.vec,dirname_,buf_);
   }
 }
 

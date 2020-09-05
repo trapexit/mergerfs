@@ -33,22 +33,19 @@ namespace lus
 {
   static
   int
-  create(const Branches &branches_,
-         const uint64_t  minfreespace_,
-         vector<string> *paths_)
+  create(const BranchVec &branches_,
+         vector<string>  *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
-
     int rv;
     int error;
     uint64_t lus;
     fs::info_t info;
     const Branch *branch;
-    const string *lusbasepath;
+    const string *basepath;
 
     error = ENOENT;
     lus = std::numeric_limits<uint64_t>::max();
-    lusbasepath = NULL;
+    basepath = NULL;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         branch = &branches_[i];
@@ -60,21 +57,31 @@ namespace lus
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
         if(info.spaceused >= lus)
           continue;
 
-        lus = info.spaceused;
-        lusbasepath = &branch->path;
+        lus      = info.spaceused;
+        basepath = &branch->path;
       }
 
-    if(lusbasepath == NULL)
+    if(basepath == NULL)
       return (errno=error,-1);
 
-    paths_->push_back(*lusbasepath);
+    paths_->push_back(*basepath);
 
     return 0;
+  }
+
+  static
+  int
+  create(const Branches &branches_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return lus::create(branches_.vec,paths_);
   }
 }
 
@@ -82,11 +89,10 @@ int
 Policy::Func::lus(const Category  type_,
                   const Branches &branches_,
                   const char     *fusepath_,
-                  const uint64_t  minfreespace_,
                   vector<string> *paths_)
 {
   if(type_ == Category::CREATE)
-    return lus::create(branches_,minfreespace_,paths_);
+    return lus::create(branches_,paths_);
 
-  return Policy::Func::eplus(type_,branches_,fusepath_,minfreespace_,paths_);
+  return Policy::Func::eplus(type_,branches_,fusepath_,paths_);
 }

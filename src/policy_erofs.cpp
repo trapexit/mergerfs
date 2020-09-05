@@ -27,7 +27,6 @@ int
 Policy::Func::erofs(const Category  type_,
                     const Branches &branches_,
                     const char     *fusepath_,
-                    const uint64_t  minfreespace_,
                     vector<string> *paths)
 {
   return (errno=EROFS,-1);

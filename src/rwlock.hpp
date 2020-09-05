@@ -23,42 +23,42 @@ namespace rwlock
   class ReadGuard
   {
   public:
-    ReadGuard(pthread_rwlock_t *lock_)
+    ReadGuard(pthread_rwlock_t &lock_)
       : _lock(lock_)
     {
-      pthread_rwlock_rdlock(_lock);
+      pthread_rwlock_rdlock(&_lock);
     }
 
     ~ReadGuard()
     {
-      pthread_rwlock_unlock(_lock);
+      pthread_rwlock_unlock(&_lock);
     }
 
   private:
     ReadGuard();
 
   private:
-    pthread_rwlock_t *_lock;
+    pthread_rwlock_t &_lock;
   };
 
   class WriteGuard
   {
   public:
-    WriteGuard(pthread_rwlock_t *lock_)
+    WriteGuard(pthread_rwlock_t &lock_)
       : _lock(lock_)
     {
-      pthread_rwlock_wrlock(_lock);
+      pthread_rwlock_wrlock(&_lock);
     }
 
     ~WriteGuard()
     {
-      pthread_rwlock_unlock(_lock);
+      pthread_rwlock_unlock(&_lock);
     }
 
   private:
     WriteGuard();
 
   private:
-    pthread_rwlock_t *_lock;
+    pthread_rwlock_t &_lock;
   };
 }

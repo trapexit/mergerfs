@@ -20,16 +20,25 @@
 
 #include "rwlock.hpp"
 #include "tofrom_string.hpp"
+#include "nonstd/optional.hpp"
 
 #include <string>
 #include <vector>
 
+#include <stdint.h>
 #include <pthread.h>
 
-class Branch
+class Branch : public ToFromString
 {
 public:
-  enum Mode
+  Branch(const uint64_t &default_minfreespace);
+
+public:
+  int from_string(const std::string &str);
+  std::string to_string(void) const;
+
+public:
+  enum class Mode
     {
       INVALID,
       RO,
@@ -37,18 +46,30 @@ public:
       NC
     };
 
+public:
   Mode        mode;
   std::string path;
+  uint64_t    minfreespace() const;
 
+public:
+  void set_minfreespace(const uint64_t minfreespace);
+
+public:
   bool ro(void) const;
   bool nc(void) const;
   bool ro_or_nc(void) const;
+
+private:
+  nonstd::optional<uint64_t>  _minfreespace;
+  const uint64_t             *_default_minfreespace;
 };
 
-class Branches : public std::vector<Branch>, public ToFromString
+typedef std::vector<Branch> BranchVec;
+
+class Branches : public ToFromString
 {
 public:
-  Branches();
+  Branches(const uint64_t &default_minfreespace_);
 
 public:
   int from_string(const std::string &str);
@@ -59,6 +80,8 @@ public:
 
 public:
   mutable pthread_rwlock_t lock;
+  BranchVec vec;
+  const uint64_t &default_minfreespace;
 };
 
 class SrcMounts : public ToFromString

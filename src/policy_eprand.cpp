@@ -28,12 +28,11 @@ int
 Policy::Func::eprand(const Category  type_,
                      const Branches &branches_,
                      const char     *fusepath_,
-                     const uint64_t  minfreespace_,
                      vector<string> *paths_)
 {
   int rv;
 
-  rv = Policy::Func::epall(type_,branches_,fusepath_,minfreespace_,paths_);
+  rv = Policy::Func::epall(type_,branches_,fusepath_,paths_);
   if(rv == 0)
     {
       std::random_shuffle(paths_->begin(),paths_->end());

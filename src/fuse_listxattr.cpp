@@ -59,7 +59,6 @@ namespace l
   int
   listxattr(Policy::Func::Search  searchFunc_,
             const Branches       &branches_,
-            const uint64_t        minfreespace_,
             const char           *fusepath_,
             char                 *list_,
             const size_t          size_)
@@ -68,7 +67,7 @@ namespace l
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -107,7 +106,6 @@ namespace FUSE
 
     return l::listxattr(config.func.listxattr.policy,
                         config.branches,
-                        config.minfreespace,
                         fusepath_,
                         list_,
                         size_);

@@ -14,11 +14,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "ef.hpp"
+
+#include <string>
+
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-#include <string>
+#define KB (1024UL)
+#define MB (KB * 1024UL)
+#define GB (MB * 1024UL)
+#define TB (GB * 1024UL)
 
 namespace num
 {
@@ -96,5 +104,29 @@ namespace num
     value = tmp;
 
     return 0;
+  }
+}
+
+ namespace num
+{
+  std::string
+  humanize(const uint64_t bytes_)
+  {
+    char buf[64];
+
+    if(bytes_ < KB)
+      sprintf(buf,"%lu",bytes_);
+    ef(((bytes_ / TB) * TB) == bytes_)
+      sprintf(buf,"%luT",bytes_ / TB);
+    ef(((bytes_ / GB) * GB) == bytes_)
+      sprintf(buf,"%luG",bytes_ / GB);
+    ef(((bytes_ / MB) * MB) == bytes_)
+      sprintf(buf,"%luM",bytes_ / MB);
+    ef(((bytes_ / KB) * KB) == bytes_)
+      sprintf(buf,"%luK",bytes_ / KB);
+    else
+      sprintf(buf,"%lu",bytes_);
+
+    return std::string(buf);
   }
 }

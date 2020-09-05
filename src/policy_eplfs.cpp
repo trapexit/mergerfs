@@ -34,49 +34,101 @@ namespace eplfs
 {
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         const uint64_t  minfreespace_,
-         vector<string> *paths_)
+  create(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
-
     int rv;
     int error;
     uint64_t eplfs;
     fs::info_t info;
     const Branch *branch;
-    const string *eplfsbasepath;
+    const string *basepath;
 
     error = ENOENT;
     eplfs = std::numeric_limits<uint64_t>::max();
-    eplfsbasepath = NULL;
+    basepath = NULL;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath_))
-          error_and_continue(error,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(error,EROFS);
+        if(!fs::exists(branch->path,fusepath_))
+          error_and_continue(error,ENOENT);
         rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
         if(info.spaceavail > eplfs)
           continue;
 
         eplfs = info.spaceavail;
-        eplfsbasepath = &branch->path;
+        basepath = &branch->path;
       }
 
-    if(eplfsbasepath == NULL)
+    if(basepath == NULL)
       return (errno=error,-1);
 
-    paths_->push_back(*eplfsbasepath);
+    paths_->push_back(*basepath);
+
+    return 0;
+  }
+
+  static
+  int
+  create(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return eplfs::create(branches_.vec,fusepath_,paths_);
+  }
+
+  static
+  int
+  action(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
+  {
+    int rv;
+    int error;
+    uint64_t eplfs;
+    fs::info_t info;
+    const Branch *branch;
+    const string *basepath;
+
+    error = ENOENT;
+    eplfs = std::numeric_limits<uint64_t>::max();
+    basepath = NULL;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        branch = &branches_[i];
+
+        if(branch->ro())
+          error_and_continue(error,EROFS);
+        if(!fs::exists(branch->path,fusepath_))
+          error_and_continue(error,ENOENT);
+        rv = fs::info(branch->path,&info);
+        if(rv == -1)
+          error_and_continue(error,ENOENT);
+        if(info.readonly)
+          error_and_continue(error,EROFS);
+        if(info.spaceavail > eplfs)
+          continue;
+
+        eplfs = info.spaceavail;
+        basepath = &branch->path;
+      }
+
+    if(basepath == NULL)
+      return (errno=error,-1);
+
+    paths_->push_back(*basepath);
 
     return 0;
   }
@@ -87,62 +139,25 @@ namespace eplfs
          const char     *fusepath_,
          vector<string> *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
+    rwlock::ReadGuard guard(branches_.lock);
 
-    int rv;
-    int error;
-    uint64_t eplfs;
-    fs::info_t info;
-    const Branch *branch;
-    const string *eplfsbasepath;
-
-    error = ENOENT;
-    eplfs = std::numeric_limits<uint64_t>::max();
-    eplfsbasepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
-      {
-        branch = &branches_[i];
-
-        if(!fs::exists(branch->path,fusepath_))
-          error_and_continue(error,ENOENT);
-        if(branch->ro())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch->path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail > eplfs)
-          continue;
-
-        eplfs = info.spaceavail;
-        eplfsbasepath = &branch->path;
-      }
-
-    if(eplfsbasepath == NULL)
-      return (errno=error,-1);
-
-    paths_->push_back(*eplfsbasepath);
-
-    return 0;
+    return eplfs::action(branches_.vec,fusepath_,paths_);
   }
 
   static
   int
-  search(const Branches        &branches_,
-         const char            *fusepath_,
-         vector<string>        *paths_)
+  search(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
-
     int rv;
     uint64_t eplfs;
     uint64_t spaceavail;
     const Branch *branch;
-    const string *eplfsbasepath;
+    const string *basepath;
 
     eplfs = std::numeric_limits<uint64_t>::max();
-    eplfsbasepath = NULL;
+    basepath = NULL;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         branch = &branches_[i];
@@ -156,15 +171,26 @@ namespace eplfs
           continue;
 
         eplfs = spaceavail;
-        eplfsbasepath = &branch->path;
+        basepath = &branch->path;
       }
 
-    if(eplfsbasepath == NULL)
+    if(basepath == NULL)
       return (errno=ENOENT,-1);
 
-    paths_->push_back(*eplfsbasepath);
+    paths_->push_back(*basepath);
 
     return 0;
+  }
+
+  static
+  int
+  search(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return eplfs::search(branches_.vec,fusepath_,paths_);
   }
 }
 
@@ -172,13 +198,12 @@ int
 Policy::Func::eplfs(const Category  type_,
                     const Branches &branches_,
                     const char     *fusepath_,
-                    const uint64_t  minfreespace_,
                     vector<string> *paths_)
 {
   switch(type_)
     {
     case Category::CREATE:
-      return eplfs::create(branches_,fusepath_,minfreespace_,paths_);
+      return eplfs::create(branches_,fusepath_,paths_);
     case Category::ACTION:
       return eplfs::action(branches_,fusepath_,paths_);
     case Category::SEARCH:

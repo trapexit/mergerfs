@@ -97,7 +97,6 @@ namespace l
   mkdir(Policy::Func::Search  searchFunc_,
         Policy::Func::Create  createFunc_,
         const Branches       &branches_,
-        const uint64_t        minfreespace_,
         const char           *fusepath_,
         const mode_t          mode_,
         const mode_t          umask_)
@@ -109,11 +108,11 @@ namespace l
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,minfreespace_,&existingpaths);
+    rv = searchFunc_(branches_,fusedirpath,&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,minfreespace_,&createpaths);
+    rv = createFunc_(branches_,fusedirpath,&createpaths);
     if(rv == -1)
       return -errno;
 
@@ -139,7 +138,6 @@ namespace FUSE
     return l::mkdir(config.func.getattr.policy,
                     config.func.mkdir.policy,
                     config.branches,
-                    config.minfreespace,
                     fusepath_,
                     mode_,
                     fc->umask);

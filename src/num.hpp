@@ -26,3 +26,8 @@ namespace num
   int to_double(const std::string &str, double *value);
   int to_time_t(const std::string &str, time_t *value);
 }
+
+namespace num
+{
+  std::string humanize(const uint64_t bytes);
+}

@@ -165,7 +165,6 @@ namespace l
   int
   getxattr(Policy::Func::Search  searchFunc_,
            const Branches       &branches_,
-           const size_t          minfreespace_,
            const char           *fusepath_,
            const char           *attrname_,
            char                 *buf_,
@@ -175,7 +174,7 @@ namespace l
     string fullpath;
     vector<string> basepaths;
 
-    rv = searchFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -222,7 +221,6 @@ namespace FUSE
 
     return l::getxattr(config.func.getxattr.policy,
                        config.branches,
-                       config.minfreespace,
                        fusepath_,
                        attrname_,
                        buf_,

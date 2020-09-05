@@ -49,7 +49,6 @@ public:
   int operator()(Policy::Func::Search &func,
                  const Branches       &branches,
                  const char           *fusepath,
-                 const uint64_t        minfreespace,
                  std::string          *branch);
 
 public:

@@ -183,7 +183,6 @@ namespace l
   open(Policy::Func::Search  searchFunc_,
        PolicyCache          &cache,
        const Branches       &branches_,
-       const uint64_t        minfreespace_,
        const char           *fusepath_,
        const int             flags_,
        const bool            link_cow_,
@@ -193,7 +192,7 @@ namespace l
     int rv;
     string basepath;
 
-    rv = cache(searchFunc_,branches_,fusepath_,minfreespace_,&basepath);
+    rv = cache(searchFunc_,branches_,fusepath_,&basepath);
     if(rv == -1)
       return -errno;
 
@@ -219,7 +218,6 @@ namespace FUSE
     return l::open(config.func.open.policy,
                    config.open_cache,
                    config.branches,
-                   config.minfreespace,
                    fusepath_,
                    ffi_->flags,
                    config.link_cow,

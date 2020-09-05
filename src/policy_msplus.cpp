@@ -36,10 +36,9 @@ namespace msplus
   static
   const
   string*
-  create_1(const Branches &branches_,
-           const string   &fusepath_,
-           const uint64_t  minfreespace_,
-           int            *err_)
+  create_1(const BranchVec &branches_,
+           const string    &fusepath_,
+           int             *err_)
   {
     int rv;
     uint64_t lus;
@@ -54,16 +53,16 @@ namespace msplus
       {
         branch = &branches_[i];
 
-        if(!fs::exists(branch->path,fusepath))
-          error_and_continue(*err_,ENOENT);
         if(branch->ro_or_nc())
           error_and_continue(*err_,EROFS);
+        if(!fs::exists(branch->path,fusepath))
+          error_and_continue(*err_,ENOENT);
         rv = fs::info(branch->path,&info);
         if(rv == -1)
           error_and_continue(*err_,ENOENT);
         if(info.readonly)
           error_and_continue(*err_,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(*err_,ENOSPC);
         if(info.spaceused >= lus)
           continue;
@@ -77,21 +76,19 @@ namespace msplus
 
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         const uint64_t  minfreespace_,
-         vector<string> *paths_)
+  create(const BranchVec &branches_,
+         const char      *fusepath_,
+         vector<string>  *paths_)
   {
     int error;
     string fusepath;
     const string *basepath;
-    rwlock::ReadGuard guard(&branches_.lock);
 
     error = ENOENT;
     fusepath = fusepath_;
     do
       {
-        basepath = create_1(branches_,fusepath,minfreespace_,&error);
+        basepath = msplus::create_1(branches_,fusepath,&error);
         if(basepath)
           break;
 
@@ -106,17 +103,27 @@ namespace msplus
 
     return 0;
   }
+
+  static
+  int
+  create(const Branches &branches_,
+         const char     *fusepath_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return msplus::create(branches_.vec,fusepath_,paths_);
+  }
 }
 
 int
 Policy::Func::msplus(const Category  type_,
                      const Branches &branches_,
                      const char     *fusepath_,
-                     const uint64_t  minfreespace_,
                      vector<string> *paths_)
 {
   if(type_ == Category::CREATE)
-    return msplus::create(branches_,fusepath_,minfreespace_,paths_);
+    return msplus::create(branches_,fusepath_,paths_);
 
-  return Policy::Func::eplus(type_,branches_,fusepath_,minfreespace_,paths_);
+  return Policy::Func::eplus(type_,branches_,fusepath_,paths_);
 }

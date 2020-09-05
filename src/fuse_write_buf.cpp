@@ -74,7 +74,6 @@ namespace l
 
     rv = fs::movefile_as_root(config.moveonenospc.policy,
                               config.branches,
-                              config.minfreespace,
                               fi_->fusepath,
                               &fi_->fd);
     if(rv == -1)

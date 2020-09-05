@@ -419,7 +419,7 @@ option_processor(void       *data_,
       return process_opt(data,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
-      if(data->config->branches.empty())
+      if(data->config->branches.vec.empty())
         return process_branches(data,arg_);
       else
         return process_mount(data,arg_);

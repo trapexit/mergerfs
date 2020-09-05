@@ -67,22 +67,22 @@ namespace str
       {
       case 'k':
       case 'K':
-        tmp *= 1024;
+        tmp *= 1024ULL;
         break;
 
       case 'm':
       case 'M':
-        tmp *= (1024 * 1024);
+        tmp *= (1024ULL * 1024ULL);
         break;
 
       case 'g':
       case 'G':
-        tmp *= (1024 * 1024 * 1024);
+        tmp *= (1024ULL * 1024ULL * 1024ULL);
         break;
 
       case 't':
       case 'T':
-        tmp *= (1024ULL * 1024 * 1024 * 1024);
+        tmp *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
         break;
 
       case '\0':

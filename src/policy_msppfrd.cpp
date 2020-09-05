@@ -44,18 +44,16 @@ namespace msppfrd
 {
   static
   int
-  create_1(const Branches &branches_,
-           const string   &fusepath_,
-           const uint64_t  minfreespace_,
-           BranchInfoVec  *branchinfo_,
-           uint64_t       *sum_)
+  create_1(const BranchVec &branches_,
+           const string    &fusepath_,
+           BranchInfoVec   *branchinfo_,
+           uint64_t        *sum_)
   {
     int rv;
     int error;
     BranchInfo bi;
     fs::info_t info;
     const Branch *branch;
-    rwlock::ReadGuard guard(&branches_.lock);
 
     *sum_ = 0;
     error = ENOENT;
@@ -72,7 +70,7 @@ namespace msppfrd
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
 
         *sum_ += info.spaceavail;
@@ -87,9 +85,22 @@ namespace msppfrd
 
   static
   int
+  create_1(const Branches &branches_,
+           const string   &fusepath_,
+           BranchInfoVec  *branchinfo_,
+           uint64_t       *sum_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    branchinfo_->reserve(branches_.vec.size());
+
+    return msppfrd::create_1(branches_.vec,fusepath_,branchinfo_,sum_);
+  }
+
+  static
+  int
   get_branchinfo(const Branches &branches_,
                  const char     *fusepath_,
-                 const uint64_t  minfreespace_,
                  BranchInfoVec  *branchinfo_,
                  uint64_t       *sum_)
   {
@@ -99,7 +110,7 @@ namespace msppfrd
     fusepath = fusepath_;
     do
       {
-        error = msppfrd::create_1(branches_,fusepath,minfreespace_,branchinfo_,sum_);
+        error = msppfrd::create_1(branches_,fusepath,branchinfo_,sum_);
         if(branchinfo_->size())
           return error;
 
@@ -138,7 +149,6 @@ namespace msppfrd
   int
   create(const Branches &branches_,
          const char     *fusepath_,
-         const uint64_t  minfreespace_,
          vector<string> *paths_)
   {
     int error;
@@ -146,8 +156,7 @@ namespace msppfrd
     const string *basepath;
     BranchInfoVec branchinfo;
 
-    branchinfo.reserve(branches_.size());
-    error    = msppfrd::get_branchinfo(branches_,fusepath_,minfreespace_,&branchinfo,&sum);
+    error    = msppfrd::get_branchinfo(branches_,fusepath_,&branchinfo,&sum);
     basepath = msppfrd::get_branch(branchinfo,sum);
     if(basepath == NULL)
       return (errno=error,-1);
@@ -162,11 +171,10 @@ int
 Policy::Func::msppfrd(const Category  type_,
                       const Branches &branches_,
                       const char     *fusepath_,
-                      const uint64_t  minfreespace_,
                       vector<string> *paths_)
 {
   if(type_ == Category::CREATE)
-    return msppfrd::create(branches_,fusepath_,minfreespace_,paths_);
+    return msppfrd::create(branches_,fusepath_,paths_);
 
-  return Policy::Func::eppfrd(type_,branches_,fusepath_,minfreespace_,paths_);
+  return Policy::Func::eppfrd(type_,branches_,fusepath_,paths_);
 }

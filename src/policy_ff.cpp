@@ -32,12 +32,9 @@ namespace ff
 {
   static
   int
-  create(const Branches &branches_,
-         const uint64_t  minfreespace_,
-         vector<string> *paths_)
+  create(const BranchVec &branches_,
+         vector<string>  *paths_)
   {
-    rwlock::ReadGuard guard(&branches_.lock);
-
     int rv;
     int error;
     fs::info_t info;
@@ -55,7 +52,7 @@ namespace ff
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < minfreespace_)
+        if(info.spaceavail < branch->minfreespace())
           error_and_continue(error,ENOSPC);
 
         paths_->push_back(branch->path);
@@ -65,17 +62,26 @@ namespace ff
 
     return (errno=error,-1);
   }
+
+  static
+  int
+  create(const Branches &branches_,
+         vector<string> *paths_)
+  {
+    rwlock::ReadGuard guard(branches_.lock);
+
+    return ff::create(branches_.vec,paths_);
+  }
 }
 
 int
 Policy::Func::ff(const Category  type_,
                  const Branches &branches_,
                  const char     *fusepath_,
-                 const uint64_t  minfreespace_,
                  vector<string> *paths_)
 {
   if(type_ == Category::CREATE)
-    return ff::create(branches_,minfreespace_,paths_);
+    return ff::create(branches_,paths_);
 
-  return Policy::Func::epff(type_,branches_,fusepath_,minfreespace_,paths_);
+  return Policy::Func::epff(type_,branches_,fusepath_,paths_);
 }

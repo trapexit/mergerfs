@@ -72,14 +72,13 @@ namespace l
   int
   truncate(Policy::Func::Action  actionFunc_,
            const Branches       &branches_,
-           const uint64_t        minfreespace_,
            const char           *fusepath_,
            const off_t           size_)
   {
     int rv;
     vector<string> basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,minfreespace_,&basepaths);
+    rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -99,7 +98,6 @@ namespace FUSE
 
     return l::truncate(config.func.truncate.policy,
                        config.branches,
-                       config.minfreespace,
                        fusepath_,
                        size_);
   }

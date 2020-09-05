@@ -19,6 +19,7 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs.hpp"
+#include "rwlock.hpp"
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
 
@@ -84,6 +85,8 @@ namespace l
          const StatFSIgnore  ignore_,
          struct statvfs     *fsstat_)
   {
+    rwlock::ReadGuard guard(branches_.lock);
+
     int rv;
     string fullpath;
     struct stat st;
@@ -96,11 +99,11 @@ namespace l
     min_bsize   = std::numeric_limits<unsigned long>::max();
     min_frsize  = std::numeric_limits<unsigned long>::max();
     min_namemax = std::numeric_limits<unsigned long>::max();
-    for(size_t i = 0, ei = branches_.size(); i < ei; i++)
+    for(size_t i = 0, ei = branches_.vec.size(); i < ei; i++)
       {
         fullpath = ((mode_ == StatFS::ENUM::FULL) ?
-                    fs::path::make(branches_[i].path,fusepath_) :
-                    branches_[i].path);
+                    fs::path::make(branches_.vec[i].path,fusepath_) :
+                    branches_.vec[i].path);
 
         rv = fs::lstat(fullpath,&st);
         if(rv == -1)
@@ -117,7 +120,7 @@ namespace l
         if(stvfs.f_namemax && (min_namemax > stvfs.f_namemax))
           min_namemax = stvfs.f_namemax;
 
-        if(l::should_ignore(ignore_,&branches_[i],StatVFS::readonly(stvfs)))
+        if(l::should_ignore(ignore_,&branches_.vec[i],StatVFS::readonly(stvfs)))
           {
             stvfs.f_bavail = 0;
             stvfs.f_favail = 0;

@@ -99,7 +99,6 @@ int
 _rename_create_path(Policy::Func::Search  searchFunc,
                     Policy::Func::Action  actionFunc,
                     const Branches       &branches_,
-                    const uint64_t        minfreespace,
                     const char           *oldfusepath,
                     const char           *newfusepath)
 {
@@ -111,13 +110,13 @@ _rename_create_path(Policy::Func::Search  searchFunc,
   vector<string> oldbasepaths;
   vector<string> branches;
 
-  rv = actionFunc(branches_,oldfusepath,minfreespace,&oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,&oldbasepaths);
   if(rv == -1)
     return -errno;
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = searchFunc(branches_,newfusedirpath,minfreespace,&newbasepath);
+  rv = searchFunc(branches_,newfusedirpath,&newbasepath);
   if(rv == -1)
     return -errno;
 
@@ -146,14 +145,13 @@ static
 int
 _clonepath(Policy::Func::Search  searchFunc,
            const Branches       &branches_,
-           const uint64_t        minfreespace,
            const string         &dstbasepath,
            const string         &fusedirpath)
 {
   int rv;
   vector<string> srcbasepath;
 
-  rv = searchFunc(branches_,fusedirpath,minfreespace,&srcbasepath);
+  rv = searchFunc(branches_,fusedirpath,&srcbasepath);
   if(rv == -1)
     return -errno;
 
@@ -167,7 +165,6 @@ int
 _clonepath_if_would_create(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
                            const Branches       &branches_,
-                           const uint64_t        minfreespace,
                            const string         &oldbasepath,
                            const char           *oldfusepath,
                            const char           *newfusepath)
@@ -178,12 +175,12 @@ _clonepath_if_would_create(Policy::Func::Search  searchFunc,
 
   newfusedirpath = fs::path::dirname(newfusepath);
 
-  rv = createFunc(branches_,newfusedirpath,minfreespace,&newbasepath);
+  rv = createFunc(branches_,newfusedirpath,&newbasepath);
   if(rv == -1)
     return rv;
 
   if(oldbasepath == newbasepath[0])
-    return _clonepath(searchFunc,branches_,minfreespace,oldbasepath,newfusedirpath);
+    return _clonepath(searchFunc,branches_,oldbasepath,newfusedirpath);
 
   return (errno=EXDEV,-1);
 }
@@ -193,7 +190,6 @@ void
 _rename_preserve_path_core(Policy::Func::Search  searchFunc,
                            Policy::Func::Create  createFunc,
                            const Branches       &branches_,
-                           const uint64_t        minfreespace,
                            const vector<string> &oldbasepaths,
                            const string         &oldbasepath,
                            const char           *oldfusepath,
@@ -218,8 +214,8 @@ _rename_preserve_path_core(Policy::Func::Search  searchFunc,
       if((rv == -1) && (errno == ENOENT))
         {
           rv = _clonepath_if_would_create(searchFunc,createFunc,
-                                          branches_,minfreespace,
-                                          oldbasepath,oldfusepath,newfusepath);
+                                          branches_,oldbasepath,
+                                          oldfusepath,newfusepath);
           if(rv == 0)
             rv = fs::rename(oldfullpath,newfullpath);
         }
@@ -240,7 +236,6 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
                       Policy::Func::Action  actionFunc,
                       Policy::Func::Create  createFunc,
                       const Branches       &branches_,
-                      const uint64_t        minfreespace,
                       const char           *oldfusepath,
                       const char           *newfusepath)
 {
@@ -250,7 +245,7 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
   vector<string> oldbasepaths;
   vector<string> branches;
 
-  rv = actionFunc(branches_,oldfusepath,minfreespace,&oldbasepaths);
+  rv = actionFunc(branches_,oldfusepath,&oldbasepaths);
   if(rv == -1)
     return -errno;
 
@@ -262,7 +257,7 @@ _rename_preserve_path(Policy::Func::Search  searchFunc,
       const string &oldbasepath = branches[i];
 
       _rename_preserve_path_core(searchFunc,createFunc,
-                                 branches_,minfreespace,
+                                 branches_,
                                  oldbasepaths,oldbasepath,
                                  oldfusepath,newfusepath,
                                  error,toremove);
@@ -291,14 +286,12 @@ namespace FUSE
                                    config.func.rename.policy,
                                    config.func.create.policy,
                                    config.branches,
-                                   config.minfreespace,
                                    oldpath,
                                    newpath);
 
     return _rename_create_path(config.func.getattr.policy,
                                config.func.rename.policy,
                                config.branches,
-                               config.minfreespace,
                                oldpath,
                                newpath);
   }
