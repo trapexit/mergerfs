@@ -293,10 +293,20 @@ namespace nonstd {
 #define optional_CPP11_140  (optional_CPP11_OR_GREATER_ || optional_COMPILER_MSVC_VER >= 1900)
 #define optional_CPP11_141  (optional_CPP11_OR_GREATER_ || optional_COMPILER_MSVC_VER >= 1910)
 
-#define optional_CPP11_140_490  ((optional_CPP11_OR_GREATER_ && optional_COMPILER_GNUC_VERSION >= 490) || (optional_COMPILER_MSVC_VER >= 1910))
-
 #define optional_CPP14_000  (optional_CPP14_OR_GREATER)
 #define optional_CPP17_000  (optional_CPP17_OR_GREATER)
+
+// gcc >= 4.9, msvc >= vc14.1 (vs17):
+#define optional_CPP11_140_G490     ((optional_CPP11_OR_GREATER_ && optional_COMPILER_GNUC_VERSION >= 490) || (optional_COMPILER_MSVC_VER >= 1910))
+
+// clang >= 3.5, msvc >= vc11 (vs12):
+#define optional_CPP11_110_C350     ( optional_CPP11_110 && !optional_BETWEEN( optional_COMPILER_CLANG_VERSION, 1, 350 ) )
+
+// clang >= 3.5, gcc >= 5.0, msvc >= vc11 (vs12):
+#define optional_CPP11_110_C350_G500 \
+    (  optional_CPP11_110 && \
+    !( optional_BETWEEN( optional_COMPILER_CLANG_VERSION, 1, 350 ) \
+    || optional_BETWEEN( optional_COMPILER_GNUC_VERSION , 1, 500 ) ) )
 
 // Presence of C++11 language features:
 
@@ -304,7 +314,7 @@ namespace nonstd {
 #define optional_HAVE_IS_DEFAULT        optional_CPP11_140
 #define optional_HAVE_NOEXCEPT          optional_CPP11_140
 #define optional_HAVE_NULLPTR           optional_CPP11_100
-#define optional_HAVE_REF_QUALIFIER     optional_CPP11_140_490
+#define optional_HAVE_REF_QUALIFIER     optional_CPP11_140_G490
 #define optional_HAVE_INITIALIZER_LIST  optional_CPP11_140
 
 // Presence of C++14 language features:
@@ -323,6 +333,13 @@ namespace nonstd {
 
 #define optional_HAVE_TR1_TYPE_TRAITS   (!! optional_COMPILER_GNUC_VERSION )
 #define optional_HAVE_TR1_ADD_POINTER   (!! optional_COMPILER_GNUC_VERSION )
+
+#define optional_HAVE_IS_ASSIGNABLE                     optional_CPP11_110_C350
+#define optional_HAVE_IS_MOVE_CONSTRUCTIBLE             optional_CPP11_110_C350
+#define optional_HAVE_IS_NOTHROW_MOVE_ASSIGNABLE        optional_CPP11_110_C350
+#define optional_HAVE_IS_NOTHROW_MOVE_CONSTRUCTIBLE     optional_CPP11_110_C350
+#define optional_HAVE_IS_TRIVIALLY_COPY_CONSTRUCTIBLE   optional_CPP11_110_C350_G500
+#define optional_HAVE_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE   optional_CPP11_110_C350_G500
 
 // C++ feature usage:
 
@@ -419,6 +436,12 @@ namespace nonstd { namespace optional_lite {
 
 namespace std11 {
 
+template< class T, T v > struct integral_constant { enum { value = v }; };
+template< bool B       > struct bool_constant : integral_constant<bool, B>{};
+
+typedef bool_constant< true  > true_type;
+typedef bool_constant< false > false_type;
+
 #if optional_CPP11_OR_GREATER
     using std::move;
 #else
@@ -432,16 +455,42 @@ namespace std11 {
     template<         typename T, typename F > struct conditional<false, T, F> { typedef F type; };
 #endif // optional_HAVE_CONDITIONAL
 
-// gcc < 5:
-#if optional_CPP11_OR_GREATER
-#if optional_BETWEEN( optional_COMPILER_GNUC_VERSION, 1, 500 )
-    template< typename T > struct is_trivially_copy_constructible : std::true_type{};
-    template< typename T > struct is_trivially_move_constructible : std::true_type{};
+#if optional_HAVE( IS_ASSIGNABLE )
+    using std::is_assignable;
 #else
+    template< class T, class U > struct is_assignable : std11::true_type{};
+#endif
+
+#if optional_HAVE( IS_MOVE_CONSTRUCTIBLE )
+    using std::is_move_constructible;
+#else
+    template< class T > struct is_move_constructible : std11::true_type{};
+#endif
+
+#if optional_HAVE( IS_NOTHROW_MOVE_ASSIGNABLE )
+    using std::is_nothrow_move_assignable;
+#else
+    template< class T > struct is_nothrow_move_assignable : std11::true_type{};
+#endif
+
+#if optional_HAVE( IS_NOTHROW_MOVE_CONSTRUCTIBLE )
+    using std::is_nothrow_move_constructible;
+#else
+    template< class T > struct is_nothrow_move_constructible : std11::true_type{};
+#endif
+
+#if optional_HAVE( IS_TRIVIALLY_COPY_CONSTRUCTIBLE )
     using std::is_trivially_copy_constructible;
+#else
+    template< class T > struct is_trivially_copy_constructible : std11::true_type{};
+#endif
+
+#if optional_HAVE( IS_TRIVIALLY_MOVE_CONSTRUCTIBLE )
     using std::is_trivially_move_constructible;
+#else
+    template< class T > struct is_trivially_move_constructible : std11::true_type{};
 #endif
-#endif
+
 } // namespace std11
 
 #if optional_CPP11_OR_GREATER
@@ -464,10 +513,10 @@ using std::swap;
 struct is_swappable
 {
     template< typename T, typename = decltype( swap( std::declval<T&>(), std::declval<T&>() ) ) >
-    static std::true_type test( int /*unused*/ );
+    static std11::true_type test( int /*unused*/ );
 
     template< typename >
-    static std::false_type test(...);
+    static std11::false_type test(...);
 };
 
 struct is_nothrow_swappable
@@ -481,10 +530,10 @@ struct is_nothrow_swappable
     }
 
     template< typename T >
-    static auto test( int /*unused*/ ) -> std::integral_constant<bool, satisfies<T>()>{}
+    static auto test( int /*unused*/ ) -> std11::integral_constant<bool, satisfies<T>()>{}
 
     template< typename >
-    static auto test(...) -> std::false_type;
+    static auto test(...) -> std11::false_type;
 };
 
 } // namespace detail
@@ -891,13 +940,13 @@ public:
     // 3 (C++11) - move-construct from optional
     template< typename U = T
         optional_REQUIRES_T(
-            std::is_move_constructible<U>::value
+            std11::is_move_constructible<U>::value
             || std11::is_trivially_move_constructible<U>::value
         )
     >
     optional_constexpr14 optional( optional && other )
     // NOLINTNEXTLINE( performance-noexcept-move-constructor )
-        noexcept( std::is_nothrow_move_constructible<T>::value )
+        noexcept( std11::is_nothrow_move_constructible<T>::value )
     : has_value_( other.has_value() )
     {
         if ( other.has_value() )
@@ -1101,8 +1150,8 @@ public:
     )
     operator=( optional const & other )
         noexcept(
-            std::is_nothrow_move_assignable<T>::value
-            && std::is_nothrow_move_constructible<T>::value
+            std11::is_nothrow_move_assignable<T>::value
+            && std11::is_nothrow_move_constructible<T>::value
         )
 #else
     optional & operator=( optional const & other )
@@ -1121,7 +1170,7 @@ public:
     optional_REQUIRES_R(
         optional &,
         true
-//      std::is_move_constructible<T>::value
+//      std11::is_move_constructible<T>::value
 //      && std::is_move_assignable<T>::value
     )
     operator=( optional && other ) noexcept
@@ -1138,7 +1187,7 @@ public:
         optional_REQUIRES_R(
             optional &,
             std::is_constructible<T , U>::value
-            && std::is_assignable<T&, U>::value
+            && std11::is_assignable<T&, U>::value
             && !std::is_same<typename std20::remove_cvref<U>::type, nonstd_lite_in_place_t(U)>::value
             && !std::is_same<typename std20::remove_cvref<U>::type, optional<T>>::value
             && !(std::is_scalar<T>::value && std::is_same<T, typename std::decay<U>::type>::value)
@@ -1176,7 +1225,7 @@ public:
         optional_REQUIRES_R(
             optional&,
             std::is_constructible<  T , U const &>::value
-            &&  std::is_assignable< T&, U const &>::value
+            &&  std11::is_assignable< T&, U const &>::value
             && !std::is_constructible<T, optional<U> &          >::value
             && !std::is_constructible<T, optional<U> &&         >::value
             && !std::is_constructible<T, optional<U> const &    >::value
@@ -1185,10 +1234,10 @@ public:
             && !std::is_convertible<     optional<U> &&      , T>::value
             && !std::is_convertible<     optional<U> const & , T>::value
             && !std::is_convertible<     optional<U> const &&, T>::value
-            && !std::is_assignable<  T&, optional<U> &          >::value
-            && !std::is_assignable<  T&, optional<U> &&         >::value
-            && !std::is_assignable<  T&, optional<U> const &    >::value
-            && !std::is_assignable<  T&, optional<U> const &&   >::value
+            && !std11::is_assignable<  T&, optional<U> &          >::value
+            && !std11::is_assignable<  T&, optional<U> &&         >::value
+            && !std11::is_assignable<  T&, optional<U> const &    >::value
+            && !std11::is_assignable<  T&, optional<U> const &&   >::value
         )
 #else
     optional&
@@ -1206,7 +1255,7 @@ public:
         optional_REQUIRES_R(
             optional&,
             std::is_constructible<  T , U>::value
-            &&  std::is_assignable< T&, U>::value
+            &&  std11::is_assignable< T&, U>::value
             && !std::is_constructible<T, optional<U> &          >::value
             && !std::is_constructible<T, optional<U> &&         >::value
             && !std::is_constructible<T, optional<U> const &    >::value
@@ -1215,10 +1264,10 @@ public:
             && !std::is_convertible<     optional<U> &&      , T>::value
             && !std::is_convertible<     optional<U> const & , T>::value
             && !std::is_convertible<     optional<U> const &&, T>::value
-            && !std::is_assignable<  T&, optional<U> &          >::value
-            && !std::is_assignable<  T&, optional<U> &&         >::value
-            && !std::is_assignable<  T&, optional<U> const &    >::value
-            && !std::is_assignable<  T&, optional<U> const &&   >::value
+            && !std11::is_assignable<  T&, optional<U> &          >::value
+            && !std11::is_assignable<  T&, optional<U> &&         >::value
+            && !std11::is_assignable<  T&, optional<U> const &    >::value
+            && !std11::is_assignable<  T&, optional<U> const &&   >::value
         )
     operator=( optional<U> && other )
     {
@@ -1260,7 +1309,7 @@ public:
     void swap( optional & other )
 #if optional_CPP11_OR_GREATER
         noexcept(
-            std::is_nothrow_move_constructible<T>::value
+            std11::is_nothrow_move_constructible<T>::value
             && std17::is_nothrow_swappable<T>::value
         )
 #endif
@@ -1626,7 +1675,7 @@ inline optional_constexpr bool operator>=( U const & v, optional<T> const & x )
 template< typename T
 #if optional_CPP11_OR_GREATER
     optional_REQUIRES_T(
-        std::is_move_constructible<T>::value
+        std11::is_move_constructible<T>::value
         && std17::is_swappable<T>::value )
 #endif
 >
