@@ -8,13 +8,19 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is. Please do not file bugs for unreleased versions. The master branch is **not** to be considered in a production state.
+A clear and concise description of what the bug is. Please do not file bugs for unreleased versions unless you're a tester or sure it's not a work in progress. The master branch is **not** to be considered in a production state.
 
 **To Reproduce**
-Steps to reproduce the behavior. List **all** steps to reproduce. All settings.
+Steps to reproduce the behavior. List **all** steps to reproduce. **All** settings.
+
+Please simplify the reproduction as much as possible. 
+ - Unless it is dependenat on multiple branches, use a single branch
+ - Use basic tooling if possible (touch,truncate,rm,rmdir,ln,etc.)
+
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
+
 
 **System information:**
  - OS, kernel version: `uname -a`
