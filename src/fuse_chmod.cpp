@@ -18,7 +18,7 @@
 #include "errno.hpp"
 #include "fs_lchmod.hpp"
 #include "fs_path.hpp"
-#include "rv.hpp"
+#include "policy_rv.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
@@ -31,57 +31,87 @@
 using std::string;
 using std::vector;
 
+
 namespace l
 {
   static
   int
+  get_error(const PolicyRV &prv_,
+            const string   &basepath_)
+  {
+    for(int i = 0, ei = prv_.success.size(); i < ei; i++)
+      {
+        if(prv_.success[i].basepath == basepath_)
+          return prv_.success[i].rv;
+      }
+
+    for(int i = 0, ei = prv_.error.size(); i < ei; i++)
+      {
+        if(prv_.error[i].basepath == basepath_)
+          return prv_.error[i].rv;
+      }
+
+    return 0;
+  }
+
+  static
+  void
   chmod_loop_core(const string &basepath_,
                   const char   *fusepath_,
                   const mode_t  mode_,
-                  const int     error_)
+                  PolicyRV     *prv_)
   {
-    int rv;
     string fullpath;
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::lchmod(fullpath,mode_);
+    errno = 0;
+    fs::lchmod(fullpath,mode_);
 
-    return error::calc(rv,error_,errno);
+    prv_->insert(errno,basepath_);
   }
 
   static
-  int
+  void
   chmod_loop(const vector<string> &basepaths_,
              const char           *fusepath_,
-             const mode_t          mode_)
+             const mode_t          mode_,
+             PolicyRV             *prv_)
   {
-    int error;
-
-    error = -1;
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = l::chmod_loop_core(basepaths_[i],fusepath_,mode_,error);
+        l::chmod_loop_core(basepaths_[i],fusepath_,mode_,prv_);
       }
-
-    return -error;
   }
 
   static
   int
   chmod(Policy::Func::Action  actionFunc_,
+        Policy::Func::Search  searchFunc_,
         const Branches       &branches_,
         const char           *fusepath_,
         const mode_t          mode_)
   {
     int rv;
+    PolicyRV prv;
     vector<string> basepaths;
 
     rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
-    return l::chmod_loop(basepaths,fusepath_,mode_);
+    l::chmod_loop(basepaths,fusepath_,mode_,&prv);
+    if(prv.error.empty())
+      return 0;
+    if(prv.success.empty())
+      return prv.error[0].rv;
+
+    basepaths.clear();
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    if(rv == -1)
+      return -errno;
+
+    return l::get_error(prv,basepaths[0]);
   }
 }
 
@@ -96,6 +126,7 @@ namespace FUSE
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     return l::chmod(config.func.chmod.policy,
+                    config.func.getattr.policy,
                     config.branches,
                     fusepath_,
                     mode_);
