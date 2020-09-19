@@ -52,14 +52,14 @@ public:
 
 public:
   ToFromWrapper<T>&
-  operator=(const T data_)
+  operator=(const T &data_)
   {
     _data = data_;
     return *this;
   }
 
 public:
-  operator T() const
+  operator const T&() const
   {
     return _data;
   }
@@ -72,7 +72,7 @@ public:
 
 public:
   bool
-  operator==(const T data_) const
+  operator==(const T &data_) const
   {
     return (_data == data_);
   }
@@ -121,7 +121,7 @@ public:
 
 public:
   bool
-  operator==(const T data_) const
+  operator==(const T &data_) const
   {
     return (_data == data_);
   }
