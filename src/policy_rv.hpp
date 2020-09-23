@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,22 +18,34 @@
 
 #pragma once
 
-namespace error
-{
-  static
-  inline
-  int
-  calc(const int rv_,
-       const int prev_,
-       const int cur_)
-  {
-    if(rv_ == -1)
-      {
-        if(prev_ == 0)
-          return 0;
-        return cur_;
-      }
+#include <string>
+#include <vector>
 
-    return 0;
+struct PolicyRV
+{
+  struct RV
+  {
+    RV(const int          rv_,
+       const std::string &basepath_)
+      : rv(rv_),
+        basepath(basepath_)
+    {
+    }
+
+    int         rv;
+    std::string basepath;
+  };
+
+  std::vector<RV> success;
+  std::vector<RV> error;
+
+  void
+  insert(const int          err_,
+         const std::string &basepath_)
+  {
+    if(err_ == 0)
+      success.push_back(RV(err_,basepath_));
+    else
+      error.push_back(RV(-err_,basepath_));
   }
-}
+};

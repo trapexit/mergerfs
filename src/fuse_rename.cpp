@@ -20,17 +20,35 @@
 #include "fs_path.hpp"
 #include "fs_remove.hpp"
 #include "fs_rename.hpp"
-#include "rv.hpp"
 #include "ugid.hpp"
 
 #include <algorithm>
-#include <set>
 #include <string>
 #include <vector>
 
 using std::string;
 using std::vector;
-using std::set;
+
+
+namespace error
+{
+  static
+  inline
+  int
+  calc(const int rv_,
+       const int prev_,
+       const int cur_)
+  {
+    if(rv_ == -1)
+      {
+        if(prev_ == 0)
+          return 0;
+        return cur_;
+      }
+
+    return 0;
+  }
+}
 
 static
 bool

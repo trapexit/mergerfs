@@ -18,7 +18,6 @@
 #include "errno.hpp"
 #include "fs_rmdir.hpp"
 #include "fs_path.hpp"
-#include "rv.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -29,6 +28,23 @@
 
 using std::string;
 using std::vector;
+
+
+namespace error
+{
+  static
+  int
+  calc(const int rv_,
+       const int prev_,
+       const int cur_)
+  {
+    if(prev_ != 0)
+      return prev_;
+    if(rv_ == -1)
+      return cur_;
+    return 0;
+  }
+}
 
 namespace l
 {
@@ -48,7 +64,6 @@ namespace l
     return error::calc(rv,error_,errno);
   }
 
-
   static
   int
   rmdir_loop(const vector<string> &basepaths_,
@@ -56,7 +71,7 @@ namespace l
   {
     int error;
 
-    error = -1;
+    error = 0;
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
         error = l::rmdir_loop_core(basepaths_[i],fusepath_,error);

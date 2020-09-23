@@ -21,13 +21,12 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "num.hpp"
-#include "rv.hpp"
+#include "policy_rv.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
 
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -38,8 +37,29 @@ static const char SECURITY_CAPABILITY[] = "security.capability";
 using std::string;
 using std::vector;
 
+
 namespace l
 {
+  static
+  int
+  get_error(const PolicyRV &prv_,
+            const string   &basepath_)
+  {
+    for(int i = 0, ei = prv_.success.size(); i < ei; i++)
+      {
+        if(prv_.success[i].basepath == basepath_)
+          return prv_.success[i].rv;
+      }
+
+    for(int i = 0, ei = prv_.error.size(); i < ei; i++)
+      {
+        if(prv_.error[i].basepath == basepath_)
+          return prv_.error[i].rv;
+      }
+
+    return 0;
+  }
+
   static
   bool
   is_attrname_security_capability(const char *attrname_)
@@ -49,117 +69,126 @@ namespace l
 
   static
   int
-  setxattr_controlfile(Config       &config,
-                       const string &attrname,
-                       const string &attrval,
-                       const int     flags)
+  setxattr_controlfile(Config       &config_,
+                       const string &attrname_,
+                       const string &attrval_,
+                       const int     flags_)
   {
     int rv;
     string key;
 
-    if(!str::startswith(attrname,"user.mergerfs."))
+    if(!str::startswith(attrname_,"user.mergerfs."))
       return -ENOATTR;
 
-    key = &attrname[14];
+    key = &attrname_[14];
 
-    if(config.has_key(key) == false)
+    if(config_.has_key(key) == false)
       return -ENOATTR;
 
-    if((flags & XATTR_CREATE) == XATTR_CREATE)
+    if((flags_ & XATTR_CREATE) == XATTR_CREATE)
       return -EEXIST;
 
-    rv = config.set(key,attrval);
+    rv = config_.set(key,attrval_);
     if(rv < 0)
       return rv;
 
-    config.open_cache.clear();
-    fs::statvfs_cache_timeout(config.cache_statfs);
+    config_.open_cache.clear();
+    fs::statvfs_cache_timeout(config_.cache_statfs);
 
     return rv;
   }
 
   static
-  int
-  setxattr_loop_core(const string &basepath,
-                     const char   *fusepath,
-                     const char   *attrname,
-                     const char   *attrval,
-                     const size_t  attrvalsize,
-                     const int     flags,
-                     const int     error)
+  void
+  setxattr_loop_core(const string &basepath_,
+                     const char   *fusepath_,
+                     const char   *attrname_,
+                     const char   *attrval_,
+                     const size_t  attrvalsize_,
+                     const int     flags_,
+                     PolicyRV     *prv_)
   {
-    int rv;
     string fullpath;
 
-    fullpath = fs::path::make(basepath,fusepath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::lsetxattr(fullpath,attrname,attrval,attrvalsize,flags);
+    errno = 0;
+    fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
 
-    return error::calc(rv,error,errno);
+    prv_->insert(errno,basepath_);
   }
 
   static
-  int
-  setxattr_loop(const vector<string> &basepaths,
-                const char           *fusepath,
-                const char           *attrname,
-                const char           *attrval,
-                const size_t          attrvalsize,
-                const int             flags)
+  void
+  setxattr_loop(const vector<string> &basepaths_,
+                const char           *fusepath_,
+                const char           *attrname_,
+                const char           *attrval_,
+                const size_t          attrvalsize_,
+                const int             flags_,
+                PolicyRV             *prv_)
   {
-    int error;
-
-    error = -1;
-    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = l::setxattr_loop_core(basepaths[i],fusepath,
-                                      attrname,attrval,attrvalsize,flags,
-                                      error);
+        l::setxattr_loop_core(basepaths_[i],fusepath_,
+                              attrname_,attrval_,attrvalsize_,
+                              flags_,prv_);
       }
-
-    return -error;
   }
 
   static
   int
-  setxattr(Policy::Func::Action  actionFunc,
+  setxattr(Policy::Func::Action  actionFunc_,
+           Policy::Func::Search  searchFunc_,
            const Branches       &branches_,
-           const char           *fusepath,
-           const char           *attrname,
-           const char           *attrval,
-           const size_t          attrvalsize,
-           const int             flags)
+           const char           *fusepath_,
+           const char           *attrname_,
+           const char           *attrval_,
+           const size_t          attrvalsize_,
+           const int             flags_)
   {
     int rv;
+    PolicyRV prv;
     vector<string> basepaths;
 
-    rv = actionFunc(branches_,fusepath,&basepaths);
+    rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
-    return l::setxattr_loop(basepaths,fusepath,attrname,attrval,attrvalsize,flags);
+    l::setxattr_loop(basepaths,fusepath_,attrname_,attrval_,attrvalsize_,flags_,&prv);
+    if(prv.error.empty())
+      return 0;
+    if(prv.success.empty())
+      return prv.error[0].rv;
+
+    basepaths.clear();
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    if(rv == -1)
+      return -errno;
+
+    return l::get_error(prv,basepaths[0]);
   }
 }
 
 namespace FUSE
 {
   int
-  setxattr(const char *fusepath,
-           const char *attrname,
-           const char *attrval,
-           size_t      attrvalsize,
-           int         flags)
+  setxattr(const char *fusepath_,
+           const char *attrname_,
+           const char *attrval_,
+           size_t      attrvalsize_,
+           int         flags_)
   {
     Config &config = Config::rw();
 
-    if(fusepath == config.controlfile)
+    if(fusepath_ == config.controlfile)
       return l::setxattr_controlfile(config,
-                                     attrname,
-                                     string(attrval,attrvalsize),
-                                     flags);
+                                     attrname_,
+                                     string(attrval_,attrvalsize_),
+                                     flags_);
 
     if((config.security_capability == false) &&
-       l::is_attrname_security_capability(attrname))
+       l::is_attrname_security_capability(attrname_))
       return -ENOATTR;
 
     if(config.xattr.to_int())
@@ -169,11 +198,12 @@ namespace FUSE
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     return l::setxattr(config.func.setxattr.policy,
+                       config.func.getxattr.policy,
                        config.branches,
-                       fusepath,
-                       attrname,
-                       attrval,
-                       attrvalsize,
-                       flags);
+                       fusepath_,
+                       attrname_,
+                       attrval_,
+                       attrvalsize_,
+                       flags_);
   }
 }

@@ -20,7 +20,6 @@
 #include "fs_mknod.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
-#include "rv.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -30,6 +29,26 @@
 
 using std::string;
 using std::vector;
+
+namespace error
+{
+  static
+  inline
+  int
+  calc(const int rv_,
+       const int prev_,
+       const int cur_)
+  {
+    if(rv_ == -1)
+      {
+        if(prev_ == 0)
+          return 0;
+        return cur_;
+      }
+
+    return 0;
+  }
+}
 
 namespace l
 {

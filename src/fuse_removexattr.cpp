@@ -18,7 +18,7 @@
 #include "errno.hpp"
 #include "fs_lremovexattr.hpp"
 #include "fs_path.hpp"
-#include "rv.hpp"
+#include "policy_rv.hpp"
 #include "ugid.hpp"
 
 #include <fuse.h>
@@ -29,58 +29,87 @@
 using std::string;
 using std::vector;
 
+
 namespace l
 {
   static
   int
+  get_error(const PolicyRV &prv_,
+            const string   &basepath_)
+  {
+    for(int i = 0, ei = prv_.success.size(); i < ei; i++)
+      {
+        if(prv_.success[i].basepath == basepath_)
+          return prv_.success[i].rv;
+      }
+
+    for(int i = 0, ei = prv_.error.size(); i < ei; i++)
+      {
+        if(prv_.error[i].basepath == basepath_)
+          return prv_.error[i].rv;
+      }
+
+    return 0;
+  }
+
+  static
+  void
   removexattr_loop_core(const string &basepath_,
                         const char   *fusepath_,
                         const char   *attrname_,
-                        const int     error_)
+                        PolicyRV     *prv_)
   {
-    int rv;
     string fullpath;
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::lremovexattr(fullpath,attrname_);
+    errno = 0;
+    fs::lremovexattr(fullpath,attrname_);
 
-    return error::calc(rv,error_,errno);
+    prv_->insert(errno,basepath_);
   }
 
   static
-  int
+  void
   removexattr_loop(const vector<string> &basepaths_,
                    const char           *fusepath_,
-                   const char           *attrname_)
+                   const char           *attrname_,
+                   PolicyRV             *prv_)
   {
-    int error;
-
-    error = -1;
-
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = l::removexattr_loop_core(basepaths_[i],fusepath_,attrname_,error);
+        l::removexattr_loop_core(basepaths_[i],fusepath_,attrname_,prv_);
       }
-
-    return -error;
   }
 
   static
   int
   removexattr(Policy::Func::Action  actionFunc_,
+              Policy::Func::Search  searchFunc_,
               const Branches       &branches_,
               const char           *fusepath_,
               const char           *attrname_)
   {
     int rv;
+    PolicyRV prv;
     vector<string> basepaths;
 
     rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
-    return l::removexattr_loop(basepaths,fusepath_,attrname_);
+    l::removexattr_loop(basepaths,fusepath_,attrname_,&prv);
+    if(prv.error.empty())
+      return 0;
+    if(prv.success.empty())
+      return prv.error[0].rv;
+
+    basepaths.clear();
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    if(rv == -1)
+      return -errno;
+
+    return l::get_error(prv,basepaths[0]);
   }
 }
 
@@ -101,6 +130,7 @@ namespace FUSE
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     return l::removexattr(config.func.removexattr.policy,
+                          config.func.getxattr.policy,
                           config.branches,
                           fusepath_,
                           attrname_);
