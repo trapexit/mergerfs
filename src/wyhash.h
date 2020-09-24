@@ -3,7 +3,7 @@
 #define wyhash_final_version
 //defines that change behavior
 #ifndef WYHASH_CONDOM
-#define WYHASH_CONDOM 0 //0,1,2
+#define WYHASH_CONDOM 1 //0: read 8 bytes before and after boudaries, dangerous but fastest. 1: normal valid behavior 2: extra protection against entropy loss (probability=2^-63), aka. "blind multiplication"
 #endif
 #define WYHASH_32BIT_MUM 0	//faster on 32 bit system
 //includes
@@ -129,7 +129,7 @@ static inline void make_secret(uint64_t seed, uint64_t *secret){
       for(size_t j=0;j<i;j++)
 #if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__clang__)
         if(__builtin_popcountll(secret[j]^secret[i])!=32){ ok=0; break; }
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && defined(_M_X64)
       if(_mm_popcnt_u64(secret[j]^secret[i])!=32){ ok=0; break; }
 #endif
       if(!ok)continue;
