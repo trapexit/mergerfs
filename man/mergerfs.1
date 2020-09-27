@@ -1075,6 +1075,46 @@ included when checking the mount\[aq]s stats.
 .PP
 The options \f[C]statfs\f[] and \f[C]statfs_ignore\f[] can be used to
 modify \f[C]statfs\f[] behavior.
+.SH ERROR HANDLING
+.PP
+POSIX filesystem functions offer a single return code meaning that there
+is some complication regarding the handling of multiple branches as
+mergerfs does.
+It tries to handle errors in a way that would generally return
+meaningful values for that particular function.
+.SS chmod, chown, removexattr, setxattr, truncate, utimens
+.IP "1)" 3
+if no error: return 0 (success)
+.IP "2)" 3
+if no successes: return first error
+.IP "3)" 3
+if one of the files acted on was the same as the related search
+function: return its value
+.IP "4)" 3
+return 0 (success)
+.PP
+While doing this increases the complexity and cost of error handling,
+particularly step 3, this provides probably the most reasonable return
+value.
+.SS unlink, rmdir
+.IP "1)" 3
+if no errors: return 0 (success)
+.IP "2)" 3
+return first error
+.PP
+Older version of mergerfs would return success if any success occurred
+but for unlink and rmdir there are downstream assumptions that, while
+not impossible to occur, can confuse some software.
+.SS others
+.PP
+For search functions there is always a single thing acted on and as such
+whatever return value that comes from the single function call is
+returned.
+.PP
+For create functions \f[C]mkdir\f[], \f[C]mknod\f[], and
+\f[C]symlink\f[] which don\[aq]t return a file descriptor and therefore
+can have \f[C]all\f[] or \f[C]epall\f[] policies it will return success
+if any of the calls succeed and an error otherwise.
 .SH BUILD / UPDATE
 .PP
 \f[B]NOTE:\f[] Prebuilt packages can be found at and recommended for
@@ -1136,6 +1176,35 @@ make\ STATIC=1\ \ \ \ \ \ \ \ \ \-\ build\ static\ binary
 make\ LTO=1\ \ \ \ \ \ \ \ \ \ \ \ \-\ build\ with\ link\ time\ optimization
 \f[]
 .fi
+.SH UPGRADE
+.PP
+mergerfs can be upgraded live by mounting on top of the previous
+instance.
+Simply install the new version of mergerfs and follow the instructions
+below.
+.PP
+Add \f[C]nonempty\f[] to your mergerfs option list and call mergerfs
+again or if using \f[C]/etc/fstab\f[] call for it to mount again.
+Existing open files and such will continue to work fine though they
+won\[aq]t see runtime changes since any such change would be the new
+mount.
+If you plan on changing settings with the new mount you should / could
+apply those before mounting the new version.
+.IP
+.nf
+\f[C]
+$\ sudo\ mount\ /mnt/mergerfs
+$\ mount\ |\ grep\ mergerfs
+media\ on\ /mnt/mergerfs\ type\ fuse.mergerfs\ (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media\ on\ /mnt/mergerfs\ type\ fuse.mergerfs\ (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+\f[]
+.fi
+.PP
+A problem with this approach is that the underlying instance will
+continue to run even if the software using it stop or are restarted.
+To work around this you can use a "lazy umount".
+Before mounting over top the mount point with the new instance of
+mergerfs issue: \f[C]umount\ \-l\ <mergerfs_mountpoint>\f[].
 .SH RUNTIME CONFIG
 .SS ioctl
 .PP
@@ -1344,29 +1413,6 @@ A\ B\ C
 [trapexit:/mnt/mergerfs]\ $\ xattr\ \-p\ user.mergerfs.allpaths\ A\ |\ tr\ \[aq]\\0\[aq]\ \[aq]\\n\[aq]
 /mnt/a/full/path/to/A
 /mnt/b/full/path/to/A
-\f[]
-.fi
-.SH UPGRADE
-.PP
-mergerfs can be upgraded live by mounting on top of the previous
-version.
-Simply install the new version of mergerfs and follow the instructions
-below.
-.PP
-Add \f[C]nonempty\f[] to your mergerfs option list and call mergerfs
-again or if using \f[C]/etc/fstab\f[] call for it to mount again.
-Existing open files and such will continue to work fine though they
-won\[aq]t see runtime changes since any such change would be the new
-mount.
-If you plan on changing settings with the new mount you should / could
-apply those before mounting the new version.
-.IP
-.nf
-\f[C]
-$\ sudo\ mount\ /mnt/mergerfs
-$\ mount\ |\ grep\ mergerfs
-media\ on\ /mnt/mergerfs\ type\ fuse.mergerfs\ (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
-media\ on\ /mnt/mergerfs\ type\ fuse.mergerfs\ (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
 \f[]
 .fi
 .SH TOOLING
@@ -1856,14 +1902,6 @@ Do \f[B]not\f[] use \f[C]cache.files=off\f[] if you expect applications
 Shared mmap is not currently supported in FUSE w/ page caching disabled.
 Enabling \f[C]dropcacheonclose\f[] is recommended when
 \f[C]cache.files=partial|full|auto\-full\f[].
-.IP \[bu] 2
-Since POSIX functions give only a singular error or success its
-difficult to determine the proper behavior when applying the function to
-multiple targets.
-\f[B]mergerfs\f[] will return an error only if all attempts of an action
-fail.
-Any success will lead to a success returned.
-This means however that some odd situations may arise.
 .IP \[bu] 2
 Kodi (http://kodi.tv), Plex (http://plex.tv),
 Subsonic (http://subsonic.org), etc.
