@@ -410,6 +410,35 @@ The above behavior will help minimize the likelihood of EXDEV being returned but
 The options `statfs` and `statfs_ignore` can be used to modify `statfs` behavior.
 
 
+# ERROR HANDLING
+
+POSIX filesystem functions offer a single return code meaning that there is some complication regarding the handling of multiple branches as mergerfs does. It tries to handle errors in a way that would generally return meaningful values for that particular function.
+
+### chmod, chown, removexattr, setxattr, truncate, utimens
+
+1) if no error: return 0 (success)
+2) if no successes: return first error
+3) if one of the files acted on was the same as the related search function: return its value
+4) return 0 (success)
+
+While doing this increases the complexity and cost of error handling, particularly step 3, this provides probably the most reasonable return value.
+
+
+### unlink, rmdir
+
+1) if no errors: return 0 (success)
+2) return first error
+
+Older version of mergerfs would return success if any success occurred but for unlink and rmdir there are downstream assumptions that, while not impossible to occur, can confuse some software.
+
+
+### others
+
+For search functions there is always a single thing acted on and as such whatever return value that comes from the single function call is returned.
+
+For create functions `mkdir`, `mknod`, and `symlink` which don't return a file descriptor and therefore can have `all` or `epall` policies it will return success if any of the calls succeed and an error otherwise.
+
+
 # BUILD / UPDATE
 
 **NOTE:** Prebuilt packages can be found at and recommended for most users: https://github.com/trapexit/mergerfs/releases
@@ -460,6 +489,23 @@ make USE_XATTR=0      - build program without xattrs functionality
 make STATIC=1         - build static binary
 make LTO=1            - build with link time optimization
 ```
+
+
+# UPGRADE
+
+mergerfs can be upgraded live by mounting on top of the previous instance. Simply install the new version of mergerfs and follow the instructions below.
+
+Add `nonempty` to your mergerfs option list and call mergerfs again or if using `/etc/fstab` call for it to mount again. Existing open files and such will continue to work fine though they won't see runtime changes since any such change would be the new mount. If you plan on changing settings with the new mount you should / could apply those before mounting the new version.
+
+```
+$ sudo mount /mnt/mergerfs
+$ mount | grep mergerfs
+media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+```
+
+A problem with this approach is that the underlying instance will continue to run even if the software using it stop or are restarted. To work around this you can use a "lazy umount". Before mounting over top the mount point with the new instance of mergerfs issue: `umount -l <mergerfs_mountpoint>`.
+
 
 
 # RUNTIME CONFIG
@@ -590,20 +636,6 @@ A B C
 [trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.allpaths A | tr '\0' '\n'
 /mnt/a/full/path/to/A
 /mnt/b/full/path/to/A
-```
-
-
-# UPGRADE
-
-mergerfs can be upgraded live by mounting on top of the previous version. Simply install the new version of mergerfs and follow the instructions below.
-
-Add `nonempty` to your mergerfs option list and call mergerfs again or if using `/etc/fstab` call for it to mount again. Existing open files and such will continue to work fine though they won't see runtime changes since any such change would be the new mount. If you plan on changing settings with the new mount you should / could apply those before mounting the new version.
-
-```
-$ sudo mount /mnt/mergerfs
-$ mount | grep mergerfs
-media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
-media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
 ```
 
 
@@ -826,7 +858,6 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
 * If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * Do **not** use `cache.files=off` if you expect applications (such as rtorrent) to use [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ page caching disabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full`.
-* Since POSIX functions give only a singular error or success its difficult to determine the proper behavior when applying the function to multiple targets. **mergerfs** will return an error only if all attempts of an action fail. Any success will lead to a success returned. This means however that some odd situations may arise.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
