@@ -127,6 +127,7 @@ This is required for most use\-cases.
 .IP \[bu] 2
 \f[B]minfreespace=SIZE\f[]: The minimum space value used for creation
 policies.
+Can be overridden by branch specific option.
 Understands \[aq]K\[aq], \[aq]M\[aq], and \[aq]G\[aq] to represent
 kilobyte, megabyte, and gigabyte respectively.
 (default: 4G)
@@ -331,28 +332,40 @@ POLICY = mergerfs function policy
 The \[aq]branches\[aq] (formerly \[aq]srcmounts\[aq]) argument is a
 colon (\[aq]:\[aq]) delimited list of paths to be pooled together.
 It does not matter if the paths are on the same or different drives nor
-does it matter the filesystem.
+does it matter the filesystem (within reason).
 Used and available space will not be duplicated for paths on the same
 device and any features which aren\[aq]t supported by the underlying
 filesystem (such as file attributes or extended attributes) will return
 the appropriate errors.
 .PP
+Branches currently have two options which can be set.
+A type which impacts whether or not the branch is included in a policy
+calculation and a individual minfreespace value.
+The values are set by prepending an \f[C]=\f[] at the end of a branch
+designation and using commas as delimiters.
+Example: /mnt/drive=RW,1234
+.SS branch type
+.IP \[bu] 2
+RW: (read/write) \- Default behavior.
+Will be eligible in all policy categories.
+.IP \[bu] 2
+RO: (read\-only) \- Will be excluded from \f[C]create\f[] and
+\f[C]action\f[] policies.
+Same as a read\-only mounted filesystem would be (though faster to
+process).
+.IP \[bu] 2
+NC: (no\-create) \- Will be excluded from \f[C]create\f[] policies.
+You can\[aq]t create on that branch but you can change or delete.
+.SS minfreespace
+.PP
+Same purpose as the global option but specific to the branch.
+If not set the global value is used.
+.SS globbing
+.PP
 To make it easier to include multiple branches mergerfs supports
 globbing (http://linux.die.net/man/7/glob).
 \f[B]The globbing tokens MUST be escaped when using via the shell else
 the shell itself will apply the glob itself.\f[]
-.PP
-Each branch can have a suffix of \f[C]=RW\f[] (read / write),
-\f[C]=RO\f[] (read\-only), or \f[C]=NC\f[] (no create).
-These suffixes work with globs as well and will apply to each path
-found.
-\f[C]RW\f[] is the default behavior and those paths will be eligible for
-all policy categories.
-\f[C]RO\f[] will exclude those paths from \f[C]create\f[] and
-\f[C]action\f[] policies (just as a filesystem being mounted \f[C]ro\f[]
-would).
-\f[C]NC\f[] will exclude those paths from \f[C]create\f[] policies (you
-can\[aq]t create but you can change / delete).
 .IP
 .nf
 \f[C]
@@ -373,8 +386,8 @@ tools use \f[B]/etc/fstab\f[].
 \f[]
 .fi
 .PP
-\f[B]NOTE:\f[] the globbing is done at mount or xattr update time (see
-below).
+\f[B]NOTE:\f[] the globbing is done at mount or when updated using the
+runtime API.
 If a new directory is added matching the glob after the fact it will not
 be automatically included.
 .PP

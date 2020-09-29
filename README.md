@@ -95,7 +95,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 * **config**: Path to a config file. Same arguments as below in key=val format.
 * **branches**: Colon delimited list of branches.
 * **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
-* **minfreespace=SIZE**: The minimum space value used for creation policies. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
+* **minfreespace=SIZE**: The minimum space value used for creation policies. Can be overridden by branch specific option. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
 * **moveonenospc=BOOL|POLICY**: When enabled if a **write** fails with **ENOSPC** (no space left on device) or **EDQUOT** (disk quota exceeded) the policy selected will run to find a new location for the file. An attempt to move the file to that branch will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false, true = mfs)
 * **use_ino**: Causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
 * **inodecalc=passthrough|path-hash|devino-hash|hybrid-hash**: Selects the inode calculation algorithm. (default: hybrid-hash)
@@ -149,11 +149,27 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 
 ### branches
 
-The 'branches' (formerly 'srcmounts') argument is a colon (':') delimited list of paths to be pooled together. It does not matter if the paths are on the same or different drives nor does it matter the filesystem. Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
+The 'branches' (formerly 'srcmounts') argument is a colon (':') delimited list of paths to be pooled together. It does not matter if the paths are on the same or different drives nor does it matter the filesystem (within reason). Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
+
+Branches currently have two options which can be set. A type which impacts whether or not the branch is included in a policy calculation and a individual minfreespace value. The values are set by prepending an `=` at the end of a branch designation and using commas as delimiters. Example: /mnt/drive=RW,1234
+
+
+#### branch type
+
+* RW: (read/write) - Default behavior. Will be eligible in all policy categories.
+* RO: (read-only) - Will be excluded from `create` and `action` policies. Same as a read-only mounted filesystem would be (though faster to process).
+* NC: (no-create) - Will be excluded from `create` policies. You can't create on that branch but you can change or delete.
+
+
+#### minfreespace
+
+Same purpose as the global option but specific to the branch. If not set the global value is used.
+
+
+#### globbing
 
 To make it easier to include multiple branches mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will apply the glob itself.**
 
-Each branch can have a suffix of `=RW` (read / write), `=RO` (read-only), or `=NC` (no create). These suffixes work with globs as well and will apply to each path found. `RW` is the default behavior and those paths will be eligible for all policy categories. `RO` will exclude those paths from `create` and `action` policies (just as a filesystem being mounted `ro` would). `NC` will exclude those paths from `create` policies (you can't create but you can change / delete).
 
 ```
 # mergerfs -o allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
@@ -168,7 +184,7 @@ To have the pool mounted at boot or otherwise accessible from related tools use 
 /mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other,use_ino   0       0
 ```
 
-**NOTE:** the globbing is done at mount or xattr update time (see below). If a new directory is added matching the glob after the fact it will not be automatically included.
+**NOTE:** the globbing is done at mount or when updated using the runtime API. If a new directory is added matching the glob after the fact it will not be automatically included.
 
 **NOTE:** for mounting via **fstab** to work you must have **mount.fuse** installed. For Ubuntu/Debian it is included in the **fuse** package.
 
