@@ -805,7 +805,7 @@ do
                   head -n 1 | \
                   cut -d' ' -f2-)
     test -n "${FILE}"
-    rsync -axqHAXWES --preallocate --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
+    rsync -axqHAXWESR --preallocate --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
 done
 ```
 
