@@ -8,6 +8,7 @@
 
 #include "fuse_opt.h"
 #include "fuse_misc.h"
+#include "xmem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,8 +35,8 @@ fuse_opt_free_args(struct fuse_args *args)
     if (args->argv && args->allocated) {
       int i;
       for (i = 0; i < args->argc; i++)
-        free(args->argv[i]);
-      free(args->argv);
+        xmem_free(args->argv[i]);
+      xmem_free(args->argv);
     }
     args->argc = 0;
     args->argv = NULL;
@@ -63,9 +64,9 @@ fuse_opt_add_arg(struct fuse_args *args, const char *arg)
   if (!newarg)
     return alloc_failed();
 
-  newargv = realloc(args->argv, (args->argc + 2) * sizeof(char *));
+  newargv = xmem_realloc(args->argv, (args->argc + 2) * sizeof(char *));
   if (!newargv) {
-    free(newarg);
+    xmem_free(newarg);
     return alloc_failed();
   }
 
@@ -115,7 +116,7 @@ static int add_arg(struct fuse_opt_context *ctx, const char *arg)
 static int add_opt_common(char **opts, const char *opt, int esc)
 {
   unsigned oldlen = *opts ? strlen(*opts) : 0;
-  char *d = realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1);
+  char *d = xmem_realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1);
 
   if (!d)
     return alloc_failed();
@@ -257,14 +258,14 @@ static int process_opt_sep_arg(struct fuse_opt_context *ctx,
     return -1;
 
   param = ctx->argv[ctx->argctr];
-  newarg = malloc(sep + strlen(param) + 1);
+  newarg = xmem_malloc(sep + strlen(param) + 1);
   if (!newarg)
     return alloc_failed();
 
   memcpy(newarg, arg, sep);
   strcpy(newarg + sep, param);
   res = process_opt(ctx, opt, sep, newarg, iso);
-  free(newarg);
+  xmem_free(newarg);
 
   return res;
 }
@@ -339,7 +340,7 @@ static int process_option_group(struct fuse_opt_context *ctx, const char *opts)
     return -1;
   }
   res = process_real_option_group(ctx, copy);
-  free(copy);
+  xmem_free(copy);
   return res;
 }
 
@@ -386,7 +387,7 @@ static int opt_parse(struct fuse_opt_context *ctx)
   /* If option separator ("--") is the last argument, remove it */
   if (ctx->nonopt && ctx->nonopt == ctx->outargs.argc &&
       strcmp(ctx->outargs.argv[ctx->outargs.argc - 1], "--") == 0) {
-    free(ctx->outargs.argv[ctx->outargs.argc - 1]);
+    xmem_free(ctx->outargs.argv[ctx->outargs.argc - 1]);
     ctx->outargs.argv[--ctx->outargs.argc] = NULL;
   }
 
@@ -415,7 +416,7 @@ int fuse_opt_parse(struct fuse_args *args, void *data,
     *args = ctx.outargs;
     ctx.outargs = tmp;
   }
-  free(ctx.opts);
+  xmem_free(ctx.opts);
   fuse_opt_free_args(&ctx.outargs);
   return res;
 }

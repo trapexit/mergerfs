@@ -8,6 +8,7 @@
 
 #include "fuse_i.h"
 #include "fuse_misc.h"
+#include "xmem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +27,7 @@ struct fuse_chan
 
 struct fuse_session *fuse_session_new(struct fuse_session_ops *op, void *data)
 {
-  struct fuse_session *se = (struct fuse_session *) malloc(sizeof(*se));
+  struct fuse_session *se = (struct fuse_session *)xmem_malloc(sizeof(*se));
   if (se == NULL) {
     fprintf(stderr, "fuse: failed to allocate session\n");
     return NULL;
@@ -107,7 +108,7 @@ void fuse_session_destroy(struct fuse_session *se)
     se->op.destroy(se->data);
   if (se->ch != NULL)
     fuse_chan_destroy(se->ch);
-  free(se);
+  xmem_free(se);
 }
 
 void fuse_session_exit(struct fuse_session *se)
@@ -140,7 +141,7 @@ void *fuse_session_data(struct fuse_session *se)
 static struct fuse_chan *fuse_chan_new_common(struct fuse_chan_ops *op, int fd,
 					      size_t bufsize, void *data)
 {
-  struct fuse_chan *ch = (struct fuse_chan *) malloc(sizeof(*ch));
+  struct fuse_chan *ch = (struct fuse_chan *)xmem_malloc(sizeof(*ch));
   if (ch == NULL) {
     fprintf(stderr, "fuse: failed to allocate channel\n");
     return NULL;
@@ -213,5 +214,5 @@ void fuse_chan_destroy(struct fuse_chan *ch)
   fuse_session_remove_chan(ch);
   if (ch->op.destroy)
     ch->op.destroy(ch);
-  free(ch);
+  xmem_free(ch);
 }

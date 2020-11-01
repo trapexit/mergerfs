@@ -13,6 +13,7 @@
 #include "fuse_kernel.h"
 #include "fuse_opt.h"
 #include "fuse_misc.h"
+#include "xmem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -127,7 +128,7 @@ static void list_add_req(struct fuse_req *req, struct fuse_req *next)
 static void destroy_req(fuse_req_t req)
 {
   pthread_mutex_destroy(&req->lock);
-  free(req);
+  xmem_free(req);
 }
 
 void fuse_free_req(fuse_req_t req)
@@ -149,7 +150,7 @@ static struct fuse_req *fuse_ll_alloc_req(struct fuse_ll *f)
 {
   struct fuse_req *req;
 
-  req = (struct fuse_req *) calloc(1, sizeof(struct fuse_req));
+  req = (struct fuse_req *)xmem_calloc(1, sizeof(struct fuse_req));
   if (req == NULL) {
     fprintf(stderr, "fuse: failed to allocate request\n");
   } else {
@@ -161,7 +162,6 @@ static struct fuse_req *fuse_ll_alloc_req(struct fuse_ll *f)
 
   return req;
 }
-
 
 static int fuse_send_msg(struct fuse_ll *f, struct fuse_chan *ch,
 			 struct iovec *iov, int count)
@@ -235,7 +235,7 @@ int fuse_reply_iov(fuse_req_t req, const struct iovec *iov, int count)
   int res;
   struct iovec *padded_iov;
 
-  padded_iov = malloc((count + 1) * sizeof(struct iovec));
+  padded_iov = xmem_malloc((count + 1) * sizeof(struct iovec));
   if (padded_iov == NULL)
     return fuse_reply_err(req, ENOMEM);
 
@@ -243,7 +243,7 @@ int fuse_reply_iov(fuse_req_t req, const struct iovec *iov, int count)
   count++;
 
   res = send_reply_iov(req, 0, padded_iov, count);
-  free(padded_iov);
+  xmem_free(padded_iov);
 
   return res;
 }
@@ -451,7 +451,7 @@ static int fuse_send_data_iov_fallback(struct fuse_ll *f, struct fuse_chan *ch,
   mem_buf.buf[0].mem = mbuf;
   res = fuse_buf_copy(&mem_buf, buf, 0);
   if (res < 0) {
-    free(mbuf);
+    xmem_free(mbuf);
     return -res;
   }
   len = res;
@@ -460,7 +460,7 @@ static int fuse_send_data_iov_fallback(struct fuse_ll *f, struct fuse_chan *ch,
   iov[iov_count].iov_len = len;
   iov_count++;
   res = fuse_send_msg(f, ch, iov, iov_count);
-  free(mbuf);
+  xmem_free(mbuf);
 
   return res;
 }
@@ -475,7 +475,7 @@ static void fuse_ll_pipe_free(struct fuse_ll_pipe *llp)
 {
   close(llp->pipe[0]);
   close(llp->pipe[1]);
-  free(llp);
+  xmem_free(llp);
 }
 
 #ifdef HAVE_SPLICE
@@ -485,13 +485,13 @@ static struct fuse_ll_pipe *fuse_ll_get_pipe(struct fuse_ll *f)
   if (llp == NULL) {
     int res;
 
-    llp = malloc(sizeof(struct fuse_ll_pipe));
+    llp = xmem_malloc(sizeof(struct fuse_ll_pipe));
     if (llp == NULL)
       return NULL;
 
     res = pipe(llp->pipe);
     if (res == -1) {
-      free(llp);
+      xmem_free(llp);
       return NULL;
     }
 
@@ -499,7 +499,7 @@ static struct fuse_ll_pipe *fuse_ll_get_pipe(struct fuse_ll *f)
         fcntl(llp->pipe[1], F_SETFL, O_NONBLOCK) == -1) {
       close(llp->pipe[0]);
       close(llp->pipe[1]);
-      free(llp);
+      xmem_free(llp);
       return NULL;
     }
 
@@ -674,21 +674,21 @@ static int fuse_send_data_iov(struct fuse_ll *f, struct fuse_chan *ch,
        * back the data from the pipe and then fall
        * back to regular write.
        */
-      tmpbuf = malloc(headerlen);
+      tmpbuf = xmem_malloc(headerlen);
       if (tmpbuf == NULL) {
-        free(mbuf);
+        xmem_free(mbuf);
         res = ENOMEM;
         goto clear_pipe;
       }
       res = read_back(llp->pipe[0], tmpbuf, headerlen);
-      free(tmpbuf);
+      xmem_free(tmpbuf);
       if (res != 0) {
-        free(mbuf);
+        xmem_free(mbuf);
         goto clear_pipe;
       }
       res = read_back(llp->pipe[0], mbuf, now_len);
       if (res != 0) {
-        free(mbuf);
+        xmem_free(mbuf);
         goto clear_pipe;
       }
       len = now_len + extra_len;
@@ -696,10 +696,10 @@ static int fuse_send_data_iov(struct fuse_ll *f, struct fuse_chan *ch,
       iov[iov_count].iov_len = len;
       iov_count++;
       res = fuse_send_msg(f, ch, iov, iov_count);
-      free(mbuf);
+      xmem_free(mbuf);
       return res;
     }
-    free(mbuf);
+    xmem_free(mbuf);
     res = now_len;
   }
   len = res;
@@ -827,7 +827,7 @@ static struct fuse_ioctl_iovec *fuse_ioctl_iovec_copy(const struct iovec *iov,
   struct fuse_ioctl_iovec *fiov;
   size_t i;
 
-  fiov = malloc(sizeof(fiov[0]) * count);
+  fiov = xmem_malloc(sizeof(fiov[0]) * count);
   if (!fiov)
     return NULL;
 
@@ -899,8 +899,8 @@ int fuse_reply_ioctl_retry(fuse_req_t req,
 
   res = send_reply_iov(req, 0, iov, count);
  out:
-  free(in_fiov);
-  free(out_fiov);
+  xmem_free(in_fiov);
+  xmem_free(out_fiov);
 
   return res;
 
@@ -942,7 +942,7 @@ int fuse_reply_ioctl_iov(fuse_req_t req, int result, const struct iovec *iov,
   struct fuse_ioctl_out arg;
   int res;
 
-  padded_iov = malloc((count + 2) * sizeof(struct iovec));
+  padded_iov = xmem_malloc((count + 2) * sizeof(struct iovec));
   if (padded_iov == NULL)
     return fuse_reply_err(req, ENOMEM);
 
@@ -954,7 +954,7 @@ int fuse_reply_ioctl_iov(fuse_req_t req, int result, const struct iovec *iov,
   memcpy(&padded_iov[2], iov, count * sizeof(struct iovec));
 
   res = send_reply_iov(req, 0, padded_iov, count + 2);
-  free(padded_iov);
+  xmem_free(padded_iov);
 
   return res;
 }
@@ -1648,7 +1648,7 @@ static struct fuse_req *check_interrupt(struct fuse_ll *f, struct fuse_req *req)
     if (curr->u.i.unique == req->unique) {
       req->interrupted = 1;
       list_del_req(curr);
-      free(curr);
+      xmem_free(curr);
       return NULL;
     }
   }
@@ -1702,7 +1702,7 @@ static void do_ioctl(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 
 void fuse_pollhandle_destroy(struct fuse_pollhandle *ph)
 {
-  free(ph);
+  xmem_free(ph);
 }
 
 static void do_poll(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
@@ -1717,7 +1717,7 @@ static void do_poll(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
     struct fuse_pollhandle *ph = NULL;
 
     if (arg->flags & FUSE_POLL_SCHEDULE_NOTIFY) {
-      ph = malloc(sizeof(struct fuse_pollhandle));
+      ph = xmem_malloc(sizeof(struct fuse_pollhandle));
       if (ph == NULL) {
         fuse_reply_err(req, ENOMEM);
         return;
@@ -2224,7 +2224,7 @@ static void fuse_ll_retrieve_reply(struct fuse_notify_req *nreq,
     fuse_reply_none(req);
   }
  out:
-  free(rreq);
+  xmem_free(rreq);
   if ((ibuf->flags & FUSE_BUF_IS_FD) && bufv.idx < bufv.count)
     fuse_ll_clear_pipe(f);
 }
@@ -2248,7 +2248,7 @@ int fuse_lowlevel_notify_retrieve(struct fuse_chan *ch, fuse_ino_t ino,
   if (f->conn.proto_minor < 15)
     return -ENOSYS;
 
-  rreq = malloc(sizeof(*rreq));
+  rreq = xmem_malloc(sizeof(*rreq));
   if (rreq == NULL)
     return -ENOMEM;
 
@@ -2272,7 +2272,7 @@ int fuse_lowlevel_notify_retrieve(struct fuse_chan *ch, fuse_ino_t ino,
     pthread_mutex_lock(&f->lock);
     list_del_nreq(&rreq->nreq);
     pthread_mutex_unlock(&f->lock);
-    free(rreq);
+    xmem_free(rreq);
   }
 
   return err;
@@ -2406,7 +2406,7 @@ static void fuse_ll_process_buf(void *data, const struct fuse_buf *buf,
     if (buf->size < tmpbuf.buf[0].size)
       tmpbuf.buf[0].size = buf->size;
 
-    mbuf = malloc(tmpbuf.buf[0].size);
+    mbuf = xmem_malloc(tmpbuf.buf[0].size);
     if (mbuf == NULL) {
       fprintf(stderr, "fuse: failed to allocate header\n");
       goto clear_pipe;
@@ -2498,7 +2498,7 @@ static void fuse_ll_process_buf(void *data, const struct fuse_buf *buf,
     void *newmbuf;
 
     err = ENOMEM;
-    newmbuf = realloc(mbuf, buf->size);
+    newmbuf = xmem_realloc(mbuf, buf->size);
     if (newmbuf == NULL)
       goto reply_err;
     mbuf = newmbuf;
@@ -2523,7 +2523,7 @@ static void fuse_ll_process_buf(void *data, const struct fuse_buf *buf,
     fuse_ll_ops[in->opcode].func(req, in->nodeid, inarg);
 
  out_free:
-  free(mbuf);
+  xmem_free(mbuf);
   return;
 
  reply_err:
@@ -2637,7 +2637,7 @@ static void fuse_ll_destroy(void *data)
     fuse_ll_pipe_free(llp);
   pthread_key_delete(f->pipe_key);
   pthread_mutex_destroy(&f->lock);
-  free(f);
+  xmem_free(f);
 }
 
 static void fuse_ll_pipe_destructor(void *data)
@@ -2783,7 +2783,7 @@ struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
     op_size = sizeof(struct fuse_lowlevel_ops);
   }
 
-  f = (struct fuse_ll *) calloc(1, sizeof(struct fuse_ll));
+  f = (struct fuse_ll *)xmem_calloc(1, sizeof(struct fuse_ll));
   if (f == NULL) {
     fprintf(stderr, "fuse: failed to allocate fuse object\n");
     goto out;
@@ -2827,7 +2827,7 @@ struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
   pthread_key_delete(f->pipe_key);
  out_free:
   pthread_mutex_destroy(&f->lock);
-  free(f);
+  xmem_free(f);
  out:
   return NULL;
 }

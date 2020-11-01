@@ -7,6 +7,7 @@
 #include "fuse_entry.h"
 #include "linux_dirent64.h"
 #include "stat_utils.h"
+#include "xmem.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -61,7 +62,7 @@ fuse_dirents_buf_resize(fuse_dirents_t *d_,
 
   if((d_->data_len + size_) >= d_->buf_len)
     {
-      p = realloc(d_->buf,(d_->buf_len * 2));
+      p = xmem_realloc(d_->buf,(d_->buf_len * 2));
       if(p == NULL)
         return -errno;
 
@@ -381,7 +382,7 @@ fuse_dirents_init(fuse_dirents_t *d_)
 {
   void *buf;
 
-  buf = calloc(DEFAULT_SIZE,1);
+  buf = xmem_calloc(DEFAULT_SIZE,1);
   if(buf == NULL)
     return -ENOMEM;
 
@@ -406,5 +407,5 @@ fuse_dirents_free(fuse_dirents_t *d_)
 
   kv_destroy(d_->offs);
 
-  free(d_->buf);
+  xmem_free(d_->buf);
 }

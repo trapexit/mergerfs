@@ -17,6 +17,7 @@
 #include "fuse_misc.h"
 #include "fuse_kernel.h"
 #include "fuse_dirents.h"
+#include "xmem.h"
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -38,12 +39,6 @@
 #include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
-
-#define FUSE_NODE_SLAB 1
-
-#ifndef MAP_ANONYMOUS
-#undef FUSE_NODE_SLAB
-#endif
 
 #define FUSE_DEFAULT_INTR_SIGNAL SIGUSR1
 
@@ -257,6 +252,43 @@ list_del(struct list_head *entry)
 }
 
 static
+void
+fuse_print_table(struct fuse *f_)
+{
+  FILE *f;
+  size_t i;
+  char filepath[256];
+
+  sprintf(filepath,"/tmp/mergerfs.nodes.%d.%ld",getpid(),time(NULL));
+  f = fopen(filepath,"w+");
+  if(f == NULL)
+    f = stderr;
+
+  pthread_mutex_lock(&f_->lock);
+  for(i = 0; i < f_->id_table.size; i++)
+    {
+      struct node *node;
+
+      for(node = f_->id_table.array[i]; node != NULL; node = node->id_next)
+        {
+          fprintf(f,
+                  "id:%lu; pid:%lu; ref:%d; %s\n",
+                  node->nodeid,
+                  (node->parent ? node->parent->nodeid : 0),
+                  node->refctr,
+                  node->name);
+        }
+    }
+  pthread_mutex_unlock(&f_->lock);
+
+  if(f != stderr)
+    {
+      fprintf(stderr,"%s\n",filepath);
+      fclose(f);
+    }
+}
+
+static
 inline
 int
 lru_enabled(struct fuse *f)
@@ -282,118 +314,11 @@ get_node_size(struct fuse *f)
     return sizeof(struct node);
 }
 
-#ifdef FUSE_NODE_SLAB
-static
-struct node_slab*
-list_to_slab(struct list_head *head)
-{
-  return (struct node_slab *) head;
-}
-
-static
-struct node_slab*
-node_to_slab(struct fuse *f, struct node *node)
-{
-  return (struct node_slab *) (((uintptr_t) node) & ~((uintptr_t) f->pagesize - 1));
-}
-
-static
-int
-alloc_slab(struct fuse *f)
-{
-  void *mem;
-  struct node_slab *slab;
-  char *start;
-  size_t num;
-  size_t i;
-  size_t node_size = get_node_size(f);
-
-  mem = mmap(NULL, f->pagesize, PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-  if (mem == MAP_FAILED)
-    return -1;
-
-  slab = mem;
-  init_list_head(&slab->freelist);
-  slab->used = 0;
-  num = (f->pagesize - sizeof(struct node_slab)) / node_size;
-
-  start = (char *) mem + f->pagesize - num * node_size;
-  for (i = 0; i < num; i++) {
-    struct list_head *n;
-
-    n = (struct list_head *) (start + i * node_size);
-    list_add_tail(n, &slab->freelist);
-  }
-  list_add_tail(&slab->list, &f->partial_slabs);
-
-  return 0;
-}
-
 static
 struct node*
 alloc_node(struct fuse *f)
 {
-  struct node_slab *slab;
-  struct list_head *node;
-
-  if (list_empty(&f->partial_slabs)) {
-    int res = alloc_slab(f);
-    if (res != 0)
-      return NULL;
-  }
-  slab = list_to_slab(f->partial_slabs.next);
-  slab->used++;
-  node = slab->freelist.next;
-  list_del(node);
-  if (list_empty(&slab->freelist)) {
-    list_del(&slab->list);
-    list_add_tail(&slab->list, &f->full_slabs);
-  }
-  memset(node, 0, sizeof(struct node));
-
-  return (struct node *) node;
-}
-
-static
-void
-free_slab(struct fuse      *f,
-          struct node_slab *slab)
-{
-  int res;
-
-  list_del(&slab->list);
-  res = munmap(slab, f->pagesize);
-  if (res == -1)
-    fprintf(stderr, "fuse warning: munmap(%p) failed\n", slab);
-}
-
-static
-void
-free_node_mem(struct fuse *f,
-              struct node *node)
-{
-  struct node_slab *slab = node_to_slab(f, node);
-  struct list_head *n = (struct list_head *) node;
-
-  slab->used--;
-  if (slab->used) {
-    if (list_empty(&slab->freelist)) {
-      list_del(&slab->list);
-      list_add_tail(&slab->list, &f->partial_slabs);
-    }
-    list_add_head(n, &slab->freelist);
-  } else {
-    free_slab(f, slab);
-  }
-}
-#else
-static
-struct node*
-alloc_node(struct fuse *f)
-{
-  return (struct node *) calloc(1, get_node_size(f));
+  return (struct node *)xmem_calloc(1, get_node_size(f));
 }
 
 static
@@ -402,9 +327,8 @@ free_node_mem(struct fuse *f,
               struct node *node)
 {
   (void) f;
-  free(node);
+  xmem_free(node);
 }
-#endif
 
 static
 size_t
@@ -483,7 +407,7 @@ free_node(struct fuse *f_,
           struct node *node_)
 {
   if(node_->name != node_->inline_name)
-    free(node_->name);
+    xmem_free(node_->name);
 
   if(node_->is_hidden)
     fuse_fs_free_hide(f_->fs,node_->hidden_fh);
@@ -501,7 +425,7 @@ node_table_reduce(struct node_table *t)
   if (newsize < NODE_TABLE_MIN_SIZE)
     return;
 
-  newarray = realloc(t->array, sizeof(struct node *) * newsize);
+  newarray = xmem_realloc(t->array, sizeof(struct node *) * newsize);
   if (newarray != NULL)
     t->array = newarray;
 
@@ -559,7 +483,7 @@ static int node_table_resize(struct node_table *t)
   size_t newsize = t->size * 2;
   void *newarray;
 
-  newarray = realloc(t->array, sizeof(struct node *) * newsize);
+  newarray = xmem_realloc(t->array, sizeof(struct node *) * newsize);
   if (newarray == NULL)
     return -1;
 
@@ -668,7 +592,7 @@ static void unhash_name(struct fuse *f, struct node *node)
         node->name_next = NULL;
         unref_node(f, node->parent);
         if (node->name != node->inline_name)
-          free(node->name);
+          xmem_free(node->name);
         node->name = NULL;
         node->parent = NULL;
         f->name_table.use--;
@@ -866,7 +790,7 @@ static char *add_name(char **buf, unsigned *bufsize, char *s, const char *name)
         newbufsize *= 2;
     }
 
-    newbuf = realloc(*buf, newbufsize);
+    newbuf = xmem_realloc(*buf, newbufsize);
     if (newbuf == NULL)
       return NULL;
 
@@ -917,7 +841,7 @@ static int try_get_path(struct fuse *f, fuse_ino_t nodeid, const char *name,
   *path = NULL;
 
   err = -ENOMEM;
-  buf = malloc(bufsize);
+  buf = xmem_malloc(bufsize);
   if (buf == NULL)
     goto out_err;
 
@@ -980,7 +904,7 @@ static int try_get_path(struct fuse *f, fuse_ino_t nodeid, const char *name,
   if (need_lock)
     unlock_path(f, nodeid, wnode, node);
  out_free:
-  free(buf);
+  xmem_free(buf);
 
  out_err:
   return err;
@@ -1172,7 +1096,7 @@ static int try_get_path2(struct fuse *f, fuse_ino_t nodeid1, const char *name1,
       struct node *wn1 = wnode1 ? *wnode1 : NULL;
 
       unlock_path(f, nodeid1, wn1, NULL);
-      free(*path1);
+      xmem_free(*path1);
     }
   }
   return err;
@@ -1219,7 +1143,7 @@ static void free_path_wrlock(struct fuse *f, fuse_ino_t nodeid,
   if (f->lockq)
     wake_up_queued(f);
   pthread_mutex_unlock(&f->lock);
-  free(path);
+  xmem_free(path);
 }
 
 static void free_path(struct fuse *f, fuse_ino_t nodeid, char *path)
@@ -1237,8 +1161,8 @@ static void free_path2(struct fuse *f, fuse_ino_t nodeid1, fuse_ino_t nodeid2,
   unlock_path(f, nodeid2, wnode2, NULL);
   wake_up_queued(f);
   pthread_mutex_unlock(&f->lock);
-  free(path1);
-  free(path2);
+  xmem_free(path1);
+  xmem_free(path2);
 }
 
 static
@@ -1316,14 +1240,13 @@ static int rename_node(struct fuse *f, fuse_ino_t olddir, const char *oldname,
   int err = 0;
 
   pthread_mutex_lock(&f->lock);
-  node = lookup_node(f, olddir, oldname);
-  newnode	= lookup_node(f, newdir, newname);
+  node    = lookup_node(f, olddir, oldname);
+  newnode = lookup_node(f, newdir, newname);
   if (node == NULL)
     goto out;
 
   if (newnode != NULL)
     unlink_node(f, newnode);
-
 
   unhash_name(f, node);
   if (hash_name(f, node, newdir, newname) == -1) {
@@ -1612,8 +1535,8 @@ static void fuse_free_buf(struct fuse_bufvec *buf)
     size_t i;
 
     for (i = 0; i < buf->count; i++)
-      free(buf->buf[i].mem);
-    free(buf);
+      xmem_free(buf->buf[i].mem);
+    xmem_free(buf);
   }
 }
 
@@ -1637,13 +1560,13 @@ int fuse_fs_read_buf(struct fuse_fs *fs,
       struct fuse_bufvec *buf;
       void *mem;
 
-      buf = malloc(sizeof(struct fuse_bufvec));
+      buf = xmem_malloc(sizeof(struct fuse_bufvec));
       if (buf == NULL)
         return -ENOMEM;
 
-      mem = malloc(size);
+      mem = xmem_malloc(size);
       if (mem == NULL) {
-        free(buf);
+        xmem_free(buf);
         return -ENOMEM;
       }
       *buf = FUSE_BUFVEC_INIT(size);
@@ -1721,7 +1644,7 @@ int fuse_fs_write_buf(struct fuse_fs *fs,
         flatbuf = &buf->buf[0];
       } else {
         res = -ENOMEM;
-        mem = malloc(size);
+        mem = xmem_malloc(size);
         if (mem == NULL)
           goto out;
 
@@ -1737,7 +1660,7 @@ int fuse_fs_write_buf(struct fuse_fs *fs,
       res = fs->op.write(flatbuf->mem, flatbuf->size,
                          off, fi);
     out_free:
-      free(mem);
+      xmem_free(mem);
     }
   out:
     if (fs->debug && res >= 0)
@@ -2335,7 +2258,7 @@ static struct fuse_context_i *fuse_get_context_internal(void)
   c = (struct fuse_context_i *) pthread_getspecific(fuse_context_key);
   if (c == NULL) {
     c = (struct fuse_context_i *)
-      calloc(1, sizeof(struct fuse_context_i));
+      xmem_calloc(1, sizeof(struct fuse_context_i));
     if (c == NULL) {
       /* This is hard to deal with properly, so just
          abort.  If memory is so low that the
@@ -2351,7 +2274,7 @@ static struct fuse_context_i *fuse_get_context_internal(void)
 
 static void fuse_freecontext(void *data)
 {
-  free(data);
+  xmem_free(data);
 }
 
 static int fuse_create_context_key(void)
@@ -2377,7 +2300,7 @@ static void fuse_delete_context_key(void)
   pthread_mutex_lock(&fuse_context_lock);
   fuse_context_ref--;
   if (!fuse_context_ref) {
-    free(pthread_getspecific(fuse_context_key));
+    xmem_free(pthread_getspecific(fuse_context_key));
     pthread_key_delete(fuse_context_key);
   }
   pthread_mutex_unlock(&fuse_context_lock);
@@ -2445,7 +2368,7 @@ void fuse_fs_destroy(struct fuse_fs *fs)
   fuse_get_context()->private_data = fs->user_data;
   if (fs->op.destroy)
     fs->op.destroy(fs->user_data);
-  free(fs);
+  xmem_free(fs);
 }
 
 static void fuse_lib_destroy(void *data)
@@ -3258,7 +3181,7 @@ static void fuse_lib_opendir(fuse_req_t req, fuse_ino_t ino,
   char *path;
   int err;
 
-  dh = (struct fuse_dh *) calloc(1,sizeof(struct fuse_dh));
+  dh = (struct fuse_dh *)xmem_calloc(1,sizeof(struct fuse_dh));
   if (dh == NULL) {
     reply_err(req, -ENOMEM);
     return;
@@ -3288,12 +3211,12 @@ static void fuse_lib_opendir(fuse_req_t req, fuse_ino_t ino,
          must be cancelled */
       fuse_fs_releasedir(f->fs, &fi);
       pthread_mutex_destroy(&dh->lock);
-      free(dh);
+      xmem_free(dh);
     }
   } else {
     reply_err(req, err);
     pthread_mutex_destroy(&dh->lock);
-    free(dh);
+    xmem_free(dh);
   }
   free_path(f, ino, path);
 }
@@ -3456,7 +3379,7 @@ fuse_lib_releasedir(fuse_req_t             req_,
   pthread_mutex_unlock(&dh->lock);
   pthread_mutex_destroy(&dh->lock);
   fuse_dirents_free(&dh->d);
-  free(dh);
+  xmem_free(dh);
   reply_err(req_,0);
 }
 
@@ -3544,7 +3467,7 @@ static void fuse_lib_getxattr(fuse_req_t req, fuse_ino_t ino, const char *name,
   int res;
 
   if (size) {
-    char *value = (char *) malloc(size);
+    char *value = (char*)xmem_malloc(size);
     if (value == NULL) {
       reply_err(req, -ENOMEM);
       return;
@@ -3554,7 +3477,7 @@ static void fuse_lib_getxattr(fuse_req_t req, fuse_ino_t ino, const char *name,
       fuse_reply_buf(req, value, res);
     else
       reply_err(req, res);
-    free(value);
+    xmem_free(value);
   } else {
     res = common_getxattr(f, req, ino, name, NULL, 0);
     if (res >= 0)
@@ -3587,7 +3510,7 @@ static void fuse_lib_listxattr(fuse_req_t req, fuse_ino_t ino, size_t size)
   int res;
 
   if (size) {
-    char *list = (char *) malloc(size);
+    char *list = (char*)xmem_malloc(size);
     if (list == NULL) {
       reply_err(req, -ENOMEM);
       return;
@@ -3597,7 +3520,7 @@ static void fuse_lib_listxattr(fuse_req_t req, fuse_ino_t ino, size_t size)
       fuse_reply_buf(req, list, res);
     else
       reply_err(req, res);
-    free(list);
+    xmem_free(list);
   } else {
     res = common_listxattr(f, req, ino, NULL, 0);
     if (res >= 0)
@@ -3678,7 +3601,7 @@ static void delete_lock(struct lock **lockp)
 {
   struct lock *l = *lockp;
   *lockp = l->next;
-  free(l);
+  xmem_free(l);
 }
 
 static void insert_lock(struct lock **pos, struct lock *lock)
@@ -3695,12 +3618,12 @@ static int locks_insert(struct node *node, struct lock *lock)
 
   if (lock->type != F_UNLCK || lock->start != 0 ||
       lock->end != OFFSET_MAX) {
-    newl1 = malloc(sizeof(struct lock));
-    newl2 = malloc(sizeof(struct lock));
+    newl1 = xmem_malloc(sizeof(struct lock));
+    newl2 = xmem_malloc(sizeof(struct lock));
 
     if (!newl1 || !newl2) {
-      free(newl1);
-      free(newl2);
+      xmem_free(newl1);
+      xmem_free(newl2);
       return -ENOLCK;
     }
   }
@@ -3756,8 +3679,8 @@ static int locks_insert(struct node *node, struct lock *lock)
     newl1 = NULL;
   }
  out:
-  free(newl1);
-  free(newl2);
+  xmem_free(newl1);
+  xmem_free(newl2);
   return 0;
 }
 
@@ -3960,7 +3883,7 @@ static void fuse_lib_ioctl(fuse_req_t req, fuse_ino_t ino, unsigned long cmd, vo
 
   if (out_bufsz) {
     err = -ENOMEM;
-    out_buf = malloc(out_bufsz);
+    out_buf = xmem_malloc(out_bufsz);
     if (!out_buf)
       goto err;
   }
@@ -3976,12 +3899,18 @@ static void fuse_lib_ioctl(fuse_req_t req, fuse_ino_t ino, unsigned long cmd, vo
 
   fuse_finish_interrupt(f, req, &d);
 
+  if(err == -0xDEADBEEF)
+    {
+      fuse_print_table(f);
+      err = 0;
+    }
+
   fuse_reply_ioctl(req, err, out_buf, out_bufsz);
   goto out;
  err:
   reply_err(req, err);
  out:
-  free(out_buf);
+  xmem_free(out_buf);
 }
 
 static void fuse_lib_poll(fuse_req_t req, fuse_ino_t ino,
@@ -4122,8 +4051,8 @@ int fuse_notify_poll(struct fuse_pollhandle *ph)
 
 static void free_cmd(struct fuse_cmd *cmd)
 {
-  free(cmd->buf);
-  free(cmd);
+  xmem_free(cmd->buf);
+  xmem_free(cmd);
 }
 
 void fuse_process_cmd(struct fuse *f, struct fuse_cmd *cmd)
@@ -4144,15 +4073,15 @@ struct fuse_session *fuse_get_session(struct fuse *f)
 
 static struct fuse_cmd *fuse_alloc_cmd(size_t bufsize)
 {
-  struct fuse_cmd *cmd = (struct fuse_cmd *) malloc(sizeof(*cmd));
+  struct fuse_cmd *cmd = (struct fuse_cmd *)xmem_malloc(sizeof(*cmd));
   if (cmd == NULL) {
     fprintf(stderr, "fuse: failed to allocate cmd\n");
     return NULL;
   }
-  cmd->buf = (char *) malloc(bufsize);
+  cmd->buf = (char*)xmem_malloc(bufsize);
   if (cmd->buf == NULL) {
     fprintf(stderr, "fuse: failed to allocate read buffer\n");
-    free(cmd);
+    xmem_free(cmd);
     return NULL;
   }
   return cmd;
@@ -4314,7 +4243,7 @@ struct fuse_fs *fuse_fs_new(const struct fuse_operations *op, size_t op_size,
     op_size = sizeof(struct fuse_operations);
   }
 
-  fs = (struct fuse_fs *) calloc(1, sizeof(struct fuse_fs));
+  fs = (struct fuse_fs *)xmem_calloc(1, sizeof(struct fuse_fs));
   if (!fs) {
     fprintf(stderr, "fuse: failed to allocate fuse_fs object\n");
     return NULL;
@@ -4329,7 +4258,7 @@ struct fuse_fs *fuse_fs_new(const struct fuse_operations *op, size_t op_size,
 static int node_table_init(struct node_table *t)
 {
   t->size = NODE_TABLE_MIN_SIZE;
-  t->array = (struct node **) calloc(1, sizeof(struct node *) * t->size);
+  t->array = (struct node **)xmem_calloc(1, sizeof(struct node *) * t->size);
   if (t->array == NULL) {
     fprintf(stderr, "fuse: memory allocation failed\n");
     return -1;
@@ -4382,7 +4311,7 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
   if (fuse_create_context_key() == -1)
     goto out;
 
-  f = (struct fuse *) calloc(1, sizeof(struct fuse));
+  f = (struct fuse *)xmem_calloc(1,sizeof(struct fuse));
   if (f == NULL) {
     fprintf(stderr, "fuse: failed to allocate fuse object\n");
     goto out_delete_context_key;
@@ -4457,11 +4386,11 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
   return f;
 
  out_free_root:
-  free(root);
+  xmem_free(root);
  out_free_id_table:
-  free(f->id_table.array);
+  xmem_free(f->id_table.array);
  out_free_name_table:
-  free(f->name_table.array);
+  xmem_free(f->name_table.array);
  out_free_session:
   fuse_session_destroy(f->se);
  out_free_fs:
@@ -4470,7 +4399,7 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
   fs->op.destroy = NULL;
   fuse_fs_destroy(f->fs);
  out_free:
-  free(f);
+  xmem_free(f);
  out_delete_context_key:
   fuse_delete_context_key();
  out:
@@ -4520,11 +4449,11 @@ void fuse_destroy(struct fuse *f)
   assert(list_empty(&f->partial_slabs));
   assert(list_empty(&f->full_slabs));
 
-  free(f->id_table.array);
-  free(f->name_table.array);
+  xmem_free(f->id_table.array);
+  xmem_free(f->name_table.array);
   pthread_mutex_destroy(&f->lock);
   fuse_session_destroy(f->se);
-  free(f);
+  xmem_free(f);
   fuse_delete_context_key();
 }
 

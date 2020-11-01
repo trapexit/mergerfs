@@ -10,6 +10,7 @@
 #include "fuse_misc.h"
 #include "fuse_kernel.h"
 #include "fuse_i.h"
+#include "xmem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,28 +135,28 @@ int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg)
 static int fuse_loop_start_thread(struct fuse_mt *mt)
 {
   int res;
-  struct fuse_worker *w = malloc(sizeof(struct fuse_worker));
+  struct fuse_worker *w = xmem_malloc(sizeof(struct fuse_worker));
   if (!w) {
     fprintf(stderr, "fuse: failed to allocate worker structure\n");
     return -1;
   }
   memset(w, 0, sizeof(struct fuse_worker));
   w->bufsize = fuse_chan_bufsize(mt->prevch);
-  w->buf = calloc(w->bufsize,1);
+  w->buf = xmem_calloc(w->bufsize,1);
   w->mt = mt;
   if (!w->buf) {
     fprintf(stderr, "fuse: failed to allocate read buffer\n");
-    free(w);
+    xmem_free(w);
     return -1;
   }
 
   res = fuse_start_thread(&w->thread_id, fuse_do_work, w);
   if (res == -1) {
-    free(w->buf);
-    free(w);
+    xmem_free(w->buf);
+    xmem_free(w);
     return -1;
   }
-  list_add_worker(w, &mt->main);
+  list_add_worker(w,&mt->main);
 
   return 0;
 }
@@ -164,8 +165,8 @@ static void fuse_join_worker(struct fuse_worker *w)
 {
   pthread_join(w->thread_id, NULL);
   list_del_worker(w);
-  free(w->buf);
-  free(w);
+  xmem_free(w->buf);
+  xmem_free(w);
 }
 
 static int number_of_threads(void)

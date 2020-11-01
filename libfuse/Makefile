@@ -43,7 +43,8 @@ SRC   = \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \
 	lib/helper.c \
-	lib/mount.c
+	lib/mount.c \
+	lib/xmem.c
 OBJS = $(SRC:lib/%.c=build/%.o)
 DEPS = $(SRC:lib/%.c=build/%.d)
 CFLAGS ?= \

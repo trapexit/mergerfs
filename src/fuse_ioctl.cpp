@@ -27,6 +27,8 @@
 #include "str.hpp"
 #include "ugid.hpp"
 
+#include "xmem.h"
+
 #include <fuse.h>
 
 #include <string>
@@ -44,11 +46,14 @@ typedef char IOCTL_BUF[4096];
 //#define IOCTL_READ_VAL  0xD000DF01
 //#define IOCTL_WRITE_VAL 0x5000DF02
 //#define IOCTL_FILE_INFO 0xD000DF03
-#define IOCTL_READ_KEYS _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
-#define IOCTL_READ_VAL  _IOWR(IOCTL_APP_TYPE,1,IOCTL_BUF)
-#define IOCTL_WRITE_VAL _IOW(IOCTL_APP_TYPE,2,IOCTL_BUF)
-#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,3,IOCTL_BUF)
-
+#define IOCTL_READ_KEYS    _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_READ_VAL     _IOWR(IOCTL_APP_TYPE,1,IOCTL_BUF)
+#define IOCTL_WRITE_VAL    _IOW(IOCTL_APP_TYPE,2,IOCTL_BUF)
+#define IOCTL_FILE_INFO    _IOWR(IOCTL_APP_TYPE,3,IOCTL_BUF)
+#define IOCTL_XMEM_PRINT   _IO(IOCTL_APP_TYPE,4)
+#define IOCTL_XMEM_ENABLE  _IO(IOCTL_APP_TYPE,5)
+#define IOCTL_XMEM_DISABLE _IO(IOCTL_APP_TYPE,6)
+#define IOCTL_PRINT_NODES  _IO(IOCTL_APP_TYPE,7)
 
 #ifndef FS_IOC_GETFLAGS
 # define FS_IOC_GETFLAGS _IOR('f',1,long)
@@ -364,6 +369,38 @@ namespace l
 
     return -ENOATTR;
   }
+
+  static
+  int
+  ioctl_type_DF(unsigned long   cmd_,
+                fuse_file_info *ffi_,
+                void           *data_)
+  {
+    switch(cmd_)
+      {
+      case IOCTL_READ_KEYS:
+        return l::read_keys(data_);
+      case IOCTL_READ_VAL:
+        return l::read_val(data_);
+      case IOCTL_WRITE_VAL:
+        return l::write_val(data_);
+      case IOCTL_FILE_INFO:
+        return l::file_info(ffi_,data_);
+      case IOCTL_XMEM_PRINT:
+        xmem_print_to_tmp();
+        return 0;
+      case IOCTL_XMEM_ENABLE:
+        xmem_enable();
+        return 0;
+      case IOCTL_XMEM_DISABLE:
+        xmem_disable();
+        return 0;
+      case IOCTL_PRINT_NODES:
+        return -0xDEADBEEF;
+      }
+
+    return 0;
+  }
 }
 
 namespace FUSE
@@ -376,17 +413,8 @@ namespace FUSE
         void           *data_,
         uint32_t       *out_bufsz_)
   {
-    switch(cmd_)
-      {
-      case IOCTL_READ_KEYS:
-        return l::read_keys(data_);
-      case IOCTL_READ_VAL:
-        return l::read_val(data_);
-      case IOCTL_WRITE_VAL:
-        return l::write_val(data_);
-      case IOCTL_FILE_INFO:
-        return l::file_info(ffi_,data_);
-      }
+    if(((cmd_ >> 8) & 0xFF) == IOCTL_APP_TYPE)
+      return l::ioctl_type_DF(cmd_,ffi_,data_);
 
     if(flags_ & FUSE_IOCTL_DIR)
       return l::ioctl_dir(ffi_,cmd_,data_,out_bufsz_);
