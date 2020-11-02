@@ -57,11 +57,11 @@ int
 fuse_dirents_buf_resize(fuse_dirents_t *d_,
                         uint64_t        size_)
 {
-  void *p;
+  char *p;
 
   if((d_->data_len + size_) >= d_->buf_len)
     {
-      p = realloc(d_->buf,(d_->buf_len * 2));
+      p = (char*)realloc(d_->buf,(d_->buf_len * 2));
       if(p == NULL)
         return -errno;
 
@@ -73,7 +73,7 @@ fuse_dirents_buf_resize(fuse_dirents_t *d_,
 }
 
 static
-void*
+fuse_dirent_t*
 fuse_dirents_dirent_alloc(fuse_dirents_t *d_,
                           uint64_t        namelen_)
 {
@@ -95,13 +95,13 @@ fuse_dirents_dirent_alloc(fuse_dirents_t *d_,
 }
 
 static
-void*
+fuse_direntplus_t*
 fuse_dirents_direntplus_alloc(fuse_dirents_t *d_,
                               uint64_t        namelen_)
 {
   int rv;
   uint64_t size;
-  fuse_dirent_t *d;
+  fuse_direntplus_t *d;
 
   size = fuse_direntplus_size(namelen_);
 
@@ -109,7 +109,7 @@ fuse_dirents_direntplus_alloc(fuse_dirents_t *d_,
   if(rv)
     return NULL;
 
-  d = (fuse_dirent_t*)&d_->buf[d_->data_len];
+  d = (fuse_direntplus_t*)&d_->buf[d_->data_len];
 
   d_->data_len += size;
 
@@ -379,9 +379,9 @@ fuse_dirents_reset(fuse_dirents_t *d_)
 int
 fuse_dirents_init(fuse_dirents_t *d_)
 {
-  void *buf;
+  char *buf;
 
-  buf = calloc(DEFAULT_SIZE,1);
+  buf = (char*)calloc(DEFAULT_SIZE,1);
   if(buf == NULL)
     return -ENOMEM;
 

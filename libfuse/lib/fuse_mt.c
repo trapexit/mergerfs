@@ -75,14 +75,14 @@ int fuse_loop_mt_proc(struct fuse *f, fuse_processor_t proc, void *data)
   struct fuse_session *se;
   struct fuse_chan *prevch = fuse_session_next_chan(prevse, NULL);
   struct fuse_chan *ch;
-  struct fuse_session_ops sop = {
-    .exit = mt_session_exit,
-    .exited = mt_session_exited,
-    .process = mt_session_proc,
-  };
-  struct fuse_chan_ops cop = {
-    .receive = mt_chan_receive,
-  };
+  struct fuse_session_ops sop;
+  struct fuse_chan_ops cop;
+
+  sop.exit = mt_session_exit;
+  sop.exited = mt_session_exited;
+  sop.process = mt_session_proc;
+
+  cop.receive = mt_chan_receive;
 
   pd.f = f;
   pd.prevch = prevch;

@@ -79,8 +79,8 @@ void fuse_session_process_buf(struct fuse_session *se,
   if (se->process_buf) {
     se->process_buf(se->data, buf, ch);
   } else {
-    assert(!(buf->flags & FUSE_BUF_IS_FD));
-    fuse_session_process(se->data, buf->mem, buf->size, ch);
+    assert(!(buf->flags & FUSE_BUF_FLAG_IS_FD));
+    fuse_session_process((fuse_session*)se->data, buf->mem, buf->size, ch);
   }
 }
 

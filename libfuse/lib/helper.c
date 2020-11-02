@@ -87,7 +87,7 @@ static void helper_version(void)
 static int fuse_helper_opt_proc(void *data, const char *arg, int key,
 				struct fuse_args *outargs)
 {
-  struct helper_opts *hopts = data;
+  struct helper_opts *hopts = (helper_opts*)data;
 
   switch (key) {
   case KEY_HELP:

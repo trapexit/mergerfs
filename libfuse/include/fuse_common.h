@@ -280,14 +280,15 @@ void fuse_pollhandle_destroy(struct fuse_pollhandle *ph);
 /**
  * Buffer flags
  */
-enum fuse_buf_flags {
-  /**
+#define FUSE_BUF_FLAG_NONE (1 << 0)
+
+/**
    * Buffer contains a file descriptor
    *
    * If this flag is set, the .fd field is valid, otherwise the
    * .mem fields is valid.
    */
-  FUSE_BUF_IS_FD		= (1 << 1),
+#define FUSE_BUF_FLAG_IS_FD (1 << 1)
 
   /**
    * Seek on the file descriptor
@@ -296,7 +297,7 @@ enum fuse_buf_flags {
    * used to seek to the given offset before performing
    * operation on file descriptor.
    */
-  FUSE_BUF_FD_SEEK	= (1 << 2),
+#define FUSE_BUF_FLAG_FD_SEEK (1 << 2)
 
   /**
    * Retry operation on file descriptor
@@ -305,50 +306,50 @@ enum fuse_buf_flags {
    * until .size bytes have been copied or an error or EOF is
    * detected.
    */
-  FUSE_BUF_FD_RETRY	= (1 << 3),
-};
+#define FUSE_BUF_FLAG_FD_RETRY (1 << 3)
 
 /**
  * Buffer copy flags
  */
-enum fuse_buf_copy_flags {
-  /**
-   * Don't use splice(2)
-   *
-   * Always fall back to using read and write instead of
-   * splice(2) to copy data from one file descriptor to another.
-   *
-   * If this flag is not set, then only fall back if splice is
-   * unavailable.
-   */
-  FUSE_BUF_NO_SPLICE	= (1 << 1),
+#define FUSE_BUF_COPY_FLAG_NONE 0
 
-  /**
-   * Force splice
-   *
-   * Always use splice(2) to copy data from one file descriptor
-   * to another.  If splice is not available, return -EINVAL.
-   */
-  FUSE_BUF_FORCE_SPLICE	= (1 << 2),
+/**
+ * Don't use splice(2)
+ *
+ * Always fall back to using read and write instead of
+ * splice(2) to copy data from one file descriptor to another.
+ *
+ * If this flag is not set, then only fall back if splice is
+ * unavailable.
+ */
+#define FUSE_BUF_COPY_FLAG_NO_SPLICE (1 << 1)
 
-  /**
-   * Try to move data with splice.
-   *
-   * If splice is used, try to move pages from the source to the
-   * destination instead of copying.  See documentation of
-   * SPLICE_F_MOVE in splice(2) man page.
-   */
-  FUSE_BUF_SPLICE_MOVE	= (1 << 3),
+/**
+ * Force splice
+ *
+ * Always use splice(2) to copy data from one file descriptor
+ * to another.  If splice is not available, return -EINVAL.
+ */
+#define FUSE_BUF_COPY_FLAG_FORCE_SPLICE (1 << 2)
 
-  /**
-   * Don't block on the pipe when copying data with splice
-   *
-   * Makes the operations on the pipe non-blocking (if the pipe
-   * is full or empty).  See SPLICE_F_NONBLOCK in the splice(2)
-   * man page.
-   */
-  FUSE_BUF_SPLICE_NONBLOCK= (1 << 4),
-};
+/**
+ * Try to move data with splice.
+ *
+ * If splice is used, try to move pages from the source to the
+ * destination instead of copying.  See documentation of
+ * SPLICE_F_MOVE in splice(2) man page.
+ */
+#define FUSE_BUF_COPY_FLAG_SPLICE_MOVE (1 << 3)
+
+/**
+ * Don't block on the pipe when copying data with splice
+ *
+ * Makes the operations on the pipe non-blocking (if the pipe
+ * is full or empty).  See SPLICE_F_NONBLOCK in the splice(2)
+ * man page.
+ */
+#define FUSE_BUF_COPY_FLAG_SPLICE_NONBLOCK (1 << 4)
+
 
 /**
  * Single data buffer
@@ -365,14 +366,14 @@ struct fuse_buf {
   /**
    * Buffer flags
    */
-  enum fuse_buf_flags flags;
+  int flags;
 
   /**
    * Memory pointer
    *
    * Used unless FUSE_BUF_IS_FD flag is set.
    */
-  void *mem;
+  char *mem;
 
   /**
    * File descriptor
@@ -427,7 +428,7 @@ struct fuse_bufvec {
       /* .off =  */ 0,                                  \
       /* .buf =  */ { /* [0] = */ {			\
         /* .size =  */ (size__),                        \
-          /* .flags = */ (enum fuse_buf_flags) 0,	\
+          /* .flags = */ 0,	\
           /* .mem =   */ NULL,                          \
           /* .fd =    */ -1,                            \
           /* .pos =   */ 0,                             \
@@ -450,8 +451,7 @@ size_t fuse_buf_size(const struct fuse_bufvec *bufv);
  * @param flags flags controlling the copy
  * @return actual number of bytes copied or -errno on error
  */
-ssize_t fuse_buf_copy(struct fuse_bufvec *dst, struct fuse_bufvec *src,
-                      enum fuse_buf_copy_flags flags);
+ssize_t fuse_buf_copy(struct fuse_bufvec *dst, struct fuse_bufvec *src, int flags);
 
 /* ----------------------------------------------------------- *
  * Signal handling					       *

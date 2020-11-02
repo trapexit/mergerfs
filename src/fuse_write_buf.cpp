@@ -49,10 +49,9 @@ namespace l
   {
     size_t size = fuse_buf_size(src_);
     fuse_bufvec dst = FUSE_BUFVEC_INIT(size);
-    const fuse_buf_copy_flags cpflags =
-      (fuse_buf_copy_flags)(FUSE_BUF_SPLICE_MOVE|FUSE_BUF_SPLICE_NONBLOCK);
+    const int cpflags = (FUSE_BUF_COPY_FLAG_SPLICE_MOVE|FUSE_BUF_COPY_FLAG_SPLICE_NONBLOCK);
 
-    dst.buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK);
+    dst.buf->flags = (FUSE_BUF_FLAG_IS_FD|FUSE_BUF_FLAG_FD_SEEK);
     dst.buf->fd    = fd_;
     dst.buf->pos   = offset_;
 

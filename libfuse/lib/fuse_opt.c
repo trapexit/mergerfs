@@ -63,7 +63,7 @@ fuse_opt_add_arg(struct fuse_args *args, const char *arg)
   if (!newarg)
     return alloc_failed();
 
-  newargv = realloc(args->argv, (args->argc + 2) * sizeof(char *));
+  newargv = (char**)realloc(args->argv, (args->argc + 2) * sizeof(char *));
   if (!newargv) {
     free(newarg);
     return alloc_failed();
@@ -115,7 +115,7 @@ static int add_arg(struct fuse_opt_context *ctx, const char *arg)
 static int add_opt_common(char **opts, const char *opt, int esc)
 {
   unsigned oldlen = *opts ? strlen(*opts) : 0;
-  char *d = realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1);
+  char *d = (char*)realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1);
 
   if (!d)
     return alloc_failed();
@@ -231,7 +231,7 @@ static int process_opt(struct fuse_opt_context *ctx,
     if (call_proc(ctx, arg, opt->value, iso) == -1)
       return -1;
   } else {
-    void *var = ctx->data + opt->offset;
+    void *var = (char*)ctx->data + opt->offset;
     if (sep && opt->templ[sep + 1]) {
       const char *param = arg + sep;
       if (opt->templ[sep] == '=')
@@ -257,7 +257,7 @@ static int process_opt_sep_arg(struct fuse_opt_context *ctx,
     return -1;
 
   param = ctx->argv[ctx->argctr];
-  newarg = malloc(sep + strlen(param) + 1);
+  newarg = (char*)malloc(sep + strlen(param) + 1);
   if (!newarg)
     return alloc_failed();
 
@@ -397,15 +397,14 @@ int fuse_opt_parse(struct fuse_args *args, void *data,
 		   const struct fuse_opt opts[], fuse_opt_proc_t proc)
 {
   int res;
-  struct fuse_opt_context ctx = {
-    .data = data,
-    .opt = opts,
-    .proc = proc,
-  };
+  struct fuse_opt_context ctx;
 
-  if (!args || !args->argv || !args->argc)
+  if(!args || !args->argv || !args->argc)
     return 0;
 
+  ctx.data = data;
+  ctx.opt  = opts;
+  ctx.proc = proc;
   ctx.argc = args->argc;
   ctx.argv = args->argv;
 

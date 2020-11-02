@@ -46,10 +46,10 @@ SRC   = \
 	lib/mount.c
 OBJS = $(SRC:lib/%.c=build/%.o)
 DEPS = $(SRC:lib/%.c=build/%.d)
-CFLAGS ?= \
+CXXFLAGS ?= \
 	$(OPT_FLAGS)
-CFLAGS := \
-    ${CFLAGS} \
+CXXFLAGS := \
+    ${CXXFLAGS} \
 	-Wall \
 	-pipe \
 	-MMD
@@ -85,17 +85,17 @@ build/libfuse.a: objects
 utils: mergerfs-fusermount mount.mergerfs
 
 build/mergerfs-fusermount: build/config.h util/fusermount.c lib/mount_util.c
-	$(CC) $(CFLAGS) $(FUSE_FLAGS) -Ilib -o build/mergerfs-fusermount util/fusermount.c lib/mount_util.c
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -Ilib -o build/mergerfs-fusermount util/fusermount.c lib/mount_util.c
 
 mergerfs-fusermount: build/mergerfs-fusermount
 
 build/mount.mergerfs: build/libfuse.a util/mount.mergerfs.c
-	$(CC) $(CFLAGS) $(FUSE_FLAGS) -o build/mount.mergerfs util/mount.mergerfs.c build/libfuse.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -o build/mount.mergerfs util/mount.mergerfs.c build/libfuse.a $(LDFLAGS)
 
 mount.mergerfs: build/mount.mergerfs
 
 build/%.o: lib/%.c
-	$(CC) $(CFLAGS) $(FUSE_FLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
 clean:
 	rm -rf build

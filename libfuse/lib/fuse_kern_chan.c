@@ -88,12 +88,11 @@ fuse_kern_chan_new(int fd_)
 {
   long pagesize;
   size_t bufsize;
-  struct fuse_chan_ops op =
-    {
-      .receive = fuse_kern_chan_receive,
-      .send    = fuse_kern_chan_send,
-      .destroy = fuse_kern_chan_destroy,
-    };
+  struct fuse_chan_ops op;
+
+  op.receive = fuse_kern_chan_receive;
+  op.send    = fuse_kern_chan_send;
+  op.destroy = fuse_kern_chan_destroy;
 
   pagesize = sysconf(_SC_PAGESIZE);
 

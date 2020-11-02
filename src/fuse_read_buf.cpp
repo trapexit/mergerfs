@@ -41,7 +41,7 @@ namespace l
 
     *src = FUSE_BUFVEC_INIT(size_);
 
-    src->buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK|FUSE_BUF_FD_RETRY);
+    src->buf->flags = (FUSE_BUF_FLAG_IS_FD|FUSE_BUF_FLAG_FD_SEEK|FUSE_BUF_FLAG_FD_RETRY);
     src->buf->fd    = fd_;
     src->buf->pos   = offset_;
 

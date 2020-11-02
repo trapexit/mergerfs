@@ -8,7 +8,6 @@
 
 
 /* For pthread_rwlock_t */
-#define _GNU_SOURCE
 
 #include "config.h"
 #include "fuse_i.h"
@@ -17,6 +16,8 @@
 #include "fuse_misc.h"
 #include "fuse_kernel.h"
 #include "fuse_dirents.h"
+
+#include <limits>
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -39,15 +40,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define FUSE_NODE_SLAB 1
-
-#ifndef MAP_ANONYMOUS
-#undef FUSE_NODE_SLAB
-#endif
-
 #define FUSE_DEFAULT_INTR_SIGNAL SIGUSR1
 
-#define FUSE_UNKNOWN_INO UINT64_MAX
+#define FUSE_UNKNOWN_INO std::numeric_limits<uint64_t>::max()
 #define OFFSET_MAX 0x7fffffffffffffffLL
 
 #define NODE_TABLE_MIN_SIZE 8192
@@ -101,13 +96,6 @@ struct node_table
   size_t size;
   size_t split;
 };
-
-#define container_of(ptr, type, member) ({                      \
-      const typeof( ((type *)0)->member ) *__mptr = (ptr);      \
-      (type *)( (char *)__mptr - offsetof(type,member) );})
-
-#define list_entry(ptr, type, member)           \
-  container_of(ptr, type, member)
 
 struct list_head
 {
@@ -216,32 +204,32 @@ list_empty(const struct list_head *head)
 
 static
 void
-list_add(struct list_head *new,
-         struct list_head *prev,
-         struct list_head *next)
+list_add(struct list_head *new_,
+         struct list_head *prev_,
+         struct list_head *next_)
 {
-  next->prev = new;
-  new->next = next;
-  new->prev = prev;
-  prev->next = new;
+  next_->prev = new_;
+  new_->next  = next_;
+  new_->prev  = prev_;
+  prev_->next = new_;
 }
 
 static
 inline
 void
-list_add_head(struct list_head *new,
-              struct list_head *head)
+list_add_head(struct list_head *new_,
+              struct list_head *head_)
 {
-  list_add(new, head, head->next);
+  list_add(new_,head_,head_->next);
 }
 
 static
 inline
 void
-list_add_tail(struct list_head *new,
-              struct list_head *head)
+list_add_tail(struct list_head *new_,
+              struct list_head *head_)
 {
-  list_add(new, head->prev, head);
+  list_add(new_,head_->prev,head_);
 }
 
 static
@@ -282,113 +270,6 @@ get_node_size(struct fuse *f)
     return sizeof(struct node);
 }
 
-#ifdef FUSE_NODE_SLAB
-static
-struct node_slab*
-list_to_slab(struct list_head *head)
-{
-  return (struct node_slab *) head;
-}
-
-static
-struct node_slab*
-node_to_slab(struct fuse *f, struct node *node)
-{
-  return (struct node_slab *) (((uintptr_t) node) & ~((uintptr_t) f->pagesize - 1));
-}
-
-static
-int
-alloc_slab(struct fuse *f)
-{
-  void *mem;
-  struct node_slab *slab;
-  char *start;
-  size_t num;
-  size_t i;
-  size_t node_size = get_node_size(f);
-
-  mem = mmap(NULL, f->pagesize, PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-  if (mem == MAP_FAILED)
-    return -1;
-
-  slab = mem;
-  init_list_head(&slab->freelist);
-  slab->used = 0;
-  num = (f->pagesize - sizeof(struct node_slab)) / node_size;
-
-  start = (char *) mem + f->pagesize - num * node_size;
-  for (i = 0; i < num; i++) {
-    struct list_head *n;
-
-    n = (struct list_head *) (start + i * node_size);
-    list_add_tail(n, &slab->freelist);
-  }
-  list_add_tail(&slab->list, &f->partial_slabs);
-
-  return 0;
-}
-
-static
-struct node*
-alloc_node(struct fuse *f)
-{
-  struct node_slab *slab;
-  struct list_head *node;
-
-  if (list_empty(&f->partial_slabs)) {
-    int res = alloc_slab(f);
-    if (res != 0)
-      return NULL;
-  }
-  slab = list_to_slab(f->partial_slabs.next);
-  slab->used++;
-  node = slab->freelist.next;
-  list_del(node);
-  if (list_empty(&slab->freelist)) {
-    list_del(&slab->list);
-    list_add_tail(&slab->list, &f->full_slabs);
-  }
-  memset(node, 0, sizeof(struct node));
-
-  return (struct node *) node;
-}
-
-static
-void
-free_slab(struct fuse      *f,
-          struct node_slab *slab)
-{
-  int res;
-
-  list_del(&slab->list);
-  res = munmap(slab, f->pagesize);
-  if (res == -1)
-    fprintf(stderr, "fuse warning: munmap(%p) failed\n", slab);
-}
-
-static
-void
-free_node_mem(struct fuse *f,
-              struct node *node)
-{
-  struct node_slab *slab = node_to_slab(f, node);
-  struct list_head *n = (struct list_head *) node;
-
-  slab->used--;
-  if (slab->used) {
-    if (list_empty(&slab->freelist)) {
-      list_del(&slab->list);
-      list_add_tail(&slab->list, &f->partial_slabs);
-    }
-    list_add_head(n, &slab->freelist);
-  } else {
-    free_slab(f, slab);
-  }
-}
-#else
 static
 struct node*
 alloc_node(struct fuse *f)
@@ -404,7 +285,6 @@ free_node_mem(struct fuse *f,
   (void) f;
   free(node);
 }
-#endif
 
 static
 size_t
@@ -496,13 +376,13 @@ void
 node_table_reduce(struct node_table *t)
 {
   size_t newsize = t->size / 2;
-  void *newarray;
+  node **newarray;
 
   if (newsize < NODE_TABLE_MIN_SIZE)
     return;
 
-  newarray = realloc(t->array, sizeof(struct node *) * newsize);
-  if (newarray != NULL)
+  newarray = (node**)realloc(t->array,sizeof(struct node*)*newsize);
+  if(newarray != NULL)
     t->array = newarray;
 
   t->size = newsize;
@@ -557,14 +437,14 @@ unhash_id(struct fuse *f, struct node *node)
 static int node_table_resize(struct node_table *t)
 {
   size_t newsize = t->size * 2;
-  void *newarray;
+  node **newarray;
 
-  newarray = realloc(t->array, sizeof(struct node *) * newsize);
-  if (newarray == NULL)
+  newarray = (node**)realloc(t->array,sizeof(struct node*)*newsize);
+  if(newarray == NULL)
     return -1;
 
   t->array = newarray;
-  memset(t->array + t->size, 0, t->size * sizeof(struct node *));
+  memset(t->array + t->size,0,t->size*sizeof(struct node*));
   t->size = newsize;
   t->split = 0;
 
@@ -780,7 +660,7 @@ next_id(struct fuse *f)
 {
   do
     {
-      f->ctr = ((f->ctr + 1) & UINT64_MAX);
+      f->ctr = ((f->ctr + 1) & std::numeric_limits<uint64_t>::max());
       if(f->ctr == 0)
         f->generation++;
     } while((f->ctr == 0)                ||
@@ -850,7 +730,12 @@ static struct node *find_node(struct fuse *f, fuse_ino_t parent,
   return node;
 }
 
-static char *add_name(char **buf, unsigned *bufsize, char *s, const char *name)
+static
+char *
+add_name(char **buf,
+         unsigned *bufsize,
+         char *s,
+         const char *name)
 {
   size_t len = strlen(name);
 
@@ -866,7 +751,7 @@ static char *add_name(char **buf, unsigned *bufsize, char *s, const char *name)
         newbufsize *= 2;
     }
 
-    newbuf = realloc(*buf, newbufsize);
+    newbuf = (char*)realloc(*buf, newbufsize);
     if (newbuf == NULL)
       return NULL;
 
@@ -917,7 +802,7 @@ static int try_get_path(struct fuse *f, fuse_ino_t nodeid, const char *name,
   *path = NULL;
 
   err = -ENOMEM;
-  buf = malloc(bufsize);
+  buf = (char*)malloc(bufsize);
   if (buf == NULL)
     goto out_err;
 
@@ -1124,17 +1009,19 @@ static int get_path_common(struct fuse *f, fuse_ino_t nodeid, const char *name,
 
   pthread_mutex_lock(&f->lock);
   err = try_get_path(f, nodeid, name, path, wnode, true);
-  if (err == -EAGAIN) {
-    struct lock_queue_element qe = {
-      .nodeid1 = nodeid,
-      .name1 = name,
-      .path1 = path,
-      .wnode1 = wnode,
-    };
-    debug_path(f, "QUEUE PATH", nodeid, name, !!wnode);
-    err = wait_path(f, &qe);
-    debug_path(f, "DEQUEUE PATH", nodeid, name, !!wnode);
-  }
+  if(err == -EAGAIN)
+    {
+      struct lock_queue_element qe;
+
+      qe.nodeid1 = nodeid;
+      qe.name1   = name;
+      qe.path1   = path;
+      qe.wnode1  = wnode;
+
+      debug_path(f, "QUEUE PATH", nodeid, name, !!wnode);
+      err = wait_path(f, &qe);
+      debug_path(f, "DEQUEUE PATH", nodeid, name, !!wnode);
+    }
   pthread_mutex_unlock(&f->lock);
 
   return err;
@@ -1188,24 +1075,25 @@ static int get_path2(struct fuse *f, fuse_ino_t nodeid1, const char *name1,
   pthread_mutex_lock(&f->lock);
   err = try_get_path2(f, nodeid1, name1, nodeid2, name2,
                       path1, path2, wnode1, wnode2);
-  if (err == -EAGAIN) {
-    struct lock_queue_element qe = {
-      .nodeid1 = nodeid1,
-      .name1 = name1,
-      .path1 = path1,
-      .wnode1 = wnode1,
-      .nodeid2 = nodeid2,
-      .name2 = name2,
-      .path2 = path2,
-      .wnode2 = wnode2,
-    };
+  if(err == -EAGAIN)
+    {
+      struct lock_queue_element qe;
 
-    debug_path(f, "QUEUE PATH1", nodeid1, name1, !!wnode1);
-    debug_path(f, "      PATH2", nodeid2, name2, !!wnode2);
-    err = wait_path(f, &qe);
-    debug_path(f, "DEQUEUE PATH1", nodeid1, name1, !!wnode1);
-    debug_path(f, "        PATH2", nodeid2, name2, !!wnode2);
-  }
+      qe.nodeid1 = nodeid1;
+      qe.name1 = name1;
+      qe.path1 = path1;
+      qe.wnode1 = wnode1;
+      qe.nodeid2 = nodeid2;
+      qe.name2 = name2;
+      qe.path2 = path2;
+      qe.wnode2 = wnode2;
+
+      debug_path(f, "QUEUE PATH1", nodeid1, name1, !!wnode1);
+      debug_path(f, "      PATH2", nodeid2, name2, !!wnode2);
+      err = wait_path(f, &qe);
+      debug_path(f, "DEQUEUE PATH1", nodeid1, name1, !!wnode1);
+      debug_path(f, "        PATH2", nodeid2, name2, !!wnode2);
+    }
   pthread_mutex_unlock(&f->lock);
 
   return err;
@@ -1261,9 +1149,9 @@ forget_node(struct fuse      *f,
    */
   while(node->nlookup == nlookup && node->treelock)
     {
-      struct lock_queue_element qe = {
-        .nodeid1 = nodeid,
-      };
+      struct lock_queue_element qe;
+
+      qe.nodeid1 = nodeid;
 
       debug_path(f, "QUEUE PATH (forget)", nodeid, NULL, false);
       queue_path(f, &qe);
@@ -1366,16 +1254,20 @@ struct fuse_intr_data {
   int finished;
 };
 
-static void fuse_interrupt(fuse_req_t req, void *d_)
+static
+void
+fuse_interrupt(fuse_req_t      req_,
+               fuse_intr_data *d_)
 {
   struct fuse_intr_data *d = d_;
-  struct fuse *f = req_fuse(req);
+  struct fuse *f = req_fuse(req_);
 
-  if (d->id == pthread_self())
+  if(d->id == pthread_self())
     return;
 
   pthread_mutex_lock(&f->lock);
-  while (!d->finished) {
+  while (!d->finished)
+    {
     struct timeval now;
     struct timespec timeout;
 
@@ -1395,7 +1287,7 @@ static void fuse_do_finish_interrupt(struct fuse *f, fuse_req_t req,
   d->finished = 1;
   pthread_cond_broadcast(&d->cond);
   pthread_mutex_unlock(&f->lock);
-  fuse_req_interrupt_func(req, NULL, NULL);
+  fuse_req_interrupt_func(req,NULL,NULL);
   pthread_cond_destroy(&d->cond);
 }
 
@@ -1404,7 +1296,7 @@ static void fuse_do_prepare_interrupt(fuse_req_t req, struct fuse_intr_data *d)
   d->id = pthread_self();
   pthread_cond_init(&d->cond, NULL);
   d->finished = 0;
-  fuse_req_interrupt_func(req, fuse_interrupt, d);
+  fuse_req_interrupt_func(req,fuse_interrupt,d);
 }
 
 static inline void fuse_finish_interrupt(struct fuse *f, fuse_req_t req,
@@ -1617,9 +1509,12 @@ static void fuse_free_buf(struct fuse_bufvec *buf)
   }
 }
 
-int fuse_fs_read_buf(struct fuse_fs *fs,
-		     struct fuse_bufvec **bufp, size_t size, off_t off,
-		     struct fuse_file_info *fi)
+int
+fuse_fs_read_buf(struct fuse_fs         *fs,
+                 struct fuse_bufvec    **bufp,
+                 size_t                  size,
+                 off_t                   off,
+                 struct fuse_file_info  *fi)
 {
   fuse_get_context()->private_data = fs->user_data;
   if (fs->op.read || fs->op.read_buf) {
@@ -1635,13 +1530,13 @@ int fuse_fs_read_buf(struct fuse_fs *fs,
       res = fs->op.read_buf(bufp, size, off, fi);
     } else {
       struct fuse_bufvec *buf;
-      void *mem;
+      char *mem;
 
-      buf = malloc(sizeof(struct fuse_bufvec));
-      if (buf == NULL)
+      buf = (struct fuse_bufvec*)malloc(sizeof(struct fuse_bufvec));
+      if(buf == NULL)
         return -ENOMEM;
 
-      mem = malloc(size);
+      mem = (char*)malloc(size);
       if (mem == NULL) {
         free(buf);
         return -ENOMEM;
@@ -1660,7 +1555,7 @@ int fuse_fs_read_buf(struct fuse_fs *fs,
               (unsigned long long) fi->fh,
               fuse_buf_size(*bufp),
               (unsigned long long) off);
-    if (res >= 0 && fuse_buf_size(*bufp) > (int) size)
+    if ((res >= 0) && fuse_buf_size(*bufp) > size)
       fprintf(stderr, "fuse: read too many bytes\n");
 
     if (res < 0)
@@ -1683,83 +1578,98 @@ int fuse_fs_read(struct fuse_fs *fs, char *mem, size_t size,
     struct fuse_bufvec dst = FUSE_BUFVEC_INIT(size);
 
     dst.buf[0].mem = mem;
-    res = fuse_buf_copy(&dst, buf, 0);
+    res = fuse_buf_copy(&dst, buf, FUSE_BUF_FLAG_NONE);
   }
   fuse_free_buf(buf);
 
   return res;
 }
 
-int fuse_fs_write_buf(struct fuse_fs *fs,
-		      struct fuse_bufvec *buf, off_t off,
-		      struct fuse_file_info *fi)
+int
+fuse_fs_write_buf(struct fuse_fs        *fs,
+                  struct fuse_bufvec    *buf,
+                  off_t                  off,
+                  struct fuse_file_info *fi)
 {
   fuse_get_context()->private_data = fs->user_data;
-  if (fs->op.write_buf || fs->op.write) {
-    int res;
-    size_t size = fuse_buf_size(buf);
+  if(fs->op.write_buf || fs->op.write)
+    {
+      int res;
+      size_t size = fuse_buf_size(buf);
 
-    assert(buf->idx == 0 && buf->off == 0);
-    if (fs->debug)
-      fprintf(stderr,
-              "write%s[%llu] %zu bytes to %llu flags: 0x%x\n",
-              fi->writepage ? "page" : "",
-              (unsigned long long) fi->fh,
-              size,
-              (unsigned long long) off,
-              fi->flags);
+      assert(buf->idx == 0 && buf->off == 0);
+      if (fs->debug)
+        fprintf(stderr,
+                "write%s[%llu] %zu bytes to %llu flags: 0x%x\n",
+                fi->writepage ? "page" : "",
+                (unsigned long long) fi->fh,
+                size,
+                (unsigned long long) off,
+                fi->flags);
 
-    if (fs->op.write_buf) {
-      res = fs->op.write_buf(buf, off, fi);
-    } else {
-      void *mem = NULL;
-      struct fuse_buf *flatbuf;
-      struct fuse_bufvec tmp = FUSE_BUFVEC_INIT(size);
+      if (fs->op.write_buf)
+        {
+          res = fs->op.write_buf(buf, off, fi);
+        }
+      else
+        {
+          char *mem = NULL;
+          struct fuse_buf *flatbuf;
+          struct fuse_bufvec tmp = FUSE_BUFVEC_INIT(size);
 
-      if (buf->count == 1 &&
-          !(buf->buf[0].flags & FUSE_BUF_IS_FD)) {
-        flatbuf = &buf->buf[0];
-      } else {
-        res = -ENOMEM;
-        mem = malloc(size);
-        if (mem == NULL)
-          goto out;
+          if((buf->count == 1) &&
+             !(buf->buf[0].flags & FUSE_BUF_FLAG_IS_FD))
+            {
+              flatbuf = &buf->buf[0];
+            }
+          else
+            {
+              res = -ENOMEM;
+              mem = (char*)malloc(size);
+              if (mem == NULL)
+                goto out;
 
-        tmp.buf[0].mem = mem;
-        res = fuse_buf_copy(&tmp, buf, 0);
-        if (res <= 0)
-          goto out_free;
+              tmp.buf[0].mem = mem;
+              res = fuse_buf_copy(&tmp, buf, FUSE_BUF_FLAG_NONE);
+              if (res <= 0)
+                goto out_free;
 
-        tmp.buf[0].size = res;
-        flatbuf = &tmp.buf[0];
-      }
+              tmp.buf[0].size = res;
+              flatbuf = &tmp.buf[0];
+            }
 
-      res = fs->op.write(flatbuf->mem, flatbuf->size,
-                         off, fi);
-    out_free:
-      free(mem);
+          res = fs->op.write(flatbuf->mem, flatbuf->size,
+                             off, fi);
+        out_free:
+          free(mem);
+        }
+    out:
+      if (fs->debug && res >= 0)
+        fprintf(stderr, "   write%s[%llu] %u bytes to %llu\n",
+                fi->writepage ? "page" : "",
+                (unsigned long long) fi->fh, res,
+                (unsigned long long) off);
+      if (res > (int) size)
+        fprintf(stderr, "fuse: wrote too many bytes\n");
+
+      return res;
     }
-  out:
-    if (fs->debug && res >= 0)
-      fprintf(stderr, "   write%s[%llu] %u bytes to %llu\n",
-              fi->writepage ? "page" : "",
-              (unsigned long long) fi->fh, res,
-              (unsigned long long) off);
-    if (res > (int) size)
-      fprintf(stderr, "fuse: wrote too many bytes\n");
-
-    return res;
-  } else {
-    return -ENOSYS;
-  }
+  else
+    {
+      return -ENOSYS;
+    }
 }
 
-int fuse_fs_write(struct fuse_fs *fs, const char *mem,
-		  size_t size, off_t off, struct fuse_file_info *fi)
+int
+fuse_fs_write(struct fuse_fs        *fs,
+              const char            *mem,
+              size_t                 size,
+              off_t                  off,
+              struct fuse_file_info *fi)
 {
   struct fuse_bufvec bufv = FUSE_BUFVEC_INIT(size);
 
-  bufv.buf[0].mem = (void *) mem;
+  bufv.buf[0].mem = (char*)mem;
 
   return fuse_fs_write_buf(fs, &bufv, off, fi);
 }
@@ -3199,7 +3109,7 @@ static void fuse_lib_read(fuse_req_t req, fuse_ino_t ino, size_t size,
   fuse_finish_interrupt(f, req, &d);
 
   if (res == 0)
-    fuse_reply_data(req, buf, FUSE_BUF_SPLICE_MOVE);
+    fuse_reply_data(req, buf, FUSE_BUF_COPY_FLAG_SPLICE_MOVE);
   else
     reply_err(req, res);
 
@@ -3338,7 +3248,7 @@ readdir_buf_size(fuse_dirents_t *d_,
                  size_t          size_,
                  off_t           off_)
 {
-  if(off_ >= kv_size(d_->offs))
+  if(off_ >= (off_t)kv_size(d_->offs))
     return 0;
   if((kv_A(d_->offs,off_) + size_) > d_->data_len)
     return (d_->data_len - kv_A(d_->offs,off_));
@@ -3694,16 +3604,18 @@ static int locks_insert(struct node *node, struct lock *lock)
   struct lock *newl2 = NULL;
 
   if (lock->type != F_UNLCK || lock->start != 0 ||
-      lock->end != OFFSET_MAX) {
-    newl1 = malloc(sizeof(struct lock));
-    newl2 = malloc(sizeof(struct lock));
+      lock->end != OFFSET_MAX)
+    {
+      newl1 = (struct lock*)malloc(sizeof(struct lock));
+      newl2 = (struct lock*)malloc(sizeof(struct lock));
 
-    if (!newl1 || !newl2) {
-      free(newl1);
-      free(newl2);
-      return -ENOLCK;
+      if(!newl1 || !newl2)
+        {
+          free(newl1);
+          free(newl2);
+          return -ENOLCK;
+        }
     }
-  }
 
   for (lp = &node->locks; *lp;) {
     struct lock *l = *lp;
@@ -3721,14 +3633,14 @@ static int locks_insert(struct node *node, struct lock *lock)
         lock->start = l->start;
       if (lock->end < l->end)
         lock->end = l->end;
-      goto delete;
+      goto _delete;
     } else {
       if (l->end < lock->start)
         goto skip;
       if (lock->end < l->start)
         break;
       if (lock->start <= l->start && l->end <= lock->end)
-        goto delete;
+        goto _delete;
       if (l->end <= lock->end) {
         l->end = lock->start - 1;
         goto skip;
@@ -3747,7 +3659,7 @@ static int locks_insert(struct node *node, struct lock *lock)
     lp = &l->next;
     continue;
 
-  delete:
+  _delete:
     delete_lock(lp);
   }
   if (lock->type != F_UNLCK) {
@@ -3958,12 +3870,13 @@ static void fuse_lib_ioctl(fuse_req_t req, fuse_ino_t ino, unsigned long cmd, vo
   else
     fi = *llfi;
 
-  if (out_bufsz) {
-    err = -ENOMEM;
-    out_buf = malloc(out_bufsz);
-    if (!out_buf)
-      goto err;
-  }
+  if(out_bufsz)
+    {
+      err = -ENOMEM;
+      out_buf = (char*)malloc(out_bufsz);
+      if (!out_buf)
+        goto err;
+    }
 
   assert(!in_bufsz || !out_bufsz || in_bufsz == out_bufsz);
   if (out_buf)
@@ -4049,7 +3962,8 @@ int fuse_clean_cache(struct fuse *f)
     double age;
 
     next = curr->next;
-    lnode = list_entry(curr, struct node_lru, lru);
+    lnode = ({ const list_head *__mptr = (curr); (struct node_lru*)((char*)__mptr - offsetof(struct node_lru,lru));});
+    //lnode = list_entry(curr, struct node_lru, lru);
     node = &lnode->node;
 
     age = diff_timespec(&now, &lnode->forget_time);
@@ -4071,49 +3985,52 @@ int fuse_clean_cache(struct fuse *f)
   return clean_delay(f);
 }
 
-static struct fuse_lowlevel_ops fuse_path_ops = {
-  .init            = fuse_lib_init,
-  .destroy         = fuse_lib_destroy,
-  .lookup          = fuse_lib_lookup,
-  .forget          = fuse_lib_forget,
-  .forget_multi    = fuse_lib_forget_multi,
-  .getattr         = fuse_lib_getattr,
-  .setattr         = fuse_lib_setattr,
-  .access          = fuse_lib_access,
-  .readlink        = fuse_lib_readlink,
-  .mknod           = fuse_lib_mknod,
-  .mkdir           = fuse_lib_mkdir,
-  .unlink          = fuse_lib_unlink,
-  .rmdir           = fuse_lib_rmdir,
-  .symlink         = fuse_lib_symlink,
-  .rename          = fuse_lib_rename,
-  .link            = fuse_lib_link,
-  .create          = fuse_lib_create,
-  .open            = fuse_lib_open,
-  .read            = fuse_lib_read,
-  .write_buf       = fuse_lib_write_buf,
-  .flush           = fuse_lib_flush,
-  .release         = fuse_lib_release,
-  .fsync           = fuse_lib_fsync,
-  .opendir         = fuse_lib_opendir,
-  .readdir         = fuse_lib_readdir,
-  .readdir_plus    = fuse_lib_readdir_plus,
-  .releasedir      = fuse_lib_releasedir,
-  .fsyncdir        = fuse_lib_fsyncdir,
-  .statfs          = fuse_lib_statfs,
-  .setxattr        = fuse_lib_setxattr,
-  .getxattr        = fuse_lib_getxattr,
-  .listxattr       = fuse_lib_listxattr,
-  .removexattr     = fuse_lib_removexattr,
-  .getlk           = fuse_lib_getlk,
-  .setlk           = fuse_lib_setlk,
-  .flock           = fuse_lib_flock,
-  .bmap            = fuse_lib_bmap,
-  .ioctl           = fuse_lib_ioctl,
-  .poll            = fuse_lib_poll,
-  .fallocate       = fuse_lib_fallocate,
-  .copy_file_range = fuse_lib_copy_file_range,
-};
+static struct fuse_lowlevel_ops fuse_path_ops =
+  {
+    fuse_lib_init,
+    fuse_lib_destroy,
+    fuse_lib_lookup,
+    fuse_lib_forget,
+    fuse_lib_getattr,
+    fuse_lib_setattr,
+    fuse_lib_readlink,
+    fuse_lib_mknod,
+    fuse_lib_mkdir,
+    fuse_lib_unlink,
+    fuse_lib_rmdir,
+    fuse_lib_symlink,
+    fuse_lib_rename,
+    fuse_lib_link,
+    fuse_lib_open,
+    fuse_lib_read,
+    NULL,
+    fuse_lib_flush,
+    fuse_lib_release,
+    fuse_lib_fsync,
+    fuse_lib_opendir,
+    fuse_lib_readdir,
+    fuse_lib_readdir_plus,
+    fuse_lib_releasedir,
+    fuse_lib_fsyncdir,
+    fuse_lib_statfs,
+    fuse_lib_setxattr,
+    fuse_lib_getxattr,
+    fuse_lib_listxattr,
+    fuse_lib_removexattr,
+    fuse_lib_access,
+    fuse_lib_create,
+    fuse_lib_getlk,
+    fuse_lib_setlk,
+    fuse_lib_bmap,
+    fuse_lib_ioctl,
+    fuse_lib_poll,
+    fuse_lib_write_buf,
+    NULL,
+    fuse_lib_forget_multi,
+    fuse_lib_flock,
+    fuse_lib_fallocate,
+    fuse_lib_copy_file_range
+  };
 
 int fuse_notify_poll(struct fuse_pollhandle *ph)
 {
@@ -4342,7 +4259,7 @@ static int node_table_init(struct node_table *t)
 
 static void *fuse_prune_nodes(void *fuse)
 {
-  struct fuse *f = fuse;
+  struct fuse *f = (struct fuse*)fuse;
   int sleep_time;
 
   while(1) {

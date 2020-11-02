@@ -68,11 +68,11 @@ static void *fuse_do_work(void *data)
 
   while (!fuse_session_exited(mt->se)) {
     struct fuse_chan *ch = mt->prevch;
-    struct fuse_buf fbuf = {
-      .mem = w->buf,
-      .size = w->bufsize,
-    };
+    struct fuse_buf fbuf;
     int res;
+
+    fbuf.mem  = w->buf;
+    fbuf.size = w->bufsize;
 
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     res = fuse_session_receive_buf(mt->se, &fbuf, &ch);
@@ -134,14 +134,14 @@ int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg)
 static int fuse_loop_start_thread(struct fuse_mt *mt)
 {
   int res;
-  struct fuse_worker *w = malloc(sizeof(struct fuse_worker));
+  struct fuse_worker *w = (struct fuse_worker*)malloc(sizeof(struct fuse_worker));
   if (!w) {
     fprintf(stderr, "fuse: failed to allocate worker structure\n");
     return -1;
   }
   memset(w, 0, sizeof(struct fuse_worker));
   w->bufsize = fuse_chan_bufsize(mt->prevch);
-  w->buf = calloc(w->bufsize,1);
+  w->buf = (char*)calloc(w->bufsize,1);
   w->mt = mt;
   if (!w->buf) {
     fprintf(stderr, "fuse: failed to allocate read buffer\n");

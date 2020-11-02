@@ -1202,8 +1202,7 @@ int fuse_reply_buf(fuse_req_t req, const char *buf, size_t size);
  * @param flags flags controlling the copy
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_data(fuse_req_t req, struct fuse_bufvec *bufv,
-                    enum fuse_buf_copy_flags flags);
+int fuse_reply_data(fuse_req_t req, struct fuse_bufvec *bufv, int flags);
 
 /**
  * Reply with data vector
@@ -1406,7 +1405,7 @@ int fuse_lowlevel_notify_delete(struct fuse_chan *ch,
  */
 int fuse_lowlevel_notify_store(struct fuse_chan *ch, fuse_ino_t ino,
                                off_t offset, struct fuse_bufvec *bufv,
-                               enum fuse_buf_copy_flags flags);
+                               int flags);
 /**
  * Retrieve data from the kernel buffers
  *
@@ -1486,7 +1485,7 @@ int fuse_req_getgroups(fuse_req_t req, int size, gid_t list[]);
  * @param req interrupted request
  * @param data user data
  */
-typedef void (*fuse_interrupt_func_t)(fuse_req_t req, void *data);
+typedef void (*fuse_interrupt_func_t)(fuse_req_t req, struct fuse_intr_data *data);
 
 /**
  * Register/unregister callback for an interrupt
@@ -1499,7 +1498,8 @@ typedef void (*fuse_interrupt_func_t)(fuse_req_t req, void *data);
  * @param func the callback function or NULL for unregister
  * @param data user data passed to the callback function
  */
-void fuse_req_interrupt_func(fuse_req_t req, fuse_interrupt_func_t func,
+void fuse_req_interrupt_func(fuse_req_t req,
+                             fuse_interrupt_func_t func,
                              void *data);
 
 /**

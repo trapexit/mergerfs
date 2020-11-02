@@ -235,7 +235,7 @@ static int may_unmount(const char *mnt, int quiet)
  */
 static int check_is_mount_child(void *p)
 {
-	const char **a = p;
+        const char **a = (const char**)p;
 	const char *last = a[0];
 	const char *mnt = a[1];
 	int res;
@@ -817,10 +817,10 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
 	    fuse_mnt_check_empty(progname, mnt, rootmode, rootsize) == -1)
 		goto err;
 
-	source = malloc((fsname ? strlen(fsname) : 0) +
-			(subtype ? strlen(subtype) : 0) + strlen(dev) + 32);
+	source = (char*)malloc((fsname ? strlen(fsname) : 0) +
+                               (subtype ? strlen(subtype) : 0) + strlen(dev) + 32);
 
-	type = malloc((subtype ? strlen(subtype) : 0) + 32);
+	type = (char*)malloc(((subtype != NULL) ? strlen(subtype) : 0) + 32);
 	if (!type || !source) {
 		fprintf(stderr, "%s: failed to allocate memory\n", progname);
 		goto err;
