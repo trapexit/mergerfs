@@ -62,10 +62,10 @@ namespace l
 namespace FUSE
 {
   int
-  read(char           *buf_,
-       size_t          count_,
-       off_t           offset_,
-       fuse_file_info *ffi_)
+  read(const fuse_file_info_t *ffi_,
+       char                   *buf_,
+       size_t                  count_,
+       off_t                   offset_)
   {
     FileInfo *fi;
 
@@ -77,11 +77,10 @@ namespace FUSE
   }
 
   int
-  read_null(char           *buf_,
-            size_t          count_,
-            off_t           offset_,
-            fuse_file_info *ffi_)
-
+  read_null(const fuse_file_info_t *ffi_,
+            char                   *buf_,
+            size_t                  count_,
+            off_t                   offset_)
   {
     return count_;
   }

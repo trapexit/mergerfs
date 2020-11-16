@@ -19,10 +19,10 @@
 namespace FUSE
 {
   ssize_t
-  copy_file_range(struct fuse_file_info *ffi_in,
-                  off_t                  offset_in,
-                  struct fuse_file_info *ffi_out,
-                  off_t                  offset_out,
-                  size_t                 size,
-                  int                    flags);
+  copy_file_range(const fuse_file_info_t *ffi_in,
+                  off_t                   offset_in,
+                  const fuse_file_info_t *ffi_out,
+                  off_t                   offset_out,
+                  size_t                  size,
+                  int                     flags);
 }

@@ -38,8 +38,8 @@ namespace l
 namespace FUSE
 {
   int
-  ftruncate(off_t           size_,
-            fuse_file_info *ffi_)
+  ftruncate(const fuse_file_info_t *ffi_,
+            off_t                   size_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

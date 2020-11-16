@@ -49,12 +49,12 @@ namespace l
 namespace FUSE
 {
   ssize_t
-  copy_file_range(struct fuse_file_info *ffi_in_,
-                  off_t                  offset_in_,
-                  struct fuse_file_info *ffi_out_,
-                  off_t                  offset_out_,
-                  size_t                 size_,
-                  int                    flags_)
+  copy_file_range(const fuse_file_info_t *ffi_in_,
+                  off_t                   offset_in_,
+                  const fuse_file_info_t *ffi_out_,
+                  off_t                   offset_out_,
+                  size_t                  size_,
+                  int                     flags_)
   {
     FileInfo *fi_in  = reinterpret_cast<FileInfo*>(ffi_in_->fh);
     FileInfo *fi_out = reinterpret_cast<FileInfo*>(ffi_out_->fh);

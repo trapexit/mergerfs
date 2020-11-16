@@ -43,9 +43,9 @@ namespace l
 namespace FUSE
 {
   int
-  fchown(const struct fuse_file_info *ffi_,
-         const uid_t                  uid_,
-         const gid_t                  gid_)
+  fchown(const fuse_file_info_t *ffi_,
+         const uid_t             uid_,
+         const gid_t             gid_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

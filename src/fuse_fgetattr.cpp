@@ -45,9 +45,9 @@ namespace l
 namespace FUSE
 {
   int
-  fgetattr(struct stat     *st_,
-           fuse_file_info  *ffi_,
-           fuse_timeouts_t *timeout_)
+  fgetattr(const fuse_file_info_t *ffi_,
+           struct stat            *st_,
+           fuse_timeouts_t        *timeout_)
   {
     int rv;
     const Config &config = Config::ro();

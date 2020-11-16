@@ -21,7 +21,6 @@
 namespace FUSE
 {
   int
-  flock(const char     *fusepath,
-        fuse_file_info *ffi,
-        int             op);
+  flock(const fuse_file_info_t *ffi,
+        int                     op);
 }

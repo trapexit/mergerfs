@@ -116,10 +116,10 @@ namespace l
 
   static
   int
-  ioctl_file(fuse_file_info *ffi_,
-             const uint32_t  cmd_,
-             void           *data_,
-             uint32_t       *out_bufsz_)
+  ioctl_file(const fuse_file_info_t *ffi_,
+             const uint32_t          cmd_,
+             void                   *data_,
+             uint32_t               *out_bufsz_)
   {
     FileInfo           *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
     const fuse_context *fc = fuse_get_context();
@@ -165,10 +165,10 @@ namespace l
 
   static
   int
-  ioctl_dir(fuse_file_info *ffi_,
-            const uint32_t  cmd_,
-            void           *data_,
-            uint32_t       *out_bufsz_)
+  ioctl_dir(const fuse_file_info_t *ffi_,
+            const uint32_t          cmd_,
+            void                   *data_,
+            uint32_t               *out_bufsz_)
   {
     DirInfo            *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
     const fuse_context *fc     = fuse_get_context();
@@ -270,8 +270,8 @@ namespace l
 
   static
   int
-  file_basepath(fuse_file_info *ffi_,
-                void           *data_)
+  file_basepath(const fuse_file_info_t *ffi_,
+                void                   *data_)
   {
     const Config &config   = Config::ro();
     std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
@@ -284,8 +284,8 @@ namespace l
 
   static
   int
-  file_relpath(fuse_file_info *ffi_,
-               void           *data_)
+  file_relpath(const fuse_file_info_t *ffi_,
+               void                   *data_)
   {
     std::string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
@@ -314,8 +314,8 @@ namespace l
 
   static
   int
-  file_fullpath(fuse_file_info *ffi_,
-                void           *data_)
+  file_fullpath(const fuse_file_info_t *ffi_,
+                void                   *data_)
   {
     const Config &config   = Config::ro();
     std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
@@ -328,8 +328,8 @@ namespace l
 
   static
   int
-  file_allpaths(fuse_file_info *ffi_,
-                void           *data_)
+  file_allpaths(const fuse_file_info_t *ffi_,
+                void                   *data_)
   {
     string concated;
     vector<string> paths;
@@ -348,8 +348,8 @@ namespace l
 
   static
   int
-  file_info(fuse_file_info *ffi_,
-            void           *data_)
+  file_info(const fuse_file_info_t *ffi_,
+            void                   *data_)
   {
     char *key = (char*)data_;
 
@@ -369,12 +369,12 @@ namespace l
 namespace FUSE
 {
   int
-  ioctl(unsigned long   cmd_,
-        void           *arg_,
-        fuse_file_info *ffi_,
-        unsigned int    flags_,
-        void           *data_,
-        uint32_t       *out_bufsz_)
+  ioctl(const fuse_file_info_t *ffi_,
+        unsigned long           cmd_,
+        void                   *arg_,
+        unsigned int            flags_,
+        void                   *data_,
+        uint32_t               *out_bufsz_)
   {
     switch(cmd_)
       {

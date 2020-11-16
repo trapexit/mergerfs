@@ -44,8 +44,8 @@ namespace l
 namespace FUSE
 {
   int
-  fsync(int             isdatasync_,
-        fuse_file_info *ffi_)
+  fsync(const fuse_file_info_t *ffi_,
+        int                     isdatasync_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

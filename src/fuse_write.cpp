@@ -102,11 +102,11 @@ namespace l
 
   static
   int
-  write(WriteFunc       func_,
-        const char     *buf_,
-        const size_t    count_,
-        const off_t     offset_,
-        fuse_file_info *ffi_)
+  write(const fuse_file_info_t *ffi_,
+        WriteFunc               func_,
+        const char             *buf_,
+        const size_t            count_,
+        const off_t             offset_)
   {
     int rv;
     FileInfo* fi;
@@ -124,10 +124,10 @@ namespace l
 namespace FUSE
 {
   int
-  write(const char     *buf_,
-        size_t          count_,
-        off_t           offset_,
-        fuse_file_info *ffi_)
+  write(const fuse_file_info_t *ffi_,
+        const char             *buf_,
+        size_t                  count_,
+        off_t                   offset_)
   {
     WriteFunc wf;
 
@@ -135,14 +135,14 @@ namespace FUSE
           l::write_direct_io :
           l::write_regular);
 
-    return l::write(wf,buf_,count_,offset_,ffi_);
+    return l::write(ffi_,wf,buf_,count_,offset_);
   }
 
   int
-  write_null(const char     *buf_,
-             size_t          count_,
-             off_t           offset_,
-             fuse_file_info *ffi_)
+  write_null(const fuse_file_info_t *ffi_,
+             const char             *buf_,
+             size_t                  count_,
+             off_t                   offset_)
   {
     return count_;
   }
