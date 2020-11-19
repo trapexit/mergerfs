@@ -42,7 +42,6 @@ namespace mspmfs
   {
     int rv;
     uint64_t mfs;
-    string fusepath;
     fs::info_t info;
     const Branch *branch;
     const string *basepath;
@@ -55,7 +54,7 @@ namespace mspmfs
 
         if(branch->ro_or_nc())
           error_and_continue(*err_,EROFS);
-        if(!fs::exists(branch->path,fusepath))
+        if(!fs::exists(branch->path,fusepath_))
           error_and_continue(*err_,ENOENT);
         rv = fs::info(branch->path,&info);
         if(rv == -1)
