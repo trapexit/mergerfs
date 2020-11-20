@@ -46,8 +46,8 @@ EXTERN_C_BEGIN
  *
  * Changed in version 2.5
  */
-struct
-fuse_file_info
+typedef struct fuse_file_info_t fuse_file_info_t;
+struct fuse_file_info_t
 {
   /** Open flags. Available in open() and release() */
   int flags;
@@ -205,7 +205,8 @@ struct fuse_conn_info {
 
 struct fuse_session;
 struct fuse_chan;
-struct fuse_pollhandle;
+struct fuse_pollhandle_t;
+typedef struct fuse_pollhandle_t fuse_pollhandle_t;
 
 /**
  * Create a FUSE mountpoint
@@ -271,7 +272,7 @@ int fuse_version(void);
  *
  * @param ph the poll handle
  */
-void fuse_pollhandle_destroy(struct fuse_pollhandle *ph);
+void fuse_pollhandle_destroy(fuse_pollhandle_t *ph);
 
 /* ----------------------------------------------------------- *
  * Data buffer						       *

@@ -21,10 +21,10 @@
 namespace FUSE
 {
   int
-  ioctl(unsigned long   cmd,
-        void           *arg,
-        fuse_file_info *ffi,
-        unsigned int    flags,
-        void           *data,
-        uint32_t       *out_bufsz);
+  ioctl(const fuse_file_info_t *ffi,
+        unsigned long           cmd,
+        void                   *arg,
+        unsigned int            flags,
+        void                   *data,
+        uint32_t               *out_bufsz);
 }

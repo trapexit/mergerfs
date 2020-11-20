@@ -42,8 +42,8 @@ namespace l
 namespace FUSE
 {
   int
-  fsyncdir(int             isdatasync_,
-           fuse_file_info *ffi_)
+  fsyncdir(const fuse_file_info_t *ffi_,
+           int                     isdatasync_)
   {
     DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
 

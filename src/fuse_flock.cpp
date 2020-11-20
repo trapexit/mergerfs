@@ -38,9 +38,8 @@ namespace l
 namespace FUSE
 {
   int
-  flock(const char     *fusepath_,
-        fuse_file_info *ffi_,
-        int             op_)
+  flock(const fuse_file_info_t *ffi_,
+        int                     op_)
   {
     FileInfo* fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

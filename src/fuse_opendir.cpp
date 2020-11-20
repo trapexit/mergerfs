@@ -22,8 +22,8 @@
 namespace FUSE
 {
   int
-  opendir(const char     *fusepath_,
-          fuse_file_info *ffi_)
+  opendir(const char       *fusepath_,
+          fuse_file_info_t *ffi_)
   {
     const Config &config = Config::ro();
 

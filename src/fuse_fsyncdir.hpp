@@ -21,6 +21,6 @@
 namespace FUSE
 {
   int
-  fsyncdir(int             isdatasync,
-           fuse_file_info *ffi);
+  fsyncdir(const fuse_file_info_t *ffi,
+           int                     isdatasync);
 }

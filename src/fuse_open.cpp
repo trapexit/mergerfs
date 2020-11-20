@@ -117,8 +117,8 @@ namespace l
 
   static
   void
-  config_to_ffi_flags(const Config   &config_,
-                      fuse_file_info *ffi_)
+  config_to_ffi_flags(const Config     &config_,
+                      fuse_file_info_t *ffi_)
   {
     switch(config_.cache_files)
       {
@@ -203,8 +203,8 @@ namespace l
 namespace FUSE
 {
   int
-  open(const char     *fusepath_,
-       fuse_file_info *ffi_)
+  open(const char       *fusepath_,
+       fuse_file_info_t *ffi_)
   {
     const fuse_context *fc     = fuse_get_context();
     const Config       &config = Config::ro();

@@ -42,8 +42,8 @@ namespace l
 namespace FUSE
 {
   int
-  futimens(const struct fuse_file_info *ffi_,
-           const struct timespec        ts_[2])
+  futimens(const fuse_file_info_t *ffi_,
+           const struct timespec   ts_[2])
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

@@ -23,8 +23,8 @@
 namespace FUSE
 {
   int
-  read_buf(struct fuse_bufvec **buf,
-           size_t               size,
-           off_t                offset,
-           fuse_file_info      *ffi);
+  read_buf(const fuse_file_info_t  *ffi,
+           struct fuse_bufvec     **buf,
+           size_t                   size,
+           off_t                    offset);
 }

@@ -23,7 +23,7 @@
 namespace FUSE
 {
   int
-  create(const char     *fusepath,
-         mode_t          mode,
-         fuse_file_info *ffi);
+  create(const char       *fusepath,
+         mode_t            mode,
+         fuse_file_info_t *ffi);
 }

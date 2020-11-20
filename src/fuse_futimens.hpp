@@ -23,6 +23,6 @@
 namespace FUSE
 {
   int
-  futimens(const fuse_file_info *ffi,
-           const timespec        ts[2]);
+  futimens(const fuse_file_info_t *ffi,
+           const timespec          ts[2]);
 }

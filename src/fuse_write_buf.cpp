@@ -86,9 +86,9 @@ namespace l
 namespace FUSE
 {
   int
-  write_buf(fuse_bufvec    *src_,
-            off_t           offset_,
-            fuse_file_info *ffi_)
+  write_buf(const fuse_file_info_t *ffi_,
+            fuse_bufvec            *src_,
+            off_t                   offset_)
   {
     int rv;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
@@ -101,9 +101,9 @@ namespace FUSE
   }
 
   int
-  write_buf_null(fuse_bufvec    *src_,
-                 off_t           offset_,
-                 fuse_file_info *ffi_)
+  write_buf_null(const fuse_file_info_t *ffi_,
+                 fuse_bufvec            *src_,
+                 off_t                   offset_)
   {
     return src_->buf[0].size;
   }

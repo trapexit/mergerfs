@@ -54,10 +54,10 @@ namespace l
 namespace FUSE
 {
   int
-  read_buf(fuse_bufvec    **bufp_,
-           size_t           size_,
-           off_t            offset_,
-           fuse_file_info  *ffi_)
+  read_buf(const fuse_file_info_t  *ffi_,
+           fuse_bufvec            **bufp_,
+           size_t                   size_,
+           off_t                    offset_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

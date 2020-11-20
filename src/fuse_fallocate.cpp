@@ -40,10 +40,10 @@ namespace l
 namespace FUSE
 {
   int
-  fallocate(int             mode_,
-            off_t           offset_,
-            off_t           len_,
-            fuse_file_info *ffi_)
+  fallocate(const fuse_file_info_t *ffi_,
+            int                     mode_,
+            off_t                   offset_,
+            off_t                   len_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 

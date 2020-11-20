@@ -29,7 +29,7 @@ namespace FUSE
                uint64_t   *fh_)
   {
     int rv;
-    struct fuse_file_info ffi = {0};
+    fuse_file_info_t ffi = {0};
 
     ffi.flags = O_RDONLY|O_NOFOLLOW;
     rv = FUSE::open(fusepath_,&ffi);

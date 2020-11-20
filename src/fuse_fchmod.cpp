@@ -40,8 +40,8 @@ namespace l
 namespace FUSE
 {
   int
-  fchmod(const struct fuse_file_info *ffi_,
-         const mode_t                 mode_)
+  fchmod(const fuse_file_info_t *ffi_,
+         const mode_t            mode_)
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
