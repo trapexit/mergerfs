@@ -129,7 +129,7 @@ namespace l
     else
       {
         l::read_config(data_,is);
-        if(is.fail())
+        if(!is.eof())
           data_->errs->push_back("failure reading config file");
         is.close();
       }
