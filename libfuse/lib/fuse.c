@@ -1130,8 +1130,7 @@ queue_element_wakeup(struct fuse               *f,
 
   if(!qe->second_locked && qe->path2)
     {
-      err = try_get_path(f,qe->nodeid2,qe->name2,qe->path2,
-                         qe->wnode2,true);
+      err = try_get_path(f,qe->nodeid2,qe->name2,qe->path2,qe->wnode2,true);
       if(!err)
         qe->second_locked = true;
       else if(err != -EAGAIN)
@@ -1256,7 +1255,7 @@ get_path_common(struct fuse  *f,
   err = try_get_path(f,nodeid,name,path,wnode,true);
   if(err == -EAGAIN)
     {
-      struct lock_queue_element qe;
+      struct lock_queue_element qe = {0};
 
       qe.nodeid1 = nodeid;
       qe.name1   = name;
@@ -1352,7 +1351,7 @@ get_path2(struct fuse  *f,
                       path1,path2,wnode1,wnode2);
   if(err == -EAGAIN)
     {
-      struct lock_queue_element qe;
+      struct lock_queue_element qe = {0};
 
       qe.nodeid1 = nodeid1;
       qe.name1   = name1;
@@ -1438,7 +1437,7 @@ forget_node(struct fuse      *f,
    */
   while(node->nlookup == nlookup && node->treelock)
     {
-      struct lock_queue_element qe;
+      struct lock_queue_element qe = {0};
 
       qe.nodeid1 = nodeid;
 
