@@ -73,7 +73,7 @@ namespace fs
       return 0;
 
     dirname = fs::path::dirname(relative_);
-    if(!dirname.empty())
+    if(dirname != "/")
       {
         rv = fs::clonepath(fromsrc_,tosrc_,dirname,return_metadata_errors_);
         if(rv == -1)

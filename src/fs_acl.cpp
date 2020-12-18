@@ -31,7 +31,7 @@ namespace fs
     dir_has_defaults(const std::string &fullpath_)
     {
       int rv;
-       std::string dirpath;
+      std::string dirpath;
 
       dirpath = fs::path::dirname(fullpath_);
 
