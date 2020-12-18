@@ -40,32 +40,25 @@ namespace fs
     string
     dirname(const string &path_)
     {
-      string rv;
-      string::reverse_iterator i;
-      string::reverse_iterator ei;
+      std::size_t i;
 
-      rv = path_;
+      i = path_.size() - 1;
+      while((i > 0) && (path_[i] == '/'))
+        i--;
 
-      i  = rv.rbegin();
-      ei = rv.rend();
-      while(*i == '/' && i != ei)
-        i++;
+      while((i > 0) && (path_[i] != '/'))
+        i--;
 
-      while(*i != '/' && i != ei)
-        i++;
+      while((i > 0) && (path_[i] == '/'))
+        i--;
 
-      while(*i == '/' && i != ei)
-        i++;
-
-      rv.erase(i.base(),rv.end());
-
-      return rv;
+      return path_.substr(0,i+1);
     }
 
     string
-    basename(const string &path)
+    basename(const string &path_)
     {
-      return path.substr(path.find_last_of('/')+1);
+      return path_.substr(path_.find_last_of('/')+1);
     }
   }
 }

@@ -85,15 +85,15 @@ namespace mspmfs
 
     error = ENOENT;
     fusepath = fusepath_;
-    do
+    for(;;)
       {
         basepath = mspmfs::create_1(branches_,fusepath,&error);
         if(basepath)
           break;
-
+        if(fusepath == "/")
+          break;
         fusepath = fs::path::dirname(fusepath);
       }
-    while(!fusepath.empty());
 
     if(basepath == NULL)
       return (errno=error,-1);

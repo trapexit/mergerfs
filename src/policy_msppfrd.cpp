@@ -108,15 +108,15 @@ namespace msppfrd
     string fusepath;
 
     fusepath = fusepath_;
-    do
+    for(;;)
       {
         error = msppfrd::create_1(branches_,fusepath,branchinfo_,sum_);
         if(branchinfo_->size())
-          return error;
-
+          break;
+        if(fusepath == "/")
+          break;
         fusepath = fs::path::dirname(fusepath);
       }
-    while(!fusepath.empty());
 
     return error;
   }
