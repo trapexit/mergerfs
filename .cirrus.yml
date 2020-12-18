@@ -27,16 +27,15 @@ linux_task:
     - make STATIC=1 LTO=1
 
 linux_task:
-  name: "centos:6"
+  name: "alpine:3.12"
   container:
-    image: centos:6
+    image: alpine:3.12
     cpu: 4
     memory: 2G
   timeout_in: 10m
   script:
     - tools/install-build-pkgs
-    - make
-    - make rpm
+    - make STATIC=1 LTO=1
 
 linux_task:
   name: "centos:7"
@@ -99,6 +98,18 @@ linux_task:
     - make rpm
 
 linux_task:
+  name: "fedora:33"
+  container:
+    image: fedora:33
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
   name: "ubuntu:14.04"
   container:
     image: ubuntu:14.04
@@ -132,21 +143,6 @@ linux_task:
   name: "ubuntu:18.04"
   container:
     image: ubuntu:18.04
-    cpu: 4
-    memory: 2G
-  timeout_in: 10m
-  script:
-    - tools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "ubuntu:19.10"
-  container:
-    image: ubuntu:19.10
     cpu: 4
     memory: 2G
   timeout_in: 10m
