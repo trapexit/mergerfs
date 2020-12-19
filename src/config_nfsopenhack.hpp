@@ -20,6 +20,7 @@
 
 #include "enum.hpp"
 
+
 enum class NFSOpenHackEnum
   {
     OFF,

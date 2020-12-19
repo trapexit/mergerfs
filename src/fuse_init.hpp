@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <fuse.h>
+#include "fuse.h"
+
 
 namespace FUSE
 {

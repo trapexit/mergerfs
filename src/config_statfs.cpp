@@ -20,6 +20,7 @@
 #include "ef.hpp"
 #include "errno.hpp"
 
+
 template<>
 std::string
 StatFS::to_string() const

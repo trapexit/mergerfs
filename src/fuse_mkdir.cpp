@@ -20,15 +20,15 @@
 #include "fs_clonepath.hpp"
 #include "fs_mkdir.hpp"
 #include "fs_path.hpp"
+#include "policy.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
+
 
 namespace error
 {
@@ -84,12 +84,12 @@ namespace l
 
   static
   int
-  mkdir_loop(const string         &existingpath_,
-             const vector<string> &createpaths_,
-             const char           *fusepath_,
-             const string         &fusedirpath_,
-             const mode_t          mode_,
-             const mode_t          umask_)
+  mkdir_loop(const string &existingpath_,
+             const StrVec &createpaths_,
+             const char   *fusepath_,
+             const string &fusedirpath_,
+             const mode_t  mode_,
+             const mode_t  umask_)
   {
     int rv;
     int error;
@@ -113,8 +113,8 @@ namespace l
 
   static
   int
-  mkdir(Policy::Func::Search  searchFunc_,
-        Policy::Func::Create  createFunc_,
+  mkdir(const Policy::Search &getattrPolicy_,
+        const Policy::Create &mkdirPolicy_,
         const Branches       &branches_,
         const char           *fusepath_,
         const mode_t          mode_,
@@ -122,16 +122,16 @@ namespace l
   {
     int rv;
     string fusedirpath;
-    vector<string> createpaths;
-    vector<string> existingpaths;
+    StrVec createpaths;
+    StrVec existingpaths;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,&existingpaths);
+    rv = getattrPolicy_(branches_,fusedirpath.c_str(),&existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,&createpaths);
+    rv = mkdirPolicy_(branches_,fusedirpath.c_str(),&createpaths);
     if(rv == -1)
       return -errno;
 
@@ -150,13 +150,13 @@ namespace FUSE
   mkdir(const char *fusepath_,
         mode_t      mode_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::mkdir(config.func.getattr.policy,
-                    config.func.mkdir.policy,
-                    config.branches,
+    return l::mkdir(cfg->func.getattr.policy,
+                    cfg->func.mkdir.policy,
+                    cfg->branches,
                     fusepath_,
                     mode_,
                     fc->umask);

@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
-#include <stdint.h>
 #include <sys/stat.h>
 
 

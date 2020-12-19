@@ -21,7 +21,7 @@
 #include "policy_rv.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
@@ -86,8 +86,8 @@ namespace l
 
   static
   int
-  chown(Policy::Func::Action  actionFunc_,
-        Policy::Func::Search  searchFunc_,
+  chown(const Policy::Action &actionFunc_,
+        const Policy::Search &searchFunc_,
         const Branches       &branches_,
         const char           *fusepath_,
         const uid_t           uid_,
@@ -123,13 +123,13 @@ namespace FUSE
         uid_t       uid_,
         gid_t       gid_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read        cfg;
+    const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::chown(config.func.chown.policy,
-                    config.func.getattr.policy,
-                    config.branches,
+    return l::chown(cfg->func.chown.policy,
+                    cfg->func.getattr.policy,
+                    cfg->branches,
                     fusepath_,
                     uid_,
                     gid_);

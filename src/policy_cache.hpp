@@ -19,12 +19,14 @@
 #pragma once
 
 #include "policy.hpp"
+#include "strvec.hpp"
 
+#include <cstdint>
 #include <string>
 #include <map>
 
 #include <pthread.h>
-#include <stdint.h>
+
 
 class PolicyCache
 {
@@ -33,8 +35,8 @@ public:
   {
     Value();
 
-    uint64_t    time;
-    std::string path;
+    uint64_t time;
+    StrVec   paths;
   };
 
 public:
@@ -46,10 +48,10 @@ public:
   void clear(void);
 
 public:
-  int operator()(Policy::Func::Search &func,
+  int operator()(const Policy::Search &policy,
                  const Branches       &branches,
                  const char           *fusepath,
-                 std::string          *branch);
+                 StrVec               *paths);
 
 public:
   uint64_t timeout;

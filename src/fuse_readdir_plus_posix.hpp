@@ -18,18 +18,19 @@
 
 #pragma once
 
-#include "branch.hpp"
+#include "branches.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
-#include <stdint.h>
+#include <cstdint>
+
 
 namespace FUSE
 {
   int
-  readdir_plus_posix(const Branches &branches,
-                     const char     *dirname,
-                     const uint64_t  entry_timeout,
-                     const uint64_t  attr_timeout,
-                     fuse_dirents_t *buf);
+  readdir_plus_posix(const Branches::CPtr &branches,
+                     const char           *dirname,
+                     const uint64_t        entry_timeout,
+                     const uint64_t        attr_timeout,
+                     fuse_dirents_t       *buf);
 }

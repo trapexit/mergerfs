@@ -17,7 +17,8 @@
 #include "config.hpp"
 #include "dirinfo.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
+
 
 namespace FUSE
 {
@@ -25,11 +26,11 @@ namespace FUSE
   opendir(const char       *fusepath_,
           fuse_file_info_t *ffi_)
   {
-    const Config &config = Config::ro();
+    Config::Read cfg;
 
     ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
 
-    if(config.cache_readdir)
+    if(cfg->cache_readdir)
       {
         ffi_->keep_cache    = 1;
         ffi_->cache_readdir = 1;

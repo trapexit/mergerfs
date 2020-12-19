@@ -21,56 +21,52 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "policy_newest.hpp"
 #include "rwlock.hpp"
 
 #include <string>
-#include <vector>
 #include <limits>
 
 #include <sys/stat.h>
 
 using std::string;
-using std::vector;
 
 namespace newest
 {
   static
   int
-  create(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  create(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     time_t newest;
     struct stat st;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     newest = std::numeric_limits<time_t>::min();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_,&st))
+        if(!fs::exists(branch.path,fusepath_,&st))
           error_and_continue(error,ENOENT);
         if(st.st_mtime < newest)
           continue;
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
         newest = st.st_mtime;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -83,50 +79,36 @@ namespace newest
 
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return newest::create(branches_.vec,fusepath_,paths_);
-  }
-
-  static
-  int
-  action(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  action(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     bool readonly;
     time_t newest;
     struct stat st;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     newest = std::numeric_limits<time_t>::min();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro())
+        if(branch.ro())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_,&st))
+        if(!fs::exists(branch.path,fusepath_,&st))
           error_and_continue(error,ENOENT);
         if(st.st_mtime < newest)
           continue;
-        rv = fs::statvfs_cache_readonly(branch->path,&readonly);
+        rv = fs::statvfs_cache_readonly(branch.path,&readonly);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(readonly)
           error_and_continue(error,EROFS);
 
         newest = st.st_mtime;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -139,39 +121,25 @@ namespace newest
 
   static
   int
-  action(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return newest::action(branches_.vec,fusepath_,paths_);
-  }
-
-  static
-  int
-  search(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  search(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     time_t newest;
     struct stat st;
-    const Branch *branch;
     const string *basepath;
 
     newest = std::numeric_limits<time_t>::min();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(!fs::exists(branch->path,fusepath_,&st))
+        if(!fs::exists(branch.path,fusepath_,&st))
           continue;
         if(st.st_mtime < newest)
           continue;
 
         newest = st.st_mtime;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -181,33 +149,28 @@ namespace newest
 
     return 0;
   }
-
-  static
-  int
-  search(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return newest::search(branches_.vec,fusepath_,paths_);
-  }
 }
 
 int
-Policy::Func::newest(const Category  type_,
-                     const Branches &branches_,
-                     const char     *fusepath_,
-                     vector<string> *paths_)
+Policy::Newest::Action::operator()(const Branches::CPtr &branches_,
+                                   const char           *fusepath_,
+                                   StrVec               *paths_) const
 {
-  switch(type_)
-    {
-    case Category::CREATE:
-      return newest::create(branches_,fusepath_,paths_);
-    case Category::ACTION:
-      return newest::action(branches_,fusepath_,paths_);
-    case Category::SEARCH:
-    default:
-      return newest::search(branches_,fusepath_,paths_);
-    }
+  return ::newest::action(branches_,fusepath_,paths_);
+}
+
+int
+Policy::Newest::Create::operator()(const Branches::CPtr &branches_,
+                                   const char           *fusepath_,
+                                   StrVec               *paths_) const
+{
+  return ::newest::create(branches_,fusepath_,paths_);
+}
+
+int
+Policy::Newest::Search::operator()(const Branches::CPtr &branches_,
+                                   const char           *fusepath_,
+                                   StrVec               *paths_) const
+{
+  return ::newest::search(branches_,fusepath_,paths_);
 }

@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <sys/types.h>
+
 
 namespace FUSE
 {

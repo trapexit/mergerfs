@@ -17,12 +17,13 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct fuse_bufvec fuse_bufvec;
+
 
 namespace l
 {

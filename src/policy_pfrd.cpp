@@ -17,10 +17,12 @@
 #include "errno.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
+#include "policy_pfrd.hpp"
 #include "rnd.hpp"
-#include "rwlock.hpp"
+#include "strvec.hpp"
 
 #include <string>
 #include <vector>
@@ -40,53 +42,37 @@ namespace pfrd
 {
   static
   int
-  get_branchinfo(const BranchVec &branches_,
-                 BranchInfoVec   *branchinfo_,
-                 uint64_t        *sum_)
+  get_branchinfo(const Branches::CPtr &branches_,
+                 BranchInfoVec        *branchinfo_,
+                 uint64_t             *sum_)
   {
     int rv;
     int error;
     BranchInfo bi;
     fs::info_t info;
-    const Branch *branch;
 
     *sum_ = 0;
     error = ENOENT;
-    for(size_t i = 0, ei = branches_.size(); i < ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
         *sum_ += info.spaceavail;
 
         bi.spaceavail = info.spaceavail;
-        bi.basepath   = &branch->path;
+        bi.basepath   = &branch.path;
         branchinfo_->push_back(bi);
       }
 
     return error;
-  }
-
-  static
-  int
-  get_branchinfo(const Branches &branches_,
-                 BranchInfoVec  *branchinfo_,
-                 uint64_t       *sum_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    branchinfo_->reserve(branches_.vec.size());
-
-    return pfrd::get_branchinfo(branches_.vec,branchinfo_,sum_);
   }
 
   static
@@ -115,9 +101,9 @@ namespace pfrd
 
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
+  create(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int error;
     uint64_t sum;
@@ -136,13 +122,25 @@ namespace pfrd
 }
 
 int
-Policy::Func::pfrd(const Category  type_,
-                   const Branches &branches_,
-                   const char     *fusepath_,
-                   vector<string> *paths_)
+Policy::PFRD::Action::operator()(const Branches::CPtr &branches_,
+                                 const char           *fusepath_,
+                                 StrVec               *paths_) const
 {
-  if(type_ == Category::CREATE)
-    return pfrd::create(branches_,fusepath_,paths_);
+  return Policies::Action::eppfrd(branches_,fusepath_,paths_);
+}
 
-  return Policy::Func::eppfrd(type_,branches_,fusepath_,paths_);
+int
+Policy::PFRD::Create::operator()(const Branches::CPtr &branches_,
+                                 const char           *fusepath_,
+                                 StrVec               *paths_) const
+{
+  return ::pfrd::create(branches_,fusepath_,paths_);
+}
+
+int
+Policy::PFRD::Search::operator()(const Branches::CPtr &branches_,
+                                 const char           *fusepath_,
+                                 StrVec               *paths_) const
+{
+  return Policies::Search::eppfrd(branches_,fusepath_,paths_);
 }

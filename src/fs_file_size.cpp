@@ -18,7 +18,8 @@
 
 #include "fs_fstat.hpp"
 
-#include <stdint.h>
+#include <cstdint>
+
 
 namespace fs
 {

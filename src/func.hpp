@@ -19,203 +19,166 @@
 #pragma once
 
 #include "policy.hpp"
+#include "policies.hpp"
 #include "tofrom_string.hpp"
 
 #include <string>
-#include <iostream>
 
-class Func : public ToFromString
+
+namespace Func
 {
-public:
-  Func(const Policy &policy_)
-    : policy(&policy_)
+  namespace Base
   {
+    class Action : public ToFromString
+    {
+    public:
+      Action(Policy::ActionImpl *policy_)
+        : policy(policy_)
+      {}
+
+    public:
+      int from_string(const std::string &s) final;
+      std::string to_string() const final;
+
+    public:
+      Policy::Action policy;
+    };
+
+    class Create : public ToFromString
+    {
+    public:
+      Create(Policy::CreateImpl *policy_)
+        : policy(policy_)
+      {}
+
+    public:
+      int from_string(const std::string &s) final;
+      std::string to_string() const final;
+
+    public:
+      Policy::Create policy;
+    };
+
+    class Search : public ToFromString
+    {
+    public:
+      Search(Policy::SearchImpl *policy_)
+        : policy(policy_)
+      {}
+
+    public:
+      int from_string(const std::string &s) final;
+      std::string to_string() const final;
+
+    public:
+      Policy::Search policy;
+    };
+
+    class ActionDefault : public Action
+    {
+    public:
+      ActionDefault()
+        : Func::Base::Action(&Policies::Action::epall)
+      {
+      }
+    };
+
+    class CreateDefault : public Create
+    {
+    public:
+      CreateDefault()
+        : Func::Base::Create(&Policies::Create::epmfs)
+      {
+      }
+    };
+
+    class SearchDefault : public Search
+    {
+    public:
+      SearchDefault()
+        : Func::Base::Search(&Policies::Search::ff)
+      {
+      }
+    };
   }
 
-public:
-  int from_string(const std::string &s);
-  std::string to_string() const;
-
-public:
-  const Policy *policy;
-};
-
-class FuncAccess : public Func
-{
-public:
-  FuncAccess()
-    : Func(Policy::ff)
+  class Access final : public Base::SearchDefault
   {
-  }
-};
+  };
 
-class FuncChmod : public Func
-{
-public:
-  FuncChmod()
-    : Func(Policy::epall)
+  class Chmod final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncChown : public Func
-{
-public:
-  FuncChown()
-    : Func(Policy::epall)
+  class Chown final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncCreate : public Func
-{
-public:
-  FuncCreate()
-    : Func(Policy::epmfs)
+  class Create final : public Base::CreateDefault
   {
-  }
-};
+  };
 
-class FuncGetAttr : public Func
-{
-public:
-  FuncGetAttr()
-    : Func(Policy::ff)
+  class GetAttr final : public Base::SearchDefault
   {
-  }
-};
+  };
 
-class FuncGetXAttr : public Func
-{
-public:
-  FuncGetXAttr()
-    : Func(Policy::ff)
+  class GetXAttr final : public Base::SearchDefault
   {
-  }
-};
+  };
 
-class FuncLink : public Func
-{
-public:
-  FuncLink()
-    : Func(Policy::epall)
+  class Link final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncListXAttr : public Func
-{
-public:
-  FuncListXAttr()
-    : Func(Policy::ff)
+  class ListXAttr final : public Base::SearchDefault
   {
-  }
-};
+  };
 
-class FuncMkdir : public Func
-{
-public:
-  FuncMkdir()
-    : Func(Policy::epmfs)
+  class Mkdir final : public Base::CreateDefault
   {
-  }
-};
+  };
 
-class FuncMknod : public Func
-{
-public:
-  FuncMknod()
-    : Func(Policy::epmfs)
+  class Mknod final : public Base::CreateDefault
   {
-  }
-};
+  };
 
-class FuncOpen : public Func
-{
-public:
-  FuncOpen()
-    : Func(Policy::ff)
+  class Open final : public Base::SearchDefault
   {
-  }
-};
+  };
 
-class FuncReadlink : public Func
-{
-public:
-  FuncReadlink()
-    : Func(Policy::ff)
+  class Readlink final : public Base::SearchDefault
   {
-  }
-};
+  };
 
-class FuncRemoveXAttr : public Func
-{
-public:
-  FuncRemoveXAttr()
-    : Func(Policy::epall)
+  class RemoveXAttr final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncRename : public Func
-{
-public:
-  FuncRename()
-    : Func(Policy::epall)
+  class Rename final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncRmdir : public Func
-{
-public:
-  FuncRmdir()
-    : Func(Policy::epall)
+  class Rmdir final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncSetXAttr : public Func
-{
-public:
-  FuncSetXAttr()
-    : Func(Policy::epall)
+  class SetXAttr final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncSymlink : public Func
-{
-public:
-  FuncSymlink()
-    : Func(Policy::epmfs)
+  class Symlink final : public Base::CreateDefault
   {
-  }
-};
+  };
 
-class FuncTruncate : public Func
-{
-public:
-  FuncTruncate()
-    : Func(Policy::epall)
+  class Truncate final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncUnlink : public Func
-{
-public:
-  FuncUnlink()
-    : Func(Policy::epall)
+  class Unlink final : public Base::ActionDefault
   {
-  }
-};
+  };
 
-class FuncUtimens : public Func
-{
-public:
-  FuncUtimens()
-    : Func(Policy::epall)
+  class Utimens final : public Base::ActionDefault
   {
-  }
-};
+  };
+}

@@ -16,9 +16,9 @@
 
 #include "ef.hpp"
 
+#include <cstdint>
 #include <string>
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -27,6 +27,7 @@
 #define MB (KB * 1024UL)
 #define GB (MB * 1024UL)
 #define TB (GB * 1024UL)
+
 
 namespace num
 {

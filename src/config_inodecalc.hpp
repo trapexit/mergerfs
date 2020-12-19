@@ -20,12 +20,13 @@
 
 #include "tofrom_string.hpp"
 
+
 class InodeCalc : public ToFromString
 {
 public:
   InodeCalc(const std::string &);
 
 public:
-  std::string to_string(void) const;
-  int from_string(const std::string &);
+  std::string to_string(void) const final;
+  int from_string(const std::string &) final;
 };

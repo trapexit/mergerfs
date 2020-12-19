@@ -18,6 +18,7 @@
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
 #include "resources.hpp"
+#include "strvec.hpp"
 
 #include "fuse_access.hpp"
 #include "fuse_chmod.hpp"
@@ -66,12 +67,13 @@
 #include "fuse_write.hpp"
 #include "fuse_write_buf.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <cstdlib>
 #include <iostream>
 
 #include <string.h>
+
 
 namespace l
 {
@@ -151,10 +153,10 @@ namespace l
   main(const int   argc_,
        char      **argv_)
   {
-    Config config;
-    fuse_args                args;
-    fuse_operations          ops;
-    std::vector<std::string> errs;
+    Config::Read    cfg;
+    Config::ErrVec  errs;
+    fuse_args       args;
+    fuse_operations ops;
 
     memset(&ops,0,sizeof(fuse_operations));
 
@@ -162,22 +164,17 @@ namespace l
     args.argv      = argv_;
     args.allocated = 0;
 
-    options::parse(&args,&config,&errs);
+    options::parse(&args,&errs);
     if(errs.size())
-      {
-        for(uint64_t i = 0; i < errs.size(); i++)
-          std::cerr << "* ERROR: " << errs[i] << std::endl;
-
-        return 1;
-      }
+      std::cerr << errs << std::endl;
 
     l::setup_resources();
-    l::get_fuse_operations(ops,config.nullrw);
+    l::get_fuse_operations(ops,cfg->nullrw);
 
     return fuse_main(args.argc,
                      args.argv,
                      &ops,
-                     &config);
+                     NULL);
   }
 }
 

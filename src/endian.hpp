@@ -18,6 +18,7 @@
 
 #pragma once
 
+
 namespace endian
 {
   static

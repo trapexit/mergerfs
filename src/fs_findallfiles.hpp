@@ -18,13 +18,16 @@
 
 #pragma once
 
+#include "strvec.hpp"
+
 #include <string>
 #include <vector>
+
 
 namespace fs
 {
   void
-  findallfiles(const std::vector<std::string> &basepaths,
-               const char                     *fusepath,
-               std::vector<std::string>       *paths);
+  findallfiles(const StrVec &basepaths,
+               const char   *fusepath,
+               StrVec       *paths);
 }

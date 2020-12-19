@@ -18,10 +18,11 @@
 #include "dirinfo.hpp"
 #include "fs_fsync.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
+
 
 namespace l
 {

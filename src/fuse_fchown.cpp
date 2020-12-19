@@ -18,9 +18,10 @@
 #include "fileinfo.hpp"
 #include "fs_fchown.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <unistd.h>
+
 
 namespace l
 {

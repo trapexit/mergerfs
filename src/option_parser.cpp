@@ -25,7 +25,7 @@
 #include "str.hpp"
 #include "version.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <fstream>
 #include <iomanip>
@@ -48,12 +48,6 @@ enum
     MERGERFS_OPT_VERSION
   };
 
-struct Data
-{
-  Config         *config;
-  vector<string> *errs;
-};
-
 
 namespace l
 {
@@ -74,140 +68,81 @@ namespace l
 
     return tc;
   }
-
-  static
-  void
-  read_config(Data         *data_,
-              std::istream &is_)
-  {
-    int rv;
-    std::string key;
-    std::string val;
-    std::string line;
-
-    rv = 0;
-    while(std::getline(is_,line,'\n'))
-      {
-        line = str::trim(line);
-        if(!line.empty() && (line[0] == '#'))
-          continue;
-
-        str::splitkv(line,'=',&key,&val);
-        key = str::trim(key);
-        val = str::trim(val);
-
-        if(key.empty() || val.empty())
-          continue;
-
-        rv = data_->config->set_raw(key,val);
-        switch(rv)
-          {
-          case -EINVAL:
-            data_->errs->push_back("invalid argument - " + line);
-            break;
-          case -ENOATTR:
-            data_->errs->push_back("unknown option - " + line);
-            break;
-          default:
-            break;
-          }
-      }
-  }
-
-  static
-  void
-  read_config(Data              *data_,
-              const std::string &filepath_)
-  {
-    std::ifstream is;
-
-    is.open(filepath_);
-    if(is.bad())
-      {
-        data_->errs->push_back("unable to open config - " + filepath_);
-      }
-    else
-      {
-        l::read_config(data_,is);
-        if(!is.eof())
-          data_->errs->push_back("failure reading config file");
-        is.close();
-      }
-  }
 }
 
 static
 void
-set_option(fuse_args         *args,
-           const std::string &option_)
+set_option(const std::string &option_,
+           fuse_args         *args_)
 {
 
-  fuse_opt_add_arg(args,"-o");
-  fuse_opt_add_arg(args,option_.c_str());
+  fuse_opt_add_arg(args_,"-o");
+  fuse_opt_add_arg(args_,option_.c_str());
 }
 
 static
 void
-set_kv_option(fuse_args         *args,
-              const std::string &key,
-              const std::string &value)
+set_kv_option(const std::string &key_,
+              const std::string &val_,
+              fuse_args         *args_)
 {
   std::string option;
 
-  option = key + '=' + value;
+  option = key_ + '=' + val_;
 
-  set_option(args,option);
+  set_option(option,args_);
 }
 
 static
 void
-set_threads(fuse_args *args_,
-            Config    *config_)
+set_threads(Config::Write &cfg_,
+            fuse_args     *args_)
 {
   int threads;
 
-  threads = l::calculate_thread_count(config_->threads);
+  threads = l::calculate_thread_count(cfg_->threads);
 
-  config_->threads = threads;
+  cfg_->threads = threads;
 
-  set_kv_option(args_,"threads",config_->threads.to_string());
+  set_kv_option("threads",cfg_->threads.to_string(),args_);
 }
 
 static
 void
-set_fsname(fuse_args *args_,
-           Config    *config_)
+set_fsname(Config::Write &cfg_,
+           fuse_args     *args_)
 {
-  if(config_->fsname->empty())
+  if(cfg_->fsname->empty())
     {
-      vector<string> branches;
+      vector<string> paths;
 
-      config_->branches.to_paths(branches);
+      cfg_->branches->to_paths(paths);
 
-      if(branches.size() > 0)
-        config_->fsname = str::remove_common_prefix_and_join(branches,':');
+      if(paths.size() > 0)
+        cfg_->fsname = str::remove_common_prefix_and_join(paths,':');
     }
 
-  set_kv_option(args_,"fsname",config_->fsname);
+  set_kv_option("fsname",cfg_->fsname,args_);
 }
 
 static
 void
-set_subtype(fuse_args *args)
+set_subtype(fuse_args *args_)
 {
-  set_kv_option(args,"subtype","mergerfs");
+  set_kv_option("subtype","mergerfs",args_);
 }
 
 static
 void
-set_default_options(fuse_args *args)
+set_default_options(fuse_args *args_)
 {
-  set_option(args,"default_permissions");
+  set_option("default_permissions",args_);
 }
 
 static
 int
-parse_and_process_kv_arg(Data              *data_,
+parse_and_process_kv_arg(Config::Write     &cfg_,
+                         Config::ErrVec    *errs_,
                          const std::string &key_,
                          const std::string &val_)
 {
@@ -217,7 +152,7 @@ parse_and_process_kv_arg(Data              *data_,
 
   rv = 0;
   if(key == "config")
-    return (l::read_config(data_,val_),0);
+    return ((cfg_->from_file(val_,errs_) < 0) ? 1 : 0);
   ef(key == "attr_timeout")
     key = "cache.attr";
   ef(key == "entry_timeout")
@@ -245,57 +180,62 @@ parse_and_process_kv_arg(Data              *data_,
   ef(key == "cache.open")
     return 0;
 
-  if(data_->config->has_key(key) == false)
+  if(cfg_->has_key(key) == false)
     return 1;
 
-  rv = data_->config->set_raw(key,val);
+  rv = cfg_->set_raw(key,val);
   if(rv)
-    data_->errs->push_back("invalid argument - " + key_ + '=' + val_);
+    errs_->push_back({rv,key+'='+val});
 
   return 0;
 }
 
 static
 int
-process_opt(Data              *data_,
+process_opt(Config::Write     &cfg_,
+            Config::ErrVec    *errs_,
             const std::string &arg_)
 {
   std::string key;
   std::string val;
 
   str::splitkv(arg_,'=',&key,&val);
+  key = str::trim(key);
+  val = str::trim(val);
 
-  return parse_and_process_kv_arg(data_,key,val);
+  return parse_and_process_kv_arg(cfg_,errs_,key,val);
 }
 
 static
 int
-process_branches(Data       *data_,
-                 const char *arg_)
+process_branches(Config::Write  &cfg_,
+                 Config::ErrVec *errs_,
+                 const char     *arg_)
 {
   int rv;
   string arg;
 
   arg = arg_;
-  rv = data_->config->set_raw("branches",arg);
+  rv = cfg_->set_raw("branches",arg);
   if(rv)
-    data_->errs->push_back("unable to parse 'branches' - " + arg);
+    errs_->push_back({rv,"branches="+arg});
 
   return 0;
 }
 
 static
 int
-process_mount(Data       *data_,
-              const char *arg_)
+process_mount(Config::Write  &cfg_,
+              Config::ErrVec *errs_,
+              const char     *arg_)
 {
   int rv;
   string arg;
 
   arg = arg_;
-  rv = data_->config->set_raw("mount",arg);
+  rv = cfg_->set_raw("mount",arg);
   if(rv)
-    data_->errs->push_back("unable to set 'mount' - " + arg);
+    errs_->push_back({rv,"mount="+arg});
 
   return 1;
 }
@@ -412,18 +352,19 @@ option_processor(void       *data_,
                  int         key_,
                  fuse_args  *outargs_)
 {
-  Data *data = (Data*)data_;
+  Config::Write cfg;
+  Config::ErrVec *errs = (Config::ErrVec*)data_;
 
   switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      return process_opt(data,arg_);
+      return process_opt(cfg,errs,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
-      if(data->config->branches.vec.empty())
-        return process_branches(data,arg_);
+      if(cfg->branches->empty())
+        return process_branches(cfg,errs,arg_);
       else
-        return process_mount(data,arg_);
+        return process_mount(cfg,errs,arg_);
 
     case MERGERFS_OPT_HELP:
       usage();
@@ -445,11 +386,10 @@ option_processor(void       *data_,
 namespace options
 {
   void
-  parse(fuse_args                *args_,
-        Config                   *config_,
-        std::vector<std::string> *errs_)
+  parse(fuse_args      *args_,
+        Config::ErrVec *errs_)
   {
-    Data data;
+    Config::Write cfg;
     const struct fuse_opt opts[] =
       {
         FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
@@ -460,21 +400,19 @@ namespace options
         {NULL,-1U,0}
       };
 
-    data.config = config_;
-    data.errs   = errs_;
     fuse_opt_parse(args_,
-                   &data,
+                   errs_,
                    opts,
                    ::option_processor);
 
-    if(config_->branches.vec.empty())
-      errs_->push_back("branches not set");
-    if(config_->mount->empty())
-      errs_->push_back("mountpoint not set");
+    if(cfg->branches->empty())
+      errs_->push_back({0,"branches not set"});
+    if(cfg->mount->empty())
+      errs_->push_back({0,"mountpoint not set"});
 
     set_default_options(args_);
-    set_fsname(args_,config_);
+    set_fsname(cfg,args_);
     set_subtype(args_);
-    set_threads(args_,config_);
+    set_threads(cfg,args_);
   }
 }

@@ -20,8 +20,10 @@
 
 #include "wyhash.h"
 
-#include <stdint.h>
+#include <cstdint>
+
 #include <sys/time.h>
+
 
 static uint64_t G_SEED;
 static RND      G_RND;

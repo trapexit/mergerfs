@@ -21,13 +21,14 @@
 #include "fs_path.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
 
 using std::string;
 using std::vector;
+
 
 namespace error
 {
@@ -73,11 +74,11 @@ namespace l
 
   static
   int
-  link_create_path_loop(const vector<string> &oldbasepaths_,
-                        const string         &newbasepath_,
-                        const char           *oldfusepath_,
-                        const char           *newfusepath_,
-                        const string         &newfusedirpath_)
+  link_create_path_loop(const StrVec &oldbasepaths_,
+                        const string &newbasepath_,
+                        const char   *oldfusepath_,
+                        const char   *newfusepath_,
+                        const string &newfusedirpath_)
   {
     int rv;
     int error;
@@ -99,16 +100,16 @@ namespace l
 
   static
   int
-  link_create_path(Policy::Func::Search  searchFunc_,
-                   Policy::Func::Action  actionFunc_,
+  link_create_path(const Policy::Search &searchFunc_,
+                   const Policy::Action &actionFunc_,
                    const Branches       &branches_,
                    const char           *oldfusepath_,
                    const char           *newfusepath_)
   {
     int rv;
     string newfusedirpath;
-    vector<string> oldbasepaths;
-    vector<string> newbasepaths;
+    StrVec oldbasepaths;
+    StrVec newbasepaths;
 
     rv = actionFunc_(branches_,oldfusepath_,&oldbasepaths);
     if(rv == -1)
@@ -127,8 +128,8 @@ namespace l
 
   static
   int
-  clonepath_if_would_create(Policy::Func::Search  searchFunc_,
-                            Policy::Func::Create  createFunc_,
+  clonepath_if_would_create(const Policy::Search &searchFunc_,
+                            const Policy::Create &createFunc_,
                             const Branches       &branches_,
                             const string         &oldbasepath_,
                             const char           *oldfusepath_,
@@ -136,7 +137,7 @@ namespace l
   {
     int rv;
     string newfusedirpath;
-    vector<string> newbasepath;
+    StrVec newbasepath;
 
     newfusedirpath = fs::path::dirname(newfusepath_);
 
@@ -156,8 +157,8 @@ namespace l
 
   static
   int
-  link_preserve_path_core(Policy::Func::Search  searchFunc_,
-                          Policy::Func::Create  createFunc_,
+  link_preserve_path_core(const Policy::Search &searchFunc_,
+                          const Policy::Create &createFunc_,
                           const Branches       &branches_,
                           const string         &oldbasepath_,
                           const char           *oldfusepath_,
@@ -187,12 +188,12 @@ namespace l
 
   static
   int
-  link_preserve_path_loop(Policy::Func::Search  searchFunc_,
-                          Policy::Func::Create  createFunc_,
+  link_preserve_path_loop(const Policy::Search &searchFunc_,
+                          const Policy::Create &createFunc_,
                           const Branches       &branches_,
                           const char           *oldfusepath_,
                           const char           *newfusepath_,
-                          const vector<string> &oldbasepaths_)
+                          const StrVec         &oldbasepaths_)
   {
     int error;
 
@@ -211,15 +212,15 @@ namespace l
 
   static
   int
-  link_preserve_path(Policy::Func::Search  searchFunc_,
-                     Policy::Func::Action  actionFunc_,
-                     Policy::Func::Create  createFunc_,
+  link_preserve_path(const Policy::Search &searchFunc_,
+                     const Policy::Action &actionFunc_,
+                     const Policy::Create &createFunc_,
                      const Branches       &branches_,
                      const char           *oldfusepath_,
                      const char           *newfusepath_)
   {
     int rv;
-    vector<string> oldbasepaths;
+    StrVec oldbasepaths;
 
     rv = actionFunc_(branches_,oldfusepath_,&oldbasepaths);
     if(rv == -1)
@@ -238,21 +239,21 @@ namespace FUSE
   link(const char *from_,
        const char *to_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    if(config.func.create.policy->path_preserving() && !config.ignorepponrename)
-      return l::link_preserve_path(config.func.getattr.policy,
-                                   config.func.link.policy,
-                                   config.func.create.policy,
-                                   config.branches,
+    if(cfg->func.create.policy.path_preserving() && !cfg->ignorepponrename)
+      return l::link_preserve_path(cfg->func.getattr.policy,
+                                   cfg->func.link.policy,
+                                   cfg->func.create.policy,
+                                   cfg->branches,
                                    from_,
                                    to_);
 
-    return l::link_create_path(config.func.link.policy,
-                               config.func.create.policy,
-                               config.branches,
+    return l::link_create_path(cfg->func.getattr.policy,
+                               cfg->func.link.policy,
+                               cfg->branches,
                                from_,
                                to_);
   }

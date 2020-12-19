@@ -18,15 +18,12 @@
 
 #include "config.hpp"
 
-#include <string>
-#include <vector>
+#include "fuse.h"
 
-#include <fuse.h>
 
 namespace options
 {
   void
-  parse(fuse_args                *args,
-        Config                   *config,
-        std::vector<std::string> *errs);
+  parse(fuse_args      *args,
+        Config::ErrVec *errs);
 }

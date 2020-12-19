@@ -18,6 +18,7 @@
 
 #include <sys/stat.h>
 
+
 namespace FUSE
 {
   int

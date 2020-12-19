@@ -58,13 +58,20 @@ LTO_FLAGS :=
 endif
 
 SRC	    = $(wildcard src/*.cpp)
-OBJS        = $(SRC:src/%.cpp=build/%.o)
-DEPS        = $(SRC:src/%.cpp=build/%.d)
+OBJS        = $(SRC:src/%.cpp=build/.src/%.o)
+DEPS        = $(SRC:src/%.cpp=build/.src/%.d)
+
+TESTS       = $(wildcard tests/*.cpp)
+TESTS_OBJS  = $(filter-out build/.src/mergerfs.o,$(OBJS))
+TESTS_OBJS += $(TESTS:tests/%.cpp=build/.tests/%.o)
+TESTS_DEPS  = $(TESTS:tests/%.cpp=build/.tests/%.d)
+TESTS_DEPS += $(DEPS)
+
 MANPAGE     = mergerfs.1
 CXXFLAGS    ?= ${OPT_FLAGS}
 CXXFLAGS    := \
               ${CXXFLAGS} \
-              -std=c++0x \
+              -std=c++11 \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
               -Wall \
@@ -77,6 +84,9 @@ FUSE_FLAGS = \
 MFS_FLAGS  = \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
+TESTS_FLAGS = \
+              -Isrc \
+              -DTESTS
 
 LDFLAGS := \
     ${LDFLAGS} \
@@ -110,10 +120,18 @@ help:
 objects: version build/stamp
 	$(MAKE) $(OBJS)
 
+tests-objects:
+	$(MAKE) $(TESTS_OBJS)
+
 build/mergerfs: libfuse objects
 	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
 
+build/tests: build/mergerfs tests-objects
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
+
 mergerfs: build/mergerfs
+
+tests: build/tests
 
 changelog:
 ifeq ($(GIT_REPO),1)
@@ -127,11 +145,15 @@ version:
 	tools/update-version
 
 build/stamp:
-	$(MKDIR) -p build
+	$(MKDIR) -p build/.src build/.tests
 	$(TOUCH) $@
 
-build/%.o: src/%.cpp
+build/.src/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
+
+build/.tests/%.o: tests/%.cpp
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
+
 
 .PHONY: clean
 clean: rpm-clean
