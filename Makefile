@@ -64,7 +64,7 @@ MANPAGE     = mergerfs.1
 CXXFLAGS    ?= ${OPT_FLAGS}
 CXXFLAGS    := \
               ${CXXFLAGS} \
-              -std=c++11 \
+              -std=c++14 \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
               -Wall \
