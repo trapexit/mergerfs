@@ -181,7 +181,7 @@ To have the pool mounted at boot or otherwise accessible from related tools use 
 
 ```
 # <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other,use_ino   0       0
+/mnt/disk\*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other,use_ino   0       0
 ```
 
 **NOTE:** the globbing is done at mount or when updated using the runtime API. If a new directory is added matching the glob after the fact it will not be automatically included.
