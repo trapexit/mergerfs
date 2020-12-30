@@ -42,7 +42,7 @@ Can turn read\-only files into symlinks to underlying file
 .IP \[bu] 2
 Hard link copy\-on\-write / CoW
 .IP \[bu] 2
-supports POSIX ACLs
+Support for POSIX ACLs
 .SH HOW IT WORKS
 .PP
 mergerfs logically merges multiple paths together.
@@ -74,14 +74,14 @@ A\ \ \ \ \ \ \ \ \ +\ \ \ \ \ \ B\ \ \ \ \ \ \ \ =\ \ \ \ \ \ \ C
 \f[]
 .fi
 .PP
-mergerfs does \f[B]not\f[] support the copy\-on\-write (CoW) behavior
-found in \f[B]aufs\f[] and \f[B]overlayfs\f[].
+mergerfs does \f[B]NOT\f[] support the copy\-on\-write (CoW) or whiteout
+behaviors found in \f[B]aufs\f[] and \f[B]overlayfs\f[].
 You can \f[B]not\f[] mount a read\-only filesystem and write to it.
 However, mergerfs will ignore read\-only drives when creating new files
 so you can mix read\-write and read\-only drives.
-It also does \f[B]not\f[] split data across drives.
+It also does \f[B]NOT\f[] split data across drives.
 It is not RAID0 / striping.
-It is simply a union.
+It is simply a union of other filesystems.
 .SH TERMINOLOGY
 .IP \[bu] 2
 branch: A base path used in the pool.
@@ -91,11 +91,12 @@ The union of the branches.
 .IP \[bu] 2
 relative path: The path in the pool relative to the branch and mount.
 .IP \[bu] 2
+function: A filesystem call (open, unlink, create, getattr, rmdir, etc.)
+.IP \[bu] 2
+category: A collection of functions based on basic behavior (action,
+create, search).
+.IP \[bu] 2
 policy: The algorithm used to select a file when performing a function.
-.IP \[bu] 2
-function: A filesystem call (open, unlink, create, getattr, etc.)
-.IP \[bu] 2
-category: A collection of functions (action, create, search).
 .IP \[bu] 2
 path preservation: Aspect of some policies which includes checking the
 path for which a file would be created.
@@ -103,21 +104,26 @@ path for which a file would be created.
 .PP
 If you don\[aq]t already know that you have a special use case then just
 start with one of the following option sets.
+.SS You need \f[C]mmap\f[] (used by rtorrent and many sqlite3 base
+software)
+.PP
+\f[C]allow_other,use_ino,cache.files=partial,dropcacheonclose=true,category.create=mfs\f[]
 .SS You don\[aq]t need \f[C]mmap\f[]
 .PP
-\f[C]use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs\f[]
-.SS You do need \f[C]mmap\f[] (used by rtorrent and some other programs)
-.PP
-\f[C]use_ino,cache.files=partial,dropcacheonclose=true,allow_other,category.create=mfs\f[]
+\f[C]allow_other,use_ino,cache.files=off,dropcacheonclose=true,category.create=mfs\f[]
 .PP
 See the mergerfs wiki for real world
 deployments (https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments)
 for comparisons / ideas.
 .SH OPTIONS
+.PP
+These options are the same regardless you use them with the
+\f[C]mergerfs\f[] commandline program, used in fstab, or in a config
+file.
 .SS mount options
 .IP \[bu] 2
 \f[B]config\f[]: Path to a config file.
-Same arguments as below in key=val format.
+Same arguments as below in key=val / ini style format.
 .IP \[bu] 2
 \f[B]branches\f[]: Colon delimited list of branches.
 .IP \[bu] 2
@@ -163,7 +169,7 @@ be reported as symlinks to the original files.
 Please read more below before using.
 (default: false)
 .IP \[bu] 2
-\f[B]symlinkify_timeout=INT\f[]: Time to wait, in seconds, to activate
+\f[B]symlinkify_timeout=UINT\f[]: Time to wait, in seconds, to activate
 the \f[B]symlinkify\f[] behavior.
 (default: 3600)
 .IP \[bu] 2
@@ -227,7 +233,7 @@ pending read request per file handle and will attempt to order requests
 by offset.
 (default: true)
 .IP \[bu] 2
-\f[B]fuse_msg_size=INT\f[]: Set the max number of pages per FUSE
+\f[B]fuse_msg_size=UINT\f[]: Set the max number of pages per FUSE
 message.
 Only available on Linux >= 4.20 and ignored otherwise.
 (min: 1; max: 256; default: 256)
@@ -254,24 +260,32 @@ longest common prefix removed.
 See below for the list of value types.
 Example: \f[B]func.getattr=newest\f[]
 .IP \[bu] 2
-\f[B]category.CATEGORY=POLICY\f[]: Sets policy of all FUSE functions in
-the provided category.
-See POLICIES section for defaults.
-Example: \f[B]category.create=mfs\f[]
+\f[B]category.action=POLICY\f[]: Sets policy of all FUSE functions in
+the action category.
+(default: epall)
 .IP \[bu] 2
-\f[B]cache.open=INT\f[]: \[aq]open\[aq] policy cache timeout in seconds.
+\f[B]category.create=POLICY\f[]: Sets policy of all FUSE functions in
+the create category.
+(default: epmfs)
+.IP \[bu] 2
+\f[B]category.search=POLICY\f[]: Sets policy of all FUSE functions in
+the search category.
+(default: ff)
+.IP \[bu] 2
+\f[B]cache.open=UINT\f[]: \[aq]open\[aq] policy cache timeout in
+seconds.
 (default: 0)
 .IP \[bu] 2
-\f[B]cache.statfs=INT\f[]: \[aq]statfs\[aq] cache timeout in seconds.
+\f[B]cache.statfs=UINT\f[]: \[aq]statfs\[aq] cache timeout in seconds.
 (default: 0)
 .IP \[bu] 2
-\f[B]cache.attr=INT\f[]: File attribute cache timeout in seconds.
+\f[B]cache.attr=UINT\f[]: File attribute cache timeout in seconds.
 (default: 1)
 .IP \[bu] 2
-\f[B]cache.entry=INT\f[]: File name lookup cache timeout in seconds.
+\f[B]cache.entry=UINT\f[]: File name lookup cache timeout in seconds.
 (default: 1)
 .IP \[bu] 2
-\f[B]cache.negative_entry=INT\f[]: Negative file name lookup cache
+\f[B]cache.negative_entry=UINT\f[]: Negative file name lookup cache
 timeout in seconds.
 (default: 0)
 .IP \[bu] 2
@@ -315,22 +329,24 @@ setting.
 .IP \[bu] 2
 BOOL = \[aq]true\[aq] | \[aq]false\[aq]
 .IP \[bu] 2
-INT = [0,MAX_INT]
+INT = [MIN_INT,MAX_INT]
+.IP \[bu] 2
+UINT = [0,MAX_INT]
 .IP \[bu] 2
 SIZE = \[aq]NNM\[aq]; NN = INT, M = \[aq]K\[aq] | \[aq]M\[aq] |
 \[aq]G\[aq] | \[aq]T\[aq]
 .IP \[bu] 2
 STR = string
 .IP \[bu] 2
-FUNC = FUSE function
+FUNC = filesystem function
 .IP \[bu] 2
-CATEGORY = FUSE function category
+CATEGORY = function category
 .IP \[bu] 2
 POLICY = mergerfs function policy
 .SS branches
 .PP
-The \[aq]branches\[aq] (formerly \[aq]srcmounts\[aq]) argument is a
-colon (\[aq]:\[aq]) delimited list of paths to be pooled together.
+The \[aq]branches\[aq] argument is a colon (\[aq]:\[aq]) delimited list
+of paths to be pooled together.
 It does not matter if the paths are on the same or different drives nor
 does it matter the filesystem (within reason).
 Used and available space will not be duplicated for paths on the same
@@ -613,7 +629,7 @@ If set to \f[C]git\f[] it will only perform the hack when the path in
 question includes \f[C]/.git/\f[].
 \f[C]all\f[] will result it it applying anytime a readonly file which is
 empty is opened for writing.
-.SH FUNCTIONS / POLICIES / CATEGORIES
+.SH FUNCTIONS, CATEGORIES and POLICIES
 .PP
 The POSIX filesystem API is made up of a number of functions.
 \f[B]creat\f[], \f[B]stat\f[], \f[B]chown\f[], etc.
@@ -621,34 +637,34 @@ For ease of configuration in mergerfs most of the core functions are
 grouped into 3 categories: \f[B]action\f[], \f[B]create\f[], and
 \f[B]search\f[].
 These functions and categories can be assigned a policy which dictates
-which underlying branch/file/directory is chosen when performing that
-behavior.
-Any policy can be assigned to a function or category though some may not
-be very useful in practice.
-For instance: \f[B]rand\f[] (random) may be useful for file creation
-(create) but could lead to very odd behavior if used for \f[C]chmod\f[]
-if there were more than one copy of the file.
+which branch is chosen when performing that function.
 .PP
 Some functions, listed in the category \f[C]N/A\f[] below, can not be
 assigned the normal policies.
-All functions which work on file handles use the handle which was
-acquired by \f[C]open\f[] or \f[C]create\f[].
-\f[C]readdir\f[] has no real need for a policy given the purpose is
-merely to return a list of entries in a directory.
-\f[C]statfs\f[]\[aq]s behavior can be modified via other options.
+These functions work with file handles, rather than file paths, which
+were created by \f[C]open\f[] or \f[C]create\f[].
 That said many times the current FUSE kernel driver will not always
 provide the file handle when a client calls \f[C]fgetattr\f[],
 \f[C]fchown\f[], \f[C]fchmod\f[], \f[C]futimens\f[], \f[C]ftruncate\f[],
 etc.
 This means it will call the regular, path based, versions.
+\f[C]readdir\f[] has no real need for a policy given the purpose is
+merely to return a list of entries in a directory.
+\f[C]statfs\f[]\[aq]s behavior can be modified via other options.
 .PP
 When using policies which are based on a branch\[aq]s available space
 the base path provided is used.
 Not the full path to the file in question.
-Meaning that sub mounts won\[aq]t be considered in the space
+Meaning that mounts in the branch won\[aq]t be considered in the space
 calculations.
 The reason is that it doesn\[aq]t really work for non\-path preserving
 policies and can lead to non\-obvious behaviors.
+.PP
+NOTE: While any policy can be assigned to a function or category though
+some may not be very useful in practice.
+For instance: \f[B]rand\f[] (random) may be useful for file creation
+(create) but could lead to very odd behavior if used for \f[C]chmod\f[]
+if there were more than one copy of the file.
 .SS Functions and their Category classifications
 .PP
 .TS
@@ -685,8 +701,44 @@ fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl
 T}
 .TE
 .PP
-In cases where something may be searched (to confirm a directory exists
-across all source mounts) \f[B]getattr\f[] will be used.
+In cases where something may be searched for (such as a path to clone)
+\f[B]getattr\f[] will usually be used.
+.SS Policies
+.PP
+A policy is the algorithm used to choose a branch or branches for a
+function to work on.
+Think of them as ways to filter and sort branches.
+.PP
+Any function in the \f[C]create\f[] category will clone the relative
+path if needed.
+Some other functions (\f[C]rename\f[],\f[C]link\f[],\f[C]ioctl\f[]) have
+special requirements or behaviors which you can read more about below.
+.SS Filtering
+.PP
+Policies basically search branches and create a list of files / paths
+for functions to work on.
+The policy is responsible for filtering and sorting the branches.
+Filters include \f[B]minfreespace\f[], whether or not a branch is
+mounted read\-only, and the branch tagging (RO,NC,RW).
+These filters are applied across all policies unless otherwise noted.
+.IP \[bu] 2
+No \f[B]search\f[] function policies filter.
+.IP \[bu] 2
+All \f[B]action\f[] function policies filter out branches which are
+mounted \f[B]read\-only\f[] or tagged as \f[B]RO (read\-only)\f[].
+.IP \[bu] 2
+All \f[B]create\f[] function policies filter out branches which are
+mounted \f[B]read\-only\f[], tagged \f[B]RO (read\-only)\f[] or \f[B]NC
+(no create)\f[], or has available space less than \f[C]minfreespace\f[].
+.PP
+Policies may have their own additional filtering such as those that
+require existing paths to be present.
+.PP
+If all branches are filtered an error will be returned.
+Typically \f[B]EROFS\f[] (read\-only filesystem) or \f[B]ENOSPC\f[] (no
+space left on device) depending on the most recent reason for filtering
+a branch.
+\f[B]ENOENT\f[] will be returned if no elegible branch is found.
 .SS Path Preservation
 .PP
 Policies, as described below, are of two basic types.
@@ -709,33 +761,14 @@ defined as \f[C]path\ preserving\f[] for the purpose of controlling
 \f[C]ignorepponrename\f[] is available to disable that behavior.
 In mergerfs v3.0 the path preserving behavior of rename and link will
 likely be separated from the policy all together.
-.SS Filters
-.PP
-Policies basically search branches and create a list of files / paths
-for functions to work on.
-The policy is responsible for filtering and sorting.
-Filters include \f[B]minfreespace\f[], whether or not a branch is
-mounted read\-only, and the branch tagging (RO,NC,RW).
-The policy defines the sorting but filtering is mostly uniform as
-described below.
-.IP \[bu] 2
-No \f[B]search\f[] policies filter.
-.IP \[bu] 2
-All \f[B]action\f[] policies will filter out branches which are mounted
-\f[B]read\-only\f[] or tagged as \f[B]RO (read\-only)\f[].
-.IP \[bu] 2
-All \f[B]create\f[] policies will filter out branches which are mounted
-\f[B]read\-only\f[], tagged \f[B]RO (read\-only)\f[] or \f[B]NC (no
-create)\f[], or has available space less than \f[C]minfreespace\f[].
-.PP
-If all branches are filtered an error will be returned.
-Typically \f[B]EROFS\f[] (read\-only filesystem) or \f[B]ENOSPC\f[] (no
-space left on device) depending on the most recent reason for filtering
-a branch.
 .SS Policy descriptions
 .PP
-Because of the nature of the behavior the policies act differently
-depending on the function it is used with (based on the category).
+A policy\[aq]s behavior differs, as mentioned above, based on the
+function it is used with.
+Sometimes it really might not make sense to even offer certain policies
+because they are literally the same as others but it makes things a bit
+more uniform.
+In mergerfs 3.0 this might change.
 .PP
 .TS
 tab(@);
@@ -930,38 +963,6 @@ When \f[C]ioctl\f[] is used with an open file then it will use the file
 handle which was created at the original \f[C]open\f[] call.
 However, when using \f[C]ioctl\f[] with a directory mergerfs will use
 the \f[C]open\f[] policy to find the directory to act on.
-.SS unlink
-.PP
-In FUSE there is an opaque "file handle" which is created by
-\f[C]open\f[], \f[C]create\f[], or \f[C]opendir\f[], passed to the
-kernel, and then is passed back to the FUSE userland application by the
-kernel.
-Unfortunately, the FUSE kernel driver does not always send the file
-handle when it theoretically could/should.
-This complicates certain behaviors / workflows particularly in the high
-level API.
-As a result mergerfs is currently doing a few hacky things.
-.PP
-libfuse2 and libfuse3, when using the high level API, will rename names
-to \f[C]\&.fuse_hiddenXXXXXX\f[] if the file is open when unlinked or
-renamed over.
-It does this so the file is still available when a request referencing
-the now missing file is made.
-This file however keeps a \f[C]rmdir\f[] from succeeding and can be
-picked up by software reading directories.
-.PP
-The change mergerfs has done is that if a file is open when an unlink or
-rename happens it will open the file and keep it open till closed by all
-those who opened it prior.
-When a request comes in referencing that file and it doesn\[aq]t include
-a file handle it will instead use the file handle created at
-unlink/rename time.
-.PP
-This won\[aq]t result in technically proper behavior but close enough
-for many usecases.
-.PP
-The plan is to rewrite mergerfs to use the low level API so these
-invasive libfuse changes are no longer necessary.
 .SS rename & link
 .PP
 \f[B]NOTE:\f[] If you\[aq]re receiving errors from software when files
@@ -1152,7 +1153,7 @@ $\ wget\ https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs\-
 $\ cd\ mergerfs
 $\ sudo\ tools/install\-build\-pkgs
 $\ make\ deb
-$\ sudo\ dpkg\ \-i\ ../mergerfs_version_arch.deb
+$\ sudo\ dpkg\ \-i\ ../mergerfs_<version>_<arch>.deb
 \f[]
 .fi
 .SS RHEL / CentOS /Fedora
@@ -1449,9 +1450,6 @@ most filled to the least filled
 mergerfs.consolidate: move files within a single mergerfs directory to
 the drive with most free space
 .IP \[bu] 2
-mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible
-directories on a mergerfs mount
-.IP \[bu] 2
 https://github.com/trapexit/scorch
 .IP \[bu] 2
 scorch: A tool to help discover silent corruption of files and keep
@@ -1741,7 +1739,7 @@ do
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ head\ \-n\ 1\ |\ \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cut\ \-d\[aq]\ \[aq]\ \-f2\-)
 \ \ \ \ test\ \-n\ "${FILE}"
-\ \ \ \ rsync\ \-axqHAXWES\ \-\-preallocate\ \-\-remove\-source\-files\ "${CACHE}/./${FILE}"\ "${BACKING}/"
+\ \ \ \ rsync\ \-axqHAXWESR\ \-\-preallocate\ \-\-remove\-source\-files\ "${CACHE}/./${FILE}"\ "${BACKING}/"
 done
 \f[]
 .fi
@@ -1892,6 +1890,13 @@ $\ dd\ if=/mnt/mergerfs/1GB.file\ of=/dev/null\ bs=1M\ count=1024\ iflag=nocache
 \f[]
 .fi
 .SH TIPS / NOTES
+.IP \[bu] 2
+This document is very literal and thorough.
+Unless there is a bug things work as described.
+If a suspected feature isn\[aq]t mentioned it doesn\[aq]t exist.
+.IP \[bu] 2
+Ensure you\[aq]re using the latest version.
+Few distros have the latest version.
 .IP \[bu] 2
 \f[B]use_ino\f[] will only work when used with mergerfs 2.18.0 and
 above.
