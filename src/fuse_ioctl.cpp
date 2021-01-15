@@ -27,7 +27,7 @@
 #include "str.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
@@ -134,7 +134,7 @@ namespace l
 
   static
   int
-  ioctl_dir_base(Policy::Func::Search  searchFunc_,
+  ioctl_dir_base(const Policy::Search &searchFunc_,
                  const Branches       &branches_,
                  const char           *fusepath_,
                  const uint32_t        cmd_,
@@ -144,7 +144,7 @@ namespace l
     int fd;
     int rv;
     string fullpath;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -170,13 +170,13 @@ namespace l
             void                   *data_,
             uint32_t               *out_bufsz_)
   {
-    DirInfo            *di     = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read        cfg;
+    DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::ioctl_dir_base(config.func.open.policy,
-                             config.branches,
+    return l::ioctl_dir_base(cfg->func.open.policy,
+                             cfg->branches,
                              di->fusepath.c_str(),
                              cmd_,
                              data_,
@@ -203,10 +203,10 @@ namespace l
   int
   read_keys(void *data_)
   {
-    std::string   keys;
-    const Config &config = Config::ro();
+    Config::Read cfg;
+    std::string  keys;
 
-    config.keys(keys);
+    cfg->keys(keys);
 
     return l::strcpy(keys,data_);
   }
@@ -215,17 +215,17 @@ namespace l
   int
   read_val(void *data_)
   {
+    Config::Read cfg;
     int rv;
     char *data;
     std::string key;
     std::string val;
-    const Config &config = Config::ro();
 
     data = (char*)data_;
     data[sizeof(IOCTL_BUF) - 1] = '\0';
 
     key = data;
-    rv = config.get(key,&val);
+    rv = cfg->get(key,&val);
     if(rv < 0)
       return rv;
 
@@ -236,11 +236,11 @@ namespace l
   int
   write_val(void *data_)
   {
+    Config::Write cfg;
     char *data;
     std::string kv;
     std::string key;
     std::string val;
-    Config &config = Config::rw();
 
     data = (char*)data_;
     data[sizeof(IOCTL_BUF) - 1] = '\0';
@@ -248,18 +248,18 @@ namespace l
     kv = data;
     str::splitkv(kv,'=',&key,&val);
 
-    return config.set(key,val);
+    return cfg->set(key,val);
   }
 
   static
   int
-  file_basepath(Policy::Func::Search  searchFunc_,
+  file_basepath(const Policy::Search &searchFunc_,
                 const Branches       &branches_,
                 const char           *fusepath_,
                 void                 *data_)
   {
     int rv;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -273,11 +273,11 @@ namespace l
   file_basepath(const fuse_file_info_t *ffi_,
                 void                   *data_)
   {
-    const Config &config   = Config::ro();
+    Config::Read cfg;
     std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
-    return l::file_basepath(config.func.open.policy,
-                            config.branches,
+    return l::file_basepath(cfg->func.open.policy,
+                            cfg->branches,
                             fusepath.c_str(),
                             data_);
   }
@@ -294,14 +294,14 @@ namespace l
 
   static
   int
-  file_fullpath(Policy::Func::Search  searchFunc_,
+  file_fullpath(const Policy::Search &searchFunc_,
                 const Branches       &branches_,
                 const string         &fusepath_,
                 void                 *data_)
   {
     int rv;
     string fullpath;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -317,11 +317,11 @@ namespace l
   file_fullpath(const fuse_file_info_t *ffi_,
                 void                   *data_)
   {
-    const Config &config   = Config::ro();
+    Config::Read cfg;
     std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
-    return l::file_fullpath(config.func.open.policy,
-                            config.branches,
+    return l::file_fullpath(cfg->func.open.policy,
+                            cfg->branches,
                             fusepath,
                             data_);
   }
@@ -331,13 +331,13 @@ namespace l
   file_allpaths(const fuse_file_info_t *ffi_,
                 void                   *data_)
   {
+    Config::Read cfg;
     string concated;
-    vector<string> paths;
-    vector<string> branches;
+    StrVec paths;
+    StrVec branches;
     string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
-    const Config &config = Config::ro();
 
-    config.branches.to_paths(branches);
+    cfg->branches->to_paths(branches);
 
     fs::findallfiles(branches,fusepath.c_str(),&paths);
 

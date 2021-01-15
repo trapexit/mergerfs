@@ -21,16 +21,14 @@
 #include "policy_rv.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
-#include <vector>
 
 #include <sys/types.h>
 #include <unistd.h>
 
 using std::string;
-using std::vector;
 
 
 namespace l
@@ -74,10 +72,10 @@ namespace l
 
   static
   void
-  truncate_loop(const vector<string> &basepaths_,
-                const char           *fusepath_,
-                const off_t           size_,
-                PolicyRV             *prv_)
+  truncate_loop(const StrVec &basepaths_,
+                const char   *fusepath_,
+                const off_t   size_,
+                PolicyRV     *prv_)
   {
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
@@ -87,15 +85,15 @@ namespace l
 
   static
   int
-  truncate(Policy::Func::Action  actionFunc_,
-           Policy::Func::Search  searchFunc_,
+  truncate(const Policy::Action &actionFunc_,
+           const Policy::Search &searchFunc_,
            const Branches       &branches_,
            const char           *fusepath_,
            const off_t           size_)
   {
     int rv;
     PolicyRV prv;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -122,13 +120,13 @@ namespace FUSE
   truncate(const char *fusepath_,
            off_t       size_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::truncate(config.func.truncate.policy,
-                       config.func.getattr.policy,
-                       config.branches,
+    return l::truncate(cfg->func.truncate.policy,
+                       cfg->func.getattr.policy,
+                       cfg->branches,
                        fusepath_,
                        size_);
   }

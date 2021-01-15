@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "branch.hpp"
+#include "branches.hpp"
 #include "errno.hpp"
 #include "fs_close.hpp"
 #include "fs_devid.hpp"
@@ -28,8 +28,8 @@
 #include "linux_dirent64.h"
 #include "mempools.hpp"
 
-#include <fuse.h>
-#include <fuse_dirents.h>
+#include "fuse.h"
+#include "fuse_dirents.h"
 
 #include <string>
 #include <vector>
@@ -53,11 +53,11 @@ namespace l
 
   static
   int
-  readdir_plus(const BranchVec &branches_,
-               const char      *dirname_,
-               const uint64_t   entry_timeout_,
-               const uint64_t   attr_timeout_,
-               fuse_dirents_t  *buf_)
+  readdir_plus(const Branches::CPtr &branches_,
+               const char           *dirname_,
+               const uint64_t        entry_timeout_,
+               const uint64_t        attr_timeout_,
+               fuse_dirents_t       *buf_)
   {
     int rv;
     dev_t dev;
@@ -78,20 +78,17 @@ namespace l
     entry.attr_valid       = attr_timeout_;
     entry.entry_valid_nsec = 0;
     entry.attr_valid_nsec  = 0;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
         int dirfd;
         int64_t nread;
 
-        basepath = fs::path::make(branches_[i].path,dirname_);
+        basepath = fs::path::make(branch.path,dirname_);
 
         dirfd = fs::open_dir_ro(basepath);
         if(dirfd == -1)
           continue;
-
         dev = fs::devid(dirfd);
-        if(dev == (dev_t)-1)
-          dev = i;
 
         for(;;)
           {
@@ -136,29 +133,16 @@ namespace l
 
     return 0;
   }
-
-  static
-  int
-  readdir_plus(const Branches &branches_,
-               const char     *dirname_,
-               const uint64_t  entry_timeout_,
-               const uint64_t  attr_timeout_,
-               fuse_dirents_t *buf_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return l::readdir_plus(branches_.vec,dirname_,entry_timeout_,attr_timeout_,buf_);
-  }
 }
 
 namespace FUSE
 {
   int
-  readdir_plus_linux(const Branches &branches_,
-                     const char     *dirname_,
-                     const uint64_t  entry_timeout_,
-                     const uint64_t  attr_timeout_,
-                     fuse_dirents_t *buf_)
+  readdir_plus_linux(const Branches::CPtr &branches_,
+                     const char           *dirname_,
+                     const uint64_t        entry_timeout_,
+                     const uint64_t        attr_timeout_,
+                     fuse_dirents_t       *buf_)
   {
     return l::readdir_plus(branches_,dirname_,entry_timeout_,attr_timeout_,buf_);
   }

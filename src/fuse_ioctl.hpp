@@ -16,7 +16,10 @@
 
 #pragma once
 
-#include <fuse.h>
+#include <cstdint>
+
+#include "fuse.h"
+
 
 namespace FUSE
 {

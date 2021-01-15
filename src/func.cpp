@@ -18,22 +18,45 @@
 
 #include "func.hpp"
 
+
 int
-Func::from_string(const std::string &s_)
+Func::Base::Action::from_string(const std::string &policyname_)
 {
-  const Policy *tmp;
-
-  tmp = &Policy::find(s_);
-  if(tmp == Policy::invalid)
-    return -EINVAL;
-
-  policy = tmp;
+  policy = Policies::Action::find(policyname_);
 
   return 0;
 }
 
 std::string
-Func::to_string(void) const
+Func::Base::Action::to_string(void) const
 {
-  return policy->to_string();
+  return policy.name();
+}
+
+int
+Func::Base::Create::from_string(const std::string &policyname_)
+{
+  policy = Policies::Create::find(policyname_);
+
+  return 0;
+}
+
+std::string
+Func::Base::Create::to_string(void) const
+{
+  return policy.name();
+}
+
+int
+Func::Base::Search::from_string(const std::string &policyname_)
+{
+  policy = Policies::Search::find(policyname_);
+
+  return 0;
+}
+
+std::string
+Func::Base::Search::to_string(void) const
+{
+  return policy.name();
 }

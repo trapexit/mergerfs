@@ -29,6 +29,7 @@ using std::string;
 #define PADLEN 6
 #define MAX_ATTEMPTS 10
 
+
 static
 string
 generate_tmp_path(const string &base_)

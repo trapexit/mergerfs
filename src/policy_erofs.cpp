@@ -16,18 +16,33 @@
 
 #include "errno.hpp"
 #include "policy.hpp"
+#include "policy_erofs.hpp"
 
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
+
 
 int
-Policy::Func::erofs(const Category  type_,
-                    const Branches &branches_,
-                    const char     *fusepath_,
-                    vector<string> *paths)
+Policy::ERoFS::Action::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
+{
+  return (errno=EROFS,-1);
+}
+
+int
+Policy::ERoFS::Create::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
+{
+  return (errno=EROFS,-1);
+}
+
+int
+Policy::ERoFS::Search::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
 {
   return (errno=EROFS,-1);
 }

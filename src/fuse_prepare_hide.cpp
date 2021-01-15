@@ -18,9 +18,10 @@
 
 #include "fuse_open.hpp"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <stdio.h>
+
 
 namespace FUSE
 {

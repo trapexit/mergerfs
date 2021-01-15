@@ -22,9 +22,10 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
+#include "policy_msppfrd.hpp"
+#include "policies.hpp"
 #include "policy_error.hpp"
 #include "rnd.hpp"
-#include "rwlock.hpp"
 
 #include <string>
 #include <vector>
@@ -44,39 +45,36 @@ namespace msppfrd
 {
   static
   int
-  create_1(const BranchVec &branches_,
-           const string    &fusepath_,
-           BranchInfoVec   *branchinfo_,
-           uint64_t        *sum_)
+  create_1(const Branches::CPtr &branches_,
+           const string         &fusepath_,
+           BranchInfoVec        *branchinfo_,
+           uint64_t             *sum_)
   {
     int rv;
     int error;
     BranchInfo bi;
     fs::info_t info;
-    const Branch *branch;
 
     *sum_ = 0;
     error = ENOENT;
-    for(size_t i = 0, ei = branches_.size(); i < ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           error_and_continue(error,ENOENT);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
         *sum_ += info.spaceavail;
 
         bi.spaceavail = info.spaceavail;
-        bi.basepath   = &branch->path;
+        bi.basepath   = &branch.path;
         branchinfo_->push_back(bi);
       }
 
@@ -85,24 +83,10 @@ namespace msppfrd
 
   static
   int
-  create_1(const Branches &branches_,
-           const string   &fusepath_,
-           BranchInfoVec  *branchinfo_,
-           uint64_t       *sum_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    branchinfo_->reserve(branches_.vec.size());
-
-    return msppfrd::create_1(branches_.vec,fusepath_,branchinfo_,sum_);
-  }
-
-  static
-  int
-  get_branchinfo(const Branches &branches_,
-                 const char     *fusepath_,
-                 BranchInfoVec  *branchinfo_,
-                 uint64_t       *sum_)
+  get_branchinfo(const Branches::CPtr &branches_,
+                 const char           *fusepath_,
+                 BranchInfoVec        *branchinfo_,
+                 uint64_t             *sum_)
   {
     int error;
     string fusepath;
@@ -147,9 +131,9 @@ namespace msppfrd
 
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
+  create(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int error;
     uint64_t sum;
@@ -168,13 +152,25 @@ namespace msppfrd
 }
 
 int
-Policy::Func::msppfrd(const Category  type_,
-                      const Branches &branches_,
-                      const char     *fusepath_,
-                      vector<string> *paths_)
+Policy::MSPPFRD::Action::operator()(const Branches::CPtr &branches_,
+                                    const char           *fusepath_,
+                                    StrVec               *paths_) const
 {
-  if(type_ == Category::CREATE)
-    return msppfrd::create(branches_,fusepath_,paths_);
+  return Policies::Action::eppfrd(branches_,fusepath_,paths_);
+}
 
-  return Policy::Func::eppfrd(type_,branches_,fusepath_,paths_);
+int
+Policy::MSPPFRD::Create::operator()(const Branches::CPtr &branches_,
+                                    const char           *fusepath_,
+                                    StrVec               *paths_) const
+{
+  return ::msppfrd::create(branches_,fusepath_,paths_);
+}
+
+int
+Policy::MSPPFRD::Search::operator()(const Branches::CPtr &branches_,
+                                    const char           *fusepath_,
+                                    StrVec               *paths_) const
+{
+  return Policies::Search::eppfrd(branches_,fusepath_,paths_);
 }

@@ -18,8 +18,10 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <stdlib.h>
-#include <stdint.h>
+
 
 typedef struct fixed_mem_pool_t fixed_mem_pool_t;
 struct fixed_mem_pool_t

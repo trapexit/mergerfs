@@ -3,6 +3,6 @@
 CXX="${CXX:-c++}"
 FUSE_CFLAGS="-Ilibfuse/include -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=29"
 
-echo "#include <fuse.h>" | ${CXX} -E ${FUSE_CFLAGS} - | grep "${1}" > /dev/null
+echo "#include \"fuse.h\"" | ${CXX} -E ${FUSE_CFLAGS} - | grep "${1}" > /dev/null
 
 [ "$?" != "0" ]; echo $?

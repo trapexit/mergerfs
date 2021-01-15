@@ -20,6 +20,7 @@
 #include "ef.hpp"
 #include "errno.hpp"
 
+
 template<>
 int
 NFSOpenHack::from_string(const std::string &s_)

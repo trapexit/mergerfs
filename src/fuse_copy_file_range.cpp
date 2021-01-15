@@ -18,9 +18,10 @@
 #include "fileinfo.hpp"
 #include "fs_copy_file_range.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <stdio.h>
+
 
 namespace l
 {

@@ -14,15 +14,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include <fnmatch.h>
 
+using std::istringstream;
+using std::set;
 using std::string;
 using std::vector;
-using std::istringstream;
 
 namespace str
 {
@@ -103,6 +105,25 @@ namespace str
        const char            sep_)
   {
     return str::join(vec_,0,sep_);
+  }
+
+  string
+  join(const set<string> &set_,
+       const char         sep_)
+  {
+    string rv;
+    set<string>::iterator i;
+
+    if(set_.empty())
+      return string();
+
+    i = set_.begin();
+    rv += *i;
+    ++i;
+    for(; i != set_.end(); ++i)
+      rv += sep_ + *i;
+
+    return rv;
   }
 
   size_t

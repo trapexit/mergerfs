@@ -16,23 +16,53 @@
 
 #include "errno.hpp"
 #include "policy.hpp"
+#include "policy_rand.hpp"
+#include "policies.hpp"
 
 #include <algorithm>
-#include <string>
-#include <vector>
-
-using std::string;
-using std::vector;
 
 int
-Policy::Func::rand(const Category  type_,
-                   const Branches &branches_,
-                   const char     *fusepath_,
-                   vector<string> *paths_)
+Policy::Rand::Action::operator()(const Branches::CPtr &branches_,
+                                 const char           *fusepath_,
+                                 StrVec               *paths_) const
 {
   int rv;
 
-  rv = Policy::Func::all(type_,branches_,fusepath_,paths_);
+  rv = Policies::Action::all(branches_,fusepath_,paths_);
+  if(rv == 0)
+    {
+      std::random_shuffle(paths_->begin(),paths_->end());
+      paths_->resize(1);
+    }
+
+  return rv;
+}
+
+int
+Policy::Rand::Create::operator()(const Branches::CPtr &branches_,
+                                 const char           *fusepath_,
+                                 StrVec               *paths_) const
+{
+  int rv;
+
+  rv = Policies::Create::all(branches_,fusepath_,paths_);
+  if(rv == 0)
+    {
+      std::random_shuffle(paths_->begin(),paths_->end());
+      paths_->resize(1);
+    }
+
+  return rv;
+}
+
+int
+Policy::Rand::Search::operator()(const Branches::CPtr &branches_,
+                                 const char           *fusepath_,
+                                 StrVec               *paths_) const
+{
+  int rv;
+
+  rv = Policies::Search::all(branches_,fusepath_,paths_);
   if(rv == 0)
     {
       std::random_shuffle(paths_->begin(),paths_->end());

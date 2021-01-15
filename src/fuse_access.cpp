@@ -26,26 +26,27 @@
 using std::string;
 using std::vector;
 
+
 namespace l
 {
   static
   int
-  access(Policy::Func::Search  searchFunc,
+  access(const Policy::Search &searchFunc_,
          const Branches       &branches_,
-         const char           *fusepath,
-         const int             mask)
+         const char           *fusepath_,
+         const int             mask_)
   {
     int rv;
     string fullpath;
-    vector<string> basepaths;
+    StrVec basepaths;
 
-    rv = searchFunc(branches_,fusepath,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath);
+    fullpath = fs::path::make(basepaths[0],fusepath_);
 
-    rv = fs::eaccess(fullpath,mask);
+    rv = fs::eaccess(fullpath,mask_);
 
     return ((rv == -1) ? -errno : 0);
   }
@@ -54,16 +55,16 @@ namespace l
 namespace FUSE
 {
   int
-  access(const char *fusepath,
-         int         mask)
+  access(const char *fusepath_,
+         int         mask_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::access(config.func.access.policy,
-                     config.branches,
-                     fusepath,
-                     mask);
+    return l::access(cfg->func.access.policy,
+                     cfg->branches,
+                     fusepath_,
+                     mask_);
   }
 }

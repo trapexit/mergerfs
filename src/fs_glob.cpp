@@ -14,15 +14,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdint.h>
-
 #include <glob.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 using std::string;
 using std::vector;
+
 
 namespace fs
 {

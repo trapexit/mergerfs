@@ -21,15 +21,13 @@
 #include "policy_rv.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
-#include <vector>
 
 #include <fcntl.h>
 
 using std::string;
-using std::vector;
 
 
 namespace l
@@ -73,10 +71,10 @@ namespace l
 
   static
   void
-  utimens_loop(const vector<string> &basepaths_,
-               const char           *fusepath_,
-               const timespec        ts_[2],
-               PolicyRV             *prv_)
+  utimens_loop(const StrVec   &basepaths_,
+               const char     *fusepath_,
+               const timespec  ts_[2],
+               PolicyRV       *prv_)
   {
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
@@ -86,17 +84,17 @@ namespace l
 
   static
   int
-  utimens(Policy::Func::Action  actionFunc_,
-          Policy::Func::Search  searchFunc_,
+  utimens(const Policy::Action &utimensPolicy_,
+          const Policy::Search &getattrPolicy_,
           const Branches       &branches_,
           const char           *fusepath_,
           const timespec        ts_[2])
   {
     int rv;
     PolicyRV prv;
-    vector<string> basepaths;
+    StrVec basepaths;
 
-    rv = actionFunc_(branches_,fusepath_,&basepaths);
+    rv = utimensPolicy_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -107,7 +105,7 @@ namespace l
       return prv.error[0].rv;
 
     basepaths.clear();
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = getattrPolicy_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
@@ -121,13 +119,13 @@ namespace FUSE
   utimens(const char     *fusepath_,
           const timespec  ts_[2])
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::utimens(config.func.utimens.policy,
-                      config.func.getattr.policy,
-                      config.branches,
+    return l::utimens(cfg->func.utimens.policy,
+                      cfg->func.getattr.policy,
+                      cfg->branches,
                       fusepath_,
                       ts_);
   }

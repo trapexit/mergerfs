@@ -19,26 +19,26 @@
 #pragma once
 
 #include "policy.hpp"
+#include "policies.hpp"
 #include "tofrom_string.hpp"
 
 #include <string>
+
 
 class MoveOnENOSPC : public ToFromString
 {
 public:
   MoveOnENOSPC(const bool enabled_)
-    : enabled(enabled_)
+    : enabled(enabled_),
+      policy(&Policies::Create::mfs)
   {
-    policy = (enabled ?
-              &Policy::mfs :
-              &Policy::invalid);
   }
 
 public:
-  int from_string(const std::string &s);
-  std::string to_string() const;
+  int from_string(const std::string &s) final;
+  std::string to_string() const final;
 
 public:
   bool enabled;
-  const Policy *policy;
+  Policy::Create policy;
 };

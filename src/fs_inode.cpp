@@ -21,10 +21,10 @@
 #include "fs_inode.hpp"
 #include "wyhash.h"
 
+#include <cstdint>
 #include <string>
 
 #include <pthread.h>
-#include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -184,10 +184,16 @@ namespace fs
         return "passthrough";
       if(g_func == path_hash)
         return "path-hash";
+      if(g_func == path_hash32)
+        return "path-hash32";
       if(g_func == devino_hash)
         return "devino-hash";
+      if(g_func == devino_hash32)
+        return "devino-hash32";
       if(g_func == hybrid_hash)
         return "hybrid-hash";
+      if(g_func == hybrid_hash32)
+        return "hybrid-hash32";
 
       return std::string();
     }

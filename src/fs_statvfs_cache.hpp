@@ -18,8 +18,10 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
+
 #include <sys/statvfs.h>
+
 
 namespace fs
 {

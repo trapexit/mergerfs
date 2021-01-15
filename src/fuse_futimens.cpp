@@ -18,9 +18,10 @@
 #include "fileinfo.hpp"
 #include "fs_futimens.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <sys/stat.h>
+
 
 namespace l
 {

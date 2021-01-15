@@ -20,9 +20,10 @@
 #include "fs_close.hpp"
 #include "fs_fadvise.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
+
 
 namespace l
 {
@@ -52,12 +53,9 @@ namespace FUSE
   int
   release(const fuse_file_info_t *ffi_)
   {
-    const Config &config = Config::ro();
+    Config::Read cfg;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    if(config.open_cache.timeout)
-      config.open_cache.cleanup(10);
-
-    return l::release(fi,config.dropcacheonclose);
+    return l::release(fi,cfg->dropcacheonclose);
   }
 }

@@ -29,13 +29,13 @@ class ToFromWrapper : public ToFromString
 {
 public:
   int
-  from_string(const std::string &s_)
+  from_string(const std::string &s_) final
   {
     return str::from(s_,&_data);
   }
 
   std::string
-  to_string(void) const
+  to_string(void) const final
   {
     return str::to(_data);
   }
@@ -70,6 +70,13 @@ public:
     return &_data;
   }
 
+  const
+  T*
+  operator->() const
+  {
+    return &_data;
+  }
+
 public:
   bool
   operator==(const T &data_) const
@@ -86,13 +93,13 @@ class ROToFromWrapper : public ToFromString
 {
 public:
   int
-  from_string(const std::string &s_)
+  from_string(const std::string &s_) final
   {
     return -EINVAL;
   }
 
   std::string
-  to_string(void) const
+  to_string(void) const final
   {
     return str::to(_data);
   }

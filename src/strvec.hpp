@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,20 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
-#include "policy.hpp"
+#pragma once
 
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
-
-int
-Policy::Func::invalid(const Category  type_,
-                      const Branches &branches_,
-                      const char     *fusepath_,
-                      vector<string> *paths_)
-{
-  return (errno=EINVAL,-1);
-}
+typedef std::vector<std::string> StrVec;

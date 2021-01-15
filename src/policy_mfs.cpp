@@ -18,51 +18,46 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "rwlock.hpp"
 
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
 
 namespace mfs
 {
   static
   int
-  create(const BranchVec &branches_,
-         vector<string>  *paths_)
+  create(const Branches::CPtr &branches_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     uint64_t mfs;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     mfs = 0;
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(const auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
         if(info.spaceavail < mfs)
           continue;
 
         mfs = info.spaceavail;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -72,26 +67,28 @@ namespace mfs
 
     return 0;
   }
-
-  static
-  int
-  create(const Branches &branches_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return mfs::create(branches_.vec,paths_);
-  }
 }
 
 int
-Policy::Func::mfs(const Category  type_,
-                  const Branches &branches_,
-                  const char     *fusepath_,
-                  vector<string> *paths_)
+Policy::MFS::Action::operator()(const Branches::CPtr &branches_,
+                                const char           *fusepath_,
+                                StrVec               *paths_) const
 {
-  if(type_ == Category::CREATE)
-    return mfs::create(branches_,paths_);
+  return Policies::Action::mfs(branches_,fusepath_,paths_);
+}
 
-  return Policy::Func::epmfs(type_,branches_,fusepath_,paths_);
+int
+Policy::MFS::Create::operator()(const Branches::CPtr &branches_,
+                                const char           *fusepath_,
+                                StrVec               *paths_) const
+{
+  return ::mfs::create(branches_,paths_);
+}
+
+int
+Policy::MFS::Search::operator()(const Branches::CPtr &branches_,
+                                const char           *fusepath_,
+                                StrVec               *paths_) const
+{
+  return Policies::Search::epmfs(branches_,fusepath_,paths_);
 }

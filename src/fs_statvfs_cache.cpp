@@ -19,13 +19,14 @@
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
+#include <cstdint>
 #include <map>
 #include <string>
 
 #include <pthread.h>
-#include <stdint.h>
 #include <sys/statvfs.h>
 #include <time.h>
+
 
 struct Element
 {

@@ -16,7 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "branch.hpp"
+#include "branches.hpp"
 #include "errno.hpp"
 #include "fs_fstat.hpp"
 #include "fs_lstat.hpp"
@@ -24,31 +24,29 @@
 
 #include <string>
 
+
 namespace l
 {
   static
   int
-  findonfs(const BranchVec   &branches_,
-           const std::string &fusepath_,
-           const int          fd_,
-           std::string       *basepath_)
+  findonfs(const Branches::CPtr &branches_,
+           const std::string    &fusepath_,
+           const int             fd_,
+           std::string          *basepath_)
   {
     int rv;
     dev_t dev;
     struct stat st;
     std::string fullpath;
-    const Branch *branch;
 
     rv = fs::fstat(fd_,&st);
     if(rv == -1)
       return -1;
 
     dev = st.st_dev;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(const auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        fullpath = fs::path::make(branch->path,fusepath_);
+        fullpath = fs::path::make(branch.path,fusepath_);
 
         rv = fs::lstat(fullpath,&st);
         if(rv == -1)
@@ -57,7 +55,7 @@ namespace l
         if(st.st_dev != dev)
           continue;
 
-        *basepath_ = branch->path;
+        *basepath_ = branch.path;
 
         return 0;
       }
@@ -69,13 +67,11 @@ namespace l
 namespace fs
 {
   int
-  findonfs(const Branches    &branches_,
-           const std::string &fusepath_,
-           const int          fd_,
-           std::string       *basepath_)
+  findonfs(const Branches::CPtr &branches_,
+           const std::string    &fusepath_,
+           const int             fd_,
+           std::string          *basepath_)
   {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return l::findonfs(branches_.vec,fusepath_,fd_,basepath_);
+    return l::findonfs(branches_,fusepath_,fd_,basepath_);
   }
 }

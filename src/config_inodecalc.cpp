@@ -19,6 +19,7 @@
 #include "config_inodecalc.hpp"
 #include "fs_inode.hpp"
 
+
 InodeCalc::InodeCalc(const std::string &s_)
 {
   fs::inode::set_algo(s_);

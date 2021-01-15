@@ -21,12 +21,13 @@
 #include "errno.hpp"
 #include "from_string.hpp"
 
+
 int
 MoveOnENOSPC::from_string(const std::string &s_)
 {
   int rv;
   std::string s;
-  const Policy *tmp;
+  Policy::CreateImpl *tmp;
 
   rv = str::from(s_,&enabled);
   if((rv == 0) && (enabled == true))
@@ -36,8 +37,8 @@ MoveOnENOSPC::from_string(const std::string &s_)
   else
     return 0;
 
-  tmp = &Policy::find(s);
-  if(tmp == Policy::invalid)
+  tmp = Policies::Create::find(s);
+  if(tmp == NULL)
     return -EINVAL;
 
   policy  = tmp;
@@ -50,6 +51,6 @@ std::string
 MoveOnENOSPC::to_string(void) const
 {
   if(enabled)
-    return policy->to_string();
+    return policy.name();
   return "false";
 }

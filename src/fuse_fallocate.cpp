@@ -18,7 +18,8 @@
 #include "fileinfo.hpp"
 #include "fs_fallocate.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
+
 
 namespace l
 {

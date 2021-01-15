@@ -22,12 +22,14 @@
 
 #include "errno.hpp"
 
+#include <cstdint>
+
 #include <fcntl.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 
 namespace l
 {

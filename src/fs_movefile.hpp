@@ -16,22 +16,23 @@
 
 #pragma once
 
-#include "branch.hpp"
+#include "branches.hpp"
 #include "policy.hpp"
 
 #include <string>
 
+
 namespace fs
 {
   int
-  movefile(const Policy      *policy,
-           const Branches    &branches,
-           const std::string &fusepath,
-           int               *origfd);
+  movefile(const Policy::Create &policy,
+           const Branches::CPtr &branches,
+           const std::string    &fusepath,
+           int                  *origfd);
 
   int
-  movefile_as_root(const Policy      *policy,
-                   const Branches    &branches,
-                   const std::string &fusepath,
-                   int               *origfd);
+  movefile_as_root(const Policy::Create &policy,
+                   const Branches::CPtr &branches,
+                   const std::string    &fusepath,
+                   int                  *origfd);
 }

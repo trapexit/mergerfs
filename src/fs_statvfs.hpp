@@ -22,6 +22,7 @@
 #include "fs_close.hpp"
 #include "fs_open.hpp"
 
+#include <cstdint>
 #include <string>
 
 #include <sys/statvfs.h>
@@ -29,6 +30,7 @@
 #ifndef O_PATH
 # define O_PATH 0
 #endif
+
 
 namespace fs
 {

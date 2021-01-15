@@ -23,13 +23,14 @@
 #include "fs_path.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
 
 using std::string;
 using std::vector;
+
 
 namespace l
 {
@@ -54,15 +55,15 @@ namespace l
 
   static
   void
-  config_to_ffi_flags(const Config     &config_,
+  config_to_ffi_flags(Config::Read     &cfg_,
                       fuse_file_info_t *ffi_)
   {
-    switch(config_.cache_files)
+    switch(cfg_->cache_files)
       {
       case CacheFiles::ENUM::LIBFUSE:
-        ffi_->direct_io  = config_.direct_io;
-        ffi_->keep_cache = config_.kernel_cache;
-        ffi_->auto_cache = config_.auto_cache;
+        ffi_->direct_io  = cfg_->direct_io;
+        ffi_->keep_cache = cfg_->kernel_cache;
+        ffi_->auto_cache = cfg_->auto_cache;
         break;
       case CacheFiles::ENUM::OFF:
         ffi_->direct_io  = 1;
@@ -125,8 +126,8 @@ namespace l
 
   static
   int
-  create(Policy::Func::Search  searchFunc_,
-         Policy::Func::Create  createFunc_,
+  create(const Policy::Search &searchFunc_,
+         const Policy::Create &createFunc_,
          const Branches       &branches_,
          const char           *fusepath_,
          const mode_t          mode_,
@@ -137,8 +138,8 @@ namespace l
     int rv;
     string fullpath;
     string fusedirpath;
-    vector<string> createpaths;
-    vector<string> existingpaths;
+    StrVec createpaths;
+    StrVec existingpaths;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
@@ -170,18 +171,18 @@ namespace FUSE
          mode_t            mode_,
          fuse_file_info_t *ffi_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    l::config_to_ffi_flags(config,ffi_);
+    l::config_to_ffi_flags(cfg,ffi_);
 
-    if(config.writeback_cache)
+    if(cfg->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return l::create(config.func.getattr.policy,
-                     config.func.create.policy,
-                     config.branches,
+    return l::create(cfg->func.getattr.policy,
+                     cfg->func.create.policy,
+                     cfg->branches,
                      fusepath_,
                      mode_,
                      fc->umask,

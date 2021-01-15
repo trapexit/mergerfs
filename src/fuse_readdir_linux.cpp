@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "branch.hpp"
+#include "branches.hpp"
 #include "errno.hpp"
 #include "fs_close.hpp"
 #include "fs_devid.hpp"
@@ -26,10 +26,9 @@
 #include "hashset.hpp"
 #include "linux_dirent64.h"
 #include "mempools.hpp"
-#include "rwlock.hpp"
 
-#include <fuse.h>
-#include <fuse_dirents.h>
+#include "fuse.h"
+#include "fuse_dirents.h"
 
 #include <string>
 #include <vector>
@@ -53,9 +52,9 @@ namespace l
 
   static
   int
-  readdir(const BranchVec &branches_,
-          const char      *dirname_,
-          fuse_dirents_t  *buf_)
+  readdir(const Branches::CPtr &branches_,
+          const char           *dirname_,
+          fuse_dirents_t       *buf_)
   {
     int rv;
     dev_t dev;
@@ -70,20 +69,18 @@ namespace l
     if(buf == NULL)
       return -ENOMEM;
 
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(const auto &branch : *branches_)
       {
         int dirfd;
         int64_t nread;
 
-        basepath = fs::path::make(branches_[i].path,dirname_);
+        basepath = fs::path::make(branch.path,dirname_);
 
         dirfd = fs::open_dir_ro(basepath);
         if(dirfd == -1)
           continue;
 
         dev = fs::devid(dirfd);
-        if(dev == (dev_t)-1)
-          dev = i;
 
         for(;;)
           {
@@ -122,25 +119,14 @@ namespace l
 
     return 0;
   }
-
-  static
-  int
-  readdir(const Branches &branches_,
-          const char     *dirname_,
-          fuse_dirents_t *buf_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return l::readdir(branches_.vec,dirname_,buf_);
-  }
 }
 
 namespace FUSE
 {
   int
-  readdir_linux(const Branches &branches_,
-                const char     *dirname_,
-                fuse_dirents_t *buf_)
+  readdir_linux(const Branches::CPtr &branches_,
+                const char           *dirname_,
+                fuse_dirents_t       *buf_)
   {
     return l::readdir(branches_,dirname_,buf_);
   }
