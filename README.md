@@ -767,6 +767,9 @@ With #2 one could use dm-cache as well but there is another solution which requi
 
 Move files from cache to backing pool based only on the last time the file was accessed. Replace `-atime` with `-amin` if you want minutes rather than days. May want to use the `fadvise` / `--drop-cache` version of rsync or run rsync with the tool "nocache".
 
+*NOTE:* The arguments to these scripts include the cache **drive**. Not the pool with the cache drive. You could have data loss if the source is the cache pool.
+
+
 ```
 #!/bin/bash
 
@@ -787,6 +790,8 @@ find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
 ##### percentage full expiring
 
 Move the oldest file from the cache to the backing pool. Continue till below percentage threshold.
+
+*NOTE:* The arguments to these scripts include the cache **drive**. Not the pool with the cache drive. You could have data loss if the source is the cache pool.
 
 ```
 #!/bin/bash
@@ -1067,16 +1072,20 @@ The default create policy is `epmfs`. That is a path preserving algorithm. With 
 This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`. Or use `func.mkdir=rand` if you're interested in just grouping together directory content by drive.
 
 
-#### Do hard links work?
+#### Do hardlinks work?
 
 Yes. You need to use `use_ino` to support proper reporting of inodes but they work regardless. See also the option `inodecalc`.
 
 What mergerfs does not do is fake hard links across branches.  Read the section "rename & link" for how it works.
 
+Remember that hardlinks will NOT work across devices. That includes between the original filesystem and a mergerfs pool, between two separate pools of the same underlying filesystems, or bind mounts of paths within the mergerfs pool. The latter is common when using Docker or Podman. Multiple volumes (bind mounts) to the same underlying filesystem are considered different devices. There is no way to link between them. You should mount in the highest directory in the mergerfs pool that includes all the paths you need if you want links to work.
 
-#### Does mergerfs support CoW / copy-on-write?
+
+#### Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
 
 Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs sense. It does offer a [cow-shell](http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html) like hard link breaking (copy to temp file then rename over original) which can be useful when wanting to save space by hardlinking duplicate files but wish to treat each name as if it were a unique and separate file.
+
+If you want to write to a read-only filesystem you should look at overlayfs. You can always include the overlayfs mount into a mergerfs pool.
 
 
 #### Why can't I see my files / directories?
