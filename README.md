@@ -1289,15 +1289,22 @@ At the moment my preference would be GitHub Sponsors only because I am part of t
 * SubscribeStar: https://www.subscribestar.com/trapexit
 * Ko-Fi: https://ko-fi.com/trapexit
 * Open Collective: https://opencollective.com/trapexit
-* Bitcoin (BTC): 1DfoUd2m5WCxJAMvcFuvDpT4DR2gWX2PWb
-* Bitcoin Cash (BCH): qrf257j0l09yxty4kur8dk2uma8p5vntdcpks72l8z
-* Ethereum (ETH): 0xb486C0270fF75872Fc51d85879b9c15C380E66CA
-* Litecoin (LTC): LW1rvHRPWtm2NUEMhJpP4DjHZY1FaJ1WYs
-* Monero (XMR): 8AuU7PeK1fVhGP9yug8fdgKBssvUQoBVFKGhtT5DzWQt7fcTKC1SUx3Eb7xCAiVt3McWJp2Z9gX2wU7SPhh1GfWYBTCs6SS
-* Basic Attention Token (BAT): 0xE651d4900B4C305284Da43E2e182e9abE149A87A
+
+* Bitcoin (BTC): bc1qjwlywkqxgrxql3m7a7fvcsf3z3t98jvtekqp2j
+* Bitcoin Cash (BCH): qrvymmkvuk7703m7cx0pqxc3mz4mmsn6ngn9xw52kc
+* Bitcoin SV (BSV): 1FkFuxRtt3f8LbkpeUKRZq7gKJFzGSGgZV
+* Bitcoin Gold (BTG): Gfk8QbMJFgpMTcY7uB63axy6HU7uTPPWNj
+* Basic Attention Token (BAT): 0x6241857fa5fb7667FB7a792b13E83fDEabe96f7F
+* Chainlink (LINK): 0x6241857fa5fb7667FB7a792b13E83fDEabe96f7F
+* Dash (DASH): Xu2U3Nd3G4hM5TRQUBcP4DHJFzXH93xB84
+* Dogecoin (DOGE): DGFBPsRBYL8wHbgnvKbYkVn5FvAe854p1c
+* Ethereum (ETH): 0x6241857fa5fb7667FB7a792b13E83fDEabe96f7F
+* Filecoin (FIL): f1wpypkjcluufzo74yha7p67nbxepzizlroockgcy
 * LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
-* Zcash (ZEC): t1ZwTgmbQF23DJrzqbAmw8kXWvU2xUkkhTt
-* Zcoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
+* Litecoin (LTC): LfL7jLNYuVpy7v5TyRyc3yRZ2uhqc4UoR3
+* Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
+* Tezos (XTZ): tz1ZxerkbbALsuU9XGV9K9fFpuLWnKAGfc1C
+* Zcash (ZEC): t1bjbVBK7tx9EGBrnD2wDfjGV9yZrcyfMmr
 * Other crypto currencies: contact me for address
 
 
