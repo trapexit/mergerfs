@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-30
+% 2021-02-08
 
 # NAME
 
@@ -1283,28 +1283,34 @@ This software is free to use and released under a very liberal license (ISC). Th
 
 At the moment my preference would be GitHub Sponsors only because I am part of the matching program. That said please use whatever platform you prefer.
 
-* PayPal: https://paypal.me/trapexit
 * GitHub Sponsors: https://github.com/sponsors/trapexit
+* PayPal: https://paypal.me/trapexit
 * Patreon: https://www.patreon.com/trapexit
-* SubscribeStar: https://www.subscribestar.com/trapexit
 * Ko-Fi: https://ko-fi.com/trapexit
 * Open Collective: https://opencollective.com/trapexit
-
-* Bitcoin (BTC): bc1qjwlywkqxgrxql3m7a7fvcsf3z3t98jvtekqp2j
-* Bitcoin Cash (BCH): qrvymmkvuk7703m7cx0pqxc3mz4mmsn6ngn9xw52kc
+* Bitcoin (BTC): bc1qu537hqlnmn2wawx9n7nws0dlkz55h0cd93ny28
+* Bitcoin Cash (BCH): bitcoincash:qqp0vh9v44us74gaggwjfv9y54zfjmmd7srlqxa3xt
 * Bitcoin SV (BSV): 1FkFuxRtt3f8LbkpeUKRZq7gKJFzGSGgZV
-* Bitcoin Gold (BTG): Gfk8QbMJFgpMTcY7uB63axy6HU7uTPPWNj
-* Basic Attention Token (BAT): 0x6241857fa5fb7667FB7a792b13E83fDEabe96f7F
-* Chainlink (LINK): 0x6241857fa5fb7667FB7a792b13E83fDEabe96f7F
-* Dash (DASH): Xu2U3Nd3G4hM5TRQUBcP4DHJFzXH93xB84
-* Dogecoin (DOGE): DGFBPsRBYL8wHbgnvKbYkVn5FvAe854p1c
-* Ethereum (ETH): 0x6241857fa5fb7667FB7a792b13E83fDEabe96f7F
+* Bitcoin Gold (BTG): AaPuJgJeohPjkB3LxJM6NKGnaHoRJ8ieT3
+* Litecoin (LTC): MJQzsHBdNnkyGqCFdcAdHYKugicBmfAXfQ
+* Dogecoin (DOGE): DLJNLVe28vZ4SMQSxDJLBQBv57rGtUoWFh
+* Ethereum (ETH): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Basic Attention Token (BAT): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Chainlink (LINK): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Reserve Rights (RSR): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Reef Finance (REEF): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
+* Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
+* Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
+* Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
 * Filecoin (FIL): f1wpypkjcluufzo74yha7p67nbxepzizlroockgcy
 * LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
-* Litecoin (LTC): LfL7jLNYuVpy7v5TyRyc3yRZ2uhqc4UoR3
-* Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
+* Ripple (XRP): r9f6aoxaGD8aymxqH89Ke1PCUPkNiFdZZC
 * Tezos (XTZ): tz1ZxerkbbALsuU9XGV9K9fFpuLWnKAGfc1C
-* Zcash (ZEC): t1bjbVBK7tx9EGBrnD2wDfjGV9yZrcyfMmr
+* Zcash (ZEC): t1Zo1GGn2T3GrhKvgdtnTsTnWu6tCPaCaHG
+* DigiByte (DGB): Sb8r1qTrryY9Sp4YkTE1eeKEGVzgArnE5N
+* Namecoin (NMC): NDzb9FkoptGu5QbgetCkodJqo2zE1cTwyb
+* Vertcoin (VTC): 3PYdhokAGXJwWrwHRoTywxG4iUDk6EHjKe
 * Other crypto currencies: contact me for address
 
 
