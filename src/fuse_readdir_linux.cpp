@@ -66,6 +66,8 @@ namespace l
     uint64_t namelen;
     struct linux_dirent64 *d;
 
+    fuse_dirents_reset(buf_);
+
     buf = (char*)g_DENTS_BUF_POOL.alloc();
     if(buf == NULL)
       return -ENOMEM;

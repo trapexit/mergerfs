@@ -72,6 +72,8 @@ namespace l
     uint64_t namelen;
     fuse_entry_t entry;
 
+    fuse_dirents_reset(buf_);
+
     entry.nodeid           = 0;
     entry.generation       = 0;
     entry.entry_valid      = entry_timeout_;

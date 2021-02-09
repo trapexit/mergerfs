@@ -67,6 +67,8 @@ namespace l
     string fullpath;
     uint64_t namelen;
 
+    fuse_dirents_reset(buf_);
+
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         int rv;
