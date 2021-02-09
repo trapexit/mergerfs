@@ -21,7 +21,7 @@
 #include "policy_rv.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
 #include <vector>
@@ -84,8 +84,8 @@ namespace l
 
   static
   int
-  removexattr(Policy::Func::Action  actionFunc_,
-              Policy::Func::Search  searchFunc_,
+  removexattr(const Policy::Action &actionFunc_,
+              const Policy::Search &searchFunc_,
               const Branches       &branches_,
               const char           *fusepath_,
               const char           *attrname_)
@@ -119,19 +119,20 @@ namespace FUSE
   removexattr(const char *fusepath_,
               const char *attrname_)
   {
-    const Config &config = Config::ro();
+    Config::Read cfg;
 
-    if(fusepath_ == config.controlfile)
+    if(fusepath_ == CONTROLFILE)
       return -ENOATTR;
-    if(config.xattr.to_int())
-      return -config.xattr.to_int();
+
+    if(cfg->xattr.to_int())
+      return -cfg->xattr.to_int();
 
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::removexattr(config.func.removexattr.policy,
-                          config.func.getxattr.policy,
-                          config.branches,
+    return l::removexattr(cfg->func.removexattr.policy,
+                          cfg->func.getxattr.policy,
+                          cfg->branches,
                           fusepath_,
                           attrname_);
   }

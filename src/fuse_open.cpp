@@ -23,7 +23,6 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "fs_stat.hpp"
-#include "policy_cache.hpp"
 #include "stat_util.hpp"
 #include "ugid.hpp"
 
@@ -34,6 +33,7 @@
 
 using std::string;
 using std::vector;
+
 
 namespace l
 {
@@ -117,15 +117,15 @@ namespace l
 
   static
   void
-  config_to_ffi_flags(const Config     &config_,
+  config_to_ffi_flags(Config::Read     &cfg_,
                       fuse_file_info_t *ffi_)
   {
-    switch(config_.cache_files)
+    switch(cfg_->cache_files)
       {
       case CacheFiles::ENUM::LIBFUSE:
-        ffi_->direct_io  = config_.direct_io;
-        ffi_->keep_cache = config_.kernel_cache;
-        ffi_->auto_cache = config_.auto_cache;
+        ffi_->direct_io  = cfg_->direct_io;
+        ffi_->keep_cache = cfg_->kernel_cache;
+        ffi_->auto_cache = cfg_->auto_cache;
         break;
       case CacheFiles::ENUM::OFF:
         ffi_->direct_io  = 1;
@@ -180,8 +180,7 @@ namespace l
 
   static
   int
-  open(Policy::Func::Search  searchFunc_,
-       PolicyCache          &cache,
+  open(const Policy::Search &searchFunc_,
        const Branches       &branches_,
        const char           *fusepath_,
        const int             flags_,
@@ -190,13 +189,13 @@ namespace l
        uint64_t             *fh_)
   {
     int rv;
-    string basepath;
+    StrVec basepaths;
 
-    rv = cache(searchFunc_,branches_,fusepath_,&basepath);
+    rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
 
-    return l::open_core(basepath,fusepath_,flags_,link_cow_,nfsopenhack_,fh_);
+    return l::open_core(basepaths[0],fusepath_,flags_,link_cow_,nfsopenhack_,fh_);
   }
 }
 
@@ -206,22 +205,21 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    l::config_to_ffi_flags(config,ffi_);
+    l::config_to_ffi_flags(cfg,ffi_);
 
-    if(config.writeback_cache)
+    if(cfg->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return l::open(config.func.open.policy,
-                   config.open_cache,
-                   config.branches,
+    return l::open(cfg->func.open.policy,
+                   cfg->branches,
                    fusepath_,
                    ffi_->flags,
-                   config.link_cow,
-                   config.nfsopenhack,
+                   cfg->link_cow,
+                   cfg->nfsopenhack,
                    &ffi_->fh);
   }
 }

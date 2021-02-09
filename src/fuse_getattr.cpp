@@ -22,13 +22,12 @@
 #include "symlinkify.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
+
 
 namespace l
 {
@@ -59,7 +58,7 @@ namespace l
 
   static
   int
-  getattr(Policy::Func::Search  searchFunc_,
+  getattr(const Policy::Search &searchFunc_,
           const Branches       &branches_,
           const char           *fusepath_,
           struct stat          *st_,
@@ -68,7 +67,7 @@ namespace l
   {
     int rv;
     string fullpath;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -87,6 +86,31 @@ namespace l
 
     return 0;
   }
+
+  int
+  getattr(const char      *fusepath_,
+          struct stat     *st_,
+          fuse_timeouts_t *timeout_)
+  {
+    int rv;
+    Config::Read cfg;
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    rv = l::getattr(cfg->func.getattr.policy,
+                    cfg->branches,
+                    fusepath_,
+                    st_,
+                    cfg->symlinkify,
+                    cfg->symlinkify_timeout);
+
+    timeout_->entry = ((rv >= 0) ?
+                       cfg->cache_entry :
+                       cfg->cache_negative_entry);
+    timeout_->attr  = cfg->cache_attr;
+
+    return rv;
+  }
 }
 
 namespace FUSE
@@ -96,27 +120,9 @@ namespace FUSE
           struct stat     *st_,
           fuse_timeouts_t *timeout_)
   {
-    int rv;
-    const Config &config = Config::ro();
-
-    if(fusepath_ == config.controlfile)
+    if(fusepath_ == CONTROLFILE)
       return l::getattr_controlfile(st_);
 
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
-
-    rv = l::getattr(config.func.getattr.policy,
-                    config.branches,
-                    fusepath_,
-                    st_,
-                    config.symlinkify,
-                    config.symlinkify_timeout);
-
-    timeout_->entry = ((rv >= 0) ?
-                       config.cache_entry :
-                       config.cache_negative_entry);
-    timeout_->attr  = config.cache_attr;
-
-    return rv;
+    return l::getattr(fusepath_,st_,timeout_);
   }
 }

@@ -18,6 +18,7 @@
 
 #include "fuse.h"
 
+
 namespace FUSE
 {
   int

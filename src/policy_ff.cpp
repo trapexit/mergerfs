@@ -18,70 +18,68 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "rwlock.hpp"
+#include "policy_ff.hpp"
 
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
 
 namespace ff
 {
   static
   int
-  create(const BranchVec &branches_,
-         vector<string>  *paths_)
+  create(const Branches::CPtr &branches_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     fs::info_t info;
-    const Branch *branch;
 
     error = ENOENT;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
-        paths_->push_back(branch->path);
+        paths_->push_back(branch.path);
 
         return 0;
       }
 
     return (errno=error,-1);
   }
-
-  static
-  int
-  create(const Branches &branches_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return ff::create(branches_.vec,paths_);
-  }
 }
 
 int
-Policy::Func::ff(const Category  type_,
-                 const Branches &branches_,
-                 const char     *fusepath_,
-                 vector<string> *paths_)
+Policy::FF::Action::operator()(const Branches::CPtr &branches_,
+                               const char           *fusepath_,
+                               StrVec               *paths_) const
 {
-  if(type_ == Category::CREATE)
-    return ff::create(branches_,paths_);
+  return Policies::Action::epff(branches_,fusepath_,paths_);
+}
 
-  return Policy::Func::epff(type_,branches_,fusepath_,paths_);
+int
+Policy::FF::Create::operator()(const Branches::CPtr &branches_,
+                               const char           *fusepath_,
+                               StrVec               *paths_) const
+{
+  return ::ff::create(branches_,paths_);
+}
+
+int
+Policy::FF::Search::operator()(const Branches::CPtr &branches_,
+                               const char           *fusepath_,
+                               StrVec               *paths_) const
+{
+  return Policies::Search::epff(branches_,fusepath_,paths_);
 }

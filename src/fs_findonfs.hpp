@@ -18,15 +18,16 @@
 
 #pragma once
 
-#include "branch.hpp"
+#include "branches.hpp"
 
 #include <string>
+
 
 namespace fs
 {
   int
-  findonfs(const Branches    &branches,
-           const std::string &fusepath,
-           const int          fd,
-           std::string       *basepath);
+  findonfs(const Branches::CPtr &branches,
+           const std::string    &fusepath,
+           const int             fd,
+           std::string          *basepath);
 }

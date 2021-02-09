@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2020-08-30
+% 2021-02-08
 
 # NAME
 
@@ -31,7 +31,7 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 * Handles pool of read-only and read/write drives
 * Can turn read-only files into symlinks to underlying file
 * Hard link copy-on-write / CoW
-* supports POSIX ACLs
+* Support for POSIX ACLs
 
 
 # HOW IT WORKS
@@ -59,7 +59,7 @@ A         +      B        =       C
                                   +-- file6
 ```
 
-mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives. It also does **not** split data across drives. It is not RAID0 / striping. It is simply a union.
+mergerfs does **NOT** support the copy-on-write (CoW) or whiteout behaviors found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives. It also does **NOT** split data across drives. It is not RAID0 / striping. It is simply a union of other filesystems.
 
 
 # TERMINOLOGY
@@ -67,9 +67,9 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 * branch: A base path used in the pool.
 * pool: The mergerfs mount. The union of the branches.
 * relative path: The path in the pool relative to the branch and mount.
+* function: A filesystem call (open, unlink, create, getattr, rmdir, etc.)
+* category: A collection of functions based on basic behavior (action, create, search).
 * policy: The algorithm used to select a file when performing a function.
-* function: A filesystem call (open, unlink, create, getattr, etc.)
-* category: A collection of functions (action, create, search).
 * path preservation: Aspect of some policies which includes checking the path for which a file would be created.
 
 
@@ -77,22 +77,25 @@ mergerfs does **not** support the copy-on-write (CoW) behavior found in **aufs**
 
 If you don't already know that you have a special use case then just start with one of the following option sets.
 
+#### You need `mmap` (used by rtorrent and many sqlite3 base software)
+
+`allow_other,use_ino,cache.files=partial,dropcacheonclose=true,category.create=mfs`
+
 #### You don't need `mmap`
 
-`use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
+`allow_other,use_ino,cache.files=off,dropcacheonclose=true,category.create=mfs`
 
-#### You do need `mmap` (used by rtorrent and some other programs)
-
-`use_ino,cache.files=partial,dropcacheonclose=true,allow_other,category.create=mfs`
 
 See the mergerfs [wiki for real world deployments](https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments) for comparisons / ideas.
 
 
 # OPTIONS
 
+These options are the same regardless you use them with the `mergerfs` commandline program, used in fstab, or in a config file.
+
 ### mount options
 
-* **config**: Path to a config file. Same arguments as below in key=val format.
+* **config**: Path to a config file. Same arguments as below in key=val / ini style format.
 * **branches**: Colon delimited list of branches.
 * **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
 * **minfreespace=SIZE**: The minimum space value used for creation policies. Can be overridden by branch specific option. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
@@ -101,7 +104,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 * **inodecalc=passthrough|path-hash|devino-hash|hybrid-hash**: Selects the inode calculation algorithm. (default: hybrid-hash)
 * **dropcacheonclose=BOOL**: When a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **cache.files=partial|full|auto-full** to limit double caching. (default: false)
 * **symlinkify=BOOL**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
-* **symlinkify_timeout=INT**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
+* **symlinkify_timeout=UINT**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **nullrw=BOOL**: Turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
 * **ignorepponrename=BOOL**: Ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
 * **security_capability=BOOL**: If false return ENOATTR when xattr security.capability is queried. (default: true)
@@ -112,16 +115,18 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 * **nfsopenhack=off|git|all**: A workaround for exporting mergerfs over NFS where there are issues with creating files for write while setting the mode to read-only. (default: off)
 * **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
 * **async_read=BOOL**: Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
-* **fuse_msg_size=INT**: Set the max number of pages per FUSE message. Only available on Linux >= 4.20 and ignored otherwise. (min: 1; max: 256; default: 256)
+* **fuse_msg_size=UINT**: Set the max number of pages per FUSE message. Only available on Linux >= 4.20 and ignored otherwise. (min: 1; max: 256; default: 256)
 * **threads=INT**: Number of threads to use in multithreaded mode. When set to zero it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: 0)
 * **fsname=STR**: Sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
 * **func.FUNC=POLICY**: Sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
-* **category.CATEGORY=POLICY**: Sets policy of all FUSE functions in the provided category. See POLICIES section for defaults. Example: **category.create=mfs**
-* **cache.open=INT**: 'open' policy cache timeout in seconds. (default: 0)
-* **cache.statfs=INT**: 'statfs' cache timeout in seconds. (default: 0)
-* **cache.attr=INT**: File attribute cache timeout in seconds. (default: 1)
-* **cache.entry=INT**: File name lookup cache timeout in seconds. (default: 1)
-* **cache.negative_entry=INT**: Negative file name lookup cache timeout in seconds. (default: 0)
+* **category.action=POLICY**: Sets policy of all FUSE functions in the action category. (default: epall)
+* **category.create=POLICY**: Sets policy of all FUSE functions in the create category. (default: epmfs)
+* **category.search=POLICY**: Sets policy of all FUSE functions in the search category. (default: ff)
+* **cache.open=UINT**: 'open' policy cache timeout in seconds. (default: 0)
+* **cache.statfs=UINT**: 'statfs' cache timeout in seconds. (default: 0)
+* **cache.attr=UINT**: File attribute cache timeout in seconds. (default: 1)
+* **cache.entry=UINT**: File name lookup cache timeout in seconds. (default: 1)
+* **cache.negative_entry=UINT**: Negative file name lookup cache timeout in seconds. (default: 0)
 * **cache.files=libfuse|off|partial|full|auto-full**: File page caching mode (default: libfuse)
 * **cache.writeback=BOOL**: Enable kernel writeback caching (default: false)
 * **cache.symlinks=BOOL**: Cache symlinks (if supported by kernel) (default: false)
@@ -139,17 +144,18 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 #### Value Types
 
 * BOOL = 'true' | 'false'
-* INT = [0,MAX_INT]
+* INT = [MIN_INT,MAX_INT]
+* UINT = [0,MAX_INT]
 * SIZE = 'NNM'; NN = INT, M = 'K' | 'M' | 'G' | 'T'
 * STR = string
-* FUNC = FUSE function
-* CATEGORY = FUSE function category
+* FUNC = filesystem function
+* CATEGORY = function category
 * POLICY = mergerfs function policy
 
 
 ### branches
 
-The 'branches' (formerly 'srcmounts') argument is a colon (':') delimited list of paths to be pooled together. It does not matter if the paths are on the same or different drives nor does it matter the filesystem (within reason). Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
+The 'branches' argument is a colon (':') delimited list of paths to be pooled together. It does not matter if the paths are on the same or different drives nor does it matter the filesystem (within reason). Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
 
 Branches currently have two options which can be set. A type which impacts whether or not the branch is included in a policy calculation and a individual minfreespace value. The values are set by prepending an `=` at the end of a branch designation and using commas as delimiters. Example: /mnt/drive=RW,1234
 
@@ -270,25 +276,47 @@ This hack addresses the issue where the creation of a file with a read-only mode
 Even though it's a more niche situation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it it applying anytime a readonly file which is empty is opened for writing.
 
 
-# FUNCTIONS / POLICIES / CATEGORIES
+# FUNCTIONS, CATEGORIES and POLICIES
 
-The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which underlying branch/file/directory is chosen when performing that behavior. Any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
+The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which branch is chosen when performing that function.
 
-Some functions, listed in the category `N/A` below, can not be assigned the normal policies. All functions which work on file handles use the handle which was acquired by `open` or `create`. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options. That said many times the current FUSE kernel driver will not always provide the file handle when a client calls `fgetattr`, `fchown`, `fchmod`, `futimens`, `ftruncate`, etc. This means it will call the regular, path based, versions.
+Some functions, listed in the category `N/A` below, can not be assigned the normal policies. These functions work with file handles, rather than file paths, which were created by `open` or `create`. That said many times the current FUSE kernel driver will not always provide the file handle when a client calls `fgetattr`, `fchown`, `fchmod`, `futimens`, `ftruncate`, etc. This means it will call the regular, path based, versions. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options.
 
-When using policies which are based on a branch's available space the base path provided is used. Not the full path to the file in question. Meaning that sub mounts won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
+When using policies which are based on a branch's available space the base path provided is used. Not the full path to the file in question. Meaning that mounts in the branch won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
+
+NOTE: While any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
 
 
-#### Functions and their Category classifications
+### Functions and their Category classifications
 
 | Category | FUSE Functions                                                                      |
 |----------|-------------------------------------------------------------------------------------|
 | action   | chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens |
 | create   | create, mkdir, mknod, symlink                                                       |
-| search   | access, getattr, getxattr, ioctl (directories), listxattr, open, readlink                         |
+| search   | access, getattr, getxattr, ioctl (directories), listxattr, open, readlink           |
 | N/A      | fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl (files), read, readdir, release, statfs, write, copy_file_range |
 
-In cases where something may be searched (to confirm a directory exists across all source mounts) **getattr** will be used.
+In cases where something may be searched for (such as a path to clone) **getattr** will usually be used.
+
+
+### Policies
+
+A policy is the algorithm used to choose a branch or branches for a function to work on. Think of them as ways to filter and sort branches.
+
+Any function in the `create` category will clone the relative path if needed. Some other functions (`rename`,`link`,`ioctl`) have special requirements or behaviors which you can read more about below.
+
+
+#### Filtering
+
+Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting the branches. Filters include **minfreespace**, whether or not a branch is mounted read-only, and the branch tagging (RO,NC,RW). These filters are applied across all policies unless otherwise noted.
+
+* No **search** function policies filter.
+* All **action** function policies filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.
+* All **create** function policies filter out branches which are mounted **read-only**, tagged **RO (read-only)** or **NC (no create)**, or has available space less than `minfreespace`.
+
+Policies may have their own additional filtering such as those that require existing paths to be present.
+
+If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the most recent reason for filtering a branch. **ENOENT** will be returned if no elegible branch is found.
 
 
 #### Path Preservation
@@ -304,20 +332,9 @@ When using non-path preserving policies paths will be cloned to target drives as
 With the `msp` or `most shared path` policies they are defined as `path preserving` for the purpose of controlling `link` and `rename`'s behaviors since `ignorepponrename` is available to disable that behavior. In mergerfs v3.0 the path preserving behavior of rename and link will likely be separated from the policy all together.
 
 
-#### Filters
-
-Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting. Filters include **minfreespace**, whether or not a branch is mounted read-only, and the branch tagging (RO,NC,RW). The policy defines the sorting but filtering is mostly uniform as described below.
-
-* No **search** policies filter.
-* All **action** policies will filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.
-* All **create** policies will filter out branches which are mounted **read-only**, tagged **RO (read-only)** or **NC (no create)**, or has available space less than `minfreespace`.
-
-If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the most recent reason for filtering a branch.
-
-
 #### Policy descriptions
 
-Because of the nature of the behavior the policies act differently depending on the function it is used with (based on the category).
+A policy's behavior differs, as mentioned above, based on the function it is used with. Sometimes it really might not make sense to even offer certain policies because they are literally the same as others but it makes things a bit more uniform. In mergerfs 3.0 this might change.
 
 
 | Policy           | Description                                                |
@@ -358,19 +375,6 @@ Because of the nature of the behavior the policies act differently depending on 
 #### ioctl
 
 When `ioctl` is used with an open file then it will use the file handle which was created at the original `open` call. However, when using `ioctl` with a directory mergerfs will use the `open` policy to find the directory to act on.
-
-
-#### unlink
-
-In FUSE there is an opaque "file handle" which is created by `open`, `create`, or `opendir`, passed to the kernel, and then is passed back to the FUSE userland application by the kernel. Unfortunately, the FUSE kernel driver does not always send the file handle when it theoretically could/should. This complicates certain behaviors / workflows particularly in the high level API. As a result mergerfs is currently doing a few hacky things.
-
-libfuse2 and libfuse3, when using the high level API, will rename names to `.fuse_hiddenXXXXXX` if the file is open when unlinked or renamed over. It does this so the file is still available when a request referencing the now missing file is made. This file however keeps a `rmdir` from succeeding and can be picked up by software reading directories.
-
-The change mergerfs has done is that if a file is open when an unlink or rename happens it will open the file and keep it open till closed by all those who opened it prior. When a request comes in referencing that file and it doesn't include a file handle it will instead use the file handle created at unlink/rename time.
-
-This won't result in technically proper behavior but close enough for many usecases.
-
-The plan is to rewrite mergerfs to use the low level API so these invasive libfuse changes are no longer necessary.
 
 
 #### rename & link ####
@@ -473,7 +477,7 @@ $ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ve
 $ cd mergerfs
 $ sudo tools/install-build-pkgs
 $ make deb
-$ sudo dpkg -i ../mergerfs_version_arch.deb
+$ sudo dpkg -i ../mergerfs_<version>_<arch>.deb
 ```
 
 #### RHEL / CentOS /Fedora
@@ -664,7 +668,6 @@ A B C
   * mergerfs.dup: Ensure there are at least N copies of a file across the pool
   * mergerfs.balance: Rebalance files across drives by moving them from the most filled to the least filled
   * mergerfs.consolidate: move files within a single mergerfs directory to the drive with most free space
-  * mergerfs.mktrash: Creates FreeDesktop.org Trash specification compatible directories on a mergerfs mount
 * https://github.com/trapexit/scorch
   * scorch: A tool to help discover silent corruption of files and keep track of files
 * https://github.com/trapexit/bbf
@@ -764,6 +767,9 @@ With #2 one could use dm-cache as well but there is another solution which requi
 
 Move files from cache to backing pool based only on the last time the file was accessed. Replace `-atime` with `-amin` if you want minutes rather than days. May want to use the `fadvise` / `--drop-cache` version of rsync or run rsync with the tool "nocache".
 
+*NOTE:* The arguments to these scripts include the cache **drive**. Not the pool with the cache drive. You could have data loss if the source is the cache pool.
+
+
 ```
 #!/bin/bash
 
@@ -784,6 +790,8 @@ find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
 ##### percentage full expiring
 
 Move the oldest file from the cache to the backing pool. Continue till below percentage threshold.
+
+*NOTE:* The arguments to these scripts include the cache **drive**. Not the pool with the cache drive. You could have data loss if the source is the cache pool.
 
 ```
 #!/bin/bash
@@ -869,6 +877,8 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 
 # TIPS / NOTES
 
+* This document is very literal and thorough. Unless there is a bug things work as described. If a suspected feature isn't mentioned it doesn't exist.
+* Ensure you're using the latest version. Few distros have the latest version.
 * **use_ino** will only work when used with mergerfs 2.18.0 and above.
 * Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
 * https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
@@ -884,6 +894,7 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 #### kernel issues & bugs
 
 [https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
+
 
 #### directory mtime is not being updated
 
@@ -1061,16 +1072,20 @@ The default create policy is `epmfs`. That is a path preserving algorithm. With 
 This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`. Or use `func.mkdir=rand` if you're interested in just grouping together directory content by drive.
 
 
-#### Do hard links work?
+#### Do hardlinks work?
 
 Yes. You need to use `use_ino` to support proper reporting of inodes but they work regardless. See also the option `inodecalc`.
 
 What mergerfs does not do is fake hard links across branches.  Read the section "rename & link" for how it works.
 
+Remember that hardlinks will NOT work across devices. That includes between the original filesystem and a mergerfs pool, between two separate pools of the same underlying filesystems, or bind mounts of paths within the mergerfs pool. The latter is common when using Docker or Podman. Multiple volumes (bind mounts) to the same underlying filesystem are considered different devices. There is no way to link between them. You should mount in the highest directory in the mergerfs pool that includes all the paths you need if you want links to work.
 
-#### Does mergerfs support CoW / copy-on-write?
+
+#### Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
 
 Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs sense. It does offer a [cow-shell](http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html) like hard link breaking (copy to temp file then rename over original) which can be useful when wanting to save space by hardlinking duplicate files but wish to treat each name as if it were a unique and separate file.
+
+If you want to write to a read-only filesystem you should look at overlayfs. You can always include the overlayfs mount into a mergerfs pool.
 
 
 #### Why can't I see my files / directories?
@@ -1268,21 +1283,34 @@ This software is free to use and released under a very liberal license (ISC). Th
 
 At the moment my preference would be GitHub Sponsors only because I am part of the matching program. That said please use whatever platform you prefer.
 
-* PayPal: https://paypal.me/trapexit
 * GitHub Sponsors: https://github.com/sponsors/trapexit
+* PayPal: https://paypal.me/trapexit
 * Patreon: https://www.patreon.com/trapexit
-* SubscribeStar: https://www.subscribestar.com/trapexit
 * Ko-Fi: https://ko-fi.com/trapexit
 * Open Collective: https://opencollective.com/trapexit
-* Bitcoin (BTC): 1DfoUd2m5WCxJAMvcFuvDpT4DR2gWX2PWb
-* Bitcoin Cash (BCH): qrf257j0l09yxty4kur8dk2uma8p5vntdcpks72l8z
-* Ethereum (ETH): 0xb486C0270fF75872Fc51d85879b9c15C380E66CA
-* Litecoin (LTC): LW1rvHRPWtm2NUEMhJpP4DjHZY1FaJ1WYs
-* Monero (XMR): 8AuU7PeK1fVhGP9yug8fdgKBssvUQoBVFKGhtT5DzWQt7fcTKC1SUx3Eb7xCAiVt3McWJp2Z9gX2wU7SPhh1GfWYBTCs6SS
-* Basic Attention Token (BAT): 0xE651d4900B4C305284Da43E2e182e9abE149A87A
+* Bitcoin (BTC): bc1qu537hqlnmn2wawx9n7nws0dlkz55h0cd93ny28
+* Bitcoin Cash (BCH): bitcoincash:qqp0vh9v44us74gaggwjfv9y54zfjmmd7srlqxa3xt
+* Bitcoin SV (BSV): 1FkFuxRtt3f8LbkpeUKRZq7gKJFzGSGgZV
+* Bitcoin Gold (BTG): AaPuJgJeohPjkB3LxJM6NKGnaHoRJ8ieT3
+* Litecoin (LTC): MJQzsHBdNnkyGqCFdcAdHYKugicBmfAXfQ
+* Dogecoin (DOGE): DLJNLVe28vZ4SMQSxDJLBQBv57rGtUoWFh
+* Ethereum (ETH): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Basic Attention Token (BAT): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Chainlink (LINK): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Reserve Rights (RSR): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Reef Finance (REEF): 0xB8d6d55c0319aacC327860d13f891427caEede7a
+  * Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
+* Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
+* Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
+* Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
+* Filecoin (FIL): f1wpypkjcluufzo74yha7p67nbxepzizlroockgcy
 * LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
-* Zcash (ZEC): t1ZwTgmbQF23DJrzqbAmw8kXWvU2xUkkhTt
-* Zcoin (XZC): a8L5Vz35KdCQe7Y7urK2pcCGau7JsqZ5Gw
+* Ripple (XRP): r9f6aoxaGD8aymxqH89Ke1PCUPkNiFdZZC
+* Tezos (XTZ): tz1ZxerkbbALsuU9XGV9K9fFpuLWnKAGfc1C
+* Zcash (ZEC): t1Zo1GGn2T3GrhKvgdtnTsTnWu6tCPaCaHG
+* DigiByte (DGB): Sb8r1qTrryY9Sp4YkTE1eeKEGVzgArnE5N
+* Namecoin (NMC): NDzb9FkoptGu5QbgetCkodJqo2zE1cTwyb
+* Vertcoin (VTC): 3PYdhokAGXJwWrwHRoTywxG4iUDk6EHjKe
 * Other crypto currencies: contact me for address
 
 

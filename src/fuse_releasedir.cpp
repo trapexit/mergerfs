@@ -17,7 +17,8 @@
 #include "config.hpp"
 #include "dirinfo.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
+
 
 namespace l
 {

@@ -17,12 +17,13 @@
 */
 
 #include "ef.hpp"
+#include "errno.hpp"
 
+#include <cstdint>
 #include <string>
 
-#include <errno.h>
-#include <stdint.h>
 #include <stdlib.h>
+
 
 namespace str
 {
@@ -50,7 +51,17 @@ namespace str
   from(const std::string &value_,
        int               *int_)
   {
-    *int_ = ::strtol(value_.c_str(),NULL,10);
+    int tmp;
+    char *endptr;
+
+    errno = 0;
+    tmp = ::strtol(value_.c_str(),&endptr,10);
+    if(errno != 0)
+      return -EINVAL;
+    if(endptr == value_.c_str())
+      return -EINVAL;
+
+    *int_ = tmp;
 
     return 0;
   }

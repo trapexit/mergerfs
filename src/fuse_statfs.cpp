@@ -19,11 +19,10 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs.hpp"
-#include "rwlock.hpp"
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <algorithm>
 #include <limits>
@@ -34,6 +33,7 @@
 using std::string;
 using std::map;
 using std::vector;
+
 
 namespace l
 {
@@ -69,24 +69,22 @@ namespace l
   static
   bool
   should_ignore(const StatFSIgnore  ignore_,
-                const Branch       *branch_,
+                const Branch       &branch_,
                 const bool          readonly_)
   {
     return ((((ignore_ == StatFSIgnore::ENUM::RO) || readonly_) &&
-             (branch_->ro_or_nc())) ||
-            ((ignore_ == StatFSIgnore::ENUM::NC) && (branch_->nc())));
+             (branch_.ro_or_nc())) ||
+            ((ignore_ == StatFSIgnore::ENUM::NC) && (branch_.nc())));
   }
 
   static
   int
-  statfs(const Branches     &branches_,
-         const char         *fusepath_,
-         const StatFS        mode_,
-         const StatFSIgnore  ignore_,
-         struct statvfs     *fsstat_)
+  statfs(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         const StatFS          mode_,
+         const StatFSIgnore    ignore_,
+         struct statvfs       *fsstat_)
   {
-    rwlock::ReadGuard guard(branches_.lock);
-
     int rv;
     string fullpath;
     struct stat st;
@@ -99,11 +97,11 @@ namespace l
     min_bsize   = std::numeric_limits<unsigned long>::max();
     min_frsize  = std::numeric_limits<unsigned long>::max();
     min_namemax = std::numeric_limits<unsigned long>::max();
-    for(size_t i = 0, ei = branches_.vec.size(); i < ei; i++)
+    for(const auto &branch : *branches_)
       {
         fullpath = ((mode_ == StatFS::ENUM::FULL) ?
-                    fs::path::make(branches_.vec[i].path,fusepath_) :
-                    branches_.vec[i].path);
+                    fs::path::make(branch.path,fusepath_) :
+                    branch.path);
 
         rv = fs::lstat(fullpath,&st);
         if(rv == -1)
@@ -120,7 +118,7 @@ namespace l
         if(stvfs.f_namemax && (min_namemax > stvfs.f_namemax))
           min_namemax = stvfs.f_namemax;
 
-        if(l::should_ignore(ignore_,&branches_.vec[i],StatVFS::readonly(stvfs)))
+        if(l::should_ignore(ignore_,branch,StatVFS::readonly(stvfs)))
           {
             stvfs.f_bavail = 0;
             stvfs.f_favail = 0;
@@ -153,14 +151,14 @@ namespace FUSE
   statfs(const char     *fusepath_,
          struct statvfs *st_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read        cfg;
+    const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::statfs(config.branches,
+    return l::statfs(cfg->branches,
                      fusepath_,
-                     config.statfs,
-                     config.statfs_ignore,
+                     cfg->statfs,
+                     cfg->statfs_ignore,
                      st_);
   }
 }

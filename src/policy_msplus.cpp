@@ -19,55 +19,50 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
+#include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "rwlock.hpp"
+#include "policy_msplus.hpp"
 
 #include <limits>
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
-
 
 namespace msplus
 {
   static
   const
   string*
-  create_1(const BranchVec &branches_,
-           const string    &fusepath_,
-           int             *err_)
+  create_1(const Branches::CPtr &branches_,
+           const string         &fusepath_,
+           int                  *err_)
   {
     int rv;
     uint64_t lus;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     basepath = NULL;
     lus = std::numeric_limits<uint64_t>::max();
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(*err_,EROFS);
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           error_and_continue(*err_,ENOENT);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(*err_,ENOENT);
         if(info.readonly)
           error_and_continue(*err_,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(*err_,ENOSPC);
         if(info.spaceused >= lus)
           continue;
 
         lus = info.spaceused;;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     return basepath;
@@ -75,9 +70,9 @@ namespace msplus
 
   static
   int
-  create(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  create(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int error;
     string fusepath;
@@ -102,27 +97,28 @@ namespace msplus
 
     return 0;
   }
-
-  static
-  int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return msplus::create(branches_.vec,fusepath_,paths_);
-  }
 }
 
 int
-Policy::Func::msplus(const Category  type_,
-                     const Branches &branches_,
-                     const char     *fusepath_,
-                     vector<string> *paths_)
+Policy::MSPLUS::Action::operator()(const Branches::CPtr &branches_,
+                                   const char           *fusepath_,
+                                   StrVec               *paths_) const
 {
-  if(type_ == Category::CREATE)
-    return msplus::create(branches_,fusepath_,paths_);
+  return Policies::Action::eplus(branches_,fusepath_,paths_);
+}
 
-  return Policy::Func::eplus(type_,branches_,fusepath_,paths_);
+int
+Policy::MSPLUS::Create::operator()(const Branches::CPtr &branches_,
+                                   const char           *fusepath_,
+                                   StrVec               *paths_) const
+{
+  return ::msplus::create(branches_,fusepath_,paths_);
+}
+
+int
+Policy::MSPLUS::Search::operator()(const Branches::CPtr &branches_,
+                                   const char           *fusepath_,
+                                   StrVec               *paths_) const
+{
+  return Policies::Search::eplus(branches_,fusepath_,paths_);
 }

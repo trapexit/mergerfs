@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,9 +16,92 @@
 
 #pragma once
 
-enum class Category
+#include "tofrom_string.hpp"
+#include "funcs.hpp"
+#include "func.hpp"
+
+#include <string>
+
+namespace Category
+{
+  class Base : public ToFromString
   {
-    ACTION,
-    CREATE,
-    SEARCH
+  public:
+    int from_string(const std::string &s) final;
+    std::string to_string() const final;
+
+  protected:
+    std::vector<ToFromString*> funcs;
   };
+
+  class Action final : public Base
+  {
+  private:
+    Action();
+
+  public:
+    Action(Funcs &funcs_)
+    {
+      funcs.push_back(&funcs_.chmod);
+      funcs.push_back(&funcs_.chown);
+      funcs.push_back(&funcs_.link);
+      funcs.push_back(&funcs_.removexattr);
+      funcs.push_back(&funcs_.rename);
+      funcs.push_back(&funcs_.rmdir);
+      funcs.push_back(&funcs_.setxattr);
+      funcs.push_back(&funcs_.truncate);
+      funcs.push_back(&funcs_.unlink);
+      funcs.push_back(&funcs_.utimens);
+    }
+  };
+
+  class Create final : public Base
+  {
+  private:
+    Create();
+
+  public:
+    Create(Funcs &funcs_)
+    {
+      funcs.push_back(&funcs_.create);
+      funcs.push_back(&funcs_.mkdir);
+      funcs.push_back(&funcs_.mknod);
+      funcs.push_back(&funcs_.symlink);
+    }
+  };
+
+  class Search final : public Base
+  {
+  private:
+    Search();
+
+  public:
+    Search(Funcs &funcs_)
+    {
+      funcs.push_back(&funcs_.access);
+      funcs.push_back(&funcs_.getattr);
+      funcs.push_back(&funcs_.getxattr);
+      funcs.push_back(&funcs_.listxattr);
+      funcs.push_back(&funcs_.open);
+      funcs.push_back(&funcs_.readlink);
+    }
+  };
+}
+
+class Categories final
+{
+private:
+  Categories();
+
+public:
+  Categories(Funcs &funcs_)
+    : action(funcs_),
+      create(funcs_),
+      search(funcs_)
+  {}
+
+public:
+  Category::Action action;
+  Category::Create create;
+  Category::Search search;
+};

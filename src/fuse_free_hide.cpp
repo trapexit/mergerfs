@@ -19,7 +19,8 @@
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
 
-#include <stdint.h>
+#include <cstdint>
+
 
 namespace FUSE
 {

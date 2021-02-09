@@ -21,15 +21,16 @@
 #include "fs_write.hpp"
 #include "ugid.hpp"
 
+#include "fuse.h"
+
 #include <string>
 #include <vector>
-
-#include <fuse.h>
 
 using std::string;
 using std::vector;
 
 typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
+
 
 namespace l
 {
@@ -85,13 +86,13 @@ namespace l
                  int           err_)
   {
     int rv;
-    const Config &config = Config::ro();
+    Config::Read cfg;
 
-    if(config.moveonenospc.enabled == false)
+    if(cfg->moveonenospc.enabled == false)
       return err_;
 
-    rv = fs::movefile_as_root(config.moveonenospc.policy,
-                              config.branches,
+    rv = fs::movefile_as_root(cfg->moveonenospc.policy,
+                              cfg->branches,
                               fi_->fusepath,
                               &fi_->fd);
     if(rv == -1)

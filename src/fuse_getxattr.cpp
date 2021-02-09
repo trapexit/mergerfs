@@ -24,12 +24,11 @@
 #include "ugid.hpp"
 #include "version.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
 
 #include <algorithm>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include <stdio.h>
 #include <string.h>
@@ -37,7 +36,7 @@
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
 using std::string;
-using std::vector;
+
 
 namespace l
 {
@@ -64,7 +63,7 @@ namespace l
 
   static
   int
-  getxattr_controlfile(const Config &config_,
+  getxattr_controlfile(Config::Read &cfg_,
                        const char   *attrname_,
                        char         *buf_,
                        const size_t  count_)
@@ -73,13 +72,13 @@ namespace l
     size_t len;
     string key;
     string val;
-    vector<string> attr;
+    StrVec attr;
 
     if(!str::startswith(attrname_,"user.mergerfs."))
       return -ENOATTR;
 
     key = &attrname_[14];
-    rv = config_.get(key,&val);
+    rv = cfg_->get(key,&val);
     if(rv < 0)
       return rv;
 
@@ -117,16 +116,16 @@ namespace l
 
   static
   int
-  getxattr_user_mergerfs_allpaths(const Branches &branches_,
-                                  const char     *fusepath_,
-                                  char           *buf_,
-                                  const size_t    count_)
+  getxattr_user_mergerfs_allpaths(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  char                 *buf_,
+                                  const size_t          count_)
   {
     string concated;
-    vector<string> paths;
-    vector<string> branches;
+    StrVec paths;
+    StrVec branches;
 
-    branches_.to_paths(branches);
+    branches_->to_paths(branches);
 
     fs::findallfiles(branches,fusepath_,&paths);
 
@@ -145,7 +144,7 @@ namespace l
                          char                 *buf_,
                          const size_t          count_)
   {
-    vector<string> attr;
+    StrVec attr;
 
     str::split(attrname_,'.',&attr);
 
@@ -163,7 +162,7 @@ namespace l
 
   static
   int
-  getxattr(Policy::Func::Search  searchFunc_,
+  getxattr(const Policy::Search &searchFunc_,
            const Branches       &branches_,
            const char           *fusepath_,
            const char           *attrname_,
@@ -172,7 +171,7 @@ namespace l
   {
     int rv;
     string fullpath;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -201,26 +200,26 @@ namespace FUSE
            char       *buf_,
            size_t      count_)
   {
-    const Config &config = Config::ro();
+    Config::Read cfg;
 
-    if(fusepath_ == config.controlfile)
-      return l::getxattr_controlfile(config,
+    if(fusepath_ == CONTROLFILE)
+      return l::getxattr_controlfile(cfg,
                                      attrname_,
                                      buf_,
                                      count_);
 
-    if((config.security_capability == false) &&
+    if((cfg->security_capability == false) &&
        l::is_attrname_security_capability(attrname_))
       return -ENOATTR;
 
-    if(config.xattr.to_int())
-      return -config.xattr.to_int();
+    if(cfg->xattr.to_int())
+      return -cfg->xattr.to_int();
 
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::getxattr(config.func.getxattr.policy,
-                       config.branches,
+    return l::getxattr(cfg->func.getxattr.policy,
+                       cfg->branches,
                        fusepath_,
                        attrname_,
                        buf_,

@@ -23,11 +23,11 @@
 #include "fs_statvfs_cache.hpp"
 #include "statvfs_util.hpp"
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <string>
 
 using std::string;
+
 
 namespace fs
 {

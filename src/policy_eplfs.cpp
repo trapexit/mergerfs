@@ -19,9 +19,10 @@
 #include "fs_info.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
+#include "policies.hpp"
 #include "policy.hpp"
+#include "policy_eplfs.hpp"
 #include "policy_error.hpp"
-#include "rwlock.hpp"
 
 #include <limits>
 #include <string>
@@ -34,40 +35,37 @@ namespace eplfs
 {
   static
   int
-  create(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  create(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     uint64_t eplfs;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     eplfs = std::numeric_limits<uint64_t>::max();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(const auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           error_and_continue(error,ENOENT);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
         if(info.spaceavail > eplfs)
           continue;
 
         eplfs = info.spaceavail;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -80,40 +78,26 @@ namespace eplfs
 
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return eplfs::create(branches_.vec,fusepath_,paths_);
-  }
-
-  static
-  int
-  action(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  action(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     uint64_t eplfs;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     eplfs = std::numeric_limits<uint64_t>::max();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(const auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro())
+        if(branch.ro())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           error_and_continue(error,ENOENT);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -122,7 +106,7 @@ namespace eplfs
           continue;
 
         eplfs = info.spaceavail;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -135,43 +119,29 @@ namespace eplfs
 
   static
   int
-  action(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return eplfs::action(branches_.vec,fusepath_,paths_);
-  }
-
-  static
-  int
-  search(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  search(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     uint64_t eplfs;
     uint64_t spaceavail;
-    const Branch *branch;
     const string *basepath;
 
     eplfs = std::numeric_limits<uint64_t>::max();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(const auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           continue;
-        rv = fs::statvfs_cache_spaceavail(branch->path,&spaceavail);
+        rv = fs::statvfs_cache_spaceavail(branch.path,&spaceavail);
         if(rv == -1)
           continue;
         if(spaceavail > eplfs)
           continue;
 
         eplfs = spaceavail;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -181,33 +151,28 @@ namespace eplfs
 
     return 0;
   }
-
-  static
-  int
-  search(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return eplfs::search(branches_.vec,fusepath_,paths_);
-  }
 }
 
 int
-Policy::Func::eplfs(const Category  type_,
-                    const Branches &branches_,
-                    const char     *fusepath_,
-                    vector<string> *paths_)
+Policy::EPLFS::Action::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
 {
-  switch(type_)
-    {
-    case Category::CREATE:
-      return eplfs::create(branches_,fusepath_,paths_);
-    case Category::ACTION:
-      return eplfs::action(branches_,fusepath_,paths_);
-    case Category::SEARCH:
-    default:
-      return eplfs::search(branches_,fusepath_,paths_);
-    }
+  return ::eplfs::action(branches_,fusepath_,paths_);
+}
+
+int
+Policy::EPLFS::Create::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
+{
+  return ::eplfs::create(branches_,fusepath_,paths_);
+}
+
+int
+Policy::EPLFS::Search::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
+{
+  return ::eplfs::search(branches_,fusepath_,paths_);
 }

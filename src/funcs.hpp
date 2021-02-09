@@ -20,27 +20,27 @@
 
 #include "func.hpp"
 
-class Funcs
+
+struct Funcs
 {
-public:
-  FuncAccess      access;
-  FuncChmod       chmod;
-  FuncChown       chown;
-  FuncCreate      create;
-  FuncGetAttr     getattr;
-  FuncGetXAttr    getxattr;
-  FuncLink        link;
-  FuncListXAttr   listxattr;
-  FuncMkdir       mkdir;
-  FuncMknod       mknod;
-  FuncOpen        open;
-  FuncReadlink    readlink;
-  FuncRemoveXAttr removexattr;
-  FuncRename      rename;
-  FuncRmdir       rmdir;
-  FuncSetXAttr    setxattr;
-  FuncSymlink     symlink;
-  FuncTruncate    truncate;
-  FuncUnlink      unlink;
-  FuncUtimens     utimens;
+  Func::Access      access;
+  Func::Chmod       chmod;
+  Func::Chown       chown;
+  Func::Create      create;
+  Func::GetAttr     getattr;
+  Func::GetXAttr    getxattr;
+  Func::Link        link;
+  Func::ListXAttr   listxattr;
+  Func::Mkdir       mkdir;
+  Func::Mknod       mknod;
+  Func::Open        open;
+  Func::Readlink    readlink;
+  Func::RemoveXAttr removexattr;
+  Func::Rename      rename;
+  Func::Rmdir       rmdir;
+  Func::SetXAttr    setxattr;
+  Func::Symlink     symlink;
+  Func::Truncate    truncate;
+  Func::Unlink      unlink;
+  Func::Utimens     utimens;
 };

@@ -20,6 +20,7 @@
 #include "ef.hpp"
 #include "errno.hpp"
 
+
 template<>
 std::string
 StatFSIgnore::to_string() const

@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <string>
+
+#include <time.h>
 
 namespace num
 {

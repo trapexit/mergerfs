@@ -20,54 +20,50 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
+#include "policy_eplus.hpp"
 #include "policy_error.hpp"
 #include "rwlock.hpp"
 
 #include <limits>
 #include <string>
-#include <vector>
 
 using std::string;
-using std::vector;
 
 namespace eplus
 {
   static
   int
-  create(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  create(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     uint64_t eplus;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     eplus = std::numeric_limits<uint64_t>::max();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro_or_nc())
+        if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           error_and_continue(error,ENOENT);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
           error_and_continue(error,EROFS);
-        if(info.spaceavail < branch->minfreespace())
+        if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
         if(info.spaceused >= eplus)
           continue;
 
         eplus = info.spaceused;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -80,40 +76,26 @@ namespace eplus
 
   static
   int
-  create(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return eplus::create(branches_.vec,fusepath_,paths_);
-  }
-
-  static
-  int
-  action(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  action(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     int error;
     uint64_t eplus;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;
     eplus = std::numeric_limits<uint64_t>::max();
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(branch->ro())
+        if(branch.ro())
           error_and_continue(error,EROFS);
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           error_and_continue(error,ENOENT);
-        rv = fs::info(branch->path,&info);
+        rv = fs::info(branch.path,&info);
         if(rv == -1)
           error_and_continue(error,ENOENT);
         if(info.readonly)
@@ -122,7 +104,7 @@ namespace eplus
           continue;
 
         eplus = info.spaceused;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -135,43 +117,29 @@ namespace eplus
 
   static
   int
-  action(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return eplus::action(branches_.vec,fusepath_,paths_);
-  }
-
-  static
-  int
-  search(const BranchVec &branches_,
-         const char      *fusepath_,
-         vector<string>  *paths_)
+  search(const Branches::CPtr &branches_,
+         const char           *fusepath_,
+         StrVec               *paths_)
   {
     int rv;
     uint64_t eplus;
     uint64_t spaceused;
-    const Branch *branch;
     const string *basepath;
 
     eplus = 0;
     basepath = NULL;
-    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+    for(auto &branch : *branches_)
       {
-        branch = &branches_[i];
-
-        if(!fs::exists(branch->path,fusepath_))
+        if(!fs::exists(branch.path,fusepath_))
           continue;
-        rv = fs::statvfs_cache_spaceused(branch->path,&spaceused);
+        rv = fs::statvfs_cache_spaceused(branch.path,&spaceused);
         if(rv == -1)
           continue;
         if(spaceused >= eplus)
           continue;
 
         eplus = spaceused;
-        basepath = &branch->path;
+        basepath = &branch.path;
       }
 
     if(basepath == NULL)
@@ -181,33 +149,28 @@ namespace eplus
 
     return 0;
   }
-
-  static
-  int
-  search(const Branches &branches_,
-         const char     *fusepath_,
-         vector<string> *paths_)
-  {
-    rwlock::ReadGuard guard(branches_.lock);
-
-    return eplus::search(branches_.vec,fusepath_,paths_);
-  }
 }
 
 int
-Policy::Func::eplus(const Category  type_,
-                    const Branches &branches_,
-                    const char     *fusepath_,
-                    vector<string> *paths_)
+Policy::EPLUS::Action::operator()(const Branches::CPtr &branches_,
+                                  const char          *fusepath_,
+                                  StrVec              *paths_) const
 {
-  switch(type_)
-    {
-    case Category::CREATE:
-      return eplus::create(branches_,fusepath_,paths_);
-    case Category::ACTION:
-      return eplus::action(branches_,fusepath_,paths_);
-    case Category::SEARCH:
-    default:
-      return eplus::search(branches_,fusepath_,paths_);
-    }
+  return ::eplus::action(branches_,fusepath_,paths_);
+}
+
+int
+Policy::EPLUS::Create::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
+{
+  return ::eplus::create(branches_,fusepath_,paths_);
+}
+
+int
+Policy::EPLUS::Search::operator()(const Branches::CPtr &branches_,
+                                  const char           *fusepath_,
+                                  StrVec               *paths_) const
+{
+  return ::eplus::search(branches_,fusepath_,paths_);
 }

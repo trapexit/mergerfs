@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-
 #include "errno.h"
 #include "fs_attr.hpp"
 #include "fs_clonepath.hpp"
@@ -27,7 +25,10 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
+#include <string>
+
 using std::string;
+
 
 namespace l
 {

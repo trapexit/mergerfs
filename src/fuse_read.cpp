@@ -18,7 +18,8 @@
 #include "fileinfo.hpp"
 #include "fs_read.hpp"
 
-#include <fuse.h>
+#include "fuse.h"
+
 
 namespace l
 {

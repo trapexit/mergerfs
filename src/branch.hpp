@@ -18,81 +18,50 @@
 
 #pragma once
 
-#include "rwlock.hpp"
-#include "tofrom_string.hpp"
 #include "nonstd/optional.hpp"
+#include "strvec.hpp"
+#include "tofrom_string.hpp"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
-#include <stdint.h>
-#include <pthread.h>
 
-class Branch : public ToFromString
+class Branch final : public ToFromString
 {
 public:
-  Branch(const uint64_t &default_minfreespace);
+  typedef std::vector<Branch> Vector;
 
 public:
-  int from_string(const std::string &str);
-  std::string to_string(void) const;
+  Branch(const uint64_t &default_minfreespace_);
 
 public:
   enum class Mode
     {
-      INVALID,
-      RO,
-      RW,
-      NC
+     INVALID,
+     RO,
+     RW,
+     NC
     };
-
-public:
-  Mode        mode;
-  std::string path;
-  uint64_t    minfreespace() const;
-
-public:
-  void set_minfreespace(const uint64_t minfreespace);
 
 public:
   bool ro(void) const;
   bool nc(void) const;
   bool ro_or_nc(void) const;
 
+public:
+  int from_string(const std::string &str) final;
+  std::string to_string(void) const final;
+
+public:
+  uint64_t minfreespace() const;
+  void set_minfreespace(const uint64_t);
+
+public:
+  Mode mode;
+  std::string path;
+
 private:
   nonstd::optional<uint64_t>  _minfreespace;
   const uint64_t             *_default_minfreespace;
-};
-
-typedef std::vector<Branch> BranchVec;
-
-class Branches : public ToFromString
-{
-public:
-  Branches(const uint64_t &default_minfreespace_);
-
-public:
-  int from_string(const std::string &str);
-  std::string to_string(void) const;
-
-public:
-  void to_paths(std::vector<std::string> &vec) const;
-
-public:
-  mutable pthread_rwlock_t lock;
-  BranchVec vec;
-  const uint64_t &default_minfreespace;
-};
-
-class SrcMounts : public ToFromString
-{
-public:
-  SrcMounts(Branches &b_);
-
-public:
-  int from_string(const std::string &str);
-  std::string to_string(void) const;
-
-private:
-  Branches &_branches;
 };

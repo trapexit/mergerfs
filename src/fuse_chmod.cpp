@@ -24,12 +24,10 @@
 #include "fuse.h"
 
 #include <string>
-#include <vector>
 
 #include <string.h>
 
 using std::string;
-using std::vector;
 
 
 namespace l
@@ -73,10 +71,10 @@ namespace l
 
   static
   void
-  chmod_loop(const vector<string> &basepaths_,
-             const char           *fusepath_,
-             const mode_t          mode_,
-             PolicyRV             *prv_)
+  chmod_loop(const StrVec &basepaths_,
+             const char   *fusepath_,
+             const mode_t  mode_,
+             PolicyRV     *prv_)
   {
     for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
@@ -86,15 +84,15 @@ namespace l
 
   static
   int
-  chmod(Policy::Func::Action  actionFunc_,
-        Policy::Func::Search  searchFunc_,
+  chmod(const Policy::Action &actionFunc_,
+        const Policy::Search &searchFunc_,
         const Branches       &branches_,
         const char           *fusepath_,
         const mode_t          mode_)
   {
     int rv;
     PolicyRV prv;
-    vector<string> basepaths;
+    StrVec basepaths;
 
     rv = actionFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
@@ -121,13 +119,13 @@ namespace FUSE
   chmod(const char *fusepath_,
         mode_t      mode_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::ro();
+    Config::Read cfg;
+    const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::chmod(config.func.chmod.policy,
-                    config.func.getattr.policy,
-                    config.branches,
+    return l::chmod(cfg->func.chmod.policy,
+                    cfg->func.getattr.policy,
+                    cfg->branches,
                     fusepath_,
                     mode_);
   }

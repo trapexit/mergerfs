@@ -19,9 +19,9 @@
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
+#include <cstdint>
 #include <string>
 
-#include <stdint.h>
 
 namespace fs
 {

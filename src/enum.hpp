@@ -22,6 +22,7 @@
 
 #include <string>
 
+
 template<typename E>
 class Enum : public ToFromString
 {

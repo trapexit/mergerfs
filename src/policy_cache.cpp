@@ -28,7 +28,7 @@ namespace l
 
 PolicyCache::Value::Value()
   : time(0),
-    path()
+    paths()
 {
 
 }
@@ -91,18 +91,17 @@ PolicyCache::clear(void)
 }
 
 int
-PolicyCache::operator()(Policy::Func::Search &func_,
+PolicyCache::operator()(const Policy::Search &policy_,
                         const Branches       &branches_,
                         const char           *fusepath_,
-                        std::string          *branch_)
+                        StrVec               *paths_)
 {
   int rv;
   Value *v;
   uint64_t now;
-  string branch;
 
   if(timeout == 0)
-    return func_(branches_,fusepath_,branch_);
+    return policy_(branches_,fusepath_,paths_);
 
   now = l::get_time();
 
@@ -112,16 +111,19 @@ PolicyCache::operator()(Policy::Func::Search &func_,
   if((now - v->time) >= timeout)
     {
       pthread_mutex_unlock(&_lock);
-      rv = func_(branches_,fusepath_,&branch);
+
+      rv = policy_(branches_,fusepath_,paths_);
       if(rv == -1)
         return -1;
 
       pthread_mutex_lock(&_lock);
-      v->time = now;
-      v->path = branch;
+      v->time  = now;
+      v->paths = *paths_;
     }
-
-  *branch_ = v->path;
+  else
+    {
+      *paths_ = v->paths;
+    }
 
   pthread_mutex_unlock(&_lock);
 

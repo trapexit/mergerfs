@@ -14,16 +14,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_path.hpp"
+
+#include <string>
+
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <string>
-
-#include "fs_path.hpp"
-
 using std::string;
+
 
 namespace fs
 {

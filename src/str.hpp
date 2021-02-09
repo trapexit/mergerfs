@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -49,6 +50,10 @@ namespace str
   std::string
   join(const std::vector<std::string> &vec,
        const char                      sep);
+
+  std::string
+  join(const std::set<std::string> &s,
+       const char                   sep);
 
   size_t
   longest_common_prefix_index(const std::vector<std::string> &vec);

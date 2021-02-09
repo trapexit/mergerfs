@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <fuse.h>
+#include "fuse.h"
+
 
 namespace FUSE
 {
   int
   fsync(const fuse_file_info_t *ffi,
         int                     isdatasync);
-        
+
 }
