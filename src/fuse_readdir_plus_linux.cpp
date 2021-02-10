@@ -70,6 +70,8 @@ namespace l
     fuse_entry_t entry;
     struct linux_dirent64 *d;
 
+    fuse_dirents_reset(buf_);
+
     buf = (char*)g_DENTS_BUF_POOL.alloc();
 
     entry.nodeid           = 0;
