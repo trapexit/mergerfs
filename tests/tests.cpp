@@ -109,6 +109,10 @@ test_config_branches()
   TEST_MSG("minfreespace: expected = %lu; produced = %lu",
            4321,
            (*bcp0)[1].minfreespace());
+
+  TEST_CHECK(b.from_string("foo/bar") == 0);
+  TEST_CHECK(b.from_string("./foo/bar") == 0);
+  TEST_CHECK(b.from_string("./foo/bar:/bar/baz:blah/asdf") == 0);
 }
 
 void
