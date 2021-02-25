@@ -19,10 +19,13 @@
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
+#include "config_follow_symlinks.hpp"
 #include "config_inodecalc.hpp"
+#include "config_link_exdev.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
 #include "config_readdir.hpp"
+#include "config_rename_exdev.hpp"
 #include "config_statfs.hpp"
 #include "config_statfsignore.hpp"
 #include "config_xattr.hpp"
@@ -38,7 +41,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
@@ -98,6 +100,7 @@ public:
 public:
   ConfigBOOL     async_read;
   ConfigBOOL     auto_cache;
+  ConfigUINT64   minfreespace;
   Branches       branches;
   ConfigUINT64   cache_attr;
   ConfigUINT64   cache_entry;
@@ -110,13 +113,14 @@ public:
   ConfigBOOL     direct_io;
   ConfigBOOL     dropcacheonclose;
   ConfigSTR      fsname;
+  FollowSymlinks follow_symlinks;
   Funcs          func;
   ConfigUINT64   fuse_msg_size;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
   ConfigBOOL     link_cow;
-  ConfigUINT64   minfreespace;
+  LinkEXDEV      link_exdev;
   ConfigSTR      mount;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
@@ -125,6 +129,7 @@ public:
   ConfigBOOL     posix_acl;
   ReadDir        readdir;
   ConfigBOOL     readdirplus;
+  RenameEXDEV    rename_exdev;
   ConfigBOOL     security_capability;
   SrcMounts      srcmounts;
   StatFS         statfs;

@@ -223,6 +223,18 @@ over NFS where there are issues with creating files for write while
 setting the mode to read\-only.
 (default: off)
 .IP \[bu] 2
+\f[B]follow\-symlinks=never|directory|regular|all\f[]: Turns symlinks
+into what they point to.
+(default: never)
+.IP \[bu] 2
+\f[B]link\-exdev=passthrough|rel\-symlink|abs\-base\-symlink|abs\-pool\-symlink\f[]:
+When a link fails with EXDEV optionally create a symlink to the file
+instead.
+.IP \[bu] 2
+\f[B]rename\-exdev=passthrough|rel\-symlink|abs\-symlink\f[]: When a
+rename fails with EXDEV optionally move the file to a special directory
+and symlink to it.
+.IP \[bu] 2
 \f[B]posix_acl=BOOL\f[]: Enable POSIX ACL support (if supported by
 kernel and underlying filesystem).
 (default: false)
@@ -542,6 +554,75 @@ On kernels before 4.20 the value has no effect.
 The reason the value is configurable is to enable experimentation and
 benchmarking.
 See the BENCHMARKING section for examples.
+.SS follow\-symlinks
+.PP
+This feature, when enabled, will cause symlinks to be interpreted by
+mergerfs as their target (depending on the mode).
+.PP
+When there is a getattr/stat request for a file mergerfs will check if
+the file is a symlink and depending on the \f[C]follow\-symlinks\f[]
+setting will replace the information about the symlink with that of that
+which it points to.
+.PP
+When unlink\[aq]ing or rmdir\[aq]ing the followed symlink it will remove
+the symlink itself and not that which it points to.
+.IP \[bu] 2
+never: Behave as normal.
+Symlinks are treated as such.
+.IP \[bu] 2
+directory: Resolve symlinks only which point to directories.
+.IP \[bu] 2
+regular: Resolve symlinks only which point to regular files.
+.IP \[bu] 2
+all: Resolve all symlinks to that which they point to.
+.PP
+Symlinks which do not point to anything are left as is.
+.PP
+WARNING: This feature works but there might be edge cases yet found.
+If you find any odd behaviors please file a ticket on
+github (https://github.com/trapexit/mergerfs/issues).
+.SS link\-exdev
+.PP
+If using path preservation and a \f[C]link\f[] fails with EXDEV make a
+call to \f[C]symlink\f[] where the \f[C]target\f[] is the
+\f[C]oldlink\f[] and the \f[C]linkpath\f[] is the \f[C]newpath\f[].
+The \f[C]target\f[] value is determined by the value of
+\f[C]link\-exdev\f[].
+.IP \[bu] 2
+passthrough: Return EXDEV as normal.
+.IP \[bu] 2
+rel\-symlink: A relative path from the \f[C]newpath\f[].
+.IP \[bu] 2
+abs\-base\-symlink: A absolute value using the underlying branch.
+.IP \[bu] 2
+abs\-pool\-symlink: A absolute value using the mergerfs mount point.
+.PP
+NOTE: It is possible that some applications check the file they link.
+In those cases it is possible it will error or complain.
+.SS rename\-exdev
+.PP
+If using path preservation and a \f[C]rename\f[] fails with EXDEV:
+.IP "1." 3
+Move file from \f[B]/branch/a/b/c\f[] to
+\f[B]/branch/.mergerfs_rename_exdev/a/b/c\f[].
+.IP "2." 3
+symlink the rename\[aq]s \f[C]newpath\f[] to the moved file.
+.PP
+The \f[C]target\f[] value is determined by the value of
+\f[C]rename\-exdev\f[].
+.IP \[bu] 2
+passthrough: Return EXDEV as normal.
+.IP \[bu] 2
+rel\-symlink: A relative path from the \f[C]newpath\f[].
+.IP \[bu] 2
+abs\-symlink: A absolute value using the mergerfs mount point.
+.PP
+NOTE: It is possible that some applications check the file they rename.
+In those cases it is possible it will error or complain.
+.PP
+NOTE: The reason \f[C]abs\-symlink\f[] is not split into two like
+\f[C]link\-exdev\f[] is due to the complexities in managing absolute
+base symlinks when multiple \f[C]oldpaths\f[] exist.
 .SS symlinkify
 .PP
 Due to the levels of indirection introduced by mergerfs and the

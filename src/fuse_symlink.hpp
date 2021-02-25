@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,10 +16,19 @@
 
 #pragma once
 
+#include "fuse.h"
+
+#include <sys/stat.h>
 
 namespace FUSE
 {
   int
-  symlink(const char *oldpath,
-          const char *newpath);
+  symlink(const char *target,
+          const char *linkpath);
+
+  int
+  symlink(const char      *target,
+          const char      *linkpath,
+          struct stat     *st,
+          fuse_timeouts_t *timeouts);
 }

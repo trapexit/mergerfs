@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,16 +16,20 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fs_mkdir.hpp"
+#include "ugid.hpp"
 
-#include "fuse.h"
-
-
-namespace FUSE
+namespace fs
 {
+  template<typename T>
+  static
+  inline
   int
-  link(const char      *oldpath,
-       const char      *newpath,
-       struct stat     *st,
-       fuse_timeouts_t *timeouts);
+  mkdir_as_root(const T      &path_,
+                const mode_t  mode_)
+  {
+    const ugid::SetRootGuard guard;
+
+    return fs::mkdir(path_,mode_);
+  }
 }
