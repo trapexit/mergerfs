@@ -1165,7 +1165,7 @@ If `mergerfs` doesn't work as a type it could be due to how the `mount.mergerfs`
 
 See above first.
 
-If/when mergerfs is rewritten to use the low-level API then it'll be plausible to support system libfuse but till then its simply too much work to manage the differences across the versions.
+If/when mergerfs is rewritten to use the low-level API then it'll be plausible to support system libfuse but till then it's simply too much work to manage the differences across the versions.
 
 
 #### Why use mergerfs over mhddfs?
