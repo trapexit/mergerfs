@@ -2421,6 +2421,10 @@ considered different devices.
 There is no way to link between them.
 You should mount in the highest directory in the mergerfs pool that
 includes all the paths you need if you want links to work.
+.SS Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
+.PP
+Yes.
+They are completely unreleated pieces of software.
 .SS Does mergerfs support CoW / copy\-on\-write / writes to read\-only
 filesystems?
 .PP
@@ -2770,12 +2774,12 @@ permissions, etc.
 .IP \[bu] 2
 A \f[C]strace\f[] of the app having problems:
 .IP \[bu] 2
-\f[C]strace\ \-f\ \-o\ /tmp/app.strace.txt\ <cmd>\f[]
+\f[C]strace\ \-fvTtt\ \-s\ 256\ \-o\ /tmp/app.strace.txt\ <cmd>\f[]
 .IP \[bu] 2
 A \f[C]strace\f[] of mergerfs while the program is trying to do whatever
 it\[aq]s failing to do:
 .IP \[bu] 2
-\f[C]strace\ \-f\ \-p\ <mergerfsPID>\ \-o\ /tmp/mergerfs.strace.txt\f[]
+\f[C]strace\ \-fvTtt\ \-s\ 256\ \-p\ <mergerfsPID>\ \-o\ /tmp/mergerfs.strace.txt\f[]
 .IP \[bu] 2
 \f[B]Precise\f[] directions on replicating the issue.
 Do not leave \f[B]anything\f[] out.

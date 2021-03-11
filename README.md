@@ -1132,6 +1132,11 @@ What mergerfs does not do is fake hard links across branches.  Read the section 
 Remember that hardlinks will NOT work across devices. That includes between the original filesystem and a mergerfs pool, between two separate pools of the same underlying filesystems, or bind mounts of paths within the mergerfs pool. The latter is common when using Docker or Podman. Multiple volumes (bind mounts) to the same underlying filesystem are considered different devices. There is no way to link between them. You should mount in the highest directory in the mergerfs pool that includes all the paths you need if you want links to work.
 
 
+#### Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
+
+Yes. They are completely unreleated pieces of software.
+
+
 #### Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
 
 Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs sense. It does offer a [cow-shell](http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html) like hard link breaking (copy to temp file then rename over original) which can be useful when wanting to save space by hardlinking duplicate files but wish to treat each name as if it were a unique and separate file.
@@ -1312,9 +1317,9 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 * List of drives, their filesystems, and sizes (before and after issue): `df -h`
 * **All** information about the relevant branches and paths: permissions, etc.
 * A `strace` of the app having problems:
-  * `strace -f -o /tmp/app.strace.txt <cmd>`
+  * `strace -fvTtt -s 256 -o /tmp/app.strace.txt <cmd>`
 * A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
-  * `strace -f -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
+  * `strace -fvTtt -s 256 -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
 * **Precise** directions on replicating the issue. Do not leave **anything** out.
 * Try to recreate the problem in the simplest way using standard programs.
 
