@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fchmod.hpp"
@@ -38,8 +40,14 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::FCHMOD
 {
+  int
+  config(const toml::value &cfg_)
+  {
+    return 0;
+  }
+
   int
   fchmod(const fuse_file_info_t *ffi_,
          const mode_t            mode_)

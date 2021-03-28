@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include "toml.hpp"
 
-namespace FUSE
+
+namespace FUSE::COPY_FILE_RANGE
 {
+  int
+  config(const toml::value &cfg);
+
   ssize_t
   copy_file_range(const fuse_file_info_t *ffi_in,
                   off_t                   offset_in,

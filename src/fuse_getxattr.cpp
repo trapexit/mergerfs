@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 #include "version.hpp"
 
 #include "fuse.h"
@@ -59,40 +60,6 @@ namespace l
     rv = fs::lgetxattr(path_,attrname_,value_,size_);
 
     return ((rv == -1) ? -errno : rv);
-  }
-
-  static
-  int
-  getxattr_controlfile(Config::Read &cfg_,
-                       const char   *attrname_,
-                       char         *buf_,
-                       const size_t  count_)
-  {
-    int rv;
-    size_t len;
-    string key;
-    string val;
-    StrVec attr;
-
-    if(!str::startswith(attrname_,"user.mergerfs."))
-      return -ENOATTR;
-
-    key = &attrname_[14];
-    rv = cfg_->get(key,&val);
-    if(rv < 0)
-      return rv;
-
-    len = val.size();
-
-    if(count_ == 0)
-      return len;
-
-    if(count_ < len)
-      return -ERANGE;
-
-    memcpy(buf_,val.c_str(),len);
-
-    return (int)len;
   }
 
   static
@@ -192,21 +159,15 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::GETXATTR
 {
   int
-  getxattr(const char *fusepath_,
-           const char *attrname_,
+  getxattr2(const char *fusepath_,
+            const char *attrname_,
            char       *buf_,
            size_t      count_)
   {
     Config::Read cfg;
-
-    if(fusepath_ == CONTROLFILE)
-      return l::getxattr_controlfile(cfg,
-                                     attrname_,
-                                     buf_,
-                                     count_);
 
     if((cfg->security_capability == false) &&
        l::is_attrname_security_capability(attrname_))
@@ -224,5 +185,22 @@ namespace FUSE
                        attrname_,
                        buf_,
                        count_);
+  }
+
+  int
+  getxattr(const char *fusepath_,
+           const char *attrname_,
+           char       *buf_,
+           size_t      count_)
+  {
+    State s;
+
+    if((s->security_capability == false) && l::is_attrname_security_capability(attrname_))
+      return -ENOATTR;
+
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    return s->getxattr(fusepath_,attrname_,buf_,count_);
   }
 }

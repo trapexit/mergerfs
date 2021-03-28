@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 #include <vector>
 
@@ -25,4 +27,8 @@ namespace fs
   void
   glob(const std::string        &pattern,
        std::vector<std::string> *strs);
+
+  void
+  glob(const std::string                  &pattern,
+       std::vector<ghc::filesystem::path> *paths);
 }

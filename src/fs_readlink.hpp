@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -28,10 +30,24 @@ namespace fs
   static
   inline
   int
-  readlink(const std::string &path_,
-           char              *buf_,
-           const size_t       bufsiz_)
+  readlink(const char   *pathname_,
+           char         *buf_,
+           const size_t  bufsiz_)
   {
-    return ::readlink(path_.c_str(),buf_,bufsiz_);
+    int rv;
+
+    rv = ::readlink(pathname_,buf_,bufsiz_);
+
+    return ((rv == -1) ? -errno : rv);
+  }
+
+  static
+  inline
+  int
+  readlink(const ghc::filesystem::path &pathname_,
+           char                        *buf_,
+           const size_t                 bufsiz_)
+  {
+    return fs::readlink(pathname_.c_str(),buf_,bufsiz_);
   }
 }

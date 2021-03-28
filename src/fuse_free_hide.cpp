@@ -22,7 +22,7 @@
 #include <cstdint>
 
 
-namespace FUSE
+namespace FUSE::FREE_HIDE
 {
   int
   free_hide(const uint64_t fh_)

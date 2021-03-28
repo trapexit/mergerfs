@@ -19,6 +19,7 @@
 #include "fs_lremovexattr.hpp"
 #include "fs_path.hpp"
 #include "policy_rv.hpp"
+#include "state.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
@@ -113,16 +114,13 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::REMOVEXATTR
 {
   int
-  removexattr(const char *fusepath_,
-              const char *attrname_)
+  removexattr_old(const char *fusepath_,
+                  const char *attrname_)
   {
     Config::Read cfg;
-
-    if(fusepath_ == CONTROLFILE)
-      return -ENOATTR;
 
     if(cfg->xattr.to_int())
       return -cfg->xattr.to_int();
@@ -135,5 +133,16 @@ namespace FUSE
                           cfg->branches,
                           fusepath_,
                           attrname_);
+  }
+
+  int
+  removexattr(const char *fusepath_,
+              const char *attrname_)
+  {
+    State s;
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    return s->removexattr(fusepath_,attrname_);
   }
 }

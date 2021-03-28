@@ -28,6 +28,10 @@ namespace fs
   int
   close(const int fd_)
   {
-    return ::close(fd_);
+    int rv;
+
+    rv = ::close(fd_);
+
+    return ((rv == -1) ? -errno : 0);
   }
 }

@@ -20,7 +20,9 @@
 #include "fs_clonepath.hpp"
 #include "fs_mkdir.hpp"
 #include "fs_path.hpp"
+#include "ghc/filesystem.hpp"
 #include "policy.hpp"
+#include "state.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
@@ -144,11 +146,11 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::MKDIR
 {
   int
-  mkdir(const char *fusepath_,
-        mode_t      mode_)
+  mkdir_old(const char *fusepath_,
+            mode_t      mode_)
   {
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
@@ -160,5 +162,16 @@ namespace FUSE
                     fusepath_,
                     mode_,
                     fc->umask);
+  }
+
+  int
+  mkdir(const char *fusepath_,
+        mode_t      mode_)
+  {
+    State s;
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    return s->mkdir(fusepath_,mode_,fc->umask);
   }
 }

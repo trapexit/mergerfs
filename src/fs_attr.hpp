@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <string>
+#include "ghc/filesystem.hpp"
 
 
 namespace fs
@@ -25,7 +25,7 @@ namespace fs
   {
     int copy(const int fdin,
              const int fdout);
-    int copy(const std::string &from,
-             const std::string &to);
+    int copy(const ghc::filesystem::path &from,
+             const ghc::filesystem::path &to);
   }
 }

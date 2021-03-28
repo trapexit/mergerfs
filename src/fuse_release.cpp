@@ -48,8 +48,18 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::RELEASE
 {
+  int
+  config(const toml::value &toml_)
+  {
+    Config::Write cfg;
+
+    cfg->dropcacheonclose = toml::find<bool>(toml_,"func","release","drop-cache");
+
+    return 0;
+  }
+
   int
   release(const fuse_file_info_t *ffi_)
   {

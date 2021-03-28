@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 
@@ -27,5 +29,8 @@ namespace fs
   {
     bool
     dir_has_defaults(const std::string &fullpath);
+
+    int
+    dir_has_defaults(const ghc::filesystem::path &fullpath);
   }
 }

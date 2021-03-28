@@ -27,7 +27,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::READDIR_PLUS
 {
   int
   readdir_plus(const fuse_file_info_t *ffi_,
@@ -41,18 +41,18 @@ namespace FUSE
     switch(cfg->readdir)
       {
       case ReadDir::ENUM::LINUX:
-        return FUSE::readdir_plus_linux(cfg->branches,
-                                        di->fusepath.c_str(),
-                                        cfg->cache_entry,
-                                        cfg->cache_attr,
-                                        buf_);
+        return FUSE::READDIR_PLUS_LINUX::readdir_plus_linux(cfg->branches,
+                                                            di->fusepath.c_str(),
+                                                            cfg->cache_entry,
+                                                            cfg->cache_attr,
+                                                            buf_);
       default:
       case ReadDir::ENUM::POSIX:
-        return FUSE::readdir_plus_posix(cfg->branches,
-                                        di->fusepath.c_str(),
-                                        cfg->cache_entry,
-                                        cfg->cache_attr,
-                                        buf_);
+        return FUSE::READDIR_PLUS_POSIX::readdir_plus_posix(cfg->branches,
+                                                            di->fusepath.c_str(),
+                                                            cfg->cache_entry,
+                                                            cfg->cache_attr,
+                                                            buf_);
       }
   }
 }

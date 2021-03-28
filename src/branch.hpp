@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include "from_toml.hpp"
+
+#include "ghc/filesystem.hpp"
+
 #include "nonstd/optional.hpp"
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
@@ -65,3 +69,55 @@ private:
   nonstd::optional<uint64_t>  _minfreespace;
   const uint64_t             *_default_minfreespace;
 };
+
+class Branch2
+{
+public:
+  enum class Mode
+    {
+     INVALID,
+     RO,
+     RW,
+     NC
+    };
+
+  static Mode str2mode(const std::string &);
+
+public:
+  Branch2(const toml::value   &toml,
+          const Branch2::Mode  default_mode,
+          const uint64_t       default_minfreespace);
+
+public:
+  bool ro(void) const;
+  bool nc(void) const;
+  bool ro_or_nc(void) const;
+
+public:
+  ghc::filesystem::path path;
+  Mode                  mode;
+  uint64_t              minfreespace;
+};
+
+namespace toml
+{
+  template<>
+  struct from<Branch2::Mode>
+  {
+    static
+    Branch2::Mode
+    from_toml(const toml::value &v_)
+    {
+      std::string str = v_.as_string();
+
+      if(str == "RW")
+        return Branch2::Mode::RW;
+      if(str == "RO")
+        return Branch2::Mode::RO;
+      if(str == "NC")
+        return Branch2::Mode::NC;
+
+      return Branch2::Mode::RW;
+    }
+  };
+}

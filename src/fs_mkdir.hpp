@@ -34,7 +34,11 @@ namespace fs
   mkdir(const char   *path_,
         const mode_t  mode_)
   {
-    return ::mkdir(path_,mode_);
+    int rv;
+
+    rv = ::mkdir(path_,mode_);
+
+    return ((rv == -1) ? -errno : 0);
   }
 
   static

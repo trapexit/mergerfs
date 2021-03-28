@@ -21,6 +21,7 @@
 #include "fs_path.hpp"
 #include "ugid.hpp"
 #include "xattr.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -33,26 +34,6 @@ using std::string;
 
 namespace l
 {
-  static
-  int
-  listxattr_controlfile(Config::Read &cfg_,
-                        char         *list_,
-                        const size_t  size_)
-  {
-    string xattrs;
-
-    cfg_->keys_xattr(xattrs);
-    if(size_ == 0)
-      return xattrs.size();
-
-    if(size_ < xattrs.size())
-      return -ERANGE;
-
-    memcpy(list_,xattrs.c_str(),xattrs.size());
-
-    return xattrs.size();
-  }
-
   static
   int
   listxattr(const Policy::Search &searchFunc_,
@@ -77,17 +58,14 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::LISTXATTR
 {
   int
-  listxattr(const char *fusepath_,
+  listxattr_old(const char *fusepath_,
             char       *list_,
             size_t      size_)
   {
     Config::Read cfg;
-
-    if(fusepath_ == CONTROLFILE)
-      return l::listxattr_controlfile(cfg,list_,size_);
 
     switch(cfg->xattr)
       {
@@ -107,5 +85,17 @@ namespace FUSE
                         fusepath_,
                         list_,
                         size_);
+  }
+
+  int
+  listxattr(const char *fusepath_,
+            char       *list_,
+            size_t      size_)
+  {
+    State s;
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    return s->listxattr(fusepath_,list_,size_);
   }
 }

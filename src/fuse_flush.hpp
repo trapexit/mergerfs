@@ -16,11 +16,16 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::FLUSH
 {
+  int
+  config(const toml::value &cfg);
+
   int
   flush(const fuse_file_info_t *ffi);
 }

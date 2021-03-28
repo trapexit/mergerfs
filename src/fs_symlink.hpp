@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -31,7 +33,11 @@ namespace fs
   symlink(const char *target_,
           const char *linkpath_)
   {
-    return ::symlink(target_,linkpath_);
+    int rv;
+
+    rv = ::symlink(target_,linkpath_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static
@@ -40,7 +46,7 @@ namespace fs
   symlink(const std::string &target_,
           const std::string &linkpath_)
   {
-    return ::symlink(target_.c_str(),linkpath_.c_str());
+    return fs::symlink(target_.c_str(),linkpath_.c_str());
   }
 
   static
@@ -49,6 +55,15 @@ namespace fs
   symlink(const char        *target_,
           const std::string &linkpath_)
   {
-    return ::symlink(target_,linkpath_.c_str());
+    return fs::symlink(target_,linkpath_.c_str());
+  }
+
+  static
+  inline
+  int
+  symlink(const char                  *target_,
+          const ghc::filesystem::path &linkpath_)
+  {
+    return fs::symlink(target_,linkpath_.c_str());
   }
 }

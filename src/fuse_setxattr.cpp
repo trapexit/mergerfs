@@ -22,6 +22,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "num.hpp"
 #include "policy_rv.hpp"
+#include "state.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 
@@ -65,36 +66,6 @@ namespace l
   is_attrname_security_capability(const char *attrname_)
   {
     return (strcmp(attrname_,SECURITY_CAPABILITY) == 0);
-  }
-
-  static
-  int
-  setxattr_controlfile(const string &attrname_,
-                       const string &attrval_,
-                       const int     flags_)
-  {
-    int rv;
-    string key;
-    Config::Write cfg;
-
-    if(!str::startswith(attrname_,"user.mergerfs."))
-      return -ENOATTR;
-
-    key = &attrname_[14];
-
-    if(cfg->has_key(key) == false)
-      return -ENOATTR;
-
-    if((flags_ & XATTR_CREATE) == XATTR_CREATE)
-      return -EEXIST;
-
-    rv = cfg->set(key,attrval_);
-    if(rv < 0)
-      return rv;
-
-    fs::statvfs_cache_timeout(cfg->cache_statfs);
-
-    return rv;
   }
 
   static
@@ -198,8 +169,18 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::SETXATTR
 {
+  int
+  setxattr_old(const char *fusepath_,
+           const char *attrname_,
+           const char *attrval_,
+           size_t      attrvalsize_,
+           int         flags_)
+  {
+    return l::setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
+  }
+
   int
   setxattr(const char *fusepath_,
            const char *attrname_,
@@ -207,11 +188,12 @@ namespace FUSE
            size_t      attrvalsize_,
            int         flags_)
   {
-    if(fusepath_ == CONTROLFILE)
-      return l::setxattr_controlfile(attrname_,
-                                     string(attrval_,attrvalsize_),
-                                     flags_);
+    State s;
 
-    return l::setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
+    return s->setxattr(fusepath_,
+                       attrname_,
+                       attrval_,
+                       attrvalsize_,
+                       flags_);
   }
 }

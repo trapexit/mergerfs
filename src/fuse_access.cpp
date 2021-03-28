@@ -14,57 +14,24 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
-#include "errno.hpp"
-#include "fs_eaccess.hpp"
 #include "fs_path.hpp"
+#include "state.hpp"
 #include "ugid.hpp"
 
-#include <string>
-#include <vector>
-
-using std::string;
-using std::vector;
+#include "fuse.h"
 
 
-namespace l
-{
-  static
-  int
-  access(const Policy::Search &searchFunc_,
-         const Branches       &branches_,
-         const char           *fusepath_,
-         const int             mask_)
-  {
-    int rv;
-    string fullpath;
-    StrVec basepaths;
-
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
-    if(rv == -1)
-      return -errno;
-
-    fullpath = fs::path::make(basepaths[0],fusepath_);
-
-    rv = fs::eaccess(fullpath,mask_);
-
-    return ((rv == -1) ? -errno : 0);
-  }
-}
-
-namespace FUSE
+namespace FUSE::ACCESS
 {
   int
   access(const char *fusepath_,
-         int         mask_)
+         int         mode_)
   {
-    Config::Read cfg;
+    State s;
+    gfs::path fusepath(&fusepath_[1]);
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::access(cfg->func.access.policy,
-                     cfg->branches,
-                     fusepath_,
-                     mask_);
+    return s->access(fusepath,mode_);
   }
 }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_copy_file_range.hpp"
@@ -47,8 +49,14 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::COPY_FILE_RANGE
 {
+  int
+  config(const toml::value &cfg_)
+  {
+    return 0;
+  }
+
   ssize_t
   copy_file_range(const fuse_file_info_t *ffi_in_,
                   off_t                   offset_in_,

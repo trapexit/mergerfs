@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::RMDIR
 {
   int
   rmdir(const char *fusepath);

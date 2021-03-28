@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-namespace FUSE
+namespace FUSE::DESTROY
 {
   void
   destroy(void)

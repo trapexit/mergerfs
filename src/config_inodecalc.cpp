@@ -18,7 +18,7 @@
 
 #include "config_inodecalc.hpp"
 #include "fs_inode.hpp"
-
+#include "toml.hpp"
 
 InodeCalc::InodeCalc(const std::string &s_)
 {
@@ -35,4 +35,25 @@ int
 InodeCalc::from_string(const std::string &s_)
 {
   return fs::inode::set_algo(s_);
+}
+
+void
+InodeCalc::from_toml(const toml::value &v_)
+{
+  int rv;
+
+  rv = fs::inode::set_algo(v_.as_string());
+  if(rv < 0)
+    throw toml::type_error("must be: "
+                           "passthrough|"
+                           "path-hash|"
+                           "path-hash32|"
+                           "devino-hash|"
+                           "devino-hash32|"
+                           "hybrid-hash|"
+                           "hybrid-hash32"
+                           ,
+                           v_.location());
+
+  return;
 }

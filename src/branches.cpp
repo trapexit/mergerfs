@@ -29,6 +29,7 @@
 #include <string>
 
 #include <fnmatch.h>
+#include <iostream>
 
 using std::string;
 using std::vector;
@@ -428,4 +429,24 @@ SrcMounts::to_string(void) const
   rv.pop_back();
 
   return rv;
+}
+
+Branches2::Branches2(const toml::value &toml_)
+{
+  toml::value branches;
+  Branch2::Mode default_mode;
+  uint64_t default_minfreespace;
+
+  default_mode         = toml::find_or(toml_,"branches","mode",Branch2::Mode::RW);
+  default_minfreespace = toml::find_or(toml_,"branches","min-free-space",0);
+
+  branches = toml::find(toml_,"branches");
+
+  for(const auto &branch_group : branches.at("group").as_array())
+    {
+      if(!toml::find_or(branch_group,"active",true))
+        continue;
+
+      emplace_back(branch_group,default_mode,default_minfreespace);
+    }
 }

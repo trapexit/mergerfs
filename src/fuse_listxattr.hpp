@@ -17,10 +17,10 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::LISTXATTR
 {
   int
   listxattr(const char *fusepath,
-            char       *buf,
-            size_t      count);
+            char       *list,
+            size_t      size);
 }

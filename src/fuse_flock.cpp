@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_flock.hpp"
@@ -36,8 +38,14 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::FLOCK
 {
+  int
+  config(const toml::value &cfg_)
+  {
+    return 0;
+  }
+
   int
   flock(const fuse_file_info_t *ffi_,
         int                     op_)

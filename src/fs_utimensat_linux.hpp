@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <fcntl.h>
@@ -34,7 +36,11 @@ namespace fs
             const struct timespec  times_[2],
             const int              flags_)
   {
-    return ::utimensat(dirfd_,pathname_,times_,flags_);
+    int rv;
+
+    rv = ::utimensat(dirfd_,pathname_,times_,flags_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static
@@ -44,6 +50,17 @@ namespace fs
             const std::string     &pathname_,
             const struct timespec  times_[2],
             const int              flags_)
+  {
+    return fs::utimensat(dirfd_,pathname_.c_str(),times_,flags_);
+  }
+
+  static
+  inline
+  int
+  utimensat(const int                    dirfd_,
+            const ghc::filesystem::path &pathname_,
+            const struct timespec        times_[2],
+            const int                    flags_)
   {
     return fs::utimensat(dirfd_,pathname_.c_str(),times_,flags_);
   }

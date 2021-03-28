@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,39 +16,36 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config_rename_exdev.hpp"
-#include "ef.hpp"
-#include "errno.hpp"
+#pragma once
 
-template<>
-std::string
-RenameEXDEV::to_string(void) const
+namespace FUSE::CHOWN
 {
-  switch(_data)
+  class Err
+  {
+  public:
+    Err()
+      : _err(-ENOENT)
     {
-    case RenameEXDEV::ENUM::PASSTHROUGH:
-      return "passthrough";
-    case RenameEXDEV::ENUM::REL_SYMLINK:
-      return "rel-symlink";
-    case RenameEXDEV::ENUM::ABS_SYMLINK:
-      return "abs-symlink";
     }
 
-  return "invalid";
-}
+  public:
+    inline
+    Err&
+    operator=(const int err_)
+    {
+      if(_err == -ENOENT)
+        _err = err_;
+      return *this;
+    }
 
-template<>
-int
-RenameEXDEV::from_string(const std::string &s_)
-{
-  if(s_ == "passthrough")
-    _data = RenameEXDEV::ENUM::PASSTHROUGH;
-  ef(s_ == "rel-symlink")
-    _data = RenameEXDEV::ENUM::REL_SYMLINK;
-  ef(s_ == "abs-symlink")
-    _data = RenameEXDEV::ENUM::ABS_SYMLINK;
-  else
-    return -EINVAL;
+  public:
+    inline
+    operator int()
+    {
+      return _err;
+    }
 
-  return 0;
+  private:
+    int _err;
+  };
 }

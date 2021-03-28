@@ -19,12 +19,15 @@
 #pragma once
 
 #include "tofrom_string.hpp"
-
+#include "toml.hpp"
 
 class InodeCalc : public ToFromString
 {
 public:
   InodeCalc(const std::string &);
+
+public:
+  void from_toml(const toml::value &);
 
 public:
   std::string to_string(void) const final;

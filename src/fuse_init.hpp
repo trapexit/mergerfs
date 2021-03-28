@@ -19,7 +19,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::INIT
 {
   void *
   init(fuse_conn_info *conn);

@@ -18,14 +18,13 @@
 #include "fs_close.hpp"
 #include "fs_open.hpp"
 #include "fs_ioctl.hpp"
-
-#include <string>
+#include "ghc/filesystem.hpp"
 
 #include <fcntl.h>
 #include <linux/fs.h>
 
-using std::string;
 
+namespace gfs = ghc::filesystem;
 
 namespace fs
 {
@@ -33,38 +32,36 @@ namespace fs
   {
     static
     int
-    get_fs_ioc_flags(const int  fd,
-                     int       &flags)
+    get_fs_ioc_flags(const int  fd_,
+                     int       *flags_)
     {
       int rv;
 
-      rv = fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
-      if((rv == -1) && (errno == EINVAL))
-        errno = ENOTSUP;
+      rv = fs::ioctl(fd_,FS_IOC_GETFLAGS,(void*)flags_);
+      if(rv == -EINVAL)
+        rv = -ENOTSUP;
 
       return rv;
     }
 
     static
     int
-    get_fs_ioc_flags(const string &file,
-                     int          &flags)
+    get_fs_ioc_flags(const gfs::path &file_,
+                     int             *flags_)
     {
       int fd;
       int rv;
       const int openflags = O_RDONLY|O_NONBLOCK;
 
-      fd = fs::open(file,openflags);
-      if(fd == -1)
-        return -1;
+      fd = fs::open(file_,openflags);
+      if(fd < 0)
+        return fd;
 
-      rv = get_fs_ioc_flags(fd,flags);
-      if(rv == -1)
+      rv = get_fs_ioc_flags(fd,flags_);
+      if(rv < 0)
         {
-          int error = errno;
           fs::close(fd);
-          errno = error;
-          return -1;
+          return rv;
         }
 
       return fs::close(fd);
@@ -72,69 +69,67 @@ namespace fs
 
     static
     int
-    set_fs_ioc_flags(const int fd,
-                     const int flags)
+    set_fs_ioc_flags(const int fd_,
+                     const int flags_)
     {
       int rv;
 
-      rv = fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
-      if((rv == -1) && (errno == EINVAL))
-        errno = ENOTSUP;
+      rv = fs::ioctl(fd_,FS_IOC_SETFLAGS,(void*)&flags_);
+      if(rv == -EINVAL)
+        rv = -ENOTSUP;
 
       return rv;
     }
 
     static
     int
-    set_fs_ioc_flags(const string &file,
-                     const int     flags)
+    set_fs_ioc_flags(const gfs::path &file_,
+                     const int        flags_)
     {
       int fd;
       int rv;
       const int openflags = O_RDONLY|O_NONBLOCK;
 
-      fd = fs::open(file,openflags);
-      if(fd == -1)
-        return -1;
+      fd = fs::open(file_,openflags);
+      if(fd < 0)
+        return fd;
 
-      rv = set_fs_ioc_flags(fd,flags);
-      if(rv == -1)
+      rv = set_fs_ioc_flags(fd,flags_);
+      if(rv < 0)
         {
-          int error = errno;
           fs::close(fd);
-          errno = error;
-          return -1;
+          return rv;
         }
 
       return fs::close(fd);
     }
 
     int
-    copy(const int fdin,
-         const int fdout)
+    copy(const int fdin_,
+         const int fdout_)
     {
       int rv;
       int flags;
 
-      rv = get_fs_ioc_flags(fdin,flags);
-      if(rv == -1)
-        return -1;
+      rv = get_fs_ioc_flags(fdin_,&flags);
+      if(rv < 0)
+        return rv;
 
-      return set_fs_ioc_flags(fdout,flags);
+      return set_fs_ioc_flags(fdout_,flags);
     }
 
     int
-    copy(const string &from,
-         const string &to)
+    copy(const gfs::path &from_,
+         const gfs::path &to_)
     {
       int rv;
       int flags;
 
-      rv = get_fs_ioc_flags(from,flags);
-      if(rv == -1)
-        return -1;
+      rv = get_fs_ioc_flags(from_,&flags);
+      if(rv < 0)
+        return rv;
 
-      return set_fs_ioc_flags(to,flags);
+      return set_fs_ioc_flags(to_,flags);
     }
   }
 }

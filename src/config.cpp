@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_access.hpp"
+#include "fuse_getattr.hpp"
+
 #include "config.hpp"
 #include "ef.hpp"
 #include "errno.hpp"
@@ -23,6 +26,9 @@
 #include "str.hpp"
 #include "to_string.hpp"
 #include "version.hpp"
+#include "toml.hpp"
+#include "toml_verify.hpp"
+//#include "nonstd/span.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -41,7 +47,6 @@ using std::string;
 
 #define IFERT(S) if(S == s_) return true
 
-const std::string CONTROLFILE = "/.mergerfs";
 
 Config Config::_singleton;
 
@@ -90,7 +95,6 @@ Config::Config()
     ignorepponrename(false),
     inodecalc("hybrid-hash"),
     link_cow(false),
-    link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
     log_metrics(false),
     mount(),
     moveonenospc(false),
@@ -155,7 +159,6 @@ Config::Config()
   _map["inodecalc"]            = &inodecalc;
   _map["kernel_cache"]         = &kernel_cache;
   _map["link_cow"]             = &link_cow;
-  _map["link-exdev"]           = &link_exdev;
   _map["log.metrics"]          = &log_metrics;
   _map["minfreespace"]         = &minfreespace;
   _map["mount"]                = &mount;
@@ -343,6 +346,35 @@ Config::from_file(const std::string &filepath_,
   ifstrm.close();
 
   return rv;
+}
+
+int
+Config::from_toml(const toml::value &toml_,
+                  ErrVec            *errs_)
+{
+  // toml::verify_bool(toml_,"cache","readdir",true);
+  // toml::verify_bool(toml_,"drop-cache-on-close",true);
+  // toml::verify_bool(toml_,"link-cow",false);
+  // toml::verify_bool(toml_,"null-rw",false);
+  // toml::verify_bool(toml_,"posix-acl",false);
+  // toml::verify_bool(toml_,"security-capability",false);
+  // toml::verify_bool(toml_,"symlinkify",false);
+  // toml::verify_enum(toml_,"follow-symlinks",true,{"never","directory","regular","all"});
+  // toml::verify_enum(toml_,"inode-calc",true,{"foo","bar","baz"});
+  // toml::verify_enum(toml_,"link-exdev",false,{"passthrough","rel-symlinks","abs-base-symlink","abs-pool-symlink"});
+  // toml::verify_enum(toml_,"move-on-enospc",true,{"mfs","lfs"});
+  // toml::verify_enum(toml_,"nfs-open-hack",false,{"off","git","all"});
+  // toml::verify_enum(toml_,"rename-exdev",false,{"passthrough","rel-symlink","abs-symlink"});
+  // toml::verify_enum(toml_,"statfs",true,{"base","full"});
+  // toml::verify_enum(toml_,"statfs-ignore",true,{"none","ro","nc"});
+  // toml::verify_enum(toml_,"xattr",false,{"passthrough","noattr","nosys"});
+  // toml::verify_human_size(toml_,"min-free-space",false);
+  // toml::verify_integer(toml_,"fuse-msg-size",false,1,256);
+  // toml::verify_min_integer(toml_,"symlinkify-timeout",false,0);
+  // toml::verify_bool(toml_,"allow-other",false);
+  // toml::verify_string(toml_,"filesystem-name",true);
+
+  return 0;
 }
 
 std::ostream&

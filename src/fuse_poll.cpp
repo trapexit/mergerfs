@@ -21,7 +21,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::POLL
 {
   int
   poll(const fuse_file_info_t *ffi_,

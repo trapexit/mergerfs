@@ -1,0 +1,89 @@
+# test file
+
+[filesystem]
+name = 'foo'
+mountpoint = '/tmp/test'
+threads = 0
+
+[fuse]
+posix-acl = false
+async-read = true
+message-size = 256
+
+[func]
+inode-calc = 'hybrid-hash'
+symlinkify = false
+symlinkify-timeout = 0
+xattr = 'passthrough'
+
+[func.access]
+policy = 'ff'
+
+[func.create]
+policy = 'ff'
+
+[func.getattr]
+policy = 'ff'
+follow-symlinks = 'never'
+
+[func.rmdir]
+policy = 'all'
+follow-symlinks = 'never'
+
+[func.link]
+policy = 'all' # 'preserve-paths' | 'create-paths' | 'per-branch'
+exdev = 'passthrough'
+
+[func.write]
+policy = 'null'
+move-on-enospc = 'mfs'
+
+[func.release]
+drop-cache = true
+
+[func.read]
+policy = 'null'
+
+[func.getxattr]
+security-capability = false
+
+[func.setxattr]
+security-capability = false
+
+[func.open]
+link-cow = true
+nfs-hack = 'off'
+
+[func.rename]
+policy = ''
+exdev = 'passthrough'
+
+[func.statfs]
+policy = 'base'
+ignore = 'none'
+
+[cache]
+files = 'off'
+statfs = 0
+attr-timeout = 0
+entry-timeout = 0
+negative-entry-timeout = 0
+writeback = false
+symlinks = false
+readdir = false
+
+[branches]
+min-free-space = 123
+
+[[branches.group]]
+
+[[branches.group.branch]]
+active = false
+path = '/tmp/mergerfs/a'
+path-type = 'literal'
+mode = 'RW'
+if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
+
+[[branches.group.branch]]
+path = '/tmp/mergerfs/*'
+path-type = 'glob'

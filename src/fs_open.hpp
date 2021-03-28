@@ -18,8 +18,11 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -33,7 +36,13 @@ namespace fs
   open(const char *path_,
        const int   flags_)
   {
-    return ::open(path_,flags_);
+    int rv;
+
+    rv = ::open(path_,flags_);
+    if(rv == -1)
+      return -errno;
+
+    return rv;
   }
 
   static
@@ -43,7 +52,23 @@ namespace fs
        const int     flags_,
        const mode_t  mode_)
   {
-    return ::open(path_,flags_,mode_);
+    int rv;
+
+    rv = ::open(path_,flags_,mode_);
+    if(rv == -1)
+      return -errno;
+
+    return rv;
+  }
+
+  static
+  inline
+  int
+  open(const ghc::filesystem::path &path_,
+       const int                    flags_,
+       const mode_t                 mode_)
+  {
+    return fs::open(path_.c_str(),flags_,mode_);
   }
 
   static

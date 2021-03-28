@@ -19,7 +19,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::FSYNCDIR
 {
   int
   fsyncdir(const fuse_file_info_t *ffi,

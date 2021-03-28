@@ -19,7 +19,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::LINK
 {
   int
   link(const char      *oldpath,

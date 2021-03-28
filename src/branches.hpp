@@ -18,7 +18,11 @@
 
 #pragma once
 
+#include "from_toml.hpp"
+
 #include "branch.hpp"
+#include "branch_group.hpp"
+
 #include "nonstd/optional.hpp"
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
@@ -29,6 +33,12 @@
 #include <string>
 #include <vector>
 
+
+class Branches2 : public std::vector<BranchGroup>
+{
+public:
+  Branches2(const toml::value &);
+};
 
 class Branches final : public ToFromString
 {

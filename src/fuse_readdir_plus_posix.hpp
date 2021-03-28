@@ -25,7 +25,7 @@
 #include <cstdint>
 
 
-namespace FUSE
+namespace FUSE::READDIR_PLUS_POSIX
 {
   int
   readdir_plus_posix(const Branches::CPtr &branches,

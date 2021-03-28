@@ -52,7 +52,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::READ_BUF
 {
   int
   read_buf(const fuse_file_info_t  *ffi_,

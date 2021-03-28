@@ -18,10 +18,15 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include "fuse.h"
 
-namespace FUSE
+namespace FUSE::BMAP
 {
+  int
+  config(const toml::value &cfg);
+
   int
   bmap(const char *fusepath,
        size_t      blocksize,

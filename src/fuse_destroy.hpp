@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::DESTROY
 {
   void
   destroy(void);

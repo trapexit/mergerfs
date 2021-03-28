@@ -21,6 +21,7 @@
 #include "fs_readlink.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -89,46 +90,19 @@ namespace l
 
     return l::readlink_core_standard(fullpath,buf_,size_);
   }
-
-  static
-  int
-  readlink(const Policy::Search &searchFunc_,
-           const Branches       &branches_,
-           const char           *fusepath_,
-           char                 *buf_,
-           const size_t          size_,
-           const bool            symlinkify_,
-           const time_t          symlinkify_timeout_)
-  {
-    int rv;
-    StrVec basepaths;
-
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
-    if(rv == -1)
-      return -errno;
-
-    return l::readlink_core(basepaths[0],fusepath_,buf_,size_,
-                            symlinkify_,symlinkify_timeout_);
-  }
 }
 
-namespace FUSE
+namespace FUSE::READLINK
 {
   int
   readlink(const char *fusepath_,
            char       *buf_,
-           size_t      size_)
+           size_t      bufsiz_)
   {
-    Config::Read cfg;
+    State s;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::readlink(cfg->func.readlink.policy,
-                       cfg->branches,
-                       fusepath_,
-                       buf_,
-                       size_,
-                       cfg->symlinkify,
-                       cfg->symlinkify_timeout);
+    return s->readlink(fusepath_,buf_,bufsiz_);
   }
 }

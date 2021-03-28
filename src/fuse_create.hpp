@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include "fuse.h"
 
 #include <sys/types.h>
 
 
-namespace FUSE
+namespace FUSE::CREATE
 {
   int
   create(const char       *fusepath,

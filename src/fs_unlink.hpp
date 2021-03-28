@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -30,13 +32,25 @@ namespace fs
   int
   unlink(const char *path_)
   {
-    return ::unlink(path_);
+    int rv;
+
+    rv = ::unlink(path_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static
   inline
   int
   unlink(const std::string &path_)
+  {
+    return fs::unlink(path_.c_str());
+  }
+
+  static
+  inline
+  int
+  unlink(const ghc::filesystem::path &path_)
   {
     return fs::unlink(path_.c_str());
   }

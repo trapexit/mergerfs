@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::REMOVEXATTR
 {
   int
   removexattr(const char *fusepath,

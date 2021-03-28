@@ -16,11 +16,16 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include <sys/statvfs.h>
 
 
-namespace FUSE
+namespace FUSE::STATFS
 {
+  int
+  config(const toml::value &);
+  
   int
   statfs(const char     *fusepath,
          struct statvfs *fsstat);

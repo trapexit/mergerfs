@@ -18,8 +18,11 @@
 
 #include "fs_lgetxattr.hpp"
 #include "fs_path.hpp"
+#include "ghc/filesystem.hpp"
 
 #include <string>
+
+namespace gfs = ghc::filesystem;
 
 const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
 
@@ -39,6 +42,16 @@ namespace fs
       rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 
       return (rv != -1);
+    }
+
+    int
+    dir_has_defaults(const gfs::path &fullpath_)
+    {
+      int rv;
+
+      rv = fs::lgetxattr(fullpath_.parent_path(),POSIX_ACL_DEFAULT_XATTR,NULL,0);
+
+      return rv;
     }
   }
 }

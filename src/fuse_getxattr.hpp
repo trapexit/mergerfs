@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::GETXATTR
 {
   int
   getxattr(const char *fusepath,

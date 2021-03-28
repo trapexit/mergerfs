@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include <sys/types.h>
 
 
-namespace FUSE
+namespace FUSE::TRUNCATE
 {
   int
   truncate(const char *fusepath,
-           off_t       size);
+           off_t       length);
 }

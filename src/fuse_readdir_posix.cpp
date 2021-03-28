@@ -112,7 +112,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::READDIR_POSIX
 {
   int
   readdir_posix(const Branches::CPtr &branches_,

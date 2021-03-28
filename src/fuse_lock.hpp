@@ -20,7 +20,7 @@
 
 #include "fuse.h"
 
-namespace FUSE
+namespace FUSE::LOCK
 {
   int
   lock(const fuse_file_info_t *ffi,

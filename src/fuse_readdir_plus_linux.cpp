@@ -137,7 +137,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::READDIR_PLUS_LINUX
 {
   int
   readdir_plus_linux(const Branches::CPtr &branches_,

@@ -84,7 +84,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::WRITE_BUF
 {
   int
   write_buf(const fuse_file_info_t *ffi_,

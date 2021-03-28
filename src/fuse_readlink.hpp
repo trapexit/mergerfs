@@ -17,10 +17,10 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::READLINK
 {
   int
   readlink(const char *fusepath,
            char       *buf,
-           size_t      size);
+           size_t      bufsiz);
 }

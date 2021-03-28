@@ -19,6 +19,7 @@
 #pragma once
 
 #include "errno.hpp"
+#include "ghc/filesystem.hpp"
 #include "xattr.hpp"
 
 #include <string>
@@ -37,12 +38,16 @@ namespace fs
             const size_t  size_)
   {
 #ifdef USE_XATTR
-    return ::lgetxattr(path_,
-                       attrname_,
-                       value_,
-                       size_);
+    int rv;
+    
+    rv = ::lgetxattr(path_,
+                     attrname_,
+                     value_,
+                     size_);
+
+    return ((rv == -1) ? -errno : rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 
@@ -56,6 +61,34 @@ namespace fs
   {
     return fs::lgetxattr(path_.c_str(),
                          attrname_,
+                         value_,
+                         size_);
+  }
+
+  static
+  inline
+  int
+  lgetxattr(const ghc::filesystem::path &path_,
+            const char                  *attrname_,
+            void                        *value_,
+            const size_t                 size_)
+  {
+    return fs::lgetxattr(path_.c_str(),
+                         attrname_,
+                         value_,
+                         size_);
+  }
+
+  static
+  inline
+  int
+  lgetxattr(const ghc::filesystem::path &path_,
+            const std::string           &attrname_,
+            void                        *value_,
+            const size_t                 size_)
+  {
+    return fs::lgetxattr(path_.c_str(),
+                         attrname_.c_str(),
                          value_,
                          size_);
   }

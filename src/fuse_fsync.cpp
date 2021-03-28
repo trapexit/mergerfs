@@ -42,7 +42,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::FSYNC
 {
   int
   fsync(const fuse_file_info_t *ffi_,

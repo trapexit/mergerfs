@@ -16,8 +16,12 @@
 
 #pragma once
 
+#include "toml.hpp"
 
-namespace FUSE
+#include <unistd.h>
+
+
+namespace FUSE::CHOWN
 {
   int
   chown(const char *fusepath,

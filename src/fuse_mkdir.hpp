@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::MKDIR
 {
   int
   mkdir(const char *fusepath,

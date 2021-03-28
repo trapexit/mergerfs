@@ -113,8 +113,21 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::UTIMENS
 {
+  int
+  config(const toml::value &toml_)
+  {
+    std::string val;
+    Config::Write cfg;
+
+    val = toml::find<std::string>(toml_,"func","utimens","policy");
+
+    cfg->func.utimens.from_string(val);
+
+    return 0;
+  }
+
   int
   utimens(const char     *fusepath_,
           const timespec  ts_[2])

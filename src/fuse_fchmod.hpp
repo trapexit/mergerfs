@@ -16,13 +16,18 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include "fuse.h"
 
 #include <sys/stat.h>
 
 
-namespace FUSE
+namespace FUSE::FCHMOD
 {
+  int
+  config(const toml::value &cfg);
+  
   int
   fchmod(const fuse_file_info_t *ffi,
          const mode_t            mode);

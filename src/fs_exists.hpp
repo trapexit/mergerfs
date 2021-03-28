@@ -21,6 +21,8 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 
@@ -47,6 +49,16 @@ namespace fs
     struct stat st;
 
     return fs::exists(path_,&st);
+  }
+
+  static
+  inline
+  bool
+  exists(const ghc::filesystem::path &path_)
+  {
+    struct stat st;
+
+    return fs::exists(path_.c_str(),&st);
   }
 
   static

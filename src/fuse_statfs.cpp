@@ -145,8 +145,23 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::STATFS
 {
+  int
+  config(const toml::value &toml_)
+  {
+    std::string val;
+    Config::Write cfg;
+
+    val = toml::find<std::string>(toml_,"func","statfs","policy");
+    cfg->statfs.from_string(val);
+
+    val = toml::find<std::string>(toml_,"func","statfs","ignore");
+    cfg->statfs_ignore.from_string(val);
+
+    return 0;
+  }
+
   int
   statfs(const char     *fusepath_,
          struct statvfs *st_)

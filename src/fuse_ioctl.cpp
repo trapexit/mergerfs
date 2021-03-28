@@ -24,6 +24,7 @@
 #include "fs_ioctl.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "state.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 
@@ -330,7 +331,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::IOCTL
 {
   int
   ioctl(const fuse_file_info_t *ffi_,
@@ -344,7 +345,7 @@ namespace FUSE
       return l::ioctl_custom(ffi_,cmd_,data_);
 
     if(flags_ & FUSE_IOCTL_DIR)
-      return l::ioctl_dir(ffi_,cmd_,data_,out_bufsz_);
+      return State()->ioctl(ffi_,cmd_,flags_,data_,out_bufsz_);
 
     return l::ioctl_file(ffi_,cmd_,data_,out_bufsz_);
   }

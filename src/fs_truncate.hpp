@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "errno.hpp"
+
 #include <string>
 
 #include <sys/types.h>
@@ -32,7 +34,11 @@ namespace fs
   truncate(const char  *path_,
            const off_t  length_)
   {
-    return ::truncate(path_,length_);
+    int rv;
+
+    rv = ::truncate(path_,length_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static
@@ -40,6 +46,15 @@ namespace fs
   int
   truncate(const std::string &path_,
            const off_t        length_)
+  {
+    return fs::truncate(path_.c_str(),length_);
+  }
+
+  static
+  inline
+  int
+  truncate(const ghc::filesystem::path &path_,
+           const off_t                  length_)
   {
     return fs::truncate(path_.c_str(),length_);
   }

@@ -20,6 +20,8 @@
 #include "resources.hpp"
 #include "strvec.hpp"
 
+#include "state.hpp"
+
 #include "fuse_access.hpp"
 #include "fuse_bmap.hpp"
 #include "fuse_chmod.hpp"
@@ -70,6 +72,9 @@
 
 #include "fuse.h"
 
+#include "toml.hpp"
+#include "toml_verify.hpp"
+
 #include <cstdlib>
 #include <iostream>
 
@@ -83,53 +88,53 @@ namespace l
   get_fuse_operations(struct fuse_operations &ops_,
                       const bool              nullrw_)
   {
-    ops_.access          = FUSE::access;
-    ops_.bmap            = FUSE::bmap;
-    ops_.chmod           = FUSE::chmod;
-    ops_.chown           = FUSE::chown;
-    ops_.copy_file_range = FUSE::copy_file_range;
-    ops_.create          = FUSE::create;
-    ops_.destroy         = FUSE::destroy;
-    ops_.fallocate       = FUSE::fallocate;
-    ops_.fchmod          = FUSE::fchmod;
-    ops_.fchown          = FUSE::fchown;
-    ops_.fgetattr        = FUSE::fgetattr;
-    ops_.flock           = FUSE::flock;
-    ops_.flush           = FUSE::flush;
-    ops_.free_hide       = FUSE::free_hide;
-    ops_.fsync           = FUSE::fsync;
-    ops_.fsyncdir        = FUSE::fsyncdir;
-    ops_.ftruncate       = FUSE::ftruncate;
-    ops_.futimens        = FUSE::futimens;
-    ops_.getattr         = FUSE::getattr;
-    ops_.getxattr        = FUSE::getxattr;
-    ops_.init            = FUSE::init;
-    ops_.ioctl           = FUSE::ioctl;
-    ops_.link            = FUSE::link;
-    ops_.listxattr       = FUSE::listxattr;
-    ops_.lock            = FUSE::lock;
-    ops_.mkdir           = FUSE::mkdir;
-    ops_.mknod           = FUSE::mknod;
-    ops_.open            = FUSE::open;
-    ops_.opendir         = FUSE::opendir;
-    ops_.poll            = FUSE::poll;;
-    ops_.prepare_hide    = FUSE::prepare_hide;
-    ops_.read_buf        = (nullrw_ ? FUSE::read_buf_null : FUSE::read_buf);
-    ops_.readdir         = FUSE::readdir;
-    ops_.readdir_plus    = FUSE::readdir_plus;
-    ops_.readlink        = FUSE::readlink;
-    ops_.release         = FUSE::release;
-    ops_.releasedir      = FUSE::releasedir;
-    ops_.removexattr     = FUSE::removexattr;
-    ops_.rename          = FUSE::rename;
-    ops_.rmdir           = FUSE::rmdir;
-    ops_.setxattr        = FUSE::setxattr;
-    ops_.statfs          = FUSE::statfs;
-    ops_.symlink         = FUSE::symlink;
-    ops_.truncate        = FUSE::truncate;
-    ops_.unlink          = FUSE::unlink;
-    ops_.utimens         = FUSE::utimens;
-    ops_.write_buf       = (nullrw_ ? FUSE::write_buf_null : FUSE::write_buf);
+    ops_.access          = FUSE::ACCESS::access;
+    ops_.bmap            = FUSE::BMAP::bmap;
+    ops_.chmod           = FUSE::CHMOD::chmod;
+    ops_.chown           = FUSE::CHOWN::chown;
+    ops_.copy_file_range = FUSE::COPY_FILE_RANGE::copy_file_range;
+    ops_.create          = FUSE::CREATE::create;
+    ops_.destroy         = FUSE::DESTROY::destroy;
+    ops_.fallocate       = FUSE::FALLOCATE::fallocate;
+    ops_.fchmod          = FUSE::FCHMOD::fchmod;
+    ops_.fchown          = FUSE::FCHOWN::fchown;
+    ops_.fgetattr        = FUSE::FGETATTR::fgetattr;
+    ops_.flock           = FUSE::FLOCK::flock;
+    ops_.flush           = FUSE::FLUSH::flush;
+    ops_.free_hide       = FUSE::FREE_HIDE::free_hide;
+    ops_.fsync           = FUSE::FSYNC::fsync;
+    ops_.fsyncdir        = FUSE::FSYNCDIR::fsyncdir;
+    ops_.ftruncate       = FUSE::FTRUNCATE::ftruncate;
+    ops_.futimens        = FUSE::FUTIMENS::futimens;
+    ops_.getattr         = FUSE::GETATTR::getattr;
+    ops_.getxattr        = FUSE::GETXATTR::getxattr;
+    ops_.init            = FUSE::INIT::init;
+    ops_.ioctl           = FUSE::IOCTL::ioctl;
+    ops_.link            = FUSE::LINK::link;
+    ops_.listxattr       = FUSE::LISTXATTR::listxattr;
+    ops_.lock            = FUSE::LOCK::lock;
+    ops_.mkdir           = FUSE::MKDIR::mkdir;
+    ops_.mknod           = FUSE::MKNOD::mknod;
+    ops_.open            = FUSE::OPEN::open;
+    ops_.opendir         = FUSE::OPENDIR::opendir;
+    ops_.poll            = FUSE::POLL::poll;;
+    ops_.prepare_hide    = FUSE::PREPARE_HIDE::prepare_hide;
+    ops_.read_buf        = (nullrw_ ? FUSE::READ_BUF::read_buf_null : FUSE::READ_BUF::read_buf);
+    ops_.readdir         = FUSE::READDIR::readdir;
+    ops_.readdir_plus    = FUSE::READDIR_PLUS::readdir_plus;
+    ops_.readlink        = FUSE::READLINK::readlink;
+    ops_.release         = FUSE::RELEASE::release;
+    ops_.releasedir      = FUSE::RELEASEDIR::releasedir;
+    ops_.removexattr     = FUSE::REMOVEXATTR::removexattr;
+    ops_.rename          = FUSE::RENAME::rename;
+    ops_.rmdir           = FUSE::RMDIR::rmdir;
+    ops_.setxattr        = FUSE::SETXATTR::setxattr;
+    ops_.statfs          = FUSE::STATFS::statfs;
+    ops_.symlink         = FUSE::SYMLINK::symlink;
+    ops_.truncate        = FUSE::TRUNCATE::truncate;
+    ops_.unlink          = FUSE::UNLINK::unlink;
+    ops_.utimens         = FUSE::UTIMENS::utimens;
+    ops_.write_buf       = (nullrw_ ? FUSE::WRITE_BUF::write_buf_null : FUSE::WRITE_BUF::write_buf);
 
     return;
   }
@@ -179,5 +184,27 @@ int
 main(int    argc_,
      char **argv_)
 {
+  State s;
+  std::vector<std::string> errs;
+
+  const auto doc = toml::parse("config.toml");
+
+  s = doc;
+
+  try
+    {
+      //toml::verify(doc,errs);
+    }
+  catch(const toml::exception &e)
+    {
+      std::cout << e.what()
+                << std::endl;
+    }
+
+  for(const auto &err : errs)
+    {
+      std::cout << err << std::endl;
+    }
+
   return l::main(argc_,argv_);
 }

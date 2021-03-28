@@ -27,7 +27,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::READDIR
 {
   int
   readdir(const fuse_file_info_t *ffi_,
@@ -41,10 +41,10 @@ namespace FUSE
     switch(cfg->readdir)
       {
       case ReadDir::ENUM::LINUX:
-        return FUSE::readdir_linux(cfg->branches,di->fusepath.c_str(),buf_);
+        return FUSE::READDIR_LINUX::readdir_linux(cfg->branches,di->fusepath.c_str(),buf_);
       default:
       case ReadDir::ENUM::POSIX:
-        return FUSE::readdir_posix(cfg->branches,di->fusepath.c_str(),buf_);
+        return FUSE::READDIR_POSIX::readdir_posix(cfg->branches,di->fusepath.c_str(),buf_);
       }
   }
 }

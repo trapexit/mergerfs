@@ -23,7 +23,7 @@
 #include <stdio.h>
 
 
-namespace FUSE
+namespace FUSE::PREPARE_HIDE
 {
   int
   prepare_hide(const char *fusepath_,
@@ -33,7 +33,7 @@ namespace FUSE
     fuse_file_info_t ffi = {0};
 
     ffi.flags = O_RDONLY|O_NOFOLLOW;
-    rv = FUSE::open(fusepath_,&ffi);
+    rv = FUSE::OPEN::open(fusepath_,&ffi);
     if(rv < 0)
       return rv;
 

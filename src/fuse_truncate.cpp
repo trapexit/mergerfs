@@ -20,8 +20,11 @@
 #include "fs_truncate.hpp"
 #include "policy_rv.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
+
+#include "toml.hpp"
 
 #include <string>
 
@@ -114,20 +117,16 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::TRUNCATE
 {
   int
   truncate(const char *fusepath_,
            off_t       size_)
   {
-    Config::Read cfg;
+    State s;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::truncate(cfg->func.truncate.policy,
-                       cfg->func.getattr.policy,
-                       cfg->branches,
-                       fusepath_,
-                       size_);
+    return s->truncate(fusepath_,size_);
   }
 }

@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 
 
-namespace FUSE
+namespace FUSE::FUTIMENS
 {
   int
   futimens(const fuse_file_info_t *ffi,

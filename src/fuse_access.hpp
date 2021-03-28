@@ -16,8 +16,7 @@
 
 #pragma once
 
-
-namespace FUSE
+namespace FUSE::ACCESS
 {
   int
   access(const char *fusepath,

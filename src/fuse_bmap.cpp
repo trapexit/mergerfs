@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "errno.hpp"
 
 #include <cstdint>
@@ -23,8 +25,14 @@
 #include <stddef.h>
 
 
-namespace FUSE
+namespace FUSE::BMAP
 {
+  int
+  config(const toml::value &cfg_)
+  {
+    return 0;
+  }
+
   int
   bmap(const char *fusepath_,
        size_t      blocksize_,

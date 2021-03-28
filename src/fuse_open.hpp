@@ -19,7 +19,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::OPEN
 {
   int
   open(const char       *fusepath,

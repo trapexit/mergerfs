@@ -32,7 +32,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::RELEASEDIR
 {
   int
   releasedir(const fuse_file_info_t *ffi_)

@@ -21,7 +21,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::IOCTL
 {
   int
   ioctl(const fuse_file_info_t *ffi,

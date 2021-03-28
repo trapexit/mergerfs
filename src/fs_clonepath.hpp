@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 
@@ -30,6 +32,10 @@ namespace fs
                 const std::string &relative,
                 const bool         return_metadata_errors = false);
 
+  int clonepath(const ghc::filesystem::path &fromsrc,
+                const ghc::filesystem::path &tosrc,
+                const ghc::filesystem::path &relative);
+
   int clonepath_as_root(const std::string &from,
                         const std::string &to,
                         const char        *relative,
@@ -38,4 +44,7 @@ namespace fs
                         const std::string &to,
                         const std::string &relative,
                         const bool         return_metadata_errors = false);
+  int clonepath_as_root(const ghc::filesystem::path &from,
+                        const ghc::filesystem::path &to,
+                        const ghc::filesystem::path &relative);
 }

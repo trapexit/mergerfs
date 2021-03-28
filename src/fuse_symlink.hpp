@@ -18,9 +18,11 @@
 
 #include "fuse.h"
 
+#include "toml.hpp"
+
 #include <sys/stat.h>
 
-namespace FUSE
+namespace FUSE::SYMLINK
 {
   int
   symlink(const char      *target,

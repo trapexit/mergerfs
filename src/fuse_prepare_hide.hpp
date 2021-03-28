@@ -21,7 +21,7 @@
 #include <cstdint>
 
 
-namespace FUSE
+namespace FUSE::PREPARE_HIDE
 {
   int
   prepare_hide(const char *name,

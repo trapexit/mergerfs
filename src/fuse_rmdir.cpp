@@ -19,6 +19,7 @@
 #include "fs_path.hpp"
 #include "fs_rmdir.hpp"
 #include "fs_unlink.hpp"
+#include "state.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
@@ -114,18 +115,15 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::RMDIR
 {
   int
   rmdir(const char *fusepath_)
   {
-    Config::Read cfg;
+    State s;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::rmdir(cfg->func.rmdir.policy,
-                    cfg->branches,
-                    cfg->follow_symlinks,
-                    fusepath_);
+    return s->rmdir(fusepath_);
   }
 }

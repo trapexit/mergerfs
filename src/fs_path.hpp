@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -19,6 +19,9 @@
 #include <string>
 #include <vector>
 
+#include "ghc/filesystem.hpp"
+
+namespace gfs = ghc::filesystem;
 
 namespace fs
 {

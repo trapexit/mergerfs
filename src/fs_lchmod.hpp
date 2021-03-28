@@ -20,9 +20,13 @@
 
 #include "fs_lstat.hpp"
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
+#include <errno.h>
 #include <sys/stat.h>
+
 
 #define MODE_BITS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
 
@@ -35,11 +39,15 @@ namespace fs
   lchmod(const char   *pathname_,
          const mode_t  mode_)
   {
+    int rv;
+
 #if defined __linux__
-    return ::chmod(pathname_,mode_);
+    rv = ::chmod(pathname_,mode_);
 #else
-    return ::lchmod(pathname_,mode_);
+    rv = ::lchmod(pathname_,mode_);
 #endif
+
+    return ((rv == -1) ? -errno : 0);
   }
 
   static
@@ -49,6 +57,15 @@ namespace fs
          const mode_t       mode_)
   {
     return fs::lchmod(pathname_.c_str(),mode_);
+  }
+
+  static
+  inline
+  int
+  lchmod(const ghc::filesystem::path &pathname_,
+         const mode_t                 mode_)
+  {
+    return fs::lchmod(pathname_.native(),mode_);
   }
 
   static

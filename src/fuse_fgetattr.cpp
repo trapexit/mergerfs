@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
@@ -43,8 +45,14 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::FGETATTR
 {
+  int
+  config(const toml::value &cfg_)
+  {
+    return 0;
+  }
+
   int
   fgetattr(const fuse_file_info_t *ffi_,
            struct stat            *st_,

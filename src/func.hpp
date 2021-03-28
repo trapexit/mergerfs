@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include "policy.hpp"
+#include "from_toml.hpp"
 #include "policies.hpp"
+#include "policy.hpp"
 #include "tofrom_string.hpp"
 
 #include <string>

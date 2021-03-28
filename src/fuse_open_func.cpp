@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,14 +16,26 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fuse_open_func.hpp"
+#include "fuse_open_func_factory.hpp"
 
-#include "enum.hpp"
+#include "state.hpp"
 
-enum class RenameEXDEVEnum
-  {
-    PASSTHROUGH,
-    REL_SYMLINK,
-    ABS_SYMLINK
-  };
-typedef Enum<RenameEXDEVEnum> RenameEXDEV;
+
+FUSE::OPEN::Func::Func(const toml::value &toml_)
+{
+  _open = FuncFactory(toml_);
+}
+
+void
+FUSE::OPEN::Func::operator=(const toml::value &toml_)
+{
+  _open = FuncFactory(toml_);
+}
+
+int
+FUSE::OPEN::Func::operator()(const char      *fusepath_,
+                             fuse_file_info_t *ffi_)
+{
+  return (*_open)(fusepath_,ffi_);
+}

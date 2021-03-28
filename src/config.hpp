@@ -21,12 +21,10 @@
 #include "config_cachefiles.hpp"
 #include "config_follow_symlinks.hpp"
 #include "config_inodecalc.hpp"
-#include "config_link_exdev.hpp"
 #include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
 #include "config_readdir.hpp"
-#include "config_rename_exdev.hpp"
 #include "config_statfs.hpp"
 #include "config_statfsignore.hpp"
 #include "config_xattr.hpp"
@@ -38,6 +36,8 @@
 #include "tofrom_wrapper.hpp"
 
 #include "fuse.h"
+
+#include "toml.hpp"
 
 #include <cstdint>
 #include <map>
@@ -53,7 +53,6 @@ typedef ToFromWrapper<int>                  ConfigINT;
 typedef ToFromWrapper<std::string>          ConfigSTR;
 typedef std::map<std::string,ToFromString*> Str2TFStrMap;
 
-extern const std::string CONTROLFILE;
 
 class Config
 {
@@ -121,7 +120,6 @@ public:
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
   ConfigBOOL     link_cow;
-  LinkEXDEV      link_exdev;
   LogMetrics     log_metrics;
   ConfigSTR      mount;
   MoveOnENOSPC   moveonenospc;
@@ -131,7 +129,6 @@ public:
   ConfigBOOL     posix_acl;
   ReadDir        readdir;
   ConfigBOOL     readdirplus;
-  RenameEXDEV    rename_exdev;
   ConfigBOOL     security_capability;
   SrcMounts      srcmounts;
   StatFS         statfs;
@@ -161,6 +158,7 @@ public:
 public:
   int from_stream(std::istream &istrm, ErrVec *errs);
   int from_file(const std::string &filepath, ErrVec *errs);
+  int from_toml(const toml::value &value, ErrVec *errs);
 
 private:
   Str2TFStrMap _map;
@@ -203,3 +201,5 @@ Config::Write::operator->()
 {
   return &_cfg;
 }
+
+int process_toml_config(const std::string &filepath_);

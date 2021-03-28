@@ -21,14 +21,16 @@
 #include "fs_utimensat.hpp"
 #include "fs_stat_utils.hpp"
 
+#include "ghc/filesystem.hpp"
+
 
 namespace fs
 {
   static
   inline
   int
-  lutimens(const std::string     &path_,
-           const struct timespec  ts_[2])
+  lutimens(const ghc::filesystem::path &path_,
+           const struct timespec        ts_[2])
   {
     return fs::utimensat(AT_FDCWD,path_,ts_,AT_SYMLINK_NOFOLLOW);
   }
@@ -36,8 +38,8 @@ namespace fs
   static
   inline
   int
-  lutimens(const std::string &path_,
-           const struct stat &st_)
+  lutimens(const ghc::filesystem::path &path_,
+           const struct stat           &st_)
   {
     struct timespec ts[2];
 

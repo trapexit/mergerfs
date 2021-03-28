@@ -18,8 +18,11 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
+#include <errno.h>
 #include <unistd.h>
 
 
@@ -28,10 +31,33 @@ namespace fs
   static
   inline
   int
+  link(const char *oldpath_,
+       const char *newpath_)
+  {
+    int rv;
+
+    rv = ::link(oldpath_,newpath_);
+
+    return ((rv == -1) ? -errno : rv);
+  }
+
+  static
+  inline
+  int
   link(const std::string &oldpath_,
        const std::string &newpath_)
   {
-    return ::link(oldpath_.c_str(),
-                  newpath_.c_str());
+    return fs::link(oldpath_.c_str(),
+                    newpath_.c_str());
+  }
+
+  static
+  inline
+  int
+  link(const ghc::filesystem::path &oldpath_,
+       const ghc::filesystem::path &newpath_)
+  {
+    return fs::link(oldpath_.c_str(),
+                    newpath_.c_str());
   }
 }

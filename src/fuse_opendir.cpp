@@ -20,7 +20,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::OPENDIR
 {
   int
   opendir(const char       *fusepath_,

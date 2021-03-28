@@ -21,6 +21,8 @@
 #include "errno.hpp"
 #include "xattr.hpp"
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <sys/types.h>
@@ -38,27 +40,31 @@ namespace fs
             const int     flags_)
   {
 #ifdef USE_XATTR
-    return ::lsetxattr(path_,
-                       name_,
-                       value_,
-                       size_,
-                       flags_);
+    int rv;
+
+    rv = ::lsetxattr(path_,
+                     name_,
+                     value_,
+                     size_,
+                     flags_);
+
+    return ((rv == -1) ? -errno : rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 
   static
   inline
   int
-  lsetxattr(const std::string &path_,
-            const std::string &name_,
-            const void        *value_,
-            const size_t       size_,
-            const int          flags_)
+  lsetxattr(const ghc::filesystem::path &path_,
+            const char                  *name_,
+            const void                  *value_,
+            const size_t                 size_,
+            const int                    flags_)
   {
     return fs::lsetxattr(path_.c_str(),
-                         name_.c_str(),
+                         name_,
                          value_,
                          size_,
                          flags_);

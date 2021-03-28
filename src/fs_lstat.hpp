@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <sys/stat.h>
@@ -33,7 +35,11 @@ namespace fs
   lstat(const char  *path_,
         struct stat *st_)
   {
-    return ::lstat(path_,st_);
+    int rv;
+
+    rv = ::lstat(path_,st_);
+
+    return ((rv == -1) ? -errno : 0);
   }
 
   static
@@ -41,6 +47,15 @@ namespace fs
   int
   lstat(const std::string &path_,
         struct stat       *st_)
+  {
+    return fs::lstat(path_.c_str(),st_);
+  }
+
+  static
+  inline
+  int
+  lstat(const ghc::filesystem::path &path_,
+        struct stat                 *st_)
   {
     return fs::lstat(path_.c_str(),st_);
   }

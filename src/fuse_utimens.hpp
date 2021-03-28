@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include <sys/stat.h>
 
 
-namespace FUSE
+namespace FUSE::UTIMENS
 {
   int
   utimens(const char     *fusepath,

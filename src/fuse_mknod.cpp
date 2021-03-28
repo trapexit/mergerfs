@@ -17,9 +17,10 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
-#include "fs_mknod.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_mknod.hpp"
 #include "fs_path.hpp"
+#include "state.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
@@ -145,23 +146,17 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::MKNOD
 {
   int
   mknod(const char *fusepath_,
         mode_t      mode_,
         dev_t       rdev_)
   {
-    Config::Read cfg;
+    State s;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::mknod(cfg->func.getattr.policy,
-                    cfg->func.mknod.policy,
-                    cfg->branches,
-                    fusepath_,
-                    mode_,
-                    fc->umask,
-                    rdev_);
+    return s->mknod(fusepath_,mode_,fc->umask,rdev_);
   }
 }

@@ -19,6 +19,7 @@
 #include "fs_path.hpp"
 #include "fs_unlink.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -99,10 +100,10 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::UNLINK
 {
   int
-  unlink(const char *fusepath_)
+  unlink_old(const char *fusepath_)
   {
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
@@ -111,5 +112,13 @@ namespace FUSE
     return l::unlink(cfg->func.unlink.policy,
                      cfg->branches,
                      fusepath_);
+  }
+
+  int
+  unlink(const char *fusepath_)
+  {
+    State s;
+
+    return s->unlink(fusepath_);
   }
 }

@@ -21,7 +21,7 @@
 #include <sys/types.h>
 
 
-namespace FUSE
+namespace FUSE::WRITE_BUF
 {
   int
   write_buf(const fuse_file_info_t *ffi,

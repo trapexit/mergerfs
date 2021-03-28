@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fallocate.hpp"
@@ -38,8 +40,14 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::FALLOCATE
 {
+  int
+  config(const toml::value &cfg_)
+  {
+    return 0;
+  }
+
   int
   fallocate(const fuse_file_info_t *ffi_,
             int                     mode_,

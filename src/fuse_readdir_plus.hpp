@@ -19,7 +19,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::READDIR_PLUS
 {
   int
   readdir_plus(const fuse_file_info_t *ffi,

@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,15 +16,20 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fuse_removexattr_func.hpp"
+#include "fuse_removexattr_func_factory.hpp"
 
-#include "enum.hpp"
+#include "toml.hpp"
 
-enum class LinkEXDEVEnum
-  {
-    PASSTHROUGH,
-    REL_SYMLINK,
-    ABS_BASE_SYMLINK,
-    ABS_POOL_SYMLINK
-  };
-typedef Enum<LinkEXDEVEnum> LinkEXDEV;
+
+FUSE::REMOVEXATTR::Func::Func(const toml::value &toml_)
+{
+  _removexattr = FuncFactory(toml_);
+}
+
+int
+FUSE::REMOVEXATTR::Func::operator()(const char *fusepath_,
+                                    const char *attrname_)
+{
+  return (*_removexattr)(fusepath_,attrname_);
+}

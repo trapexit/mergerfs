@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "toml.hpp"
+
 #include "fuse.h"
 
 #include <sys/stat.h>
@@ -23,8 +25,11 @@
 #include <unistd.h>
 
 
-namespace FUSE
+namespace FUSE::FGETATTR
 {
+  int
+  config(const toml::value &cfg);
+
   int
   fgetattr(const fuse_file_info_t *ffi,
            struct stat            *st,

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
@@ -25,43 +27,38 @@ namespace fs
 {
   namespace xattr
   {
-    using std::string;
-    using std::vector;
-    using std::map;
+    int list(const ghc::filesystem::path &path,
+             std::vector<char>           *attrs);
+    int list(const ghc::filesystem::path &path,
+             std::string                 *attrs);
+    int list(const ghc::filesystem::path &path,
+             std::vector<std::string>    *attrs);
 
+    int get(const ghc::filesystem::path &path,
+            const std::string           &attr,
+            std::vector<char>           *value);
+    int get(const ghc::filesystem::path &path,
+            const std::string           &attr,
+            std::string                 *value);
 
-    int list(const string   &path,
-             vector<char>   *attrs);
-    int list(const string   &path,
-             string         *attrs);
-    int list(const string   &path,
-             vector<string> *attrs);
+    int get(const ghc::filesystem::path       &path,
+            std::map<std::string,std::string> *attrs);
 
-    int get(const string &path,
-            const string &attr,
-            vector<char> *value);
-    int get(const string &path,
-            const string &attr,
-            string       *value);
+    int set(const ghc::filesystem::path &path,
+            const std::string           &key,
+            const std::string           &value,
+            const int                    flags);
+    int set(const int          fd,
+            const std::string &key,
+            const std::string &value,
+            const int          flags);
 
-    int get(const string       &path,
-            map<string,string> *attrs);
-
-    int set(const string &path,
-            const string &key,
-            const string &value,
-            const int     flags);
-    int set(const int     fd,
-            const string &key,
-            const string &value,
-            const int     flags);
-
-    int set(const string             &path,
-            const map<string,string> &attrs);
+    int set(const ghc::filesystem::path             &path,
+            const std::map<std::string,std::string> &attrs);
 
     int copy(const int fdin,
              const int fdout);
-    int copy(const string &from,
-             const string &to);
+    int copy(const ghc::filesystem::path &from,
+             const ghc::filesystem::path &to);
   }
 }

@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::RENAME
 {
   int
   rename(const char *from,

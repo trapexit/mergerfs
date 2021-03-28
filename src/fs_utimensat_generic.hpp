@@ -276,21 +276,21 @@ namespace fs
     struct timeval *tvp;
 
     if(l::flags_invalid(flags))
-      return (errno=EINVAL,-1);
+      return -EINVAL;
     if(l::timespec_invalid(ts_))
-      return (errno=EINVAL,-1);
+      return -EINVAL;
     if(l::should_ignore(ts_))
       return 0;
 
     rv = l::convert_timespec_to_timeval(dirfd_,path_,ts_,tv,&tvp,flags_);
     if(rv == -1)
-      return -1;
+      return -errno;
 
     if((flags_ & AT_SYMLINK_NOFOLLOW) == 0)
       return fs::futimesat(dirfd_,path_,tvp);
     if(l::can_call_lutimes(dirfd_,path_,flags))
       return fs::lutimes(path_,tvp);
 
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
   }
 }

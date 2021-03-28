@@ -16,9 +16,15 @@
 
 #pragma once
 
+#include "toml.hpp"
 
-namespace FUSE
+#include <sys/stat.h>
+
+namespace FUSE::CHMOD
 {
+  int
+  config(const toml::value &cfg);
+  
   int
   chmod(const char *fusepath,
         mode_t      mode);

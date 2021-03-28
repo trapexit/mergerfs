@@ -18,7 +18,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::MKNOD
 {
   int
   mknod(const char *fusepath,

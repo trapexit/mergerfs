@@ -17,7 +17,7 @@
 #pragma once
 
 
-namespace FUSE
+namespace FUSE::SETXATTR
 {
   int
   setxattr(const char *fusepath,

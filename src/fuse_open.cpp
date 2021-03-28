@@ -25,6 +25,7 @@
 #include "fs_stat.hpp"
 #include "stat_util.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -199,11 +200,11 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::OPEN
 {
   int
-  open(const char       *fusepath_,
-       fuse_file_info_t *ffi_)
+  open_old(const char       *fusepath_,
+           fuse_file_info_t *ffi_)
   {
     Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
@@ -221,5 +222,14 @@ namespace FUSE
                    cfg->link_cow,
                    cfg->nfsopenhack,
                    &ffi_->fh);
+  }
+
+  int
+  open(const char       *fusepath_,
+       fuse_file_info_t *ffi_)
+  {
+    State s;
+
+    return s->open(fusepath_,ffi_);
   }
 }

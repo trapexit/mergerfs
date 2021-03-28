@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include "toml.hpp"
 
-namespace FUSE
+
+namespace FUSE::UNLINK
 {
+  int
+  config(const toml::value &);
+
   int
   unlink(const char *fusepath);
 }

@@ -23,6 +23,7 @@
 #include "fs_symlink.hpp"
 #include "fuse_getattr.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -138,7 +139,7 @@ namespace l
   }
 }
 
-namespace FUSE
+namespace FUSE::SYMLINK
 {
   int
   symlink(const char      *target_,

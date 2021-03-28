@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_glob.hpp"
+
 #include <glob.h>
 
 #include <cstdint>
@@ -23,22 +25,37 @@
 using std::string;
 using std::vector;
 
+namespace gfs = ghc::filesystem;
 
-namespace fs
+
+void
+fs::glob(const string   &pattern_,
+         vector<string> *strs_)
 {
-  void
-  glob(const string   &pattern_,
-       vector<string> *strs_)
-  {
-    int flags;
-    glob_t gbuf = {0};
+  int flags;
+  glob_t gbuf = {0};
 
-    flags = GLOB_NOCHECK;
-    ::glob(pattern_.c_str(),flags,NULL,&gbuf);
+  flags = GLOB_NOCHECK;
+  ::glob(pattern_.c_str(),flags,NULL,&gbuf);
 
-    for(size_t i = 0; i < gbuf.gl_pathc; i++)
-      strs_->push_back(gbuf.gl_pathv[i]);
+  for(size_t i = 0; i < gbuf.gl_pathc; i++)
+    strs_->push_back(gbuf.gl_pathv[i]);
 
-    ::globfree(&gbuf);
-  }
+  ::globfree(&gbuf);
+}
+
+void
+fs::glob(const string      &pattern_,
+         vector<gfs::path> *paths_)
+{
+  int flags;
+  glob_t gbuf = {0};
+
+  flags = GLOB_NOCHECK;
+  ::glob(pattern_.c_str(),flags,NULL,&gbuf);
+
+  for(size_t i = 0; i < gbuf.gl_pathc; i++)
+    paths_->push_back(gbuf.gl_pathv[i]);
+
+  ::globfree(&gbuf);
 }

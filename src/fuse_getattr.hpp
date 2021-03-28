@@ -16,13 +16,20 @@
 
 #pragma once
 
+#include "fuse_timeouts.h"
+
+#include "toml.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 
-namespace FUSE
+namespace FUSE::GETATTR
 {
+  int
+  config(const toml::value &cfg);
+  
   int
   getattr(const char      *fusepath,
           struct stat     *buf,

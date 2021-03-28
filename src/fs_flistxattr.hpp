@@ -34,9 +34,13 @@ namespace fs
              const size_t  size_)
   {
 #ifdef USE_XATTR
-    return ::flistxattr(fd_,list_,size_);
+    int rv;
+
+    rv = ::flistxattr(fd_,list_,size_);
+
+    return ((rv == -1) ? -errno : rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_xattr.hpp"
+
 #include "errno.hpp"
 #include "fs_close.hpp"
 #include "fs_fgetxattr.hpp"
@@ -24,6 +26,7 @@
 #include "fs_lremovexattr.hpp"
 #include "fs_lsetxattr.hpp"
 #include "fs_open.hpp"
+#include "ghc/filesystem.hpp"
 #include "str.hpp"
 
 #include <map>
@@ -37,6 +40,8 @@ using std::map;
 using std::istringstream;
 
 
+namespace gfs = ghc::filesystem;
+
 namespace fs
 {
   namespace xattr
@@ -47,9 +52,8 @@ namespace fs
     {
       ssize_t rv;
 
-      rv    = -1;
-      errno = ERANGE;
-      while((rv == -1) && (errno == ERANGE))
+      rv = -ERANGE;
+      while(rv == -ERANGE)
         {
           rv = fs::flistxattr(fd_,NULL,0);
           if(rv <= 0)
@@ -64,14 +68,13 @@ namespace fs
     }
 
     int
-    list(const string &path_,
-         vector<char> *attrs_)
+    list(const gfs::path &path_,
+         vector<char>    *attrs_)
     {
       ssize_t rv;
 
-      rv    = -1;
-      errno = ERANGE;
-      while((rv == -1) && (errno == ERANGE))
+      rv = -ERANGE;
+      while(rv == -ERANGE)
         {
           rv = fs::llistxattr(path_,NULL,0);
           if(rv <= 0)
@@ -93,7 +96,7 @@ namespace fs
       vector<char> attrs;
 
       rv = fs::xattr::list(fd_,&attrs);
-      if(rv != -1)
+      if(rv > 0)
         {
           string tmp(attrs.begin(),attrs.end());
           str::split(tmp,'\0',attrvector_);
@@ -103,14 +106,14 @@ namespace fs
     }
 
     int
-    list(const string   &path_,
-         vector<string> *attrvector_)
+    list(const gfs::path &path_,
+         vector<string>  *attrvector_)
     {
       int rv;
       vector<char> attrs;
 
       rv = fs::xattr::list(path_,&attrs);
-      if(rv != -1)
+      if(rv > 0)
         {
           string tmp(attrs.begin(),attrs.end());
           str::split(tmp,'\0',attrvector_);
@@ -127,21 +130,21 @@ namespace fs
       vector<char> attrs;
 
       rv = fs::xattr::list(fd_,&attrs);
-      if(rv != -1)
+      if(rv > 0)
         *attrstr_ = string(attrs.begin(),attrs.end());
 
       return rv;
     }
 
     int
-    list(const string &path_,
-         string       *attrstr_)
+    list(const gfs::path &path_,
+         string          *attrstr_)
     {
       int rv;
       vector<char> attrs;
 
       rv = fs::xattr::list(path_,&attrs);
-      if(rv != -1)
+      if(rv > 0)
         *attrstr_ = string(attrs.begin(),attrs.end());
 
       return rv;
@@ -154,9 +157,8 @@ namespace fs
     {
       ssize_t rv;
 
-      rv    = -1;
-      errno = ERANGE;
-      while((rv == -1) && (errno == ERANGE))
+      rv = -ERANGE;
+      while(rv == -ERANGE)
         {
           rv = fs::fgetxattr(fd_,attr_,NULL,0);
           if(rv <= 0)
@@ -171,15 +173,14 @@ namespace fs
     }
 
     int
-    get(const string &path_,
-        const string &attr_,
-        vector<char> *value_)
+    get(const gfs::path &path_,
+        const string    &attr_,
+        vector<char>    *value_)
     {
       ssize_t rv;
 
-      rv    = -1;
-      errno = ERANGE;
-      while((rv == -1) && (errno == ERANGE))
+      rv = -ERANGE;
+      while(rv == -ERANGE)
         {
           rv = fs::lgetxattr(path_,attr_,NULL,0);
           if(rv <= 0)
@@ -201,23 +202,23 @@ namespace fs
       int          rv;
       vector<char> tmpvalue;
 
-      rv = get(fd_,attr_,&tmpvalue);
-      if(rv != -1)
+      rv = fs::xattr::get(fd_,attr_,&tmpvalue);
+      if(rv > 0)
         *value_ = string(tmpvalue.begin(),tmpvalue.end());
 
       return rv;
     }
 
     int
-    get(const string &path_,
-        const string &attr_,
-        string       *value_)
+    get(const gfs::path &path_,
+        const string    &attr_,
+        string          *value_)
     {
       int          rv;
       vector<char> tmpvalue;
 
       rv = fs::xattr::get(path_,attr_,&tmpvalue);
-      if(rv != -1)
+      if(rv > 0)
         *value_ = string(tmpvalue.begin(),tmpvalue.end());
 
       return rv;
@@ -231,8 +232,8 @@ namespace fs
       string attrstr;
 
       rv = fs::xattr::list(fd_,&attrstr);
-      if(rv == -1)
-        return -1;
+      if(rv <= 0)
+        return rv;
 
       {
         string key;
@@ -243,7 +244,7 @@ namespace fs
             string value;
 
             rv = fs::xattr::get(fd_,key,&value);
-            if(rv != -1)
+            if(rv > 0)
               (*attrs_)[key] = value;
           }
       }
@@ -252,15 +253,15 @@ namespace fs
     }
 
     int
-    get(const string       &path_,
+    get(const gfs::path    &path_,
         map<string,string> *attrs_)
     {
       int rv;
       string attrstr;
 
       rv = fs::xattr::list(path_,&attrstr);
-      if(rv == -1)
-        return -1;
+      if(rv <= 0)
+        return rv;
 
       {
         string key;
@@ -271,7 +272,7 @@ namespace fs
             string value;
 
             rv = fs::xattr::get(path_,key,&value);
-            if(rv != -1)
+            if(rv > 0)
               (*attrs_)[key] = value;
           }
       }
@@ -293,13 +294,13 @@ namespace fs
     }
 
     int
-    set(const string &path_,
-        const string &key_,
-        const string &value_,
-        const int     flags_)
+    set(const gfs::path &path_,
+        const string    &key_,
+        const string    &value_,
+        const int        flags_)
     {
       return fs::lsetxattr(path_,
-                           key_,
+                           key_.c_str(),
                            value_.data(),
                            value_.size(),
                            flags_);
@@ -309,28 +310,23 @@ namespace fs
     set(const int                 fd_,
         const map<string,string> &attrs_)
     {
-      int rv;
-
-      for(map<string,string>::const_iterator
-            i = attrs_.begin(), ei = attrs_.end(); i != ei; ++i)
+      for(const auto &kv : attrs_)
         {
-          rv = fs::xattr::set(fd_,i->first,i->second,0);
-          if(rv == -1)
-            return -1;
+          fs::xattr::set(fd_,kv.first,kv.second,0);
         }
 
       return 0;
     }
 
     int
-    set(const string             &path_,
+    set(const gfs::path          &path_,
         const map<string,string> &attrs_)
     {
       int fd;
 
       fd = fs::open(path_,O_RDONLY|O_NONBLOCK);
-      if(fd == -1)
-        return -1;
+      if(fd < 0)
+        return fd;
 
       fs::xattr::set(fd,attrs_);
 
@@ -345,22 +341,22 @@ namespace fs
       map<string,string> attrs;
 
       rv = fs::xattr::get(fdin_,&attrs);
-      if(rv == -1)
-        return -1;
+      if(rv < 0)
+        return rv;
 
       return fs::xattr::set(fdout_,attrs);
     }
 
     int
-    copy(const string &from_,
-         const string &to_)
+    copy(const gfs::path &from_,
+         const gfs::path &to_)
     {
       int rv;
       map<string,string> attrs;
 
       rv = fs::xattr::get(from_,&attrs);
-      if(rv == -1)
-        return -1;
+      if(rv < 0)
+        return rv;
 
       return fs::xattr::set(to_,attrs);
     }

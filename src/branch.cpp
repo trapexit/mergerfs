@@ -95,3 +95,25 @@ Branch::ro_or_nc(void) const
   return ((mode == Branch::Mode::RO) ||
           (mode == Branch::Mode::NC));
 }
+
+Branch2::Mode
+Branch2::str2mode(const std::string &str_)
+{
+  if(str_ == "RW")
+    return Branch2::Mode::RW;
+  if(str_ == "RO")
+    return Branch2::Mode::RO;
+  if(str_ == "NC")
+    return Branch2::Mode::NC;
+
+  return Branch2::Mode::RW;
+}
+
+Branch2::Branch2(const toml::value   &toml_,
+                 const Branch2::Mode  default_mode_,
+                 const uint64_t       default_minfreespace_)
+{
+  mode         = toml::find_or(toml_,"mode",default_mode_);
+  minfreespace = toml::find_or(toml_,"min-free-space",default_minfreespace_);
+  path         = toml::find<std::string>(toml_,"path");
+}

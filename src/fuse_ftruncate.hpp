@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 
-namespace FUSE
+namespace FUSE::FTRUNCATE
 {
   int
   ftruncate(const fuse_file_info_t *ffi,

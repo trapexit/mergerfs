@@ -19,6 +19,7 @@
 #pragma once
 
 #include "errno.hpp"
+#include "ghc/filesystem.hpp"
 #include "xattr.hpp"
 
 #include <string>
@@ -36,19 +37,27 @@ namespace fs
              const size_t  size_)
   {
 #ifdef USE_XATTR
-    return ::llistxattr(path_,list_,size_);
+    int rv;
+
+    rv = ::llistxattr(path_,list_,size_);
+
+    return ((rv == -1) ? -errno : rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 
   static
   inline
   int
-  llistxattr(const std::string &path_,
-             char              *list_,
-             const size_t       size_)
+  llistxattr(const ghc::filesystem::path &path_,
+             char                        *list_,
+             const size_t                 size_)
   {
-    return fs::llistxattr(path_.c_str(),list_,size_);
+    return fs::llistxattr(path_.c_str(),
+                          list_,
+                          size_);
   }
+
+
 }

@@ -19,7 +19,7 @@
 #include "fuse.h"
 
 
-namespace FUSE
+namespace FUSE::RELEASE
 {
   int
   release(const fuse_file_info_t *ffi);
