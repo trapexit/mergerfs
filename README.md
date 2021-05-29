@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2021-02-08
+% 2021-05-29
 
 # NAME
 
@@ -1142,6 +1142,8 @@ Yes. They are completely unreleated pieces of software.
 Yes. With Docker you'll need to include `--cap-add=SYS_ADMIN --device=/dev/fuse --security-opt=apparmor:unconfined` or similar with other container runtimes. You should also be running it as root or given sufficient caps to change user and group identity as well as have root like filesystem permissions.
 
 Keep in mind that you **MUST** consider identity when using containers. For example: supplemental groups will be picked up from the container unless you properly manage users and groups by sharing relevant /etc files or by using some other means to share identity across containers. Similarly if you use "rootless" containers and user namespaces to do uid/gid translations you **MUST** consider that while managing shared files.
+
+Also, as mentioned by [hotio](https://hotio.dev/containers/mergerfs), with Docker you should probably be mounting with `bind-propagation` set to `slave`.
 
 
 #### Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
