@@ -1137,6 +1137,13 @@ Remember that hardlinks will NOT work across devices. That includes between the 
 Yes. They are completely unreleated pieces of software.
 
 
+#### Can mergerfs run via Docker, Podman, Kubernetes, etc.
+
+Yes. With Docker you'll need to include `--cap-add=SYS_ADMIN --device=/dev/fuse --security-opt=apparmor:unconfined` or similar with other container runtimes. You should also be running it as root or given sufficient caps to change user and group identity as well as have root like filesystem permissions.
+
+Keep in mind that you **MUST** consider identity when using containers. For example: supplemental groups will be picked up from the container unless you properly manage users and groups by sharing relevant /etc files or by using some other means to share identity across containers. Similarly if you use "rootless" containers and user namespaces to do uid/gid translations you **MUST** consider that while managing shared files.
+
+
 #### Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
 
 Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs sense. It does offer a [cow-shell](http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html) like hard link breaking (copy to temp file then rename over original) which can be useful when wanting to save space by hardlinking duplicate files but wish to treat each name as if it were a unique and separate file.
@@ -1342,6 +1349,7 @@ At the moment my preference would be GitHub Sponsors only because I am part of t
 * GitHub Sponsors: https://github.com/sponsors/trapexit
 * PayPal: https://paypal.me/trapexit
 * Patreon: https://www.patreon.com/trapexit
+* BuyMeACoffee: https://buymeacoff.ee/trapexit
 * Ko-Fi: https://ko-fi.com/trapexit
 * Open Collective: https://opencollective.com/trapexit
 * Bitcoin (BTC): bc1qu537hqlnmn2wawx9n7nws0dlkz55h0cd93ny28
@@ -1351,12 +1359,9 @@ At the moment my preference would be GitHub Sponsors only because I am part of t
 * Litecoin (LTC): MJQzsHBdNnkyGqCFdcAdHYKugicBmfAXfQ
 * Dogecoin (DOGE): DLJNLVe28vZ4SMQSxDJLBQBv57rGtUoWFh
 * Ethereum (ETH): 0xB8d6d55c0319aacC327860d13f891427caEede7a
-  * Basic Attention Token (BAT): 0xB8d6d55c0319aacC327860d13f891427caEede7a
-  * Chainlink (LINK): 0xB8d6d55c0319aacC327860d13f891427caEede7a
-  * Reserve Rights (RSR): 0xB8d6d55c0319aacC327860d13f891427caEede7a
-  * Reef Finance (REEF): 0xB8d6d55c0319aacC327860d13f891427caEede7a
-  * Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
+* Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
 * Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
+* Harmony (ONE): one1hrtd2hqrrx4vcvncvrgnlzg5yl9wahn66lq6rw
 * Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
 * Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
 * Filecoin (FIL): f1wpypkjcluufzo74yha7p67nbxepzizlroockgcy
