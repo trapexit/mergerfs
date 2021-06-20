@@ -79,8 +79,8 @@ fuse_do_work(void *data)
       struct fuse_buf fbuf;
       struct fuse_chan *ch = mt->prevch;
 
-      fbuf.mem  = w->buf;
-      fbuf.size = w->bufsize;
+      fbuf = (struct fuse_buf){ .mem  = w->buf,
+                                .size = w->bufsize };
 
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
       res = fuse_session_receive_buf(mt->se, &fbuf, &ch);
