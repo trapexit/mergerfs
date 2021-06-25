@@ -155,6 +155,9 @@ namespace eppfrd
     uint64_t idx;
     uint64_t threshold;
 
+    if(sum_ == 0)
+      return NULL;
+
     idx = 0;
     threshold = RND::rand64(sum_);
     for(size_t i = 0; i < branchinfo_.size(); i++)
