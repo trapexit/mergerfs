@@ -40,15 +40,8 @@ using std::vector;
 
 typedef char IOCTL_BUF[4096];
 #define IOCTL_APP_TYPE 0xDF
-//#define IOCTL_READ_KEYS 0xD000DF00
-//#define IOCTL_READ_VAL  0xD000DF01
-//#define IOCTL_WRITE_VAL 0x5000DF02
-//#define IOCTL_FILE_INFO 0xD000DF03
-#define IOCTL_READ_KEYS _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
-#define IOCTL_READ_VAL  _IOWR(IOCTL_APP_TYPE,1,IOCTL_BUF)
-#define IOCTL_WRITE_VAL _IOW(IOCTL_APP_TYPE,2,IOCTL_BUF)
-#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,3,IOCTL_BUF)
-
+//#define IOCTL_FILE_INFO 0xD000DF00
+#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
 
 #ifndef FS_IOC_GETFLAGS
 # define FS_IOC_GETFLAGS _IOR('f',1,long)
@@ -201,58 +194,6 @@ namespace l
 
   static
   int
-  read_keys(void *data_)
-  {
-    Config::Read cfg;
-    std::string  keys;
-
-    cfg->keys(keys);
-
-    return l::strcpy(keys,data_);
-  }
-
-  static
-  int
-  read_val(void *data_)
-  {
-    Config::Read cfg;
-    int rv;
-    char *data;
-    std::string key;
-    std::string val;
-
-    data = (char*)data_;
-    data[sizeof(IOCTL_BUF) - 1] = '\0';
-
-    key = data;
-    rv = cfg->get(key,&val);
-    if(rv < 0)
-      return rv;
-
-    return l::strcpy(val,data_);
-  }
-
-  static
-  int
-  write_val(void *data_)
-  {
-    Config::Write cfg;
-    char *data;
-    std::string kv;
-    std::string key;
-    std::string val;
-
-    data = (char*)data_;
-    data[sizeof(IOCTL_BUF) - 1] = '\0';
-
-    kv = data;
-    str::splitkv(kv,'=',&key,&val);
-
-    return cfg->set(key,val);
-  }
-
-  static
-  int
   file_basepath(const Policy::Search &searchFunc_,
                 const Branches       &branches_,
                 const char           *fusepath_,
@@ -378,12 +319,6 @@ namespace FUSE
   {
     switch(cmd_)
       {
-      case IOCTL_READ_KEYS:
-        return l::read_keys(data_);
-      case IOCTL_READ_VAL:
-        return l::read_val(data_);
-      case IOCTL_WRITE_VAL:
-        return l::write_val(data_);
       case IOCTL_FILE_INFO:
         return l::file_info(ffi_,data_);
       }
