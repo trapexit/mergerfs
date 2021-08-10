@@ -9,7 +9,7 @@ assignees: ''
 
 **Describe the bug**
 
-A clear and concise description of what the bug is. Make sure you've upgraded to the latest release to ensure the issue still exists.
+A clear and concise description of the unexpected behavior. Please be sure to use latest release of mergerfs to ensure the issue still exists.
 
 The master branch is **not** to be considered production ready. Feel free to file bug reports but do so indicating clearly that you are testing unreleased code.
 
@@ -20,12 +20,12 @@ Steps to reproduce the behavior. List **all** steps to reproduce. **All** settin
 
 Please simplify the reproduction as much as possible. 
  - Unless it is dependenat on multiple branches, use a single branch
- - Use basic tooling if possible (touch,truncate,rm,rmdir,ln,etc.)
+ - Use standard tooling if possible (touch,truncate,rm,rmdir,ln,etc.)
 
 
 **Expected behavior**
 
-A clear and concise description of what you expected to happen.
+A clear and concise description of the expected behavior.
 
 
 **System information:**
