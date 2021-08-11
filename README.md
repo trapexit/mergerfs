@@ -19,19 +19,19 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 
 # FEATURES
 
-* Runs in userspace (FUSE)
 * Configurable behaviors / file placement
+* Ability to add or remove filesystems at will
+* Resistance to individual filesystem failure
 * Support for extended attributes (xattrs)
 * Support for file attributes (chattr)
 * Runtime configurable (via xattrs)
-* Safe to run as root
-* Opportunistic credential caching
 * Works with heterogeneous filesystem types
-* Handling of writes to full drives (transparently move file to drive with capacity)
-* Handles pool of read-only and read/write drives
-* Can turn read-only files into symlinks to underlying file
+* Moving of file when filesystem runs out of space while writing
+* Ignore read-only filesystems when creating files
+* Turn read-only files into symlinks to underlying file
 * Hard link copy-on-write / CoW
 * Support for POSIX ACLs
+* Misc other things
 
 
 # HOW IT WORKS
