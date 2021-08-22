@@ -1984,6 +1984,8 @@ $\ dd\ if=/mnt/mergerfs/1GB.file\ of=/dev/null\ bs=1M\ count=1024\ iflag=nocache
 This document is very literal and thorough.
 Unless there is a bug things work as described.
 If a suspected feature isn\[aq]t mentioned it doesn\[aq]t exist.
+If certain libfuse arguments aren\[aq]t listed they probably
+shouldn\[aq]t be used.
 .IP \[bu] 2
 Ensure you\[aq]re using the latest version.
 Few distros have the latest version.
@@ -1992,18 +1994,20 @@ Few distros have the latest version.
 above.
 .IP \[bu] 2
 Run mergerfs as \f[C]root\f[] (with \f[B]allow_other\f[]) unless
-you\[aq]re merging paths which are owned by the same user otherwise
-strange permission issues may arise.
+you\[aq]re merging paths which are owned exclusively and fully by the
+same user otherwise strange permission issues may arise.
+mergerfs is designed and intended to be run as \f[C]root\f[].
 .IP \[bu] 2
-https://github.com/trapexit/backup\-and\-recovery\-howtos : A set of
-guides / howtos on creating a data storage system, backing it up,
-maintaining it, and recovering from failure.
-.IP \[bu] 2
-If you don\[aq]t see some directories and files you expect in a merged
-point or policies seem to skip drives be sure the user has permission to
-all the underlying directories.
+If you don\[aq]t see some directories and files you expect, policies
+seem to skip branches, you get strange permission errors, etc.
+be sure the underlying filesystems\[aq] permissions are all the same.
 Use \f[C]mergerfs.fsck\f[] to audit the drive for out of sync
 permissions.
+.IP \[bu] 2
+If you still have permission issues be sure you are using POSIX ACL
+compliant filesystems.
+mergerfs doesn\[aq]t generally make exceptions for FAT, NTFS, or other
+non\-POSIX filesystem.
 .IP \[bu] 2
 Do \f[B]not\f[] use \f[C]cache.files=off\f[] if you expect applications
 (such as rtorrent) to use mmap (http://linux.die.net/man/2/mmap) files.
@@ -2781,17 +2785,21 @@ have been addressed already.\f[]
 .IP \[bu] 2
 Version of mergerfs: \f[C]mergerfs\ \-V\f[]
 .IP \[bu] 2
-mergerfs settings: from \f[C]/etc/fstab\f[] or command line execution
+mergerfs settings / arguments: from fstab, systemd unit, command line,
+etc.
 .IP \[bu] 2
-Version of Linux: \f[C]uname\ \-a\f[]
+Version of the OS: \f[C]uname\ \-a\f[]
 .IP \[bu] 2
-Versions of any additional software being used
-.IP \[bu] 2
-List of drives, their filesystems, and sizes (before and after issue):
-\f[C]df\ \-h\f[]
+List of branches, their filesystem types, sizes (before and after
+issue): \f[C]df\ \-h\f[]
 .IP \[bu] 2
 \f[B]All\f[] information about the relevant branches and paths:
-permissions, etc.
+permissions, ownership, etc.
+.IP \[bu] 2
+\f[B]All\f[] information about the client app making the requests:
+version, uid/gid
+.IP \[bu] 2
+Runtime environment: mostly are things running inside containers or not
 .IP \[bu] 2
 A \f[C]strace\f[] of the app having problems:
 .IP \[bu] 2
@@ -2805,18 +2813,19 @@ it\[aq]s failing to do:
 \f[B]Precise\f[] directions on replicating the issue.
 Do not leave \f[B]anything\f[] out.
 .IP \[bu] 2
-Try to recreate the problem in the simplest way using standard programs.
+Try to recreate the problem in the simplest way using standard programs:
+ln, mv, cp, ls, dd, etc.
 .SS Contact / Issue submission
 .IP \[bu] 2
 github.com: https://github.com/trapexit/mergerfs/issues
 .IP \[bu] 2
 email: trapexit\@spawn.link
 .IP \[bu] 2
+discord: https://discord.gg/MpAr69V
+.IP \[bu] 2
 twitter: https://twitter.com/_trapexit
 .IP \[bu] 2
 reddit: https://www.reddit.com/user/trapexit
-.IP \[bu] 2
-discord: https://discord.gg/MpAr69V
 .SS Support development
 .PP
 This software is free to use and released under a very liberal license
@@ -2824,9 +2833,9 @@ This software is free to use and released under a very liberal license
 That said if you like this software and would like to support its
 development donations are welcome.
 .PP
-At the moment my preference would be GitHub Sponsors only because I am
-part of the matching program.
-That said please use whatever platform you prefer.
+Crypto is fine in whatever protocol you prefer.
+My preferences for fiat would be GitHub Sponsors or PayPal though feel
+free to use any platform listed below.
 .IP \[bu] 2
 GitHub Sponsors: https://github.com/sponsors/trapexit
 .IP \[bu] 2
@@ -2860,6 +2869,7 @@ Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
 Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
 .IP \[bu] 2
 Harmony (ONE): one1hrtd2hqrrx4vcvncvrgnlzg5yl9wahn66lq6rw
+(0xB8d6d55c0319aacC327860d13f891427caEede7a)
 .IP \[bu] 2
 Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
 .IP \[bu] 2
