@@ -928,12 +928,12 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 
 # TIPS / NOTES
 
-* This document is very literal and thorough. Unless there is a bug things work as described. If a suspected feature isn't mentioned it doesn't exist.
+* This document is very literal and thorough. Unless there is a bug things work as described. If a suspected feature isn't mentioned it doesn't exist. If certain libfuse arguments aren't listed they probably shouldn't be used.
 * Ensure you're using the latest version. Few distros have the latest version.
 * **use_ino** will only work when used with mergerfs 2.18.0 and above.
-* Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned by the same user otherwise strange permission issues may arise.
-* https://github.com/trapexit/backup-and-recovery-howtos : A set of guides / howtos on creating a data storage system, backing it up, maintaining it, and recovering from failure.
-* If you don't see some directories and files you expect in a merged point or policies seem to skip drives be sure the user has permission to all the underlying directories. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
+* Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned exclusively and fully by the same user otherwise strange permission issues may arise. mergerfs is designed and intended to be run as `root`.
+* If you don't see some directories and files you expect, policies seem to skip branches, you get strange permission errors, etc. be sure the underlying filesystems' permissions are all the same. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
+* If you still have permission issues be sure you are using POSIX ACL compliant filesystems. mergerfs doesn't generally make exceptions for FAT, NTFS, or other non-POSIX filesystem.
 * Do **not** use `cache.files=off` if you expect applications (such as rtorrent) to use [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ page caching disabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full`.
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
@@ -1320,33 +1320,34 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 #### Information to include in bug reports
 
 * Version of mergerfs: `mergerfs -V`
-* mergerfs settings: from `/etc/fstab` or command line execution
-* Version of Linux: `uname -a`
-* Versions of any additional software being used
-* List of drives, their filesystems, and sizes (before and after issue): `df -h`
-* **All** information about the relevant branches and paths: permissions, etc.
+* mergerfs settings / arguments: from fstab, systemd unit, command line, etc.
+* Version of the OS: `uname -a`
+* List of branches, their filesystem types, sizes (before and after issue): `df -h`
+* **All** information about the relevant branches and paths: permissions, ownership, etc.
+* **All** information about the client app making the requests: version, uid/gid
+* Runtime environment: mostly are things running inside containers or not
 * A `strace` of the app having problems:
   * `strace -fvTtt -s 256 -o /tmp/app.strace.txt <cmd>`
 * A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
   * `strace -fvTtt -s 256 -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
 * **Precise** directions on replicating the issue. Do not leave **anything** out.
-* Try to recreate the problem in the simplest way using standard programs.
+* Try to recreate the problem in the simplest way using standard programs: ln, mv, cp, ls, dd, etc.
 
 
 #### Contact / Issue submission
 
 * github.com: https://github.com/trapexit/mergerfs/issues
 * email: trapexit@spawn.link
+* discord: https://discord.gg/MpAr69V
 * twitter: https://twitter.com/_trapexit
 * reddit: https://www.reddit.com/user/trapexit
-* discord: https://discord.gg/MpAr69V
 
 
 #### Support development
 
 This software is free to use and released under a very liberal license (ISC). That said if you like this software and would like to support its development donations are welcome.
 
-At the moment my preference would be GitHub Sponsors only because I am part of the matching program. That said please use whatever platform you prefer.
+Crypto is fine in whatever protocol you prefer. My preferences for fiat would be GitHub Sponsors or PayPal though feel free to use any platform listed below.
 
 * GitHub Sponsors: https://github.com/sponsors/trapexit
 * PayPal: https://paypal.me/trapexit
@@ -1363,7 +1364,7 @@ At the moment my preference would be GitHub Sponsors only because I am part of t
 * Ethereum (ETH): 0xB8d6d55c0319aacC327860d13f891427caEede7a
 * Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
 * Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
-* Harmony (ONE): one1hrtd2hqrrx4vcvncvrgnlzg5yl9wahn66lq6rw
+* Harmony (ONE): one1hrtd2hqrrx4vcvncvrgnlzg5yl9wahn66lq6rw (0xB8d6d55c0319aacC327860d13f891427caEede7a)
 * Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
 * Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
 * Filecoin (FIL): f1wpypkjcluufzo74yha7p67nbxepzizlroockgcy
