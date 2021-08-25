@@ -782,9 +782,7 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
 					skip_option = 1;
 				}
 			}
-			if (getuid() != 0 && !user_allow_other &&
-			    (opt_eq(s, len, "allow_other") ||
-			     opt_eq(s, len, "allow_root"))) {
+			if (getuid() != 0 && !user_allow_other && opt_eq(s, len, "allow_other")) {
 				fprintf(stderr, "%s: option %.*s only allowed if 'user_allow_other' is set in /etc/fuse.conf\n", progname, len, s);
 				goto err;
 			}

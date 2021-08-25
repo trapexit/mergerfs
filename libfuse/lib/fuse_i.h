@@ -35,23 +35,9 @@ struct fuse_req
 {
   struct fuse_ll *f;
   uint64_t unique;
-  int ctr;
-  pthread_mutex_t lock;
   struct fuse_ctx ctx;
   struct fuse_chan *ch;
-  int interrupted;
   unsigned int ioctl_64bit : 1;
-  union {
-    struct {
-      uint64_t unique;
-    } i;
-    struct {
-      fuse_interrupt_func_t func;
-      void *data;
-    } ni;
-  } u;
-  struct fuse_req *next;
-  struct fuse_req *prev;
 };
 
 struct fuse_notify_req
@@ -66,7 +52,6 @@ struct fuse_notify_req
 struct fuse_ll
 {
   int debug;
-  int allow_root;
   int no_remote_posix_lock;
   int no_remote_flock;
   int big_writes;
@@ -81,8 +66,6 @@ struct fuse_ll
   void *userdata;
   uid_t owner;
   struct fuse_conn_info conn;
-  struct fuse_req list;
-  struct fuse_req interrupts;
   pthread_mutex_t lock;
   int got_destroy;
   pthread_key_t pipe_key;
@@ -100,7 +83,7 @@ struct fuse_cmd
 
 struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 			     const struct fuse_operations *op,
-			     size_t op_size, void *user_data);
+			     size_t op_size);
 
 struct fuse_chan *fuse_kern_chan_new(int fd);
 
@@ -122,7 +105,6 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       const struct fuse_operations *op,
 			       size_t op_size,
 			       char **mountpoint,
-			       int *fd,
-			       void *user_data);
+			       int *fd);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);

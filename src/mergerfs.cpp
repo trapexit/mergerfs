@@ -21,6 +21,7 @@
 #include "strvec.hpp"
 
 #include "fuse_access.hpp"
+#include "fuse_bmap.hpp"
 #include "fuse_chmod.hpp"
 #include "fuse_chown.hpp"
 #include "fuse_copy_file_range.hpp"
@@ -43,12 +44,13 @@
 #include "fuse_ioctl.hpp"
 #include "fuse_link.hpp"
 #include "fuse_listxattr.hpp"
+#include "fuse_lock.hpp"
 #include "fuse_mkdir.hpp"
 #include "fuse_mknod.hpp"
 #include "fuse_open.hpp"
 #include "fuse_opendir.hpp"
+#include "fuse_poll.hpp"
 #include "fuse_prepare_hide.hpp"
-#include "fuse_read.hpp"
 #include "fuse_read_buf.hpp"
 #include "fuse_readdir.hpp"
 #include "fuse_readdir_plus.hpp"
@@ -64,7 +66,6 @@
 #include "fuse_truncate.hpp"
 #include "fuse_unlink.hpp"
 #include "fuse_utimens.hpp"
-#include "fuse_write.hpp"
 #include "fuse_write_buf.hpp"
 
 #include "fuse.h"
@@ -83,7 +84,7 @@ namespace l
                       const bool              nullrw_)
   {
     ops_.access          = FUSE::access;
-    ops_.bmap            = NULL;
+    ops_.bmap            = FUSE::bmap;
     ops_.chmod           = FUSE::chmod;
     ops_.chown           = FUSE::chown;
     ops_.copy_file_range = FUSE::copy_file_range;
@@ -93,7 +94,7 @@ namespace l
     ops_.fchmod          = FUSE::fchmod;
     ops_.fchown          = FUSE::fchown;
     ops_.fgetattr        = FUSE::fgetattr;
-    ops_.flock           = NULL; // FUSE::flock;
+    ops_.flock           = FUSE::flock;
     ops_.flush           = FUSE::flush;
     ops_.free_hide       = FUSE::free_hide;
     ops_.fsync           = FUSE::fsync;
@@ -106,15 +107,14 @@ namespace l
     ops_.ioctl           = FUSE::ioctl;
     ops_.link            = FUSE::link;
     ops_.listxattr       = FUSE::listxattr;
-    ops_.lock            = NULL;
+    ops_.lock            = FUSE::lock;
     ops_.mkdir           = FUSE::mkdir;
     ops_.mknod           = FUSE::mknod;
     ops_.open            = FUSE::open;
     ops_.opendir         = FUSE::opendir;
-    ops_.poll            = NULL;
+    ops_.poll            = FUSE::poll;;
     ops_.prepare_hide    = FUSE::prepare_hide;
-    ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
-    ops_.read_buf        = (nullrw_ ? NULL : FUSE::read_buf);
+    ops_.read_buf        = (nullrw_ ? FUSE::read_buf_null : FUSE::read_buf);
     ops_.readdir         = FUSE::readdir;
     ops_.readdir_plus    = FUSE::readdir_plus;
     ops_.readlink        = FUSE::readlink;
@@ -128,9 +128,7 @@ namespace l
     ops_.symlink         = FUSE::symlink;
     ops_.truncate        = FUSE::truncate;
     ops_.unlink          = FUSE::unlink;
-    ops_.utime           = NULL; /* deprecated; use utimens() */
     ops_.utimens         = FUSE::utimens;
-    ops_.write           = (nullrw_ ? FUSE::write_null : FUSE::write);
     ops_.write_buf       = (nullrw_ ? FUSE::write_buf_null : FUSE::write_buf);
 
     return;
@@ -173,8 +171,7 @@ namespace l
 
     return fuse_main(args.argc,
                      args.argv,
-                     &ops,
-                     NULL);
+                     &ops);
   }
 }
 

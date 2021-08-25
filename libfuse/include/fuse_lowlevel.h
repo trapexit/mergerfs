@@ -1482,36 +1482,6 @@ const struct fuse_ctx *fuse_req_ctx(fuse_req_t req);
  */
 int fuse_req_getgroups(fuse_req_t req, int size, gid_t list[]);
 
-/**
- * Callback function for an interrupt
- *
- * @param req interrupted request
- * @param data user data
- */
-typedef void (*fuse_interrupt_func_t)(fuse_req_t req, void *data);
-
-/**
- * Register/unregister callback for an interrupt
- *
- * If an interrupt has already happened, then the callback function is
- * called from within this function, hence it's not possible for
- * interrupts to be lost.
- *
- * @param req request handle
- * @param func the callback function or NULL for unregister
- * @param data user data passed to the callback function
- */
-void fuse_req_interrupt_func(fuse_req_t req, fuse_interrupt_func_t func,
-                             void *data);
-
-/**
- * Check if a request has already been interrupted
- *
- * @param req request handle
- * @return 1 if the request has been interrupted, 0 otherwise
- */
-int fuse_req_interrupted(fuse_req_t req);
-
 /* ----------------------------------------------------------- *
  * Filesystem setup					       *
  * ----------------------------------------------------------- */

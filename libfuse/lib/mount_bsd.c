@@ -28,7 +28,6 @@
 #define FUSE_DEV_TRUNK		"/dev/fuse"
 
 enum {
-  KEY_ALLOW_ROOT,
   KEY_RO,
   KEY_HELP,
   KEY_VERSION,
@@ -37,7 +36,6 @@ enum {
 
 struct mount_opts {
   int allow_other;
-  int allow_root;
   int ishelp;
   char *kernel_opts;
 };
@@ -47,8 +45,6 @@ struct mount_opts {
 
 static const struct fuse_opt fuse_mount_opts[] = {
   { "allow_other", offsetof(struct mount_opts, allow_other), 1 },
-  { "allow_root", offsetof(struct mount_opts, allow_root), 1 },
-  FUSE_OPT_KEY("allow_root",		KEY_ALLOW_ROOT),
   FUSE_OPT_KEY("-r",			KEY_RO),
   FUSE_OPT_KEY("-h",			KEY_HELP),
   FUSE_OPT_KEY("--help",			KEY_HELP),
@@ -102,7 +98,6 @@ static const struct fuse_opt fuse_mount_opts[] = {
 static void mount_help(void)
 {
   fprintf(stderr,
-          "    -o allow_root          allow access to root\n"
           );
   system(FUSERMOUNT_PROG " --help");
   fputc('\n', stderr);
@@ -119,12 +114,6 @@ static int fuse_mount_opt_proc(void *data, const char *arg, int key,
   struct mount_opts *mo = data;
 
   switch (key) {
-  case KEY_ALLOW_ROOT:
-    if (fuse_opt_add_opt(&mo->kernel_opts, "allow_other") == -1 ||
-        fuse_opt_add_arg(outargs, "-oallow_root") == -1)
-      return -1;
-    return 0;
-
   case KEY_RO:
     arg = "ro";
     /* fall through */
@@ -328,10 +317,6 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
       fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
     return -1;
 
-  if (mo.allow_other && mo.allow_root) {
-    fprintf(stderr, "fuse: 'allow_other' and 'allow_root' options are mutually exclusive\n");
-    goto out;
-  }
   if (mo.ishelp)
     return 0;
 

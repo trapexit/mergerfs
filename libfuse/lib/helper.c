@@ -290,8 +290,7 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       const struct fuse_operations *op,
 			       size_t op_size,
 			       char **mountpoint,
-			       int *fd,
-			       void *user_data)
+			       int *fd)
 {
   struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
   struct fuse_chan *ch;
@@ -309,7 +308,7 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
     goto err_free;
   }
 
-  fuse = fuse_new_common(ch, &args, op, op_size, user_data);
+  fuse = fuse_new_common(ch, &args, op, op_size);
   fuse_opt_free_args(&args);
   if (fuse == NULL)
     goto err_unmount;
@@ -338,10 +337,10 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 
 struct fuse *fuse_setup(int argc, char *argv[],
 			const struct fuse_operations *op, size_t op_size,
-			char **mountpoint, void *user_data)
+			char **mountpoint)
 {
   return fuse_setup_common(argc, argv, op, op_size, mountpoint,
-                           NULL, user_data);
+                           NULL);
 }
 
 static void fuse_teardown_common(struct fuse *fuse, char *mountpoint)
@@ -360,8 +359,7 @@ void fuse_teardown(struct fuse *fuse, char *mountpoint)
 }
 
 static int fuse_main_common(int argc, char *argv[],
-			    const struct fuse_operations *op, size_t op_size,
-			    void *user_data)
+			    const struct fuse_operations *op, size_t op_size)
 {
   struct fuse *fuse;
   char *mountpoint;
@@ -369,7 +367,7 @@ static int fuse_main_common(int argc, char *argv[],
 
   fuse = fuse_setup_common(argc, argv, op, op_size,
                            &mountpoint,
-                           NULL, user_data);
+                           NULL);
   if (fuse == NULL)
     return 1;
 
@@ -382,10 +380,12 @@ static int fuse_main_common(int argc, char *argv[],
   return 0;
 }
 
-int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
-		   size_t op_size, void *user_data)
+int fuse_main_real(int argc,
+                   char *argv[],
+                   const struct fuse_operations *op,
+		   size_t op_size)
 {
-  return fuse_main_common(argc, argv, op, op_size, user_data);
+  return fuse_main_common(argc, argv, op, op_size);
 }
 
 #undef fuse_main

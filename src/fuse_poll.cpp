@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,11 +16,22 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "errno.hpp"
+
+#include "fuse.h"
 
 
 namespace FUSE
 {
-  void
-  destroy(void);
+  int
+  poll(const fuse_file_info_t *ffi_,
+       fuse_pollhandle_t      *ph_,
+       unsigned               *reventsp_)
+  {
+    (void)ffi_;
+    (void)ph_;
+    (void)reventsp_;
+
+    return -ENOSYS;
+  }
 }

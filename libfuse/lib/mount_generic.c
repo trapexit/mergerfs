@@ -55,7 +55,6 @@ enum {
   KEY_FUSERMOUNT_OPT,
   KEY_SUBTYPE_OPT,
   KEY_MTAB_OPT,
-  KEY_ALLOW_ROOT,
   KEY_RO,
   KEY_HELP,
   KEY_VERSION,
@@ -63,7 +62,6 @@ enum {
 
 struct mount_opts {
   int allow_other;
-  int allow_root;
   int ishelp;
   int flags;
   int nonempty;
@@ -81,14 +79,12 @@ struct mount_opts {
 
 static const struct fuse_opt fuse_mount_opts[] = {
   FUSE_MOUNT_OPT("allow_other",		allow_other),
-  FUSE_MOUNT_OPT("allow_root",		allow_root),
   FUSE_MOUNT_OPT("nonempty",		nonempty),
   FUSE_MOUNT_OPT("blkdev",		blkdev),
   FUSE_MOUNT_OPT("auto_unmount",		auto_unmount),
   FUSE_MOUNT_OPT("fsname=%s",		fsname),
   FUSE_MOUNT_OPT("subtype=%s",		subtype),
   FUSE_OPT_KEY("allow_other",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("allow_root",		KEY_ALLOW_ROOT),
   FUSE_OPT_KEY("nonempty",		KEY_FUSERMOUNT_OPT),
   FUSE_OPT_KEY("auto_unmount",		KEY_FUSERMOUNT_OPT),
   FUSE_OPT_KEY("blkdev",			KEY_FUSERMOUNT_OPT),
@@ -129,7 +125,6 @@ static void mount_help(void)
 {
   fprintf(stderr,
           "    -o allow_other         allow access to other users\n"
-          "    -o allow_root          allow access to root\n"
           "    -o auto_unmount        auto unmount on process termination\n"
           "    -o nonempty            allow mounts over non-empty file/dir\n"
           "    -o default_permissions enable permission checking by kernel\n"
@@ -208,12 +203,6 @@ static int fuse_mount_opt_proc(void *data, const char *arg, int key,
   struct mount_opts *mo = data;
 
   switch (key) {
-  case KEY_ALLOW_ROOT:
-    if (fuse_opt_add_opt(&mo->kernel_opts, "allow_other") == -1 ||
-        fuse_opt_add_arg(outargs, "-oallow_root") == -1)
-      return -1;
-    return 0;
-
   case KEY_RO:
     arg = "ro";
     /* fall through */
@@ -575,10 +564,6 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
       fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
     return -1;
 
-  if (mo.allow_other && mo.allow_root) {
-    fprintf(stderr, "fuse: 'allow_other' and 'allow_root' options are mutually exclusive\n");
-    goto out;
-  }
   res = 0;
   if (mo.ishelp)
     goto out;

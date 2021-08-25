@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,11 +16,24 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "errno.hpp"
+
+#include <cstdint>
+
+#include <stddef.h>
 
 
 namespace FUSE
 {
-  void
-  destroy(void);
+  int
+  bmap(const char *fusepath_,
+       size_t      blocksize_,
+       uint64_t   *idx_)
+  {
+    (void)fusepath_;
+    (void)blocksize_;
+    (void)idx_;
+
+    return -ENOSYS;
+  }
 }
