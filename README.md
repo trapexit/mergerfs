@@ -1365,9 +1365,9 @@ Crypto is fine in whatever protocol you prefer. My preferences for fiat would be
 * Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
 * Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
 * Harmony (ONE): one1hrtd2hqrrx4vcvncvrgnlzg5yl9wahn66lq6rw (0xB8d6d55c0319aacC327860d13f891427caEede7a)
-* Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
 * Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
-* Filecoin (FIL): f1wpypkjcluufzo74yha7p67nbxepzizlroockgcy
+* Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
+* Chia (XCH): xch18l7e2q34jtuyzkq0jg8vp7yrtnfwzly30w3yyhkk96um2ur4yqcq6p2een
 * LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
 * Ripple (XRP): r9f6aoxaGD8aymxqH89Ke1PCUPkNiFdZZC
 * Tezos (XTZ): tz1ZxerkbbALsuU9XGV9K9fFpuLWnKAGfc1C
