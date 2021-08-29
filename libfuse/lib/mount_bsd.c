@@ -97,8 +97,6 @@ static const struct fuse_opt fuse_mount_opts[] = {
 
 static void mount_help(void)
 {
-  fprintf(stderr,
-          );
   system(FUSERMOUNT_PROG " --help");
   fputc('\n', stderr);
 }
