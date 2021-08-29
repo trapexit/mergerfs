@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,9 +18,12 @@
 
 #pragma once
 
+#include "fuse.h"
 
 namespace FUSE
 {
-  void
-  destroy(void);
+  int
+  lock(const fuse_file_info_t *ffi,
+       int                     cmd,
+       struct flock           *flock);
 }

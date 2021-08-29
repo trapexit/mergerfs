@@ -67,8 +67,6 @@ struct fuse_config
 struct fuse_fs
 {
   struct fuse_operations op;
-  void *user_data;
-  int debug;
 };
 
 struct lock_queue_element
@@ -128,7 +126,6 @@ struct fuse
   unsigned int hidectr;
   pthread_mutex_t lock;
   struct fuse_config conf;
-  int intr_installed;
   struct fuse_fs *fs;
   struct lock_queue_element *lockq;
   int pagesize;
@@ -797,9 +794,6 @@ void
 delete_node(struct fuse *f,
             struct node *node)
 {
-  if(f->conf.debug)
-    fprintf(stderr,"DELETE: %llu\n",(unsigned long long)node->nodeid);
-
   assert(node->treelock == 0);
   unhash_name(f,node);
   if(lru_enabled(f))
@@ -1176,28 +1170,6 @@ wake_up_queued(struct fuse *f)
 
 static
 void
-debug_path(struct fuse *f,
-           const char  *msg,
-           fuse_ino_t   nodeid,
-           const char  *name,
-           bool         wr)
-{
-  if(f->conf.debug)
-    {
-      struct node *wnode = NULL;
-
-      if(wr)
-        wnode = lookup_node(f,nodeid,name);
-
-      if(wnode)
-        fprintf(stderr,"%s %li (w)\n",	msg,wnode->nodeid);
-      else
-        fprintf(stderr,"%s %li\n",msg,nodeid);
-    }
-}
-
-static
-void
 queue_path(struct fuse               *f,
            struct lock_queue_element *qe)
 {
@@ -1262,9 +1234,7 @@ get_path_common(struct fuse  *f,
       qe.path1   = path;
       qe.wnode1  = wnode;
 
-      debug_path(f,"QUEUE PATH",nodeid,name,!!wnode);
       err = wait_path(f,&qe);
-      debug_path(f,"DEQUEUE PATH",nodeid,name,!!wnode);
     }
   pthread_mutex_unlock(&f->lock);
 
@@ -1362,11 +1332,7 @@ get_path2(struct fuse  *f,
       qe.path2   = path2;
       qe.wnode2  = wnode2;
 
-      debug_path(f,"QUEUE PATH1",nodeid1,name1,!!wnode1);
-      debug_path(f,"      PATH2",nodeid2,name2,!!wnode2);
       err = wait_path(f,&qe);
-      debug_path(f,"DEQUEUE PATH1",nodeid1,name1,!!wnode1);
-      debug_path(f,"        PATH2",nodeid2,name2,!!wnode2);
     }
   pthread_mutex_unlock(&f->lock);
 
@@ -1441,7 +1407,6 @@ forget_node(struct fuse      *f,
 
       qe.nodeid1 = nodeid;
 
-      debug_path(f,"QUEUE PATH (forget)",nodeid,NULL,false);
       queue_path(f,&qe);
 
       do
@@ -1451,7 +1416,6 @@ forget_node(struct fuse      *f,
       while((node->nlookup == nlookup) && node->treelock);
 
       dequeue_path(f,&qe);
-      debug_path(f,"DEQUEUE_PATH (forget)",nodeid,NULL,false);
     }
 
   assert(node->nlookup >= nlookup);
@@ -1554,14 +1518,6 @@ fuse_fs_getattr(struct fuse_fs  *fs,
                 struct stat     *buf,
                 fuse_timeouts_t *timeout)
 {
-  if(fs->op.getattr == NULL)
-    return -ENOSYS;
-
-  if(fs->debug)
-    fprintf(stderr,"getattr %s\n",path);
-
-  fuse_get_context()->private_data = fs->user_data;
-
   return fs->op.getattr(path,buf,timeout);
 }
 
@@ -1571,13 +1527,6 @@ fuse_fs_fgetattr(struct fuse_fs   *fs,
                  fuse_file_info_t *fi,
                  fuse_timeouts_t  *timeout)
 {
-  if(fs->op.fgetattr == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-  if(fs->debug)
-    fprintf(stderr,"fgetattr[%llu]\n",(unsigned long long)fi->fh);
-
   return fs->op.fgetattr(fi,buf,timeout);
 }
 
@@ -1586,11 +1535,6 @@ fuse_fs_rename(struct fuse_fs *fs,
                const char     *oldpath,
                const char     *newpath)
 {
-  if(fs->op.rename == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
   return fs->op.rename(oldpath,newpath);
 }
 
@@ -1599,11 +1543,6 @@ fuse_fs_prepare_hide(struct fuse_fs *fs_,
                      const char     *path_,
                      uint64_t       *fh_)
 {
-  if(fs_->op.prepare_hide == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.prepare_hide(path_,fh_);
 }
 
@@ -1611,11 +1550,6 @@ int
 fuse_fs_free_hide(struct fuse_fs *fs_,
                   uint64_t        fh_)
 {
-  if(fs_->op.free_hide == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.free_hide(fh_);
 }
 
@@ -1623,14 +1557,6 @@ int
 fuse_fs_unlink(struct fuse_fs *fs,
                const char     *path)
 {
-  if(fs->op.unlink == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"unlink %s\n",path);
-
   return fs->op.unlink(path);
 }
 
@@ -1638,14 +1564,6 @@ int
 fuse_fs_rmdir(struct fuse_fs *fs,
               const char     *path)
 {
-  if(fs->op.rmdir == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"rmdir %s\n",path);
-
   return fs->op.rmdir(path);
 }
 
@@ -1656,15 +1574,6 @@ fuse_fs_symlink(struct fuse_fs  *fs_,
                 struct stat     *st_,
                 fuse_timeouts_t *timeouts_)
 {
-
-  if(fs_->op.symlink == NULL)
-    return -ENOSYS;
-
-  if(fs_->debug)
-    fprintf(stderr,"symlink %s %s\n",linkname_,path_);
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.symlink(linkname_,path_,st_,timeouts_);
 }
 
@@ -1675,14 +1584,6 @@ fuse_fs_link(struct fuse_fs  *fs,
              struct stat     *st_,
              fuse_timeouts_t *timeouts_)
 {
-  if(fs->op.link == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"link %s %s\n",oldpath,newpath);
-
   return fs->op.link(oldpath,newpath,st_,timeouts_);
 }
 
@@ -1690,16 +1591,6 @@ int
 fuse_fs_release(struct fuse_fs   *fs,
                 fuse_file_info_t *fi)
 {
-  if(fs->op.release == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"release%s[%llu] flags: 0x%x\n",
-            fi->flush ? "+flush" : "",
-            (unsigned long long)fi->fh,fi->flags);
-
   return fs->op.release(fi);
 }
 
@@ -1708,23 +1599,7 @@ fuse_fs_opendir(struct fuse_fs   *fs,
                 const char       *path,
                 fuse_file_info_t *fi)
 {
-  int err;
-
-  if(fs->op.opendir == NULL)
-    return 0;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"opendir flags: 0x%x %s\n",fi->flags,path);
-
-  err = fs->op.opendir(path,fi);
-
-  if(fs->debug && !err)
-    fprintf(stderr,"   opendir[%lli] flags: 0x%x %s\n",
-            (unsigned long long)fi->fh,fi->flags,path);
-
-  return err;
+  return fs->op.opendir(path,fi);
 }
 
 int
@@ -1732,23 +1607,7 @@ fuse_fs_open(struct fuse_fs   *fs,
              const char       *path,
              fuse_file_info_t *fi)
 {
-  int err;
-
-  if(fs->op.open == NULL)
-    return 0;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"open flags: 0x%x %s\n",fi->flags,path);
-
-  err = fs->op.open(path,fi);
-
-  if(fs->debug && !err)
-    fprintf(stderr,"   open[%lli] flags: 0x%x %s\n",
-            (unsigned long long)fi->fh,fi->flags,path);
-
-  return err;
+  return fs->op.open(path,fi);
 }
 
 static
@@ -1772,63 +1631,13 @@ fuse_fs_read_buf(struct fuse_fs      *fs,
                  off_t                off,
                  fuse_file_info_t    *fi)
 {
-  fuse_get_context()->private_data = fs->user_data;
-  if(fs->op.read || fs->op.read_buf)
-    {
-      int res;
+  int res;
 
-      if(fs->debug)
-        fprintf(stderr,
-                "read[%llu] %zu bytes from %llu flags: 0x%x\n",
-                (unsigned long long)fi->fh,
-                size,(unsigned long long)off,fi->flags);
+  res = fs->op.read_buf(fi,bufp,size,off);
+  if(res < 0)
+    return res;
 
-      if(fs->op.read_buf)
-        {
-          res = fs->op.read_buf(fi,bufp,size,off);
-        }
-      else
-        {
-          struct fuse_bufvec *buf;
-          void *mem;
-
-          buf = malloc(sizeof(struct fuse_bufvec));
-          if(buf == NULL)
-            return -ENOMEM;
-
-          mem = malloc(size);
-          if(mem == NULL)
-            {
-            free(buf);
-            return -ENOMEM;
-          }
-
-          *buf = FUSE_BUFVEC_INIT(size);
-          buf->buf[0].mem = mem;
-          *bufp = buf;
-
-          res = fs->op.read(fi,mem,size,off);
-          if(res >= 0)
-            buf->buf[0].size = res;
-        }
-
-      if(fs->debug && res >= 0)
-        fprintf(stderr,"   read[%llu] %zu bytes from %llu\n",
-                (unsigned long long)fi->fh,
-                fuse_buf_size(*bufp),
-                (unsigned long long)off);
-      if(res >= 0 && fuse_buf_size(*bufp) > (int)size)
-        fprintf(stderr,"fuse: read too many bytes\n");
-
-      if(res < 0)
-        return res;
-
-      return 0;
-    }
-  else
-    {
-      return -ENOSYS;
-    }
+  return 0;
 }
 
 int
@@ -1860,85 +1669,7 @@ fuse_fs_write_buf(struct fuse_fs     *fs,
                   off_t               off,
                   fuse_file_info_t   *fi)
 {
-  fuse_get_context()->private_data = fs->user_data;
-  if(fs->op.write_buf || fs->op.write)
-    {
-      int res;
-      size_t size = fuse_buf_size(buf);
-
-      assert(buf->idx == 0 && buf->off == 0);
-      if(fs->debug)
-        fprintf(stderr,
-                "write%s[%llu] %zu bytes to %llu flags: 0x%x\n",
-                fi->writepage ? "page" : "",
-                (unsigned long long)fi->fh,
-                size,
-                (unsigned long long)off,
-                fi->flags);
-
-      if(fs->op.write_buf)
-        {
-          res = fs->op.write_buf(fi,buf,off);
-        }
-      else
-        {
-          void *mem = NULL;
-          struct fuse_buf *flatbuf;
-          struct fuse_bufvec tmp = FUSE_BUFVEC_INIT(size);
-
-          if(buf->count == 1 && !(buf->buf[0].flags & FUSE_BUF_IS_FD))
-            {
-              flatbuf = &buf->buf[0];
-            }
-          else
-            {
-              res = -ENOMEM;
-              mem = malloc(size);
-              if(mem == NULL)
-                goto out;
-
-              tmp.buf[0].mem = mem;
-              res = fuse_buf_copy(&tmp,buf,0);
-              if(res <= 0)
-                goto out_free;
-
-              tmp.buf[0].size = res;
-              flatbuf = &tmp.buf[0];
-            }
-
-          res = fs->op.write(fi,flatbuf->mem,flatbuf->size,off);
-        out_free:
-          free(mem);
-        }
-    out:
-      if(fs->debug && res >= 0)
-        fprintf(stderr,"   write%s[%llu] %u bytes to %llu\n",
-                fi->writepage ? "page" : "",
-                (unsigned long long)fi->fh,res,
-                (unsigned long long)off);
-      if(res > (int)size)
-        fprintf(stderr,"fuse: wrote too many bytes\n");
-
-      return res;
-    }
-  else
-    {
-      return -ENOSYS;
-    }
-}
-
-int
-fuse_fs_write(struct fuse_fs   *fs,
-              const char       *mem,
-              size_t            size,
-              off_t             off,
-              fuse_file_info_t *fi)
-{
-  struct fuse_bufvec bufv = FUSE_BUFVEC_INIT(size);
-
-  bufv.buf[0].mem = (void *)mem;
-
-  return fuse_fs_write_buf(fs,&bufv,off,fi);
+  return fs->op.write_buf(fi,buf,off);
 }
 
 int
@@ -1946,15 +1677,6 @@ fuse_fs_fsync(struct fuse_fs   *fs,
               int               datasync,
               fuse_file_info_t *fi)
 {
-  if(fs->op.fsync == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"fsync[%llu] datasync: %i\n",
-            (unsigned long long)fi->fh,datasync);
-
   return fs->op.fsync(fi,datasync);
 }
 
@@ -1963,15 +1685,6 @@ fuse_fs_fsyncdir(struct fuse_fs   *fs,
                  int               datasync,
                  fuse_file_info_t *fi)
 {
-  if(fs->op.fsyncdir == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"fsyncdir[%llu] datasync: %i\n",
-            (unsigned long long)fi->fh,datasync);
-
   return fs->op.fsyncdir(fi,datasync);
 }
 
@@ -1979,15 +1692,6 @@ int
 fuse_fs_flush(struct fuse_fs   *fs,
               fuse_file_info_t *fi)
 {
-  if(fs->op.flush == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"flush[%llu]\n",
-            (unsigned long long)fi->fh);
-
   return fs->op.flush(fi);
 }
 
@@ -1996,18 +1700,6 @@ fuse_fs_statfs(struct fuse_fs *fs,
                const char     *path,
                struct statvfs *buf)
 {
-  if(fs->op.statfs == NULL)
-    {
-      buf->f_namemax = 255;
-      buf->f_bsize = 512;
-      return 0;
-    }
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"statfs %s\n",path);
-
   return fs->op.statfs(path,buf);
 }
 
@@ -2015,15 +1707,6 @@ int
 fuse_fs_releasedir(struct fuse_fs   *fs,
                    fuse_file_info_t *fi)
 {
-  if(fs->op.releasedir == NULL)
-    return 0;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"releasedir[%llu] flags: 0x%x\n",
-            (unsigned long long)fi->fh,fi->flags);
-
   return fs->op.releasedir(fi);
 }
 
@@ -2032,11 +1715,6 @@ fuse_fs_readdir(struct fuse_fs   *fs,
                 fuse_file_info_t *fi,
                 fuse_dirents_t   *buf)
 {
-  if(fs->op.readdir == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
   return fs->op.readdir(fi,buf);
 }
 
@@ -2045,11 +1723,6 @@ fuse_fs_readdir_plus(struct fuse_fs   *fs_,
                      fuse_file_info_t *ffi_,
                      fuse_dirents_t   *buf_)
 {
-  if(fs_->op.readdir_plus == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.readdir_plus(ffi_,buf_);
 }
 
@@ -2059,26 +1732,7 @@ fuse_fs_create(struct fuse_fs   *fs,
                mode_t            mode,
                fuse_file_info_t *fi)
 {
-  int err;
-
-  if(fs->op.create == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,
-            "create flags: 0x%x %s 0%o umask=0%03o\n",
-            fi->flags,path,mode,
-            fuse_get_context()->umask);
-
-  err = fs->op.create(path,mode,fi);
-
-  if(fs->debug && !err)
-    fprintf(stderr,"   create[%llu] flags: 0x%x %s\n",
-            (unsigned long long)fi->fh,fi->flags,path);
-
-  return err;
+  return fs->op.create(path,mode,fi);
 }
 
 int
@@ -2087,25 +1741,6 @@ fuse_fs_lock(struct fuse_fs   *fs,
              int               cmd,
              struct flock     *lock)
 {
-  if(fs->op.lock == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"lock[%llu] %s %s start: %llu len: %llu pid: %llu\n",
-            (unsigned long long)fi->fh,
-            (cmd == F_GETLK ? "F_GETLK" :
-             (cmd == F_SETLK ? "F_SETLK" :
-              (cmd == F_SETLKW ? "F_SETLKW" : "???"))),
-            (lock->l_type == F_RDLCK ? "F_RDLCK" :
-             (lock->l_type == F_WRLCK ? "F_WRLCK" :
-              (lock->l_type == F_UNLCK ? "F_UNLCK" :
-               "???"))),
-            (unsigned long long)lock->l_start,
-            (unsigned long long)lock->l_len,
-            (unsigned long long)lock->l_pid);
-
   return fs->op.lock(fi,cmd,lock);
 }
 
@@ -2114,23 +1749,6 @@ fuse_fs_flock(struct fuse_fs   *fs,
               fuse_file_info_t *fi,
               int               op)
 {
-  if(fs->op.flock == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    {
-      int xop = op & ~LOCK_NB;
-
-      fprintf(stderr,"lock[%llu] %s%s\n",
-              (unsigned long long)fi->fh,
-              xop == LOCK_SH ? "LOCK_SH" :
-              (xop == LOCK_EX ? "LOCK_EX" :
-               (xop == LOCK_UN ? "LOCK_UN" : "???")),
-              (op & LOCK_NB) ? "|LOCK_NB" : "");
-    }
-
   return fs->op.flock(fi,op);
 }
 
@@ -2140,15 +1758,6 @@ fuse_fs_chown(struct fuse_fs *fs,
               uid_t           uid,
               gid_t           gid)
 {
-  if(fs->op.chown == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"chown %s %lu %lu\n",path,
-            (unsigned long)uid,(unsigned long)gid);
-
   return fs->op.chown(path,uid,gid);
 }
 
@@ -2158,12 +1767,6 @@ fuse_fs_fchown(struct fuse_fs         *fs_,
                const uid_t             uid_,
                const gid_t             gid_)
 {
-  if(fs_->op.fchown == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
-
   return fs_->op.fchown(ffi_,uid_,gid_);
 }
 
@@ -2172,15 +1775,6 @@ fuse_fs_truncate(struct fuse_fs *fs,
                  const char     *path,
                  off_t           size)
 {
-  if(fs->op.truncate == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"truncate %s %llu\n",path,
-            (unsigned long long)size);
-
   return fs->op.truncate(path,size);
 }
 
@@ -2189,16 +1783,6 @@ fuse_fs_ftruncate(struct fuse_fs   *fs,
                   off_t             size,
                   fuse_file_info_t *fi)
 {
-  if(fs->op.ftruncate == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"ftruncate[%llu] %llu\n",
-            (unsigned long long)fi->fh,
-            (unsigned long long)size);
-
   return fs->op.ftruncate(fi,size);
 }
 
@@ -2207,32 +1791,7 @@ fuse_fs_utimens(struct fuse_fs        *fs,
                 const char            *path,
                 const struct timespec  tv[2])
 {
-  fuse_get_context()->private_data = fs->user_data;
-  if(fs->op.utimens)
-    {
-      if(fs->debug)
-        fprintf(stderr,"utimens %s %li.%09lu %li.%09lu\n",
-                path,tv[0].tv_sec,tv[0].tv_nsec,
-                tv[1].tv_sec,tv[1].tv_nsec);
-
-      return fs->op.utimens(path,tv);
-    }
-  else if(fs->op.utime)
-    {
-      struct utimbuf buf;
-
-      if(fs->debug)
-        fprintf(stderr,"utime %s %li %li\n",path,
-                tv[0].tv_sec,tv[1].tv_sec);
-
-      buf.actime = tv[0].tv_sec;
-      buf.modtime = tv[1].tv_sec;
-      return fs->op.utime(path,&buf);
-    }
-  else
-    {
-      return -ENOSYS;
-    }
+  return fs->op.utimens(path,tv);
 }
 
 int
@@ -2240,11 +1799,6 @@ fuse_fs_futimens(struct fuse_fs         *fs_,
                  const fuse_file_info_t *ffi_,
                  const struct timespec   tv_[2])
 {
-  if(fs_->op.futimens == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.futimens(ffi_,tv_);
 }
 
@@ -2253,14 +1807,6 @@ fuse_fs_access(struct fuse_fs *fs,
                const char     *path,
                int             mask)
 {
-  if(fs->op.access == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"access %s 0%o\n",path,mask);
-
   return fs->op.access(path,mask);
 }
 
@@ -2270,15 +1816,6 @@ fuse_fs_readlink(struct fuse_fs *fs,
                  char           *buf,
                  size_t          len)
 {
-  if(fs->op.readlink == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"readlink %s %lu\n",path,
-            (unsigned long)len);
-
   return fs->op.readlink(path,buf,len);
 }
 
@@ -2288,16 +1825,6 @@ fuse_fs_mknod(struct fuse_fs *fs,
               mode_t          mode,
               dev_t           rdev)
 {
-  if(fs->op.mknod == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"mknod %s 0%o 0x%llx umask=0%03o\n",
-            path,mode,(unsigned long long)rdev,
-            fuse_get_context()->umask);
-
   return fs->op.mknod(path,mode,rdev);
 }
 
@@ -2306,15 +1833,6 @@ fuse_fs_mkdir(struct fuse_fs *fs,
               const char     *path,
               mode_t          mode)
 {
-  if(fs->op.mkdir == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"mkdir %s 0%o umask=0%03o\n",
-            path,mode,fuse_get_context()->umask);
-
   return fs->op.mkdir(path,mode);
 }
 
@@ -2326,15 +1844,6 @@ fuse_fs_setxattr(struct fuse_fs *fs,
                  size_t          size,
                  int             flags)
 {
-  if(fs->op.setxattr == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"setxattr %s %s %lu 0x%x\n",
-            path,name,(unsigned long)size,flags);
-
   return fs->op.setxattr(path,name,value,size,flags);
 }
 
@@ -2345,15 +1854,6 @@ fuse_fs_getxattr(struct fuse_fs *fs,
                  char           *value,
                  size_t          size)
 {
-  if(fs->op.getxattr == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"getxattr %s %s %lu\n",
-            path,name,(unsigned long)size);
-
   return fs->op.getxattr(path,name,value,size);
 }
 
@@ -2363,15 +1863,6 @@ fuse_fs_listxattr(struct fuse_fs *fs,
                   char           *list,
                   size_t          size)
 {
-  if(fs->op.listxattr == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"listxattr %s %lu\n",
-            path,(unsigned long)size);
-
   return fs->op.listxattr(path,list,size);
 }
 
@@ -2381,15 +1872,6 @@ fuse_fs_bmap(struct fuse_fs *fs,
              size_t          blocksize,
              uint64_t       *idx)
 {
-  if(fs->op.bmap == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-  if(fs->debug)
-    fprintf(stderr,"bmap %s blocksize: %lu index: %llu\n",
-            path,(unsigned long)blocksize,
-            (unsigned long long)*idx);
-
   return fs->op.bmap(path,blocksize,idx);
 }
 
@@ -2398,14 +1880,6 @@ fuse_fs_removexattr(struct fuse_fs *fs,
                     const char     *path,
                     const char     *name)
 {
-  if(fs->op.removexattr == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"removexattr %s %s\n",path,name);
-
   return fs->op.removexattr(path,name);
 }
 
@@ -2418,15 +1892,6 @@ fuse_fs_ioctl(struct fuse_fs   *fs,
               void             *data,
               uint32_t         *out_size)
 {
-  if(fs->op.ioctl == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"ioctl[%llu] 0x%lx flags: 0x%x\n",
-            (unsigned long long)fi->fh,cmd,flags);
-
   return fs->op.ioctl(fi,cmd,arg,flags,data,out_size);
 }
 
@@ -2436,24 +1901,7 @@ fuse_fs_poll(struct fuse_fs    *fs,
              fuse_pollhandle_t *ph,
              unsigned          *reventsp)
 {
-  int res;
-
-  if(fs->op.poll == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"poll[%llu] ph: %p\n",
-            (unsigned long long)fi->fh,ph);
-
-  res = fs->op.poll(fi,ph,reventsp);
-
-  if(fs->debug && !res)
-    fprintf(stderr,"   poll[%llu] revents: 0x%x\n",
-            (unsigned long long)fi->fh,*reventsp);
-
-  return res;
+  return fs->op.poll(fi,ph,reventsp);
 }
 
 int
@@ -2463,17 +1911,6 @@ fuse_fs_fallocate(struct fuse_fs   *fs,
                   off_t             length,
                   fuse_file_info_t *fi)
 {
-  if(fs->op.fallocate == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
-  if(fs->debug)
-    fprintf(stderr,"fallocate mode %x,offset: %llu,length: %llu\n",
-            mode,
-            (unsigned long long)offset,
-            (unsigned long long)length);
-
   return fs->op.fallocate(fi,mode,offset,length);
 }
 
@@ -2486,11 +1923,6 @@ fuse_fs_copy_file_range(struct fuse_fs   *fs_,
                         size_t            len_,
                         int               flags_)
 {
-  if(fs_->op.copy_file_range == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.copy_file_range(ffi_in_,
                                  off_in_,
                                  ffi_out_,
@@ -2567,12 +1999,6 @@ set_path_info(struct fuse             *f,
   pthread_mutex_unlock(&f->lock);
 
   set_stat(f,e->ino,&e->attr);
-  if(f->conf.debug)
-    fprintf(stderr,
-            "   NODEID: %llu\n"
-            "   GEN: %llu\n",
-            (unsigned long long)e->ino,
-            (unsigned long long)e->generation);
 
   return 0;
 }
@@ -2718,15 +2144,7 @@ void
 fuse_fs_init(struct fuse_fs        *fs,
              struct fuse_conn_info *conn)
 {
-  fuse_get_context()->private_data = fs->user_data;
-  if(!fs->op.write_buf)
-    conn->want &= ~FUSE_CAP_SPLICE_READ;
-  if(!fs->op.lock)
-    conn->want &= ~FUSE_CAP_POSIX_LOCKS;
-  if(!fs->op.flock)
-    conn->want &= ~FUSE_CAP_FLOCK_LOCKS;
-  if(fs->op.init)
-    fs->user_data = fs->op.init(conn);
+  fs->op.init(conn);
 }
 
 static
@@ -2746,9 +2164,7 @@ fuse_lib_init(void                  *data,
 void
 fuse_fs_destroy(struct fuse_fs *fs)
 {
-  fuse_get_context()->private_data = fs->user_data;
-  if(fs->op.destroy)
-    fs->op.destroy(fs->user_data);
+  fs->op.destroy();
   free(fs);
 }
 
@@ -2786,8 +2202,6 @@ fuse_lib_lookup(fuse_req_t  req,
           pthread_mutex_lock(&f->lock);
           if(len == 1)
             {
-              if(f->conf.debug)
-                fprintf(stderr,"LOOKUP-DOT\n");
               dot = get_node_nocheck(f,parent);
               if(dot == NULL)
                 {
@@ -2799,8 +2213,6 @@ fuse_lib_lookup(fuse_req_t  req,
             }
           else
             {
-              if(f->conf.debug)
-                fprintf(stderr,"LOOKUP-DOTDOT\n");
               parent = get_node(f,parent)->parent->nodeid;
             }
           pthread_mutex_unlock(&f->lock);
@@ -2811,8 +2223,6 @@ fuse_lib_lookup(fuse_req_t  req,
   err = get_path_name(f,parent,name,&path);
   if(!err)
     {
-      if(f->conf.debug)
-        fprintf(stderr,"LOOKUP %s\n",path);
       err = lookup_path(f,parent,name,path,&e,NULL);
       if(err == -ENOENT)
         {
@@ -2836,11 +2246,6 @@ do_forget(struct fuse      *f,
           const fuse_ino_t  ino,
           const uint64_t    nlookup)
 {
-  if(f->conf.debug)
-    fprintf(stderr,
-            "FORGET %llu/%llu\n",
-            (unsigned long long)ino,
-            (unsigned long long)nlookup);
   forget_node(f,ino,nlookup);
 }
 
@@ -2902,7 +2307,7 @@ fuse_lib_getattr(fuse_req_t        req,
 
   err = 0;
   path = NULL;
-  if((fi == NULL) || (f->fs->op.fgetattr == NULL))
+  if(fi == NULL)
     err = get_path(f,ino,&path);
 
   if(!err)
@@ -2934,11 +2339,6 @@ fuse_fs_chmod(struct fuse_fs *fs,
               const char     *path,
               mode_t          mode)
 {
-  if(fs->op.chmod == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs->user_data;
-
   return fs->op.chmod(path,mode);
 }
 
@@ -2947,11 +2347,6 @@ fuse_fs_fchmod(struct fuse_fs         *fs_,
                const fuse_file_info_t *ffi_,
                const mode_t            mode_)
 {
-  if(fs_->op.fchmod == NULL)
-    return -ENOSYS;
-
-  fuse_get_context()->private_data = fs_->user_data;
-
   return fs_->op.fchmod(ffi_,mode_);
 }
 
@@ -3327,7 +2722,7 @@ fuse_lib_link(fuse_req_t  req,
   f = req_fuse_prepare(req);
 
   rv = get_path2(f,ino,NULL,newparent,newname,
-                  &oldpath,&newpath,NULL,NULL);
+                 &oldpath,&newpath,NULL,NULL);
   if(!rv)
     {
       rv = fuse_fs_link(f->fs,oldpath,newpath,&e.attr,&e.timeout);
@@ -3634,34 +3029,6 @@ fuse_lib_opendir(fuse_req_t        req,
 }
 
 static
-int
-readdir_fill(struct fuse      *f_,
-             fuse_req_t        req_,
-             fuse_dirents_t   *d_,
-             fuse_file_info_t *fi_)
-{
-  int rv;
-
-  rv = fuse_fs_readdir(f_->fs,fi_,d_);
-
-  return rv;
-}
-
-static
-int
-readdir_plus_fill(struct fuse      *f_,
-                  fuse_req_t        req_,
-                  fuse_dirents_t   *d_,
-                  fuse_file_info_t *fi_)
-{
-  int rv;
-
-  rv = fuse_fs_readdir_plus(f_->fs,fi_,d_);
-
-  return rv;
-}
-
-static
 size_t
 readdir_buf_size(fuse_dirents_t *d_,
                  size_t          size_,
@@ -3704,7 +3071,7 @@ fuse_lib_readdir(fuse_req_t        req_,
 
   rv = 0;
   if((off_ == 0) || (d->data_len == 0))
-    rv = readdir_fill(f,req_,d,&fi);
+    rv = fuse_fs_readdir(f->fs,&fi,d);
 
   if(rv)
     {
@@ -3744,7 +3111,7 @@ fuse_lib_readdir_plus(fuse_req_t        req_,
 
   rv = 0;
   if((off_ == 0) || (d->data_len == 0))
-    rv = readdir_plus_fill(f,req_,d,&fi);
+    rv = fuse_fs_readdir_plus(f->fs,&fi,d);
 
   if(rv)
     {
@@ -4460,26 +3827,26 @@ fuse_clean_cache(struct fuse *f)
 
   for(curr = f->lru_table.next; curr != &f->lru_table; curr = next)
     {
-    double age;
+      double age;
 
-    next = curr->next;
-    lnode = list_entry(curr,struct node_lru,lru);
-    node = &lnode->node;
+      next = curr->next;
+      lnode = list_entry(curr,struct node_lru,lru);
+      node = &lnode->node;
 
-    age = diff_timespec(&now,&lnode->forget_time);
-    if(age <= f->conf.remember)
-      break;
+      age = diff_timespec(&now,&lnode->forget_time);
+      if(age <= f->conf.remember)
+        break;
 
-    assert(node->nlookup == 1);
+      assert(node->nlookup == 1);
 
-    /* Don't forget active directories */
-    if(node->refctr > 1)
-      continue;
+      /* Don't forget active directories */
+      if(node->refctr > 1)
+        continue;
 
-    node->nlookup = 0;
-    unhash_name(f,node);
-    unref_node(f,node);
-  }
+      node->nlookup = 0;
+      unhash_name(f,node);
+      unref_node(f,node);
+    }
   pthread_mutex_unlock(&f->lock);
 
   return clean_delay(f);
@@ -4487,47 +3854,48 @@ fuse_clean_cache(struct fuse *f)
 
 static struct fuse_lowlevel_ops fuse_path_ops =
   {
-    .init            = fuse_lib_init,
+    .access          = fuse_lib_access,
+    .bmap            = fuse_lib_bmap,
+    .copy_file_range = fuse_lib_copy_file_range,
+    .create          = fuse_lib_create,
     .destroy         = fuse_lib_destroy,
-    .lookup          = fuse_lib_lookup,
+    .fallocate       = fuse_lib_fallocate,
+    .flock           = fuse_lib_flock,
+    .flush           = fuse_lib_flush,
     .forget          = fuse_lib_forget,
     .forget_multi    = fuse_lib_forget_multi,
-    .getattr         = fuse_lib_getattr,
-    .setattr         = fuse_lib_setattr,
-    .access          = fuse_lib_access,
-    .readlink        = fuse_lib_readlink,
-    .mknod           = fuse_lib_mknod,
-    .mkdir           = fuse_lib_mkdir,
-    .unlink          = fuse_lib_unlink,
-    .rmdir           = fuse_lib_rmdir,
-    .symlink         = fuse_lib_symlink,
-    .rename          = fuse_lib_rename,
-    .link            = fuse_lib_link,
-    .create          = fuse_lib_create,
-    .open            = fuse_lib_open,
-    .read            = fuse_lib_read,
-    .write_buf       = fuse_lib_write_buf,
-    .flush           = fuse_lib_flush,
-    .release         = fuse_lib_release,
     .fsync           = fuse_lib_fsync,
+    .fsyncdir        = fuse_lib_fsyncdir,
+    .getattr         = fuse_lib_getattr,
+    .getlk           = fuse_lib_getlk,
+    .getxattr        = fuse_lib_getxattr,
+    .init            = fuse_lib_init,
+    .ioctl           = fuse_lib_ioctl,
+    .link            = fuse_lib_link,
+    .listxattr       = fuse_lib_listxattr,
+    .lookup          = fuse_lib_lookup,
+    .mkdir           = fuse_lib_mkdir,
+    .mknod           = fuse_lib_mknod,
+    .open            = fuse_lib_open,
     .opendir         = fuse_lib_opendir,
+    .poll            = fuse_lib_poll,
+    .read            = fuse_lib_read,
     .readdir         = fuse_lib_readdir,
     .readdir_plus    = fuse_lib_readdir_plus,
+    .readlink        = fuse_lib_readlink,
+    .release         = fuse_lib_release,
     .releasedir      = fuse_lib_releasedir,
-    .fsyncdir        = fuse_lib_fsyncdir,
-    .statfs          = fuse_lib_statfs,
-    .setxattr        = fuse_lib_setxattr,
-    .getxattr        = fuse_lib_getxattr,
-    .listxattr       = fuse_lib_listxattr,
     .removexattr     = fuse_lib_removexattr,
-    .getlk           = fuse_lib_getlk,
+    .rename          = fuse_lib_rename,
+    .retrieve_reply  = NULL,
+    .rmdir           = fuse_lib_rmdir,
+    .setattr         = fuse_lib_setattr,
     .setlk           = fuse_lib_setlk,
-    .flock           = fuse_lib_flock,
-    .bmap            = fuse_lib_bmap,
-    .ioctl           = fuse_lib_ioctl,
-    .poll            = fuse_lib_poll,
-    .fallocate       = fuse_lib_fallocate,
-    .copy_file_range = fuse_lib_copy_file_range,
+    .setxattr        = fuse_lib_setxattr,
+    .statfs          = fuse_lib_statfs,
+    .symlink         = fuse_lib_symlink,
+    .unlink          = fuse_lib_unlink,
+    .write_buf       = fuse_lib_write_buf,
   };
 
 int
@@ -4632,20 +4000,20 @@ static const struct fuse_opt fuse_lib_opts[] =
   {
     FUSE_OPT_KEY("-h",		      KEY_HELP),
     FUSE_OPT_KEY("--help",	      KEY_HELP),
-    FUSE_OPT_KEY("debug",		      FUSE_OPT_KEY_KEEP),
+    FUSE_OPT_KEY("debug",	      FUSE_OPT_KEY_KEEP),
     FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
-    FUSE_LIB_OPT("debug",		      debug,1),
+    FUSE_LIB_OPT("debug",	      debug,1),
     FUSE_LIB_OPT("-d",		      debug,1),
     FUSE_LIB_OPT("umask=",	      set_mode,1),
     FUSE_LIB_OPT("umask=%o",	      umask,0),
-    FUSE_LIB_OPT("uid=",		      set_uid,1),
+    FUSE_LIB_OPT("uid=",	      set_uid,1),
     FUSE_LIB_OPT("uid=%d",	      uid,0),
-    FUSE_LIB_OPT("gid=",		      set_gid,1),
+    FUSE_LIB_OPT("gid=",	      set_gid,1),
     FUSE_LIB_OPT("gid=%d",	      gid,0),
-    FUSE_LIB_OPT("noforget",           remember,-1),
-    FUSE_LIB_OPT("remember=%u",        remember,0),
-    FUSE_LIB_OPT("threads=%d",         threads,0),
-    FUSE_LIB_OPT("use_ino",            use_ino,1),
+    FUSE_LIB_OPT("noforget",          remember,-1),
+    FUSE_LIB_OPT("remember=%u",       remember,0),
+    FUSE_LIB_OPT("threads=%d",        threads,0),
+    FUSE_LIB_OPT("use_ino",           use_ino,1),
     FUSE_OPT_END
   };
 
@@ -4690,8 +4058,7 @@ fuse_is_lib_option(const char *opt)
 
 struct fuse_fs*
 fuse_fs_new(const struct fuse_operations *op,
-            size_t                        op_size,
-            void                         *user_data)
+            size_t                        op_size)
 {
   struct fuse_fs *fs;
 
@@ -4708,7 +4075,6 @@ fuse_fs_new(const struct fuse_operations *op,
       return NULL;
     }
 
-  fs->user_data = user_data;
   if(op)
     memcpy(&fs->op,op,op_size);
 
@@ -4772,8 +4138,7 @@ struct fuse*
 fuse_new_common(struct fuse_chan             *ch,
                 struct fuse_args             *args,
                 const struct fuse_operations *op,
-                size_t                        op_size,
-                void                         *user_data)
+                size_t                        op_size)
 {
   struct fuse *f;
   struct node *root;
@@ -4790,7 +4155,7 @@ fuse_new_common(struct fuse_chan             *ch,
       goto out_delete_context_key;
     }
 
-  fs = fuse_fs_new(op,op_size,user_data);
+  fs = fuse_fs_new(op,op_size);
   if(!fs)
     goto out_free;
 
@@ -4819,7 +4184,6 @@ fuse_new_common(struct fuse_chan             *ch,
 
   /* Trace topmost layer by default */
   srand(time(NULL));
-  f->fs->debug = f->conf.debug;
   f->ctr = 0;
   f->generation = rand64();
   if(node_table_init(&f->name_table) == -1)
@@ -4876,10 +4240,9 @@ struct fuse*
 fuse_new(struct fuse_chan             *ch,
          struct fuse_args             *args,
          const struct fuse_operations *op,
-         size_t                        op_size,
-         void                         *user_data)
+         size_t                        op_size)
 {
-  return fuse_new_common(ch,args,op,op_size,user_data);
+  return fuse_new_common(ch,args,op,op_size);
 }
 
 void

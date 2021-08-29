@@ -140,12 +140,6 @@ struct fuse_operations
   /** Change the size of a file */
   int (*truncate) (const char *, off_t);
 
-  /** Change the access and/or modification times of a file
-   *
-   * Deprecated, use utimens() instead.
-   */
-  int (*utime) (const char *, struct utimbuf *);
-
   /** File open operation
    *
    * No creation (O_CREAT, O_EXCL) and by default also no
@@ -164,35 +158,6 @@ struct fuse_operations
    * Changed in version 2.2
    */
   int (*open) (const char *, fuse_file_info_t *);
-
-  /** Read data from an open file
-   *
-   * Read should return exactly the number of bytes requested except
-   * on EOF or error, otherwise the rest of the data will be
-   * substituted with zeroes.	 An exception to this is when the
-   * 'direct_io' mount option is specified, in which case the return
-   * value of the read system call will reflect the return value of
-   * this operation.
-   *
-   * Changed in version 2.2
-   */
-  int (*read) (const fuse_file_info_t *,
-               char *,
-               size_t,
-               off_t);
-
-  /** Write data to an open file
-   *
-   * Write should return exactly the number of bytes requested
-   * except on error.	 An exception to this is when the 'direct_io'
-   * mount option is specified (see read operation).
-   *
-   * Changed in version 2.2
-   */
-  int (*write) (const fuse_file_info_t *,
-                const char *,
-                size_t,
-                off_t);
 
   /** Get file system statistics
    *
@@ -340,7 +305,7 @@ struct fuse_operations
    *
    * Introduced in version 2.3
    */
-  void (*destroy) (void *);
+  void (*destroy) (void);
 
   /**
    * Check file access permissions
@@ -606,9 +571,6 @@ struct fuse_context
   /** Thread ID of the calling process */
   pid_t pid;
 
-  /** Private filesystem data */
-  void *private_data;
-
   /** Umask of the calling process (introduced in version 2.8) */
   mode_t umask;
 };
@@ -633,15 +595,13 @@ struct fuse_context
  * @param argc the argument counter passed to the main() function
  * @param argv the argument vector passed to the main() function
  * @param op the file system operation
- * @param user_data user data supplied in the context during the init() method
  * @return 0 on success, nonzero on failure
  */
 /*
-  int fuse_main(int argc, char *argv[], const struct fuse_operations *op,
-  void *user_data);
+  int fuse_main(int argc, char *argv[], const struct fuse_operations *op);
 */
-#define fuse_main(argc, argv, op, user_data)                    \
-  fuse_main_real(argc, argv, op, sizeof(*(op)), user_data)
+#define fuse_main(argc, argv, op)                    \
+  fuse_main_real(argc, argv, op, sizeof(*(op)))
 
 /* ----------------------------------------------------------- *
  * More detailed API					       *
@@ -654,12 +614,10 @@ struct fuse_context
  * @param args argument vector
  * @param op the filesystem operations
  * @param op_size the size of the fuse_operations structure
- * @param user_data user data supplied in the context during the init() method
  * @return the created FUSE handle
  */
 struct fuse *fuse_new(struct fuse_chan *ch, struct fuse_args *args,
-                      const struct fuse_operations *op, size_t op_size,
-                      void *user_data);
+                      const struct fuse_operations *op, size_t op_size);
 
 /**
  * Destroy the FUSE handle.
@@ -729,8 +687,7 @@ int fuse_is_lib_option(const char *opt);
  *
  * Do not call this directly, use fuse_main()
  */
-int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
-                   size_t op_size, void *user_data);
+int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op, size_t op_size);
 
 /**
  * Start the cleanup thread when using option "remember".
@@ -813,8 +770,6 @@ int fuse_fs_read(struct fuse_fs *fs, char *buf, size_t size,
 int fuse_fs_read_buf(struct fuse_fs *fs,
                      struct fuse_bufvec **bufp, size_t size, off_t off,
                      fuse_file_info_t *fi);
-int fuse_fs_write(struct fuse_fs *fs, const char *buf,
-                  size_t size, off_t off, fuse_file_info_t *fi);
 int fuse_fs_write_buf(struct fuse_fs *fs,
                       struct fuse_bufvec *buf, off_t off,
                       fuse_file_info_t *fi);
@@ -889,11 +844,9 @@ int fuse_notify_poll(fuse_pollhandle_t *ph);
  *
  * @param op the filesystem operations
  * @param op_size the size of the fuse_operations structure
- * @param user_data user data supplied in the context during the init() method
  * @return a new filesystem object
  */
-struct fuse_fs *fuse_fs_new(const struct fuse_operations *op, size_t op_size,
-                            void *user_data);
+struct fuse_fs *fuse_fs_new(const struct fuse_operations *op, size_t op_size);
 
 /* ----------------------------------------------------------- *
  * Advanced API for event handling, don't worry about this...  *
@@ -908,8 +861,7 @@ typedef void (*fuse_processor_t)(struct fuse *, struct fuse_cmd *, void *);
 /** This is the part of fuse_main() before the event loop */
 struct fuse *fuse_setup(int argc, char *argv[],
                         const struct fuse_operations *op, size_t op_size,
-                        char **mountpoint,
-                        void *user_data);
+                        char **mountpoint);
 
 /** This is the part of fuse_main() after the event loop */
 void fuse_teardown(struct fuse *fuse, char *mountpoint);

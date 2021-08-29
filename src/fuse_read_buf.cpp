@@ -67,4 +67,32 @@ namespace FUSE
                      size_,
                      offset_);
   }
+
+  int
+  read_buf_null(const fuse_file_info_t  *ffi_,
+                fuse_bufvec            **bufp_,
+                size_t                   size_,
+                off_t                    offset_)
+  {
+    void *mem;
+    struct fuse_bufvec *buf;
+
+    buf = (struct fuse_bufvec*)malloc(sizeof(struct fuse_bufvec));
+    if(buf == NULL)
+      return -ENOMEM;
+
+    mem = (void*)calloc(1,size_);
+    if(mem == NULL)
+      {
+        free(buf);
+        return -ENOMEM;
+      }
+
+    *buf = FUSE_BUFVEC_INIT(size_);
+    buf->buf[0].mem = mem;
+
+    *bufp_ = buf;
+
+    return 0;
+  }
 }

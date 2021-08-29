@@ -17,7 +17,7 @@
 namespace FUSE
 {
   void
-  destroy(void *)
+  destroy(void)
   {
 
   }
