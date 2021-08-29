@@ -1,4 +1,14 @@
 freebsd_task:
+  name: "freebsd:11.4"
+  freebsd_instance:
+    image_family: freebsd-11-4
+  env:
+    ASSUME_ALWAYS_YES: yes
+  script:
+    - tools/install-build-pkgs
+    - gmake -j4
+
+freebsd_task:
   name: "freebsd:12.1"
   freebsd_instance:
     image_family: freebsd-12-1
@@ -7,6 +17,27 @@ freebsd_task:
   script:
     - tools/install-build-pkgs
     - gmake -j4
+
+freebsd_task:
+  name: "freebsd:12.2"
+  freebsd_instance:
+    image_family: freebsd-12-2
+  env:
+    ASSUME_ALWAYS_YES: yes
+  script:
+    - tools/install-build-pkgs
+    - gmake -j4
+
+freebsd_task:
+  name: "freebsd:13.0"
+  freebsd_instance:
+    image_family: freebsd-13-0
+  env:
+    ASSUME_ALWAYS_YES: yes
+  script:
+    - tools/install-build-pkgs
+    - gmake -j4
+
 
 #macos_task:
 #  osx_instance:
@@ -30,6 +61,50 @@ linux_task:
   name: "alpine:3.12"
   container:
     image: alpine:3.12
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine:3.13"
+  container:
+    image: alpine:3.13
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine:3.14"
+  container:
+    image: alpine:3.14
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine:latest"
+  container:
+    image: alpine:latest
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine-arm:latest"
+  arm_container:
+    image: alpine:latest
     cpu: 4
     memory: 2G
   timeout_in: 10m
@@ -110,6 +185,42 @@ linux_task:
     - make rpm
 
 linux_task:
+  name: "fedora:34"
+  container:
+    image: fedora:34
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "fedora:latest"
+  container:
+    image: fedora:latest
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "fedora-arm:latest"
+  arm_container:
+    image: fedora:latest
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
   name: "ubuntu:14.04"
   container:
     image: ubuntu:14.04
@@ -170,6 +281,36 @@ linux_task:
     - mergerfs -v || true
 
 linux_task:
+  name: "ubuntu:latest"
+  container:
+    image: ubuntu:latest
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu-arm:latest"
+  arm_container:
+    image: ubuntu:latest
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
   name: "debian:7"
   container:
     image: debian:8
@@ -218,6 +359,51 @@ linux_task:
   name: "debian:10"
   container:
     image: debian:10
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:11"
+  container:
+    image: debian:11
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:latest"
+  container:
+    image: debian:latest
+    cpu: 4
+    memory: 2G
+  timeout_in: 10m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian-arm:latest"
+  arm_container:
+    image: debian:latest
     cpu: 4
     memory: 2G
   timeout_in: 10m
