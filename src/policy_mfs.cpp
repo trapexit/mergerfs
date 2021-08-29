@@ -74,7 +74,7 @@ Policy::MFS::Action::operator()(const Branches::CPtr &branches_,
                                 const char           *fusepath_,
                                 StrVec               *paths_) const
 {
-  return Policies::Action::mfs(branches_,fusepath_,paths_);
+  return Policies::Action::epmfs(branches_,fusepath_,paths_);
 }
 
 int
