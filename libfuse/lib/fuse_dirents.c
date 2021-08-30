@@ -21,6 +21,14 @@
 
 static
 uint64_t
+round_up(const uint64_t number_,
+         const uint64_t multiple_)
+{
+  return (((number_ + multiple_ - 1) / multiple_) * multiple_);
+}
+
+static
+uint64_t
 align_uint64_t(uint64_t v_)
 {
   return ((v_ + sizeof(uint64_t) - 1) & ~(sizeof(uint64_t) - 1));
@@ -57,16 +65,20 @@ int
 fuse_dirents_buf_resize(fuse_dirents_t *d_,
                         uint64_t        size_)
 {
-  void *p;
+  char *p;
 
   if((d_->data_len + size_) >= d_->buf_len)
     {
-      p = realloc(d_->buf,(d_->buf_len * 2));
+      uint64_t new_size;
+
+      new_size = round_up((d_->data_len + size_),DEFAULT_SIZE);
+      p = realloc(d_->buf,new_size);
+      memset(&p[d_->data_len],0,new_size - d_->data_len);
       if(p == NULL)
         return -errno;
 
-      d_->buf      = p;
-      d_->buf_len *= 2;
+      d_->buf     = p;
+      d_->buf_len = new_size;
     }
 
   return 0;
@@ -381,7 +393,7 @@ fuse_dirents_init(fuse_dirents_t *d_)
 {
   void *buf;
 
-  buf = calloc(DEFAULT_SIZE,1);
+  buf = calloc(1,DEFAULT_SIZE);
   if(buf == NULL)
     return -ENOMEM;
 

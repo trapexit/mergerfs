@@ -32,6 +32,7 @@ INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 AR ?= ar
 
 SRC   = \
+	lib/fuse_node.c \
 	lib/buffer.c \
 	lib/fuse_dirents.c \
 	lib/fuse.c \
@@ -49,7 +50,8 @@ DEPS = $(SRC:lib/%.c=build/%.d)
 CFLAGS ?= \
 	$(OPT_FLAGS)
 CFLAGS := \
-    ${CFLAGS} \
+	${CFLAGS} \
+	-std=gnu99 \
 	-Wall \
 	-pipe \
 	-MMD

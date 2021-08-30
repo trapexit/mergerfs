@@ -689,22 +689,8 @@ int fuse_is_lib_option(const char *opt);
  */
 int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op, size_t op_size);
 
-/**
- * Start the cleanup thread when using option "remember".
- *
- * This is done automatically by fuse_loop_mt()
- * @param fuse struct fuse pointer for fuse instance
- * @return 0 on success and -1 on error
- */
-int fuse_start_cleanup_thread(struct fuse *fuse);
-
-/**
- * Stop the cleanup thread when using option "remember".
- *
- * This is done automatically by fuse_loop_mt()
- * @param fuse struct fuse pointer for fuse instance
- */
-void fuse_stop_cleanup_thread(struct fuse *fuse);
+int  fuse_start_maintenance_thread(struct fuse *fuse);
+void fuse_stop_maintenance_thread(struct fuse *fuse);
 
 /**
  * Iterate over cache removing stale entries
@@ -765,8 +751,6 @@ int fuse_fs_release(struct fuse_fs *fs,
                     fuse_file_info_t *fi);
 int fuse_fs_open(struct fuse_fs *fs, const char *path,
                  fuse_file_info_t *fi);
-int fuse_fs_read(struct fuse_fs *fs, char *buf, size_t size,
-                 off_t off, fuse_file_info_t *fi);
 int fuse_fs_read_buf(struct fuse_fs *fs,
                      struct fuse_bufvec **bufp, size_t size, off_t off,
                      fuse_file_info_t *fi);
