@@ -925,6 +925,15 @@ $ dd if=/dev/zero of=/mnt/mergerfs/1GB.file bs=1M count=1024 oflag=nocache conv=
 $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=fdatasync status=progress
 ```
 
+### other benchmarks
+
+If you are attempting to benchmark other behaviors you must ensure you clear kernel caches before runs. In fact it would be a good deal to run before the read and write benchmarks as well just in case.
+
+```
+sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches
+```
+
 
 # TIPS / NOTES
 

@@ -1979,6 +1979,19 @@ $\ dd\ if=/dev/zero\ of=/mnt/mergerfs/1GB.file\ bs=1M\ count=1024\ oflag=nocache
 $\ dd\ if=/mnt/mergerfs/1GB.file\ of=/dev/null\ bs=1M\ count=1024\ iflag=nocache\ conv=fdatasync\ status=progress
 \f[]
 .fi
+.SS other benchmarks
+.PP
+If you are attempting to benchmark other behaviors you must ensure you
+clear kernel caches before runs.
+In fact it would be a good deal to run before the read and write
+benchmarks as well just in case.
+.IP
+.nf
+\f[C]
+sync
+echo\ 3\ |\ sudo\ tee\ /proc/sys/vm/drop_caches
+\f[]
+.fi
 .SH TIPS / NOTES
 .IP \[bu] 2
 This document is very literal and thorough.
