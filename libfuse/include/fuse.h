@@ -25,7 +25,6 @@
 
 #include "extern_c.h"
 #include "fuse_common.h"
-#include "fuse_dirents.h"
 
 #include <fcntl.h>
 #include <time.h>
@@ -46,6 +45,9 @@ struct fuse;
 
 /** Structure containing a raw command */
 struct fuse_cmd;
+
+struct fuse_dirents_t;
+typedef struct fuse_dirents_t fuse_dirents_t;
 
 /**
  * The file system operations:

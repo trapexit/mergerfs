@@ -43,14 +43,12 @@ enum fuse_dirents_type_e
 };
 typedef enum fuse_dirents_type_e fuse_dirents_type_t;
 
-typedef struct fuse_dirents_s fuse_dirents_t;
-struct fuse_dirents_s
+typedef struct fuse_dirents_t fuse_dirents_t;
+struct fuse_dirents_t
 {
-  char                *buf;
-  uint64_t             buf_len;
-  uint64_t             data_len;
-  kvec_t(uint32_t)     offs;
-  fuse_dirents_type_t  type;
+  kvec_t(char)        data;
+  kvec_t(uint32_t)    offs;
+  fuse_dirents_type_t type;
 };
 
 int  fuse_dirents_init(fuse_dirents_t *d);

@@ -1981,7 +1981,8 @@ fuse_lib_init(void                  *data,
 void
 fuse_fs_destroy(struct fuse_fs *fs)
 {
-  fs->op.destroy();
+  if(fs->op.destroy)
+    fs->op.destroy();
   free(fs);
 }
 
@@ -2844,8 +2845,8 @@ readdir_buf_size(fuse_dirents_t *d_,
 {
   if(off_ >= kv_size(d_->offs))
     return 0;
-  if((kv_A(d_->offs,off_) + size_) > d_->data_len)
-    return (d_->data_len - kv_A(d_->offs,off_));
+  if((kv_A(d_->offs,off_) + size_) > kv_size(d_->data))
+    return (kv_size(d_->data) - kv_A(d_->offs,off_));
   return size_;
 }
 
@@ -2854,7 +2855,11 @@ char*
 readdir_buf(fuse_dirents_t *d_,
             off_t           off_)
 {
-  return &d_->buf[kv_A(d_->offs,off_)];
+  size_t i;
+
+  i = kv_A(d_->offs,off_);
+
+  return &kv_A(d_->data,i);
 }
 
 static
@@ -2878,7 +2883,7 @@ fuse_lib_readdir(fuse_req_t        req_,
   pthread_mutex_lock(&dh->lock);
 
   rv = 0;
-  if((off_ == 0) || (d->data_len == 0))
+  if((off_ == 0) || (kv_size(d->data) == 0))
     rv = fuse_fs_readdir(f->fs,&fi,d);
 
   if(rv)
@@ -2918,7 +2923,7 @@ fuse_lib_readdir_plus(fuse_req_t        req_,
   pthread_mutex_lock(&dh->lock);
 
   rv = 0;
-  if((off_ == 0) || (d->data_len == 0))
+  if((off_ == 0) || (kv_size(d->data) == 0))
     rv = fuse_fs_readdir_plus(f->fs,&fi,d);
 
   if(rv)
