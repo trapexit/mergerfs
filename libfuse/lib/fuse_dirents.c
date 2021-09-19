@@ -21,6 +21,14 @@
 
 static
 uint64_t
+round_up(const uint64_t number_,
+         const uint64_t multiple_)
+{
+  return (((number_ + multiple_ - 1) / multiple_) * multiple_);
+}
+
+static
+uint64_t
 align_uint64_t(uint64_t v_)
 {
   return ((v_ + sizeof(uint64_t) - 1) & ~(sizeof(uint64_t) - 1));
@@ -57,16 +65,15 @@ int
 fuse_dirents_buf_resize(fuse_dirents_t *d_,
                         uint64_t        size_)
 {
-  void *p;
-
-  if((d_->data_len + size_) >= d_->buf_len)
+  if((kv_size(d_->data) + size_) >= kv_max(d_->data))
     {
-      p = realloc(d_->buf,(d_->buf_len * 2));
-      if(p == NULL)
-        return -errno;
+      uint64_t new_size;
 
-      d_->buf      = p;
-      d_->buf_len *= 2;
+      new_size = round_up((kv_size(d_->data) + size_),DEFAULT_SIZE);
+
+      kv_resize(char,d_->data,new_size);
+      if(d_->data.a == NULL)
+        return -ENOMEM;
     }
 
   return 0;
@@ -87,9 +94,8 @@ fuse_dirents_dirent_alloc(fuse_dirents_t *d_,
   if(rv)
     return NULL;
 
-  d = (fuse_dirent_t*)&d_->buf[d_->data_len];
-
-  d_->data_len += size;
+  d = (fuse_dirent_t*)&kv_end(d_->data);
+  kv_size(d_->data) += size;
 
   return d;
 }
@@ -109,9 +115,8 @@ fuse_dirents_direntplus_alloc(fuse_dirents_t *d_,
   if(rv)
     return NULL;
 
-  d = (fuse_dirent_t*)&d_->buf[d_->data_len];
-
-  d_->data_len += size;
+  d = (fuse_dirent_t*)&kv_end(d_->data);
+  kv_size(d_->data) += size;
 
   return d;
 }
@@ -170,8 +175,8 @@ fuse_dirent_find(fuse_dirents_t *d_,
   if(d_->type != NORMAL)
     return NULL;
 
-  cur = (fuse_dirent_t*)&d_->buf[0];
-  end = (fuse_dirent_t*)&d_->buf[d_->data_len];
+  cur = (fuse_dirent_t*)&kv_first(d_->data);
+  end = (fuse_dirent_t*)&kv_end(d_->data);
   while(cur < end)
     {
       if(cur->ino == ino_)
@@ -193,8 +198,8 @@ fuse_direntplus_find(fuse_dirents_t *d_,
   if(d_->type != PLUS)
     return NULL;
 
-  cur = (fuse_direntplus_t*)&d_->buf[0];
-  end = (fuse_direntplus_t*)&d_->buf[d_->data_len];
+  cur = (fuse_direntplus_t*)&kv_first(d_->data);
+  end = (fuse_direntplus_t*)&kv_end(d_->data);
   while(cur < end)
     {
       if(cur->dirent.ino == ino_)
@@ -251,7 +256,7 @@ fuse_dirents_add(fuse_dirents_t      *d_,
     return -ENOMEM;
 
   d->off     = kv_size(d_->offs);
-  kv_push(uint32_t,d_->offs,d_->data_len);
+  kv_push(uint32_t,d_->offs,kv_size(d_->data));
   d->ino     = dirent_->d_ino;
   d->namelen = namelen_;
   d->type    = dirent_->d_type;
@@ -285,7 +290,7 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
     return -ENOMEM;
 
   d->dirent.off     = kv_size(d_->offs);
-  kv_push(uint32_t,d_->offs,d_->data_len);
+  kv_push(uint32_t,d_->offs,kv_size(d_->data));
   d->dirent.ino     = dirent_->d_ino;
   d->dirent.namelen = namelen_;
   d->dirent.type    = dirent_->d_type;
@@ -321,7 +326,7 @@ fuse_dirents_add_linux(fuse_dirents_t              *d_,
     return -ENOMEM;
 
   d->off     = kv_size(d_->offs);
-  kv_push(uint32_t,d_->offs,d_->data_len);
+  kv_push(uint32_t,d_->offs,kv_size(d_->data));
   d->ino     = dirent_->ino;
   d->namelen = namelen_;
   d->type    = dirent_->type;
@@ -355,7 +360,7 @@ fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
     return -ENOMEM;
 
   d->dirent.off     = kv_size(d_->offs);
-  kv_push(uint32_t,d_->offs,d_->data_len);
+  kv_push(uint32_t,d_->offs,kv_size(d_->data));
   d->dirent.ino     = dirent_->ino;
   d->dirent.namelen = namelen_;
   d->dirent.type    = dirent_->type;
@@ -371,24 +376,20 @@ fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
 void
 fuse_dirents_reset(fuse_dirents_t *d_)
 {
-  d_->data_len      = 0;
   d_->type          = UNSET;
+  kv_size(d_->data) = 0;
   kv_size(d_->offs) = 1;
 }
 
 int
 fuse_dirents_init(fuse_dirents_t *d_)
 {
-  void *buf;
+  d_->type = UNSET;
 
-  buf = calloc(DEFAULT_SIZE,1);
-  if(buf == NULL)
+  kv_init(d_->data);
+  kv_resize(char,d_->data,DEFAULT_SIZE);
+  if(d_->data.a == NULL)
     return -ENOMEM;
-
-  d_->buf      = buf;
-  d_->buf_len  = DEFAULT_SIZE;
-  d_->data_len = 0;
-  d_->type     = UNSET;
 
   kv_init(d_->offs);
   kv_resize(uint32_t,d_->offs,64);
@@ -400,11 +401,6 @@ fuse_dirents_init(fuse_dirents_t *d_)
 void
 fuse_dirents_free(fuse_dirents_t *d_)
 {
-  d_->buf_len  = 0;
-  d_->data_len = 0;
-  d_->type     = UNSET;
-
+  kv_destroy(d_->data);
   kv_destroy(d_->offs);
-
-  free(d_->buf);
 }

@@ -59,6 +59,10 @@
 #define kv_pop(v) ((v).a[--(v).n])
 #define kv_size(v) ((v).n)
 #define kv_max(v) ((v).m)
+#define kv_first(v) (kv_A(v,0))
+#define kv_last(v) (kv_A(v,kv_size(v)-1))
+#define kv_end(v) (kv_A(v,kv_size(v)))
+#define kv_delete(v,i) (kv_A(v,i) = kv_pop(v))
 
 #define kv_resize(type, v, s)  ((v).m = (s), (v).a = (type*)realloc((v).a, sizeof(type) * (v).m))
 

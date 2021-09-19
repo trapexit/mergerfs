@@ -8,6 +8,8 @@
 
 #define _GNU_SOURCE
 
+#include "lfmp.h"
+
 #include "config.h"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -47,11 +49,25 @@ struct fuse_pollhandle_t
 };
 
 static size_t pagesize;
+static lfmp_t g_FMP_fuse_req;
 
-static __attribute__((constructor)) void fuse_ll_init_pagesize(void)
+static
+__attribute__((constructor))
+void
+fuse_ll_constructor(void)
 {
   pagesize = getpagesize();
+  lfmp_init(&g_FMP_fuse_req,sizeof(struct fuse_req),1);
 }
+
+static
+__attribute__((destructor))
+void
+fuse_ll_destructor(void)
+{
+  lfmp_destroy(&g_FMP_fuse_req);
+}
+
 
 static
 void
@@ -109,7 +125,7 @@ static
 void
 destroy_req(fuse_req_t req)
 {
-  free(req);
+  lfmp_free(&g_FMP_fuse_req,req);
 }
 
 static
@@ -118,7 +134,7 @@ fuse_ll_alloc_req(struct fuse_ll *f)
 {
   struct fuse_req *req;
 
-  req = (struct fuse_req *) calloc(1, sizeof(struct fuse_req));
+  req = (struct fuse_req*)lfmp_calloc(&g_FMP_fuse_req);
   if (req == NULL)
     {
       fprintf(stderr, "fuse: failed to allocate request\n");
@@ -201,27 +217,6 @@ send_reply(fuse_req_t  req,
     }
 
   return send_reply_iov(req, error, iov, count);
-}
-
-int
-fuse_reply_iov(fuse_req_t          req,
-               const struct iovec *iov,
-               int                 count)
-{
-  int res;
-  struct iovec *padded_iov;
-
-  padded_iov = malloc((count + 1) * sizeof(struct iovec));
-  if (padded_iov == NULL)
-    return fuse_reply_err(req, ENOMEM);
-
-  memcpy(padded_iov + 1, iov, count * sizeof(struct iovec));
-  count++;
-
-  res = send_reply_iov(req, 0, padded_iov, count);
-  free(padded_iov);
-
-  return res;
 }
 
 static
@@ -1635,9 +1630,7 @@ do_interrupt(fuse_req_t  req,
              fuse_ino_t  nodeid,
              const void *inarg)
 {
-  pthread_mutex_lock(&req->f->lock);
   destroy_req(req);
-  pthread_mutex_unlock(&req->f->lock);
 }
 
 static
@@ -2631,6 +2624,8 @@ fuse_ll_destroy(void *data)
   pthread_key_delete(f->pipe_key);
   pthread_mutex_destroy(&f->lock);
   free(f);
+
+  lfmp_clear(&g_FMP_fuse_req);
 }
 
 static

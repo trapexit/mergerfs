@@ -9,6 +9,10 @@
 /* For pthread_rwlock_t */
 #define _GNU_SOURCE
 
+#include "fuse_node.h"
+#include "lfmp.h"
+#include "kvec.h"
+
 #include "config.h"
 #include "fuse_i.h"
 #include "fuse_lowlevel.h"
@@ -38,10 +42,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define FUSE_NODE_SLAB 1
-
-#ifndef MAP_ANONYMOUS
-#undef FUSE_NODE_SLAB
+#ifdef HAVE_MALLOC_TRIM
+#include <malloc.h>
 #endif
 
 #define FUSE_UNKNOWN_INO UINT64_MAX
@@ -108,11 +110,11 @@ struct list_head
   struct list_head *prev;
 };
 
-struct node_slab
+typedef struct remembered_node_t remembered_node_t;
+struct remembered_node_t
 {
-  struct list_head list;  /* must be the first member */
-  struct list_head freelist;
-  int used;
+  struct node *node;
+  time_t       time;
 };
 
 struct fuse
@@ -120,7 +122,6 @@ struct fuse
   struct fuse_session *se;
   struct node_table name_table;
   struct node_table id_table;
-  struct list_head lru_table;
   fuse_ino_t ctr;
   uint64_t generation;
   unsigned int hidectr;
@@ -128,10 +129,10 @@ struct fuse
   struct fuse_config conf;
   struct fuse_fs *fs;
   struct lock_queue_element *lockq;
-  int pagesize;
-  struct list_head partial_slabs;
-  struct list_head full_slabs;
-  pthread_t prune_thread;
+
+  pthread_t maintenance_thread;
+  lfmp_t node_fmp;
+  kvec_t(remembered_node_t) remembered_nodes;
 };
 
 struct lock
@@ -166,15 +167,9 @@ struct node
   char inline_name[32];
 };
 
+
 #define TREELOCK_WRITE -1
 #define TREELOCK_WAIT_OFFSET INT_MIN
-
-struct node_lru
-{
-  struct node node;
-  struct list_head lru;
-  struct timespec forget_time;
-};
 
 struct fuse_dh
 {
@@ -192,21 +187,6 @@ struct fuse_context_i
 static pthread_key_t fuse_context_key;
 static pthread_mutex_t fuse_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static int fuse_context_ref;
-
-static
-void
-init_list_head(struct list_head *list)
-{
-  list->next = list;
-  list->prev = list;
-}
-
-static
-int
-list_empty(const struct list_head *head)
-{
-  return head->next == head;
-}
 
 static
 void
@@ -251,120 +231,10 @@ list_del(struct list_head *entry)
 }
 
 static
-inline
-int
-lru_enabled(struct fuse *f)
-{
-  return f->conf.remember > 0;
-}
-
-static
-struct
-node_lru*
-node_lru(struct node *node)
-{
-  return (struct node_lru*)node;
-}
-
-static
-size_t
-get_node_size(struct fuse *f)
-{
-  if(lru_enabled(f))
-    return sizeof(struct node_lru);
-  else
-    return sizeof(struct node);
-}
-
-#ifdef FUSE_NODE_SLAB
-static
-struct node_slab*
-list_to_slab(struct list_head *head)
-{
-  return (struct node_slab *)head;
-}
-
-static
-struct node_slab*
-node_to_slab(struct fuse *f,
-             struct node *node)
-{
-  return (struct node_slab *)(((uintptr_t)node) & ~((uintptr_t)f->pagesize - 1));
-}
-
-static
-int
-alloc_slab(struct fuse *f)
-{
-  void *mem;
-  struct node_slab *slab;
-  char *start;
-  size_t num;
-  size_t i;
-  size_t node_size = get_node_size(f);
-
-  mem = mmap(NULL,f->pagesize,PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANONYMOUS,-1,0);
-
-  if(mem == MAP_FAILED)
-    return -1;
-
-  slab = mem;
-  init_list_head(&slab->freelist);
-  slab->used = 0;
-  num = (f->pagesize - sizeof(struct node_slab)) / node_size;
-
-  start = (char *)mem + f->pagesize - num * node_size;
-  for(i = 0; i < num; i++)
-    {
-      struct list_head *n;
-
-      n = (struct list_head *)(start + i * node_size);
-      list_add_tail(n,&slab->freelist);
-    }
-  list_add_tail(&slab->list,&f->partial_slabs);
-
-  return 0;
-}
-
-static
 struct node*
 alloc_node(struct fuse *f)
 {
-  struct node_slab *slab;
-  struct list_head *node;
-
-  if(list_empty(&f->partial_slabs))
-    {
-      int res = alloc_slab(f);
-      if(res != 0)
-        return NULL;
-    }
-  slab = list_to_slab(f->partial_slabs.next);
-  slab->used++;
-  node = slab->freelist.next;
-  list_del(node);
-  if(list_empty(&slab->freelist))
-    {
-      list_del(&slab->list);
-      list_add_tail(&slab->list,&f->full_slabs);
-    }
-  memset(node,0,sizeof(struct node));
-
-  return (struct node *)node;
-}
-
-static
-void
-free_slab(struct fuse      *f,
-          struct node_slab *slab)
-{
-  int res;
-
-  list_del(&slab->list);
-  res = munmap(slab,f->pagesize);
-  if(res == -1)
-    fprintf(stderr,"fuse warning: munmap(%p) failed\n",slab);
+  return lfmp_calloc(&f->node_fmp);
 }
 
 static
@@ -372,41 +242,8 @@ void
 free_node_mem(struct fuse *f,
               struct node *node)
 {
-  struct node_slab *slab = node_to_slab(f,node);
-  struct list_head *n = (struct list_head *)node;
-
-  slab->used--;
-  if(slab->used)
-    {
-      if(list_empty(&slab->freelist))
-        {
-          list_del(&slab->list);
-          list_add_tail(&slab->list,&f->partial_slabs);
-        }
-      list_add_head(n,&slab->freelist);
-    }
-  else
-    {
-      free_slab(f,slab);
-    }
+  return lfmp_free(&f->node_fmp,node);
 }
-#else
-static
-struct node*
-alloc_node(struct fuse *f)
-{
-  return (struct node *)calloc(1,get_node_size(f));
-}
-
-static
-void
-free_node_mem(struct fuse *f,
-              struct node *node)
-{
-  (void)f;
-  free(node);
-}
-#endif
 
 static
 size_t
@@ -454,29 +291,44 @@ get_node(struct fuse      *f,
   return node;
 }
 
-static void curr_time(struct timespec *now);
-static double diff_timespec(const struct timespec *t1,
-                            const struct timespec *t2);
-
 static
 void
-remove_node_lru(struct node *node)
+remove_remembered_node(struct fuse *f_,
+                       struct node *node_)
 {
-  struct node_lru *lnode = node_lru(node);
-  list_del(&lnode->lru);
-  init_list_head(&lnode->lru);
+  for(size_t i = 0; i < kv_size(f_->remembered_nodes); i++)
+    {
+      if(kv_A(f_->remembered_nodes,i).node != node_)
+        continue;
+
+      kv_delete(f_->remembered_nodes,i);
+      break;
+    }
 }
 
-static
-void
-set_forget_time(struct fuse *f,
-                struct node *node)
-{
-  struct node_lru *lnode = node_lru(node);
+#ifndef CLOCK_MONOTONIC
+# define CLOCK_MONOTONIC CLOCK_REALTIME
+#endif
 
-  list_del(&lnode->lru);
-  list_add_tail(&lnode->lru,&f->lru_table);
-  curr_time(&lnode->forget_time);
+static
+time_t
+current_time()
+{
+  int rv;
+  struct timespec now;
+  static clockid_t clockid = CLOCK_MONOTONIC;
+
+  rv = clock_gettime(clockid,&now);
+  if((rv == -1) && (errno == EINVAL))
+    {
+      clockid = CLOCK_REALTIME;
+      rv = clock_gettime(clockid,&now);
+    }
+
+  if(rv == -1)
+    now.tv_sec = time(NULL);
+
+  return now.tv_sec;
 }
 
 static
@@ -777,7 +629,7 @@ hash_name(struct fuse *f,
         return -1;
     }
 
-  parent->refctr ++;
+  parent->refctr++;
   node->parent = parent;
   node->name_next = f->name_table.array[hash];
   f->name_table.array[hash] = node;
@@ -790,14 +642,22 @@ hash_name(struct fuse *f,
 }
 
 static
+inline
+int
+remember_nodes(struct fuse *f_)
+{
+  return (f_->conf.remember > 0);
+}
+
+static
 void
 delete_node(struct fuse *f,
             struct node *node)
 {
   assert(node->treelock == 0);
   unhash_name(f,node);
-  if(lru_enabled(f))
-    remove_node_lru(node);
+  if(remember_nodes(f))
+    remove_remembered_node(f,node);
   unhash_id(f,node);
   free_node(f,node);
 }
@@ -881,6 +741,7 @@ find_node(struct fuse *f,
     node = get_node(f,parent);
   else
     node = lookup_node(f,parent,name);
+
   if(node == NULL)
     {
       node = alloc_node(f);
@@ -899,15 +760,10 @@ find_node(struct fuse *f,
           goto out_err;
         }
       hash_id(f,node);
-      if(lru_enabled(f))
-        {
-          struct node_lru *lnode = node_lru(node);
-          init_list_head(&lnode->lru);
-        }
     }
-  else if(lru_enabled(f) && node->nlookup == 1)
+  else if((node->nlookup == 1) && remember_nodes(f))
     {
-      remove_node_lru(node);
+      remove_remembered_node(f,node);
     }
   inc_nlookup(node);
  out_err:
@@ -1420,10 +1276,20 @@ forget_node(struct fuse      *f,
 
   assert(node->nlookup >= nlookup);
   node->nlookup -= nlookup;
-  if(!node->nlookup)
-    unref_node(f,node);
-  else if(lru_enabled(f) && node->nlookup == 1)
-    set_forget_time(f,node);
+
+  if(node->nlookup == 0)
+    {
+      unref_node(f,node);
+    }
+  else if((node->nlookup == 1) && remember_nodes(f))
+    {
+      remembered_node_t fn;
+
+      fn.node = node;
+      fn.time = current_time();
+
+      kv_push(remembered_node_t,f->remembered_nodes,fn);
+    }
 
   pthread_mutex_unlock(&f->lock);
 }
@@ -1433,11 +1299,8 @@ void
 unlink_node(struct fuse *f,
             struct node *node)
 {
-  if(f->conf.remember)
-    {
-      assert(node->nlookup > 1);
-      node->nlookup--;
-    }
+  assert(node->nlookup > 1);
+  node->nlookup--;
   unhash_name(f,node);
 }
 
@@ -1638,29 +1501,6 @@ fuse_fs_read_buf(struct fuse_fs      *fs,
     return res;
 
   return 0;
-}
-
-int
-fuse_fs_read(struct fuse_fs   *fs,
-             char             *mem,
-             size_t            size,
-             off_t             off,
-             fuse_file_info_t *fi)
-{
-  int res;
-  struct fuse_bufvec *buf = NULL;
-
-  res = fuse_fs_read_buf(fs,&buf,size,off,fi);
-  if(res == 0)
-    {
-      struct fuse_bufvec dst = FUSE_BUFVEC_INIT(size);
-
-      dst.buf[0].mem = mem;
-      res = fuse_buf_copy(&dst,buf,0);
-    }
-  fuse_free_buf(buf);
-
-  return res;
 }
 
 int
@@ -1938,29 +1778,6 @@ node_open(const struct node *node_)
   return ((node_ != NULL) && (node_->open_count > 0));
 }
 
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC CLOCK_REALTIME
-#endif
-
-static
-void
-curr_time(struct timespec *now)
-{
-  static clockid_t clockid = CLOCK_MONOTONIC;
-  int res = clock_gettime(clockid,now);
-  if(res == -1 && errno == EINVAL)
-    {
-      clockid = CLOCK_REALTIME;
-      res = clock_gettime(clockid,now);
-    }
-
-  if(res == -1)
-    {
-      perror("fuse: clock_gettime");
-      abort();
-    }
-}
-
 static
 void
 update_stat(struct node       *node_,
@@ -2164,7 +1981,8 @@ fuse_lib_init(void                  *data,
 void
 fuse_fs_destroy(struct fuse_fs *fs)
 {
-  fs->op.destroy();
+  if(fs->op.destroy)
+    fs->op.destroy();
   free(fs);
 }
 
@@ -2195,28 +2013,26 @@ fuse_lib_lookup(fuse_req_t  req,
 
   if(name[0] == '.')
     {
-      int len = strlen(name);
-
-      if(len == 1 || (name[1] == '.' && len == 2))
+      if(name[1] == '\0')
         {
-          pthread_mutex_lock(&f->lock);
-          if(len == 1)
-            {
-              dot = get_node_nocheck(f,parent);
-              if(dot == NULL)
-                {
-                  pthread_mutex_unlock(&f->lock);
-                  reply_entry(req,&e,-ESTALE);
-                  return;
-                }
-              dot->refctr++;
-            }
-          else
-            {
-              parent = get_node(f,parent)->parent->nodeid;
-            }
-          pthread_mutex_unlock(&f->lock);
           name = NULL;
+          pthread_mutex_lock(&f->lock);
+          dot = get_node_nocheck(f,parent);
+          if(dot == NULL)
+            {
+              pthread_mutex_unlock(&f->lock);
+              reply_entry(req,&e,-ESTALE);
+              return;
+            }
+          dot->refctr++;
+          pthread_mutex_unlock(&f->lock);
+        }
+      else if((name[1] == '.') && (name[2] == '\0'))
+        {
+          name = NULL;
+          pthread_mutex_lock(&f->lock);
+          parent = get_node(f,parent)->parent->nodeid;
+          pthread_mutex_unlock(&f->lock);
         }
     }
 
@@ -2231,12 +2047,14 @@ fuse_lib_lookup(fuse_req_t  req,
         }
       free_path(f,parent,path);
     }
+
   if(dot)
     {
       pthread_mutex_lock(&f->lock);
       unref_node(f,dot);
       pthread_mutex_unlock(&f->lock);
     }
+
   reply_entry(req,&e,err);
 }
 
@@ -2821,15 +2639,6 @@ fuse_lib_create(fuse_req_t        req,
 }
 
 static
-double
-diff_timespec(const struct timespec *t1,
-              const struct timespec *t2)
-{
-  return (t1->tv_sec - t2->tv_sec) +
-    ((double)t1->tv_nsec - (double)t2->tv_nsec) / 1000000000.0;
-}
-
-static
 void
 open_auto_cache(struct fuse      *f,
                 fuse_ino_t        ino,
@@ -3036,8 +2845,8 @@ readdir_buf_size(fuse_dirents_t *d_,
 {
   if(off_ >= kv_size(d_->offs))
     return 0;
-  if((kv_A(d_->offs,off_) + size_) > d_->data_len)
-    return (d_->data_len - kv_A(d_->offs,off_));
+  if((kv_A(d_->offs,off_) + size_) > kv_size(d_->data))
+    return (kv_size(d_->data) - kv_A(d_->offs,off_));
   return size_;
 }
 
@@ -3046,7 +2855,11 @@ char*
 readdir_buf(fuse_dirents_t *d_,
             off_t           off_)
 {
-  return &d_->buf[kv_A(d_->offs,off_)];
+  size_t i;
+
+  i = kv_A(d_->offs,off_);
+
+  return &kv_A(d_->data,i);
 }
 
 static
@@ -3070,7 +2883,7 @@ fuse_lib_readdir(fuse_req_t        req_,
   pthread_mutex_lock(&dh->lock);
 
   rv = 0;
-  if((off_ == 0) || (d->data_len == 0))
+  if((off_ == 0) || (kv_size(d->data) == 0))
     rv = fuse_fs_readdir(f->fs,&fi,d);
 
   if(rv)
@@ -3110,7 +2923,7 @@ fuse_lib_readdir_plus(fuse_req_t        req_,
   pthread_mutex_lock(&dh->lock);
 
   rv = 0;
-  if((off_ == 0) || (d->data_len == 0))
+  if((off_ == 0) || (kv_size(d->data) == 0))
     rv = fuse_fs_readdir_plus(f->fs,&fi,d);
 
   if(rv)
@@ -3795,61 +3608,115 @@ fuse_lib_fallocate(fuse_req_t        req,
 
 static
 int
-clean_delay(struct fuse *f)
+remembered_node_cmp(const void *a_,
+                    const void *b_)
 {
-  /*
-   * This is calculating the delay between clean runs.  To
-   * reduce the number of cleans we are doing them 10 times
-   * within the remember window.
-   */
-  int min_sleep = 60;
-  int max_sleep = 3600;
-  int sleep_time = f->conf.remember / 10;
+  const remembered_node_t *a = a_;
+  const remembered_node_t *b = b_;
 
-  if(sleep_time > max_sleep)
-    return max_sleep;
-  if(sleep_time < min_sleep)
-    return min_sleep;
-  return sleep_time;
+  return (a->time - b->time);
 }
 
-int
-fuse_clean_cache(struct fuse *f)
+static
+void
+remembered_nodes_sort(struct fuse *f_)
 {
-  struct node_lru *lnode;
-  struct list_head *curr,*next;
-  struct node *node;
-  struct timespec now;
+  pthread_mutex_lock(&f_->lock);
+  qsort(&kv_first(f_->remembered_nodes),
+        kv_size(f_->remembered_nodes),
+        sizeof(remembered_node_t),
+        remembered_node_cmp);
+  pthread_mutex_unlock(&f_->lock);
+}
 
-  pthread_mutex_lock(&f->lock);
+#define MAX_PRUNE 100
+#define MAX_CHECK 1000
 
-  curr_time(&now);
+int
+fuse_prune_some_remembered_nodes(struct fuse *f_,
+                                 int         *offset_)
+{
+  time_t now;
+  int pruned;
+  int checked;
 
-  for(curr = f->lru_table.next; curr != &f->lru_table; curr = next)
+  pthread_mutex_lock(&f_->lock);
+
+  pruned = 0;
+  checked = 0;
+  now = current_time();
+  while(*offset_ < kv_size(f_->remembered_nodes))
     {
-      double age;
+      time_t age;
+      remembered_node_t *fn = &kv_A(f_->remembered_nodes,*offset_);
 
-      next = curr->next;
-      lnode = list_entry(curr,struct node_lru,lru);
-      node = &lnode->node;
-
-      age = diff_timespec(&now,&lnode->forget_time);
-      if(age <= f->conf.remember)
+      if(pruned >= MAX_PRUNE)
+        break;
+      if(checked >= MAX_CHECK)
         break;
 
-      assert(node->nlookup == 1);
+      checked++;
+      age = (now - fn->time);
+      if(f_->conf.remember > age)
+        break;
+
+      assert(fn->node->nlookup == 1);
 
       /* Don't forget active directories */
-      if(node->refctr > 1)
-        continue;
+      if(fn->node->refctr > 1)
+        {
+          (*offset_)++;
+          continue;
+        }
 
-      node->nlookup = 0;
-      unhash_name(f,node);
-      unref_node(f,node);
+      fn->node->nlookup = 0;
+      unref_node(f_,fn->node);
+      kv_delete(f_->remembered_nodes,*offset_);
+      pruned++;
     }
-  pthread_mutex_unlock(&f->lock);
 
-  return clean_delay(f);
+  pthread_mutex_unlock(&f_->lock);
+
+  if((pruned < MAX_PRUNE) && (checked < MAX_CHECK))
+    *offset_ = -1;
+
+  return pruned;
+}
+
+#undef MAX_PRUNE
+#undef MAX_CHECK
+
+static
+void
+sleep_100ms(void)
+{
+  const struct timespec ms100 = {0,100 * 1000000};
+
+  nanosleep(&ms100,NULL);
+}
+
+void
+fuse_prune_remembered_nodes(struct fuse *f_)
+{
+  int offset;
+  int pruned;
+
+  offset = 0;
+  pruned = 0;
+  for(;;)
+    {
+      pruned += fuse_prune_some_remembered_nodes(f_,&offset);
+      if(offset >= 0)
+        {
+          sleep_100ms();
+          continue;
+        }
+
+      break;
+    }
+
+  if(pruned > 0)
+    remembered_nodes_sort(f_);
 }
 
 static struct fuse_lowlevel_ops fuse_path_ops =
@@ -3937,6 +3804,7 @@ struct fuse_cmd*
 fuse_alloc_cmd(size_t bufsize)
 {
   struct fuse_cmd *cmd = (struct fuse_cmd *)malloc(sizeof(*cmd));
+
   if(cmd == NULL)
     {
       fprintf(stderr,"fuse: failed to allocate cmd\n");
@@ -4099,39 +3967,57 @@ node_table_init(struct node_table *t)
 }
 
 static
-void*
-fuse_prune_nodes(void *fuse)
+void
+fuse_malloc_trim(void)
 {
-  struct fuse *f = fuse;
-  int sleep_time;
+#ifdef HAVE_MALLOC_TRIM
+  malloc_trim(1024 * 1024);
+#endif
+}
 
+static
+void*
+fuse_maintenance_loop(void *fuse_)
+{
+  int loops;
+  int sleep_time;
+  double slab_usage_ratio;
+  struct fuse *f = (struct fuse*)fuse_;
+
+  loops = 0;
+  sleep_time = 60;
   while(1)
     {
-      sleep_time = fuse_clean_cache(f);
+      if(remember_nodes(f))
+        fuse_prune_remembered_nodes(f);
+
+      slab_usage_ratio = lfmp_slab_usage_ratio(&f->node_fmp);
+      if(slab_usage_ratio > 3.0)
+        lfmp_gc(&f->node_fmp);
+
+      if(loops % 15)
+        fuse_malloc_trim();
+
+      loops++;
       sleep(sleep_time);
     }
+
   return NULL;
 }
 
 int
-fuse_start_cleanup_thread(struct fuse *f)
+fuse_start_maintenance_thread(struct fuse *f_)
 {
-  if(lru_enabled(f))
-    return fuse_start_thread(&f->prune_thread,fuse_prune_nodes,f);
-
-  return 0;
+  return fuse_start_thread(&f_->maintenance_thread,fuse_maintenance_loop,f_);
 }
 
 void
-fuse_stop_cleanup_thread(struct fuse *f)
+fuse_stop_maintenance_thread(struct fuse *f_)
 {
-  if(lru_enabled(f))
-    {
-      pthread_mutex_lock(&f->lock);
-      pthread_cancel(f->prune_thread);
-      pthread_mutex_unlock(&f->lock);
-      pthread_join(f->prune_thread,NULL);
-    }
+  pthread_mutex_lock(&f_->lock);
+  pthread_cancel(f_->maintenance_thread);
+  pthread_mutex_unlock(&f_->lock);
+  pthread_join(f_->maintenance_thread,NULL);
 }
 
 struct fuse*
@@ -4168,11 +4054,6 @@ fuse_new_common(struct fuse_chan             *ch,
       llop.setlk = NULL;
     }
 
-  f->pagesize = getpagesize();
-  init_list_head(&f->partial_slabs);
-  init_list_head(&f->full_slabs);
-  init_list_head(&f->lru_table);
-
   if(fuse_opt_parse(args,&f->conf,fuse_lib_opts,fuse_lib_opt_proc) == -1)
     goto out_free_fs;
 
@@ -4194,17 +4075,14 @@ fuse_new_common(struct fuse_chan             *ch,
 
   fuse_mutex_init(&f->lock);
 
+  lfmp_init(&f->node_fmp,sizeof(struct node),256);
+  kv_init(f->remembered_nodes);
+
   root = alloc_node(f);
   if(root == NULL)
     {
       fprintf(stderr,"fuse: memory allocation failed\n");
       goto out_free_id_table;
-    }
-
-  if(lru_enabled(f))
-    {
-      struct node_lru *lnode = node_lru(root);
-      init_list_head(&lnode->lru);
     }
 
   strcpy(root->inline_name,"/");
@@ -4282,13 +4160,12 @@ fuse_destroy(struct fuse *f)
         }
     }
 
-  assert(list_empty(&f->partial_slabs));
-  assert(list_empty(&f->full_slabs));
-
   free(f->id_table.array);
   free(f->name_table.array);
   pthread_mutex_destroy(&f->lock);
   fuse_session_destroy(f->se);
+  lfmp_destroy(&f->node_fmp);
+  kv_destroy(f->remembered_nodes);
   free(f);
   fuse_delete_context_key();
 }
