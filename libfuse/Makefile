@@ -32,14 +32,15 @@ INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 AR ?= ar
 
 SRC   = \
-	lib/fuse_node.c \
 	lib/buffer.c \
-	lib/fuse_dirents.c \
+	lib/crc32b.c \
 	lib/fuse.c \
+	lib/fuse_dirents.c \
 	lib/fuse_kern_chan.c \
 	lib/fuse_loop_mt.c \
 	lib/fuse_lowlevel.c \
 	lib/fuse_mt.c \
+	lib/fuse_node.c \
 	lib/fuse_opt.c \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \

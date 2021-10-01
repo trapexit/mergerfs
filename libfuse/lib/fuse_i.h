@@ -43,8 +43,11 @@ struct fuse_req
 struct fuse_notify_req
 {
   uint64_t unique;
-  void (*reply)(struct fuse_notify_req *, fuse_req_t, fuse_ino_t,
-                const void *, const struct fuse_buf *);
+  void (*reply)(struct fuse_notify_req *,
+                fuse_req_t,
+                uint64_t,
+                const void *,
+                const struct fuse_buf *);
   struct fuse_notify_req *next;
   struct fuse_notify_req *prev;
 };
