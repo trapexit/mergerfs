@@ -1299,8 +1299,11 @@ void
 unlink_node(struct fuse *f,
             struct node *node)
 {
-  assert(node->nlookup > 1);
-  node->nlookup--;
+  if(remember_nodes(f))
+    {
+      assert(node->nlookup > 1);
+      node->nlookup--;
+    }
   unhash_name(f,node);
 }
 
