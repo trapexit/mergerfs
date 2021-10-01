@@ -301,7 +301,7 @@
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // ghc::filesystem version in decimal (major * 10000 + minor * 100 + patch)
-#define GHC_FILESYSTEM_VERSION 10508L
+#define GHC_FILESYSTEM_VERSION 10509L
 
 #if !defined(GHC_WITH_EXCEPTIONS) && (defined(__EXCEPTIONS) || defined(__cpp_exceptions) || defined(_CPPUNWIND))
 #define GHC_WITH_EXCEPTIONS
@@ -4875,7 +4875,7 @@ GHC_INLINE space_info space(const path& p, std::error_code& ec) noexcept
         ec = detail::make_system_error();
         return {static_cast<uintmax_t>(-1), static_cast<uintmax_t>(-1), static_cast<uintmax_t>(-1)};
     }
-    return {static_cast<uintmax_t>(sfs.f_blocks * sfs.f_frsize), static_cast<uintmax_t>(sfs.f_bfree * sfs.f_frsize), static_cast<uintmax_t>(sfs.f_bavail * sfs.f_frsize)};
+    return {static_cast<uintmax_t>(sfs.f_blocks) * static_cast<uintmax_t>(sfs.f_frsize), static_cast<uintmax_t>(sfs.f_bfree) * static_cast<uintmax_t>(sfs.f_frsize), static_cast<uintmax_t>(sfs.f_bavail) * static_cast<uintmax_t>(sfs.f_frsize)};
 #endif
 }
 
