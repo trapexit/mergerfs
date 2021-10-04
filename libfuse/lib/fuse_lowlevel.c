@@ -1002,7 +1002,7 @@ fuse_reply_poll(fuse_req_t req,
 static
 void
 do_lookup(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   char *name = (char*)inarg;
@@ -1013,7 +1013,7 @@ do_lookup(fuse_req_t  req,
 static
 void
 do_forget(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   struct fuse_forget_in *arg = (struct fuse_forget_in*)inarg;
@@ -1024,7 +1024,7 @@ do_forget(fuse_req_t  req,
 static
 void
 do_batch_forget(fuse_req_t  req,
-                fuse_ino_t  nodeid,
+                uint64_t    nodeid,
                 const void *inarg)
 {
   struct fuse_batch_forget_in *arg = (void *) inarg;
@@ -1040,7 +1040,7 @@ do_batch_forget(fuse_req_t  req,
 static
 void
 do_getattr(fuse_req_t  req,
-           fuse_ino_t  nodeid,
+           uint64_t    nodeid,
            const void *inarg)
 {
   fuse_file_info_t *fip = NULL;
@@ -1063,7 +1063,7 @@ do_getattr(fuse_req_t  req,
 static
 void
 do_setattr(fuse_req_t  req_,
-           fuse_ino_t  nodeid_,
+           uint64_t    nodeid_,
            const void *inarg_)
 {
   struct stat stbuf = {0};
@@ -1101,7 +1101,7 @@ do_setattr(fuse_req_t  req_,
 static
 void
 do_access(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   struct fuse_access_in *arg = (struct fuse_access_in *)inarg;
@@ -1112,7 +1112,7 @@ do_access(fuse_req_t  req,
 static
 void
 do_readlink(fuse_req_t  req,
-            fuse_ino_t  nodeid,
+            uint64_t    nodeid,
             const void *inarg)
 {
   (void)inarg;
@@ -1123,7 +1123,7 @@ do_readlink(fuse_req_t  req,
 static
 void
 do_mknod(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   struct fuse_mknod_in *arg = (struct fuse_mknod_in *) inarg;
@@ -1140,7 +1140,7 @@ do_mknod(fuse_req_t  req,
 static
 void
 do_mkdir(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   struct fuse_mkdir_in *arg = (struct fuse_mkdir_in *) inarg;
@@ -1154,7 +1154,7 @@ do_mkdir(fuse_req_t  req,
 static
 void
 do_unlink(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   char *name = (char*)inarg;
@@ -1165,7 +1165,7 @@ do_unlink(fuse_req_t  req,
 static
 void
 do_rmdir(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   char *name = (char*)inarg;
@@ -1176,7 +1176,7 @@ do_rmdir(fuse_req_t  req,
 static
 void
 do_symlink(fuse_req_t  req,
-           fuse_ino_t  nodeid,
+           uint64_t    nodeid,
            const void *inarg)
 {
   char *name     = (char*)inarg;
@@ -1188,7 +1188,7 @@ do_symlink(fuse_req_t  req,
 static
 void
 do_rename(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   struct fuse_rename_in *arg = (struct fuse_rename_in*)inarg;
@@ -1201,7 +1201,7 @@ do_rename(fuse_req_t  req,
 static
 void
 do_link(fuse_req_t  req,
-        fuse_ino_t  nodeid,
+        uint64_t    nodeid,
         const void *inarg)
 {
   struct fuse_link_in *arg = (struct fuse_link_in*)inarg;
@@ -1212,7 +1212,7 @@ do_link(fuse_req_t  req,
 static
 void
 do_create(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   struct fuse_create_in *arg = (struct fuse_create_in*)inarg;
@@ -1232,7 +1232,7 @@ do_create(fuse_req_t  req,
 static
 void
 do_open(fuse_req_t  req,
-        fuse_ino_t  nodeid,
+        uint64_t    nodeid,
         const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1246,7 +1246,7 @@ do_open(fuse_req_t  req,
 static
 void
 do_read(fuse_req_t  req,
-        fuse_ino_t  nodeid,
+        uint64_t    nodeid,
         const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1265,7 +1265,7 @@ do_read(fuse_req_t  req,
 static
 void
 do_write(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   char *param;
@@ -1292,14 +1292,14 @@ do_write(fuse_req_t  req,
 static
 void
 do_write_buf(fuse_req_t             req,
-             fuse_ino_t             nodeid,
+             uint64_t               nodeid,
              const void            *inarg,
              const struct fuse_buf *ibuf)
 {
   struct fuse_ll *f = req->f;
   struct fuse_bufvec bufv = {
-    .buf[0] = *ibuf,
-    .count = 1,
+                             .buf[0] = *ibuf,
+                             .count = 1,
   };
   fuse_file_info_t fi = {0};
   struct fuse_write_in *arg = (struct fuse_write_in *) inarg;
@@ -1344,7 +1344,7 @@ do_write_buf(fuse_req_t             req,
 static
 void
 do_flush(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1361,7 +1361,7 @@ do_flush(fuse_req_t  req,
 static
 void
 do_release(fuse_req_t  req,
-           fuse_ino_t  nodeid,
+           uint64_t    nodeid,
            const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1387,7 +1387,7 @@ do_release(fuse_req_t  req,
 static
 void
 do_fsync(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1401,7 +1401,7 @@ do_fsync(fuse_req_t  req,
 static
 void
 do_opendir(fuse_req_t  req,
-           fuse_ino_t  nodeid,
+           uint64_t    nodeid,
            const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1415,7 +1415,7 @@ do_opendir(fuse_req_t  req,
 static
 void
 do_readdir(fuse_req_t  req,
-           fuse_ino_t  nodeid,
+           uint64_t    nodeid,
            const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1429,7 +1429,7 @@ do_readdir(fuse_req_t  req,
 static
 void
 do_readdir_plus(fuse_req_t  req_,
-                fuse_ino_t  nodeid_,
+                uint64_t    nodeid_,
                 const void *inarg_)
 {
   const struct fuse_read_in *arg;
@@ -1444,7 +1444,7 @@ do_readdir_plus(fuse_req_t  req_,
 static
 void
 do_releasedir(fuse_req_t  req,
-              fuse_ino_t  nodeid,
+              uint64_t    nodeid,
               const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1459,7 +1459,7 @@ do_releasedir(fuse_req_t  req,
 static
 void
 do_fsyncdir(fuse_req_t  req,
-            fuse_ino_t  nodeid,
+            uint64_t    nodeid,
             const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1473,7 +1473,7 @@ do_fsyncdir(fuse_req_t  req,
 static
 void
 do_statfs(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   (void)nodeid;
@@ -1485,7 +1485,7 @@ do_statfs(fuse_req_t  req,
 static
 void
 do_setxattr(fuse_req_t  req,
-            fuse_ino_t  nodeid,
+            uint64_t    nodeid,
             const void *inarg)
 {
   struct fuse_setxattr_in *arg = (struct fuse_setxattr_in*)inarg;
@@ -1498,7 +1498,7 @@ do_setxattr(fuse_req_t  req,
 static
 void
 do_getxattr(fuse_req_t  req,
-            fuse_ino_t  nodeid,
+            uint64_t    nodeid,
             const void *inarg)
 {
   struct fuse_getxattr_in *arg = (struct fuse_getxattr_in*)inarg;
@@ -1509,7 +1509,7 @@ do_getxattr(fuse_req_t  req,
 static
 void
 do_listxattr(fuse_req_t  req,
-             fuse_ino_t  nodeid,
+             uint64_t    nodeid,
              const void *inarg)
 {
   struct fuse_getxattr_in *arg = (struct fuse_getxattr_in*)inarg;
@@ -1520,7 +1520,7 @@ do_listxattr(fuse_req_t  req,
 static
 void
 do_removexattr(fuse_req_t  req,
-               fuse_ino_t  nodeid,
+               uint64_t    nodeid,
                const void *inarg)
 {
   char *name = (char *) inarg;
@@ -1547,7 +1547,7 @@ convert_fuse_file_lock(struct fuse_file_lock *fl,
 static
 void
 do_getlk(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1565,7 +1565,7 @@ do_getlk(fuse_req_t  req,
 static
 void
 do_setlk_common(fuse_req_t  req,
-                fuse_ino_t  nodeid,
+                uint64_t    nodeid,
                 const void *inarg,
                 int         sleep)
 {
@@ -1609,7 +1609,7 @@ do_setlk_common(fuse_req_t  req,
 static
 void
 do_setlk(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   do_setlk_common(req, nodeid, inarg, 0);
@@ -1618,7 +1618,7 @@ do_setlk(fuse_req_t  req,
 static
 void
 do_setlkw(fuse_req_t  req,
-          fuse_ino_t  nodeid,
+          uint64_t    nodeid,
           const void *inarg)
 {
   do_setlk_common(req, nodeid, inarg, 1);
@@ -1627,7 +1627,7 @@ do_setlkw(fuse_req_t  req,
 static
 void
 do_interrupt(fuse_req_t  req,
-             fuse_ino_t  nodeid,
+             uint64_t    nodeid,
              const void *inarg)
 {
   destroy_req(req);
@@ -1636,7 +1636,7 @@ do_interrupt(fuse_req_t  req,
 static
 void
 do_bmap(fuse_req_t  req,
-        fuse_ino_t  nodeid,
+        uint64_t    nodeid,
         const void *inarg)
 {
   struct fuse_bmap_in *arg = (struct fuse_bmap_in*)inarg;
@@ -1647,7 +1647,7 @@ do_bmap(fuse_req_t  req,
 static
 void
 do_ioctl(fuse_req_t  req,
-         fuse_ino_t  nodeid,
+         uint64_t    nodeid,
          const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1684,7 +1684,7 @@ fuse_pollhandle_destroy(fuse_pollhandle_t *ph)
 static
 void
 do_poll(fuse_req_t  req,
-        fuse_ino_t  nodeid,
+        uint64_t    nodeid,
         const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1711,7 +1711,7 @@ do_poll(fuse_req_t  req,
 static
 void
 do_fallocate(fuse_req_t  req,
-             fuse_ino_t  nodeid,
+             uint64_t    nodeid,
              const void *inarg)
 {
   fuse_file_info_t fi = {0};
@@ -1725,7 +1725,7 @@ do_fallocate(fuse_req_t  req,
 static
 void
 do_init(fuse_req_t  req,
-        fuse_ino_t  nodeid,
+        uint64_t    nodeid,
         const void *inarg)
 {
   struct fuse_init_out outarg = {0};
@@ -1912,7 +1912,7 @@ do_init(fuse_req_t  req,
 static
 void
 do_destroy(fuse_req_t  req,
-           fuse_ino_t  nodeid,
+           uint64_t    nodeid,
            const void *inarg)
 {
   struct fuse_ll *f = req->f;
@@ -1959,7 +1959,7 @@ list_init_nreq(struct fuse_notify_req *nreq)
 static
 void
 do_notify_reply(fuse_req_t             req,
-                fuse_ino_t             nodeid,
+                uint64_t             nodeid,
                 const void            *inarg,
                 const struct fuse_buf *buf)
 {
@@ -1986,7 +1986,7 @@ do_notify_reply(fuse_req_t             req,
 static
 void
 do_copy_file_range(fuse_req_t  req_,
-                   fuse_ino_t  nodeid_in_,
+                   uint64_t  nodeid_in_,
                    const void *arg_)
 
 {
@@ -2052,7 +2052,7 @@ fuse_lowlevel_notify_poll(fuse_pollhandle_t *ph)
 
 int
 fuse_lowlevel_notify_inval_inode(struct fuse_chan *ch,
-                                 fuse_ino_t        ino,
+                                 uint64_t        ino,
                                  off_t             off,
                                  off_t             len)
 {
@@ -2079,7 +2079,7 @@ fuse_lowlevel_notify_inval_inode(struct fuse_chan *ch,
 
 int
 fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch,
-                                 fuse_ino_t        parent,
+                                 uint64_t        parent,
                                  const char       *name,
                                  size_t            namelen)
 {
@@ -2108,8 +2108,8 @@ fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch,
 
 int
 fuse_lowlevel_notify_delete(struct fuse_chan *ch,
-                            fuse_ino_t        parent,
-                            fuse_ino_t        child,
+                            uint64_t        parent,
+                            uint64_t        child,
                             const char       *name,
                             size_t            namelen)
 {
@@ -2142,7 +2142,7 @@ fuse_lowlevel_notify_delete(struct fuse_chan *ch,
 
 int
 fuse_lowlevel_notify_store(struct fuse_chan         *ch,
-                           fuse_ino_t                ino,
+                           uint64_t                ino,
                            off_t                     offset,
                            struct fuse_bufvec       *bufv,
                            enum fuse_buf_copy_flags  flags)
@@ -2194,7 +2194,7 @@ static
 void
 fuse_ll_retrieve_reply(struct fuse_notify_req *nreq,
                        fuse_req_t              req,
-                       fuse_ino_t              ino,
+                       uint64_t              ino,
                        const void             *inarg,
                        const struct fuse_buf  *ibuf)
 {
@@ -2203,8 +2203,8 @@ fuse_ll_retrieve_reply(struct fuse_notify_req *nreq,
     container_of(nreq, struct fuse_retrieve_req, nreq);
   const struct fuse_notify_retrieve_in *arg = inarg;
   struct fuse_bufvec bufv = {
-    .buf[0] = *ibuf,
-    .count = 1,
+                             .buf[0] = *ibuf,
+                             .count = 1,
   };
 
   if (!(bufv.buf[0].flags & FUSE_BUF_IS_FD))
@@ -2239,7 +2239,7 @@ fuse_ll_retrieve_reply(struct fuse_notify_req *nreq,
 
 int
 fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
-                              fuse_ino_t        ino,
+                              uint64_t        ino,
                               size_t            size,
                               off_t             offset,
                               void             *cookie)
@@ -2305,53 +2305,53 @@ fuse_req_ctx(fuse_req_t req)
 }
 
 static struct {
-  void (*func)(fuse_req_t, fuse_ino_t, const void *);
+  void (*func)(fuse_req_t, uint64_t, const void *);
   const char *name;
 } fuse_ll_ops[] =
   {
-    [FUSE_LOOKUP]          = { do_lookup,          "LOOKUP"	     },
-    [FUSE_FORGET]          = { do_forget,          "FORGET"	     },
-    [FUSE_GETATTR]         = { do_getattr,         "GETATTR"         },
-    [FUSE_SETATTR]         = { do_setattr,         "SETATTR"         },
-    [FUSE_READLINK]        = { do_readlink,        "READLINK"        },
-    [FUSE_SYMLINK]         = { do_symlink,         "SYMLINK"         },
-    [FUSE_MKNOD]           = { do_mknod,           "MKNOD"	     },
-    [FUSE_MKDIR]           = { do_mkdir,           "MKDIR"	     },
-    [FUSE_UNLINK]          = { do_unlink,          "UNLINK"	     },
-    [FUSE_RMDIR]           = { do_rmdir,           "RMDIR"	     },
-    [FUSE_RENAME]          = { do_rename,          "RENAME"	     },
-    [FUSE_LINK]            = { do_link,	           "LINK"	     },
-    [FUSE_OPEN]            = { do_open,	           "OPEN"	     },
-    [FUSE_READ]            = { do_read,	           "READ"	     },
-    [FUSE_WRITE]           = { do_write,           "WRITE"	     },
-    [FUSE_STATFS]          = { do_statfs,          "STATFS"	     },
-    [FUSE_RELEASE]         = { do_release,         "RELEASE"         },
-    [FUSE_FSYNC]           = { do_fsync,           "FSYNC"	     },
-    [FUSE_SETXATTR]        = { do_setxattr,        "SETXATTR"        },
-    [FUSE_GETXATTR]        = { do_getxattr,        "GETXATTR"        },
-    [FUSE_LISTXATTR]       = { do_listxattr,       "LISTXATTR"       },
-    [FUSE_REMOVEXATTR]     = { do_removexattr,     "REMOVEXATTR"     },
-    [FUSE_FLUSH]           = { do_flush,           "FLUSH"	     },
-    [FUSE_INIT]            = { do_init,	           "INIT"	     },
-    [FUSE_OPENDIR]         = { do_opendir,         "OPENDIR"         },
-    [FUSE_READDIR]         = { do_readdir,         "READDIR"         },
-    [FUSE_READDIRPLUS]     = { do_readdir_plus,    "READDIR_PLUS"    },
-    [FUSE_RELEASEDIR]      = { do_releasedir,      "RELEASEDIR"      },
-    [FUSE_FSYNCDIR]        = { do_fsyncdir,        "FSYNCDIR"        },
-    [FUSE_GETLK]           = { do_getlk,           "GETLK"	     },
-    [FUSE_SETLK]           = { do_setlk,           "SETLK"	     },
-    [FUSE_SETLKW]          = { do_setlkw,          "SETLKW"	     },
-    [FUSE_ACCESS]          = { do_access,          "ACCESS"	     },
-    [FUSE_CREATE]          = { do_create,          "CREATE"	     },
-    [FUSE_INTERRUPT]       = { do_interrupt,       "INTERRUPT"       },
-    [FUSE_BMAP]            = { do_bmap,	           "BMAP"	     },
-    [FUSE_IOCTL]           = { do_ioctl,           "IOCTL"	     },
-    [FUSE_POLL]            = { do_poll,            "POLL"	     },
-    [FUSE_FALLOCATE]       = { do_fallocate,       "FALLOCATE"       },
-    [FUSE_DESTROY]         = { do_destroy,         "DESTROY"         },
-    [FUSE_NOTIFY_REPLY]    = { (void *) 1,         "NOTIFY_REPLY"    },
-    [FUSE_BATCH_FORGET]    = { do_batch_forget,    "BATCH_FORGET"    },
-    [FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
+   [FUSE_LOOKUP]          = { do_lookup,          "LOOKUP"	     },
+   [FUSE_FORGET]          = { do_forget,          "FORGET"	     },
+   [FUSE_GETATTR]         = { do_getattr,         "GETATTR"         },
+   [FUSE_SETATTR]         = { do_setattr,         "SETATTR"         },
+   [FUSE_READLINK]        = { do_readlink,        "READLINK"        },
+   [FUSE_SYMLINK]         = { do_symlink,         "SYMLINK"         },
+   [FUSE_MKNOD]           = { do_mknod,           "MKNOD"	     },
+   [FUSE_MKDIR]           = { do_mkdir,           "MKDIR"	     },
+   [FUSE_UNLINK]          = { do_unlink,          "UNLINK"	     },
+   [FUSE_RMDIR]           = { do_rmdir,           "RMDIR"	     },
+   [FUSE_RENAME]          = { do_rename,          "RENAME"	     },
+   [FUSE_LINK]            = { do_link,	           "LINK"	     },
+   [FUSE_OPEN]            = { do_open,	           "OPEN"	     },
+   [FUSE_READ]            = { do_read,	           "READ"	     },
+   [FUSE_WRITE]           = { do_write,           "WRITE"	     },
+   [FUSE_STATFS]          = { do_statfs,          "STATFS"	     },
+   [FUSE_RELEASE]         = { do_release,         "RELEASE"         },
+   [FUSE_FSYNC]           = { do_fsync,           "FSYNC"	     },
+   [FUSE_SETXATTR]        = { do_setxattr,        "SETXATTR"        },
+   [FUSE_GETXATTR]        = { do_getxattr,        "GETXATTR"        },
+   [FUSE_LISTXATTR]       = { do_listxattr,       "LISTXATTR"       },
+   [FUSE_REMOVEXATTR]     = { do_removexattr,     "REMOVEXATTR"     },
+   [FUSE_FLUSH]           = { do_flush,           "FLUSH"	     },
+   [FUSE_INIT]            = { do_init,	           "INIT"	     },
+   [FUSE_OPENDIR]         = { do_opendir,         "OPENDIR"         },
+   [FUSE_READDIR]         = { do_readdir,         "READDIR"         },
+   [FUSE_READDIRPLUS]     = { do_readdir_plus,    "READDIR_PLUS"    },
+   [FUSE_RELEASEDIR]      = { do_releasedir,      "RELEASEDIR"      },
+   [FUSE_FSYNCDIR]        = { do_fsyncdir,        "FSYNCDIR"        },
+   [FUSE_GETLK]           = { do_getlk,           "GETLK"	     },
+   [FUSE_SETLK]           = { do_setlk,           "SETLK"	     },
+   [FUSE_SETLKW]          = { do_setlkw,          "SETLKW"	     },
+   [FUSE_ACCESS]          = { do_access,          "ACCESS"	     },
+   [FUSE_CREATE]          = { do_create,          "CREATE"	     },
+   [FUSE_INTERRUPT]       = { do_interrupt,       "INTERRUPT"       },
+   [FUSE_BMAP]            = { do_bmap,	           "BMAP"	     },
+   [FUSE_IOCTL]           = { do_ioctl,           "IOCTL"	     },
+   [FUSE_POLL]            = { do_poll,            "POLL"	     },
+   [FUSE_FALLOCATE]       = { do_fallocate,       "FALLOCATE"       },
+   [FUSE_DESTROY]         = { do_destroy,         "DESTROY"         },
+   [FUSE_NOTIFY_REPLY]    = { (void *) 1,         "NOTIFY_REPLY"    },
+   [FUSE_BATCH_FORGET]    = { do_batch_forget,    "BATCH_FORGET"    },
+   [FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
   };
 
 #define FUSE_MAXOP (sizeof(fuse_ll_ops) / sizeof(fuse_ll_ops[0]))
@@ -2423,12 +2423,12 @@ fuse_ll_process_buf(void                  *data,
   if (req == NULL)
     {
       struct fuse_out_header out = {
-        .unique = in->unique,
-        .error = -ENOMEM,
+                                    .unique = in->unique,
+                                    .error = -ENOMEM,
       };
       struct iovec iov = {
-        .iov_base = &out,
-        .iov_len = sizeof(struct fuse_out_header),
+                          .iov_base = &out,
+                          .iov_len = sizeof(struct fuse_out_header),
       };
 
       fuse_send_msg(f, ch, &iov, 1);
@@ -2510,42 +2510,42 @@ fuse_ll_process(void             *data,
                 struct fuse_chan *ch)
 {
   struct fuse_buf fbuf = {
-    .mem = (void *) buf,
-    .size = len,
+                          .mem = (void *) buf,
+                          .size = len,
   };
 
   fuse_ll_process_buf(data, &fbuf, ch);
 }
 
 enum {
-  KEY_HELP,
-  KEY_VERSION,
+      KEY_HELP,
+      KEY_VERSION,
 };
 
 static const struct fuse_opt fuse_ll_opts[] =
   {
-    { "debug", offsetof(struct fuse_ll, debug), 1 },
-    { "-d", offsetof(struct fuse_ll, debug), 1 },
-    { "max_readahead=%u", offsetof(struct fuse_ll, conn.max_readahead), 0 },
-    { "max_background=%u", offsetof(struct fuse_ll, conn.max_background), 0 },
-    { "congestion_threshold=%u",
-      offsetof(struct fuse_ll, conn.congestion_threshold), 0 },
-    { "no_remote_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
-    { "no_remote_lock", offsetof(struct fuse_ll, no_remote_flock), 1},
-    { "no_remote_flock", offsetof(struct fuse_ll, no_remote_flock), 1},
-    { "no_remote_posix_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
-    { "splice_write", offsetof(struct fuse_ll, splice_write), 1},
-    { "no_splice_write", offsetof(struct fuse_ll, no_splice_write), 1},
-    { "splice_move", offsetof(struct fuse_ll, splice_move), 1},
-    { "no_splice_move", offsetof(struct fuse_ll, no_splice_move), 1},
-    { "splice_read", offsetof(struct fuse_ll, splice_read), 1},
-    { "no_splice_read", offsetof(struct fuse_ll, no_splice_read), 1},
-    FUSE_OPT_KEY("max_read=", FUSE_OPT_KEY_DISCARD),
-    FUSE_OPT_KEY("-h", KEY_HELP),
-    FUSE_OPT_KEY("--help", KEY_HELP),
-    FUSE_OPT_KEY("-V", KEY_VERSION),
-    FUSE_OPT_KEY("--version", KEY_VERSION),
-    FUSE_OPT_END
+   { "debug", offsetof(struct fuse_ll, debug), 1 },
+   { "-d", offsetof(struct fuse_ll, debug), 1 },
+   { "max_readahead=%u", offsetof(struct fuse_ll, conn.max_readahead), 0 },
+   { "max_background=%u", offsetof(struct fuse_ll, conn.max_background), 0 },
+   { "congestion_threshold=%u",
+     offsetof(struct fuse_ll, conn.congestion_threshold), 0 },
+   { "no_remote_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
+   { "no_remote_lock", offsetof(struct fuse_ll, no_remote_flock), 1},
+   { "no_remote_flock", offsetof(struct fuse_ll, no_remote_flock), 1},
+   { "no_remote_posix_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
+   { "splice_write", offsetof(struct fuse_ll, splice_write), 1},
+   { "no_splice_write", offsetof(struct fuse_ll, no_splice_write), 1},
+   { "splice_move", offsetof(struct fuse_ll, splice_move), 1},
+   { "no_splice_move", offsetof(struct fuse_ll, no_splice_move), 1},
+   { "splice_read", offsetof(struct fuse_ll, splice_read), 1},
+   { "no_splice_read", offsetof(struct fuse_ll, no_splice_read), 1},
+   FUSE_OPT_KEY("max_read=", FUSE_OPT_KEY_DISCARD),
+   FUSE_OPT_KEY("-h", KEY_HELP),
+   FUSE_OPT_KEY("--help", KEY_HELP),
+   FUSE_OPT_KEY("-V", KEY_VERSION),
+   FUSE_OPT_KEY("--version", KEY_VERSION),
+   FUSE_OPT_END
   };
 
 static
@@ -2701,9 +2701,9 @@ fuse_ll_receive_buf(struct fuse_session  *se,
     }
 
   tmpbuf = (struct fuse_buf) {
-    .size = res,
-    .flags = FUSE_BUF_IS_FD,
-    .fd = llp->pipe[0],
+                              .size = res,
+                              .flags = FUSE_BUF_IS_FD,
+                              .fd = llp->pipe[0],
   };
 
   /*
@@ -2784,8 +2784,8 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   struct fuse_ll *f;
   struct fuse_session *se;
   struct fuse_session_ops sop = {
-    .process = fuse_ll_process,
-    .destroy = fuse_ll_destroy,
+                                 .process = fuse_ll_process,
+                                 .destroy = fuse_ll_destroy,
   };
 
   if (sizeof(struct fuse_lowlevel_ops) < op_size)
