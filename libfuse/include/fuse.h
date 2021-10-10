@@ -694,6 +694,8 @@ int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op, siz
 int  fuse_start_maintenance_thread(struct fuse *fuse);
 void fuse_stop_maintenance_thread(struct fuse *fuse);
 
+void fuse_log_metrics(int enabled);
+
 /**
  * Iterate over cache removing stale entries
  * use in conjunction with "-oremember"

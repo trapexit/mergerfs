@@ -354,3 +354,11 @@ fmp_slab_usage_ratio(fmp_t *fmp_)
 
   return rv;
 }
+
+static
+inline
+uint64_t
+fmp_total_allocated_memory(fmp_t *fmp_)
+{
+  return (fmp_->slab_size * kv_size(fmp_->slabs));
+}

@@ -38,10 +38,19 @@
 using std::string;
 using std::vector;
 
+#ifndef _IOC_TYPE
+#define _IOC_TYPE(X) (((X) >> 8) & 0xFF)
+#endif
+
 typedef char IOCTL_BUF[4096];
 #define IOCTL_APP_TYPE 0xDF
-//#define IOCTL_FILE_INFO 0xD000DF00
-#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_FILE_INFO       _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_METRICS_ENABLE  _IOWR(IOCTL_APP_TYPE,1,IOCTL_BUF)
+#define IOCTL_METRICS_DISABLE _IOWR(IOCTL_APP_TYPE,2,IOCTL_BUF)
+
+static_assert(IOCTL_FILE_INFO       == 0xD000DF00,"");
+static_assert(IOCTL_METRICS_ENABLE  == 0xD000DF01,"");
+static_assert(IOCTL_METRICS_DISABLE == 0xD000DF02,"");
 
 #ifndef FS_IOC_GETFLAGS
 # define FS_IOC_GETFLAGS _IOR('f',1,long)
@@ -305,6 +314,34 @@ namespace l
 
     return -ENOATTR;
   }
+
+  static
+  bool
+  is_mergerfs_ioctl_cmd(const unsigned long cmd_)
+  {
+    return (_IOC_TYPE(cmd_) == IOCTL_APP_TYPE);
+  }
+
+  static
+  int
+  ioctl_custom(const fuse_file_info_t *ffi_,
+               unsigned long           cmd_,
+               void                   *data_)
+  {
+    switch(cmd_)
+      {
+      case IOCTL_FILE_INFO:
+        return l::file_info(ffi_,data_);
+      case IOCTL_METRICS_ENABLE:
+        fuse_log_metrics(1);
+        return 0;
+      case IOCTL_METRICS_DISABLE:
+        fuse_log_metrics(0);
+        return 0;
+      }
+
+    return -ENOTTY;
+  }
 }
 
 namespace FUSE
@@ -317,11 +354,8 @@ namespace FUSE
         void                   *data_,
         uint32_t               *out_bufsz_)
   {
-    switch(cmd_)
-      {
-      case IOCTL_FILE_INFO:
-        return l::file_info(ffi_,data_);
-      }
+    if(l::is_mergerfs_ioctl_cmd(cmd_))
+      return l::ioctl_custom(ffi_,cmd_,data_);
 
     if(flags_ & FUSE_IOCTL_DIR)
       return l::ioctl_dir(ffi_,cmd_,data_,out_bufsz_);

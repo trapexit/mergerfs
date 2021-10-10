@@ -53,6 +53,8 @@
 
 #define NODE_TABLE_MIN_SIZE 8192
 
+static int g_LOG_METRICS = 0;
+
 struct fuse_config
 {
   unsigned int uid;
@@ -4008,6 +4010,64 @@ node_table_init(struct node_table *t)
 
 static
 void
+metrics_log_nodes_info(struct fuse *f_,
+                       FILE        *file_)
+{
+  pthread_mutex_lock(&f_->lock);
+
+  fprintf(file_,
+          "time: %zu\n"
+          "sizeof(node): %zu\n"
+          "node id_table size: %zu\n"
+          "node id_table usage: %zu\n"
+          "node id_table total allocated memory: %zu\n"
+          "node name_table size: %zu\n"
+          "node name_table usage: %zu\n"
+          "node name_table total allocated memory: %zu\n"
+          "node memory pool slab count: %zu\n"
+          "node memory pool usage ratio: %f\n"
+          "node memory pool avail objs: %zu\n"
+          "node memory pool total allocated memory: %zu\n"
+          "\n"
+          ,
+          time(NULL),
+          sizeof(struct node),
+          f_->id_table.size,
+          f_->id_table.use,
+          (f_->id_table.size * sizeof(struct node*)),
+          f_->name_table.size,
+          f_->name_table.use,
+          (f_->name_table.size * sizeof(struct node*)),
+          lfmp_slab_count(&f_->node_fmp),
+          lfmp_slab_usage_ratio(&f_->node_fmp),
+          lfmp_avail_objs(&f_->node_fmp),
+          lfmp_total_allocated_memory(&f_->node_fmp)
+          );
+
+  pthread_mutex_unlock(&f_->lock);
+}
+
+static
+void
+metrics_log_nodes_info_to_tmp_dir(struct fuse *f_)
+{
+  FILE *file;
+  char filepath[256];
+
+  sprintf(filepath,"/tmp/mergerfs.%d.info",getpid());
+
+  file = fopen(filepath,"w");
+  if(file == NULL)
+    return;
+
+  metrics_log_nodes_info(f_,file);
+
+  fclose(file);
+}
+
+
+static
+void
 fuse_malloc_trim(void)
 {
 #ifdef HAVE_MALLOC_TRIM
@@ -4037,6 +4097,9 @@ fuse_maintenance_loop(void *fuse_)
 
       if(loops % 15)
         fuse_malloc_trim();
+
+      if(g_LOG_METRICS)
+        metrics_log_nodes_info_to_tmp_dir(f);
 
       loops++;
       sleep(sleep_time);
@@ -4096,6 +4159,8 @@ fuse_new_common(struct fuse_chan             *ch,
 
   if(fuse_opt_parse(args,&f->conf,fuse_lib_opts,fuse_lib_opt_proc) == -1)
     goto out_free_fs;
+
+  g_LOG_METRICS = f->conf.debug;
 
   f->se = fuse_lowlevel_new_common(args,&llop,sizeof(llop),f);
   if(f->se == NULL)
@@ -4214,4 +4279,10 @@ int
 fuse_config_num_threads(const struct fuse *fuse_)
 {
   return fuse_->conf.threads;
+}
+
+void
+fuse_log_metrics(int log_)
+{
+  g_LOG_METRICS = log_;
 }
