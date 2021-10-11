@@ -211,3 +211,17 @@ lfmp_slab_usage_ratio(lfmp_t *lfmp_)
 
   return rv;
 }
+
+static
+inline
+uint64_t
+lfmp_total_allocated_memory(lfmp_t *lfmp_)
+{
+  uint64_t rv;
+
+  pthread_mutex_lock(&lfmp_->lock);
+  rv = fmp_total_allocated_memory(&lfmp_->fmp);
+  pthread_mutex_unlock(&lfmp_->lock);
+
+  return rv;
+}
