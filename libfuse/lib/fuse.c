@@ -16,12 +16,12 @@
 #include "lfmp.h"
 
 #include "config.h"
-#include "fuse_i.h"
-#include "fuse_lowlevel.h"
-#include "fuse_opt.h"
-#include "fuse_misc.h"
-#include "fuse_kernel.h"
 #include "fuse_dirents.h"
+#include "fuse_i.h"
+#include "fuse_kernel.h"
+#include "fuse_lowlevel.h"
+#include "fuse_misc.h"
+#include "fuse_opt.h"
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -4282,7 +4282,13 @@ fuse_config_num_threads(const struct fuse *fuse_)
 }
 
 void
-fuse_log_metrics(int log_)
+fuse_log_metrics_set(int log_)
 {
   g_LOG_METRICS = log_;
+}
+
+int
+fuse_log_metrics_get(void)
+{
+  return g_LOG_METRICS;
 }

@@ -91,6 +91,7 @@ Config::Config()
     inodecalc("hybrid-hash"),
     link_cow(false),
     link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
+    log_metrics(false),
     mount(),
     moveonenospc(false),
     nfsopenhack(NFSOpenHack::ENUM::OFF),
@@ -155,6 +156,7 @@ Config::Config()
   _map["kernel_cache"]         = &kernel_cache;
   _map["link_cow"]             = &link_cow;
   _map["link-exdev"]           = &link_exdev;
+  _map["log.metrics"]          = &log_metrics;
   _map["minfreespace"]         = &minfreespace;
   _map["mount"]                = &mount;
   _map["moveonenospc"]         = &moveonenospc;

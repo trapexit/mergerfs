@@ -34,6 +34,7 @@ AR ?= ar
 SRC   = \
 	lib/buffer.c \
 	lib/crc32b.c \
+	lib/debug.c \
 	lib/fuse.c \
 	lib/fuse_dirents.c \
 	lib/fuse_kern_chan.c \
