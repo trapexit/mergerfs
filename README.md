@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2021-05-29
+% 2021-10-25
 
 # NAME
 
@@ -581,41 +581,7 @@ A problem with this approach is that the underlying instance will continue to ru
 
 # RUNTIME CONFIG
 
-#### ioctl
-
-The original runtime config API was via xattr calls. This however became an issue when needing to disable xattr. While slightly less convenient ioctl does not have the same problems and will be the main API going forward.
-
-The keys are the same as the command line option arguments as well as the config file.
-
-##### requests / commands
-
-All commands take a 4096 byte char buffer.
-
-* read keys: get a nul '\0' delimited list of option keys
-  * _IOWR(0xDF,0,char[4096]) = 0xD000DF00
-  * on success ioctl return value is the total length
-* read value: get an option value
-  * _IOWR(0xDF,1,char[4096]) = 0xD000DF01
-  * the key is passed in via the char buffer as a nul '\0' terminated string
-  * on success ioctl return value is the total length
-* write value: set an option value
-  * _IOW(0xDF,2,char[4096]) = 0x5000DF02
-  * the key and value is passed in via the char buffer as a nul '\0' terminated string in the format of `key=value`
-  * on success ioctl return value is 0
-* file info: get mergerfs metadata info for a file
-  * _IOWR(0xDF,3,char[4096]) = 0xD000DF03
-  * the key is passed in via the char buffer as a nul '\0' terminated string
-  * on success the ioctl return value is the total length
-  * keys:
-    * basepath: the base mount point for the file according to the getattr policy
-    * relpath: the relative path of the file from the mount point
-    * fullpath: the full path of the underlying file according to the getattr policy
-    * allpaths: a NUL '\0' delimited list of full paths to all files found
-
-
-#### .mergerfs pseudo file (deprecated) ####
-
-NOTE: this interface will be removed in mergerfs 3.0
+#### .mergerfs pseudo file ####
 
 ```
 <mountpoint>/.mergerfs
@@ -628,7 +594,7 @@ Any changes made at runtime are **not** persisted. If you wish for values to per
 
 ##### Keys #####
 
-Use `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only. `setxattr` will return EINVAL (invalid argument) on read-only keys.
+Use `getfattr -d /mountpoint/.mergerfs` or `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only. `setxattr` will return EINVAL (invalid argument) on read-only keys.
 
 
 ##### Values #####
@@ -637,8 +603,6 @@ Same as the command line.
 
 
 ###### user.mergerfs.branches ######
-
-**NOTE:** formerly `user.mergerfs.srcmounts` but said key is still supported.
 
 Used to query or modify the list of branches. When modifying there are several shortcuts to easy manipulation of the list.
 
@@ -659,55 +623,29 @@ The `=NC`, `=RO`, `=RW` syntax works just as on the command line.
 ##### Example #####
 
 ```
-[trapexit:/mnt/mergerfs] $ xattr -l .mergerfs
-user.mergerfs.branches: /mnt/a=RW:/mnt/b=RW
-user.mergerfs.minfreespace: 4294967295
-user.mergerfs.moveonenospc: false
+[trapexit:/mnt/mergerfs] $ getfattr -d .mergerfs
+user.mergerfs.branches="/mnt/a=RW:/mnt/b=RW"
+user.mergerfs.minfreespace="4294967295"
+user.mergerfs.moveonenospc="false"
 ...
 
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.category.search .mergerfs
-ff
+[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.search .mergerfs
+user.mergerfs.category.search="ff"
 
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.category.search newest .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.category.search .mergerfs
-newest
-
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.branches +/mnt/c .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.branches .mergerfs
-/mnt/a:/mnt/b:/mnt/c
-
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.branches =/mnt/c .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.branches .mergerfs
-/mnt/c
-
-[trapexit:/mnt/mergerfs] $ xattr -w user.mergerfs.branches '+</mnt/a:/mnt/b' .mergerfs
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.branches .mergerfs
-/mnt/a:/mnt/b:/mnt/c
+[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.category.search -v newest .mergerfs
+[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.search .mergerfs
+user.mergerfs.category.search="newest"
 ```
 
 
 #### file / directory xattrs ####
 
-While they won't show up when using [listxattr](http://linux.die.net/man/2/listxattr) **mergerfs** offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
+While they won't show up when using `getfattr` **mergerfs** offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
 
 * **user.mergerfs.basepath**: the base mount point for the file given the current getattr policy
 * **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
 * **user.mergerfs.fullpath**: the full path of the original file given the getattr policy
 * **user.mergerfs.allpaths**: a NUL ('\0') separated list of full paths to all files found
-
-```
-[trapexit:/mnt/mergerfs] $ ls
-A B C
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.fullpath A
-/mnt/a/full/path/to/A
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.basepath A
-/mnt/a
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.relpath A
-/full/path/to/A
-[trapexit:/mnt/mergerfs] $ xattr -p user.mergerfs.allpaths A | tr '\0' '\n'
-/mnt/a/full/path/to/A
-/mnt/b/full/path/to/A
-```
 
 
 # TOOLING
