@@ -22,6 +22,7 @@
 #include "config_follow_symlinks.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
+#include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
 #include "config_readdir.hpp"
@@ -121,6 +122,7 @@ public:
   ConfigBOOL     kernel_cache;
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
+  LogMetrics     log_metrics;
   ConfigSTR      mount;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;

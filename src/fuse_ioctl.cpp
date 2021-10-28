@@ -27,8 +27,6 @@
 #include "str.hpp"
 #include "ugid.hpp"
 
-#include "fuse.h"
-
 #include <string>
 #include <vector>
 
@@ -43,14 +41,8 @@ using std::vector;
 #endif
 
 typedef char IOCTL_BUF[4096];
-#define IOCTL_APP_TYPE 0xDF
-#define IOCTL_FILE_INFO       _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
-#define IOCTL_METRICS_ENABLE  _IOWR(IOCTL_APP_TYPE,1,IOCTL_BUF)
-#define IOCTL_METRICS_DISABLE _IOWR(IOCTL_APP_TYPE,2,IOCTL_BUF)
-
-static_assert(IOCTL_FILE_INFO       == 0xD000DF00,"");
-static_assert(IOCTL_METRICS_ENABLE  == 0xD000DF01,"");
-static_assert(IOCTL_METRICS_DISABLE == 0xD000DF02,"");
+#define IOCTL_APP_TYPE  0xDF
+#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
 
 #ifndef FS_IOC_GETFLAGS
 # define FS_IOC_GETFLAGS _IOR('f',1,long)
@@ -332,12 +324,6 @@ namespace l
       {
       case IOCTL_FILE_INFO:
         return l::file_info(ffi_,data_);
-      case IOCTL_METRICS_ENABLE:
-        fuse_log_metrics(1);
-        return 0;
-      case IOCTL_METRICS_DISABLE:
-        fuse_log_metrics(0);
-        return 0;
       }
 
     return -ENOTTY;

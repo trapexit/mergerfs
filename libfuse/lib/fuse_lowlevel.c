@@ -11,6 +11,7 @@
 #include "lfmp.h"
 
 #include "config.h"
+#include "debug.h"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_opt.h"
@@ -1733,7 +1734,10 @@ do_init(fuse_req_t  req,
   struct fuse_ll *f = req->f;
   size_t bufsize = fuse_chan_bufsize(req->ch);
 
-  (void) nodeid;
+  (void)nodeid;
+
+  if(f->debug)
+    debug_fuse_init_in(arg);
 
   f->conn.proto_major = arg->major;
   f->conn.proto_minor = arg->minor;
@@ -1905,6 +1909,9 @@ do_init(fuse_req_t  req,
     outargsize = FUSE_COMPAT_22_INIT_OUT_SIZE;
   else
     outargsize = sizeof(outarg);
+
+  if(f->debug)
+    debug_fuse_init_out(req->unique,&outarg,outargsize);
 
   send_reply_ok(req, &outarg, outargsize);
 }
