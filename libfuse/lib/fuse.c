@@ -173,7 +173,6 @@ struct node
   struct lock *locks;
 
   uint32_t stat_crc32b;
-  char inline_name[32];
   uint8_t is_hidden:1;
   uint8_t is_stat_cache_valid:1;
 };
@@ -394,8 +393,7 @@ void
 free_node(struct fuse *f_,
           struct node *node_)
 {
-  if(node_->name != node_->inline_name)
-    filename_free(f_,node_->name);
+  filename_free(f_,node_->name);
 
   if(node_->is_hidden)
     fuse_fs_free_hide(f_->fs,node_->hidden_fh);
@@ -611,8 +609,7 @@ unhash_name(struct fuse *f,
             *nodep = node->name_next;
             node->name_next = NULL;
             unref_node(f,node->parent);
-            if(node->name != node->inline_name)
-              filename_free(f,node->name);
+            filename_free(f,node->name);
             node->name = NULL;
             node->parent = NULL;
             f->name_table.use--;
@@ -675,17 +672,9 @@ hash_name(struct fuse *f,
 {
   size_t hash = name_hash(f,parentid,name);
   struct node *parent = get_node(f,parentid);
-  if(strlen(name) < sizeof(node->inline_name))
-    {
-      strcpy(node->inline_name,name);
-      node->name = node->inline_name;
-    }
-  else
-    {
-      node->name = filename_strdup(f,name);
-      if(node->name == NULL)
-        return -1;
-    }
+  node->name = filename_strdup(f,name);
+  if(node->name == NULL)
+    return -1;
 
   parent->refctr++;
   node->parent = parent;
@@ -4190,8 +4179,7 @@ fuse_new_common(struct fuse_chan             *ch,
       goto out_free_id_table;
     }
 
-  strcpy(root->inline_name,"/");
-  root->name = root->inline_name;
+  root->name = filename_strdup(f,"/");
 
   root->parent = NULL;
   root->nodeid = FUSE_ROOT_ID;
