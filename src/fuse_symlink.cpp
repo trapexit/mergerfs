@@ -155,6 +155,6 @@ namespace FUSE
     if(rv < 0)
       return rv;
 
-    return FUSE::getattr(target_,st_,timeout_);
+    return FUSE::getattr(linkpath_,st_,timeout_);
   }
 }
