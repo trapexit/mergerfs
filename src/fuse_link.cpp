@@ -62,8 +62,7 @@ namespace l
                         const string &newbasepath_,
                         const char   *oldfusepath_,
                         const char   *newfusepath_,
-                        const string &newfusedirpath_,
-                        struct stat  *st_)
+                        const string &newfusedirpath_)
   {
     int rv;
     int error;
@@ -84,9 +83,6 @@ namespace l
               rv = fs::link(oldfullpath,newfullpath);
           }
 
-        if((rv == 0) && (st_->st_ino == 0))
-          rv = fs::lstat(oldfullpath,st_);
-
         error = error::calc(rv,error,errno);
       }
 
@@ -99,8 +95,7 @@ namespace l
                    const Policy::Action &actionFunc_,
                    const Branches       &branches_,
                    const char           *oldfusepath_,
-                   const char           *newfusepath_,
-                   struct stat          *st_)
+                   const char           *newfusepath_)
   {
     int rv;
     string newfusedirpath;
@@ -119,8 +114,7 @@ namespace l
 
     return l::link_create_path_loop(oldbasepaths,newbasepaths[0],
                                     oldfusepath_,newfusepath_,
-                                    newfusedirpath,
-                                    st_);
+                                    newfusedirpath);
   }
 
   static
@@ -208,8 +202,7 @@ namespace l
                                cfg_->func.link.policy,
                                cfg_->branches,
                                oldpath_,
-                               newpath_,
-                               st_);
+                               newpath_);
   }
 
   static
@@ -223,13 +216,10 @@ namespace l
     int rv;
 
     rv = l::link(cfg_,oldpath_,newpath_,st_);
+    if(rv < 0)
+      return rv;
 
-    timeouts_->entry = ((rv >= 0) ?
-                        cfg_->cache_entry :
-                        cfg_->cache_negative_entry);
-    timeouts_->attr  = cfg_->cache_attr;
-
-    return rv;
+    return FUSE::getattr(newpath_,st_,timeouts_);
   }
 
   static
