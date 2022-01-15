@@ -829,6 +829,8 @@ NOTE: be sure to read about these features before changing them to understand wh
 * use `symlinkify` if your data is largely static and read-only
 * use tiered cache drives
 * use LVM and LVM cache to place a SSD in front of your HDDs
+* if `cache.files` is enabled increase readahead: `echo "1024" > /sys/class/bdi/0:$(stat -c%d /MOUNT)/read_ahead_kb`
+* increase readahead on all devices: `echo "1024" > /sys/class/bdi/0:$(stat -c%d /mnt/MOUNT)/read_ahead_kb`
 
 If you come across a setting that significantly impacts performance please contact trapexit so he may investigate further.
 
