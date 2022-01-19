@@ -35,7 +35,7 @@ A clear and concise description of the expected behavior.
  - mergerfs settings
  - List of drives, filesystems, & sizes:
    - `df -h`
-   - `lsblk`
+   - `lsblk -f`
  - A strace of the application having a problem: 
    - `strace -fvTtt -s 256 -o /tmp/app.strace.txt <cmd>`
    - `strace -fvTtt -s 256 -o /tmp/app.strace.txt -p <appPID>`
