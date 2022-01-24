@@ -329,7 +329,7 @@ Even though it's a more niche situation this hack breaks normal security and beh
 
 # FUNCTIONS, CATEGORIES and POLICIES
 
-The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which branch is chosen when performing that function.
+The POSIX filesystem API is made up of a number of functions. **create**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which branch is chosen when performing that function.
 
 Some functions, listed in the category `N/A` below, can not be assigned the normal policies. These functions work with file handles, rather than file paths, which were created by `open` or `create`. That said many times the current FUSE kernel driver will not always provide the file handle when a client calls `fgetattr`, `fchown`, `fchmod`, `futimens`, `ftruncate`, etc. This means it will call the regular, path based, versions. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options.
 
