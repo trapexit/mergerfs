@@ -252,19 +252,31 @@ fmp_avail_objs(fmp_t *fmp_)
 static
 inline
 uint64_t
+fmp_objs_per_slab(fmp_t *fmp_)
+{
+  return (fmp_->slab_size / fmp_->obj_size);
+}
+
+static
+inline
+uint64_t
 fmp_objs_in_slab(fmp_t *fmp_,
                  void  *slab_)
 {
   char *slab;
+  uint64_t objs_per_slab;
   uint64_t objs_in_slab;
 
-  objs_in_slab = 0;
-  slab = (char*)slab_;
+  slab          = (char*)slab_;
+  objs_in_slab  = 0;
+  objs_per_slab = fmp_objs_per_slab(fmp_);
   for(mem_stack_t *stack = fmp_->objs; stack != NULL; stack = stack->next)
     {
       char *obj = (char*)stack;
       if((obj >= slab) && (obj < (slab + fmp_->slab_size)))
         objs_in_slab++;
+      if(objs_in_slab >= objs_per_slab)
+        break;
     }
 
   return objs_in_slab;
@@ -276,17 +288,27 @@ void
 fmp_remove_objs_in_slab(fmp_t *fmp_,
                         void  *slab_)
 {
-  char *slab = (char*)slab_;
-  mem_stack_t **p = &fmp_->objs;
+  char *slab;
+  uint64_t objs_per_slab;
+  uint64_t objs_in_slab;
+  mem_stack_t **p;
 
+  p             = &fmp_->objs;
+  slab          = (char*)slab_;
+  objs_in_slab  = 0;
+  objs_per_slab = fmp_objs_per_slab(fmp_);
   while((*p) != NULL)
     {
       char *obj = (char*)*p;
 
       if((obj >= slab) && (obj < (slab + fmp_->slab_size)))
         {
+          objs_in_slab++;
           *p = (*p)->next;
           fmp_->avail_objs--;
+
+          if(objs_in_slab >= objs_per_slab)
+            break;
           continue;
         }
 
@@ -297,47 +319,40 @@ fmp_remove_objs_in_slab(fmp_t *fmp_,
 static
 inline
 int
-fmp_gc(fmp_t *fmp_)
+fmp_gc_slab(fmp_t    *fmp_,
+            uint64_t  slab_idx_)
 {
-  int i;
-  int freed_slabs;
+  char *slab;
+  uint64_t objs_in_slab;
   uint64_t objs_per_slab;
 
-  objs_per_slab = (fmp_->slab_size / fmp_->obj_size);
+  slab_idx_ = (slab_idx_ % kv_size(fmp_->slabs));
 
-  i = 0;
-  freed_slabs = 0;
-  while(i < kv_size(fmp_->slabs))
-    {
-      char *slab;
-      uint64_t objs_in_slab;
+  slab = kv_A(fmp_->slabs,slab_idx_);
 
-      slab = kv_A(fmp_->slabs,i);
+  objs_per_slab = fmp_objs_per_slab(fmp_);
+  objs_in_slab  = fmp_objs_in_slab(fmp_,slab);
+  if(objs_in_slab != objs_per_slab)
+    return 0;
 
-      objs_in_slab = fmp_objs_in_slab(fmp_,slab);
-      if(objs_in_slab != objs_per_slab)
-        {
-          i++;
-          continue;
-        }
+  fmp_remove_objs_in_slab(fmp_,slab);
+  kv_delete(fmp_->slabs,slab_idx_);
+  fmp_slab_free_mmap(fmp_,slab);
 
-      fmp_remove_objs_in_slab(fmp_,slab);
-
-      kv_delete(fmp_->slabs,i);
-
-      fmp_slab_free_mmap(fmp_,slab);
-      freed_slabs++;
-    }
-
-  return freed_slabs;
+  return 1;
 }
+
 
 static
 inline
-uint64_t
-fmp_objs_per_slab(fmp_t *fmp_)
+int
+fmp_gc(fmp_t *fmp_)
 {
-  return (fmp_->slab_size / fmp_->obj_size);
+  uint64_t slab_idx;
+
+  slab_idx = rand();
+
+  return fmp_gc_slab(fmp_,slab_idx);
 }
 
 static
@@ -345,14 +360,15 @@ inline
 double
 fmp_slab_usage_ratio(fmp_t *fmp_)
 {
-  double rv;
-  uint64_t objs_per_slab;
+  double avail_objs;
+  double objs_per_slab;
+  double nums_of_slabs;
 
+  avail_objs    = fmp_->avail_objs;
   objs_per_slab = fmp_objs_per_slab(fmp_);
+  nums_of_slabs = kv_size(fmp_->slabs);
 
-  rv = ((double)fmp_->avail_objs / (double)objs_per_slab);
-
-  return rv;
+  return (avail_objs / (objs_per_slab * nums_of_slabs));
 }
 
 static
