@@ -239,8 +239,9 @@ namespace l
     if(rv == 0)
       rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
-    // Disable attr caching since we created a symlink but should be a regular.
-    timeouts_->attr = 0;
+    // Disable caching since we created a symlink but should be a regular.
+    timeouts_->attr  = 0;
+    timeouts_->entry = 0;
 
     return rv;
   }
@@ -268,8 +269,9 @@ namespace l
     if(rv == 0)
       rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
-    // Disable attr caching since we created a symlink but should be a regular.
-    timeouts_->attr = 0;
+    // Disable caching since we created a symlink but should be a regular.
+    timeouts_->attr  = 0;
+    timeouts_->entry = 0;
 
     return rv;
   }
@@ -292,8 +294,9 @@ namespace l
     if(rv == 0)
       rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
-    // Disable attr caching since we created a symlink but should be a regular.
-    timeouts_->attr = 0;
+    // Disable caching since we created a symlink but should be a regular.
+    timeouts_->attr  = 0;
+    timeouts_->entry = 0;
 
     return rv;
   }
