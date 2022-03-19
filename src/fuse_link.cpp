@@ -235,12 +235,11 @@ namespace l
 
     target = target.lexically_relative(linkpath.parent_path());
 
-    rv = FUSE::symlink(target.c_str(),linkpath.c_str());
-    if(rv == 0)
-      rv = FUSE::getattr(oldpath_,st_,timeouts_);
+    rv = FUSE::symlink(target.c_str(),linkpath.c_str(),st_);
 
-    // Disable attr caching since we created a symlink but should be a regular.
-    timeouts_->attr = 0;
+    // Disable caching since we created a symlink but should be a regular.
+    timeouts_->attr  = 0;
+    timeouts_->entry = 0;
 
     return rv;
   }
@@ -264,12 +263,11 @@ namespace l
 
     target = fs::path::make(basepaths[0],oldpath_);
 
-    rv = FUSE::symlink(target.c_str(),newpath_);
-    if(rv == 0)
-      rv = FUSE::getattr(oldpath_,st_,timeouts_);
+    rv = FUSE::symlink(target.c_str(),newpath_,st_);
 
-    // Disable attr caching since we created a symlink but should be a regular.
-    timeouts_->attr = 0;
+    // Disable caching since we created a symlink but should be a regular.
+    timeouts_->attr  = 0;
+    timeouts_->entry = 0;
 
     return rv;
   }
@@ -288,12 +286,11 @@ namespace l
 
     target = fs::path::make(mount_,oldpath_);
 
-    rv = FUSE::symlink(target.c_str(),newpath_);
-    if(rv == 0)
-      rv = FUSE::getattr(oldpath_,st_,timeouts_);
+    rv = FUSE::symlink(target.c_str(),newpath_,st_);
 
-    // Disable attr caching since we created a symlink but should be a regular.
-    timeouts_->attr = 0;
+    // Disable caching since we created a symlink but should be a regular.
+    timeouts_->attr  = 0;
+    timeouts_->entry = 0;
 
     return rv;
   }

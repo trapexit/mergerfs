@@ -23,12 +23,8 @@
 namespace FUSE
 {
   int
-  symlink(const char *target,
-          const char *linkpath);
-
-  int
   symlink(const char      *target,
           const char      *linkpath,
-          struct stat     *st,
-          fuse_timeouts_t *timeouts);
+          struct stat     *st       = NULL,
+          fuse_timeouts_t *timeouts = NULL);
 }

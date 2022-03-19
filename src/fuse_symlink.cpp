@@ -17,7 +17,9 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_lstat.hpp"
 #include "fs_path.hpp"
+#include "fs_inode.hpp"
 #include "fs_symlink.hpp"
 #include "fuse_getattr.hpp"
 #include "ugid.hpp"
@@ -59,6 +61,7 @@ namespace l
   symlink_loop_core(const string &newbasepath_,
                     const char   *target_,
                     const char   *linkpath_,
+                    struct stat  *st_,
                     const int     error_)
   {
     int rv;
@@ -67,6 +70,12 @@ namespace l
     fullnewpath = fs::path::make(newbasepath_,linkpath_);
 
     rv = fs::symlink(target_,fullnewpath);
+    if((rv != -1) && (st_ != NULL) && (st_->st_ino == 0))
+      {
+        fs::lstat(fullnewpath,st_);
+        if(st_->st_ino != 0)
+          fs::inode::calc(linkpath_,st_);
+      }
 
     return error::calc(rv,error_,errno);
   }
@@ -77,7 +86,8 @@ namespace l
                const StrVec &newbasepaths_,
                const char   *target_,
                const char   *linkpath_,
-               const string &newdirpath_)
+               const string &newdirpath_,
+               struct stat  *st_)
   {
     int rv;
     int error;
@@ -92,6 +102,7 @@ namespace l
           error = l::symlink_loop_core(newbasepaths_[i],
                                        target_,
                                        linkpath_,
+                                       st_,
                                        error);
       }
 
@@ -104,7 +115,8 @@ namespace l
           const Policy::Create &createFunc_,
           const Branches       &branches_,
           const char           *target_,
-          const char           *linkpath_)
+          const char           *linkpath_,
+          struct stat          *st_)
   {
     int rv;
     string newdirpath;
@@ -122,39 +134,47 @@ namespace l
       return -errno;
 
     return l::symlink_loop(existingpaths[0],newbasepaths,
-                           target_,linkpath_,newdirpath);
+                           target_,linkpath_,newdirpath,st_);
   }
 }
 
 namespace FUSE
 {
   int
-  symlink(const char *target_,
-          const char *linkpath_)
+  symlink(const char      *target_,
+          const char      *linkpath_,
+          struct stat     *st_,
+          fuse_timeouts_t *timeouts_)
   {
+    int rv;
     Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::symlink(cfg->func.getattr.policy,
-                      cfg->func.symlink.policy,
-                      cfg->branches,
-                      target_,
-                      linkpath_);
-  }
+    rv = l::symlink(cfg->func.getattr.policy,
+                    cfg->func.symlink.policy,
+                    cfg->branches,
+                    target_,
+                    linkpath_,
+                    st_);
 
-  int
-  symlink(const char      *target_,
-          const char      *linkpath_,
-          struct stat     *st_,
-          fuse_timeouts_t *timeout_)
-  {
-    int rv;
+    if(timeouts_ != NULL)
+      {
+        switch(cfg->follow_symlinks)
+          {
+          case FollowSymlinks::ENUM::NEVER:
+            timeouts_->entry = ((rv >= 0) ?
+                                cfg->cache_entry :
+                                cfg->cache_negative_entry);
+            timeouts_->attr  = cfg->cache_attr;
+            break;
+          default:
+            timeouts_->entry = 0;
+            timeouts_->attr  = 0;
+            break;
+          }
+      }
 
-    rv = FUSE::symlink(target_,linkpath_);
-    if(rv < 0)
-      return rv;
-
-    return FUSE::getattr(linkpath_,st_,timeout_);
+    return rv;
   }
 }
