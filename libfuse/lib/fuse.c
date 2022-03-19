@@ -62,6 +62,7 @@ struct fuse_config
   unsigned int umask;
   int remember;
   int debug;
+  int nogc;
   int use_ino;
   int set_mode;
   int set_uid;
@@ -3903,6 +3904,7 @@ static const struct fuse_opt fuse_lib_opts[] =
    FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
    FUSE_LIB_OPT("debug",	      debug,1),
    FUSE_LIB_OPT("-d",		      debug,1),
+   FUSE_LIB_OPT("nogc",               nogc,1),
    FUSE_LIB_OPT("umask=",	      set_mode,1),
    FUSE_LIB_OPT("umask=%o",	      umask,0),
    FUSE_LIB_OPT("uid=",	      set_uid,1),
@@ -4002,38 +4004,40 @@ void
 metrics_log_nodes_info(struct fuse *f_,
                        FILE        *file_)
 {
+  char buf[1024];
+
   pthread_mutex_lock(&f_->lock);
-
-  fprintf(file_,
-          "time: %zu\n"
-          "sizeof(node): %zu\n"
-          "node id_table size: %zu\n"
-          "node id_table usage: %zu\n"
-          "node id_table total allocated memory: %zu\n"
-          "node name_table size: %zu\n"
-          "node name_table usage: %zu\n"
-          "node name_table total allocated memory: %zu\n"
-          "node memory pool slab count: %zu\n"
-          "node memory pool usage ratio: %f\n"
-          "node memory pool avail objs: %zu\n"
-          "node memory pool total allocated memory: %zu\n"
-          "\n"
-          ,
-          time(NULL),
-          sizeof(struct node),
-          f_->id_table.size,
-          f_->id_table.use,
-          (f_->id_table.size * sizeof(struct node*)),
-          f_->name_table.size,
-          f_->name_table.use,
-          (f_->name_table.size * sizeof(struct node*)),
-          lfmp_slab_count(&f_->node_fmp),
-          lfmp_slab_usage_ratio(&f_->node_fmp),
-          lfmp_avail_objs(&f_->node_fmp),
-          lfmp_total_allocated_memory(&f_->node_fmp)
-          );
-
+  snprintf(buf,sizeof(buf),
+           "time: %zu\n"
+           "sizeof(node): %zu\n"
+           "node id_table size: %zu\n"
+           "node id_table usage: %zu\n"
+           "node id_table total allocated memory: %zu\n"
+           "node name_table size: %zu\n"
+           "node name_table usage: %zu\n"
+           "node name_table total allocated memory: %zu\n"
+           "node memory pool slab count: %zu\n"
+           "node memory pool usage ratio: %f\n"
+           "node memory pool avail objs: %zu\n"
+           "node memory pool total allocated memory: %zu\n"
+           "\n"
+           ,
+           time(NULL),
+           sizeof(struct node),
+           f_->id_table.size,
+           f_->id_table.use,
+           (f_->id_table.size * sizeof(struct node*)),
+           f_->name_table.size,
+           f_->name_table.use,
+           (f_->name_table.size * sizeof(struct node*)),
+           lfmp_slab_count(&f_->node_fmp),
+           lfmp_slab_usage_ratio(&f_->node_fmp),
+           lfmp_avail_objs(&f_->node_fmp),
+           lfmp_total_allocated_memory(&f_->node_fmp)
+           );
   pthread_mutex_unlock(&f_->lock);
+
+  fputs(buf,file_);
 }
 
 static
@@ -4068,11 +4072,13 @@ static
 void*
 fuse_maintenance_loop(void *fuse_)
 {
+  int gc;
   int loops;
   int sleep_time;
   double slab_usage_ratio;
   struct fuse *f = (struct fuse*)fuse_;
 
+  gc = 0;
   loops = 0;
   sleep_time = 60;
   while(1)
@@ -4080,12 +4086,15 @@ fuse_maintenance_loop(void *fuse_)
       if(remember_nodes(f))
         fuse_prune_remembered_nodes(f);
 
-      slab_usage_ratio = lfmp_slab_usage_ratio(&f->node_fmp);
-      if(slab_usage_ratio > 3.0)
-        lfmp_gc(&f->node_fmp);
+      if((loops % 15) == 0)
+        {
+          fuse_malloc_trim();
+          gc = 1;
+        }
 
-      if(loops % 15)
-        fuse_malloc_trim();
+      // Trigger a followup gc if this gc succeeds
+      if(!f->conf.nogc && gc)
+        gc = lfmp_gc(&f->node_fmp);
 
       if(g_LOG_METRICS)
         metrics_log_nodes_info_to_tmp_dir(f);
