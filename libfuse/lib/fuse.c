@@ -921,7 +921,7 @@ try_get_path(struct fuse  *f,
 
   for(node = get_node(f,nodeid); node->nodeid != FUSE_ROOT_ID; node = node->parent)
     {
-      err = -ENOENT;
+      err = -ESTALE;
       if(node->name == NULL || node->parent == NULL)
         goto out_unlock;
 
