@@ -4006,7 +4006,7 @@ metrics_log_nodes_info(struct fuse *f_,
 {
   char buf[1024];
 
-  pthread_mutex_lock(&f_->lock);
+  lfmp_lock(&f_->node_fmp);
   snprintf(buf,sizeof(buf),
            "time: %zu\n"
            "sizeof(node): %zu\n"
@@ -4030,12 +4030,12 @@ metrics_log_nodes_info(struct fuse *f_,
            f_->name_table.size,
            f_->name_table.use,
            (f_->name_table.size * sizeof(struct node*)),
-           lfmp_slab_count(&f_->node_fmp),
-           lfmp_slab_usage_ratio(&f_->node_fmp),
-           lfmp_avail_objs(&f_->node_fmp),
-           lfmp_total_allocated_memory(&f_->node_fmp)
+           fmp_slab_count(&f_->node_fmp.fmp),
+           fmp_slab_usage_ratio(&f_->node_fmp.fmp),
+           fmp_avail_objs(&f_->node_fmp.fmp),
+           fmp_total_allocated_memory(&f_->node_fmp.fmp)
            );
-  pthread_mutex_unlock(&f_->lock);
+  lfmp_unlock(&f_->node_fmp);
 
   fputs(buf,file_);
 }
@@ -4075,7 +4075,6 @@ fuse_maintenance_loop(void *fuse_)
   int gc;
   int loops;
   int sleep_time;
-  double slab_usage_ratio;
   struct fuse *f = (struct fuse*)fuse_;
 
   gc = 0;
