@@ -44,6 +44,22 @@ lfmp_init(lfmp_t         *lfmp_,
 
 static
 inline
+void
+lfmp_lock(lfmp_t *lfmp_)
+{
+  pthread_mutex_lock(&lfmp_->lock);
+}
+
+static
+inline
+void
+lfmp_unlock(lfmp_t *lfmp_)
+{
+  pthread_mutex_unlock(&lfmp_->lock);
+}
+
+static
+inline
 uint64_t
 lfmp_slab_count(lfmp_t *lfmp_)
 {
