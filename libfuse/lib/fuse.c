@@ -2037,11 +2037,11 @@ fuse_lib_lookup(fuse_req_t  req,
                 uint64_t    parent,
                 const char *name)
 {
-  struct fuse *f = req_fuse_prepare(req);
-  struct fuse_entry_param e;
-  char *path;
   int err;
+  char *path;
   struct node *dot = NULL;
+  struct fuse *f = req_fuse_prepare(req);
+  struct fuse_entry_param e = {0};
 
   if(name[0] == '.')
     {
@@ -2061,6 +2061,12 @@ fuse_lib_lookup(fuse_req_t  req,
         }
       else if((name[1] == '.') && (name[2] == '\0'))
         {
+          if(parent == 1)
+            {
+              reply_entry(req,&e,-ENOENT);
+              return;
+            }
+
           name = NULL;
           pthread_mutex_lock(&f->lock);
           parent = get_node(f,parent)->parent->nodeid;
