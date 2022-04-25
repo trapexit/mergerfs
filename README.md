@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2021-10-25
+% 2022-04-25
 
 # NAME
 
@@ -1294,37 +1294,9 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 
 #### Support development
 
-This software is free to use and released under a very liberal license (ISC). That said if you like this software and would like to support its development donations are welcome.
+This software is free to use and released under a very liberal license (ISC). That said if you like this software and have the means please consider supporting its development.
 
-Crypto is fine in whatever protocol you prefer. My preferences for fiat would be GitHub Sponsors or PayPal though feel free to use any platform listed below.
-
-* GitHub Sponsors: https://github.com/sponsors/trapexit
-* PayPal: https://paypal.me/trapexit
-* Patreon: https://www.patreon.com/trapexit
-* BuyMeACoffee: https://buymeacoff.ee/trapexit
-* Ko-Fi: https://ko-fi.com/trapexit
-* Open Collective: https://opencollective.com/trapexit
-* Bitcoin (BTC): bc1qu537hqlnmn2wawx9n7nws0dlkz55h0cd93ny28
-* Bitcoin Cash (BCH): bitcoincash:qqp0vh9v44us74gaggwjfv9y54zfjmmd7srlqxa3xt
-* Bitcoin SV (BSV): 1FkFuxRtt3f8LbkpeUKRZq7gKJFzGSGgZV
-* Bitcoin Gold (BTG): AaPuJgJeohPjkB3LxJM6NKGnaHoRJ8ieT3
-* Litecoin (LTC): MJQzsHBdNnkyGqCFdcAdHYKugicBmfAXfQ
-* Dogecoin (DOGE): DLJNLVe28vZ4SMQSxDJLBQBv57rGtUoWFh
-* Ethereum (ETH): 0xB8d6d55c0319aacC327860d13f891427caEede7a
-* Any ERC20 Token: 0xB8d6d55c0319aacC327860d13f891427caEede7a
-* Ethereum Classic (ETC): 0x2B6054428e69a1201B6555f7a2aEc0Fba01EAD9F
-* Harmony (ONE): one1hrtd2hqrrx4vcvncvrgnlzg5yl9wahn66lq6rw (0xB8d6d55c0319aacC327860d13f891427caEede7a)
-* Monero (XMR): 45BBZMrJwPSaFwSoqLVNEggWR2BJJsXxz7bNz8FXnnFo3GyhVJFSCrCFSS7zYwDa9r1TmFmGMxQ2HTntuc11yZ9q1LeCE8f
-* Dash (DASH): XvsFrohu8tbjA4E8p7xsc86E2ADxLHGXHL
-* Chia (XCH): xch18l7e2q34jtuyzkq0jg8vp7yrtnfwzly30w3yyhkk96um2ur4yqcq6p2een
-* LBRY Credits (LBC): bFusyoZPkSuzM2Pr8mcthgvkymaosJZt5r
-* Ripple (XRP): r9f6aoxaGD8aymxqH89Ke1PCUPkNiFdZZC
-* Tezos (XTZ): tz1ZxerkbbALsuU9XGV9K9fFpuLWnKAGfc1C
-* Zcash (ZEC): t1Zo1GGn2T3GrhKvgdtnTsTnWu6tCPaCaHG
-* DigiByte (DGB): Sb8r1qTrryY9Sp4YkTE1eeKEGVzgArnE5N
-* Namecoin (NMC): NDzb9FkoptGu5QbgetCkodJqo2zE1cTwyb
-* Vertcoin (VTC): 3PYdhokAGXJwWrwHRoTywxG4iUDk6EHjKe
-* Other crypto currencies: contact me for address
+https://github.com/trapexit/support
 
 
 # LINKS
