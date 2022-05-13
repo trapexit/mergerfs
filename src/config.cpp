@@ -104,7 +104,6 @@ Config::Config()
     posix_acl(false),
     readdir(ReadDir::ENUM::POSIX),
     readdirplus(false),
-    rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
     security_capability(true),
     srcmounts(branches),
     statfs(StatFS::ENUM::BASE),
@@ -169,7 +168,6 @@ Config::Config()
   _map["posix_acl"]            = &posix_acl;
   //  _map["readdir"]              = &readdir;
   _map["readdirplus"]          = &readdirplus;
-  _map["rename-exdev"]         = &rename_exdev;
   _map["security_capability"]  = &security_capability;
   _map["srcmounts"]            = &srcmounts;
   _map["statfs"]               = &statfs;
@@ -346,35 +344,6 @@ Config::from_file(const std::string &filepath_,
   ifstrm.close();
 
   return rv;
-}
-
-int
-Config::from_toml(const toml::value &toml_,
-                  ErrVec            *errs_)
-{
-  // toml::verify_bool(toml_,"cache","readdir",true);
-  // toml::verify_bool(toml_,"drop-cache-on-close",true);
-  // toml::verify_bool(toml_,"link-cow",false);
-  // toml::verify_bool(toml_,"null-rw",false);
-  // toml::verify_bool(toml_,"posix-acl",false);
-  // toml::verify_bool(toml_,"security-capability",false);
-  // toml::verify_bool(toml_,"symlinkify",false);
-  // toml::verify_enum(toml_,"follow-symlinks",true,{"never","directory","regular","all"});
-  // toml::verify_enum(toml_,"inode-calc",true,{"foo","bar","baz"});
-  // toml::verify_enum(toml_,"link-exdev",false,{"passthrough","rel-symlinks","abs-base-symlink","abs-pool-symlink"});
-  // toml::verify_enum(toml_,"move-on-enospc",true,{"mfs","lfs"});
-  // toml::verify_enum(toml_,"nfs-open-hack",false,{"off","git","all"});
-  // toml::verify_enum(toml_,"rename-exdev",false,{"passthrough","rel-symlink","abs-symlink"});
-  // toml::verify_enum(toml_,"statfs",true,{"base","full"});
-  // toml::verify_enum(toml_,"statfs-ignore",true,{"none","ro","nc"});
-  // toml::verify_enum(toml_,"xattr",false,{"passthrough","noattr","nosys"});
-  // toml::verify_human_size(toml_,"min-free-space",false);
-  // toml::verify_integer(toml_,"fuse-msg-size",false,1,256);
-  // toml::verify_min_integer(toml_,"symlinkify-timeout",false,0);
-  // toml::verify_bool(toml_,"allow-other",false);
-  // toml::verify_string(toml_,"filesystem-name",true);
-
-  return 0;
 }
 
 std::ostream&
