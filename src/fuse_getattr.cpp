@@ -30,12 +30,13 @@ namespace FUSE::GETATTR
           struct stat     *st_,
           fuse_timeouts_t *timeout_)
   {
-    State s;
     int rv;
+    State s;
+    gfs::path fusepath(fusepath_);
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    rv = s->getattr(fusepath_,st_,timeout_);
+    rv = s->getattr(fusepath,st_,timeout_);
     if(rv < 0)
       return rv;
 

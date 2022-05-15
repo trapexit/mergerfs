@@ -31,21 +31,19 @@ FUSE::GETXATTR::FuncFF::FuncFF(const toml::value &toml_)
 }
 
 int
-FUSE::GETXATTR::FuncFF::operator()(const char *fusepath_,
-                                   const char *attrname_,
-                                   char       *buf_,
-                                   size_t      count_)
+FUSE::GETXATTR::FuncFF::operator()(const gfs::path &fusepath_,
+                                   const char      *attrname_,
+                                   char            *buf_,
+                                   size_t           count_)
 {
   int rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / fusepath;
+          fullpath  = branch.path / fusepath_;
 
           rv = fs::lgetxattr(fullpath,attrname_,buf_,count_);
           if(rv == -ENOENT)

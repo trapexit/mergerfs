@@ -194,13 +194,15 @@ namespace FUSE::GETXATTR
            size_t      count_)
   {
     State s;
+    gfs::path fusepath;
 
+    fusepath = &fusepath_[1];
     if((s->security_capability == false) && l::is_attrname_security_capability(attrname_))
       return -ENOATTR;
 
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return s->getxattr(fusepath_,attrname_,buf_,count_);
+    return s->getxattr(fusepath,attrname_,buf_,count_);
   }
 }

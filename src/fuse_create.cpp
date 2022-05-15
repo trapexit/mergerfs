@@ -199,12 +199,13 @@ namespace FUSE::CREATE
          fuse_file_info_t *ffi_)
   {
     State s;
+    gfs::path fusepath(fusepath_);
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     if(s->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return s->create(fusepath_,mode_,fc->umask,ffi_);
+    return s->create(fusepath,mode_,fc->umask,ffi_);
   }
 }

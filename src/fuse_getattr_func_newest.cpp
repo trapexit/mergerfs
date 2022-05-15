@@ -33,7 +33,7 @@ FUSE::GETATTR::FuncNewest::FuncNewest(const toml::value &toml_)
 }
 
 int
-FUSE::GETATTR::FuncNewest::operator()(const char      *fusepath_,
+FUSE::GETATTR::FuncNewest::operator()(const gfs::path &fusepath_,
                                       struct stat     *st_,
                                       fuse_timeouts_t *timeout_)
 {
@@ -46,8 +46,7 @@ FUSE::GETATTR::FuncNewest::operator()(const char      *fusepath_,
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path;
-          fullpath /= &fusepath_[1];
+          fullpath  = branch.path / fusepath_;
 
           rv = _statfunc(fullpath,&st);
           if(rv != 0)

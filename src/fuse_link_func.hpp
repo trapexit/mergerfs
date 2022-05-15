@@ -34,8 +34,8 @@ namespace FUSE::LINK
 
   public:
     int
-    operator()(const char *oldpath_,
-               const char *newpath_)
+    operator()(const gfs::path &oldpath_,
+               const gfs::path &newpath_)
     {
       return (*_link)(oldpath_,newpath_);
     }

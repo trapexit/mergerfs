@@ -51,7 +51,7 @@ FUSE::GETATTR::FuncCheckFF::FuncCheckFF(const toml::value &toml_)
 }
 
 int
-FUSE::GETATTR::FuncCheckFF::operator()(const char      *fusepath_,
+FUSE::GETATTR::FuncCheckFF::operator()(const gfs::path &fusepath_,
                                        struct stat     *st_,
                                        fuse_timeouts_t *timeout_)
 {
@@ -65,8 +65,7 @@ FUSE::GETATTR::FuncCheckFF::operator()(const char      *fusepath_,
     {
       for(j = 0, ej = _branches[i].size(); j < ej; j++)
         {
-          fullpath  = _branches[i][j].path;
-          fullpath /= &fusepath_[1];
+          fullpath  = _branches[i][j].path / fusepath_;
 
           rv = _statfunc(fullpath,&st);
           if(rv != 0)
@@ -83,8 +82,7 @@ FUSE::GETATTR::FuncCheckFF::operator()(const char      *fusepath_,
     {
       for(; j < ej; j++)
         {
-          fullpath  = _branches[i][j].path;
-          fullpath /= &fusepath_[1];
+          fullpath  = _branches[i][j].path / fusepath_;
 
           rv = _statfunc(fullpath,&st);
           if(rv != 0)

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "from_toml.hpp"
+#include "fs_path.hpp"
 
 #include <memory>
 
@@ -32,9 +32,9 @@ namespace FUSE::GETXATTR
     typedef std::shared_ptr<FuncBase> Ptr;
 
   public:
-    virtual int operator()(const char *fusepath,
-                           const char *attrname,
-                           char       *buf,
-                           size_t      count) = 0;
+    virtual int operator()(const gfs::path &fusepath,
+                           const char      *attrname,
+                           char            *buf,
+                           size_t           count) = 0;
   };
 }

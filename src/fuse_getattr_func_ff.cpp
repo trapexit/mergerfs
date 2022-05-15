@@ -31,20 +31,18 @@ FUSE::GETATTR::FuncFF::FuncFF(const toml::value &toml_)
 }
 
 int
-FUSE::GETATTR::FuncFF::operator()(const char      *fusepath_,
+FUSE::GETATTR::FuncFF::operator()(const gfs::path &fusepath_,
                                   struct stat     *st_,
                                   fuse_timeouts_t *timeout_)
 {
   int rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath = branch.path / fusepath;
+          fullpath = branch.path / fusepath_;
 
           rv = _statfunc(fullpath,st_);
           if(rv == -ENOENT)

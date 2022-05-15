@@ -28,7 +28,7 @@ FUSE::CREATE::Func::Func(const toml::value &toml_)
 }
 
 int
-FUSE::CREATE::Func::operator()(const char       *fusepath_,
+FUSE::CREATE::Func::operator()(const gfs::path  &fusepath_,
                                const mode_t      mode_,
                                const mode_t      umask_,
                                fuse_file_info_t *ffi_)

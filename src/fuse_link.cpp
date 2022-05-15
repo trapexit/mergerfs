@@ -22,14 +22,10 @@
 #include "fs_path.hpp"
 #include "fuse_getattr.hpp"
 #include "fuse_symlink.hpp"
-#include "ghc/filesystem.hpp"
 #include "state.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
-
-
-namespace gfs = ghc::filesystem;
 
 
 namespace l
@@ -151,13 +147,17 @@ namespace FUSE::LINK
   {
     int rv;
     State s;
+    gfs::path oldpath;
+    gfs::path newpath;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    rv = s->link(oldpath_,newpath_);
+    oldpath = &oldpath_[1];
+    newpath = &newpath_[1];
+    rv = s->link(oldpath,newpath);
     if(rv == -EXDEV)
       return l::link_exdev(s,oldpath_,newpath_,st_,timeouts_);
 
-    return s->getattr(newpath_,st_,timeouts_);
+    return s->getattr(newpath,st_,timeouts_);
   }
 }

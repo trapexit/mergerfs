@@ -33,7 +33,6 @@ FUSE::CHMOD::FuncALL::operator()(const gfs::path &fusepath_,
                                  const mode_t     mode_)
 {
   Err rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
   for(const auto &branch_group : _branches)

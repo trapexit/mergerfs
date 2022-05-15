@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "from_toml.hpp"
+#include "fs_path.hpp"
 
 #include "fuse_timeouts.h"
 
@@ -34,7 +34,7 @@ namespace FUSE::GETATTR
     typedef std::shared_ptr<FuncBase> Ptr;
 
   public:
-    virtual int operator()(const char      *fusepath,
+    virtual int operator()(const gfs::path &fusepath,
                            struct stat     *st,
                            fuse_timeouts_t *timeout) = 0;
   };

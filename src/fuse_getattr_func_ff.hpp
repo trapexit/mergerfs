@@ -33,7 +33,7 @@ namespace FUSE::GETATTR
     FuncFF(const toml::value&);
 
   public:
-    int operator()(const char      *fusepath,
+    int operator()(const gfs::path &fusepath,
                    struct stat     *st,
                    fuse_timeouts_t *timeout) final;
 

@@ -217,7 +217,7 @@ namespace l
                 void                   *data_)
   {
     Config::Read cfg;
-    std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+    gfs::path &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
     return l::file_basepath(cfg->func.open.policy,
                             cfg->branches,
@@ -230,7 +230,7 @@ namespace l
   file_relpath(const fuse_file_info_t *ffi_,
                void                   *data_)
   {
-    std::string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+    gfs::path &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
     return l::strcpy(fusepath,data_);
   }
@@ -261,7 +261,7 @@ namespace l
                 void                   *data_)
   {
     Config::Read cfg;
-    std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+    gfs::path &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
     return l::file_fullpath(cfg->func.open.policy,
                             cfg->branches,
@@ -278,7 +278,7 @@ namespace l
     string concated;
     StrVec paths;
     StrVec branches;
-    string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+    gfs::path &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
     cfg->branches->to_paths(branches);
 

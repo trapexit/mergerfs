@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include "fuse.h"
 
 #include <memory>
@@ -31,8 +33,8 @@ namespace FUSE::LINK
     typedef std::shared_ptr<FuncBase> Ptr;
 
   public:
-    virtual int operator()(const char *oldpath,
-                           const char *newpath) = 0;
+    virtual int operator()(const gfs::path &oldpath,
+                           const gfs::path &newpath) = 0;
 
   };
 }

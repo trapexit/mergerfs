@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <string>
 
 
@@ -27,6 +29,16 @@ public:
   {
   }
 
+  FH(const gfs::path &fusepath_)
+    : fusepath(fusepath_)
+  {
+  }
+
+  FH(const std::string &fusepath_)
+    : fusepath(fusepath_)
+  {
+  }
+
 public:
-  std::string fusepath;
+  gfs::path fusepath;
 };

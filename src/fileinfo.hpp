@@ -18,14 +18,26 @@
 
 #include "fh.hpp"
 
-#include <string>
-
 
 class FileInfo : public FH
 {
 public:
   FileInfo(const int   fd_,
            const char *fusepath_)
+    : FH(fusepath_),
+      fd(fd_)
+  {
+  }
+
+  FileInfo(const int          fd_,
+           const std::string &fusepath_)
+    : FH(fusepath_),
+      fd(fd_)
+  {
+  }
+
+  FileInfo(const int        fd_,
+           const gfs::path &fusepath_)
     : FH(fusepath_),
       fd(fd_)
   {

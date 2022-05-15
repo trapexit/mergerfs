@@ -31,7 +31,7 @@ namespace FUSE::CREATE
     Func(const toml::value &);
 
   public:
-    int operator()(const char       *fusepath,
+    int operator()(const gfs::path  &fusepath,
                    const mode_t      mode,
                    const mode_t      umask,
                    fuse_file_info_t *ffi);

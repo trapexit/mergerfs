@@ -34,24 +34,20 @@ FUSE::LINK::FuncALL::FuncALL(const toml::value &toml_)
 }
 
 int
-FUSE::LINK::FuncALL::operator()(const char *oldpath_,
-                                const char *newpath_)
+FUSE::LINK::FuncALL::operator()(const gfs::path &oldpath_,
+                                const gfs::path &newpath_)
 {
   int rv;
   Err err;
-  gfs::path oldpath;
-  gfs::path newpath;
   gfs::path fulloldpath;
   gfs::path fullnewpath;
 
-  oldpath = &oldpath_[1];
-  newpath = &newpath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fulloldpath = branch.path / oldpath;
-          fullnewpath = branch.path / newpath;;
+          fulloldpath = branch.path / oldpath_;
+          fullnewpath = branch.path / newpath_;
 
           rv = fs::link(fulloldpath,fullnewpath);
           if(rv == -ENOENT)
@@ -59,7 +55,7 @@ FUSE::LINK::FuncALL::operator()(const char *oldpath_,
               if(!fs::exists(fulloldpath))
                 continue;
 
-              rv = fs::clonepath_as_root(_branches,branch.path,newpath.parent_path());
+              rv = fs::clonepath_as_root(_branches,branch.path,newpath_.parent_path());
               if(rv < 0)
                 continue;
 

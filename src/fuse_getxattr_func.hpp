@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include "from_toml.hpp"
 #include "fuse_getxattr_func_base.hpp"
 
 #include "fuse_timeouts.h"
+
+#include "toml.hpp"
 
 #include <memory>
 
@@ -35,12 +36,10 @@ namespace FUSE::GETXATTR
     Func(const toml::value &);
 
   public:
-    int operator()(const char *fusepath,
-                   const char *attrname,
-                   char       *buf,
-                   size_t      count);
-
-    void operator=(const toml::value&);
+    int operator()(const gfs::path &fusepath,
+                   const char      *attrname,
+                   char            *buf,
+                   size_t           count);
 
   private:
     FuncBase::Ptr _getxattr;

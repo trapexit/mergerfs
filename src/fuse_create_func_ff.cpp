@@ -36,28 +36,26 @@ FUSE::CREATE::FuncFF::FuncFF(const toml::value &toml_)
 }
 
 int
-FUSE::CREATE::FuncFF::operator()(const char       *fusepath_,
+FUSE::CREATE::FuncFF::operator()(const gfs::path  &fusepath_,
                                  const mode_t      mode_,
                                  const mode_t      umask_,
                                  fuse_file_info_t *ffi_)
 {
   int rv;
   mode_t mode;
-  gfs::path fusepath;
   gfs::path fullpath;
 
   mode = mode_;
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / fusepath;
+          fullpath  = branch.path / fusepath_;
 
           rv = fs::acl::dir_has_defaults(fullpath);
           if(rv == -ENOENT)
             {
-              rv = fs::clonepath_as_root(_branches,branch.path,fusepath);
+              rv = fs::clonepath_as_root(_branches,branch.path,fusepath_);
               if(rv >= 0)
                 rv = fs::acl::dir_has_defaults(fullpath);
             }
@@ -68,7 +66,7 @@ FUSE::CREATE::FuncFF::operator()(const char       *fusepath_,
           rv = fs::open(fullpath,ffi_->flags,mode);
           if(rv == -ENOENT)
             {
-              rv = fs::clonepath_as_root(_branches,branch.path,fusepath);
+              rv = fs::clonepath_as_root(_branches,branch.path,fusepath_);
               if(rv >= 0)
                 {
                   rv = fs::acl::dir_has_defaults(fullpath);

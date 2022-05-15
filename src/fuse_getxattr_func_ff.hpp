@@ -33,10 +33,10 @@ namespace FUSE::GETXATTR
     FuncFF(const toml::value&);
 
   public:
-    int operator()(const char *fusepath,
-                   const char *attrname,
-                   char       *buf,
-                   size_t      count) final;
+    int operator()(const gfs::path &fusepath,
+                   const char      *attrname,
+                   char            *buf,
+                   size_t           count) final;
 
   private:
     Branches2  _branches;

@@ -27,17 +27,11 @@ FUSE::GETXATTR::Func::Func(const toml::value &toml_)
   _getxattr = FuncFactory(toml_);
 }
 
-void
-FUSE::GETXATTR::Func::operator=(const toml::value &toml_)
-{
-  _getxattr = FuncFactory(toml_);
-}
-
 int
-FUSE::GETXATTR::Func::operator()(const char *fusepath_,
-                                 const char *attrname_,
-                                 char       *buf_,
-                                 size_t      count_)
+FUSE::GETXATTR::Func::operator()(const gfs::path &fusepath_,
+                                 const char      *attrname_,
+                                 char            *buf_,
+                                 size_t           count_)
 {
   return (*_getxattr)(fusepath_,attrname_,buf_,count_);
 }

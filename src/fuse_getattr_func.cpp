@@ -34,7 +34,7 @@ FUSE::GETATTR::Func::operator=(const toml::value &toml_)
 }
 
 int
-FUSE::GETATTR::Func::operator()(const char      *fusepath_,
+FUSE::GETATTR::Func::operator()(const gfs::path &fusepath_,
                                 struct stat     *st_,
                                 fuse_timeouts_t *timeout_)
 {

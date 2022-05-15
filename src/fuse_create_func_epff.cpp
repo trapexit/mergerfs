@@ -23,9 +23,6 @@
 #include "fs_open.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
 FUSE::CREATE::FuncEPFF::FuncEPFF(const toml::value &toml_)
   : _branches(toml_)
 {
@@ -33,23 +30,21 @@ FUSE::CREATE::FuncEPFF::FuncEPFF(const toml::value &toml_)
 }
 
 int
-FUSE::CREATE::FuncEPFF::operator()(const char       *fusepath_,
+FUSE::CREATE::FuncEPFF::operator()(const gfs::path  &fusepath_,
                                    const mode_t      mode_,
                                    const mode_t      umask_,
                                    fuse_file_info_t *ffi_)
 {
   int rv;
   mode_t mode;
-  gfs::path fusepath;
   gfs::path fullpath;
 
   mode = mode_;
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / fusepath;
+          fullpath  = branch.path / fusepath_;
 
           rv = fs::acl::dir_has_defaults(fullpath);
           if(rv == -ENOENT)

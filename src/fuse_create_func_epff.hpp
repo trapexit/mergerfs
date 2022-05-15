@@ -22,6 +22,8 @@
 
 #include "branches.hpp"
 
+#include "fs_path.hpp"
+
 
 namespace FUSE::CREATE
 {
@@ -31,7 +33,7 @@ namespace FUSE::CREATE
     FuncEPFF(const toml::value&);
 
   public:
-    int operator()(const char       *fusepath,
+    int operator()(const gfs::path  &fusepath,
                    const mode_t      mode,
                    const mode_t      umask,
                    fuse_file_info_t *ffi) final;

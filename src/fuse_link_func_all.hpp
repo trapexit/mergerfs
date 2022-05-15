@@ -28,11 +28,11 @@ namespace FUSE::LINK
   class FuncALL : public FuncBase
   {
   public:
-    FuncALL(const toml::value &);
+    FuncALL(const toml::value&);
 
   public:
-    int operator()(const char *oldpath,
-                   const char *newpath) final;
+    int operator()(const gfs::path &oldpath,
+                   const gfs::path &newpath) final;
 
   private:
     Branches2 _branches;
