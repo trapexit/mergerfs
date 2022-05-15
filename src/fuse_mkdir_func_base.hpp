@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include "fuse.h"
 
 #include <memory>
@@ -31,8 +33,8 @@ namespace FUSE::MKDIR
     typedef std::shared_ptr<FuncBase> Ptr;
 
   public:
-    virtual int operator()(const char   *fusepath,
-                           const mode_t  mode,
-                           const mode_t  umask) = 0;
+    virtual int operator()(const gfs::path &fusepath,
+                           const mode_t     mode,
+                           const mode_t     umask) = 0;
   };
 }

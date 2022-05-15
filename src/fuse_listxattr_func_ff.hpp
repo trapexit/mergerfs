@@ -32,9 +32,9 @@ namespace FUSE::LISTXATTR
     FuncFF(const toml::value&);
 
   public:
-    int operator()(const char   *fusepath,
-                   char         *list,
-                   const size_t  size) final;
+    int operator()(const gfs::path &fusepath,
+                   char            *list,
+                   const size_t     size) final;
 
   private:
     Branches2 _branches;

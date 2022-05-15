@@ -32,25 +32,23 @@ FUSE::MKDIR::FuncFF::FuncFF(const toml::value &toml_)
 }
 
 int
-FUSE::MKDIR::FuncFF::operator()(const char   *fusepath_,
-                                const mode_t  mode_,
-                                const mode_t  umask_)
+FUSE::MKDIR::FuncFF::operator()(const gfs::path &fusepath_,
+                                const mode_t     mode_,
+                                const mode_t     umask_)
 {
   int rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / fusepath;
+          fullpath  = branch.path / fusepath_;
 
           rv = FUSE::MKDIR::mkdir(fullpath,mode_,umask_);
           if(rv == -ENOENT)
             {
-              rv = fs::clonepath_as_root(_branches,branch.path,fusepath);
+              rv = fs::clonepath_as_root(_branches,branch.path,fusepath_);
               if(rv >= 0)
                 rv = FUSE::MKDIR::mkdir(fullpath,mode_,umask_);
             }

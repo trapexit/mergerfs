@@ -31,9 +31,9 @@ namespace FUSE::MKDIR
     Func(const toml::value &);
 
   public:
-    int operator()(const char   *fusepath,
-                   const mode_t  mode,
-                   const mode_t  umask);
+    int operator()(const gfs::path &fusepath,
+                   const mode_t     mode,
+                   const mode_t     umask);
 
   private:
     FuncBase::Ptr _mkdir;

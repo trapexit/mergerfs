@@ -31,9 +31,9 @@ namespace FUSE::MKDIR
     FuncEPFF(const toml::value&);
 
   public:
-    int operator()(const char   *fusepath,
-                   const mode_t  mode,
-                   const mode_t  umask) final;
+    int operator()(const gfs::path &fusepath,
+                   const mode_t     mode,
+                   const mode_t     umask) final;
 
   private:
     Branches2 _branches;

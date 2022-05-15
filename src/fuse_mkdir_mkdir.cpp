@@ -22,9 +22,6 @@
 #include "fs_mkdir.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
 int
 FUSE::MKDIR::mkdir(const gfs::path &fullpath_,
                    const mode_t     mode_,

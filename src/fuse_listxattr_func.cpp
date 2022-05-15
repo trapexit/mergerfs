@@ -25,16 +25,10 @@ FUSE::LISTXATTR::Func::Func(const toml::value &toml_)
   _listxattr = FuncFactory(toml_);
 }
 
-void
-FUSE::LISTXATTR::Func::operator=(const toml::value &toml_)
-{
-  _listxattr = FuncFactory(toml_);
-}
-
 int
-FUSE::LISTXATTR::Func::operator()(const char   *fusepath_,
-                                  char         *list_,
-                                  const size_t  size_)
+FUSE::LISTXATTR::Func::operator()(const gfs::path &fusepath_,
+                                  char            *list_,
+                                  const size_t     size_)
 {
   return (*_listxattr)(fusepath_,list_,size_);
 }

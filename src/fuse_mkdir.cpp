@@ -149,29 +149,15 @@ namespace l
 namespace FUSE::MKDIR
 {
   int
-  mkdir_old(const char *fusepath_,
-            mode_t      mode_)
-  {
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
-
-    return l::mkdir(cfg->func.getattr.policy,
-                    cfg->func.mkdir.policy,
-                    cfg->branches,
-                    fusepath_,
-                    mode_,
-                    fc->umask);
-  }
-
-  int
   mkdir(const char *fusepath_,
         mode_t      mode_)
   {
     State s;
+    gfs::path fusepath;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return s->mkdir(fusepath_,mode_,fc->umask);
+    fusepath = &fusepath_[1];
+    return s->mkdir(fusepath,mode_,fc->umask);
   }
 }

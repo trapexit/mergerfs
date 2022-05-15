@@ -28,9 +28,9 @@ FUSE::MKDIR::Func::Func(const toml::value &toml_)
 }
 
 int
-FUSE::MKDIR::Func::operator()(const char   *fusepath_,
-                              const mode_t  mode_,
-                              const mode_t  umask_)
+FUSE::MKDIR::Func::operator()(const gfs::path &fusepath_,
+                              const mode_t     mode_,
+                              const mode_t     umask_)
 {
   return (*_mkdir)(fusepath_,mode_,umask_);
 }

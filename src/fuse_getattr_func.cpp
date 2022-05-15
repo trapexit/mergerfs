@@ -27,12 +27,6 @@ FUSE::GETATTR::Func::Func(const toml::value &toml_)
   _getattr = FuncFactory(toml_);
 }
 
-void
-FUSE::GETATTR::Func::operator=(const toml::value &toml_)
-{
-  _getattr = FuncFactory(toml_);
-}
-
 int
 FUSE::GETATTR::Func::operator()(const gfs::path &fusepath_,
                                 struct stat     *st_,

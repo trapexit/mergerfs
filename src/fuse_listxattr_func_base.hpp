@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <memory>
 
 
@@ -29,9 +31,8 @@ namespace FUSE::LISTXATTR
     typedef std::shared_ptr<FuncBase> Ptr;
 
   public:
-    virtual int operator()(const char   *fusepath,
-                           char         *list,
-                           const size_t  size) = 0;
-
+    virtual int operator()(const gfs::path &fusepath,
+                           char            *list,
+                           const size_t     size) = 0;
   };
 }

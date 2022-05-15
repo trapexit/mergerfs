@@ -39,9 +39,6 @@ namespace FUSE::GETATTR
                    struct stat     *st,
                    fuse_timeouts_t *timeout);
 
-    
-    void operator=(const toml::value&);
-
   private:
     FuncBase::Ptr _getattr;
   };

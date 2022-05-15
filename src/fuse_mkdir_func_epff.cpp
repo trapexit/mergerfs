@@ -30,20 +30,18 @@ FUSE::MKDIR::FuncEPFF::FuncEPFF(const toml::value &toml_)
 }
 
 int
-FUSE::MKDIR::FuncEPFF::operator()(const char   *fusepath_,
-                                  const mode_t  mode_,
-                                  const mode_t  umask_)
+FUSE::MKDIR::FuncEPFF::operator()(const gfs::path &fusepath_,
+                                  const mode_t     mode_,
+                                  const mode_t     umask_)
 {
   int rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / fusepath;
+          fullpath  = branch.path / fusepath_;
 
           rv = FUSE::MKDIR::mkdir(fullpath,mode_,umask_);
           if(rv == -ENOENT)

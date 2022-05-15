@@ -33,12 +33,9 @@ namespace FUSE::LISTXATTR
     Func(const toml::value &);
 
   public:
-    int operator()(const char *fusepath,
-                   char       *buf,
-                   size_t      count);
-
-
-    void operator=(const toml::value&);
+    int operator()(const gfs::path &fusepath,
+                   char            *buf,
+                   size_t           count);
 
   private:
     FuncBase::Ptr _listxattr;

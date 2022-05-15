@@ -21,9 +21,6 @@
 #include "fs_llistxattr.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
 FUSE::LISTXATTR::FuncFF::FuncFF(const toml::value &toml_)
   : _branches(toml_)
 {
@@ -31,20 +28,18 @@ FUSE::LISTXATTR::FuncFF::FuncFF(const toml::value &toml_)
 }
 
 int
-FUSE::LISTXATTR::FuncFF::operator()(const char   *fusepath_,
-                                    char         *list_,
-                                    const size_t  size_)
+FUSE::LISTXATTR::FuncFF::operator()(const gfs::path &fusepath_,
+                                    char            *list_,
+                                    const size_t     size_)
 {
   int rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath = branch.path / fusepath;
+          fullpath = branch.path / fusepath_;
 
           rv = fs::llistxattr(fullpath,list_,size_);
           if(rv == -ENOENT)

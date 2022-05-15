@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "ghc/filesystem.hpp"
+#include "fs_path.hpp"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -27,7 +27,7 @@
 namespace FUSE::MKDIR
 {
   int
-  mkdir(const ghc::filesystem::path &fullpath,
-        const mode_t                 mode,
-        const mode_t                 umask);
+  mkdir(const gfs::path &fullpath,
+        const mode_t     mode,
+        const mode_t     umask);
 }

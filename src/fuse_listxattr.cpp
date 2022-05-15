@@ -93,9 +93,11 @@ namespace FUSE::LISTXATTR
             size_t      size_)
   {
     State s;
+    gfs::path fusepath;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return s->listxattr(fusepath_,list_,size_);
+    fusepath = &fusepath_[1];
+    return s->listxattr(fusepath,list_,size_);
   }
 }
