@@ -1,0 +1,67 @@
+/*
+  ISC License
+
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include "fuse_link_policy_all.hpp"
+#include "fuse_link_err.hpp"
+
+#include "fs_clonepath_branches.hpp"
+#include "fs_exists.hpp"
+#include "fs_link.hpp"
+
+
+FUSE::LINK::POLICY::ALL::ALL(const toml::value &toml_)
+  : _branches(toml_)
+{
+
+}
+
+int
+FUSE::LINK::POLICY::ALL::operator()(const gfs::path &oldpath_,
+                                    const gfs::path &newpath_)
+{
+  int rv;
+  Err err;
+  gfs::path fulloldpath;
+  gfs::path fullnewpath;
+
+  for(const auto &branch_group : _branches)
+    {
+      for(const auto &branch : branch_group)
+        {
+          fulloldpath = branch.path / oldpath_;
+          fullnewpath = branch.path / newpath_;
+
+          rv = fs::link(fulloldpath,fullnewpath);
+          if(rv == -ENOENT)
+            {
+              if(!fs::exists(fulloldpath))
+                continue;
+
+              rv = fs::clonepath_as_root(_branches,branch.path,newpath_.parent_path());
+              if(rv < 0)
+                continue;
+
+              rv = fs::link(fulloldpath,fullnewpath);
+            }
+
+          err = rv;
+        }
+    }
+
+  return err;
+}
