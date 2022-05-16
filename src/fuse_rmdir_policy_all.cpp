@@ -16,34 +16,29 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_rmdir_func_all.hpp"
+#include "fuse_rmdir_policy_all.hpp"
 #include "fuse_rmdir_err.hpp"
 
 #include "fs_rmdir.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
-FUSE::RMDIR::FuncALL::FuncALL(const toml::value &toml_)
+FUSE::RMDIR::POLICY::ALL::ALL(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::RMDIR::FuncALL::operator()(const char *fusepath_)
+FUSE::RMDIR::POLICY::ALL::operator()(const gfs::path &fusepath_)
 {
   Err rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath = branch.path / fusepath;
+          fullpath = branch.path / fusepath_;
 
           rv = fs::rmdir(fullpath);
         }

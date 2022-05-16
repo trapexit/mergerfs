@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fuse_rename_policy_base.hpp"
+#include "fuse_rename_policy_factory.hpp"
 
 #include "toml.hpp"
 

@@ -18,20 +18,20 @@
 
 #pragma once
 
-#include "fuse.h"
+#include "fs_path.hpp"
 
 #include <memory>
 
 
-namespace FUSE::SYMLINK
+namespace FUSE::SYMLINK::POLICY
 {
-  class FuncBase
+  class Base
   {
   public:
-    typedef std::shared_ptr<FuncBase> Ptr;
+    typedef std::shared_ptr<Base> Ptr;
 
   public:
-    virtual int operator()(const char *target,
-                           const char *linkpath) = 0;
+    virtual int operator()(const gfs::path &target,
+                           const char      *linkpath) = 0;
   };
 }

@@ -25,10 +25,10 @@
 
 namespace FUSE::CHOWN::POLICY
 {
-  class all : public base
+  class ALL : public Base
   {
   public:
-    all(const toml::value &);
+    ALL(const toml::value &);
 
   public:
     int operator()(const gfs::path &fusepath,

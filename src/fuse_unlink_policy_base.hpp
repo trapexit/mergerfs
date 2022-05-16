@@ -18,18 +18,19 @@
 
 #pragma once
 
+#include "fs_path.hpp"
 
 #include <memory>
 
 
-namespace FUSE::UNLINK
+namespace FUSE::UNLINK::POLICY
 {
-  class FuncBase
+  class Base
   {
   public:
-    typedef std::shared_ptr<FuncBase> Ptr;
+    typedef std::shared_ptr<Base> Ptr;
 
   public:
-    virtual int operator()(const char *fusepath) = 0;
+    virtual int operator()(const gfs::path &fusepath) = 0;
   };
 }

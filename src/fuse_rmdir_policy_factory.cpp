@@ -16,22 +16,23 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_rmdir_func_factory.hpp"
-#include "fuse_rmdir_func_all.hpp"
+#include "fuse_rmdir_policy_factory.hpp"
+
+#include "fuse_rmdir_policy_all.hpp"
 
 #include <stdexcept>
 
 
-namespace FUSE::RMDIR
+namespace FUSE::RMDIR::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &toml_)
+  Base::Ptr
+  factory(const toml::value &toml_)
   {
     std::string str;
 
     str = toml::find_or(toml_,"func","rmdir","policy","all");
     if(str == "all")
-      return std::make_shared<FuncALL>(toml_);
+      return std::make_shared<ALL>(toml_);
 
     throw std::runtime_error("");
   }

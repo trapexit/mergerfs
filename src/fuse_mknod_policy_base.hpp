@@ -33,7 +33,7 @@ namespace FUSE::MKNOD::POLICY
   class Base
   {
   public:
-    typedef std::shared_ptr<FuncBase> Ptr;
+    typedef std::shared_ptr<Base> Ptr;
 
   public:
     virtual int operator()(const gfs::path &fusepath,

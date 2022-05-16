@@ -22,15 +22,15 @@
 #include "fs_lchmod.hpp"
 
 
-FUSE::CHMOD::POLICY::ALL(const toml::value &toml_)
+FUSE::CHMOD::POLICY::ALL::ALL(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::CHMOD::POLICYALL::operator()(const gfs::path &fusepath_,
-                                   const mode_t     mode_)
+FUSE::CHMOD::POLICY::ALL::operator()(const gfs::path &fusepath_,
+                                     const mode_t     mode_)
 {
   Err rv;
   gfs::path fullpath;

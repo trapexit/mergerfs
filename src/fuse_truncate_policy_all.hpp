@@ -18,21 +18,21 @@
 
 #pragma once
 
-#include "fuse_truncate_func_base.hpp"
+#include "fuse_truncate_policy_base.hpp"
 
 #include "branches.hpp"
 
 
-namespace FUSE::TRUNCATE
+namespace FUSE::TRUNCATE::POLICY
 {
-  class FuncALL : public FuncBase
+  class ALL : public Base
   {
   public:
-    FuncALL(const toml::value &);
+    ALL(const toml::value &);
 
   public:
-    int operator()(const char  *fusepath,
-                   const off_t  length) final;
+    int operator()(const gfs::path &fusepath,
+                   const off_t      length) final;
 
   private:
     Branches2 _branches;

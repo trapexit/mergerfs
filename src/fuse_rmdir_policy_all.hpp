@@ -18,20 +18,20 @@
 
 #pragma once
 
-#include "fuse_rmdir_func_base.hpp"
+#include "fuse_rmdir_policy_base.hpp"
 
 #include "branches.hpp"
 
 
-namespace FUSE::RMDIR
+namespace FUSE::RMDIR::POLICY
 {
-  class FuncALL : public FuncBase
+  class ALL : public Base
   {
   public:
-    FuncALL(const toml::value &);
+    ALL(const toml::value &);
 
   public:
-    int operator()(const char *fusepath) final;
+    int operator()(const gfs::path &fusepath) final;
 
   private:
     Branches2 _branches;

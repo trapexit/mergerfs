@@ -18,26 +18,34 @@
 
 #pragma once
 
-#include "fuse_setxattr_func_base.hpp"
+#include "fuse_setxattr_policy_base.hpp"
+#include "fuse_setxattr_policy_factory.hpp"
 
 #include "toml.hpp"
 
 
 namespace FUSE::SETXATTR
 {
-  class Func
+  class Policy
   {
   public:
-    Func(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _setxattr = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const char   *fusepath,
-                   const char   *attrname,
-                   const char   *attrval,
-                   const size_t  attrvalsize,
-                   const int     flags);
+    int
+    operator()(const gfs::path &fusepath_,
+               const char      *attrname_,
+               const char      *attrval_,
+               const size_t     attrvalsize_,
+               const int        flags_)
+    {
+      return (*_setxattr)(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
+    }
 
   private:
-    FuncBase::Ptr _setxattr;
+    POLICY::Base::Ptr _setxattr;
   };
 }

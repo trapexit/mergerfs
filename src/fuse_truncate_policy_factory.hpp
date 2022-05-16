@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "fuse_truncate_func_base.hpp"
+#include "fuse_truncate_policy_base.hpp"
 
 #include "toml.hpp"
 
 
-namespace FUSE::TRUNCATE
+namespace FUSE::TRUNCATE::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &);
+  Base::Ptr
+  factory(const toml::value &);
 }

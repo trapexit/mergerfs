@@ -18,21 +18,22 @@
 
 #pragma once
 
+#include "fs_path.hpp"
 
 #include <memory>
 
 #include <sys/types.h>
 
 
-namespace FUSE::TRUNCATE
+namespace FUSE::TRUNCATE::POLICY
 {
-  class FuncBase
+  class Base
   {
   public:
-    typedef std::shared_ptr<FuncBase> Ptr;
+    typedef std::shared_ptr<Base> Ptr;
 
   public:
-    virtual int operator()(const char  *fusepath,
-                           const off_t  length) = 0;
+    virtual int operator()(const gfs::path &fusepath,
+                           const off_t      length) = 0;
   };
 }

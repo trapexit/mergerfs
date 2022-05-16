@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "fuse_rmdir_func_base.hpp"
+#include "fuse_rmdir_policy_base.hpp"
 
 #include "toml.hpp"
 
 
-namespace FUSE::RMDIR
+namespace FUSE::RMDIR::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &);
+  Base::Ptr
+  factory(const toml::value &);
 }

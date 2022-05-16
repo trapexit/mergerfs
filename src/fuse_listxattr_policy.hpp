@@ -38,7 +38,7 @@ namespace FUSE::LISTXATTR
                char            *buf_,
                size_t           count_)
     {
-      return (*_listxattr)(fusepath_,list_,size_);
+      return (*_listxattr)(fusepath_,buf_,count_);
     }
 
   private:

@@ -19,7 +19,11 @@
 #include "fuse_ioctl_policy_all.hpp"
 #include "fuse_ioctl_err.hpp"
 
+#include "fs_path.hpp"
+
 #include "fs_ioctl.hpp"
+
+#include "fh.hpp"
 
 
 FUSE::IOCTL::POLICY::ALL::ALL(const toml::value &toml_)
@@ -39,6 +43,7 @@ FUSE::IOCTL::POLICY::ALL::operator()(const fuse_file_info_t *ffi_,
   gfs::path fusepath;
   gfs::path fullpath;
 
+  fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)

@@ -33,7 +33,7 @@ namespace FUSE::READLINK::POLICY
     FF(const toml::value &);
 
   public:
-    int operator()(const gfs::path &fusepath,,
+    int operator()(const gfs::path &fusepath,
                    char            *buf,
                    const size_t     bufsiz) final;
 

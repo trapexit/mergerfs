@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "fuse_unlink_func_base.hpp"
+#include "fuse_unlink_policy_base.hpp"
 
 #include "toml.hpp"
 
 
-namespace FUSE::UNLINK
+namespace FUSE::UNLINK::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &);
+  Base::Ptr
+  factory(const toml::value &);
 }

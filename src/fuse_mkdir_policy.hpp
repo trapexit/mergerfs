@@ -18,7 +18,8 @@
 
 #pragma once
 
-#include "fuse_mkdir_func_base.hpp"
+#include "fuse_mkdir_policy_base.hpp"
+#include "fuse_mkdir_policy_factory.hpp"
 
 #include "toml.hpp"
 
@@ -42,6 +43,6 @@ namespace FUSE::MKDIR
     }
 
   private:
-    FuncBase::Ptr _mkdir;
+    POLICY::Base::Ptr _mkdir;
   };
 }

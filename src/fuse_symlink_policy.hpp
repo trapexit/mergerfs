@@ -18,23 +18,31 @@
 
 #pragma once
 
-#include "fuse_symlink_func_base.hpp"
+#include "fuse_symlink_policy_base.hpp"
+#include "fuse_symlink_policy_factory.hpp"
 
 #include "toml.hpp"
 
 
 namespace FUSE::SYMLINK
 {
-  class Func
+  class Policy
   {
   public:
-    Func(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _symlink = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const char *target,
-                   const char *linkpath);
+    int
+    operator()(const gfs::path &target_,
+               const char      *linkpath_)
+    {
+      return (*_symlink)(target_,linkpath_);
+    }
 
   private:
-    FuncBase::Ptr _symlink;
+    POLICY::Base::Ptr _symlink;
   };
 }

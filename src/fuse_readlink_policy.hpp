@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fuse_readlink_policy_base.hpp"
+#include "fuse_readlink_policy_factory.hpp"
 
 #include "fuse_timeouts.h"
 

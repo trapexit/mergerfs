@@ -18,22 +18,30 @@
 
 #pragma once
 
-#include "fuse_unlink_func_base.hpp"
+#include "fuse_unlink_policy_base.hpp"
+#include "fuse_unlink_policy_factory.hpp"
 
 #include "toml.hpp"
 
 
 namespace FUSE::UNLINK
 {
-  class Func
+  class Policy
   {
   public:
-    Func(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _unlink = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const char *fusepath);
+    int
+    operator()(const gfs::path &fusepath_)
+    {
+      return (*_unlink)(fusepath_);
+    }
 
   private:
-    FuncBase::Ptr _unlink;
+    POLICY::Base::Ptr _unlink;
   };
 }

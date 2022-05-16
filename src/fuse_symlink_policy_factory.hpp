@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "fuse_symlink_func_base.hpp"
+#include "fuse_symlink_policy_base.hpp"
 
 #include "toml.hpp"
 
 
-namespace FUSE::SYMLINK
+namespace FUSE::SYMLINK::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &);
+  Base::Ptr
+  factory(const toml::value &);
 }

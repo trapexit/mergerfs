@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "fuse_setxattr_func_base.hpp"
+#include "fuse_setxattr_policy_base.hpp"
 
 #include "toml.hpp"
 
 
-namespace FUSE::SETXATTR
+namespace FUSE::SETXATTR::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &);
+  Base::Ptr
+  factory(const toml::value &);
 }

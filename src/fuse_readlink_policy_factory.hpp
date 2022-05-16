@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "fuse_readlink_func_base.hpp"
+#include "fuse_readlink_policy_base.hpp"
 
 #include "toml.hpp"
 

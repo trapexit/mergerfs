@@ -31,15 +31,15 @@ namespace FUSE::MKNOD
   public:
     Policy(const toml::value &toml_)
     {
-      _mknod = FuncFactory(toml_);
+      _mknod = POLICY::factory(toml_);
     }
 
   public:
     int
-    operator()(const gfs::path &fusepath,
-               const mode_t     mode,
-               const mode_t     umask,
-               const dev_t      dev)
+    operator()(const gfs::path &fusepath_,
+               const mode_t     mode_,
+               const mode_t     umask_,
+               const dev_t      dev_)
     {
       return (*_mknod)(fusepath_,mode_,umask_,dev_);
     }

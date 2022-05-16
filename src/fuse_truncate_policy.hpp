@@ -18,23 +18,31 @@
 
 #pragma once
 
-#include "fuse_truncate_func_base.hpp"
+#include "fuse_truncate_policy_base.hpp"
+#include "fuse_truncate_policy_factory.hpp"
 
 #include "toml.hpp"
 
 
 namespace FUSE::TRUNCATE
 {
-  class Func
+  class Policy
   {
   public:
-    Func(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _truncate = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const char  *fusepath,
-                   const off_t  length);
+    int
+    operator()(const gfs::path &fusepath_,
+               const off_t      length_)
+    {
+      return (*_truncate)(fusepath_,length_);
+    }
 
   private:
-    FuncBase::Ptr _truncate;
+    POLICY::Base::Ptr _truncate;
   };
 }
