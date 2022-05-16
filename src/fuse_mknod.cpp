@@ -154,9 +154,11 @@ namespace FUSE::MKNOD
         dev_t       rdev_)
   {
     State s;
+    gfs::path fusepath;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return s->mknod(fusepath_,mode_,fc->umask,rdev_);
+    fusepath = &fusepath_[1];
+    return s->mknod(fusepath,mode_,fc->umask,rdev_);
   }
 }

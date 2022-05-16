@@ -18,26 +18,26 @@
 
 #pragma once
 
-#include "fuse_access_func.hpp"
-#include "fuse_chmod_func.hpp"
-#include "fuse_chown_func.hpp"
-#include "fuse_create_func.hpp"
-#include "fuse_getattr_func.hpp"
-#include "fuse_getxattr_func.hpp"
-#include "fuse_ioctl_func.hpp"
-#include "fuse_link_func.hpp"
-#include "fuse_listxattr_func.hpp"
-#include "fuse_mkdir_func.hpp"
-#include "fuse_mknod_func.hpp"
-#include "fuse_open_func.hpp"
-#include "fuse_readlink_func.hpp"
-#include "fuse_removexattr_func.hpp"
-#include "fuse_rename_func.hpp"
-#include "fuse_rmdir_func.hpp"
-#include "fuse_setxattr_func.hpp"
-#include "fuse_symlink_func.hpp"
-#include "fuse_truncate_func.hpp"
-#include "fuse_unlink_func.hpp"
+#include "fuse_access_policy.hpp"
+#include "fuse_chmod_policy.hpp"
+#include "fuse_chown_policy.hpp"
+#include "fuse_create_policy.hpp"
+#include "fuse_getattr_policy.hpp"
+#include "fuse_getxattr_policy.hpp"
+#include "fuse_ioctl_policy.hpp"
+#include "fuse_link_policy.hpp"
+#include "fuse_listxattr_policy.hpp"
+#include "fuse_mkdir_policy.hpp"
+#include "fuse_mknod_policy.hpp"
+#include "fuse_open_policy.hpp"
+#include "fuse_readlink_policy.hpp"
+#include "fuse_removexattr_policy.hpp"
+#include "fuse_rename_policy.hpp"
+#include "fuse_rmdir_policy.hpp"
+#include "fuse_setxattr_policy.hpp"
+#include "fuse_symlink_policy.hpp"
+#include "fuse_truncate_policy.hpp"
+#include "fuse_unlink_policy.hpp"
 
 #include "branches.hpp"
 
@@ -86,26 +86,26 @@ public:
   RenameEXDEV rename_exdev;
 
 public:
-  FUSE::ACCESS::Func      access;
-  FUSE::CHMOD::Func       chmod;
-  FUSE::CHOWN::Func       chown;
-  FUSE::CREATE::Func      create;
-  FUSE::GETATTR::Func     getattr;
-  FUSE::GETXATTR::Func    getxattr;
-  FUSE::IOCTL::Func       ioctl;
-  FUSE::LINK::Func        link;
-  FUSE::LISTXATTR::Func   listxattr;
-  FUSE::MKDIR::Func       mkdir;
-  FUSE::MKNOD::Func       mknod;
-  FUSE::OPEN::Func        open;
-  FUSE::READLINK::Func    readlink;
-  FUSE::REMOVEXATTR::Func removexattr;
-  FUSE::RENAME::Func      rename;
-  FUSE::RMDIR::Func       rmdir;
-  FUSE::SETXATTR::Func    setxattr;
-  FUSE::SYMLINK::Func     symlink;
-  FUSE::TRUNCATE::Func    truncate;
-  FUSE::UNLINK::Func      unlink;
+  FUSE::ACCESS::Policy      access;
+  FUSE::CHMOD::Policy       chmod;
+  FUSE::CHOWN::Policy       chown;
+  FUSE::CREATE::Policy      create;
+  FUSE::GETATTR::Policy     getattr;
+  FUSE::GETXATTR::Policy    getxattr;
+  FUSE::IOCTL::Policy       ioctl;
+  FUSE::LINK::Policy        link;
+  FUSE::LISTXATTR::Policy   listxattr;
+  FUSE::MKDIR::Policy       mkdir;
+  FUSE::MKNOD::Policy       mknod;
+  FUSE::OPEN::Policy        open;
+  FUSE::READLINK::Policy    readlink;
+  FUSE::REMOVEXATTR::Policy removexattr;
+  FUSE::RENAME::Policy      rename;
+  FUSE::RMDIR::Policy       rmdir;
+  FUSE::SETXATTR::Policy    setxattr;
+  FUSE::SYMLINK::Policy     symlink;
+  FUSE::TRUNCATE::Policy    truncate;
+  FUSE::UNLINK::Policy      unlink;
 
 public:
   const toml::value _toml;

@@ -27,6 +27,7 @@
 
 #include <sys/stat.h>
 
+
 namespace FUSE::GETATTR
 {
   class Func
