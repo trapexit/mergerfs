@@ -25,7 +25,7 @@
 namespace FUSE::ACCESS::POLICY
 {
   Base::Ptr
-  Factory(const toml::value &toml_)
+  factory(const toml::value &toml_)
   {
     std::string str;
 

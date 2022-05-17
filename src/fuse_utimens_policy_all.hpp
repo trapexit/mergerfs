@@ -18,21 +18,21 @@
 
 #pragma once
 
-#include "fuse_utimens_func_base.hpp"
+#include "fuse_utimens_policy_base.hpp"
 
 #include "branches.hpp"
 
 
-namespace FUSE::UTIMENS
+namespace FUSE::UTIMENS::POLICY
 {
-  class FuncALL : public FuncBase
+  class ALL : public Base
   {
   public:
-    FuncALL(const toml::value &);
+    ALL(const toml::value &);
 
   public:
-    int operator()(const char     *fusepath,
-                   const timespec  ts[2]) final;
+    int operator()(const gfs::path &fusepath,
+                   const timespec   ts[2]) final;
 
   private:
     Branches2 _branches;

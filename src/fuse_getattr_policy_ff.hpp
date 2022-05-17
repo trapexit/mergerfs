@@ -26,12 +26,12 @@
 #include "toml.hpp"
 
 
-namespace FUSE::GETATTR
+namespace FUSE::GETATTR::POLICY
 {
   class FF : public Base
   {
   public:
-    FF(const toml::value&);
+    FF(const toml::value &);
 
   public:
     int operator()(const gfs::path &fusepath,

@@ -18,21 +18,21 @@
 
 #pragma once
 
-#include "fuse_symlink_func_base.hpp"
+#include "fuse_symlink_policy_base.hpp"
 
 #include "branches.hpp"
 
 
-namespace FUSE::SYMLINK
+namespace FUSE::SYMLINK::POLICY
 {
-  class FuncFF : public FuncBase
+  class FF : public Base
   {
   public:
-    FuncFF(const toml::value&);
+    FF(const toml::value &);
 
   public:
-    int operator()(const char *target,
-                   const char *linkpath) final;
+    int operator()(const gfs::path &target,
+                   const char      *linkpath) final;
 
   private:
     Branches2 _branches;

@@ -16,24 +16,26 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_symlink_func_factory.hpp"
-#include "fuse_symlink_func_ff.hpp"
-#include "fuse_symlink_func_epff.hpp"
+#include "fuse_symlink_policy_factory.hpp"
+
+#include "fuse_symlink_policy_ff.hpp"
+#include "fuse_symlink_policy_epff.hpp"
 
 #include <stdexcept>
 
-namespace FUSE::SYMLINK
+
+namespace FUSE::SYMLINK::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &toml_)
+  Base::Ptr
+  factory(const toml::value &toml_)
   {
     std::string str;
 
     str = toml::find_or(toml_,"func","symlink","policy","ff");
     if(str == "ff")
-      return std::make_shared<FuncFF>(toml_);
+      return std::make_shared<FF>(toml_);
     if(str == "epff")
-      return std::make_shared<FuncEPFF>(toml_);
+      return std::make_shared<EPFF>(toml_);
 
     throw std::runtime_error("");
   }

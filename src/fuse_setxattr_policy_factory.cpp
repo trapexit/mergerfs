@@ -25,13 +25,13 @@
 namespace FUSE::SETXATTR
 {
   FuncBase::Ptr
-  FuncFactory(const toml::value &toml_)
+  factory(const toml::value &toml_)
   {
     std::string str;
 
     str = toml::find_or(toml_,"func","setxattr","policy","all");
     if(str == "all")
-      return std::make_shared<FuncALL>(toml_);
+      return std::make_shared<ALL>(toml_);
 
     throw std::runtime_error("");
   }

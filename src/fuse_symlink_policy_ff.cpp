@@ -16,7 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_symlink_func_ff.hpp"
+#include "fuse_symlink_policy_ff.hpp"
 
 #include "fs_clonepath.hpp"
 #include "fs_clonepath_branches.hpp"
@@ -24,29 +24,24 @@
 #include "ugid.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
-FUSE::SYMLINK::FuncFF::FuncFF(const toml::value &toml_)
+FUSE::SYMLINK::POLICY::FF::FF(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::SYMLINK::FuncFF::operator()(const char *target_,
-                                  const char *linkpath_)
+FUSE::SYMLINK::POLICY::FF::operator()(const char      *target_,
+                                      const gfs::path &linkpath_)
 {
   int rv;
-  gfs::path linkpath;
   gfs::path fullpath;
 
-  linkpath = &linkpath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / linkpath;
+          fullpath  = branch.path / linkpath_;
 
           rv = fs::symlink(target_,fullpath);
           if(rv == -ENOENT)

@@ -26,5 +26,5 @@
 namespace FUSE::CHMOD::POLICY
 {
   Base::Ptr
-  Factory(const toml::value &);
+  factory(const toml::value &);
 }

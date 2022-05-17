@@ -17,7 +17,8 @@
 */
 
 #include "fuse_link_policy_factory.hpp"
-#include "fuse_link_all_all.hpp"
+
+#include "fuse_link_policy_all.hpp"
 
 #include <stdexcept>
 

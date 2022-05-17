@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "fuse_utimens_func_base.hpp"
+#include "fuse_utimens_policy_base.hpp"
 
 #include "toml.hpp"
 
 
-namespace FUSE::UTIMENS
+namespace FUSE::UTIMENS::POLICY
 {
-  FuncBase::Ptr
-  FuncFactory(const toml::value &);
+  Base::Ptr
+  factory(const toml::value &);
 }

@@ -35,13 +35,13 @@ namespace FUSE::GETATTR::POLICY
 
     str = toml::find_or(toml_,"func","getattr","policy","ff");
     if(str == "ff")
-      return std::make_shared<FuncFF>(toml_);
+      return std::make_shared<FF>(toml_);
     if(str == "newest")
-      return std::make_shared<FuncNewest>(toml_);
+      return std::make_shared<Newest>(toml_);
     if(str == "aggregate")
-      return std::make_shared<FuncAggregate>(toml_);
+      return std::make_shared<Aggregate>(toml_);
     if(str == "check-ff")
-      return std::make_shared<FuncCheckFF>(toml_);
+      return std::make_shared<CheckFF>(toml_);
 
     throw std::runtime_error("");
   }
