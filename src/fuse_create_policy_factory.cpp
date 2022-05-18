@@ -35,6 +35,6 @@ namespace FUSE::CREATE::POLICY
     if(str == "epff")
       return std::make_shared<EPFF>(toml_);
 
-    throw std::runtime_error("");
+    throw std::runtime_error("create");
   }
 }

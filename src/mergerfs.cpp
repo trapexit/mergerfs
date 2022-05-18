@@ -16,7 +16,6 @@
 
 #include "fs_path.hpp"
 #include "mergerfs.hpp"
-#include "option_parser.hpp"
 #include "resources.hpp"
 #include "strvec.hpp"
 
@@ -156,8 +155,6 @@ namespace l
   main(const int   argc_,
        char      **argv_)
   {
-    Config::Read    cfg;
-    Config::ErrVec  errs;
     fuse_args       args;
     fuse_operations ops;
 
@@ -167,12 +164,8 @@ namespace l
     args.argv      = argv_;
     args.allocated = 0;
 
-    options::parse(&args,&errs);
-    if(errs.size())
-      std::cerr << errs << std::endl;
-
     l::setup_resources();
-    l::get_fuse_operations(ops,cfg->nullrw);
+    l::get_fuse_operations(ops,false);
 
     return fuse_main(args.argc,
                      args.argv,

@@ -55,7 +55,7 @@ link-cow = true
 nfs-hack = 'off'
 
 [func.rename]
-policy = ''
+policy = 'all'
 exdev = 'passthrough'
 
 [func.statfs]
@@ -84,6 +84,6 @@ path-type = 'literal'
 mode = 'RW'
 if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 
-[[branches.group.branch]]
-path = '/tmp/mergerfs/*'
-path-type = 'glob'
+#[[branches.group.branch]]
+#path = '/tmp/mergerfs/*'
+#path-type = 'glob'

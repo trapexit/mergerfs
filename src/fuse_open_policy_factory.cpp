@@ -34,6 +34,6 @@ namespace FUSE::OPEN::POLICY
     if(str == "ff")
       return std::make_shared<FF>(toml_);
 
-    throw std::runtime_error("");
+    throw std::runtime_error("open");
   }
 }

@@ -43,6 +43,6 @@ namespace FUSE::GETATTR::POLICY
     if(str == "check-ff")
       return std::make_shared<CheckFF>(toml_);
 
-    throw std::runtime_error("");
+    throw std::runtime_error("getattr");
   }
 }

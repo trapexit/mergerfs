@@ -34,6 +34,6 @@ namespace FUSE::SETXATTR::POLICY
     if(str == "all")
       return std::make_shared<ALL>(toml_);
 
-    throw std::runtime_error("");
+    throw std::runtime_error("setxattr");
   }
 }
