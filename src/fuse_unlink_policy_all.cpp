@@ -16,34 +16,29 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_unlink_func_all.hpp"
 #include "fuse_unlink_err.hpp"
+#include "fuse_unlink_policy_all.hpp"
 
 #include "fs_unlink.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
-FUSE::UNLINK::FuncALL::FuncALL(const toml::value &toml_)
+FUSE::UNLINK::POLICY::ALL::ALL(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::UNLINK::FuncALL::operator()(const char *fusepath_)
+FUSE::UNLINK::POLICY::ALL::operator()(const gfs::path &fusepath_)
 {
   Err rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath = branch.path / fusepath;
+          fullpath = branch.path / fusepath_;
 
           rv = fs::unlink(fullpath);
         }

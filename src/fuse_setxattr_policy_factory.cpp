@@ -16,15 +16,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_setxattr_func_factory.hpp"
-#include "fuse_setxattr_func_all.hpp"
+#include "fuse_setxattr_policy_factory.hpp"
+
+#include "fuse_setxattr_policy_all.hpp"
 
 #include <stdexcept>
 
 
-namespace FUSE::SETXATTR
+namespace FUSE::SETXATTR::POLICY
 {
-  FuncBase::Ptr
+  Base::Ptr
   factory(const toml::value &toml_)
   {
     std::string str;

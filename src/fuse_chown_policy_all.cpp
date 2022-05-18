@@ -22,14 +22,14 @@
 #include "fs_lchown.hpp"
 
 
-FUSE::CHOWN::POLICY::all::all(const toml::value &toml_)
+FUSE::CHOWN::POLICY::ALL::ALL(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::CHOWN::POLICY::all::operator()(const gfs::path &fusepath_,
+FUSE::CHOWN::POLICY::ALL::operator()(const gfs::path &fusepath_,
                                      const uid_t      uid_,
                                      const gid_t      gid_)
 {

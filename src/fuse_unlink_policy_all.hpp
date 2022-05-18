@@ -18,20 +18,20 @@
 
 #pragma once
 
-#include "fuse_unlink_func_base.hpp"
+#include "fuse_unlink_policy_base.hpp"
 
 #include "branches.hpp"
 
 
-namespace FUSE::UNLINK
+namespace FUSE::UNLINK::POLICY
 {
-  class FuncALL : public FuncBase
+  class ALL : public Base
   {
   public:
-    FuncALL(const toml::value &);
+    ALL(const toml::value &);
 
   public:
-    int operator()(const char *fusepath) final;
+    int operator()(const gfs::path &fusepath) final;
 
   private:
     Branches2 _branches;

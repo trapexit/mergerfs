@@ -18,24 +18,24 @@
 
 #pragma once
 
-#include "fuse_setxattr_func_base.hpp"
+#include "fuse_setxattr_policy_base.hpp"
 
 #include "branches.hpp"
 
 
-namespace FUSE::SETXATTR
+namespace FUSE::SETXATTR::POLICY
 {
-  class FuncALL : public FuncBase
+  class ALL : public Base
   {
   public:
-    FuncALL(const toml::value &);
+    ALL(const toml::value &);
 
   public:
-    int operator()(const char   *fusepath,
-                   const char   *attrname,
-                   const char   *attrval,
-                   const size_t  attrvalsize,
-                   const int     flags) final;
+    int operator()(const gfs::path &fusepath,
+                   const char      *attrname,
+                   const char      *attrval,
+                   const size_t     attrvalsize,
+                   const int        flags) final;
 
   private:
     Branches2 _branches;

@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fuse_ioctl_policy_base.hpp"
+#include "fuse_ioctl_policy_factory.hpp"
 
 #include "toml.hpp"
 
@@ -28,14 +29,21 @@ namespace FUSE::IOCTL
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _ioctl = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const fuse_file_info_t *ffi_,
-                   const unsigned long     cmd,
-                   const unsigned int      flags,
-                   void                   *data,
-                   uint32_t               *out_bufsz);
+    int
+    operator()(const fuse_file_info_t *ffi_,
+               const unsigned long     cmd_,
+               const unsigned int      flags_,
+               void                   *data_,
+               uint32_t               *out_bufsz_)
+    {
+      return (*_ioctl)(ffi_,cmd_,flags_,data_,out_bufsz_);
+    }
 
   private:
     POLICY::Base::Ptr _ioctl;

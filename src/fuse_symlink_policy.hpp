@@ -36,8 +36,8 @@ namespace FUSE::SYMLINK
 
   public:
     int
-    operator()(const gfs::path &target_,
-               const char      *linkpath_)
+    operator()(const char      *target_,
+               const gfs::path &linkpath_)
     {
       return (*_symlink)(target_,linkpath_);
     }

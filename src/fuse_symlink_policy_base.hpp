@@ -31,7 +31,7 @@ namespace FUSE::SYMLINK::POLICY
     typedef std::shared_ptr<Base> Ptr;
 
   public:
-    virtual int operator()(const gfs::path &target,
-                           const char      *linkpath) = 0;
+    virtual int operator()(const char      *target,
+                           const gfs::path &linkpath) = 0;
   };
 }

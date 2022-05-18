@@ -28,10 +28,9 @@ namespace FUSE::ACCESS
          int         mode_)
   {
     State s;
-    gfs::path fusepath(&fusepath_[1]);
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return s->access(fusepath,mode_);
+    return s->access(&fusepath_[1],mode_);
   }
 }

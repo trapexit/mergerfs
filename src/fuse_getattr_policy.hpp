@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fuse_getattr_policy_base.hpp"
+#include "fuse_getattr_policy_factory.hpp"
 
 #include "fuse_timeouts.h"
 
@@ -32,12 +33,19 @@ namespace FUSE::GETATTR
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _getattr = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const gfs::path &fusepath,
-                   struct stat     *st,
-                   fuse_timeouts_t *timeout);
+    int
+    operator()(const gfs::path &fusepath_,
+               struct stat     *st_,
+               fuse_timeouts_t *timeout_)
+    {
+      return (*_getattr)(fusepath_,st_,timeout_);
+    }
 
   private:
     POLICY::Base::Ptr _getattr;

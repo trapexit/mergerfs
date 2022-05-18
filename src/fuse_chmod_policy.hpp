@@ -19,8 +19,7 @@
 #pragma once
 
 #include "fuse_chmod_policy_base.hpp"
-
-#include "toml.hpp"
+#include "fuse_chmod_policy_factory.hpp"
 
 #include <sys/stat.h>
 
@@ -30,11 +29,18 @@ namespace FUSE::CHMOD
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _chmod = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const gfs::path &fusepath,
-                   const mode_t     mode);
+    int
+    operator()(const gfs::path &fusepath_,
+               const mode_t     mode_)
+    {
+      return (*_chmod)(fusepath_,mode_);
+    }
 
   private:
     POLICY::Base::Ptr _chmod;

@@ -16,34 +16,29 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_symlink_func_epff.hpp"
+#include "fuse_symlink_policy_epff.hpp"
 
 #include "fs_symlink.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
-FUSE::SYMLINK::FuncEPFF::FuncEPFF(const toml::value &toml_)
+FUSE::SYMLINK::POLICY::EPFF::EPFF(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::SYMLINK::FuncEPFF::operator()(const char *target_,
-                                    const char *linkpath_)
+FUSE::SYMLINK::POLICY::EPFF::operator()(const char      *target_,
+                                        const gfs::path &linkpath_)
 {
   int rv;
-  gfs::path linkpath;
   gfs::path fullpath;
 
-  linkpath = &linkpath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath  = branch.path / linkpath;
+          fullpath  = branch.path / linkpath_;
 
           rv = fs::symlink(target_,fullpath);
           if(rv == -ENOENT)

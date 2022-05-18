@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "fuse_getxattr_func_base.hpp"
+#include "fuse_getxattr_policy_base.hpp"
 
 #include "toml.hpp"
 

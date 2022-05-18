@@ -19,8 +19,7 @@
 #pragma once
 
 #include "fuse_create_policy_base.hpp"
-
-#include "toml.hpp"
+#include "fuse_create_policy_factory.hpp"
 
 
 namespace FUSE::CREATE
@@ -28,13 +27,20 @@ namespace FUSE::CREATE
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _create = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const gfs::path  &fusepath,
-                   const mode_t      mode,
-                   const mode_t      umask,
-                   fuse_file_info_t *ffi);
+    int
+    operator()(const gfs::path  &fusepath_,
+               const mode_t      mode_,
+               const mode_t      umask_,
+               fuse_file_info_t *ffi_)
+    {
+      return (*_create)(fusepath_,mode_,umask_,ffi_);
+    }
 
   private:
     POLICY::Base::Ptr _create;

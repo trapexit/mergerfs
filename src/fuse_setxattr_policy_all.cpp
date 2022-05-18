@@ -16,38 +16,33 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_setxattr_func_all.hpp"
 #include "fuse_setxattr_err.hpp"
+#include "fuse_setxattr_policy_all.hpp"
 
 #include "fs_lsetxattr.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
-FUSE::SETXATTR::FuncALL::FuncALL(const toml::value &toml_)
+FUSE::SETXATTR::POLICY::ALL::ALL(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::SETXATTR::FuncALL::operator()(const char   *fusepath_,
-                                    const char   *attrname_,
-                                    const char   *attrval_,
-                                    const size_t  attrvalsize_,
-                                    const int     flags_)
+FUSE::SETXATTR::POLICY::ALL::operator()(const gfs::path &fusepath_,
+                                        const char      *attrname_,
+                                        const char      *attrval_,
+                                        const size_t     attrvalsize_,
+                                        const int        flags_)
 {
   Err rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath = branch.path / fusepath;
+          fullpath = branch.path / fusepath_;
 
           rv = fs::lsetxattr(fullpath,
                              attrname_,

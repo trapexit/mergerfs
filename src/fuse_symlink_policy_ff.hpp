@@ -31,8 +31,8 @@ namespace FUSE::SYMLINK::POLICY
     FF(const toml::value &);
 
   public:
-    int operator()(const gfs::path &target,
-                   const char      *linkpath) final;
+    int operator()(const char      *target,
+                   const gfs::path &linkpath) final;
 
   private:
     Branches2 _branches;

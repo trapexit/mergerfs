@@ -19,8 +19,7 @@
 #pragma once
 
 #include "fuse_chown_policy_base.hpp"
-
-#include "toml.hpp"
+#include "fuse_chown_policy_factory.hpp"
 
 #include <sys/stat.h>
 
@@ -30,12 +29,19 @@ namespace FUSE::CHOWN
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _chown = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const gfs::path &fusepath,
-                   const uid_t      uid,
-                   const gid_t      gid);
+    int
+    operator()(const gfs::path &fusepath_,
+               const uid_t      uid_,
+               const gid_t      gid_)
+    {
+      return (*_chown)(fusepath_,uid_,gid_);
+    }
 
   private:
     POLICY::Base::Ptr _chown;

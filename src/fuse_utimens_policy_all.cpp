@@ -16,35 +16,30 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_utimens_func_all.hpp"
+#include "fuse_utimens_policy_all.hpp"
 #include "fuse_utimens_err.hpp"
 
 #include "fs_lutimens.hpp"
 
 
-namespace gfs = ghc::filesystem;
-
-
-FUSE::UTIMENS::FuncALL::FuncALL(const toml::value &toml_)
+FUSE::UTIMENS::POLICY::ALL::ALL(const toml::value &toml_)
   : _branches(toml_)
 {
 
 }
 
 int
-FUSE::UTIMENS::FuncALL::operator()(const char     *fusepath_,
-                                   const timespec  ts_[2])
+FUSE::UTIMENS::POLICY::ALL::operator()(const gfs::path &fusepath_,
+                                       const timespec   ts_[2])
 {
   Err rv;
-  gfs::path fusepath;
   gfs::path fullpath;
 
-  fusepath = &fusepath_[1];
   for(const auto &branch_group : _branches)
     {
       for(const auto &branch : branch_group)
         {
-          fullpath = branch.path / fusepath;
+          fullpath = branch.path / fusepath_;
 
           rv = fs::lutimens(fullpath,ts_);
         }

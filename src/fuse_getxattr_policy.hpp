@@ -19,10 +19,9 @@
 #pragma once
 
 #include "fuse_getxattr_policy_base.hpp"
+#include "fuse_getxattr_policy_factory.hpp"
 
 #include "fuse_timeouts.h"
-
-#include "toml.hpp"
 
 #include <memory>
 
@@ -34,13 +33,20 @@ namespace FUSE::GETXATTR
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _getxattr = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const gfs::path &fusepath,
-                   const char      *attrname,
-                   char            *buf,
-                   size_t           count);
+    int
+    operator()(const gfs::path &fusepath_,
+               const char      *attrname_,
+               char            *buf_,
+               size_t           count_)
+    {
+      return (*_getxattr)(fusepath_,attrname_,buf_,count_);
+    }
 
   private:
     POLICY::Base::Ptr _getxattr;

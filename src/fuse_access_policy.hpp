@@ -19,8 +19,7 @@
 #pragma once
 
 #include "fuse_access_policy_base.hpp"
-
-#include "toml.hpp"
+#include "fuse_access_policy_factory.hpp"
 
 
 namespace FUSE::ACCESS
@@ -28,11 +27,18 @@ namespace FUSE::ACCESS
   class Policy
   {
   public:
-    Policy(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _access = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const gfs::path &fusepath,
-                   const int        mask);
+    int
+    operator()(const gfs::path &fusepath_,
+               const int        mask_)
+    {
+      return (*_access)(fusepath_,mask_);
+    }
 
   private:
     POLICY::Base::Ptr _access;

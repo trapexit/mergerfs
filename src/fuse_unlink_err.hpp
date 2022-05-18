@@ -18,6 +18,9 @@
 
 #pragma once
 
+#include "errno.hpp"
+
+
 namespace FUSE::UNLINK
 {
   class Err
