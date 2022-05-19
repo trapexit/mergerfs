@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,22 +16,24 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "state.hpp"
-#include "ugid.hpp"
+#include "fuse_readdir_policy_factory.hpp"
 
-#include "fuse.h"
+#include "fuse_readdir_policy_posix.hpp"
+
+#include <stdexcept>
 
 
-namespace FUSE::READDIR
+namespace FUSE::READDIR::POLICY
 {
-  int
-  readdir(const fuse_file_info_t *ffi_,
-          fuse_dirents_t         *buf_)
+  Base::Ptr
+  factory(const toml::value &toml_)
   {
-    State s;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+    std::string str;
 
-    return s->readdir(ffi_,buf_);
+    str = toml::find_or(toml_,"func","readdir","policy","posix");
+    if(str == "posix")
+      return std::make_shared<POSIX>(toml_);
+
+    throw std::runtime_error("readdir");
   }
 }

@@ -30,6 +30,7 @@
 #include "fuse_mkdir_policy.hpp"
 #include "fuse_mknod_policy.hpp"
 #include "fuse_open_policy.hpp"
+#include "fuse_readdir_policy.hpp"
 #include "fuse_readlink_policy.hpp"
 #include "fuse_removexattr_policy.hpp"
 #include "fuse_rename_policy.hpp"
@@ -38,6 +39,7 @@
 #include "fuse_symlink_policy.hpp"
 #include "fuse_truncate_policy.hpp"
 #include "fuse_unlink_policy.hpp"
+#include "fuse_write_policy.hpp"
 
 #include "branches.hpp"
 
@@ -86,6 +88,12 @@ public:
   RenameEXDEV rename_exdev;
 
 public:
+  bool drop_cache_on_release;
+
+public:
+  bool cache_readdir;
+
+public:
   FUSE::ACCESS::Policy      access;
   FUSE::CHMOD::Policy       chmod;
   FUSE::CHOWN::Policy       chown;
@@ -98,6 +106,7 @@ public:
   FUSE::MKDIR::Policy       mkdir;
   FUSE::MKNOD::Policy       mknod;
   FUSE::OPEN::Policy        open;
+  FUSE::READDIR::Policy     readdir;
   FUSE::READLINK::Policy    readlink;
   FUSE::REMOVEXATTR::Policy removexattr;
   FUSE::RENAME::Policy      rename;
@@ -106,6 +115,8 @@ public:
   FUSE::SYMLINK::Policy     symlink;
   FUSE::TRUNCATE::Policy    truncate;
   FUSE::UNLINK::Policy      unlink;
+  FUSE::WRITE::Policy       write;
+
 
 public:
   const toml::value _toml;

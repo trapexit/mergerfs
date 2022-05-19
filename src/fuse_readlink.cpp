@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "errno.hpp"
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"

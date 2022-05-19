@@ -14,8 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "dirinfo.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -26,11 +26,11 @@ namespace FUSE::OPENDIR
   opendir(const char       *fusepath_,
           fuse_file_info_t *ffi_)
   {
-    Config::Read cfg;
+    State s;
 
     ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
 
-    if(cfg->cache_readdir)
+    if(s->cache_readdir)
       {
         ffi_->keep_cache    = 1;
         ffi_->cache_readdir = 1;

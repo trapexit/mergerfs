@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,22 +16,26 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "state.hpp"
-#include "ugid.hpp"
+#include "fuse_statfs_policy_factory.hpp"
+#include "fuse_statfs_policy_branch.hpp"
+#include "fuse_statfs_policy_full.hpp"
 
-#include "fuse.h"
+#include <stdexcept>
 
 
-namespace FUSE::READDIR
+namespace FUSE::STATFS::POLICY
 {
-  int
-  readdir(const fuse_file_info_t *ffi_,
-          fuse_dirents_t         *buf_)
+  Base::Ptr
+  factory(const toml::value &toml_)
   {
-    State s;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+    std::string str;
 
-    return s->readdir(ffi_,buf_);
+    str = toml::find_or(toml_,"func","readlink","policy","branch");
+    if(str == "branch")
+      return std::make_shared<Branch>(toml_);
+    if(str == "full")
+      return std::make_shared<Full>(toml_);
+
+    throw std::runtime_error("statfs");
   }
 }

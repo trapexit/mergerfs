@@ -14,15 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
-#include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
 #include "fs_fadvise.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
-
-#include <string>
 
 
 namespace l
@@ -51,21 +48,11 @@ namespace l
 namespace FUSE::RELEASE
 {
   int
-  config(const toml::value &toml_)
-  {
-    Config::Write cfg;
-
-    cfg->dropcacheonclose = toml::find<bool>(toml_,"func","release","drop-cache");
-
-    return 0;
-  }
-
-  int
   release(const fuse_file_info_t *ffi_)
   {
-    Config::Read cfg;
+    State s;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    return l::release(fi,cfg->dropcacheonclose);
+    return l::release(fi,s->drop_cache_on_release);
   }
 }

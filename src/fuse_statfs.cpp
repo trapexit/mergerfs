@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "errno.hpp"
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
@@ -148,32 +147,13 @@ namespace l
 namespace FUSE::STATFS
 {
   int
-  config(const toml::value &toml_)
-  {
-    std::string val;
-    Config::Write cfg;
-
-    val = toml::find<std::string>(toml_,"func","statfs","policy");
-    cfg->statfs.from_string(val);
-
-    val = toml::find<std::string>(toml_,"func","statfs","ignore");
-    cfg->statfs_ignore.from_string(val);
-
-    return 0;
-  }
-
-  int
   statfs(const char     *fusepath_,
          struct statvfs *st_)
   {
-    Config::Read        cfg;
+    State s;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::statfs(cfg->branches,
-                     fusepath_,
-                     cfg->statfs,
-                     cfg->statfs_ignore,
-                     st_);
+    return s->statfs(&fusepath_[1],st_);
   }
 }

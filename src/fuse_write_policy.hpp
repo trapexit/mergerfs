@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,22 +16,36 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "state.hpp"
-#include "ugid.hpp"
+#pragma once
 
-#include "fuse.h"
+#include "fuse_write_policy_base.hpp"
+#include "fuse_write_policy_factory.hpp"
+
+#include "fuse_timeouts.h"
+
+#include <memory>
 
 
-namespace FUSE::READDIR
+namespace FUSE::WRITE
 {
-  int
-  readdir(const fuse_file_info_t *ffi_,
-          fuse_dirents_t         *buf_)
+  class Policy
   {
-    State s;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  public:
+    Policy(const toml::value &toml_)
+    {
+      _write = POLICY::factory(toml_);
+    }
 
-    return s->readdir(ffi_,buf_);
-  }
+  public:
+    int
+    operator()(const fuse_file_info_t *ffi_,
+               struct fuse_bufvec     *buf_,
+               const off_t             offset_)
+    {
+      return (*_write)(ffi_,buf_,offset_);
+    }
+
+  private:
+    POLICY::Base::Ptr _write;
+  };
 }

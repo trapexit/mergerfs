@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_movefile.hpp"
@@ -86,15 +85,14 @@ namespace l
                  int           err_)
   {
     int rv;
-    Config::Read cfg;
 
-    if(cfg->moveonenospc.enabled == false)
+    //if(cfg->moveonenospc.enabled == false)
       return err_;
 
-    rv = fs::movefile_as_root(cfg->moveonenospc.policy,
-                              cfg->branches,
-                              fi_->fusepath,
-                              &fi_->fd);
+    // rv = fs::movefile_as_root(cfg->moveonenospc.policy,
+    //                           cfg->branches,
+    //                           fi_->fusepath,
+    //                           &fi_->fd);
     if(rv == -1)
       return err_;
 

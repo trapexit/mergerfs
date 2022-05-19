@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
 #include "fs_clonepath.hpp"
@@ -113,36 +112,6 @@ namespace l
       }
 
     return -error;
-  }
-
-  static
-  int
-  mknod(const Policy::Search &searchFunc_,
-        const Policy::Create &createFunc_,
-        const Branches       &branches_,
-        const char           *fusepath_,
-        const mode_t          mode_,
-        const mode_t          umask_,
-        const dev_t           dev_)
-  {
-    int rv;
-    string fusedirpath;
-    vector<string> createpaths;
-    vector<string> existingpaths;
-
-    fusedirpath = fs::path::dirname(fusepath_);
-
-    rv = searchFunc_(branches_,fusedirpath,&existingpaths);
-    if(rv == -1)
-      return -errno;
-
-    rv = createFunc_(branches_,fusedirpath,&createpaths);
-    if(rv == -1)
-      return -errno;
-
-    return l::mknod_loop(existingpaths[0],createpaths,
-                         fusepath_,fusedirpath,
-                         mode_,umask_,dev_);
   }
 }
 

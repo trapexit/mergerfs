@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_lchmod.hpp"
@@ -35,68 +34,8 @@
 using std::string;
 using std::vector;
 
-
 namespace l
 {
-  static
-  bool
-  rdonly(const int flags_)
-  {
-    return ((flags_ & O_ACCMODE) == O_RDONLY);
-  }
-
-  static
-  int
-  lchmod_and_open_if_not_writable_and_empty(const string &fullpath_,
-                                            const int     flags_)
-  {
-    int rv;
-    struct stat st;
-
-    rv = fs::lstat(fullpath_,&st);
-    if(rv == -1)
-      return (errno=EACCES,-1);
-
-    if(StatUtil::writable(st))
-      return (errno=EACCES,-1);
-
-    rv = fs::lchmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
-    if(rv == -1)
-      return (errno=EACCES,-1);
-
-    rv = fs::open(fullpath_,flags_);
-    if(rv == -1)
-      return (errno=EACCES,-1);
-
-    fs::fchmod(rv,st.st_mode);
-
-    return rv;
-  }
-
-  static
-  int
-  nfsopenhack(const std::string &fullpath_,
-              const int          flags_,
-              const NFSOpenHack  nfsopenhack_)
-  {
-    switch(nfsopenhack_)
-      {
-      default:
-      case NFSOpenHack::ENUM::OFF:
-        return (errno=EACCES,-1);
-      case NFSOpenHack::ENUM::GIT:
-        if(l::rdonly(flags_))
-          return (errno=EACCES,-1);
-        if(fullpath_.find("/.git/") == string::npos)
-          return (errno=EACCES,-1);
-        return l::lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
-      case NFSOpenHack::ENUM::ALL:
-        if(l::rdonly(flags_))
-          return (errno=EACCES,-1);
-        return l::lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
-      }
-  }
-
   /*
     The kernel expects being able to issue read requests when running
     with writeback caching enabled so we must change O_WRONLY to
@@ -115,120 +54,20 @@ namespace l
     if(*flags_ & O_APPEND)
       *flags_ &= ~O_APPEND;
   }
-
-  static
-  void
-  config_to_ffi_flags(Config::Read     &cfg_,
-                      fuse_file_info_t *ffi_)
-  {
-    switch(cfg_->cache_files)
-      {
-      case CacheFiles::ENUM::LIBFUSE:
-        ffi_->direct_io  = cfg_->direct_io;
-        ffi_->keep_cache = cfg_->kernel_cache;
-        ffi_->auto_cache = cfg_->auto_cache;
-        break;
-      case CacheFiles::ENUM::OFF:
-        ffi_->direct_io  = 1;
-        ffi_->keep_cache = 0;
-        ffi_->auto_cache = 0;
-        break;
-      case CacheFiles::ENUM::PARTIAL:
-        ffi_->direct_io  = 0;
-        ffi_->keep_cache = 0;
-        ffi_->auto_cache = 0;
-        break;
-      case CacheFiles::ENUM::FULL:
-        ffi_->direct_io  = 0;
-        ffi_->keep_cache = 1;
-        ffi_->auto_cache = 0;
-        break;
-      case CacheFiles::ENUM::AUTO_FULL:
-        ffi_->direct_io  = 0;
-        ffi_->keep_cache = 0;
-        ffi_->auto_cache = 1;
-        break;
-      }
-  }
-
-  static
-  int
-  open_core(const string      &basepath_,
-            const char        *fusepath_,
-            const int          flags_,
-            const bool         link_cow_,
-            const NFSOpenHack  nfsopenhack_,
-            uint64_t          *fh_)
-  {
-    int fd;
-    string fullpath;
-
-    fullpath = fs::path::make(basepath_,fusepath_);
-
-    if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),flags_))
-      fs::cow::break_link(fullpath.c_str());
-
-    fd = fs::open(fullpath,flags_);
-    if((fd == -1) && (errno == EACCES))
-      fd = l::nfsopenhack(fullpath,flags_,nfsopenhack_);
-    if(fd == -1)
-      return -errno;
-
-    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_));
-
-    return 0;
-  }
-
-  static
-  int
-  open(const Policy::Search &searchFunc_,
-       const Branches       &branches_,
-       const char           *fusepath_,
-       const int             flags_,
-       const bool            link_cow_,
-       const NFSOpenHack     nfsopenhack_,
-       uint64_t             *fh_)
-  {
-    int rv;
-    StrVec basepaths;
-
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
-    if(rv == -1)
-      return -errno;
-
-    return l::open_core(basepaths[0],fusepath_,flags_,link_cow_,nfsopenhack_,fh_);
-  }
 }
 
 namespace FUSE::OPEN
 {
   int
-  open_old(const char       *fusepath_,
-           fuse_file_info_t *ffi_)
-  {
-    Config::Read cfg;
-    const fuse_context *fc  = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
-
-    l::config_to_ffi_flags(cfg,ffi_);
-
-    if(cfg->writeback_cache)
-      l::tweak_flags_writeback_cache(&ffi_->flags);
-
-    return l::open(cfg->func.open.policy,
-                   cfg->branches,
-                   fusepath_,
-                   ffi_->flags,
-                   cfg->link_cow,
-                   cfg->nfsopenhack,
-                   &ffi_->fh);
-  }
-
-  int
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
     State s;
+    const fuse_context *fc  = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    if(s->writeback_cache)
+      l::tweak_flags_writeback_cache(&ffi_->flags);
 
     return s->open(fusepath_,ffi_);
   }

@@ -14,13 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "toml.hpp"
-
-#include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fstat.hpp"
 #include "fs_inode.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -48,26 +46,20 @@ namespace l
 namespace FUSE::FGETATTR
 {
   int
-  config(const toml::value &cfg_)
-  {
-    return 0;
-  }
-
-  int
   fgetattr(const fuse_file_info_t *ffi_,
            struct stat            *st_,
            fuse_timeouts_t        *timeout_)
   {
     int rv;
-    Config::Read cfg;
+    State s;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
     rv = l::fgetattr(fi->fd,fi->fusepath,st_);
 
     timeout_->entry = ((rv >= 0) ?
-                       cfg->cache_entry :
-                       cfg->cache_negative_entry);
-    timeout_->attr  = cfg->cache_attr;
+                       s->entry_cache_timeout :
+                       s->neg_entry_cache_timeout);
+    timeout_->attr  = s->attr_cache_timeout;
 
     return rv;
   }

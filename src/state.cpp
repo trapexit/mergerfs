@@ -39,6 +39,7 @@ StateBase::StateBase(const toml::value &toml_)
   mkdir(toml_),
   mknod(toml_),
   open(toml_),
+  readdir(toml_),
   readlink(toml_),
   removexattr(toml_),
   rename(toml_),
@@ -46,13 +47,14 @@ StateBase::StateBase(const toml::value &toml_)
   setxattr(toml_),
   symlink(toml_),
   truncate(toml_),
+  write(toml_),
   unlink(toml_)
 {
   mountpoint              = toml::find<std::string>(toml_,"filesystem","mountpoint");
 
   link_exdev              = toml::find_or(toml_,"func","link","exdev",DEFAULT_LINK_EXDEV);
   rename_exdev            = toml::find_or(toml_,"func","rename","exdev",DEFAULT_RENAME_EXDEV);
-  
+
   entry_cache_timeout     = toml::find_or(toml_,"cache","entry-timeout",60);
   neg_entry_cache_timeout = toml::find_or(toml_,"cache","negative-entry-timeout",0);
   attr_cache_timeout      = toml::find_or(toml_,"cache","attr-timeout",60);
@@ -60,4 +62,6 @@ StateBase::StateBase(const toml::value &toml_)
   symlinkify              = toml::find_or(toml_,"func","symlinkify",false);
   symlinkify_timeout      = toml::find_or(toml_,"func","symlinkify-timeout",3600);
   security_capability     = toml::find_or(toml_,"xattr","security-capability",true);
+
+  drop_cache_on_release   = toml::find_or(toml_,"func","release","drop-cache",false);
 }

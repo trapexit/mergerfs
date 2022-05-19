@@ -15,7 +15,6 @@
 */
 
 #include "category.hpp"
-#include "config.hpp"
 #include "errno.hpp"
 #include "fs_llistxattr.hpp"
 #include "fs_path.hpp"
@@ -61,43 +60,14 @@ namespace l
 namespace FUSE::LISTXATTR
 {
   int
-  listxattr_old(const char *fusepath_,
-            char       *list_,
-            size_t      size_)
-  {
-    Config::Read cfg;
-
-    switch(cfg->xattr)
-      {
-      case XAttr::ENUM::PASSTHROUGH:
-        break;
-      case XAttr::ENUM::NOATTR:
-        return 0;
-      case XAttr::ENUM::NOSYS:
-        return -ENOSYS;
-      }
-
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
-
-    return l::listxattr(cfg->func.listxattr.policy,
-                        cfg->branches,
-                        fusepath_,
-                        list_,
-                        size_);
-  }
-
-  int
   listxattr(const char *fusepath_,
             char       *list_,
             size_t      size_)
   {
     State s;
-    gfs::path fusepath;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    fusepath = &fusepath_[1];
-    return s->listxattr(fusepath,list_,size_);
+    return s->listxattr(&fusepath_[1],list_,size_);
   }
 }
