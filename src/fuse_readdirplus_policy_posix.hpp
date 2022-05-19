@@ -18,22 +18,25 @@
 
 #pragma once
 
-#include "fs_path.hpp"
+#include "fuse_readdirplus_policy_base.hpp"
+
+#include "branches.hpp"
 
 #include "fuse.h"
 
-#include <memory>
 
-
-namespace FUSE::UTIMENS::POLICY
+namespace FUSE::READDIRPLUS::POLICY
 {
-  class Base
+  class POSIX : public Base
   {
   public:
-    typedef std::shared_ptr<Base> Ptr;
+    POSIX(const toml::value &);
 
   public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
+    int operator()(const fuse_file_info_t *ffi,
+                   fuse_dirents_t         *buf) final;
+
+  private:
+    Branches2 _branches;
   };
 }

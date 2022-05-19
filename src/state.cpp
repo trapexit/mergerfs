@@ -40,15 +40,18 @@ StateBase::StateBase(const toml::value &toml_)
   mknod(toml_),
   open(toml_),
   readdir(toml_),
+  readdirplus(toml_),
   readlink(toml_),
   removexattr(toml_),
   rename(toml_),
   rmdir(toml_),
   setxattr(toml_),
+  statfs(toml_),
   symlink(toml_),
   truncate(toml_),
-  write(toml_),
-  unlink(toml_)
+  unlink(toml_),
+  utimens(toml_),
+  write(toml_)
 {
   mountpoint              = toml::find<std::string>(toml_,"filesystem","mountpoint");
 

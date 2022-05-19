@@ -32,7 +32,9 @@ namespace FUSE::SYMLINK::POLICY
 
   public:
     int operator()(const char      *target,
-                   const gfs::path &linkpath) final;
+                   const gfs::path &linkpath,
+                   struct stat     *st,
+                   fuse_timeouts_t *timeouts) final;
 
   private:
     Branches2 _branches;

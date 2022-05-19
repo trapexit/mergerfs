@@ -18,22 +18,31 @@
 
 #pragma once
 
-#include "fs_path.hpp"
+#include "fuse_readdirplus_policy_base.hpp"
+#include "fuse_readdirplus_policy_factory.hpp"
 
 #include "fuse.h"
 
-#include <memory>
 
-
-namespace FUSE::UTIMENS::POLICY
+namespace FUSE::READDIRPLUS
 {
-  class Base
+  class Policy
   {
   public:
-    typedef std::shared_ptr<Base> Ptr;
+    Policy(const toml::value &toml_)
+    {
+      _readdirplus = POLICY::factory(toml_);
+    }
 
   public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
+    int
+    operator()(const fuse_file_info_t *ffi_,
+               fuse_dirents_t         *buf_)
+    {
+      return (*_readdirplus)(ffi_,buf_);
+    }
+
+  private:
+    POLICY::Base::Ptr _readdirplus;
   };
 }

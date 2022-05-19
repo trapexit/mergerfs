@@ -54,7 +54,7 @@
 #include "fuse_prepare_hide.hpp"
 #include "fuse_read_buf.hpp"
 #include "fuse_readdir.hpp"
-#include "fuse_readdir_plus.hpp"
+#include "fuse_readdirplus.hpp"
 #include "fuse_readlink.hpp"
 #include "fuse_release.hpp"
 #include "fuse_releasedir.hpp"
@@ -84,8 +84,7 @@ namespace l
 {
   static
   void
-  get_fuse_operations(struct fuse_operations &ops_,
-                      const bool              nullrw_)
+  get_fuse_operations(struct fuse_operations &ops_)
   {
     ops_.access          = FUSE::ACCESS::access;
     ops_.bmap            = FUSE::BMAP::bmap;
@@ -118,9 +117,9 @@ namespace l
     ops_.opendir         = FUSE::OPENDIR::opendir;
     ops_.poll            = FUSE::POLL::poll;;
     ops_.prepare_hide    = FUSE::PREPARE_HIDE::prepare_hide;
-    ops_.read_buf        = (nullrw_ ? FUSE::READ_BUF::read_buf_null : FUSE::READ_BUF::read_buf);
+    //    ops_.read_buf        = FUSE::READ::read;
     ops_.readdir         = FUSE::READDIR::readdir;
-    ops_.readdir_plus    = FUSE::READDIR_PLUS::readdir_plus;
+    ops_.readdir_plus    = FUSE::READDIRPLUS::readdirplus;
     ops_.readlink        = FUSE::READLINK::readlink;
     ops_.release         = FUSE::RELEASE::release;
     ops_.releasedir      = FUSE::RELEASEDIR::releasedir;
@@ -133,7 +132,7 @@ namespace l
     ops_.truncate        = FUSE::TRUNCATE::truncate;
     ops_.unlink          = FUSE::UNLINK::unlink;
     ops_.utimens         = FUSE::UTIMENS::utimens;
-    ops_.write_buf       = (nullrw_ ? FUSE::WRITE_BUF::write_buf_null : FUSE::WRITE_BUF::write_buf);
+    //    ops_.write_buf       = FUSE::WRITE::write;
 
     return;
   }
@@ -165,7 +164,7 @@ namespace l
     args.allocated = 0;
 
     l::setup_resources();
-    l::get_fuse_operations(ops,false);
+    l::get_fuse_operations(ops);
 
     return fuse_main(args.argc,
                      args.argv,

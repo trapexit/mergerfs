@@ -31,14 +31,17 @@
 #include "fuse_mknod_policy.hpp"
 #include "fuse_open_policy.hpp"
 #include "fuse_readdir_policy.hpp"
+#include "fuse_readdirplus_policy.hpp"
 #include "fuse_readlink_policy.hpp"
 #include "fuse_removexattr_policy.hpp"
 #include "fuse_rename_policy.hpp"
 #include "fuse_rmdir_policy.hpp"
 #include "fuse_setxattr_policy.hpp"
+#include "fuse_statfs_policy.hpp"
 #include "fuse_symlink_policy.hpp"
 #include "fuse_truncate_policy.hpp"
 #include "fuse_unlink_policy.hpp"
+#include "fuse_utimens_policy.hpp"
 #include "fuse_write_policy.hpp"
 
 #include "branches.hpp"
@@ -46,7 +49,7 @@
 #include "link_exdev_enum.hpp"
 #include "rename_exdev_enum.hpp"
 
-#include "ghc/filesystem.hpp"
+#include "fs_path.hpp"
 
 #include <atomic>
 #include <memory>
@@ -65,6 +68,14 @@ public:
   StateBase(const toml::value &);
 
 public:
+  uint64_t fuse_msg_size;
+
+public:
+  bool async_read;
+  bool cache_symlinks;
+  bool posix_acl;
+
+public:
   int entry_cache_timeout;
   int neg_entry_cache_timeout;
   int attr_cache_timeout;
@@ -80,7 +91,7 @@ public:
   bool security_capability;
 
 public:
-  ghc::filesystem::path mountpoint;
+  gfs::path mountpoint;
   Branches2 branches;
 
 public:
@@ -107,19 +118,21 @@ public:
   FUSE::MKNOD::Policy       mknod;
   FUSE::OPEN::Policy        open;
   FUSE::READDIR::Policy     readdir;
+  FUSE::READDIRPLUS::Policy readdirplus;
   FUSE::READLINK::Policy    readlink;
   FUSE::REMOVEXATTR::Policy removexattr;
   FUSE::RENAME::Policy      rename;
   FUSE::RMDIR::Policy       rmdir;
   FUSE::SETXATTR::Policy    setxattr;
+  FUSE::STATFS::Policy      statfs;
   FUSE::SYMLINK::Policy     symlink;
   FUSE::TRUNCATE::Policy    truncate;
   FUSE::UNLINK::Policy      unlink;
+  FUSE::UTIMENS::Policy     utimens;
   FUSE::WRITE::Policy       write;
 
-
 public:
-  const toml::value _toml;
+  const toml::value config_toml;
 };
 
 class State

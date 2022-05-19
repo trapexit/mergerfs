@@ -18,25 +18,31 @@
 
 #pragma once
 
-#include "fuse_utimens_func_base.hpp"
+#include "fuse_utimens_policy_base.hpp"
+#include "fuse_utimens_policy_factory.hpp"
 
 #include "toml.hpp"
-
-#include <sys/stat.h>
 
 
 namespace FUSE::UTIMENS
 {
-  class Func
+  class Policy
   {
   public:
-    Func(const toml::value &);
+    Policy(const toml::value &toml_)
+    {
+      _utimens = POLICY::factory(toml_);
+    }
 
   public:
-    int operator()(const char     *fusepath,
-                   const timespec  ts_[2]);
+    int
+    operator()(const gfs::path &fusepath_,
+               const timespec   ts_[2])
+    {
+      return (*_utimens)(fusepath_,ts_);
+    }
 
   private:
-    FuncBase::Ptr _utimens;
+    POLICY::Base::Ptr _utimens;
   };
 }

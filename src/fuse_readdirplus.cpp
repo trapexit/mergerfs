@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,21 +16,22 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
-
-#include "branches.hpp"
+#include "state.hpp"
+#include "ugid.hpp"
 
 #include "fuse.h"
 
-#include <cstdint>
 
-
-namespace FUSE::READDIR_PLUS_LINUX
+namespace FUSE::READDIRPLUS
 {
   int
-  readdir_plus_linux(const Branches::CPtr &branches,
-                     const char           *dirname,
-                     const uint64_t        entry_timeout,
-                     const uint64_t        attr_timeout,
-                     fuse_dirents_t       *buf);
+  readdirplus(const fuse_file_info_t *ffi_,
+              fuse_dirents_t         *buf_)
+  {
+    State s;
+    const fuse_context *fc = fuse_get_context();
+    const ugid::Set     ugid(fc->uid,fc->gid);
+
+    return s->readdirplus(ffi_,buf_);
+  }
 }

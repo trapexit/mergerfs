@@ -18,22 +18,13 @@
 
 #pragma once
 
-#include "fs_path.hpp"
+#include "fuse_readdirplus_policy_base.hpp"
 
-#include "fuse.h"
-
-#include <memory>
+#include "toml.hpp"
 
 
-namespace FUSE::UTIMENS::POLICY
+namespace FUSE::READDIRPLUS::POLICY
 {
-  class Base
-  {
-  public:
-    typedef std::shared_ptr<Base> Ptr;
-
-  public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
-  };
+  Base::Ptr
+  factory(const toml::value &);
 }

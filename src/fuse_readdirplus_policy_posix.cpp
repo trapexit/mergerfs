@@ -16,6 +16,8 @@
 
 #define _DEFAULT_SOURCE
 
+#include "fuse_readdirplus_policy_posix.hpp"
+
 #include "branches.hpp"
 #include "errno.hpp"
 #include "fs_closedir.hpp"
@@ -128,15 +130,16 @@ namespace l
   }
 }
 
-namespace FUSE::READDIR_PLUS_POSIX
+
+FUSE::READDIRPLUS::POLICY::POSIX::POSIX(const toml::value &toml_)
+  : _branches(toml_)
 {
-  int
-  readdir_plus_posix(const Branches::CPtr &branches_,
-                     const char           *dirname_,
-                     const uint64_t        entry_timeout_,
-                     const uint64_t        attr_timeout_,
-                     fuse_dirents_t       *buf_)
-  {
-    return l::readdir_plus(branches_,dirname_,entry_timeout_,attr_timeout_,buf_);
-  }
+
+}
+
+int
+FUSE::READDIRPLUS::POLICY::POSIX::operator()(const fuse_file_info_t *ffi_,
+                                         fuse_dirents_t         *buf_)
+{
+  return -ENOENT;
 }

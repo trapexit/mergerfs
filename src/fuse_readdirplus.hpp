@@ -1,7 +1,5 @@
 /*
-  ISC License
-
-  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,22 +16,12 @@
 
 #pragma once
 
-#include "fs_path.hpp"
-
 #include "fuse.h"
 
-#include <memory>
 
-
-namespace FUSE::UTIMENS::POLICY
+namespace FUSE::READDIRPLUS
 {
-  class Base
-  {
-  public:
-    typedef std::shared_ptr<Base> Ptr;
-
-  public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
-  };
+  int
+  readdirplus(const fuse_file_info_t *ffi,
+              fuse_dirents_t         *buf);
 }

@@ -18,7 +18,11 @@
 
 #pragma once
 
-#include "fuse_statfs_policy_full.hpp"
+#include "fuse_statfs_policy_base.hpp"
+
+#include "branches.hpp"
+
+#include "toml.hpp"
 
 
 namespace FUSE::STATFS::POLICY

@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,14 +16,18 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
-
-#include "fuse.h"
+#include "fuse_statfs_policy_branch.hpp"
 
 
-namespace FUSE::READDIR_PLUS
+FUSE::STATFS::POLICY::Branch::Branch(const toml::value &toml_)
+  : _branches(toml_)
 {
-  int
-  readdir_plus(const fuse_file_info_t *ffi,
-               fuse_dirents_t         *buf);
+
+}
+
+int
+FUSE::STATFS::POLICY::Branch::operator()(const gfs::path &fusepath_,
+                                         struct statvfs  *fsstat)
+{
+  return 0;
 }

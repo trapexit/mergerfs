@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_readdirplus_policy_linux.hpp"
+
 #include "branches.hpp"
 #include "errno.hpp"
 #include "fs_close.hpp"
@@ -137,15 +139,16 @@ namespace l
   }
 }
 
-namespace FUSE::READDIR_PLUS_LINUX
+
+FUSE::READDIRPLUS::POLICY::linux::linux(const toml::value &toml_)
+  : _branches(toml_)
 {
-  int
-  readdir_plus_linux(const Branches::CPtr &branches_,
-                     const char           *dirname_,
-                     const uint64_t        entry_timeout_,
-                     const uint64_t        attr_timeout_,
-                     fuse_dirents_t       *buf_)
-  {
-    return l::readdir_plus(branches_,dirname_,entry_timeout_,attr_timeout_,buf_);
-  }
+
+}
+
+int
+FUSE::READDIRPLUS::POLICY::linux::operator()(const fuse_file_info_t *ffi_,
+                                             fuse_dirents_t         *buf_)
+{
+  return -ENOENT;
 }

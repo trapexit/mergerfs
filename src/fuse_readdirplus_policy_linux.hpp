@@ -18,19 +18,25 @@
 
 #pragma once
 
+#include "fuse_readdirplus_policy_base.hpp"
+
 #include "branches.hpp"
 
 #include "fuse.h"
 
-#include <cstdint>
 
-
-namespace FUSE::READDIR_PLUS_POSIX
+namespace FUSE::READDIRPLUS::POLICY
 {
-  int
-  readdir_plus_posix(const Branches::CPtr &branches,
-                     const char           *dirname,
-                     const uint64_t        entry_timeout,
-                     const uint64_t        attr_timeout,
-                     fuse_dirents_t       *buf);
+  class linux : public Base
+  {
+  public:
+    linux(const toml::value &);
+
+  public:
+    int operator()(const fuse_file_info_t *ffi,
+                   fuse_dirents_t         *buf) final;
+
+  private:
+    Branches2 _branches;
+  };
 }

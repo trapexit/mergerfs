@@ -37,9 +37,11 @@ namespace FUSE::SYMLINK
   public:
     int
     operator()(const char      *target_,
-               const gfs::path &linkpath_)
+               const gfs::path &linkpath_,
+               struct stat     *st_       = NULL,
+               fuse_timeouts_t *timeouts_ = NULL)
     {
-      return (*_symlink)(target_,linkpath_);
+      return (*_symlink)(target_,linkpath_,st_,timeouts_);
     }
 
   private:

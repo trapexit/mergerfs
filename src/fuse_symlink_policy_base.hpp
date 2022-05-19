@@ -20,6 +20,8 @@
 
 #include "fs_path.hpp"
 
+#include "fuse.h"
+
 #include <memory>
 
 
@@ -32,6 +34,8 @@ namespace FUSE::SYMLINK::POLICY
 
   public:
     virtual int operator()(const char      *target,
-                           const gfs::path &linkpath) = 0;
+                           const gfs::path &linkpath,
+                           struct stat     *st_       = NULL,
+                           fuse_timeouts_t *timeouts_ = NULL) = 0;
   };
 }

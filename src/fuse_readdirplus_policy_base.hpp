@@ -18,14 +18,12 @@
 
 #pragma once
 
-#include "fs_path.hpp"
-
 #include "fuse.h"
 
 #include <memory>
 
 
-namespace FUSE::UTIMENS::POLICY
+namespace FUSE::READDIRPLUS::POLICY
 {
   class Base
   {
@@ -33,7 +31,7 @@ namespace FUSE::UTIMENS::POLICY
     typedef std::shared_ptr<Base> Ptr;
 
   public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
+    virtual int operator()(const fuse_file_info_t *ffi,
+                           fuse_dirents_t         *buf) = 0;
   };
 }

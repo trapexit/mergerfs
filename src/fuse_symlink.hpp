@@ -18,9 +18,6 @@
 
 #include "fuse.h"
 
-#include "toml.hpp"
-
-#include <sys/stat.h>
 
 namespace FUSE::SYMLINK
 {

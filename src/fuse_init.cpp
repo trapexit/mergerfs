@@ -14,8 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
 #include "ugid.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -51,7 +51,7 @@ namespace l
   void
   want_if_capable(fuse_conn_info *conn_,
                   const int       flag_,
-                  ConfigBOOL     *want_)
+                  bool           *want_)
   {
     if(*want_ && l::capable(conn_,flag_))
       {
@@ -65,16 +65,16 @@ namespace l
   static
   void
   want_if_capable_max_pages(fuse_conn_info *conn_,
-                            Config::Write  &cfg_)
+                            State &s_)
   {
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
         l::want(conn_,FUSE_CAP_MAX_PAGES);
-        conn_->max_pages = cfg_->fuse_msg_size;
+        conn_->max_pages = s_->fuse_msg_size;
       }
     else
       {
-        cfg_->fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
+        s_->fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
       }
   }
 }
@@ -84,23 +84,34 @@ namespace FUSE::INIT
   void *
   init(fuse_conn_info *conn_)
   {
-    Config::Write cfg;
+    State s;
+    bool async_read;
+    bool posix_acl;
+    bool wb_cache;
+    bool readdirplus;
+    bool cache_symlinks;
 
+    async_read     = toml::find_or(s->config_toml,"fuse","async-read",true);
+    posix_acl      = toml::find_or(s->config_toml,"fuse","posix-acl",false);
+    wb_cache       = toml::find_or(s->config_toml,"cache","writeback",false);
+    readdirplus    = toml::find_or(s->config_toml,"func","readdir","readdirplus",false);
+    cache_symlinks = toml::find_or(s->config_toml,"cache","symlinks",false);
+    
     ugid::init();
 
     l::want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
-    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&cfg->async_read);
+    l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&async_read);
     l::want_if_capable(conn_,FUSE_CAP_ATOMIC_O_TRUNC);
     l::want_if_capable(conn_,FUSE_CAP_BIG_WRITES);
-    l::want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&cfg->cache_symlinks);
+    l::want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&cache_symlinks);
     l::want_if_capable(conn_,FUSE_CAP_DONT_MASK);
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
-    l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg->readdirplus);
+    l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&readdirplus);
     //l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS_AUTO);
-    l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&cfg->posix_acl);
-    l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg->writeback_cache);
-    l::want_if_capable_max_pages(conn_,cfg);
+    l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&posix_acl);
+    l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&wb_cache);
+    l::want_if_capable_max_pages(conn_,s);
     conn_->want &= ~FUSE_CAP_POSIX_LOCKS;
     conn_->want &= ~FUSE_CAP_FLOCK_LOCKS;
 

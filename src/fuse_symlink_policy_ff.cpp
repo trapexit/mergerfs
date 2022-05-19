@@ -32,7 +32,9 @@ FUSE::SYMLINK::POLICY::FF::FF(const toml::value &toml_)
 
 int
 FUSE::SYMLINK::POLICY::FF::operator()(const char      *target_,
-                                      const gfs::path &linkpath_)
+                                      const gfs::path &linkpath_,
+                                      struct stat     *st_,
+                                      fuse_timeouts_t *timeouts_)
 {
   int rv;
   gfs::path fullpath;

@@ -16,24 +16,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fuse_readdirplus_policy_enosys.hpp"
 
-#include "fs_path.hpp"
-
-#include "fuse.h"
-
-#include <memory>
+#include "errno.hpp"
 
 
-namespace FUSE::UTIMENS::POLICY
+FUSE::READDIRPLUS::POLICY::enosys::enosys(const toml::value &toml_)
 {
-  class Base
-  {
-  public:
-    typedef std::shared_ptr<Base> Ptr;
 
-  public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
-  };
+}
+
+int
+FUSE::READDIRPLUS::POLICY::enosys::operator()(const fuse_file_info_t *ffi_,
+                                              fuse_dirents_t         *buf_)
+{
+  return -ENOSYS;
 }

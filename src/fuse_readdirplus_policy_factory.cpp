@@ -16,24 +16,24 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fuse_readdirplus_policy_factory.hpp"
 
-#include "fs_path.hpp"
+#include "fuse_readdirplus_policy_enosys.hpp"
 
-#include "fuse.h"
-
-#include <memory>
+#include <stdexcept>
 
 
-namespace FUSE::UTIMENS::POLICY
+namespace FUSE::READDIRPLUS::POLICY
 {
-  class Base
+  Base::Ptr
+  factory(const toml::value &toml_)
   {
-  public:
-    typedef std::shared_ptr<Base> Ptr;
+    std::string str;
 
-  public:
-    virtual int operator()(const gfs::path &fusepath,
-                           const timespec   ts[2]) = 0;
-  };
+    str = toml::find_or(toml_,"func","readdirplus","policy","enosys");
+    if(str == "enosys")
+      return std::make_shared<enosys>(toml_);
+
+    throw std::runtime_error("readdirplus");
+  }
 }
