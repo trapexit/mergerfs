@@ -26,6 +26,7 @@ StateBase::Ptr g_STATE;
 
 StateBase::StateBase(const toml::value &toml_)
   :
+  toml(toml_),
   branches(toml_),
   access(toml_),
   chmod(toml_),

@@ -159,9 +159,13 @@ namespace l
 
     memset(&ops,0,sizeof(fuse_operations));
 
-    args.argc      = argc_;
-    args.argv      = argv_;
-    args.allocated = 0;
+    args.argc      = 0;
+    args.argv      = NULL;
+    args.allocated = 1;
+
+    for(int i = 0; i < argc_; i++)
+      fuse_opt_add_arg(&args,argv_[i]);
+    fuse_opt_add_arg(&args,"/tmp/test");
 
     l::setup_resources();
     l::get_fuse_operations(ops);

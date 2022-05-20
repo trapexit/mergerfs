@@ -62,6 +62,10 @@ exdev = 'passthrough'
 policy = 'base'
 ignore = 'none'
 
+[func.readdir]
+policy = 'posix'
+readdirplus = false
+
 [cache]
 files = 'off'
 statfs = 0

@@ -68,6 +68,9 @@ public:
   StateBase(const toml::value &);
 
 public:
+  const toml::value toml;
+
+public:
   uint64_t fuse_msg_size;
 
 public:
@@ -130,9 +133,6 @@ public:
   FUSE::UNLINK::Policy      unlink;
   FUSE::UTIMENS::Policy     utimens;
   FUSE::WRITE::Policy       write;
-
-public:
-  const toml::value config_toml;
 };
 
 class State
