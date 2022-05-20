@@ -38,6 +38,6 @@ namespace FUSE::IOCTL::POLICY
                    uint32_t               *out_bufsz) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

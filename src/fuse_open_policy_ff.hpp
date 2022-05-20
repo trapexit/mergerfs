@@ -37,6 +37,6 @@ namespace FUSE::OPEN::POLICY
                    fuse_file_info_t *ffi) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

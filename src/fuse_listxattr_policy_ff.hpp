@@ -38,6 +38,6 @@ namespace FUSE::LISTXATTR::POLICY
                    const size_t     size) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

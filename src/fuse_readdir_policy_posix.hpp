@@ -37,6 +37,6 @@ namespace FUSE::READDIR::POLICY
                    fuse_dirents_t         *buf) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

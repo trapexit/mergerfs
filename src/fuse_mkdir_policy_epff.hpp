@@ -36,6 +36,6 @@ namespace FUSE::MKDIR::POLICY
                    const mode_t     umask) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

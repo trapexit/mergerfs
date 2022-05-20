@@ -35,6 +35,6 @@ namespace FUSE::TRUNCATE::POLICY
                    const off_t      length) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

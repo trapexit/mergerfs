@@ -19,12 +19,13 @@
 #pragma once
 
 #include "branches.hpp"
-#include "ghc/filesystem.hpp"
+#include "fs_path.hpp"
+
 
 namespace fs
 {
   int
-  clonepath_as_root(const Branches2             &branches_,
-                    const ghc::filesystem::path &to_,
-                    const ghc::filesystem::path &relative_);
+  clonepath_as_root(const Branches  &branches_,
+                    const gfs::path &to_,
+                    const gfs::path &relative_);
 }

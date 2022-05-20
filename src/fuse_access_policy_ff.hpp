@@ -35,6 +35,6 @@ namespace FUSE::ACCESS::POLICY
                    const int        mode) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

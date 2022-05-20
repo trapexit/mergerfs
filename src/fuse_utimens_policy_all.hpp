@@ -35,6 +35,6 @@ namespace FUSE::UTIMENS::POLICY
                    const timespec   ts[2]) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

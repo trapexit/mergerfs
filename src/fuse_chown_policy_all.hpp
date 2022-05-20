@@ -36,6 +36,6 @@ namespace FUSE::CHOWN::POLICY
                    const gid_t      gid) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

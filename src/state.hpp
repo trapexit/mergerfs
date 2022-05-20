@@ -95,7 +95,7 @@ public:
 
 public:
   gfs::path mountpoint;
-  Branches2 branches;
+  Branches branches;
 
 public:
   LinkEXDEV   link_exdev;

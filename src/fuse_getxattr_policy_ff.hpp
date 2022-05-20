@@ -40,6 +40,6 @@ namespace FUSE::GETXATTR::POLICY
                    size_t           count) final;
 
   private:
-    Branches2  _branches;
+    Branches _branches;
   };
 }

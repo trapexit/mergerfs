@@ -22,10 +22,10 @@
 
 #include <vector>
 
-class BranchGroup : public std::vector<Branch2>
+class BranchGroup : public std::vector<Branch>
 {
 public:
   BranchGroup(const toml::value &,
-              const Branch2::Mode,
+              const Branch::Mode,
               const uint64_t);
 };

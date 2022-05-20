@@ -40,6 +40,6 @@ namespace FUSE::GETATTR::POLICY
 
   private:
     Stat::Func _statfunc;
-    Branches2  _branches;
+    Branches   _branches;
   };
 }

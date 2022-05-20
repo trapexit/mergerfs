@@ -37,6 +37,6 @@ namespace FUSE::SYMLINK::POLICY
                    fuse_timeouts_t *timeouts) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

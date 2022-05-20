@@ -37,6 +37,6 @@ namespace FUSE::MKNOD::POLICY
                    const dev_t      dev) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

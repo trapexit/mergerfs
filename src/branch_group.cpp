@@ -19,32 +19,30 @@
 #include "branch_group.hpp"
 
 #include "fs_glob.hpp"
+#include "fs_path.hpp"
 
 #include <iostream>
 #include <stdexcept>
-
-
-namespace gfs = ghc::filesystem;
 
 
 namespace l
 {
   static
   void
-  add_literal(const toml::value   &branch_,
-              const Branch2::Mode  default_mode_,
-              const uint64_t       default_minfreespace_,
-              BranchGroup         *branch_group_)
+  add_literal(const toml::value  &branch_,
+              const Branch::Mode  default_mode_,
+              const uint64_t      default_minfreespace_,
+              BranchGroup        *branch_group_)
   {
     branch_group_->emplace_back(branch_,default_mode_,default_minfreespace_);
   }
 
   static
   void
-  add_glob(const toml::value   &branch_,
-           const Branch2::Mode  default_mode_,
-           const uint64_t       default_minfreespace_,
-           BranchGroup         *branch_group_)
+  add_glob(const toml::value  &branch_,
+           const Branch::Mode  default_mode_,
+           const uint64_t      default_minfreespace_,
+           BranchGroup        *branch_group_)
   {
     std::string pattern;
     std::vector<gfs::path> paths;
@@ -66,11 +64,11 @@ namespace l
 }
 
 
-BranchGroup::BranchGroup(const toml::value   &toml_,
-                         const Branch2::Mode  default_mode_,
-                         const uint64_t       default_minfreespace_)
+BranchGroup::BranchGroup(const toml::value  &toml_,
+                         const Branch::Mode  default_mode_,
+                         const uint64_t      default_minfreespace_)
 {
-  Branch2::Mode default_mode;
+  Branch::Mode default_mode;
   uint64_t default_minfreespace;
 
   default_mode         = toml::find_or(toml_,"mode",default_mode_);

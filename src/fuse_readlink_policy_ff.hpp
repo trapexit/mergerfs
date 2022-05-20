@@ -38,6 +38,6 @@ namespace FUSE::READLINK::POLICY
                    const size_t     bufsiz) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

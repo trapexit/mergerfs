@@ -82,7 +82,7 @@ min-free-space = 123
 [[branches.group]]
 
 [[branches.group.branch]]
-active = false
+active = true
 path = '/tmp/mergerfs/a'
 path-type = 'literal'
 mode = 'RW'

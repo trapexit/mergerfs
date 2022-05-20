@@ -35,6 +35,6 @@ namespace FUSE::CHMOD::POLICY
                    const mode_t     mode) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

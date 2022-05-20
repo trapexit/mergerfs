@@ -17,101 +17,24 @@
 */
 
 #include "branch.hpp"
-#include "ef.hpp"
-#include "errno.hpp"
-#include "num.hpp"
 
 
-Branch::Branch(const uint64_t &default_minfreespace_)
-  : _default_minfreespace(&default_minfreespace_)
-{
-}
-
-int
-Branch::from_string(const std::string &str_)
-{
-  return -EINVAL;
-}
-
-std::string
-Branch::to_string(void) const
-{
-  std::string rv;
-
-  rv  = path;
-  rv += '=';
-  switch(mode)
-    {
-    default:
-    case Branch::Mode::RW:
-      rv += "RW";
-      break;
-    case Branch::Mode::RO:
-      rv += "RO";
-      break;
-    case Branch::Mode::NC:
-      rv += "NC";
-      break;
-    }
-
-  if(_minfreespace.has_value())
-    {
-      rv += ',';
-      rv += num::humanize(_minfreespace.value());
-    }
-
-  return rv;
-}
-
-void
-Branch::set_minfreespace(const uint64_t minfreespace_)
-{
-  _minfreespace = minfreespace_;
-}
-
-uint64_t
-Branch::minfreespace(void) const
-{
-  if(_minfreespace.has_value())
-    return _minfreespace.value();
-  return *_default_minfreespace;
-}
-
-bool
-Branch::ro(void) const
-{
-  return (mode == Branch::Mode::RO);
-}
-
-bool
-Branch::nc(void) const
-{
-  return (mode == Branch::Mode::NC);
-}
-
-bool
-Branch::ro_or_nc(void) const
-{
-  return ((mode == Branch::Mode::RO) ||
-          (mode == Branch::Mode::NC));
-}
-
-Branch2::Mode
-Branch2::str2mode(const std::string &str_)
+Branch::Mode
+Branch::str2mode(const std::string &str_)
 {
   if(str_ == "RW")
-    return Branch2::Mode::RW;
+    return Branch::Mode::RW;
   if(str_ == "RO")
-    return Branch2::Mode::RO;
+    return Branch::Mode::RO;
   if(str_ == "NC")
-    return Branch2::Mode::NC;
+    return Branch::Mode::NC;
 
-  return Branch2::Mode::RW;
+  return Branch::Mode::RW;
 }
 
-Branch2::Branch2(const toml::value   &toml_,
-                 const Branch2::Mode  default_mode_,
-                 const uint64_t       default_minfreespace_)
+Branch::Branch(const toml::value  &toml_,
+               const Branch::Mode  default_mode_,
+               const uint64_t      default_minfreespace_)
 {
   mode         = toml::find_or(toml_,"mode",default_mode_);
   minfreespace = toml::find_or(toml_,"min-free-space",default_minfreespace_);
