@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2022-04-25
+% 2022-05-23
 
 # NAME
 
@@ -1109,6 +1109,32 @@ It's almost always a permissions issue. Unlike mhddfs and unionfs-fuse, which ru
 Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
 
 If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay close attention to anything regarding permissioning and users. Root squashing and user translation for instance has bitten a few mergerfs users. Some of these also affect the use of mergerfs from container platforms such as Docker.
+
+
+#### Why use FUSE? Why not a kernel based solution?
+
+As with any two solutions to a problem there are advantages and disadvantages to each one.
+
+A FUSE based solution has all the downsides of FUSE:
+
+* Higher IO latency due to the trips in and out of kernel space
+* Higher general overhead due to trips in and out of kernel space
+* Double caching when using page caching
+* Misc limitations due to FUSE's design
+
+But FUSE also has a lot of upsides:
+
+* Easier to offer a cross platform solution
+* Easier forward and backward compatibility
+* Easier updates for users
+* Easier and faster release cadence
+* Allows more flexibility in design and features
+* Overall easier to write, secure, and maintain
+* Ability to run without root access or need to change the kernel
+* Much lower barrier to entry (getting code into the kernel takes a lot of time and effort initially)
+
+
+FUSE was chosen because of all the advantages listed above. The negatives of FUSE do not outweight the positives.
 
 
 #### Is my OS's libfuse needed for mergerfs to work?
