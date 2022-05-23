@@ -34,6 +34,6 @@ namespace FUSE::RMDIR::POLICY
     int operator()(const gfs::path &fusepath) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }
