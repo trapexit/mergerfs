@@ -214,7 +214,6 @@
 #include <compare>
 #endif
 #endif
-#include <chrono>
 #include <fstream>
 #include <memory>
 #include <stack>
@@ -265,7 +264,7 @@
 // configure LWG conformance ()
 #define LWG_2682_BEHAVIOUR
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// LWG #2395 makes crate_directory/create_directories not emit an error if there is a regular
+// LWG #2395 makes create_directory/create_directories not emit an error if there is a regular
 // file with that name, it is superseded by P1164R1, so only activate if really needed
 // #define LWG_2935_BEHAVIOUR
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3233,7 +3232,7 @@ GHC_INLINE path::impl_string_type::const_iterator path::iterator::increment(cons
             // we can only sit on a slash if it is a network name or a root
             if (i != _last && *i == preferred_separator) {
                 if (fromStart && !(i + 1 != _last && *(i + 1) == preferred_separator)) {
-                    // leadind double slashes detected, treat this and the
+                    // leading double slashes detected, treat this and the
                     // following until a slash as one unit
                     i = std::find(++i, _last, preferred_separator);
                 }

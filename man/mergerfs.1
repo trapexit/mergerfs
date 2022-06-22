@@ -704,7 +704,7 @@ Even though it\[cq]s a more niche situation this hack breaks normal
 security and behavior and as such is \f[C]off\f[R] by default.
 If set to \f[C]git\f[R] it will only perform the hack when the path in
 question includes \f[C]/.git/\f[R].
-\f[C]all\f[R] will result it it applying anytime a readonly file which
+\f[C]all\f[R] will result it applying anytime a readonly file which
 is empty is opened for writing.
 .SH FUNCTIONS, CATEGORIES and POLICIES
 .PP
@@ -817,7 +817,7 @@ If all branches are filtered an error will be returned.
 Typically \f[B]EROFS\f[R] (read\-only filesystem) or \f[B]ENOSPC\f[R]
 (no space left on device) depending on the most recent reason for
 filtering a branch.
-\f[B]ENOENT\f[R] will be returned if no elegible branch is found.
+\f[B]ENOENT\f[R] will be returned if no eligible branch is found.
 .SS Path Preservation
 .PP
 Policies, as described below, are of two basic types.
@@ -1643,7 +1643,7 @@ Fast network, slow drives, small\[cq]ish bursty writes: You have a
 10+Gbps network and wish to transfer amounts of data less than your
 cache drive but wish to do so quickly.
 .PP
-With #1 its arguable if you should be using mergerfs at all.
+With #1 it's arguable if you should be using mergerfs at all.
 RAID would probably be the better solution.
 If you\[cq]re going to use mergerfs there are other tactics that may
 help: spreading the data across drives (see the mergerfs.dup tool) and
@@ -2367,7 +2367,7 @@ includes all the paths you need if you want links to work.
 .SS Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
 .PP
 Yes.
-They are completely unreleated pieces of software.
+They are completely unrelated pieces of software.
 .SS Can mergerfs run via Docker, Podman, Kubernetes, etc.
 .PP
 Yes.
@@ -2468,7 +2468,7 @@ Much lower barrier to entry (getting code into the kernel takes a lot of
 time and effort initially)
 .PP
 FUSE was chosen because of all the advantages listed above.
-The negatives of FUSE do not outweight the positives.
+The negatives of FUSE do not outweigh the positives.
 .SS Is my OS\[cq]s libfuse needed for mergerfs to work?
 .PP
 No.\ Normally \f[C]mount.fuse\f[R] is needed to get mergerfs (or any
