@@ -3,7 +3,7 @@
 #define wyhash_final_version
 //defines that change behavior
 #ifndef WYHASH_CONDOM
-#define WYHASH_CONDOM 1 //0: read 8 bytes before and after boudaries, dangerous but fastest. 1: normal valid behavior 2: extra protection against entropy loss (probability=2^-63), aka. "blind multiplication"
+#define WYHASH_CONDOM 1 //0: read 8 bytes before and after boundaries, dangerous but faster. 1: normal valid behavior 2: extra protection against entropy loss (probability=2^-63), aka. "blind multiplication"
 #endif
 #define WYHASH_32BIT_MUM 0	//faster on 32 bit system
 //includes

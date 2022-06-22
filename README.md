@@ -324,7 +324,7 @@ NFS is not fully POSIX compliant and historically certain behaviors, such as ope
 
 This hack addresses the issue where the creation of a file with a read-only mode but with a read/write or write only flag. Normally this is perfectly valid but NFS chops the one open call into multiple calls. Exactly how it is translated depends on the configuration and versions of the NFS server and clients but it results in a permission error because a normal user is not allowed to open a read-only file as writable.
 
-Even though it's a more niche situation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it it applying anytime a readonly file which is empty is opened for writing.
+Even though it's a more niche situation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it applying anytime a readonly file which is empty is opened for writing.
 
 
 # FUNCTIONS, CATEGORIES and POLICIES
@@ -367,7 +367,7 @@ Policies basically search branches and create a list of files / paths for functi
 
 Policies may have their own additional filtering such as those that require existing paths to be present.
 
-If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the most recent reason for filtering a branch. **ENOENT** will be returned if no elegible branch is found.
+If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the most recent reason for filtering a branch. **ENOENT** will be returned if no eligible branch is found.
 
 
 #### Path Preservation
@@ -739,7 +739,7 @@ MergerFS does not natively support any sort of tiered caching. Most users have n
 1. Fast network, slow drives, many readers: You've a 10+Gbps network with many readers and your regular drives can't keep up.
 2. Fast network, slow drives, small'ish bursty writes: You have a 10+Gbps network and wish to transfer amounts of data less than your cache drive but wish to do so quickly.
 
-With #1 its arguable if you should be using mergerfs at all. RAID would probably be the better solution. If you're going to use mergerfs there are other tactics that may help: spreading the data across drives (see the mergerfs.dup tool) and setting `func.open=rand`, using `symlinkify`, or using dm-cache or a similar technology to add tiered cache to the underlying device.
+With #1 it's arguable if you should be using mergerfs at all. RAID would probably be the better solution. If you're going to use mergerfs there are other tactics that may help: spreading the data across drives (see the mergerfs.dup tool) and setting `func.open=rand`, using `symlinkify`, or using dm-cache or a similar technology to add tiered cache to the underlying device.
 
 With #2 one could use dm-cache as well but there is another solution which requires only mergerfs and a cronjob.
 
@@ -884,7 +884,7 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 * If you don't see some directories and files you expect, policies seem to skip branches, you get strange permission errors, etc. be sure the underlying filesystems' permissions are all the same. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * If you still have permission issues be sure you are using POSIX ACL compliant filesystems. mergerfs doesn't generally make exceptions for FAT, NTFS, or other non-POSIX filesystem.
 * Do **not** use `cache.files=off` if you expect applications (such as rtorrent) to use [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ page caching disabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full`.
-* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and its a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
+* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and it's a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
 * Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
 * For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
 
@@ -1083,7 +1083,7 @@ Remember that hardlinks will NOT work across devices. That includes between the 
 
 #### Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
 
-Yes. They are completely unreleated pieces of software.
+Yes. They are completely unrelated pieces of software.
 
 
 #### Can mergerfs run via Docker, Podman, Kubernetes, etc.
@@ -1134,7 +1134,7 @@ But FUSE also has a lot of upsides:
 * Much lower barrier to entry (getting code into the kernel takes a lot of time and effort initially)
 
 
-FUSE was chosen because of all the advantages listed above. The negatives of FUSE do not outweight the positives.
+FUSE was chosen because of all the advantages listed above. The negatives of FUSE do not outweigh the positives.
 
 
 #### Is my OS's libfuse needed for mergerfs to work?

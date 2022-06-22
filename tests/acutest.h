@@ -62,7 +62,7 @@
 #define TEST_LIST               const struct test_ test_list_[]
 
 
-/* Macros for testing whether an unit test succeeds or fails. These macros
+/* Macros for testing whether a unit test succeeds or fails. These macros
  * can be used arbitrarily in functions implementing the unit tests.
  *
  * If any condition fails throughout execution of a test, the test fails.
@@ -245,7 +245,7 @@
 #endif
 
 
-/* Common test initialiation/clean-up
+/* Common test initialization/clean-up
  *
  * In some test suites, it may be needed to perform some sort of the same
  * initialization and/or clean-up in all the tests.
