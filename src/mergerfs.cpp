@@ -164,7 +164,10 @@ namespace l
 
     options::parse(&args,&errs);
     if(errs.size())
-      std::cerr << errs << std::endl;
+      {
+        std::cerr << errs << std::endl;
+        return 1;
+      }
 
     l::setup_resources();
     l::get_fuse_operations(ops,cfg->nullrw);

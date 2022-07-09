@@ -73,6 +73,11 @@ namespace Policy
       return (*impl)(branches_,fusepath_.c_str(),paths_);
     }
 
+    operator bool() const
+    {
+      return (bool)impl;
+    }
+
   private:
     ActionImpl *impl;
   };
@@ -134,6 +139,11 @@ namespace Policy
       return (*impl)(branches_,fusepath_.c_str(),paths_);
     }
 
+    operator bool() const
+    {
+      return (bool)impl;
+    }
+
   private:
     CreateImpl *impl;
   };
@@ -186,6 +196,11 @@ namespace Policy
                StrVec               *paths_) const
     {
       return (*impl)(branches_,fusepath_.c_str(),paths_);
+    }
+
+    operator bool() const
+    {
+      return (bool)impl;
     }
 
   private:
