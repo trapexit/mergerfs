@@ -23,6 +23,8 @@ int
 Func::Base::Action::from_string(const std::string &policyname_)
 {
   policy = Policies::Action::find(policyname_);
+  if(!policy)
+    return -EINVAL;
 
   return 0;
 }
@@ -37,6 +39,8 @@ int
 Func::Base::Create::from_string(const std::string &policyname_)
 {
   policy = Policies::Create::find(policyname_);
+  if(!policy)
+    return -EINVAL;
 
   return 0;
 }
@@ -51,6 +55,8 @@ int
 Func::Base::Search::from_string(const std::string &policyname_)
 {
   policy = Policies::Search::find(policyname_);
+  if(!policy)
+    return -EINVAL;
 
   return 0;
 }

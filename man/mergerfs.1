@@ -704,8 +704,8 @@ Even though it\[cq]s a more niche situation this hack breaks normal
 security and behavior and as such is \f[C]off\f[R] by default.
 If set to \f[C]git\f[R] it will only perform the hack when the path in
 question includes \f[C]/.git/\f[R].
-\f[C]all\f[R] will result it applying anytime a readonly file which
-is empty is opened for writing.
+\f[C]all\f[R] will result it applying anytime a readonly file which is
+empty is opened for writing.
 .SH FUNCTIONS, CATEGORIES and POLICIES
 .PP
 The POSIX filesystem API is made up of a number of functions.
@@ -1643,7 +1643,7 @@ Fast network, slow drives, small\[cq]ish bursty writes: You have a
 10+Gbps network and wish to transfer amounts of data less than your
 cache drive but wish to do so quickly.
 .PP
-With #1 it's arguable if you should be using mergerfs at all.
+With #1 it\[cq]s arguable if you should be using mergerfs at all.
 RAID would probably be the better solution.
 If you\[cq]re going to use mergerfs there are other tactics that may
 help: spreading the data across drives (see the mergerfs.dup tool) and
@@ -1963,7 +1963,7 @@ efficiently determine whether to scan for new content rather than simply
 performing a full scan.
 If using the default \f[B]getattr\f[R] policy of \f[B]ff\f[R] it\[cq]s
 possible those programs will miss an update on account of it returning
-the first directory found\[cq]s \f[B]stat\f[R] info and its a later
+the first directory found\[cq]s \f[B]stat\f[R] info and it\[cq]s a later
 directory on another mount which had the \f[B]mtime\f[R] recently
 updated.
 To fix this you will want to set \f[B]func.getattr=newest\f[R].

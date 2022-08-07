@@ -42,7 +42,7 @@ Category::Base::to_string(void) const
 {
   std::set<std::string> rv;
 
-  for(auto func : funcs)
+  for(const auto func : funcs)
     rv.insert(func->to_string());
 
   return str::join(rv,',');
