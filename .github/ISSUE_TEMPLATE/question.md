@@ -1,10 +1,10 @@
 ---
 name: Question
-about: When you're looking for information
+about: When you're looking for information or general support
 title: ''
 labels: investigating, question
 assignees: ''
 
 ---
 
-You can also ask questions on Discord for realtime help: https://discord.gg/MpAr69V
+For general questions and support please use [GitHub Discussions](https://github.com/trapexit/mergerfs/discussions) or [Discord](https://discord.gg/MpAr69V).

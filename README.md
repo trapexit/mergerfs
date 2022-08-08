@@ -1291,6 +1291,8 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 
 **Please make sure you are using the [latest release](https://github.com/trapexit/mergerfs/releases) or have tried it in comparison. Old versions, which are often included in distros like Debian and Ubuntu, are not ever going to be updated and your bug may have been addressed already.**
 
+**For commercial support or feature requests please contact me directly.**
+
 
 #### Information to include in bug reports
 
@@ -1320,7 +1322,7 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 
 #### Support development
 
-This software is free to use and released under a very liberal license (ISC). That said if you like this software and have the means please consider supporting its development.
+This software is released under the very liberal ISC license and is therefore free to use for personal or commercial uses. That said if you like this software and have the means please consider supporting its development.
 
 https://github.com/trapexit/support
 
