@@ -17,7 +17,6 @@
 #include "errno.hpp"
 #include "fs_path.hpp"
 #include "fs_truncate.hpp"
-#include "policy_rv.hpp"
 #include "ugid.hpp"
 #include "state.hpp"
 

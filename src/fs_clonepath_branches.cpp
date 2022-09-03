@@ -26,7 +26,7 @@ namespace gfs = ghc::filesystem;
 
 
 int
-fs::clonepath_as_root(const Branches2 &branches_,
+fs::clonepath_as_root(const Branches  &branches_,
                       const gfs::path &to_,
                       const gfs::path &relative_)
 {

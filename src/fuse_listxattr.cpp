@@ -14,7 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "category.hpp"
 #include "errno.hpp"
 #include "fs_llistxattr.hpp"
 #include "fs_path.hpp"
@@ -33,28 +32,6 @@ using std::string;
 
 namespace l
 {
-  static
-  int
-  listxattr(const Policy::Search &searchFunc_,
-            const Branches       &branches_,
-            const char           *fusepath_,
-            char                 *list_,
-            const size_t          size_)
-  {
-    int rv;
-    string fullpath;
-    StrVec basepaths;
-
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
-    if(rv == -1)
-      return -errno;
-
-    fullpath = fs::path::make(basepaths[0],fusepath_);
-
-    rv = fs::llistxattr(fullpath,list_,size_);
-
-    return ((rv == -1) ? -errno : rv);
-  }
 }
 
 namespace FUSE::LISTXATTR

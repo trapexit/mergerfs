@@ -37,6 +37,6 @@ namespace FUSE::STATFS::POLICY
                    struct statvfs  *fsstat) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }

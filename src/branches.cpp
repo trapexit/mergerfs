@@ -34,7 +34,7 @@ Branches::Branches(const toml::value &toml_)
   Branch::Mode default_mode;
   uint64_t default_minfreespace;
 
-  default_mode         = toml::find_or(toml_,"branches","mode",Branch2::Mode::RW);
+  default_mode         = toml::find_or(toml_,"branches","mode",Branch::Mode::RW);
   default_minfreespace = toml::find_or(toml_,"branches","min-free-space",0);
 
   branches = toml::find(toml_,"branches");

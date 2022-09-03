@@ -35,6 +35,6 @@ namespace FUSE::LINK::POLICY
                    const gfs::path &newpath) final;
 
   private:
-    Branches2 _branches;
+    Branches _branches;
   };
 }
