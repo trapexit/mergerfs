@@ -115,6 +115,57 @@ test_config_branches()
   TEST_CHECK(b.from_string("./foo/bar:/bar/baz:blah/asdf") == 0);
 }
 
+
+void
+test_config_update_branches()
+{
+  uint64_t minfreespace;
+  Branches b(minfreespace);
+
+  minfreespace = 1234;
+
+  //
+  TEST_CHECK(b.from_string("/first:/second") == 0);
+
+  TEST_CHECK(b.from_string("-/first") == 0);
+  TEST_CHECK(b.to_string() == "/second=RW");
+
+  TEST_CHECK(b.from_string("+>/last") == 0);
+  TEST_CHECK(b.to_string() == "/second=RW:/last=RW");
+
+  TEST_CHECK(b.from_string("+/last") == 0);
+  TEST_CHECK(b.to_string() == "/second=RW:/last=RW:/last=RW");
+
+  //
+  TEST_CHECK(b.from_string("/second") == 0);
+
+  TEST_CHECK(b.from_string("+</first") == 0);
+  TEST_CHECK(b.to_string() == "/first=RW:/second=RW");
+
+  //
+  TEST_CHECK(b.from_string("/first:/second") == 0);
+  TEST_CHECK(b.from_string("-/second") == 0);
+  TEST_CHECK(b.to_string() == "/first=RW");
+
+  //
+  TEST_CHECK(b.from_string("/first:/second") == 0);
+
+  TEST_CHECK(b.from_string("->") == 0);
+  TEST_CHECK(b.to_string() == "/first=RW");
+
+  //
+  TEST_CHECK(b.from_string("/first:/second") == 0);
+
+  TEST_CHECK(b.from_string("-<") == 0);
+  TEST_CHECK(b.to_string() == "/second=RW");
+
+  //
+  TEST_CHECK(b.from_string("=/dir") == 0);
+  TEST_CHECK(b.to_string() == "/dir=RW");
+  TEST_CHECK(b.from_string("/dir") == 0);
+  TEST_CHECK(b.to_string() == "/dir=RW");
+}
+
 void
 test_config_cachefiles()
 {
@@ -274,6 +325,7 @@ TEST_LIST =
    {"config_int",test_config_int},
    {"config_str",test_config_str},
    {"config_branches",test_config_branches},
+   {"config_update_branches",test_config_update_branches},
    {"config_cachefiles",test_config_cachefiles},
    {"config_inodecalc",test_config_inodecalc},
    {"config_moveonenospc",test_config_moveonenospc},
