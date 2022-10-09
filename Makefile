@@ -93,6 +93,10 @@ LDFLAGS := \
     -pthread \
     -lrt
 
+ifeq ($(DEBUG),1)
+LDFLAGS := ${LDFLAGS} -fsanitize=undefined
+endif
+
 DESTDIR       =
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
