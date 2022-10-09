@@ -164,6 +164,16 @@ test_config_update_branches()
   TEST_CHECK(b.to_string() == "/dir=RW");
   TEST_CHECK(b.from_string("/dir") == 0);
   TEST_CHECK(b.to_string() == "/dir=RW");
+
+  // error out when no branches left
+  TEST_CHECK(b.from_string("=/dir") == 0);
+  TEST_CHECK(b.from_string("-/dir") < 0);
+  TEST_CHECK(b.from_string("-<") < 0);
+  TEST_CHECK(b.from_string("->") < 0);
+
+  // error out when setting empty branches
+  TEST_CHECK(b.from_string("=") < 0);
+  TEST_CHECK(b.from_string("") < 0);
 }
 
 void
