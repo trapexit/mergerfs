@@ -21,6 +21,9 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#include <string>
+
+
 namespace symlinkify
 {
   static
@@ -41,9 +44,12 @@ namespace symlinkify
 
   static
   inline
-  mode_t
-  convert(const mode_t mode_)
+  void
+  convert(const std::string &target_,
+          struct stat       *st_)
   {
-    return ((mode_ & ~S_IFMT) | S_IFLNK);
+    st_->st_mode = (((st_->st_mode & ~S_IFMT) | S_IFLNK) | 0777);
+    st_->st_size = target_.size();
+    st_->st_blocks = 0;
   }
 }

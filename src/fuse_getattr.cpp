@@ -139,7 +139,7 @@ namespace l
       return -errno;
 
     if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
-      st_->st_mode = symlinkify::convert(st_->st_mode);
+      symlinkify::convert(fullpath,st_);
 
     fs::inode::calc(fusepath_,st_);
 
