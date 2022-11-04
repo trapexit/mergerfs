@@ -34,7 +34,9 @@ RND::RND()
 
   gettimeofday(&tv,NULL);
 
-  G_SEED = ((tv.tv_sec << 32) | (tv.tv_usec));
+  G_SEED   = tv.tv_sec;
+  G_SEED <<= 32;
+  G_SEED  |= tv.tv_usec;
 }
 
 uint64_t
