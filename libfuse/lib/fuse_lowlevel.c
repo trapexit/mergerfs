@@ -2515,21 +2515,6 @@ fuse_ll_process_buf(void                  *data,
   goto out_free;
 }
 
-static
-void
-fuse_ll_process(void             *data,
-                const char       *buf,
-                size_t            len,
-                struct fuse_chan *ch)
-{
-  struct fuse_buf fbuf = {
-                          .mem = (void *) buf,
-                          .size = len,
-  };
-
-  fuse_ll_process_buf(data, &fbuf, ch);
-}
-
 enum {
       KEY_HELP,
       KEY_VERSION,
@@ -2652,11 +2637,9 @@ fuse_ll_pipe_destructor(void *data)
 #ifdef HAVE_SPLICE
 static
 int
-fuse_ll_receive_buf(struct fuse_session  *se,
-                    struct fuse_buf      *buf,
-                    struct fuse_chan    **chp)
+fuse_ll_receive_buf(struct fuse_session *se,
+                    struct fuse_buf     *buf)
 {
-  struct fuse_chan *ch = *chp;
   struct fuse_ll *f = fuse_session_data(se);
   size_t bufsize = buf->size;
   struct fuse_ll_pipe *llp;
@@ -2687,27 +2670,27 @@ fuse_ll_receive_buf(struct fuse_session  *se,
         goto fallback;
     }
 
-  res = splice(fuse_chan_fd(ch), NULL, llp->pipe[1], NULL, bufsize, 0);
+  res = splice(fuse_chan_fd(se->ch), NULL, llp->pipe[1], NULL, bufsize, 0);
   err = errno;
 
   if(fuse_session_exited(se))
     return 0;
 
-  if (res == -1)
+  if(res == -1)
     {
-      if (err == ENODEV)
+      if(err == ENODEV)
         {
           fuse_session_exit(se);
           return 0;
         }
 
-      if (err != EINTR && err != EAGAIN)
+      if(err != EINTR && err != EAGAIN)
         perror("fuse: splice from device");
 
       return -err;
     }
 
-  if (res < sizeof(struct fuse_in_header))
+  if(res < sizeof(struct fuse_in_header))
     {
       fprintf(stderr, "short splice from fuse device\n");
       return -EIO;
@@ -2755,7 +2738,7 @@ fuse_ll_receive_buf(struct fuse_session  *se,
   return res;
 
  fallback:
-  res = fuse_chan_recv(chp, buf->mem, bufsize);
+  res = fuse_chan_recv(se->ch, buf->mem, bufsize);
   if (res <= 0)
     return res;
 
@@ -2766,13 +2749,12 @@ fuse_ll_receive_buf(struct fuse_session  *se,
 #else
 static
 int
-fuse_ll_receive_buf(struct fuse_session  *se,
-                    struct fuse_buf      *buf,
-                    struct fuse_chan    **chp)
+fuse_ll_receive_buf(struct fuse_session *se,
+                    struct fuse_buf     *buf)
 {
   (void) se;
 
-  int res = fuse_chan_recv(chp, buf->mem, buf->size);
+  int res = fuse_chan_recv(se->ch, buf->mem, buf->size);
   if (res <= 0)
     return res;
 
@@ -2796,10 +2778,6 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   int err;
   struct fuse_ll *f;
   struct fuse_session *se;
-  struct fuse_session_ops sop = {
-                                 .process = fuse_ll_process,
-                                 .destroy = fuse_ll_destroy,
-  };
 
   if (sizeof(struct fuse_lowlevel_ops) < op_size)
     {
@@ -2835,12 +2813,12 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   f->owner = getuid();
   f->userdata = userdata;
 
-  se = fuse_session_new(&sop, f);
+  se = fuse_session_new(f,
+                        fuse_ll_receive_buf,
+                        fuse_ll_process_buf,
+                        fuse_ll_destroy);
   if (!se)
     goto out_key_destroy;
-
-  se->receive_buf = fuse_ll_receive_buf;
-  se->process_buf = fuse_ll_process_buf;
 
   return se;
 

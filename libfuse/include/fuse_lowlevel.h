@@ -1503,231 +1503,29 @@ struct fuse_session *fuse_lowlevel_new(struct fuse_args *args,
  * Session interface					       *
  * ----------------------------------------------------------- */
 
-/**
- * Session operations
- *
- * This is used in session creation
- */
-struct fuse_session_ops
-{
-  /**
-   * Hook to process a request (mandatory)
-   *
-   * @param data user data passed to fuse_session_new()
-   * @param buf buffer containing the raw request
-   * @param len request length
-   * @param ch channel on which the request was received
-   */
-  void (*process)(void *data, const char *buf, size_t len,
-                  struct fuse_chan *ch);
-
-  /**
-   * Hook for session exit and reset (optional)
-   *
-   * @param data user data passed to fuse_session_new()
-   * @param val exited status (1 - exited, 0 - not exited)
-   */
-  void (*exit)(void *data, int val);
-
-  /**
-   * Hook for querying the current exited status (optional)
-   *
-   * @param data user data passed to fuse_session_new()
-   * @return 1 if exited, 0 if not exited
-   */
-  int (*exited)(void *data);
-
-  /**
-   * Hook for cleaning up the channel on destroy (optional)
-   *
-   * @param data user data passed to fuse_session_new()
-   */
-  void (*destroy)(void *data);
-};
-
-/**
- * Create a new session
- *
- * @param op session operations
- * @param data user data
- * @return new session object, or NULL on failure
- */
-struct fuse_session *fuse_session_new(struct fuse_session_ops *op, void *data);
-
-/**
- * Assign a channel to a session
- *
- * Note: currently only a single channel may be assigned.  This may
- * change in the future
- *
- * If a session is destroyed, the assigned channel is also destroyed
- *
- * @param se the session
- * @param ch the channel
- */
+struct fuse_session *fuse_session_new(void *data,
+                                      void *receive_buf,
+                                      void *process_buf,
+                                      void *destroy);
 void fuse_session_add_chan(struct fuse_session *se, struct fuse_chan *ch);
-
-/**
- * Remove a channel from a session
- *
- * If the channel is not assigned to a session, then this is a no-op
- *
- * @param ch the channel to remove
- */
 void fuse_session_remove_chan(struct fuse_chan *ch);
-
-/**
- * Iterate over the channels assigned to a session
- *
- * The iterating function needs to start with a NULL channel, and
- * after that needs to pass the previously returned channel to the
- * function.
- *
- * @param se the session
- * @param ch the previous channel, or NULL
- * @return the next channel, or NULL if no more channels exist
- */
-struct fuse_chan *fuse_session_next_chan(struct fuse_session *se,
-                                         struct fuse_chan *ch);
-
-/**
- * Process a raw request
- *
- * @param se the session
- * @param buf buffer containing the raw request
- * @param len request length
- * @param ch channel on which the request was received
- */
-void fuse_session_process(struct fuse_session *se, const char *buf, size_t len,
-                          struct fuse_chan *ch);
-
-/**
- * Process a raw request supplied in a generic buffer
- *
- * This is a more generic version of fuse_session_process().  The
- * fuse_buf may contain a memory buffer or a pipe file descriptor.
- *
- * @param se the session
- * @param buf the fuse_buf containing the request
- * @param ch channel on which the request was received
- */
-void fuse_session_process_buf(struct fuse_session *se,
-                              const struct fuse_buf *buf, struct fuse_chan *ch);
-
-/**
- * Receive a raw request supplied in a generic buffer
- *
- * This is a more generic version of fuse_chan_recv().  The fuse_buf
- * supplied to this function contains a suitably allocated memory
- * buffer.  This may be overwritten with a file descriptor buffer.
- *
- * @param se the session
- * @param buf the fuse_buf to store the request in
- * @param chp pointer to the channel
- * @return the actual size of the raw request, or -errno on error
- */
-int fuse_session_receive_buf(struct fuse_session *se, struct fuse_buf *buf,
-                             struct fuse_chan **chp);
-
-/**
- * Destroy a session
- *
- * @param se the session
- */
 void fuse_session_destroy(struct fuse_session *se);
-
-/**
- * Exit a session
- *
- * @param se the session
- */
 void fuse_session_exit(struct fuse_session *se);
-
-/**
- * Reset the exited status of a session
- *
- * @param se the session
- */
-void fuse_session_reset(struct fuse_session *se);
-
-/**
- * Query the exited status of a session
- *
- * @param se the session
- * @return 1 if exited, 0 if not exited
- */
 int fuse_session_exited(struct fuse_session *se);
-
-/**
- * Get the user data provided to the session
- *
- * @param se the session
- * @return the user data
- */
+void fuse_session_reset(struct fuse_session *se);
 void *fuse_session_data(struct fuse_session *se);
+int fuse_session_receive(struct fuse_session *se,
+                         struct fuse_buf *buf);
+void fuse_session_process(struct fuse_session *se,
+                          const struct fuse_buf *buf);
 
-/**
- * Enter a multi-threaded event loop
- *
- * @param se the session
- * @return 0 on success, -1 on error
- */
 int fuse_session_loop_mt(struct fuse_session *se, const int threads);
 
 /* ----------------------------------------------------------- *
  * Channel interface					       *
  * ----------------------------------------------------------- */
 
-/**
- * Channel operations
- *
- * This is used in channel creation
- */
-struct fuse_chan_ops
-{
-  /**
-   * Hook for receiving a raw request
-   *
-   * @param ch pointer to the channel
-   * @param buf the buffer to store the request in
-   * @param size the size of the buffer
-   * @return the actual size of the raw request, or -1 on error
-   */
-  int (*receive)(struct fuse_chan **chp, char *buf, size_t size);
-
-  /**
-   * Hook for sending a raw reply
-   *
-   * A return value of -ENOENT means, that the request was
-   * interrupted, and the reply was discarded
-   *
-   * @param ch the channel
-   * @param iov vector of blocks
-   * @param count the number of blocks in vector
-   * @return zero on success, -errno on failure
-   */
-  int (*send)(struct fuse_chan *ch, const struct iovec iov[],
-              size_t count);
-
-  /**
-   * Destroy the channel
-   *
-   * @param ch the channel
-   */
-  void (*destroy)(struct fuse_chan *ch);
-};
-
-/**
- * Create a new channel
- *
- * @param op channel operations
- * @param fd file descriptor of the channel
- * @param bufsize the minimal receive buffer size
- * @param data user data
- * @return the new channel object, or NULL on failure
- */
-struct fuse_chan *fuse_chan_new(struct fuse_chan_ops *op, int fd,
-                                size_t bufsize, void *data);
+struct fuse_chan *fuse_chan_new(int fd, size_t bufsize);
 
 /**
  * Query the file descriptor of the channel
@@ -1761,37 +1559,12 @@ void *fuse_chan_data(struct fuse_chan *ch);
  */
 struct fuse_session *fuse_chan_session(struct fuse_chan *ch);
 
-/**
- * Receive a raw request
- *
- * A return value of -ENODEV means, that the filesystem was unmounted
- *
- * @param ch pointer to the channel
- * @param buf the buffer to store the request in
- * @param size the size of the buffer
- * @return the actual size of the raw request, or -errno on error
- */
-int fuse_chan_recv(struct fuse_chan **ch, char *buf, size_t size);
-
-/**
- * Send a raw reply
- *
- * A return value of -ENOENT means, that the request was
- * interrupted, and the reply was discarded
- *
- * @param ch the channel
- * @param iov vector of blocks
- * @param count the number of blocks in vector
- * @return zero on success, -errno on failure
- */
-int fuse_chan_send(struct fuse_chan *ch, const struct iovec iov[],
+int fuse_chan_recv(struct fuse_chan *ch,
+                   char *buf,
+                   size_t size);
+int fuse_chan_send(struct fuse_chan *ch,
+                   const struct iovec iov[],
                    size_t count);
-
-/**
- * Destroy a channel
- *
- * @param ch the channel
- */
 void fuse_chan_destroy(struct fuse_chan *ch);
 
 EXTERN_C_END

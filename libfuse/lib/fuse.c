@@ -3817,14 +3817,6 @@ free_cmd(struct fuse_cmd *cmd)
   free(cmd);
 }
 
-void
-fuse_process_cmd(struct fuse     *f,
-                 struct fuse_cmd *cmd)
-{
-  fuse_session_process(f->se,cmd->buf,cmd->buflen,cmd->ch);
-  free_cmd(cmd);
-}
-
 int
 fuse_exited(struct fuse *f)
 {
@@ -3863,13 +3855,13 @@ fuse_alloc_cmd(size_t bufsize)
 struct fuse_cmd*
 fuse_read_cmd(struct fuse *f)
 {
-  struct fuse_chan *ch = fuse_session_next_chan(f->se,NULL);
+  struct fuse_chan *ch = f->se->ch;
   size_t bufsize = fuse_chan_bufsize(ch);
   struct fuse_cmd *cmd = fuse_alloc_cmd(bufsize);
 
   if(cmd != NULL)
     {
-      int res = fuse_chan_recv(&ch,cmd->buf,bufsize);
+      int res = fuse_chan_recv(ch,cmd->buf,bufsize);
       if(res <= 0)
         {
           free_cmd(cmd);
@@ -3887,7 +3879,7 @@ fuse_read_cmd(struct fuse *f)
 void
 fuse_exit(struct fuse *f)
 {
-  fuse_session_exit(f->se);
+  f->se->exited = 1;
 }
 
 struct fuse_context*
