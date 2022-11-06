@@ -307,21 +307,27 @@ fuse_reply_entry(fuse_req_t                     req,
   return send_reply_ok(req, &arg, size);
 }
 
+struct fuse_create_out
+{
+  struct fuse_entry_out e;
+  struct fuse_open_out o;
+};
+
 int
 fuse_reply_create(fuse_req_t                     req,
                   const struct fuse_entry_param *e,
                   const fuse_file_info_t        *f)
 {
-  char buf[sizeof(struct fuse_entry_out) + sizeof(struct fuse_open_out)] = {0};
+  struct fuse_create_out buf = {0};
   size_t entrysize = req->f->conn.proto_minor < 9 ?
     FUSE_COMPAT_ENTRY_OUT_SIZE : sizeof(struct fuse_entry_out);
-  struct fuse_entry_out *earg = (struct fuse_entry_out *) buf;
-  struct fuse_open_out *oarg = (struct fuse_open_out *) (buf + entrysize);
+  struct fuse_entry_out *earg = (struct fuse_entry_out*)&buf.e;
+  struct fuse_open_out  *oarg = (struct fuse_open_out*)(((char*)&buf)+entrysize);
 
   fill_entry(earg, e);
   fill_open(oarg, f);
 
-  return send_reply_ok(req, buf, entrysize + sizeof(struct fuse_open_out));
+  return send_reply_ok(req, &buf, entrysize + sizeof(struct fuse_open_out));
 }
 
 int
