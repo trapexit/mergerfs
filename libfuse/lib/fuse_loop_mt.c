@@ -37,7 +37,6 @@ struct fuse_worker
 struct fuse_mt
 {
   struct fuse_session *se;
-  struct fuse_chan *prevch;
   struct fuse_worker main;
   sem_t finish;
   int exit;
@@ -77,28 +76,29 @@ fuse_do_work(void *data)
     {
       int res;
       struct fuse_buf fbuf;
-      struct fuse_chan *ch = mt->prevch;
 
       fbuf = (struct fuse_buf){ .mem  = w->buf,
                                 .size = w->bufsize };
 
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-      res = fuse_session_receive_buf(mt->se, &fbuf, &ch);
+      res = fuse_session_receive(mt->se,&fbuf);
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
       if(res == -EINTR)
         continue;
-      if(res <= 0) {
-        if(res < 0) {
-          fuse_session_exit(mt->se);
-          mt->error = -1;
+      if(res <= 0)
+        {
+          if(res < 0)
+            {
+              mt->se->exited = 1;
+              mt->error = -1;
+            }
+          break;
         }
-        break;
-      }
 
       if(mt->exit)
         return NULL;
 
-      fuse_session_process_buf(mt->se, &fbuf, ch);
+      fuse_session_process(mt->se,&fbuf);
     }
 
   sem_post(&mt->finish);
@@ -144,7 +144,7 @@ static int fuse_loop_start_thread(struct fuse_mt *mt)
     return -1;
   }
   memset(w, 0, sizeof(struct fuse_worker));
-  w->bufsize = fuse_chan_bufsize(mt->prevch);
+  w->bufsize = fuse_chan_bufsize(mt->se->ch);
   w->buf = calloc(w->bufsize,1);
   w->mt = mt;
   if(!w->buf) {
@@ -193,7 +193,6 @@ fuse_session_loop_mt(struct fuse_session *se_,
 
   memset(&mt,0,sizeof(struct fuse_mt));
   mt.se = se_;
-  mt.prevch = fuse_session_next_chan(se_,NULL);
   mt.error = 0;
   mt.main.thread_id = pthread_self();
   mt.main.prev = mt.main.next = &mt.main;
