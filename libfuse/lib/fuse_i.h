@@ -46,8 +46,7 @@ struct fuse_notify_req
   void (*reply)(struct fuse_notify_req *,
                 fuse_req_t,
                 uint64_t,
-                const void *,
-                const struct fuse_buf *);
+                const void *);
   struct fuse_notify_req *next;
   struct fuse_notify_req *prev;
 };

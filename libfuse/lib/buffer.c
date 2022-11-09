@@ -182,8 +182,7 @@ static ssize_t fuse_buf_splice(const struct fuse_buf *dst, size_t dst_off,
   }
 
   while (len) {
-    res = splice(src->fd, srcpos, dst->fd, dstpos, len,
-                 splice_flags);
+    res = splice(src->fd, srcpos, dst->fd, dstpos, len, splice_flags);
     if (res == -1) {
       if (copied)
         break;
