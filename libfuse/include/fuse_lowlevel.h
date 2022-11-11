@@ -234,8 +234,7 @@ struct fuse_lowlevel_ops
    * @param ino the inode number
    * @param fi for future use, currently always NULL
    */
-  void (*getattr)(fuse_req_t req, uint64_t ino,
-                  fuse_file_info_t *fi);
+  void (*getattr)(fuse_req_t req, uint64_t ino, fuse_file_info_t *fi);
 
   /**
    * Set file attributes
@@ -957,8 +956,10 @@ struct fuse_lowlevel_ops
    * @param offset the offset supplied to fuse_lowlevel_notify_retrieve()
    * @param bufv the buffer containing the returned data
    */
-  void (*retrieve_reply)(fuse_req_t req, void *cookie, uint64_t ino,
-                         off_t offset, struct fuse_bufvec *bufv);
+  void (*retrieve_reply)(fuse_req_t req,
+                         void *cookie,
+                         uint64_t ino,
+                         off_t offset);
 
   /**
    * Forget about multiple inodes
