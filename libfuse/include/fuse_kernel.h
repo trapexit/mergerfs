@@ -282,18 +282,18 @@ struct fuse_file_lock {
 /**
  * Bitmasks for fuse_setattr_in.valid
  */
-#define FATTR_MODE	(1 << 0)
-#define FATTR_UID	(1 << 1)
-#define FATTR_GID	(1 << 2)
-#define FATTR_SIZE	(1 << 3)
-#define FATTR_ATIME	(1 << 4)
-#define FATTR_MTIME	(1 << 5)
-#define FATTR_FH	(1 << 6)
-#define FATTR_ATIME_NOW	(1 << 7)
-#define FATTR_MTIME_NOW	(1 << 8)
-#define FATTR_LOCKOWNER	(1 << 9)
-#define FATTR_CTIME	(1 << 10)
-#define FATTR_KILL_SUIDGID	(1 << 11)
+#define FATTR_MODE         (1 << 0)
+#define FATTR_UID          (1 << 1)
+#define FATTR_GID          (1 << 2)
+#define FATTR_SIZE         (1 << 3)
+#define FATTR_ATIME        (1 << 4)
+#define FATTR_MTIME        (1 << 5)
+#define FATTR_FH           (1 << 6)
+#define FATTR_ATIME_NOW    (1 << 7)
+#define FATTR_MTIME_NOW    (1 << 8)
+#define FATTR_LOCKOWNER    (1 << 9)
+#define FATTR_CTIME        (1 << 10)
+#define FATTR_KILL_SUIDGID (1 << 11)
 
 /**
  * Flags returned by the OPEN request

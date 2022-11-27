@@ -66,7 +66,7 @@
 #include "fuse_truncate.hpp"
 #include "fuse_unlink.hpp"
 #include "fuse_utimens.hpp"
-#include "fuse_write_buf.hpp"
+#include "fuse_write.hpp"
 
 #include "fuse.h"
 
@@ -129,7 +129,7 @@ namespace l
     ops_.truncate        = FUSE::truncate;
     ops_.unlink          = FUSE::unlink;
     ops_.utimens         = FUSE::utimens;
-    ops_.write_buf       = (nullrw_ ? FUSE::write_buf_null : FUSE::write_buf);
+    ops_.write           = (nullrw_ ? FUSE::write_null : FUSE::write);
 
     return;
   }
