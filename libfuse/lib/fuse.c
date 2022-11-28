@@ -1717,15 +1717,6 @@ fuse_lib_lookup(fuse_req_t             req,
 
 static
 void
-do_forget(struct fuse    *f,
-          const uint64_t  nodeid,
-          const uint64_t  nlookup)
-{
-  forget_node(f,nodeid,nlookup);
-}
-
-static
-void
 fuse_lib_forget(fuse_req_t             req,
                 struct fuse_in_header *hdr_)
 {
@@ -1735,7 +1726,8 @@ fuse_lib_forget(fuse_req_t             req,
   f   = req_fuse(req);
   arg = fuse_hdr_arg(hdr_);
 
-  do_forget(f,hdr_->nodeid,arg->nlookup);
+  forget_node(f,hdr_->nodeid,arg->nlookup);
+
   fuse_reply_none(req);
 }
 
@@ -1753,7 +1745,9 @@ fuse_lib_forget_multi(fuse_req_t             req,
   entry = PARAM(arg);
 
   for(uint32_t i = 0; i < arg->count; i++)
-    do_forget(f,entry[i].nodeid,entry[i].nlookup);
+    forget_node(f,
+                entry[i].nodeid,
+                entry[i].nlookup);
 
   fuse_reply_none(req);
 }
@@ -3485,10 +3479,10 @@ fuse_lib_fallocate(fuse_req_t                   req,
 
   f = req_fuse_prepare(req);
 
-  err = f->fs->op.fallocate(arg->mode,
+  err = f->fs->op.fallocate(&ffi,
+                            arg->mode,
                             arg->offset,
-                            arg->length,
-                            &ffi);
+                            arg->length);
 
   reply_err(req,err);
 }
