@@ -1,0 +1,14 @@
+#!/bin/sh
+set -x
+
+BASEPATH="/tmp"
+
+for x in $(seq -w 2)
+do
+    FILEPATH="${BASEPATH}/mergerfs-${x}.img"
+    MOUNTPOINT="${BASEPATH}/mergerfs-${x}"
+    truncate -s 1G "${FILEPATH}"
+    mkdir -p "${MOUNTPOINT}"
+    mkfs.ext4 -m0 -L "mergerfs${x}" "${FILEPATH}"
+    sudo mount "${FILEPATH}" "${MOUNTPOINT}"
+done    

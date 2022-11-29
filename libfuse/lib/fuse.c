@@ -72,7 +72,8 @@ struct fuse_config
   int set_uid;
   int set_gid;
   int help;
-  int threads;
+  int read_thread_count;
+  int process_thread_count;
 };
 
 struct fuse_fs
@@ -3657,14 +3658,6 @@ fuse_notify_poll(fuse_pollhandle_t *ph)
   return fuse_lowlevel_notify_poll(ph);
 }
 
-static
-void
-free_cmd(struct fuse_cmd *cmd)
-{
-  free(cmd->buf);
-  free(cmd);
-}
-
 int
 fuse_exited(struct fuse *f)
 {
@@ -3675,53 +3668,6 @@ struct fuse_session*
 fuse_get_session(struct fuse *f)
 {
   return f->se;
-}
-
-static
-struct fuse_cmd*
-fuse_alloc_cmd(size_t bufsize)
-{
-  struct fuse_cmd *cmd = (struct fuse_cmd *)malloc(sizeof(*cmd));
-
-  if(cmd == NULL)
-    {
-      fprintf(stderr,"fuse: failed to allocate cmd\n");
-      return NULL;
-    }
-
-  cmd->buf = (char *)malloc(bufsize);
-  if(cmd->buf == NULL)
-    {
-      fprintf(stderr,"fuse: failed to allocate read buffer\n");
-      free(cmd);
-      return NULL;
-    }
-
-  return cmd;
-}
-
-struct fuse_cmd*
-fuse_read_cmd(struct fuse *f)
-{
-  struct fuse_chan *ch = f->se->ch;
-  size_t bufsize = fuse_chan_bufsize(ch);
-  struct fuse_cmd *cmd = fuse_alloc_cmd(bufsize);
-
-  if(cmd != NULL)
-    {
-      int res = fuse_chan_recv(ch,cmd->buf,bufsize);
-      if(res <= 0)
-        {
-          free_cmd(cmd);
-          if(res < 0 && res != -EINTR && res != -EAGAIN)
-            fuse_exit(f);
-          return NULL;
-        }
-      cmd->buflen = res;
-      cmd->ch = ch;
-    }
-
-  return cmd;
 }
 
 void
@@ -3753,13 +3699,15 @@ static const struct fuse_opt fuse_lib_opts[] =
    FUSE_LIB_OPT("nogc",               nogc,1),
    FUSE_LIB_OPT("umask=",	      set_mode,1),
    FUSE_LIB_OPT("umask=%o",	      umask,0),
-   FUSE_LIB_OPT("uid=",	      set_uid,1),
+   FUSE_LIB_OPT("uid=",	              set_uid,1),
    FUSE_LIB_OPT("uid=%d",	      uid,0),
-   FUSE_LIB_OPT("gid=",	      set_gid,1),
+   FUSE_LIB_OPT("gid=",	              set_gid,1),
    FUSE_LIB_OPT("gid=%d",	      gid,0),
-   FUSE_LIB_OPT("noforget",          remember,-1),
-   FUSE_LIB_OPT("remember=%u",       remember,0),
-   FUSE_LIB_OPT("threads=%d",        threads,0),
+   FUSE_LIB_OPT("noforget",           remember,-1),
+   FUSE_LIB_OPT("remember=%u",        remember,0),
+   FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
+   FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
+   FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
    FUSE_LIB_OPT("use_ino",           use_ino,1),
    FUSE_OPT_END
   };
@@ -4118,9 +4066,15 @@ fuse_destroy(struct fuse *f)
 }
 
 int
-fuse_config_num_threads(const struct fuse *fuse_)
+fuse_config_read_thread_count(const struct fuse *f_)
 {
-  return fuse_->conf.threads;
+  return f_->conf.read_thread_count;
+}
+
+int
+fuse_config_process_thread_count(const struct fuse *f_)
+{
+  return f_->conf.process_thread_count;
 }
 
 void

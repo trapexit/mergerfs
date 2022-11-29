@@ -107,7 +107,8 @@ Config::Config()
     statfs_ignore(StatFSIgnore::ENUM::NONE),
     symlinkify(false),
     symlinkify_timeout(3600),
-    threads(0),
+    fuse_read_thread_count(-1),
+    fuse_process_thread_count(-1),
     version(MERGERFS_VERSION),
     writeback_cache(false),
     xattr(XAttr::ENUM::PASSTHROUGH)
@@ -173,7 +174,9 @@ Config::Config()
   _map["statfs_ignore"]        = &statfs_ignore;
   _map["symlinkify"]           = &symlinkify;
   _map["symlinkify_timeout"]   = &symlinkify_timeout;
-  _map["threads"]              = &threads;
+  _map["threads"]              = &fuse_read_thread_count;
+  _map["read-thread-count"]    = &fuse_read_thread_count;
+  _map["process-thread-count"] = &fuse_process_thread_count;
   _map["version"]              = &version;
   _map["xattr"]                = &xattr;
 }

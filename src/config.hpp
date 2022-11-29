@@ -138,7 +138,8 @@ public:
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
   ConfigUINT64   symlinkify_timeout;
-  ConfigINT      threads;
+  ConfigINT      fuse_read_thread_count;
+  ConfigINT      fuse_process_thread_count;
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;
   XAttr          xattr;

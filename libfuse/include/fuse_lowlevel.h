@@ -19,6 +19,7 @@
  * 25
  */
 
+#include "fuse_msgbuf.h"
 #ifndef FUSE_USE_VERSION
 #define FUSE_USE_VERSION 24
 #endif
@@ -1478,9 +1479,12 @@ void *fuse_session_data(struct fuse_session *se);
 int fuse_session_receive(struct fuse_session *se,
                          struct fuse_buf *buf);
 void fuse_session_process(struct fuse_session *se,
-                          const struct fuse_buf *buf);
+                          const void          *buf,
+                          const size_t         bufsize);
 
-int fuse_session_loop_mt(struct fuse_session *se, const int threads);
+int fuse_session_loop_mt(struct fuse_session *se,
+                         const int            read_thread_count,
+                         const int            process_thread_count);
 
 /* ----------------------------------------------------------- *
  * Channel interface					       *
@@ -1520,12 +1524,6 @@ void *fuse_chan_data(struct fuse_chan *ch);
  */
 struct fuse_session *fuse_chan_session(struct fuse_chan *ch);
 
-int fuse_chan_recv(struct fuse_chan *ch,
-                   char *buf,
-                   size_t size);
-int fuse_chan_send(struct fuse_chan *ch,
-                   const struct iovec iov[],
-                   size_t count);
 void fuse_chan_destroy(struct fuse_chan *ch);
 
 EXTERN_C_END

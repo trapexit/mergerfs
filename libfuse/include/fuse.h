@@ -641,7 +641,8 @@ void fuse_destroy(struct fuse *f);
  */
 void fuse_exit(struct fuse *f);
 
-int fuse_config_num_threads(const struct fuse *fuse_);
+int fuse_config_read_thread_count(const struct fuse *f);
+int fuse_config_process_thread_count(const struct fuse *f);
 
 /**
  * FUSE event loop with multiple threads
@@ -761,12 +762,6 @@ struct fuse *fuse_setup(int argc, char *argv[],
 
 /** This is the part of fuse_main() after the event loop */
 void fuse_teardown(struct fuse *fuse, char *mountpoint);
-
-/** Read a single command.  If none are read, return NULL */
-struct fuse_cmd *fuse_read_cmd(struct fuse *f);
-
-/** Process a single command */
-void fuse_process_cmd(struct fuse *f, struct fuse_cmd *cmd);
 
 /** Multi threaded event loop, which calls the custom command
     processor function */

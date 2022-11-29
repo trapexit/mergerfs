@@ -31,13 +31,12 @@ INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
 AR ?= ar
 
-SRC   = \
+SRC_C = \
 	lib/buffer.c \
 	lib/crc32b.c \
 	lib/debug.c \
 	lib/fuse.c \
 	lib/fuse_dirents.c \
-	lib/fuse_loop_mt.c \
 	lib/fuse_lowlevel.c \
 	lib/fuse_mt.c \
 	lib/fuse_node.c \
@@ -46,13 +45,24 @@ SRC   = \
 	lib/fuse_signals.c \
 	lib/helper.c \
 	lib/mount.c
-OBJS = $(SRC:lib/%.c=build/%.o)
-DEPS = $(SRC:lib/%.c=build/%.d)
+SRC_CPP = \
+	lib/fuse_loop_mt.cpp \
+	lib/fuse_msgbuf.cpp
+OBJS_C   = $(SRC_C:lib/%.c=build/%.o)
+OBJS_CPP = $(SRC_CPP:lib/%.cpp=build/%.o)
+DEPS_C   = $(SRC_C:lib/%.c=build/%.d)
+DEPS_CPP = $(SRC_CPP:lib/%.cpp=build/%.d)
 CFLAGS ?= \
 	$(OPT_FLAGS)
 CFLAGS := \
 	${CFLAGS} \
 	-std=gnu99 \
+	-Wall \
+	-pipe \
+	-MMD
+CXXFLAGS := \
+	${CXXFLAGS} \
+	-std=c++11 \
 	-Wall \
 	-pipe \
 	-MMD
@@ -80,10 +90,10 @@ build/stamp:
 	touch $@
 
 objects: build/config.h
-	$(MAKE) $(OBJS)
+	$(MAKE) $(OBJS_C) $(OBJS_CPP)
 
 build/libfuse.a: objects
-	${AR} rcs build/libfuse.a $(OBJS)
+	${AR} rcs build/libfuse.a $(OBJS_C) $(OBJS_CPP)
 
 utils: mergerfs-fusermount mount.mergerfs
 
@@ -99,6 +109,9 @@ mount.mergerfs: build/mount.mergerfs
 
 build/%.o: lib/%.c
 	$(CC) $(CFLAGS) $(FUSE_FLAGS) -c $< -o $@
+
+build/%.o: lib/%.cpp
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
 clean:
 	rm -rf build
@@ -119,4 +132,4 @@ install: $(INSTALLUTILS)
 
 .PHONY: objects strip utils install install-utils
 
--include $(DEPS)
+-include $(DEPS_C) $(DEPS_CPP)

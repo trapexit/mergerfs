@@ -26,10 +26,11 @@ struct fuse_chan
   size_t bufsize;
 };
 
-struct fuse_session *fuse_session_new(void *data,
-                                      void *receive_buf,
-                                      void *process_buf,
-                                      void *destroy)
+struct fuse_session *
+fuse_session_new(void *data,
+                 void *receive_buf,
+                 void *process_buf,
+                 void *destroy)
 {
   struct fuse_session *se = (struct fuse_session *) malloc(sizeof(*se));
   if (se == NULL) {
@@ -38,7 +39,7 @@ struct fuse_session *fuse_session_new(void *data,
   }
 
   memset(se, 0, sizeof(*se));
-  se->data = data;
+  se->f           = data;
   se->receive_buf = receive_buf;
   se->process_buf = process_buf;
   se->destroy     = destroy;
@@ -67,7 +68,7 @@ void fuse_session_remove_chan(struct fuse_chan *ch)
 void
 fuse_session_destroy(struct fuse_session *se)
 {
-  se->destroy(se->data);
+  se->destroy(se->f);
   if(se->ch != NULL)
     fuse_chan_destroy(se->ch);
   free(se);
@@ -90,23 +91,10 @@ fuse_session_exit(struct fuse_session *se_)
   se_->exited = 1;
 }
 
-void *fuse_session_data(struct fuse_session *se)
+void*
+fuse_session_data(struct fuse_session *se)
 {
-  return se->data;
-}
-
-int
-fuse_session_receive(struct fuse_session *se_,
-                     struct fuse_buf     *buf_)
-{
-  return se_->receive_buf(se_,buf_,se_->ch);
-}
-
-void
-fuse_session_process(struct fuse_session   *se_,
-                     const struct fuse_buf *buf_)
-{
-  se_->process_buf(se_->data,buf_,se_->ch);
+  return se->f;
 }
 
 struct fuse_chan *
@@ -150,82 +138,6 @@ size_t fuse_chan_bufsize(struct fuse_chan *ch)
 struct fuse_session *fuse_chan_session(struct fuse_chan *ch)
 {
   return ch->se;
-}
-
-int
-fuse_chan_recv(struct fuse_chan *ch,
-               char             *buf,
-               size_t            size)
-{
-  int err;
-  ssize_t res;
-  struct fuse_session *se = fuse_chan_session(ch);
-  assert(se != NULL);
-
- restart:
-  res = read(fuse_chan_fd(ch), buf, size);
-  err = errno;
-
-  if(fuse_session_exited(se))
-    return 0;
-
-  if(res == -1)
-    {
-      /* ENOENT means the operation was interrupted, it's safe
-         to restart */
-      if (err == ENOENT)
-        goto restart;
-
-      if(err == ENODEV)
-        {
-          se->exited = 1;
-          return 0;
-        }
-
-      /* Errors occurring during normal operation: EINTR (read
-         interrupted), EAGAIN (nonblocking I/O), ENODEV (filesystem
-         umounted) */
-      if(err != EINTR && err != EAGAIN)
-        perror("fuse: reading device");
-      return -err;
-    }
-
-  if((size_t) res < sizeof(struct fuse_in_header))
-    {
-      fprintf(stderr, "short read on fuse device\n");
-      return -EIO;
-    }
-
-  return res;
-}
-
-int
-fuse_chan_send(struct fuse_chan *ch,
-               const struct iovec iov[],
-               size_t count)
-{
-  if(!iov)
-    return 0;
-
-  int err;
-  ssize_t res;
-
-  res = writev(fuse_chan_fd(ch), iov, count);
-  err = errno;
-
-  if(res == -1)
-    {
-      struct fuse_session *se = fuse_chan_session(ch);
-
-      assert(se != NULL);
-
-      /* ENOENT means the operation was interrupted */
-      if(!fuse_session_exited(se) && err != ENOENT)
-        perror("fuse: writing device");
-      return -err;
-    }
-
-  return 0;
 }
 
 void

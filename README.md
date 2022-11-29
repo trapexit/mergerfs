@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2022-05-23
+% 2023-01-16
 
 # NAME
 
@@ -14,7 +14,9 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 
 # DESCRIPTION
 
-**mergerfs** is a union filesystem geared towards simplifying storage and management of files across numerous commodity storage devices. It is similar to **mhddfs**, **unionfs**, and **aufs**.
+**mergerfs** is a union filesystem geared towards simplifying storage
+and management of files across numerous commodity storage devices. It
+is similar to **mhddfs**, **unionfs**, and **aufs**.
 
 
 # FEATURES
@@ -36,7 +38,10 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 
 # HOW IT WORKS
 
-mergerfs logically merges multiple paths together. Think a union of sets. The file/s or directory/s acted on or presented through mergerfs are based on the policy chosen for that particular action. Read more about policies below.
+mergerfs logically merges multiple paths together. Think a union of
+sets. The file/s or directory/s acted on or presented through mergerfs
+are based on the policy chosen for that particular action. Read more
+about policies below.
 
 ```
 A         +      B        =       C
@@ -59,7 +64,12 @@ A         +      B        =       C
                                   +-- file6
 ```
 
-mergerfs does **NOT** support the copy-on-write (CoW) or whiteout behaviors found in **aufs** and **overlayfs**. You can **not** mount a read-only filesystem and write to it. However, mergerfs will ignore read-only drives when creating new files so you can mix read-write and read-only drives. It also does **NOT** split data across drives. It is not RAID0 / striping. It is simply a union of other filesystems.
+mergerfs does **NOT** support the copy-on-write (CoW) or whiteout
+behaviors found in **aufs** and **overlayfs**. You can **not** mount a
+read-only filesystem and write to it. However, mergerfs will ignore
+read-only drives when creating new files so you can mix read-write and
+read-only drives. It also does **NOT** split data across drives. It is
+not RAID0 / striping. It is simply a union of other filesystems.
 
 
 # TERMINOLOGY
@@ -75,7 +85,8 @@ mergerfs does **NOT** support the copy-on-write (CoW) or whiteout behaviors foun
 
 # BASIC SETUP
 
-If you don't already know that you have a special use case then just start with one of the following option sets.
+If you don't already know that you have a special use case then just
+start with one of the following option sets.
 
 #### You need `mmap` (used by rtorrent and many sqlite3 base software)
 
@@ -95,50 +106,142 @@ These options are the same regardless of whether you use them with the `mergerfs
 
 ### mount options
 
-* **config**: Path to a config file. Same arguments as below in key=val / ini style format.
+* **config**: Path to a config file. Same arguments as below in
+  key=val / ini style format.
 * **branches**: Colon delimited list of branches.
-* **allow_other**: A libfuse option which allows users besides the one which ran mergerfs to see the filesystem. This is required for most use-cases.
-* **minfreespace=SIZE**: The minimum space value used for creation policies. Can be overridden by branch specific option. Understands 'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte respectively. (default: 4G)
-* **moveonenospc=BOOL|POLICY**: When enabled if a **write** fails with **ENOSPC** (no space left on device) or **EDQUOT** (disk quota exceeded) the policy selected will run to find a new location for the file. An attempt to move the file to that branch will occur (keeping all metadata possible) and if successful the original is unlinked and the write retried. (default: false, true = mfs)
-* **use_ino**: Causes mergerfs to supply file/directory inodes rather than libfuse. While not a default it is recommended it be enabled so that linked files share the same inode value.
-* **inodecalc=passthrough|path-hash|devino-hash|hybrid-hash**: Selects the inode calculation algorithm. (default: hybrid-hash)
-* **dropcacheonclose=BOOL**: When a file is requested to be closed call `posix_fadvise` on it first to instruct the kernel that we no longer need the data and it can drop its cache. Recommended when **cache.files=partial|full|auto-full** to limit double caching. (default: false)
-* **symlinkify=BOOL**: When enabled and a file is not writable and its mtime or ctime is older than **symlinkify_timeout** files will be reported as symlinks to the original files. Please read more below before using. (default: false)
-* **symlinkify_timeout=UINT**: Time to wait, in seconds, to activate the **symlinkify** behavior. (default: 3600)
-* **nullrw=BOOL**: Turns reads and writes into no-ops. The request will succeed but do nothing. Useful for benchmarking mergerfs. (default: false)
-* **ignorepponrename=BOOL**: Ignore path preserving on rename. Typically rename and link act differently depending on the policy of `create` (read below). Enabling this will cause rename and link to always use the non-path preserving behavior. This means files, when renamed or linked, will stay on the same drive. (default: false)
-* **security_capability=BOOL**: If false return ENOATTR when xattr security.capability is queried. (default: true)
-* **xattr=passthrough|noattr|nosys**: Runtime control of xattrs. Default is to passthrough xattr requests. 'noattr' will short circuit as if nothing exists. 'nosys' will respond with ENOSYS as if xattrs are not supported or disabled. (default: passthrough)
-* **link_cow=BOOL**: When enabled if a regular file is opened which has a link count > 1 it will copy the file to a temporary file and rename over the original. Breaking the link and providing a basic copy-on-write function similar to cow-shell. (default: false)
-* **statfs=base|full**: Controls how statfs works. 'base' means it will always use all branches in statfs calculations. 'full' is in effect path preserving and only includes drives where the path exists. (default: base)
-* **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to ignore available space for branches mounted or tagged as 'read-only' or 'no create'. 'nc' will ignore available space for branches tagged as 'no create'. (default: none)
-* **nfsopenhack=off|git|all**: A workaround for exporting mergerfs over NFS where there are issues with creating files for write while setting the mode to read-only. (default: off)
-* **follow-symlinks=never|directory|regular|all**: Turns symlinks into what they point to. (default: never)
-* **link-exdev=passthrough|rel-symlink|abs-base-symlink|abs-pool-symlink**: When a link fails with EXDEV optionally create a symlink to the file instead.
-* **rename-exdev=passthrough|rel-symlink|abs-symlink**: When a rename fails with EXDEV optionally move the file to a special directory and symlink to it.
-* **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel and underlying filesystem). (default: false)
-* **async_read=BOOL**: Perform reads asynchronously. If disabled or unavailable the kernel will ensure there is at most one pending read request per file handle and will attempt to order requests by offset. (default: true)
-* **fuse_msg_size=UINT**: Set the max number of pages per FUSE message. Only available on Linux >= 4.20 and ignored otherwise. (min: 1; max: 256; default: 256)
-* **threads=INT**: Number of threads to use in multithreaded mode. When set to zero it will attempt to discover and use the number of logical cores. If the lookup fails it will fall back to using 4. If the thread count is set negative it will look up the number of cores then divide by the absolute value. ie. threads=-2 on an 8 core machine will result in 8 / 2 = 4 threads. There will always be at least 1 thread. NOTE: higher number of threads increases parallelism but usually decreases throughput. (default: 0)
-* **fsname=STR**: Sets the name of the filesystem as seen in **mount**, **df**, etc. Defaults to a list of the source paths concatenated together with the longest common prefix removed.
-* **func.FUNC=POLICY**: Sets the specific FUSE function's policy. See below for the list of value types. Example: **func.getattr=newest**
-* **category.action=POLICY**: Sets policy of all FUSE functions in the action category. (default: epall)
-* **category.create=POLICY**: Sets policy of all FUSE functions in the create category. (default: epmfs)
-* **category.search=POLICY**: Sets policy of all FUSE functions in the search category. (default: ff)
-* **cache.open=UINT**: 'open' policy cache timeout in seconds. (default: 0)
-* **cache.statfs=UINT**: 'statfs' cache timeout in seconds. (default: 0)
-* **cache.attr=UINT**: File attribute cache timeout in seconds. (default: 1)
-* **cache.entry=UINT**: File name lookup cache timeout in seconds. (default: 1)
-* **cache.negative_entry=UINT**: Negative file name lookup cache timeout in seconds. (default: 0)
-* **cache.files=libfuse|off|partial|full|auto-full**: File page caching mode (default: libfuse)
-* **cache.writeback=BOOL**: Enable kernel writeback caching (default: false)
-* **cache.symlinks=BOOL**: Cache symlinks (if supported by kernel) (default: false)
-* **cache.readdir=BOOL**: Cache readdir (if supported by kernel) (default: false)
-* **direct_io**: deprecated - Bypass page cache. Use `cache.files=off` instead. (default: false)
-* **kernel_cache**: deprecated - Do not invalidate data cache on file open. Use `cache.files=full` instead. (default: false)
-* **auto_cache**: deprecated - Invalidate data cache if file mtime or size change. Use `cache.files=auto-full` instead. (default: false)
-* **async_read**: deprecated - Perform reads asynchronously. Use `async_read=true` instead.
-* **sync_read**: deprecated - Perform reads synchronously. Use `async_read=false` instead.
+* **allow_other**: A libfuse option which allows users besides the one
+  which ran mergerfs to see the filesystem. This is required for most
+  use-cases.
+* **minfreespace=SIZE**: The minimum space value used for creation
+  policies. Can be overridden by branch specific option. Understands
+  'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte
+  respectively. (default: 4G)
+* **moveonenospc=BOOL|POLICY**: When enabled if a **write** fails with
+  **ENOSPC** (no space left on device) or **EDQUOT** (disk quota
+  exceeded) the policy selected will run to find a new location for
+  the file. An attempt to move the file to that branch will occur
+  (keeping all metadata possible) and if successful the original is
+  unlinked and the write retried. (default: false, true = mfs)
+* **use_ino**: Causes mergerfs to supply file/directory inodes rather
+  than libfuse. While not a default it is recommended it be enabled so
+  that linked files share the same inode value.
+* **inodecalc=passthrough|path-hash|devino-hash|hybrid-hash**: Selects
+  the inode calculation algorithm. (default: hybrid-hash)
+* **dropcacheonclose=BOOL**: When a file is requested to be closed
+  call `posix_fadvise` on it first to instruct the kernel that we no
+  longer need the data and it can drop its cache. Recommended when
+  **cache.files=partial|full|auto-full** to limit double
+  caching. (default: false)
+* **symlinkify=BOOL**: When enabled and a file is not writable and its
+  mtime or ctime is older than **symlinkify_timeout** files will be
+  reported as symlinks to the original files. Please read more below
+  before using. (default: false)
+* **symlinkify_timeout=UINT**: Time to wait, in seconds, to activate
+  the **symlinkify** behavior. (default: 3600)
+* **nullrw=BOOL**: Turns reads and writes into no-ops. The request
+  will succeed but do nothing. Useful for benchmarking
+  mergerfs. (default: false)
+* **ignorepponrename=BOOL**: Ignore path preserving on
+  rename. Typically rename and link act differently depending on the
+  policy of `create` (read below). Enabling this will cause rename and
+  link to always use the non-path preserving behavior. This means
+  files, when renamed or linked, will stay on the same
+  drive. (default: false)
+* **security_capability=BOOL**: If false return ENOATTR when xattr
+  security.capability is queried. (default: true)
+* **xattr=passthrough|noattr|nosys**: Runtime control of
+  xattrs. Default is to passthrough xattr requests. 'noattr' will
+  short circuit as if nothing exists. 'nosys' will respond with ENOSYS
+  as if xattrs are not supported or disabled. (default: passthrough)
+* **link_cow=BOOL**: When enabled if a regular file is opened which
+  has a link count > 1 it will copy the file to a temporary file and
+  rename over the original. Breaking the link and providing a basic
+  copy-on-write function similar to cow-shell. (default: false)
+* **statfs=base|full**: Controls how statfs works. 'base' means it
+  will always use all branches in statfs calculations. 'full' is in
+  effect path preserving and only includes drives where the path
+  exists. (default: base)
+* **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to
+  ignore available space for branches mounted or tagged as 'read-only'
+  or 'no create'. 'nc' will ignore available space for branches tagged
+  as 'no create'. (default: none)
+* **nfsopenhack=off|git|all**: A workaround for exporting mergerfs
+  over NFS where there are issues with creating files for write while
+  setting the mode to read-only. (default: off)
+* **follow-symlinks=never|directory|regular|all**: Turns symlinks into
+  what they point to. (default: never)
+* **link-exdev=passthrough|rel-symlink|abs-base-symlink|abs-pool-symlink**:
+  When a link fails with EXDEV optionally create a symlink to the file
+  instead.
+* **rename-exdev=passthrough|rel-symlink|abs-symlink**: When a rename
+  fails with EXDEV optionally move the file to a special directory and
+  symlink to it.
+* **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel
+  and underlying filesystem). (default: false)
+* **async_read=BOOL**: Perform reads asynchronously. If disabled or
+  unavailable the kernel will ensure there is at most one pending read
+  request per file handle and will attempt to order requests by
+  offset. (default: true)
+* **fuse_msg_size=UINT**: Set the max number of pages per FUSE
+  message. Only available on Linux >= 4.20 and ignored
+  otherwise. (min: 1; max: 256; default: 256)
+* **threads=INT**: Number of threads to use. When used alone
+  (`process-thread-count=-1`) it sets the number of threads reading
+  and processing FUSE messages. When used together it sets the number
+  of threads reading from FUSE. When set to zero it will attempt to
+  discover and use the number of logical cores. If the thread count is
+  set negative it will look up the number of cores then divide by the
+  absolute value. ie. threads=-2 on an 8 core machine will result in 8
+  / 2 = 4 threads. There will always be at least 1 thread. If set to
+  -1 in combination with `process-thread-count` then it will try to
+  pick reasonable values based on CPU thread count. NOTE: higher
+  number of threads increases parallelism but usually decreases
+  throughput. (default: 0)
+* **read-thread-count=INT**: Alias for `threads`.
+* **process-thread-count=INT**: Enables separate thread pool to
+  asynchronously process FUSE requests. In this mode
+  `read-thread-count` refers to the number of threads reading FUSE
+  messages which are dispatched to process threads. -1 means disabled
+  otherwise acts like `read-thread-count`. (default: -1)
+* **fsname=STR**: Sets the name of the filesystem as seen in
+  **mount**, **df**, etc. Defaults to a list of the source paths
+  concatenated together with the longest common prefix removed.
+* **func.FUNC=POLICY**: Sets the specific FUSE function's policy. See
+  below for the list of value types. Example: **func.getattr=newest**
+* **category.action=POLICY**: Sets policy of all FUSE functions in the
+  action category. (default: epall)
+* **category.create=POLICY**: Sets policy of all FUSE functions in the
+  create category. (default: epmfs)
+* **category.search=POLICY**: Sets policy of all FUSE functions in the
+  search category. (default: ff)
+* **cache.open=UINT**: 'open' policy cache timeout in
+  seconds. (default: 0)
+* **cache.statfs=UINT**: 'statfs' cache timeout in seconds. (default:
+  0)
+* **cache.attr=UINT**: File attribute cache timeout in
+  seconds. (default: 1)
+* **cache.entry=UINT**: File name lookup cache timeout in
+  seconds. (default: 1)
+* **cache.negative_entry=UINT**: Negative file name lookup cache
+  timeout in seconds. (default: 0)
+* **cache.files=libfuse|off|partial|full|auto-full**: File page
+  caching mode (default: libfuse)
+* **cache.writeback=BOOL**: Enable kernel writeback caching (default:
+  false)
+* **cache.symlinks=BOOL**: Cache symlinks (if supported by kernel)
+  (default: false)
+* **cache.readdir=BOOL**: Cache readdir (if supported by kernel)
+  (default: false)
+* **direct_io**: deprecated - Bypass page cache. Use `cache.files=off`
+  instead. (default: false)
+* **kernel_cache**: deprecated - Do not invalidate data cache on file
+  open. Use `cache.files=full` instead. (default: false)
+* **auto_cache**: deprecated - Invalidate data cache if file mtime or
+  size change. Use `cache.files=auto-full` instead. (default: false)
+* **async_read**: deprecated - Perform reads asynchronously. Use
+  `async_read=true` instead.
+* **sync_read**: deprecated - Perform reads synchronously. Use
+  `async_read=false` instead.
 
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.

@@ -10,6 +10,9 @@
 
 #include "fuse.h"
 #include "fuse_lowlevel.h"
+#include "fuse_msgbuf.h"
+
+#include "extern_c.h"
 
 struct fuse_chan;
 struct fuse_ll;
@@ -17,16 +20,14 @@ struct fuse_ll;
 struct fuse_session
 {
   int (*receive_buf)(struct fuse_session *se,
-                     struct fuse_buf *buf,
-                     struct fuse_chan *ch);
+                     fuse_msgbuf_t       *msgbuf);
 
-  void (*process_buf)(void *data,
-                      const struct fuse_buf *buf,
-                      struct fuse_chan *ch);
+  void (*process_buf)(struct fuse_session *se,
+                      const fuse_msgbuf_t *msgbuf);
 
   void (*destroy)(void *data);
 
-  void *data;
+  struct fuse_ll *f;
   volatile int exited;
   struct fuse_chan *ch;
 };
@@ -64,11 +65,11 @@ struct fuse_ll
   int no_splice_move;
   int no_splice_read;
   struct fuse_lowlevel_ops op;
-  int got_init;
   void *userdata;
   uid_t owner;
   struct fuse_conn_info conn;
   pthread_mutex_t lock;
+  int got_init;
   int got_destroy;
   pthread_key_t pipe_key;
   int broken_splice_nonblock;
@@ -82,6 +83,8 @@ struct fuse_cmd
   size_t buflen;
   struct fuse_chan *ch;
 };
+
+EXTERN_C_BEGIN
 
 struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 			     const struct fuse_operations *op,
@@ -110,3 +113,5 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       int *fd);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
+
+EXTERN_C_END
