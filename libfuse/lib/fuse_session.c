@@ -95,20 +95,6 @@ void *fuse_session_data(struct fuse_session *se)
   return se->data;
 }
 
-int
-fuse_session_receive(struct fuse_session *se_,
-                     struct fuse_buf     *buf_)
-{
-  return se_->receive_buf(se_,buf_,se_->ch);
-}
-
-void
-fuse_session_process(struct fuse_session   *se_,
-                     const struct fuse_buf *buf_)
-{
-  se_->process_buf(se_->data,buf_,se_->ch);
-}
-
 struct fuse_chan *
 fuse_chan_new(int fd,
               size_t bufsize)

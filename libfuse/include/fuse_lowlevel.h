@@ -1478,7 +1478,8 @@ void *fuse_session_data(struct fuse_session *se);
 int fuse_session_receive(struct fuse_session *se,
                          struct fuse_buf *buf);
 void fuse_session_process(struct fuse_session *se,
-                          const struct fuse_buf *buf);
+                          const void          *buf,
+                          const size_t         bufsize);
 
 int fuse_session_loop_mt(struct fuse_session *se, const int threads);
 

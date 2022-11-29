@@ -1945,16 +1945,17 @@ static struct {
 
 static
 void
-fuse_ll_process_buf(void                  *data,
-                    const struct fuse_buf *buf,
-                    struct fuse_chan      *ch)
+fuse_ll_process_buf(void             *data,
+                    const void       *fuse_msg_buf_,
+                    struct fuse_chan *ch)
 {
   struct fuse_ll *f = (struct fuse_ll*)data;
   struct fuse_in_header *in;
   struct fuse_req *req;
   int err;
 
-  in = buf->mem;
+  //  in = buf->mem;
+  in = fuse_msg_buf_;
 
   req = fuse_ll_alloc_req(f);
   if(req == NULL)

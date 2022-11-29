@@ -6,6 +6,8 @@
   See the file COPYING.LIB.
 */
 
+#include "pool.hpp"
+
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
@@ -65,6 +67,8 @@ static void list_del_worker(struct fuse_worker *w)
 
 static int fuse_loop_start_thread(struct fuse_mt *mt);
 
+thread_pool tp;
+
 static
 void*
 fuse_do_work(void *data)
@@ -75,13 +79,13 @@ fuse_do_work(void *data)
   while(!fuse_session_exited(mt->se))
     {
       int res;
-      struct fuse_buf fbuf;
+      struct fuse_buf fbuf = {0};
 
-      fbuf = (struct fuse_buf){ .mem  = w->buf,
-                                .size = w->bufsize };
+      fbuf.mem = (char*)malloc(w->bufsize);
+      fbuf.size = w->bufsize;
 
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-      res = fuse_session_receive(mt->se,&fbuf);
+      res = mt->se->receive_buf(mt->se,&fbuf,mt->se->ch);
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
       if(res == -EINTR)
         continue;
@@ -98,7 +102,11 @@ fuse_do_work(void *data)
       if(mt->exit)
         return NULL;
 
-      fuse_session_process(mt->se,&fbuf);
+      tp.enqueue_work([=] {
+        mt->se->process_buf(mt->se->data,fbuf.mem,mt->se->ch);
+
+        free(fbuf.mem);
+      });
     }
 
   sem_post(&mt->finish);
@@ -138,14 +146,14 @@ int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg)
 static int fuse_loop_start_thread(struct fuse_mt *mt)
 {
   int res;
-  struct fuse_worker *w = malloc(sizeof(struct fuse_worker));
+  struct fuse_worker *w = (struct fuse_worker*)malloc(sizeof(struct fuse_worker));
   if(!w) {
     fprintf(stderr, "fuse: failed to allocate worker structure\n");
     return -1;
   }
   memset(w, 0, sizeof(struct fuse_worker));
   w->bufsize = fuse_chan_bufsize(mt->se->ch);
-  w->buf = calloc(w->bufsize,1);
+  w->buf = (char*)calloc(w->bufsize,1);
   w->mt = mt;
   if(!w->buf) {
     fprintf(stderr, "fuse: failed to allocate read buffer\n");

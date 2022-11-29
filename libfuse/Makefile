@@ -56,6 +56,12 @@ CFLAGS := \
 	-Wall \
 	-pipe \
 	-MMD
+CXXFLAGS := \
+	${CXXFLAGS} \
+	-std=c++17 \
+	-Wall \
+	-pipe \
+	-MMD
 FUSERMOUNT_DIR = $(BINDIR)
 FUSE_FLAGS = \
 	-Iinclude \
@@ -99,6 +105,9 @@ mount.mergerfs: build/mount.mergerfs
 
 build/%.o: lib/%.c
 	$(CC) $(CFLAGS) $(FUSE_FLAGS) -c $< -o $@
+
+build/%.o: lib/%.cpp
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
 clean:
 	rm -rf build

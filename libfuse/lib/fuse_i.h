@@ -11,6 +11,8 @@
 #include "fuse.h"
 #include "fuse_lowlevel.h"
 
+#include "extern_c.h"
+
 struct fuse_chan;
 struct fuse_ll;
 
@@ -21,7 +23,7 @@ struct fuse_session
                      struct fuse_chan *ch);
 
   void (*process_buf)(void *data,
-                      const struct fuse_buf *buf,
+                      const void *buf,
                       struct fuse_chan *ch);
 
   void (*destroy)(void *data);
@@ -83,6 +85,8 @@ struct fuse_cmd
   struct fuse_chan *ch;
 };
 
+EXTERN_C_BEGIN
+
 struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 			     const struct fuse_operations *op,
 			     size_t op_size);
@@ -110,3 +114,5 @@ struct fuse *fuse_setup_common(int argc, char *argv[],
 			       int *fd);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
+
+EXTERN_C_END
