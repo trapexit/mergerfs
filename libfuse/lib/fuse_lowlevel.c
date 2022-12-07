@@ -1432,6 +1432,8 @@ do_init(fuse_req_t             req,
         f->conn.capable |= FUSE_CAP_READDIR_PLUS;
       if (arg->flags & FUSE_READDIRPLUS_AUTO)
         f->conn.capable |= FUSE_CAP_READDIR_PLUS_AUTO;
+      if (arg->flags & FUSE_SETXATTR_EXT)
+        f->conn.capable |= FUSE_CAP_SETXATTR_EXT;
     }
   else
     {
@@ -1519,6 +1521,8 @@ do_init(fuse_req_t             req,
     outarg.flags |= FUSE_DO_READDIRPLUS;
   if (f->conn.want & FUSE_CAP_READDIR_PLUS_AUTO)
     outarg.flags |= FUSE_READDIRPLUS_AUTO;
+  if (f->conn.want & FUSE_CAP_SETXATTR_EXT)
+    outarg.flags |= FUSE_SETXATTR_EXT;
 
   outarg.max_readahead = f->conn.max_readahead;
   outarg.max_write = f->conn.max_write;
