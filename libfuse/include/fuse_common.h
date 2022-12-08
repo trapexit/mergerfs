@@ -126,6 +126,7 @@ struct fuse_file_info_t
 #define FUSE_CAP_POSIX_ACL         (1 << 19)
 #define FUSE_CAP_CACHE_SYMLINKS    (1 << 20)
 #define FUSE_CAP_MAX_PAGES         (1 << 21)
+#define FUSE_CAP_SETXATTR_EXT      (1 << 22)
 
 /**
  * Ioctl flags
