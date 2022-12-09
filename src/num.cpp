@@ -16,17 +16,18 @@
 
 #include "ef.hpp"
 
-#include <cstdint>
-#include <string>
-
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-#define KB (1024UL)
-#define MB (KB * 1024UL)
-#define GB (MB * 1024UL)
-#define TB (GB * 1024UL)
+#include <cstdint>
+#include <string>
+
+#define KB (1024ULL)
+#define MB (KB * 1024ULL)
+#define GB (MB * 1024ULL)
+#define TB (GB * 1024ULL)
 
 
 namespace num
@@ -116,17 +117,17 @@ namespace num
     char buf[64];
 
     if(bytes_ < KB)
-      sprintf(buf,"%lu",bytes_);
+      sprintf(buf,"%" PRIu64 "",bytes_);
     ef(((bytes_ / TB) * TB) == bytes_)
-      sprintf(buf,"%luT",bytes_ / TB);
+      sprintf(buf,"%" PRIu64 "T",bytes_ / TB);
     ef(((bytes_ / GB) * GB) == bytes_)
-      sprintf(buf,"%luG",bytes_ / GB);
+      sprintf(buf,"%" PRIu64 "G",bytes_ / GB);
     ef(((bytes_ / MB) * MB) == bytes_)
-      sprintf(buf,"%luM",bytes_ / MB);
+      sprintf(buf,"%" PRIu64 "M",bytes_ / MB);
     ef(((bytes_ / KB) * KB) == bytes_)
-      sprintf(buf,"%luK",bytes_ / KB);
+      sprintf(buf,"%" PRIu64 "K",bytes_ / KB);
     else
-      sprintf(buf,"%lu",bytes_);
+      sprintf(buf,"%" PRIu64 "",bytes_);
 
     return std::string(buf);
   }

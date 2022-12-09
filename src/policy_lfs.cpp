@@ -40,7 +40,6 @@ namespace lfs
     int error;
     uint64_t lfs;
     fs::info_t info;
-    const Branch *branch;
     const string *basepath;
 
     error = ENOENT;

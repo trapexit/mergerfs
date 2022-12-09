@@ -28,6 +28,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
 #include <signal.h>
@@ -3853,32 +3854,32 @@ metrics_log_nodes_info(struct fuse *f_,
 
   lfmp_lock(&f_->node_fmp);
   snprintf(buf,sizeof(buf),
-           "time: %zu\n"
-           "sizeof(node): %zu\n"
-           "node id_table size: %zu\n"
-           "node id_table usage: %zu\n"
-           "node id_table total allocated memory: %zu\n"
-           "node name_table size: %zu\n"
-           "node name_table usage: %zu\n"
-           "node name_table total allocated memory: %zu\n"
-           "node memory pool slab count: %zu\n"
+           "time: %"PRIu64"\n"
+           "sizeof(node): %"PRIu64"\n"
+           "node id_table size: %"PRIu64"\n"
+           "node id_table usage: %"PRIu64"\n"
+           "node id_table total allocated memory: %"PRIu64"\n"
+           "node name_table size: %"PRIu64"\n"
+           "node name_table usage: %"PRIu64"\n"
+           "node name_table total allocated memory: %"PRIu64"\n"
+           "node memory pool slab count: %"PRIu64"\n"
            "node memory pool usage ratio: %f\n"
-           "node memory pool avail objs: %zu\n"
-           "node memory pool total allocated memory: %zu\n"
+           "node memory pool avail objs: %"PRIu64"\n"
+           "node memory pool total allocated memory: %"PRIu64"\n"
            "\n"
            ,
-           time(NULL),
-           sizeof(struct node),
-           f_->id_table.size,
-           f_->id_table.use,
-           (f_->id_table.size * sizeof(struct node*)),
-           f_->name_table.size,
-           f_->name_table.use,
-           (f_->name_table.size * sizeof(struct node*)),
-           fmp_slab_count(&f_->node_fmp.fmp),
+           (uint64_t)time(NULL),
+           (uint64_t)sizeof(struct node),
+           (uint64_t)f_->id_table.size,
+           (uint64_t)f_->id_table.use,
+           (uint64_t)(f_->id_table.size * sizeof(struct node*)),
+           (uint64_t)f_->name_table.size,
+           (uint64_t)f_->name_table.use,
+           (uint64_t)(f_->name_table.size * sizeof(struct node*)),
+           (uint64_t)fmp_slab_count(&f_->node_fmp.fmp),
            fmp_slab_usage_ratio(&f_->node_fmp.fmp),
-           fmp_avail_objs(&f_->node_fmp.fmp),
-           fmp_total_allocated_memory(&f_->node_fmp.fmp)
+           (uint64_t)fmp_avail_objs(&f_->node_fmp.fmp),
+           (uint64_t)fmp_total_allocated_memory(&f_->node_fmp.fmp)
            );
   lfmp_unlock(&f_->node_fmp);
 
