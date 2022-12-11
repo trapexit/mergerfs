@@ -1999,6 +1999,8 @@ fuse_ll_process_buf(void                  *data,
   err = ENOSYS;
   if(in->opcode >= FUSE_MAXOP)
     goto reply_err;
+  if(fuse_ll_ops[in->opcode].func == NULL)
+    goto reply_err;
 
   fuse_ll_ops[in->opcode].func(req, in);
 
