@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-01-16
+% 2023-01-24
 
 # NAME
 
@@ -165,6 +165,9 @@ These options are the same regardless of whether you use them with the `mergerfs
 * **nfsopenhack=off|git|all**: A workaround for exporting mergerfs
   over NFS where there are issues with creating files for write while
   setting the mode to read-only. (default: off)
+* **branches-mount-timeout=UINT**: Number of seconds to wait at
+  startup for branches to be a mount other than the mountpoint's
+  filesystem. (default: 0)
 * **follow-symlinks=never|directory|regular|all**: Turns symlinks into
   what they point to. (default: never)
 * **link-exdev=passthrough|rel-symlink|abs-base-symlink|abs-pool-symlink**:

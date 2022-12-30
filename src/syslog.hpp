@@ -15,3 +15,15 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+#pragma once
+
+#include <syslog.h>
+
+
+void syslog_open();
+void syslog_log(const int priority, const char *format, ...);
+void syslog_info(const char *format, ...);
+void syslog_warning(const char *format, ...);
+void syslog_error(const char *format, ...);
+void syslog_close();
