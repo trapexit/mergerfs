@@ -91,7 +91,7 @@ See the mergerfs [wiki for real world deployments](https://github.com/trapexit/m
 
 # OPTIONS
 
-These options are the same regardless you use them with the `mergerfs` commandline program, used in fstab, or in a config file.
+These options are the same regardless of whether you use them with the `mergerfs` commandline program, in fstab, or in a config file.
 
 ### mount options
 
