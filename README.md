@@ -90,11 +90,11 @@ start with one of the following option sets.
 
 #### You need `mmap` (used by rtorrent and many sqlite3 base software)
 
-`allow_other,use_ino,cache.files=partial,dropcacheonclose=true,category.create=mfs`
+`allow_other,cache.files=partial,dropcacheonclose=true,category.create=mfs`
 
 #### You don't need `mmap`
 
-`allow_other,use_ino,cache.files=off,dropcacheonclose=true,category.create=mfs`
+`allow_other,cache.files=off,dropcacheonclose=true,category.create=mfs`
 
 
 See the mergerfs [wiki for real world deployments](https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments) for comparisons / ideas.
@@ -122,9 +122,6 @@ These options are the same regardless of whether you use them with the `mergerfs
   the file. An attempt to move the file to that branch will occur
   (keeping all metadata possible) and if successful the original is
   unlinked and the write retried. (default: false, true = mfs)
-* **use_ino**: Causes mergerfs to supply file/directory inodes rather
-  than libfuse. While not a default it is recommended it be enabled so
-  that linked files share the same inode value.
 * **inodecalc=passthrough|path-hash|devino-hash|hybrid-hash**: Selects
   the inode calculation algorithm. (default: hybrid-hash)
 * **dropcacheonclose=BOOL**: When a file is requested to be closed
@@ -284,7 +281,7 @@ To make it easier to include multiple branches mergerfs supports [globbing](http
 
 
 ```
-# mergerfs -o allow_other,use_ino /mnt/disk\*:/mnt/cdrom /media/drives
+# mergerfs -o allow_other /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
 The above line will use all mount points in /mnt prefixed with **disk** and the **cdrom**.
@@ -293,7 +290,7 @@ To have the pool mounted at boot or otherwise accessible from related tools use 
 
 ```
 # <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other,use_ino   0       0
+/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other           0       0
 ```
 
 **NOTE:** the globbing is done at mount or when updated using the runtime API. If a new directory is added matching the glob after the fact it will not be automatically included.
@@ -334,7 +331,7 @@ Note that this does *not* affect the inode that libfuse
 and the kernel use internally (also called the "nodeid").
 ```
 
-In the future the `use_ino` option will probably be removed as this feature should replace the original libfuse inode calculation strategy. Currently you still need to use `use_ino` in order to enable `inodecalc`.
+As of version 2.35.0 the `use_ino` option has been removed. mergerfs should always be managing inode values.
 
 
 ### fuse_msg_size
@@ -982,7 +979,6 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 
 * This document is very literal and thorough. Unless there is a bug things work as described. If a suspected feature isn't mentioned it doesn't exist. If certain libfuse arguments aren't listed they probably shouldn't be used.
 * Ensure you're using the latest version. Few distros have the latest version.
-* **use_ino** will only work when used with mergerfs 2.18.0 and above.
 * Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned exclusively and fully by the same user otherwise strange permission issues may arise. mergerfs is designed and intended to be run as `root`.
 * If you don't see some directories and files you expect, policies seem to skip branches, you get strange permission errors, etc. be sure the underlying filesystems' permissions are all the same. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * If you still have permission issues be sure you are using POSIX ACL compliant filesystems. mergerfs doesn't generally make exceptions for FAT, NTFS, or other non-POSIX filesystem.
@@ -1039,7 +1035,6 @@ NFS does not like out of band changes. That is especially true of inode values.
 Be sure to use the following options:
 
 * noforget
-* use_ino
 * inodecalc=path-hash
 
 
@@ -1085,10 +1080,6 @@ In Apple's MacOSX 10.9 they replaced Samba (client and server) with their own pr
 This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
 
 To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
-
-#### tar: Directory renamed before its status could be extracted
-
-Make sure to use the `use_ino` option.
 
 
 #### Supplemental user groups
@@ -1163,7 +1154,7 @@ Depends on what features you want. Generally speaking there are no "wrong" setti
 
 That said, for the average person, the following should be fine:
 
-`-o use_ino,cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
+`-o cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
 
 
 #### Why are all my files ending up on 1 drive?!
@@ -1177,7 +1168,7 @@ This catches a lot of new users off guard but changing the default would break t
 
 #### Do hardlinks work?
 
-Yes. You need to use `use_ino` to support proper reporting of inodes but they work regardless. See also the option `inodecalc`.
+Yes. See also the option `inodecalc` for how inode values are calculated.
 
 What mergerfs does not do is fake hard links across branches.  Read the section "rename & link" for how it works.
 
@@ -1348,7 +1339,6 @@ Yes, however if you do anything which may changes files out of band (including f
 Be sure to use the following options:
 
 * noforget
-* use_ino
 * inodecalc=path-hash
 
 
