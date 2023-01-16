@@ -67,7 +67,6 @@ struct fuse_config
   int remember;
   int debug;
   int nogc;
-  int use_ino;
   int set_mode;
   int set_uid;
   int set_gid;
@@ -1404,8 +1403,6 @@ set_stat(struct fuse *f,
          uint64_t     nodeid,
          struct stat *stbuf)
 {
-  if(!f->conf.use_ino)
-    stbuf->st_ino = nodeid;
   if(f->conf.set_mode)
     stbuf->st_mode = (stbuf->st_mode & S_IFMT) | (0777 & ~f->conf.umask);
   if(f->conf.set_uid)
@@ -3708,7 +3705,6 @@ static const struct fuse_opt fuse_lib_opts[] =
    FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
    FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
    FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
-   FUSE_LIB_OPT("use_ino",           use_ino,1),
    FUSE_OPT_END
   };
 
