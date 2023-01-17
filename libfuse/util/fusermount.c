@@ -726,7 +726,6 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
 	char *subtype = NULL;
 	char *source = NULL;
 	char *type = NULL;
-	int check_empty = 1;
 	int blkdev = 0;
 
 	optbuf = (char *) malloc(strlen(opts) + 128);
@@ -759,8 +758,6 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
 				goto err;
 			}
 			blkdev = 1;
-		} else if (opt_eq(s, len, "nonempty")) {
-			check_empty = 0;
 		} else if (opt_eq(s, len, "auto_unmount")) {
 			auto_unmount = 1;
 		} else if (!begins_with(s, "fd=") &&
@@ -810,10 +807,6 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
 
 	sprintf(d, "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
 		fd, rootmode, getuid(), getgid());
-
-	if (check_empty &&
-	    fuse_mnt_check_empty(progname, mnt, rootmode, rootsize) == -1)
-		goto err;
 
 	source = malloc((fsname ? strlen(fsname) : 0) +
 			(subtype ? strlen(subtype) : 0) + strlen(dev) + 32);

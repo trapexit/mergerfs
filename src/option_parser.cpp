@@ -49,27 +49,6 @@ enum
   };
 
 
-namespace l
-{
-  static
-  int
-  calculate_thread_count(int threads_)
-  {
-    int tc;
-
-    if(threads_ > 0)
-      return threads_;
-
-    tc = hw::cpu::logical_core_count();
-    if(threads_ < 0)
-      tc /= -threads_;
-    if(tc == 0)
-      tc = 1;
-
-    return tc;
-  }
-}
-
 static
 void
 set_option(const std::string &option_,
@@ -135,6 +114,24 @@ set_default_options(fuse_args *args_)
 }
 
 static
+bool
+should_ignore(const std::string &key_)
+{
+  static const std::set<std::string> IGNORED_KEYS =
+    {
+      "atomic_o_trunc",
+      "big_writes",
+      "cache.open",
+      "defaults",
+      "hard_remove",
+      "nonempty",
+      "use_ino"
+    };
+
+  return (IGNORED_KEYS.find(key_) != IGNORED_KEYS.end());
+}
+
+static
 int
 parse_and_process_kv_arg(Config::Write     &cfg_,
                          Config::ErrVec    *errs_,
@@ -164,17 +161,7 @@ parse_and_process_kv_arg(Config::Write     &cfg_,
     val = "true";
   ef(key == "sync_read" && val.empty())
     {key = "async_read", val = "false";}
-  ef(key == "defaults")
-    return 0;
-  ef(key == "hard_remove")
-    return 0;
-  ef(key == "atomic_o_trunc")
-    return 0;
-  ef(key == "big_writes")
-    return 0;
-  ef(key == "cache.open")
-    return 0;
-  ef(key == "use_ino")
+  ef(::should_ignore(key_))
     return 0;
 
   if(cfg_->has_key(key) == false)
