@@ -666,7 +666,7 @@ make LTO=1            - build with link time optimization
 
 mergerfs can be upgraded live by mounting on top of the previous instance. Simply install the new version of mergerfs and follow the instructions below.
 
-Add `nonempty` to your mergerfs option list and call mergerfs again or if using `/etc/fstab` call for it to mount again. Existing open files and such will continue to work fine though they won't see runtime changes since any such change would be the new mount. If you plan on changing settings with the new mount you should / could apply those before mounting the new version.
+Run mergerfs again or if using `/etc/fstab` call for it to mount again. Existing open files and such will continue to work fine though they won't see runtime changes since any such change would be the new mount. If you plan on changing settings with the new mount you should / could apply those before mounting the new version.
 
 ```
 $ sudo mount /mnt/mergerfs
