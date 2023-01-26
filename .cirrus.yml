@@ -52,7 +52,7 @@ linux_task:
     image: alpine:3.11
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make STATIC=1 LTO=1
@@ -63,7 +63,7 @@ linux_task:
     image: alpine:3.12
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make STATIC=1 LTO=1
@@ -74,7 +74,7 @@ linux_task:
     image: alpine:3.13
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make STATIC=1 LTO=1
@@ -85,7 +85,40 @@ linux_task:
     image: alpine:3.14
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine:3.15"
+  container:
+    image: alpine:3.15
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine:3.16"
+  container:
+    image: alpine:3.16
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make STATIC=1 LTO=1
+
+linux_task:
+  name: "alpine:3.17"
+  container:
+    image: alpine:3.17
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make STATIC=1 LTO=1
@@ -96,7 +129,7 @@ linux_task:
     image: alpine:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make STATIC=1 LTO=1
@@ -107,7 +140,7 @@ linux_task:
     image: alpine:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make STATIC=1 LTO=1
@@ -118,19 +151,19 @@ linux_task:
     image: centos:7
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
     - make rpm
 
 linux_task:
-  name: "centos:8"
+  name: "rocky:8"
   container:
-    image: centos:8
+    image: rocky:8
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -142,7 +175,7 @@ linux_task:
     image: fedora:30
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -154,7 +187,7 @@ linux_task:
     image: fedora:31
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -166,7 +199,7 @@ linux_task:
     image: fedora:32
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -178,7 +211,7 @@ linux_task:
     image: fedora:33
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -190,7 +223,55 @@ linux_task:
     image: fedora:34
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "fedora:35"
+  container:
+    image: fedora:35
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "fedora:36"
+  container:
+    image: fedora:36
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "fedora:37"
+  container:
+    image: fedora:37
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - make
+    - make rpm
+
+linux_task:
+  name: "fedora:38"
+  container:
+    image: fedora:38
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -202,7 +283,7 @@ linux_task:
     image: fedora:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -214,7 +295,7 @@ linux_task:
     image: fedora:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - make
@@ -226,7 +307,7 @@ linux_task:
     image: ubuntu:14.04
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -241,7 +322,7 @@ linux_task:
     image: ubuntu:16.04
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -256,7 +337,7 @@ linux_task:
     image: ubuntu:18.04
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -271,7 +352,22 @@ linux_task:
     image: ubuntu:20.04
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
+  script:
+    - tools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu:22.04"
+  container:
+    image: ubuntu:22.04
+    cpu: 4
+    memory: 2G
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -286,7 +382,7 @@ linux_task:
     image: ubuntu:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -301,7 +397,7 @@ linux_task:
     image: ubuntu:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -316,7 +412,7 @@ linux_task:
     image: debian:8
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -331,7 +427,7 @@ linux_task:
     image: debian:8
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -346,7 +442,7 @@ linux_task:
     image: debian:9
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -361,7 +457,7 @@ linux_task:
     image: debian:10
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -376,7 +472,7 @@ linux_task:
     image: debian:11
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -391,7 +487,7 @@ linux_task:
     image: debian:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
@@ -406,7 +502,7 @@ linux_task:
     image: debian:latest
     cpu: 4
     memory: 2G
-  timeout_in: 10m
+  timeout_in: 15m
   script:
     - tools/install-build-pkgs
     - git fetch
