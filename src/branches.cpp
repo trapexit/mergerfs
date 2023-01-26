@@ -363,6 +363,17 @@ Branches::Impl::to_paths(StrVec &paths_) const
     }
 }
 
+fs::PathVector
+Branches::Impl::to_paths() const
+{
+  fs::PathVector vp;
+
+  for(const auto &branch : *this)
+    vp.emplace_back(branch.path);
+
+  return vp;
+}
+
 int
 Branches::from_string(const std::string &str_)
 {

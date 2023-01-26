@@ -19,7 +19,7 @@
 #pragma once
 
 #include "branch.hpp"
-#include "nonstd/optional.hpp"
+#include "fs_pathvector.hpp"
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
 
@@ -49,6 +49,7 @@ public:
   public:
     const uint64_t& minfreespace(void) const;
     void to_paths(StrVec &strvec) const;
+    fs::PathVector to_paths() const;
 
   public:
     Impl& operator=(Impl &impl_);

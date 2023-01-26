@@ -103,6 +103,7 @@ public:
   ConfigBOOL     auto_cache;
   ConfigUINT64   minfreespace;
   Branches       branches;
+  ConfigUINT64   branches_mount_timeout;
   ConfigUINT64   cache_attr;
   ConfigUINT64   cache_entry;
   CacheFiles     cache_files;

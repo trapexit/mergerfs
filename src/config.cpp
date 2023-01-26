@@ -53,6 +53,7 @@ namespace l
   readonly(const std::string &s_)
   {
     IFERT("async_read");
+    IFERT("branches-mount-timeout");
     IFERT("cache.symlinks");
     IFERT("cache.writeback");
     IFERT("fsname");
@@ -73,6 +74,7 @@ Config::Config()
     auto_cache(false),
     minfreespace(MINFREESPACE_DEFAULT),
     branches(minfreespace),
+    branches_mount_timeout(0),
     cache_attr(1),
     cache_entry(1),
     cache_files(CacheFiles::ENUM::LIBFUSE),
@@ -113,72 +115,73 @@ Config::Config()
     writeback_cache(false),
     xattr(XAttr::ENUM::PASSTHROUGH)
 {
-  _map["async_read"]           = &async_read;
-  _map["auto_cache"]           = &auto_cache;
-  _map["branches"]             = &branches;
-  _map["cache.attr"]           = &cache_attr;
-  _map["cache.entry"]          = &cache_entry;
-  _map["cache.files"]          = &cache_files;
-  _map["cache.negative_entry"] = &cache_negative_entry;
-  _map["cache.readdir"]        = &cache_readdir;
-  _map["cache.statfs"]         = &cache_statfs;
-  _map["cache.symlinks"]       = &cache_symlinks;
-  _map["cache.writeback"]      = &writeback_cache;
-  _map["category.action"]      = &category.action;
-  _map["category.create"]      = &category.create;
-  _map["category.search"]      = &category.search;
-  _map["direct_io"]            = &direct_io;
-  _map["dropcacheonclose"]     = &dropcacheonclose;
-  _map["follow-symlinks"]      = &follow_symlinks;
-  _map["fsname"]               = &fsname;
-  _map["func.access"]          = &func.access;
-  _map["func.chmod"]           = &func.chmod;
-  _map["func.chown"]           = &func.chown;
-  _map["func.create"]          = &func.create;
-  _map["func.getattr"]         = &func.getattr;
-  _map["func.getxattr"]        = &func.getxattr;
-  _map["func.link"]            = &func.link;
-  _map["func.listxattr"]       = &func.listxattr;
-  _map["func.mkdir"]           = &func.mkdir;
-  _map["func.mknod"]           = &func.mknod;
-  _map["func.open"]            = &func.open;
-  _map["func.readlink"]        = &func.readlink;
-  _map["func.removexattr"]     = &func.removexattr;
-  _map["func.rename"]          = &func.rename;
-  _map["func.rmdir"]           = &func.rmdir;
-  _map["func.setxattr"]        = &func.setxattr;
-  _map["func.symlink"]         = &func.symlink;
-  _map["func.truncate"]        = &func.truncate;
-  _map["func.unlink"]          = &func.unlink;
-  _map["func.utimens"]         = &func.utimens;
-  _map["fuse_msg_size"]        = &fuse_msg_size;
-  _map["ignorepponrename"]     = &ignorepponrename;
-  _map["inodecalc"]            = &inodecalc;
-  _map["kernel_cache"]         = &kernel_cache;
-  _map["link_cow"]             = &link_cow;
-  _map["link-exdev"]           = &link_exdev;
-  _map["log.metrics"]          = &log_metrics;
-  _map["minfreespace"]         = &minfreespace;
-  _map["mount"]                = &mount;
-  _map["moveonenospc"]         = &moveonenospc;
-  _map["nfsopenhack"]          = &nfsopenhack;
-  _map["nullrw"]               = &nullrw;
-  _map["pid"]                  = &pid;
-  _map["posix_acl"]            = &posix_acl;
-  //  _map["readdir"]              = &readdir;
-  _map["readdirplus"]          = &readdirplus;
-  _map["rename-exdev"]         = &rename_exdev;
-  _map["security_capability"]  = &security_capability;
-  _map["srcmounts"]            = &srcmounts;
-  _map["statfs"]               = &statfs;
-  _map["statfs_ignore"]        = &statfs_ignore;
-  _map["symlinkify"]           = &symlinkify;
-  _map["symlinkify_timeout"]   = &symlinkify_timeout;
-  _map["threads"]              = &fuse_read_thread_count;
-  _map["read-thread-count"]    = &fuse_read_thread_count;
-  _map["process-thread-count"] = &fuse_process_thread_count;
-  _map["version"]              = &version;
-  _map["xattr"]                = &xattr;
+  _map["async_read"]             = &async_read;
+  _map["auto_cache"]             = &auto_cache;
+  _map["branches"]               = &branches;
+  _map["branches-mount-timeout"] = &branches_mount_timeout;
+  _map["cache.attr"]             = &cache_attr;
+  _map["cache.entry"]            = &cache_entry;
+  _map["cache.files"]            = &cache_files;
+  _map["cache.negative_entry"]   = &cache_negative_entry;
+  _map["cache.readdir"]          = &cache_readdir;
+  _map["cache.statfs"]           = &cache_statfs;
+  _map["cache.symlinks"]         = &cache_symlinks;
+  _map["cache.writeback"]        = &writeback_cache;
+  _map["category.action"]        = &category.action;
+  _map["category.create"]        = &category.create;
+  _map["category.search"]        = &category.search;
+  _map["direct_io"]              = &direct_io;
+  _map["dropcacheonclose"]       = &dropcacheonclose;
+  _map["follow-symlinks"]        = &follow_symlinks;
+  _map["fsname"]                 = &fsname;
+  _map["func.access"]            = &func.access;
+  _map["func.chmod"]             = &func.chmod;
+  _map["func.chown"]             = &func.chown;
+  _map["func.create"]            = &func.create;
+  _map["func.getattr"]           = &func.getattr;
+  _map["func.getxattr"]          = &func.getxattr;
+  _map["func.link"]              = &func.link;
+  _map["func.listxattr"]         = &func.listxattr;
+  _map["func.mkdir"]             = &func.mkdir;
+  _map["func.mknod"]             = &func.mknod;
+  _map["func.open"]              = &func.open;
+  _map["func.readlink"]          = &func.readlink;
+  _map["func.removexattr"]       = &func.removexattr;
+  _map["func.rename"]            = &func.rename;
+  _map["func.rmdir"]             = &func.rmdir;
+  _map["func.setxattr"]          = &func.setxattr;
+  _map["func.symlink"]           = &func.symlink;
+  _map["func.truncate"]          = &func.truncate;
+  _map["func.unlink"]            = &func.unlink;
+  _map["func.utimens"]           = &func.utimens;
+  _map["fuse_msg_size"]          = &fuse_msg_size;
+  _map["ignorepponrename"]       = &ignorepponrename;
+  _map["inodecalc"]              = &inodecalc;
+  _map["kernel_cache"]           = &kernel_cache;
+  _map["link_cow"]               = &link_cow;
+  _map["link-exdev"]             = &link_exdev;
+  _map["log.metrics"]            = &log_metrics;
+  _map["minfreespace"]           = &minfreespace;
+  _map["mount"]                  = &mount;
+  _map["moveonenospc"]           = &moveonenospc;
+  _map["nfsopenhack"]            = &nfsopenhack;
+  _map["nullrw"]                 = &nullrw;
+  _map["pid"]                    = &pid;
+  _map["posix_acl"]              = &posix_acl;
+  //  _map["readdir"]            = &readdir;
+  _map["readdirplus"]            = &readdirplus;
+  _map["rename-exdev"]           = &rename_exdev;
+  _map["security_capability"]    = &security_capability;
+  _map["srcmounts"]              = &srcmounts;
+  _map["statfs"]                 = &statfs;
+  _map["statfs_ignore"]          = &statfs_ignore;
+  _map["symlinkify"]             = &symlinkify;
+  _map["symlinkify_timeout"]     = &symlinkify_timeout;
+  _map["threads"]                = &fuse_read_thread_count;
+  _map["read-thread-count"]      = &fuse_read_thread_count;
+  _map["process-thread-count"]   = &fuse_process_thread_count;
+  _map["version"]                = &version;
+  _map["xattr"]                  = &xattr;
 }
 
 Config&

@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_wait_for_mount.hpp"
+#include "syslog.hpp"
+
 #include "fs_path.hpp"
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
@@ -147,6 +150,33 @@ namespace l
     resources::setpriority(prio);
   }
 
+  static
+  void
+  wait_for_mount(const Config::Read &cfg_)
+  {
+    fs::PathVector paths;
+    fs::PathVector failed;
+    std::chrono::milliseconds timeout;
+
+    paths = cfg_->branches->to_paths();
+
+    syslog_info("Waiting %u seconds for branches to mount",
+                (uint64_t)cfg_->branches_mount_timeout);
+
+    timeout = std::chrono::milliseconds(cfg_->branches_mount_timeout * 1000);
+    fs::wait_for_mount((std::string)cfg_->mount,
+                       paths,
+                       timeout,
+                       failed);
+    for(auto &path : failed)
+      syslog_warning("Branch %s was not mounted within timeout",
+                     path.c_str());
+    if(failed.size())
+      syslog_warning("Continuing to mount mergerfs despite %u branches not "
+                     "being different from the mountpoint filesystem",
+                     failed.size());
+  }
+
   int
   main(const int   argc_,
        char      **argv_)
@@ -155,6 +185,8 @@ namespace l
     Config::ErrVec  errs;
     fuse_args       args;
     fuse_operations ops;
+
+    syslog_open();
 
     memset(&ops,0,sizeof(fuse_operations));
 
@@ -168,6 +200,9 @@ namespace l
         std::cerr << errs << std::endl;
         return 1;
       }
+
+    if(cfg->branches_mount_timeout > 0)
+      l::wait_for_mount(cfg);
 
     l::setup_resources();
     l::get_fuse_operations(ops,cfg->nullrw);
