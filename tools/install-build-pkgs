@@ -3,7 +3,7 @@
 if [ -e /usr/bin/apt-get ]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get -qy update
-    apt-get -qy --no-install-suggests --no-install-recommends \
+    apt-get -qy --force-yes --no-install-suggests --no-install-recommends \
 	    install \
             ca-certificates \
             build-essential \
