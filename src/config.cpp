@@ -64,6 +64,7 @@ namespace l
     IFERT("readdirplus");
     IFERT("threads");
     IFERT("version");
+    IFERT("scheduling-priority");
 
     return false;
   }
@@ -103,6 +104,7 @@ Config::Config()
     readdir(ReadDir::ENUM::POSIX),
     readdirplus(false),
     rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
+    scheduling_priority(-10),
     security_capability(true),
     srcmounts(branches),
     statfs(StatFS::ENUM::BASE),
@@ -171,6 +173,7 @@ Config::Config()
   //  _map["readdir"]            = &readdir;
   _map["readdirplus"]            = &readdirplus;
   _map["rename-exdev"]           = &rename_exdev;
+  _map["scheduling-priority"]    = &scheduling_priority;
   _map["security_capability"]    = &security_capability;
   _map["srcmounts"]              = &srcmounts;
   _map["statfs"]                 = &statfs;

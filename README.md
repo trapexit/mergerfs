@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-01-24
+% 2023-01-25
 
 # NAME
 
@@ -203,6 +203,9 @@ These options are the same regardless of whether you use them with the `mergerfs
   `read-thread-count` refers to the number of threads reading FUSE
   messages which are dispatched to process threads. -1 means disabled
   otherwise acts like `read-thread-count`. (default: -1)
+* **scheduling-priority=INT**: Set mergerfs' scheduling
+  priority. Valid values range from -20 to 19. See `setpriority` man
+  page for more details. (default: -10)
 * **fsname=STR**: Sets the name of the filesystem as seen in
   **mount**, **df**, etc. Defaults to a list of the source paths
   concatenated together with the longest common prefix removed.
