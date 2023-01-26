@@ -133,6 +133,7 @@ public:
   ReadDir        readdir;
   ConfigBOOL     readdirplus;
   RenameEXDEV    rename_exdev;
+  ConfigINT      scheduling_priority;
   ConfigBOOL     security_capability;
   SrcMounts      srcmounts;
   StatFS         statfs;
@@ -144,6 +145,7 @@ public:
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;
   XAttr          xattr;
+
 
 public:
   friend std::ostream& operator<<(std::ostream &s,

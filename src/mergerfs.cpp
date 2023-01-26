@@ -139,15 +139,13 @@ namespace l
 
   static
   void
-  setup_resources(void)
+  setup_resources(const int scheduling_priority_)
   {
-    const int prio = -10;
-
     std::srand(time(NULL));
     resources::reset_umask();
     resources::maxout_rlimit_nofile();
     resources::maxout_rlimit_fsize();
-    resources::setpriority(prio);
+    resources::setpriority(scheduling_priority_);
   }
 
   static
@@ -204,7 +202,7 @@ namespace l
     if(cfg->branches_mount_timeout > 0)
       l::wait_for_mount(cfg);
 
-    l::setup_resources();
+    l::setup_resources(cfg->scheduling_priority);
     l::get_fuse_operations(ops,cfg->nullrw);
 
     return fuse_main(args.argc,
