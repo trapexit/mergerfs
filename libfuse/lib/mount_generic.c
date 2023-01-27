@@ -61,7 +61,6 @@ enum {
 };
 
 struct mount_opts {
-  int allow_other;
   int ishelp;
   int flags;
   int auto_unmount;
@@ -77,12 +76,10 @@ struct mount_opts {
 #define FUSE_MOUNT_OPT(t, p) { t, offsetof(struct mount_opts, p), 1 }
 
 static const struct fuse_opt fuse_mount_opts[] = {
-  FUSE_MOUNT_OPT("allow_other",		allow_other),
   FUSE_MOUNT_OPT("blkdev",		blkdev),
   FUSE_MOUNT_OPT("auto_unmount",		auto_unmount),
   FUSE_MOUNT_OPT("fsname=%s",		fsname),
   FUSE_MOUNT_OPT("subtype=%s",		subtype),
-  FUSE_OPT_KEY("allow_other",		KEY_KERN_OPT),
   FUSE_OPT_KEY("auto_unmount",		KEY_FUSERMOUNT_OPT),
   FUSE_OPT_KEY("blkdev",			KEY_FUSERMOUNT_OPT),
   FUSE_OPT_KEY("fsname=",			KEY_FUSERMOUNT_OPT),
@@ -121,7 +118,6 @@ static const struct fuse_opt fuse_mount_opts[] = {
 static void mount_help(void)
 {
   fprintf(stderr,
-          "    -o allow_other         allow access to other users\n"
           "    -o auto_unmount        auto unmount on process termination\n"
           "    -o default_permissions enable permission checking by kernel\n"
           "    -o fsname=NAME         set filesystem name\n"
@@ -552,6 +548,8 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
   if (args &&
       fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
     return -1;
+
+  fuse_opt_add_opt(&mo.kernel_opts,"allow_other");
 
   res = 0;
   if (mo.ishelp)

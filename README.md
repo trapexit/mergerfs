@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-01-25
+% 2023-01-26
 
 # NAME
 
@@ -90,11 +90,11 @@ start with one of the following option sets.
 
 #### You need `mmap` (used by rtorrent and many sqlite3 base software)
 
-`allow_other,cache.files=partial,dropcacheonclose=true,category.create=mfs`
+`cache.files=partial,dropcacheonclose=true,category.create=mfs`
 
 #### You don't need `mmap`
 
-`allow_other,cache.files=off,dropcacheonclose=true,category.create=mfs`
+`cache.files=off,dropcacheonclose=true,category.create=mfs`
 
 
 See the mergerfs [wiki for real world deployments](https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments) for comparisons / ideas.
@@ -109,9 +109,6 @@ These options are the same regardless of whether you use them with the `mergerfs
 * **config**: Path to a config file. Same arguments as below in
   key=val / ini style format.
 * **branches**: Colon delimited list of branches.
-* **allow_other**: A libfuse option which allows users besides the one
-  which ran mergerfs to see the filesystem. This is required for most
-  use-cases.
 * **minfreespace=SIZE**: The minimum space value used for creation
   policies. Can be overridden by branch specific option. Understands
   'K', 'M', and 'G' to represent kilobyte, megabyte, and gigabyte
@@ -287,7 +284,7 @@ To make it easier to include multiple branches mergerfs supports [globbing](http
 
 
 ```
-# mergerfs -o allow_other /mnt/disk\*:/mnt/cdrom /media/drives
+# mergerfs /mnt/disk\*:/mnt/cdrom /media/drives
 ```
 
 The above line will use all mount points in /mnt prefixed with **disk** and the **cdrom**.
@@ -296,7 +293,7 @@ To have the pool mounted at boot or otherwise accessible from related tools use 
 
 ```
 # <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  allow_other           0       0
+/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  minfreespace=16G      0       0
 ```
 
 **NOTE:** the globbing is done at mount or when updated using the runtime API. If a new directory is added matching the glob after the fact it will not be automatically included.
@@ -985,7 +982,7 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 
 * This document is very literal and thorough. Unless there is a bug things work as described. If a suspected feature isn't mentioned it doesn't exist. If certain libfuse arguments aren't listed they probably shouldn't be used.
 * Ensure you're using the latest version. Few distros have the latest version.
-* Run mergerfs as `root` (with **allow_other**) unless you're merging paths which are owned exclusively and fully by the same user otherwise strange permission issues may arise. mergerfs is designed and intended to be run as `root`.
+* Run mergerfs as `root` unless you're merging paths which are owned exclusively and fully by the same user otherwise strange permission issues may arise. mergerfs is designed and intended to be run as `root`.
 * If you don't see some directories and files you expect, policies seem to skip branches, you get strange permission errors, etc. be sure the underlying filesystems' permissions are all the same. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
 * If you still have permission issues be sure you are using POSIX ACL compliant filesystems. mergerfs doesn't generally make exceptions for FAT, NTFS, or other non-POSIX filesystem.
 * Do **not** use `cache.files=off` if you expect applications (such as rtorrent) to use [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ page caching disabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full`.
@@ -1160,7 +1157,7 @@ Depends on what features you want. Generally speaking there are no "wrong" setti
 
 That said, for the average person, the following should be fine:
 
-`-o cache.files=off,dropcacheonclose=true,allow_other,category.create=mfs`
+`-o cache.files=off,dropcacheonclose=true,category.create=mfs`
 
 
 #### Why are all my files ending up on 1 drive?!
@@ -1265,7 +1262,7 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 
 `mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool`
 
-`mergerfs -o minfreespace=4G,allow_other,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
+`mergerfs -o minfreespace=4G,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
 
 
 #### Why use mergerfs over aufs?

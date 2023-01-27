@@ -125,7 +125,8 @@ should_ignore(const std::string &key_)
       "defaults",
       "hard_remove",
       "nonempty",
-      "use_ino"
+      "use_ino",
+      "allow_other"
     };
 
   return (IGNORED_KEYS.find(key_) != IGNORED_KEYS.end());
