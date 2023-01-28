@@ -93,8 +93,6 @@ struct lock_queue_element
   char **path2;
   struct node **wnode2;
   int err;
-  bool first_locked : 1;
-  bool second_locked : 1;
   bool done : 1;
 };
 
@@ -973,25 +971,33 @@ try_get_path(struct fuse  *f,
 }
 
 static
-void
-queue_element_unlock(struct fuse               *f,
-                     struct lock_queue_element *qe)
+int
+try_get_path2(struct fuse  *f,
+              uint64_t      nodeid1,
+              const char   *name1,
+              uint64_t      nodeid2,
+              const char   *name2,
+              char        **path1,
+              char        **path2,
+              struct node **wnode1,
+              struct node **wnode2)
 {
-  struct node *wnode;
+  int err;
 
-  if(qe->first_locked)
+  err = try_get_path(f,nodeid1,name1,path1,wnode1,true);
+  if(!err)
     {
-      wnode = qe->wnode1 ? *qe->wnode1 : NULL;
-      unlock_path(f,qe->nodeid1,wnode,NULL);
-      qe->first_locked = false;
+      err = try_get_path(f,nodeid2,name2,path2,wnode2,true);
+      if(err)
+        {
+          struct node *wn1 = wnode1 ? *wnode1 : NULL;
+
+          unlock_path(f,nodeid1,wn1,NULL);
+          free(*path1);
+        }
     }
 
-  if(qe->second_locked)
-    {
-      wnode = qe->wnode2 ? *qe->wnode2 : NULL;
-      unlock_path(f,qe->nodeid2,wnode,NULL);
-      qe->second_locked = false;
-    }
+  return err;
 }
 
 static
@@ -1000,7 +1006,6 @@ queue_element_wakeup(struct fuse               *f,
                      struct lock_queue_element *qe)
 {
   int err;
-  bool first = (qe == f->lockq);
 
   if(!qe->path1)
     {
@@ -1011,46 +1016,34 @@ queue_element_wakeup(struct fuse               *f,
       return;
     }
 
-  if(!qe->first_locked)
+  if(qe->done)
+    return;
+
+  if(!qe->path2)
     {
-      err = try_get_path(f,qe->nodeid1,qe->name1,qe->path1,qe->wnode1,true);
-      if(!err)
-        qe->first_locked = true;
-      else if(err != -EAGAIN)
-        goto err_unlock;
+      err = try_get_path(f,
+                         qe->nodeid1,
+                         qe->name1,
+                         qe->path1,
+                         qe->wnode1,
+                         true);
+    }
+  else
+    {
+      err = try_get_path2(f,
+                          qe->nodeid1,
+                          qe->name1,
+                          qe->nodeid2,
+                          qe->name2,
+                          qe->path1,
+                          qe->path2,
+                          qe->wnode1,
+                          qe->wnode2);
     }
 
-  if(!qe->second_locked && qe->path2)
-    {
-      err = try_get_path(f,qe->nodeid2,qe->name2,qe->path2,qe->wnode2,true);
-      if(!err)
-        qe->second_locked = true;
-      else if(err != -EAGAIN)
-        goto err_unlock;
-    }
+  if(err == -EAGAIN)
+    return;
 
-  if(qe->first_locked && (qe->second_locked || !qe->path2))
-    {
-      err = 0;
-      goto done;
-    }
-
-  /*
-   * Only let the first element be partially locked otherwise there could
-   * be a deadlock.
-   *
-   * But do allow the first element to be partially locked to prevent
-   * starvation.
-   */
-  if(!first)
-    queue_element_unlock(f,qe);
-
-  /* keep trying */
-  return;
-
- err_unlock:
-  queue_element_unlock(f,qe);
- done:
   qe->err = err;
   qe->done = true;
   pthread_cond_signal(&qe->cond);
@@ -1074,8 +1067,6 @@ queue_path(struct fuse               *f,
   struct lock_queue_element **qp;
 
   qe->done = false;
-  qe->first_locked = false;
-  qe->second_locked = false;
   pthread_cond_init(&qe->cond,NULL);
   qe->next = NULL;
   for(qp = &f->lockq; *qp != NULL; qp = &(*qp)->next);
@@ -1167,37 +1158,6 @@ get_path_wrlock(struct fuse  *f,
                 struct node **wnode)
 {
   return get_path_common(f,nodeid,name,path,wnode);
-}
-
-static
-int
-try_get_path2(struct fuse  *f,
-              uint64_t      nodeid1,
-              const char   *name1,
-              uint64_t      nodeid2,
-              const char   *name2,
-              char        **path1,
-              char        **path2,
-              struct node **wnode1,
-              struct node **wnode2)
-{
-  int err;
-
-  /* FIXME: locking two paths needs deadlock checking */
-  err = try_get_path(f,nodeid1,name1,path1,wnode1,true);
-  if(!err)
-    {
-      err = try_get_path(f,nodeid2,name2,path2,wnode2,true);
-      if(err)
-        {
-          struct node *wn1 = wnode1 ? *wnode1 : NULL;
-
-          unlock_path(f,nodeid1,wn1,NULL);
-          free(*path1);
-        }
-    }
-
-  return err;
 }
 
 static
@@ -3421,6 +3381,8 @@ fuse_lib_ioctl(fuse_req_t                   req,
                         arg->flags,
                         out_buf ?: (void *)in_buf,
                         &out_size);
+  if(err < 0)
+    goto err;
 
   fuse_reply_ioctl(req,err,out_buf,out_size);
   goto out;
