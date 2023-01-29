@@ -16,12 +16,16 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 #include <vector>
 
 
 namespace fs
 {
+  typedef ghc::filesystem::path Path;
+
   namespace path
   {
     std::string dirname(const char *path);

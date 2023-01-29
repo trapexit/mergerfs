@@ -51,7 +51,7 @@ linux_task:
   container:
     image: alpine:3.11
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -62,7 +62,7 @@ linux_task:
   container:
     image: alpine:3.12
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -73,7 +73,7 @@ linux_task:
   container:
     image: alpine:3.13
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -84,7 +84,7 @@ linux_task:
   container:
     image: alpine:3.14
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -95,7 +95,7 @@ linux_task:
   container:
     image: alpine:3.15
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -106,7 +106,7 @@ linux_task:
   container:
     image: alpine:3.16
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -117,7 +117,7 @@ linux_task:
   container:
     image: alpine:3.17
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -128,7 +128,7 @@ linux_task:
   container:
     image: alpine:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -139,7 +139,7 @@ linux_task:
   arm_container:
     image: alpine:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -150,7 +150,7 @@ linux_task:
   container:
     image: centos:7
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -162,7 +162,7 @@ linux_task:
   container:
     image: rocky:8
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -174,7 +174,7 @@ linux_task:
   container:
     image: fedora:30
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -186,7 +186,7 @@ linux_task:
   container:
     image: fedora:31
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -198,7 +198,7 @@ linux_task:
   container:
     image: fedora:32
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -210,7 +210,7 @@ linux_task:
   container:
     image: fedora:33
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -222,7 +222,7 @@ linux_task:
   container:
     image: fedora:34
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -234,7 +234,7 @@ linux_task:
   container:
     image: fedora:35
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -246,7 +246,7 @@ linux_task:
   container:
     image: fedora:36
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -258,7 +258,7 @@ linux_task:
   container:
     image: fedora:37
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -270,7 +270,7 @@ linux_task:
   container:
     image: fedora:38
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -282,7 +282,7 @@ linux_task:
   container:
     image: fedora:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -294,7 +294,7 @@ linux_task:
   arm_container:
     image: fedora:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -306,7 +306,7 @@ linux_task:
   container:
     image: ubuntu:14.04
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -321,7 +321,7 @@ linux_task:
   container:
     image: ubuntu:16.04
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -336,7 +336,7 @@ linux_task:
   container:
     image: ubuntu:18.04
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -351,7 +351,7 @@ linux_task:
   container:
     image: ubuntu:20.04
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -366,7 +366,7 @@ linux_task:
   container:
     image: ubuntu:22.04
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -381,7 +381,7 @@ linux_task:
   container:
     image: ubuntu:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -396,7 +396,7 @@ linux_task:
   arm_container:
     image: ubuntu:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -411,7 +411,7 @@ linux_task:
   container:
     image: debian:8
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -426,7 +426,7 @@ linux_task:
   container:
     image: debian:8
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -441,7 +441,7 @@ linux_task:
   container:
     image: debian:9
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -456,7 +456,7 @@ linux_task:
   container:
     image: debian:10
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -471,7 +471,7 @@ linux_task:
   container:
     image: debian:11
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -486,7 +486,7 @@ linux_task:
   container:
     image: debian:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs
@@ -501,7 +501,7 @@ linux_task:
   arm_container:
     image: debian:latest
     cpu: 4
-    memory: 2G
+    memory: 4G
   timeout_in: 15m
   script:
     - tools/install-build-pkgs

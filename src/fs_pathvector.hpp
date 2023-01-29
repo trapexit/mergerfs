@@ -1,10 +1,10 @@
 #pragma once
 
-#include "ghc/filesystem.hpp"
+#include "fs_path.hpp"
 
 #include <vector>
 
 namespace fs
 {
-  typedef std::vector<ghc::filesystem::path> PathVector;
+  typedef std::vector<fs::Path> PathVector;
 }

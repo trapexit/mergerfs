@@ -14,9 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#define FMT_HEADER_ONLY
+
 #include "config.hpp"
 #include "ef.hpp"
 #include "errno.hpp"
+#include "fmt/core.h"
 #include "fs_glob.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "hw_cpu.hpp"
@@ -366,6 +369,29 @@ option_processor(void       *data_,
   return 0;
 }
 
+static
+void
+check_for_mount_loop(Config::Write  &cfg_,
+                     Config::ErrVec *errs_)
+{
+  fs::Path mount;
+  fs::PathVector branches;
+  std::error_code ec;
+
+  mount    = (std::string)cfg_->mount;
+  branches = cfg_->branches->to_paths();
+  for(const auto &branch : branches)
+    {
+      if(ghc::filesystem::equivalent(branch,mount,ec))
+        {
+          std::string errstr;
+
+          errstr = fmt::format("branches can not include the mountpoint: {}",branch.string());
+          errs_->push_back({0,errstr});
+        }
+    }
+}
+
 namespace options
 {
   void
@@ -393,6 +419,8 @@ namespace options
     if(cfg->mount->empty())
       errs_->push_back({0,"mountpoint not set"});
 
+    check_for_mount_loop(cfg,errs_);
+    
     set_default_options(args_);
     set_fsname(cfg,args_);
     set_subtype(args_);
