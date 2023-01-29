@@ -79,8 +79,7 @@ CXXFLAGS    := \
               -MMD
 FUSE_FLAGS = \
               -Ilibfuse/include \
-              -D_FILE_OFFSET_BITS=64 \
-              -DFUSE_USE_VERSION=29
+              -D_FILE_OFFSET_BITS=64
 MFS_FLAGS  = \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)

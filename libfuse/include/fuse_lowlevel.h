@@ -9,21 +9,6 @@
 #ifndef _FUSE_LOWLEVEL_H_
 #define _FUSE_LOWLEVEL_H_
 
-/** @file
- *
- * Low level API
- *
- * IMPORTANT: you should define FUSE_USE_VERSION before including this
- * header.  To use the newest API define it to 26 (recommended for any
- * new application), to use the old API define it to 24 (default) or
- * 25
- */
-
-#include "fuse_msgbuf.h"
-#ifndef FUSE_USE_VERSION
-#define FUSE_USE_VERSION 24
-#endif
-
 #include "extern_c.h"
 #include "fuse_common.h"
 #include "fuse_kernel.h"
