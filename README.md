@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-01-26
+% 2023-01-29
 
 # NAME
 
@@ -1047,9 +1047,24 @@ Be sure to set `cache.files=partial|full|auto-full` or turn off `direct_io`. rto
 
 #### Plex doesn't work with mergerfs
 
-It does. If you're trying to put Plex's config / metadata / database on mergerfs you can't set `cache.files=off` because Plex is using sqlite3 with mmap enabled. Shared mmap is not supported by Linux's FUSE implementation when page caching is disabled. To fix this place the data elsewhere (preferable) or enable `cache.files` (with `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer needs to fall back to standard IO if mmap fails.
+It does. If you're trying to put Plex's config / metadata / database
+on mergerfs you can't set `cache.files=off` because Plex is using
+sqlite3 with mmap enabled. Shared mmap is not supported by Linux's
+FUSE implementation when page caching is disabled. To fix this place
+the data elsewhere (preferable) or enable `cache.files` (with
+`dropcacheonclose=true`). Sqlite3 does not need mmap but the developer
+needs to fall back to standard IO if mmap fails.
 
-If the issue is that scanning doesn't seem to pick up media then be sure to set `func.getattr=newest` though generally a full scan will pick up all media anyway.
+
+This applies to other software: Radarr, Sonarr, Lidarr, Jellyfin, etc.
+
+I would recommend reaching out to the developers of the software
+you're having troubles with and asking them to add a fallback to
+regular file IO when mmap is unavailable.
+
+If the issue is that scanning doesn't seem to pick up media then be
+sure to set `func.getattr=newest` though generally a full scan will
+pick up all media anyway.
 
 
 #### When a program tries to move or rename a file it fails
