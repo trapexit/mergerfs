@@ -493,31 +493,30 @@ A policy's behavior differs, as mentioned above, based on the function it is use
 
 | Policy           | Description                                                |
 |------------------|------------------------------------------------------------|
-| all | Search: Same as **epall**. Action: Same as **epall**. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
-| epall (existing path, all) | Search: Same as **epff** (but more expensive because it doesn't stop after finding a valid branch). Action: apply to all found. Create: for **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
+| all | Search: For **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
+| epall (existing path, all) | For **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
 | epff (existing path, first found) | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists. |
 | eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the drive with the least free space. |
 | eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
 | epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
 | eppfrd (existing path, percentage free random distribution) | Like **pfrd** but limited to existing paths.  |
 | eprand (existing path, random) | Calls **epall** and then randomizes. Returns 1. |
-| erofs | Exclusively return **-1** with **errno** set to **EROFS** (read-only filesystem). |
-| ff (first found) | Search: Same as **epff**. Action: Same as **epff**. Create: Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
-| lfs (least free space) | Search: Same as **eplfs**. Action: Same as **eplfs**. Create: Pick the drive with the least available free space. |
-| lus (least used space) | Search: Same as **eplus**. Action: Same as **eplus**. Create: Pick the drive with the least used space. |
-| mfs (most free space) | Search: Same as **epmfs**. Action: Same as **epmfs**. Create: Pick the drive with the most available free space. |
-| msplfs (most shared path, least free space) | Search: Same as **eplfs**. Action: Same as **eplfs**. Create: like **eplfs** but walk back the path if it fails to find a branch at that level. |
-| msplus (most shared path, least used space) | Search: Same as **eplus**. Action: Same as **eplus**. Create: like **eplus** but walk back the path if it fails to find a branch at that level. |
-| mspmfs (most shared path, most free space) | Search: Same as **epmfs**. Action: Same as **epmfs**. Create: like **epmfs** but walk back the path if it fails to find a branch at that level. |
-| msppfrd (most shared path, percentage free random distribution) | Search: Same as **eppfrd**. Action: Same as **eppfrd**. Create: Like **eppfrd** but will walk back the path if it fails to find a branch at that level. |
+| ff (first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
+| lfs (least free space) | Pick the drive with the least available free space. |
+| lus (least used space) | Pick the drive with the least used space. |
+| mfs (most free space) | Pick the drive with the most available free space. |
+| msplfs (most shared path, least free space) | Like **eplfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
+| msplus (most shared path, least used space) | Like **eplus** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
+| mspmfs (most shared path, most free space) | Like **epmfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
+| msppfrd (most shared path, percentage free random distribution) | Like **eppfrd** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
 | newest | Pick the file / directory with the largest mtime. |
-| pfrd (percentage free random distribution) | Search: Same as **eppfrd**. Action: Same as **eppfrd**. Create: Chooses a branch at random with the likelihood of selection based on a branch's available space relative to the total. |
-| rand (random) | Calls **all** and then randomizes. Returns 1. |
+| pfrd (percentage free random distribution) | Chooses a branch at random with the likelihood of selection based on a branch's available space relative to the total. |
+| rand (random) | Calls **all** and then randomizes. Returns 1 branch. |
 
 **NOTE:** If you are using an underlying filesystem that reserves blocks such as ext2, ext3, or ext4 be aware that mergerfs respects the reservation by using `f_bavail` (number of free blocks for unprivileged users) rather than `f_bfree` (number of free blocks) in policy calculations. **df** does NOT use `f_bavail`, it uses `f_bfree`, so direct comparisons between **df** output and mergerfs' policies is not appropriate.
 
 
-#### Defaults ####
+#### Defaults
 
 | Category | Policy |
 |----------|--------|
@@ -1383,28 +1382,47 @@ For non-Linux systems mergerfs uses a read-write lock and changes credentials on
 
 # SUPPORT
 
-Filesystems are complex and difficult to debug. mergerfs, while being just a proxy of sorts, is also very difficult to debug given the large number of possible settings it can have itself and the massive number of environments it can run in. When reporting on a suspected issue **please, please** include as much of the below information as possible otherwise it will be difficult or impossible to diagnose. Also please make sure to read all of the above documentation as it includes nearly every known system or user issue previously encountered.
+Filesystems are complex and difficult to debug. mergerfs, while being
+just a proxy of sorts, can be difficult to debug given the large
+number of possible settings it can have itself and the number of
+environments it can run in. When reporting on a suspected issue
+**please** include as much of the below information as possible
+otherwise it will be difficult or impossible to diagnose. Also please
+read the above documentation as it provides details on many previously
+encountered questions/issues.
 
-**Please make sure you are using the [latest release](https://github.com/trapexit/mergerfs/releases) or have tried it in comparison. Old versions, which are often included in distros like Debian and Ubuntu, are not ever going to be updated and your bug may have been addressed already.**
+
+**Please make sure you are using the [latest
+release](https://github.com/trapexit/mergerfs/releases) or have tried
+it in comparison. Old versions, which are often included in distros
+like Debian and Ubuntu, are not ever going to be updated and your bug
+may have been addressed already.**
+
 
 **For commercial support or feature requests please contact me directly.**
 
 
 #### Information to include in bug reports
 
+* [Information about the broader problem along with any attempted
+  solutions.](https://xyproblem.info)
+* Solution already ruled out and why.
 * Version of mergerfs: `mergerfs -V`
-* mergerfs settings / arguments: from fstab, systemd unit, command line, etc.
-* Version of the OS: `uname -a`
+* mergerfs settings / arguments: from fstab, systemd unit, command
+  line, OMV plugin, etc.
+* Version of the OS: `uname -a` and `lsb_release -a`
 * List of branches, their filesystem types, sizes (before and after issue): `df -h`
-* **All** information about the relevant branches and paths: permissions, ownership, etc.
+* **All** information about the relevant paths and files: permissions, ownership, etc.
 * **All** information about the client app making the requests: version, uid/gid
-* Runtime environment: mostly are things running inside containers or not
+* Runtime environment:
+  * Is mergerfs running within a container?
+  * Are the client apps using mergerfs running in a container?
 * A `strace` of the app having problems:
   * `strace -fvTtt -s 256 -o /tmp/app.strace.txt <cmd>`
-* A `strace` of mergerfs while the program is trying to do whatever it's failing to do:
+* A `strace` of mergerfs while the program is trying to do whatever it is failing to do:
   * `strace -fvTtt -s 256 -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
 * **Precise** directions on replicating the issue. Do not leave **anything** out.
-* Try to recreate the problem in the simplest way using standard programs: ln, mv, cp, ls, dd, etc.
+* Try to recreate the problem in the simplest way using standard programs: `ln`, `mv`, `cp`, `ls`, `dd`, etc.
 
 
 #### Contact / Issue submission
@@ -1418,7 +1436,10 @@ Filesystems are complex and difficult to debug. mergerfs, while being just a pro
 
 #### Support development
 
-This software is released under the very liberal ISC license and is therefore free to use for personal or commercial uses. That said if you like this software and have the means please consider supporting its development.
+This software is released under the very liberal ISC license and is
+therefore free to use for personal or commercial uses. That said if
+you like this software and have the means please consider supporting
+its development.
 
 https://github.com/trapexit/support
 
@@ -1431,4 +1452,3 @@ https://github.com/trapexit/support
 * https://github.com/trapexit/mergerfs-tools
 * https://github.com/trapexit/scorch
 * https://github.com/trapexit/bbf
-* https://github.com/trapexit/backup-and-recovery-howtos
