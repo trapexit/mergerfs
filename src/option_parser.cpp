@@ -378,7 +378,7 @@ check_for_mount_loop(Config::Write  &cfg_,
   fs::PathVector branches;
   std::error_code ec;
 
-  mount    = (std::string)cfg_->mount;
+  mount    = (std::string)cfg_->mountpoint;
   branches = cfg_->branches->to_paths();
   for(const auto &branch : branches)
     {
@@ -416,7 +416,7 @@ namespace options
 
     if(cfg->branches->empty())
       errs_->push_back({0,"branches not set"});
-    if(cfg->mount->empty())
+    if(cfg->mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
 
     check_for_mount_loop(cfg,errs_);

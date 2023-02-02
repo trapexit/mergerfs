@@ -18,6 +18,7 @@
 #include "syslog.hpp"
 
 #include "fs_path.hpp"
+#include "fs_umount2.hpp"
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
 #include "resources.hpp"
@@ -162,7 +163,7 @@ namespace l
                 (uint64_t)cfg_->branches_mount_timeout);
 
     timeout = std::chrono::milliseconds(cfg_->branches_mount_timeout * 1000);
-    fs::wait_for_mount((std::string)cfg_->mount,
+    fs::wait_for_mount((std::string)cfg_->mountpoint,
                        paths,
                        timeout,
                        failed);
@@ -173,6 +174,32 @@ namespace l
       syslog_warning("Continuing to mount mergerfs despite %u branches not "
                      "being different from the mountpoint filesystem",
                      failed.size());
+  }
+
+  static
+  void
+  lazy_umount(const std::string target_)
+  {
+    int rv;
+
+    rv = fs::umount_lazy(target_);
+    switch(rv)
+      {
+      case 0:
+        syslog_notice("%s has been successfully lazily unmounted",
+                      target_.c_str());
+        break;
+      case -EINVAL:
+        syslog_notice("%s was not a mount point needing to be unmounted",
+                      target_.c_str());
+        break;
+      default:
+        syslog_error("Error unmounting %s: %d - %s",
+                     target_.c_str(),
+                     -rv,
+                     strerror(-rv));
+        break;
+      }
   }
 
   int
@@ -204,6 +231,9 @@ namespace l
 
     l::setup_resources(cfg->scheduling_priority);
     l::get_fuse_operations(ops,cfg->nullrw);
+
+    if(cfg->lazy_umount_mountpoint)
+      l::lazy_umount(cfg->mountpoint);
 
     return fuse_main(args.argc,
                      args.argv,

@@ -326,7 +326,7 @@ namespace l
                                               st_,
                                               timeouts_);
       case LinkEXDEV::ENUM::ABS_POOL_SYMLINK:
-        return l::link_exdev_abs_pool_symlink(cfg_->mount,
+        return l::link_exdev_abs_pool_symlink(cfg_->mountpoint,
                                               oldpath_,
                                               newpath_,
                                               st_,

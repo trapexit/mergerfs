@@ -18,13 +18,32 @@
 
 #pragma once
 
-#include <syslog.h>
+#include <errno.h>
+#include <sys/mount.h>
 
+#include <string>
 
-void syslog_open();
-void syslog_log(const int priority, const char *format, ...);
-void syslog_info(const char *format, ...);
-void syslog_notice(const char *format, ...);
-void syslog_warning(const char *format, ...);
-void syslog_error(const char *format, ...);
-void syslog_close();
+namespace fs
+{
+  static
+  inline
+  int
+  umount2(const std::string target_,
+          const int         flags_)
+  {
+    int rv;
+
+    rv = ::umount2(target_.c_str(),
+                   flags_);
+
+    return ((rv == -1) ? -errno : rv);
+  }
+
+  static
+  inline
+  int
+  umount_lazy(const std::string target_)
+  {
+    return fs::umount2(target_,MNT_DETACH);
+  }
+}

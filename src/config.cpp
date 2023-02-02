@@ -92,10 +92,11 @@ Config::Config()
     fuse_msg_size(FUSE_MAX_MAX_PAGES),
     ignorepponrename(false),
     inodecalc("hybrid-hash"),
+    lazy_umount_mountpoint(false),
     link_cow(false),
     link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
     log_metrics(false),
-    mount(),
+    mountpoint(),
     moveonenospc(false),
     nfsopenhack(NFSOpenHack::ENUM::OFF),
     nullrw(false),
@@ -160,11 +161,12 @@ Config::Config()
   _map["ignorepponrename"]       = &ignorepponrename;
   _map["inodecalc"]              = &inodecalc;
   _map["kernel_cache"]           = &kernel_cache;
+  _map["lazy-umount-mountpoint"] = &lazy_umount_mountpoint;
   _map["link_cow"]               = &link_cow;
   _map["link-exdev"]             = &link_exdev;
   _map["log.metrics"]            = &log_metrics;
   _map["minfreespace"]           = &minfreespace;
-  _map["mount"]                  = &mount;
+  _map["mount"]                  = &mountpoint;
   _map["moveonenospc"]           = &moveonenospc;
   _map["nfsopenhack"]            = &nfsopenhack;
   _map["nullrw"]                 = &nullrw;
