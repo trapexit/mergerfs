@@ -121,10 +121,11 @@ public:
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
+  ConfigBOOL     lazy_umount_mountpoint;
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
   LogMetrics     log_metrics;
-  ConfigSTR      mount;
+  ConfigSTR      mountpoint;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;

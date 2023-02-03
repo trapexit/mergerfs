@@ -358,7 +358,7 @@ namespace l
       case RenameEXDEV::ENUM::ABS_SYMLINK:
         return l::rename_exdev_abs_symlink(cfg_->func.rename.policy,
                                            cfg_->branches,
-                                           cfg_->mount,
+                                           cfg_->mountpoint,
                                            oldfusepath_,
                                            newfusepath_);
       }

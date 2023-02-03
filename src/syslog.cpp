@@ -74,6 +74,17 @@ syslog_info(const char *format_,
 }
 
 void
+syslog_notice(const char *format_,
+              ...)
+{
+  va_list valist;
+
+  va_start(valist,format_);
+  syslog_log(LOG_NOTICE,format_,valist);
+  va_end(valist);  
+}
+
+void
 syslog_warning(const char *format_,
                ...)
 {
