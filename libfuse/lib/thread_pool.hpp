@@ -95,6 +95,18 @@ public:
     return future;
   }
 
+public:
+  std::vector<pthread_t>
+  threads()
+  {
+    std::vector<pthread_t> rv;
+
+    for(auto &thread : _threads)
+      rv.push_back(thread.native_handle());
+
+    return rv;
+  }
+
 private:
   using Proc   = std::function<void(void)>;
   using Queue  = UnboundedQueue<Proc>;

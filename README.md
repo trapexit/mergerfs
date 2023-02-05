@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-02-16
+% 2023-02-19
 
 # NAME
 
@@ -200,6 +200,8 @@ These options are the same regardless of whether you use them with the `mergerfs
   `read-thread-count` refers to the number of threads reading FUSE
   messages which are dispatched to process threads. -1 means disabled
   otherwise acts like `read-thread-count`. (default: -1)
+* **pin-threads=STR**: Selects a strategy to pin threads to CPUs
+  (default: unset)
 * **scheduling-priority=INT**: Set mergerfs' scheduling
   priority. Valid values range from -20 to 19. See `setpriority` man
   page for more details. (default: -10)
@@ -257,7 +259,8 @@ These options are the same regardless of whether you use them with the `mergerfs
 * INT = [MIN_INT,MAX_INT]
 * UINT = [0,MAX_INT]
 * SIZE = 'NNM'; NN = INT, M = 'K' | 'M' | 'G' | 'T'
-* STR = string
+* STR = string (may refer to an enumerated value, see details of
+  argument)
 * FUNC = filesystem function
 * CATEGORY = function category
 * POLICY = mergerfs function policy
@@ -339,6 +342,26 @@ and the kernel use internally (also called the "nodeid").
 ```
 
 As of version 2.35.0 the `use_ino` option has been removed. mergerfs should always be managing inode values.
+
+
+### pin-threads
+
+Simple strategies for pinning read and/or process threads. If process
+threads are not enabled than the strategy simply works on the read
+threads. Invalid values are ignored.
+
+* R1L: All read threads pinned to a single logical CPU.
+* R1P: All read threads pinned to a single physical CPU.
+* RP1L: All read and process threads pinned to a single logical CPU.
+* RP1P: All read and process threads pinned to a single physical CPU.
+* R1LP1L: All read threads pinned to a single logical CPU, all process
+  threads pinned to a (if possible) different logical CPU.
+* R1PP1P: All read threads pinned to a single physical CPU, all
+  process threads pinned to a (if possible) different logical CPU.
+* RPSL: All read and process threads are spread across all logical CPUs.
+* RPSP: All read and process threads are spread across all physical CPUs.
+* R1PPSP: All read threads are pinned to a single physical CPU while
+  process threads are spread across all other phsycial CPUs.
 
 
 ### fuse_msg_size

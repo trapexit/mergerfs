@@ -73,6 +73,7 @@ struct fuse_config
   int help;
   int read_thread_count;
   int process_thread_count;
+  char *pin_threads;
 };
 
 struct fuse_fs
@@ -3667,6 +3668,7 @@ static const struct fuse_opt fuse_lib_opts[] =
    FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
    FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
    FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
+   FUSE_LIB_OPT("pin-threads=%s",     pin_threads, 0),
    FUSE_OPT_END
   };
 
@@ -4033,6 +4035,13 @@ int
 fuse_config_process_thread_count(const struct fuse *f_)
 {
   return f_->conf.process_thread_count;
+}
+
+const
+char*
+fuse_config_pin_threads(const struct fuse *f_)
+{
+  return f_->conf.pin_threads;
 }
 
 void

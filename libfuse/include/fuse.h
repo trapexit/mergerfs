@@ -629,6 +629,7 @@ void fuse_exit(struct fuse *f);
 
 int fuse_config_read_thread_count(const struct fuse *f);
 int fuse_config_process_thread_count(const struct fuse *f);
+const char* fuse_config_pin_threads(const struct fuse *f);
 
 /**
  * FUSE event loop with multiple threads

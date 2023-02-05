@@ -46,6 +46,9 @@ SRC_C = \
 	lib/helper.c \
 	lib/mount.c
 SRC_CPP = \
+	lib/format.cpp \
+	lib/os.cpp \
+	lib/cpu.cpp \
 	lib/fuse_loop_mt.cpp \
 	lib/fuse_msgbuf.cpp
 OBJS_C   = $(SRC_C:lib/%.c=build/%.o)
