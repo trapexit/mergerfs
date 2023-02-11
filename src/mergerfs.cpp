@@ -21,6 +21,7 @@
 #include "fs_umount2.hpp"
 #include "mergerfs.hpp"
 #include "option_parser.hpp"
+#include "procfs_get_name.hpp"
 #include "resources.hpp"
 #include "strvec.hpp"
 
@@ -234,6 +235,8 @@ namespace l
 
     if(cfg->lazy_umount_mountpoint)
       l::lazy_umount(cfg->mountpoint);
+
+    procfs::init();
 
     return fuse_main(args.argc,
                      args.argv,

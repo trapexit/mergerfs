@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +18,24 @@
 
 #pragma once
 
-#include "enum.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 
-
-enum class CacheFilesEnum
+namespace fs
+{
+  static
+  inline
+  int
+  openat(const int   dirfd_,
+         const char *pathname_,
+         const int   flags_)
   {
-    LIBFUSE,
-    OFF,
-    PARTIAL,
-    FULL,
-    AUTO_FULL,
-    PER_PROCESS
-  };
+    int rv;
 
-typedef Enum<CacheFilesEnum> CacheFiles;
+    rv = ::openat(dirfd_,pathname_,flags_);
+
+    return ((rv == -1) ? -errno : rv);
+  }
+}

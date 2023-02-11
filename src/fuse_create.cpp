@@ -21,15 +21,13 @@
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "procfs_get_name.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
 
 #include <string>
 #include <vector>
-
-using std::string;
-using std::vector;
 
 
 namespace l
@@ -56,6 +54,7 @@ namespace l
   static
   void
   config_to_ffi_flags(Config::Read     &cfg_,
+                      const int         tid_,
                       fuse_file_info_t *ffi_)
   {
     switch(cfg_->cache_files)
@@ -85,15 +84,32 @@ namespace l
         ffi_->keep_cache = 0;
         ffi_->auto_cache = 1;
         break;
+      case CacheFiles::ENUM::PER_PROCESS:
+        std::string proc_name;
+
+        proc_name = procfs::get_name(tid_);
+        if(cfg_->cache_files_process_names.count(proc_name) == 0)
+          {
+            ffi_->direct_io  = 1;
+            ffi_->keep_cache = 0;
+            ffi_->auto_cache = 0;
+          }
+        else
+          {
+            ffi_->direct_io  = 0;
+            ffi_->keep_cache = 0;
+            ffi_->auto_cache = 0;
+          }
+        break;
       }
   }
 
   static
   int
-  create_core(const string &fullpath_,
-              mode_t        mode_,
-              const mode_t  umask_,
-              const int     flags_)
+  create_core(const std::string &fullpath_,
+              mode_t             mode_,
+              const mode_t       umask_,
+              const int          flags_)
   {
     if(!fs::acl::dir_has_defaults(fullpath_))
       mode_ &= ~umask_;
@@ -103,15 +119,15 @@ namespace l
 
   static
   int
-  create_core(const string &createpath_,
-              const char   *fusepath_,
-              const mode_t  mode_,
-              const mode_t  umask_,
-              const int     flags_,
-              uint64_t     *fh_)
+  create_core(const std::string &createpath_,
+              const char        *fusepath_,
+              const mode_t       mode_,
+              const mode_t       umask_,
+              const int          flags_,
+              uint64_t          *fh_)
   {
     int rv;
-    string fullpath;
+    std::string fullpath;
 
     fullpath = fs::path::make(createpath_,fusepath_);
 
@@ -136,8 +152,8 @@ namespace l
          uint64_t             *fh_)
   {
     int rv;
-    string fullpath;
-    string fusedirpath;
+    std::string fullpath;
+    std::string fusedirpath;
     StrVec createpaths;
     StrVec existingpaths;
 
@@ -175,7 +191,7 @@ namespace FUSE
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    l::config_to_ffi_flags(cfg,ffi_);
+    l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
