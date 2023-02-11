@@ -44,6 +44,9 @@ typedef char IOCTL_BUF[4096];
 #define IOCTL_APP_TYPE  0xDF
 #define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
 
+// From linux/btrfs.h
+#define BTRFS_IOCTL_MAGIC 0x94
+
 #ifndef FS_IOC_GETFLAGS
 # define FS_IOC_GETFLAGS _IOR('f',1,long)
 #endif
@@ -315,6 +318,13 @@ namespace l
   }
 
   static
+  bool
+  is_btrfs_ioctl_cmd(const unsigned long cmd_)
+  {
+    return (_IOC_TYPE(cmd_) == BTRFS_IOCTL_MAGIC);
+  }
+
+  static
   int
   ioctl_custom(const fuse_file_info_t *ffi_,
                unsigned long           cmd_,
@@ -340,6 +350,8 @@ namespace FUSE
         void                   *data_,
         uint32_t               *out_bufsz_)
   {
+    if(l::is_btrfs_ioctl_cmd(cmd_))
+      return -ENOTTY;
     if(l::is_mergerfs_ioctl_cmd(cmd_))
       return l::ioctl_custom(ffi_,cmd_,data_);
 
