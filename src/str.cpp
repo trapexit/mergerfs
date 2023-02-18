@@ -41,9 +41,29 @@ namespace str
   }
 
   void
+  split(const char  *str_,
+        const char   delimiter_,
+        set<string> *result_)
+  {
+    string part;
+    istringstream ss(str_);
+
+    while(std::getline(ss,part,delimiter_))
+      result_->insert(part);
+  }
+
+  void
   split(const string   &str_,
         const char      delimiter_,
         vector<string> *result_)
+  {
+    return str::split(str_.c_str(),delimiter_,result_);
+  }
+
+  void
+  split(const string &str_,
+        const char    delimiter_,
+        set<string>  *result_)
   {
     return str::split(str_.c_str(),delimiter_,result_);
   }
@@ -112,16 +132,10 @@ namespace str
        const char         sep_)
   {
     string rv;
-    set<string>::iterator i;
 
-    if(set_.empty())
-      return string();
-
-    i = set_.begin();
-    rv += *i;
-    ++i;
-    for(; i != set_.end(); ++i)
-      rv += sep_ + *i;
+    for(auto const &s : set_)
+      rv += s + sep_;
+    rv.pop_back();
 
     return rv;
   }

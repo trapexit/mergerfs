@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,19 +16,28 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "config_set.hpp"
 
-#include "enum.hpp"
+#include "str.hpp"
 
 
-enum class CacheFilesEnum
-  {
-    LIBFUSE,
-    OFF,
-    PARTIAL,
-    FULL,
-    AUTO_FULL,
-    PER_PROCESS
-  };
+ConfigSet::ConfigSet(const std::string &str_)
+{
+  from_string(str_);
+}
 
-typedef Enum<CacheFilesEnum> CacheFiles;
+std::string
+ConfigSet::to_string(void) const
+{
+  return str::join(*this,'|');
+}
+
+int
+ConfigSet::from_string(const std::string &str_)
+{
+  this->clear();
+
+  str::split(str_,'|',this);
+
+  return 0;
+}

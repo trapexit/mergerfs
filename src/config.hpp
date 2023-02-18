@@ -30,6 +30,7 @@
 #include "config_statfs.hpp"
 #include "config_statfsignore.hpp"
 #include "config_xattr.hpp"
+#include "config_set.hpp"
 #include "enum.hpp"
 #include "errno.hpp"
 #include "funcs.hpp"
@@ -107,6 +108,7 @@ public:
   ConfigUINT64   cache_attr;
   ConfigUINT64   cache_entry;
   CacheFiles     cache_files;
+  ConfigSet      cache_files_process_names;
   ConfigUINT64   cache_negative_entry;
   ConfigBOOL     cache_readdir;
   ConfigUINT64   cache_statfs;

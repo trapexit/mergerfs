@@ -37,11 +37,13 @@
 
 #define MINFREESPACE_DEFAULT (4294967295ULL)
 
-using std::string;
-
 #define IFERT(S) if(S == s_) return true
 
 const std::string CONTROLFILE = "/.mergerfs";
+constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
+  "rtorrent|"
+  "qbittorrent-nox";
+
 
 Config Config::_singleton;
 
@@ -79,6 +81,7 @@ Config::Config()
     cache_attr(1),
     cache_entry(1),
     cache_files(CacheFiles::ENUM::LIBFUSE),
+    cache_files_process_names(CACHE_FILES_PROCESS_NAMES_DEFAULT),
     cache_negative_entry(0),
     cache_readdir(false),
     cache_statfs(0),
@@ -125,6 +128,7 @@ Config::Config()
   _map["cache.attr"]             = &cache_attr;
   _map["cache.entry"]            = &cache_entry;
   _map["cache.files"]            = &cache_files;
+  _map["cache.files.process-names"] = &cache_files_process_names;
   _map["cache.negative_entry"]   = &cache_negative_entry;
   _map["cache.readdir"]          = &cache_readdir;
   _map["cache.statfs"]           = &cache_statfs;

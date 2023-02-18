@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +18,10 @@
 
 #pragma once
 
-#include "enum.hpp"
+#include <string>
 
-
-enum class CacheFilesEnum
-  {
-    LIBFUSE,
-    OFF,
-    PARTIAL,
-    FULL,
-    AUTO_FULL,
-    PER_PROCESS
-  };
-
-typedef Enum<CacheFilesEnum> CacheFiles;
+namespace procfs
+{
+  int init();
+  std::string get_name(const int tid);
+}

@@ -36,6 +36,8 @@ CacheFiles::to_string() const
       return "full";
     case CacheFiles::ENUM::AUTO_FULL:
       return "auto-full";
+    case CacheFiles::ENUM::PER_PROCESS:
+      return "per-process";
     }
 
   return "invalid";
@@ -55,6 +57,8 @@ CacheFiles::from_string(const std::string &s_)
     _data = CacheFiles::ENUM::FULL;
   ef(s_ == "auto-full")
     _data = CacheFiles::ENUM::AUTO_FULL;
+  ef(s_ == "per-process")
+    _data = CacheFiles::ENUM::PER_PROCESS;
   else
     return -EINVAL;
 

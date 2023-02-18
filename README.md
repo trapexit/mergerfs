@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-01-29
+% 2023-02-16
 
 # NAME
 
@@ -124,7 +124,7 @@ These options are the same regardless of whether you use them with the `mergerfs
 * **dropcacheonclose=BOOL**: When a file is requested to be closed
   call `posix_fadvise` on it first to instruct the kernel that we no
   longer need the data and it can drop its cache. Recommended when
-  **cache.files=partial|full|auto-full** to limit double
+  **cache.files=partial|full|auto-full|per-process** to limit double
   caching. (default: false)
 * **symlinkify=BOOL**: When enabled and a file is not writable and its
   mtime or ctime is older than **symlinkify_timeout** files will be
@@ -224,8 +224,12 @@ These options are the same regardless of whether you use them with the `mergerfs
   seconds. (default: 1)
 * **cache.negative_entry=UINT**: Negative file name lookup cache
   timeout in seconds. (default: 0)
-* **cache.files=libfuse|off|partial|full|auto-full**: File page
-  caching mode (default: libfuse)
+* **cache.files=libfuse|off|partial|full|auto-full|per-process**: File
+  page caching mode (default: libfuse)
+* **cache.files.process-names=LIST**: A pipe | delimited list of
+  process [comm](https://man7.org/linux/man-pages/man5/proc.5.html)
+  names to enable page caching for when
+  `cache.files=per-process`. (default: "rtorrent|qbittorrent-nox")
 * **cache.writeback=BOOL**: Enable kernel writeback caching (default:
   false)
 * **cache.symlinks=BOOL**: Cache symlinks (if supported by kernel)
@@ -771,23 +775,57 @@ While they won't show up when using `getfattr` **mergerfs** offers a number of s
 
 https://en.wikipedia.org/wiki/Page_cache
 
-tl;dr:
-* cache.files=off: Disables page caching. Underlying files cached, mergerfs files are not.
-* cache.files=partial: Enables page caching. Underlying files cached, mergerfs files cached while open.
-* cache.files=full: Enables page caching. Underlying files cached, mergerfs files cached across opens.
-* cache.files=auto-full: Enables page caching. Underlying files cached, mergerfs files cached across opens if mtime and size are unchanged since previous open.
-* cache.files=libfuse: follow traditional libfuse `direct_io`, `kernel_cache`, and `auto_cache` arguments.
+* cache.files=off: Disables page caching. Underlying files cached,
+  mergerfs files are not.
+* cache.files=partial: Enables page caching. Underlying files cached,
+  mergerfs files cached while open.
+* cache.files=full: Enables page caching. Underlying files cached,
+  mergerfs files cached across opens.
+* cache.files=auto-full: Enables page caching. Underlying files
+  cached, mergerfs files cached across opens if mtime and size are
+  unchanged since previous open.
+* cache.files=libfuse: follow traditional libfuse `direct_io`,
+  `kernel_cache`, and `auto_cache` arguments.
+* cache.files=per-process: Enable page caching only for processes
+  which 'comm' name matches one of the values defined in
+  `cache.files.process-names`.
 
+FUSE, which mergerfs uses, offers a number of page caching
+modes. mergerfs tries to simplify their use via the `cache.files`
+option. It can and should replace usage of `direct_io`,
+`kernel_cache`, and `auto_cache`.
 
-FUSE, which mergerfs uses, offers a number of page caching modes. mergerfs tries to simplify their use via the `cache.files` option. It can and should replace usage of `direct_io`, `kernel_cache`, and `auto_cache`.
+Due to mergerfs using FUSE and therefore being a userland process
+proxying existing filesystems the kernel will double cache the content
+being read and written through mergerfs. Once from the underlying
+filesystem and once from mergerfs (it sees them as two separate
+entities). Using `cache.files=off` will keep the double caching from
+happening by disabling caching of mergerfs but this has the side
+effect that *all* read and write calls will be passed to mergerfs
+which may be slower than enabling caching, you lose shared `mmap`
+support which can affect apps such as rtorrent, and no read-ahead will
+take place. The kernel will still cache the underlying filesystem data
+but that only helps so much given mergerfs will still process all
+requests.
 
-Due to mergerfs using FUSE and therefore being a userland process proxying existing filesystems the kernel will double cache the content being read and written through mergerfs. Once from the underlying filesystem and once from mergerfs (it sees them as two separate entities). Using `cache.files=off` will keep the double caching from happening by disabling caching of mergerfs but this has the side effect that *all* read and write calls will be passed to mergerfs which may be slower than enabling caching, you lose shared `mmap` support which can affect apps such as rtorrent, and no read-ahead will take place. The kernel will still cache the underlying filesystem data but that only helps so much given mergerfs will still process all requests.
+If you do enable file page caching,
+`cache.files=partial|full|auto-full`, you should also enable
+`dropcacheonclose` which will cause mergerfs to instruct the kernel to
+flush the underlying file's page cache when the file is closed. This
+behavior is the same as the rsync fadvise / drop cache patch and Feh's
+nocache project.
 
-If you do enable file page caching, `cache.files=partial|full|auto-full`, you should also enable `dropcacheonclose` which will cause mergerfs to instruct the kernel to flush the underlying file's page cache when the file is closed. This behavior is the same as the rsync fadvise / drop cache patch and Feh's nocache project.
+If most files are read once through and closed (like media) it is best
+to enable `dropcacheonclose` regardless of caching mode in order to
+minimize buffer bloat.
 
-If most files are read once through and closed (like media) it is best to enable `dropcacheonclose` regardless of caching mode in order to minimize buffer bloat.
-
-It is difficult to balance memory usage, cache bloat & duplication, and performance. Ideally mergerfs would be able to disable caching for the files it reads/writes but allow page caching for itself. That would limit the FUSE overhead. However, there isn't a good way to achieve this. It would need to open all files with O_DIRECT which places limitations on the what underlying filesystems would be supported and complicates the code.
+It is difficult to balance memory usage, cache bloat & duplication,
+and performance. Ideally mergerfs would be able to disable caching for
+the files it reads/writes but allow page caching for itself. That
+would limit the FUSE overhead. However, there isn't a good way to
+achieve this. It would need to open all files with O_DIRECT which
+places limitations on the what underlying filesystems would be
+supported and complicates the code.
 
 kernel documentation: https://www.kernel.org/doc/Documentation/filesystems/fuse-io.txt
 
