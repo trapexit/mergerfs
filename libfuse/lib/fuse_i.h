@@ -58,12 +58,6 @@ struct fuse_ll
   int no_remote_posix_lock;
   int no_remote_flock;
   int big_writes;
-  int splice_write;
-  int splice_move;
-  int splice_read;
-  int no_splice_write;
-  int no_splice_move;
-  int no_splice_read;
   struct fuse_lowlevel_ops op;
   void *userdata;
   uid_t owner;

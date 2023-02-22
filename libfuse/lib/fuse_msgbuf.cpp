@@ -15,21 +15,31 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_msgbuf.h"
+#include "fuse_msgbuf.hpp"
+#include "fuse.h"
 
-#include <assert.h>
-#include <fcntl.h>
 #include <unistd.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <mutex>
 #include <stack>
 
 
-static std::size_t g_BUFSIZE = (1024 * 1024 * 2);
+static std::uint32_t g_PAGESIZE = 0;
+static std::uint32_t g_BUFSIZE  = 0;
 
 static std::mutex g_MUTEX;
 static std::stack<fuse_msgbuf_t*> g_MSGBUF_STACK;
+
+static
+__attribute__((constructor))
+void
+msgbuf_constructor()
+{
+  g_PAGESIZE = sysconf(_SC_PAGESIZE);
+  g_BUFSIZE  = (g_PAGESIZE * (FUSE_MAX_MAX_PAGES + 2));
+}
 
 static
 __attribute__((destructor))
@@ -39,22 +49,35 @@ msgbuf_destroy()
   // TODO: cleanup?
 }
 
-std::size_t
-msgbuf_bufsize()
+uint32_t
+msgbuf_get_bufsize()
 {
   return g_BUFSIZE;
 }
 
 void
-msgbuf_bufsize(const std::size_t size_)
+msgbuf_set_bufsize(const uint32_t size_in_pages_)
 {
-  g_BUFSIZE = size_;
+  g_BUFSIZE = (size_in_pages_ * g_PAGESIZE);
+}
+
+static
+void*
+page_aligned_malloc(const uint64_t size_)
+{
+  int rv;
+  void *buf = NULL;
+
+  rv = posix_memalign(&buf,g_PAGESIZE,size_);
+  if(rv != 0)
+    return NULL;
+
+  return buf;
 }
 
 fuse_msgbuf_t*
 msgbuf_alloc()
 {
-  int rv;
   fuse_msgbuf_t *msgbuf;
 
   g_MUTEX.lock();
@@ -66,43 +89,14 @@ msgbuf_alloc()
       if(msgbuf == NULL)
         return NULL;
 
-      rv = pipe(msgbuf->pipefd);
-      assert(rv == 0);
-      rv = fcntl(msgbuf->pipefd[0],F_SETPIPE_SZ,g_BUFSIZE);
-      assert(rv > 0);
-      msgbuf->mem  = (char*)malloc(rv);
-      msgbuf->size = rv;
-      msgbuf->used = 0;
-    }
-  else
-    {
-      msgbuf = g_MSGBUF_STACK.top();
-      g_MSGBUF_STACK.pop();
-      g_MUTEX.unlock();
-    }
+      msgbuf->mem = (char*)page_aligned_malloc(g_BUFSIZE);
+      if(msgbuf->mem == NULL)
+        {
+          free(msgbuf);
+          return NULL;
+        }
 
-  return msgbuf;
-}
-
-fuse_msgbuf_t*
-msgbuf_alloc_memonly()
-{
-  fuse_msgbuf_t *msgbuf;
-
-  g_MUTEX.lock();
-  if(g_MSGBUF_STACK.empty())
-    {
-      g_MUTEX.unlock();
-
-      msgbuf = (fuse_msgbuf_t*)malloc(sizeof(fuse_msgbuf_t));
-      if(msgbuf == NULL)
-        return NULL;
-
-      msgbuf->pipefd[0] = -1;
-      msgbuf->pipefd[1] = -1;
-      msgbuf->mem  = (char*)malloc(g_BUFSIZE);
       msgbuf->size = g_BUFSIZE;
-      msgbuf->used = 0;
     }
   else
     {
@@ -118,6 +112,13 @@ void
 msgbuf_free(fuse_msgbuf_t *msgbuf_)
 {
   std::lock_guard<std::mutex> lck(g_MUTEX);
+
+  if(msgbuf_->size != g_BUFSIZE)
+    {
+      free(msgbuf_->mem);
+      free(msgbuf_);
+      return;
+    }
 
   g_MSGBUF_STACK.push(msgbuf_);
 }

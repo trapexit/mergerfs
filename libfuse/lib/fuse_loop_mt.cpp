@@ -33,7 +33,6 @@ struct fuse_worker_data_t
   struct fuse_session *se;
   sem_t finished;
   std::function<void(fuse_worker_data_t*,fuse_msgbuf_t*)> msgbuf_processor;
-  std::function<fuse_msgbuf_t*(void)> msgbuf_allocator;
   std::shared_ptr<ThreadPool> tp;
 };
 
@@ -99,7 +98,6 @@ fuse_do_work(void *data)
   fuse_worker_data_t *wd = (fuse_worker_data_t*)data;
   fuse_session       *se = wd->se;
   auto               &process_msgbuf = wd->msgbuf_processor;
-  auto               &msgbuf_allocator = wd->msgbuf_allocator;
   WorkerCleanup       workercleanup(wd);
 
   while(!fuse_session_exited(se))
@@ -107,7 +105,7 @@ fuse_do_work(void *data)
       int rv;
       fuse_msgbuf_t *msgbuf;
 
-      msgbuf = msgbuf_allocator();
+      msgbuf = msgbuf_alloc();
 
       do
         {
@@ -454,8 +452,6 @@ fuse_session_loop_mt(struct fuse_session *se_,
     {
       wd.msgbuf_processor = process_msgbuf_sync;
     }
-
-  wd.msgbuf_allocator = ((se_->f->splice_read) ? msgbuf_alloc : msgbuf_alloc_memonly);
 
   wd.se = se_;
   sem_init(&wd.finished,0,0);

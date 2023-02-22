@@ -1,6 +1,6 @@
 % mergerfs(1) mergerfs user manual
 % Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-02-19
+% 2023-02-23
 
 # NAME
 
@@ -248,6 +248,11 @@ These options are the same regardless of whether you use them with the `mergerfs
   `async_read=true` instead.
 * **sync_read**: deprecated - Perform reads synchronously. Use
   `async_read=false` instead.
+* **use_ino**: deprecated - Always enabled.
+* **allow_other**: deprecated - Always enabled.
+* **splice_read**: deprecated - Does nothing.
+* **splice_write**: deprecated - Does nothing.
+* **splice_move**: deprecated - Does nothing.
 
 
 **NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
@@ -976,7 +981,6 @@ mergerfs is at its core just a proxy and therefore its theoretical max performan
 
 NOTE: be sure to read about these features before changing them to understand what behaviors it may impact
 
-* enable (or disable) `splice_move`, `splice_read`, and `splice_write`
 * disable `security_capability` and/or `xattr`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable (or disable) page caching (`cache.files`)
@@ -1011,7 +1015,7 @@ When benchmarking through mergerfs ensure you only use 1 branch to remove any po
 3. Mount mergerfs over a local drive. NVMe, SSD, HDD, etc. If you have more than one I'd suggest testing each of them as drives and/or controllers (their drivers) could impact performance.
 4. Finally, if you intend to use mergerfs with a network filesystem, either as the source of data or to combine with another through mergerfs, test each of those alone as above.
 
-Once you find the component which has the performance issue you can do further testing with different options to see if they impact performance. For reads and writes the most relevant would be: `cache.files`, `async_read`, `splice_move`, `splice_read`, `splice_write`. Less likely but relevant when using NFS or with certain filesystems would be `security_capability`, `xattr`, and `posix_acl`. If you find a specific system, drive, filesystem, controller, etc. that performs poorly contact trapexit so he may investigate further.
+Once you find the component which has the performance issue you can do further testing with different options to see if they impact performance. For reads and writes the most relevant would be: `cache.files`, `async_read`. Less likely but relevant when using NFS or with certain filesystems would be `security_capability`, `xattr`, and `posix_acl`. If you find a specific system, drive, filesystem, controller, etc. that performs poorly contact trapexit so he may investigate further.
 
 Sometimes the problem is really the application accessing or writing data through mergerfs. Some software use small buffer sizes which can lead to more requests and therefore greater overhead. You can test this out yourself by replace `bs=1M` in the examples below with `ibs` or `obs` and using a size of `512` instead of `1M`. In one example test using `nullrw` the write speed dropped from 4.9GB/s to 69.7MB/s when moving from `1M` to `512`. Similar results were had when testing reads. Small writes overhead may be improved by leveraging a write cache but in casual tests little gain was found. More tests will need to be done before this feature would become available. If you have an app that appears slow with mergerfs it could be due to this. Contact trapexit so he may investigate further.
 
@@ -1326,7 +1330,18 @@ If `mergerfs` doesn't work as a type it could be due to how the `mount.mergerfs`
 
 See above first.
 
-If/when mergerfs is rewritten to use the low-level API then it'll be plausible to support system libfuse but till then it's simply too much work to manage the differences across the versions.
+If/when mergerfs is rewritten to use the low-level API then it'll be
+plausible to support system libfuse but till then it's simply too much
+work to manage the differences across the versions.
+
+
+#### Why was splice support removed?
+
+After a lot of testing over the years splicing always appeared to be
+at best provide equivalent performance and in cases worse
+performance. Splice is not supported on other platforms forcing a
+traditional read/write fallback to be provided. The splice code was
+removed to simplify the codebase.
 
 
 #### Why use mergerfs over mhddfs?
