@@ -146,6 +146,8 @@ fuse_send_msg(struct fuse_ll   *f,
   return 0;
 }
 
+#define MAX_ERRNO 4095
+
 int
 fuse_send_reply_iov_nofree(fuse_req_t    req,
                            int           error,
@@ -154,17 +156,20 @@ fuse_send_reply_iov_nofree(fuse_req_t    req,
 {
   struct fuse_out_header out;
 
-  if(error <= -1000 || error > 0)
+  if(error > 0)
+    error = -error;
+
+  if(error <= -MAX_ERRNO)
     {
-      fprintf(stderr, "fuse: bad error value: %i\n",error);
+      fprintf(stderr,"fuse: bad error value: %i\n",error);
       error = -ERANGE;
     }
 
   out.unique = req->unique;
-  out.error = error;
+  out.error  = error;
 
   iov[0].iov_base = &out;
-  iov[0].iov_len = sizeof(struct fuse_out_header);
+  iov[0].iov_len  = sizeof(struct fuse_out_header);
 
   return fuse_send_msg(req->f, req->ch, iov, count);
 }
@@ -231,7 +236,7 @@ int
 fuse_reply_err(fuse_req_t req_,
                int        err_)
 {
-  return send_reply(req_,-err_,NULL,0);
+  return send_reply(req_,err_,NULL,0);
 }
 
 void
@@ -445,21 +450,23 @@ fuse_send_data_iov(struct fuse_ll     *f,
 }
 
 int
-fuse_reply_data(fuse_req_t                req,
-                struct fuse_bufvec       *bufv,
-                enum fuse_buf_copy_flags  flags)
+fuse_reply_data(fuse_req_t    req,
+                char         *buf_,
+                const size_t  bufsize_)
 {
+  int res;
   struct iovec iov[2];
   struct fuse_out_header out;
-  int res;
 
   iov[0].iov_base = &out;
-  iov[0].iov_len = sizeof(struct fuse_out_header);
+  iov[0].iov_len  = sizeof(struct fuse_out_header);
+  iov[1].iov_base = buf_;
+  iov[1].iov_len  = bufsize_;
 
   out.unique = req->unique;
   out.error = 0;
 
-  res = fuse_send_data_iov(req->f, req->ch, iov, 1, bufv, flags);
+  res = fuse_send_msg(req->f,req->ch,iov,2);
   if(res <= 0)
     {
       destroy_req(req);

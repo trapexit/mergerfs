@@ -482,10 +482,10 @@ struct fuse_operations
    *
    * Introduced in version 2.9
    */
-  int (*read_buf) (const fuse_file_info_t  *ffi,
-                   struct fuse_bufvec     **bufp,
-                   size_t                   size,
-                   off_t                    off);
+  int (*read)(const fuse_file_info_t *ffi,
+              char                   *buf,
+              size_t                  size,
+              off_t                   off);
   /**
    * Perform BSD file locking operation
    *

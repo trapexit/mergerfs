@@ -23,6 +23,7 @@
 #include "fuse_misc.h"
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
+#include "fuse_msgbuf.hpp"
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -1380,20 +1381,6 @@ req_fuse(fuse_req_t req)
 }
 
 static
-void
-fuse_free_buf(struct fuse_bufvec *buf)
-{
-  if(buf != NULL)
-    {
-      size_t i;
-
-      for(i = 0; i < buf->count; i++)
-        free(buf->buf[i].mem);
-      free(buf);
-    }
-}
-
-static
 int
 node_open(const struct node *node_)
 {
@@ -1546,16 +1533,6 @@ req_fuse_prepare(fuse_req_t req)
 }
 
 static
-inline
-void
-reply_err(fuse_req_t req,
-          int        err)
-{
-  /* fuse_reply_err() uses non-negated errno values */
-  fuse_reply_err(req,-err);
-}
-
-static
 void
 reply_entry(fuse_req_t                     req,
             const struct fuse_entry_param *e,
@@ -1573,7 +1550,7 @@ reply_entry(fuse_req_t                     req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
     }
 }
 
@@ -1770,7 +1747,7 @@ fuse_lib_getattr(fuse_req_t             req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
     }
 }
 
@@ -1893,7 +1870,7 @@ fuse_lib_setattr(fuse_req_t             req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
     }
 }
 
@@ -1918,7 +1895,7 @@ fuse_lib_access(fuse_req_t             req,
       free_path(f,hdr_->nodeid,path);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -1947,7 +1924,7 @@ fuse_lib_readlink(fuse_req_t             req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
     }
 }
 
@@ -2068,7 +2045,7 @@ fuse_lib_unlink(fuse_req_t             req,
       free_path_wrlock(f,hdr_->nodeid,wnode,path);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2095,7 +2072,7 @@ fuse_lib_rmdir(fuse_req_t             req,
       free_path_wrlock(f,hdr_->nodeid,wnode,path);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2168,7 +2145,7 @@ fuse_lib_rename(fuse_req_t             req,
       free_path2(f,hdr_->nodeid,arg->newdir,wnode1,wnode2,oldpath,newpath);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2295,7 +2272,7 @@ fuse_lib_create(fuse_req_t             req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
     }
 
   free_path(f,hdr_->nodeid,path);
@@ -2376,7 +2353,7 @@ fuse_lib_open(fuse_req_t             req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
     }
 
   free_path(f,hdr_->nodeid,path);
@@ -2390,8 +2367,8 @@ fuse_lib_read(fuse_req_t             req,
   int res;
   struct fuse *f;
   fuse_file_info_t ffi = {0};
-  struct fuse_bufvec *buf = NULL;
   struct fuse_read_in *arg;
+  fuse_msgbuf_t *msgbuf;
 
   arg = fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
@@ -2403,14 +2380,16 @@ fuse_lib_read(fuse_req_t             req,
 
   f = req_fuse_prepare(req);
 
-  res = f->fs->op.read_buf(&ffi,&buf,arg->size,arg->offset);
+  msgbuf = msgbuf_alloc();
+
+  res = f->fs->op.read(&ffi,msgbuf->mem,arg->size,arg->offset);
 
   if(res >= 0)
-    fuse_reply_data(req,buf,FUSE_BUF_SPLICE_MOVE);
+    fuse_reply_data(req,msgbuf->mem,res);
   else
-    reply_err(req,res);
+    fuse_reply_err(req,res);
 
-  fuse_free_buf(buf);
+  msgbuf_free(msgbuf);
 }
 
 static
@@ -2446,7 +2425,7 @@ fuse_lib_write(fuse_req_t             req,
   if(res >= 0)
     fuse_reply_write(req,res);
   else
-    reply_err(req,res);
+    fuse_reply_err(req,res);
 }
 
 static
@@ -2467,7 +2446,7 @@ fuse_lib_fsync(fuse_req_t             req,
   err = f->fs->op.fsync(&ffi,
                         !!(arg->fsync_flags & 1));
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2502,7 +2481,7 @@ fuse_lib_opendir(fuse_req_t             req,
   dh = (struct fuse_dh *)calloc(1,sizeof(struct fuse_dh));
   if(dh == NULL)
     {
-      reply_err(req,-ENOMEM);
+      fuse_reply_err(req,ENOMEM);
       return;
     }
 
@@ -2534,7 +2513,7 @@ fuse_lib_opendir(fuse_req_t             req,
     }
   else
     {
-      reply_err(req,err);
+      fuse_reply_err(req,err);
       pthread_mutex_destroy(&dh->lock);
       free(dh);
     }
@@ -2597,7 +2576,7 @@ fuse_lib_readdir(fuse_req_t             req_,
 
   if(rv)
     {
-      reply_err(req_,rv);
+      fuse_reply_err(req_,rv);
       goto out;
     }
 
@@ -2641,7 +2620,7 @@ fuse_lib_readdir_plus(fuse_req_t             req_,
 
   if(rv)
     {
-      reply_err(req_,rv);
+      fuse_reply_err(req_,rv);
       goto out;
     }
 
@@ -2681,7 +2660,7 @@ fuse_lib_releasedir(fuse_req_t             req_,
   pthread_mutex_destroy(&dh->lock);
   fuse_dirents_free(&dh->d);
   free(dh);
-  reply_err(req_,0);
+  fuse_reply_err(req_,0);
 }
 
 static
@@ -2705,7 +2684,7 @@ fuse_lib_fsyncdir(fuse_req_t             req,
   err = f->fs->op.fsyncdir(&ffi,
                            !!(arg->fsync_flags & FUSE_FSYNC_FDATASYNC));
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2732,7 +2711,7 @@ fuse_lib_statfs(fuse_req_t             req,
   if(!err)
     fuse_reply_statfs(req,&buf);
   else
-    reply_err(req,err);
+    fuse_reply_err(req,err);
 }
 
 static
@@ -2764,7 +2743,7 @@ fuse_lib_setxattr(fuse_req_t             req,
       free_path(f,hdr_->nodeid,path);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2810,7 +2789,7 @@ fuse_lib_getxattr(fuse_req_t             req,
       char *value = (char*)malloc(arg->size);
       if(value == NULL)
         {
-          reply_err(req,-ENOMEM);
+          fuse_reply_err(req,ENOMEM);
           return;
         }
 
@@ -2818,7 +2797,7 @@ fuse_lib_getxattr(fuse_req_t             req,
       if(res > 0)
         fuse_reply_buf(req,value,res);
       else
-        reply_err(req,res);
+        fuse_reply_err(req,res);
       free(value);
     }
   else
@@ -2827,7 +2806,7 @@ fuse_lib_getxattr(fuse_req_t             req,
       if(res >= 0)
         fuse_reply_xattr(req,res);
       else
-        reply_err(req,res);
+        fuse_reply_err(req,res);
     }
 }
 
@@ -2870,7 +2849,7 @@ fuse_lib_listxattr(fuse_req_t             req,
       char *list = (char*)malloc(arg->size);
       if(list == NULL)
         {
-          reply_err(req,-ENOMEM);
+          fuse_reply_err(req,ENOMEM);
           return;
         }
 
@@ -2878,7 +2857,7 @@ fuse_lib_listxattr(fuse_req_t             req,
       if(res > 0)
         fuse_reply_buf(req,list,res);
       else
-        reply_err(req,res);
+        fuse_reply_err(req,res);
       free(list);
     }
   else
@@ -2887,7 +2866,7 @@ fuse_lib_listxattr(fuse_req_t             req,
       if(res >= 0)
         fuse_reply_xattr(req,res);
       else
-        reply_err(req,res);
+        fuse_reply_err(req,res);
     }
 }
 
@@ -2912,7 +2891,7 @@ fuse_lib_removexattr(fuse_req_t                   req,
       free_path(f,hdr_->nodeid,path);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -2942,7 +2921,7 @@ fuse_lib_copy_file_range(fuse_req_t                   req_,
   if(rv >= 0)
     fuse_reply_write(req_,rv);
   else
-    reply_err(req_,rv);
+    fuse_reply_err(req_,rv);
 }
 
 static
@@ -3157,7 +3136,7 @@ fuse_lib_release(fuse_req_t             req,
 
   fuse_do_release(f,hdr_->nodeid,&ffi);
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -3181,7 +3160,7 @@ fuse_lib_flush(fuse_req_t             req,
 
   err = fuse_flush_common(f,req,hdr_->nodeid,&ffi);
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -3252,7 +3231,7 @@ fuse_lib_getlk(fuse_req_t                   req,
   if(!err)
     fuse_reply_lock(req,&flk);
   else
-    reply_err(req,err);
+    fuse_reply_err(req,err);
 }
 
 static
@@ -3276,7 +3255,7 @@ fuse_lib_setlk(fuse_req_t        req,
       pthread_mutex_unlock(&f->lock);
     }
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -3291,7 +3270,7 @@ fuse_lib_flock(fuse_req_t        req,
 
   err = f->fs->op.flock(fi,op);
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static
@@ -3320,7 +3299,7 @@ fuse_lib_bmap(fuse_req_t                   req,
   if(!err)
     fuse_reply_bmap(req,block);
   else
-    reply_err(req,err);
+    fuse_reply_err(req,err);
 }
 
 static
@@ -3388,7 +3367,7 @@ fuse_lib_ioctl(fuse_req_t                   req,
   fuse_reply_ioctl(req,err,out_buf,out_size);
   goto out;
  err:
-  reply_err(req,err);
+  fuse_reply_err(req,err);
  out:
   free(out_buf);
 }
@@ -3427,7 +3406,7 @@ fuse_lib_poll(fuse_req_t                   req,
   if(!err)
     fuse_reply_poll(req,revents);
   else
-    reply_err(req,err);
+    fuse_reply_err(req,err);
 }
 
 static
@@ -3450,7 +3429,7 @@ fuse_lib_fallocate(fuse_req_t                   req,
                             arg->offset,
                             arg->length);
 
-  reply_err(req,err);
+  fuse_reply_err(req,err);
 }
 
 static

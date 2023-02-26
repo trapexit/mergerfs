@@ -1137,19 +1137,9 @@ int fuse_reply_write(fuse_req_t req, size_t count);
  */
 int fuse_reply_buf(fuse_req_t req, const char *buf, size_t size);
 
-/**
- * Reply with data copied/moved from buffer(s)
- *
- * Possible requests:
- *   read, readdir, getxattr, listxattr
- *
- * @param req request handle
- * @param bufv buffer vector
- * @param flags flags controlling the copy
- * @return zero for success, -errno for failure to send reply
- */
-int fuse_reply_data(fuse_req_t req, struct fuse_bufvec *bufv,
-                    enum fuse_buf_copy_flags flags);
+int fuse_reply_data(fuse_req_t  req,
+                    char       *buf,
+                    size_t      bufsize);
 
 /**
  * Reply with data vector

@@ -56,7 +56,7 @@
 #include "fuse_opendir.hpp"
 #include "fuse_poll.hpp"
 #include "fuse_prepare_hide.hpp"
-#include "fuse_read_buf.hpp"
+#include "fuse_read.hpp"
 #include "fuse_readdir.hpp"
 #include "fuse_readdir_plus.hpp"
 #include "fuse_readlink.hpp"
@@ -119,7 +119,7 @@ namespace l
     ops_.opendir         = FUSE::opendir;
     ops_.poll            = FUSE::poll;;
     ops_.prepare_hide    = FUSE::prepare_hide;
-    ops_.read_buf        = (nullrw_ ? FUSE::read_buf_null : FUSE::read_buf);
+    ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
     ops_.readdir         = FUSE::readdir;
     ops_.readdir_plus    = FUSE::readdir_plus;
     ops_.readlink        = FUSE::readlink;
