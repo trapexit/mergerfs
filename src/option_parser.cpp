@@ -122,14 +122,20 @@ should_ignore(const std::string &key_)
 {
   static const std::set<std::string> IGNORED_KEYS =
     {
+      "allow_other",
       "atomic_o_trunc",
       "big_writes",
       "cache.open",
       "defaults",
       "hard_remove",
+      "no_splice_move",
+      "no_splice_read",
+      "no_splice_write",
       "nonempty",
-      "use_ino",
-      "allow_other"
+      "splice_move",
+      "splice_read",
+      "splice_write",
+      "use_ino"
     };
 
   return (IGNORED_KEYS.find(key_) != IGNORED_KEYS.end());
@@ -420,7 +426,7 @@ namespace options
       errs_->push_back({0,"mountpoint not set"});
 
     check_for_mount_loop(cfg,errs_);
-    
+
     set_default_options(args_);
     set_fsname(cfg,args_);
     set_subtype(args_);

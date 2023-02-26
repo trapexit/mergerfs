@@ -19,11 +19,15 @@
 #pragma once
 
 #include "fuse_msgbuf.h"
+#include "extern_c.h"
 
-void           msgbuf_bufsize(const uint32_t size);
-std::size_t    msgbuf_bufsize();
+EXTERN_C_BEGIN
+
+void     msgbuf_set_bufsize(const uint32_t size);
+uint32_t msgbuf_get_bufsize();
 
 fuse_msgbuf_t* msgbuf_alloc();
 fuse_msgbuf_t* msgbuf_alloc_memonly();
-
 void           msgbuf_free(fuse_msgbuf_t *msgbuf);
+
+EXTERN_C_END
