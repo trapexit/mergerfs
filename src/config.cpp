@@ -105,6 +105,7 @@ Config::Config()
     nullrw(false),
     pid(::getpid()),
     posix_acl(false),
+    readahead(0),
     readdir(ReadDir::ENUM::POSIX),
     readdirplus(false),
     rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
@@ -176,6 +177,7 @@ Config::Config()
   _map["nullrw"]                 = &nullrw;
   _map["pid"]                    = &pid;
   _map["posix_acl"]              = &posix_acl;
+  _map["readahead"]              = &readahead;
   //  _map["readdir"]            = &readdir;
   _map["readdirplus"]            = &readdirplus;
   _map["rename-exdev"]           = &rename_exdev;

@@ -211,6 +211,8 @@ These options are the same regardless of whether you use them with the
 * **rename-exdev=passthrough|rel-symlink|abs-symlink**: When a rename
   fails with EXDEV optionally move the file to a special directory and
   symlink to it.
+* **readahead=UINT**: Set readahead (in kilobytes) for mergerfs and
+  branches if greater than 0. (default: 0)
 * **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel
   and underlying filesystem). (default: false)
 * **async_read=BOOL**: Perform reads asynchronously. If disabled or
@@ -1528,8 +1530,7 @@ understand what behaviors it may impact
 * use `symlinkify` if your data is largely static and read-only
 * use tiered cache drives
 * use LVM and LVM cache to place a SSD in front of your HDDs
-* if `cache.files` is enabled increase readahead: `echo "1024" > /sys/class/bdi/0:$(stat -c%d /MOUNT)/read_ahead_kb`
-* increase readahead on all devices: `ls -1 /sys/class/bdi/*/read_ahead_kb | xargs -n1 -I{} sh -c "echo 1024 > {}"`
+* increase readahead: `readahead=1024`
 
 If you come across a setting that significantly impacts performance
 please contact trapexit so he may investigate further. Please test

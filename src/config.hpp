@@ -133,6 +133,7 @@ public:
   ConfigBOOL     nullrw;
   ConfigUINT64   pid;
   ConfigBOOL     posix_acl;
+  ConfigUINT64   readahead;
   ReadDir        readdir;
   ConfigBOOL     readdirplus;
   RenameEXDEV    rename_exdev;
