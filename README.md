@@ -1,6 +1,4 @@
 % mergerfs(1) mergerfs user manual
-% Antonio SJ Musumeci <trapexit@spawn.link>
-% 2023-02-23
 
 # NAME
 
@@ -64,11 +62,11 @@ A         +      B        =       C
                                   +-- file6
 ```
 
-mergerfs does **NOT** support the copy-on-write (CoW) or whiteout
+mergerfs does **not** support the copy-on-write (CoW) or whiteout
 behaviors found in **aufs** and **overlayfs**. You can **not** mount a
 read-only filesystem and write to it. However, mergerfs will ignore
 read-only drives when creating new files so you can mix read-write and
-read-only drives. It also does **NOT** split data across drives. It is
+read-only drives. It also does **not** split data across drives. It is
 not RAID0 / striping. It is simply a union of other filesystems.
 
 
@@ -96,13 +94,50 @@ start with one of the following option sets.
 
 `cache.files=off,dropcacheonclose=true,category.create=mfs`
 
+### Command Line
 
-See the mergerfs [wiki for real world deployments](https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments) for comparisons / ideas.
+`mergerfs -o create.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media`
+
+### /etc/fstab
+
+`/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs create.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
+
+### systemd mount
+
+https://github.com/trapexit/mergerfs/wiki/systemd
+
+```
+[Unit]
+Description=mergerfs service
+
+[Service]
+Type=simple
+KillMode=none
+ExecStart=/usr/bin/mergerfs \
+  -f \
+  -o create.files=partial \
+  -o dropcacheonclose=true \
+  -o category.create=mfs \
+  /mnt/hdd0:/mnt/hdd1 \
+  /media
+ExecStop=/bin/fusermount -uz /media
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+
+See the mergerfs [wiki for real world
+deployments](https://github.com/trapexit/mergerfs/wiki/Real-World-Deployments)
+for comparisons / ideas.
 
 
 # OPTIONS
 
-These options are the same regardless of whether you use them with the `mergerfs` commandline program, in fstab, or in a config file.
+These options are the same regardless of whether you use them with the
+`mergerfs` commandline program, in fstab, or in a config file.
+
 
 ### mount options
 
@@ -135,6 +170,9 @@ These options are the same regardless of whether you use them with the `mergerfs
 * **nullrw=BOOL**: Turns reads and writes into no-ops. The request
   will succeed but do nothing. Useful for benchmarking
   mergerfs. (default: false)
+* **lazy-umount-mountpoint=BOOL**: mergerfs will attempt to "lazy
+  umount" the mountpoint before mounting itself. Useful when
+  performing live upgrades of mergerfs. (default: false)
 * **ignorepponrename=BOOL**: Ignore path preserving on
   rename. Typically rename and link act differently depending on the
   policy of `create` (read below). Enabling this will cause rename and
@@ -253,10 +291,19 @@ These options are the same regardless of whether you use them with the `mergerfs
 * **splice_read**: deprecated - Does nothing.
 * **splice_write**: deprecated - Does nothing.
 * **splice_move**: deprecated - Does nothing.
+* **allow_other**: deprecated - mergerfs always sets this FUSE option
+  as normal permissions can be used to limit access.
+* **use_ino**: deprecated - mergerfs should always control inode
+  calculation so this is enabled all the time.
 
 
-**NOTE:** Options are evaluated in the order listed so if the options are **func.rmdir=rand,category.action=ff** the **action** category setting will override the **rmdir** setting.
+**NOTE:** Options are evaluated in the order listed so if the options
+are **func.rmdir=rand,category.action=ff** the **action** category
+setting will override the **rmdir** setting.
 
+**NOTE:** Always look at the documentation for the version of mergerfs
+you're using. Not all features are available in older releases. Use
+`man mergerfs` or find the docs as linked in the release.
 
 #### Value Types
 
@@ -273,67 +320,131 @@ These options are the same regardless of whether you use them with the `mergerfs
 
 ### branches
 
-The 'branches' argument is a colon (':') delimited list of paths to be pooled together. It does not matter if the paths are on the same or different drives nor does it matter the filesystem (within reason). Used and available space will not be duplicated for paths on the same device and any features which aren't supported by the underlying filesystem (such as file attributes or extended attributes) will return the appropriate errors.
+The 'branches' argument is a colon (':') delimited list of paths to be
+pooled together. It does not matter if the paths are on the same or
+different drives nor does it matter the filesystem (within
+reason). Used and available space will not be duplicated for paths on
+the same device and any features which aren't supported by the
+underlying filesystem (such as file attributes or extended attributes)
+will return the appropriate errors.
 
-Branches currently have two options which can be set. A type which impacts whether or not the branch is included in a policy calculation and a individual minfreespace value. The values are set by prepending an `=` at the end of a branch designation and using commas as delimiters. Example: /mnt/drive=RW,1234
+Branches currently have two options which can be set. A type which
+impacts whether or not the branch is included in a policy calculation
+and a individual minfreespace value. The values are set by prepending
+an `=` at the end of a branch designation and using commas as
+delimiters. Example: /mnt/drive=RW,1234
 
 
-#### branch type
+#### branch mode
 
-* RW: (read/write) - Default behavior. Will be eligible in all policy categories.
-* RO: (read-only) - Will be excluded from `create` and `action` policies. Same as a read-only mounted filesystem would be (though faster to process).
-* NC: (no-create) - Will be excluded from `create` policies. You can't create on that branch but you can change or delete.
+* RW: (read/write) - Default behavior. Will be eligible in all policy
+  categories.
+* RO: (read-only) - Will be excluded from `create` and `action`
+  policies. Same as a read-only mounted filesystem would be (though
+  faster to process).
+* NC: (no-create) - Will be excluded from `create` policies. You can't
+  create on that branch but you can change or delete.
 
 
 #### minfreespace
 
-Same purpose as the global option but specific to the branch. If not set the global value is used.
+Same purpose and syntax as the global option but specific to the
+branch. If not set the global value is used.
 
 
 #### globbing
 
-To make it easier to include multiple branches mergerfs supports [globbing](http://linux.die.net/man/7/glob). **The globbing tokens MUST be escaped when using via the shell else the shell itself will apply the glob itself.**
+To make it easier to include multiple branches mergerfs supports
+[globbing](http://linux.die.net/man/7/glob). **The globbing tokens
+MUST be escaped when using via the shell else the shell itself will
+apply the glob itself.**
 
 
 ```
-# mergerfs /mnt/disk\*:/mnt/cdrom /media/drives
+# mergerfs /mnt/hdd\*:/mnt/ssd /media
 ```
 
-The above line will use all mount points in /mnt prefixed with **disk** and the **cdrom**.
+The above line will use all mount points in /mnt prefixed with **hdd** and **ssd**.
 
 To have the pool mounted at boot or otherwise accessible from related tools use **/etc/fstab**.
 
 ```
 # <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/disk*:/mnt/cdrom  /mnt/pool      fuse.mergerfs  minfreespace=16G      0       0
+/mnt/hdd*:/mnt/ssd    /media          fuse.mergerfs  minfreespace=16G      0       0
 ```
 
-**NOTE:** the globbing is done at mount or when updated using the runtime API. If a new directory is added matching the glob after the fact it will not be automatically included.
+**NOTE:** the globbing is done at mount or when updated using the
+runtime API. If a new directory is added matching the glob after the
+fact it will not be automatically included.
 
-**NOTE:** for mounting via **fstab** to work you must have **mount.fuse** installed. For Ubuntu/Debian it is included in the **fuse** package.
+**NOTE:** for mounting via **fstab** to work you must have
+**mount.fuse** installed. For Ubuntu/Debian it is included in the
+**fuse** package.
 
 
 ### inodecalc
 
-Inodes (st_ino) are unique identifiers within a filesystem. Each mounted filesystem has device ID (st_dev) as well and together they can uniquely identify a file on the whole of the system. Entries on the same device with the same inode are in fact references to the same underlying file. It is a many to one relationship between names and an inode. Directories, however, do not have multiple links on most systems due to the complexity they add.
+Inodes (st_ino) are unique identifiers within a filesystem. Each
+mounted filesystem has device ID (st_dev) as well and together they
+can uniquely identify a file on the whole of the system. Entries on
+the same device with the same inode are in fact references to the same
+underlying file. It is a many to one relationship between names and an
+inode. Directories, however, do not have multiple links on most
+systems due to the complexity they add.
 
-FUSE allows the server (mergerfs) to set inode values but not device IDs. Creating an inode value is somewhat complex in mergerfs' case as files aren't really in its control. If a policy changes what directory or file is to be selected or something changes out of band it becomes unclear what value should be used. Most software does not to care what the values are but those that do often break if a value changes unexpectedly. The tool `find` will abort a directory walk if it sees a directory inode change. NFS will return stale handle errors if the inode changes out of band. File dedup tools will usually leverage device ids and inodes as a shortcut in searching for duplicate files and would resort to full file comparisons should it find different inode values.
+FUSE allows the server (mergerfs) to set inode values but not device
+IDs. Creating an inode value is somewhat complex in mergerfs' case as
+files aren't really in its control. If a policy changes what directory
+or file is to be selected or something changes out of band it becomes
+unclear what value should be used. Most software does not to care what
+the values are but those that do often break if a value changes
+unexpectedly. The tool `find` will abort a directory walk if it sees a
+directory inode change. NFS will return stale handle errors if the
+inode changes out of band. File dedup tools will usually leverage
+device ids and inodes as a shortcut in searching for duplicate files
+and would resort to full file comparisons should it find different
+inode values.
 
-mergerfs offers multiple ways to calculate the inode in hopes of covering different usecases.
+mergerfs offers multiple ways to calculate the inode in hopes of
+covering different usecases.
 
-* passthrough: Passes through the underlying inode value. Mostly intended for testing as using this does not address any of the problems mentioned above and could confuse file deduplication software as inodes from different filesystems can be the same.
-* path-hash: Hashes the relative path of the entry in question. The underlying file's values are completely ignored. This means the inode value will always be the same for that file path. This is useful when using NFS and you make changes out of band such as copy data between branches. This also means that entries that do point to the same file will not be recognizable via inodes. That **does not** mean hard links don't work. They will.
+* passthrough: Passes through the underlying inode value. Mostly
+  intended for testing as using this does not address any of the
+  problems mentioned above and could confuse file deduplication
+  software as inodes from different filesystems can be the same.
+* path-hash: Hashes the relative path of the entry in question. The
+  underlying file's values are completely ignored. This means the
+  inode value will always be the same for that file path. This is
+  useful when using NFS and you make changes out of band such as copy
+  data between branches. This also means that entries that do point to
+  the same file will not be recognizable via inodes. That **does not**
+  mean hard links don't work. They will.
 * path-hash32: 32bit version of path-hash.
-* devino-hash: Hashes the device id and inode of the underlying entry. This won't prevent issues with NFS should the policy pick a different file or files move out of band but will present the same inode for underlying files that do too.
+* devino-hash: Hashes the device id and inode of the underlying
+  entry. This won't prevent issues with NFS should the policy pick a
+  different file or files move out of band but will present the same
+  inode for underlying files that do too.
 * devino-hash32: 32bit version of devino-hash.
-* hybrid-hash: Performs `path-hash` on directories and `devino-hash` on other file types. Since directories can't have hard links the static value won't make a difference and the files will get values useful for finding duplicates. Probably the best to use if not using NFS. As such it is the default.
+* hybrid-hash: Performs `path-hash` on directories and `devino-hash`
+  on other file types. Since directories can't have hard links the
+  static value won't make a difference and the files will get values
+  useful for finding duplicates. Probably the best to use if not using
+  NFS. As such it is the default.
 * hybrid-hash32: 32bit version of hybrid-hash.
 
-32bit versions are provided as there is some software which does not handle 64bit inodes well.
+32bit versions are provided as there is some software which does not
+handle 64bit inodes well.
 
-While there is a risk of hash collision in tests of a couple million entries there were zero collisions. Unlike a typical filesystem FUSE filesystems can reuse inodes and not refer to the same entry. The internal identifier used to reference a file in FUSE is different from the inode value presented. The former is the `nodeid` and is actually a tuple of 2 64bit values: `nodeid` and `generation`. This tuple is not client facing. The inode that is presented to the client is passed through the kernel uninterpreted.
+While there is a risk of hash collision in tests of a couple million
+entries there were zero collisions. Unlike a typical filesystem FUSE
+filesystems can reuse inodes and not refer to the same entry. The
+internal identifier used to reference a file in FUSE is different from
+the inode value presented. The former is the `nodeid` and is actually
+a tuple of 2 64bit values: `nodeid` and `generation`. This tuple is
+not client facing. The inode that is presented to the client is passed
+through the kernel uninterpreted.
 
-From FUSE docs regarding `use_ino`:
+From FUSE docs for `use_ino`:
 
 ```
 Honor the st_ino field in the functions getattr() and
@@ -346,7 +457,8 @@ Note that this does *not* affect the inode that libfuse
 and the kernel use internally (also called the "nodeid").
 ```
 
-As of version 2.35.0 the `use_ino` option has been removed. mergerfs should always be managing inode values.
+As of version 2.35.0 the `use_ino` option has been removed. mergerfs
+should always be managing inode values.
 
 
 ### pin-threads
@@ -371,20 +483,45 @@ threads. Invalid values are ignored.
 
 ### fuse_msg_size
 
-FUSE applications communicate with the kernel over a special character device: `/dev/fuse`. A large portion of the overhead associated with FUSE is the cost of going back and forth from user space and kernel space over that device. Generally speaking the fewer trips needed the better the performance will be. Reducing the number of trips can be done a number of ways. Kernel level caching and increasing message sizes being two significant ones. When it comes to reads and writes if the message size is doubled the number of trips are approximately halved.
+FUSE applications communicate with the kernel over a special character
+device: `/dev/fuse`. A large portion of the overhead associated with
+FUSE is the cost of going back and forth from user space and kernel
+space over that device. Generally speaking the fewer trips needed the
+better the performance will be. Reducing the number of trips can be
+done a number of ways. Kernel level caching and increasing message
+sizes being two significant ones. When it comes to reads and writes if
+the message size is doubled the number of trips are approximately
+halved.
 
-In Linux 4.20 a new feature was added allowing the negotiation of the max message size. Since the size is in multiples of [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the feature is called `max_pages`. There is a maximum `max_pages` value of 256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20, and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its referred to as `fuse_msg_size` to make it clear what it impacts and provide some abstraction.
+In Linux 4.20 a new feature was added allowing the negotiation of the
+max message size. Since the size is in multiples of
+[pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the
+feature is called `max_pages`. There is a maximum `max_pages` value of
+256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20,
+and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its
+referred to as `fuse_msg_size` to make it clear what it impacts and
+provide some abstraction.
 
-Since there should be no downsides to increasing `fuse_msg_size` / `max_pages`, outside a minor bump in RAM usage due to larger message buffers, mergerfs defaults the value to 256. On kernels before 4.20 the value has no effect. The reason the value is configurable is to enable experimentation and benchmarking. See the BENCHMARKING section for examples.
+Since there should be no downsides to increasing `fuse_msg_size` /
+`max_pages`, outside a minor bump in RAM usage due to larger message
+buffers, mergerfs defaults the value to 256. On kernels before 4.20
+the value has no effect. The reason the value is configurable is to
+enable experimentation and benchmarking. See the BENCHMARKING section
+for examples.
 
 
 ### follow-symlinks
 
-This feature, when enabled, will cause symlinks to be interpreted by mergerfs as their target (depending on the mode).
+This feature, when enabled, will cause symlinks to be interpreted by
+mergerfs as their target (depending on the mode).
 
-When there is a getattr/stat request for a file mergerfs will check if the file is a symlink and depending on the `follow-symlinks` setting will replace the information about the symlink with that of that which it points to.
+When there is a getattr/stat request for a file mergerfs will check if
+the file is a symlink and depending on the `follow-symlinks` setting
+will replace the information about the symlink with that of that which
+it points to.
 
-When unlink'ing or rmdir'ing the followed symlink it will remove the symlink itself and not that which it points to.
+When unlink'ing or rmdir'ing the followed symlink it will remove the
+symlink itself and not that which it points to.
 
 * never: Behave as normal. Symlinks are treated as such.
 * directory: Resolve symlinks only which point to directories.
@@ -393,19 +530,25 @@ When unlink'ing or rmdir'ing the followed symlink it will remove the symlink its
 
 Symlinks which do not point to anything are left as is.
 
-WARNING: This feature works but there might be edge cases yet found. If you find any odd behaviors please file a ticket on [github](https://github.com/trapexit/mergerfs/issues).
+WARNING: This feature works but there might be edge cases yet
+found. If you find any odd behaviors please file a ticket on
+[github](https://github.com/trapexit/mergerfs/issues).
 
 
 ### link-exdev
 
-If using path preservation and a `link` fails with EXDEV make a call to `symlink` where the `target` is the `oldlink` and the `linkpath` is the `newpath`. The `target` value is determined by the value of `link-exdev`.
+If using path preservation and a `link` fails with EXDEV make a call
+to `symlink` where the `target` is the `oldlink` and the `linkpath` is
+the `newpath`. The `target` value is determined by the value of
+`link-exdev`.
 
 * passthrough: Return EXDEV as normal.
 * rel-symlink: A relative path from the `newpath`.
 * abs-base-symlink: A absolute value using the underlying branch.
 * abs-pool-symlink: A absolute value using the mergerfs mount point.
 
-NOTE: It is possible that some applications check the file they link. In those cases it is possible it will error or complain.
+NOTE: It is possible that some applications check the file they
+link. In those cases it is possible it will error or complain.
 
 
 ### rename-exdev
@@ -421,56 +564,130 @@ The `target` value is determined by the value of `rename-exdev`.
 * rel-symlink: A relative path from the `newpath`.
 * abs-symlink: A absolute value using the mergerfs mount point.
 
-NOTE: It is possible that some applications check the file they rename. In those cases it is possible it will error or complain.
+NOTE: It is possible that some applications check the file they
+rename. In those cases it is possible it will error or complain.
 
-NOTE: The reason `abs-symlink` is not split into two like `link-exdev` is due to the complexities in managing absolute base symlinks when multiple `oldpaths` exist.
+NOTE: The reason `abs-symlink` is not split into two like `link-exdev`
+is due to the complexities in managing absolute base symlinks when
+multiple `oldpaths` exist.
 
 
 ### symlinkify
 
-Due to the levels of indirection introduced by mergerfs and the underlying technology FUSE there can be varying levels of performance degradation. This feature will turn non-directories which are not writable into symlinks to the original file found by the `readlink` policy after the mtime and ctime are older than the timeout.
+Due to the levels of indirection introduced by mergerfs and the
+underlying technology FUSE there can be varying levels of performance
+degradation. This feature will turn non-directories which are not
+writable into symlinks to the original file found by the `readlink`
+policy after the mtime and ctime are older than the timeout.
 
-**WARNING:** The current implementation has a known issue in which if the file is open and being used when the file is converted to a symlink then the application which has that file open will receive an error when using it. This is unlikely to occur in practice but is something to keep in mind.
+**WARNING:** The current implementation has a known issue in which if
+the file is open and being used when the file is converted to a
+symlink then the application which has that file open will receive an
+error when using it. This is unlikely to occur in practice but is
+something to keep in mind.
 
-**WARNING:** Some backup solutions, such as CrashPlan, do not backup the target of a symlink. If using this feature it will be necessary to point any backup software to the original drives or configure the software to follow symlinks if such an option is available. Alternatively create two mounts. One for backup and one for general consumption.
+**WARNING:** Some backup solutions, such as CrashPlan, do not backup
+the target of a symlink. If using this feature it will be necessary to
+point any backup software to the original drives or configure the
+software to follow symlinks if such an option is
+available. Alternatively create two mounts. One for backup and one for
+general consumption.
 
 
 ### nullrw
 
-Due to how FUSE works there is an overhead to all requests made to a FUSE filesystem that wouldn't exist for an in kernel one. Meaning that even a simple passthrough will have some slowdown. However, generally the overhead is minimal in comparison to the cost of the underlying I/O. By disabling the underlying I/O we can test the theoretical performance boundaries.
+Due to how FUSE works there is an overhead to all requests made to a
+FUSE filesystem that wouldn't exist for an in kernel one. Meaning that
+even a simple passthrough will have some slowdown. However, generally
+the overhead is minimal in comparison to the cost of the underlying
+I/O. By disabling the underlying I/O we can test the theoretical
+performance boundaries.
 
-By enabling `nullrw` mergerfs will work as it always does **except** that all reads and writes will be no-ops. A write will succeed (the size of the write will be returned as if it were successful) but mergerfs does nothing with the data it was given. Similarly a read will return the size requested but won't touch the buffer.
+By enabling `nullrw` mergerfs will work as it always does **except**
+that all reads and writes will be no-ops. A write will succeed (the
+size of the write will be returned as if it were successful) but
+mergerfs does nothing with the data it was given. Similarly a read
+will return the size requested but won't touch the buffer.
 
 See the BENCHMARKING section for suggestions on how to test.
 
 
 ### xattr
 
-Runtime extended attribute support can be managed via the `xattr` option. By default it will passthrough any xattr calls. Given xattr support is rarely used and can have significant performance implications mergerfs allows it to be disabled at runtime. The performance problems mostly comes when file caching is enabled. The kernel will send a `getxattr` for `security.capability` *before every single write*. It doesn't cache the responses to any `getxattr`. This might be addressed in the future but for now mergerfs can really only offer the following workarounds.
+Runtime extended attribute support can be managed via the `xattr`
+option. By default it will passthrough any xattr calls. Given xattr
+support is rarely used and can have significant performance
+implications mergerfs allows it to be disabled at runtime. The
+performance problems mostly comes when file caching is enabled. The
+kernel will send a `getxattr` for `security.capability` *before every
+single write*. It doesn't cache the responses to any `getxattr`. This
+might be addressed in the future but for now mergerfs can really only
+offer the following workarounds.
 
-`noattr` will cause mergerfs to short circuit all xattr calls and return ENOATTR where appropriate. mergerfs still gets all the requests but they will not be forwarded on to the underlying filesystems. The runtime control will still function in this mode.
+`noattr` will cause mergerfs to short circuit all xattr calls and
+return ENOATTR where appropriate. mergerfs still gets all the requests
+but they will not be forwarded on to the underlying filesystems. The
+runtime control will still function in this mode.
 
-`nosys` will cause mergerfs to return ENOSYS for any xattr call. The difference with `noattr` is that the kernel will cache this fact and itself short circuit future calls. This is more efficient than `noattr` but will cause mergerfs' runtime control via the hidden file to stop working.
+`nosys` will cause mergerfs to return ENOSYS for any xattr call. The
+difference with `noattr` is that the kernel will cache this fact and
+itself short circuit future calls. This is more efficient than
+`noattr` but will cause mergerfs' runtime control via the hidden file
+to stop working.
 
 
 ### nfsopenhack
 
-NFS is not fully POSIX compliant and historically certain behaviors, such as opening files with O_EXCL, are not or not well supported. When mergerfs (or any FUSE filesystem) is exported over NFS some of these issues come up due to how NFS and FUSE interact.
+NFS is not fully POSIX compliant and historically certain behaviors,
+such as opening files with O_EXCL, are not or not well supported. When
+mergerfs (or any FUSE filesystem) is exported over NFS some of these
+issues come up due to how NFS and FUSE interact.
 
-This hack addresses the issue where the creation of a file with a read-only mode but with a read/write or write only flag. Normally this is perfectly valid but NFS chops the one open call into multiple calls. Exactly how it is translated depends on the configuration and versions of the NFS server and clients but it results in a permission error because a normal user is not allowed to open a read-only file as writable.
+This hack addresses the issue where the creation of a file with a
+read-only mode but with a read/write or write only flag. Normally this
+is perfectly valid but NFS chops the one open call into multiple
+calls. Exactly how it is translated depends on the configuration and
+versions of the NFS server and clients but it results in a permission
+error because a normal user is not allowed to open a read-only file as
+writable.
 
-Even though it's a more niche situation this hack breaks normal security and behavior and as such is `off` by default. If set to `git` it will only perform the hack when the path in question includes `/.git/`. `all` will result it applying anytime a readonly file which is empty is opened for writing.
+Even though it's a more niche situation this hack breaks normal
+security and behavior and as such is `off` by default. If set to `git`
+it will only perform the hack when the path in question includes
+`/.git/`. `all` will result it applying anytime a readonly file which
+is empty is opened for writing.
 
 
 # FUNCTIONS, CATEGORIES and POLICIES
 
-The POSIX filesystem API is made up of a number of functions. **creat**, **stat**, **chown**, etc. For ease of configuration in mergerfs most of the core functions are grouped into 3 categories: **action**, **create**, and **search**. These functions and categories can be assigned a policy which dictates which branch is chosen when performing that function.
+The POSIX filesystem API is made up of a number of
+functions. **creat**, **stat**, **chown**, etc. For ease of
+configuration in mergerfs most of the core functions are grouped into
+3 categories: **action**, **create**, and **search**. These functions
+and categories can be assigned a policy which dictates which branch is
+chosen when performing that function.
 
-Some functions, listed in the category `N/A` below, can not be assigned the normal policies. These functions work with file handles, rather than file paths, which were created by `open` or `create`. That said many times the current FUSE kernel driver will not always provide the file handle when a client calls `fgetattr`, `fchown`, `fchmod`, `futimens`, `ftruncate`, etc. This means it will call the regular, path based, versions. `readdir` has no real need for a policy given the purpose is merely to return a list of entries in a directory. `statfs`'s behavior can be modified via other options.
+Some functions, listed in the category `N/A` below, can not be
+assigned the normal policies. These functions work with file handles,
+rather than file paths, which were created by `open` or `create`. That
+said many times the current FUSE kernel driver will not always provide
+the file handle when a client calls `fgetattr`, `fchown`, `fchmod`,
+`futimens`, `ftruncate`, etc. This means it will call the regular,
+path based, versions. `readdir` has no real need for a policy given
+the purpose is merely to return a list of entries in a
+directory. `statfs`'s behavior can be modified via other options.
 
-When using policies which are based on a branch's available space the base path provided is used. Not the full path to the file in question. Meaning that mounts in the branch won't be considered in the space calculations. The reason is that it doesn't really work for non-path preserving policies and can lead to non-obvious behaviors.
+When using policies which are based on a branch's available space the
+base path provided is used. Not the full path to the file in
+question. Meaning that mounts in the branch won't be considered in the
+space calculations. The reason is that it doesn't really work for
+non-path preserving policies and can lead to non-obvious behaviors.
 
-NOTE: While any policy can be assigned to a function or category though some may not be very useful in practice. For instance: **rand** (random) may be useful for file creation (create) but could lead to very odd behavior if used for `chmod` if there were more than one copy of the file.
+NOTE: While any policy can be assigned to a function or category
+though some may not be very useful in practice. For instance: **rand**
+(random) may be useful for file creation (create) but could lead to
+very odd behavior if used for `chmod` if there were more than one copy
+of the file.
 
 
 ### Functions and their Category classifications
@@ -482,45 +699,73 @@ NOTE: While any policy can be assigned to a function or category though some may
 | search   | access, getattr, getxattr, ioctl (directories), listxattr, open, readlink           |
 | N/A      | fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl (files), read, readdir, release, statfs, write, copy_file_range |
 
-In cases where something may be searched for (such as a path to clone) **getattr** will usually be used.
+In cases where something may be searched for (such as a path to clone)
+**getattr** will usually be used.
 
 
 ### Policies
 
-A policy is the algorithm used to choose a branch or branches for a function to work on. Think of them as ways to filter and sort branches.
+A policy is the algorithm used to choose a branch or branches for a
+function to work on. Think of them as ways to filter and sort
+branches.
 
-Any function in the `create` category will clone the relative path if needed. Some other functions (`rename`,`link`,`ioctl`) have special requirements or behaviors which you can read more about below.
+Any function in the `create` category will clone the relative path if
+needed. Some other functions (`rename`,`link`,`ioctl`) have special
+requirements or behaviors which you can read more about below.
 
 
 #### Filtering
 
-Policies basically search branches and create a list of files / paths for functions to work on. The policy is responsible for filtering and sorting the branches. Filters include **minfreespace**, whether or not a branch is mounted read-only, and the branch tagging (RO,NC,RW). These filters are applied across all policies unless otherwise noted.
+Policies basically search branches and create a list of files / paths
+for functions to work on. The policy is responsible for filtering and
+sorting the branches. Filters include **minfreespace**, whether or not
+a branch is mounted read-only, and the branch tagging
+(RO,NC,RW). These filters are applied across all policies unless
+otherwise noted.
 
 * No **search** function policies filter.
-* All **action** function policies filter out branches which are mounted **read-only** or tagged as **RO (read-only)**.
-* All **create** function policies filter out branches which are mounted **read-only**, tagged **RO (read-only)** or **NC (no create)**, or has available space less than `minfreespace`.
+* All **action** function policies filter out branches which are
+  mounted **read-only** or tagged as **RO (read-only)**.
+* All **create** function policies filter out branches which are
+  mounted **read-only**, tagged **RO (read-only)** or **NC (no
+  create)**, or has available space less than `minfreespace`.
 
-Policies may have their own additional filtering such as those that require existing paths to be present.
+Policies may have their own additional filtering such as those that
+require existing paths to be present.
 
-If all branches are filtered an error will be returned. Typically **EROFS** (read-only filesystem) or **ENOSPC** (no space left on device) depending on the most recent reason for filtering a branch. **ENOENT** will be returned if no eligible branch is found.
+If all branches are filtered an error will be returned. Typically
+**EROFS** (read-only filesystem) or **ENOSPC** (no space left on
+device) depending on the most recent reason for filtering a
+branch. **ENOENT** will be returned if no eligible branch is found.
 
 
 #### Path Preservation
 
-Policies, as described below, are of two basic types. `path preserving` and `non-path preserving`.
+Policies, as described below, are of two basic classifications. `path
+preserving` and `non-path preserving`.
 
-All policies which start with `ep` (**epff**, **eplfs**, **eplus**, **epmfs**, **eprand**) are `path preserving`. `ep` stands for `existing path`.
+All policies which start with `ep` (**epff**, **eplfs**, **eplus**,
+**epmfs**, **eprand**) are `path preserving`. `ep` stands for
+`existing path`.
 
-A path preserving policy will only consider drives where the relative path being accessed already exists.
+A path preserving policy will only consider drives where the relative
+path being accessed already exists.
 
-When using non-path preserving policies paths will be cloned to target drives as necessary.
+When using non-path preserving policies paths will be cloned to target
+drives as necessary.
 
-With the `msp` or `most shared path` policies they are defined as `path preserving` for the purpose of controlling `link` and `rename`'s behaviors since `ignorepponrename` is available to disable that behavior. In mergerfs v3.0 the path preserving behavior of rename and link will likely be separated from the policy all together.
+With the `msp` or `most shared path` policies they are defined as
+`path preserving` for the purpose of controlling `link` and `rename`'s
+behaviors since `ignorepponrename` is available to disable that
+behavior.
 
 
 #### Policy descriptions
 
-A policy's behavior differs, as mentioned above, based on the function it is used with. Sometimes it really might not make sense to even offer certain policies because they are literally the same as others but it makes things a bit more uniform. In mergerfs 3.0 this might change.
+A policy's behavior differs, as mentioned above, based on the function
+it is used with. Sometimes it really might not make sense to even
+offer certain policies because they are literally the same as others
+but it makes things a bit more uniform.
 
 
 | Policy           | Description                                                |
@@ -545,7 +790,13 @@ A policy's behavior differs, as mentioned above, based on the function it is use
 | pfrd (percentage free random distribution) | Chooses a branch at random with the likelihood of selection based on a branch's available space relative to the total. |
 | rand (random) | Calls **all** and then randomizes. Returns 1 branch. |
 
-**NOTE:** If you are using an underlying filesystem that reserves blocks such as ext2, ext3, or ext4 be aware that mergerfs respects the reservation by using `f_bavail` (number of free blocks for unprivileged users) rather than `f_bfree` (number of free blocks) in policy calculations. **df** does NOT use `f_bavail`, it uses `f_bfree`, so direct comparisons between **df** output and mergerfs' policies is not appropriate.
+**NOTE:** If you are using an underlying filesystem that reserves
+blocks such as ext2, ext3, or ext4 be aware that mergerfs respects the
+reservation by using `f_bavail` (number of free blocks for
+unprivileged users) rather than `f_bfree` (number of free blocks) in
+policy calculations. **df** does NOT use `f_bavail`, it uses
+`f_bfree`, so direct comparisons between **df** output and mergerfs'
+policies is not appropriate.
 
 
 #### Defaults
@@ -559,18 +810,39 @@ A policy's behavior differs, as mentioned above, based on the function it is use
 
 #### ioctl
 
-When `ioctl` is used with an open file then it will use the file handle which was created at the original `open` call. However, when using `ioctl` with a directory mergerfs will use the `open` policy to find the directory to act on.
+When `ioctl` is used with an open file then it will use the file
+handle which was created at the original `open` call. However, when
+using `ioctl` with a directory mergerfs will use the `open` policy to
+find the directory to act on.
 
 
 #### rename & link ####
 
-**NOTE:** If you're receiving errors from software when files are moved / renamed / linked then you should consider changing the create policy to one which is **not** path preserving, enabling `ignorepponrename`, or contacting the author of the offending software and requesting that `EXDEV` (cross device / improper link) be properly handled.
+**NOTE:** If you're receiving errors from software when files are
+moved / renamed / linked then you should consider changing the create
+policy to one which is **not** path preserving, enabling
+`ignorepponrename`, or contacting the author of the offending software
+and requesting that `EXDEV` (cross device / improper link) be properly
+handled.
 
-`rename` and `link` are tricky functions in a union filesystem. `rename` only works within a single filesystem or device. If a rename can't be done atomically due to the source and destination paths existing on different mount points it will return **-1** with **errno = EXDEV** (cross device / improper link). So if a `rename`'s source and target are on different drives within the pool it creates an issue.
+`rename` and `link` are tricky functions in a union
+filesystem. `rename` only works within a single filesystem or
+device. If a rename can't be done atomically due to the source and
+destination paths existing on different mount points it will return
+**-1** with **errno = EXDEV** (cross device / improper link). So if a
+`rename`'s source and target are on different drives within the pool
+it creates an issue.
 
-Originally mergerfs would return EXDEV whenever a rename was requested which was cross directory in any way. This made the code simple and was technically compliant with POSIX requirements. However, many applications fail to handle EXDEV at all and treat it as a normal error or otherwise handle it poorly. Such apps include: gvfsd-fuse v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+, NZBGet, Samba's recycling bin feature.
+Originally mergerfs would return EXDEV whenever a rename was requested
+which was cross directory in any way. This made the code simple and
+was technically compliant with POSIX requirements. However, many
+applications fail to handle EXDEV at all and treat it as a normal
+error or otherwise handle it poorly. Such apps include: gvfsd-fuse
+v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+,
+NZBGet, Samba's recycling bin feature.
 
-As a result a compromise was made in order to get most software to work while still obeying mergerfs' policies. Below is the basic logic.
+As a result a compromise was made in order to get most software to
+work while still obeying mergerfs' policies. Below is the basic logic.
 
 * If using a **create** policy which tries to preserve directory paths (epff,eplfs,eplus,epmfs)
   * Using the **rename** policy get the list of files to rename
@@ -598,26 +870,45 @@ As a result a compromise was made in order to get most software to work while st
 
 The the removals are subject to normal entitlement checks.
 
-The above behavior will help minimize the likelihood of EXDEV being returned but it will still be possible.
+The above behavior will help minimize the likelihood of EXDEV being
+returned but it will still be possible.
 
 **link** uses the same strategy but without the removals.
 
 
 #### readdir ####
 
-[readdir](http://linux.die.net/man/3/readdir) is different from all other filesystem functions. While it could have its own set of policies to tweak its behavior at this time it provides a simple union of files and directories found. Remember that any action or information queried about these files and directories come from the respective function. For instance: an **ls** is a **readdir** and for each file/directory returned **getattr** is called. Meaning the policy of **getattr** is responsible for choosing the file/directory which is the source of the metadata you see in an **ls**.
+[readdir](http://linux.die.net/man/3/readdir) is different from all
+other filesystem functions. While it could have its own set of
+policies to tweak its behavior at this time it provides a simple union
+of files and directories found. Remember that any action or
+information queried about these files and directories come from the
+respective function. For instance: an **ls** is a **readdir** and for
+each file/directory returned **getattr** is called. Meaning the policy
+of **getattr** is responsible for choosing the file/directory which is
+the source of the metadata you see in an **ls**.
 
 
 #### statfs / statvfs ####
 
-[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source drives based on the fragment size and sums the number of adjusted blocks and inodes. This means you will see the combined space of all sources. Total, used, and free. The sources however are dedupped based on the drive so multiple sources on the same drive will not result in double counting its space. Filesystems mounted further down the tree of the branch will not be included when checking the mount's stats.
+[statvfs](http://linux.die.net/man/2/statvfs) normalizes the source
+drives based on the fragment size and sums the number of adjusted
+blocks and inodes. This means you will see the combined space of all
+sources. Total, used, and free. The sources however are dedupped based
+on the drive so multiple sources on the same drive will not result in
+double counting its space. Filesystems mounted further down the tree
+of the branch will not be included when checking the mount's stats.
 
-The options `statfs` and `statfs_ignore` can be used to modify `statfs` behavior.
+The options `statfs` and `statfs_ignore` can be used to modify
+`statfs` behavior.
 
 
 # ERROR HANDLING
 
-POSIX filesystem functions offer a single return code meaning that there is some complication regarding the handling of multiple branches as mergerfs does. It tries to handle errors in a way that would generally return meaningful values for that particular function.
+POSIX filesystem functions offer a single return code meaning that
+there is some complication regarding the handling of multiple branches
+as mergerfs does. It tries to handle errors in a way that would
+generally return meaningful values for that particular function.
 
 ### chmod, chown, removexattr, setxattr, truncate, utimens
 
@@ -626,7 +917,9 @@ POSIX filesystem functions offer a single return code meaning that there is some
 3) if one of the files acted on was the same as the related search function: return its value
 4) return 0 (success)
 
-While doing this increases the complexity and cost of error handling, particularly step 3, this provides probably the most reasonable return value.
+While doing this increases the complexity and cost of error handling,
+particularly step 3, this provides probably the most reasonable return
+value.
 
 
 ### unlink, rmdir
@@ -634,20 +927,121 @@ While doing this increases the complexity and cost of error handling, particular
 1) if no errors: return 0 (success)
 2) return first error
 
-Older version of mergerfs would return success if any success occurred but for unlink and rmdir there are downstream assumptions that, while not impossible to occur, can confuse some software.
+Older version of mergerfs would return success if any success occurred
+but for unlink and rmdir there are downstream assumptions that, while
+not impossible to occur, can confuse some software.
 
 
 ### others
 
-For search functions there is always a single thing acted on and as such whatever return value that comes from the single function call is returned.
+For search functions there is always a single thing acted on and as
+such whatever return value that comes from the single function call is
+returned.
 
-For create functions `mkdir`, `mknod`, and `symlink` which don't return a file descriptor and therefore can have `all` or `epall` policies it will return success if any of the calls succeed and an error otherwise.
+For create functions `mkdir`, `mknod`, and `symlink` which don't
+return a file descriptor and therefore can have `all` or `epall`
+policies it will return success if any of the calls succeed and an
+error otherwise.
 
 
-# BUILD / UPDATE
+# INSTALL
 
-**NOTE:** Prebuilt packages can be found at and recommended for most users: https://github.com/trapexit/mergerfs/releases
-**NOTE:** Only tagged releases are supported. `master` and other branches should be considered works in progress.
+https://github.com/trapexit/mergerfs/releases
+
+If your distribution's package manager includes mergerfs check if the
+version is up to date. If out of date it is recommended to use
+the latest release found on the release page. Details for common
+distros are below.
+
+
+#### Debian
+
+Most Debian installs are of a stable branch and therefore do not have
+the most up to date software. While mergerfs is available via `apt` it
+is suggested that uses install the most recent version available from
+the [releases page](https://github.com/trapexit/mergerfs/releases).
+
+#### prebuilt deb
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs_<ver>.debian-<rel>_<arch>.deb
+dpkg -i mergerfs_<ver>.debian-<rel>_<arch>.deb
+```
+
+#### apt
+
+```
+sudo apt install -y mergerfs
+```
+
+
+#### Ubuntu
+
+Most Ubuntu installs are of a stable branch and therefore do not have
+the most up to date software. While mergerfs is available via `apt` it
+is suggested that uses install the most recent version available from
+the [releases page](https://github.com/trapexit/mergerfs/releases).
+
+#### prebuilt deb
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<version>/mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
+dpkg -i mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
+```
+
+#### apt
+
+```
+sudo apt install -y mergerfs
+```
+
+
+#### Raspberry Pi OS
+
+Effectively the same as Debian or Ubuntu.
+
+
+#### Fedora
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>.fc<rel>.<arch>.rpm
+sudo rpm -i mergerfs-<ver>.fc<rel>.<arch>.rpm
+```
+
+
+#### CentOS / Rocky
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>.el<rel>.<arch>.rpm
+sudo rpm -i mergerfs-<ver>.el<rel>.<arch>.rpm
+```
+
+
+#### ArchLinux
+
+1. Setup AUR
+2. Install `mergerfs`
+
+
+#### Other
+
+Static binaries are provided for situations where native packages are
+unavailable.
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-static-linux_<arch>.tar.gz
+sudo tar xvf mergerfs-static-linux_<arch>.tar.gz -C /
+```
+
+
+# BUILD
+
+**NOTE:** Prebuilt packages can be found at and recommended for most
+users: https://github.com/trapexit/mergerfs/releases
+
+**NOTE:** Only tagged releases are supported. `master` and other
+branches should be considered works in progress.
+
 
 First get the code from [github](https://github.com/trapexit/mergerfs).
 
@@ -658,6 +1052,7 @@ $ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ve
 ```
 
 #### Debian / Ubuntu
+
 ```
 $ cd mergerfs
 $ sudo tools/install-build-pkgs
@@ -665,7 +1060,8 @@ $ make deb
 $ sudo dpkg -i ../mergerfs_<version>_<arch>.deb
 ```
 
-#### RHEL / CentOS /Fedora
+#### RHEL / CentOS / Rocky / Fedora
+
 ```
 $ su -
 # cd mergerfs
@@ -674,7 +1070,7 @@ $ su -
 # rpm -i rpmbuild/RPMS/<arch>/mergerfs-<version>.<arch>.rpm
 ```
 
-#### Generically
+#### Generic
 
 Have git, g++, make, python installed.
 
@@ -698,9 +1094,15 @@ make LTO=1            - build with link time optimization
 
 # UPGRADE
 
-mergerfs can be upgraded live by mounting on top of the previous instance. Simply install the new version of mergerfs and follow the instructions below.
+mergerfs can be upgraded live by mounting on top of the previous
+instance. Simply install the new version of mergerfs and follow the
+instructions below.
 
-Run mergerfs again or if using `/etc/fstab` call for it to mount again. Existing open files and such will continue to work fine though they won't see runtime changes since any such change would be the new mount. If you plan on changing settings with the new mount you should / could apply those before mounting the new version.
+Run mergerfs again or if using `/etc/fstab` call for it to mount
+again. Existing open files and such will continue to work fine though
+they won't see runtime changes since any such change would be the new
+mount. If you plan on changing settings with the new mount you should
+/ could apply those before mounting the new version.
 
 ```
 $ sudo mount /mnt/mergerfs
@@ -709,8 +1111,12 @@ media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,defa
 media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
 ```
 
-A problem with this approach is that the underlying instance will continue to run even if the software using it stop or are restarted. To work around this you can use a "lazy umount". Before mounting over top the mount point with the new instance of mergerfs issue: `umount -l <mergerfs_mountpoint>`.
-
+A problem with this approach is that the underlying instance will
+continue to run even if the software using it stop or are
+restarted. To work around this you can use a "lazy umount". Before
+mounting over top the mount point with the new instance of mergerfs
+issue: `umount -l <mergerfs_mountpoint>`. Or you can let mergerfs do
+it by setting the option `lazy-umount-mountpoint=true`.
 
 
 # RUNTIME CONFIG
@@ -721,14 +1127,23 @@ A problem with this approach is that the underlying instance will continue to ru
 <mountpoint>/.mergerfs
 ```
 
-There is a pseudo file available at the mount point which allows for the runtime modification of certain **mergerfs** options. The file will not show up in **readdir** but can be **stat**'ed and manipulated via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls.
+There is a pseudo file available at the mount point which allows for
+the runtime modification of certain **mergerfs** options. The file
+will not show up in **readdir** but can be **stat**'ed and manipulated
+via [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr)
+calls.
 
-Any changes made at runtime are **not** persisted. If you wish for values to persist they must be included as options wherever you configure the mounting of mergerfs (/etc/fstab).
+Any changes made at runtime are **not** persisted. If you wish for
+values to persist they must be included as options wherever you
+configure the mounting of mergerfs (/etc/fstab).
 
 
 ##### Keys #####
 
-Use `getfattr -d /mountpoint/.mergerfs` or `xattr -l /mountpoint/.mergerfs` to see all supported keys. Some are informational and therefore read-only. `setxattr` will return EINVAL (invalid argument) on read-only keys.
+Use `getfattr -d /mountpoint/.mergerfs` or `xattr -l
+/mountpoint/.mergerfs` to see all supported keys. Some are
+informational and therefore read-only. `setxattr` will return EINVAL
+(invalid argument) on read-only keys.
 
 
 ##### Values #####
@@ -738,7 +1153,8 @@ Same as the command line.
 
 ###### user.mergerfs.branches ######
 
-Used to query or modify the list of branches. When modifying there are several shortcuts to easy manipulation of the list.
+Used to query or modify the list of branches. When modifying there are
+several shortcuts to easy manipulation of the list.
 
 | Value        | Description |
 |--------------|-------------|
@@ -774,7 +1190,11 @@ user.mergerfs.category.search="newest"
 
 #### file / directory xattrs ####
 
-While they won't show up when using `getfattr` **mergerfs** offers a number of special xattrs to query information about the files served. To access the values you will need to issue a [getxattr](http://linux.die.net/man/2/getxattr) for one of the following:
+While they won't show up when using `getfattr` **mergerfs** offers a
+number of special xattrs to query information about the files
+served. To access the values you will need to issue a
+[getxattr](http://linux.die.net/man/2/getxattr) for one of the
+following:
 
 * **user.mergerfs.basepath**: the base mount point for the file given the current getattr policy
 * **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
@@ -860,71 +1280,168 @@ kernel documentation: https://www.kernel.org/doc/Documentation/filesystems/fuse-
 
 #### entry & attribute caching
 
-Given the relatively high cost of FUSE due to the kernel <-> userspace round trips there are kernel side caches for file entries and attributes. The entry cache limits the `lookup` calls to mergerfs which ask if a file exists. The attribute cache limits the need to make `getattr` calls to mergerfs which provide file attributes (mode, size, type, etc.). As with the page cache these should not be used if the underlying filesystems are being manipulated at the same time as it could lead to odd behavior or data corruption. The options for setting these are `cache.entry` and `cache.negative_entry` for the entry cache and `cache.attr` for the attributes cache. `cache.negative_entry` refers to the timeout for negative responses to lookups (non-existent files).
+Given the relatively high cost of FUSE due to the kernel <-> userspace
+round trips there are kernel side caches for file entries and
+attributes. The entry cache limits the `lookup` calls to mergerfs
+which ask if a file exists. The attribute cache limits the need to
+make `getattr` calls to mergerfs which provide file attributes (mode,
+size, type, etc.). As with the page cache these should not be used if
+the underlying filesystems are being manipulated at the same time as
+it could lead to odd behavior or data corruption. The options for
+setting these are `cache.entry` and `cache.negative_entry` for the
+entry cache and `cache.attr` for the attributes
+cache. `cache.negative_entry` refers to the timeout for negative
+responses to lookups (non-existent files).
 
 
 #### writeback caching
 
-When `cache.files` is enabled the default is for it to perform writethrough caching. This behavior won't help improve performance as each write still goes one for one through the filesystem. By enabling the FUSE writeback cache small writes may be aggregated by the kernel and then sent to mergerfs as one larger request. This can greatly improve the throughput for apps which write to files inefficiently. The amount the kernel can aggregate is limited by the size of a FUSE message. Read the `fuse_msg_size` section for more details.
+When `cache.files` is enabled the default is for it to perform
+writethrough caching. This behavior won't help improve performance as
+each write still goes one for one through the filesystem. By enabling
+the FUSE writeback cache small writes may be aggregated by the kernel
+and then sent to mergerfs as one larger request. This can greatly
+improve the throughput for apps which write to files
+inefficiently. The amount the kernel can aggregate is limited by the
+size of a FUSE message. Read the `fuse_msg_size` section for more
+details.
 
-There is a small side effect as a result of enabling writeback caching. Underlying files won't ever be opened with O_APPEND or O_WRONLY. The former because the kernel then manages append mode and the latter because the kernel may request file data from mergerfs to populate the write cache. The O_APPEND change means that if a file is changed outside of mergerfs it could lead to corruption as the kernel won't know the end of the file has changed. That said any time you use caching you should keep from using the same file outside of mergerfs at the same time.
+There is a small side effect as a result of enabling writeback
+caching. Underlying files won't ever be opened with O_APPEND or
+O_WRONLY. The former because the kernel then manages append mode and
+the latter because the kernel may request file data from mergerfs to
+populate the write cache. The O_APPEND change means that if a file is
+changed outside of mergerfs it could lead to corruption as the kernel
+won't know the end of the file has changed. That said any time you use
+caching you should keep from using the same file outside of mergerfs
+at the same time.
 
-Note that if an application is properly sizing writes then writeback caching will have little or no effect. It will only help with writes of sizes below the FUSE message size (128K on older kernels, 1M on newer).
+Note that if an application is properly sizing writes then writeback
+caching will have little or no effect. It will only help with writes
+of sizes below the FUSE message size (128K on older kernels, 1M on
+newer).
 
 
 #### policy caching
 
-Policies are run every time a function (with a policy as mentioned above) is called. These policies can be expensive depending on mergerfs' setup and client usage patterns. Generally we wouldn't want to cache policy results because it may result in stale responses if the underlying drives are used directly.
+Policies are run every time a function (with a policy as mentioned
+above) is called. These policies can be expensive depending on
+mergerfs' setup and client usage patterns. Generally we wouldn't want
+to cache policy results because it may result in stale responses if
+the underlying drives are used directly.
 
-The `open` policy cache will cache the result of an `open` policy for a particular input for `cache.open` seconds or until the file is unlinked. Each file close (release) will randomly chose to clean up the cache of expired entries.
+The `open` policy cache will cache the result of an `open` policy for
+a particular input for `cache.open` seconds or until the file is
+unlinked. Each file close (release) will randomly chose to clean up
+the cache of expired entries.
 
-This cache is really only useful in cases where you have a large number of branches and `open` is called on the same files repeatedly (like **Transmission** which opens and closes a file on every read/write presumably to keep file handle usage low).
+This cache is really only useful in cases where you have a large
+number of branches and `open` is called on the same files repeatedly
+(like **Transmission** which opens and closes a file on every
+read/write presumably to keep file handle usage low).
 
 
 #### statfs caching
 
-Of the syscalls used by mergerfs in policies the `statfs` / `statvfs` call is perhaps the most expensive. It's used to find out the available space of a drive and whether it is mounted read-only. Depending on the setup and usage pattern these queries can be relatively costly. When `cache.statfs` is enabled all calls to `statfs` by a policy will be cached for the number of seconds its set to.
+Of the syscalls used by mergerfs in policies the `statfs` / `statvfs`
+call is perhaps the most expensive. It's used to find out the
+available space of a drive and whether it is mounted
+read-only. Depending on the setup and usage pattern these queries can
+be relatively costly. When `cache.statfs` is enabled all calls to
+`statfs` by a policy will be cached for the number of seconds its set
+to.
 
-Example: If the create policy is `mfs` and the timeout is 60 then for that 60 seconds the same drive will be returned as the target for creates because the available space won't be updated for that time.
+Example: If the create policy is `mfs` and the timeout is 60 then for
+that 60 seconds the same drive will be returned as the target for
+creates because the available space won't be updated for that time.
 
 
 #### symlink caching
 
-As of version 4.20 Linux supports symlink caching. Significant performance increases can be had in workloads which use a lot of symlinks. Setting `cache.symlinks=true` will result in requesting symlink caching from the kernel only if supported. As a result its safe to enable it on systems prior to 4.20. That said it is disabled by default for now. You can see if caching is enabled by querying the xattr `user.mergerfs.cache.symlinks` but given it must be requested at startup you can not change it at runtime.
+As of version 4.20 Linux supports symlink caching. Significant
+performance increases can be had in workloads which use a lot of
+symlinks. Setting `cache.symlinks=true` will result in requesting
+symlink caching from the kernel only if supported. As a result its
+safe to enable it on systems prior to 4.20. That said it is disabled
+by default for now. You can see if caching is enabled by querying the
+xattr `user.mergerfs.cache.symlinks` but given it must be requested at
+startup you can not change it at runtime.
 
 
 #### readdir caching
 
-As of version 4.20 Linux supports readdir caching. This can have a significant impact on directory traversal. Especially when combined with entry (`cache.entry`) and attribute (`cache.attr`) caching. Setting `cache.readdir=true` will result in requesting readdir caching from the kernel on each `opendir`. If the kernel doesn't support readdir caching setting the option to `true` has no effect. This option is configurable at runtime via xattr `user.mergerfs.cache.readdir`.
+As of version 4.20 Linux supports readdir caching. This can have a
+significant impact on directory traversal. Especially when combined
+with entry (`cache.entry`) and attribute (`cache.attr`)
+caching. Setting `cache.readdir=true` will result in requesting
+readdir caching from the kernel on each `opendir`. If the kernel
+doesn't support readdir caching setting the option to `true` has no
+effect. This option is configurable at runtime via xattr
+`user.mergerfs.cache.readdir`.
 
 
 #### tiered caching
 
-Some storage technologies support what some call "tiered" caching. The placing of usually smaller, faster storage as a transparent cache to larger, slower storage. NVMe, SSD, Optane in front of traditional HDDs for instance.
+Some storage technologies support what some call "tiered" caching. The
+placing of usually smaller, faster storage as a transparent cache to
+larger, slower storage. NVMe, SSD, Optane in front of traditional HDDs
+for instance.
 
-MergerFS does not natively support any sort of tiered caching. Most users have no use for such a feature and its inclusion would complicate the code. However, there are a few situations where a cache drive could help with a typical mergerfs setup.
+MergerFS does not natively support any sort of tiered caching. Most
+users have no use for such a feature and its inclusion would
+complicate the code. However, there are a few situations where a cache
+drive could help with a typical mergerfs setup.
 
-1. Fast network, slow drives, many readers: You've a 10+Gbps network with many readers and your regular drives can't keep up.
-2. Fast network, slow drives, small'ish bursty writes: You have a 10+Gbps network and wish to transfer amounts of data less than your cache drive but wish to do so quickly.
+1. Fast network, slow drives, many readers: You've a 10+Gbps network
+   with many readers and your regular drives can't keep up.
+2. Fast network, slow drives, small'ish bursty writes: You have a
+   10+Gbps network and wish to transfer amounts of data less than your
+   cache drive but wish to do so quickly.
 
-With #1 it's arguable if you should be using mergerfs at all. RAID would probably be the better solution. If you're going to use mergerfs there are other tactics that may help: spreading the data across drives (see the mergerfs.dup tool) and setting `func.open=rand`, using `symlinkify`, or using dm-cache or a similar technology to add tiered cache to the underlying device.
+With #1 it's arguable if you should be using mergerfs at all. RAID
+would probably be the better solution. If you're going to use mergerfs
+there are other tactics that may help: spreading the data across
+drives (see the mergerfs.dup tool) and setting `func.open=rand`, using
+`symlinkify`, or using dm-cache or a similar technology to add tiered
+cache to the underlying device.
 
-With #2 one could use dm-cache as well but there is another solution which requires only mergerfs and a cronjob.
+With #2 one could use dm-cache as well but there is another solution
+which requires only mergerfs and a cronjob.
 
-1. Create 2 mergerfs pools. One which includes just the slow drives and one which has both the fast drives (SSD,NVME,etc.) and slow drives.
+1. Create 2 mergerfs pools. One which includes just the slow drives
+   and one which has both the fast drives (SSD,NVME,etc.) and slow
+   drives.
 2. The 'cache' pool should have the cache drives listed first.
-3. The best `create` policies to use for the 'cache' pool would probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under the assumption that the cache drive(s) are far smaller than the backing drives. If using path preserving policies remember that you'll need to manually create the core directories of those paths you wish to be cached. Be sure the permissions are in sync. Use `mergerfs.fsck` to check / correct them. You could also tag the slow drives as `=NC` though that'd mean if the cache drives fill you'd get "out of space" errors.
-4. Enable `moveonenospc` and set `minfreespace` appropriately. To make sure there is enough room on the "slow" pool you might want to set `minfreespace` to at least as large as the size of the largest cache drive if not larger. This way in the worst case the whole of the cache drive(s) can be moved to the other drives.
+3. The best `create` policies to use for the 'cache' pool would
+   probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under
+   the assumption that the cache drive(s) are far smaller than the
+   backing drives. If using path preserving policies remember that
+   you'll need to manually create the core directories of those paths
+   you wish to be cached. Be sure the permissions are in sync. Use
+   `mergerfs.fsck` to check / correct them. You could also tag the
+   slow drives as `=NC` though that'd mean if the cache drives fill
+   you'd get "out of space" errors.
+4. Enable `moveonenospc` and set `minfreespace` appropriately. To make
+   sure there is enough room on the "slow" pool you might want to set
+   `minfreespace` to at least as large as the size of the largest
+   cache drive if not larger. This way in the worst case the whole of
+   the cache drive(s) can be moved to the other drives.
 5. Set your programs to use the cache pool.
 6. Save one of the below scripts or create you're own.
-7. Use `cron` (as root) to schedule the command at whatever frequency is appropriate for your workflow.
+7. Use `cron` (as root) to schedule the command at whatever frequency
+   is appropriate for your workflow.
 
 
 ##### time based expiring
 
-Move files from cache to backing pool based only on the last time the file was accessed. Replace `-atime` with `-amin` if you want minutes rather than days. May want to use the `fadvise` / `--drop-cache` version of rsync or run rsync with the tool "nocache".
+Move files from cache to backing pool based only on the last time the
+file was accessed. Replace `-atime` with `-amin` if you want minutes
+rather than days. May want to use the `fadvise` / `--drop-cache`
+version of rsync or run rsync with the tool "nocache".
 
-*NOTE:* The arguments to these scripts include the cache **drive**. Not the pool with the cache drive. You could have data loss if the source is the cache pool.
+*NOTE:* The arguments to these scripts include the cache
+**drive**. Not the pool with the cache drive. You could have data loss
+if the source is the cache pool.
 
 
 ```
@@ -946,9 +1463,13 @@ find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
 
 ##### percentage full expiring
 
-Move the oldest file from the cache to the backing pool. Continue till below percentage threshold.
+Move the oldest file from the cache to the backing pool. Continue till
+below percentage threshold.
 
-*NOTE:* The arguments to these scripts include the cache **drive**. Not the pool with the cache drive. You could have data loss if the source is the cache pool.
+*NOTE:* The arguments to these scripts include the cache
+**drive**. Not the pool with the cache drive. You could have data loss
+if the source is the cache pool.
+
 
 ```
 #!/bin/bash
@@ -977,15 +1498,26 @@ done
 
 # PERFORMANCE
 
-mergerfs is at its core just a proxy and therefore its theoretical max performance is that of the underlying devices. However, given it is a FUSE filesystem working from userspace there is an increase in overhead relative to kernel based solutions. That said the performance can match the theoretical max but it depends greatly on the system's configuration. Especially when adding network filesystems into the mix there are many variables which can impact performance. Drive speeds and latency, network speeds and latency, general concurrency, read/write sizes, etc. Unfortunately, given the number of variables it has been difficult to find a single set of settings which provide optimal performance. If you're having performance issues please look over the suggestions below (including the benchmarking section.)
+mergerfs is at its core just a proxy and therefore its theoretical max
+performance is that of the underlying devices. However, given it is a
+FUSE filesystem working from userspace there is an increase in
+overhead relative to kernel based solutions. That said the performance
+can match the theoretical max but it depends greatly on the system's
+configuration. Especially when adding network filesystems into the mix
+there are many variables which can impact performance. Drive speeds
+and latency, network speeds and latency, general concurrency,
+read/write sizes, etc. Unfortunately, given the number of variables it
+has been difficult to find a single set of settings which provide
+optimal performance. If you're having performance issues please look
+over the suggestions below (including the benchmarking section.)
 
-NOTE: be sure to read about these features before changing them to understand what behaviors it may impact
+NOTE: be sure to read about these features before changing them to
+understand what behaviors it may impact
 
 * disable `security_capability` and/or `xattr`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable (or disable) page caching (`cache.files`)
 * enable `cache.writeback`
-* enable `cache.open`
 * enable `cache.statfs`
 * enable `cache.symlinks`
 * enable `cache.readdir`
@@ -999,25 +1531,69 @@ NOTE: be sure to read about these features before changing them to understand wh
 * if `cache.files` is enabled increase readahead: `echo "1024" > /sys/class/bdi/0:$(stat -c%d /MOUNT)/read_ahead_kb`
 * increase readahead on all devices: `ls -1 /sys/class/bdi/*/read_ahead_kb | xargs -n1 -I{} sh -c "echo 1024 > {}"`
 
-If you come across a setting that significantly impacts performance please contact trapexit so he may investigate further.
+If you come across a setting that significantly impacts performance
+please contact trapexit so he may investigate further. Please test
+both against your normal setup, a singular branch, and with
+`nullrw=true`
 
 
 # BENCHMARKING
 
-Filesystems are complicated. They do many things and many of those are interconnected. Additionally, the OS, drivers, hardware, etc. all can impact performance. Therefore, when benchmarking, it is **necessary** that the test focus as narrowly as possible.
+Filesystems are complicated. They do many things and many of those are
+interconnected. Additionally, the OS, drivers, hardware, etc. all can
+impact performance. Therefore, when benchmarking, it is **necessary**
+that the test focus as narrowly as possible.
 
-For most throughput is the key benchmark. To test throughput `dd` is useful but **must** be used with the correct settings in order to ensure the filesystem or device is actually being tested. The OS can and will cache data. Without forcing synchronous reads and writes and/or disabling caching the values returned will not be representative of the device's true performance.
+For most throughput is the key benchmark. To test throughput `dd` is
+useful but **must** be used with the correct settings in order to
+ensure the filesystem or device is actually being tested. The OS can
+and will cache data. Without forcing synchronous reads and writes
+and/or disabling caching the values returned will not be
+representative of the device's true performance.
 
-When benchmarking through mergerfs ensure you only use 1 branch to remove any possibility of the policies complicating the situation. Benchmark the underlying filesystem first and then mount mergerfs over it and test again. If you're experience speeds below your expectation you will need to narrow down precisely which component is leading to the slowdown. Preferably test the following in the order listed (but not combined).
+When benchmarking through mergerfs ensure you only use 1 branch to
+remove any possibility of the policies complicating the
+situation. Benchmark the underlying filesystem first and then mount
+mergerfs over it and test again. If you're experience speeds below
+your expectation you will need to narrow down precisely which
+component is leading to the slowdown. Preferably test the following in
+the order listed (but not combined).
 
-1. Enable `nullrw` mode with `nullrw=true`. This will effectively make reads and writes no-ops. Removing the underlying device / filesystem from the equation. This will give us the top theoretical speeds.
-2. Mount mergerfs over `tmpfs`. `tmpfs` is a RAM disk. Extremely high speed and very low latency. This is a more realistic best case scenario. Example: `mount -t tmpfs -o size=2G tmpfs /tmp/tmpfs`
-3. Mount mergerfs over a local drive. NVMe, SSD, HDD, etc. If you have more than one I'd suggest testing each of them as drives and/or controllers (their drivers) could impact performance.
-4. Finally, if you intend to use mergerfs with a network filesystem, either as the source of data or to combine with another through mergerfs, test each of those alone as above.
+1. Enable `nullrw` mode with `nullrw=true`. This will effectively make
+   reads and writes no-ops. Removing the underlying device /
+   filesystem from the equation. This will give us the top theoretical
+   speeds.
+2. Mount mergerfs over `tmpfs`. `tmpfs` is a RAM disk. Extremely high
+   speed and very low latency. This is a more realistic best case
+   scenario. Example: `mount -t tmpfs -o size=2G tmpfs /tmp/tmpfs`
+3. Mount mergerfs over a local drive. NVMe, SSD, HDD, etc. If you have
+   more than one I'd suggest testing each of them as drives and/or
+   controllers (their drivers) could impact performance.
+4. Finally, if you intend to use mergerfs with a network filesystem,
+   either as the source of data or to combine with another through
+   mergerfs, test each of those alone as above.
 
-Once you find the component which has the performance issue you can do further testing with different options to see if they impact performance. For reads and writes the most relevant would be: `cache.files`, `async_read`. Less likely but relevant when using NFS or with certain filesystems would be `security_capability`, `xattr`, and `posix_acl`. If you find a specific system, drive, filesystem, controller, etc. that performs poorly contact trapexit so he may investigate further.
+Once you find the component which has the performance issue you can do
+further testing with different options to see if they impact
+performance. For reads and writes the most relevant would be:
+`cache.files`, `async_read`. Less likely but relevant when using NFS
+or with certain filesystems would be `security_capability`, `xattr`,
+and `posix_acl`. If you find a specific system, drive, filesystem,
+controller, etc. that performs poorly contact trapexit so he may
+investigate further.
 
-Sometimes the problem is really the application accessing or writing data through mergerfs. Some software use small buffer sizes which can lead to more requests and therefore greater overhead. You can test this out yourself by replace `bs=1M` in the examples below with `ibs` or `obs` and using a size of `512` instead of `1M`. In one example test using `nullrw` the write speed dropped from 4.9GB/s to 69.7MB/s when moving from `1M` to `512`. Similar results were had when testing reads. Small writes overhead may be improved by leveraging a write cache but in casual tests little gain was found. More tests will need to be done before this feature would become available. If you have an app that appears slow with mergerfs it could be due to this. Contact trapexit so he may investigate further.
+Sometimes the problem is really the application accessing or writing
+data through mergerfs. Some software use small buffer sizes which can
+lead to more requests and therefore greater overhead. You can test
+this out yourself by replace `bs=1M` in the examples below with `ibs`
+or `obs` and using a size of `512` instead of `1M`. In one example
+test using `nullrw` the write speed dropped from 4.9GB/s to 69.7MB/s
+when moving from `1M` to `512`. Similar results were had when testing
+reads. Small writes overhead may be improved by leveraging a write
+cache but in casual tests little gain was found. More tests will need
+to be done before this feature would become available. If you have an
+app that appears slow with mergerfs it could be due to this. Contact
+trapexit so he may investigate further.
 
 
 ### write benchmark
@@ -1034,7 +1610,9 @@ $ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=
 
 ### other benchmarks
 
-If you are attempting to benchmark other behaviors you must ensure you clear kernel caches before runs. In fact it would be a good deal to run before the read and write benchmarks as well just in case.
+If you are attempting to benchmark other behaviors you must ensure you
+clear kernel caches before runs. In fact it would be a good deal to
+run before the read and write benchmarks as well just in case.
 
 ```
 sync
@@ -1044,15 +1622,48 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 
 # TIPS / NOTES
 
-* This document is very literal and thorough. Unless there is a bug things work as described. If a suspected feature isn't mentioned it doesn't exist. If certain libfuse arguments aren't listed they probably shouldn't be used.
-* Ensure you're using the latest version. Few distros have the latest version.
-* Run mergerfs as `root` unless you're merging paths which are owned exclusively and fully by the same user otherwise strange permission issues may arise. mergerfs is designed and intended to be run as `root`.
-* If you don't see some directories and files you expect, policies seem to skip branches, you get strange permission errors, etc. be sure the underlying filesystems' permissions are all the same. Use `mergerfs.fsck` to audit the drive for out of sync permissions.
-* If you still have permission issues be sure you are using POSIX ACL compliant filesystems. mergerfs doesn't generally make exceptions for FAT, NTFS, or other non-POSIX filesystem.
-* Do **not** use `cache.files=off` if you expect applications (such as rtorrent) to use [mmap](http://linux.die.net/man/2/mmap) files. Shared mmap is not currently supported in FUSE w/ page caching disabled. Enabling `dropcacheonclose` is recommended when `cache.files=partial|full|auto-full`.
-* [Kodi](http://kodi.tv), [Plex](http://plex.tv), [Subsonic](http://subsonic.org), etc. can use directory [mtime](http://linux.die.net/man/2/stat) to more efficiently determine whether to scan for new content rather than simply performing a full scan. If using the default **getattr** policy of **ff** it's possible those programs will miss an update on account of it returning the first directory found's **stat** info and it's a later directory on another mount which had the **mtime** recently updated. To fix this you will want to set **func.getattr=newest**. Remember though that this is just **stat**. If the file is later **open**'ed or **unlink**'ed and the policy is different for those then a completely different file or directory could be acted on.
-* Some policies mixed with some functions may result in strange behaviors. Not that some of these behaviors and race conditions couldn't happen outside **mergerfs** but that they are far more likely to occur on account of the attempt to merge together multiple sources of data which could be out of sync due to the different policies.
-* For consistency its generally best to set **category** wide policies rather than individual **func**'s. This will help limit the confusion of tools such as [rsync](http://linux.die.net/man/1/rsync). However, the flexibility is there if needed.
+* This document is literal and thorough. If a suspected feature isn't
+  mentioned it doesn't exist. If certain libfuse arguments aren't
+  listed they probably shouldn't be used.
+* Ensure you're using the latest version.
+* Run mergerfs as `root`.  mergerfs is designed and intended to be run
+  as `root` and may exibit incorrect behavior if run otherwise..
+* If you don't see some directories and files you expect, policies
+  seem to skip branches, you get strange permission errors, etc. be
+  sure the underlying filesystems' permissions are all the same. Use
+  `mergerfs.fsck` to audit the drive for out of sync permissions.
+* If you still have permission issues be sure you are using POSIX ACL
+  compliant filesystems. mergerfs doesn't generally make exceptions
+  for FAT, NTFS, or other non-POSIX filesystem.
+* Do **not** use `cache.files=off` if you expect applications (such as
+  rtorrent) to use [mmap](http://linux.die.net/man/2/mmap)
+  files. Shared mmap is not currently supported in FUSE w/ page
+  caching disabled. Enabling `dropcacheonclose` is recommended when
+  `cache.files=partial|full|auto-full`.
+* [Kodi](http://kodi.tv), [Plex](http://plex.tv),
+  [Subsonic](http://subsonic.org), etc. can use directory
+  [mtime](http://linux.die.net/man/2/stat) to more efficiently
+  determine whether to scan for new content rather than simply
+  performing a full scan. If using the default **getattr** policy of
+  **ff** it's possible those programs will miss an update on account
+  of it returning the first directory found's **stat** info and it's a
+  later directory on another mount which had the **mtime** recently
+  updated. To fix this you will want to set
+  **func.getattr=newest**. Remember though that this is just
+  **stat**. If the file is later **open**'ed or **unlink**'ed and the
+  policy is different for those then a completely different file or
+  directory could be acted on.
+* Some policies mixed with some functions may result in strange
+  behaviors. Not that some of these behaviors and race conditions
+  couldn't happen outside **mergerfs** but that they are far more
+  likely to occur on account of the attempt to merge together multiple
+  sources of data which could be out of sync due to the different
+  policies.
+* For consistency its generally best to set **category** wide policies
+  rather than individual **func**'s. This will help limit the
+  confusion of tools such as
+  [rsync](http://linux.die.net/man/1/rsync). However, the flexibility
+  is there if needed.
 
 
 # KNOWN ISSUES / BUGS
@@ -1064,11 +1675,18 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 
 #### directory mtime is not being updated
 
-Remember that the default policy for `getattr` is `ff`. The information for the first directory found will be returned. If it wasn't the directory which had been updated then it will appear outdated.
+Remember that the default policy for `getattr` is `ff`. The
+information for the first directory found will be returned. If it
+wasn't the directory which had been updated then it will appear
+outdated.
 
-The reason this is the default is because any other policy would be more expensive and for many applications it is unnecessary. To always return the directory with the most recent mtime or a faked value based on all found would require a scan of all drives.
+The reason this is the default is because any other policy would be
+more expensive and for many applications it is unnecessary. To always
+return the directory with the most recent mtime or a faked value based
+on all found would require a scan of all drives.
 
-If you always want the directory information from the one with the most recent mtime then use the `newest` policy for `getattr`.
+If you always want the directory information from the one with the
+most recent mtime then use the `newest` policy for `getattr`.
 
 
 #### 'mv /mnt/pool/foo /mnt/disk1/foo' removes 'foo'
@@ -1085,19 +1703,26 @@ $ ls /mnt/pool/foo
 ls: cannot access '/mnt/pool/foo': No such file or directory
 ```
 
-`mv`, when working across devices, is copying the source to target and then removing the source. Since the source **is** the target in this case, depending on the unlink policy, it will remove the just copied file and other files across the branches.
+`mv`, when working across devices, is copying the source to target and
+then removing the source. Since the source **is** the target in this
+case, depending on the unlink policy, it will remove the just copied
+file and other files across the branches.
 
-If you want to move files to one drive just copy them there and use mergerfs.dedup to clean up the old paths or manually remove them from the branches directly.
+If you want to move files to one drive just copy them there and use
+mergerfs.dedup to clean up the old paths or manually remove them from
+the branches directly.
 
 
 #### cached memory appears greater than it should be
 
-Use `cache.files=off` and/or `dropcacheonclose=true`. See the section on page caching.
+Use `cache.files=off` and/or `dropcacheonclose=true`. See the section
+on page caching.
 
 
 #### NFS clients returning ESTALE / Stale file handle
 
-NFS does not like out of band changes. That is especially true of inode values.
+NFS does not like out of band changes. That is especially true of
+inode values.
 
 Be sure to use the following options:
 
@@ -1107,7 +1732,16 @@ Be sure to use the following options:
 
 #### rtorrent fails with ENODEV (No such device)
 
-Be sure to set `cache.files=partial|full|auto-full` or turn off `direct_io`. rtorrent and some other applications use [mmap](http://linux.die.net/man/2/mmap) to read and write to files and offer no fallback to traditional methods. FUSE does not currently support mmap while using `direct_io`. There may be a performance penalty on writes with `direct_io` off as well as the problem of double caching but it's the only way to get such applications to work. If the performance loss is too high for other apps you can mount mergerfs twice. Once with `direct_io` enabled and one without it. Be sure to set `dropcacheonclose=true` if not using `direct_io`.
+Be sure to set `cache.files=partial|full|auto-full|per-processe` or
+turn off `direct_io`. rtorrent and some other applications use
+[mmap](http://linux.die.net/man/2/mmap) to read and write to files and
+offer no fallback to traditional methods. FUSE does not currently
+support mmap while using `direct_io`. There may be a performance
+penalty on writes with `direct_io` off as well as the problem of
+double caching but it's the only way to get such applications to
+work. If the performance loss is too high for other apps you can mount
+mergerfs twice. Once with `direct_io` enabled and one without it. Be
+sure to set `dropcacheonclose=true` if not using `direct_io`.
 
 
 #### Plex doesn't work with mergerfs
@@ -1119,7 +1753,6 @@ FUSE implementation when page caching is disabled. To fix this place
 the data elsewhere (preferable) or enable `cache.files` (with
 `dropcacheonclose=true`). Sqlite3 does not need mmap but the developer
 needs to fall back to standard IO if mmap fails.
-
 
 This applies to other software: Radarr, Sonarr, Lidarr, Jellyfin, etc.
 
@@ -1136,82 +1769,142 @@ pick up all media anyway.
 
 Please read the section above regarding [rename & link](#rename--link).
 
-The problem is that many applications do not properly handle `EXDEV` errors which `rename` and `link` may return even though they are perfectly valid situations which do not indicate actual drive or OS errors. The error will only be returned by mergerfs if using a path preserving policy as described in the policy section above. If you do not care about path preservation simply change the mergerfs policy to the non-path preserving version. For example: `-o category.create=mfs`
+The problem is that many applications do not properly handle `EXDEV`
+errors which `rename` and `link` may return even though they are
+perfectly valid situations which do not indicate actual drive or OS
+errors. The error will only be returned by mergerfs if using a path
+preserving policy as described in the policy section above. If you do
+not care about path preservation simply change the mergerfs policy to
+the non-path preserving version. For example: `-o category.create=mfs`
 
-Ideally the offending software would be fixed and it is recommended that if you run into this problem you contact the software's author and request proper handling of `EXDEV` errors.
+Ideally the offending software would be fixed and it is recommended
+that if you run into this problem you contact the software's author
+and request proper handling of `EXDEV` errors.
 
 
 #### my 32bit software has problems
 
-Some software have problems with 64bit inode values. The symptoms can include EOVERFLOW errors when trying to list files. You can address this by setting `inodecalc` to one of the 32bit based algos as described in the relevant section.
+Some software have problems with 64bit inode values. The symptoms can
+include EOVERFLOW errors when trying to list files. You can address
+this by setting `inodecalc` to one of the 32bit based algos as
+described in the relevant section.
 
 
 #### Samba: Moving files / directories fails
 
-Workaround: Copy the file/directory and then remove the original rather than move.
+Workaround: Copy the file/directory and then remove the original
+rather than move.
 
-This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3 and prior (found in Ubuntu 14.04 among others) failed to handle certain error codes correctly. Particularly **STATUS_NOT_SAME_DEVICE** which comes from the **EXDEV** which is returned by **rename** when the call is crossing mount points. When a program gets an **EXDEV** it needs to explicitly take an alternate action to accomplish its goal. In the case of **mv** or similar it tries **rename** and on **EXDEV** falls back to a manual copying of data between the two locations and unlinking the source. In these older versions of GVFS-fuse if it received **EXDEV** it would translate that into **EIO**. This would cause **mv** or most any application attempting to move files around on that SMB share to fail with a IO error.
+This isn't an issue with Samba but some SMB clients. GVFS-fuse v1.20.3
+and prior (found in Ubuntu 14.04 among others) failed to handle
+certain error codes correctly. Particularly **STATUS_NOT_SAME_DEVICE**
+which comes from the **EXDEV** which is returned by **rename** when
+the call is crossing mount points. When a program gets an **EXDEV** it
+needs to explicitly take an alternate action to accomplish its
+goal. In the case of **mv** or similar it tries **rename** and on
+**EXDEV** falls back to a manual copying of data between the two
+locations and unlinking the source. In these older versions of
+GVFS-fuse if it received **EXDEV** it would translate that into
+**EIO**. This would cause **mv** or most any application attempting to
+move files around on that SMB share to fail with a IO error.
 
-[GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568) and above fixed this issue but a large number of systems use the older release. On Ubuntu the version can be checked by issuing `apt-cache showpkg gvfs-fuse`. Most distros released in 2015 seem to have the updated release and will work fine but older systems may not. Upgrading gvfs-fuse or the distro in general will address the problem.
+[GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568)
+and above fixed this issue but a large number of systems use the older
+release. On Ubuntu the version can be checked by issuing `apt-cache
+showpkg gvfs-fuse`. Most distros released in 2015 seem to have the
+updated release and will work fine but older systems may
+not. Upgrading gvfs-fuse or the distro in general will address the
+problem.
 
-In Apple's MacOSX 10.9 they replaced Samba (client and server) with their own product. It appears their new client does not handle **EXDEV** either and responds similar to older release of gvfs on Linux.
+In Apple's MacOSX 10.9 they replaced Samba (client and server) with
+their own product. It appears their new client does not handle
+**EXDEV** either and responds similar to older release of gvfs on
+Linux.
 
 
 #### Trashing files occasionally fails
 
-This is the same issue as with Samba. `rename` returns `EXDEV` (in our case that will really only happen with path preserving policies like `epmfs`) and the software doesn't handle the situation well. This is unfortunately a common failure of software which moves files around. The standard indicates that an implementation `MAY` choose to support non-user home directory trashing of files (which is a `MUST`). The implementation `MAY` also support "top directory trashes" which many probably do.
+This is the same issue as with Samba. `rename` returns `EXDEV` (in our
+case that will really only happen with path preserving policies like
+`epmfs`) and the software doesn't handle the situation well. This is
+unfortunately a common failure of software which moves files
+around. The standard indicates that an implementation `MAY` choose to
+support non-user home directory trashing of files (which is a
+`MUST`). The implementation `MAY` also support "top directory trashes"
+which many probably do.
 
-To create a `$topdir/.Trash` directory as defined in the standard use the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool `mergerfs.mktrash`.
+To create a `$topdir/.Trash` directory as defined in the standard use
+the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool
+`mergerfs.mktrash`.
 
 
 #### Supplemental user groups
 
-Due to the overhead of [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs utilizes a cache. This cache is opportunistic and per thread. Each thread will query the supplemental groups for a user when that particular thread needs to change credentials and will keep that data for the lifetime of the thread. This means that if a user is added to a group it may not be picked up without the restart of mergerfs. However, since the high level FUSE API's (at least the standard version) thread pool dynamically grows and shrinks it's possible that over time a thread will be killed and later a new thread with no cache will start and query the new data.
+Due to the overhead of
+[getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs
+utilizes a cache. This cache is opportunistic and per thread. Each
+thread will query the supplemental groups for a user when that
+particular thread needs to change credentials and will keep that data
+for the lifetime of the thread. This means that if a user is added to
+a group it may not be picked up without the restart of
+mergerfs. However, since the high level FUSE API's (at least the
+standard version) thread pool dynamically grows and shrinks it's
+possible that over time a thread will be killed and later a new thread
+with no cache will start and query the new data.
 
-The gid cache uses fixed storage to simplify the design and be compatible with older systems which may not have C++11 compilers. There is enough storage for 256 users' supplemental groups. Each user is allowed up to 32 supplemental groups. Linux >= 2.6.3 allows up to 65535 groups per user but most other *nixs allow far less. NFS allowing only 16. The system does handle overflow gracefully. If the user has more than 32 supplemental groups only the first 32 will be used. If more than 256 users are using the system when an uncached user is found it will evict an existing user's cache at random. So long as there aren't more than 256 active users this should be fine. If either value is too low for your needs you will have to modify `gidcache.hpp` to increase the values. Note that doing so will increase the memory needed by each thread.
+The gid cache uses fixed storage to simplify the design and be
+compatible with older systems which may not have C++11
+compilers. There is enough storage for 256 users' supplemental
+groups. Each user is allowed up to 32 supplemental groups. Linux >=
+2.6.3 allows up to 65535 groups per user but most other *nixs allow
+far less. NFS allowing only 16. The system does handle overflow
+gracefully. If the user has more than 32 supplemental groups only the
+first 32 will be used. If more than 256 users are using the system
+when an uncached user is found it will evict an existing user's cache
+at random. So long as there aren't more than 256 active users this
+should be fine. If either value is too low for your needs you will
+have to modify `gidcache.hpp` to increase the values. Note that doing
+so will increase the memory needed by each thread.
 
-While not a bug some users have found when using containers that supplemental groups defined inside the container don't work properly with regard to permissions. This is expected as mergerfs lives outside the container and therefore is querying the host's group database. There might be a hack to work around this (make mergerfs read the /etc/group file in the container) but it is not yet implemented and would be limited to Linux and the /etc/group DB. Preferably users would mount in the host group file into the containers or use a standard shared user & groups technology like NIS or LDAP.
-
-
-#### mergerfs or libfuse crashing
-
-First... always upgrade to the latest version unless told otherwise.
-
-If using mergerfs below 2.22.0:
-
-If suddenly the mergerfs mount point disappears and `Transport endpoint is not connected` is returned when attempting to perform actions within the mount directory **and** the version of libfuse (use `mergerfs -v` to find the version) is older than `2.9.4` its likely due to a bug in libfuse. Affected versions of libfuse can be found in Debian Wheezy, Ubuntu Precise and others.
-
-In order to fix this please install newer versions of libfuse. If using a Debian based distro (Debian,Ubuntu,Mint) you can likely just install newer versions of [libfuse](https://packages.debian.org/unstable/libfuse2) and [fuse](https://packages.debian.org/unstable/fuse) from the repo of a newer release.
-
-If using mergerfs at or above 2.22.0:
-
-First upgrade if possible, check the known bugs section, and contact trapexit.
-
-
-#### mergerfs appears to be crashing or exiting
-
-There seems to be an issue with Linux version `4.9.0` and above in which an invalid message appears to be transmitted to libfuse (used by mergerfs) causing it to exit. No messages will be printed in any logs as it's not a proper crash. Debugging of the issue is still ongoing and can be followed via the [fuse-devel thread](https://sourceforge.net/p/fuse/mailman/message/35662577).
-
-
-#### rm: fts_read failed: No such file or directory
-
-Please update. This is only happened to mergerfs versions at or below v2.25.x and will not occur in more recent versions.
+While not a bug some users have found when using containers that
+supplemental groups defined inside the container don't work properly
+with regard to permissions. This is expected as mergerfs lives outside
+the container and therefore is querying the host's group
+database. There might be a hack to work around this (make mergerfs
+read the /etc/group file in the container) but it is not yet
+implemented and would be limited to Linux and the /etc/group
+DB. Preferably users would mount in the host group file into the
+containers or use a standard shared user & groups technology like NIS
+or LDAP.
 
 
 # FAQ
 
 #### How well does mergerfs scale? Is it "production ready?"
 
-Users have reported running mergerfs on everything from a Raspberry Pi to dual socket Xeon systems with >20 cores. I'm aware of at least a few companies which use mergerfs in production. [Open Media Vault](https://www.openmediavault.org) includes mergerfs as its sole solution for pooling drives. The author of mergerfs had it running for over 300 days managing 16+ drives with reasonably heavy 24/7 read and write usage. Stopping only after the machine's power supply died.
+Users have reported running mergerfs on everything from a Raspberry Pi
+to dual socket Xeon systems with >20 cores. I'm aware of at least a
+few companies which use mergerfs in production. [Open Media
+Vault](https://www.openmediavault.org) includes mergerfs as its sole
+solution for pooling drives. The author of mergerfs had it running for
+over 300 days managing 16+ drives with reasonably heavy 24/7 read and
+write usage. Stopping only after the machine's power supply died.
 
-Most serious issues (crashes or data corruption) have been due to [kernel bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs). All of which are fixed in stable releases.
+Most serious issues (crashes or data corruption) have been due to
+[kernel
+bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs). All
+of which are fixed in stable releases.
 
 
 #### Can mergerfs be used with drives which already have data / are in use?
 
-Yes. MergerFS is a proxy and does **NOT** interfere with the normal form or function of the drives / mounts / paths it manages.
+Yes. MergerFS is a proxy and does **NOT** interfere with the normal
+form or function of the drives / mounts / paths it manages.
 
-MergerFS is **not** a traditional filesystem. MergerFS is **not** RAID. It does **not** manipulate the data that passes through it. It does **not** shard data across drives. It merely shards some **behavior** and aggregates others.
+MergerFS is **not** a traditional filesystem. MergerFS is **not**
+RAID. It does **not** manipulate the data that passes through it. It
+does **not** shard data across drives. It merely shards some
+**behavior** and aggregates others.
 
 
 #### Can mergerfs be removed without affecting the data?
@@ -1221,40 +1914,95 @@ See the previous question's answer.
 
 #### What policies should I use?
 
-Unless you're doing something more niche the average user is probably best off using `mfs` for `category.create`. It will spread files out across your branches based on available space. Use `mspmfs` if you want to try to colocate the data a bit more. You may want to use `lus` if you prefer a slightly different distribution of data if you have a mix of smaller and larger drives. Generally though `mfs`, `lus`, or even `rand` are good for the general use case. If you are starting with an imbalanced pool you can use the tool **mergerfs.balance** to redistribute files across the pool.
+Unless you're doing something more niche the average user is probably
+best off using `mfs` for `category.create`. It will spread files out
+across your branches based on available space. Use `mspmfs` if you
+want to try to colocate the data a bit more. You may want to use `lus`
+if you prefer a slightly different distribution of data if you have a
+mix of smaller and larger drives. Generally though `mfs`, `lus`, or
+even `rand` are good for the general use case. If you are starting
+with an imbalanced pool you can use the tool **mergerfs.balance** to
+redistribute files across the pool.
 
-If you really wish to try to colocate files based on directory you can set `func.create` to `epmfs` or similar and `func.mkdir` to `rand` or `eprand` depending on if you just want to colocate generally or on specific branches. Either way the *need* to colocate is rare. For instance: if you wish to remove the drive regularly and want the data to predictably be on that drive or if you don't use backup at all and don't wish to replace that data piecemeal. In which case using path preservation can help but will require some manual attention. Colocating after the fact can be accomplished using the **mergerfs.consolidate** tool. If you don't need strict colocation which the `ep` policies provide then you can use the `msp` based policies which will walk back the path till finding a branch that works.
+If you really wish to try to colocate files based on directory you can
+set `func.create` to `epmfs` or similar and `func.mkdir` to `rand` or
+`eprand` depending on if you just want to colocate generally or on
+specific branches. Either way the *need* to colocate is rare. For
+instance: if you wish to remove the drive regularly and want the data
+to predictably be on that drive or if you don't use backup at all and
+don't wish to replace that data piecemeal. In which case using path
+preservation can help but will require some manual
+attention. Colocating after the fact can be accomplished using the
+**mergerfs.consolidate** tool. If you don't need strict colocation
+which the `ep` policies provide then you can use the `msp` based
+policies which will walk back the path till finding a branch that
+works.
 
-Ultimately there is no correct answer. It is a preference or based on some particular need. mergerfs is very easy to test and experiment with. I suggest creating a test setup and experimenting to get a sense of what you want.
+Ultimately there is no correct answer. It is a preference or based on
+some particular need. mergerfs is very easy to test and experiment
+with. I suggest creating a test setup and experimenting to get a sense
+of what you want.
 
-The reason `mfs` is not the default `category.create` policy is historical. When/if a 3.X gets released it will be changed to minimize confusion people often have with path preserving policies.
+The reason `mfs` is not the default `category.create` policy is
+historical. When/if a 3.X gets released it will be changed to minimize
+confusion people often have with path preserving policies.
 
 
 #### What settings should I use?
 
-Depends on what features you want. Generally speaking there are no "wrong" settings. All settings are performance or feature related. The best bet is to read over the available options and choose what fits your situation. If something isn't clear from the documentation please reach out and the documentation will be improved.
+Depends on what features you want. Generally speaking there are no
+"wrong" settings. All settings are performance or feature related. The
+best bet is to read over the available options and choose what fits
+your situation. If something isn't clear from the documentation please
+reach out and the documentation will be improved.
 
 That said, for the average person, the following should be fine:
 
-`-o cache.files=off,dropcacheonclose=true,category.create=mfs`
+`cache.files=off,dropcacheonclose=true,category.create=mfs`
 
 
 #### Why are all my files ending up on 1 drive?!
 
-Did you start with empty drives? Did you explicitly configure a `category.create` policy? Are you using an `existing path` / `path preserving` policy?
+Did you start with empty drives? Did you explicitly configure a
+`category.create` policy? Are you using an `existing path` / `path
+preserving` policy?
 
-The default create policy is `epmfs`. That is a path preserving algorithm. With such a policy for `mkdir` and `create` with a set of empty drives it will select only 1 drive when the first directory is created. Anything, files or directories, created in that first directory will be placed on the same branch because it is preserving paths.
+The default create policy is `epmfs`. That is a path preserving
+algorithm. With such a policy for `mkdir` and `create` with a set of
+empty drives it will select only 1 drive when the first directory is
+created. Anything, files or directories, created in that first
+directory will be placed on the same branch because it is preserving
+paths.
 
-This catches a lot of new users off guard but changing the default would break the setup for many existing users. If you do not care about path preservation and wish your files to be spread across all your drives change to `mfs` or similar policy as described above. If you do want path preservation you'll need to perform the manual act of creating paths on the drives you want the data to land on before transferring your data. Setting `func.mkdir=epall` can simplify managing path preservation for `create`. Or use `func.mkdir=rand` if you're interested in just grouping together directory content by drive.
+This catches a lot of new users off guard but changing the default
+would break the setup for many existing users. If you do not care
+about path preservation and wish your files to be spread across all
+your drives change to `mfs` or similar policy as described above. If
+you do want path preservation you'll need to perform the manual act of
+creating paths on the drives you want the data to land on before
+transferring your data. Setting `func.mkdir=epall` can simplify
+managing path preservation for `create`. Or use `func.mkdir=rand` if
+you're interested in just grouping together directory content by
+drive.
 
 
 #### Do hardlinks work?
 
-Yes. See also the option `inodecalc` for how inode values are calculated.
+Yes. See also the option `inodecalc` for how inode values are
+calculated.
 
-What mergerfs does not do is fake hard links across branches.  Read the section "rename & link" for how it works.
+What mergerfs does not do is fake hard links across branches.  Read
+the section "rename & link" for how it works.
 
-Remember that hardlinks will NOT work across devices. That includes between the original filesystem and a mergerfs pool, between two separate pools of the same underlying filesystems, or bind mounts of paths within the mergerfs pool. The latter is common when using Docker or Podman. Multiple volumes (bind mounts) to the same underlying filesystem are considered different devices. There is no way to link between them. You should mount in the highest directory in the mergerfs pool that includes all the paths you need if you want links to work.
+Remember that hardlinks will NOT work across devices. That includes
+between the original filesystem and a mergerfs pool, between two
+separate pools of the same underlying filesystems, or bind mounts of
+paths within the mergerfs pool. The latter is common when using Docker
+or Podman. Multiple volumes (bind mounts) to the same underlying
+filesystem are considered different devices. There is no way to link
+between them. You should mount in the highest directory in the
+mergerfs pool that includes all the paths you need if you want links
+to work.
 
 
 #### Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
@@ -1264,32 +2012,71 @@ Yes. They are completely unrelated pieces of software.
 
 #### Can mergerfs run via Docker, Podman, Kubernetes, etc.
 
-Yes. With Docker you'll need to include `--cap-add=SYS_ADMIN --device=/dev/fuse --security-opt=apparmor:unconfined` or similar with other container runtimes. You should also be running it as root or given sufficient caps to change user and group identity as well as have root like filesystem permissions.
+Yes. With Docker you'll need to include `--cap-add=SYS_ADMIN
+--device=/dev/fuse --security-opt=apparmor:unconfined` or similar with
+other container runtimes. You should also be running it as root or
+given sufficient caps to change user and group identity as well as
+have root like filesystem permissions.
 
-Keep in mind that you **MUST** consider identity when using containers. For example: supplemental groups will be picked up from the container unless you properly manage users and groups by sharing relevant /etc files or by using some other means to share identity across containers. Similarly if you use "rootless" containers and user namespaces to do uid/gid translations you **MUST** consider that while managing shared files.
+Keep in mind that you **MUST** consider identity when using
+containers. For example: supplemental groups will be picked up from
+the container unless you properly manage users and groups by sharing
+relevant /etc files or by using some other means to share identity
+across containers. Similarly if you use "rootless" containers and user
+namespaces to do uid/gid translations you **MUST** consider that while
+managing shared files.
 
-Also, as mentioned by [hotio](https://hotio.dev/containers/mergerfs), with Docker you should probably be mounting with `bind-propagation` set to `slave`.
+Also, as mentioned by [hotio](https://hotio.dev/containers/mergerfs),
+with Docker you should probably be mounting with `bind-propagation`
+set to `slave`.
 
 
 #### Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
 
-Not in the sense of a filesystem like BTRFS or ZFS nor in the overlayfs or aufs sense. It does offer a [cow-shell](http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html) like hard link breaking (copy to temp file then rename over original) which can be useful when wanting to save space by hardlinking duplicate files but wish to treat each name as if it were a unique and separate file.
+Not in the sense of a filesystem like BTRFS or ZFS nor in the
+overlayfs or aufs sense. It does offer a
+[cow-shell](http://manpages.ubuntu.com/manpages/bionic/man1/cow-shell.1.html)
+like hard link breaking (copy to temp file then rename over original)
+which can be useful when wanting to save space by hardlinking
+duplicate files but wish to treat each name as if it were a unique and
+separate file.
 
-If you want to write to a read-only filesystem you should look at overlayfs. You can always include the overlayfs mount into a mergerfs pool.
+If you want to write to a read-only filesystem you should look at
+overlayfs. You can always include the overlayfs mount into a mergerfs
+pool.
 
 
 #### Why can't I see my files / directories?
 
-It's almost always a permissions issue. Unlike mhddfs and unionfs-fuse, which runs as root and attempts to access content as such, mergerfs always changes its credentials to that of the caller. This means that if the user does not have access to a file or directory than neither will mergerfs. However, because mergerfs is creating a union of paths it may be able to read some files and directories on one drive but not another resulting in an incomplete set.
+It's almost always a permissions issue. Unlike mhddfs and
+unionfs-fuse, which runs as root and attempts to access content as
+such, mergerfs always changes its credentials to that of the
+caller. This means that if the user does not have access to a file or
+directory than neither will mergerfs. However, because mergerfs is
+creating a union of paths it may be able to read some files and
+directories on one drive but not another resulting in an incomplete
+set.
 
-Whenever you run into a split permission issue (seeing some but not all files) try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to check for and fix the mismatch. If you aren't seeing anything at all be sure that the basic permissions are correct. The user and group values are correct and that directories have their executable bit set. A common mistake by users new to Linux is to `chmod -R 644` when they should have `chmod -R u=rwX,go=rX`.
+Whenever you run into a split permission issue (seeing some but not
+all files) try using
+[mergerfs.fsck](https://github.com/trapexit/mergerfs-tools) tool to
+check for and fix the mismatch. If you aren't seeing anything at all
+be sure that the basic permissions are correct. The user and group
+values are correct and that directories have their executable bit
+set. A common mistake by users new to Linux is to `chmod -R 644` when
+they should have `chmod -R u=rwX,go=rX`.
 
-If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure to pay close attention to anything regarding permissioning and users. Root squashing and user translation for instance has bitten a few mergerfs users. Some of these also affect the use of mergerfs from container platforms such as Docker.
+If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure
+to pay close attention to anything regarding permissioning and
+users. Root squashing and user translation for instance has bitten a
+few mergerfs users. Some of these also affect the use of mergerfs from
+container platforms such as Docker.
 
 
 #### Why use FUSE? Why not a kernel based solution?
 
-As with any two solutions to a problem there are advantages and disadvantages to each one.
+As with any solutions to a problem there are advantages and
+disadvantages to each one.
 
 A FUSE based solution has all the downsides of FUSE:
 
@@ -1306,33 +2093,25 @@ But FUSE also has a lot of upsides:
 * Easier and faster release cadence
 * Allows more flexibility in design and features
 * Overall easier to write, secure, and maintain
-* Ability to run without root access or need to change the kernel
-* Much lower barrier to entry (getting code into the kernel takes a lot of time and effort initially)
+* Much lower barrier to entry (getting code into the kernel takes a
+  lot of time and effort initially)
 
-
-FUSE was chosen because of all the advantages listed above. The negatives of FUSE do not outweigh the positives.
+FUSE was chosen because of all the advantages listed above. The
+negatives of FUSE do not outweigh the positives.
 
 
 #### Is my OS's libfuse needed for mergerfs to work?
 
-No. Normally `mount.fuse` is needed to get mergerfs (or any FUSE filesystem to mount using the `mount` command but in vendoring the libfuse library the `mount.fuse` app has been renamed to `mount.mergerfs` meaning the filesystem type in `fstab` can simply be `mergerfs`. That said there should be no harm in having it installed and continuing to using `fuse.mergerfs` as the type in `/etc/fstab`.
+No. Normally `mount.fuse` is needed to get mergerfs (or any FUSE
+filesystem to mount using the `mount` command but in vendoring the
+libfuse library the `mount.fuse` app has been renamed to
+`mount.mergerfs` meaning the filesystem type in `fstab` can simply be
+`mergerfs`. That said there should be no harm in having it installed
+and continuing to using `fuse.mergerfs` as the type in `/etc/fstab`.
 
-If `mergerfs` doesn't work as a type it could be due to how the `mount.mergerfs` tool was installed. Must be in `/sbin/` with proper permissions.
-
-
-#### Why was libfuse embedded into mergerfs?
-
-1. A significant number of users use mergerfs on distros with old versions of libfuse which have serious bugs. Requiring updated versions of libfuse on those distros isn't practical (no package offered, user inexperience, etc.). The only practical way to provide a stable runtime on those systems was to "vendor" / embed the library into the project.
-2. mergerfs was written to use the high level API. There are a number of limitations in the HLAPI that make certain features difficult or impossible to implement. While some of these features could be patched into newer versions of libfuse without breaking the public API some of them would require hacky code to provide backwards compatibility. While it may still be worth working with upstream to address these issues in future versions, since the library needs to be vendored for stability and compatibility reasons it is preferable / easier to modify the API. Longer term the plan is to rewrite mergerfs to use the low level API.
-
-
-#### Why did support for system libfuse get removed?
-
-See above first.
-
-If/when mergerfs is rewritten to use the low-level API then it'll be
-plausible to support system libfuse but till then it's simply too much
-work to manage the differences across the versions.
+If `mergerfs` doesn't work as a type it could be due to how the
+`mount.mergerfs` tool was installed. Must be in `/sbin/` with proper
+permissions.
 
 
 #### Why was splice support removed?
@@ -1346,7 +2125,9 @@ removed to simplify the codebase.
 
 #### Why use mergerfs over mhddfs?
 
-mhddfs is no longer maintained and has some known stability and security issues (see below). MergerFS provides a superset of mhddfs' features and should offer the same or maybe better performance.
+mhddfs is no longer maintained and has some known stability and
+security issues (see below). MergerFS provides a superset of mhddfs'
+features and should offer the same or maybe better performance.
 
 Below is an example of mhddfs and mergerfs setup to work similarly.
 
@@ -1359,12 +2140,18 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 
 aufs is mostly abandoned and no longer available in many distros.
 
-While aufs can offer better peak performance mergerfs provides more configurability and is generally easier to use. mergerfs however does not offer the overlay / copy-on-write (CoW) features which aufs and overlayfs have.
+While aufs can offer better peak performance mergerfs provides more
+configurability and is generally easier to use. mergerfs however does
+not offer the overlay / copy-on-write (CoW) features which aufs and
+overlayfs have.
 
 
 #### Why use mergerfs over unionfs?
 
-UnionFS is more like aufs than mergerfs in that it offers overlay / CoW features. If you're just looking to create a union of drives and want flexibility in file/directory placement then mergerfs offers that whereas unionfs is more for overlaying RW filesystems over RO ones.
+UnionFS is more like aufs than mergerfs in that it offers overlay /
+CoW features. If you're just looking to create a union of drives and
+want flexibility in file/directory placement then mergerfs offers that
+whereas unionfs is more for overlaying RW filesystems over RO ones.
 
 
 #### Why use mergerfs over overlayfs?
@@ -1374,60 +2161,112 @@ Same reasons as with unionfs.
 
 #### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
 
-With simple JBOD / drive concatenation / stripping / RAID0 a single drive failure will result in full pool failure. mergerfs performs a similar function without the possibility of catastrophic failure and the difficulties in recovery. Drives may fail, however, all other data will continue to be accessible.
+With simple JBOD / drive concatenation / stripping / RAID0 a single
+drive failure will result in full pool failure. mergerfs performs a
+similar function without the possibility of catastrophic failure and
+the difficulties in recovery. Drives may fail, however, all other data
+will continue to be accessible.
 
-When combined with something like [SnapRaid](http://www.snapraid.it) and/or an offsite backup solution you can have the flexibility of JBOD without the single point of failure.
+When combined with something like [SnapRaid](http://www.snapraid.it)
+and/or an offsite backup solution you can have the flexibility of JBOD
+without the single point of failure.
 
 
 #### Why use mergerfs over ZFS?
 
-MergerFS is not intended to be a replacement for ZFS. MergerFS is intended to provide flexible pooling of arbitrary drives (local or remote), of arbitrary sizes, and arbitrary filesystems. For `write once, read many` usecases such as bulk media storage. Where data integrity and backup is managed in other ways. In that situation ZFS can introduce a number of costs and limitations as described [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html), [here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and [here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
+MergerFS is not intended to be a replacement for ZFS. MergerFS is
+intended to provide flexible pooling of arbitrary drives (local or
+remote), of arbitrary sizes, and arbitrary filesystems. For `write
+once, read many` usecases such as bulk media storage. Where data
+integrity and backup is managed in other ways. In that situation ZFS
+can introduce a number of costs and limitations as described
+[here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
+[here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
+[here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
 
 
 #### Why use mergerfs over UnRAID?
 
-UnRAID is a full OS and its storage layer, as I understand, is proprietary and closed source. Users who have experience with both have said they prefer the flexibility offered by mergerfs and for some the fact it is free and open source is important.
+UnRAID is a full OS and its storage layer, as I understand, is
+proprietary and closed source. Users who have experience with both
+have said they prefer the flexibility offered by mergerfs and for some
+the fact it is free and open source is important.
 
-There are a number of UnRAID users who use mergerfs as well though I'm not entirely familiar with the use case.
+There are a number of UnRAID users who use mergerfs as well though I'm
+not entirely familiar with the use case.
 
 
 #### What should mergerfs NOT be used for?
 
-* databases: Even if the database stored data in separate files (mergerfs wouldn't offer much otherwise) the higher latency of the indirection will kill performance. If it is a lightly used SQLITE database then it may be fine but you'll need to test.
-
-* VM images: For the same reasons as databases. VM images are accessed very aggressively and mergerfs will introduce too much latency (if it works at all).
-
-* As replacement for RAID: mergerfs is just for pooling branches. If you need that kind of device performance aggregation or high availability you should stick with RAID.
+* databases: Even if the database stored data in separate files
+  (mergerfs wouldn't offer much otherwise) the higher latency of the
+  indirection will kill performance. If it is a lightly used SQLITE
+  database then it may be fine but you'll need to test.
+* VM images: For the same reasons as databases. VM images are accessed
+  very aggressively and mergerfs will introduce too much latency (if
+  it works at all).
+* As replacement for RAID: mergerfs is just for pooling branches. If
+  you need that kind of device performance aggregation or high
+  availability you should stick with RAID.
 
 
 #### Can drives be written to directly? Outside of mergerfs while pooled?
 
-Yes, however it's not recommended to use the same file from within the pool and from without at the same time (particularly writing). Especially if using caching of any kind (cache.files, cache.entry, cache.attr, cache.negative_entry, cache.symlinks, cache.readdir, etc.) as there could be a conflict between cached data and not.
+Yes, however it's not recommended to use the same file from within the
+pool and from without at the same time (particularly
+writing). Especially if using caching of any kind (cache.files,
+cache.entry, cache.attr, cache.negative_entry, cache.symlinks,
+cache.readdir, etc.) as there could be a conflict between cached data
+and not.
 
 
 #### Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
 
-First make sure you've read the sections above about policies, path preservation, branch filtering, and the options **minfreespace**, **moveonenospc**, **statfs**, and **statfs_ignore**.
+First make sure you've read the sections above about policies, path
+preservation, branch filtering, and the options **minfreespace**,
+**moveonenospc**, **statfs**, and **statfs_ignore**.
 
-mergerfs is simply presenting a union of the content within multiple branches. The reported free space is an aggregate of space available within the pool (behavior modified by **statfs** and **statfs_ignore**). It does not represent a contiguous space. In the same way that read-only filesystems, those with quotas, or reserved space report the full theoretical space available.
+mergerfs is simply presenting a union of the content within multiple
+branches. The reported free space is an aggregate of space available
+within the pool (behavior modified by **statfs** and
+**statfs_ignore**). It does not represent a contiguous space. In the
+same way that read-only filesystems, those with quotas, or reserved
+space report the full theoretical space available.
 
-Due to path preservation, branch tagging, read-only status, and **minfreespace** settings it is perfectly valid that `ENOSPC` / "out of space" / "no space left on device" be returned. It is doing what was asked of it: filtering possible branches due to those settings. Only one error can be returned and if one of the reasons for filtering a branch was **minfreespace** then it will be returned as such. **moveonenospc** is only relevant to writing a file which is too large for the drive its currently on.
+Due to path preservation, branch tagging, read-only status, and
+**minfreespace** settings it is perfectly valid that `ENOSPC` / "out
+of space" / "no space left on device" be returned. It is doing what
+was asked of it: filtering possible branches due to those
+settings. Only one error can be returned and if one of the reasons for
+filtering a branch was **minfreespace** then it will be returned as
+such. **moveonenospc** is only relevant to writing a file which is too
+large for the drive its currently on.
 
-It is also possible that the filesystem selected has run out of inodes. Use `df -i` to list the total and available inodes per filesystem.
+It is also possible that the filesystem selected has run out of
+inodes. Use `df -i` to list the total and available inodes per
+filesystem.
 
-If you don't care about path preservation then simply change the `create` policy to one which isn't. `mfs` is probably what most are looking for. The reason it's not default is because it was originally set to `epmfs` and changing it now would change people's setup. Such a setting change will likely occur in mergerfs 3.
+If you don't care about path preservation then simply change the
+`create` policy to one which isn't. `mfs` is probably what most are
+looking for. The reason it's not default is because it was originally
+set to `epmfs` and changing it now would change people's setup. Such a
+setting change will likely occur in mergerfs 3.
 
 
 #### Why does the total available space in mergerfs not equal outside?
 
-Are you using ext2/3/4? With reserve for root? mergerfs uses available space for statfs calculations. If you've reserved space for root then it won't show up.
+Are you using ext2/3/4? With reserve for root? mergerfs uses available
+space for statfs calculations. If you've reserved space for root then
+it won't show up.
 
 You can remove the reserve by running: `tune2fs -m 0 <device>`
 
 
 #### Can mergerfs mounts be exported over NFS?
 
-Yes, however if you do anything which may changes files out of band (including for example using the `newest` policy) it will result in "stale file handle" errors unless properly setup.
+Yes, however if you do anything which may changes files out of band
+(including for example using the `newest` policy) it will result in
+"stale file handle" errors unless properly setup.
 
 Be sure to use the following options:
 
@@ -1437,7 +2276,8 @@ Be sure to use the following options:
 
 #### Can mergerfs mounts be exported over Samba / SMB?
 
-Yes. While some users have reported problems it appears to always be related to how Samba is setup in relation to permissions.
+Yes. While some users have reported problems it appears to always be
+related to how Samba is setup in relation to permissions.
 
 
 #### Can mergerfs mounts be used over SSHFS?
@@ -1447,28 +2287,64 @@ Yes.
 
 #### I notice massive slowdowns of writes when enabling cache.files.
 
-When file caching is enabled in any form (`cache.files!=off` or `direct_io=false`) it will issue `getxattr` requests for `security.capability` prior to *every single write*. This will usually result in a performance degradation, especially when using a network filesystem (such as NFS or CIFS/SMB/Samba.) Unfortunately at this moment the kernel is not caching the response.
+When file caching is enabled in any form (`cache.files!=off` or
+`direct_io=false`) it will issue `getxattr` requests for
+`security.capability` prior to *every single write*. This will usually
+result in a performance degradation, especially when using a network
+filesystem (such as NFS or CIFS/SMB/Samba.) Unfortunately at this
+moment the kernel is not caching the response.
 
 To work around this situation mergerfs offers a few solutions.
 
-1. Set `security_capability=false`. It will short circuit any call and return `ENOATTR`. This still means though that mergerfs will receive the request before every write but at least it doesn't get passed through to the underlying filesystem.
-2. Set `xattr=noattr`. Same as above but applies to *all* calls to getxattr. Not just `security.capability`. This will not be cached by the kernel either but mergerfs' runtime config system will still function.
-3. Set `xattr=nosys`. Results in mergerfs returning `ENOSYS` which *will* be cached by the kernel. No future xattr calls will be forwarded to mergerfs. The downside is that also means the xattr based config and query functionality won't work either.
-4. Disable file caching. If you aren't using applications which use `mmap` it's probably simpler to just disable it all together. The kernel won't send the requests when caching is disabled.
-
-
-#### What are these .fuse_hidden files?
-
-Please upgrade. mergerfs >= 2.26.0 will not have these temporary files. See the notes on `unlink`.
+1. Set `security_capability=false`. It will short circuit any call and
+   return `ENOATTR`. This still means though that mergerfs will
+   receive the request before every write but at least it doesn't get
+   passed through to the underlying filesystem.
+2. Set `xattr=noattr`. Same as above but applies to *all* calls to
+   getxattr. Not just `security.capability`. This will not be cached
+   by the kernel either but mergerfs' runtime config system will still
+   function.
+3. Set `xattr=nosys`. Results in mergerfs returning `ENOSYS` which
+   *will* be cached by the kernel. No future xattr calls will be
+   forwarded to mergerfs. The downside is that also means the xattr
+   based config and query functionality won't work either.
+4. Disable file caching. If you aren't using applications which use
+   `mmap` it's probably simpler to just disable it all together. The
+   kernel won't send the requests when caching is disabled.
 
 
 #### It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
 
-[mhddfs](https://github.com/trapexit/mhddfs) manages running as **root** by calling [getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319) and if it returns **0** then it will [chown](http://linux.die.net/man/1/chown) the file. Not only is that a race condition but it doesn't handle other situations. Rather than attempting to simulate POSIX ACL behavior the proper way to manage this is to use [seteuid](http://linux.die.net/man/2/seteuid) and [setegid](http://linux.die.net/man/2/setegid), in effect becoming the user making the original call, and perform the action as them. This is what mergerfs does and why mergerfs should always run as root.
+[mhddfs](https://github.com/trapexit/mhddfs) manages running as
+**root** by calling
+[getuid()](https://github.com/trapexit/mhddfs/blob/cae96e6251dd91e2bdc24800b4a18a74044f6672/src/main.c#L319)
+and if it returns **0** then it will
+[chown](http://linux.die.net/man/1/chown) the file. Not only is that a
+race condition but it doesn't handle other situations. Rather than
+attempting to simulate POSIX ACL behavior the proper way to manage
+this is to use [seteuid](http://linux.die.net/man/2/seteuid) and
+[setegid](http://linux.die.net/man/2/setegid), in effect becoming the
+user making the original call, and perform the action as them. This is
+what mergerfs does and why mergerfs should always run as root.
 
-In Linux setreuid syscalls apply only to the thread. GLIBC hides this away by using realtime signals to inform all threads to change credentials. Taking after **Samba**, mergerfs uses **syscall(SYS_setreuid,...)** to set the callers credentials for that thread only. Jumping back to **root** as necessary should escalated privileges be needed (for instance: to clone paths between drives).
+In Linux setreuid syscalls apply only to the thread. GLIBC hides this
+away by using realtime signals to inform all threads to change
+credentials. Taking after **Samba**, mergerfs uses
+**syscall(SYS_setreuid,...)** to set the callers credentials for that
+thread only. Jumping back to **root** as necessary should escalated
+privileges be needed (for instance: to clone paths between drives).
 
-For non-Linux systems mergerfs uses a read-write lock and changes credentials only when necessary. If multiple threads are to be user X then only the first one will need to change the processes credentials. So long as the other threads need to be user X they will take a readlock allowing multiple threads to share the credentials. Once a request comes in to run as user Y that thread will attempt a write lock and change to Y's credentials when it can. If the ability to give writers priority is supported then that flag will be used so threads trying to change credentials don't starve. This isn't the best solution but should work reasonably well assuming there are few users.
+For non-Linux systems mergerfs uses a read-write lock and changes
+credentials only when necessary. If multiple threads are to be user X
+then only the first one will need to change the processes
+credentials. So long as the other threads need to be user X they will
+take a readlock allowing multiple threads to share the
+credentials. Once a request comes in to run as user Y that thread will
+attempt a write lock and change to Y's credentials when it can. If the
+ability to give writers priority is supported then that flag will be
+used so threads trying to change credentials don't starve. This isn't
+the best solution but should work reasonably well assuming there are
+few users.
 
 
 # SUPPORT
@@ -1486,11 +2362,12 @@ encountered questions/issues.
 **Please make sure you are using the [latest
 release](https://github.com/trapexit/mergerfs/releases) or have tried
 it in comparison. Old versions, which are often included in distros
-like Debian and Ubuntu, are not ever going to be updated and your bug
-may have been addressed already.**
+like Debian and Ubuntu, are not ever going to be updated and the issue
+you are encountering may have been addressed already.**
 
 
-**For commercial support or feature requests please contact me directly.**
+**For commercial support or feature requests please [contact me
+directly.](mailto:support@spawn.link)**
 
 
 #### Information to include in bug reports
@@ -1498,7 +2375,7 @@ may have been addressed already.**
 * [Information about the broader problem along with any attempted
   solutions.](https://xyproblem.info)
 * Solution already ruled out and why.
-* Version of mergerfs: `mergerfs -V`
+* Version of mergerfs: `mergerfs --version`
 * mergerfs settings / arguments: from fstab, systemd unit, command
   line, OMV plugin, etc.
 * Version of the OS: `uname -a` and `lsb_release -a`
@@ -1519,20 +2396,28 @@ may have been addressed already.**
 #### Contact / Issue submission
 
 * github.com: https://github.com/trapexit/mergerfs/issues
-* email: trapexit@spawn.link
 * discord: https://discord.gg/MpAr69V
-* twitter: https://twitter.com/_trapexit
-* reddit: https://www.reddit.com/user/trapexit
+* reddit: https://www.reddit.com/r/mergerfs
 
 
-#### Support development
-
-This software is released under the very liberal ISC license and is
-therefore free to use for personal or commercial uses. That said if
-you like this software and have the means please consider supporting
-its development.
+#### Donations
 
 https://github.com/trapexit/support
+
+
+Development and support of a project like mergerfs requires a
+significant amount of time and effort. The software is released under
+the very liberal ISC license and is therefore free to use for personal
+or commercial uses.
+
+If you are a personal user and find mergerfs and its support valuable
+and would like to support the project financially it would be very
+much appreciated.
+
+If you are using mergerfs commercially please consider sponsoring the
+project to ensure it continues to be maintained and receive
+updates. If custom features are needed feel free to [contact me
+directly](mailto:support@spawn.link).
 
 
 # LINKS
