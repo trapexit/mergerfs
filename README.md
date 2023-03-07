@@ -1943,9 +1943,12 @@ some particular need. mergerfs is very easy to test and experiment
 with. I suggest creating a test setup and experimenting to get a sense
 of what you want.
 
-The reason `mfs` is not the default `category.create` policy is
-historical. When/if a 3.X gets released it will be changed to minimize
-confusion people often have with path preserving policies.
+`epmfs` is the default `category.create` policy because `ep` policies
+are not going to change the general layout of the branches. It won't
+place files/dirs on branches that don't already have the relative
+branch. So it keeps the system in a known state. It's much easier to
+stop using `epmfs` or redistribute files around the filesystem than it
+is to consolidate them back.
 
 
 #### What settings should I use?
