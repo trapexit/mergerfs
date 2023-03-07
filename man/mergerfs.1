@@ -112,10 +112,10 @@ start with one of the following option sets.
 \f[C]cache.files=off,dropcacheonclose=true,category.create=mfs\f[R]
 .SS Command Line
 .PP
-\f[C]mergerfs -o create.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media\f[R]
+\f[C]mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media\f[R]
 .SS /etc/fstab
 .PP
-\f[C]/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs create.files=partial,dropcacheonclose=true,category.create=mfs 0 0\f[R]
+\f[C]/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0\f[R]
 .SS systemd mount
 .PP
 https://github.com/trapexit/mergerfs/wiki/systemd
@@ -130,7 +130,7 @@ Type=simple
 KillMode=none
 ExecStart=/usr/bin/mergerfs \[rs]
   -f \[rs]
-  -o create.files=partial \[rs]
+  -o cache.files=partial \[rs]
   -o dropcacheonclose=true \[rs]
   -o category.create=mfs \[rs]
   /mnt/hdd0:/mnt/hdd1 \[rs]
@@ -2430,10 +2430,14 @@ mergerfs is very easy to test and experiment with.
 I suggest creating a test setup and experimenting to get a sense of what
 you want.
 .PP
-The reason \f[C]mfs\f[R] is not the default \f[C]category.create\f[R]
-policy is historical.
-When/if a 3.X gets released it will be changed to minimize confusion
-people often have with path preserving policies.
+\f[C]epmfs\f[R] is the default \f[C]category.create\f[R] policy because
+\f[C]ep\f[R] policies are not going to change the general layout of the
+branches.
+It won\[cq]t place files/dirs on branches that don\[cq]t already have
+the relative branch.
+So it keeps the system in a known state.
+It\[cq]s much easier to stop using \f[C]epmfs\f[R] or redistribute files
+around the filesystem than it is to consolidate them back.
 .SS What settings should I use?
 .PP
 Depends on what features you want.
