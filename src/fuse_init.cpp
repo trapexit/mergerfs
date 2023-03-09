@@ -16,8 +16,14 @@
 
 #include "config.hpp"
 #include "ugid.hpp"
+#include "fs_readahead.hpp"
+#include "syslog.hpp"
+
+#include "fmt/core.h"
 
 #include "fuse.h"
+
+#include <thread>
 
 
 namespace l
@@ -77,6 +83,49 @@ namespace l
         cfg_->fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
       }
   }
+
+  static
+  void
+  readahead(const std::string path_,
+            const int         readahead_)
+  {
+    int rv;
+
+    rv = fs::readahead(path_,readahead_);
+    if(rv == 0)
+      syslog_info("%s - readahead set to %d",path_.c_str(),readahead_);
+    else
+      syslog_error("%s - unable to set readahead",path_.c_str());
+  }
+
+  static
+  void
+  set_readahead_on_mount_and_branches()
+  {
+    Config::Read cfg;
+    Branches::CPtr branches;
+
+    if((uint64_t)cfg->readahead == 0)
+      return;
+
+    l::readahead(cfg->mountpoint,cfg->readahead);
+
+    branches = cfg->branches;
+    for(auto const &branch : *branches)
+      l::readahead(branch.path,cfg->readahead);
+  }
+
+  // Spawn a thread to do this because before init returns calls to
+  // set the value will block leading to a deadlock. This is just
+  // easier.
+  static
+  void
+  spawn_thread_to_set_readahead()
+  {
+    std::thread readahead_thread(l::set_readahead_on_mount_and_branches);
+
+    readahead_thread.detach();
+  }
 }
 
 namespace FUSE
@@ -103,6 +152,8 @@ namespace FUSE
     l::want_if_capable_max_pages(conn_,cfg);
     conn_->want &= ~FUSE_CAP_POSIX_LOCKS;
     conn_->want &= ~FUSE_CAP_FLOCK_LOCKS;
+
+    l::spawn_thread_to_set_readahead();
 
     return NULL;
   }

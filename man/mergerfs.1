@@ -265,6 +265,10 @@ instead.
 rename fails with EXDEV optionally move the file to a special directory
 and symlink to it.
 .IP \[bu] 2
+\f[B]readahead=UINT\f[R]: Set readahead (in kilobytes) for mergerfs and
+branches if greater than 0.
+(default: 0)
+.IP \[bu] 2
 \f[B]posix_acl=BOOL\f[R]: Enable POSIX ACL support (if supported by
 kernel and underlying filesystem).
 (default: false)
@@ -1982,11 +1986,7 @@ use tiered cache drives
 .IP \[bu] 2
 use LVM and LVM cache to place a SSD in front of your HDDs
 .IP \[bu] 2
-if \f[C]cache.files\f[R] is enabled increase readahead:
-\f[C]echo \[dq]1024\[dq] > /sys/class/bdi/0:$(stat -c%d /MOUNT)/read_ahead_kb\f[R]
-.IP \[bu] 2
-increase readahead on all devices:
-\f[C]ls -1 /sys/class/bdi/*/read_ahead_kb | xargs -n1 -I{} sh -c \[dq]echo 1024 > {}\[dq]\f[R]
+increase readahead: \f[C]readahead=1024\f[R]
 .PP
 If you come across a setting that significantly impacts performance
 please contact trapexit so he may investigate further.
