@@ -80,11 +80,8 @@ namespace l
     uint64_t offset;
 
     offset = s_.find_first_not_of("+<>-=");
-    if(offset > 1)
-      offset = 2;
+    *values_ = ((offset != std::string::npos) ? s_.substr(offset) : "");
     *instr_ = s_.substr(0,offset);
-    if(offset != std::string::npos)
-      *values_ = s_.substr(offset);
   }
 
   static
@@ -205,6 +202,9 @@ namespace l
     Branches::Impl tmp_branches(branches_->minfreespace());
 
     str::split(str_,':',&paths);
+    if (paths.empty())
+      return -ENOTSUP;
+
     for(auto &path : paths)
       {
         rv = l::parse(path,&tmp_branches);
@@ -269,6 +269,9 @@ namespace l
   int
   erase_begin(Branches::Impl *branches_)
   {
+    if (branches_->size() <= 1)
+      return -ENOTSUP;
+
     branches_->erase(branches_->begin());
 
     return 0;
@@ -278,6 +281,9 @@ namespace l
   int
   erase_end(Branches::Impl *branches_)
   {
+    if (branches_->size() <= 1)
+      return -ENOTSUP;
+
     branches_->pop_back();
 
     return 0;
@@ -299,6 +305,8 @@ namespace l
           {
             match = ::fnmatch(pi->c_str(),i->path.c_str(),0);
           }
+        if (match == 0 && branches_->size() == 1)
+          return -ENOTSUP;
 
         i = ((match == 0) ? branches_->erase(i) : (i+1));
       }

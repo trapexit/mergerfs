@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
@@ -19,7 +19,7 @@ import subprocess
 import argparse
 
 def call(args):
-    return subprocess.Popen(args,stdout=subprocess.PIPE).communicate()[0].decode()
+    return subprocess.Popen(args,stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
 
 def git_tags():
     args = ["git", "tag", '-l']
