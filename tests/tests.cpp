@@ -86,6 +86,9 @@ test_config_branches()
   TEST_CHECK(b->minfreespace() == 1234);
   TEST_CHECK(b.to_string() == "");
 
+  // Parse initial value for branch
+  TEST_CHECK(b.from_string(b.to_string()) == 0);
+
   bcp0 = b;
   TEST_CHECK(b.from_string("/foo/bar") == 0);
   TEST_CHECK(b.to_string() == "/foo/bar=RW");
