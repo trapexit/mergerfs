@@ -80,11 +80,14 @@ namespace l
     uint64_t offset;
 
     offset = s_.find_first_not_of("+<>-=");
+    if (offset == std::string::npos) {
+      return;
+    }
+
     if(offset > 1)
       offset = 2;
     *instr_ = s_.substr(0,offset);
-    if(offset != std::string::npos)
-      *values_ = s_.substr(offset);
+    *values_ = s_.substr(offset);
   }
 
   static
