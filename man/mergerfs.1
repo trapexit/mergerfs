@@ -77,9 +77,9 @@ A         +      B        =       C
 mergerfs does \f[B]not\f[R] support the copy-on-write (CoW) or whiteout
 behaviors found in \f[B]aufs\f[R] and \f[B]overlayfs\f[R].
 You can \f[B]not\f[R] mount a read-only filesystem and write to it.
-However, mergerfs will ignore read-only drives when creating new files
-so you can mix read-write and read-only drives.
-It also does \f[B]not\f[R] split data across drives.
+However, mergerfs will ignore read-only filesystems when creating new
+files so you can mix read-write and read-only filesystems.
+It also does \f[B]not\f[R] split data across filesystems.
 It is not RAID0 / striping.
 It is simply a union of other filesystems.
 .SH TERMINOLOGY
@@ -210,7 +210,8 @@ Typically rename and link act differently depending on the policy of
 \f[C]create\f[R] (read below).
 Enabling this will cause rename and link to always use the non-path
 preserving behavior.
-This means files, when renamed or linked, will stay on the same drive.
+This means files, when renamed or linked, will stay on the same
+filesystem.
 (default: false)
 .IP \[bu] 2
 \f[B]security_capability=BOOL\f[R]: If false return ENOATTR when xattr
@@ -233,7 +234,7 @@ to cow-shell.
 .IP \[bu] 2
 \f[B]statfs=base|full\f[R]: Controls how statfs works.
 `base' means it will always use all branches in statfs calculations.
-`full' is in effect path preserving and only includes drives where the
+`full' is in effect path preserving and only includes branches where the
 path exists.
 (default: base)
 .IP \[bu] 2
@@ -442,10 +443,10 @@ POLICY = mergerfs function policy
 .PP
 The `branches' argument is a colon (`:') delimited list of paths to be
 pooled together.
-It does not matter if the paths are on the same or different drives nor
-does it matter the filesystem (within reason).
+It does not matter if the paths are on the same or different filesystems
+nor does it matter the filesystem type (within reason).
 Used and available space will not be duplicated for paths on the same
-device and any features which aren\[cq]t supported by the underlying
+filesystem and any features which aren\[cq]t supported by the underlying
 filesystem (such as file attributes or extended attributes) will return
 the appropriate errors.
 .PP
@@ -454,7 +455,7 @@ A type which impacts whether or not the branch is included in a policy
 calculation and a individual minfreespace value.
 The values are set by prepending an \f[C]=\f[R] at the end of a branch
 designation and using commas as delimiters.
-Example: /mnt/drive=RW,1234
+Example: \f[C]/mnt/drive=RW,1234\f[R]
 .SS branch mode
 .IP \[bu] 2
 RW: (read/write) - Default behavior.
@@ -748,8 +749,8 @@ This is unlikely to occur in practice but is something to keep in mind.
 \f[B]WARNING:\f[R] Some backup solutions, such as CrashPlan, do not
 backup the target of a symlink.
 If using this feature it will be necessary to point any backup software
-to the original drives or configure the software to follow symlinks if
-such an option is available.
+to the original filesystems or configure the software to follow symlinks
+if such an option is available.
 Alternatively create two mounts.
 One for backup and one for general consumption.
 .SS nullrw
@@ -939,11 +940,11 @@ All policies which start with \f[C]ep\f[R] (\f[B]epff\f[R],
 \f[C]path preserving\f[R].
 \f[C]ep\f[R] stands for \f[C]existing path\f[R].
 .PP
-A path preserving policy will only consider drives where the relative
+A path preserving policy will only consider branches where the relative
 path being accessed already exists.
 .PP
 When using non-path preserving policies paths will be cloned to target
-drives as necessary.
+branches as necessary.
 .PP
 With the \f[C]msp\f[R] or \f[C]most shared path\f[R] policies they are
 defined as \f[C]path preserving\f[R] for the purpose of controlling
@@ -990,19 +991,19 @@ T}
 T{
 eplfs (existing path, least free space)
 T}@T{
-Of all the branches on which the relative path exists choose the drive
+Of all the branches on which the relative path exists choose the branch
 with the least free space.
 T}
 T{
 eplus (existing path, least used space)
 T}@T{
-Of all the branches on which the relative path exists choose the drive
+Of all the branches on which the relative path exists choose the branch
 with the least used space.
 T}
 T{
 epmfs (existing path, most free space)
 T}@T{
-Of all the branches on which the relative path exists choose the drive
+Of all the branches on which the relative path exists choose the branch
 with the most free space.
 T}
 T{
@@ -1019,23 +1020,23 @@ T}
 T{
 ff (first found)
 T}@T{
-Given the order of the drives, as defined at mount time or configured at
-runtime, act on the first one found.
+Given the order of the branches, as defined at mount time or configured
+at runtime, act on the first one found.
 T}
 T{
 lfs (least free space)
 T}@T{
-Pick the drive with the least available free space.
+Pick the branch with the least available free space.
 T}
 T{
 lus (least used space)
 T}@T{
-Pick the drive with the least used space.
+Pick the branch with the least used space.
 T}
 T{
 mfs (most free space)
 T}@T{
-Pick the drive with the most available free space.
+Pick the branch with the most available free space.
 T}
 T{
 msplfs (most shared path, least free space)
@@ -1141,8 +1142,8 @@ If a rename can\[cq]t be done atomically due to the source and
 destination paths existing on different mount points it will return
 \f[B]-1\f[R] with \f[B]errno = EXDEV\f[R] (cross device / improper
 link).
-So if a \f[C]rename\f[R]\[cq]s source and target are on different drives
-within the pool it creates an issue.
+So if a \f[C]rename\f[R]\[cq]s source and target are on different
+filesystems within the pool it creates an issue.
 .PP
 Originally mergerfs would return EXDEV whenever a rename was requested
 which was cross directory in any way.
@@ -1169,7 +1170,7 @@ For each file attempt rename:
 If failure with ENOENT (no such file or directory) run \f[B]create\f[R]
 policy
 .IP \[bu] 2
-If create policy returns the same drive as currently evaluating then
+If create policy returns the same branch as currently evaluating then
 clone the path
 .IP \[bu] 2
 Re-attempt rename
@@ -1184,9 +1185,9 @@ returned
 On success:
 .RS 2
 .IP \[bu] 2
-Remove the target from all drives with no source file
+Remove the target from all branches with no source file
 .IP \[bu] 2
-Remove the source from all drives which failed to rename
+Remove the source from all branches which failed to rename
 .RE
 .RE
 .IP \[bu] 2
@@ -1201,10 +1202,10 @@ Using the \f[B]getattr\f[R] policy get the target path
 For each file attempt rename:
 .RS 2
 .IP \[bu] 2
-If the source drive != target drive:
+If the source branch != target branch:
 .RS 2
 .IP \[bu] 2
-Clone target path from target drive to source drive
+Clone target path from target branch to source branch
 .RE
 .IP \[bu] 2
 Rename
@@ -1219,9 +1220,9 @@ returned
 On success:
 .RS 2
 .IP \[bu] 2
-Remove the target from all drives with no source file
+Remove the target from all branches with no source file
 .IP \[bu] 2
-Remove the source from all drives which failed to rename
+Remove the source from all branches which failed to rename
 .RE
 .RE
 .PP
@@ -1247,14 +1248,14 @@ file/directory which is the source of the metadata you see in an
 .SS statfs / statvfs
 .PP
 statvfs (http://linux.die.net/man/2/statvfs) normalizes the source
-drives based on the fragment size and sums the number of adjusted blocks
-and inodes.
+filesystems based on the fragment size and sums the number of adjusted
+blocks and inodes.
 This means you will see the combined space of all sources.
 Total, used, and free.
-The sources however are dedupped based on the drive so multiple sources
-on the same drive will not result in double counting its space.
-Filesystems mounted further down the tree of the branch will not be
-included when checking the mount\[cq]s stats.
+The sources however are dedupped based on the filesystem so multiple
+sources on the same drive will not result in double counting its space.
+Other filesystems mounted further down the tree of the branch will not
+be included when checking the mount\[cq]s stats.
 .PP
 The options \f[C]statfs\f[R] and \f[C]statfs_ignore\f[R] can be used to
 modify \f[C]statfs\f[R] behavior.
@@ -1611,11 +1612,11 @@ mergerfs.dedup: Will help identify and optionally remove duplicate files
 mergerfs.dup: Ensure there are at least N copies of a file across the
 pool
 .IP \[bu] 2
-mergerfs.balance: Rebalance files across drives by moving them from the
-most filled to the least filled
+mergerfs.balance: Rebalance files across filesystems by moving them from
+the most filled to the least filled
 .IP \[bu] 2
 mergerfs.consolidate: move files within a single mergerfs directory to
-the drive with most free space
+the filesystem with most free space
 .RE
 .IP \[bu] 2
 https://github.com/trapexit/scorch
@@ -1746,40 +1747,21 @@ Note that if an application is properly sizing writes then writeback
 caching will have little or no effect.
 It will only help with writes of sizes below the FUSE message size (128K
 on older kernels, 1M on newer).
-.SS policy caching
-.PP
-Policies are run every time a function (with a policy as mentioned
-above) is called.
-These policies can be expensive depending on mergerfs\[cq] setup and
-client usage patterns.
-Generally we wouldn\[cq]t want to cache policy results because it may
-result in stale responses if the underlying drives are used directly.
-.PP
-The \f[C]open\f[R] policy cache will cache the result of an
-\f[C]open\f[R] policy for a particular input for \f[C]cache.open\f[R]
-seconds or until the file is unlinked.
-Each file close (release) will randomly chose to clean up the cache of
-expired entries.
-.PP
-This cache is really only useful in cases where you have a large number
-of branches and \f[C]open\f[R] is called on the same files repeatedly
-(like \f[B]Transmission\f[R] which opens and closes a file on every
-read/write presumably to keep file handle usage low).
 .SS statfs caching
 .PP
 Of the syscalls used by mergerfs in policies the \f[C]statfs\f[R] /
 \f[C]statvfs\f[R] call is perhaps the most expensive.
-It\[cq]s used to find out the available space of a drive and whether it
-is mounted read-only.
+It\[cq]s used to find out the available space of a filesystem and
+whether it is mounted read-only.
 Depending on the setup and usage pattern these queries can be relatively
 costly.
 When \f[C]cache.statfs\f[R] is enabled all calls to \f[C]statfs\f[R] by
 a policy will be cached for the number of seconds its set to.
 .PP
 Example: If the create policy is \f[C]mfs\f[R] and the timeout is 60
-then for that 60 seconds the same drive will be returned as the target
-for creates because the available space won\[cq]t be updated for that
-time.
+then for that 60 seconds the same filesystem will be returned as the
+target for creates because the available space won\[cq]t be updated for
+that time.
 .SS symlink caching
 .PP
 As of version 4.20 Linux supports symlink caching.
@@ -1815,54 +1797,55 @@ NVMe, SSD, Optane in front of traditional HDDs for instance.
 MergerFS does not natively support any sort of tiered caching.
 Most users have no use for such a feature and its inclusion would
 complicate the code.
-However, there are a few situations where a cache drive could help with
-a typical mergerfs setup.
+However, there are a few situations where a cache filesystem could help
+with a typical mergerfs setup.
 .IP "1." 3
-Fast network, slow drives, many readers: You\[cq]ve a 10+Gbps network
-with many readers and your regular drives can\[cq]t keep up.
+Fast network, slow filesystems, many readers: You\[cq]ve a 10+Gbps
+network with many readers and your regular filesystems can\[cq]t keep
+up.
 .IP "2." 3
-Fast network, slow drives, small\[cq]ish bursty writes: You have a
+Fast network, slow filesystems, small\[cq]ish bursty writes: You have a
 10+Gbps network and wish to transfer amounts of data less than your
-cache drive but wish to do so quickly.
+cache filesystem but wish to do so quickly.
 .PP
 With #1 it\[cq]s arguable if you should be using mergerfs at all.
 RAID would probably be the better solution.
 If you\[cq]re going to use mergerfs there are other tactics that may
-help: spreading the data across drives (see the mergerfs.dup tool) and
-setting \f[C]func.open=rand\f[R], using \f[C]symlinkify\f[R], or using
-dm-cache or a similar technology to add tiered cache to the underlying
-device.
+help: spreading the data across filesystems (see the mergerfs.dup tool)
+and setting \f[C]func.open=rand\f[R], using \f[C]symlinkify\f[R], or
+using dm-cache or a similar technology to add tiered cache to the
+underlying device.
 .PP
 With #2 one could use dm-cache as well but there is another solution
 which requires only mergerfs and a cronjob.
 .IP "1." 3
 Create 2 mergerfs pools.
-One which includes just the slow drives and one which has both the fast
-drives (SSD,NVME,etc.) and slow drives.
+One which includes just the slow devices and one which has both the fast
+devices (SSD,NVME,etc.) and slow devices.
 .IP "2." 3
-The `cache' pool should have the cache drives listed first.
+The `cache' pool should have the cache filesystems listed first.
 .IP "3." 3
 The best \f[C]create\f[R] policies to use for the `cache' pool would
 probably be \f[C]ff\f[R], \f[C]epff\f[R], \f[C]lfs\f[R], or
 \f[C]eplfs\f[R].
-The latter two under the assumption that the cache drive(s) are far
-smaller than the backing drives.
+The latter two under the assumption that the cache filesystem(s) are far
+smaller than the backing filesystems.
 If using path preserving policies remember that you\[cq]ll need to
 manually create the core directories of those paths you wish to be
 cached.
 Be sure the permissions are in sync.
 Use \f[C]mergerfs.fsck\f[R] to check / correct them.
-You could also tag the slow drives as \f[C]=NC\f[R] though that\[cq]d
-mean if the cache drives fill you\[cq]d get \[lq]out of space\[rq]
-errors.
+You could also set the slow filesystems mode to \f[C]NC\f[R] though
+that\[cq]d mean if the cache filesystems fill you\[cq]d get \[lq]out of
+space\[rq] errors.
 .IP "4." 3
 Enable \f[C]moveonenospc\f[R] and set \f[C]minfreespace\f[R]
 appropriately.
 To make sure there is enough room on the \[lq]slow\[rq] pool you might
 want to set \f[C]minfreespace\f[R] to at least as large as the size of
-the largest cache drive if not larger.
-This way in the worst case the whole of the cache drive(s) can be moved
-to the other drives.
+the largest cache filesystem if not larger.
+This way in the worst case the whole of the cache filesystem(s) can be
+moved to the other drives.
 .IP "5." 3
 Set your programs to use the cache pool.
 .IP "6." 3
@@ -1880,8 +1863,8 @@ May want to use the \f[C]fadvise\f[R] / \f[C]--drop-cache\f[R] version
 of rsync or run rsync with the tool \[lq]nocache\[rq].
 .PP
 \f[I]NOTE:\f[R] The arguments to these scripts include the cache
-\f[B]drive\f[R].
-Not the pool with the cache drive.
+\f[B]filesystem\f[R] itself.
+Not the pool with the cache filesystem.
 You could have data loss if the source is the cache pool.
 .IP
 .nf
@@ -1889,7 +1872,7 @@ You could have data loss if the source is the cache pool.
 #!/bin/bash
 
 if [ $# != 3 ]; then
-  echo \[dq]usage: $0 <cache-drive> <backing-pool> <days-old>\[dq]
+  echo \[dq]usage: $0 <cache-fs> <backing-pool> <days-old>\[dq]
   exit 1
 fi
 
@@ -1907,8 +1890,8 @@ Move the oldest file from the cache to the backing pool.
 Continue till below percentage threshold.
 .PP
 \f[I]NOTE:\f[R] The arguments to these scripts include the cache
-\f[B]drive\f[R].
-Not the pool with the cache drive.
+\f[B]filesystem\f[R] itself.
+Not the pool with the cache filesystem.
 You could have data loss if the source is the cache pool.
 .IP
 .nf
@@ -1916,7 +1899,7 @@ You could have data loss if the source is the cache pool.
 #!/bin/bash
 
 if [ $# != 3 ]; then
-  echo \[dq]usage: $0 <cache-drive> <backing-pool> <percentage>\[dq]
+  echo \[dq]usage: $0 <cache-fs> <backing-pool> <percentage>\[dq]
   exit 1
 fi
 
@@ -1946,7 +1929,7 @@ That said the performance can match the theoretical max but it depends
 greatly on the system\[cq]s configuration.
 Especially when adding network filesystems into the mix there are many
 variables which can impact performance.
-Drive speeds and latency, network speeds and latency, general
+Device speeds and latency, network speeds and latency, general
 concurrency, read/write sizes, etc.
 Unfortunately, given the number of variables it has been difficult to
 find a single set of settings which provide optimal performance.
@@ -1982,7 +1965,7 @@ disk
 .IP \[bu] 2
 use \f[C]symlinkify\f[R] if your data is largely static and read-only
 .IP \[bu] 2
-use tiered cache drives
+use tiered cache devices
 .IP \[bu] 2
 use LVM and LVM cache to place a SSD in front of your HDDs
 .IP \[bu] 2
@@ -2029,7 +2012,7 @@ Extremely high speed and very low latency.
 This is a more realistic best case scenario.
 Example: \f[C]mount -t tmpfs -o size=2G tmpfs /tmp/tmpfs\f[R]
 .IP "3." 3
-Mount mergerfs over a local drive.
+Mount mergerfs over a local device.
 NVMe, SSD, HDD, etc.
 If you have more than one I\[cq]d suggest testing each of them as drives
 and/or controllers (their drivers) could impact performance.
@@ -2046,7 +2029,7 @@ For reads and writes the most relevant would be: \f[C]cache.files\f[R],
 Less likely but relevant when using NFS or with certain filesystems
 would be \f[C]security_capability\f[R], \f[C]xattr\f[R], and
 \f[C]posix_acl\f[R].
-If you find a specific system, drive, filesystem, controller, etc.
+If you find a specific system, device, filesystem, controller, etc.
 that performs poorly contact trapexit so he may investigate further.
 .PP
 Sometimes the problem is really the application accessing or writing
@@ -2109,7 +2092,7 @@ exibit incorrect behavior if run otherwise..
 If you don\[cq]t see some directories and files you expect, policies
 seem to skip branches, you get strange permission errors, etc.
 be sure the underlying filesystems\[cq] permissions are all the same.
-Use \f[C]mergerfs.fsck\f[R] to audit the drive for out of sync
+Use \f[C]mergerfs.fsck\f[R] to audit the filesystem for out of sync
 permissions.
 .IP \[bu] 2
 If you still have permission issues be sure you are using POSIX ACL
@@ -2165,7 +2148,7 @@ appear outdated.
 The reason this is the default is because any other policy would be more
 expensive and for many applications it is unnecessary.
 To always return the directory with the most recent mtime or a faked
-value based on all found would require a scan of all drives.
+value based on all found would require a scan of all filesystems.
 .PP
 If you always want the directory information from the one with the most
 recent mtime then use the \f[C]newest\f[R] policy for \f[C]getattr\f[R].
@@ -2191,7 +2174,7 @@ Since the source \f[B]is\f[R] the target in this case, depending on the
 unlink policy, it will remove the just copied file and other files
 across the branches.
 .PP
-If you want to move files to one drive just copy them there and use
+If you want to move files to one filesystem just copy them there and use
 mergerfs.dedup to clean up the old paths or manually remove them from
 the branches directly.
 .SS cached memory appears greater than it should be
@@ -2253,16 +2236,15 @@ Please read the section above regarding rename & link.
 The problem is that many applications do not properly handle
 \f[C]EXDEV\f[R] errors which \f[C]rename\f[R] and \f[C]link\f[R] may
 return even though they are perfectly valid situations which do not
-indicate actual drive or OS errors.
+indicate actual device, filesystem, or OS errors.
 The error will only be returned by mergerfs if using a path preserving
 policy as described in the policy section above.
 If you do not care about path preservation simply change the mergerfs
 policy to the non-path preserving version.
-For example: \f[C]-o category.create=mfs\f[R]
-.PP
-Ideally the offending software would be fixed and it is recommended that
-if you run into this problem you contact the software\[cq]s author and
-request proper handling of \f[C]EXDEV\f[R] errors.
+For example: \f[C]-o category.create=mfs\f[R] Ideally the offending
+software would be fixed and it is recommended that if you run into this
+problem you contact the software\[cq]s author and request proper
+handling of \f[C]EXDEV\f[R] errors.
 .SS my 32bit software has problems
 .PP
 Some software have problems with 64bit inode values.
@@ -2373,24 +2355,24 @@ to dual socket Xeon systems with >20 cores.
 I\[cq]m aware of at least a few companies which use mergerfs in
 production.
 Open Media Vault (https://www.openmediavault.org) includes mergerfs as
-its sole solution for pooling drives.
+its sole solution for pooling filesystems.
 The author of mergerfs had it running for over 300 days managing 16+
-drives with reasonably heavy 24/7 read and write usage.
+devices with reasonably heavy 24/7 read and write usage.
 Stopping only after the machine\[cq]s power supply died.
 .PP
 Most serious issues (crashes or data corruption) have been due to kernel
 bugs (https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs).
 All of which are fixed in stable releases.
-.SS Can mergerfs be used with drives which already have data / are in use?
+.SS Can mergerfs be used with filesystems which already have data / are in use?
 .PP
 Yes.
 MergerFS is a proxy and does \f[B]NOT\f[R] interfere with the normal
-form or function of the drives / mounts / paths it manages.
+form or function of the filesystems / mounts / paths it manages.
 .PP
 MergerFS is \f[B]not\f[R] a traditional filesystem.
 MergerFS is \f[B]not\f[R] RAID.
 It does \f[B]not\f[R] manipulate the data that passes through it.
-It does \f[B]not\f[R] shard data across drives.
+It does \f[B]not\f[R] shard data across filesystems.
 It merely shards some \f[B]behavior\f[R] and aggregates others.
 .SS Can mergerfs be removed without affecting the data?
 .PP
@@ -2402,7 +2384,8 @@ probably best off using \f[C]mfs\f[R] for \f[C]category.create\f[R].
 It will spread files out across your branches based on available space.
 Use \f[C]mspmfs\f[R] if you want to try to colocate the data a bit more.
 You may want to use \f[C]lus\f[R] if you prefer a slightly different
-distribution of data if you have a mix of smaller and larger drives.
+distribution of data if you have a mix of smaller and larger
+filesystems.
 Generally though \f[C]mfs\f[R], \f[C]lus\f[R], or even \f[C]rand\f[R]
 are good for the general use case.
 If you are starting with an imbalanced pool you can use the tool
@@ -2413,8 +2396,8 @@ set \f[C]func.create\f[R] to \f[C]epmfs\f[R] or similar and
 \f[C]func.mkdir\f[R] to \f[C]rand\f[R] or \f[C]eprand\f[R] depending on
 if you just want to colocate generally or on specific branches.
 Either way the \f[I]need\f[R] to colocate is rare.
-For instance: if you wish to remove the drive regularly and want the
-data to predictably be on that drive or if you don\[cq]t use backup at
+For instance: if you wish to remove the device regularly and want the
+data to predictably be on that device or if you don\[cq]t use backup at
 all and don\[cq]t wish to replace that data piecemeal.
 In which case using path preservation can help but will require some
 manual attention.
@@ -2451,9 +2434,9 @@ the documentation will be improved.
 That said, for the average person, the following should be fine:
 .PP
 \f[C]cache.files=off,dropcacheonclose=true,category.create=mfs\f[R]
-.SS Why are all my files ending up on 1 drive?!
+.SS Why are all my files ending up on 1 filesystem?!
 .PP
-Did you start with empty drives?
+Did you start with empty filesystems?
 Did you explicitly configure a \f[C]category.create\f[R] policy?
 Are you using an \f[C]existing path\f[R] / \f[C]path preserving\f[R]
 policy?
@@ -2461,23 +2444,23 @@ policy?
 The default create policy is \f[C]epmfs\f[R].
 That is a path preserving algorithm.
 With such a policy for \f[C]mkdir\f[R] and \f[C]create\f[R] with a set
-of empty drives it will select only 1 drive when the first directory is
-created.
+of empty filesystems it will select only 1 filesystem when the first
+directory is created.
 Anything, files or directories, created in that first directory will be
 placed on the same branch because it is preserving paths.
 .PP
 This catches a lot of new users off guard but changing the default would
 break the setup for many existing users.
 If you do not care about path preservation and wish your files to be
-spread across all your drives change to \f[C]mfs\f[R] or similar policy
-as described above.
+spread across all your filesystems change to \f[C]mfs\f[R] or similar
+policy as described above.
 If you do want path preservation you\[cq]ll need to perform the manual
-act of creating paths on the drives you want the data to land on before
-transferring your data.
+act of creating paths on the filesystems you want the data to land on
+before transferring your data.
 Setting \f[C]func.mkdir=epall\f[R] can simplify managing path
 preservation for \f[C]create\f[R].
 Or use \f[C]func.mkdir=rand\f[R] if you\[cq]re interested in just
-grouping together directory content by drive.
+grouping together directory content by filesystem.
 .SS Do hardlinks work?
 .PP
 Yes.
@@ -2546,8 +2529,8 @@ of the caller.
 This means that if the user does not have access to a file or directory
 than neither will mergerfs.
 However, because mergerfs is creating a union of paths it may be able to
-read some files and directories on one drive but not another resulting
-in an incomplete set.
+read some files and directories on one filesystem but not another
+resulting in an incomplete set.
 .PP
 Whenever you run into a split permission issue (seeing some but not all
 files) try using
@@ -2644,7 +2627,7 @@ features which aufs and overlayfs have.
 .PP
 UnionFS is more like aufs than mergerfs in that it offers overlay / CoW
 features.
-If you\[cq]re just looking to create a union of drives and want
+If you\[cq]re just looking to create a union of filesystems and want
 flexibility in file/directory placement then mergerfs offers that
 whereas unionfs is more for overlaying RW filesystems over RO ones.
 .SS Why use mergerfs over overlayfs?
@@ -2664,8 +2647,9 @@ without the single point of failure.
 .SS Why use mergerfs over ZFS?
 .PP
 MergerFS is not intended to be a replacement for ZFS.
-MergerFS is intended to provide flexible pooling of arbitrary drives
-(local or remote), of arbitrary sizes, and arbitrary filesystems.
+MergerFS is intended to provide flexible pooling of arbitrary
+filesystems (local or remote), of arbitrary sizes, and arbitrary
+filesystems.
 For \f[C]write once, read many\f[R] usecases such as bulk media storage.
 Where data integrity and backup is managed in other ways.
 In that situation ZFS can introduce a number of costs and limitations as
@@ -2683,6 +2667,29 @@ open source is important.
 .PP
 There are a number of UnRAID users who use mergerfs as well though
 I\[cq]m not entirely familiar with the use case.
+.SS Why use mergerfs over StableBit\[cq]s DrivePool?
+.PP
+DrivePool works only on Windows so not as common an alternative as other
+Linux solutions.
+If you want to use Windows then DrivePool is a good option.
+Functionally the two projects work a bit differently.
+DrivePool always writes to the filesystem with the most free space and
+later rebalances.
+mergerfs does not offer rebalance but chooses a branch at file/directory
+create time.
+DrivePool\[cq]s rebalancing can be done differently in any directory and
+has file pattern matching to further customize the behavior.
+mergerfs, not having rebalancing does not have these features, but
+similar features are planned for mergerfs v3.
+DrivePool has builtin file duplication which mergerfs does not natively
+support (but can be done via an external script.)
+.PP
+There are a lot of misc differences between the two projects but most
+features in DrivePool can be replicated with external tools in
+combination with mergerfs.
+.PP
+Additionally DrivePool is a closed source commercial product vs mergerfs
+a ISC licensed OSS project.
 .SS What should mergerfs NOT be used for?
 .IP \[bu] 2
 databases: Even if the database stored data in separate files (mergerfs
@@ -2698,7 +2705,7 @@ much latency (if it works at all).
 As replacement for RAID: mergerfs is just for pooling branches.
 If you need that kind of device performance aggregation or high
 availability you should stick with RAID.
-.SS Can drives be written to directly? Outside of mergerfs while pooled?
+.SS Can filesystems be written to directly? Outside of mergerfs while pooled?
 .PP
 Yes, however it\[cq]s not recommended to use the same file from within
 the pool and from without at the same time (particularly writing).
@@ -2729,7 +2736,7 @@ those settings.
 Only one error can be returned and if one of the reasons for filtering a
 branch was \f[B]minfreespace\f[R] then it will be returned as such.
 \f[B]moveonenospc\f[R] is only relevant to writing a file which is too
-large for the drive its currently on.
+large for the filesystem it\[cq]s currently on.
 .PP
 It is also possible that the filesystem selected has run out of inodes.
 Use \f[C]df -i\f[R] to list the total and available inodes per
@@ -2824,7 +2831,7 @@ Taking after \f[B]Samba\f[R], mergerfs uses
 \f[B]syscall(SYS_setreuid,\&...)\f[R] to set the callers credentials for
 that thread only.
 Jumping back to \f[B]root\f[R] as necessary should escalated privileges
-be needed (for instance: to clone paths between drives).
+be needed (for instance: to clone paths between filesystems).
 .PP
 For non-Linux systems mergerfs uses a read-write lock and changes
 credentials only when necessary.
