@@ -65,9 +65,10 @@ A         +      B        =       C
 mergerfs does **not** support the copy-on-write (CoW) or whiteout
 behaviors found in **aufs** and **overlayfs**. You can **not** mount a
 read-only filesystem and write to it. However, mergerfs will ignore
-read-only drives when creating new files so you can mix read-write and
-read-only drives. It also does **not** split data across drives. It is
-not RAID0 / striping. It is simply a union of other filesystems.
+read-only filesystems when creating new files so you can mix
+read-write and read-only filesystems. It also does **not** split data
+across filesystems. It is not RAID0 / striping. It is simply a union of
+other filesystems.
 
 
 # TERMINOLOGY
@@ -178,7 +179,7 @@ These options are the same regardless of whether you use them with the
   policy of `create` (read below). Enabling this will cause rename and
   link to always use the non-path preserving behavior. This means
   files, when renamed or linked, will stay on the same
-  drive. (default: false)
+  filesystem. (default: false)
 * **security_capability=BOOL**: If false return ENOATTR when xattr
   security.capability is queried. (default: true)
 * **xattr=passthrough|noattr|nosys**: Runtime control of
@@ -191,7 +192,7 @@ These options are the same regardless of whether you use them with the
   copy-on-write function similar to cow-shell. (default: false)
 * **statfs=base|full**: Controls how statfs works. 'base' means it
   will always use all branches in statfs calculations. 'full' is in
-  effect path preserving and only includes drives where the path
+  effect path preserving and only includes branches where the path
   exists. (default: base)
 * **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to
   ignore available space for branches mounted or tagged as 'read-only'
@@ -324,9 +325,9 @@ you're using. Not all features are available in older releases. Use
 
 The 'branches' argument is a colon (':') delimited list of paths to be
 pooled together. It does not matter if the paths are on the same or
-different drives nor does it matter the filesystem (within
+different filesystems nor does it matter the filesystem type (within
 reason). Used and available space will not be duplicated for paths on
-the same device and any features which aren't supported by the
+the same filesystem and any features which aren't supported by the
 underlying filesystem (such as file attributes or extended attributes)
 will return the appropriate errors.
 
@@ -334,7 +335,7 @@ Branches currently have two options which can be set. A type which
 impacts whether or not the branch is included in a policy calculation
 and a individual minfreespace value. The values are set by prepending
 an `=` at the end of a branch designation and using commas as
-delimiters. Example: /mnt/drive=RW,1234
+delimiters. Example: `/mnt/drive=RW,1234`
 
 
 #### branch mode
@@ -590,10 +591,10 @@ something to keep in mind.
 
 **WARNING:** Some backup solutions, such as CrashPlan, do not backup
 the target of a symlink. If using this feature it will be necessary to
-point any backup software to the original drives or configure the
-software to follow symlinks if such an option is
-available. Alternatively create two mounts. One for backup and one for
-general consumption.
+point any backup software to the original filesystems or configure the
+software to follow symlinks if such an option is available.
+Alternatively create two mounts. One for backup and one for general
+consumption.
 
 
 ### nullrw
@@ -750,11 +751,11 @@ All policies which start with `ep` (**epff**, **eplfs**, **eplus**,
 **epmfs**, **eprand**) are `path preserving`. `ep` stands for
 `existing path`.
 
-A path preserving policy will only consider drives where the relative
+A path preserving policy will only consider branches where the relative
 path being accessed already exists.
 
 When using non-path preserving policies paths will be cloned to target
-drives as necessary.
+branches as necessary.
 
 With the `msp` or `most shared path` policies they are defined as
 `path preserving` for the purpose of controlling `link` and `rename`'s
@@ -775,15 +776,15 @@ but it makes things a bit more uniform.
 | all | Search: For **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**. |
 | epall (existing path, all) | For **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
 | epff (existing path, first found) | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists. |
-| eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the drive with the least free space. |
-| eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the drive with the least used space. |
-| epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the drive with the most free space. |
+| eplfs (existing path, least free space) | Of all the branches on which the relative path exists choose the branch with the least free space. |
+| eplus (existing path, least used space) | Of all the branches on which the relative path exists choose the branch with the least used space. |
+| epmfs (existing path, most free space) | Of all the branches on which the relative path exists choose the branch with the most free space. |
 | eppfrd (existing path, percentage free random distribution) | Like **pfrd** but limited to existing paths.  |
 | eprand (existing path, random) | Calls **epall** and then randomizes. Returns 1. |
-| ff (first found) | Given the order of the drives, as defined at mount time or configured at runtime, act on the first one found. |
-| lfs (least free space) | Pick the drive with the least available free space. |
-| lus (least used space) | Pick the drive with the least used space. |
-| mfs (most free space) | Pick the drive with the most available free space. |
+| ff (first found) | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found. |
+| lfs (least free space) | Pick the branch with the least available free space. |
+| lus (least used space) | Pick the branch with the least used space. |
+| mfs (most free space) | Pick the branch with the most available free space. |
 | msplfs (most shared path, least free space) | Like **eplfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
 | msplus (most shared path, least used space) | Like **eplus** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
 | mspmfs (most shared path, most free space) | Like **epmfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one. |
@@ -832,7 +833,7 @@ filesystem. `rename` only works within a single filesystem or
 device. If a rename can't be done atomically due to the source and
 destination paths existing on different mount points it will return
 **-1** with **errno = EXDEV** (cross device / improper link). So if a
-`rename`'s source and target are on different drives within the pool
+`rename`'s source and target are on different filesystems within the pool
 it creates an issue.
 
 Originally mergerfs would return EXDEV whenever a rename was requested
@@ -850,25 +851,25 @@ work while still obeying mergerfs' policies. Below is the basic logic.
   * Using the **rename** policy get the list of files to rename
   * For each file attempt rename:
     * If failure with ENOENT (no such file or directory) run **create** policy
-    * If create policy returns the same drive as currently evaluating then clone the path
+    * If create policy returns the same branch as currently evaluating then clone the path
     * Re-attempt rename
   * If **any** of the renames succeed the higher level rename is considered a success
   * If **no** renames succeed the first error encountered will be returned
   * On success:
-    * Remove the target from all drives with no source file
-    * Remove the source from all drives which failed to rename
+    * Remove the target from all branches with no source file
+    * Remove the source from all branches which failed to rename
 * If using a **create** policy which does **not** try to preserve directory paths
   * Using the **rename** policy get the list of files to rename
   * Using the **getattr** policy get the target path
   * For each file attempt rename:
-    * If the source drive != target drive:
-      * Clone target path from target drive to source drive
+    * If the source branch != target branch:
+      * Clone target path from target branch to source branch
     * Rename
   * If **any** of the renames succeed the higher level rename is considered a success
   * If **no** renames succeed the first error encountered will be returned
   * On success:
-    * Remove the target from all drives with no source file
-    * Remove the source from all drives which failed to rename
+    * Remove the target from all branches with no source file
+    * Remove the source from all branches which failed to rename
 
 The the removals are subject to normal entitlement checks.
 
@@ -894,11 +895,11 @@ the source of the metadata you see in an **ls**.
 #### statfs / statvfs ####
 
 [statvfs](http://linux.die.net/man/2/statvfs) normalizes the source
-drives based on the fragment size and sums the number of adjusted
+filesystems based on the fragment size and sums the number of adjusted
 blocks and inodes. This means you will see the combined space of all
 sources. Total, used, and free. The sources however are dedupped based
-on the drive so multiple sources on the same drive will not result in
-double counting its space. Filesystems mounted further down the tree
+on the filesystem so multiple sources on the same drive will not result in
+double counting its space. Other filesystems mounted further down the tree
 of the branch will not be included when checking the mount's stats.
 
 The options `statfs` and `statfs_ignore` can be used to modify
@@ -1211,8 +1212,8 @@ following:
   * mergerfs.fsck: Provides permissions and ownership auditing and the ability to fix them
   * mergerfs.dedup: Will help identify and optionally remove duplicate files
   * mergerfs.dup: Ensure there are at least N copies of a file across the pool
-  * mergerfs.balance: Rebalance files across drives by moving them from the most filled to the least filled
-  * mergerfs.consolidate: move files within a single mergerfs directory to the drive with most free space
+  * mergerfs.balance: Rebalance files across filesystems by moving them from the most filled to the least filled
+  * mergerfs.consolidate: move files within a single mergerfs directory to the filesystem with most free space
 * https://github.com/trapexit/scorch
   * scorch: A tool to help discover silent corruption of files and keep track of files
 * https://github.com/trapexit/bbf
@@ -1324,37 +1325,18 @@ of sizes below the FUSE message size (128K on older kernels, 1M on
 newer).
 
 
-#### policy caching
-
-Policies are run every time a function (with a policy as mentioned
-above) is called. These policies can be expensive depending on
-mergerfs' setup and client usage patterns. Generally we wouldn't want
-to cache policy results because it may result in stale responses if
-the underlying drives are used directly.
-
-The `open` policy cache will cache the result of an `open` policy for
-a particular input for `cache.open` seconds or until the file is
-unlinked. Each file close (release) will randomly chose to clean up
-the cache of expired entries.
-
-This cache is really only useful in cases where you have a large
-number of branches and `open` is called on the same files repeatedly
-(like **Transmission** which opens and closes a file on every
-read/write presumably to keep file handle usage low).
-
-
 #### statfs caching
 
 Of the syscalls used by mergerfs in policies the `statfs` / `statvfs`
 call is perhaps the most expensive. It's used to find out the
-available space of a drive and whether it is mounted
+available space of a filesystem and whether it is mounted
 read-only. Depending on the setup and usage pattern these queries can
 be relatively costly. When `cache.statfs` is enabled all calls to
 `statfs` by a policy will be cached for the number of seconds its set
 to.
 
 Example: If the create policy is `mfs` and the timeout is 60 then for
-that 60 seconds the same drive will be returned as the target for
+that 60 seconds the same filesystem will be returned as the target for
 creates because the available space won't be updated for that time.
 
 
@@ -1392,42 +1374,42 @@ for instance.
 MergerFS does not natively support any sort of tiered caching. Most
 users have no use for such a feature and its inclusion would
 complicate the code. However, there are a few situations where a cache
-drive could help with a typical mergerfs setup.
+filesystem could help with a typical mergerfs setup.
 
-1. Fast network, slow drives, many readers: You've a 10+Gbps network
-   with many readers and your regular drives can't keep up.
-2. Fast network, slow drives, small'ish bursty writes: You have a
+1. Fast network, slow filesystems, many readers: You've a 10+Gbps network
+   with many readers and your regular filesystems can't keep up.
+2. Fast network, slow filesystems, small'ish bursty writes: You have a
    10+Gbps network and wish to transfer amounts of data less than your
-   cache drive but wish to do so quickly.
+   cache filesystem but wish to do so quickly.
 
 With #1 it's arguable if you should be using mergerfs at all. RAID
 would probably be the better solution. If you're going to use mergerfs
 there are other tactics that may help: spreading the data across
-drives (see the mergerfs.dup tool) and setting `func.open=rand`, using
-`symlinkify`, or using dm-cache or a similar technology to add tiered
-cache to the underlying device.
+filesystems (see the mergerfs.dup tool) and setting `func.open=rand`,
+using `symlinkify`, or using dm-cache or a similar technology to add
+tiered cache to the underlying device.
 
 With #2 one could use dm-cache as well but there is another solution
 which requires only mergerfs and a cronjob.
 
-1. Create 2 mergerfs pools. One which includes just the slow drives
-   and one which has both the fast drives (SSD,NVME,etc.) and slow
-   drives.
-2. The 'cache' pool should have the cache drives listed first.
+1. Create 2 mergerfs pools. One which includes just the slow devices
+   and one which has both the fast devices (SSD,NVME,etc.) and slow
+   devices.
+2. The 'cache' pool should have the cache filesystems listed first.
 3. The best `create` policies to use for the 'cache' pool would
    probably be `ff`, `epff`, `lfs`, or `eplfs`. The latter two under
-   the assumption that the cache drive(s) are far smaller than the
-   backing drives. If using path preserving policies remember that
+   the assumption that the cache filesystem(s) are far smaller than the
+   backing filesystems. If using path preserving policies remember that
    you'll need to manually create the core directories of those paths
    you wish to be cached. Be sure the permissions are in sync. Use
-   `mergerfs.fsck` to check / correct them. You could also tag the
-   slow drives as `=NC` though that'd mean if the cache drives fill
-   you'd get "out of space" errors.
+   `mergerfs.fsck` to check / correct them. You could also set the
+   slow filesystems mode to `NC` though that'd mean if the cache
+   filesystems fill you'd get "out of space" errors.
 4. Enable `moveonenospc` and set `minfreespace` appropriately. To make
    sure there is enough room on the "slow" pool you might want to set
    `minfreespace` to at least as large as the size of the largest
-   cache drive if not larger. This way in the worst case the whole of
-   the cache drive(s) can be moved to the other drives.
+   cache filesystem if not larger. This way in the worst case the
+   whole of the cache filesystem(s) can be moved to the other drives.
 5. Set your programs to use the cache pool.
 6. Save one of the below scripts or create you're own.
 7. Use `cron` (as root) to schedule the command at whatever frequency
@@ -1442,15 +1424,15 @@ rather than days. May want to use the `fadvise` / `--drop-cache`
 version of rsync or run rsync with the tool "nocache".
 
 *NOTE:* The arguments to these scripts include the cache
-**drive**. Not the pool with the cache drive. You could have data loss
-if the source is the cache pool.
+**filesystem** itself. Not the pool with the cache filesystem. You
+could have data loss if the source is the cache pool.
 
 
 ```
 #!/bin/bash
 
 if [ $# != 3 ]; then
-  echo "usage: $0 <cache-drive> <backing-pool> <days-old>"
+  echo "usage: $0 <cache-fs> <backing-pool> <days-old>"
   exit 1
 fi
 
@@ -1469,15 +1451,15 @@ Move the oldest file from the cache to the backing pool. Continue till
 below percentage threshold.
 
 *NOTE:* The arguments to these scripts include the cache
-**drive**. Not the pool with the cache drive. You could have data loss
-if the source is the cache pool.
+**filesystem** itself. Not the pool with the cache filesystem. You
+could have data loss if the source is the cache pool.
 
 
 ```
 #!/bin/bash
 
 if [ $# != 3 ]; then
-  echo "usage: $0 <cache-drive> <backing-pool> <percentage>"
+  echo "usage: $0 <cache-fs> <backing-pool> <percentage>"
   exit 1
 fi
 
@@ -1506,7 +1488,7 @@ FUSE filesystem working from userspace there is an increase in
 overhead relative to kernel based solutions. That said the performance
 can match the theoretical max but it depends greatly on the system's
 configuration. Especially when adding network filesystems into the mix
-there are many variables which can impact performance. Drive speeds
+there are many variables which can impact performance. Device speeds
 and latency, network speeds and latency, general concurrency,
 read/write sizes, etc. Unfortunately, given the number of variables it
 has been difficult to find a single set of settings which provide
@@ -1528,7 +1510,7 @@ understand what behaviors it may impact
 * disable `async_read`
 * test theoretical performance using `nullrw` or mounting a ram disk
 * use `symlinkify` if your data is largely static and read-only
-* use tiered cache drives
+* use tiered cache devices
 * use LVM and LVM cache to place a SSD in front of your HDDs
 * increase readahead: `readahead=1024`
 
@@ -1567,9 +1549,9 @@ the order listed (but not combined).
 2. Mount mergerfs over `tmpfs`. `tmpfs` is a RAM disk. Extremely high
    speed and very low latency. This is a more realistic best case
    scenario. Example: `mount -t tmpfs -o size=2G tmpfs /tmp/tmpfs`
-3. Mount mergerfs over a local drive. NVMe, SSD, HDD, etc. If you have
-   more than one I'd suggest testing each of them as drives and/or
-   controllers (their drivers) could impact performance.
+3. Mount mergerfs over a local device. NVMe, SSD, HDD, etc. If you
+   have more than one I'd suggest testing each of them as drives
+   and/or controllers (their drivers) could impact performance.
 4. Finally, if you intend to use mergerfs with a network filesystem,
    either as the source of data or to combine with another through
    mergerfs, test each of those alone as above.
@@ -1579,7 +1561,7 @@ further testing with different options to see if they impact
 performance. For reads and writes the most relevant would be:
 `cache.files`, `async_read`. Less likely but relevant when using NFS
 or with certain filesystems would be `security_capability`, `xattr`,
-and `posix_acl`. If you find a specific system, drive, filesystem,
+and `posix_acl`. If you find a specific system, device, filesystem,
 controller, etc. that performs poorly contact trapexit so he may
 investigate further.
 
@@ -1632,7 +1614,7 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 * If you don't see some directories and files you expect, policies
   seem to skip branches, you get strange permission errors, etc. be
   sure the underlying filesystems' permissions are all the same. Use
-  `mergerfs.fsck` to audit the drive for out of sync permissions.
+  `mergerfs.fsck` to audit the filesystem for out of sync permissions.
 * If you still have permission issues be sure you are using POSIX ACL
   compliant filesystems. mergerfs doesn't generally make exceptions
   for FAT, NTFS, or other non-POSIX filesystem.
@@ -1684,7 +1666,7 @@ outdated.
 The reason this is the default is because any other policy would be
 more expensive and for many applications it is unnecessary. To always
 return the directory with the most recent mtime or a faked value based
-on all found would require a scan of all drives.
+on all found would require a scan of all filesystems.
 
 If you always want the directory information from the one with the
 most recent mtime then use the `newest` policy for `getattr`.
@@ -1709,9 +1691,9 @@ then removing the source. Since the source **is** the target in this
 case, depending on the unlink policy, it will remove the just copied
 file and other files across the branches.
 
-If you want to move files to one drive just copy them there and use
-mergerfs.dedup to clean up the old paths or manually remove them from
-the branches directly.
+If you want to move files to one filesystem just copy them there and
+use mergerfs.dedup to clean up the old paths or manually remove them
+from the branches directly.
 
 
 #### cached memory appears greater than it should be
@@ -1772,15 +1754,14 @@ Please read the section above regarding [rename & link](#rename--link).
 
 The problem is that many applications do not properly handle `EXDEV`
 errors which `rename` and `link` may return even though they are
-perfectly valid situations which do not indicate actual drive or OS
-errors. The error will only be returned by mergerfs if using a path
-preserving policy as described in the policy section above. If you do
-not care about path preservation simply change the mergerfs policy to
-the non-path preserving version. For example: `-o category.create=mfs`
-
-Ideally the offending software would be fixed and it is recommended
-that if you run into this problem you contact the software's author
-and request proper handling of `EXDEV` errors.
+perfectly valid situations which do not indicate actual device,
+filesystem, or OS errors. The error will only be returned by mergerfs
+if using a path preserving policy as described in the policy section
+above. If you do not care about path preservation simply change the
+mergerfs policy to the non-path preserving version. For example: `-o
+category.create=mfs` Ideally the offending software would be fixed and
+it is recommended that if you run into this problem you contact the
+software's author and request proper handling of `EXDEV` errors.
 
 
 #### my 32bit software has problems
@@ -1887,9 +1868,10 @@ Users have reported running mergerfs on everything from a Raspberry Pi
 to dual socket Xeon systems with >20 cores. I'm aware of at least a
 few companies which use mergerfs in production. [Open Media
 Vault](https://www.openmediavault.org) includes mergerfs as its sole
-solution for pooling drives. The author of mergerfs had it running for
-over 300 days managing 16+ drives with reasonably heavy 24/7 read and
-write usage. Stopping only after the machine's power supply died.
+solution for pooling filesystems. The author of mergerfs had it
+running for over 300 days managing 16+ devices with reasonably heavy
+24/7 read and write usage. Stopping only after the machine's power
+supply died.
 
 Most serious issues (crashes or data corruption) have been due to
 [kernel
@@ -1897,14 +1879,14 @@ bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs). All
 of which are fixed in stable releases.
 
 
-#### Can mergerfs be used with drives which already have data / are in use?
+#### Can mergerfs be used with filesystems which already have data / are in use?
 
 Yes. MergerFS is a proxy and does **NOT** interfere with the normal
-form or function of the drives / mounts / paths it manages.
+form or function of the filesystems / mounts / paths it manages.
 
 MergerFS is **not** a traditional filesystem. MergerFS is **not**
 RAID. It does **not** manipulate the data that passes through it. It
-does **not** shard data across drives. It merely shards some
+does **not** shard data across filesystems. It merely shards some
 **behavior** and aggregates others.
 
 
@@ -1920,8 +1902,8 @@ best off using `mfs` for `category.create`. It will spread files out
 across your branches based on available space. Use `mspmfs` if you
 want to try to colocate the data a bit more. You may want to use `lus`
 if you prefer a slightly different distribution of data if you have a
-mix of smaller and larger drives. Generally though `mfs`, `lus`, or
-even `rand` are good for the general use case. If you are starting
+mix of smaller and larger filesystems. Generally though `mfs`, `lus`,
+or even `rand` are good for the general use case. If you are starting
 with an imbalanced pool you can use the tool **mergerfs.balance** to
 redistribute files across the pool.
 
@@ -1929,8 +1911,8 @@ If you really wish to try to colocate files based on directory you can
 set `func.create` to `epmfs` or similar and `func.mkdir` to `rand` or
 `eprand` depending on if you just want to colocate generally or on
 specific branches. Either way the *need* to colocate is rare. For
-instance: if you wish to remove the drive regularly and want the data
-to predictably be on that drive or if you don't use backup at all and
+instance: if you wish to remove the device regularly and want the data
+to predictably be on that device or if you don't use backup at all and
 don't wish to replace that data piecemeal. In which case using path
 preservation can help but will require some manual
 attention. Colocating after the fact can be accomplished using the
@@ -1965,29 +1947,29 @@ That said, for the average person, the following should be fine:
 `cache.files=off,dropcacheonclose=true,category.create=mfs`
 
 
-#### Why are all my files ending up on 1 drive?!
+#### Why are all my files ending up on 1 filesystem?!
 
-Did you start with empty drives? Did you explicitly configure a
+Did you start with empty filesystems? Did you explicitly configure a
 `category.create` policy? Are you using an `existing path` / `path
 preserving` policy?
 
 The default create policy is `epmfs`. That is a path preserving
 algorithm. With such a policy for `mkdir` and `create` with a set of
-empty drives it will select only 1 drive when the first directory is
-created. Anything, files or directories, created in that first
-directory will be placed on the same branch because it is preserving
-paths.
+empty filesystems it will select only 1 filesystem when the first
+directory is created. Anything, files or directories, created in that
+first directory will be placed on the same branch because it is
+preserving paths.
 
 This catches a lot of new users off guard but changing the default
 would break the setup for many existing users. If you do not care
 about path preservation and wish your files to be spread across all
-your drives change to `mfs` or similar policy as described above. If
-you do want path preservation you'll need to perform the manual act of
-creating paths on the drives you want the data to land on before
-transferring your data. Setting `func.mkdir=epall` can simplify
-managing path preservation for `create`. Or use `func.mkdir=rand` if
-you're interested in just grouping together directory content by
-drive.
+your filesystems change to `mfs` or similar policy as described
+above. If you do want path preservation you'll need to perform the
+manual act of creating paths on the filesystems you want the data to
+land on before transferring your data. Setting `func.mkdir=epall` can
+simplify managing path preservation for `create`. Or use
+`func.mkdir=rand` if you're interested in just grouping together
+directory content by filesystem.
 
 
 #### Do hardlinks work?
@@ -2058,8 +2040,8 @@ such, mergerfs always changes its credentials to that of the
 caller. This means that if the user does not have access to a file or
 directory than neither will mergerfs. However, because mergerfs is
 creating a union of paths it may be able to read some files and
-directories on one drive but not another resulting in an incomplete
-set.
+directories on one filesystem but not another resulting in an
+incomplete set.
 
 Whenever you run into a split permission issue (seeing some but not
 all files) try using
@@ -2153,9 +2135,10 @@ overlayfs have.
 #### Why use mergerfs over unionfs?
 
 UnionFS is more like aufs than mergerfs in that it offers overlay /
-CoW features. If you're just looking to create a union of drives and
-want flexibility in file/directory placement then mergerfs offers that
-whereas unionfs is more for overlaying RW filesystems over RO ones.
+CoW features. If you're just looking to create a union of filesystems
+and want flexibility in file/directory placement then mergerfs offers
+that whereas unionfs is more for overlaying RW filesystems over RO
+ones.
 
 
 #### Why use mergerfs over overlayfs?
@@ -2179,8 +2162,8 @@ without the single point of failure.
 #### Why use mergerfs over ZFS?
 
 MergerFS is not intended to be a replacement for ZFS. MergerFS is
-intended to provide flexible pooling of arbitrary drives (local or
-remote), of arbitrary sizes, and arbitrary filesystems. For `write
+intended to provide flexible pooling of arbitrary filesystems (local
+or remote), of arbitrary sizes, and arbitrary filesystems. For `write
 once, read many` usecases such as bulk media storage. Where data
 integrity and backup is managed in other ways. In that situation ZFS
 can introduce a number of costs and limitations as described
@@ -2200,6 +2183,29 @@ There are a number of UnRAID users who use mergerfs as well though I'm
 not entirely familiar with the use case.
 
 
+#### Why use mergerfs over StableBit's DrivePool?
+
+DrivePool works only on Windows so not as common an alternative as
+other Linux solutions. If you want to use Windows then DrivePool is a
+good option. Functionally the two projects work a bit
+differently. DrivePool always writes to the filesystem with the most
+free space and later rebalances. mergerfs does not offer rebalance but
+chooses a branch at file/directory create time. DrivePool's
+rebalancing can be done differently in any directory and has file
+pattern matching to further customize the behavior. mergerfs, not
+having rebalancing does not have these features, but similar features
+are planned for mergerfs v3. DrivePool has builtin file duplication
+which mergerfs does not natively support (but can be done via an
+external script.)
+
+There are a lot of misc differences between the two projects but most
+features in DrivePool can be replicated with external tools in
+combination with mergerfs.
+
+Additionally DrivePool is a closed source commercial product vs
+mergerfs a ISC licensed OSS project.
+
+
 #### What should mergerfs NOT be used for?
 
 * databases: Even if the database stored data in separate files
@@ -2214,7 +2220,7 @@ not entirely familiar with the use case.
   availability you should stick with RAID.
 
 
-#### Can drives be written to directly? Outside of mergerfs while pooled?
+#### Can filesystems be written to directly? Outside of mergerfs while pooled?
 
 Yes, however it's not recommended to use the same file from within the
 pool and from without at the same time (particularly
@@ -2244,7 +2250,7 @@ was asked of it: filtering possible branches due to those
 settings. Only one error can be returned and if one of the reasons for
 filtering a branch was **minfreespace** then it will be returned as
 such. **moveonenospc** is only relevant to writing a file which is too
-large for the drive its currently on.
+large for the filesystem it's currently on.
 
 It is also possible that the filesystem selected has run out of
 inodes. Use `df -i` to list the total and available inodes per
@@ -2336,7 +2342,8 @@ away by using realtime signals to inform all threads to change
 credentials. Taking after **Samba**, mergerfs uses
 **syscall(SYS_setreuid,...)** to set the callers credentials for that
 thread only. Jumping back to **root** as necessary should escalated
-privileges be needed (for instance: to clone paths between drives).
+privileges be needed (for instance: to clone paths between
+filesystems).
 
 For non-Linux systems mergerfs uses a read-write lock and changes
 credentials only when necessary. If multiple threads are to be user X
