@@ -1427,22 +1427,7 @@ version of rsync or run rsync with the tool "nocache".
 **filesystem** itself. Not the pool with the cache filesystem. You
 could have data loss if the source is the cache pool.
 
-
-```
-#!/bin/bash
-
-if [ $# != 3 ]; then
-  echo "usage: $0 <cache-fs> <backing-pool> <days-old>"
-  exit 1
-fi
-
-CACHE="${1}"
-BACKING="${2}"
-N=${3}
-
-find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
-  rsync --files-from=- -axqHAXWES --preallocate --remove-source-files "${CACHE}/" "${BACKING}/"
-```
+[mergerfs.time-based-mover](tools/mergerfs.time-based-mover?raw=1 "download")
 
 
 ##### percentage full expiring
@@ -1454,30 +1439,7 @@ below percentage threshold.
 **filesystem** itself. Not the pool with the cache filesystem. You
 could have data loss if the source is the cache pool.
 
-
-```
-#!/bin/bash
-
-if [ $# != 3 ]; then
-  echo "usage: $0 <cache-fs> <backing-pool> <percentage>"
-  exit 1
-fi
-
-CACHE="${1}"
-BACKING="${2}"
-PERCENTAGE=${3}
-
-set -o errexit
-while [ $(df --output=pcent "${CACHE}" | grep -v Use | cut -d'%' -f1) -gt ${PERCENTAGE} ]
-do
-    FILE=$(find "${CACHE}" -type f -printf '%A@ %P\n' | \
-                  sort | \
-                  head -n 1 | \
-                  cut -d' ' -f2-)
-    test -n "${FILE}"
-    rsync -axqHAXWESR --preallocate --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
-done
-```
+[mergerfs.percent-full-mover](tools/percent-full-mover?raw=1)
 
 
 # PERFORMANCE
