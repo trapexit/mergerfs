@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+if [ $# != 3 ]; then
+  echo "usage: $0 <cache-fs> <backing-pool> <days-old>"
+  exit 1
+fi
+
+CACHE="${1}"
+BACKING="${2}"
+N=${3}
+
+find "${CACHE}" -type f -atime +${N} -printf '%P\n' | \
+  rsync --files-from=- -axqHAXWES --preallocate --remove-source-files "${CACHE}/" "${BACKING}/"
