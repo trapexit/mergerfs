@@ -82,6 +82,7 @@ set_fuse_threads(Config::Write &cfg_,
 {
   set_kv_option("read-thread-count",cfg_->fuse_read_thread_count.to_string(),args_);
   set_kv_option("process-thread-count",cfg_->fuse_process_thread_count.to_string(),args_);
+  set_kv_option("pin-threads",cfg_->fuse_pin_threads.to_string(),args_);
 }
 
 static
@@ -135,7 +136,7 @@ should_ignore(const std::string &key_)
       "splice_move",
       "splice_read",
       "splice_write",
-      "use_ino"
+      "use_ino",
     };
 
   return (IGNORED_KEYS.find(key_) != IGNORED_KEYS.end());
@@ -431,5 +432,7 @@ namespace options
     set_fsname(cfg,args_);
     set_subtype(args_);
     set_fuse_threads(cfg,args_);
+
+    cfg->finish_initializing();
   }
 }
