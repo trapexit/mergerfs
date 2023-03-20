@@ -1427,7 +1427,7 @@ version of rsync or run rsync with the tool "nocache".
 **filesystem** itself. Not the pool with the cache filesystem. You
 could have data loss if the source is the cache pool.
 
-[mergerfs.time-based-mover](tools/mergerfs.time-based-mover?raw=1 "download")
+[mergerfs.time-based-mover](tools/mergerfs.time-based-mover?raw=1)
 
 
 ##### percentage full expiring
@@ -1439,7 +1439,7 @@ below percentage threshold.
 **filesystem** itself. Not the pool with the cache filesystem. You
 could have data loss if the source is the cache pool.
 
-[mergerfs.percent-full-mover](tools/percent-full-mover?raw=1)
+[mergerfs.percent-full-mover](tools/mergerfs.percent-full-mover?raw=1)
 
 
 # PERFORMANCE
