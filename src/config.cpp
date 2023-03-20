@@ -63,10 +63,13 @@ namespace l
     IFERT("mount");
     IFERT("nullrw");
     IFERT("pid");
+    IFERT("pin-threads");
+    IFERT("process-thread-count");
+    IFERT("read-thread-count");
     IFERT("readdirplus");
+    IFERT("scheduling-priority");
     IFERT("threads");
     IFERT("version");
-    IFERT("scheduling-priority");
 
     return false;
   }
@@ -118,9 +121,11 @@ Config::Config()
     symlinkify_timeout(3600),
     fuse_read_thread_count(-1),
     fuse_process_thread_count(-1),
+    fuse_pin_threads("false"),
     version(MERGERFS_VERSION),
     writeback_cache(false),
-    xattr(XAttr::ENUM::PASSTHROUGH)
+    xattr(XAttr::ENUM::PASSTHROUGH),
+    _initialized(false)
 {
   _map["async_read"]             = &async_read;
   _map["auto_cache"]             = &auto_cache;
@@ -176,6 +181,7 @@ Config::Config()
   _map["nfsopenhack"]            = &nfsopenhack;
   _map["nullrw"]                 = &nullrw;
   _map["pid"]                    = &pid;
+  _map["pin-threads"]            = &fuse_pin_threads;
   _map["posix_acl"]              = &posix_acl;
   _map["readahead"]              = &readahead;
   //  _map["readdir"]            = &readdir;
@@ -287,7 +293,7 @@ int
 Config::set(const std::string &key_,
             const std::string &value_)
 {
-  if(l::readonly(key_))
+  if(_initialized && l::readonly(key_))
     return -EROFS;
 
   return set_raw(key_,value_);
@@ -360,6 +366,12 @@ Config::from_file(const std::string &filepath_,
   ifstrm.close();
 
   return rv;
+}
+
+void
+Config::finish_initializing()
+{
+  _initialized = true;
 }
 
 std::ostream&

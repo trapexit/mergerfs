@@ -146,10 +146,17 @@ public:
   ConfigUINT64   symlinkify_timeout;
   ConfigINT      fuse_read_thread_count;
   ConfigINT      fuse_process_thread_count;
+  ConfigSTR      fuse_pin_threads;
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;
   XAttr          xattr;
 
+
+private:
+  bool _initialized;
+
+public:
+  void finish_initializing();
 
 public:
   friend std::ostream& operator<<(std::ostream &s,
