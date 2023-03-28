@@ -188,6 +188,9 @@ namespace l
       branch.set_minfreespace(minfreespace.value());
 
     fs::glob(glob,&paths);
+    if(paths.empty())
+      paths.push_back(glob);
+
     fs::realpathize(&paths);
     for(auto &path : paths)
       {

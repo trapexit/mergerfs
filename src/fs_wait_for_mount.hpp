@@ -29,22 +29,8 @@
 
 namespace fs
 {
-  typedef std::vector<ghc::filesystem::path> PathVector;
-
-  bool
-  wait_for_mount(const struct stat               &st,
-                 const ghc::filesystem::path     &tgtpath,
+  void
+  wait_for_mount(const fs::Path                  &srcpath,
+                 const fs::PathVector            &tgtpaths,
                  const std::chrono::milliseconds &timeout);
-
-  void
-  wait_for_mount(const struct stat               &st,
-                 const fs::PathVector            &tgtpaths,
-                 const std::chrono::milliseconds &timeout,
-                 fs::PathVector                  &failed_paths);
-
-  void
-  wait_for_mount(const ghc::filesystem::path     &srcpath,
-                 const fs::PathVector            &tgtpaths,
-                 const std::chrono::milliseconds &timeout,
-                 fs::PathVector                  &failed_paths);
 }

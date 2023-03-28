@@ -156,7 +156,6 @@ namespace l
   wait_for_mount(const Config::Read &cfg_)
   {
     fs::PathVector paths;
-    fs::PathVector failed;
     std::chrono::milliseconds timeout;
 
     paths = cfg_->branches->to_paths();
@@ -167,15 +166,7 @@ namespace l
     timeout = std::chrono::milliseconds(cfg_->branches_mount_timeout * 1000);
     fs::wait_for_mount((std::string)cfg_->mountpoint,
                        paths,
-                       timeout,
-                       failed);
-    for(auto &path : failed)
-      syslog_warning("Branch %s was not mounted within timeout",
-                     path.c_str());
-    if(failed.size())
-      syslog_warning("Continuing to mount mergerfs despite %u branches not "
-                     "being different from the mountpoint filesystem",
-                     failed.size());
+                       timeout);
   }
 
   static
