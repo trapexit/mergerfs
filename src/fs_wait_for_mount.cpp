@@ -19,6 +19,7 @@
 #include "fs_wait_for_mount.hpp"
 #include "syslog.hpp"
 
+#include <functional>
 #include <thread>
 #include <unordered_set>
 
@@ -30,15 +31,18 @@ namespace fs
 
 constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(333);
 
-template<>
-struct std::hash<fs::Path>
+namespace std
 {
-  std::size_t
-  operator()(fs::Path const &path_) const noexcept
+  template<>
+  struct hash<fs::Path>
   {
-    return std::hash<std::string>{}(path_.string());
-  }
-};
+    std::size_t
+    operator()(fs::Path const &path_) const noexcept
+    {
+      return std::hash<std::string>{}(path_.string());
+    }
+  };
+}
 
 static
 void

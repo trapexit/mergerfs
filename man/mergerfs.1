@@ -1866,24 +1866,8 @@ of rsync or run rsync with the tool \[lq]nocache\[rq].
 \f[B]filesystem\f[R] itself.
 Not the pool with the cache filesystem.
 You could have data loss if the source is the cache pool.
-.IP
-.nf
-\f[C]
-#!/bin/bash
-
-if [ $# != 3 ]; then
-  echo \[dq]usage: $0 <cache-fs> <backing-pool> <days-old>\[dq]
-  exit 1
-fi
-
-CACHE=\[dq]${1}\[dq]
-BACKING=\[dq]${2}\[dq]
-N=${3}
-
-find \[dq]${CACHE}\[dq] -type f -atime +${N} -printf \[aq]%P\[rs]n\[aq] | \[rs]
-  rsync --files-from=- -axqHAXWES --preallocate --remove-source-files \[dq]${CACHE}/\[dq] \[dq]${BACKING}/\[dq]
-\f[R]
-.fi
+.PP
+mergerfs.time-based-mover
 .SS percentage full expiring
 .PP
 Move the oldest file from the cache to the backing pool.
@@ -1893,32 +1877,8 @@ Continue till below percentage threshold.
 \f[B]filesystem\f[R] itself.
 Not the pool with the cache filesystem.
 You could have data loss if the source is the cache pool.
-.IP
-.nf
-\f[C]
-#!/bin/bash
-
-if [ $# != 3 ]; then
-  echo \[dq]usage: $0 <cache-fs> <backing-pool> <percentage>\[dq]
-  exit 1
-fi
-
-CACHE=\[dq]${1}\[dq]
-BACKING=\[dq]${2}\[dq]
-PERCENTAGE=${3}
-
-set -o errexit
-while [ $(df --output=pcent \[dq]${CACHE}\[dq] | grep -v Use | cut -d\[aq]%\[aq] -f1) -gt ${PERCENTAGE} ]
-do
-    FILE=$(find \[dq]${CACHE}\[dq] -type f -printf \[aq]%A\[at] %P\[rs]n\[aq] | \[rs]
-                  sort | \[rs]
-                  head -n 1 | \[rs]
-                  cut -d\[aq] \[aq] -f2-)
-    test -n \[dq]${FILE}\[dq]
-    rsync -axqHAXWESR --preallocate --remove-source-files \[dq]${CACHE}/./${FILE}\[dq] \[dq]${BACKING}/\[dq]
-done
-\f[R]
-.fi
+.PP
+mergerfs.percent-full-mover
 .SH PERFORMANCE
 .PP
 mergerfs is at its core just a proxy and therefore its theoretical max
