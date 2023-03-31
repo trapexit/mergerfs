@@ -119,7 +119,7 @@ Config::Config()
     statfs_ignore(StatFSIgnore::ENUM::NONE),
     symlinkify(false),
     symlinkify_timeout(3600),
-    fuse_read_thread_count(-1),
+    fuse_read_thread_count(0),
     fuse_process_thread_count(-1),
     fuse_pin_threads("false"),
     version(MERGERFS_VERSION),
