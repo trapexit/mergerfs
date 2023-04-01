@@ -289,8 +289,6 @@ These options are the same regardless of whether you use them with the
   `async_read=true` instead.
 * **sync_read**: deprecated - Perform reads synchronously. Use
   `async_read=false` instead.
-* **use_ino**: deprecated - Always enabled.
-* **allow_other**: deprecated - Always enabled.
 * **splice_read**: deprecated - Does nothing.
 * **splice_write**: deprecated - Does nothing.
 * **splice_move**: deprecated - Does nothing.
