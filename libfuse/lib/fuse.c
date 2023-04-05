@@ -178,7 +178,6 @@ struct node
   struct lock *locks;
 
   uint32_t stat_crc32b;
-  uint8_t is_hidden:1;
   uint8_t is_stat_cache_valid:1;
 };
 
@@ -407,7 +406,7 @@ free_node(struct fuse *f_,
 {
   filename_free(f_,node_->name);
 
-  if(node_->is_hidden)
+  if(node_->hidden_fh)
     f_->fs->op.free_hide(node_->hidden_fh);
 
   free_node_mem(f_,node_);
@@ -1715,7 +1714,7 @@ fuse_lib_getattr(fuse_req_t             req,
     {
       pthread_mutex_lock(&f->lock);
       node = get_node(f,hdr_->nodeid);
-      if(node->is_hidden)
+      if(node->hidden_fh)
         ffi.fh = node->hidden_fh;
       pthread_mutex_unlock(&f->lock);
     }
@@ -1778,7 +1777,7 @@ fuse_lib_setattr(fuse_req_t             req,
     {
       pthread_mutex_lock(&f->lock);
       node = get_node(f,hdr_->nodeid);
-      if(node->is_hidden)
+      if(node->hidden_fh)
         {
           fi = &ffi;
           fi->fh = node->hidden_fh;
@@ -2031,11 +2030,7 @@ fuse_lib_unlink(fuse_req_t             req,
     {
       pthread_mutex_lock(&f->lock);
       if(node_open(wnode))
-        {
-          err = f->fs->op.prepare_hide(path,&wnode->hidden_fh);
-          if(!err)
-            wnode->is_hidden = 1;
-        }
+        err = f->fs->op.prepare_hide(path,&wnode->hidden_fh);
       pthread_mutex_unlock(&f->lock);
 
       err = f->fs->op.unlink(path);
@@ -2131,11 +2126,7 @@ fuse_lib_rename(fuse_req_t             req,
     {
       pthread_mutex_lock(&f->lock);
       if(node_open(wnode2))
-        {
-          err = f->fs->op.prepare_hide(newpath,&wnode2->hidden_fh);
-          if(!err)
-            wnode2->is_hidden = 1;
-        }
+        err = f->fs->op.prepare_hide(newpath,&wnode2->hidden_fh);
       pthread_mutex_unlock(&f->lock);
 
       err = f->fs->op.rename(oldpath,newpath);
@@ -2187,27 +2178,28 @@ fuse_do_release(struct fuse      *f,
                 uint64_t          ino,
                 fuse_file_info_t *fi)
 {
-  struct node *node;
   uint64_t fh;
-  int was_hidden;
+  struct node *node;
 
   fh = 0;
+
   f->fs->op.release(fi);
 
   pthread_mutex_lock(&f->lock);
-  node = get_node(f,ino);
-  assert(node->open_count > 0);
-  node->open_count--;
-  was_hidden = 0;
-  if(node->is_hidden && (node->open_count == 0))
-    {
-      was_hidden = 1;
-      node->is_hidden = 0;
-      fh = node->hidden_fh;
-    }
+  {
+    node = get_node(f,ino);
+    assert(node->open_count > 0);
+    node->open_count--;
+
+    if(node->hidden_fh && (node->open_count == 0))
+      {
+        fh = node->hidden_fh;
+        node->hidden_fh = 0;
+      }
+  }
   pthread_mutex_unlock(&f->lock);
 
-  if(was_hidden)
+  if(fh)
     f->fs->op.free_hide(fh);
 }
 
@@ -3975,8 +3967,11 @@ fuse_destroy(struct fuse *f)
 
           for(node = f->id_table.array[i]; node != NULL; node = node->id_next)
             {
-              if(node->is_hidden)
-                f->fs->op.free_hide(node->hidden_fh);
+              if(!node->hidden_fh)
+                continue;
+
+              f->fs->op.free_hide(node->hidden_fh);
+              node->hidden_fh = 0;
             }
         }
     }
