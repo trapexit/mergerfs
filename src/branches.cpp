@@ -424,7 +424,8 @@ SrcMounts::SrcMounts(Branches &b_)
 int
 SrcMounts::from_string(const std::string &s_)
 {
-  return _branches.from_string(s_);
+  //  return _branches.from_string(s_);
+  return 0;
 }
 
 std::string
