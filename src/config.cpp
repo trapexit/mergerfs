@@ -68,6 +68,7 @@ namespace l
     IFERT("read-thread-count");
     IFERT("readdirplus");
     IFERT("scheduling-priority");
+    IFERT("srcmounts");
     IFERT("threads");
     IFERT("version");
 
