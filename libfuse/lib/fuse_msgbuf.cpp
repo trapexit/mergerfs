@@ -24,13 +24,17 @@
 #include <cstdlib>
 #include <mutex>
 #include <vector>
+#include <unordered_set>
+#include <atomic>
 
 
-static std::uint32_t g_PAGESIZE = 0;
-static std::uint32_t g_BUFSIZE  = 0;
+static std::uint32_t    g_PAGESIZE      = 0;
+static std::uint32_t    g_BUFSIZE       = 0;
+//static std::atomic_uint g_TOTAL_ALLOCED;
 
 static std::mutex g_MUTEX;
 static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
+static std::unordered_set<fuse_msgbuf_t*> g_MSGBUF_ALLOCED;
 
 static
 __attribute__((constructor))
@@ -79,8 +83,8 @@ page_aligned_malloc(const uint64_t size_)
 fuse_msgbuf_t*
 msgbuf_alloc()
 {
-  std::lock_guard<std::mutex> lck(g_MUTEX);
   fuse_msgbuf_t *msgbuf;
+  std::lock_guard<std::mutex> lck(g_MUTEX);
 
   if(g_MSGBUF_STACK.empty())
     {
@@ -96,6 +100,8 @@ msgbuf_alloc()
         }
 
       msgbuf->size = g_BUFSIZE;
+
+      g_MSGBUF_ALLOCED.emplace(msgbuf);
     }
   else
     {
@@ -113,6 +119,7 @@ msgbuf_free(fuse_msgbuf_t *msgbuf_)
 
   if(msgbuf_->size != g_BUFSIZE)
     {
+      g_MSGBUF_ALLOCED.erase(msgbuf_);
       free(msgbuf_->mem);
       free(msgbuf_);
       return;
@@ -124,9 +131,7 @@ msgbuf_free(fuse_msgbuf_t *msgbuf_)
 uint64_t
 msgbuf_alloc_count()
 {
-  std::lock_guard<std::mutex> lck(g_MUTEX);
-
-  return g_MSGBUF_STACK.size();
+  return g_MSGBUF_ALLOCED.size();
 }
 
 void
@@ -141,6 +146,7 @@ msgbuf_gc()
 
   for(auto msgbuf: oldstack)
     {
+      g_MSGBUF_ALLOCED.erase(msgbuf);
       free(msgbuf->mem);
       free(msgbuf);
     }
