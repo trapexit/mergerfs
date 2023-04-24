@@ -3829,7 +3829,7 @@ fuse_maintenance_loop(void *fuse_)
       if(!f->conf.nogc && gc)
         {
           gc = lfmp_gc(&f->node_fmp);
-          msgbuf_gc();
+          //          msgbuf_gc();
         }
 
       if(g_LOG_METRICS)

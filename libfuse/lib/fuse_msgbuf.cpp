@@ -23,14 +23,14 @@
 #include <cstdint>
 #include <cstdlib>
 #include <mutex>
-#include <stack>
+#include <vector>
 
 
 static std::uint32_t g_PAGESIZE = 0;
 static std::uint32_t g_BUFSIZE  = 0;
 
 static std::mutex g_MUTEX;
-static std::stack<fuse_msgbuf_t*> g_MSGBUF_STACK;
+static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
 
 static
 __attribute__((constructor))
@@ -38,6 +38,7 @@ void
 msgbuf_constructor()
 {
   g_PAGESIZE = sysconf(_SC_PAGESIZE);
+  // +2 because to do O_DIRECT we need to offset the buffer to align
   g_BUFSIZE  = (g_PAGESIZE * (FUSE_MAX_MAX_PAGES + 2));
 }
 
@@ -98,8 +99,8 @@ msgbuf_alloc()
     }
   else
     {
-      msgbuf = g_MSGBUF_STACK.top();
-      g_MSGBUF_STACK.pop();
+      msgbuf = g_MSGBUF_STACK.back();
+      g_MSGBUF_STACK.pop_back();
     }
 
   return msgbuf;
@@ -117,7 +118,7 @@ msgbuf_free(fuse_msgbuf_t *msgbuf_)
       return;
     }
 
-  g_MSGBUF_STACK.push(msgbuf_);
+  g_MSGBUF_STACK.emplace_back(msgbuf_);
 }
 
 uint64_t
@@ -131,15 +132,15 @@ msgbuf_alloc_count()
 void
 msgbuf_gc()
 {
-  std::lock_guard<std::mutex> lck(g_MUTEX);
+  std::vector<fuse_msgbuf_t*> oldstack;
 
-  while(!g_MSGBUF_STACK.empty())
+  {
+    std::lock_guard<std::mutex> lck(g_MUTEX);
+    oldstack.swap(g_MSGBUF_STACK);
+  }
+
+  for(auto msgbuf: oldstack)
     {
-      fuse_msgbuf_t *msgbuf;
-
-      msgbuf = g_MSGBUF_STACK.top();
-      g_MSGBUF_STACK.pop();
-
       free(msgbuf->mem);
       free(msgbuf);
     }
