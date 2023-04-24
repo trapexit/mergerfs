@@ -1,7 +1,9 @@
 #pragma once
 
-#include "unbounded_queue.hpp"
 #include "bounded_queue.hpp"
+#include "make_unique.hpp"
+
+#include <signal.h>
 
 #include <tuple>
 #include <atomic>
@@ -14,14 +16,23 @@
 #include <type_traits>
 
 
-class ThreadPool
+class BoundedThreadPool
 {
+private:
+  using Proc   = std::function<void(void)>;
+  using Queue  = BoundedQueue<Proc>;
+  using Queues = std::vector<std::unique_ptr<Queue>>;
+
 public:
   explicit
-  ThreadPool(const std::size_t thread_count_ = std::thread::hardware_concurrency())
-    : _queues(thread_count_),
+  BoundedThreadPool(const std::size_t thread_count_ = std::thread::hardware_concurrency(),
+                    const std::size_t queue_depth_  = 1)
+    : _queues(),
       _count(thread_count_)
   {
+    for(std::size_t i = 0; i < thread_count_; i++)
+      _queues.emplace_back(std::make_unique<Queue>(queue_depth_));
+
     auto worker = [this](std::size_t i)
     {
       while(true)
@@ -30,27 +41,37 @@ public:
 
           for(std::size_t n = 0; n < (_count * K); ++n)
             {
-              if(_queues[(i + n) % _count].try_pop(f))
+              if(_queues[(i + n) % _count]->pop(f))
                 break;
             }
 
-          if(!f && !_queues[i].pop(f))
+          if(!f && !_queues[i]->pop(f))
             break;
 
           f();
         }
     };
 
+    sigset_t oldset;
+    sigset_t newset;
+
+    sigfillset(&newset);
+    pthread_sigmask(SIG_BLOCK,&newset,&oldset);
+
     _threads.reserve(thread_count_);
     for(std::size_t i = 0; i < thread_count_; ++i)
       _threads.emplace_back(worker, i);
+
+    pthread_sigmask(SIG_SETMASK,&oldset,NULL);
   }
 
-  ~ThreadPool()
+  ~BoundedThreadPool()
   {
-    for(auto& queue : _queues)
-      queue.unblock();
-    for(auto& thread : _threads)
+    for(auto &queue : _queues)
+      queue->unblock();
+    for(auto &thread : _threads)
+      pthread_cancel(thread.native_handle());
+    for(auto &thread : _threads)
       thread.join();
   }
 
@@ -62,11 +83,11 @@ public:
 
     for(std::size_t n = 0; n < (_count * K); ++n)
       {
-        if(_queues[(i + n) % _count].try_push(f_))
+        if(_queues[(i + n) % _count]->push(f_))
           return;
       }
 
-    _queues[i % _count].push(std::move(f_));
+    _queues[i % _count]->push(std::move(f_));
   }
 
   template<typename F>
@@ -87,11 +108,11 @@ public:
 
     for(std::size_t n = 0; n < (_count * K); ++n)
       {
-        if(_queues[(i + n) % _count].try_push(work))
+        if(_queues[(i + n) % _count]->push(work))
           return future;
       }
 
-    _queues[i % _count].push(std::move(work));
+    _queues[i % _count]->push(std::move(work));
 
     return future;
   }
@@ -109,9 +130,6 @@ public:
   }
 
 private:
-  using Proc   = std::function<void(void)>;
-  using Queue  = UnboundedQueue<Proc>;
-  using Queues = std::vector<Queue>;
   Queues _queues;
 
 private:

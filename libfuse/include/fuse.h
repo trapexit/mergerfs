@@ -629,6 +629,7 @@ void fuse_exit(struct fuse *f);
 
 int fuse_config_read_thread_count(const struct fuse *f);
 int fuse_config_process_thread_count(const struct fuse *f);
+int fuse_config_process_thread_queue_depth(const struct fuse *f);
 const char* fuse_config_pin_threads(const struct fuse *f);
 
 /**
@@ -763,6 +764,10 @@ void fuse_set_getcontext_func(struct fuse_context *(*func)(void));
 
 /** Get session from fuse object */
 struct fuse_session *fuse_get_session(struct fuse *f);
+
+void fuse_gc1();
+void fuse_gc();
+void fuse_invalidate_all_nodes();
 
 EXTERN_C_END
 

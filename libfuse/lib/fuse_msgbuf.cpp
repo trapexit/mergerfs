@@ -20,17 +20,20 @@
 
 #include <unistd.h>
 
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <mutex>
-#include <stack>
+#include <vector>
 
 
 static std::uint32_t g_PAGESIZE = 0;
 static std::uint32_t g_BUFSIZE  = 0;
 
+static std::atomic_uint64_t g_MSGBUF_ALLOC_COUNT;
+
 static std::mutex g_MUTEX;
-static std::stack<fuse_msgbuf_t*> g_MSGBUF_STACK;
+static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
 
 static
 __attribute__((constructor))
@@ -38,6 +41,7 @@ void
 msgbuf_constructor()
 {
   g_PAGESIZE = sysconf(_SC_PAGESIZE);
+  // +2 because to do O_DIRECT we need to offset the buffer to align
   g_BUFSIZE  = (g_PAGESIZE * (FUSE_MAX_MAX_PAGES + 2));
 }
 
@@ -46,10 +50,10 @@ __attribute__((destructor))
 void
 msgbuf_destroy()
 {
-  // TODO: cleanup?
+
 }
 
-uint32_t
+uint64_t
 msgbuf_get_bufsize()
 {
   return g_BUFSIZE;
@@ -58,7 +62,7 @@ msgbuf_get_bufsize()
 void
 msgbuf_set_bufsize(const uint32_t size_in_pages_)
 {
-  g_BUFSIZE = (size_in_pages_ * g_PAGESIZE);
+  g_BUFSIZE = ((size_in_pages_ + 1) * g_PAGESIZE);
 }
 
 static
@@ -85,27 +89,31 @@ msgbuf_alloc()
     {
       g_MUTEX.unlock();
 
-      msgbuf = (fuse_msgbuf_t*)malloc(sizeof(fuse_msgbuf_t));
+      msgbuf = (fuse_msgbuf_t*)page_aligned_malloc(g_BUFSIZE);
       if(msgbuf == NULL)
         return NULL;
 
-      msgbuf->mem = (char*)page_aligned_malloc(g_BUFSIZE);
-      if(msgbuf->mem == NULL)
-        {
-          free(msgbuf);
-          return NULL;
-        }
+      msgbuf->mem = (((char*)msgbuf) + g_PAGESIZE);
 
-      msgbuf->size = g_BUFSIZE;
+      msgbuf->size = g_BUFSIZE - g_PAGESIZE;
+      g_MSGBUF_ALLOC_COUNT++;
     }
   else
     {
-      msgbuf = g_MSGBUF_STACK.top();
-      g_MSGBUF_STACK.pop();
+      msgbuf = g_MSGBUF_STACK.back();
+      g_MSGBUF_STACK.pop_back();
       g_MUTEX.unlock();
     }
 
   return msgbuf;
+}
+
+static
+void
+msgbuf_destroy(fuse_msgbuf_t *msgbuf_)
+{
+  //  free(msgbuf_->mem);
+  free(msgbuf_);
 }
 
 void
@@ -113,12 +121,72 @@ msgbuf_free(fuse_msgbuf_t *msgbuf_)
 {
   std::lock_guard<std::mutex> lck(g_MUTEX);
 
-  if(msgbuf_->size != g_BUFSIZE)
+  if(msgbuf_->size != (g_BUFSIZE - g_PAGESIZE))
     {
-      free(msgbuf_->mem);
-      free(msgbuf_);
+      msgbuf_destroy(msgbuf_);
+      g_MSGBUF_ALLOC_COUNT--;
       return;
     }
 
-  g_MSGBUF_STACK.push(msgbuf_);
+  g_MSGBUF_STACK.emplace_back(msgbuf_);
+
+}
+
+uint64_t
+msgbuf_alloc_count()
+{
+  return g_MSGBUF_ALLOC_COUNT;
+}
+
+uint64_t
+msgbuf_avail_count()
+{
+  std::lock_guard<std::mutex> lck(g_MUTEX);
+
+  return g_MSGBUF_STACK.size();
+}
+
+void
+msgbuf_gc_10percent()
+{
+  std::vector<fuse_msgbuf_t*> togc;
+
+  {
+    std::size_t size;
+    std::size_t ten_percent;
+
+    std::lock_guard<std::mutex> lck(g_MUTEX);
+
+    size        = g_MSGBUF_STACK.size();
+    ten_percent = (size / 10);
+
+    for(std::size_t i = 0; i < ten_percent; i++)
+      {
+        togc.push_back(g_MSGBUF_STACK.back());
+        g_MSGBUF_STACK.pop_back();
+      }
+  }
+
+  for(auto msgbuf : togc)
+    {
+      msgbuf_destroy(msgbuf);
+      g_MSGBUF_ALLOC_COUNT--;
+    }
+}
+
+void
+msgbuf_gc()
+{
+  std::vector<fuse_msgbuf_t*> oldstack;
+
+  {
+    std::lock_guard<std::mutex> lck(g_MUTEX);
+    oldstack.swap(g_MSGBUF_STACK);
+  }
+
+  for(auto msgbuf: oldstack)
+    {
+      msgbuf_destroy(msgbuf);
+      g_MSGBUF_ALLOC_COUNT--;
+    }
 }

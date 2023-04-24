@@ -14,9 +14,11 @@
 
 static struct fuse_session *fuse_instance;
 
-static void exit_handler(int sig)
+static
+void
+exit_handler(int sig)
 {
-  (void) sig;
+  (void)sig;
   if (fuse_instance)
     fuse_session_exit(fuse_instance);
 }
@@ -46,10 +48,10 @@ static int set_one_signal_handler(int sig, void (*handler)(int), int remove)
 
 int fuse_set_signal_handlers(struct fuse_session *se)
 {
-  if (set_one_signal_handler(SIGHUP, exit_handler, 0) == -1 ||
-      set_one_signal_handler(SIGINT, exit_handler, 0) == -1 ||
-      set_one_signal_handler(SIGTERM, exit_handler, 0) == -1 ||
-      set_one_signal_handler(SIGPIPE, SIG_IGN, 0) == -1)
+  if((set_one_signal_handler(SIGINT, exit_handler, 0)  == -1) ||
+     (set_one_signal_handler(SIGTERM, exit_handler, 0) == -1) ||
+     (set_one_signal_handler(SIGQUIT, exit_handler, 0) == -1) ||
+     (set_one_signal_handler(SIGPIPE, SIG_IGN, 0)      == -1))
     return -1;
 
   fuse_instance = se;
@@ -64,8 +66,8 @@ void fuse_remove_signal_handlers(struct fuse_session *se)
   else
     fuse_instance = NULL;
 
-  set_one_signal_handler(SIGHUP, exit_handler, 1);
   set_one_signal_handler(SIGINT, exit_handler, 1);
   set_one_signal_handler(SIGTERM, exit_handler, 1);
+  set_one_signal_handler(SIGQUIT, exit_handler, 1);
   set_one_signal_handler(SIGPIPE, SIG_IGN, 1);
 }

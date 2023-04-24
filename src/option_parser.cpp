@@ -82,6 +82,7 @@ set_fuse_threads(Config::Write &cfg_,
 {
   set_kv_option("read-thread-count",cfg_->fuse_read_thread_count.to_string(),args_);
   set_kv_option("process-thread-count",cfg_->fuse_process_thread_count.to_string(),args_);
+  set_kv_option("process-thread-queue-depth",cfg_->fuse_process_thread_queue_depth.to_string(),args_);
   set_kv_option("pin-threads",cfg_->fuse_pin_threads.to_string(),args_);
 }
 

@@ -1460,6 +1460,7 @@ void fuse_session_process(struct fuse_session *se,
 int fuse_session_loop_mt(struct fuse_session *se,
                          const int            read_thread_count,
                          const int            process_thread_count,
+                         const int            process_thread_queue_depth,
                          const char          *pin_threads_type);
 
 /* ----------------------------------------------------------- *

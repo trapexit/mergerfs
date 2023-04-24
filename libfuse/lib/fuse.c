@@ -13,8 +13,8 @@
 #include "fuse_node.h"
 #include "khash.h"
 #include "kvec.h"
-#include "lfmp.h"
 
+#include "node.h"
 #include "config.h"
 #include "fuse_dirents.h"
 #include "fuse_i.h"
@@ -74,6 +74,7 @@ struct fuse_config
   int help;
   int read_thread_count;
   int process_thread_count;
+  int process_thread_queue_depth;
   char *pin_threads;
 };
 
@@ -89,21 +90,21 @@ struct lock_queue_element
   uint64_t   nodeid1;
   const char *name1;
   char **path1;
-  struct node **wnode1;
+  node_t **wnode1;
   uint64_t   nodeid2;
   const char *name2;
   char **path2;
-  struct node **wnode2;
+  node_t **wnode2;
   int err;
   bool done : 1;
 };
 
 struct node_table
 {
-  struct node **array;
-  size_t use;
-  size_t size;
-  size_t split;
+  node_t **array;
+  size_t   use;
+  size_t   size;
+  size_t   split;
 };
 
 #define container_of(ptr,type,member) ({                        \
@@ -122,8 +123,8 @@ struct list_head
 typedef struct remembered_node_t remembered_node_t;
 struct remembered_node_t
 {
-  struct node *node;
-  time_t       time;
+  node_t *node;
+  time_t  time;
 };
 
 typedef struct nodeid_gen_t nodeid_gen_t;
@@ -146,7 +147,6 @@ struct fuse
   struct lock_queue_element *lockq;
 
   pthread_t maintenance_thread;
-  lfmp_t node_fmp;
   kvec_t(remembered_node_t) remembered_nodes;
 };
 
@@ -159,28 +159,6 @@ struct lock
   uint64_t owner;
   struct lock *next;
 };
-
-struct node
-{
-  struct node *name_next;
-  struct node *id_next;
-
-  uint64_t nodeid;
-  char *name;
-  struct node *parent;
-
-  uint64_t nlookup;
-  uint32_t refctr;
-  uint32_t open_count;
-  uint64_t hidden_fh;
-
-  int32_t treelock;
-  struct lock *locks;
-
-  uint32_t stat_crc32b;
-  uint8_t is_stat_cache_valid:1;
-};
-
 
 #define TREELOCK_WRITE -1
 #define TREELOCK_WAIT_OFFSET INT_MIN
@@ -284,21 +262,6 @@ list_del(struct list_head *entry)
 }
 
 static
-struct node*
-alloc_node(struct fuse *f)
-{
-  return lfmp_calloc(&f->node_fmp);
-}
-
-static
-void
-free_node_mem(struct fuse *f,
-              struct node *node)
-{
-  return lfmp_free(&f->node_fmp,node);
-}
-
-static
 size_t
 id_hash(struct fuse *f,
         uint64_t     ino)
@@ -313,12 +276,12 @@ id_hash(struct fuse *f,
 }
 
 static
-struct node*
+node_t*
 get_node_nocheck(struct fuse *f,
                  uint64_t     nodeid)
 {
   size_t hash = id_hash(f,nodeid);
-  struct node *node;
+  node_t *node;
 
   for(node = f->id_table.array[hash]; node != NULL; node = node->id_next)
     if(node->nodeid == nodeid)
@@ -328,11 +291,11 @@ get_node_nocheck(struct fuse *f,
 }
 
 static
-struct node*
+node_t*
 get_node(struct fuse      *f,
          const uint64_t    nodeid)
 {
-  struct node *node = get_node_nocheck(f,nodeid);
+  node_t *node = get_node_nocheck(f,nodeid);
 
   if(!node)
     {
@@ -347,7 +310,7 @@ get_node(struct fuse      *f,
 static
 void
 remove_remembered_node(struct fuse *f_,
-                       struct node *node_)
+                       node_t *node_)
 {
   for(size_t i = 0; i < kv_size(f_->remembered_nodes); i++)
     {
@@ -402,14 +365,14 @@ current_time()
 static
 void
 free_node(struct fuse *f_,
-          struct node *node_)
+          node_t      *node_)
 {
   filename_free(f_,node_->name);
 
   if(node_->hidden_fh)
     f_->fs->op.free_hide(node_->hidden_fh);
 
-  free_node_mem(f_,node_);
+  node_free(node_);
 }
 
 static
@@ -422,7 +385,7 @@ node_table_reduce(struct node_table *t)
   if(newsize < NODE_TABLE_MIN_SIZE)
     return;
 
-  newarray = realloc(t->array,sizeof(struct node *)* newsize);
+  newarray = realloc(t->array,sizeof(node_t*) * newsize);
   if(newarray != NULL)
     t->array = newarray;
 
@@ -442,13 +405,13 @@ remerge_id(struct fuse *f)
 
   for(iter = 8; t->split > 0 && iter; iter--)
     {
-      struct node **upper;
+      node_t **upper;
 
       t->split--;
       upper = &t->array[t->split + t->size / 2];
       if(*upper)
         {
-          struct node **nodep;
+          node_t **nodep;
 
           for(nodep = &t->array[t->split]; *nodep;
               nodep = &(*nodep)->id_next);
@@ -463,9 +426,9 @@ remerge_id(struct fuse *f)
 static
 void
 unhash_id(struct fuse *f,
-          struct node *node)
+          node_t      *node)
 {
-  struct node **nodep = &f->id_table.array[id_hash(f,node->nodeid)];
+  node_t **nodep = &f->id_table.array[id_hash(f,node->nodeid)];
 
   for(; *nodep != NULL; nodep = &(*nodep)->id_next)
     if(*nodep == node)
@@ -486,12 +449,12 @@ node_table_resize(struct node_table *t)
   size_t newsize = t->size * 2;
   void *newarray;
 
-  newarray = realloc(t->array,sizeof(struct node *)* newsize);
+  newarray = realloc(t->array,sizeof(node_t*) * newsize);
   if(newarray == NULL)
     return -1;
 
   t->array = newarray;
-  memset(t->array + t->size,0,t->size * sizeof(struct node *));
+  memset(t->array + t->size,0,t->size * sizeof(node_t*));
   t->size = newsize;
   t->split = 0;
 
@@ -503,8 +466,8 @@ void
 rehash_id(struct fuse *f)
 {
   struct node_table *t = &f->id_table;
-  struct node **nodep;
-  struct node **next;
+  node_t **nodep;
+  node_t **next;
   size_t hash;
 
   if(t->split == t->size / 2)
@@ -514,7 +477,7 @@ rehash_id(struct fuse *f)
   t->split++;
   for(nodep = &t->array[hash]; *nodep != NULL; nodep = next)
     {
-      struct node *node = *nodep;
+      node_t *node = *nodep;
       size_t newhash = id_hash(f,node->nodeid);
 
       if(newhash != hash)
@@ -537,7 +500,7 @@ rehash_id(struct fuse *f)
 static
 void
 hash_id(struct fuse *f,
-        struct node *node)
+        node_t      *node)
 {
   size_t hash;
 
@@ -573,7 +536,7 @@ name_hash(struct fuse *f,
 static
 void
 unref_node(struct fuse *f,
-           struct node *node);
+           node_t      *node);
 
 static
 void
@@ -587,13 +550,13 @@ remerge_name(struct fuse *f)
 
   for(iter = 8; t->split > 0 && iter; iter--)
     {
-      struct node **upper;
+      node_t **upper;
 
       t->split--;
       upper = &t->array[t->split + t->size / 2];
       if(*upper)
         {
-          struct node **nodep;
+          node_t **nodep;
 
           for(nodep = &t->array[t->split]; *nodep; nodep = &(*nodep)->name_next);
 
@@ -607,12 +570,12 @@ remerge_name(struct fuse *f)
 static
 void
 unhash_name(struct fuse *f,
-            struct node *node)
+            node_t      *node)
 {
   if(node->name)
     {
       size_t hash = name_hash(f,node->parent->nodeid,node->name);
-      struct node **nodep = &f->name_table.array[hash];
+      node_t **nodep = &f->name_table.array[hash];
 
       for(; *nodep != NULL; nodep = &(*nodep)->name_next)
         if(*nodep == node)
@@ -643,8 +606,8 @@ void
 rehash_name(struct fuse *f)
 {
   struct node_table *t = &f->name_table;
-  struct node **nodep;
-  struct node **next;
+  node_t **nodep;
+  node_t **next;
   size_t hash;
 
   if(t->split == t->size / 2)
@@ -654,7 +617,7 @@ rehash_name(struct fuse *f)
   t->split++;
   for(nodep = &t->array[hash]; *nodep != NULL; nodep = next)
     {
-      struct node *node = *nodep;
+      node_t *node = *nodep;
       size_t newhash = name_hash(f,node->parent->nodeid,node->name);
 
       if(newhash != hash)
@@ -677,12 +640,12 @@ rehash_name(struct fuse *f)
 static
 int
 hash_name(struct fuse *f,
-          struct node *node,
+          node_t *node,
           uint64_t     parentid,
           const char  *name)
 {
   size_t hash = name_hash(f,parentid,name);
-  struct node *parent = get_node(f,parentid);
+  node_t *parent = get_node(f,parentid);
   node->name = filename_strdup(f,name);
   if(node->name == NULL)
     return -1;
@@ -710,20 +673,20 @@ remember_nodes(struct fuse *f_)
 static
 void
 delete_node(struct fuse *f,
-            struct node *node)
+            node_t      *node)
 {
   assert(node->treelock == 0);
   unhash_name(f,node);
   if(remember_nodes(f))
     remove_remembered_node(f,node);
   unhash_id(f,node);
-  free_node(f,node);
+  node_free(node);
 }
 
 static
 void
 unref_node(struct fuse *f,
-           struct node *node)
+           node_t *node)
 {
   assert(node->refctr > 0);
   node->refctr--;
@@ -745,13 +708,13 @@ rand64(void)
 }
 
 static
-struct node*
+node_t*
 lookup_node(struct fuse *f,
             uint64_t     parent,
             const char  *name)
 {
   size_t hash;
-  struct node *node;
+  node_t *node;
 
   hash =  name_hash(f,parent,name);
   for(node = f->name_table.array[hash]; node != NULL; node = node->name_next)
@@ -763,7 +726,7 @@ lookup_node(struct fuse *f,
 
 static
 void
-inc_nlookup(struct node *node)
+inc_nlookup(node_t *node)
 {
   if(!node->nlookup)
     node->refctr++;
@@ -771,12 +734,12 @@ inc_nlookup(struct node *node)
 }
 
 static
-struct node*
+node_t*
 find_node(struct fuse *f,
           uint64_t     parent,
           const char  *name)
 {
-  struct node *node;
+  node_t *node;
 
   pthread_mutex_lock(&f->lock);
   if(!name)
@@ -786,7 +749,7 @@ find_node(struct fuse *f,
 
   if(node == NULL)
     {
-      node = alloc_node(f);
+      node = node_alloc();
       if(node == NULL)
         goto out_err;
 
@@ -856,10 +819,10 @@ static
 void
 unlock_path(struct fuse *f,
             uint64_t     nodeid,
-            struct node *wnode,
-            struct node *end)
+            node_t *wnode,
+            node_t *end)
 {
-  struct node *node;
+  node_t *node;
 
   if(wnode)
     {
@@ -884,14 +847,14 @@ try_get_path(struct fuse  *f,
              uint64_t      nodeid,
              const char   *name,
              char        **path,
-             struct node **wnodep,
+             node_t **wnodep,
              bool          need_lock)
 {
   unsigned bufsize = 256;
   char *buf;
   char *s;
-  struct node *node;
-  struct node *wnode = NULL;
+  node_t *node;
+  node_t *wnode = NULL;
   int err;
 
   *path = NULL;
@@ -980,8 +943,8 @@ try_get_path2(struct fuse  *f,
               const char   *name2,
               char        **path1,
               char        **path2,
-              struct node **wnode1,
-              struct node **wnode2)
+              node_t **wnode1,
+              node_t **wnode2)
 {
   int err;
 
@@ -991,7 +954,7 @@ try_get_path2(struct fuse  *f,
       err = try_get_path(f,nodeid2,name2,path2,wnode2,true);
       if(err)
         {
-          struct node *wn1 = wnode1 ? *wnode1 : NULL;
+          node_t *wn1 = wnode1 ? *wnode1 : NULL;
 
           unlock_path(f,nodeid1,wn1,NULL);
           free(*path1);
@@ -1109,7 +1072,7 @@ get_path_common(struct fuse  *f,
                 uint64_t      nodeid,
                 const char   *name,
                 char        **path,
-                struct node **wnode)
+                node_t **wnode)
 {
   int err;
 
@@ -1156,7 +1119,7 @@ get_path_wrlock(struct fuse  *f,
                 uint64_t      nodeid,
                 const char   *name,
                 char        **path,
-                struct node **wnode)
+                node_t **wnode)
 {
   return get_path_common(f,nodeid,name,path,wnode);
 }
@@ -1170,8 +1133,8 @@ get_path2(struct fuse  *f,
           const char   *name2,
           char        **path1,
           char        **path2,
-          struct node **wnode1,
-          struct node **wnode2)
+          node_t **wnode1,
+          node_t **wnode2)
 {
   int err;
 
@@ -1202,7 +1165,7 @@ static
 void
 free_path_wrlock(struct fuse *f,
                  uint64_t     nodeid,
-                 struct node *wnode,
+                 node_t *wnode,
                  char        *path)
 {
   pthread_mutex_lock(&f->lock);
@@ -1228,8 +1191,8 @@ void
 free_path2(struct fuse *f,
            uint64_t     nodeid1,
            uint64_t     nodeid2,
-           struct node *wnode1,
-           struct node *wnode2,
+           node_t *wnode1,
+           node_t *wnode2,
            char        *path1,
            char        *path2)
 {
@@ -1248,7 +1211,7 @@ forget_node(struct fuse      *f,
             const uint64_t    nodeid,
             const uint64_t    nlookup)
 {
-  struct node *node;
+  node_t *node;
 
   if(nodeid == FUSE_ROOT_ID)
     return;
@@ -1300,7 +1263,7 @@ forget_node(struct fuse      *f,
 static
 void
 unlink_node(struct fuse *f,
-            struct node *node)
+            node_t *node)
 {
   if(remember_nodes(f))
     {
@@ -1316,7 +1279,7 @@ remove_node(struct fuse *f,
             uint64_t     dir,
             const char  *name)
 {
-  struct node *node;
+  node_t *node;
 
   pthread_mutex_lock(&f->lock);
   node = lookup_node(f,dir,name);
@@ -1333,8 +1296,8 @@ rename_node(struct fuse *f,
             uint64_t     newdir,
             const char  *newname)
 {
-  struct node *node;
-  struct node *newnode;
+  node_t *node;
+  node_t *newnode;
   int err = 0;
 
   pthread_mutex_lock(&f->lock);
@@ -1381,14 +1344,14 @@ req_fuse(fuse_req_t req)
 
 static
 int
-node_open(const struct node *node_)
+node_open(const node_t *node_)
 {
   return ((node_ != NULL) && (node_->open_count > 0));
 }
 
 static
 void
-update_stat(struct node       *node_,
+update_stat(node_t       *node_,
             const struct stat *stnew_)
 {
   uint32_t crc32b;
@@ -1408,7 +1371,7 @@ set_path_info(struct fuse             *f,
               const char              *name,
               struct fuse_entry_param *e)
 {
-  struct node *node;
+  node_t *node;
 
   node = find_node(f,nodeid,name);
   if(node == NULL)
@@ -1591,7 +1554,7 @@ fuse_lib_lookup(fuse_req_t             req,
   char *path;
   const char *name;
   struct fuse *f;
-  struct node *dot = NULL;
+  node_t *dot = NULL;
   struct fuse_entry_param e = {0};
 
   name   = fuse_hdr_arg(hdr_);
@@ -1681,9 +1644,11 @@ fuse_lib_forget_multi(fuse_req_t             req,
   entry = PARAM(arg);
 
   for(uint32_t i = 0; i < arg->count; i++)
-    forget_node(f,
+    {
+      forget_node(f,
                 entry[i].nodeid,
                 entry[i].nlookup);
+    }
 
   fuse_reply_none(req);
 }
@@ -1698,7 +1663,7 @@ fuse_lib_getattr(fuse_req_t             req,
   char *path;
   struct fuse *f;
   struct stat buf;
-  struct node *node;
+  node_t *node;
   fuse_timeouts_t timeout;
   fuse_file_info_t ffi = {0};
   const struct fuse_getattr_in *arg;
@@ -1759,7 +1724,7 @@ fuse_lib_setattr(fuse_req_t             req,
   struct stat stbuf = {0};
   char *path;
   int err;
-  struct node *node;
+  node_t *node;
   fuse_timeouts_t timeout;
   fuse_file_info_t *fi;
   fuse_file_info_t ffi = {0};
@@ -2019,7 +1984,7 @@ fuse_lib_unlink(fuse_req_t             req,
   char *path;
   struct fuse *f;
   const char *name;
-  struct node *wnode;
+  node_t *wnode;
 
   name = PARAM(hdr_);
 
@@ -2052,7 +2017,7 @@ fuse_lib_rmdir(fuse_req_t             req,
   char *path;
   struct fuse *f;
   const char *name;
-  struct node *wnode;
+  node_t *wnode;
 
   name = PARAM(hdr_);
 
@@ -2110,8 +2075,8 @@ fuse_lib_rename(fuse_req_t             req,
   char *newpath;
   const char *oldname;
   const char *newname;
-  struct node *wnode1;
-  struct node *wnode2;
+  node_t *wnode1;
+  node_t *wnode2;
   struct fuse_rename_in *arg;
 
   arg     = fuse_hdr_arg(hdr_);
@@ -2179,7 +2144,7 @@ fuse_do_release(struct fuse      *f,
                 fuse_file_info_t *fi)
 {
   uint64_t fh;
-  struct node *node;
+  node_t *node;
 
   fh = 0;
 
@@ -2277,7 +2242,7 @@ open_auto_cache(struct fuse      *f,
                 const char       *path,
                 fuse_file_info_t *fi)
 {
-  struct node *node;
+  node_t *node;
   fuse_timeouts_t timeout;
 
   pthread_mutex_lock(&f->lock);
@@ -2917,11 +2882,11 @@ fuse_lib_copy_file_range(fuse_req_t                   req_,
 }
 
 static
-struct lock*
-locks_conflict(struct node       *node,
-               const struct lock *lock)
+lock_t*
+locks_conflict(node_t       *node,
+               const lock_t *lock)
 {
-  struct lock *l;
+  lock_t *l;
 
   for(l = node->locks; l; l = l->next)
     if(l->owner != lock->owner &&
@@ -2934,17 +2899,17 @@ locks_conflict(struct node       *node,
 
 static
 void
-delete_lock(struct lock **lockp)
+delete_lock(lock_t **lockp)
 {
-  struct lock *l = *lockp;
+  lock_t *l = *lockp;
   *lockp = l->next;
   free(l);
 }
 
 static
 void
-insert_lock(struct lock **pos,
-            struct lock  *lock)
+insert_lock(lock_t **pos,
+            lock_t  *lock)
 {
   lock->next = *pos;
   *pos       = lock;
@@ -2952,17 +2917,17 @@ insert_lock(struct lock **pos,
 
 static
 int
-locks_insert(struct node *node,
-             struct lock *lock)
+locks_insert(node_t *node,
+             lock_t *lock)
 {
-  struct lock **lp;
-  struct lock  *newl1 = NULL;
-  struct lock  *newl2 = NULL;
+  lock_t **lp;
+  lock_t  *newl1 = NULL;
+  lock_t  *newl2 = NULL;
 
   if(lock->type != F_UNLCK || lock->start != 0 || lock->end != OFFSET_MAX)
     {
-      newl1 = malloc(sizeof(struct lock));
-      newl2 = malloc(sizeof(struct lock));
+      newl1 = malloc(sizeof(lock_t));
+      newl2 = malloc(sizeof(lock_t));
 
       if(!newl1 || !newl2)
         {
@@ -2974,7 +2939,7 @@ locks_insert(struct node *node,
 
   for(lp = &node->locks; *lp;)
     {
-      struct lock *l = *lp;
+      lock_t *l = *lp;
       if(l->owner != lock->owner)
         goto skip;
 
@@ -3038,9 +3003,9 @@ locks_insert(struct node *node,
 static
 void
 flock_to_lock(struct flock *flock,
-              struct lock  *lock)
+              lock_t  *lock)
 {
-  memset(lock,0,sizeof(struct lock));
+  memset(lock,0,sizeof(lock_t));
   lock->type = flock->l_type;
   lock->start = flock->l_start;
   lock->end = flock->l_len ? flock->l_start + flock->l_len - 1 : OFFSET_MAX;
@@ -3049,7 +3014,7 @@ flock_to_lock(struct flock *flock,
 
 static
 void
-lock_to_flock(struct lock  *lock,
+lock_to_flock(lock_t  *lock,
               struct flock *flock)
 {
   flock->l_type = lock->type;
@@ -3066,7 +3031,7 @@ fuse_flush_common(struct fuse      *f,
                   fuse_file_info_t *fi)
 {
   struct flock lock;
-  struct lock l;
+  lock_t l;
   int err;
   int errlock;
 
@@ -3194,9 +3159,9 @@ fuse_lib_getlk(fuse_req_t                   req,
 {
   int err;
   struct fuse *f;
-  struct lock lk;
+  lock_t lk;
   struct flock flk;
-  struct lock *conflict;
+  lock_t *conflict;
   fuse_file_info_t ffi = {0};
   const struct fuse_lk_in *arg;
 
@@ -3239,7 +3204,7 @@ fuse_lib_setlk(fuse_req_t        req,
   if(!err)
     {
       struct fuse *f = req_fuse(req);
-      struct lock l;
+      lock_t l;
       flock_to_lock(lock,&l);
       l.owner = fi->lock_owner;
       pthread_mutex_lock(&f->lock);
@@ -3639,6 +3604,7 @@ static const struct fuse_opt fuse_lib_opts[] =
    FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
    FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
    FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
+   FUSE_LIB_OPT("process-thread-queue-depth=%d", process_thread_queue_depth,-1),
    FUSE_LIB_OPT("pin-threads=%s",     pin_threads, 0),
    FUSE_OPT_END
   };
@@ -3712,7 +3678,7 @@ int
 node_table_init(struct node_table *t)
 {
   t->size = NODE_TABLE_MIN_SIZE;
-  t->array = (struct node **)calloc(1,sizeof(struct node *) * t->size);
+  t->array = (node_t **)calloc(1,sizeof(node_t *) * t->size);
   if(t->array == NULL)
     {
       fprintf(stderr,"fuse: memory allocation failed\n");
@@ -3725,15 +3691,46 @@ node_table_init(struct node_table *t)
 }
 
 static
+struct fuse*
+fuse_get_fuse_obj()
+{
+  static struct fuse f = {0};
+
+  return &f;
+}
+
+static
 void
 metrics_log_nodes_info(struct fuse *f_,
                        FILE        *file_)
 {
   char buf[1024];
+  char time_str[64];
+  struct tm tm;
+  struct timeval tv;
+  uint64_t sizeof_node;
+  float node_usage_ratio;
+  uint64_t node_slab_count;
+  uint64_t node_avail_objs;
+  uint64_t node_total_alloc_mem;
 
-  lfmp_lock(&f_->node_fmp);
+  gettimeofday(&tv,NULL);
+  localtime_r(&tv.tv_sec,&tm);
+  strftime(time_str,sizeof(time_str),"%Y-%m-%dT%H:%M:%S.000%z",&tm);
+
+  sizeof_node = sizeof(node_t);
+
+  lfmp_t *lfmp;
+  lfmp = node_lfmp();
+  lfmp_lock(lfmp);
+  node_slab_count = fmp_slab_count(&lfmp->fmp);
+  node_usage_ratio = fmp_slab_usage_ratio(&lfmp->fmp);
+  node_avail_objs = fmp_avail_objs(&lfmp->fmp);
+  node_total_alloc_mem = fmp_total_allocated_memory(&lfmp->fmp);
+  lfmp_unlock(lfmp);
+
   snprintf(buf,sizeof(buf),
-           "time: %"PRIu64"\n"
+           "time: %s\n"
            "sizeof(node): %"PRIu64"\n"
            "node id_table size: %"PRIu64"\n"
            "node id_table usage: %"PRIu64"\n"
@@ -3745,22 +3742,29 @@ metrics_log_nodes_info(struct fuse *f_,
            "node memory pool usage ratio: %f\n"
            "node memory pool avail objs: %"PRIu64"\n"
            "node memory pool total allocated memory: %"PRIu64"\n"
+           "msgbuf bufsize: %"PRIu64"\n"
+           "msgbuf allocation count: %"PRIu64"\n"
+           "msgbuf available count: %"PRIu64"\n"
+           "msgbuf total allocated memory: %"PRIu64"\n"
            "\n"
            ,
-           (uint64_t)time(NULL),
-           (uint64_t)sizeof(struct node),
+           time_str,
+           sizeof_node,
            (uint64_t)f_->id_table.size,
            (uint64_t)f_->id_table.use,
-           (uint64_t)(f_->id_table.size * sizeof(struct node*)),
+           (uint64_t)(f_->id_table.size * sizeof(node_t*)),
            (uint64_t)f_->name_table.size,
            (uint64_t)f_->name_table.use,
-           (uint64_t)(f_->name_table.size * sizeof(struct node*)),
-           (uint64_t)fmp_slab_count(&f_->node_fmp.fmp),
-           fmp_slab_usage_ratio(&f_->node_fmp.fmp),
-           (uint64_t)fmp_avail_objs(&f_->node_fmp.fmp),
-           (uint64_t)fmp_total_allocated_memory(&f_->node_fmp.fmp)
+           (uint64_t)(f_->name_table.size * sizeof(node_t*)),
+           node_slab_count,
+           node_usage_ratio,
+           node_avail_objs,
+           node_total_alloc_mem,
+           msgbuf_get_bufsize(),
+           msgbuf_alloc_count(),
+           msgbuf_avail_count(),
+           msgbuf_alloc_count() * msgbuf_get_bufsize()
            );
-  lfmp_unlock(&f_->node_fmp);
 
   fputs(buf,file_);
 }
@@ -3769,12 +3773,20 @@ static
 void
 metrics_log_nodes_info_to_tmp_dir(struct fuse *f_)
 {
+  int rv;
   FILE *file;
   char filepath[256];
+  struct stat st;
+  char const *mode = "a";
+  off_t const max_size = (1024 * 1024);
 
   sprintf(filepath,"/tmp/mergerfs.%d.info",getpid());
 
-  file = fopen(filepath,"w");
+  rv = lstat(filepath,&st);
+  if((rv == 0) && (st.st_size > max_size))
+    mode = "w";
+
+  file = fopen(filepath,mode);
   if(file == NULL)
     return;
 
@@ -3782,7 +3794,6 @@ metrics_log_nodes_info_to_tmp_dir(struct fuse *f_)
 
   fclose(file);
 }
-
 
 static
 void
@@ -3793,16 +3804,60 @@ fuse_malloc_trim(void)
 #endif
 }
 
+void
+fuse_invalidate_all_nodes()
+{
+  struct fuse *f = fuse_get_fuse_obj();
+
+  syslog_info("invalidating file entries");
+
+  pthread_mutex_lock(&f->lock);
+  for(int i = 0; i < f->id_table.size; i++)
+    {
+      node_t *node;
+
+      for(node = f->id_table.array[i]; node != NULL; node = node->id_next)
+        {
+          if(node->nodeid == FUSE_ROOT_ID)
+            continue;
+          if(node->parent->nodeid != FUSE_ROOT_ID)
+            continue;
+
+          fuse_lowlevel_notify_inval_entry(f->se->ch,
+                                           node->parent->nodeid,
+                                           node->name,
+                                           strlen(node->name));
+        }
+    }
+  pthread_mutex_unlock(&f->lock);
+}
+
+void
+fuse_gc()
+{
+  syslog_info("running thorough garbage collection");
+  node_gc();
+  msgbuf_gc();
+  fuse_malloc_trim();
+}
+
+void
+fuse_gc1()
+{
+  syslog_info("running basic garbage collection");
+  node_gc1();
+  msgbuf_gc_10percent();
+  fuse_malloc_trim();
+}
+
 static
 void*
 fuse_maintenance_loop(void *fuse_)
 {
-  int gc;
   int loops;
   int sleep_time;
   struct fuse *f = (struct fuse*)fuse_;
 
-  gc = 0;
   loops = 0;
   sleep_time = 60;
   while(1)
@@ -3811,14 +3866,7 @@ fuse_maintenance_loop(void *fuse_)
         fuse_prune_remembered_nodes(f);
 
       if((loops % 15) == 0)
-        {
-          fuse_malloc_trim();
-          gc = 1;
-        }
-
-      // Trigger a followup gc if this gc succeeds
-      if(!f->conf.nogc && gc)
-        gc = lfmp_gc(&f->node_fmp);
+        fuse_gc1();
 
       if(g_LOG_METRICS)
         metrics_log_nodes_info_to_tmp_dir(f);
@@ -3852,14 +3900,14 @@ fuse_new_common(struct fuse_chan             *ch,
                 size_t                        op_size)
 {
   struct fuse *f;
-  struct node *root;
+  node_t *root;
   struct fuse_fs *fs;
   struct fuse_lowlevel_ops llop = fuse_path_ops;
 
   if(fuse_create_context_key() == -1)
     goto out;
 
-  f = (struct fuse *)calloc(1,sizeof(struct fuse));
+  f = fuse_get_fuse_obj();
   if(f == NULL)
     {
       fprintf(stderr,"fuse: failed to allocate fuse object\n");
@@ -3902,10 +3950,9 @@ fuse_new_common(struct fuse_chan             *ch,
 
   fuse_mutex_init(&f->lock);
 
-  lfmp_init(&f->node_fmp,sizeof(struct node),256);
   kv_init(f->remembered_nodes);
 
-  root = alloc_node(f);
+  root = node_alloc();
   if(root == NULL)
     {
       fprintf(stderr,"fuse: memory allocation failed\n");
@@ -3933,7 +3980,7 @@ fuse_new_common(struct fuse_chan             *ch,
   fs->op.destroy = NULL;
   free(f->fs);
  out_free:
-  free(f);
+  // free(f);
  out_delete_context_key:
   fuse_delete_context_key();
  out:
@@ -3963,7 +4010,7 @@ fuse_destroy(struct fuse *f)
 
       for(i = 0; i < f->id_table.size; i++)
         {
-          struct node *node;
+          node_t *node;
 
           for(node = f->id_table.array[i]; node != NULL; node = node->id_next)
             {
@@ -3978,8 +4025,8 @@ fuse_destroy(struct fuse *f)
 
   for(i = 0; i < f->id_table.size; i++)
     {
-      struct node *node;
-      struct node *next;
+      node_t *node;
+      node_t *next;
 
       for(node = f->id_table.array[i]; node != NULL; node = next)
         {
@@ -3993,9 +4040,7 @@ fuse_destroy(struct fuse *f)
   free(f->name_table.array);
   pthread_mutex_destroy(&f->lock);
   fuse_session_destroy(f->se);
-  lfmp_destroy(&f->node_fmp);
   kv_destroy(f->remembered_nodes);
-  free(f);
   fuse_delete_context_key();
 }
 
@@ -4009,6 +4054,12 @@ int
 fuse_config_process_thread_count(const struct fuse *f_)
 {
   return f_->conf.process_thread_count;
+}
+
+int
+fuse_config_process_thread_queue_depth(const struct fuse *f_)
+{
+  return f_->conf.process_thread_queue_depth;
 }
 
 const
