@@ -3730,6 +3730,11 @@ metrics_log_nodes_info(struct fuse *f_,
                        FILE        *file_)
 {
   char buf[1024];
+  uint64_t time_now;
+  uint64_t sizeof_node;
+
+  time_now = time(NULL);
+  sizeof_node = sizeof(struct node);
 
   lfmp_lock(&f_->node_fmp);
   snprintf(buf,sizeof(buf),
@@ -3745,10 +3750,12 @@ metrics_log_nodes_info(struct fuse *f_,
            "node memory pool usage ratio: %f\n"
            "node memory pool avail objs: %"PRIu64"\n"
            "node memory pool total allocated memory: %"PRIu64"\n"
+           "msgbuf allocation count: %"PRIu64"\n"
+           "msgbuf total allocated memory: %"PRIu64"\n"
            "\n"
            ,
-           (uint64_t)time(NULL),
-           (uint64_t)sizeof(struct node),
+           (uint64_t)time_now,
+           (uint64_t)sizeof_node,
            (uint64_t)f_->id_table.size,
            (uint64_t)f_->id_table.use,
            (uint64_t)(f_->id_table.size * sizeof(struct node*)),
@@ -3758,7 +3765,9 @@ metrics_log_nodes_info(struct fuse *f_,
            (uint64_t)fmp_slab_count(&f_->node_fmp.fmp),
            fmp_slab_usage_ratio(&f_->node_fmp.fmp),
            (uint64_t)fmp_avail_objs(&f_->node_fmp.fmp),
-           (uint64_t)fmp_total_allocated_memory(&f_->node_fmp.fmp)
+           (uint64_t)fmp_total_allocated_memory(&f_->node_fmp.fmp),
+           (uint64_t)msgbuf_alloc_count(),
+           (uint64_t)msgbuf_alloc_count() * msgbuf_get_bufsize()
            );
   lfmp_unlock(&f_->node_fmp);
 
@@ -3818,7 +3827,10 @@ fuse_maintenance_loop(void *fuse_)
 
       // Trigger a followup gc if this gc succeeds
       if(!f->conf.nogc && gc)
-        gc = lfmp_gc(&f->node_fmp);
+        {
+          gc = lfmp_gc(&f->node_fmp);
+          msgbuf_gc();
+        }
 
       if(g_LOG_METRICS)
         metrics_log_nodes_info_to_tmp_dir(f);

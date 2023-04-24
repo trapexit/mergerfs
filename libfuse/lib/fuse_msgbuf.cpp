@@ -78,13 +78,11 @@ page_aligned_malloc(const uint64_t size_)
 fuse_msgbuf_t*
 msgbuf_alloc()
 {
+  std::lock_guard<std::mutex> lck(g_MUTEX);
   fuse_msgbuf_t *msgbuf;
 
-  g_MUTEX.lock();
   if(g_MSGBUF_STACK.empty())
     {
-      g_MUTEX.unlock();
-
       msgbuf = (fuse_msgbuf_t*)malloc(sizeof(fuse_msgbuf_t));
       if(msgbuf == NULL)
         return NULL;
@@ -102,7 +100,6 @@ msgbuf_alloc()
     {
       msgbuf = g_MSGBUF_STACK.top();
       g_MSGBUF_STACK.pop();
-      g_MUTEX.unlock();
     }
 
   return msgbuf;
@@ -121,4 +118,29 @@ msgbuf_free(fuse_msgbuf_t *msgbuf_)
     }
 
   g_MSGBUF_STACK.push(msgbuf_);
+}
+
+uint64_t
+msgbuf_alloc_count()
+{
+  std::lock_guard<std::mutex> lck(g_MUTEX);
+
+  return g_MSGBUF_STACK.size();
+}
+
+void
+msgbuf_gc()
+{
+  std::lock_guard<std::mutex> lck(g_MUTEX);
+
+  while(!g_MSGBUF_STACK.empty())
+    {
+      fuse_msgbuf_t *msgbuf;
+
+      msgbuf = g_MSGBUF_STACK.top();
+      g_MSGBUF_STACK.pop();
+
+      free(msgbuf->mem);
+      free(msgbuf);
+    }
 }

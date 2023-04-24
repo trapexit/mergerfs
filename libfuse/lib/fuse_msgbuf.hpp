@@ -27,7 +27,10 @@ void     msgbuf_set_bufsize(const uint32_t size);
 uint32_t msgbuf_get_bufsize();
 
 fuse_msgbuf_t* msgbuf_alloc();
-fuse_msgbuf_t* msgbuf_alloc_memonly();
 void           msgbuf_free(fuse_msgbuf_t *msgbuf);
+
+void           msgbuf_gc();
+
+uint64_t       msgbuf_alloc_count();
 
 EXTERN_C_END
