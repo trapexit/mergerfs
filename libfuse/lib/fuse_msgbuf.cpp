@@ -30,7 +30,6 @@
 
 static std::uint32_t    g_PAGESIZE      = 0;
 static std::uint32_t    g_BUFSIZE       = 0;
-//static std::atomic_uint g_TOTAL_ALLOCED;
 
 static std::mutex g_MUTEX;
 static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
@@ -51,7 +50,7 @@ __attribute__((destructor))
 void
 msgbuf_destroy()
 {
-  // TODO: cleanup?
+  msgbuf_gc();
 }
 
 uint32_t
@@ -134,6 +133,12 @@ msgbuf_alloc_count()
   return g_MSGBUF_ALLOCED.size();
 }
 
+uint64_t
+msgbuf_avail_count()
+{
+  return g_MSGBUF_STACK.size();
+}
+
 void
 msgbuf_gc()
 {
@@ -144,6 +149,7 @@ msgbuf_gc()
     oldstack.swap(g_MSGBUF_STACK);
   }
 
+  fprintf(stderr,"freeing %lu msgbufs\n",oldstack.size());
   for(auto msgbuf: oldstack)
     {
       g_MSGBUF_ALLOCED.erase(msgbuf);

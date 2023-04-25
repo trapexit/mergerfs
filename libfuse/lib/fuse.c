@@ -3751,7 +3751,7 @@ metrics_log_nodes_info(struct fuse *f_,
            "node memory pool avail objs: %"PRIu64"\n"
            "node memory pool total allocated memory: %"PRIu64"\n"
            "msgbuf allocation count: %"PRIu64"\n"
-           "msgbuf total allocated memory: %"PRIu64"\n"
+           "msgbuf available count: %"PRIu64"\n"
            "\n"
            ,
            (uint64_t)time_now,
@@ -3767,7 +3767,7 @@ metrics_log_nodes_info(struct fuse *f_,
            (uint64_t)fmp_avail_objs(&f_->node_fmp.fmp),
            (uint64_t)fmp_total_allocated_memory(&f_->node_fmp.fmp),
            (uint64_t)msgbuf_alloc_count(),
-           (uint64_t)msgbuf_alloc_count() * msgbuf_get_bufsize()
+           msgbuf_avail_count()
            );
   lfmp_unlock(&f_->node_fmp);
 
@@ -3829,8 +3829,9 @@ fuse_maintenance_loop(void *fuse_)
       if(!f->conf.nogc && gc)
         {
           gc = lfmp_gc(&f->node_fmp);
-          //          msgbuf_gc();
         }
+
+      msgbuf_gc();
 
       if(g_LOG_METRICS)
         metrics_log_nodes_info_to_tmp_dir(f);

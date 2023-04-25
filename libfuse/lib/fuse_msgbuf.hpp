@@ -32,5 +32,6 @@ void           msgbuf_free(fuse_msgbuf_t *msgbuf);
 void           msgbuf_gc();
 
 uint64_t       msgbuf_alloc_count();
+uint64_t       msgbuf_avail_count();
 
 EXTERN_C_END
