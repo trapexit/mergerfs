@@ -1,6 +1,7 @@
 #pragma once
 
 #include "unbounded_queue.hpp"
+#include "bounded_queue.hpp"
 
 #include <tuple>
 #include <atomic>

@@ -28,8 +28,9 @@
 #include <atomic>
 
 
-static std::uint32_t    g_PAGESIZE      = 0;
-static std::uint32_t    g_BUFSIZE       = 0;
+static std::uint32_t g_PAGESIZE   = 0;
+static std::uint32_t g_BUFSIZE    = 0;
+static std::uint32_t g_MAX_ALLOCS = 128;
 
 static std::mutex g_MUTEX;
 static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;

@@ -24,14 +24,14 @@ public:
   push(const T& item_)
   {
     {
-      std::unique_lock guard(_queue_lock);
+      std::unique_lock<std::mutex> guard(_queue_lock);
 
       _condition_push.wait(guard, [&]() { return _queue.size() < _max_size || !_block; });
 
       if(_queue.size() == _max_size)
         return false;
 
-      _queue.push(item);
+      _queue.push(item_);
     }
 
     _condition_pop.notify_one();
@@ -43,7 +43,7 @@ public:
   push(T&& item_)
   {
     {
-      std::unique_lock guard(_queue_lock);
+      std::unique_lock<std::mutex> guard(_queue_lock);
 
       _condition_push.wait(guard, [&]() { return _queue.size() < _max_size || !_block; });
 
@@ -61,7 +61,7 @@ public:
   emplace(Args&&... args_)
   {
     {
-      std::unique_lock guard(_queue_lock);
+      std::unique_lock<std::mutex> guard(_queue_lock);
 
       _condition_push.wait(guard, [&]() { return _queue.size() < _max_size || !_block; });
 
@@ -80,7 +80,7 @@ public:
   pop(T& item_)
   {
     {
-      std::unique_lock guard(_queue_lock);
+      std::unique_lock<std::mutex> guard(_queue_lock);
 
       _condition_pop.wait(guard, [&]() { return !_queue.empty() || !_block; });
       if(_queue.empty())
@@ -99,7 +99,7 @@ public:
   std::size_t
   size() const
   {
-    std::lock_guard guard(_queue_lock);
+    std::lock_guard<std::mutex> guard(_queue_lock);
 
     return _queue.size();
   }
@@ -113,7 +113,7 @@ public:
   bool
   empty() const
   {
-    std::lock_guard guard(_queue_lock);
+    std::lock_guard<std::mutex> guard(_queue_lock);
 
     return _queue.empty();
   }
@@ -121,7 +121,7 @@ public:
   bool
   full() const
   {
-    std::lock_guard lock(_queue_lock);
+    std::lock_guard<std::mutex> lock(_queue_lock);
 
     return (_queue.size() == capacity());
   }
@@ -129,7 +129,7 @@ public:
   void
   block()
   {
-    std::lock_guard guard(_queue_lock);
+    std::lock_guard<std::mutex> guard(_queue_lock);
     _block = true;
   }
 
@@ -137,7 +137,7 @@ public:
   unblock()
   {
     {
-      std::lock_guard guard(_queue_lock);
+      std::lock_guard<std::mutex> guard(_queue_lock);
       _block = false;
     }
 
@@ -148,7 +148,7 @@ public:
   bool
   blocking() const
   {
-    std::lock_guard guard(_queue_lock);
+    std::lock_guard<std::mutex> guard(_queue_lock);
 
     return _block;
   }
