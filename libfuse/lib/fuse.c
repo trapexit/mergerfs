@@ -3831,7 +3831,7 @@ fuse_maintenance_loop(void *fuse_)
           gc = lfmp_gc(&f->node_fmp);
         }
 
-      msgbuf_gc();
+      //msgbuf_gc();
 
       if(g_LOG_METRICS)
         metrics_log_nodes_info_to_tmp_dir(f);

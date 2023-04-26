@@ -13,12 +13,13 @@ public:
   explicit
   BoundedQueue(std::size_t max_size_,
                bool        block_ = true)
-    : _block(block),
+    : _block(block_),
       _max_size(max_size_)
   {
-    if(_max_size == 0)
-      _max_size = 1;
   }
+
+  BoundedQueue(const BoundedQueue&) = delete;
+  BoundedQueue(BoundedQueue&&) = default;
 
   bool
   push(const T& item_)

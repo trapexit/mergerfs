@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "thread_pool.hpp"
+#include "bounded_thread_pool.hpp"
 #include "cpu.hpp"
 #include "fmt/core.h"
 
@@ -33,7 +33,7 @@ struct fuse_worker_data_t
   struct fuse_session *se;
   sem_t finished;
   std::function<void(fuse_worker_data_t*,fuse_msgbuf_t*)> msgbuf_processor;
-  std::shared_ptr<ThreadPool> tp;
+  std::shared_ptr<BoundedThreadPool> tp;
 };
 
 class WorkerCleanup
@@ -444,7 +444,7 @@ fuse_session_loop_mt(struct fuse_session *se_,
 
   if(process_thread_count > 0)
     {
-      wd.tp = std::make_shared<ThreadPool>(process_thread_count);
+      wd.tp = std::make_shared<BoundedThreadPool>(process_thread_count);
       wd.msgbuf_processor = process_msgbuf_async;
       process_threads = wd.tp->threads();
     }

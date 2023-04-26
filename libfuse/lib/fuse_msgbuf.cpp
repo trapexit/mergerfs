@@ -51,7 +51,7 @@ __attribute__((destructor))
 void
 msgbuf_destroy()
 {
-  msgbuf_gc();
+
 }
 
 uint32_t
