@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +18,9 @@
 
 #pragma once
 
-#include "fuse_msgbuf.h"
-#include "extern_c.h"
+#include "node.h"
 
-EXTERN_C_BEGIN
-
-void     msgbuf_set_bufsize(const uint32_t size);
-uint32_t msgbuf_get_bufsize();
-
-fuse_msgbuf_t* msgbuf_alloc();
-void           msgbuf_free(fuse_msgbuf_t *msgbuf);
-
-void           msgbuf_gc();
-
-EXTERN_C_END
+struct node* node_alloc();
+void         node_free(struct node *node_);
+int          node_gc();
+lfmp_t      *node_lfmp();

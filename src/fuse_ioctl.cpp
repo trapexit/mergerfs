@@ -25,6 +25,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "str.hpp"
+#include "syslog.hpp"
 #include "ugid.hpp"
 
 #include <string>
@@ -42,7 +43,8 @@ using std::vector;
 
 typedef char IOCTL_BUF[4096];
 #define IOCTL_APP_TYPE  0xDF
-#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_FILE_INFO      _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_TOGGLE_LOGGING _IO(IOCTL_APP_TYPE,1)
 
 // From linux/btrfs.h
 #define BTRFS_IOCTL_MAGIC 0x94
@@ -311,6 +313,19 @@ namespace l
   }
 
   static
+  int
+  toggle_logging()
+  {
+    int enabled;
+
+    enabled = fuse_log_metrics_get();
+    syslog_info("logging %sabled",(enabled ? "dis" : "en"));
+    fuse_log_metrics_set(!enabled);
+
+    return 0;
+  }
+
+  static
   bool
   is_mergerfs_ioctl_cmd(const unsigned long cmd_)
   {
@@ -334,6 +349,8 @@ namespace l
       {
       case IOCTL_FILE_INFO:
         return l::file_info(ffi_,data_);
+      case IOCTL_TOGGLE_LOGGING:
+        return l::toggle_logging();
       }
 
     return -ENOTTY;

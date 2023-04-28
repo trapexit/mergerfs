@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +18,46 @@
 
 #pragma once
 
-#include "fuse_msgbuf.h"
-#include "extern_c.h"
+#include "lfmp.h"
 
-EXTERN_C_BEGIN
+#include "node.h"
 
-void     msgbuf_set_bufsize(const uint32_t size);
-uint32_t msgbuf_get_bufsize();
+static lfmp_t g_NODE_FMP;
 
-fuse_msgbuf_t* msgbuf_alloc();
-void           msgbuf_free(fuse_msgbuf_t *msgbuf);
+__attribute__((constructor))
+void
+__construct_g_NODE_FMP()
+{
+  lfmp_init(&g_NODE_FMP,sizeof(struct node),256);
+}
 
-void           msgbuf_gc();
+__attribute__((destructor))
+void
+__destruct__g_NODE_FMP()
+{
+  lfmp_destroy(&g_NODE_FMP);
+}
 
-EXTERN_C_END
+struct node*
+node_alloc()
+{
+  return lfmp_calloc(&g_NODE_FMP);
+}
+
+void
+node_free(struct node *node_)
+{
+  lfmp_free(&g_NODE_FMP,node_);
+}
+
+int
+node_gc()
+{
+  return lfmp_gc(&g_NODE_FMP);
+}
+
+lfmp_t*
+node_lfmp()
+{
+  return &g_NODE_FMP;
+}

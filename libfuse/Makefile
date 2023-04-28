@@ -44,7 +44,8 @@ SRC_C = \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \
 	lib/helper.c \
-	lib/mount.c
+	lib/mount.c \
+	lib/node_pool.c
 SRC_CPP = \
 	lib/format.cpp \
 	lib/os.cpp \

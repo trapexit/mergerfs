@@ -21,9 +21,11 @@
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
 #include "fuse_misc.h"
+#include "fuse_msgbuf.hpp"
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
-#include "fuse_msgbuf.hpp"
+#include "lock.h"
+#include "node_pool.h"
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -46,6 +48,7 @@
 #include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
+#include <semaphore.h>
 
 #ifdef HAVE_MALLOC_TRIM
 #include <malloc.h>
@@ -58,7 +61,8 @@
 
 #define PARAM(inarg) ((void*)(((char*)(inarg)) + sizeof(*(inarg))))
 
-static int g_LOG_METRICS = 0;
+static int   g_LOG_METRICS = 0;
+static sem_t g_LOG_SEMAPHORE;
 
 struct fuse_config
 {
@@ -146,41 +150,8 @@ struct fuse
   struct lock_queue_element *lockq;
 
   pthread_t maintenance_thread;
-  lfmp_t node_fmp;
   kvec_t(remembered_node_t) remembered_nodes;
 };
-
-struct lock
-{
-  int type;
-  off_t start;
-  off_t end;
-  pid_t pid;
-  uint64_t owner;
-  struct lock *next;
-};
-
-struct node
-{
-  struct node *name_next;
-  struct node *id_next;
-
-  uint64_t nodeid;
-  char *name;
-  struct node *parent;
-
-  uint64_t nlookup;
-  uint32_t refctr;
-  uint32_t open_count;
-  uint64_t hidden_fh;
-
-  int32_t treelock;
-  struct lock *locks;
-
-  uint32_t stat_crc32b;
-  uint8_t is_stat_cache_valid:1;
-};
-
 
 #define TREELOCK_WRITE -1
 #define TREELOCK_WAIT_OFFSET INT_MIN
@@ -208,7 +179,7 @@ static int fuse_context_ref;
   nodeid is uint64_t: max value of 18446744073709551616
   If nodes were created at a rate of 1048576 per second it would take
   over 500 thousand years to roll over. I'm fine with risking that.
- */
+*/
 static
 uint64_t
 generate_nodeid(nodeid_gen_t *ng_)
@@ -281,21 +252,6 @@ list_del(struct list_head *entry)
 
   next->prev = prev;
   prev->next = next;
-}
-
-static
-struct node*
-alloc_node(struct fuse *f)
-{
-  return lfmp_calloc(&f->node_fmp);
-}
-
-static
-void
-free_node_mem(struct fuse *f,
-              struct node *node)
-{
-  return lfmp_free(&f->node_fmp,node);
 }
 
 static
@@ -409,7 +365,7 @@ free_node(struct fuse *f_,
   if(node_->hidden_fh)
     f_->fs->op.free_hide(node_->hidden_fh);
 
-  free_node_mem(f_,node_);
+  node_free(node_);
 }
 
 static
@@ -786,7 +742,7 @@ find_node(struct fuse *f,
 
   if(node == NULL)
     {
-      node = alloc_node(f);
+      node = node_alloc();
       if(node == NULL)
         goto out_err;
 
@@ -3539,48 +3495,48 @@ fuse_prune_remembered_nodes(struct fuse *f_)
 
 static struct fuse_lowlevel_ops fuse_path_ops =
   {
-   .access          = fuse_lib_access,
-   .bmap            = fuse_lib_bmap,
-   .copy_file_range = fuse_lib_copy_file_range,
-   .create          = fuse_lib_create,
-   .destroy         = fuse_lib_destroy,
-   .fallocate       = fuse_lib_fallocate,
-   .flock           = fuse_lib_flock,
-   .flush           = fuse_lib_flush,
-   .forget          = fuse_lib_forget,
-   .forget_multi    = fuse_lib_forget_multi,
-   .fsync           = fuse_lib_fsync,
-   .fsyncdir        = fuse_lib_fsyncdir,
-   .getattr         = fuse_lib_getattr,
-   .getlk           = fuse_lib_getlk,
-   .getxattr        = fuse_lib_getxattr,
-   .init            = fuse_lib_init,
-   .ioctl           = fuse_lib_ioctl,
-   .link            = fuse_lib_link,
-   .listxattr       = fuse_lib_listxattr,
-   .lookup          = fuse_lib_lookup,
-   .mkdir           = fuse_lib_mkdir,
-   .mknod           = fuse_lib_mknod,
-   .open            = fuse_lib_open,
-   .opendir         = fuse_lib_opendir,
-   .poll            = fuse_lib_poll,
-   .read            = fuse_lib_read,
-   .readdir         = fuse_lib_readdir,
-   .readdir_plus    = fuse_lib_readdir_plus,
-   .readlink        = fuse_lib_readlink,
-   .release         = fuse_lib_release,
-   .releasedir      = fuse_lib_releasedir,
-   .removexattr     = fuse_lib_removexattr,
-   .rename          = fuse_lib_rename,
-   .retrieve_reply  = NULL,
-   .rmdir           = fuse_lib_rmdir,
-   .setattr         = fuse_lib_setattr,
-   .setlk           = fuse_lib_setlk,
-   .setxattr        = fuse_lib_setxattr,
-   .statfs          = fuse_lib_statfs,
-   .symlink         = fuse_lib_symlink,
-   .unlink          = fuse_lib_unlink,
-   .write           = fuse_lib_write,
+    .access          = fuse_lib_access,
+    .bmap            = fuse_lib_bmap,
+    .copy_file_range = fuse_lib_copy_file_range,
+    .create          = fuse_lib_create,
+    .destroy         = fuse_lib_destroy,
+    .fallocate       = fuse_lib_fallocate,
+    .flock           = fuse_lib_flock,
+    .flush           = fuse_lib_flush,
+    .forget          = fuse_lib_forget,
+    .forget_multi    = fuse_lib_forget_multi,
+    .fsync           = fuse_lib_fsync,
+    .fsyncdir        = fuse_lib_fsyncdir,
+    .getattr         = fuse_lib_getattr,
+    .getlk           = fuse_lib_getlk,
+    .getxattr        = fuse_lib_getxattr,
+    .init            = fuse_lib_init,
+    .ioctl           = fuse_lib_ioctl,
+    .link            = fuse_lib_link,
+    .listxattr       = fuse_lib_listxattr,
+    .lookup          = fuse_lib_lookup,
+    .mkdir           = fuse_lib_mkdir,
+    .mknod           = fuse_lib_mknod,
+    .open            = fuse_lib_open,
+    .opendir         = fuse_lib_opendir,
+    .poll            = fuse_lib_poll,
+    .read            = fuse_lib_read,
+    .readdir         = fuse_lib_readdir,
+    .readdir_plus    = fuse_lib_readdir_plus,
+    .readlink        = fuse_lib_readlink,
+    .release         = fuse_lib_release,
+    .releasedir      = fuse_lib_releasedir,
+    .removexattr     = fuse_lib_removexattr,
+    .rename          = fuse_lib_rename,
+    .retrieve_reply  = NULL,
+    .rmdir           = fuse_lib_rmdir,
+    .setattr         = fuse_lib_setattr,
+    .setlk           = fuse_lib_setlk,
+    .setxattr        = fuse_lib_setxattr,
+    .statfs          = fuse_lib_statfs,
+    .symlink         = fuse_lib_symlink,
+    .unlink          = fuse_lib_unlink,
+    .write           = fuse_lib_write,
   };
 
 int
@@ -3614,33 +3570,33 @@ fuse_get_context(void)
 }
 
 enum {
-      KEY_HELP,
+  KEY_HELP,
 };
 
 #define FUSE_LIB_OPT(t,p,v) { t,offsetof(struct fuse_config,p),v }
 
 static const struct fuse_opt fuse_lib_opts[] =
   {
-   FUSE_OPT_KEY("-h",		      KEY_HELP),
-   FUSE_OPT_KEY("--help",	      KEY_HELP),
-   FUSE_OPT_KEY("debug",	      FUSE_OPT_KEY_KEEP),
-   FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
-   FUSE_LIB_OPT("debug",	      debug,1),
-   FUSE_LIB_OPT("-d",		      debug,1),
-   FUSE_LIB_OPT("nogc",               nogc,1),
-   FUSE_LIB_OPT("umask=",	      set_mode,1),
-   FUSE_LIB_OPT("umask=%o",	      umask,0),
-   FUSE_LIB_OPT("uid=",	              set_uid,1),
-   FUSE_LIB_OPT("uid=%d",	      uid,0),
-   FUSE_LIB_OPT("gid=",	              set_gid,1),
-   FUSE_LIB_OPT("gid=%d",	      gid,0),
-   FUSE_LIB_OPT("noforget",           remember,-1),
-   FUSE_LIB_OPT("remember=%u",        remember,0),
-   FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
-   FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
-   FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
-   FUSE_LIB_OPT("pin-threads=%s",     pin_threads, 0),
-   FUSE_OPT_END
+    FUSE_OPT_KEY("-h",		      KEY_HELP),
+    FUSE_OPT_KEY("--help",	      KEY_HELP),
+    FUSE_OPT_KEY("debug",	      FUSE_OPT_KEY_KEEP),
+    FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
+    FUSE_LIB_OPT("debug",	      debug,1),
+    FUSE_LIB_OPT("-d",		      debug,1),
+    FUSE_LIB_OPT("nogc",               nogc,1),
+    FUSE_LIB_OPT("umask=",	      set_mode,1),
+    FUSE_LIB_OPT("umask=%o",	      umask,0),
+    FUSE_LIB_OPT("uid=",	              set_uid,1),
+    FUSE_LIB_OPT("uid=%d",	      uid,0),
+    FUSE_LIB_OPT("gid=",	              set_gid,1),
+    FUSE_LIB_OPT("gid=%d",	      gid,0),
+    FUSE_LIB_OPT("noforget",           remember,-1),
+    FUSE_LIB_OPT("remember=%u",        remember,0),
+    FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
+    FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
+    FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
+    FUSE_LIB_OPT("pin-threads=%s",     pin_threads, 0),
+    FUSE_OPT_END
   };
 
 static void fuse_lib_help(void)
@@ -3730,10 +3686,21 @@ metrics_log_nodes_info(struct fuse *f_,
                        FILE        *file_)
 {
   char buf[1024];
+  time_t timestamp;
+  struct tm timestamp_tm;
+  char timestamp_str[256];
+  lfmp_t *lfmp;
 
-  lfmp_lock(&f_->node_fmp);
+  timestamp = time(NULL);
+  localtime_r(&timestamp,&timestamp_tm);
+  strftime(timestamp_str,sizeof(timestamp_str),"%Y-%m-%dT%H:%M:%S",&timestamp_tm);
+
+  lfmp = node_lfmp();
+
+  lfmp_lock(lfmp);
   snprintf(buf,sizeof(buf),
            "time: %"PRIu64"\n"
+           "time: %s\n"
            "sizeof(node): %"PRIu64"\n"
            "node id_table size: %"PRIu64"\n"
            "node id_table usage: %"PRIu64"\n"
@@ -3747,7 +3714,8 @@ metrics_log_nodes_info(struct fuse *f_,
            "node memory pool total allocated memory: %"PRIu64"\n"
            "\n"
            ,
-           (uint64_t)time(NULL),
+           (uint64_t)timestamp,
+           timestamp_str,
            (uint64_t)sizeof(struct node),
            (uint64_t)f_->id_table.size,
            (uint64_t)f_->id_table.use,
@@ -3755,12 +3723,12 @@ metrics_log_nodes_info(struct fuse *f_,
            (uint64_t)f_->name_table.size,
            (uint64_t)f_->name_table.use,
            (uint64_t)(f_->name_table.size * sizeof(struct node*)),
-           (uint64_t)fmp_slab_count(&f_->node_fmp.fmp),
-           fmp_slab_usage_ratio(&f_->node_fmp.fmp),
-           (uint64_t)fmp_avail_objs(&f_->node_fmp.fmp),
-           (uint64_t)fmp_total_allocated_memory(&f_->node_fmp.fmp)
+           (uint64_t)fmp_slab_count(&lfmp->fmp),
+           fmp_slab_usage_ratio(&lfmp->fmp),
+           (uint64_t)fmp_avail_objs(&lfmp->fmp),
+           (uint64_t)fmp_total_allocated_memory(&lfmp->fmp)
            );
-  lfmp_unlock(&f_->node_fmp);
+  lfmp_unlock(lfmp);
 
   fputs(buf,file_);
 }
@@ -3793,18 +3761,24 @@ fuse_malloc_trim(void)
 #endif
 }
 
+void
+fuse_gc()
+{
+  fuse_malloc_trim();
+  node_gc();
+  msgbuf_gc();
+}
+
 static
 void*
 fuse_maintenance_loop(void *fuse_)
 {
   int gc;
   int loops;
-  int sleep_time;
   struct fuse *f = (struct fuse*)fuse_;
 
   gc = 0;
   loops = 0;
-  sleep_time = 60;
   while(1)
     {
       if(remember_nodes(f))
@@ -3818,13 +3792,15 @@ fuse_maintenance_loop(void *fuse_)
 
       // Trigger a followup gc if this gc succeeds
       if(!f->conf.nogc && gc)
-        gc = lfmp_gc(&f->node_fmp);
+        gc = node_gc();
 
       if(g_LOG_METRICS)
         metrics_log_nodes_info_to_tmp_dir(f);
 
       loops++;
-      sleep(sleep_time);
+
+      struct timespec timeout = {60,0};
+      sem_timedwait(&g_LOG_SEMAPHORE,&timeout);
     }
 
   return NULL;
@@ -3902,10 +3878,9 @@ fuse_new_common(struct fuse_chan             *ch,
 
   fuse_mutex_init(&f->lock);
 
-  lfmp_init(&f->node_fmp,sizeof(struct node),256);
   kv_init(f->remembered_nodes);
 
-  root = alloc_node(f);
+  root = node_alloc();
   if(root == NULL)
     {
       fprintf(stderr,"fuse: memory allocation failed\n");
@@ -3918,6 +3893,8 @@ fuse_new_common(struct fuse_chan             *ch,
   root->nodeid = FUSE_ROOT_ID;
   inc_nlookup(root);
   hash_id(f,root);
+
+  sem_init(&g_LOG_SEMAPHORE,0,0);
 
   return f;
 
@@ -3989,11 +3966,11 @@ fuse_destroy(struct fuse *f)
         }
     }
 
+  node_gc();
   free(f->id_table.array);
   free(f->name_table.array);
   pthread_mutex_destroy(&f->lock);
   fuse_session_destroy(f->se);
-  lfmp_destroy(&f->node_fmp);
   kv_destroy(f->remembered_nodes);
   free(f);
   fuse_delete_context_key();
@@ -4022,6 +3999,8 @@ void
 fuse_log_metrics_set(int log_)
 {
   g_LOG_METRICS = log_;
+  if(g_LOG_METRICS)
+    sem_post(&g_LOG_SEMAPHORE);
 }
 
 int
