@@ -97,11 +97,11 @@ start with one of the following option sets.
 
 ### Command Line
 
-`mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media`
+`mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd\*:/mnt/otherhdd:/mnt/rohdd=ro /media`
 
 ### /etc/fstab
 
-`/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
+`/mnt/hdd*:/mnt/otherhdd:/mnt/rohdd=ro /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
 
 ### systemd mount
 
