@@ -289,13 +289,11 @@ These options are the same regardless of whether you use them with the
   `async_read=true` instead.
 * **sync_read**: deprecated - Perform reads synchronously. Use
   `async_read=false` instead.
-* **use_ino**: deprecated - Always enabled.
+* **use_ino**: deprecated - Always enabled. Mergerfs should always control inode calculation so this is enabled all the time.
 * **allow_other**: deprecated - Always enabled. Mergerfs always sets this FUSE option as normal permissions can be used to limit access.
 * **splice_read**: deprecated - Does nothing.
 * **splice_write**: deprecated - Does nothing.
 * **splice_move**: deprecated - Does nothing.
-* **use_ino**: deprecated - mergerfs should always control inode
-  calculation so this is enabled all the time.
 
 
 **NOTE:** Options are evaluated in the order listed so if the options
