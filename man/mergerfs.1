@@ -397,9 +397,9 @@ Use \f[C]async_read=true\f[R] instead.
 \f[B]sync_read\f[R]: deprecated - Perform reads synchronously.
 Use \f[C]async_read=false\f[R] instead.
 .IP \[bu] 2
-\f[B]use_ino\f[R]: deprecated - Always enabled.
+\f[B]use_ino\f[R]: deprecated - Always enabled. Mergerfs should always control inode calculation so this is enabled all the time.
 .IP \[bu] 2
-\f[B]allow_other\f[R]: deprecated - Always enabled.
+\f[B]allow_other\f[R]: deprecated - Always enabled. Mergerfs always sets this FUSE option as normal permissions can be used to limit access.
 .IP \[bu] 2
 \f[B]splice_read\f[R]: deprecated - Does nothing.
 .IP \[bu] 2
@@ -407,11 +407,6 @@ Use \f[C]async_read=false\f[R] instead.
 .IP \[bu] 2
 \f[B]splice_move\f[R]: deprecated - Does nothing.
 .IP \[bu] 2
-\f[B]allow_other\f[R]: deprecated - mergerfs always sets this FUSE
-option as normal permissions can be used to limit access.
-.IP \[bu] 2
-\f[B]use_ino\f[R]: deprecated - mergerfs should always control inode
-calculation so this is enabled all the time.
 .PP
 \f[B]NOTE:\f[R] Options are evaluated in the order listed so if the
 options are \f[B]func.rmdir=rand,category.action=ff\f[R] the
