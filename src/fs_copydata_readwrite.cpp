@@ -57,8 +57,7 @@ namespace l
   int
   copydata_readwrite(const int    src_fd_,
                      const int    dst_fd_,
-                     const size_t count_,
-                     const size_t blocksize_)
+                     const size_t count_)
   {
     ssize_t nr;
     ssize_t nw;
@@ -66,7 +65,7 @@ namespace l
     size_t  totalwritten;
     vector<char> buf;
 
-    bufsize = (blocksize_ * 16);
+    bufsize = (128 * 1024);
     buf.resize(bufsize);
 
     fs::lseek(src_fd_,0,SEEK_SET);
@@ -108,7 +107,6 @@ namespace fs
 
     return l::copydata_readwrite(src_fd_,
                                  dst_fd_,
-                                 st.st_size,
-                                 st.st_blksize);
+                                 st.st_size);
   }
 }

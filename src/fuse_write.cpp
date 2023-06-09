@@ -44,28 +44,10 @@ namespace l
 
   static
   int
-  write_regular(const int     fd_,
-                const void   *buf_,
-                const size_t  count_,
-                const off_t   offset_)
-  {
-    int rv;
-
-    rv = fs::pwrite(fd_,buf_,count_,offset_);
-    if(rv == -1)
-      return -errno;
-    if(rv == 0)
-      return 0;
-
-    return count_;
-  }
-
-  static
-  int
-  write_direct_io(const int     fd_,
-                  const void   *buf_,
-                  const size_t  count_,
-                  const off_t   offset_)
+  write(const int     fd_,
+        const void   *buf_,
+        const size_t  count_,
+        const off_t   offset_)
   {
     int rv;
 
@@ -78,8 +60,7 @@ namespace l
 
   static
   int
-  move_and_write(WriteFunc     func_,
-                 const char   *buf_,
+  move_and_write(const char   *buf_,
                  const size_t  count_,
                  const off_t   offset_,
                  FileInfo     *fi_,
@@ -94,17 +75,18 @@ namespace l
     rv = fs::movefile_as_root(cfg->moveonenospc.policy,
                               cfg->branches,
                               fi_->fusepath,
-                              &fi_->fd);
-    if(rv == -1)
+                              fi_->fd);
+    if(rv < 0)
       return err_;
 
-    return func_(fi_->fd,buf_,count_,offset_);
+    fi_->fd = rv;
+
+    return l::write(fi_->fd,buf_,count_,offset_);
   }
 
   static
   int
   write(const fuse_file_info_t *ffi_,
-        WriteFunc               func_,
         const char             *buf_,
         const size_t            count_,
         const off_t             offset_)
@@ -114,9 +96,9 @@ namespace l
 
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    rv = func_(fi->fd,buf_,count_,offset_);
+    rv = l::write(fi->fd,buf_,count_,offset_);
     if(l::out_of_space(-rv))
-      rv = l::move_and_write(func_,buf_,count_,offset_,fi,rv);
+      rv = l::move_and_write(buf_,count_,offset_,fi,rv);
 
     return rv;
   }
@@ -130,13 +112,7 @@ namespace FUSE
         size_t                  count_,
         off_t                   offset_)
   {
-    WriteFunc wf;
-
-    wf = ((ffi_->direct_io) ?
-          l::write_direct_io :
-          l::write_regular);
-
-    return l::write(ffi_,wf,buf_,count_,offset_);
+    return l::write(ffi_,buf_,count_,offset_);
   }
 
   int

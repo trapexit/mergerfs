@@ -59,7 +59,7 @@ namespace fs
 
     fd    = -1;
     count = MAX_ATTEMPTS;
-    flags = (flags_ | O_EXCL | O_CREAT);
+    flags = (flags_ | O_EXCL | O_CREAT | O_TRUNC);
     while(count-- > 0)
       {
         tmppath = generate_tmp_path(*base_);
