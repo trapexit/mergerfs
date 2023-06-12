@@ -362,9 +362,9 @@ branch. If not set the global value is used.
 #### globbing
 
 To make it easier to include multiple branches mergerfs supports
-[globbing](http://linux.die.net/man/7/glob). The globbing tokens
+[globbing](http://linux.die.net/man/7/glob). **The globbing tokens
 MUST be escaped when using via the shell else the shell itself will
-apply the glob itself. Do not escape the glob in `fstab`.
+apply the glob itself. Do not escape the glob in `fstab`.**
 
 
 ```
