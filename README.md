@@ -33,6 +33,10 @@ is similar to **mhddfs**, **unionfs**, and **aufs**.
 * Support for POSIX ACLs
 * Misc other things
 
+# TRAPS
+
+* `mv` deletes your files. Just copy!
+* Some applications need special settings. (NFS, torrents)
 
 # HOW IT WORKS
 
