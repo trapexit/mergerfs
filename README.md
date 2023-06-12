@@ -1661,7 +1661,8 @@ file and other files across the branches.
 
 If you want to move files to one filesystem just **copy** them there and
 use `mergerfs.dedup` to clean up the old paths or manually remove them
-from the branches directly. (Or just move them using the underlying paths.)
+from the underlying paths / branches directly. (Or just move them using 
+the underlying paths.)
 
 
 #### cached memory appears greater than it should be
