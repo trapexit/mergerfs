@@ -1636,6 +1636,8 @@ most recent mtime then use the `newest` policy for `getattr`.
 
 #### 'mv /mnt/pool/foo /mnt/disk1/foo' removes 'foo'
 
+**You read that correctly: moving a file deletes it!**
+
 This is not a bug.
 
 Run in verbose mode to better understand what's happening:
@@ -1653,9 +1655,9 @@ then removing the source. Since the source **is** the target in this
 case, depending on the unlink policy, it will remove the just copied
 file and other files across the branches.
 
-If you want to move files to one filesystem just copy them there and
-use mergerfs.dedup to clean up the old paths or manually remove them
-from the branches directly.
+If you want to move files to one filesystem just **copy** them there and
+use `mergerfs.dedup` to clean up the old paths or manually remove them
+from the branches directly. (Or just move them using the underlying paths.)
 
 
 #### cached memory appears greater than it should be
