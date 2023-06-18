@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -16,27 +18,25 @@
 
 #pragma once
 
-#include "fh.hpp"
-
-#include <cstdint>
-#include <string>
-#include <mutex>
+#include <unistd.h>
 
 
-class FileInfo : public FH
+namespace fs
 {
-public:
-  FileInfo(int const   fd_,
-           char const *fusepath_,
-           bool const  direct_io_)
-    : FH(fusepath_),
-      fd(fd_),
-      direct_io(direct_io_)
+  static
+  inline
+  ssize_t
+  pwrite(int const     fd_,
+         void const   *buf_,
+         size_t const  count_,
+         off_t const   offset_)
   {
-  }
+    ssize_t rv;
 
-public:
-  int fd;
-  uint32_t direct_io:1;
-  std::mutex mutex;
-};
+    rv = ::pwrite(fd_,buf_,count_,offset_);
+    if(rv == -1)
+      return -errno;
+
+    return rv;
+  }
+}

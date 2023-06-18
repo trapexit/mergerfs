@@ -23,17 +23,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct fuse_bufvec fuse_bufvec;
-
 
 namespace l
 {
   static
   int
-  read(const int     fd_,
-       char         *buf_,
-       const size_t  size_,
-       const off_t   offset_)
+  read_direct_io(const int     fd_,
+                 char         *buf_,
+                 const size_t  size_,
+                 const off_t   offset_)
+  {
+    int rv;
+
+    rv = fs::pread(fd_,buf_,size_,offset_);
+
+    return rv;
+  }
+
+  static
+  int
+  read_cached(const int     fd_,
+              char         *buf_,
+              const size_t  size_,
+              const off_t   offset_)
   {
     int rv;
 
@@ -53,10 +65,10 @@ namespace FUSE
   {
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    return l::read(fi->fd,
-                   buf_,
-                   size_,
-                   offset_);
+    if(fi->direct_io)
+      return l::read_direct_io(fi->fd,buf_,size_,offset_);
+
+    return l::read_cached(fi->fd,buf_,size_,offset_);
   }
 
   int

@@ -65,10 +65,8 @@ namespace l
     size_t  totalwritten;
     vector<char> buf;
 
-    bufsize = (128 * 1024);
+    bufsize = (1024 * 1024);
     buf.resize(bufsize);
-
-    fs::lseek(src_fd_,0,SEEK_SET);
 
     totalwritten = 0;
     while(totalwritten < count_)

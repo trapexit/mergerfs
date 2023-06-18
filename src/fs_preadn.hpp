@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <unistd.h>
+#include "fs_pread.hpp"
 
 
 namespace fs
@@ -26,10 +26,34 @@ namespace fs
   static
   inline
   ssize_t
-  write(const int     fd_,
-        const void   *buf_,
-        const size_t  count_)
+  preadn(int const     fd_,
+         void         *buf_,
+         size_t const  count_,
+         off_t const   offset_,
+         int          *err_)
   {
-    return ::write(fd_,buf_,count_);
+    ssize_t rv;
+    ssize_t count = count_;
+    off_t   offset = offset_;
+    char const *buf = (char const *)buf_;
+
+    *err_ = 0;
+    while(count > 0)
+      {
+        rv = fs::pread(fd_,buf,count,offset);
+        if(rv == 0)
+          return (count_ - count);
+        if(rv < 0)
+          {
+            *err_ = rv;
+            return (count_ - count);
+          }
+
+        buf    += rv;
+        count  -= rv;
+        offset += rv;
+      }
+
+    return count_;
   }
 }

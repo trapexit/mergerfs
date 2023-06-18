@@ -279,6 +279,9 @@ These options are the same regardless of whether you use them with the
   (default: false)
 * **cache.readdir=BOOL**: Cache readdir (if supported by kernel)
   (default: false)
+* **parallel-direct-writes=BOOL**: Allow the kernel to dispatch
+  multiple, parallel (non-extending) write requests for files opened
+  with `direct_io=true` (if supported by the kernel)
 * **direct_io**: deprecated - Bypass page cache. Use `cache.files=off`
   instead. (default: false)
 * **kernel_cache**: deprecated - Do not invalidate data cache on file
@@ -1461,6 +1464,7 @@ understand what behaviors it may impact
 * disable `security_capability` and/or `xattr`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable (or disable) page caching (`cache.files`)
+* enable `parallel-direct-writes`
 * enable `cache.writeback`
 * enable `cache.statfs`
 * enable `cache.symlinks`

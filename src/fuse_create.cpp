@@ -102,6 +102,9 @@ namespace l
           }
         break;
       }
+
+    if(cfg_->parallel_direct_writes == true)
+      ffi_->parallel_direct_writes = ffi_->direct_io;
   }
 
   static
@@ -121,21 +124,23 @@ namespace l
   int
   create_core(const std::string &createpath_,
               const char        *fusepath_,
+              fuse_file_info_t  *ffi_,
               const mode_t       mode_,
-              const mode_t       umask_,
-              const int          flags_,
-              uint64_t          *fh_)
+              const mode_t       umask_)
   {
     int rv;
+    FileInfo *fi;
     std::string fullpath;
 
     fullpath = fs::path::make(createpath_,fusepath_);
 
-    rv = l::create_core(fullpath,mode_,umask_,flags_);
+    rv = l::create_core(fullpath,mode_,umask_,ffi_->flags);
     if(rv == -1)
       return -errno;
 
-    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(rv,fusepath_));
+    fi = new FileInfo(rv,fusepath_,ffi_->direct_io);
+
+    ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
     return 0;
   }
@@ -146,10 +151,9 @@ namespace l
          const Policy::Create &createFunc_,
          const Branches       &branches_,
          const char           *fusepath_,
+         fuse_file_info_t     *ffi_,
          const mode_t          mode_,
-         const mode_t          umask_,
-         const int             flags_,
-         uint64_t             *fh_)
+         const mode_t          umask_)
   {
     int rv;
     std::string fullpath;
@@ -173,10 +177,9 @@ namespace l
 
     return l::create_core(createpaths[0],
                           fusepath_,
+                          ffi_,
                           mode_,
-                          umask_,
-                          flags_,
-                          fh_);
+                          umask_);
   }
 }
 
@@ -187,6 +190,7 @@ namespace FUSE
          mode_t            mode_,
          fuse_file_info_t *ffi_)
   {
+    int rv;
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
@@ -196,13 +200,14 @@ namespace FUSE
     if(cfg->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return l::create(cfg->func.getattr.policy,
-                     cfg->func.create.policy,
-                     cfg->branches,
-                     fusepath_,
-                     mode_,
-                     fc->umask,
-                     ffi_->flags,
-                     &ffi_->fh);
+    rv = l::create(cfg->func.getattr.policy,
+                   cfg->func.create.policy,
+                   cfg->branches,
+                   fusepath_,
+                   ffi_,
+                   mode_,
+                   fc->umask);
+
+    return rv;
   }
 }

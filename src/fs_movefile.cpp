@@ -156,8 +156,6 @@ namespace l
 
     fs::unlink(srcfd_filepath);
 
-    fs::close(origfd_);
-
     return rv;
   }
 }

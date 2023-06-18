@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,27 +18,21 @@
 
 #pragma once
 
-#include "fh.hpp"
-
-#include <cstdint>
-#include <string>
-#include <mutex>
+#include <unistd.h>
 
 
-class FileInfo : public FH
+namespace fs
 {
-public:
-  FileInfo(int const   fd_,
-           char const *fusepath_,
-           bool const  direct_io_)
-    : FH(fusepath_),
-      fd(fd_),
-      direct_io(direct_io_)
+  static
+  inline
+  int
+  dup2(int const oldfd_,
+       int const newfd_)
   {
-  }
+    int rv;
 
-public:
-  int fd;
-  uint32_t direct_io:1;
-  std::mutex mutex;
-};
+    rv = ::dup2(oldfd_,newfd_);
+
+    return ((rv == -1) ? -errno : rv);
+  }
+}

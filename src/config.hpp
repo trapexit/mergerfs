@@ -131,6 +131,7 @@ public:
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
+  ConfigBOOL     parallel_direct_writes;
   ConfigUINT64   pid;
   ConfigBOOL     posix_acl;
   ConfigUINT64   readahead;
@@ -150,7 +151,6 @@ public:
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;
   XAttr          xattr;
-
 
 private:
   bool _initialized;
