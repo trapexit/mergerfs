@@ -165,32 +165,37 @@ namespace l
           }
         break;
       }
+
+    if(cfg_->parallel_direct_writes == true)
+      ffi_->parallel_direct_writes = ffi_->direct_io;
   }
 
   static
   int
   open_core(const std::string &basepath_,
             const char        *fusepath_,
-            const int          flags_,
+            fuse_file_info_t  *ffi_,
             const bool         link_cow_,
-            const NFSOpenHack  nfsopenhack_,
-            uint64_t          *fh_)
+            const NFSOpenHack  nfsopenhack_)
   {
     int fd;
+    FileInfo *fi;
     std::string fullpath;
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),flags_))
+    if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),ffi_->flags))
       fs::cow::break_link(fullpath.c_str());
 
-    fd = fs::open(fullpath,flags_);
+    fd = fs::open(fullpath,ffi_->flags);
     if((fd == -1) && (errno == EACCES))
-      fd = l::nfsopenhack(fullpath,flags_,nfsopenhack_);
+      fd = l::nfsopenhack(fullpath,ffi_->flags,nfsopenhack_);
     if(fd == -1)
       return -errno;
 
-    *fh_ = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_));
+    fi = new FileInfo(fd,fusepath_,ffi_->direct_io);
+
+    ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
     return 0;
   }
@@ -200,10 +205,9 @@ namespace l
   open(const Policy::Search &searchFunc_,
        const Branches       &branches_,
        const char           *fusepath_,
-       const int             flags_,
+       fuse_file_info_t     *ffi_,
        const bool            link_cow_,
-       const NFSOpenHack     nfsopenhack_,
-       uint64_t             *fh_)
+       const NFSOpenHack     nfsopenhack_)
   {
     int rv;
     StrVec basepaths;
@@ -212,7 +216,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    return l::open_core(basepaths[0],fusepath_,flags_,link_cow_,nfsopenhack_,fh_);
+    return l::open_core(basepaths[0],fusepath_,ffi_,link_cow_,nfsopenhack_);
   }
 }
 
@@ -222,6 +226,7 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
+    int rv;
     Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
@@ -231,12 +236,13 @@ namespace FUSE
     if(cfg->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
 
-    return l::open(cfg->func.open.policy,
-                   cfg->branches,
-                   fusepath_,
-                   ffi_->flags,
-                   cfg->link_cow,
-                   cfg->nfsopenhack,
-                   &ffi_->fh);
+    rv = l::open(cfg->func.open.policy,
+                 cfg->branches,
+                 fusepath_,
+                 ffi_,
+                 cfg->link_cow,
+                 cfg->nfsopenhack);
+
+    return rv;
   }
 }

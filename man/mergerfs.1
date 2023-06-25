@@ -377,6 +377,10 @@ to enable page caching for when \f[C]cache.files=per-process\f[R].
 \f[B]cache.readdir=BOOL\f[R]: Cache readdir (if supported by kernel)
 (default: false)
 .IP \[bu] 2
+\f[B]parallel-direct-writes=BOOL\f[R]: Allow the kernel to dispatch
+multiple, parallel (non-extending) write requests for files opened with
+\f[C]direct_io=true\f[R] (if supported by the kernel)
+.IP \[bu] 2
 \f[B]direct_io\f[R]: deprecated - Bypass page cache.
 Use \f[C]cache.files=off\f[R] instead.
 (default: false)
@@ -1901,6 +1905,8 @@ increase cache timeouts \f[C]cache.attr\f[R], \f[C]cache.entry\f[R],
 \f[C]cache.negative_entry\f[R]
 .IP \[bu] 2
 enable (or disable) page caching (\f[C]cache.files\f[R])
+.IP \[bu] 2
+enable \f[C]parallel-direct-writes\f[R]
 .IP \[bu] 2
 enable \f[C]cache.writeback\f[R]
 .IP \[bu] 2

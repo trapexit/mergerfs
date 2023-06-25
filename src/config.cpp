@@ -107,6 +107,7 @@ Config::Config()
     moveonenospc(false),
     nfsopenhack(NFSOpenHack::ENUM::OFF),
     nullrw(false),
+    parallel_direct_writes(false),
     pid(::getpid()),
     posix_acl(false),
     readahead(0),
@@ -182,6 +183,7 @@ Config::Config()
   _map["nfsopenhack"]            = &nfsopenhack;
   _map["nullrw"]                 = &nullrw;
   _map["pid"]                    = &pid;
+  _map["parallel-direct-writes"] = &parallel_direct_writes;
   _map["pin-threads"]            = &fuse_pin_threads;
   _map["posix_acl"]              = &posix_acl;
   _map["readahead"]              = &readahead;

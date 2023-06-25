@@ -261,18 +261,20 @@ fill_entry(struct fuse_entry_out         *arg,
 
 static
 void
-fill_open(struct fuse_open_out   *arg,
-          const fuse_file_info_t *f)
+fill_open(struct fuse_open_out   *arg_,
+          const fuse_file_info_t *ffi_)
 {
-  arg->fh = f->fh;
-  if(f->direct_io)
-    arg->open_flags |= FOPEN_DIRECT_IO;
-  if(f->keep_cache)
-    arg->open_flags |= FOPEN_KEEP_CACHE;
-  if(f->nonseekable)
-    arg->open_flags |= FOPEN_NONSEEKABLE;
-  if(f->cache_readdir)
-    arg->open_flags |= FOPEN_CACHE_DIR;
+  arg_->fh = ffi_->fh;
+  if(ffi_->direct_io)
+    arg_->open_flags |= FOPEN_DIRECT_IO;
+  if(ffi_->keep_cache)
+    arg_->open_flags |= FOPEN_KEEP_CACHE;
+  if(ffi_->nonseekable)
+    arg_->open_flags |= FOPEN_NONSEEKABLE;
+  if(ffi_->cache_readdir)
+    arg_->open_flags |= FOPEN_CACHE_DIR;
+  if(ffi_->parallel_direct_writes)
+    arg_->open_flags |= FOPEN_PARALLEL_DIRECT_WRITES;
 }
 
 int
@@ -1414,9 +1416,10 @@ fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch,
   if(!f)
     return -ENODEV;
 
-  outarg.parent = parent;
+  outarg.parent  = parent;
   outarg.namelen = namelen;
-  outarg.padding = 0;
+  // TODO: Add ability to set `flags`
+  outarg.flags   = 0;
 
   iov[1].iov_base = &outarg;
   iov[1].iov_len = sizeof(outarg);

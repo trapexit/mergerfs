@@ -32,15 +32,4 @@ namespace fs
   {
     return ::write(fd_,buf_,count_);
   }
-
-  static
-  inline
-  ssize_t
-  pwrite(const int     fd_,
-         const void   *buf_,
-         const size_t  count_,
-         const off_t   offset_)
-  {
-    return ::pwrite(fd_,buf_,count_,offset_);
-  }
 }

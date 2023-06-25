@@ -84,6 +84,8 @@ struct fuse_file_info_t
 
   uint32_t auto_cache : 1;
 
+  uint32_t parallel_direct_writes:1;
+
   /** File handle.  May be filled in by filesystem in open().
       Available in all other file operations */
   uint64_t fh;

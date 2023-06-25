@@ -197,6 +197,15 @@
  *
  *  7.37
  *  - add FUSE_TMPFILE
+ *
+ *  7.38
+ *  - add FUSE_EXPIRE_ONLY flag to fuse_notify_inval_entry
+ *  - add FOPEN_PARALLEL_DIRECT_WRITES
+ *  - add total_extlen to fuse_in_header
+ *  - add FUSE_MAX_NR_SECCTX
+ *  - add extension header
+ *  - add FUSE_EXT_GROUPS
+ *  - add FUSE_CREATE_SUPP_GROUP
  */
 
 #ifndef _LINUX_FUSE_H
@@ -232,7 +241,7 @@
 #define FUSE_KERNEL_VERSION 7
 
 /** Minor version number of this interface */
-#define FUSE_KERNEL_MINOR_VERSION 37
+#define FUSE_KERNEL_MINOR_VERSION 38
 
 /** The node ID of the root inode */
 #define FUSE_ROOT_ID 1
@@ -304,13 +313,15 @@ struct fuse_file_lock {
  * FOPEN_CACHE_DIR: allow caching this directory
  * FOPEN_STREAM: the file is stream-like (no file position at all)
  * FOPEN_NOFLUSH: don't flush data cache on close (unless FUSE_WRITEBACK_CACHE)
+ * FOPEN_PARALLEL_DIRECT_WRITES: Allow concurrent direct writes on the same inode
  */
-#define FOPEN_DIRECT_IO		(1 << 0)
-#define FOPEN_KEEP_CACHE	(1 << 1)
-#define FOPEN_NONSEEKABLE	(1 << 2)
-#define FOPEN_CACHE_DIR		(1 << 3)
-#define FOPEN_STREAM		(1 << 4)
-#define FOPEN_NOFLUSH		(1 << 5)
+#define FOPEN_DIRECT_IO              (1 << 0)
+#define FOPEN_KEEP_CACHE             (1 << 1)
+#define FOPEN_NONSEEKABLE            (1 << 2)
+#define FOPEN_CACHE_DIR              (1 << 3)
+#define FOPEN_STREAM                 (1 << 4)
+#define FOPEN_NOFLUSH                (1 << 5)
+#define FOPEN_PARALLEL_DIRECT_WRITES (1 << 6)
 
 /**
  * INIT request/reply flags
@@ -356,42 +367,45 @@ struct fuse_file_lock {
  * FUSE_SECURITY_CTX:	add security context to create, mkdir, symlink, and
  *			mknod
  * FUSE_HAS_INODE_DAX:  use per inode DAX
+ * FUSE_CREATE_SUPP_GROUP: add supplementary group info to create, mkdir,
+ *			symlink and mknod (single group that matches parent)
  */
-#define FUSE_ASYNC_READ		(1 << 0)
-#define FUSE_POSIX_LOCKS	(1 << 1)
-#define FUSE_FILE_OPS		(1 << 2)
-#define FUSE_ATOMIC_O_TRUNC	(1 << 3)
-#define FUSE_EXPORT_SUPPORT	(1 << 4)
-#define FUSE_BIG_WRITES		(1 << 5)
-#define FUSE_DONT_MASK		(1 << 6)
-#define FUSE_SPLICE_WRITE	(1 << 7)
-#define FUSE_SPLICE_MOVE	(1 << 8)
-#define FUSE_SPLICE_READ	(1 << 9)
-#define FUSE_FLOCK_LOCKS	(1 << 10)
-#define FUSE_HAS_IOCTL_DIR	(1 << 11)
-#define FUSE_AUTO_INVAL_DATA	(1 << 12)
-#define FUSE_DO_READDIRPLUS	(1 << 13)
-#define FUSE_READDIRPLUS_AUTO	(1 << 14)
-#define FUSE_ASYNC_DIO		(1 << 15)
-#define FUSE_WRITEBACK_CACHE	(1 << 16)
-#define FUSE_NO_OPEN_SUPPORT	(1 << 17)
-#define FUSE_PARALLEL_DIROPS    (1 << 18)
-#define FUSE_HANDLE_KILLPRIV	(1 << 19)
-#define FUSE_POSIX_ACL		(1 << 20)
-#define FUSE_ABORT_ERROR	(1 << 21)
-#define FUSE_MAX_PAGES		(1 << 22)
-#define FUSE_CACHE_SYMLINKS	(1 << 23)
-#define FUSE_NO_OPENDIR_SUPPORT (1 << 24)
+#define FUSE_ASYNC_READ          (1 << 0)
+#define FUSE_POSIX_LOCKS         (1 << 1)
+#define FUSE_FILE_OPS            (1 << 2)
+#define FUSE_ATOMIC_O_TRUNC      (1 << 3)
+#define FUSE_EXPORT_SUPPORT      (1 << 4)
+#define FUSE_BIG_WRITES          (1 << 5)
+#define FUSE_DONT_MASK           (1 << 6)
+#define FUSE_SPLICE_WRITE        (1 << 7)
+#define FUSE_SPLICE_MOVE         (1 << 8)
+#define FUSE_SPLICE_READ         (1 << 9)
+#define FUSE_FLOCK_LOCKS         (1 << 10)
+#define FUSE_HAS_IOCTL_DIR       (1 << 11)
+#define FUSE_AUTO_INVAL_DATA     (1 << 12)
+#define FUSE_DO_READDIRPLUS      (1 << 13)
+#define FUSE_READDIRPLUS_AUTO    (1 << 14)
+#define FUSE_ASYNC_DIO           (1 << 15)
+#define FUSE_WRITEBACK_CACHE     (1 << 16)
+#define FUSE_NO_OPEN_SUPPORT     (1 << 17)
+#define FUSE_PARALLEL_DIROPS     (1 << 18)
+#define FUSE_HANDLE_KILLPRIV     (1 << 19)
+#define FUSE_POSIX_ACL           (1 << 20)
+#define FUSE_ABORT_ERROR         (1 << 21)
+#define FUSE_MAX_PAGES           (1 << 22)
+#define FUSE_CACHE_SYMLINKS      (1 << 23)
+#define FUSE_NO_OPENDIR_SUPPORT  (1 << 24)
 #define FUSE_EXPLICIT_INVAL_DATA (1 << 25)
-#define FUSE_MAP_ALIGNMENT	(1 << 26)
-#define FUSE_SUBMOUNTS		(1 << 27)
-#define FUSE_HANDLE_KILLPRIV_V2	(1 << 28)
-#define FUSE_SETXATTR_EXT	(1 << 29)
-#define FUSE_INIT_EXT		(1 << 30)
-#define FUSE_INIT_RESERVED	(1 << 31)
+#define FUSE_MAP_ALIGNMENT       (1 << 26)
+#define FUSE_SUBMOUNTS           (1 << 27)
+#define FUSE_HANDLE_KILLPRIV_V2  (1 << 28)
+#define FUSE_SETXATTR_EXT        (1 << 29)
+#define FUSE_INIT_EXT            (1 << 30)
+#define FUSE_INIT_RESERVED       (1 << 31)
 /* bits 32..63 get shifted down 32 bits into the flags2 field */
-#define FUSE_SECURITY_CTX	(1ULL << 32)
-#define FUSE_HAS_INODE_DAX	(1ULL << 33)
+#define FUSE_SECURITY_CTX        (1ULL << 32)
+#define FUSE_HAS_INODE_DAX       (1ULL << 33)
+#define FUSE_CREATE_SUPP_GROUP   (1ULL << 34)
 
 /**
  * CUSE INIT request/reply flags
@@ -403,8 +417,8 @@ struct fuse_file_lock {
 /**
  * Release flags
  */
-#define FUSE_RELEASE_FLUSH	(1 << 0)
-#define FUSE_RELEASE_FLOCK_UNLOCK	(1 << 1)
+#define FUSE_RELEASE_FLUSH        (1 << 0)
+#define FUSE_RELEASE_FLOCK_UNLOCK (1 << 1)
 
 /**
  * Getattr flags
@@ -490,6 +504,23 @@ struct fuse_file_lock {
  * FUSE_SETXATTR_ACL_KILL_SGID: Clear SGID when system.posix_acl_access is set
  */
 #define FUSE_SETXATTR_ACL_KILL_SGID	(1 << 0)
+
+/**
+ * notify_inval_entry flags
+ * FUSE_EXPIRE_ONLY
+ */
+#define FUSE_EXPIRE_ONLY		(1 << 0)
+
+/**
+ * extension type
+ * FUSE_MAX_NR_SECCTX: maximum value of &fuse_secctx_header.nr_secctx
+ * FUSE_EXT_GROUPS: &fuse_supp_groups extension
+ */
+enum fuse_ext_type {
+	/* Types 0..31 are reserved for fuse_secctx_header */
+	FUSE_MAX_NR_SECCTX	= 31,
+	FUSE_EXT_GROUPS		= 32,
+};
 
 enum fuse_opcode {
 	FUSE_LOOKUP		= 1,
@@ -874,7 +905,8 @@ struct fuse_in_header {
 	uint32_t	uid;
 	uint32_t	gid;
 	uint32_t	pid;
-	uint32_t	padding;
+	uint16_t	total_extlen; /* length of extensions in 8byte units */
+	uint16_t	padding;
 };
 
 struct fuse_out_header {
@@ -919,7 +951,7 @@ struct fuse_notify_inval_inode_out {
 struct fuse_notify_inval_entry_out {
 	uint64_t	parent;
 	uint32_t	namelen;
-	uint32_t	padding;
+	uint32_t	flags;
 };
 
 struct fuse_notify_delete_out {
@@ -1033,6 +1065,29 @@ struct fuse_secctx {
 struct fuse_secctx_header {
 	uint32_t	size;
 	uint32_t	nr_secctx;
+};
+
+/**
+ * struct fuse_ext_header - extension header
+ * @size: total size of this extension including this header
+ * @type: type of extension
+ *
+ * This is made compatible with fuse_secctx_header by using type values >
+ * FUSE_MAX_NR_SECCTX
+ */
+struct fuse_ext_header {
+	uint32_t	size;
+	uint32_t	type;
+};
+
+/**
+ * struct fuse_supp_groups - Supplementary group extension
+ * @nr_groups: number of supplementary groups
+ * @groups: flexible array of group IDs
+ */
+struct fuse_supp_groups {
+	uint32_t	nr_groups;
+	uint32_t	groups[];
 };
 
 #endif /* _LINUX_FUSE_H */
