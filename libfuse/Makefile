@@ -15,6 +15,12 @@ else
 OPT_FLAGS := -O2
 endif
 
+ifeq ($(LTO),1)
+LTO_FLAGS := -flto
+else
+LTO_FLAGS :=
+endif
+
 DESTDIR       =
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
@@ -39,12 +45,14 @@ SRC_C = \
 	lib/fuse_dirents.c \
 	lib/fuse_lowlevel.c \
 	lib/fuse_mt.c \
+	lib/node.c \
 	lib/fuse_node.c \
 	lib/fuse_opt.c \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \
 	lib/helper.c \
-	lib/mount.c
+	lib/mount.c \
+	lib/syslog.c
 SRC_CPP = \
 	lib/format.cpp \
 	lib/os.cpp \
@@ -59,12 +67,14 @@ CFLAGS ?= \
 	$(OPT_FLAGS)
 CFLAGS := \
 	${CFLAGS} \
+	$(LTO_FLAGS) \
 	-std=gnu99 \
 	-Wall \
 	-pipe \
 	-MMD
 CXXFLAGS := \
 	${CXXFLAGS} \
+	$(LTO_FLAGS) \
 	-std=c++11 \
 	-Wall \
 	-pipe \

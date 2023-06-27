@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2022, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,21 +18,13 @@
 
 #pragma once
 
-#include "fuse_msgbuf.h"
-#include "extern_c.h"
+#include <syslog.h>
 
-EXTERN_C_BEGIN
 
-void     msgbuf_set_bufsize(const uint32_t size);
-uint64_t msgbuf_get_bufsize();
-
-fuse_msgbuf_t* msgbuf_alloc();
-void           msgbuf_free(fuse_msgbuf_t *msgbuf);
-
-void           msgbuf_gc();
-void           msgbuf_gc_10percent();
-
-uint64_t       msgbuf_alloc_count();
-uint64_t       msgbuf_avail_count();
-
-EXTERN_C_END
+void syslog_open();
+void syslog_log(const int priority, const char *format, ...);
+void syslog_info(const char *format, ...);
+void syslog_notice(const char *format, ...);
+void syslog_warning(const char *format, ...);
+void syslog_error(const char *format, ...);
+void syslog_close();

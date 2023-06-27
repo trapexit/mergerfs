@@ -2,9 +2,11 @@
 #define _GNU_SOURCE
 #endif
 
-#include "thread_pool.hpp"
+#include "bounded_thread_pool.hpp"
 #include "cpu.hpp"
 #include "fmt/core.h"
+#include "scope_guard.hpp"
+#include "syslog.h"
 
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -26,33 +28,6 @@
 
 #include <cassert>
 #include <vector>
-
-
-struct fuse_worker_data_t
-{
-  struct fuse_session *se;
-  sem_t finished;
-  std::function<void(fuse_worker_data_t*,fuse_msgbuf_t*)> msgbuf_processor;
-  std::shared_ptr<ThreadPool> tp;
-};
-
-class WorkerCleanup
-{
-public:
-  WorkerCleanup(fuse_worker_data_t *wd_)
-    : _wd(wd_)
-  {
-  }
-
-  ~WorkerCleanup()
-  {
-    fuse_session_exit(_wd->se);
-    sem_post(&_wd->finished);
-  }
-
-private:
-  fuse_worker_data_t *_wd;
-};
 
 static
 bool
@@ -77,54 +52,113 @@ fatal_receive_error(const int err_)
 }
 
 static
-void*
+void
 handle_receive_error(const int      rv_,
                      fuse_msgbuf_t *msgbuf_)
 {
   msgbuf_free(msgbuf_);
 
-  fprintf(stderr,
-          "mergerfs: error reading from /dev/fuse - %s (%d)\n",
-          strerror(-rv_),
-          -rv_);
-
-  return NULL;
+  fmt::print(stderr,
+             "mergerfs: error reading from /dev/fuse - {} ({})\n",
+             strerror(-rv_),
+             -rv_);
 }
 
-static
-void*
-fuse_do_work(void *data)
+struct AsyncWorker
 {
-  fuse_worker_data_t *wd = (fuse_worker_data_t*)data;
-  fuse_session       *se = wd->se;
-  auto               &process_msgbuf = wd->msgbuf_processor;
-  WorkerCleanup       workercleanup(wd);
+  fuse_session *_se;
+  sem_t *_finished;
+  std::shared_ptr<BoundedThreadPool> _process_tp;
 
-  while(!fuse_session_exited(se))
-    {
-      int rv;
-      fuse_msgbuf_t *msgbuf;
+  AsyncWorker(fuse_session                       *se_,
+              sem_t                              *finished_,
+              std::shared_ptr<BoundedThreadPool>  process_tp_)
+    : _se(se_),
+      _finished(finished_),
+      _process_tp(process_tp_)
+  {
+  }
 
-      msgbuf = msgbuf_alloc();
+  inline
+  void
+  operator()() const
+  {
+    DEFER{ fuse_session_exit(_se); };
+    DEFER{ sem_post(_finished); };
 
-      do
-        {
-          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
-          rv = se->receive_buf(se,msgbuf);
-          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
-          if(rv == 0)
-            return NULL;
-          if(retriable_receive_error(rv))
-            continue;
-          if(fatal_receive_error(rv))
-            return handle_receive_error(rv,msgbuf);
-        } while(false);
+    while(!fuse_session_exited(_se))
+      {
+        int rv;
+        fuse_msgbuf_t *msgbuf;
 
-      process_msgbuf(wd,msgbuf);
-    }
+        msgbuf = msgbuf_alloc();
 
-  return NULL;
-}
+        do
+          {
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
+            rv = _se->receive_buf(_se,msgbuf);
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+            if(rv == 0)
+              return;
+            if(retriable_receive_error(rv))
+              continue;
+            if(fatal_receive_error(rv))
+              return handle_receive_error(rv,msgbuf);
+          } while(false);
+
+        _process_tp->enqueue_work([=] {
+          _se->process_buf(_se,msgbuf);
+          msgbuf_free(msgbuf);
+        });
+      }
+  }
+};
+
+struct SyncWorker
+{
+  fuse_session *_se;
+  sem_t *_finished;
+
+  SyncWorker(fuse_session *se_,
+             sem_t        *finished_)
+
+    : _se(se_),
+      _finished(finished_)
+  {
+  }
+
+  inline
+  void
+  operator()() const
+  {
+    DEFER{ fuse_session_exit(_se); };
+    DEFER{ sem_post(_finished); };
+
+    while(!fuse_session_exited(_se))
+      {
+        int rv;
+        fuse_msgbuf_t *msgbuf;
+
+        msgbuf = msgbuf_alloc();
+
+        do
+          {
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
+            rv = _se->receive_buf(_se,msgbuf);
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+            if(rv == 0)
+              return;
+            if(retriable_receive_error(rv))
+              continue;
+            if(fatal_receive_error(rv))
+              return handle_receive_error(rv,msgbuf);
+          } while(false);
+
+        _se->process_buf(_se,msgbuf);
+        msgbuf_free(msgbuf);
+      }
+  }
+};
 
 int
 fuse_start_thread(pthread_t *thread_id,
@@ -174,7 +208,8 @@ calculate_thread_count(const int raw_thread_count_)
 static
 void
 calculate_thread_counts(int *read_thread_count_,
-                        int *process_thread_count_)
+                        int *process_thread_count_,
+                        int *process_thread_queue_depth_)
 {
   if((*read_thread_count_ == -1) && (*process_thread_count_ == -1))
     {
@@ -190,27 +225,9 @@ calculate_thread_counts(int *read_thread_count_,
       if(*process_thread_count_ != -1)
         *process_thread_count_ = ::calculate_thread_count(*process_thread_count_);
     }
-}
 
-static
-void
-process_msgbuf_sync(fuse_worker_data_t *wd_,
-                    fuse_msgbuf_t      *msgbuf_)
-{
-  wd_->se->process_buf(wd_->se,msgbuf_);
-  msgbuf_free(msgbuf_);
-}
-
-static
-void
-process_msgbuf_async(fuse_worker_data_t *wd_,
-                     fuse_msgbuf_t      *msgbuf_)
-{
-  const auto func = [=] {
-    process_msgbuf_sync(wd_,msgbuf_);
-  };
-
-  wd_->tp->enqueue_work(func);
+  if(*process_thread_queue_depth_ <= 0)
+    *process_thread_queue_depth_ = *process_thread_count_;
 }
 
 static
@@ -425,63 +442,71 @@ pin_threads(const std::vector<pthread_t>  read_threads_,
     return ::pin_threads_R1PPSP(read_threads_,process_threads_);
 }
 
+static
+void
+wait(fuse_session *se_,
+     sem_t        *finished_sem_)
+{
+  while(!fuse_session_exited(se_))
+    sem_wait(finished_sem_);
+}
+
 int
 fuse_session_loop_mt(struct fuse_session *se_,
                      const int            raw_read_thread_count_,
                      const int            raw_process_thread_count_,
+                     const int            raw_process_thread_queue_depth_,
                      const char          *pin_threads_type_)
 {
-  int err;
+  sem_t finished;
   int read_thread_count;
   int process_thread_count;
-  fuse_worker_data_t wd = {0};
+  int process_thread_queue_depth;
   std::vector<pthread_t> read_threads;
   std::vector<pthread_t> process_threads;
+  std::unique_ptr<BoundedThreadPool> read_tp;
+  std::shared_ptr<BoundedThreadPool> process_tp;
 
-  read_thread_count    = raw_read_thread_count_;
-  process_thread_count = raw_process_thread_count_;
-  ::calculate_thread_counts(&read_thread_count,&process_thread_count);
+  sem_init(&finished,0,0);
+
+  read_thread_count          = raw_read_thread_count_;
+  process_thread_count       = raw_process_thread_count_;
+  process_thread_queue_depth = raw_process_thread_queue_depth_;
+  ::calculate_thread_counts(&read_thread_count,
+                            &process_thread_count,
+                            &process_thread_queue_depth);
 
   if(process_thread_count > 0)
+    process_tp = std::make_shared<BoundedThreadPool>(process_thread_count,process_thread_queue_depth);
+
+  read_tp = std::make_unique<BoundedThreadPool>(read_thread_count);
+  if(process_tp)
     {
-      wd.tp = std::make_shared<ThreadPool>(process_thread_count);
-      wd.msgbuf_processor = process_msgbuf_async;
-      process_threads = wd.tp->threads();
+      for(auto i = 0; i < read_thread_count; i++)
+        read_tp->enqueue_work(AsyncWorker(se_,&finished,process_tp));
     }
   else
     {
-      wd.msgbuf_processor = process_msgbuf_sync;
+      for(auto i = 0; i < read_thread_count; i++)
+        read_tp->enqueue_work(SyncWorker(se_,&finished));
     }
 
-  wd.se = se_;
-  sem_init(&wd.finished,0,0);
+  if(read_tp)
+    read_threads = read_tp->threads();
+  if(process_tp)
+    process_threads = process_tp->threads();
 
-  err = 0;
-  for(int i = 0; i < read_thread_count; i++)
-    {
-      pthread_t thread_id;
-      err = fuse_start_thread(&thread_id,fuse_do_work,&wd);
-      assert(err == 0);
-      read_threads.push_back(thread_id);
-    }
-
-  if(pin_threads_type_ != NULL)
+  if(pin_threads_type_ != nullptr)
     ::pin_threads(read_threads,process_threads,pin_threads_type_);
 
-  if(!err)
-    {
-      /* sem_wait() is interruptible */
-      while(!fuse_session_exited(se_))
-        sem_wait(&wd.finished);
+  syslog_info("read-thread-count=%d; process-thread-count=%d; process-thread-queue-depth=%d",
+              read_thread_count,
+              process_thread_count,
+              process_thread_queue_depth);
 
-      for(const auto &thread_id : read_threads)
-        pthread_cancel(thread_id);
+  ::wait(se_,&finished);
 
-      for(const auto &thread_id : read_threads)
-        pthread_join(thread_id,NULL);
-    }
+  sem_destroy(&finished);
 
-  sem_destroy(&wd.finished);
-
-  return err;
+  return 0;
 }

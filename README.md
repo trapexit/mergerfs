@@ -241,6 +241,11 @@ These options are the same regardless of whether you use them with the
   `read-thread-count` refers to the number of threads reading FUSE
   messages which are dispatched to process threads. -1 means disabled
   otherwise acts like `read-thread-count`. (default: -1)
+* **process-thread-queue-depth=UINT**: Sets the number of requests any
+  single process thread can have queued up at one time. Meaning the
+  total memory usage of the queues is queue depth multiplied by the
+  number of process threads plus read thread count. 0 sets the depth
+  to the same as the process thread count. (default: 0)
 * **pin-threads=STR**: Selects a strategy to pin threads to CPUs
   (default: unset)
 * **scheduling-priority=INT**: Set mergerfs' scheduling
@@ -1123,7 +1128,9 @@ issue: `umount -l <mergerfs_mountpoint>`. Or you can let mergerfs do
 it by setting the option `lazy-umount-mountpoint=true`.
 
 
-# RUNTIME CONFIG
+# RUNTIME INTERFACES
+
+## RUNTIME CONFIG
 
 #### .mergerfs pseudo file ####
 
@@ -1204,6 +1211,41 @@ following:
 * **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
 * **user.mergerfs.fullpath**: the full path of the original file given the getattr policy
 * **user.mergerfs.allpaths**: a NUL ('\0') separated list of full paths to all files found
+
+
+## SIGNALS
+
+* USR1: This will cause mergerfs to send invalidation notifications to
+  the kernel for all files. This will cause all unused files to be
+  released from memory.
+* USR2: Trigger a general cleanup of currently unused memory. A more
+  thorough version of what happens every ~15 minutes.
+
+
+## IOCTLS
+
+Found in `fuse_ioctl.cpp`:
+
+```C++
+typedef char IOCTL_BUF[4096];
+#define IOCTL_APP_TYPE  0xDF
+#define IOCTL_FILE_INFO            _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_GC                   _IO(IOCTL_APP_TYPE,1)
+#define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
+#define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
+```
+
+* IOCTL\_FILE\_INFO: Same as the "file / directory xattrs" mentioned
+  above. Use a buffer size of 4096 bytes. Pass in a string of
+  "basepath", "relpath", "fullpath", or "allpaths". Receive details in
+  same buffer.
+* IOCTL\_GC: Triggers a thorough garbage collection of excess
+  memory. Same as SIGUSR2.
+* IOCTL\_GC1: Triggers a simple garbage collection of excess
+  memory. Same as what happens every 15 minutes normally.
+* IOCTL\_INVALIDATE\_ALL\_NODES: Same as SIGUSR1. Send invalidation
+  notifications to the kernel for all files causing unused files to be
+  released from memory.
 
 
 # TOOLING

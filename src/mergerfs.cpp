@@ -76,6 +76,7 @@
 
 #include "fuse.h"
 
+#include <csignal>
 #include <cstdlib>
 #include <iostream>
 
@@ -195,6 +196,30 @@ namespace l
       }
   }
 
+  static
+  void
+  usr1_signal_handler(int signal_)
+  {
+    syslog_info("Received SIGUSR1 - invalidating all nodes");
+    fuse_invalidate_all_nodes();
+  }
+
+  static
+  void
+  usr2_signal_handler(int signal_)
+  {
+    syslog_info("Received SIGUSR2 - triggering thorough gc");
+    fuse_gc();
+  }
+
+  static
+  void
+  setup_signal_handlers()
+  {
+    std::signal(SIGUSR1,l::usr1_signal_handler);
+    std::signal(SIGUSR2,l::usr2_signal_handler);
+  }
+
   int
   main(const int   argc_,
        char      **argv_)
@@ -223,6 +248,7 @@ namespace l
       l::wait_for_mount(cfg);
 
     l::setup_resources(cfg->scheduling_priority);
+    l::setup_signal_handlers();
     l::get_fuse_operations(ops,cfg->nullrw);
 
     if(cfg->lazy_umount_mountpoint)

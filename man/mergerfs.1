@@ -311,6 +311,13 @@ reading FUSE messages which are dispatched to process threads.
 -1 means disabled otherwise acts like \f[C]read-thread-count\f[R].
 (default: -1)
 .IP \[bu] 2
+\f[B]process-thread-queue-depth=INT\f[R]: Sets the number of requests
+any single process thread can have queued up at one time.
+Meaning the total memory usage of the queues is queue depth multiplied
+by the number of process threads plus read thread count.
+-1 sets the depth to the same as the process thread count.
+(default: -1)
+.IP \[bu] 2
 \f[B]pin-threads=STR\f[R]: Selects a strategy to pin threads to CPUs
 (default: unset)
 .IP \[bu] 2
@@ -1480,7 +1487,8 @@ Before mounting over top the mount point with the new instance of
 mergerfs issue: \f[C]umount -l <mergerfs_mountpoint>\f[R].
 Or you can let mergerfs do it by setting the option
 \f[C]lazy-umount-mountpoint=true\f[R].
-.SH RUNTIME CONFIG
+.SH RUNTIME INTERFACES
+.SS RUNTIME CONFIG
 .SS .mergerfs pseudo file
 .IP
 .nf
@@ -1596,6 +1604,45 @@ given the getattr policy
 .IP \[bu] 2
 \f[B]user.mergerfs.allpaths\f[R]: a NUL (`\[rs]0') separated list of
 full paths to all files found
+.SS SIGNALS
+.IP \[bu] 2
+USR1: This will cause mergerfs to send invalidation notifications to the
+kernel for all files.
+This will cause all unused files to be released from memory.
+.IP \[bu] 2
+USR2: Trigger a general cleanup of currently unused memory.
+A more thorough version of what happens every \[ti]15 minutes.
+.SS IOCTLS
+.PP
+Found in \f[C]fuse_ioctl.cpp\f[R]:
+.IP
+.nf
+\f[C]
+typedef char IOCTL_BUF[4096];
+#define IOCTL_APP_TYPE  0xDF
+#define IOCTL_FILE_INFO            _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_GC                   _IO(IOCTL_APP_TYPE,1)
+#define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
+#define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
+\f[R]
+.fi
+.IP \[bu] 2
+IOCTL_FILE_INFO: Same as the \[lq]file / directory xattrs\[rq] mentioned
+above.
+Use a buffer size of 4096 bytes.
+Pass in a string of \[lq]basepath\[rq], \[lq]relpath\[rq],
+\[lq]fullpath\[rq], or \[lq]allpaths\[rq].
+Receive details in same buffer.
+.IP \[bu] 2
+IOCTL_GC: Triggers a thorough garbage collection of excess memory.
+Same as SIGUSR2.
+.IP \[bu] 2
+IOCTL_GC1: Triggers a simple garbage collection of excess memory.
+Same as what happens every 15 minutes normally.
+.IP \[bu] 2
+IOCTL_INVALIDATE_ALL_NODES: Same as SIGUSR1.
+Send invalidation notifications to the kernel for all files causing
+unused files to be released from memory.
 .SH TOOLING
 .IP \[bu] 2
 https://github.com/trapexit/mergerfs-tools

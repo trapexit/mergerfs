@@ -29,6 +29,7 @@ fuse_loop_mt(struct fuse *f)
   res = fuse_session_loop_mt(fuse_get_session(f),
                              fuse_config_read_thread_count(f),
                              fuse_config_process_thread_count(f),
+                             fuse_config_process_thread_queue_depth(f),
                              fuse_config_pin_threads(f));
 
   fuse_stop_maintenance_thread(f);

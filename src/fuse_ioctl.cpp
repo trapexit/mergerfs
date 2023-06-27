@@ -42,7 +42,10 @@ using std::vector;
 
 typedef char IOCTL_BUF[4096];
 #define IOCTL_APP_TYPE  0xDF
-#define IOCTL_FILE_INFO _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_FILE_INFO            _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
+#define IOCTL_GC                   _IO(IOCTL_APP_TYPE,1)
+#define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
+#define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
 
 // From linux/btrfs.h
 #define BTRFS_IOCTL_MAGIC 0x94
@@ -334,6 +337,15 @@ namespace l
       {
       case IOCTL_FILE_INFO:
         return l::file_info(ffi_,data_);
+      case IOCTL_GC:
+        fuse_gc();
+        return 0;
+      case IOCTL_GC1:
+        fuse_gc1();
+        return 0;
+      case IOCTL_INVALIDATE_ALL_NODES:
+        fuse_invalidate_all_nodes();
+        return 0;
       }
 
     return -ENOTTY;

@@ -147,6 +147,7 @@ public:
   ConfigUINT64   symlinkify_timeout;
   ConfigINT      fuse_read_thread_count;
   ConfigINT      fuse_process_thread_count;
+  ConfigINT      fuse_process_thread_queue_depth;
   ConfigSTR      fuse_pin_threads;
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;

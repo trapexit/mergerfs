@@ -65,6 +65,7 @@ namespace l
     IFERT("pid");
     IFERT("pin-threads");
     IFERT("process-thread-count");
+    IFERT("process-thread-queue-depth");
     IFERT("read-thread-count");
     IFERT("readdirplus");
     IFERT("scheduling-priority");
@@ -123,6 +124,7 @@ Config::Config()
     symlinkify_timeout(3600),
     fuse_read_thread_count(0),
     fuse_process_thread_count(-1),
+    fuse_process_thread_queue_depth(0),
     fuse_pin_threads("false"),
     version(MERGERFS_VERSION),
     writeback_cache(false),
@@ -200,6 +202,7 @@ Config::Config()
   _map["threads"]                = &fuse_read_thread_count;
   _map["read-thread-count"]      = &fuse_read_thread_count;
   _map["process-thread-count"]   = &fuse_process_thread_count;
+  _map["process-thread-queue-depth"] = &fuse_process_thread_queue_depth;
   _map["version"]                = &version;
   _map["xattr"]                  = &xattr;
 }
