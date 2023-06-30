@@ -22,17 +22,8 @@
 #include "fs_movefile.hpp"
 #include "fs_pwrite.hpp"
 #include "fs_pwriten.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
-
-#include <string>
-#include <vector>
-
-using std::string;
-using std::vector;
-
-typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
 
 
 namespace l
@@ -70,7 +61,7 @@ namespace l
     err = fs::dup2(rv,fi_->fd);
     fs::close(rv);
     if(err < 0)
-      return err;
+      return err_;
 
     return fs::pwrite(fi_->fd,buf_,count_,offset_);
   }
@@ -101,7 +92,7 @@ namespace l
     err = fs::dup2(rv,fi_->fd);
     fs::close(rv);
     if(err < 0)
-      return err;
+      return err_;
 
     rv = fs::pwriten(fi_->fd,
                      buf_ + written_,
@@ -111,7 +102,7 @@ namespace l
     if(err < 0)
       return err;
 
-    return (rv + written_);
+    return (written_ + rv);
   }
 
   // When in direct_io mode write's return value should match that of
@@ -152,10 +143,8 @@ namespace l
     ssize_t rv;
 
     rv = fs::pwriten(fi_->fd,buf_,count_,offset_,&err);
-    if(rv == (ssize_t)count_)
-      return count_;
-    if(rv == 0)
-      return 0;
+    if(err == 0)
+      return rv;
     if(err && !l::out_of_space(err))
       return err;
 
