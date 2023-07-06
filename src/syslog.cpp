@@ -19,7 +19,6 @@
 #include <stdarg.h>
 #include <syslog.h>
 
-static bool g_SYSLOG_ENABLED = false;
 
 void
 syslog_open()
@@ -29,14 +28,12 @@ syslog_open()
   const int   facility = LOG_USER;
 
   openlog(ident,option,facility);
-  g_SYSLOG_ENABLED = true;
 }
 
 void
 syslog_close()
 {
   closelog();
-  g_SYSLOG_ENABLED = false;
 }
 
 void
@@ -44,9 +41,6 @@ syslog_log(const int   priority_,
            const char *format_,
            va_list     valist_)
 {
-  if(g_SYSLOG_ENABLED == false)
-    return;
-
   vsyslog(priority_,format_,valist_);
 }
 
@@ -70,7 +64,7 @@ syslog_info(const char *format_,
 
   va_start(valist,format_);
   syslog_log(LOG_INFO,format_,valist);
-  va_end(valist);  
+  va_end(valist);
 }
 
 void
@@ -81,7 +75,7 @@ syslog_notice(const char *format_,
 
   va_start(valist,format_);
   syslog_log(LOG_NOTICE,format_,valist);
-  va_end(valist);  
+  va_end(valist);
 }
 
 void
@@ -92,7 +86,7 @@ syslog_warning(const char *format_,
 
   va_start(valist,format_);
   syslog_log(LOG_WARNING,format_,valist);
-  va_end(valist);  
+  va_end(valist);
 }
 
 void
@@ -103,5 +97,5 @@ syslog_error(const char *format_,
 
   va_start(valist,format_);
   syslog_log(LOG_ERR,format_,valist);
-  va_end(valist);  
+  va_end(valist);
 }

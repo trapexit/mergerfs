@@ -21,8 +21,6 @@
 #include <stdbool.h>
 
 
-static bool g_SYSLOG_ENABLED = false;
-
 void
 syslog_open()
 {
@@ -31,14 +29,12 @@ syslog_open()
   const int   facility = LOG_USER;
 
   openlog(ident,option,facility);
-  g_SYSLOG_ENABLED = true;
 }
 
 void
 syslog_close()
 {
   closelog();
-  g_SYSLOG_ENABLED = false;
 }
 
 static
@@ -47,9 +43,6 @@ syslog_vlog(const int   priority_,
             const char *format_,
             va_list     valist_)
 {
-  if(g_SYSLOG_ENABLED == false)
-    return;
-
   vsyslog(priority_,format_,valist_);
 }
 
