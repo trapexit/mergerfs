@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+import mmap
+import resource
+
+(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
+
+os.close(fd)
+
+fd = os.open(filepath,os.O_RDWR|os.O_DIRECT|os.O_TRUNC)
+
+os.unlink(filepath)
+
+data = mmap.mmap(-1, resource.getpagesize())
+
+os.write(fd,data)
+
+os.lseek(fd,0,os.SEEK_SET)
+
+data = os.read(fd,resource.getpagesize())
+
+os.close(fd)
