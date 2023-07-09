@@ -26,7 +26,8 @@ EXTERN_C_BEGIN
 void     msgbuf_set_bufsize(const uint32_t size);
 uint64_t msgbuf_get_bufsize();
 
-fuse_msgbuf_t* msgbuf_alloc();
+fuse_msgbuf_t *msgbuf_alloc();
+fuse_msgbuf_t *msgbuf_alloc_page_aligned();
 void           msgbuf_free(fuse_msgbuf_t *msgbuf);
 
 void           msgbuf_gc();
@@ -34,5 +35,8 @@ void           msgbuf_gc_10percent();
 
 uint64_t       msgbuf_alloc_count();
 uint64_t       msgbuf_avail_count();
+
+void           msgbuf_page_align(fuse_msgbuf_t *msgbuf);
+void           msgbuf_write_align(fuse_msgbuf_t *msgbuf);
 
 EXTERN_C_END

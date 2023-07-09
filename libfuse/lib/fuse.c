@@ -2337,7 +2337,7 @@ fuse_lib_read(fuse_req_t             req,
 
   f = req_fuse_prepare(req);
 
-  msgbuf = msgbuf_alloc();
+  msgbuf = msgbuf_alloc_page_aligned();
 
   res = f->fs->op.read(&ffi,msgbuf->mem,arg->size,arg->offset);
 

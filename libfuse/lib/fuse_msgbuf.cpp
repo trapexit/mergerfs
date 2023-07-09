@@ -17,6 +17,7 @@
 
 #include "fuse_msgbuf.hpp"
 #include "fuse.h"
+#include "fuse_kernel.h"
 
 #include <unistd.h>
 
@@ -35,24 +36,6 @@ static std::atomic<std::uint_fast64_t> g_MSGBUF_ALLOC_COUNT;
 static std::mutex g_MUTEX;
 static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
 
-static
-__attribute__((constructor))
-void
-msgbuf_constructor()
-{
-  g_PAGESIZE = sysconf(_SC_PAGESIZE);
-  // +2 because to do O_DIRECT we need to offset the buffer to align
-  g_BUFSIZE  = (g_PAGESIZE * (FUSE_MAX_MAX_PAGES + 2));
-}
-
-static
-__attribute__((destructor))
-void
-msgbuf_destroy()
-{
-
-}
-
 uint64_t
 msgbuf_get_bufsize()
 {
@@ -63,6 +46,42 @@ void
 msgbuf_set_bufsize(const uint32_t size_in_pages_)
 {
   g_BUFSIZE = ((size_in_pages_ + 1) * g_PAGESIZE);
+}
+
+void
+msgbuf_page_align(fuse_msgbuf_t *msgbuf_)
+{
+  msgbuf_->mem   = (char*)msgbuf_;
+  msgbuf_->mem  += g_PAGESIZE;
+  msgbuf_->size  = (g_BUFSIZE - g_PAGESIZE);
+}
+
+void
+msgbuf_write_align(fuse_msgbuf_t *msgbuf_)
+{
+  msgbuf_->mem   = (char*)msgbuf_;
+  msgbuf_->mem  += g_PAGESIZE;
+  msgbuf_->mem  -= sizeof(struct fuse_in_header);
+  msgbuf_->mem  -= sizeof(struct fuse_write_in);
+  msgbuf_->size  = (g_BUFSIZE - g_PAGESIZE);
+}
+
+static
+__attribute__((constructor))
+void
+msgbuf_constructor()
+{
+  g_PAGESIZE = sysconf(_SC_PAGESIZE);
+  // FUSE_MAX_MAX_PAGES for payload + 1 for message header
+  msgbuf_set_bufsize(FUSE_MAX_MAX_PAGES + 1);
+}
+
+static
+__attribute__((destructor))
+void
+msgbuf_destroy()
+{
+
 }
 
 static
@@ -79,8 +98,11 @@ page_aligned_malloc(const uint64_t size_)
   return buf;
 }
 
+typedef void (*msgbuf_setup_func_t)(fuse_msgbuf_t*);
+
+static
 fuse_msgbuf_t*
-msgbuf_alloc()
+_msgbuf_alloc(msgbuf_setup_func_t setup_func_)
 {
   fuse_msgbuf_t *msgbuf;
 
@@ -93,9 +115,6 @@ msgbuf_alloc()
       if(msgbuf == NULL)
         return NULL;
 
-      msgbuf->mem = (((char*)msgbuf) + g_PAGESIZE);
-
-      msgbuf->size = g_BUFSIZE - g_PAGESIZE;
       g_MSGBUF_ALLOC_COUNT++;
     }
   else
@@ -105,7 +124,24 @@ msgbuf_alloc()
       g_MUTEX.unlock();
     }
 
+  setup_func_(msgbuf);
+
   return msgbuf;
+}
+
+// Offset the memory so write request payload will be placed on page
+// boundry so O_DIRECT can work. No impact on other message types
+// except for `read` which will require using `msgbuf_page_align`.
+fuse_msgbuf_t*
+msgbuf_alloc()
+{
+  return _msgbuf_alloc(msgbuf_write_align);
+}
+
+fuse_msgbuf_t*
+msgbuf_alloc_page_aligned()
+{
+  return _msgbuf_alloc(msgbuf_page_align);
 }
 
 static
