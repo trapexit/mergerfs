@@ -311,12 +311,12 @@ reading FUSE messages which are dispatched to process threads.
 -1 means disabled otherwise acts like \f[C]read-thread-count\f[R].
 (default: -1)
 .IP \[bu] 2
-\f[B]process-thread-queue-depth=INT\f[R]: Sets the number of requests
+\f[B]process-thread-queue-depth=UINT\f[R]: Sets the number of requests
 any single process thread can have queued up at one time.
 Meaning the total memory usage of the queues is queue depth multiplied
 by the number of process threads plus read thread count.
--1 sets the depth to the same as the process thread count.
-(default: -1)
+0 sets the depth to the same as the process thread count.
+(default: 0)
 .IP \[bu] 2
 \f[B]pin-threads=STR\f[R]: Selects a strategy to pin threads to CPUs
 (default: unset)
@@ -937,6 +937,13 @@ Typically \f[B]EROFS\f[R] (read-only filesystem) or \f[B]ENOSPC\f[R] (no
 space left on device) depending on the most recent reason for filtering
 a branch.
 \f[B]ENOENT\f[R] will be returned if no eligible branch is found.
+.PP
+If \f[B]create\f[R], \f[B]mkdir\f[R], \f[B]mknod\f[R], or
+\f[B]symlink\f[R] fail with \f[C]EROFS\f[R] or other fundimental errors
+then mergerfs will mark any branch found to be read-only as such (IE
+will set the mode \f[C]RO\f[R]) and will rerun the policy and try again.
+This is mostly for \f[C]ext4\f[R] filesystems that can suddenly become
+read-only when it encounters an error.
 .SS Path Preservation
 .PP
 Policies, as described below, are of two basic classifications.

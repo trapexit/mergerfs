@@ -117,9 +117,8 @@ namespace l
 
     dstfd_filepath = dstfd_branch[0];
     fs::path::append(dstfd_filepath,fusepath_);
-    dstfd_tmp_filepath = dstfd_filepath;
-    dstfd = fs::mktemp(&dstfd_tmp_filepath,O_WRONLY);
-    if(dstfd == -1)
+    std::tie(dstfd,dstfd_tmp_filepath) = fs::mktemp(dstfd_filepath,O_WRONLY);
+    if(dstfd < 0)
       {
         fs::close(srcfd);
         return -ENOSPC;

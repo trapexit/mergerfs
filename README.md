@@ -747,6 +747,12 @@ If all branches are filtered an error will be returned. Typically
 device) depending on the most recent reason for filtering a
 branch. **ENOENT** will be returned if no eligible branch is found.
 
+If **create**, **mkdir**, **mknod**, or **symlink** fail with `EROFS`
+or other fundimental errors then mergerfs will mark any branch found
+to be read-only as such (IE will set the mode `RO`) and will rerun the
+policy and try again. This is mostly for `ext4` filesystems that can
+suddenly become read-only when it encounters an error.
+
 
 #### Path Preservation
 

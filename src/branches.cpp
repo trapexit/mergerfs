@@ -21,10 +21,12 @@
 #include "errno.hpp"
 #include "from_string.hpp"
 #include "fs_glob.hpp"
+#include "fs_is_rofs.hpp"
 #include "fs_realpathize.hpp"
 #include "nonstd/optional.hpp"
 #include "num.hpp"
 #include "str.hpp"
+#include "syslog.hpp"
 
 #include <string>
 
@@ -413,6 +415,24 @@ Branches::to_string(void) const
   std::lock_guard<std::mutex> lock_guard(_mutex);
 
   return _impl->to_string();
+}
+
+void
+Branches::find_and_set_mode_ro()
+{
+  for(auto &branch : *_impl)
+    {
+      if(branch.mode != Branch::Mode::RW)
+        continue;
+
+      if(!fs::is_rofs_but_not_mounted_ro(branch.path))
+        continue;
+
+      syslog_warning("Branch %s found to be readonly - setting its mode to RO",
+                     branch.path.c_str());
+
+      branch.mode = Branch::Mode::RO;
+    }
 }
 
 SrcMounts::SrcMounts(Branches &b_)

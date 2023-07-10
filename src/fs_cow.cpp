@@ -22,6 +22,7 @@
 #include "fs_lstat.hpp"
 #include "fs_mktemp.hpp"
 #include "fs_open.hpp"
+#include "fs_path.hpp"
 #include "fs_rename.hpp"
 #include "fs_unlink.hpp"
 
@@ -109,16 +110,14 @@ namespace fs
       int rv;
       int src_fd;
       int dst_fd;
-      string dst_fullpath;
+      std::string dst_fullpath;
 
       src_fd = fs::open(src_fullpath_,O_RDONLY|O_NOFOLLOW);
       if(src_fd == -1)
         return -1;
 
-      dst_fullpath = src_fullpath_;
-
-      dst_fd = fs::mktemp(&dst_fullpath,O_WRONLY);
-      if(dst_fd == -1)
+      std::tie(dst_fd,dst_fullpath) = fs::mktemp(src_fullpath_,O_WRONLY);
+      if(dst_fd < 0)
         return l::cleanup_on_error(src_fd);
 
       rv = fs::clonefile(src_fd,dst_fd);

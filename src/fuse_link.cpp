@@ -352,7 +352,7 @@ namespace FUSE
 
     rv = l::link(cfg,oldpath_,newpath_,st_,timeouts_);
     if(rv == -EXDEV)
-      return l::link_exdev(cfg,oldpath_,newpath_,st_,timeouts_);
+      rv = l::link_exdev(cfg,oldpath_,newpath_,st_,timeouts_);
 
     return rv;
   }
