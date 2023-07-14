@@ -19,11 +19,15 @@
 #pragma once
 
 #include <string>
-
+#include <tuple>
 
 namespace fs
 {
-  int
-  mktemp(std::string *base,
-         const int    flags);
+  std::tuple<int,std::string>
+  mktemp(std::string const filepath,
+         int const         flags);
+
+  std::tuple<int,std::string>
+  mktemp_in_dir(std::string const dirpath,
+                int const         flags);
 }

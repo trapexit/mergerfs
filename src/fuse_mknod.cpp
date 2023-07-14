@@ -152,16 +152,30 @@ namespace FUSE
         mode_t      mode_,
         dev_t       rdev_)
   {
+    int rv;
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::mknod(cfg->func.getattr.policy,
-                    cfg->func.mknod.policy,
-                    cfg->branches,
-                    fusepath_,
-                    mode_,
-                    fc->umask,
-                    rdev_);
+    rv = l::mknod(cfg->func.getattr.policy,
+                  cfg->func.mknod.policy,
+                  cfg->branches,
+                  fusepath_,
+                  mode_,
+                  fc->umask,
+                  rdev_);
+    if(rv == -EROFS)
+      {
+        Config::Write()->branches.find_and_set_mode_ro();
+        rv = l::mknod(cfg->func.getattr.policy,
+                      cfg->func.mknod.policy,
+                      cfg->branches,
+                      fusepath_,
+                      mode_,
+                      fc->umask,
+                      rdev_);
+      }
+
+    return rv;
   }
 }

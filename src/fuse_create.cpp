@@ -207,6 +207,17 @@ namespace FUSE
                    ffi_,
                    mode_,
                    fc->umask);
+    if(rv == -EROFS)
+      {
+        Config::Write()->branches.find_and_set_mode_ro();
+        rv = l::create(cfg->func.getattr.policy,
+                       cfg->func.create.policy,
+                       cfg->branches,
+                       fusepath_,
+                       ffi_,
+                       mode_,
+                       fc->umask);
+      }
 
     return rv;
   }

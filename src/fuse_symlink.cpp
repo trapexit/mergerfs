@@ -157,6 +157,16 @@ namespace FUSE
                     target_,
                     linkpath_,
                     st_);
+    if(rv == -EROFS)
+      {
+        Config::Write()->branches.find_and_set_mode_ro();
+        rv = l::symlink(cfg->func.getattr.policy,
+                        cfg->func.symlink.policy,
+                        cfg->branches,
+                        target_,
+                        linkpath_,
+                        st_);
+      }
 
     if(timeouts_ != NULL)
       {

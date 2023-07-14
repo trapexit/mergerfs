@@ -76,6 +76,9 @@ public:
   operator CPtr()   const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
   CPtr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
 
+public:
+  void find_and_set_mode_ro();
+
 private:
   mutable std::mutex _mutex;
   Ptr                _impl;
