@@ -72,10 +72,6 @@ struct fuse_config
   int set_uid;
   int set_gid;
   int help;
-  int read_thread_count;
-  int process_thread_count;
-  int process_thread_queue_depth;
-  char *pin_threads;
 };
 
 struct fuse_fs
@@ -3601,11 +3597,6 @@ static const struct fuse_opt fuse_lib_opts[] =
    FUSE_LIB_OPT("gid=%d",	      gid,0),
    FUSE_LIB_OPT("noforget",           remember,-1),
    FUSE_LIB_OPT("remember=%u",        remember,0),
-   FUSE_LIB_OPT("threads=%d",         read_thread_count,0),
-   FUSE_LIB_OPT("read-thread-count=%d", read_thread_count,0),
-   FUSE_LIB_OPT("process-thread-count=%d", process_thread_count,-1),
-   FUSE_LIB_OPT("process-thread-queue-depth=%d", process_thread_queue_depth,-1),
-   FUSE_LIB_OPT("pin-threads=%s",     pin_threads, 0),
    FUSE_OPT_END
   };
 
@@ -4042,31 +4033,6 @@ fuse_destroy(struct fuse *f)
   fuse_session_destroy(f->se);
   kv_destroy(f->remembered_nodes);
   fuse_delete_context_key();
-}
-
-int
-fuse_config_read_thread_count(const struct fuse *f_)
-{
-  return f_->conf.read_thread_count;
-}
-
-int
-fuse_config_process_thread_count(const struct fuse *f_)
-{
-  return f_->conf.process_thread_count;
-}
-
-int
-fuse_config_process_thread_queue_depth(const struct fuse *f_)
-{
-  return f_->conf.process_thread_queue_depth;
-}
-
-const
-char*
-fuse_config_pin_threads(const struct fuse *f_)
-{
-  return f_->conf.pin_threads;
 }
 
 void
