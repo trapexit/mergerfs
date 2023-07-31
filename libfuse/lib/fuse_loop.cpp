@@ -13,6 +13,7 @@
 #include "fuse_lowlevel.h"
 #include "fuse_misc.h"
 
+#include "fuse_config.hpp"
 #include "fuse_msgbuf.hpp"
 #include "fuse_ll.hpp"
 
@@ -418,10 +419,12 @@ pin_threads_R1PPSP(const std::vector<pthread_t> read_threads_,
 
 static
 void
-pin_threads(const std::vector<pthread_t>  read_threads_,
-            const std::vector<pthread_t>  process_threads_,
-            const std::string             type_)
+pin_threads(const std::vector<pthread_t> read_threads_,
+            const std::vector<pthread_t> process_threads_,
+            const std::string            type_)
 {
+  if(type_.empty())
+    return;
   if(type_ == "R1L")
     return ::pin_threads_R1L(read_threads_);
   if(type_ == "R1P")
@@ -440,6 +443,8 @@ pin_threads(const std::vector<pthread_t>  read_threads_,
     return ::pin_threads_RPSP(read_threads_,process_threads_);
   if(type_ == "R1PPSP")
     return ::pin_threads_R1PPSP(read_threads_,process_threads_);
+
+  syslog_warning("Invalid pin-threads value, ignoring: %s",type_.c_str());
 }
 
 static
@@ -456,7 +461,7 @@ fuse_session_loop_mt(struct fuse_session *se_,
                      const int            raw_read_thread_count_,
                      const int            raw_process_thread_count_,
                      const int            raw_process_thread_queue_depth_,
-                     const char          *pin_threads_type_)
+                     const std::string    pin_threads_type_)
 {
   sem_t finished;
   int read_thread_count;
@@ -496,17 +501,42 @@ fuse_session_loop_mt(struct fuse_session *se_,
   if(process_tp)
     process_threads = process_tp->threads();
 
-  if(pin_threads_type_ != nullptr)
-    ::pin_threads(read_threads,process_threads,pin_threads_type_);
+  ::pin_threads(read_threads,process_threads,pin_threads_type_);
 
-  syslog_info("read-thread-count=%d; process-thread-count=%d; process-thread-queue-depth=%d",
+  syslog_info("read-thread-count=%d; "
+              "process-thread-count=%d; "
+              "process-thread-queue-depth=%d; "
+              "pin-threads=%s;"
+              ,
               read_thread_count,
               process_thread_count,
-              process_thread_queue_depth);
+              process_thread_queue_depth,
+              pin_threads_type_);
 
   ::wait(se_,&finished);
 
   sem_destroy(&finished);
 
   return 0;
+}
+
+int
+fuse_loop_mt(struct fuse *f)
+{
+  if(f == NULL)
+    return -1;
+
+  int res = fuse_start_maintenance_thread(f);
+  if(res)
+    return -1;
+
+  res = fuse_session_loop_mt(fuse_get_session(f),
+                             fuse_config_get_read_thread_count(),
+                             fuse_config_get_process_thread_count(),
+                             fuse_config_get_process_thread_queue_depth(),
+                             fuse_config_get_pin_threads());
+
+  fuse_stop_maintenance_thread(f);
+
+  return res;
 }

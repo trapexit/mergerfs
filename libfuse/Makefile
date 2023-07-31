@@ -44,7 +44,6 @@ SRC_C = \
 	lib/fuse.c \
 	lib/fuse_dirents.c \
 	lib/fuse_lowlevel.c \
-	lib/fuse_mt.c \
 	lib/node.c \
 	lib/fuse_node.c \
 	lib/fuse_opt.c \
@@ -57,7 +56,8 @@ SRC_CPP = \
 	lib/format.cpp \
 	lib/os.cpp \
 	lib/cpu.cpp \
-	lib/fuse_loop_mt.cpp \
+	lib/fuse_config.cpp \
+	lib/fuse_loop.cpp \
 	lib/fuse_msgbuf.cpp
 OBJS_C   = $(SRC_C:lib/%.c=build/%.o)
 OBJS_CPP = $(SRC_CPP:lib/%.cpp=build/%.o)

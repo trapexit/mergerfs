@@ -29,6 +29,7 @@
 #include "version.hpp"
 
 #include "fuse.h"
+#include "fuse_config.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -77,13 +78,12 @@ set_kv_option(const std::string &key_,
 
 static
 void
-set_fuse_threads(Config::Write &cfg_,
-                      fuse_args     *args_)
+set_fuse_threads(Config::Write &cfg_)
 {
-  set_kv_option("read-thread-count",cfg_->fuse_read_thread_count.to_string(),args_);
-  set_kv_option("process-thread-count",cfg_->fuse_process_thread_count.to_string(),args_);
-  set_kv_option("process-thread-queue-depth",cfg_->fuse_process_thread_queue_depth.to_string(),args_);
-  set_kv_option("pin-threads",cfg_->fuse_pin_threads.to_string(),args_);
+  fuse_config_set_read_thread_count(cfg_->fuse_read_thread_count);
+  fuse_config_set_process_thread_count(cfg_->fuse_process_thread_count);
+  fuse_config_set_process_thread_queue_depth(cfg_->fuse_process_thread_queue_depth);
+  fuse_config_set_pin_threads(cfg_->fuse_pin_threads);
 }
 
 static
@@ -447,7 +447,7 @@ namespace options
     set_default_options(args_);
     set_fsname(cfg,args_);
     set_subtype(args_);
-    set_fuse_threads(cfg,args_);
+    set_fuse_threads(cfg);
 
     cfg->finish_initializing();
   }
