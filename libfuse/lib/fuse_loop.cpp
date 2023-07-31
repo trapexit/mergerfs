@@ -423,7 +423,7 @@ pin_threads(const std::vector<pthread_t> read_threads_,
             const std::vector<pthread_t> process_threads_,
             const std::string            type_)
 {
-  if(type_.empty())
+  if(type_.empty() || (type_ == "false"))
     return;
   if(type_ == "R1L")
     return ::pin_threads_R1L(read_threads_);
@@ -511,7 +511,7 @@ fuse_session_loop_mt(struct fuse_session *se_,
               read_thread_count,
               process_thread_count,
               process_thread_queue_depth,
-              pin_threads_type_);
+              pin_threads_type_.c_str());
 
   ::wait(se_,&finished);
 
