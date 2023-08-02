@@ -25,15 +25,15 @@
 #include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
-#include "config_readdir.hpp"
 #include "config_rename_exdev.hpp"
+#include "config_set.hpp"
 #include "config_statfs.hpp"
 #include "config_statfsignore.hpp"
 #include "config_xattr.hpp"
-#include "config_set.hpp"
 #include "enum.hpp"
 #include "errno.hpp"
 #include "funcs.hpp"
+#include "fuse_readdir.hpp"
 #include "policy.hpp"
 #include "rwlock.hpp"
 #include "tofrom_wrapper.hpp"
@@ -135,7 +135,7 @@ public:
   ConfigUINT64   pid;
   ConfigBOOL     posix_acl;
   ConfigUINT64   readahead;
-  ReadDir        readdir;
+  FUSE::ReadDir  readdir;
   ConfigBOOL     readdirplus;
   RenameEXDEV    rename_exdev;
   ConfigINT      scheduling_priority;

@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,13 +18,17 @@
 
 #pragma once
 
-#include "enum.hpp"
+#include "fuse_readdir_base.hpp"
+
+#include <string>
+#include <memory>
 
 
-enum class ReadDirEnum
+namespace FUSE
+{
+  class ReadDirFactory
   {
-    POSIX,
-    LINUX
+  public:
+    static std::shared_ptr<ReadDirBase> make(std::string const cfgstr);
   };
-
-typedef Enum<ReadDirEnum> ReadDir;
+}

@@ -112,7 +112,7 @@ Config::Config()
     pid(::getpid()),
     posix_acl(false),
     readahead(0),
-    readdir(ReadDir::ENUM::POSIX),
+    readdir("seq"),
     readdirplus(false),
     rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
     scheduling_priority(-10),
@@ -162,6 +162,7 @@ Config::Config()
   _map["func.mkdir"]             = &func.mkdir;
   _map["func.mknod"]             = &func.mknod;
   _map["func.open"]              = &func.open;
+  _map["func.readdir"]           = &readdir;
   _map["func.readlink"]          = &func.readlink;
   _map["func.removexattr"]       = &func.removexattr;
   _map["func.rename"]            = &func.rename;
@@ -189,7 +190,6 @@ Config::Config()
   _map["pin-threads"]            = &fuse_pin_threads;
   _map["posix_acl"]              = &posix_acl;
   _map["readahead"]              = &readahead;
-  //  _map["readdir"]            = &readdir;
   _map["readdirplus"]            = &readdirplus;
   _map["rename-exdev"]           = &rename_exdev;
   _map["scheduling-priority"]    = &scheduling_priority;

@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,36 +16,24 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config_readdir.hpp"
-#include "ef.hpp"
-#include "errno.hpp"
+#pragma once
 
+#include "fuse_readdir_base.hpp"
+#include "unbounded_thread_pool.hpp"
 
-template<>
-int
-ReadDir::from_string(const std::string &s_)
+// concurrent open, sequential read
+namespace FUSE
 {
-  if(s_ == "posix")
-    _data = ReadDir::ENUM::POSIX;
-  ef(s_ == "linux")
-    _data = ReadDir::ENUM::LINUX;
-  else
-    return -EINVAL;
+  class ReadDirCOSR final : public FUSE::ReadDirBase
+  {
+  public:
+    ReadDirCOSR(unsigned concurrency);
+    ~ReadDirCOSR();
 
-  return 0;
-}
+    int operator()(fuse_file_info_t const *ffi,
+                   fuse_dirents_t         *buf);
 
-template<>
-std::string
-ReadDir::to_string(void) const
-{
-  switch(_data)
-    {
-    case ReadDir::ENUM::POSIX:
-      return "posix";
-    case ReadDir::ENUM::LINUX:
-      return "linux";
-    }
-
-  return "invalid";
+  private:
+    ThreadPool _tp;
+  };
 }

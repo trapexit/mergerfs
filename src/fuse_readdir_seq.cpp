@@ -16,7 +16,11 @@
 
 #define _DEFAULT_SOURCE
 
+#include "fuse_readdir_seq.hpp"
+
 #include "branches.hpp"
+#include "config.hpp"
+#include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_closedir.hpp"
 #include "fs_devid.hpp"
@@ -27,17 +31,13 @@
 #include "fs_readdir.hpp"
 #include "fs_stat.hpp"
 #include "hashset.hpp"
+#include "ugid.hpp"
 
 #include "fuse.h"
 #include "fuse_dirents.h"
 
 #include <string>
 #include <vector>
-
-#include <dirent.h>
-
-using std::string;
-using std::vector;
 
 
 namespace l
@@ -61,19 +61,17 @@ namespace l
           const char           *dirname_,
           fuse_dirents_t       *buf_)
   {
-    dev_t dev;
     HashSet names;
-    string basepath;
-    string fullpath;
-    uint64_t namelen;
+    std::string basepath;
+    std::string fullpath;
 
     fuse_dirents_reset(buf_);
 
     for(const auto &branch : *branches_)
       {
         int rv;
-        int dirfd;
         DIR *dh;
+        dev_t dev;
 
         basepath = fs::path::make(branch.path,dirname_);
 
@@ -81,12 +79,13 @@ namespace l
         if(!dh)
           continue;
 
-        dirfd = fs::dirfd(dh);
-        dev   = fs::devid(dirfd);
+        dev = fs::devid(dh);
 
         rv = 0;
         for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
           {
+            std::uint64_t namelen;
+
             namelen = l::dirent_exact_namelen(de);
 
             rv = names.put(de->d_name,namelen);
@@ -94,8 +93,7 @@ namespace l
               continue;
 
             fullpath = fs::path::make(dirname_,de->d_name);
-            de->d_ino = fs::inode::calc(fullpath.c_str(),
-                                        fullpath.size(),
+            de->d_ino = fs::inode::calc(fullpath,
                                         DTTOIF(de->d_type),
                                         dev,
                                         de->d_ino);
@@ -112,13 +110,14 @@ namespace l
   }
 }
 
-namespace FUSE
+int
+FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
+                             fuse_dirents_t         *buf_)
 {
-  int
-  readdir_posix(const Branches::CPtr &branches_,
-                const char           *dirname_,
-                fuse_dirents_t       *buf_)
-  {
-    return l::readdir(branches_,dirname_,buf_);
-  }
+  Config::Read        cfg;
+  DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return l::readdir(cfg->branches,di->fusepath.c_str(),buf_);
 }

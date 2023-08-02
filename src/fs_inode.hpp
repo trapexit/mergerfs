@@ -37,7 +37,11 @@ namespace fs
                   const uint64_t  fusepath_len,
                   const mode_t    mode,
                   const dev_t     dev,
-                  const ino_t     ion);
+                  const ino_t     ino);
+    uint64_t calc(std::string const &fusepath,
+                  mode_t const       mode,
+                  dev_t const        dev,
+                  ino_t              ino);
     void calc(const char     *fusepath,
               const uint64_t  fusepath_len,
               struct stat    *st);

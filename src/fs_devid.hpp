@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fs_fstat.hpp"
+#include "fs_dirfd.hpp"
 
 
 namespace fs
@@ -36,5 +37,17 @@ namespace fs
       return -1;
 
     return st.st_dev;
+  }
+
+  static
+  inline
+  dev_t
+  devid(DIR *dh_)
+  {
+    int dirfd;
+
+    dirfd = fs::dirfd(dh_);
+
+    return fs::devid(dirfd);
   }
 }
