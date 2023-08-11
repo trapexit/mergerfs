@@ -256,6 +256,9 @@ These options are the same regardless of whether you use them with the
   concatenated together with the longest common prefix removed.
 * **func.FUNC=POLICY**: Sets the specific FUSE function's policy. See
   below for the list of value types. Example: **func.getattr=newest**
+* **func.readdir=seq|cosr|cor|cosr:INT|cor:INT**: Sets `readdir`
+  policy. INT value sets the number of threads to use for
+  concurrency. (default: seq)
 * **category.action=POLICY**: Sets policy of all FUSE functions in the
   action category. (default: epall)
 * **category.create=POLICY**: Sets policy of all FUSE functions in the
@@ -682,9 +685,8 @@ rather than file paths, which were created by `open` or `create`. That
 said many times the current FUSE kernel driver will not always provide
 the file handle when a client calls `fgetattr`, `fchown`, `fchmod`,
 `futimens`, `ftruncate`, etc. This means it will call the regular,
-path based, versions. `readdir` has no real need for a policy given
-the purpose is merely to return a list of entries in a
-directory. `statfs`'s behavior can be modified via other options.
+path based, versions. `statfs`'s behavior can be modified via other
+options.
 
 When using policies which are based on a branch's available space the
 base path provided is used. Not the full path to the file in
@@ -715,8 +717,7 @@ In cases where something may be searched for (such as a path to clone)
 ### Policies
 
 A policy is the algorithm used to choose a branch or branches for a
-function to work on. Think of them as ways to filter and sort
-branches.
+function to work on or generally how the function behaves.
 
 Any function in the `create` category will clone the relative path if
 needed. Some other functions (`rename`,`link`,`ioctl`) have special
@@ -725,12 +726,11 @@ requirements or behaviors which you can read more about below.
 
 #### Filtering
 
-Policies basically search branches and create a list of files / paths
+Most policies basically search branches and create a list of files / paths
 for functions to work on. The policy is responsible for filtering and
 sorting the branches. Filters include **minfreespace**, whether or not
 a branch is mounted read-only, and the branch tagging
-(RO,NC,RW). These filters are applied across all policies unless
-otherwise noted.
+(RO,NC,RW). These filters are applied across most policies.
 
 * No **search** function policies filter.
 * All **action** function policies filter out branches which are
@@ -823,6 +823,26 @@ policies is not appropriate.
 | search   | ff     |
 
 
+#### func.readdir
+
+examples: `fuse.readdir=seq`, `fuse.readdir=cor:4`
+
+`readdir` has policies to control how it manages reading directory
+content.
+
+| Policy | Description |
+|--------|-------------|
+| seq    | "sequential" : Iterate over branches in the order defined. This is the default and traditional behavior found prior to the readdir policy introduction. |
+| cosr   | "concurrent open, sequential read" : Concurrently open branch directories using a thread pool and process them in order of definition. This keeps memory and CPU usage low while also reducing the time spent waiting on branches to respond. Number of threads defaults to the number of logical cores. Can be overwritten via the syntax `fuse.readdir=cosr:N` where `N` is the number of threads. |
+| cor    | "concurrent open and read" : Concurrently open branch directories and immediately start reading their contents using a thread pool. This will result in slightly higher memory and CPU usage but reduced latency. Particularly when using higher latency / slower speed network filesystem branches. Unlike `seq` and `cosr` the order of files could change due the async nature of the thread pool. Number of threads defaults to the number of logical cores. Can be overwritten via the syntax `fuse.readdir=cor:N` where `N` is the number of threads.
+
+Keep in mind that `readdir` mostly just provides a list of file names
+in a directory and possibly some basic metadata about said files. To
+know details about the files, as one would see from commands like
+`find` or `ls`, it is required to call `stat` on the file which is
+controlled by `fuse.getattr`.
+
+
 #### ioctl
 
 When `ioctl` is used with an open file then it will use the file
@@ -889,19 +909,6 @@ The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 
 **link** uses the same strategy but without the removals.
-
-
-#### readdir ####
-
-[readdir](http://linux.die.net/man/3/readdir) is different from all
-other filesystem functions. While it could have its own set of
-policies to tweak its behavior at this time it provides a simple union
-of files and directories found. Remember that any action or
-information queried about these files and directories come from the
-respective function. For instance: an **ls** is a **readdir** and for
-each file/directory returned **getattr** is called. Meaning the policy
-of **getattr** is responsible for choosing the file/directory which is
-the source of the metadata you see in an **ls**.
 
 
 #### statfs / statvfs ####

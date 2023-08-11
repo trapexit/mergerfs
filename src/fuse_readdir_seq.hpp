@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +18,18 @@
 
 #pragma once
 
-#include <dirent.h>
-#include <sys/types.h>
+#include "fuse_readdir_base.hpp"
 
 
-namespace fs
+namespace FUSE
 {
-  static
-  inline
-  int
-  dirfd(DIR *dh_)
+  class ReadDirSeq final : public FUSE::ReadDirBase
   {
-    return ::dirfd(dh_);
-  }
+  public:
+    ReadDirSeq() {}
+    ~ReadDirSeq() {}
+
+    int operator()(fuse_file_info_t const *ffi,
+                   fuse_dirents_t         *buf);
+  };
 }

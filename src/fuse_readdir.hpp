@@ -17,11 +17,38 @@
 #pragma once
 
 #include "fuse.h"
+#include "tofrom_string.hpp"
+#include "fuse_readdir_base.hpp"
+
+#include <memory>
+#include <mutex>
+
+#include <assert.h>
 
 
 namespace FUSE
 {
-  int
-  readdir(const fuse_file_info_t *ffi,
-          fuse_dirents_t         *buf);
+  int readdir(fuse_file_info_t const *ffi,
+              fuse_dirents_t         *buf);
+
+  class ReadDir : public ToFromString
+  {
+  public:
+    ReadDir(std::string const s_);
+
+  public:
+    std::string to_string() const;
+    int from_string(const std::string &);
+
+  public:
+    int operator()(fuse_file_info_t const *ffi,
+                   fuse_dirents_t         *buf);
+
+  private:
+    mutable std::mutex _mutex;
+
+  private:
+    std::string _type;
+    std::shared_ptr<FUSE::ReadDirBase> _readdir;
+  };
 }

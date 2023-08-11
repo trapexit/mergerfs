@@ -337,6 +337,11 @@ policy.
 See below for the list of value types.
 Example: \f[B]func.getattr=newest\f[R]
 .IP \[bu] 2
+\f[B]func.readdir=seq|cosr|cor|cosr:INT|cor:INT\f[R]: Sets
+\f[C]readdir\f[R] policy.
+INT value sets the number of threads to use for concurrency.
+(default: seq)
+.IP \[bu] 2
 \f[B]category.action=POLICY\f[R]: Sets policy of all FUSE functions in
 the action category.
 (default: epall)
@@ -844,8 +849,6 @@ provide the file handle when a client calls \f[C]fgetattr\f[R],
 \f[C]fchown\f[R], \f[C]fchmod\f[R], \f[C]futimens\f[R],
 \f[C]ftruncate\f[R], etc.
 This means it will call the regular, path based, versions.
-\f[C]readdir\f[R] has no real need for a policy given the purpose is
-merely to return a list of entries in a directory.
 \f[C]statfs\f[R]\[cq]s behavior can be modified via other options.
 .PP
 When using policies which are based on a branch\[cq]s available space
@@ -902,8 +905,7 @@ In cases where something may be searched for (such as a path to clone)
 .SS Policies
 .PP
 A policy is the algorithm used to choose a branch or branches for a
-function to work on.
-Think of them as ways to filter and sort branches.
+function to work on or generally how the function behaves.
 .PP
 Any function in the \f[C]create\f[R] category will clone the relative
 path if needed.
@@ -912,12 +914,12 @@ have special requirements or behaviors which you can read more about
 below.
 .SS Filtering
 .PP
-Policies basically search branches and create a list of files / paths
-for functions to work on.
+Most policies basically search branches and create a list of files /
+paths for functions to work on.
 The policy is responsible for filtering and sorting the branches.
 Filters include \f[B]minfreespace\f[R], whether or not a branch is
 mounted read-only, and the branch tagging (RO,NC,RW).
-These filters are applied across all policies unless otherwise noted.
+These filters are applied across most policies.
 .IP \[bu] 2
 No \f[B]search\f[R] function policies filter.
 .IP \[bu] 2
@@ -1134,6 +1136,63 @@ T}@T{
 ff
 T}
 .TE
+.SS func.readdir
+.PP
+examples: \f[C]fuse.readdir=seq\f[R], \f[C]fuse.readdir=cor:4\f[R]
+.PP
+\f[C]readdir\f[R] has policies to control how it manages reading
+directory content.
+.PP
+.TS
+tab(@);
+lw(26.7n) lw(43.3n).
+T{
+Policy
+T}@T{
+Description
+T}
+_
+T{
+seq
+T}@T{
+\[lq]sequential\[rq] : Iterate over branches in the order defined.
+This is the default and traditional behavior found prior to the readdir
+policy introduction.
+T}
+T{
+cosr
+T}@T{
+\[lq]concurrent open, sequential read\[rq] : Concurrently open branch
+directories using a thread pool and process them in order of definition.
+This keeps memory and CPU usage low while also reducing the time spent
+waiting on branches to respond.
+Number of threads defaults to the number of logical cores.
+Can be overwritten via the syntax \f[C]fuse.readdir=cosr:N\f[R] where
+\f[C]N\f[R] is the number of threads.
+T}
+T{
+cor
+T}@T{
+\[lq]concurrent open and read\[rq] : Concurrently open branch
+directories and immediately start reading their contents using a thread
+pool.
+This will result in slightly higher memory and CPU usage but reduced
+latency.
+Particularly when using higher latency / slower speed network filesystem
+branches.
+Unlike \f[C]seq\f[R] and \f[C]cosr\f[R] the order of files could change
+due the async nature of the thread pool.
+Number of threads defaults to the number of logical cores.
+Can be overwritten via the syntax \f[C]fuse.readdir=cor:N\f[R] where
+\f[C]N\f[R] is the number of threads.
+T}
+.TE
+.PP
+Keep in mind that \f[C]readdir\f[R] mostly just provides a list of file
+names in a directory and possibly some basic metadata about said files.
+To know details about the files, as one would see from commands like
+\f[C]find\f[R] or \f[C]ls\f[R], it is required to call \f[C]stat\f[R] on
+the file which is controlled by \f[C]fuse.getattr\f[R].
 .SS ioctl
 .PP
 When \f[C]ioctl\f[R] is used with an open file then it will use the file
@@ -1246,19 +1305,6 @@ The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 .PP
 \f[B]link\f[R] uses the same strategy but without the removals.
-.SS readdir
-.PP
-readdir (http://linux.die.net/man/3/readdir) is different from all other
-filesystem functions.
-While it could have its own set of policies to tweak its behavior at
-this time it provides a simple union of files and directories found.
-Remember that any action or information queried about these files and
-directories come from the respective function.
-For instance: an \f[B]ls\f[R] is a \f[B]readdir\f[R] and for each
-file/directory returned \f[B]getattr\f[R] is called.
-Meaning the policy of \f[B]getattr\f[R] is responsible for choosing the
-file/directory which is the source of the metadata you see in an
-\f[B]ls\f[R].
 .SS statfs / statvfs
 .PP
 statvfs (http://linux.die.net/man/2/statvfs) normalizes the source

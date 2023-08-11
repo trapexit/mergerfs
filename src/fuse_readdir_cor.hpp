@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,17 +18,22 @@
 
 #pragma once
 
-#include "branches.hpp"
+#include "fuse_readdir_base.hpp"
+#include "unbounded_thread_pool.hpp"
 
-#include "fuse.h"
-
-#include <cstdint>
-
-
+// concurrent open & read
 namespace FUSE
 {
-  int
-  readdir_posix(const Branches::CPtr &branches,
-                const char           *dirname,
-                fuse_dirents_t       *buf);
+  class ReadDirCOR final : public FUSE::ReadDirBase
+  {
+  public:
+    ReadDirCOR(unsigned concurrency);
+    ~ReadDirCOR();
+
+    int operator()(fuse_file_info_t const *ffi,
+                   fuse_dirents_t         *buf);
+
+  private:
+    ThreadPool _tp;
+  };
 }

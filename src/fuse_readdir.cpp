@@ -16,35 +16,64 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fuse_readdir_posix.hpp"
-#include "fuse_readdir_linux.hpp"
+#include "fuse_readdir.hpp"
+#include "fuse_readdir_factory.hpp"
 
 #include "config.hpp"
-#include "dirinfo.hpp"
-#include "rwlock.hpp"
-#include "ugid.hpp"
-
-#include "fuse.h"
 
 
-namespace FUSE
+int
+FUSE::readdir(const fuse_file_info_t *ffi_,
+              fuse_dirents_t         *buf_)
 {
-  int
-  readdir(const fuse_file_info_t *ffi_,
-          fuse_dirents_t         *buf_)
-  {
-    Config::Read cfg;
-    DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  Config::Write cfg;
 
-    switch(cfg->readdir)
-      {
-      case ReadDir::ENUM::LINUX:
-        return FUSE::readdir_linux(cfg->branches,di->fusepath.c_str(),buf_);
-      default:
-      case ReadDir::ENUM::POSIX:
-        return FUSE::readdir_posix(cfg->branches,di->fusepath.c_str(),buf_);
-      }
+  return cfg->readdir(ffi_,buf_);
+}
+
+FUSE::ReadDir::ReadDir(std::string const s_)
+{
+  from_string(s_);
+  assert(_readdir);
+}
+
+std::string
+FUSE::ReadDir::to_string() const
+{
+  std::lock_guard<std::mutex> lg(_mutex);
+
+  return _type;
+}
+
+int
+FUSE::ReadDir::from_string(std::string const &str_)
+{
+  std::shared_ptr<FUSE::ReadDirBase> tmp;
+
+  tmp = FUSE::ReadDirFactory::make(str_);
+  if(!tmp)
+    return -EINVAL;
+
+  {
+    std::lock_guard<std::mutex> lg(_mutex);
+
+    _type    = str_;
+    _readdir = tmp;
   }
+
+  return 0;
+}
+
+int
+FUSE::ReadDir::operator()(fuse_file_info_t const *ffi_,
+                          fuse_dirents_t         *buf_)
+{
+  std::shared_ptr<FUSE::ReadDirBase> readdir;
+
+  {
+    std::lock_guard<std::mutex> lg(_mutex);
+    readdir = _readdir;
+  }
+
+  return (*readdir)(ffi_,buf_);
 }
