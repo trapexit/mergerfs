@@ -1331,6 +1331,42 @@ do_copy_file_range(fuse_req_t             req_,
 }
 
 static
+void
+do_setupmapping(fuse_req_t                req_,
+                   struct fuse_in_header *hdr_)
+{
+  printf("setupmapping\n");
+  req_->f->op.setupmapping(req_,hdr_);
+}
+
+static
+void
+do_removemapping(fuse_req_t             req_,
+                 struct fuse_in_header *hdr_)
+{
+  printf("removemapping\n");
+  req_->f->op.removemapping(req_,hdr_);
+}
+
+static
+void
+do_syncfs(fuse_req_t             req_,
+          struct fuse_in_header *hdr_)
+{
+  printf("syncfs\n");
+  req_->f->op.syncfs(req_,hdr_);
+}
+
+static
+void
+do_tmpfile(fuse_req_t             req_,
+           struct fuse_in_header *hdr_)
+{
+  printf("tmpfile\n");
+  req_->f->op.tmpfile(req_,hdr_);
+}
+
+static
 int
 send_notify_iov(struct fuse_ll   *f,
                 struct fuse_chan *ch,
@@ -1643,6 +1679,10 @@ static struct {
     [FUSE_NOTIFY_REPLY]    = { do_notify_reply,    "NOTIFY_REPLY"    },
     [FUSE_BATCH_FORGET]    = { do_batch_forget,    "BATCH_FORGET"    },
     [FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
+    [FUSE_SETUPMAPPING]    = { do_setupmapping,    "SETUPMAPPING"    },
+    [FUSE_REMOVEMAPPING]   = { do_removemapping,   "REMOVEMAPPING"   },
+    [FUSE_SYNCFS]          = { do_syncfs,          "SYNCFS"          },
+    [FUSE_TMPFILE]         = { do_tmpfile,         "TMPFILE"         }
   };
 
 #define FUSE_MAXOP (sizeof(fuse_ll_ops) / sizeof(fuse_ll_ops[0]))
@@ -1814,6 +1854,8 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   struct fuse_in_header *in;
 
   in = (struct fuse_in_header*)msgbuf_->mem;
+
+  //  printf("%d\n",in->opcode);
 
   req = fuse_ll_alloc_req(se_->f);
   if(req == NULL)

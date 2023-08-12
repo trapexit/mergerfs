@@ -63,12 +63,16 @@
 #include "fuse_readlink.hpp"
 #include "fuse_release.hpp"
 #include "fuse_releasedir.hpp"
+#include "fuse_removemapping.hpp"
 #include "fuse_removexattr.hpp"
 #include "fuse_rename.hpp"
 #include "fuse_rmdir.hpp"
+#include "fuse_setupmapping.hpp"
 #include "fuse_setxattr.hpp"
 #include "fuse_statfs.hpp"
 #include "fuse_symlink.hpp"
+#include "fuse_syncfs.hpp"
+#include "fuse_tmpfile.hpp"
 #include "fuse_truncate.hpp"
 #include "fuse_unlink.hpp"
 #include "fuse_utimens.hpp"
@@ -127,12 +131,16 @@ namespace l
     ops_.readlink        = FUSE::readlink;
     ops_.release         = FUSE::release;
     ops_.releasedir      = FUSE::releasedir;
+    ops_.removemapping   = FUSE::removemapping;
     ops_.removexattr     = FUSE::removexattr;
     ops_.rename          = FUSE::rename;
     ops_.rmdir           = FUSE::rmdir;
+    ops_.setupmapping    = FUSE::setupmapping;
     ops_.setxattr        = FUSE::setxattr;
     ops_.statfs          = FUSE::statfs;
     ops_.symlink         = FUSE::symlink;
+    ops_.syncfs          = FUSE::syncfs;
+    ops_.tmpfile         = FUSE::tmpfile;
     ops_.truncate        = FUSE::truncate;
     ops_.unlink          = FUSE::unlink;
     ops_.utimens         = FUSE::utimens;

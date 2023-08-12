@@ -539,6 +539,16 @@ struct fuse_operations
                              off_t                   offset_out,
                              size_t                  size,
                              int                     flags);
+
+  ssize_t (*setupmapping)(uint64_t *fh_,
+                          uint64_t  foffset_,
+                          uint64_t  len_,
+                          uint64_t  flags_,
+                          uint64_t  moffset_);
+
+  int (*removemapping)();
+  int (*syncfs)();
+  int (*tmpfile)(const char *, mode_t, fuse_file_info_t *);
 };
 
 /** Extra context that may be needed by some filesystems

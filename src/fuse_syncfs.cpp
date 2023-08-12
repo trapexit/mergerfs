@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,22 +16,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "gidcache.hpp"
+#include "fuse_syncfs.hpp"
 
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#include "ugid_linux.icpp"
-#else
-#include "ugid_rwlock.icpp"
-#endif
+#include <errno.h>
 
-namespace ugid
+
+int
+FUSE::syncfs()
 {
-  void
-  initgroups(const uid_t uid_,
-             const gid_t gid_)
-  {
-    static thread_local gid_t_cache cache = {0};
-
-    cache.initgroups(uid_,gid_);
-  }
+  return -ENOSYS;
 }
