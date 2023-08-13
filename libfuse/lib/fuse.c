@@ -636,7 +636,7 @@ rehash_name(struct fuse *f)
 static
 int
 hash_name(struct fuse *f,
-          node_t *node,
+          node_t      *node,
           uint64_t     parentid,
           const char  *name)
 {
@@ -753,6 +753,7 @@ find_node(struct fuse *f,
       if(f->conf.remember)
         inc_nlookup(node);
 
+      printf("hash_name = %s\n",name);
       if(hash_name(f,node,parent,name) == -1)
         {
           free_node(f,node);
@@ -2878,6 +2879,101 @@ fuse_lib_copy_file_range(fuse_req_t                   req_,
 }
 
 static
+void
+fuse_lib_setupmapping(fuse_req_t                   req_,
+                      const struct fuse_in_header *hdr_)
+{
+  fuse_reply_err(req_,ENOSYS);
+}
+
+static
+void
+fuse_lib_removemapping(fuse_req_t                   req_,
+                       const struct fuse_in_header *hdr_)
+{
+  fuse_reply_err(req_,ENOSYS);
+}
+
+static
+void
+fuse_lib_syncfs(fuse_req_t                   req_,
+                const struct fuse_in_header *hdr_)
+{
+  fuse_reply_err(req_,ENOSYS);
+}
+
+// TODO: This is just a copy of fuse_lib_create. Needs to be rewritten
+// so a nameless node can be setup.
+// name is always '/'
+// nodeid is the base directory
+static
+void
+fuse_lib_tmpfile(fuse_req_t                   req_,
+                 const struct fuse_in_header *hdr_)
+{
+  int err;
+  char *path;
+  struct fuse *f;
+  const char *name;
+  fuse_file_info_t ffi = {0};
+  struct fuse_entry_param e;
+  struct fuse_create_in *arg;
+
+  arg  = fuse_hdr_arg(hdr_);
+  name = PARAM(arg);
+
+  ffi.flags = arg->flags;
+
+  if(req_->f->conn.proto_minor >= 12)
+    req_->ctx.umask = arg->umask;
+  else
+    name = (char*)arg + sizeof(struct fuse_open_in);
+
+  f = req_fuse_prepare(req_);
+
+  err = get_path_name(f,hdr_->nodeid,name,&path);
+  if(!err)
+    {
+      err = f->fs->op.tmpfile(path,arg->mode,&ffi);
+      if(!err)
+        {
+          err = lookup_path(f,hdr_->nodeid,name,path,&e,&ffi);
+          if(err)
+            {
+              f->fs->op.release(&ffi);
+            }
+          else if(!S_ISREG(e.attr.st_mode))
+            {
+              err = -EIO;
+              f->fs->op.release(&ffi);
+              forget_node(f,e.ino,1);
+            }
+        }
+    }
+
+  if(!err)
+    {
+      pthread_mutex_lock(&f->lock);
+      get_node(f,e.ino)->open_count++;
+      pthread_mutex_unlock(&f->lock);
+
+      if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
+        {
+          /* The open syscall was interrupted,so it
+             must be cancelled */
+          fuse_do_release(f,e.ino,&ffi);
+          forget_node(f,e.ino,1);
+        }
+    }
+  else
+    {
+      fuse_reply_err(req_,err);
+    }
+
+  free_path(f,hdr_->nodeid,path);
+}
+
+static
 lock_t*
 locks_conflict(node_t       *node,
                const lock_t *lock)
@@ -3531,15 +3627,19 @@ static struct fuse_lowlevel_ops fuse_path_ops =
    .readlink        = fuse_lib_readlink,
    .release         = fuse_lib_release,
    .releasedir      = fuse_lib_releasedir,
+   .removemapping   = fuse_lib_removemapping,
    .removexattr     = fuse_lib_removexattr,
    .rename          = fuse_lib_rename,
    .retrieve_reply  = NULL,
    .rmdir           = fuse_lib_rmdir,
    .setattr         = fuse_lib_setattr,
    .setlk           = fuse_lib_setlk,
+   .setupmapping    = fuse_lib_setupmapping,
    .setxattr        = fuse_lib_setxattr,
    .statfs          = fuse_lib_statfs,
    .symlink         = fuse_lib_symlink,
+   .syncfs          = fuse_lib_syncfs,
+   .tmpfile         = fuse_lib_tmpfile,
    .unlink          = fuse_lib_unlink,
    .write           = fuse_lib_write,
   };

@@ -1007,6 +1007,15 @@ struct fuse_lowlevel_ops
    */
   void (*copy_file_range)(fuse_req_t                   req,
                           const struct fuse_in_header *hdr);
+
+  void (*setupmapping)(fuse_req_t                   req,
+                       const struct fuse_in_header *hdr);
+  void (*removemapping)(fuse_req_t                   req,
+                        const struct fuse_in_header *hdr);
+  void (*syncfs)(fuse_req_t                   req,
+                 const struct fuse_in_header *hdr);
+  void (*tmpfile)(fuse_req_t                   req,
+                  const struct fuse_in_header *hdr);
 };
 
 /**
