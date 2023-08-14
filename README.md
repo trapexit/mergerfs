@@ -694,8 +694,8 @@ question. Meaning that mounts in the branch won't be considered in the
 space calculations. The reason is that it doesn't really work for
 non-path preserving policies and can lead to non-obvious behaviors.
 
-NOTE: While any policy can be assigned to a function or category
-though some may not be very useful in practice. For instance: **rand**
+NOTE: While any policy can be assigned to a function or category,
+some may not be very useful in practice. For instance: **rand**
 (random) may be useful for file creation (create) but could lead to
 very odd behavior if used for `chmod` if there were more than one copy
 of the file.
