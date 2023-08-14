@@ -32,7 +32,7 @@
 
 
 FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_)
-  : _tp(concurrency_)
+  : _tp(concurrency_,"readdir.cor")
 {
 
 }

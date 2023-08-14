@@ -3,17 +3,17 @@
 #include "bounded_queue.hpp"
 #include "make_unique.hpp"
 
-#include <signal.h>
-
-#include <tuple>
 #include <atomic>
-#include <vector>
-#include <thread>
-#include <memory>
-#include <future>
-#include <utility>
+#include <csignal>
 #include <functional>
+#include <future>
+#include <memory>
+#include <string>
+#include <thread>
+#include <tuple>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 
 class BoundedThreadPool
@@ -25,8 +25,9 @@ private:
 
 public:
   explicit
-  BoundedThreadPool(const std::size_t thread_count_ = std::thread::hardware_concurrency(),
-                    const std::size_t queue_depth_  = 1)
+  BoundedThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
+                    std::size_t const queue_depth_  = 1,
+                    std::string const name_         = {})
     : _queues(),
       _count(thread_count_)
   {
@@ -61,6 +62,11 @@ public:
     _threads.reserve(thread_count_);
     for(std::size_t i = 0; i < thread_count_; ++i)
       _threads.emplace_back(worker, i);
+    if(!name_.empty())
+      {
+        for(auto &t : _threads)
+          pthread_setname_np(t.native_handle(),name_.c_str());
+      }
 
     pthread_sigmask(SIG_SETMASK,&oldset,NULL);
   }

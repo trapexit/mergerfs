@@ -482,9 +482,11 @@ fuse_session_loop_mt(struct fuse_session *se_,
                             &process_thread_queue_depth);
 
   if(process_thread_count > 0)
-    process_tp = std::make_shared<BoundedThreadPool>(process_thread_count,process_thread_queue_depth);
+    process_tp = std::make_shared<BoundedThreadPool>(process_thread_count,
+                                                     process_thread_queue_depth,
+                                                     "fuse.process");
 
-  read_tp = std::make_unique<BoundedThreadPool>(read_thread_count);
+  read_tp = std::make_unique<BoundedThreadPool>(read_thread_count,1,"fuse.read");
   if(process_tp)
     {
       for(auto i = 0; i < read_thread_count; i++)
