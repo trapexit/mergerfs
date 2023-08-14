@@ -19,37 +19,55 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <array>
+
 #define MAXGIDS 32
 #define MAXRECS 256
 
-struct gid_t_rec
+// GIDCache is a global, per thread cache of uid to gid + supplemental
+// groups mapping for use when threads change credentials. This is
+// needed due to the high cost of querying such information. The cache
+// instance should always be thread local and live the lifetime of the
+// app. The constructor will register the instance so they can each be
+// told to invalidate the cache on demand. A second instance on the
+// same thread will cause an assert to be triggered.
+
+
+struct GIDRecord
 {
   uid_t uid;
   int   size;
   gid_t gids[MAXGIDS];
 
   bool
-  operator<(const struct gid_t_rec &b) const;
+  operator<(const struct GIDRecord &b) const;
 };
 
-struct gid_t_cache
+struct GIDCache
 {
 public:
-  size_t     size;
-  gid_t_rec  recs[MAXRECS];
+  GIDCache();
+
+public:
+  bool   invalidate;
+  size_t size;
+  std::array<GIDRecord,MAXRECS> recs;
 
 private:
-  gid_t_rec * begin(void);
-  gid_t_rec * end(void);
-  gid_t_rec * allocrec(void);
-  gid_t_rec * lower_bound(gid_t_rec   *begin,
-                          gid_t_rec   *end,
-                          const uid_t  uid);
-  gid_t_rec * cache(const uid_t uid,
-                    const gid_t gid);
+  GIDRecord *begin(void);
+  GIDRecord *end(void);
+  GIDRecord *allocrec(void);
+  GIDRecord *lower_bound(GIDRecord   *begin,
+                         GIDRecord   *end,
+                         const uid_t  uid);
+  GIDRecord *cache(const uid_t uid,
+                   const gid_t gid);
 
 public:
   int
   initgroups(const uid_t uid,
              const gid_t gid);
+
+public:
+  static void invalidate_all_caches();
 };

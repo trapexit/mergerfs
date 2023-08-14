@@ -753,7 +753,6 @@ find_node(struct fuse *f,
       if(f->conf.remember)
         inc_nlookup(node);
 
-      printf("hash_name = %s\n",name);
       if(hash_name(f,node,parent,name) == -1)
         {
           free_node(f,node);

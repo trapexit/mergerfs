@@ -53,9 +53,9 @@
 
 namespace ugid
 {
-  extern __thread uid_t currentuid;
-  extern __thread gid_t currentgid;
-  extern __thread bool  initialized;
+  extern thread_local uid_t currentuid;
+  extern thread_local gid_t currentgid;
+  extern thread_local bool  initialized;
 
   struct Set
   {
