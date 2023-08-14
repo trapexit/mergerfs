@@ -2,22 +2,24 @@
 
 #include "unbounded_queue.hpp"
 
-#include <tuple>
 #include <atomic>
-#include <vector>
-#include <thread>
-#include <memory>
-#include <future>
-#include <utility>
+#include <csignal>
 #include <functional>
+#include <future>
+#include <memory>
+#include <thread>
+#include <tuple>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 
 class ThreadPool
 {
 public:
   explicit
-  ThreadPool(const std::size_t thread_count_ = std::thread::hardware_concurrency())
+  ThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
+             std::string const name_         = {})
     : _queues(thread_count_),
       _count(thread_count_)
   {
@@ -40,9 +42,22 @@ public:
         }
     };
 
+    sigset_t oldset;
+    sigset_t newset;
+
+    sigfillset(&newset);
+    pthread_sigmask(SIG_BLOCK,&newset,&oldset);
+
     _threads.reserve(thread_count_);
     for(std::size_t i = 0; i < thread_count_; ++i)
       _threads.emplace_back(worker, i);
+    if(!name_.empty())
+      {
+        for(auto &t : _threads)
+          pthread_setname_np(t.native_handle(),name_.c_str());
+      }
+
+    pthread_sigmask(SIG_SETMASK,&oldset,NULL);
   }
 
   ~ThreadPool()

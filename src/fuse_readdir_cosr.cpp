@@ -34,7 +34,7 @@
 
 
 FUSE::ReadDirCOSR::ReadDirCOSR(unsigned concurrency_)
-  : _tp(concurrency_)
+  : _tp(concurrency_,"readdir.cosr")
 {
 
 }

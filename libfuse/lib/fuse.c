@@ -3948,6 +3948,8 @@ fuse_maintenance_loop(void *fuse_)
   int sleep_time;
   struct fuse *f = (struct fuse*)fuse_;
 
+  pthread_setname_np(pthread_self(),"fuse.maint");
+
   loops = 0;
   sleep_time = 60;
   while(1)
