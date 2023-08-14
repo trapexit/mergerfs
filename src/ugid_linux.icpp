@@ -23,9 +23,9 @@
 
 namespace ugid
 {
-  __thread uid_t currentuid  = 0;
-  __thread gid_t currentgid  = 0;
-  __thread bool  initialized = false;
+  thread_local uid_t currentuid  = 0;
+  thread_local gid_t currentgid  = 0;
+  thread_local bool  initialized = false;
 
   void
   init()

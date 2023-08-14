@@ -25,6 +25,7 @@
 #include "procfs_get_name.hpp"
 #include "resources.hpp"
 #include "strvec.hpp"
+#include "gidcache.hpp"
 
 #include "fuse_access.hpp"
 #include "fuse_bmap.hpp"
@@ -218,6 +219,7 @@ namespace l
   {
     syslog_info("Received SIGUSR2 - triggering thorough gc");
     fuse_gc();
+    GIDCache::invalidate_all_caches();
   }
 
   static

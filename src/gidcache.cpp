@@ -26,35 +26,59 @@
 # include <sys/param.h>
 #endif
 
+#include <cassert>
 #include <cstdlib>
 #include <algorithm>
+#include <unordered_map>
+#include <mutex>
+
 
 #include "gidcache.hpp"
 
+std::mutex                          g_REGISTERED_CACHES_MUTEX;
+std::unordered_map<pid_t,GIDCache*> g_REGISTERED_CACHES;
+
+
 inline
 bool
-gid_t_rec::operator<(const struct gid_t_rec &b) const
+GIDRecord::operator<(const struct GIDRecord &b) const
 {
   return uid < b.uid;
 }
 
-inline
-gid_t_rec *
-gid_t_cache::begin(void)
+GIDCache::GIDCache()
+  : invalidate(false),
+    size(0),
+    recs()
 {
-  return recs;
+  std::lock_guard<std::mutex> guard(g_REGISTERED_CACHES_MUTEX);
+
+  pid_t tid;
+  bool  inserted;
+
+  tid = ::gettid();
+  inserted = g_REGISTERED_CACHES.emplace(tid,this).second;
+
+  assert(inserted == true);
 }
 
 inline
-gid_t_rec *
-gid_t_cache::end(void)
+GIDRecord *
+GIDCache::begin(void)
 {
-  return recs + size;
+  return &recs[0];
 }
 
 inline
-gid_t_rec *
-gid_t_cache::allocrec(void)
+GIDRecord *
+GIDCache::end(void)
+{
+  return &recs[size];
+}
+
+inline
+GIDRecord *
+GIDCache::allocrec(void)
 {
   if(size == MAXRECS)
     return &recs[rand() % MAXRECS];
@@ -63,14 +87,14 @@ gid_t_cache::allocrec(void)
 }
 
 inline
-gid_t_rec *
-gid_t_cache::lower_bound(gid_t_rec   *begin,
-                         gid_t_rec   *end,
-                         const uid_t  uid)
+GIDRecord *
+GIDCache::lower_bound(GIDRecord   *begin,
+                      GIDRecord   *end,
+                      const uid_t  uid)
 {
   int step;
   int count;
-  gid_t_rec *iter;
+  GIDRecord *iter;
 
   count = std::distance(begin,end);
   while(count > 0)
@@ -106,15 +130,15 @@ _getgrouplist(const char  *user,
 #endif
 }
 
-gid_t_rec *
-gid_t_cache::cache(const uid_t uid,
-                   const gid_t gid)
+GIDRecord *
+GIDCache::cache(const uid_t uid,
+                const gid_t gid)
 {
   int rv;
   char buf[4096];
   struct passwd pwd;
   struct passwd *pwdrv;
-  gid_t_rec *rec;
+  GIDRecord *rec;
 
   rec = allocrec();
 
@@ -139,7 +163,7 @@ gid_t_cache::cache(const uid_t uid,
 static
 inline
 int
-setgroups(const gid_t_rec *rec)
+setgroups(const GIDRecord *rec)
 {
 #if defined __linux__ and UGID_USE_RWLOCK == 0
 # if defined SYS_setgroups32
@@ -153,11 +177,17 @@ setgroups(const gid_t_rec *rec)
 }
 
 int
-gid_t_cache::initgroups(const uid_t uid,
-                        const gid_t gid)
+GIDCache::initgroups(const uid_t uid,
+                     const gid_t gid)
 {
   int rv;
-  gid_t_rec *rec;
+  GIDRecord *rec;
+
+  if(invalidate)
+    {
+      size       = 0;
+      invalidate = false;
+    }
 
   rec = lower_bound(begin(),end(),uid);
   if(rec == end() || rec->uid != uid)
@@ -172,4 +202,13 @@ gid_t_cache::initgroups(const uid_t uid,
     }
 
   return rv;
+}
+
+void
+GIDCache::invalidate_all_caches()
+{
+  std::lock_guard<std::mutex> guard(g_REGISTERED_CACHES_MUTEX);
+
+  for(auto &p : g_REGISTERED_CACHES)
+    p.second->invalidate = true;
 }

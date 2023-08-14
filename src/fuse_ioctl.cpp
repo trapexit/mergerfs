@@ -24,6 +24,7 @@
 #include "fs_ioctl.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "gidcache.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 
@@ -41,11 +42,13 @@ using std::vector;
 #endif
 
 typedef char IOCTL_BUF[4096];
-#define IOCTL_APP_TYPE  0xDF
+#define IOCTL_APP_TYPE             0xDF
 #define IOCTL_FILE_INFO            _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
 #define IOCTL_GC                   _IO(IOCTL_APP_TYPE,1)
 #define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
 #define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
+#define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
+
 
 // From linux/btrfs.h
 #define BTRFS_IOCTL_MAGIC 0x94
@@ -346,6 +349,9 @@ namespace l
       case IOCTL_INVALIDATE_ALL_NODES:
         fuse_invalidate_all_nodes();
         return 0;
+      case IOCTL_INVALIDATE_GID_CACHE:
+        GIDCache::invalidate_all_caches();
+        break;
       }
 
     return -ENOTTY;
