@@ -72,7 +72,7 @@ public:
   void
   enqueue_work(F&& f_)
   {
-    auto i = _index++;
+    auto i = _index.fetch_add(1,std::memory_order_relaxed);
 
     for(std::size_t n = 0; n < (_count * K); ++n)
       {
@@ -91,10 +91,11 @@ public:
     using TaskReturnType = typename std::result_of<F()>::type;
     using Promise        = std::promise<TaskReturnType>;
 
-    auto i       = _index++;
+    auto i       = _index.fetch_add(1,std::memory_order_relaxed);
     auto promise = std::make_shared<Promise>();
     auto future  = promise->get_future();
-    auto work    = [=]() {
+    auto work    = [=]()
+    {
       auto rv = f_();
       promise->set_value(rv);
     };
