@@ -120,7 +120,9 @@ namespace l
   concurrent_readdir(ThreadPool           &tp_,
                      const Branches::CPtr &branches_,
                      const char           *dirname_,
-                     fuse_dirents_t       *buf_)
+                     fuse_dirents_t       *buf_,
+                     uid_t const           uid_,
+                     gid_t const           gid_)
   {
     HashSet names;
     std::mutex names_mutex;
@@ -130,9 +132,12 @@ namespace l
 
     for(auto const &branch : *branches_)
       {
-        auto func = [&]()
+        auto func = [&,dirname_,buf_,uid_,gid_]()
         {
-          std::string basepath = fs::path::make(branch.path,dirname_);
+          std::string basepath;
+          ugid::Set const ugid(uid_,gid_);
+
+          basepath = fs::path::make(branch.path,dirname_);
 
           return l::readdir(basepath,names,names_mutex,buf_,dirents_mutex);
         };
@@ -169,13 +174,15 @@ namespace l
   readdir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
           const char           *dirname_,
-          fuse_dirents_t       *buf_)
+          fuse_dirents_t       *buf_,
+          uid_t const           uid_,
+          gid_t const           gid_)
   {
     std::vector<int> rvs;
 
     fuse_dirents_reset(buf_);
 
-    rvs = l::concurrent_readdir(tp_,branches_,dirname_,buf_);
+    rvs = l::concurrent_readdir(tp_,branches_,dirname_,buf_,uid_,gid_);
 
     return l::calc_rv(rvs);
   }
@@ -188,7 +195,11 @@ FUSE::ReadDirCOR::operator()(fuse_file_info_t const *ffi_,
   Config::Read        cfg;
   DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return l::readdir(_tp,cfg->branches,di->fusepath.c_str(),buf_);
+  return l::readdir(_tp,
+                    cfg->branches,
+                    di->fusepath.c_str(),
+                    buf_,
+                    fc->uid,
+                    fc->gid);
 }

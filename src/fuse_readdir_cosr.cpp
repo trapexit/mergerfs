@@ -65,15 +65,20 @@ namespace l
   std::vector<std::future<DIR*>>
   opendir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
-          char const           *dirname_)
+          char const           *dirname_,
+          uid_t const           uid_,
+          gid_t const           gid_)
   {
     std::vector<std::future<DIR*>> futures;
 
     for(auto const &branch : *branches_)
       {
-        auto func = [&branch,dirname_]()
+        auto func = [&branch,dirname_,uid_,gid_]()
         {
-          std::string basepath = fs::path::make(branch.path,dirname_);
+          std::string basepath;
+          ugid::Set const ugid(uid_,gid_);
+
+          basepath = fs::path::make(branch.path,dirname_);
 
           return fs::opendir(basepath);
         };
@@ -146,14 +151,16 @@ namespace l
   readdir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
           const char           *dirname_,
-          fuse_dirents_t       *buf_)
+          fuse_dirents_t       *buf_,
+          uid_t const           uid_,
+          gid_t const           gid_)
   {
     int rv;
     std::vector<std::future<DIR*>> dh_futures;
 
     fuse_dirents_reset(buf_);
 
-    dh_futures = l::opendir(tp_,branches_,dirname_);
+    dh_futures = l::opendir(tp_,branches_,dirname_,uid_,gid_);
     rv         = l::readdir(dh_futures,dirname_,buf_);
 
     return rv;
@@ -167,7 +174,11 @@ FUSE::ReadDirCOSR::operator()(fuse_file_info_t const *ffi_,
   Config::Read        cfg;
   DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return l::readdir(_tp,cfg->branches,di->fusepath.c_str(),buf_);
+  return l::readdir(_tp,
+                    cfg->branches,
+                    di->fusepath.c_str(),
+                    buf_,
+                    fc->uid,
+                    fc->gid);
 }
