@@ -115,7 +115,7 @@ _msgbuf_alloc(msgbuf_setup_func_t setup_func_)
       if(msgbuf == NULL)
         return NULL;
 
-      g_MSGBUF_ALLOC_COUNT++;
+      g_MSGBUF_ALLOC_COUNT.fetch_add(1,std::memory_order_relaxed);
     }
   else
     {
@@ -160,7 +160,7 @@ msgbuf_free(fuse_msgbuf_t *msgbuf_)
   if(msgbuf_->size != (g_BUFSIZE - g_PAGESIZE))
     {
       msgbuf_destroy(msgbuf_);
-      g_MSGBUF_ALLOC_COUNT--;
+      g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
       return;
     }
 
@@ -206,7 +206,7 @@ msgbuf_gc_10percent()
   for(auto msgbuf : togc)
     {
       msgbuf_destroy(msgbuf);
-      g_MSGBUF_ALLOC_COUNT--;
+      g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
     }
 }
 
@@ -223,6 +223,6 @@ msgbuf_gc()
   for(auto msgbuf: oldstack)
     {
       msgbuf_destroy(msgbuf);
-      g_MSGBUF_ALLOC_COUNT--;
+      g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
     }
 }
