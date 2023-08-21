@@ -119,5 +119,7 @@ FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return l::readdir(cfg->branches,di->fusepath.c_str(),buf_);
+  return l::readdir(cfg->branches,
+                    di->fusepath.c_str(),
+                    buf_);
 }
