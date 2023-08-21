@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "rnd.hpp"
+
 #include <grp.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -81,7 +83,7 @@ GIDRecord *
 GIDCache::allocrec(void)
 {
   if(size == MAXRECS)
-    return &recs[rand() % MAXRECS];
+    return &recs[RND::rand64(MAXRECS)];
   else
     return &recs[size++];
 }

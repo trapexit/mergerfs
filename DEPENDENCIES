@@ -3,6 +3,7 @@
 ### included in repo
 
 * libfuse: https://github.com/libfuse/libfuse (heavily modified fork of v2.x)
+* wyhash: https://github.com/wangyi-fudan/wyhash
 * ghc::filesystem: https://github.com/gulrak/filesystem
 * nonstd::optional: https://github.com/martinmoene/optional-lite
 * fmt: https://github.com/fmtlib/fmt
