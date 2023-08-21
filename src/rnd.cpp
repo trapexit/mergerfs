@@ -26,9 +26,11 @@
 
 
 static uint64_t G_SEED;
-static RND      G_RND;
 
-RND::RND()
+__attribute__((constructor))
+static
+void
+_constructor()
 {
   struct timeval tv;
 

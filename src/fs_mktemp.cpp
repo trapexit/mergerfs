@@ -19,6 +19,7 @@
 #include "errno.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "rnd.hpp"
 
 #include <limits.h>
 
@@ -28,7 +29,9 @@
 #define PAD_LEN             16
 #define MAX_ATTEMPTS        3
 
-static char const CHARS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static char const   CHARS[]    = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static size_t const CHARS_SIZE = (sizeof(CHARS) - 1);
+
 
 namespace l
 {
@@ -41,7 +44,7 @@ namespace l
 
     filename  = '.';
     for(int i = 0; i < PAD_LEN; i++)
-      filename += CHARS[std::rand() % (sizeof(CHARS) - 1)];
+      filename += CHARS[RND::rand64(CHARS_SIZE)];
 
     path = base_;
     path /= filename;
