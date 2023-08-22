@@ -34,11 +34,10 @@
 #include <unordered_map>
 #include <mutex>
 
-
 #include "gidcache.hpp"
 
-std::mutex                          g_REGISTERED_CACHES_MUTEX;
-std::unordered_map<pid_t,GIDCache*> g_REGISTERED_CACHES;
+std::mutex                              g_REGISTERED_CACHES_MUTEX;
+std::unordered_map<pthread_t,GIDCache*> g_REGISTERED_CACHES;
 
 
 inline
@@ -55,11 +54,11 @@ GIDCache::GIDCache()
 {
   std::lock_guard<std::mutex> guard(g_REGISTERED_CACHES_MUTEX);
 
-  pid_t tid;
-  bool  inserted;
+  bool inserted;
+  pthread_t pthid;
 
-  tid = ::gettid();
-  inserted = g_REGISTERED_CACHES.emplace(tid,this).second;
+  pthid = pthread_self();
+  inserted = g_REGISTERED_CACHES.emplace(pthid,this).second;
 
   assert(inserted == true);
 }
