@@ -25,6 +25,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <tuple>
 
 #define PAD_LEN             16
 #define MAX_ATTEMPTS        3
@@ -75,12 +76,12 @@ namespace fs
         if((fd == -1) && (errno == EEXIST))
           continue;
         if(fd == -1)
-          return {-errno,std::string{}};
+          return std::make_tuple(-errno,std::string());
 
-        return {fd,tmp_filepath};
+        return std::make_tuple(fd,tmp_filepath);
       }
 
-    return {-EEXIST,std::string{}};
+    return std::make_tuple(-EEXIST,std::string());
   }
 
   std::tuple<int,std::string>
