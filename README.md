@@ -1295,7 +1295,7 @@ https://en.wikipedia.org/wiki/Page_cache
 * cache.files=libfuse: follow traditional libfuse `direct_io`,
   `kernel_cache`, and `auto_cache` arguments.
 * cache.files=per-process: Enable page caching (equivalent to `cache.files=partial`) 
-  only for processes which 'comm' name matches one of the values defined in
+  only for processes whose 'comm' name matches one of the values defined in
   `cache.files.process-names`. If the name does not match the file open
   is equivalent to `cache.files=off`.
 
