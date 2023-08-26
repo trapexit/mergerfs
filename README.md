@@ -289,7 +289,8 @@ These options are the same regardless of whether you use them with the
   (default: false)
 * **parallel-direct-writes=BOOL**: Allow the kernel to dispatch
   multiple, parallel (non-extending) write requests for files opened
-  with `direct_io=true` (if supported by the kernel)
+  with `cache.files=per-process` (if the process is not in `process-names`)
+  or `cache.files=off`. (This requires kernel support, and was added in v6.2)
 * **direct_io**: deprecated - Bypass page cache. Use `cache.files=off`
   instead. (default: false)
 * **kernel_cache**: deprecated - Do not invalidate data cache on file
