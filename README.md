@@ -289,7 +289,8 @@ These options are the same regardless of whether you use them with the
   (default: false)
 * **parallel-direct-writes=BOOL**: Allow the kernel to dispatch
   multiple, parallel (non-extending) write requests for files opened
-  with `direct_io=true` (if supported by the kernel)
+  with `cache.files=per-process` (if the process is not in `process-names`)
+  or `cache.files=off`. (This requires kernel support, and was added in v6.2)
 * **direct_io**: deprecated - Bypass page cache. Use `cache.files=off`
   instead. (default: false)
 * **kernel_cache**: deprecated - Do not invalidate data cache on file
@@ -1293,12 +1294,12 @@ https://en.wikipedia.org/wiki/Page_cache
   unchanged since previous open.
 * cache.files=libfuse: follow traditional libfuse `direct_io`,
   `kernel_cache`, and `auto_cache` arguments.
-* cache.files=per-process: Enable page caching only for processes
-  which 'comm' name matches one of the values defined in
-  `cache.files.process-names`.
+* cache.files=per-process: Enable page caching (equivalent to `cache.files=partial`) 
+  only for processes whose 'comm' name matches one of the values defined in
+  `cache.files.process-names`. If the name does not match the file open
+  is equivalent to `cache.files=off`.
 
-FUSE, which mergerfs uses, offers a number of page caching
-modes. mergerfs tries to simplify their use via the `cache.files`
+FUSE, which mergerfs uses, offers a number of page caching modes. mergerfs tries to simplify their use via the `cache.files`
 option. It can and should replace usage of `direct_io`,
 `kernel_cache`, and `auto_cache`.
 
