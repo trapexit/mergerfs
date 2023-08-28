@@ -2,6 +2,8 @@
 
 #include "unbounded_queue.hpp"
 
+#include "syslog.hpp"
+
 #include <atomic>
 #include <csignal>
 #include <functional>
@@ -21,8 +23,13 @@ public:
   ThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
              std::string const name_         = {})
     : _queues(thread_count_),
-      _count(thread_count_)
+      _count(thread_count_),
+      _name(name_)
   {
+    syslog_info("threadpool: spawning %zu threads named '%s'",
+                _count,
+                _name.c_str());
+
     auto worker = [this](std::size_t i)
     {
       while(true)
@@ -51,10 +58,10 @@ public:
     _threads.reserve(thread_count_);
     for(std::size_t i = 0; i < thread_count_; ++i)
       _threads.emplace_back(worker, i);
-    if(!name_.empty())
+    if(!_name.empty())
       {
         for(auto &t : _threads)
-          pthread_setname_np(t.native_handle(),name_.c_str());
+          pthread_setname_np(t.native_handle(),_name.c_str());
       }
 
     pthread_sigmask(SIG_SETMASK,&oldset,NULL);
@@ -62,6 +69,10 @@ public:
 
   ~ThreadPool()
   {
+    syslog_info("threadpool: destroying %zu threads named '%s'",
+                _count,
+                _name.c_str());
+
     for(auto& queue : _queues)
       queue.unblock();
     for(auto& thread : _threads)
@@ -133,8 +144,9 @@ private:
   std::vector<std::thread> _threads;
 
 private:
-  const std::size_t _count;
+  std::size_t const _count;
   std::atomic_uint  _index;
+  std::string const _name;
 
   static const unsigned int K = 2;
 };

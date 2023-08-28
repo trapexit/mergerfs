@@ -137,6 +137,8 @@ namespace FUSE
 
     ugid::init();
 
+    cfg->readdir.initialize();
+
     l::want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
     l::want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&cfg->async_read);
     l::want_if_capable(conn_,FUSE_CAP_ATOMIC_O_TRUNC);
