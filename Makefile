@@ -42,7 +42,7 @@ UGID_USE_RWLOCK = 0
 ifeq ($(DEBUG),1)
 OPT_FLAGS := -O0 -g -fsanitize=undefined
 else
-OPT_FLAGS := -O2
+OPT_FLAGS := -O2 -DNDEBUG
 endif
 
 ifeq ($(STATIC),1)

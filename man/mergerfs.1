@@ -391,7 +391,9 @@ to enable page caching for when \f[C]cache.files=per-process\f[R].
 .IP \[bu] 2
 \f[B]parallel-direct-writes=BOOL\f[R]: Allow the kernel to dispatch
 multiple, parallel (non-extending) write requests for files opened with
-\f[C]direct_io=true\f[R] (if supported by the kernel)
+\f[C]cache.files=per-process\f[R] (if the process is not in
+\f[C]process-names\f[R]) or \f[C]cache.files=off\f[R].
+(This requires kernel support, and was added in v6.2)
 .IP \[bu] 2
 \f[B]direct_io\f[R]: deprecated - Bypass page cache.
 Use \f[C]cache.files=off\f[R] instead.
@@ -859,8 +861,8 @@ calculations.
 The reason is that it doesn\[cq]t really work for non-path preserving
 policies and can lead to non-obvious behaviors.
 .PP
-NOTE: While any policy can be assigned to a function or category though
-some may not be very useful in practice.
+NOTE: While any policy can be assigned to a function or category, some
+may not be very useful in practice.
 For instance: \f[B]rand\f[R] (random) may be useful for file creation
 (create) but could lead to very odd behavior if used for \f[C]chmod\f[R]
 if there were more than one copy of the file.
@@ -1753,9 +1755,12 @@ size are unchanged since previous open.
 cache.files=libfuse: follow traditional libfuse \f[C]direct_io\f[R],
 \f[C]kernel_cache\f[R], and \f[C]auto_cache\f[R] arguments.
 .IP \[bu] 2
-cache.files=per-process: Enable page caching only for processes which
-`comm' name matches one of the values defined in
+cache.files=per-process: Enable page caching (equivalent to
+\f[C]cache.files=partial\f[R]) only for processes whose `comm' name
+matches one of the values defined in
 \f[C]cache.files.process-names\f[R].
+If the name does not match the file open is equivalent to
+\f[C]cache.files=off\f[R].
 .PP
 FUSE, which mergerfs uses, offers a number of page caching modes.
 mergerfs tries to simplify their use via the \f[C]cache.files\f[R]
