@@ -1,53 +1,42 @@
 #pragma once
 
-#include "unbounded_queue.hpp"
-
+#include "moodycamel/blockingconcurrentqueue.h"
 #include "syslog.hpp"
 
 #include <atomic>
 #include <csignal>
-#include <functional>
+#include <cstring>
 #include <future>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <thread>
-#include <tuple>
-#include <type_traits>
-#include <utility>
 #include <vector>
 
 
-class ThreadPool
+struct UnboundedThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 {
+  static const int MAX_SEMA_SPINS = 1;
+};
+
+
+class UnboundedThreadPool
+{
+private:
+  using Func   = std::function<void(void)>;
+  using Queue  = moodycamel::BlockingConcurrentQueue<Func,UnboundedThreadPoolTraits>;
+
 public:
   explicit
-  ThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
-             std::string const name_         = {})
-    : _queues(thread_count_),
-      _count(thread_count_),
+  UnboundedThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
+                      std::string const name_         = {})
+    : _queue(thread_count_,thread_count_,thread_count_),
+      _done(false),
       _name(name_)
   {
-    syslog_info("threadpool: spawning %zu threads named '%s'",
-                _count,
-                _name.c_str());
-
-    auto worker = [this](std::size_t i)
-    {
-      while(true)
-        {
-          Proc f;
-
-          for(std::size_t n = 0; n < (_count * K); ++n)
-            {
-              if(_queues[(i + n) % _count].try_pop(f))
-                break;
-            }
-
-          if(!f && !_queues[i].pop(f))
-            break;
-
-          f();
-        }
-    };
+    syslog_debug("threadpool: spawning %zu threads named '%s'",
+                 thread_count_,
+                 _name.c_str());
 
     sigset_t oldset;
     sigset_t newset;
@@ -57,52 +46,95 @@ public:
 
     _threads.reserve(thread_count_);
     for(std::size_t i = 0; i < thread_count_; ++i)
-      _threads.emplace_back(worker, i);
-    if(!_name.empty())
       {
-        for(auto &t : _threads)
-          pthread_setname_np(t.native_handle(),_name.c_str());
+        int rv;
+        pthread_t t;
+
+        rv = pthread_create(&t,NULL,UnboundedThreadPool::start_routine,this);
+        if(rv != 0)
+          {
+            syslog_warning("threadpool: error spawning thread - %d (%s)",
+                           rv,
+                           strerror(rv));
+            continue;
+          }
+
+        if(!_name.empty())
+          pthread_setname_np(t,_name.c_str());
+
+        _threads.push_back(t);
       }
 
     pthread_sigmask(SIG_SETMASK,&oldset,NULL);
+
+    if(_threads.empty())
+      throw std::runtime_error("threadpool: failed to spawn any threads");
   }
 
-  ~ThreadPool()
+  ~UnboundedThreadPool()
   {
-    syslog_info("threadpool: destroying %zu threads named '%s'",
-                _count,
-                _name.c_str());
+    syslog_debug("threadpool: destroying %zu threads named '%s'",
+                 _threads.size(),
+                 _name.c_str());
 
-    for(auto& queue : _queues)
-      queue.unblock();
-    for(auto& thread : _threads)
-      thread.join();
+    _done.store(true,std::memory_order_relaxed);
+
+    for(auto t : _threads)
+      pthread_cancel(t);
+
+    Func f;
+    while(_queue.try_dequeue(f))
+      continue;
+
+    for(auto t : _threads)
+      pthread_join(t,NULL);
   }
 
-  template<typename F>
-  void
-  enqueue_work(F&& f_)
+private:
+  static
+  void*
+  start_routine(void *arg_)
   {
-    auto i = _index.fetch_add(1,std::memory_order_relaxed);
+    UnboundedThreadPool *btp = static_cast<UnboundedThreadPool*>(arg_);
+    UnboundedThreadPool::Func func;
+    std::atomic<bool> &done = btp->_done;
+    UnboundedThreadPool::Queue &q = btp->_queue;
+    moodycamel::ConsumerToken ctok(btp->_queue);
 
-    for(std::size_t n = 0; n < (_count * K); ++n)
+    while(!done.load(std::memory_order_relaxed))
       {
-        if(_queues[(i + n) % _count].try_push(f_))
-          return;
+        q.wait_dequeue(ctok,func);
+
+        func();
       }
 
-    _queues[i % _count].push(std::move(f_));
+    return NULL;
   }
 
-  template<typename F>
-  [[nodiscard]]
-  std::future<typename std::result_of<F()>::type>
-  enqueue_task(F&& f_)
+public:
+  template<typename FuncType>
+  void
+  enqueue_work(moodycamel::ProducerToken  &ptok_,
+               FuncType                  &&f_)
   {
-    using TaskReturnType = typename std::result_of<F()>::type;
+    _queue.enqueue(ptok_,f_);
+  }
+
+  template<typename FuncType>
+  void
+  enqueue_work(FuncType &&f_)
+  {
+    _queue.enqueue(f_);
+  }
+
+  template<typename FuncType>
+  [[nodiscard]]
+  std::future<typename std::result_of<FuncType()>::type>
+  enqueue_task(FuncType&& f_)
+  {
+    using TaskReturnType = typename std::result_of<FuncType()>::type;
     using Promise        = std::promise<TaskReturnType>;
 
-    auto i       = _index.fetch_add(1,std::memory_order_relaxed);
     auto promise = std::make_shared<Promise>();
     auto future  = promise->get_future();
     auto work    = [=]()
@@ -111,42 +143,30 @@ public:
       promise->set_value(rv);
     };
 
-    for(std::size_t n = 0; n < (_count * K); ++n)
-      {
-        if(_queues[(i + n) % _count].try_push(work))
-          return future;
-      }
-
-    _queues[i % _count].push(std::move(work));
+    _queue.enqueue(work);
 
     return future;
   }
 
 public:
   std::vector<pthread_t>
-  threads()
+  threads() const
   {
-    std::vector<pthread_t> rv;
+    return _threads;
+  }
 
-    for(auto &thread : _threads)
-      rv.push_back(thread.native_handle());
-
-    return rv;
+public:
+  Queue&
+  queue()
+  {
+    return _queue;
   }
 
 private:
-  using Proc   = std::function<void(void)>;
-  using Queue  = UnboundedQueue<Proc>;
-  using Queues = std::vector<Queue>;
-  Queues _queues;
+  Queue _queue;
 
 private:
-  std::vector<std::thread> _threads;
-
-private:
-  std::size_t const _count;
-  std::atomic_uint  _index;
-  std::string const _name;
-
-  static const unsigned int K = 2;
+  std::atomic<bool>      _done;
+  std::string const      _name;
+  std::vector<pthread_t> _threads;
 };

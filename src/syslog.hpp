@@ -23,6 +23,7 @@
 
 void syslog_open();
 void syslog_log(const int priority, const char *format, ...);
+void syslog_debug(const char *format, ...);
 void syslog_info(const char *format, ...);
 void syslog_notice(const char *format, ...);
 void syslog_warning(const char *format, ...);

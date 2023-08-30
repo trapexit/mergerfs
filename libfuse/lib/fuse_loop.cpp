@@ -5,6 +5,7 @@
 #include "bounded_thread_pool.hpp"
 #include "cpu.hpp"
 #include "fmt/core.h"
+#include "make_unique.hpp"
 #include "scope_guard.hpp"
 #include "syslog.h"
 
@@ -87,6 +88,7 @@ struct AsyncWorker
     DEFER{ fuse_session_exit(_se); };
     DEFER{ sem_post(_finished); };
 
+    moodycamel::ProducerToken ptok(_process_tp->queue());
     while(!fuse_session_exited(_se))
       {
         int rv;
@@ -107,10 +109,13 @@ struct AsyncWorker
               return handle_receive_error(rv,msgbuf);
           } while(false);
 
-        _process_tp->enqueue_work([=] {
+        auto const func = [=]
+        {
           _se->process_buf(_se,msgbuf);
           msgbuf_free(msgbuf);
-        });
+        };
+
+        _process_tp->enqueue_work(ptok,func);
       }
   }
 };

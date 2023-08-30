@@ -59,6 +59,17 @@ syslog_log(const int   priority_,
 }
 
 void
+syslog_debug(const char *format_,
+             ...)
+{
+  va_list valist;
+
+  va_start(valist,format_);
+  syslog_vlog(LOG_DEBUG,format_,valist);
+  va_end(valist);
+}
+
+void
 syslog_info(const char *format_,
             ...)
 {
