@@ -81,6 +81,9 @@ FUSE::ReadDir::from_string(std::string const &str_)
     {
       std::lock_guard<std::mutex> lg(_mutex);
 
+      if(!FUSE::ReadDirFactory::valid(str_))
+        return -EINVAL;
+
       _type = str_;
     }
 
