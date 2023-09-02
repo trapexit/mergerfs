@@ -63,7 +63,7 @@ namespace l
   static
   inline
   std::vector<std::future<DIR*>>
-  opendir(ThreadPool           &tp_,
+  opendir(UnboundedThreadPool  &tp_,
           const Branches::CPtr &branches_,
           char const           *dirname_,
           uid_t const           uid_,
@@ -148,7 +148,7 @@ namespace l
   static
   inline
   int
-  readdir(ThreadPool           &tp_,
+  readdir(UnboundedThreadPool  &tp_,
           const Branches::CPtr &branches_,
           const char           *dirname_,
           fuse_dirents_t       *buf_,

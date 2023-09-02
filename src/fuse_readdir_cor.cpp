@@ -117,7 +117,7 @@ namespace l
 
   static
   std::vector<int>
-  concurrent_readdir(ThreadPool           &tp_,
+  concurrent_readdir(UnboundedThreadPool  &tp_,
                      const Branches::CPtr &branches_,
                      const char           *dirname_,
                      fuse_dirents_t       *buf_,
@@ -171,7 +171,7 @@ namespace l
 
   static
   int
-  readdir(ThreadPool           &tp_,
+  readdir(UnboundedThreadPool  &tp_,
           const Branches::CPtr &branches_,
           const char           *dirname_,
           fuse_dirents_t       *buf_,

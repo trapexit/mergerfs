@@ -34,6 +34,6 @@ namespace FUSE
                    fuse_dirents_t         *buf);
 
   private:
-    ThreadPool _tp;
+    UnboundedThreadPool _tp;
   };
 }
