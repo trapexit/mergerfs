@@ -26,13 +26,14 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <set>
 
 
 namespace l
 {
   static
   void
-  read_cfg(std::string const  cfgstr_,
+  read_cfg(std::string const  str_,
            std::string       &type_,
            int               &concurrency_)
   {
@@ -40,7 +41,7 @@ namespace l
     int concurrency;
 
     concurrency = 0;
-    std::sscanf(cfgstr_.c_str(),"%15[a-z]:%u",type,&concurrency);
+    std::sscanf(str_.c_str(),"%15[a-z]:%d",type,&concurrency);
 
     if(concurrency == 0)
       concurrency = std::thread::hardware_concurrency();
@@ -55,14 +56,36 @@ namespace l
   }
 }
 
+bool
+FUSE::ReadDirFactory::valid(std::string const str_)
+{
+  int concurrency;
+  std::string type;
+  static const std::set<std::string> types =
+    {
+      "seq", "cosr", "cor"
+    };
+
+  l::read_cfg(str_,type,concurrency);
+
+  if(types.find(type) == types.end())
+    return false;
+  if(concurrency <= 0)
+    return false;
+
+  return true;
+}
+
 std::shared_ptr<FUSE::ReadDirBase>
-FUSE::ReadDirFactory::make(std::string const cfgstr_)
+FUSE::ReadDirFactory::make(std::string const str_)
 {
   int concurrency;
   std::string type;
 
-  l::read_cfg(cfgstr_,type,concurrency);
-  assert(concurrency);
+  if(!valid(str_))
+    return {};
+
+  l::read_cfg(str_,type,concurrency);
 
   if(type == "seq")
     return std::make_shared<FUSE::ReadDirSeq>();
