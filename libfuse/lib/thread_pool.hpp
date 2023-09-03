@@ -8,32 +8,32 @@
 #include <cstring>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
 
-struct BoundedThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
+struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 {
   static const int MAX_SEMA_SPINS = 1;
 };
 
 
-class BoundedThreadPool
+class ThreadPool
 {
 private:
   using Func  = std::function<void(void)>;
-  using Queue = moodycamel::BlockingConcurrentQueue<Func,BoundedThreadPoolTraits>;
+  using Queue = moodycamel::BlockingConcurrentQueue<Func,ThreadPoolTraits>;
 
 public:
   explicit
-  BoundedThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
-                    std::size_t const queue_depth_  = 1,
-                    std::string const name_         = {})
+  ThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
+             std::size_t const queue_depth_  = 1,
+             std::string const name_         = {})
     : _queue(queue_depth_,thread_count_,thread_count_),
-      _done(false),
-      _name(name_)
+      _name(get_thread_name(name_))
   {
     syslog_debug("threadpool: spawning %zu threads of queue depth %zu named '%s'",
                  thread_count_,
@@ -52,7 +52,7 @@ public:
         int rv;
         pthread_t t;
 
-        rv = pthread_create(&t,NULL,BoundedThreadPool::start_routine,this);
+        rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
         if(rv != 0)
           {
             syslog_warning("threadpool: error spawning thread - %d (%s)",
@@ -73,13 +73,11 @@ public:
       throw std::runtime_error("threadpool: failed to spawn any threads");
   }
 
-  ~BoundedThreadPool()
+  ~ThreadPool()
   {
     syslog_debug("threadpool: destroying %zu threads named '%s'",
                  _threads.size(),
                  _name.c_str());
-
-    _done.store(true,std::memory_order_relaxed);
 
     for(auto t : _threads)
       pthread_cancel(t);
@@ -94,16 +92,28 @@ public:
 
 private:
   static
+  std::string
+  get_thread_name(std::string const name_)
+  {
+    if(!name_.empty())
+      return name_;
+
+    char name[16];
+    pthread_getname_np(pthread_self(),name,sizeof(name));
+
+    return name;
+  }
+
+  static
   void*
   start_routine(void *arg_)
   {
-    BoundedThreadPool *btp = static_cast<BoundedThreadPool*>(arg_);
-    BoundedThreadPool::Func func;
-    std::atomic<bool> &done = btp->_done;
-    BoundedThreadPool::Queue &q = btp->_queue;
+    ThreadPool *btp = static_cast<ThreadPool*>(arg_);
+    ThreadPool::Func func;
+    ThreadPool::Queue &q = btp->_queue;
     moodycamel::ConsumerToken ctok(btp->_queue);
 
-    while(!done.load(std::memory_order_relaxed))
+    while(true)
       {
         q.wait_dequeue(ctok,func);
 
@@ -111,6 +121,110 @@ private:
       }
 
     return NULL;
+  }
+
+public:
+  int
+  add_thread(std::string const name_ = {})
+  {
+    int rv;
+    pthread_t t;
+    sigset_t oldset;
+    sigset_t newset;
+    std::string name;
+
+    name = (name_.empty() ? _name : name_);
+
+    sigfillset(&newset);
+    pthread_sigmask(SIG_BLOCK,&newset,&oldset);
+    rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
+    pthread_sigmask(SIG_SETMASK,&oldset,NULL);
+
+    if(rv != 0)
+      {
+        syslog_warning("threadpool: error spawning thread - %d (%s)",
+                       rv,
+                       strerror(rv));
+        return -rv;
+      }
+
+    if(!name.empty())
+      pthread_setname_np(t,name.c_str());
+
+    {
+      std::lock_guard<std::mutex> lg(_threads_mutex);
+      _threads.push_back(t);
+    }
+
+    syslog_debug("threadpool: 1 thread added to pool '%s' named '%s'",
+                 _name.c_str(),
+                 name.c_str());
+
+    return 0;
+  }
+
+  int
+  remove_thread(void)
+  {
+    {
+      std::lock_guard<std::mutex> lg(_threads_mutex);
+      if(_threads.size() <= 1)
+        return -EINVAL;
+    }
+
+    std::promise<pthread_t> promise;
+    auto func = [&]()
+    {
+      pthread_t t;
+
+      t = pthread_self();
+      promise.set_value(t);
+
+      {
+        std::lock_guard<std::mutex> lg(_threads_mutex);
+
+        for(auto i = _threads.begin(); i != _threads.end(); ++i)
+          {
+            if(*i != t)
+              continue;
+
+            _threads.erase(i);
+            break;
+          }
+      }
+
+      char name[16];
+      pthread_getname_np(t,name,sizeof(name));
+      syslog_debug("threadpool: 1 thread removed from pool '%s' named '%s'",
+                   _name.c_str(),
+                   name);
+
+      pthread_exit(NULL);
+    };
+
+    enqueue_work(func);
+    pthread_join(promise.get_future().get(),NULL);
+
+    return 0;
+  }
+
+  int
+  set_threads(std::size_t const count_)
+  {
+    int diff;
+    {
+      std::lock_guard<std::mutex> lg(_threads_mutex);
+
+      diff = ((int)count_ - (int)_threads.size());
+    }
+
+    syslog_debug("diff: %d",diff);
+    for(auto i = diff; i > 0; --i)
+      add_thread();
+    for(auto i = diff; i < 0; ++i)
+      remove_thread();
+
+    return diff;
   }
 
 public:
@@ -175,21 +289,22 @@ public:
   std::vector<pthread_t>
   threads() const
   {
+    std::lock_guard<std::mutex> lg(_threads_mutex);
+
     return _threads;
   }
 
-public:
-  Queue&
-  queue()
+  moodycamel::ProducerToken
+  ptoken()
   {
-    return _queue;
+    return moodycamel::ProducerToken(_queue);
   }
 
 private:
   Queue _queue;
 
 private:
-  std::atomic<bool>      _done;
   std::string const      _name;
   std::vector<pthread_t> _threads;
+  mutable std::mutex     _threads_mutex;
 };
