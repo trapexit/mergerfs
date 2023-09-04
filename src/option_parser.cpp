@@ -380,9 +380,25 @@ option_processor(void       *data_,
       exit(0);
 
     case MERGERFS_OPT_VERSION:
-      std::cout << "mergerfs version: "
-                << (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown")
-                << std::endl;
+      fmt::print("mergerfs v{}\n\n"
+                 "https://github.com/trapexit/mergerfs\n"
+                 "https://github.com/trapexit/support\n\n"
+                 "ISC License (ISC)\n\n"
+                 "Copyright 2023, Antonio SJ Musumeci <trapexit@spawn.link>\n\n"
+                 "Permission to use, copy, modify, and/or distribute this software for\n"
+                 "any purpose with or without fee is hereby granted, provided that the\n"
+                 "above copyright notice and this permission notice appear in all\n"
+                 "copies.\n\n"
+                 "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL\n"
+                 "WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED\n"
+                 "WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE\n"
+                 "AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL\n"
+                 "DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR\n"
+                 "PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER\n"
+                 "TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR\n"
+                 "PERFORMANCE OF THIS SOFTWARE.\n\n"
+                 ,
+                 (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown"));
       exit(0);
 
     default:
