@@ -218,7 +218,6 @@ public:
       diff = ((int)count_ - (int)_threads.size());
     }
 
-    syslog_debug("diff: %d",diff);
     for(auto i = diff; i > 0; --i)
       add_thread();
     for(auto i = diff; i < 0; ++i)
