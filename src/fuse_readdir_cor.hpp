@@ -19,7 +19,9 @@
 #pragma once
 
 #include "fuse_readdir_base.hpp"
-#include "unbounded_thread_pool.hpp"
+
+#include "thread_pool.hpp"
+
 
 // concurrent open & read
 namespace FUSE
@@ -34,6 +36,6 @@ namespace FUSE
                    fuse_dirents_t         *buf);
 
   private:
-    UnboundedThreadPool _tp;
+    ThreadPool _tp;
   };
 }

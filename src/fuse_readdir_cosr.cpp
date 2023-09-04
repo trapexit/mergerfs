@@ -34,7 +34,7 @@
 
 
 FUSE::ReadDirCOSR::ReadDirCOSR(unsigned concurrency_)
-  : _tp(concurrency_,"readdir.cosr")
+  : _tp(concurrency_,concurrency_,"readdir.cosr")
 {
 
 }
@@ -63,7 +63,7 @@ namespace l
   static
   inline
   std::vector<std::future<DIR*>>
-  opendir(UnboundedThreadPool  &tp_,
+  opendir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
           char const           *dirname_,
           uid_t const           uid_,
@@ -148,7 +148,7 @@ namespace l
   static
   inline
   int
-  readdir(UnboundedThreadPool  &tp_,
+  readdir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
           const char           *dirname_,
           fuse_dirents_t       *buf_,

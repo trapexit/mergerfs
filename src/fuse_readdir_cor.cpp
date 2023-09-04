@@ -32,7 +32,7 @@
 
 
 FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_)
-  : _tp(concurrency_,"readdir.cor")
+  : _tp(concurrency_,concurrency_,"readdir.cor")
 {
 
 }
@@ -117,7 +117,7 @@ namespace l
 
   static
   std::vector<int>
-  concurrent_readdir(UnboundedThreadPool  &tp_,
+  concurrent_readdir(ThreadPool           &tp_,
                      const Branches::CPtr &branches_,
                      const char           *dirname_,
                      fuse_dirents_t       *buf_,
@@ -171,7 +171,7 @@ namespace l
 
   static
   int
-  readdir(UnboundedThreadPool  &tp_,
+  readdir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
           const char           *dirname_,
           fuse_dirents_t       *buf_,

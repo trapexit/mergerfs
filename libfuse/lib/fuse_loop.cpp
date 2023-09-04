@@ -2,12 +2,12 @@
 #define _GNU_SOURCE
 #endif
 
-#include "bounded_thread_pool.hpp"
 #include "cpu.hpp"
 #include "fmt/core.h"
 #include "make_unique.hpp"
 #include "scope_guard.hpp"
 #include "syslog.h"
+#include "thread_pool.hpp"
 
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -70,11 +70,11 @@ struct AsyncWorker
 {
   fuse_session *_se;
   sem_t *_finished;
-  std::shared_ptr<BoundedThreadPool> _process_tp;
+  std::shared_ptr<ThreadPool> _process_tp;
 
   AsyncWorker(fuse_session                       *se_,
               sem_t                              *finished_,
-              std::shared_ptr<BoundedThreadPool>  process_tp_)
+              std::shared_ptr<ThreadPool>  process_tp_)
     : _se(se_),
       _finished(finished_),
       _process_tp(process_tp_)
@@ -88,7 +88,7 @@ struct AsyncWorker
     DEFER{ fuse_session_exit(_se); };
     DEFER{ sem_post(_finished); };
 
-    moodycamel::ProducerToken ptok(_process_tp->queue());
+    moodycamel::ProducerToken ptok(_process_tp->ptoken());
     while(!fuse_session_exited(_se))
       {
         int rv;
@@ -474,8 +474,8 @@ fuse_session_loop_mt(struct fuse_session *se_,
   int process_thread_queue_depth;
   std::vector<pthread_t> read_threads;
   std::vector<pthread_t> process_threads;
-  std::unique_ptr<BoundedThreadPool> read_tp;
-  std::shared_ptr<BoundedThreadPool> process_tp;
+  std::unique_ptr<ThreadPool> read_tp;
+  std::shared_ptr<ThreadPool> process_tp;
 
   sem_init(&finished,0,0);
 
@@ -487,11 +487,11 @@ fuse_session_loop_mt(struct fuse_session *se_,
                             &process_thread_queue_depth);
 
   if(process_thread_count > 0)
-    process_tp = std::make_shared<BoundedThreadPool>(process_thread_count,
-                                                     process_thread_queue_depth,
-                                                     "fuse.process");
+    process_tp = std::make_shared<ThreadPool>(process_thread_count,
+                                              process_thread_queue_depth,
+                                              "fuse.process");
 
-  read_tp = std::make_unique<BoundedThreadPool>(read_thread_count,1,"fuse.read");
+  read_tp = std::make_unique<ThreadPool>(read_thread_count,1,"fuse.read");
   if(process_tp)
     {
       for(auto i = 0; i < read_thread_count; i++)
