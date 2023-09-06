@@ -1294,10 +1294,11 @@ https://en.wikipedia.org/wiki/Page_cache
   unchanged since previous open.
 * cache.files=libfuse: follow traditional libfuse `direct_io`,
   `kernel_cache`, and `auto_cache` arguments.
-* cache.files=per-process: Enable page caching (equivalent to `cache.files=partial`) 
-  only for processes whose 'comm' name matches one of the values defined in
-  `cache.files.process-names`. If the name does not match the file open
-  is equivalent to `cache.files=off`.
+* cache.files=per-process: Enable page caching (equivalent to
+  `cache.files=partial`) only for processes whose 'comm' name matches
+  one of the values defined in `cache.files.process-names`. If the
+  name does not match the file open is equivalent to
+  `cache.files=off`.
 
 FUSE, which mergerfs uses, offers a number of page caching modes. mergerfs tries to simplify their use via the `cache.files`
 option. It can and should replace usage of `direct_io`,
@@ -1428,7 +1429,7 @@ placing of usually smaller, faster storage as a transparent cache to
 larger, slower storage. NVMe, SSD, Optane in front of traditional HDDs
 for instance.
 
-MergerFS does not natively support any sort of tiered caching. Most
+mergerfs does not natively support any sort of tiered caching. Most
 users have no use for such a feature and its inclusion would
 complicate the code. However, there are a few situations where a cache
 filesystem could help with a typical mergerfs setup.
@@ -1901,18 +1902,51 @@ of which are fixed in stable releases.
 
 #### Can mergerfs be used with filesystems which already have data / are in use?
 
-Yes. MergerFS is a proxy and does **NOT** interfere with the normal
-form or function of the filesystems / mounts / paths it manages.
+Yes. mergerfs is really just a proxy and does **NOT** interfere with
+the normal form or function of the filesystems / mounts / paths it
+manages. It is just another userland application that is acting as a
+man-in-the-middle. It can't do anything that any other random piece of
+software can't do.
 
-MergerFS is **not** a traditional filesystem. MergerFS is **not**
-RAID. It does **not** manipulate the data that passes through it. It
-does **not** shard data across filesystems. It merely shards some
-**behavior** and aggregates others.
+mergerfs is **not** a traditional filesystem that takes control over
+the underlying block device. mergerfs is **not** RAID. It does **not**
+manipulate the data that passes through it. It does **not** shard data
+across filesystems. It merely shards some **behavior** and aggregates
+others.
+
+
+#### Can drives/filesystems be removed from the pool at will?
+
+Yes. See previous question's answer.
 
 
 #### Can mergerfs be removed without affecting the data?
 
-See the previous question's answer.
+Yes. See the previous question's answer.
+
+
+#### Can drives/filesystems be moved to another pool?
+
+Yes. See the previous question's answer.
+
+
+#### How do I migrate data into or out of the pool when adding/removing drives/filesystems?
+
+You don't need to. See the previous question's answer.
+
+
+#### How do I remove a drive/filesystem but keep the data in the pool?
+
+Nothing special needs to be done. Remove the branch from mergerfs'
+config and copy (rsync) the data from the removed filesystem into the
+pool. Effectively the same as if it were you transfering data from one
+filesystem to another.
+
+If you wish to continue using the pool while performing the transfer
+simply create another, temporary pool without the filesystem in
+question and then copy the data. It would probably be a good idea to
+set the branch to `RO` prior to doing this to ensure no new content is
+written to the filesystem while performing the copy.
 
 
 #### What policies should I use?
@@ -2132,7 +2166,7 @@ removed to simplify the codebase.
 #### Why use mergerfs over mhddfs?
 
 mhddfs is no longer maintained and has some known stability and
-security issues (see below). MergerFS provides a superset of mhddfs'
+security issues (see below). mergerfs provides a superset of mhddfs'
 features and should offer the same or maybe better performance.
 
 Below is an example of mhddfs and mergerfs setup to work similarly.
@@ -2181,7 +2215,7 @@ without the single point of failure.
 
 #### Why use mergerfs over ZFS?
 
-MergerFS is not intended to be a replacement for ZFS. MergerFS is
+mergerfs is not intended to be a replacement for ZFS. mergerfs is
 intended to provide flexible pooling of arbitrary filesystems (local
 or remote), of arbitrary sizes, and arbitrary filesystems. For `write
 once, read many` usecases such as bulk media storage. Where data
