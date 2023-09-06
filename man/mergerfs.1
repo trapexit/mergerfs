@@ -1899,7 +1899,7 @@ The placing of usually smaller, faster storage as a transparent cache to
 larger, slower storage.
 NVMe, SSD, Optane in front of traditional HDDs for instance.
 .PP
-MergerFS does not natively support any sort of tiered caching.
+mergerfs does not natively support any sort of tiered caching.
 Most users have no use for such a feature and its inclusion would
 complicate the code.
 However, there are a few situations where a cache filesystem could help
@@ -2433,17 +2433,50 @@ All of which are fixed in stable releases.
 .SS Can mergerfs be used with filesystems which already have data / are in use?
 .PP
 Yes.
-MergerFS is a proxy and does \f[B]NOT\f[R] interfere with the normal
-form or function of the filesystems / mounts / paths it manages.
+mergerfs is really just a proxy and does \f[B]NOT\f[R] interfere with
+the normal form or function of the filesystems / mounts / paths it
+manages.
+It is just another userland application that is acting as a
+man-in-the-middle.
+It can\[cq]t do anything that any other random piece of software
+can\[cq]t do.
 .PP
-MergerFS is \f[B]not\f[R] a traditional filesystem.
-MergerFS is \f[B]not\f[R] RAID.
+mergerfs is \f[B]not\f[R] a traditional filesystem that takes control
+over the underlying block device.
+mergerfs is \f[B]not\f[R] RAID.
 It does \f[B]not\f[R] manipulate the data that passes through it.
 It does \f[B]not\f[R] shard data across filesystems.
 It merely shards some \f[B]behavior\f[R] and aggregates others.
+.SS Can drives/filesystems be removed from the pool at will?
+.PP
+Yes.
+See previous question\[cq]s answer.
 .SS Can mergerfs be removed without affecting the data?
 .PP
+Yes.
 See the previous question\[cq]s answer.
+.SS Can drives/filesystems be moved to another pool?
+.PP
+Yes.
+See the previous question\[cq]s answer.
+.SS How do I migrate data into or out of the pool when adding/removing drives/filesystems?
+.PP
+You don\[cq]t need to.
+See the previous question\[cq]s answer.
+.SS How do I remove a drive/filesystem but keep the data in the pool?
+.PP
+Nothing special needs to be done.
+Remove the branch from mergerfs\[cq] config and copy (rsync) the data
+from the removed filesystem into the pool.
+Effectively the same as if it were you transfering data from one
+filesystem to another.
+.PP
+If you wish to continue using the pool while performing the transfer
+simply create another, temporary pool without the filesystem in question
+and then copy the data.
+It would probably be a good idea to set the branch to \f[C]RO\f[R] prior
+to doing this to ensure no new content is written to the filesystem
+while performing the copy.
 .SS What policies should I use?
 .PP
 Unless you\[cq]re doing something more niche the average user is
@@ -2674,7 +2707,7 @@ The splice code was removed to simplify the codebase.
 .PP
 mhddfs is no longer maintained and has some known stability and security
 issues (see below).
-MergerFS provides a superset of mhddfs\[cq] features and should offer
+mergerfs provides a superset of mhddfs\[cq] features and should offer
 the same or maybe better performance.
 .PP
 Below is an example of mhddfs and mergerfs setup to work similarly.
@@ -2713,8 +2746,8 @@ and/or an offsite backup solution you can have the flexibility of JBOD
 without the single point of failure.
 .SS Why use mergerfs over ZFS?
 .PP
-MergerFS is not intended to be a replacement for ZFS.
-MergerFS is intended to provide flexible pooling of arbitrary
+mergerfs is not intended to be a replacement for ZFS.
+mergerfs is intended to provide flexible pooling of arbitrary
 filesystems (local or remote), of arbitrary sizes, and arbitrary
 filesystems.
 For \f[C]write once, read many\f[R] usecases such as bulk media storage.
