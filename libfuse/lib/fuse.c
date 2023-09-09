@@ -44,6 +44,7 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/uio.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -3899,7 +3900,7 @@ fuse_invalidate_all_nodes()
 {
   struct fuse *f = fuse_get_fuse_obj();
 
-  syslog_info("invalidating file entries");
+  syslog(LOG_INFO,"invalidating file entries");
 
   pthread_mutex_lock(&f->lock);
   for(int i = 0; i < f->id_table.size; i++)
@@ -3925,7 +3926,7 @@ fuse_invalidate_all_nodes()
 void
 fuse_gc()
 {
-  syslog_info("running thorough garbage collection");
+  syslog(LOG_INFO,"running thorough garbage collection");
   node_gc();
   msgbuf_gc();
   fuse_malloc_trim();
@@ -3934,7 +3935,7 @@ fuse_gc()
 void
 fuse_gc1()
 {
-  syslog_info("running basic garbage collection");
+  syslog(LOG_INFO,"running basic garbage collection");
   node_gc1();
   msgbuf_gc_10percent();
   fuse_malloc_trim();

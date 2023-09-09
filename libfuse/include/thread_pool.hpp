@@ -1,7 +1,6 @@
 #pragma once
 
 #include "moodycamel/blockingconcurrentqueue.h"
-#include "syslog.hpp"
 
 #include <atomic>
 #include <csignal>
@@ -14,6 +13,7 @@
 #include <thread>
 #include <vector>
 
+#include <syslog.h>
 
 struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 {
@@ -35,10 +35,11 @@ public:
     : _queue(queue_depth_,thread_count_,thread_count_),
       _name(get_thread_name(name_))
   {
-    syslog_debug("threadpool: spawning %zu threads of queue depth %zu named '%s'",
-                 thread_count_,
-                 queue_depth_,
-                 _name.c_str());
+    syslog(LOG_DEBUG,
+           "threadpool: spawning %zu threads of queue depth %zu named '%s'",
+           thread_count_,
+           queue_depth_,
+           _name.c_str());
 
     sigset_t oldset;
     sigset_t newset;
@@ -55,9 +56,10 @@ public:
         rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
         if(rv != 0)
           {
-            syslog_warning("threadpool: error spawning thread - %d (%s)",
-                           rv,
-                           strerror(rv));
+            syslog(LOG_WARNING,
+                   "threadpool: error spawning thread - %d (%s)",
+                   rv,
+                   strerror(rv));
             continue;
           }
 
@@ -75,16 +77,17 @@ public:
 
   ~ThreadPool()
   {
-    syslog_debug("threadpool: destroying %zu threads named '%s'",
-                 _threads.size(),
-                 _name.c_str());
+    syslog(LOG_DEBUG,
+           "threadpool: destroying %zu threads named '%s'",
+           _threads.size(),
+           _name.c_str());
+
+    auto func = []() { pthread_exit(NULL); };
+    for(std::size_t i = 0; i < _threads.size(); i++)
+      _queue.enqueue(func);
 
     for(auto t : _threads)
       pthread_cancel(t);
-
-    Func f;
-    while(_queue.try_dequeue(f))
-      continue;
 
     for(auto t : _threads)
       pthread_join(t,NULL);
@@ -142,9 +145,10 @@ public:
 
     if(rv != 0)
       {
-        syslog_warning("threadpool: error spawning thread - %d (%s)",
-                       rv,
-                       strerror(rv));
+        syslog(LOG_WARNING,
+               "threadpool: error spawning thread - %d (%s)",
+               rv,
+               strerror(rv));
         return -rv;
       }
 
@@ -156,9 +160,10 @@ public:
       _threads.push_back(t);
     }
 
-    syslog_debug("threadpool: 1 thread added to pool '%s' named '%s'",
-                 _name.c_str(),
-                 name.c_str());
+    syslog(LOG_DEBUG,
+           "threadpool: 1 thread added to pool '%s' named '%s'",
+           _name.c_str(),
+           name.c_str());
 
     return 0;
   }
@@ -195,9 +200,10 @@ public:
 
       char name[16];
       pthread_getname_np(t,name,sizeof(name));
-      syslog_debug("threadpool: 1 thread removed from pool '%s' named '%s'",
-                   _name.c_str(),
-                   name);
+      syslog(LOG_DEBUG,
+             "threadpool: 1 thread removed from pool '%s' named '%s'",
+             _name.c_str(),
+             name);
 
       pthread_exit(NULL);
     };
@@ -291,6 +297,12 @@ public:
     std::lock_guard<std::mutex> lg(_threads_mutex);
 
     return _threads;
+  }
+
+  moodycamel::ProducerToken
+  ptoken()
+  {
+    return moodycamel::ProducerToken(_queue);
   }
 
 private:
