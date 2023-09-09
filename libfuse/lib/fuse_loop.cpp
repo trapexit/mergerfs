@@ -6,7 +6,6 @@
 #include "fmt/core.h"
 #include "make_unique.hpp"
 #include "scope_guard.hpp"
-#include "syslog.h"
 #include "thread_pool.hpp"
 
 #include "fuse_i.h"
@@ -26,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <syslog.h>
 #include <unistd.h>
 
 #include <cassert>
@@ -449,7 +449,9 @@ pin_threads(const std::vector<pthread_t> read_threads_,
   if(type_ == "R1PPSP")
     return ::pin_threads_R1PPSP(read_threads_,process_threads_);
 
-  syslog_warning("Invalid pin-threads value, ignoring: %s",type_.c_str());
+  syslog(LOG_WARNING,
+         "Invalid pin-threads value, ignoring: %s",
+         type_.c_str());
 }
 
 static
@@ -510,15 +512,16 @@ fuse_session_loop_mt(struct fuse_session *se_,
 
   ::pin_threads(read_threads,process_threads,pin_threads_type_);
 
-  syslog_info("read-thread-count=%d; "
-              "process-thread-count=%d; "
-              "process-thread-queue-depth=%d; "
-              "pin-threads=%s;"
-              ,
-              read_thread_count,
-              process_thread_count,
-              process_thread_queue_depth,
-              pin_threads_type_.c_str());
+  syslog(LOG_INFO,
+         "read-thread-count=%d; "
+         "process-thread-count=%d; "
+         "process-thread-queue-depth=%d; "
+         "pin-threads=%s;"
+         ,
+         read_thread_count,
+         process_thread_count,
+         process_thread_queue_depth,
+         pin_threads_type_.c_str());
 
   ::wait(se_,&finished);
 
