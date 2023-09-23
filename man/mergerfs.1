@@ -1140,7 +1140,7 @@ T}
 .TE
 .SS func.readdir
 .PP
-examples: \f[C]fuse.readdir=seq\f[R], \f[C]fuse.readdir=cor:4\f[R]
+examples: \f[C]func.readdir=seq\f[R], \f[C]func.readdir=cor:4\f[R]
 .PP
 \f[C]readdir\f[R] has policies to control how it manages reading
 directory content.
@@ -1169,7 +1169,7 @@ directories using a thread pool and process them in order of definition.
 This keeps memory and CPU usage low while also reducing the time spent
 waiting on branches to respond.
 Number of threads defaults to the number of logical cores.
-Can be overwritten via the syntax \f[C]fuse.readdir=cosr:N\f[R] where
+Can be overwritten via the syntax \f[C]func.readdir=cosr:N\f[R] where
 \f[C]N\f[R] is the number of threads.
 T}
 T{
@@ -1185,7 +1185,7 @@ branches.
 Unlike \f[C]seq\f[R] and \f[C]cosr\f[R] the order of files could change
 due the async nature of the thread pool.
 Number of threads defaults to the number of logical cores.
-Can be overwritten via the syntax \f[C]fuse.readdir=cor:N\f[R] where
+Can be overwritten via the syntax \f[C]func.readdir=cor:N\f[R] where
 \f[C]N\f[R] is the number of threads.
 T}
 .TE
