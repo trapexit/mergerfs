@@ -31,17 +31,44 @@
 #include "fs_readdir.hpp"
 #include "fs_stat.hpp"
 #include "hashset.hpp"
+#include "scope_guard.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
 #include "fuse_dirents.h"
 
 #include <string>
-#include <vector>
 
 
 namespace l
 {
+  struct Error
+  {
+  private:
+    int _err;
+
+  public:
+    Error()
+      : _err(ENOENT)
+    {
+
+    }
+
+    operator int()
+    {
+      return _err;
+    }
+
+    Error&
+    operator=(int v_)
+    {
+      if(_err != 0)
+        _err = v_;
+
+      return *this;
+    }
+  };
+
   static
   uint64_t
   dirent_exact_namelen(const struct dirent *d_)
@@ -61,13 +88,14 @@ namespace l
           const char           *dirname_,
           fuse_dirents_t       *buf_)
   {
+    Error error;
     HashSet names;
     std::string basepath;
     std::string fullpath;
 
     fuse_dirents_reset(buf_);
 
-    for(const auto &branch : *branches_)
+    for(auto const &branch : *branches_)
       {
         int rv;
         DIR *dh;
@@ -75,14 +103,18 @@ namespace l
 
         basepath = fs::path::make(branch.path,dirname_);
 
+        errno = 0;
         dh = fs::opendir(basepath);
+        error = errno;
         if(!dh)
           continue;
+
+        DEFER{ fs::closedir(dh); };
 
         dev = fs::devid(dh);
 
         rv = 0;
-        for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
+        for(dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
           {
             std::uint64_t namelen;
 
@@ -100,13 +132,11 @@ namespace l
 
             rv = fuse_dirents_add(buf_,de,namelen);
             if(rv)
-              return (fs::closedir(dh),-ENOMEM);
+              return -ENOMEM;
           }
-
-        fs::closedir(dh);
       }
 
-    return 0;
+    return -error;
   }
 }
 

@@ -2,7 +2,10 @@
 
 #include <stdint.h>
 
-struct linux_dirent64
+#define DIRENT_NAMELEN(X) ((X)->reclen - offsetof(linux_dirent64_t,name))
+
+typedef struct linux_dirent64_t linux_dirent64_t;
+struct linux_dirent64_t
 {
   uint64_t ino;
   int64_t  off;

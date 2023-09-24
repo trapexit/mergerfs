@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <set>
 
+#define DEFAULT_MAX_QUEUE_DEPTH 3
 
 namespace l
 {
@@ -35,13 +36,20 @@ namespace l
   void
   read_cfg(std::string const  str_,
            std::string       &type_,
-           int               &concurrency_)
+           unsigned          &concurrency_,
+           unsigned          &max_queue_depth_)
   {
     char type[16];
     int concurrency;
+    int max_queue_depth;
 
     concurrency = 0;
-    std::sscanf(str_.c_str(),"%15[a-z]:%d",type,&concurrency);
+    max_queue_depth = 0;
+    std::sscanf(str_.c_str(),
+                "%15[a-z]:%d:%d",
+                type,
+                &concurrency,
+                &max_queue_depth);
 
     if(concurrency == 0)
       concurrency = std::thread::hardware_concurrency();
@@ -51,22 +59,29 @@ namespace l
     if(concurrency == 0)
       concurrency = 1;
 
-    type_        = type;
-    concurrency_ = concurrency;
+    if(max_queue_depth == 0)
+      max_queue_depth = DEFAULT_MAX_QUEUE_DEPTH;
+
+    max_queue_depth *= concurrency;
+
+    type_            = type;
+    concurrency_     = concurrency;
+    max_queue_depth_ = max_queue_depth;
   }
 }
 
 bool
 FUSE::ReadDirFactory::valid(std::string const str_)
 {
-  int concurrency;
+  unsigned concurrency;
+  unsigned max_queue_depth;
   std::string type;
   static const std::set<std::string> types =
     {
       "seq", "cosr", "cor"
     };
 
-  l::read_cfg(str_,type,concurrency);
+  l::read_cfg(str_,type,concurrency,max_queue_depth);
 
   if(types.find(type) == types.end())
     return false;
@@ -79,20 +94,21 @@ FUSE::ReadDirFactory::valid(std::string const str_)
 std::shared_ptr<FUSE::ReadDirBase>
 FUSE::ReadDirFactory::make(std::string const str_)
 {
-  int concurrency;
+  unsigned concurrency;
+  unsigned max_queue_depth;
   std::string type;
 
   if(!valid(str_))
     return {};
 
-  l::read_cfg(str_,type,concurrency);
+  l::read_cfg(str_,type,concurrency,max_queue_depth);
 
   if(type == "seq")
     return std::make_shared<FUSE::ReadDirSeq>();
   if(type == "cosr")
-    return std::make_shared<FUSE::ReadDirCOSR>(concurrency);
+    return std::make_shared<FUSE::ReadDirCOSR>(concurrency,max_queue_depth);
   if(type == "cor")
-    return std::make_shared<FUSE::ReadDirCOR>(concurrency);
+    return std::make_shared<FUSE::ReadDirCOR>(concurrency,max_queue_depth);
 
   return {};
 }

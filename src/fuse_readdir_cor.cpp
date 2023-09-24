@@ -19,20 +19,24 @@
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "errno.hpp"
-#include "fs_closedir.hpp"
+#include "fs_close.hpp"
 #include "fs_devid.hpp"
+#include "fs_getdents64.hpp"
 #include "fs_inode.hpp"
-#include "fs_opendir.hpp"
+#include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "fs_readdir.hpp"
 #include "hashset.hpp"
+#include "scope_guard.hpp"
 #include "ugid.hpp"
 
 #include "fuse_dirents.h"
+#include "linux_dirent64.h"
 
 
-FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_)
-  : _tp(concurrency_,concurrency_,"readdir.cor")
+FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_,
+                             unsigned max_queue_depth_)
+  : _tp(concurrency_,max_queue_depth_,"readdir.cor")
 {
 
 }
@@ -44,79 +48,98 @@ FUSE::ReadDirCOR::~ReadDirCOR()
 
 namespace l
 {
-  static
-  inline
-  uint64_t
-  dirent_exact_namelen(const struct dirent *d_)
+  struct Error
   {
-#ifdef _D_EXACT_NAMLEN
-    return _D_EXACT_NAMLEN(d_);
-#elif defined _DIRENT_HAVE_D_NAMLEN
-    return d_->d_namlen;
-#else
-    return strlen(d_->d_name);
-#endif
-  }
+  private:
+    int _err;
+
+  public:
+    Error()
+      : _err(ENOENT)
+    {
+    }
+
+    operator int()
+    {
+      return _err;
+    }
+
+    Error&
+    operator=(int v_)
+    {
+      if(_err != 0)
+        _err = v_;
+
+      return *this;
+    }
+  };
 
   static
   inline
   int
   readdir(std::string     basepath_,
           HashSet        &names_,
-          std::mutex     &names_mutex_,
           fuse_dirents_t *buf_,
-          std::mutex     &dirents_mutex_)
+          std::mutex     &mutex_)
   {
     int rv;
-    int err;
-    DIR *dh;
+    int dfd;
     dev_t dev;
     std::string filepath;
 
-    dh = fs::opendir(basepath_);
-    if(dh == NULL)
-      return -errno;
+    dfd = fs::open_dir_ro(basepath_);
+    if(dfd == -1)
+      return errno;
 
-    dev = fs::devid(dh);
+    DEFER{ fs::close(dfd); };
+
+    dev = fs::devid(dfd);
 
     rv = 0;
-    err = 0;
-    for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
+    for(;;)
       {
-        std::uint64_t namelen;
+        long nread;
+        char buf[32 * 1024];
 
-        namelen = l::dirent_exact_namelen(de);
+        nread = fs::getdents_64(dfd,buf,sizeof(buf));
+        if(nread == -1)
+          return errno;
+        if(nread == 0)
+          break;
 
-        {
-          std::lock_guard<std::mutex> lk(names_mutex_);
-          rv = names_.put(de->d_name,namelen);
-          if(rv == 0)
-            continue;
-        }
+        linux_dirent64_t *d;
+        std::lock_guard<std::mutex> lk(mutex_);
+        for(long pos = 0; pos < nread; pos += d->reclen)
+          {
+            std::uint64_t namelen;
 
-        filepath  = fs::path::make(basepath_,de->d_name);
-        de->d_ino = fs::inode::calc(filepath,
-                                    DTTOIF(de->d_type),
-                                    dev,
-                                    de->d_ino);
+            d = (linux_dirent64_t*)&buf[pos];
 
-        {
-          std::lock_guard<std::mutex> lk(dirents_mutex_);
-          rv = fuse_dirents_add(buf_,de,namelen);
-          if(rv == 0)
-            continue;
-        }
+            namelen = DIRENT_NAMELEN(d);
 
-        err = -ENOMEM;
+            rv = names_.put(d->name,namelen);
+            if(rv == 0)
+              continue;
+
+            filepath = fs::path::make(basepath_,d->name);
+            d->ino = fs::inode::calc(filepath,
+                                     DTTOIF(d->type),
+                                     dev,
+                                     d->ino);
+
+            rv = fuse_dirents_add_linux(buf_,d,namelen);
+            if(rv >= 0)
+              continue;
+
+            return ENOMEM;
+          }
       }
 
-    fs::closedir(dh);
-
-    return err;
+    return 0;
   }
 
   static
-  std::vector<int>
+  int
   concurrent_readdir(ThreadPool           &tp_,
                      const Branches::CPtr &branches_,
                      const char           *dirname_,
@@ -125,11 +148,10 @@ namespace l
                      gid_t const           gid_)
   {
     HashSet names;
-    std::mutex names_mutex;
-    std::mutex dirents_mutex;
-    std::vector<int> rv;
+    std::mutex mutex;
     std::vector<std::future<int>> futures;
 
+    futures.reserve(branches_->size());
     for(auto const &branch : *branches_)
       {
         auto func = [&,dirname_,buf_,uid_,gid_]()
@@ -139,7 +161,7 @@ namespace l
 
           basepath = fs::path::make(branch.path,dirname_);
 
-          return l::readdir(basepath,names,names_mutex,buf_,dirents_mutex);
+          return l::readdir(basepath,names,buf_,mutex);
         };
 
         auto rv = tp_.enqueue_task(func);
@@ -147,26 +169,11 @@ namespace l
         futures.emplace_back(std::move(rv));
       }
 
+    Error error;
     for(auto &future : futures)
-      rv.push_back(future.get());
+      error = future.get();
 
-    return rv;
-  }
-
-  static
-  int
-  calc_rv(std::vector<int> rvs_)
-  {
-    for(auto rv : rvs_)
-      {
-        if(rv == 0)
-          return 0;
-      }
-
-    if(rvs_.empty())
-      return -ENOENT;
-
-    return rvs_[0];
+    return -error;
   }
 
   static
@@ -178,13 +185,9 @@ namespace l
           uid_t const           uid_,
           gid_t const           gid_)
   {
-    std::vector<int> rvs;
-
     fuse_dirents_reset(buf_);
 
-    rvs = l::concurrent_readdir(tp_,branches_,dirname_,buf_,uid_,gid_);
-
-    return l::calc_rv(rvs);
+    return l::concurrent_readdir(tp_,branches_,dirname_,buf_,uid_,gid_);
   }
 }
 
