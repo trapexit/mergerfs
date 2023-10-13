@@ -8,3 +8,4 @@
 * nonstd::optional: https://github.com/martinmoene/optional-lite
 * fmt: https://github.com/fmtlib/fmt
 * concurrentqueue: https://github.com/cameron314/concurrentqueue
+* scope_guard: https://github.com/Neargye/scope_guard

@@ -37,7 +37,7 @@ public:
     : _queue(),
       _queue_depth(0),
       _max_queue_depth(std::max(thread_count_,max_queue_depth_)),
-      _name(get_thread_name(name_))
+      _name(name_)
   {
     syslog(LOG_DEBUG,
            "threadpool (%s): spawning %u threads w/ max queue depth %u%s",
@@ -100,19 +100,6 @@ public:
   }
 
 private:
-  static
-  std::string
-  get_thread_name(std::string const name_)
-  {
-    if(!name_.empty())
-      return name_;
-
-    char name[16];
-    pthread_getname_np(pthread_self(),name,sizeof(name));
-
-    return name;
-  }
-
   static
   void*
   start_routine(void *arg_)
@@ -208,12 +195,9 @@ public:
           }
       }
 
-      char name[16];
-      pthread_getname_np(t,name,sizeof(name));
       syslog(LOG_DEBUG,
-             "threadpool (%s): 1 thread removed named '%s'",
-             _name.c_str(),
-             name);
+             "threadpool (%s): 1 thread removed",
+             _name.c_str());
 
       pthread_exit(NULL);
     };
