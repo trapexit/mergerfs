@@ -28,13 +28,15 @@
 #include "fs_readdir.hpp"
 #include "fs_stat.hpp"
 #include "hashset.hpp"
+#include "scope_guard.hpp"
 #include "ugid.hpp"
 
 #include "fuse_dirents.h"
 
 
-FUSE::ReadDirCOSR::ReadDirCOSR(unsigned concurrency_)
-  : _tp(concurrency_,concurrency_,"readdir.cosr")
+FUSE::ReadDirCOSR::ReadDirCOSR(unsigned concurrency_,
+                               unsigned max_queue_depth_)
+  : _tp(concurrency_,max_queue_depth_,"readdir.cosr")
 {
 
 }
@@ -46,8 +48,40 @@ FUSE::ReadDirCOSR::~ReadDirCOSR()
 
 namespace l
 {
+  struct DirRV
+  {
+    DIR *dir;
+    int  err;
+  };
+
+  struct Error
+  {
+  private:
+    int _err;
+
+  public:
+    Error()
+      : _err(ENOENT)
+    {
+
+    }
+
+    operator int()
+    {
+      return _err;
+    }
+
+    Error&
+    operator=(int const v_)
+    {
+      if(_err != 0)
+        _err = v_;
+
+      return *this;
+    }
+  };
+
   static
-  inline
   uint64_t
   dirent_exact_namelen(const struct dirent *d_)
   {
@@ -62,25 +96,31 @@ namespace l
 
   static
   inline
-  std::vector<std::future<DIR*>>
+  std::vector<std::future<DirRV>>
   opendir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
           char const           *dirname_,
           uid_t const           uid_,
           gid_t const           gid_)
   {
-    std::vector<std::future<DIR*>> futures;
+    std::vector<std::future<DirRV>> futures;
 
+    futures.reserve(branches_->size());
     for(auto const &branch : *branches_)
       {
         auto func = [&branch,dirname_,uid_,gid_]()
         {
+          DirRV rv;
           std::string basepath;
           ugid::Set const ugid(uid_,gid_);
 
           basepath = fs::path::make(branch.path,dirname_);
 
-          return fs::opendir(basepath);
+          errno  = 0;
+          rv.dir = fs::opendir(basepath);
+          rv.err = errno;
+
+          return rv;
         };
 
         auto rv = tp_.enqueue_task(func);
@@ -94,29 +134,31 @@ namespace l
   static
   inline
   int
-  readdir(std::vector<std::future<DIR*>> &dh_futures_,
-          char const                     *dirname_,
-          fuse_dirents_t                 *buf_)
+  readdir(std::vector<std::future<DirRV>> &dh_futures_,
+          char const                      *dirname_,
+          fuse_dirents_t                  *buf_)
   {
-    int err;
+    Error error;
     HashSet names;
     std::string fullpath;
 
-    err = 0;
     for(auto &dh_future : dh_futures_)
       {
         int rv;
-        DIR *dh;
         dev_t dev;
+        DirRV dirrv;
 
-        dh = dh_future.get();
-        if(dh == NULL)
+        dirrv = dh_future.get();
+        error = dirrv.err;
+        if(dirrv.dir == NULL)
           continue;
 
-        dev = fs::devid(dh);
+        DEFER { fs::closedir(dirrv.dir); };
+
+        dev = fs::devid(dirrv.dir);
 
         rv = 0;
-        for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
+        for(dirent *de = fs::readdir(dirrv.dir); de && !rv; de = fs::readdir(dirrv.dir))
           {
             std::uint64_t namelen;
 
@@ -136,13 +178,11 @@ namespace l
             if(rv == 0)
               continue;
 
-            err = -ENOMEM;
+            error = ENOMEM;
           }
-
-        fs::closedir(dh);
       }
 
-    return err;
+    return -error;
   }
 
   static
@@ -156,12 +196,12 @@ namespace l
           gid_t const           gid_)
   {
     int rv;
-    std::vector<std::future<DIR*>> dh_futures;
+    std::vector<std::future<DirRV>> futures;
 
     fuse_dirents_reset(buf_);
 
-    dh_futures = l::opendir(tp_,branches_,dirname_,uid_,gid_);
-    rv         = l::readdir(dh_futures,dirname_,buf_);
+    futures = l::opendir(tp_,branches_,dirname_,uid_,gid_);
+    rv      = l::readdir(futures,dirname_,buf_);
 
     return rv;
   }

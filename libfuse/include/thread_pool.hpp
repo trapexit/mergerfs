@@ -2,6 +2,7 @@
 
 #include "moodycamel/blockingconcurrentqueue.h"
 
+#include <algorithm>
 #include <atomic>
 #include <csignal>
 #include <cstring>
@@ -14,6 +15,7 @@
 #include <vector>
 
 #include <syslog.h>
+
 
 struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 {
@@ -29,17 +31,20 @@ private:
 
 public:
   explicit
-  ThreadPool(std::size_t const thread_count_ = std::thread::hardware_concurrency(),
-             std::size_t const queue_depth_  = 1,
+  ThreadPool(unsigned const thread_count_    = std::thread::hardware_concurrency(),
+             unsigned const max_queue_depth_ = std::thread::hardware_concurrency(),
              std::string const name_         = {})
-    : _queue(queue_depth_,thread_count_,thread_count_),
+    : _queue(),
+      _queue_depth(0),
+      _max_queue_depth(std::max(thread_count_,max_queue_depth_)),
       _name(get_thread_name(name_))
   {
     syslog(LOG_DEBUG,
-           "threadpool: spawning %zu threads of queue depth %zu named '%s'",
+           "threadpool (%s): spawning %u threads w/ max queue depth %u%s",
+           _name.c_str(),
            thread_count_,
-           queue_depth_,
-           _name.c_str());
+           _max_queue_depth,
+           ((_max_queue_depth != max_queue_depth_) ? " (adjusted)" : ""));
 
     sigset_t oldset;
     sigset_t newset;
@@ -57,7 +62,8 @@ public:
         if(rv != 0)
           {
             syslog(LOG_WARNING,
-                   "threadpool: error spawning thread - %d (%s)",
+                   "threadpool (%s): error spawning thread - %d (%s)",
+                   _name.c_str(),
                    rv,
                    strerror(rv));
             continue;
@@ -78,9 +84,9 @@ public:
   ~ThreadPool()
   {
     syslog(LOG_DEBUG,
-           "threadpool: destroying %zu threads named '%s'",
-           _threads.size(),
-           _name.c_str());
+           "threadpool (%s): destroying %lu threads",
+           _name.c_str(),
+           _threads.size());
 
     auto func = []() { pthread_exit(NULL); };
     for(std::size_t i = 0; i < _threads.size(); i++)
@@ -114,6 +120,7 @@ private:
     ThreadPool *btp = static_cast<ThreadPool*>(arg_);
     ThreadPool::Func func;
     ThreadPool::Queue &q = btp->_queue;
+    std::atomic<unsigned> &queue_depth = btp->_queue_depth;
     moodycamel::ConsumerToken ctok(btp->_queue);
 
     while(true)
@@ -121,6 +128,8 @@ private:
         q.wait_dequeue(ctok,func);
 
         func();
+
+        queue_depth.fetch_sub(1,std::memory_order_release);
       }
 
     return NULL;
@@ -146,7 +155,8 @@ public:
     if(rv != 0)
       {
         syslog(LOG_WARNING,
-               "threadpool: error spawning thread - %d (%s)",
+               "threadpool (%s): error spawning thread - %d (%s)",
+               _name.c_str(),
                rv,
                strerror(rv));
         return -rv;
@@ -161,7 +171,7 @@ public:
     }
 
     syslog(LOG_DEBUG,
-           "threadpool: 1 thread added to pool '%s' named '%s'",
+           "threadpool (%s): 1 thread added named '%s'",
            _name.c_str(),
            name.c_str());
 
@@ -201,7 +211,7 @@ public:
       char name[16];
       pthread_getname_np(t,name,sizeof(name));
       syslog(LOG_DEBUG,
-             "threadpool: 1 thread removed from pool '%s' named '%s'",
+             "threadpool (%s): 1 thread removed named '%s'",
              _name.c_str(),
              name);
 
@@ -238,28 +248,32 @@ public:
   enqueue_work(moodycamel::ProducerToken  &ptok_,
                FuncType                  &&f_)
   {
-    timespec ts = {0,10};
-    while(true)
+    timespec ts = {0,1000};
+    for(unsigned i = 0; i < 1000000; i++)
       {
-        if(_queue.try_enqueue(ptok_,f_))
-          return;
+        if(_queue_depth.load(std::memory_order_acquire) < _max_queue_depth)
+          break;
         ::nanosleep(&ts,NULL);
-        ts.tv_nsec += 10;
       }
+
+    _queue.enqueue(ptok_,f_);
+    _queue_depth.fetch_add(1,std::memory_order_release);
   }
 
   template<typename FuncType>
   void
   enqueue_work(FuncType &&f_)
   {
-    timespec ts = {0,10};
-    while(true)
+    timespec ts = {0,1000};
+    for(unsigned i = 0; i < 1000000; i++)
       {
-        if(_queue.try_enqueue(f_))
-          return;
+        if(_queue_depth.load(std::memory_order_acquire) < _max_queue_depth)
+          break;
         ::nanosleep(&ts,NULL);
-        ts.tv_nsec += 10;
       }
+
+    _queue.enqueue(f_);
+    _queue_depth.fetch_add(1,std::memory_order_release);
   }
 
   template<typename FuncType>
@@ -272,20 +286,23 @@ public:
 
     auto promise = std::make_shared<Promise>();
     auto future  = promise->get_future();
-    auto work    = [=]()
+
+    auto work = [=]()
     {
       auto rv = f_();
       promise->set_value(rv);
     };
 
-    timespec ts = {0,10};
-    while(true)
+    timespec ts = {0,1000};
+    for(unsigned i = 0; i < 1000000; i++)
       {
-        if(_queue.try_enqueue(work))
+        if(_queue_depth.load(std::memory_order_acquire) < _max_queue_depth)
           break;
         ::nanosleep(&ts,NULL);
-        ts.tv_nsec += 10;
       }
+
+    _queue.enqueue(work);
+    _queue_depth.fetch_add(1,std::memory_order_release);
 
     return future;
   }
@@ -307,6 +324,8 @@ public:
 
 private:
   Queue _queue;
+  std::atomic<unsigned> _queue_depth;
+  unsigned const        _max_queue_depth;
 
 private:
   std::string const      _name;

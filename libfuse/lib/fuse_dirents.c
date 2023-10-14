@@ -304,9 +304,9 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
 }
 
 int
-fuse_dirents_add_linux(fuse_dirents_t              *d_,
-                       const struct linux_dirent64 *dirent_,
-                       const uint64_t               namelen_)
+fuse_dirents_add_linux(fuse_dirents_t         *d_,
+                       const linux_dirent64_t *dirent_,
+                       const uint64_t          namelen_)
 {
   fuse_dirent_t *d;
 
@@ -336,11 +336,11 @@ fuse_dirents_add_linux(fuse_dirents_t              *d_,
 }
 
 int
-fuse_dirents_add_linux_plus(fuse_dirents_t              *d_,
-                            const struct linux_dirent64 *dirent_,
-                            const uint64_t               namelen_,
-                            const fuse_entry_t          *entry_,
-                            const struct stat           *st_)
+fuse_dirents_add_linux_plus(fuse_dirents_t         *d_,
+                            const linux_dirent64_t *dirent_,
+                            const uint64_t          namelen_,
+                            const fuse_entry_t     *entry_,
+                            const struct stat      *st_)
 {
   fuse_direntplus_t *d;
 

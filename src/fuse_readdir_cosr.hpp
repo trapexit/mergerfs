@@ -28,7 +28,8 @@ namespace FUSE
   class ReadDirCOSR final : public FUSE::ReadDirBase
   {
   public:
-    ReadDirCOSR(unsigned concurrency);
+    ReadDirCOSR(unsigned concurrency,
+                unsigned max_queue_depth);
     ~ReadDirCOSR();
 
     int operator()(fuse_file_info_t const *ffi,

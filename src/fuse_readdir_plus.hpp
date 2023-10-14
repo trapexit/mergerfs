@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -21,7 +21,6 @@
 
 namespace FUSE
 {
-  int
-  readdir_plus(const fuse_file_info_t *ffi,
-               fuse_dirents_t         *buf);
+  int readdir_plus(fuse_file_info_t const *ffi,
+                   fuse_dirents_t         *buf);
 }

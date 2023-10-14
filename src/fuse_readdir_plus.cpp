@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,17 +16,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
+#include "fuse_readdir_plus.hpp"
 
-#include "fuse.h"
+#include <errno.h>
 
 
-namespace FUSE
+int
+FUSE::readdir_plus(const fuse_file_info_t *ffi_,
+                   fuse_dirents_t         *buf_)
 {
-  int
-  readdir_plus(const fuse_file_info_t *ffi_,
-               fuse_dirents_t         *buf_)
-  {
-    return -ENOTSUP;
-  }
+  return -ENOTSUP;
 }
