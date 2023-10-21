@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <string.h>
 
-#define DIRENT_NAMELEN(X) ((X)->reclen - offsetof(linux_dirent64_t,name))
+#define DIRENT_NAMELEN(X) (strlen((X)->name))
 
 typedef struct linux_dirent64_t linux_dirent64_t;
 struct linux_dirent64_t
