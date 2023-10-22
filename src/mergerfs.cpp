@@ -230,6 +230,21 @@ namespace l
     std::signal(SIGUSR2,l::usr2_signal_handler);
   }
 
+  static
+  void
+  warn_if_not_root()
+  {
+    uid_t uid;
+
+    uid = geteuid();
+    if(uid == 0)
+      return;
+
+    char const *s = "mergerfs is not running as root and may not work correctly\n";
+    fprintf(stderr,"warning: %s",s);
+    syslog_warning(s);
+  }
+
   int
   main(const int   argc_,
        char      **argv_)
@@ -240,6 +255,8 @@ namespace l
     fuse_operations ops;
 
     syslog_open();
+
+    l::warn_if_not_root();
 
     memset(&ops,0,sizeof(fuse_operations));
 
