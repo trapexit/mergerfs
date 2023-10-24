@@ -248,7 +248,10 @@ These options are the same regardless of whether you use them with the
   to the same as the process thread count. (default: 0)
 * **pin-threads=STR**: Selects a strategy to pin threads to CPUs
   (default: unset)
-* **scheduling-priority=INT**: Set mergerfs' scheduling
+* **flush-on-close=never|always|opened-for-write**: Flush data cache
+  on file close. Mostly for when writeback is enabled or merging
+  network filesystems. (default: opened-for-write)
+  * **scheduling-priority=INT**: Set mergerfs' scheduling
   priority. Valid values range from -20 to 19. See `setpriority` man
   page for more details. (default: -10)
 * **fsname=STR**: Sets the name of the filesystem as seen in
@@ -924,6 +927,27 @@ of the branch will not be included when checking the mount's stats.
 
 The options `statfs` and `statfs_ignore` can be used to modify
 `statfs` behavior.
+
+
+#### flush-on-close
+
+https://lkml.kernel.org/linux-fsdevel/20211024132607.1636952-1-amir73il@gmail.com/T/
+
+By default FUSE would issue a flush before the release of a file
+descriptor. This was considered a bit aggressive and a feature added
+to give the FUSE server the ability to choose when that happens.
+
+Options: 
+* always
+* never
+* opened-for-write
+
+For now it defaults to "opened-for-write" which is less aggressive
+than the behavior before this feature was added. It should not be a
+problem because the flush is really only relevant when a file is
+written to. Given flush is irrelevant for many filesystems in the
+future a branch specific flag may be added so only files opened on a
+specific branch would be flushed on close.
 
 
 # ERROR HANDLING

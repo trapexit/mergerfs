@@ -19,6 +19,7 @@
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
+#include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
@@ -116,8 +117,9 @@ public:
   Categories     category;
   ConfigBOOL     direct_io;
   ConfigBOOL     dropcacheonclose;
-  ConfigSTR      fsname;
+  FlushOnClose   flushonclose;
   FollowSymlinks follow_symlinks;
+  ConfigSTR      fsname;
   Funcs          func;
   ConfigUINT64   fuse_msg_size;
   ConfigBOOL     ignorepponrename;

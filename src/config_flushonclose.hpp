@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,30 +16,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config.hpp"
-#include "dirinfo.hpp"
+#pragma once
 
-#include "fuse.h"
+#include "enum.hpp"
 
 
-namespace FUSE
-{
-  int
-  opendir(const char       *fusepath_,
-          fuse_file_info_t *ffi_)
+enum class FlushOnCloseEnum
   {
-    Config::Read cfg;
+    NEVER,
+    OPENED_FOR_WRITE,
+    ALWAYS
+  };
 
-    ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
-
-    ffi_->noflush = true;
-
-    if(cfg->cache_readdir)
-      {
-        ffi_->keep_cache    = 1;
-        ffi_->cache_readdir = 1;
-      }
-
-    return 0;
-  }
-}
+typedef Enum<FlushOnCloseEnum> FlushOnClose;

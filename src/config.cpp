@@ -94,8 +94,9 @@ Config::Config()
     category(func),
     direct_io(false),
     dropcacheonclose(false),
-    fsname(),
+    flushonclose(FlushOnClose::ENUM::ALWAYS),
     follow_symlinks(FollowSymlinks::ENUM::NEVER),
+    fsname(),
     func(),
     fuse_msg_size(FUSE_MAX_MAX_PAGES),
     ignorepponrename(false),
@@ -149,6 +150,7 @@ Config::Config()
   _map["category.search"]        = &category.search;
   _map["direct_io"]              = &direct_io;
   _map["dropcacheonclose"]       = &dropcacheonclose;
+  _map["flush-on-close"]         = &flushonclose;
   _map["follow-symlinks"]        = &follow_symlinks;
   _map["fsname"]                 = &fsname;
   _map["func.access"]            = &func.access;

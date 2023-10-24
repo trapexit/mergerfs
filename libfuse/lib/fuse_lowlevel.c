@@ -275,6 +275,8 @@ fill_open(struct fuse_open_out   *arg_,
     arg_->open_flags |= FOPEN_CACHE_DIR;
   if(ffi_->parallel_direct_writes)
     arg_->open_flags |= FOPEN_PARALLEL_DIRECT_WRITES;
+  if(ffi_->noflush)
+    arg_->open_flags |= FOPEN_NOFLUSH;
 }
 
 int
