@@ -26,6 +26,7 @@
 #include "num.hpp"
 #include "policy.hpp"
 #include "str.hpp"
+#include "syslog.hpp"
 #include "version.hpp"
 
 #include "fuse.h"
@@ -116,6 +117,10 @@ void
 set_default_options(fuse_args *args_)
 {
   set_option("default_permissions",args_);
+  if(geteuid() == 0)
+    set_option("allow_other",args_);
+  else
+    syslog_notice("not auto setting allow_other since not running as root");
 }
 
 static
@@ -124,7 +129,6 @@ should_ignore(const std::string &key_)
 {
   static const std::set<std::string> IGNORED_KEYS =
     {
-      "allow_other",
       "atomic_o_trunc",
       "big_writes",
       "cache.open",

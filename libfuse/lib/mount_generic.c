@@ -61,6 +61,7 @@ enum {
 };
 
 struct mount_opts {
+  int allow_other;
   int ishelp;
   int flags;
   int auto_unmount;
@@ -76,13 +77,15 @@ struct mount_opts {
 #define FUSE_MOUNT_OPT(t, p) { t, offsetof(struct mount_opts, p), 1 }
 
 static const struct fuse_opt fuse_mount_opts[] = {
+  FUSE_MOUNT_OPT("allow_other",         allow_other),
   FUSE_MOUNT_OPT("blkdev",		blkdev),
-  FUSE_MOUNT_OPT("auto_unmount",		auto_unmount),
+  FUSE_MOUNT_OPT("auto_unmount",	auto_unmount),
   FUSE_MOUNT_OPT("fsname=%s",		fsname),
   FUSE_MOUNT_OPT("subtype=%s",		subtype),
+  FUSE_OPT_KEY("allow_other",           KEY_KERN_OPT),
   FUSE_OPT_KEY("auto_unmount",		KEY_FUSERMOUNT_OPT),
-  FUSE_OPT_KEY("blkdev",			KEY_FUSERMOUNT_OPT),
-  FUSE_OPT_KEY("fsname=",			KEY_FUSERMOUNT_OPT),
+  FUSE_OPT_KEY("blkdev",		KEY_FUSERMOUNT_OPT),
+  FUSE_OPT_KEY("fsname=",		KEY_FUSERMOUNT_OPT),
   FUSE_OPT_KEY("subtype=",		KEY_SUBTYPE_OPT),
   FUSE_OPT_KEY("large_read",		KEY_KERN_OPT),
   FUSE_OPT_KEY("blksize=",		KEY_KERN_OPT),
@@ -98,18 +101,18 @@ static const struct fuse_opt fuse_mount_opts[] = {
   FUSE_OPT_KEY("ro",			KEY_KERN_FLAG),
   FUSE_OPT_KEY("rw",			KEY_KERN_FLAG),
   FUSE_OPT_KEY("suid",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("nosuid",			KEY_KERN_FLAG),
+  FUSE_OPT_KEY("nosuid",		KEY_KERN_FLAG),
   FUSE_OPT_KEY("dev",			KEY_KERN_FLAG),
   FUSE_OPT_KEY("nodev",			KEY_KERN_FLAG),
   FUSE_OPT_KEY("exec",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("noexec",			KEY_KERN_FLAG),
+  FUSE_OPT_KEY("noexec",		KEY_KERN_FLAG),
   FUSE_OPT_KEY("async",			KEY_KERN_FLAG),
   FUSE_OPT_KEY("sync",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("dirsync",			KEY_KERN_FLAG),
+  FUSE_OPT_KEY("dirsync",		KEY_KERN_FLAG),
   FUSE_OPT_KEY("atime",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("noatime",			KEY_KERN_FLAG),
+  FUSE_OPT_KEY("noatime",		KEY_KERN_FLAG),
   FUSE_OPT_KEY("-h",			KEY_HELP),
-  FUSE_OPT_KEY("--help",			KEY_HELP),
+  FUSE_OPT_KEY("--help",		KEY_HELP),
   FUSE_OPT_KEY("-V",			KEY_VERSION),
   FUSE_OPT_KEY("--version",		KEY_VERSION),
   FUSE_OPT_END
@@ -548,8 +551,6 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
   if (args &&
       fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
     return -1;
-
-  fuse_opt_add_opt(&mo.kernel_opts,"allow_other");
 
   res = 0;
   if (mo.ishelp)
