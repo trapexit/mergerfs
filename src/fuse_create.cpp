@@ -52,6 +52,31 @@ namespace l
   }
 
   static
+  bool
+  rdonly(const int flags_)
+  {
+    return ((flags_ & O_ACCMODE) == O_RDONLY);
+  }
+
+  static
+  bool
+  calculate_flush(FlushOnClose const flushonclose_,
+                  int const          flags_)
+  {
+    switch(flushonclose_)
+      {
+      case FlushOnCloseEnum::NEVER:
+        return false;
+      case FlushOnCloseEnum::OPENED_FOR_WRITE:
+        return !l::rdonly(flags_);
+      case FlushOnCloseEnum::ALWAYS:
+        return true;
+      }
+
+    return true;
+  }
+
+  static
   void
   config_to_ffi_flags(Config::Read     &cfg_,
                       const int         tid_,
@@ -199,6 +224,9 @@ namespace FUSE
 
     if(cfg->writeback_cache)
       l::tweak_flags_writeback_cache(&ffi_->flags);
+
+    ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+                                        ffi_->flags);
 
     rv = l::create(cfg->func.getattr.policy,
                    cfg->func.create.policy,

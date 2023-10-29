@@ -321,11 +321,18 @@ by the number of process threads plus read thread count.
 \f[B]pin-threads=STR\f[R]: Selects a strategy to pin threads to CPUs
 (default: unset)
 .IP \[bu] 2
+\f[B]flush-on-close=never|always|opened-for-write\f[R]: Flush data cache
+on file close.
+Mostly for when writeback is enabled or merging network filesystems.
+(default: opened-for-write)
+.RS 2
+.IP \[bu] 2
 \f[B]scheduling-priority=INT\f[R]: Set mergerfs\[cq] scheduling
 priority.
 Valid values range from -20 to 19.
 See \f[C]setpriority\f[R] man page for more details.
 (default: -10)
+.RE
 .IP \[bu] 2
 \f[B]fsname=STR\f[R]: Sets the name of the filesystem as seen in
 \f[B]mount\f[R], \f[B]df\f[R], etc.
@@ -1321,6 +1328,24 @@ be included when checking the mount\[cq]s stats.
 .PP
 The options \f[C]statfs\f[R] and \f[C]statfs_ignore\f[R] can be used to
 modify \f[C]statfs\f[R] behavior.
+.SS flush-on-close
+.PP
+https://lkml.kernel.org/linux-fsdevel/20211024132607.1636952-1-amir73il\[at]gmail.com/T/
+.PP
+By default FUSE would issue a flush before the release of a file
+descriptor.
+This was considered a bit aggressive and a feature added to give the
+FUSE server the ability to choose when that happens.
+.PP
+Options: * always * never * opened-for-write
+.PP
+For now it defaults to \[lq]opened-for-write\[rq] which is less
+aggressive than the behavior before this feature was added.
+It should not be a problem because the flush is really only relevant
+when a file is written to.
+Given flush is irrelevant for many filesystems in the future a branch
+specific flag may be added so only files opened on a specific branch
+would be flushed on close.
 .SH ERROR HANDLING
 .PP
 POSIX filesystem functions offer a single return code meaning that there
