@@ -249,6 +249,7 @@ namespace l
   main(const int   argc_,
        char      **argv_)
   {
+    int rv;
     Config::Read    cfg;
     Config::ErrVec  errs;
     fuse_args       args;
@@ -283,9 +284,13 @@ namespace l
 
     procfs::init();
 
-    return fuse_main(args.argc,
-                     args.argv,
-                     &ops);
+    rv = fuse_main(args.argc,
+                   args.argv,
+                   &ops);
+
+    syslog_info("exiting main loop with return code %d",rv);
+
+    return rv;
   }
 }
 
