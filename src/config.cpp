@@ -94,7 +94,7 @@ Config::Config()
     category(func),
     direct_io(false),
     dropcacheonclose(false),
-    flushonclose(FlushOnClose::ENUM::ALWAYS),
+    flushonclose(FlushOnClose::ENUM::OPENED_FOR_WRITE),
     follow_symlinks(FollowSymlinks::ENUM::NEVER),
     fsname(),
     func(),
