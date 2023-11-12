@@ -21,6 +21,7 @@
 #include "config_cachefiles.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
+#include "config_pid.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
 #include "config_log_metrics.hpp"
@@ -134,7 +135,7 @@ public:
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
   ConfigBOOL     parallel_direct_writes;
-  ConfigUINT64   pid;
+  ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
   ConfigUINT64   readahead;
   FUSE::ReadDir  readdir;

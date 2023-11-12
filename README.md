@@ -251,7 +251,7 @@ These options are the same regardless of whether you use them with the
 * **flush-on-close=never|always|opened-for-write**: Flush data cache
   on file close. Mostly for when writeback is enabled or merging
   network filesystems. (default: opened-for-write)
-  * **scheduling-priority=INT**: Set mergerfs' scheduling
+* **scheduling-priority=INT**: Set mergerfs' scheduling
   priority. Valid values range from -20 to 19. See `setpriority` man
   page for more details. (default: -10)
 * **fsname=STR**: Sets the name of the filesystem as seen in
