@@ -308,7 +308,7 @@ These options are the same regardless of whether you use them with the
 * **splice_write**: deprecated - Does nothing.
 * **splice_move**: deprecated - Does nothing.
 * **allow_other**: deprecated - mergerfs v2.35.0 and newer sets this FUSE option
-  as normal permissions can be used to limit access.
+  automatically if running as root.
 * **use_ino**: deprecated - mergerfs should always control inode
   calculation so this is enabled all the time.
 
