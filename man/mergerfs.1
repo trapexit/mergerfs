@@ -402,6 +402,8 @@ multiple, parallel (non-extending) write requests for files opened with
 \f[C]process-names\f[R]) or \f[C]cache.files=off\f[R].
 (This requires kernel support, and was added in v6.2)
 .IP \[bu] 2
+\f[B]allow_other\f[R]: Allow other users to access files. Set by default when running as root.
+.IP \[bu] 2
 \f[B]direct_io\f[R]: deprecated - Bypass page cache.
 Use \f[C]cache.files=off\f[R] instead.
 (default: false)
@@ -427,9 +429,6 @@ Use \f[C]async_read=false\f[R] instead.
 \f[B]splice_write\f[R]: deprecated - Does nothing.
 .IP \[bu] 2
 \f[B]splice_move\f[R]: deprecated - Does nothing.
-.IP \[bu] 2
-\f[B]allow_other\f[R]: deprecated - mergerfs always sets this FUSE
-option as normal permissions can be used to limit access.
 .IP \[bu] 2
 \f[B]use_ino\f[R]: deprecated - mergerfs should always control inode
 calculation so this is enabled all the time.
