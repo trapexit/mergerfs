@@ -294,6 +294,7 @@ These options are the same regardless of whether you use them with the
   multiple, parallel (non-extending) write requests for files opened
   with `cache.files=per-process` (if the process is not in `process-names`)
   or `cache.files=off`. (This requires kernel support, and was added in v6.2)
+* **allow_other**: Allow other users to access files. Set by default when running as root.
 * **direct_io**: deprecated - Bypass page cache. Use `cache.files=off`
   instead. (default: false)
 * **kernel_cache**: deprecated - Do not invalidate data cache on file
@@ -307,7 +308,6 @@ These options are the same regardless of whether you use them with the
 * **splice_read**: deprecated - Does nothing.
 * **splice_write**: deprecated - Does nothing.
 * **splice_move**: deprecated - Does nothing.
-* **allow_other**: Allow other users to access files. Set by default when running as root.
 * **use_ino**: deprecated - mergerfs should always control inode
   calculation so this is enabled all the time.
 
