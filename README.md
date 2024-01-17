@@ -937,7 +937,7 @@ By default FUSE would issue a flush before the release of a file
 descriptor. This was considered a bit aggressive and a feature added
 to give the FUSE server the ability to choose when that happens.
 
-Options: 
+Options:
 * always
 * never
 * opened-for-write
@@ -1287,6 +1287,52 @@ typedef char IOCTL_BUF[4096];
 
 
 # TOOLING
+
+## preload.so
+
+EXPERIMENTAL
+
+This preloadable library overrides the creation and opening of files
+in order to simulate passthrough file IO. It catches the
+open/creat/fopen calls, lets mergerfs do the call, queries mergerfs
+for the branch the file exists on, and reopens the file on the underlying
+filesystem. Meaning that you will get native read/write performance.
+
+This will only work on dynamically linked software. Anything
+statically compiled will not work. Many GoLang and Rust apps are
+statically compiled.
+
+The library will not interfere with non-mergerfs filesystems.
+
+While the library was written to account for a number of edgecases
+there could be some yet accounted for so please report any oddities.
+
+
+### general usage
+
+```
+LD_PRELOAD=/usr/lib/mergerfs/preload.so touch /mnt/mergerfs/filename
+```
+
+### Docker usage
+
+Assume `/mnt/fs0` and `/mnt/fs1` are pooled with mergerfs at
+`/mnt/mergerfs`.
+
+Remember that you must bind into the container the original host paths
+to the same locations otherwise the preload module will not be able to
+find the files.
+
+```
+docker run \
+  -e LD_PRELOAD=/usr/lib/mergerfs/preload.so \
+  -v /usr/lib/mergerfs/preload.so:/usr/lib/mergerfs/preload.so:ro \
+  -v /mnt:/mnt \
+  ubuntu:latest \
+  bash
+```
+
+## Misc
 
 * https://github.com/trapexit/mergerfs-tools
   * mergerfs.ctl: A tool to make it easier to query and configure mergerfs at runtime
