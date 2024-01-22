@@ -1307,6 +1307,10 @@ The library will not interfere with non-mergerfs filesystems.
 While the library was written to account for a number of edgecases
 there could be some yet accounted for so please report any oddities.
 
+Thank you to
+[nohajc](https://github.com/nohajc/mergerfs-io-passthrough) for
+prototyping the idea.
+
 
 ### general usage
 
