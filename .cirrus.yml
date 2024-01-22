@@ -5,7 +5,7 @@ freebsd_task:
   env:
     ASSUME_ALWAYS_YES: yes
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - gmake -j4
 
 freebsd_task:
@@ -15,7 +15,7 @@ freebsd_task:
   env:
     ASSUME_ALWAYS_YES: yes
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - gmake -j4
 
 freebsd_task:
@@ -25,7 +25,7 @@ freebsd_task:
   env:
     ASSUME_ALWAYS_YES: yes
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - gmake -j4
 
 freebsd_task:
@@ -35,7 +35,7 @@ freebsd_task:
   env:
     ASSUME_ALWAYS_YES: yes
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - gmake -j4
 
 
@@ -43,7 +43,7 @@ freebsd_task:
 #  osx_instance:
 #    image: catalina-base
 #  script:
-#    - tools/install-build-pkgs
+#    - buildtools/install-build-pkgs
 #    - gmake -j4
 
 linux_task:
@@ -54,7 +54,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -65,7 +65,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -76,7 +76,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -87,7 +87,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -98,7 +98,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -109,7 +109,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -120,7 +120,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -131,7 +131,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -142,7 +142,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make STATIC=1 LTO=1
 
 linux_task:
@@ -153,7 +153,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -165,7 +165,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -177,7 +177,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -189,7 +189,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -201,7 +201,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -213,7 +213,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -225,7 +225,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -237,7 +237,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -249,7 +249,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -261,7 +261,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -273,7 +273,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -285,7 +285,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -297,7 +297,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - make
     - make rpm
 
@@ -309,7 +309,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -324,7 +324,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -339,7 +339,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -354,7 +354,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -369,7 +369,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -384,7 +384,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -399,7 +399,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -414,7 +414,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -429,7 +429,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -444,7 +444,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -459,7 +459,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -474,7 +474,22 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "debian:12"
+  container:
+    image: debian:12
+    cpu: 4
+    memory: 4G
+  timeout_in: 15m
+  script:
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -489,7 +504,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse
@@ -504,7 +519,7 @@ linux_task:
     memory: 4G
   timeout_in: 15m
   script:
-    - tools/install-build-pkgs
+    - buildtools/install-build-pkgs
     - git fetch
     - make deb
     - apt-get -y install fuse

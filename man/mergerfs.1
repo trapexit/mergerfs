@@ -325,14 +325,12 @@ by the number of process threads plus read thread count.
 on file close.
 Mostly for when writeback is enabled or merging network filesystems.
 (default: opened-for-write)
-.RS 2
 .IP \[bu] 2
 \f[B]scheduling-priority=INT\f[R]: Set mergerfs\[cq] scheduling
 priority.
 Valid values range from -20 to 19.
 See \f[C]setpriority\f[R] man page for more details.
 (default: -10)
-.RE
 .IP \[bu] 2
 \f[B]fsname=STR\f[R]: Sets the name of the filesystem as seen in
 \f[B]mount\f[R], \f[B]df\f[R], etc.
@@ -428,8 +426,8 @@ Use \f[C]async_read=false\f[R] instead.
 .IP \[bu] 2
 \f[B]splice_move\f[R]: deprecated - Does nothing.
 .IP \[bu] 2
-\f[B]allow_other\f[R]: deprecated - mergerfs always sets this FUSE
-option as normal permissions can be used to limit access.
+\f[B]allow_other\f[R]: deprecated - mergerfs v2.35.0 and newer sets this
+FUSE option automatically if running as root.
 .IP \[bu] 2
 \f[B]use_ino\f[R]: deprecated - mergerfs should always control inode
 calculation so this is enabled all the time.
@@ -1724,6 +1722,52 @@ IOCTL_INVALIDATE_ALL_NODES: Same as SIGUSR1.
 Send invalidation notifications to the kernel for all files causing
 unused files to be released from memory.
 .SH TOOLING
+.SS preload.so
+.PP
+EXPERIMENTAL
+.PP
+This preloadable library overrides the creation and opening of files in
+order to simulate passthrough file IO.
+It catches the open/creat/fopen calls, lets mergerfs do the call,
+queries mergerfs for the branch the file exists on, and reopens the file
+on the underlying filesystem.
+Meaning that you will get native read/write performance.
+.PP
+This will only work on dynamically linked software.
+Anything statically compiled will not work.
+Many GoLang and Rust apps are statically compiled.
+.PP
+The library will not interfere with non-mergerfs filesystems.
+.PP
+While the library was written to account for a number of edgecases there
+could be some yet accounted for so please report any oddities.
+.SS general usage
+.IP
+.nf
+\f[C]
+LD_PRELOAD=/usr/lib/mergerfs/preload.so touch /mnt/mergerfs/filename
+\f[R]
+.fi
+.SS Docker usage
+.PP
+Assume \f[C]/mnt/fs0\f[R] and \f[C]/mnt/fs1\f[R] are pooled with
+mergerfs at \f[C]/mnt/mergerfs\f[R].
+.PP
+Remember that you must bind into the container the original host paths
+to the same locations otherwise the preload module will not be able to
+find the files.
+.IP
+.nf
+\f[C]
+docker run \[rs]
+  -e LD_PRELOAD=/usr/lib/mergerfs/preload.so \[rs]
+  -v /usr/lib/mergerfs/preload.so:/usr/lib/mergerfs/preload.so:ro \[rs]
+  -v /mnt:/mnt \[rs]
+  ubuntu:latest \[rs]
+  bash
+\f[R]
+.fi
+.SS Misc
 .IP \[bu] 2
 https://github.com/trapexit/mergerfs-tools
 .RS 2

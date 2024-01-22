@@ -1,4 +1,4 @@
-#  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+#  Copyright (c) 2024, Antonio SJ Musumeci <trapexit@spawn.link>
 #
 #  Permission to use, copy, modify, and/or distribute this software for any
 #  purpose with or without fee is hereby granted, provided that the above
@@ -26,7 +26,7 @@ STRIP     = strip
 PANDOC    = pandoc
 SED       = sed
 RPMBUILD  = rpmbuild
-GIT2DEBCL = ./tools/git2debcl
+GIT2DEBCL = ./buildtools/git2debcl
 PKGCONFIG = pkg-config
 
 GIT_REPO = 0
@@ -68,6 +68,10 @@ TESTS_DEPS  = $(TESTS:tests/%.cpp=build/.tests/%.d)
 TESTS_DEPS += $(DEPS)
 
 MANPAGE     = mergerfs.1
+CFLAGS      ?= ${OPT_FLAGS}
+CFLAGS      := ${CFLAGS} \
+               -Wall \
+               -Wno-unused-result
 CXXFLAGS    ?= ${OPT_FLAGS}
 CXXFLAGS    := \
               ${CXXFLAGS} \
@@ -92,6 +96,7 @@ LDFLAGS := \
     -pthread \
     -lrt
 
+# https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
 DESTDIR       =
 PREFIX        = /usr/local
 EXEC_PREFIX   = $(PREFIX)
@@ -99,11 +104,13 @@ DATAROOTDIR   = $(PREFIX)/share
 DATADIR       = $(DATAROOTDIR)
 BINDIR        = $(EXEC_PREFIX)/bin
 SBINDIR       = $(EXEC_PREFIX)/sbin
+LIBDIR        = $(EXEC_PREFIX)/lib
 MANDIR        = $(DATAROOTDIR)/man
 MAN1DIR       = $(MANDIR)/man1
 
 INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
 INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
+INSTALLLIBDIR  = $(DESTDIR)$(LIBDIR)/mergerfs
 INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
 
 .PHONY: all
@@ -141,7 +148,7 @@ endif
 
 .PHONY: version
 version:
-	tools/update-version
+	./buildtools/update-version
 
 build/stamp:
 	$(MKDIR) -p build/.src build/.tests
@@ -153,6 +160,10 @@ build/.src/%.o: src/%.cpp
 build/.tests/%.o: tests/%.cpp
 	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
+build/preload.so: build/stamp tools/preload.c
+	$(CC) -shared -fPIC $(CFLAGS) $(CPPFLAGS) -o $@ tools/preload.c
+
+preload: build/preload.so
 
 .PHONY: clean
 clean: rpm-clean
@@ -166,7 +177,7 @@ ifeq ($(GIT_REPO),1)
 endif
 
 .PHONY: install
-install: install-base install-mount-tools install-man
+install: install-base install-mount-tools install-preload install-man
 
 install-base: build/mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
@@ -179,6 +190,10 @@ install-mount-tools: install-base
 install-man: $(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"
 	$(INSTALL) -v -m 0644 "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
+
+install-preload: preload
+	$(MKDIR) -p "$(INSTALLLIBDIR)"
+	$(INSTALL) -v -m 444 "build/preload.so" "$(INSTALLLIBDIR)/preload.so"
 
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/mergerfs"
@@ -225,13 +240,13 @@ endif
 signed-deb:
 	$(MAKE) distclean
 	$(MAKE) debian-changelog
-	dpkg-source -b .
+#	dpkg-source -b .
 	dpkg-buildpackage -nc
 
 deb:
 	$(MAKE) distclean
 	$(MAKE) debian-changelog
-	dpkg-source -b .
+#	dpkg-source -b .
 	dpkg-buildpackage -nc -uc -us
 
 .PHONY: rpm-clean
@@ -250,7 +265,7 @@ rpm: tarball
 
 .PHONY: install-build-pkgs
 install-build-pkgs:
-	tools/install-build-pkgs
+	./buildtools/install-build-pkgs
 
 .PHONY: libfuse
 libfuse:
