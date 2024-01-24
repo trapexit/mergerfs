@@ -78,11 +78,42 @@ writeback = false
 symlinks = false
 readdir = false
 
+[[branch]]
+enabled = true
+name = 'foo'
+type = 'literal'
+path = '/mnt/hdd/foo'
+mode = 'RO'
+
+[[branch]]
+enabled = true
+name = 'bar'
+type = 'literal'
+path = '/mnt/hdd/foo'
+mode = 'RW'
+
+[[branch]]
+enabled = true
+name = 'ssds'
+type = 'glob'
+path = '/mnt/ssd/*'
+order = 'name:asc' # | size
+mode = 'RW'
+
+# scan type: look for paths with a '.mergerfs' file or xattr?
+[[branch]]
+name = 'asdf'
+type = 'scan'
+path = '*'
+
+[[branch-group]]
+name = '0'
+branches = ['foo','bar']
+
 [branches]
 min-free-space = 123
+layout = [['foo','bar'],['foo']]
 
-[[branches.group]]
-name = 'foo'
 
 [[branches.group.branch]]
 active = true
