@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "toml.hpp"
+
 #include "fs_readahead.hpp"
 #include "fs_wait_for_mount.hpp"
 #include "syslog.hpp"
