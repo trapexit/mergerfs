@@ -300,7 +300,12 @@ int
 main(int    argc_,
      char **argv_)
 {
+  auto data = toml::parse("config.toml");
+
+  fmt::print("{}\n",data);
   
+
+  return 0;
   
   return l::main(argc_,argv_);
 }
