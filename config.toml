@@ -1,5 +1,7 @@
 # test file
 
+version = 0
+
 [filesystem]
 name = 'foo'
 mountpoint = '/tmp/test'
@@ -80,6 +82,7 @@ readdir = false
 min-free-space = 123
 
 [[branches.group]]
+name = 'foo'
 
 [[branches.group.branch]]
 active = true
