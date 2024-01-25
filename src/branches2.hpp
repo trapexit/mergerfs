@@ -2,8 +2,10 @@
 
 #include <vector>
 
-typedef std::vector<Branch2> Branch2Vec;
+class Branch2Vec : public std::vector<Branch2>
+{
 
+};
 
 class Branches2 : public std::vector<Branch2Vec>
 {
