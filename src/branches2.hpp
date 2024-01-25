@@ -2,7 +2,7 @@
 
 #include <vector>
 
-class Branch2Tier
+class Branch2Group
 {
 public:
   uint64_t min_free_space;
@@ -17,5 +17,5 @@ public:
   uint64_t min_free_space;
 
 private:
-  std::vector<Branch2Vec> _branches;
+  std::vector<Branch2Group> _branches;
 };
