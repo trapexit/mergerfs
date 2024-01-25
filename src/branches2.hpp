@@ -2,7 +2,7 @@
 
 #include <vector>
 
-class Branch2Group
+class Branch2Tier
 {
 public:
   uint64_t min_free_space;
