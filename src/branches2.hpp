@@ -4,7 +4,8 @@
 
 class Branch2Vec : public std::vector<Branch2>
 {
-
+public:
+  uint64_t min_free_space;
 };
 
 class Branches2 : public std::vector<Branch2Vec>
