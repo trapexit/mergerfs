@@ -106,10 +106,6 @@ name = 'asdf'
 type = 'scan'
 path = '*'
 
-[[branch-group]]
-name = '0'
-branches = ['foo','bar']
-
 [branches]
 min-free-space = 123
 layout = [['foo','bar'],['foo']]
