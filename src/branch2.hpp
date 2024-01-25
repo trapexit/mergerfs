@@ -10,4 +10,5 @@ public:
   
 public:
   bool enabled;
+  Mode mode;
 };
