@@ -4,4 +4,8 @@
 
 typedef std::vector<Branch2> Branch2Vec;
 
-typedef std::vector<Branch2Vec> Branches2;
+
+class Branches2 : public std::vector<Branch2Vec>
+{
+  
+};
