@@ -1,7 +1,7 @@
 class Branch2
 {
 public:
-  enum class
+  enum class Mode
     {
       RO,
       RW,
