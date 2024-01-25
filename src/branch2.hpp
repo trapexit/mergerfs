@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 class Branch2
 {
 public:
@@ -11,4 +13,5 @@ public:
 public:
   bool enabled;
   Mode mode;
+  uint64_t min_free_space;
 };
