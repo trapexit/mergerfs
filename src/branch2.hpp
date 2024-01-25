@@ -16,5 +16,6 @@ public:
   bool enabled;
   Mode mode;
   uint64_t min_free_space;
+  int fd;
   ghc::filesystem::path path;
 };
