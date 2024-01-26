@@ -304,7 +304,7 @@ main(int    argc_,
 {
   auto data = toml::parse("config.toml");
 
-  std::cout << data["branches"] << '\n';
+  std::cout << data["branches"]["tier"]["0"] << '\n';
   //  Branches2 b(data["branches"]);
   
 

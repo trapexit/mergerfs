@@ -116,7 +116,7 @@ func.open.policy = 'ff'
 [branches]
 min-free-space = 123
 
-[[branches.tier.0]]
+[branches.tier.0]
 [[branches.tier.0.branch]]
 name = 'branch0'
 type = 'scan'
@@ -133,6 +133,8 @@ path-type = 'literal'
 mode = 'RW'
 if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 
-#[[branches.group.branch]]
-#path = '/tmp/mergerfs/*'
-#path-type = 'glob'
+[branches.tier.1]
+[[branches.tier.1.branch]]
+name = 'branch0'
+type = 'literal'
+path = 'foo'
