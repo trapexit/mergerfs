@@ -23,5 +23,5 @@ public:
   uint64_t min_free_space;
 
 private:
-  std::vector<Branch2Group> _branches;
+  std::vector<Branch2Tier> _branches;
 };
