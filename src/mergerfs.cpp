@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "state.hpp"
+
 #include "toml.hpp"
 
 #include "fs_readahead.hpp"
