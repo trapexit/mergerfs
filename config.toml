@@ -130,7 +130,6 @@ name = 'branch1'
 type = 'literal'
 path = '/mnt/branch1'
 
-
 [[branches.group.branch]]
 active = true
 path = '/tmp/mergerfs/a'

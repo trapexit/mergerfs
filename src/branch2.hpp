@@ -11,6 +11,9 @@ public:
       RW,
       NC
     };
+
+public:
+  Branch2(toml::value const &);
   
 public:
   bool enabled;
