@@ -16,6 +16,7 @@ private:
 class Branches2
 {
 public:
+  Branches2();
   Branches2(toml::value const &);
 
 public:
