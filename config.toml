@@ -117,20 +117,16 @@ func.open.policy = 'ff'
 min-free-space = 123
 layout = [['foo','bar'],['foo']]
 
-[[branches.group]]
-
-
-[[branches.branch]]
+[[branches.tier.0]]
+[[branches.tier.0.branch]]
 name = 'branch0'
 type = 'scan'
 path = '*'
-
-[[branches.branch]]
+[[branches.tier.0.branch]]
 name = 'branch1'
 type = 'literal'
 path = '/mnt/branch1'
-
-[[branches.group.branch]]
+[[branches.tier.0.branch]]
 active = true
 path = '/tmp/mergerfs/a'
 path-type = 'literal'
