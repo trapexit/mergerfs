@@ -14,6 +14,9 @@ private:
 class Branches2
 {
 public:
+  Branches2(toml::value const &);
+
+public:
   uint64_t min_free_space;
 
 private:
