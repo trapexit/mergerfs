@@ -303,6 +303,7 @@ main(int    argc_,
   auto data = toml::parse("config.toml");
 
   //  std::cout << data << '\n';
+  Branches2 b(data["branches"]);
   
 
   return 0;
