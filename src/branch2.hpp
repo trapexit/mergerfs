@@ -1,5 +1,7 @@
 #include "ghc/filesystem.hpp"
 
+#include "toml.hpp"
+
 #include <stdint.h>
 
 class Branch2
