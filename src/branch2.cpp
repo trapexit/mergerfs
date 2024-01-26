@@ -3,5 +3,5 @@
 
 Branch2::Branch2(toml::value const &v_)
 {
-  
+  enabled = v_["enabled"].as_boolean();
 }
