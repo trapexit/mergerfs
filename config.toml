@@ -115,13 +115,13 @@ func.open.policy = 'ff'
 
 [branches]
 min-free-space = 123
-layout = [['foo','bar'],['foo']]
 
 [[branches.tier.0]]
 [[branches.tier.0.branch]]
 name = 'branch0'
 type = 'scan'
 path = '*'
+order = 'name:asc' # | size
 [[branches.tier.0.branch]]
 name = 'branch1'
 type = 'literal'
