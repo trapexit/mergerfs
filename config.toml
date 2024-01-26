@@ -106,9 +106,29 @@ name = 'asdf'
 type = 'scan'
 path = '*'
 
+[[branch.group]]
+name = 'asdf'
+branches = ['ssds']
+func.create.policy = 'ep'
+func.create.option0 = 'blah'
+func.open.policy = 'ff'
+
 [branches]
 min-free-space = 123
 layout = [['foo','bar'],['foo']]
+
+[[branches.group]]
+
+
+[[branches.branch]]
+name = 'branch0'
+type = 'scan'
+path = '*'
+
+[[branches.branch]]
+name = 'branch1'
+type = 'literal'
+path = '/mnt/branch1'
 
 
 [[branches.group.branch]]
