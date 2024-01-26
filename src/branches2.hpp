@@ -1,5 +1,7 @@
 #include "branch2.hpp"
 
+#include "toml11.hpp"
+
 #include <vector>
 
 class Branch2Group
