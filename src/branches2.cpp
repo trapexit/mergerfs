@@ -17,7 +17,7 @@ Branches2::Branches2(toml::value const &v_)
       
       for(auto const &branch : branches.as_array())
         {
-          auto const &branch_table = branch;//.as_table();
+          auto const &branch_table = branch.as_table();
 
           if(toml::find<std::string>(branch_table,"type") == "literal");
         }
