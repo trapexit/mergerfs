@@ -19,7 +19,7 @@ Branches2::Branches2(toml::value const &v_)
         {
           auto const &branch_table = branch.as_table();
 
-          if(branch_table["type"].as_string() == "literal");
+          if(toml::find<std::string>(branch_table,"type") == "literal);
         }
     }
 }
