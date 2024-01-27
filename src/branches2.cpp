@@ -19,7 +19,7 @@ Branches2::Branches2(toml::value const &v_)
         {
           auto const &branch_table = branch.as_table();
 
-          branch_table.at("type");
+          branch_table.at("type").as_string();
         }
     }
 }
