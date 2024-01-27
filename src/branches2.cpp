@@ -13,5 +13,11 @@ Branches2::Branches2(toml::value const &v_)
 
   for(auto const &tier : tiers.as_array())
     {
+      auto const &branches = toml::find(tier,"branch");
+      
+      for(auto const &branch : branches.as_array())
+        {
+
+        }
     }
 }
