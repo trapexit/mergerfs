@@ -91,67 +91,63 @@
 
 #include <string.h>
 
+namespace l {
+static void get_fuse_operations(struct fuse_operations &ops_,
+                                const bool nullrw_) {
+  ops_.access = FUSE::access;
+  ops_.bmap = FUSE::bmap;
+  ops_.chmod = FUSE::chmod;
+  ops_.chown = FUSE::chown;
+  ops_.copy_file_range = FUSE::copy_file_range;
+  ops_.create = FUSE::create;
+  ops_.destroy = FUSE::destroy;
+  ops_.fallocate = FUSE::fallocate;
+  ops_.fchmod = FUSE::fchmod;
+  ops_.fchown = FUSE::fchown;
+  ops_.fgetattr = FUSE::fgetattr;
+  ops_.flock = FUSE::flock;
+  ops_.flush = FUSE::flush;
+  ops_.free_hide = FUSE::free_hide;
+  ops_.fsync = FUSE::fsync;
+  ops_.fsyncdir = FUSE::fsyncdir;
+  ops_.ftruncate = FUSE::ftruncate;
+  ops_.futimens = FUSE::futimens;
+  ops_.getattr = FUSE::getattr;
+  ops_.getxattr = FUSE::getxattr;
+  ops_.init = FUSE::init;
+  ops_.ioctl = FUSE::ioctl;
+  ops_.link = FUSE::link;
+  ops_.listxattr = FUSE::listxattr;
+  ops_.lock = FUSE::lock;
+  ops_.mkdir = FUSE::mkdir;
+  ops_.mknod = FUSE::mknod;
+  ops_.open = FUSE::open;
+  ops_.opendir = FUSE::opendir;
+  ops_.poll = FUSE::poll;
+  ;
+  ops_.prepare_hide = FUSE::prepare_hide;
+  ops_.read = (nullrw_ ? FUSE::read_null : FUSE::read);
+  ops_.readdir = FUSE::readdir;
+  ops_.readdir_plus = FUSE::readdir_plus;
+  ops_.readlink = FUSE::readlink;
+  ops_.release = FUSE::release;
+  ops_.releasedir = FUSE::releasedir;
+  ops_.removemapping = FUSE::removemapping;
+  ops_.removexattr = FUSE::removexattr;
+  ops_.rename = FUSE::rename;
+  ops_.rmdir = FUSE::rmdir;
+  ops_.setupmapping = FUSE::setupmapping;
+  ops_.setxattr = FUSE::setxattr;
+  ops_.statfs = FUSE::statfs;
+  ops_.symlink = FUSE::symlink;
+  ops_.syncfs = FUSE::syncfs;
+  ops_.tmpfile = FUSE::tmpfile;
+  ops_.truncate = FUSE::truncate;
+  ops_.unlink = FUSE::unlink;
+  ops_.utimens = FUSE::utimens;
+  ops_.write = (nullrw_ ? FUSE::write_null : FUSE::write);
 
-namespace l
-{
-  static
-  void
-  get_fuse_operations(struct fuse_operations &ops_,
-                      const bool              nullrw_)
-  {
-    ops_.access          = FUSE::access;
-    ops_.bmap            = FUSE::bmap;
-    ops_.chmod           = FUSE::chmod;
-    ops_.chown           = FUSE::chown;
-    ops_.copy_file_range = FUSE::copy_file_range;
-    ops_.create          = FUSE::create;
-    ops_.destroy         = FUSE::destroy;
-    ops_.fallocate       = FUSE::fallocate;
-    ops_.fchmod          = FUSE::fchmod;
-    ops_.fchown          = FUSE::fchown;
-    ops_.fgetattr        = FUSE::fgetattr;
-    ops_.flock           = FUSE::flock;
-    ops_.flush           = FUSE::flush;
-    ops_.free_hide       = FUSE::free_hide;
-    ops_.fsync           = FUSE::fsync;
-    ops_.fsyncdir        = FUSE::fsyncdir;
-    ops_.ftruncate       = FUSE::ftruncate;
-    ops_.futimens        = FUSE::futimens;
-    ops_.getattr         = FUSE::getattr;
-    ops_.getxattr        = FUSE::getxattr;
-    ops_.init            = FUSE::init;
-    ops_.ioctl           = FUSE::ioctl;
-    ops_.link            = FUSE::link;
-    ops_.listxattr       = FUSE::listxattr;
-    ops_.lock            = FUSE::lock;
-    ops_.mkdir           = FUSE::mkdir;
-    ops_.mknod           = FUSE::mknod;
-    ops_.open            = FUSE::open;
-    ops_.opendir         = FUSE::opendir;
-    ops_.poll            = FUSE::poll;;
-    ops_.prepare_hide    = FUSE::prepare_hide;
-    ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
-    ops_.readdir         = FUSE::readdir;
-    ops_.readdir_plus    = FUSE::readdir_plus;
-    ops_.readlink        = FUSE::readlink;
-    ops_.release         = FUSE::release;
-    ops_.releasedir      = FUSE::releasedir;
-    ops_.removemapping   = FUSE::removemapping;
-    ops_.removexattr     = FUSE::removexattr;
-    ops_.rename          = FUSE::rename;
-    ops_.rmdir           = FUSE::rmdir;
-    ops_.setupmapping    = FUSE::setupmapping;
-    ops_.setxattr        = FUSE::setxattr;
-    ops_.statfs          = FUSE::statfs;
-    ops_.symlink         = FUSE::symlink;
-    ops_.syncfs          = FUSE::syncfs;
-    ops_.tmpfile         = FUSE::tmpfile;
-    ops_.truncate        = FUSE::truncate;
-    ops_.unlink          = FUSE::unlink;
-    ops_.utimens         = FUSE::utimens;
-    ops_.write           = (nullrw_ ? FUSE::write_null : FUSE::write);
-
-    return;
+  return;
   }
 
   static
@@ -296,13 +292,13 @@ namespace l
 
     return rv;
   }
-}
+  } // namespace l
 
 int
 main(int    argc_,
      char **argv_)
 {
-  auto data = toml::parse<toml::preserve_comments>("config.toml");
+  auto data = toml::parse<preserve_comments>("config.toml");
 
   std::cout << data["branches"] << '\n';
   //  Branches2 b(data["branches"]);
