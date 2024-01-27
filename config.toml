@@ -116,6 +116,7 @@ func.open.policy = 'ff'
 [branches]
 min-free-space = 123
 
+# TIER 0
 [[branches.tier]]
 [[branches.tier.branch]]
 name = 'branch0'
@@ -133,6 +134,7 @@ path-type = 'literal'
 mode = 'RW'
 if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 
+# TIER 1
 [[branches.tier]]
 [[branches.tier.branch]]
 name = 'branch0'

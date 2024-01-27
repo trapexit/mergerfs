@@ -302,7 +302,7 @@ int
 main(int    argc_,
      char **argv_)
 {
-  auto data = toml::parse("config.toml");
+  auto data = toml::parse<toml::preserve_comments>("config.toml");
 
   std::cout << data["branches"] << '\n';
   //  Branches2 b(data["branches"]);
