@@ -670,7 +670,7 @@ writable.
 Even though it's a more niche situation this hack breaks normal
 security and behavior and as such is `off` by default. If set to `git`
 it will only perform the hack when the path in question includes
-`/.git/`. `all` will result it applying anytime a readonly file which
+`/.git/`. `all` will result it applying anytime a read-only file which
 is empty is opened for writing.
 
 
@@ -2089,15 +2089,16 @@ first directory will be placed on the same branch because it is
 preserving paths.
 
 This catches a lot of new users off guard but changing the default
-would break the setup for many existing users. If you do not care
-about path preservation and wish your files to be spread across all
-your filesystems change to `mfs` or similar policy as described
-above. If you do want path preservation you'll need to perform the
-manual act of creating paths on the filesystems you want the data to
-land on before transferring your data. Setting `func.mkdir=epall` can
-simplify managing path preservation for `create`. Or use
-`func.mkdir=rand` if you're interested in just grouping together
-directory content by filesystem.
+would break the setup for many existing users and this policy is the
+safest policy as it will not change the general layout of the existing
+filesystems. If you do not care about path preservation and wish your
+files to be spread across all your filesystems change to `mfs` or
+similar policy as described above. If you do want path preservation
+you'll need to perform the manual act of creating paths on the
+filesystems you want the data to land on before transferring your
+data. Setting `func.mkdir=epall` can simplify managing path
+preservation for `create`. Or use `func.mkdir=rand` if you're
+interested in just grouping together directory content by filesystem.
 
 
 #### Do hardlinks work?
@@ -2117,6 +2118,16 @@ filesystem are considered different devices. There is no way to link
 between them. You should mount in the highest directory in the
 mergerfs pool that includes all the paths you need if you want links
 to work.
+
+
+#### Does FICLONE or FICLONERANGE work?
+
+Unfortunately not. FUSE, the technology mergerfs is based on, does not
+support the `clone_file_range` feature needed for it to work. mergerfs
+won't even know such a request is made. The kernel will simply return
+an error back to the application making the request.
+
+Should FUSE gain the ability mergerfs will be updated to support it.
 
 
 #### Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
@@ -2235,103 +2246,6 @@ at best provide equivalent performance and in cases worse
 performance. Splice is not supported on other platforms forcing a
 traditional read/write fallback to be provided. The splice code was
 removed to simplify the codebase.
-
-
-#### Why use mergerfs over mhddfs?
-
-mhddfs is no longer maintained and has some known stability and
-security issues (see below). mergerfs provides a superset of mhddfs'
-features and should offer the same or maybe better performance.
-
-Below is an example of mhddfs and mergerfs setup to work similarly.
-
-`mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool`
-
-`mergerfs -o minfreespace=4G,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
-
-
-#### Why use mergerfs over aufs?
-
-aufs is mostly abandoned and no longer available in many distros.
-
-While aufs can offer better peak performance mergerfs provides more
-configurability and is generally easier to use. mergerfs however does
-not offer the overlay / copy-on-write (CoW) features which aufs and
-overlayfs have.
-
-
-#### Why use mergerfs over unionfs?
-
-UnionFS is more like aufs than mergerfs in that it offers overlay /
-CoW features. If you're just looking to create a union of filesystems
-and want flexibility in file/directory placement then mergerfs offers
-that whereas unionfs is more for overlaying RW filesystems over RO
-ones.
-
-
-#### Why use mergerfs over overlayfs?
-
-Same reasons as with unionfs.
-
-
-#### Why use mergerfs over LVM/ZFS/BTRFS/RAID0 drive concatenation / striping?
-
-With simple JBOD / drive concatenation / stripping / RAID0 a single
-drive failure will result in full pool failure. mergerfs performs a
-similar function without the possibility of catastrophic failure and
-the difficulties in recovery. Drives may fail, however, all other data
-will continue to be accessible.
-
-When combined with something like [SnapRaid](http://www.snapraid.it)
-and/or an offsite backup solution you can have the flexibility of JBOD
-without the single point of failure.
-
-
-#### Why use mergerfs over ZFS?
-
-mergerfs is not intended to be a replacement for ZFS. mergerfs is
-intended to provide flexible pooling of arbitrary filesystems (local
-or remote), of arbitrary sizes, and arbitrary filesystems. For `write
-once, read many` usecases such as bulk media storage. Where data
-integrity and backup is managed in other ways. In that situation ZFS
-can introduce a number of costs and limitations as described
-[here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
-[here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
-[here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
-
-
-#### Why use mergerfs over UnRAID?
-
-UnRAID is a full OS and its storage layer, as I understand, is
-proprietary and closed source. Users who have experience with both
-have said they prefer the flexibility offered by mergerfs and for some
-the fact it is free and open source is important.
-
-There are a number of UnRAID users who use mergerfs as well though I'm
-not entirely familiar with the use case.
-
-
-#### Why use mergerfs over StableBit's DrivePool?
-
-DrivePool works only on Windows so not as common an alternative as
-other Linux solutions. If you want to use Windows then DrivePool is a
-good option. Functionally the two projects work a bit
-differently. DrivePool always writes to the filesystem with the most
-free space and later rebalances. mergerfs does not offer rebalance but
-chooses a branch at file/directory create time. DrivePool's
-rebalancing can be done differently in any directory and has file
-pattern matching to further customize the behavior. mergerfs, not
-having rebalancing does not have these features, but similar features
-are planned for mergerfs v3. DrivePool has builtin file duplication
-which mergerfs does not natively support (but can be done via an
-external script.)
-
-There are a lot of misc differences between the two projects but most
-features in DrivePool can be replicated with external tools in
-combination with mergerfs.
-
-Additionally DrivePool is a closed source commercial product vs
-mergerfs a ISC licensed OSS project.
 
 
 #### What should mergerfs NOT be used for?
@@ -2484,6 +2398,114 @@ ability to give writers priority is supported then that flag will be
 used so threads trying to change credentials don't starve. This isn't
 the best solution but should work reasonably well assuming there are
 few users.
+
+# mergerfs versus X
+
+#### mhddfs
+
+mhddfs had not been maintained for some time and has some known
+stability and security issues. mergerfs provides a superset of mhddfs'
+features and should offer the same or better performance.
+
+Below is an example of mhddfs and mergerfs setup to work similarly.
+
+`mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool`
+
+`mergerfs -o minfreespace=4G,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool`
+
+
+#### aufs
+
+aufs is mostly abandoned and no longer available in most Linux distros.
+
+While aufs can offer better peak performance mergerfs provides more
+configurability and is generally easier to use. mergerfs however does
+not offer the overlay / copy-on-write (CoW) features which aufs has.
+
+
+#### unionfs-fuse
+
+unionfs-fuse is more like aufs than mergerfs in that it offers overlay /
+copy-on-write (CoW) features. If you're just looking to create a union
+of filesystems and want flexibility in file/directory placement then
+mergerfs offers that whereas unionfs is more for overlaying read/write
+filesystems over read-only ones.
+
+
+#### overlayfs
+
+overlayfs is similar to aufs and unionfs-fuse in that it also is
+primarily used to layer a read/write filesystem over one or more
+read-only filesystems. It does not have the ability to spread
+files/directories across numerous filesystems.
+
+
+#### RAID0, JBOD, drive concatenation, striping
+
+With simple JBOD / drive concatenation / stripping / RAID0 a single
+drive failure will result in full pool failure. mergerfs performs a
+similar function without the possibility of catastrophic failure and
+the difficulties in recovery. Drives may fail but all other
+filesystems and their data will continue to be accessible.
+
+The main practical difference with mergerfs is the fact you don't
+actually have contiguous space as large as if you used those other
+technologies. Meaning you can't create a 2TB file on a pool of 2 1TB
+filesystems.
+
+When combined with something like [SnapRaid](http://www.snapraid.it)
+and/or an offsite backup solution you can have the flexibility of JBOD
+without the single point of failure.
+
+
+#### UnRAID
+
+UnRAID is a full OS and its storage layer, as I understand, is
+proprietary and closed source. Users who have experience with both
+have often said they prefer the flexibility offered by mergerfs and
+for some the fact it is open source is important.
+
+There are a number of UnRAID users who use mergerfs as well though I'm
+not entirely familiar with the use case.
+
+For semi-static data mergerfs + [SnapRaid](http://www.snapraid.it)
+provides a similar solution.
+
+
+#### ZFS
+
+mergerfs is very different from ZFS. mergerfs is intended to provide
+flexible pooling of arbitrary filesystems (local or remote), of
+arbitrary sizes, and arbitrary filesystems. For `write once, read
+many` usecases such as bulk media storage. Where data integrity and
+backup is managed in other ways. In those usecases ZFS can introduce a
+number of costs and limitations as described
+[here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
+[here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
+[here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
+
+
+#### StableBit's DrivePool
+
+DrivePool works only on Windows so not as common an alternative as
+other Linux solutions. If you want to use Windows then DrivePool is a
+good option. Functionally the two projects work a bit
+differently. DrivePool always writes to the filesystem with the most
+free space and later rebalances. mergerfs does not offer rebalance but
+chooses a branch at file/directory create time. DrivePool's
+rebalancing can be done differently in any directory and has file
+pattern matching to further customize the behavior. mergerfs, not
+having rebalancing does not have these features, but similar features
+are planned for mergerfs v3. DrivePool has builtin file duplication
+which mergerfs does not natively support (but can be done via an
+external script.)
+
+There are a lot of misc differences between the two projects but most
+features in DrivePool can be replicated with external tools in
+combination with mergerfs.
+
+Additionally DrivePool is a closed source commercial product vs
+mergerfs a ISC licensed OSS project.
 
 
 # SUPPORT
