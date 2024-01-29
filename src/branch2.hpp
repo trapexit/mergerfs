@@ -15,6 +15,7 @@ public:
   typedef BranchMode Mode;
 
 public:
+  Branch2();
   Branch2(toml::value const &);
 
 public:
