@@ -7,11 +7,7 @@
 
 #include <stdint.h>
 
-BETTER_ENUM(BranchMode,
-            int,
-            RO,
-            RW,
-            NC)
+BETTER_ENUM(BranchMode,int,RO,RW,NC);
 
 class Branch2
 {
