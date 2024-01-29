@@ -14,8 +14,10 @@ BranchTier::BranchTier(toml::value const &v_)
   for(auto const &branch : branches)
     {
       auto const &table = branch.as_table();
+      std::string type;
 
-      std::string s = table.at("type").as_string();
-      fmt::print("{}\n",s);
+      type = table.at("type");
+
+      fmt::print("{}\n",type);
     }
 }
