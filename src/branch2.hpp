@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ghc/filesystem.hpp"
 #include "toml.hpp"
 
