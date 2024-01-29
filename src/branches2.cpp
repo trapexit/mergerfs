@@ -1,6 +1,6 @@
 #include "branches2.hpp"
 
-#include "fmt.hpp"
+#include "fmt/core.hpp"
 
 #include <iostream>
 
