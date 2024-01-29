@@ -1,5 +1,7 @@
 #include "branches2.hpp"
 
+#include "fmt.hpp"
+
 #include <iostream>
 
 Branches2::Branches2()
