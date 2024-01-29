@@ -6,7 +6,8 @@ namespace l
 {
   static
   void
-  load_literal_branch(toml::table const &v_)
+  load_branch_literal(toml::table const    &v_,
+                      std::vector<Branch2> &branches_)
   {
     
   }
