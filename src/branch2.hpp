@@ -3,7 +3,15 @@
 #include "ghc/filesystem.hpp"
 #include "toml.hpp"
 
+#include "enum.h"
+
 #include <stdint.h>
+
+BETTER_ENUM(BranchMode,
+            int,
+            RO,
+            RW,
+            NC);
 
 class Branch2
 {
