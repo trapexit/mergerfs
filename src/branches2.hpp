@@ -15,5 +15,5 @@ public:
   uint64_t min_free_space;
 
 private:
-  std::vector<Branch2Tier> _branches;
+  std::vector<BranchTier> _branches;
 };
