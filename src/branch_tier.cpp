@@ -2,6 +2,16 @@
 
 #include "fmt/core.h"
 
+namespace l
+{
+  static
+  void
+  load_literal_branch(toml::table const &v_)
+  {
+    
+  }
+}
+
 BranchTier::BranchTier()
 {
 
