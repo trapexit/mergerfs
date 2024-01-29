@@ -28,7 +28,7 @@ BranchTier::BranchTier(toml::value const &v_)
 
       type = table.at("type").as_string();
       if(type == "literal")
-        load_literal_branch(table);
+        l::load_literal_branch(table);
       else if(type == "glob")
         ;
       else if(type == "scan")
