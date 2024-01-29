@@ -1,17 +1,9 @@
 #include "branch2.hpp"
+#include "branch_tier.hpp"
 
 #include "toml.hpp"
 
 #include <vector>
-
-class Branch2Tier
-{
-public:
-  uint64_t min_free_space;
-
-private:
-  std::vector<Branch2>  _branches;
-};
 
 class Branches2
 {
