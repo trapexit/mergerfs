@@ -1,3 +1,5 @@
+#pragma once
+
 #include "branch2.hpp"
 #include "branch_tier.hpp"
 
