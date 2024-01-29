@@ -28,11 +28,11 @@ BranchTier::BranchTier(toml::value const &v_)
 
       type = table.at("type").as_string();
       if(type == "literal")
-        l::load_literal_branch(table);
+        l::load_branch_literal(table,_branches);
       else if(type == "glob")
-        ;
+        l::load_branch_glob(table,_branches);
       else if(type == "scan")
-        ;
+        l::load_branch_scan(table,_branches);
 
       fmt::print("{}\n",type);
     }
