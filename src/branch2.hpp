@@ -11,7 +11,7 @@ BETTER_ENUM(BranchMode,
             int,
             RO,
             RW,
-            NC);
+            NC)
 
 class Branch2
 {
