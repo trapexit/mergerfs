@@ -9,7 +9,7 @@ namespace l
   load_branch_literal(toml::table const    &v_,
                       std::vector<Branch2> &branches_)
   {
-    
+
   }
 
   static
@@ -17,16 +17,16 @@ namespace l
   load_branch_glob(toml::table const    &v_,
                    std::vector<Branch2> &branches_)
   {
-    
+
   }
-  
+
   static
   void
   load_branch_scan(toml::table const    &v_,
                    std::vector<Branch2> &branches_)
   {
-    
-  }    
+
+  }
 }
 
 BranchTier::BranchTier()
@@ -40,7 +40,7 @@ BranchTier::BranchTier(toml::value const &v_)
 
   for(auto const &branch : branches)
     {
-      std::string type;      
+      std::string type;
       auto const &table = branch.as_table();
 
       type = table.at("type").as_string();
