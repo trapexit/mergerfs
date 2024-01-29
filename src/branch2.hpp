@@ -12,7 +12,7 @@ BETTER_ENUM(BranchMode,int,RO,RW,NC);
 class Branch2
 {
 public:
-  //  typedef BranchMode Mode;
+  typedef BranchMode Mode;
 
 public:
   Branch2(toml::value const &);
