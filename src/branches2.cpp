@@ -22,7 +22,7 @@ Branches2::Branches2(toml::value const &v_)
           auto const &branch_table = branch.as_table();
 
           fmt::print("{}\n",
-                     branch_table.at("type").as_string());
+                     branch_table.at("type").as_string().str());
         }
     }
 }
