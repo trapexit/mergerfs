@@ -11,6 +11,22 @@ namespace l
   {
     
   }
+
+  static
+  void
+  load_branch_glob(toml::table const    &v_,
+                   std::vector<Branch2> &branches_)
+  {
+    
+  }
+  
+  static
+  void
+  load_branch_scan(toml::table const    &v_,
+                   std::vector<Branch2> &branches_)
+  {
+    
+  }    
 }
 
 BranchTier::BranchTier()
