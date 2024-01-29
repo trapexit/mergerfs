@@ -23,8 +23,8 @@ BranchTier::BranchTier(toml::value const &v_)
 
   for(auto const &branch : branches)
     {
+      std::string type;      
       auto const &table = branch.as_table();
-      std::string type;
 
       type = table.at("type").as_string();
       if(type == "literal")
