@@ -16,12 +16,7 @@ BETTER_ENUM(BranchMode,
 class Branch2
 {
 public:
-  enum class Mode
-    {
-      RO,
-      RW,
-      NC
-    };
+  using BranchMode Mode;
 
 public:
   Branch2(toml::value const &);
