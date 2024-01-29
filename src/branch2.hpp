@@ -16,7 +16,7 @@ BETTER_ENUM(BranchMode,
 class Branch2
 {
 public:
-  using BranchMode Mode;
+  typedef BranchMode Mode;
 
 public:
   Branch2(toml::value const &);
