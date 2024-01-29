@@ -11,5 +11,5 @@ Branch2::Branch2(toml::value const &v_)
   : mode(Mode::RW)
 {
   enabled = v_.at("enabled").as_boolean();
-  mode    = Mode::_from_string(toml::find<std::string>(v_,"mode").c_str());
+  mode    = Mode::_from_string(toml::find<const char*>(v_,"mode"));
 }
