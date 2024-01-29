@@ -17,6 +17,12 @@ BranchTier::BranchTier(toml::value const &v_)
       std::string type;
 
       type = table.at("type").as_string();
+      if(type == "literal")
+        ;
+      else if(type == "glob")
+        ;
+      else if(type == "scan")
+        ;
 
       fmt::print("{}\n",type);
     }
