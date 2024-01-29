@@ -21,8 +21,8 @@ Branches2::Branches2(toml::value const &v_)
         {
           auto const &branch_table = branch.as_table();
 
-          fmt::print("{}\n",
-                     branch_table.at("type").as_string().str());
+          std::string s = branch_table.at("type").as_string();
+          fmt::print("{}\n",s);
         }
     }
 }
