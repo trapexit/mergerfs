@@ -15,14 +15,6 @@ Branches2::Branches2(toml::value const &v_)
 
   for(auto const &tier : tiers.as_array())
     {
-      auto const &branches = toml::find(tier,"branch");
-      
-      for(auto const &branch : branches.as_array())
-        {
-          auto const &branch_table = branch.as_table();
-
-          std::string s = branch_table.at("type").as_string();
-          fmt::print("{}\n",s);
-        }
+      _branches.emplace_back(tier);
     }
 }
