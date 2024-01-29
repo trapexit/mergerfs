@@ -21,8 +21,8 @@ Branches2::Branches2(toml::value const &v_)
         {
           auto const &branch_table = branch.as_table();
 
-          printf("%s\n",
-                 branch_table.at("type").as_string().str().c_str());
+          fmt::print("{}\n",
+                     branch_table.at("type").as_string());
         }
     }
 }
