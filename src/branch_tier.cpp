@@ -16,7 +16,7 @@ BranchTier::BranchTier(toml::value const &v_)
       auto const &table = branch.as_table();
       std::string type;
 
-      type = table.at("type");
+      type = table.at("type").as_string();
 
       fmt::print("{}\n",type);
     }
