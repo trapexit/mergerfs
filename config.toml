@@ -78,59 +78,29 @@ writeback = false
 symlinks = false
 readdir = false
 
-[[branch]]
-enabled = true
-name = 'foo'
-type = 'literal'
-path = '/mnt/hdd/foo'
-mode = 'RO'
-
-[[branch]]
-enabled = true
-name = 'bar'
-type = 'literal'
-path = '/mnt/hdd/foo'
-mode = 'RW'
-
-[[branch]]
-enabled = true
-name = 'ssds'
-type = 'glob'
-path = '/mnt/ssd/*'
-order = 'name:asc' # | size
-mode = 'RW'
-
-# scan type: look for paths with a '.mergerfs' file or xattr?
-[[branch]]
-name = 'asdf'
-type = 'scan'
-path = '*'
-
-[[branch.group]]
-name = 'asdf'
-branches = ['ssds']
-func.create.policy = 'ep'
-func.create.option0 = 'blah'
-func.open.policy = 'ff'
-
 [branches]
 min-free-space = 123
 
 # TIER 0
 [[branches.tier]]
+func.create.policy = 'mfs'
+func.open.policy = 'ff'
+
 [[branches.tier.branch]]
+enabled = true
 name = 'branch0'
 type = 'scan'
 path = '*'
 order = 'name:asc' # | size
 [[branches.tier.branch]]
+enabled = true
 name = 'branch1'
 type = 'literal'
 path = '/mnt/branch1'
 [[branches.tier.branch]]
 active = true
 path = '/tmp/mergerfs/a'
-path-type = 'literal'
+type = 'literal'
 mode = 'RW'
 if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 
