@@ -10,5 +10,5 @@ Branch2::Branch2()
 Branch2::Branch2(toml::value const &v_)
 {
   enabled = v_.at("enabled").as_boolean();
-  mode    = v_.at("mode").as_string()
+  //  mode    = v_.at("mode").as_string();
 }
