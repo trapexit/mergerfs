@@ -1726,18 +1726,41 @@ unused files to be released from memory.
 .PP
 EXPERIMENTAL
 .PP
-This preloadable library overrides the creation and opening of files in
-order to simulate passthrough file IO.
-It catches the open/creat/fopen calls, lets mergerfs do the call,
-queries mergerfs for the branch the file exists on, and reopens the file
-on the underlying filesystem.
-Meaning that you will get native read/write performance.
+For some time there has been work to enable passthrough IO in FUSE.
+Passthrough IO would allow for near native performance with regards to
+reads and writes (at the expense of certain mergerfs features.) However,
+there have been several complications which have kept the feature from
+making it into the mainline Linux kernel.
+Until that feature is available there are two methods to provide similar
+functionality.
+One method is using the LD_PRELOAD feature of the dynamic linker.
+The other leveraging ptrace to intercept syscalls.
+Each has their disadvantages.
+At the moment only a preload based tool is available.
+A ptrace based tool may be developed later if there is a need.
 .PP
-This will only work on dynamically linked software.
+\f[C]/usr/lib/mergerfs/preload.so\f[R]
+.PP
+This preloadable
+library (https://man7.org/linux/man-pages/man8/ld.so.8.html#ENVIRONMENT)
+overrides the creation and opening of files in order to simulate
+passthrough file IO.
+It catches the open/creat/fopen calls, has mergerfs do the call, queries
+mergerfs for the branch the file exists on, reopens the file on the
+underlying filesystem and returns that instead.
+Meaning that you will get native read/write performance because mergerfs
+is no longer part of the workflow.
+Keep in mind that this also means certain mergerfs features that work by
+interrupting the read/write workflow, such as \f[C]moveonenospc\f[R],
+will no longer work.
+.PP
+Also understand that this will only work on dynamically linked software.
 Anything statically compiled will not work.
 Many GoLang and Rust apps are statically compiled.
 .PP
 The library will not interfere with non-mergerfs filesystems.
+The library is written to always fallback to returning the mergerfs
+opened file on error.
 .PP
 While the library was written to account for a number of edgecases there
 could be some yet accounted for so please report any oddities.
@@ -1754,20 +1777,50 @@ LD_PRELOAD=/usr/lib/mergerfs/preload.so touch /mnt/mergerfs/filename
 .SS Docker usage
 .PP
 Assume \f[C]/mnt/fs0\f[R] and \f[C]/mnt/fs1\f[R] are pooled with
-mergerfs at \f[C]/mnt/mergerfs\f[R].
+mergerfs at \f[C]/media\f[R].
 .PP
-Remember that you must bind into the container the original host paths
-to the same locations otherwise the preload module will not be able to
-find the files.
+All mergerfs branch paths \f[I]must\f[R] be bind mounted into the
+container at the same path as found on the host so the preload library
+can see them.
 .IP
 .nf
 \f[C]
 docker run \[rs]
   -e LD_PRELOAD=/usr/lib/mergerfs/preload.so \[rs]
   -v /usr/lib/mergerfs/preload.so:/usr/lib/mergerfs/preload.so:ro \[rs]
+  -v /media:/data \[rs]
   -v /mnt:/mnt \[rs]
   ubuntu:latest \[rs]
   bash
+\f[R]
+.fi
+.PP
+or more explicitly
+.IP
+.nf
+\f[C]
+docker run \[rs]
+  -e LD_PRELOAD=/usr/lib/mergerfs/preload.so \[rs]
+  -v /usr/lib/mergerfs/preload.so:/usr/lib/mergerfs/preload.so:ro \[rs]
+  -v /media:/data \[rs]
+  -v /mnt/fs0:/mnt/fs0 \[rs]
+  -v /mnt/fs1:/mnt/fs1 \[rs]
+  ubuntu:latest \[rs]
+  bash
+\f[R]
+.fi
+.SS systemd unit
+.PP
+Use the \f[C]Environment\f[R] option to set the LD_PRELOAD variable.
+.IP \[bu] 2
+https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#Command%20lines
+.IP \[bu] 2
+https://serverfault.com/questions/413397/how-to-set-environment-variable-in-systemd-service
+.IP
+.nf
+\f[C]
+[Service]
+Environment=LD_PRELOAD=/usr/lib/mergerfs/preload.so
 \f[R]
 .fi
 .SS Misc
