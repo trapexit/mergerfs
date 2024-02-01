@@ -34,6 +34,6 @@ Branch2::Branch2(toml::value const &v_)
 
 Branch2::~Branch2()
 {
-  // if(fd >= 0)
-  //   close(fd);
+  if(fd >= 0)
+    close(fd);
 }
