@@ -17,7 +17,9 @@ namespace l
   load_branch_glob(toml::table const    &v_,
                    std::vector<Branch2> &branches_)
   {
+    std::string pattern;
 
+    pattern = v_.at("path").as_string();
   }
 
   static
