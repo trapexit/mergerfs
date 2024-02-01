@@ -25,7 +25,7 @@ Branch2::Branch2(Branch2 &&v_)
     fd(v_.fd),
     path(v_.path)
 {
-  
+  v_.fd = -1;
 }
 
 Branch2::Branch2(toml::value const &v_)
