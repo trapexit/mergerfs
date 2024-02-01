@@ -97,6 +97,7 @@ enabled = true
 name = 'branch1'
 type = 'literal'
 path = '/mnt/branch1'
+mode = 'RW'
 [[branches.tier.branch]]
 active = true
 path = '/mnt/disk*'
@@ -107,6 +108,8 @@ if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 # TIER 1
 [[branches.tier]]
 [[branches.tier.branch]]
+enabled = true
 name = 'branch0'
 type = 'literal'
 path = 'foo'
+mode = 'RO'
