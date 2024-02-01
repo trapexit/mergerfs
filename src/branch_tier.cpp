@@ -30,7 +30,7 @@ namespace l
     for(auto &path : paths)
       {
         table["path"] = path;
-        load_branch_literal(table,branches_);
+        branches_.emplace_back(table);
       }
   }
 
