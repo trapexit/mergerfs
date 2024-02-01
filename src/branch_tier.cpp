@@ -2,6 +2,8 @@
 
 #include "fmt/core.h"
 
+#include "fs_glob.hpp"
+
 namespace l
 {
   static
