@@ -17,6 +17,7 @@ public:
 public:
   Branch2();
   Branch2(toml::value const &);
+  ~Branch2();
 
 public:
   bool enabled;
