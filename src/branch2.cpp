@@ -19,12 +19,13 @@ Branch2::Branch2()
 }
 
 Branch2::Branch2(Branch2 const &v_)
+  enabled(v_.enabled),
+  mode(v_.mode),
+  min_free_space(v_.min_free_space),
+  fd(v_.fd),
+  path(v_.path)
 {
-  enabled        = v_.enabled;
-  //  mode           = v_.mode;
-  min_free_space = v_.min_free_space;
-  fd             = v_.fd;
-  path           = v_.path;
+
 }
 
 Branch2::Branch2(toml::value const &v_)
