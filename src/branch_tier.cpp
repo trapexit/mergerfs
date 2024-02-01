@@ -28,7 +28,9 @@ namespace l
 
     auto table = v_;
     for(auto &path : paths)
-      fmt::print("path: {}\n",path);
+      {
+        table["path"] = path;
+      }
   }
 
   static
