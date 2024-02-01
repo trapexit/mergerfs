@@ -50,7 +50,5 @@ BranchTier::BranchTier(toml::value const &v_)
         l::load_branch_glob(table,_branches);
       else if(type == "scan")
         l::load_branch_scan(table,_branches);
-
-      fmt::print("{}\n",type);
     }
 }
