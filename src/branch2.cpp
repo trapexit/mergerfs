@@ -23,6 +23,6 @@ Branch2::Branch2(toml::value const &v_)
   min_free_space = 0;
   path           = toml::find<std::string>(v_,"path");
 
-  int const flags = O_DIRECTORY | O_PATH;
+  int const flags = O_DIRECTORY | O_PATH | O_NOATIME;
   fd = openat(AT_FDCWD,path.string().c_str(),flags);
 }
