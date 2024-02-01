@@ -24,5 +24,5 @@ Branch2::Branch2(toml::value const &v_)
   path           = toml::find<std::string>(v_,"path");
 
   int const flags = O_DIRECTORY | O_PATH;
-  fd = openat(AT_FDCWD,path.string().c_str(),O_DI
+  fd = openat(AT_FDCWD,path.string().c_str(),flags);
 }
