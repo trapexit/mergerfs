@@ -99,7 +99,7 @@ type = 'literal'
 path = '/mnt/branch1'
 mode = 'RW'
 [[branches.tier.branch]]
-active = true
+enabled = true
 path = '/mnt/*'
 type = 'glob'
 mode = 'RW'
