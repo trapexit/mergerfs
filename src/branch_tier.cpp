@@ -18,8 +18,10 @@ namespace l
                    std::vector<Branch2> &branches_)
   {
     std::string pattern;
+    std::vector<std::string> paths;
 
     pattern = v_.at("path").as_string();
+    fs::glob(pattern,&paths);
   }
 
   static
