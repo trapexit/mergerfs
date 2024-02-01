@@ -26,3 +26,8 @@ Branch2::Branch2(toml::value const &v_)
   int const flags = O_DIRECTORY | O_PATH | O_NOATIME;
   fd = openat(AT_FDCWD,path.string().c_str(),flags);
 }
+
+Branch2::~Branch2()
+{
+  
+}
