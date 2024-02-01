@@ -26,6 +26,7 @@ namespace l
     pattern = v_.at("path").as_string();
     fs::glob(pattern,&paths);
 
+    auto table = v_;
     for(auto &path : paths)
       fmt::print("path: {}\n",path);
   }

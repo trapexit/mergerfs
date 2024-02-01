@@ -100,7 +100,7 @@ path = '/mnt/branch1'
 mode = 'RW'
 [[branches.tier.branch]]
 active = true
-path = '/mnt/disk*'
+path = '/mnt/*'
 type = 'glob'
 mode = 'RW'
 if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
