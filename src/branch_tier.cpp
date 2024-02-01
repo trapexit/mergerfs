@@ -30,8 +30,7 @@ namespace l
     for(auto &path : paths)
       {
         table["path"] = path;
-        branches_.emplace_back(table);
-        branches_.emplace_back(table);        
+        branches_.push_back(table);
       }
   }
 
