@@ -35,7 +35,9 @@ namespace l
     branches_.emplace_back(table);
 
     table["path"] = paths[2];
-    branches_.emplace_back(table);    
+    branches_.emplace_back(table);
+
+    pause();
     
     for(auto &path : paths)
       {
