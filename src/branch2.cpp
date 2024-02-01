@@ -18,6 +18,11 @@ Branch2::Branch2()
 
 }
 
+Branch2::Branch2(Branch2 const &v_)
+{
+  
+}
+
 Branch2::Branch2(toml::value const &v_)
   : mode(Mode::RW)
 {
