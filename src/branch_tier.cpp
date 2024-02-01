@@ -27,6 +27,10 @@ namespace l
     fs::glob(pattern,&paths);
 
     auto table = v_;
+
+    table["path"] = paths[0];
+    branches_.emplace_back(table);
+    
     for(auto &path : paths)
       {
         table["path"] = path;
