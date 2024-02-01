@@ -27,7 +27,6 @@ namespace l
     fs::glob(pattern,&paths);
 
     auto table = v_;
-    branches_.resize(branches_.size() + paths.size());
     for(auto &path : paths)
       {
         table["path"] = path;
