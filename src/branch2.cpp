@@ -9,7 +9,11 @@
 
 
 Branch2::Branch2()
-  : mode(Mode::RW)
+  : enabled(false),
+    mode(Mode::RW),
+    min_free_space(0),
+    fd(-1),
+    path()
 {
 
 }
