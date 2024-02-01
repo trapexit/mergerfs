@@ -32,6 +32,8 @@ namespace l
         table["path"] = path;
         branches_.emplace_back(table);
       }
+
+    pause();
   }
 
   static
