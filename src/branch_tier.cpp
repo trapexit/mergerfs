@@ -9,7 +9,7 @@ namespace l
   load_branch_literal(toml::table const    &v_,
                       std::vector<Branch2> &branches_)
   {
-
+    branches_.emplace_back(v_);
   }
 
   static
