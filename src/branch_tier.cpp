@@ -3,6 +3,7 @@
 #include "fmt/core.h"
 
 #include "fs_glob.hpp"
+#include <cassert>
 
 
 namespace l
