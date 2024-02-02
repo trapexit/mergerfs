@@ -20,6 +20,7 @@ namespace l
   load_branch_glob(toml::table const    &v_,
                    std::vector<Branch2> &branches_)
   {
+    toml::table table;
     std::string pattern;
     std::vector<std::string> paths;
 
