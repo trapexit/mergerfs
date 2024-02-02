@@ -41,7 +41,7 @@ namespace l
   load_branch_scan(toml::table const    &v_,
                    std::vector<Branch2> &branches_)
   {
-
+    assert("not currently supported" == NULL);
   }
 }
 
