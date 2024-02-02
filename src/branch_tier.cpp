@@ -27,7 +27,7 @@ namespace l
     pattern = v_.at("path").as_string();
     fs::glob(pattern,&paths);
 
-    auto table = v_;
+    table = v_;
     branches_.resize(branches_.size() + paths.size());
     for(auto &path : paths)
       {
