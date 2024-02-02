@@ -95,7 +95,7 @@ order = 'name:asc' # | size
 [[branches.tier.branch]]
 enabled = true
 name = 'branch1'
-type = 'literal'
+type = 'scan'
 path = '/mnt/branch1'
 mode = 'RW'
 [[branches.tier.branch]]
@@ -110,6 +110,6 @@ if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 [[branches.tier.branch]]
 enabled = true
 name = 'branch0'
-type = 'literal'
+type = 'scan'
 path = 'foo'
 mode = 'RO'
