@@ -89,7 +89,7 @@ func.open.policy = 'ff'
 [[branches.tier.branch]]
 enabled = true
 name = 'branch0'
-type = 'scan'
+type = 'glob'
 path = '*'
 order = 'name:asc' # | size
 [[branches.tier.branch]]
@@ -110,6 +110,6 @@ if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 [[branches.tier.branch]]
 enabled = true
 name = 'branch0'
-type = 'scan'
-path = 'foo'
+type = 'literal'
+path = '/mnt/*'
 mode = 'RO'
