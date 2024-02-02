@@ -92,6 +92,7 @@ name = 'branch0'
 type = 'glob'
 path = '*'
 order = 'name:asc' # | size
+mode = 'RW'
 [[branches.tier.branch]]
 enabled = true
 name = 'branch1'
