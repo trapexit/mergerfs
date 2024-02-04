@@ -308,9 +308,12 @@ main(int    argc_,
 
   std::cout << data["branches"] << '\n';
 
-  for(auto &branch : b)
+  for(auto &branch_tier : b)
     {
+      for(auto &branch : branch_tier)
+        {
 
+        }
     }
 
   pause();
