@@ -304,15 +304,15 @@ main(int    argc_,
 {
   auto data = toml::parse<toml::preserve_comments>("config.toml");
 
-  Branches2 b(data["branches"]);
+  Branches2 branches(data["branches"]);
 
   std::cout << data["branches"] << '\n';
 
-  for(auto &branch_tier : b)
+  for(auto &branch_tier : branches)
     {
       for(auto &branch : branch_tier)
         {
-
+          
         }
     }
 
