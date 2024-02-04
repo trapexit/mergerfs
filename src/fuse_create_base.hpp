@@ -29,6 +29,6 @@ namespace
   public:
     virtual int operator(char const       *fusepath,
                          mode_t const      mode,
-                         fuse_file_info_t *ffi);
+                         fuse_file_info_t *ffi) = 0;
   };
 }
