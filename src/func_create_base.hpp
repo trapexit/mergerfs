@@ -20,6 +20,9 @@
 
 #include "branches2.hpp"
 
+#include "fuse.h"
+
+
 namespace Func
 {
   class CreateBase
