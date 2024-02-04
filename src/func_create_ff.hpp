@@ -26,8 +26,8 @@ namespace Func
   class CreateFF final : public Func::CreateBase
   {
   public:
-    CreateBase();
-    virtual ~CreateBase() {};
+    CreateFF();
+    virtual ~CreateFF() {};
 
   public:
     virtual int operator(Branches2        &branches_,
