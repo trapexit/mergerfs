@@ -55,6 +55,10 @@ namespace l
                 continue;
               }
 
+            FileInfo *fi = new FileInfo(rv,fusepath_,ffi_->direct_io);
+            
+            ffi_->fh = reinterpret_cast<uint64_t>(fi);
+
             return rv;
           }
       }
