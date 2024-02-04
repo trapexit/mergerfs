@@ -21,7 +21,6 @@ public:
   ~Branch2();
 
 public:
-  bool enabled;
   Mode mode;
   uint64_t min_free_space;
   int fd;
