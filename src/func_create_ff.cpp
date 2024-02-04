@@ -60,7 +60,7 @@ namespace l
             
             ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
-            return rv;
+            return 0;
           }
       }
 
