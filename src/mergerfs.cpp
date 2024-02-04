@@ -308,7 +308,10 @@ main(int    argc_,
 
   std::cout << data["branches"] << '\n';
 
-  
+  for(auto &branch : b)
+    {
+
+    }
 
   pause();
 
