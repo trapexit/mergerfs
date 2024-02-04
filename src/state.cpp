@@ -6,6 +6,6 @@ State state;
 
 State::State()
 {
-  create = 
+  create = std::make_unique<Func::CreateFF>();
 }
 
