@@ -31,7 +31,7 @@ namespace Func
   {
   public:
     CreateBase();
-    virtual ~CreateBase() {}
+    virtual ~CreateBase();
 
   public:
     virtual int operator()(Branches2        &branches_,
