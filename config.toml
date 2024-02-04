@@ -83,7 +83,9 @@ min-free-space = 123
 
 # TIER 0
 [[branches.tier]]
-func.create.policy = 'mfs'
+[branches.tier.func.create]
+policy.default = 'mfs'
+
 func.open.policy = 'ff'
 
 [[branches.tier.branch]]

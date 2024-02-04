@@ -306,6 +306,8 @@ main(int    argc_,
 
   Branches2 b(data["branches"]);
 
+  std::cout << b << '\n';
+
   pause();
 
   return 0;
