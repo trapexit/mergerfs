@@ -33,6 +33,6 @@ namespace Func
     virtual int operator(Branches2        &branches_,
                          char const       *fusepath,
                          mode_t const      mode,
-                         fuse_file_info_t *ffi) = 0;
+                         fuse_file_info_t *ffi);
   };
 }
