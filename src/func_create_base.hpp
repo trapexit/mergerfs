@@ -22,6 +22,8 @@
 
 #include "fuse.h"
 
+#include <sys/types.h>
+
 
 namespace Func
 {
