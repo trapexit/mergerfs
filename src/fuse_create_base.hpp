@@ -18,3 +18,10 @@
 
 #pragma once
 
+namespace
+{
+  class CreateBase
+  {
+
+  };
+}
