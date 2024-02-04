@@ -30,8 +30,8 @@ namespace Func
   class CreateBase
   {
   public:
-    CreateBase();
-    virtual ~CreateBase();
+    CreateBase() {};
+    virtual ~CreateBase() {};
 
   public:
     virtual int operator()(Branches2        &branches_,
