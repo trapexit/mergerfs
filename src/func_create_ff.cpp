@@ -1,5 +1,6 @@
 #include "func_create_ff.hpp"
 
+#include "fileinfo.hpp"
 #include "fs_info.hpp"
 #include "fs_open.hpp"
 #include "ugid.hpp"
