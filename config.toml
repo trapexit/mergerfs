@@ -85,8 +85,15 @@ min-free-space = 123
 [[branches.tier]]
 [branches.tier.func.create]
 policy.default = 'mfs'
+[[branches.tier.func.create.policy.overrides]]
+dir = 'foo/bar'
+policy = 'lus'
+[[branches.tier.func.create.policy.overrides]]
+dir = 'blah'
+policy = 'xyz'
 
-func.open.policy = 'ff'
+[branches.tier.func.mkdir]
+policy.default = 'mfs'
 
 [[branches.tier.branch]]
 enabled = true
