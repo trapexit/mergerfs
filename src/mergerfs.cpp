@@ -312,7 +312,7 @@ main(int    argc_,
     {
       for(auto &branch : branch_tier)
         {
-          
+          fmt::print("{}\n",branch.enabled);
         }
     }
 
