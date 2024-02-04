@@ -20,7 +20,7 @@
 
 #include "branches2.hpp"
 
-namespace
+namespace Func
 {
   class CreateBase
   {
