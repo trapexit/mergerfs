@@ -27,7 +27,7 @@ namespace Func
   {
   public:
     CreateFF();
-    virtual ~CreateFF() {};
+    ~CreateFF();
 
   public:
     virtual int operator(Branches2        &branches_,
