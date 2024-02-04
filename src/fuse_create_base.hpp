@@ -22,6 +22,14 @@ namespace
 {
   class CreateBase
   {
+  public:
+    CreateBase();
+    virtual ~CreateBase() {};
+
+  public:
+    virtual int operator(char const       *fusepath,
+                         mode_t const      mode,
+                         fuse_file_info_t *ffi);
 
   };
 }
