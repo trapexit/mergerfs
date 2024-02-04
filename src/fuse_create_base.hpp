@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "branches2.hpp"
+
 namespace
 {
   class CreateBase
