@@ -19,8 +19,8 @@ public:
   std::vector<Branch2>::iterator begin() { return _branches.begin(); }
   std::vector<Branch2>::iterator end() { return _branches.end(); }
 
-  std::vector<Branch2>::iterator begin() const { return _branches.cbegin(); }
-  std::vector<Branch2>::iterator end() const { return _branches.cend(); }
+  std::vector<Branch2>::iterator begin() const { return _branches.begin(); }
+  std::vector<Branch2>::iterator end() const { return _branches.end(); }
   
 
 private:
