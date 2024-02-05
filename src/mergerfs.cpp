@@ -309,10 +309,10 @@ main(int    argc_,
   fuse_file_info_t ffi;
   Branches2 branches(data["branches"]);
 
-  state.create(branches,
-               "",
-               O_RDWR,
-               &ffi);
+  (*state.create)(branches,
+                  "",
+                  O_RDWR,
+                  &ffi);
 
   std::cout << data["branches"] << '\n';
 
