@@ -10,4 +10,3 @@ State::State()
 {
   create = std::make_unique<Func::CreateFF>();
 }
-
