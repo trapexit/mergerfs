@@ -24,11 +24,11 @@ namespace l
 {
   static
   int
-  create(Branches2        &branches_,
-         char const       *fusepath_,
-         mode_t const      mode_,
-         mode_t const      umask_,
-         fuse_file_info_t *ffi_)
+  create(Branches2                   &branches_,
+         ghc::filesystem::path const &fusepath_,
+         mode_t const                 mode_,
+         mode_t const                 umask_,
+         fuse_file_info_t            *ffi_)
   {
     int rv;
     FileInfo *fi;
