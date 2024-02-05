@@ -308,6 +308,8 @@ main(int    argc_,
 
   Branches2 branches(data["branches"]);
 
+  state.create;
+
   std::cout << data["branches"] << '\n';
 
   for(auto &branch_tier : branches)
