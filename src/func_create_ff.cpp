@@ -31,6 +31,7 @@ namespace l
          fuse_file_info_t *ffi_)
   {
     int rv;
+    FileInfo *fi;    
     fs::info_t info;
 
     for(auto &tier : branches_)
@@ -61,7 +62,7 @@ namespace l
                 continue;
               }
 
-            FileInfo *fi = new FileInfo(rv,fusepath_,ffi_->direct_io);
+            fi = new FileInfo(rv,fusepath_,ffi_->direct_io);
             
             ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
