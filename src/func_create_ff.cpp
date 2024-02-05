@@ -66,7 +66,7 @@ namespace l
                 continue;
               }
 
-            fi = new FileInfo(rv,fusepath_.string(),ffi_->direct_io);
+            fi = new FileInfo(rv,fusepath_.string().c_str(),ffi_->direct_io);
 
             ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
