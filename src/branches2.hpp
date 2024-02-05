@@ -23,6 +23,8 @@ public:
 public:
   std::vector<BranchTier>::iterator begin() { return _branches.begin(); }
   std::vector<BranchTier>::iterator end() { return _branches.end(); }
+  std::vector<BranchTier>::const_iterator begin() const { return _branches.begin(); }
+  std::vector<BranchTier>::const_iterator end() const { return _branches.end(); }  
 
 private:
   std::vector<BranchTier> _branches;
