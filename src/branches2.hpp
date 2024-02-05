@@ -17,8 +17,8 @@ public:
   uint64_t min_free_space;
 
 public:
-  int clonepath(ghc::filesystem::path &basepath,
-                ghc::filesystem::path &fusepath);
+  int clonepath(ghc::filesystem::path basepath,
+                ghc::filesystem::path fusepath);
 
 public:
   std::vector<BranchTier>::iterator begin() { return _branches.begin(); }
