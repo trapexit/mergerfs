@@ -26,7 +26,7 @@
 #include <sys/types.h>
 
 
-namespace Func
+namespace Func2
 {
   class CreateBase
   {
