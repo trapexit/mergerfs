@@ -54,7 +54,7 @@ namespace l
             fullpath = branch.path / fusepath_;
 
             if(!fs::acl::dir_has_defaults(fullpath))
-              mode_ &= ~umask_;
+              mode &= ~umask_;
 
             rv = fs::open(fullpath,ffi_->flags,mode_);
             if((rv == -1) && (errno == ENOENT))
