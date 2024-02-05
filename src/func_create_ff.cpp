@@ -56,6 +56,11 @@ namespace l
               mode_ &= ~umask_;
 
             rv = fs::open(fullpath,ffi_->flags,mode_);
+            if((rv == -1) && (errno == ENOENT))
+              {
+                branches_->clonepath(branch.path,fusepath_);
+                rv = fs::open(fullpath,ffi_->flags,mode_);                
+              }
             if((rv == -1) && (errno == EROFS))
               {
                 branch.mode = Branch2::Mode::RO;
