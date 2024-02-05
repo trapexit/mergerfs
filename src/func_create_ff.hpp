@@ -21,7 +21,7 @@
 #include "func_create_base.hpp"
 
 
-namespace Func
+namespace Func2
 {
   class CreateFF final : public Func::CreateBase
   {
