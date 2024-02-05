@@ -31,6 +31,7 @@ namespace l
   {
     int rv;
     fs::info_t info;
+    Config::Read cfg;
 
     for(auto &tier : branches_)
       {
