@@ -1,5 +1,7 @@
 #include "branches2.hpp"
 
+#include "fs_clonepath.hpp"
+
 #include "fmt/core.h"
 
 #include <iostream>
