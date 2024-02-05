@@ -303,6 +303,7 @@ int
 main(int    argc_,
      char **argv_)
 {
+  State state;
   auto data = toml::parse<toml::preserve_comments>("config.toml");
 
   Branches2 branches(data["branches"]);
