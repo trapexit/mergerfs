@@ -31,7 +31,7 @@ namespace l
          fuse_file_info_t            *ffi_)
   {
     int rv;
-    mode_t mode;    
+    mode_t mode;
     FileInfo *fi;
     fs::info_t info;
     ghc::filesystem::path fullpath;
