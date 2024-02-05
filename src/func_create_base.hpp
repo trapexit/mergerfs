@@ -19,6 +19,7 @@
 #pragma once
 
 #include "branches2.hpp"
+#include "fs_path.hpp"
 
 #include "fuse.h"
 
