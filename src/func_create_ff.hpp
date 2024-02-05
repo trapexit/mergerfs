@@ -23,7 +23,7 @@
 
 namespace Func2
 {
-  class CreateFF final : public Func::CreateBase
+  class CreateFF final : public Func2::CreateBase
   {
   public:
     CreateFF();
