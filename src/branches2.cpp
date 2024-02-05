@@ -32,8 +32,9 @@ Branches2::clonepath(ghc::filesystem::path basepath_,
           if(branch.path == basepath_)
             continue;
           rv = fs::clonepath(branch.path,basepath_,relpath_);
-          if(rv == 0)
-            return 0;
+          if(rv < 0)
+            continue;
+          return 0;
         }
     }
 
