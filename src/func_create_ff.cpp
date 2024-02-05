@@ -81,6 +81,8 @@ Func::CreateFF::operator()(Branches2        &branches_,
   ugid::Set const ugid(fc->uid,fc->gid);
 
   utils::cfg_to_ffi_flags(cfg,fc->pid,ffi_);
+  if(cfg->writeback_cache)
+    utils::tweak_flags_writeback_cache(&ffi_->flags);
   
   rv = l::create(branches_,fusepath_,mode_,fc->umask,ffi_);
 
