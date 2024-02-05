@@ -81,10 +81,10 @@ namespace l
 }
 
 int
-Func2::CreateFF::operator()(Branches2                   &branches_,
-                            ghc::filesystem::path const &fusepath_,
-                            mode_t const                 mode_,
-                            fuse_file_info_t            *ffi_)
+Func2::CreateFF::operator()(Branches2        &branches_,
+                            fs::Path const   &fusepath_,
+                            mode_t const      mode_,
+                            fuse_file_info_t *ffi_)
 {
   int rv;
   Config::Read cfg;
