@@ -306,9 +306,13 @@ main(int    argc_,
   State state;
   auto data = toml::parse<toml::preserve_comments>("config.toml");
 
+  fuse_file_info_t ffi;
   Branches2 branches(data["branches"]);
 
-  state.create;
+  state.create(branches,
+               "",
+               O_RDWR,
+               &ffi);
 
   std::cout << data["branches"] << '\n';
 
