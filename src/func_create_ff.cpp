@@ -34,7 +34,7 @@ namespace l
     mode_t mode;
     FileInfo *fi;
     fs::info_t info;
-    ghc::filesystem::path fullpath;
+    fs::Path fullpath;
 
     mode = mode_;
     for(auto &tier : branches_)
