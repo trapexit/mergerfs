@@ -8,5 +8,5 @@ State state;
 
 State::State()
 {
-  create = std::make_unique<Func2::CreateFF>();
+  auto f = std::make_unique<Func2::CreateFF>();
 }
