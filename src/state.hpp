@@ -12,5 +12,5 @@ public:
   Branches2 branches;
 
 public:
-  Func::Create create;
+  Func2::Create create;
 };
