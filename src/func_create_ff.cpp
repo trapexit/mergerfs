@@ -31,7 +31,7 @@ namespace l
          fuse_file_info_t *ffi_)
   {
     int rv;
-    FileInfo *fi;    
+    FileInfo *fi;
     fs::info_t info;
 
     for(auto &tier : branches_)
@@ -63,7 +63,7 @@ namespace l
               }
 
             fi = new FileInfo(rv,fusepath_,ffi_->direct_io);
-            
+
             ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
             return 0;
@@ -89,7 +89,7 @@ Func::CreateFF::operator()(Branches2        &branches_,
   if(cfg->writeback_cache)
     utils::tweak_flags_writeback_cache(&ffi_->flags);
   ffi_->noflush = !utils::calculate_flush(cfg->flushonclose,ffi_->flags);
-  
+
   rv = l::create(branches_,fusepath_,mode_,fc->umask,ffi_);
 
   return rv;
