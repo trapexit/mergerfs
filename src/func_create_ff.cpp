@@ -10,12 +10,12 @@
 #include <errno.h>
 
 
-Func::CreateFF::CreateFF()
+Func2::CreateFF::CreateFF()
 {
 
 }
 
-Func::CreateFF::~CreateFF()
+Func2::CreateFF::~CreateFF()
 {
 
 }
@@ -24,11 +24,11 @@ namespace l
 {
   static
   int
-  create(Branches2                   &branches_,
-         ghc::filesystem::path const &fusepath_,
-         mode_t const                 mode_,
-         mode_t const                 umask_,
-         fuse_file_info_t            *ffi_)
+  create(Branches2        &branches_,
+         fs::Path const   &fusepath_,
+         mode_t const      mode_,
+         mode_t const      umask_,
+         fuse_file_info_t *ffi_)
   {
     int rv;
     mode_t mode;
@@ -81,10 +81,10 @@ namespace l
 }
 
 int
-Func::CreateFF::operator()(Branches2                   &branches_,
-                           ghc::filesystem::path const &fusepath_,
-                           mode_t const                 mode_,
-                           fuse_file_info_t            *ffi_)
+Func2::CreateFF::operator()(Branches2                   &branches_,
+                            ghc::filesystem::path const &fusepath_,
+                            mode_t const                 mode_,
+                            fuse_file_info_t            *ffi_)
 {
   int rv;
   Config::Read cfg;
