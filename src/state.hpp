@@ -12,5 +12,5 @@ public:
   Branches2 branches;
 
 public:
-  std::unique_ptr<Func::CreateBase> create;
+  Func::Create create;
 };
