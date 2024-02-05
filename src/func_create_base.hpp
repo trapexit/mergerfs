@@ -34,9 +34,9 @@ namespace Func
     virtual ~CreateBase() {};
 
   public:
-    virtual int operator()(Branches2        &branches_,
-                           char const       *fusepath,
-                           mode_t const      mode,
+    virtual int operator()(Branches2                   &branches,
+                           ghc::filesystem::path const &fusepath,
+                           mode_t const                 mode,
                            fuse_file_info_t *ffi) = 0;
   };
 }
