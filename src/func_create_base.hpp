@@ -38,6 +38,6 @@ namespace Func
     virtual int operator()(Branches2        &branches,
                            fs::Path const   &fusepath,
                            mode_t const      mode,
-                           fuse_file_info_t *ffi)
+                           fuse_file_info_t *ffi) = 0;
   };
 }
