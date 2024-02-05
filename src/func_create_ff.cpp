@@ -83,6 +83,7 @@ Func::CreateFF::operator()(Branches2        &branches_,
   utils::cfg_to_ffi_flags(cfg,fc->pid,ffi_);
   if(cfg->writeback_cache)
     utils::tweak_flags_writeback_cache(&ffi_->flags);
+  ffi_->noflush = !utils::calculate_flush(cfg->flushonclose,ffi_->flags);
   
   rv = l::create(branches_,fusepath_,mode_,fc->umask,ffi_);
 
