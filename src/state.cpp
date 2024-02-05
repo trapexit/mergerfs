@@ -10,5 +10,5 @@ State::State()
 {
   auto f = std::make_unique<Func2::CreateFF>();
 
-  create = f;
+  create = std::move(f);
 }
