@@ -21,7 +21,6 @@
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
-#include "procfs_get_name.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
