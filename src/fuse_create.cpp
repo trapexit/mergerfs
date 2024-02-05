@@ -123,10 +123,10 @@ namespace FUSE
     utils::cfg_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
-      cfg::tweak_flags_writeback_cache(&ffi_->flags);
+      utils::tweak_flags_writeback_cache(&ffi_->flags);
 
-    ffi_->noflush = !cfg::calculate_flush(cfg->flushonclose,
-                                          ffi_->flags);
+    ffi_->noflush = !utils::calculate_flush(cfg->flushonclose,
+                                            ffi_->flags);
 
     rv = l::create(cfg->func.getattr.policy,
                    cfg->func.create.policy,
