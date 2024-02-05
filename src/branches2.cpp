@@ -18,3 +18,12 @@ Branches2::Branches2(toml::value const &v_)
       _branches.emplace_back(tier);
     }
 }
+
+int
+Branches2::clonepath(ghc::filesystem::path basepath_,
+                     ghc::filesystem::path relpath_)
+{
+  
+
+  return 0;
+}
