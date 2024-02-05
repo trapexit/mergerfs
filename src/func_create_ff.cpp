@@ -77,9 +77,12 @@ Func::CreateFF::operator()(Branches2        &branches_,
                            fuse_file_info_t *ffi_)
 {
   int rv;
+  Config::Read cfg;
   fuse_context const *fc = fuse_get_context();
   ugid::Set const ugid(fc->uid,fc->gid);
 
+  utils::cfg_to_ffi_flags(cfg,fc->pid,ffi_);
+  
   rv = l::create(branches_,fusepath_,mode_,fc->umask,ffi_);
 
   return rv;
