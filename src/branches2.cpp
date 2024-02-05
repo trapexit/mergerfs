@@ -38,5 +38,6 @@ Branches2::clonepath(ghc::filesystem::path basepath_,
         }
     }
 
-  return 0;
+  errno = ENOENT;
+  return -1;
 }
