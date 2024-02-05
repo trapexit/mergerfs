@@ -33,6 +33,7 @@ namespace l
     int rv;
     FileInfo *fi;
     fs::info_t info;
+    ghc::filesystem::path fullpath;
 
     for(auto &tier : branches_)
       {
@@ -47,8 +48,6 @@ namespace l
               continue;
             if(info.spaceavail < branch.min_free_space)
               continue;
-
-            ghc::filesystem::path fullpath;
 
             fullpath = branch.path / fusepath_;
 
