@@ -31,10 +31,12 @@ namespace l
          fuse_file_info_t            *ffi_)
   {
     int rv;
+    mode_t mode;    
     FileInfo *fi;
     fs::info_t info;
     ghc::filesystem::path fullpath;
 
+    mode = mode_;
     for(auto &tier : branches_)
       {
         for(auto &branch : tier)
@@ -51,8 +53,8 @@ namespace l
 
             fullpath = branch.path / fusepath_;
 
-            // if(!fs::acl::dir_has_defaults(fullpath))
-            //   mode_ &= ~umask_;
+            if(!fs::acl::dir_has_defaults(fullpath))
+              mode_ &= ~umask_;
 
             rv = fs::open(fullpath,ffi_->flags,mode_);
             if((rv == -1) && (errno == ENOENT))
