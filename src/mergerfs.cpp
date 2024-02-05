@@ -298,7 +298,6 @@ namespace l
   }
 }
 
-#include "state.hpp"
 
 int
 main(int    argc_,
