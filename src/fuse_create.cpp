@@ -22,6 +22,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "ugid.hpp"
+#include "func_open_create_utils.hpp"
 
 #include "fuse.h"
 
