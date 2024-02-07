@@ -45,7 +45,11 @@ namespace fs
     dir_has_defaults(const int                    fd_,
                      const ghc::filesystem::path &relpath_)
     {
+      int rv;
 
+      rv = fs::fgetxattr(fd_,relpath_.c_str(),POSIX_ACL_DEFAULT_XATTR,NULL,0);
+
+      return (rv != -1);
     }
   }
 }
