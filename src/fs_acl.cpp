@@ -49,7 +49,7 @@ namespace fs
       int fd;
 
       fd = fs::openat(fd_,relpath_.parent_path().string(),O_RDONLY);
-                      
+      
 
       rv = fs::fgetxattr(fd_,relpath_.c_str(),POSIX_ACL_DEFAULT_XATTR,NULL,0);
 
