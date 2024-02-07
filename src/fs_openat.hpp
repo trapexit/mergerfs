@@ -38,4 +38,19 @@ namespace fs
 
     return ((rv == -1) ? -errno : rv);
   }
+
+  static
+  inline
+  int
+  openat(const int     dirfd_,
+         const char   *pathname_,
+         const int     flags_,
+         const mode_t  mode_)
+  {
+    int rv;
+
+    rv = ::openat(dirfd_,pathname_,flags_);
+
+    return ((rv == -1) ? -errno : rv);
+  }
 }
