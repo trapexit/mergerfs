@@ -49,7 +49,7 @@ namespace fs
   {
     int rv;
 
-    rv = ::openat(dirfd_,pathname_,flags_);
+    rv = ::openat(dirfd_,pathname_,flags_,mode_);
 
     return ((rv == -1) ? -errno : rv);
   }
