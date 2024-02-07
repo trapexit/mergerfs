@@ -16,6 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_close.hpp"
 #include "fs_fgetxattr.hpp"
 #include "fs_lgetxattr.hpp"
 #include "fs_openat.hpp"
