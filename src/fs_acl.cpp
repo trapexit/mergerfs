@@ -44,7 +44,7 @@ namespace fs
     }
 
     bool
-    dir_has_defaults(const int                    fd_,
+    dir_has_defaults(const int                    dirfd_,
                      const ghc::filesystem::path &relpath_)
     {
       int rv;
