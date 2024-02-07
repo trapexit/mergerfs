@@ -56,7 +56,7 @@ namespace l
             if(!fs::acl::dir_has_defaults(fullpath))
               mode &= ~umask_;
 
-            rv = fs::open(fullpath,ffi_->flags,mode);
+            rv = fs::openat(branch.fd,fusepath_,ffi_->flags,mode);
             if((rv == -1) && (errno == ENOENT))
               {
                 branches_.clonepath(branch.path,fusepath_);
