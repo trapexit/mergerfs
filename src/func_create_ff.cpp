@@ -4,6 +4,7 @@
 #include "fs_acl.hpp"
 #include "fs_info.hpp"
 #include "fs_open.hpp"
+#include "fs_openat.hpp"
 #include "func_open_create_utils.hpp"
 #include "ugid.hpp"
 
