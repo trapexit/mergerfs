@@ -56,6 +56,8 @@ namespace fs
 
       rv = fs::fgetxattr(fd,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 
+      fs::close(fd);
+
       return (rv != -1);
     }
   }
