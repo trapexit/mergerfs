@@ -64,10 +64,6 @@ namespace fs
          const int                    flags_,
          const mode_t                 mode_)
   {
-    int rv;
-
-    rv = ::openat(dirfd_,pathname_,flags_,mode_);
-
-    return ((rv == -1) ? -errno : rv);
+    return fs::openat(dirfd_,pathname_.string().c_str(),flags_,mode_);
   }
 }
