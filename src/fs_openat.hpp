@@ -59,10 +59,10 @@ namespace fs
   static
   inline
   int
-  openat(const int     dirfd_,
-         const char   *pathname_,
-         const int     flags_,
-         const mode_t  mode_)
+  openat(const int                    dirfd_,
+         const ghc::filesystem::path &pathname_,
+         const int                    flags_,
+         const mode_t                 mode_)
   {
     int rv;
 
