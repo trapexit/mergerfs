@@ -65,7 +65,7 @@ namespace fs
   {
     return fs::openat(dirfd_,pathname_.string().c_str(),flags_);
   }
-  
+
   static
   inline
   int
