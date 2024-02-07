@@ -21,6 +21,8 @@
 #include "errno.hpp"
 #include "xattr.hpp"
 
+#include "ghc/filesystem.hpp"
+
 #include <string>
 
 #include <sys/types.h>
