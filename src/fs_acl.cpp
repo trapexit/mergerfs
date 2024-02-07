@@ -40,5 +40,12 @@ namespace fs
 
       return (rv != -1);
     }
+
+    bool
+    dir_has_defaults(const int                    fd_,
+                     const ghc::filesystem::path &relpath_)
+    {
+
+    }
   }
 }
