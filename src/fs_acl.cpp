@@ -54,7 +54,7 @@ namespace fs
       if(fd < 0)
         return false;
 
-      rv = fs::fgetxattr(fd_,relpath_,POSIX_ACL_DEFAULT_XATTR,NULL,0);
+      rv = fs::fgetxattr(fd,relpath_,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 
       return (rv != -1);
     }
