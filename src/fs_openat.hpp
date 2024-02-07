@@ -61,6 +61,16 @@ namespace fs
   int
   openat(const int                    dirfd_,
          const ghc::filesystem::path &pathname_,
+         const int                    flags_)
+  {
+    return fs::openat(dirfd_,pathname_.string().c_str(),flags_);
+  }
+  
+  static
+  inline
+  int
+  openat(const int                    dirfd_,
+         const ghc::filesystem::path &pathname_,
          const int                    flags_,
          const mode_t                 mode_)
   {
