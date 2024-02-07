@@ -50,7 +50,7 @@ namespace fs
       int rv;
       int fd;
 
-      fd = fs::openat(fd_,relpath_.parent_path(),O_RDONLY);
+      fd = fs::openat(fd_,relpath_.parent_path(),O_RDONLY|O_DIRECTORY);
       if(fd < 0)
         return false;
 
