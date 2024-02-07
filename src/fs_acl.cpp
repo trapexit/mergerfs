@@ -48,10 +48,11 @@ namespace fs
       int rv;
       int fd;
 
-      fd = fs::openat(fd_,relpath_.parent_path().string(),O_RDONLY);
-      
+      fd = fs::openat(fd_,relpath_.parent_path(),O_RDONLY);
+      if(fd < 0)
+        return false;
 
-      rv = fs::fgetxattr(fd_,relpath_.c_str(),POSIX_ACL_DEFAULT_XATTR,NULL,0);
+      rv = fs::fgetxattr(fd_,relpath_,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 
       return (rv != -1);
     }
