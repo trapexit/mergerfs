@@ -54,9 +54,6 @@ BranchTier::BranchTier()
 
 BranchTier::BranchTier(BranchTier &bt_)
 {
-  Branch2 b;
-  Branch2 c;
-
 
 }
 
