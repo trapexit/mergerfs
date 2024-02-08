@@ -72,7 +72,7 @@ BranchTier::BranchTier(toml::value const &v_)
 }
 
 void
-BranchTier::copy_enabled_rw(BranchTier &bt_)
+BranchTier::copy_enabled_rw(BranchTier &bt_) const
 {
   for(auto const &b : _branches)
     {
