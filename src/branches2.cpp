@@ -27,7 +27,7 @@ void
 Branches2::copy_enabled_rw(Branches2 &b_)
 {
   _branches.resize(b_._branches.size());
-  for(auto const &bt : _branches)
+  for(auto &bt : _branches)
     {
       BranchTier newbt;
 
