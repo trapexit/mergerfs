@@ -13,6 +13,9 @@ public:
   BranchTier(toml::value const &);
 
 public:
+  void copy_enabled_rw(BranchTier&);
+
+public:
   uint64_t min_free_space;
 
 public:
