@@ -80,6 +80,6 @@ BranchTier::copy_enabled_rw(BranchTier &bt_)
         continue;
       if(b.mode != +Branch2::Mode::RW)
         continue;
-      bt_.emplace_back(b);
+      bt_._branches.emplace_back(b);
     }
 }
