@@ -28,13 +28,9 @@ Branches2::copy_enabled_rw(Branches2 &b_) const
 {
   if(b_._branches.size() < _branches.size())
     b_._branches.resize(_branches.size());
-  
-  for(auto &bt : )
-    {
-      BranchTier newbt;
 
-      bt.copy_enabled_rw(newbt);
-    }
+  for(int i = 0; i < _branches.size(); i++)
+    _branches[i].copy_enabled_rw(b_._branches[i]);
 }
 
 int
