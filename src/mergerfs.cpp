@@ -310,6 +310,7 @@ main(int    argc_,
   Branches2 branches(data["branches"]);
 
   Branch2 b,c;
+  b = c;
   
   state.create(branches,
                "",
