@@ -18,6 +18,16 @@ Branch2::Branch2()
 
 }
 
+Branch2::Branch2(Branch2 &v_)
+  : enabled(v_.enabled),
+    mode(v_.mode),
+    min_free_space(v_.min_free_space),
+    fd(v_.fd),
+    path(v_.path)
+{
+  v_.fd = -1;
+}
+
 Branch2::Branch2(Branch2 &&v_)
   : enabled(v_.enabled),
     mode(v_.mode),
