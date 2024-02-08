@@ -92,6 +92,8 @@ Func2::CreateFF::operator()(Branches2        &branches_,
   fuse_context const *fc = fuse_get_context();
   ugid::Set const ugid(fc->uid,fc->gid);
 
+  Branches2 b = branches_;
+
   utils::cfg_to_ffi_flags(cfg,fc->pid,ffi_);
   if(cfg->writeback_cache)
     utils::tweak_flags_writeback_cache(&ffi_->flags);
