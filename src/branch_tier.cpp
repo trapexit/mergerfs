@@ -54,8 +54,11 @@ BranchTier::BranchTier()
 
 BranchTier::BranchTier(BranchTier &bt_)
 {
-  for(auto cosnt &b : bt_._branches)
-    _branches.emplace_back(b);
+  Branch2 b;
+
+  b = bt_._branches[0];
+  
+
 }
 
 BranchTier::BranchTier(toml::value const &v_)
