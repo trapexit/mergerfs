@@ -28,6 +28,7 @@ Branches2::copy_enabled_rw(Branches2 &b_) const
 {
   if(b_._branches.size() < _branches.size())
     b_._branches.resize(_branches.size());
+  
   for(auto &bt : )
     {
       BranchTier newbt;
