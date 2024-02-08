@@ -24,10 +24,11 @@ Branches2::Branches2(toml::value const &v_)
 }
 
 void
-Branches2::copy_enabled_rw(Branches2 &b_)
+Branches2::copy_enabled_rw(Branches2 &b_) const
 {
-  _branches.resize(b_._branches.size());
-  for(auto &bt : _branches)
+  if(b_._branches.size() < _branches.size())
+    b_._branches.resize(_branches.size());
+  for(auto &bt : )
     {
       BranchTier newbt;
 
