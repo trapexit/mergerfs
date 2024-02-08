@@ -10,7 +10,6 @@ class BranchTier
 {
 public:
   BranchTier();
-  BranchTier(BranchTier &);
   BranchTier(toml::value const &);
 
 public:
