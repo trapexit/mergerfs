@@ -28,7 +28,7 @@ Branches2::clonepath(ghc::filesystem::path basepath_,
                      ghc::filesystem::path relpath_)
 {
   int rv;
-  
+
   for(auto const &tier : _branches)
     {
       for(auto const &branch : tier)
