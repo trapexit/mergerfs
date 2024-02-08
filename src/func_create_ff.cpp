@@ -16,6 +16,11 @@ Func2::CreateFF::CreateFF()
 
 }
 
+Func2::CreateFF::CreateFF(toml::value const &v_)
+{
+
+}
+
 Func2::CreateFF::~CreateFF()
 {
 
