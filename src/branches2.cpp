@@ -23,6 +23,15 @@ Branches2::Branches2(toml::value const &v_)
     }
 }
 
+void
+Branches2::copy_enabled_rw(Branches &b_)
+{
+  for(auto const &bt : _branches)
+    {
+
+    }
+}
+
 int
 Branches2::clonepath(ghc::filesystem::path basepath_,
                      ghc::filesystem::path relpath_)
