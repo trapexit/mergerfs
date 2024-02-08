@@ -31,7 +31,7 @@ Branches2::copy_enabled_rw(Branches2 &b_)
     {
       BranchTier newbt;
 
-      bt.copy_enabled_rw(newbt)
+      bt.copy_enabled_rw(newbt);
     }
 }
 
