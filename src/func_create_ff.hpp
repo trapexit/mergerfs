@@ -20,6 +20,8 @@
 
 #include "func_create_base.hpp"
 
+#include "toml11.hpp"
+
 
 namespace Func2
 {
@@ -27,6 +29,7 @@ namespace Func2
   {
   public:
     CreateFF();
+    CreateFF(toml::value const &);
     ~CreateFF();
 
   public:
