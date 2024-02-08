@@ -14,8 +14,8 @@ public:
   Branches2(toml::value const &);
 
 public:
-  uint64_t min_free_space;
-
+  void copy_enabled_rw(Branches2 &);
+  
 public:
   int clonepath(ghc::filesystem::path basepath,
                 ghc::filesystem::path fusepath);
@@ -25,7 +25,10 @@ public:
   std::vector<BranchTier>::iterator end() { return _branches.end(); }
   std::vector<BranchTier>::const_iterator begin() const { return _branches.begin(); }
   std::vector<BranchTier>::const_iterator end() const { return _branches.end(); }
-
+  
+public:
+  uint64_t min_free_space;
+  
 private:
   std::vector<BranchTier> _branches;
 };
