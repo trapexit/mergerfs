@@ -20,6 +20,7 @@ public:
   Branch2(Branch2 &&);
   Branch2(toml::value const &);
   ~Branch2();
+  Branch2& operator=(Branch2 const &);
 
 public:
   bool enabled;
