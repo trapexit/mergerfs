@@ -57,3 +57,10 @@ Branch2::~Branch2()
   if(fd >= 0)
     close(fd);
 }
+
+Branch2&
+Branch2::operator=(Branch2 const &b_)
+{
+
+  return *this;
+}
