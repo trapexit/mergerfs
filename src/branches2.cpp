@@ -24,7 +24,7 @@ Branches2::Branches2(toml::value const &v_)
 }
 
 void
-Branches2::copy_enabled_rw(Branches &b_)
+Branches2::copy_enabled_rw(Branches2 &b_)
 {
   for(auto const &bt : _branches)
     {
