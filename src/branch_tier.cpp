@@ -52,11 +52,6 @@ BranchTier::BranchTier()
 
 }
 
-BranchTier::BranchTier(BranchTier &bt_)
-{
-
-}
-
 BranchTier::BranchTier(toml::value const &v_)
 {
   auto const &branches = toml::find(v_,"branch").as_array();
