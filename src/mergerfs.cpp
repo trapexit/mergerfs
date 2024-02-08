@@ -309,6 +309,8 @@ main(int    argc_,
   fuse_file_info_t ffi;
   Branches2 branches(data["branches"]);
 
+  Branch2 b,c;
+  
   state.create(branches,
                "",
                O_RDWR,
