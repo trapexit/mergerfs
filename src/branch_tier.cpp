@@ -78,7 +78,7 @@ BranchTier::copy_enabled_rw(BranchTier &bt_)
     {
       if(b.enabled == false)
         continue;
-      if(b.mode != Branch2::Mode::RW)
+      if(b.mode != +Branch2::Mode::RW)
         continue;
       bt_.emplace_back(b);
     }
