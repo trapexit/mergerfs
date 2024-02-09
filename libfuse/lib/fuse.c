@@ -177,6 +177,19 @@ static pthread_key_t fuse_context_key;
 static pthread_mutex_t fuse_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static int fuse_context_ref;
 
+static
+int
+fuse_valid_type(uint32_t const m_)
+{
+  return (S_ISREG(m_)  ||
+          S_ISDIR(m_)  ||
+          S_ISLNK(m_)  ||
+          S_ISCHR(m_)  ||
+          S_ISBLK(m_)  ||
+          S_ISFIFO(m_) ||
+          S_ISSOCK(m_));
+}
+
 /*
   Why was the nodeid:generation logic simplified?
 
@@ -1696,6 +1709,13 @@ fuse_lib_getattr(fuse_req_t             req,
       free_path(f,hdr_->nodeid,path);
     }
 
+  if(buf.st_size > LLONG_MAX)
+    syslog(LOG_ERR,"%s: %zu size > LLONG_MAX %zu",__FUNCTION__,hdr_->nodeid,buf.st_size);
+  if(!fuse_valid_type(buf.st_mode))
+    syslog(LOG_ERR,"%s: %zu invalid type %x",__FUNCTION__,hdr_->nodeid,buf.st_mode);
+  if(hdr_->nodeid == FUSE_ROOT_ID && !S_ISDIR(buf.st_mode))
+    syslog(LOG_ERR,"%s: rootid not type DIR %x",__FUNCTION__,buf.st_mode);
+
   if(!err)
     {
       pthread_mutex_lock(&f->lock);
@@ -1816,6 +1836,14 @@ fuse_lib_setattr(fuse_req_t             req,
         err = ((fi == NULL) ?
                f->fs->op.getattr(path,&stbuf,&timeout) :
                f->fs->op.fgetattr(fi,&stbuf,&timeout));
+
+      if(stbuf.st_size > LLONG_MAX)
+        syslog(LOG_ERR,"%s: %zu size > LLONG_MAX %zu",__FUNCTION__,hdr_->nodeid,stbuf.st_size);
+      if(!fuse_valid_type(stbuf.st_mode))
+        syslog(LOG_ERR,"%s: %zu invalid type %x",__FUNCTION__,hdr_->nodeid,stbuf.st_mode);
+      if(hdr_->nodeid == FUSE_ROOT_ID && !S_ISDIR(stbuf.st_mode))
+        syslog(LOG_ERR,"%s: rootid not type DIR %x",__FUNCTION__,stbuf.st_mode);
+
 
       free_path(f,hdr_->nodeid,path);
     }
