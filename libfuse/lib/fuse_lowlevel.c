@@ -19,15 +19,16 @@
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
 
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
 #include <string.h>
-#include <unistd.h>
-#include <limits.h>
-#include <errno.h>
-#include <assert.h>
 #include <sys/file.h>
+#include <syslog.h>
+#include <unistd.h>
 
 #ifndef F_LINUX_SPECIFIC_BASE
 #define F_LINUX_SPECIFIC_BASE       1024
@@ -320,6 +321,19 @@ fuse_reply_create(fuse_req_t                     req,
   return send_reply_ok(req, &buf, entrysize + sizeof(struct fuse_open_out));
 }
 
+static
+int
+fuse_valid_type(uint32_t const m_)
+{
+  return (S_ISREG(m_)  ||
+          S_ISDIR(m_)  ||
+          S_ISLNK(m_)  ||
+          S_ISCHR(m_)  ||
+          S_ISBLK(m_)  ||
+          S_ISFIFO(m_) ||
+          S_ISSOCK(m_));
+}
+
 int
 fuse_reply_attr(fuse_req_t         req,
                 const struct stat *attr,
@@ -332,6 +346,11 @@ fuse_reply_attr(fuse_req_t         req,
   arg.attr_valid      = timeout;
   arg.attr_valid_nsec = 0;
   convert_stat(attr,&arg.attr);
+
+  if(arg.attr.size > LLONG_MAX)
+    syslog(LOG_ERR,"fuse_reply_attr: attr.size > LLONG_MAX");
+  if(!fuse_valid_type(arg.attr.mode))
+    syslog(LOG_ERR,"fuse_reply_attr: invalid type %x",arg.attr.mode);
 
   return send_reply_ok(req,&arg,size);
 }
