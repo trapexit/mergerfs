@@ -106,7 +106,10 @@ namespace l
     int rv;
     string fullpath;
     StrVec basepaths;
+    thread_local static std::unordered_map<std::string,std::string> cache;
 
+    rv =
+    
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
