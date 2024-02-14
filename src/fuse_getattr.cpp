@@ -99,7 +99,7 @@ namespace l
           struct stat          *st_)
   {
     int rv;
-    
+
     switch(followsymlinks_)
       {
       case FollowSymlinks::ENUM::NEVER:
@@ -124,7 +124,7 @@ namespace l
 
     return rv;
   }
-  
+
   static
   int
   getattr(const Policy::Search &searchFunc_,
