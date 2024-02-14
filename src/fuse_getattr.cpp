@@ -94,6 +94,14 @@ namespace l
 
   static
   int
+  getattr(std::string const &fullpath_,
+          struct stat       *st_)
+  {
+
+  }
+  
+  static
+  int
   getattr(const Policy::Search &searchFunc_,
           const Branches       &branches_,
           const char           *fusepath_,
