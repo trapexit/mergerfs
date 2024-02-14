@@ -94,8 +94,9 @@ namespace l
 
   static
   int
-  getattr(std::string const &fullpath_,
-          struct stat       *st_)
+  getattr(std::string const    &fullpath_,
+          FollowSymlinks const  followsymlinks_)
+          struct stat          *st_)
   {
 
   }
