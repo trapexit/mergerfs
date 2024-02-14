@@ -117,7 +117,7 @@ namespace l
         i = cache.insert({fusepath_,basepaths[0]});
       }
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(i->second,fusepath_);
 
     switch(followsymlinks_)
       {
