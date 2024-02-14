@@ -173,6 +173,14 @@ namespace l
                     cfg->symlinkify,
                     cfg->symlinkify_timeout,
                     cfg->follow_symlinks);
+    if(rv == -ENOENT)
+      rv = l::getattr(cfg->func.getattr.policy,
+                      cfg->branches,
+                      fusepath_,
+                      st_,
+                      cfg->symlinkify,
+                      cfg->symlinkify_timeout,
+                      cfg->follow_symlinks);
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :
