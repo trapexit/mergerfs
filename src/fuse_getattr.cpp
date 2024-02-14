@@ -98,6 +98,8 @@ namespace l
           FollowSymlinks const  followsymlinks_)
           struct stat          *st_)
   {
+    int rv;
+    
     switch(followsymlinks_)
       {
       case FollowSymlinks::ENUM::NEVER:
@@ -119,6 +121,8 @@ namespace l
           rv = fs::lstat(fullpath,st_);
         break;
       }
+
+    return rv;
   }
   
   static
