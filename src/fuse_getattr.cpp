@@ -26,6 +26,7 @@
 #include "fuse.h"
 
 #include <string>
+#include <unordered_map>
 
 using std::string;
 
