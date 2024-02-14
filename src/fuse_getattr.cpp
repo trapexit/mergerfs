@@ -143,7 +143,10 @@ namespace l
       }
 
     if(rv == -1)
-      return -errno;
+      {
+        cache.erase(fusepath_);
+        return -errno;
+      }
 
     if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
       symlinkify::convert(fullpath,st_);
