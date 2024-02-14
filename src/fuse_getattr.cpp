@@ -107,6 +107,8 @@ namespace l
     StrVec basepaths;
     thread_local static std::unordered_map<std::string,std::string> cache;
 
+    auto i = cache.find(fusepath_);
+    
     rv = searchFunc_(branches_,fusepath_,&basepaths);
     if(rv == -1)
       return -errno;
