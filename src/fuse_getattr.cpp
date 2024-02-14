@@ -155,6 +155,8 @@ namespace l
         fullpath = fs::path::make(i->second,fusepath_);
 
         rv = l::getattr(fullpath,followsymlinks_,st_);
+        if(rv == 0)
+          break;
         if((rv == -1) && (errno != ENOENT))
           break;
 
