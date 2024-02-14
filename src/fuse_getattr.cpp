@@ -103,7 +103,7 @@ namespace l
           FollowSymlinks        followsymlinks_)
   {
     int rv;
-    string fullpath;
+    std::string fullpath;
     StrVec basepaths;
     thread_local static std::unordered_map<std::string,std::string> cache;
 
