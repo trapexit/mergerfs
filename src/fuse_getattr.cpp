@@ -140,25 +140,31 @@ namespace l
     StrVec basepaths;
     thread_local static std::unordered_map<std::string,std::string> cache;
 
-    auto i = cache.find(fusepath_);
-    if(i == cache.end())
+    for(int c = 0; c < 2; c++)
       {
-        rv = searchFunc_(branches_,fusepath_,&basepaths);
-        if(rv == -1)
-          return -errno;
+        auto i = cache.find(fusepath_);
+        if(i == cache.end())
+          {
+            rv = searchFunc_(branches_,fusepath_,&basepaths);
+            if(rv == -1)
+              return -errno;
 
-        auto rv = cache.insert({fusepath_,basepaths[0]});
-        i = rv.first;
+            auto rv = cache.insert({fusepath_,basepaths[0]});
+            i = rv.first;
+          }
+
+        fullpath = fs::path::make(i->second,fusepath_);
+
+        rv = l::getattr(fullpath,followsymlinks_,st_);
+        if((rv == -1) && (errno == ENOENT))
+          {
+            cache.erase(fusepath_);
+            continue;
+          }
       }
 
-    fullpath = fs::path::make(i->second,fusepath_);
-
-    rv = l::getattr(fullpath,followsymlinks_,st_);
     if(rv == -1)
-      {
-        cache.erase(fusepath_);
-        return -errno;
-      }
+      return -errno;
 
     if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
       symlinkify::convert(fullpath,st_);
