@@ -44,6 +44,7 @@ public:
     _cache.insert({key_,val_});
   }
 
+  const
   std::string*
   find(char const *key_)
   {
