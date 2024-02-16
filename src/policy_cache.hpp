@@ -29,7 +29,7 @@
 class PolicyCache
 {
 public:
-  typedef std::unordered_map<std::string,std::string> Map;
+  typedef boost::unordered_flat_map<std::string,std::string> Map;
 
 public:
   PolicyCache()
