@@ -18,31 +18,23 @@
 
 #pragma once
 
-#include "policy.hpp"
-#include "strvec.hpp"
+#include "nonstd/optional.hpp"
 
 #include <cstdint>
 #include <string>
 #include <unordered_map>
 
-#include <pthread.h>
-
 
 class PolicyCache
 {
 public:
-  PolicyCache(void);
+  PolicyCache();
 
 public:
+   insert
   void erase(const char *fusepath);
   void cleanup(const int prob = 1);
   void clear(void);
-
-public:
-  int operator()(const Policy::Search &policy,
-                 const Branches       &branches,
-                 const char           *fusepath,
-                 StrVec               *paths);
 
 private:
   unsigned _max_size;
