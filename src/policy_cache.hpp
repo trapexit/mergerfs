@@ -31,15 +31,6 @@
 class PolicyCache
 {
 public:
-  struct Value
-  {
-    Value();
-
-    uint64_t time;
-    StrVec   paths;
-  };
-
-public:
   PolicyCache(void);
 
 public:
@@ -58,5 +49,5 @@ public:
 
 private:
   pthread_mutex_t             _lock;
-  std::map<std::string,Value> _cache;
+  std::unordered_map<std::string,Value> _cache;
 };
