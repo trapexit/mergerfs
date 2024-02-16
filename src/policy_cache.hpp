@@ -40,6 +40,12 @@ public:
   {
     _cache.insert({key_,val_});
   }
+
+  std::string*
+  find(char const *key_)
+  {
+    auto i = _cache.find(key_);
+  }
   
   void
   erase(const char *key_)
@@ -47,9 +53,17 @@ public:
     _cache.erase(key_);
   }
 
+  void
+  cleanup()
+  {
     
-  void cleanup(const int prob = 1);
-  void clear(void);
+  }
+
+  void
+  clear()
+  {
+
+  }
 
 private:
   unsigned _max_size;
