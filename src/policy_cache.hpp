@@ -44,7 +44,9 @@ public:
   std::string*
   find(char const *key_)
   {
-    auto i = _cache.find(key_);
+    Map::const_iterator i;
+
+    i == _cache.find(key_);
   }
   
   void
