@@ -28,10 +28,20 @@
 class PolicyCache
 {
 public:
+  typedef std::unordered_map<std::string,std::string> Map;
+  
+public:
   PolicyCache();
 
 public:
-   insert
+  nonstd::optional<std::string>
+  insert(std::string const &key_,
+         std::string       &val_)
+  {
+    
+  }
+  
+  
   void erase(const char *fusepath);
   void cleanup(const int prob = 1);
   void clear(void);
