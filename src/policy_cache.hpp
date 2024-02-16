@@ -31,7 +31,10 @@ public:
   typedef std::unordered_map<std::string,std::string> Map;
   
 public:
-  PolicyCache();
+  PolicyCache()
+    : _max_size(256)
+  {
+  }
 
 public:
   void
