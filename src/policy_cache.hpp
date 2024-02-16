@@ -29,7 +29,7 @@ class PolicyCache
 {
 public:
   typedef std::unordered_map<std::string,std::string> Map;
-  
+
 public:
   PolicyCache()
     : _max_size(256)
@@ -55,7 +55,7 @@ public:
 
     return &i->second;
   }
-  
+
   void
   erase(const char *key_)
   {
