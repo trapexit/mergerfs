@@ -78,6 +78,7 @@ CXXFLAGS    := \
               -std=c++11 \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
+              -Isrc \
               -Wall \
               -Wno-unused-result \
               -MMD
