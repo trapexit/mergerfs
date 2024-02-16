@@ -45,7 +45,7 @@ public:
   {
     if(_cache.size() > _max_size)
       _cache.erase(_cache.begin());
-    return &_cache.insert({key_,val_}).first;
+    return &_cache.insert({key_,val_}).first.second;
   }
 
   const
