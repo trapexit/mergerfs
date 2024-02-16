@@ -79,5 +79,5 @@ public:
 
 private:
   unsigned _max_size;
-  boost::unordered_flat_map<std::string,std::string> _cache;
+  Map      _cache;
 };
