@@ -38,13 +38,14 @@ public:
   }
 
 public:
-  void
+  const
+  std::string*
   insert(std::string const &key_,
          std::string       &val_)
   {
     if(_cache.size() > _max_size)
       _cache.erase(_cache.begin());
-    _cache.insert({key_,val_});
+    return &_cache.insert({key_,val_}).first;
   }
 
   const
