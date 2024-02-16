@@ -47,6 +47,10 @@ public:
     Map::const_iterator i;
 
     i = _cache.find(key_);
+    if(i == _cache.end())
+      return NULL;
+
+    return &i->second;
   }
   
   void
