@@ -34,11 +34,11 @@ public:
   PolicyCache();
 
 public:
-  nonstd::optional<std::string>
+  void
   insert(std::string const &key_,
          std::string       &val_)
   {
-    
+    _cache.insert({key_,val_});
   }
   
   
