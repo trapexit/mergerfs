@@ -139,7 +139,7 @@ namespace l
     int rv;
     std::string fullpath;
     StrVec basepaths;
-    thread_local static std::unordered_map<std::string,std::string> cache;
+    thread_local static PolicyCache cache;
 
     for(int c = 0; c < 2; c++)
       {
