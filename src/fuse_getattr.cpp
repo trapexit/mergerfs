@@ -144,7 +144,7 @@ namespace l
     for(int c = 0; c < 2; c++)
       {
         auto i = cache.find(fusepath_);
-        if(i == cache.end())
+        if(i == NULL)
           {
             rv = searchFunc_(branches_,fusepath_,&basepaths);
             if(rv == -1)
