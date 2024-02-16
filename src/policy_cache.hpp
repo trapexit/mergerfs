@@ -62,7 +62,8 @@ public:
   void
   cleanup()
   {
-    
+    while(_cache.size() > _max_size)
+      _cache.erase(_cache.begin());
   }
 
   void
