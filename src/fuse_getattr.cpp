@@ -22,6 +22,7 @@
 #include "fs_stat.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
+#include "policy_cache.hpp"
 
 #include "fuse.h"
 
