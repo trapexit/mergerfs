@@ -46,7 +46,7 @@ public:
   {
     Map::const_iterator i;
 
-    i == _cache.find(key_);
+    i = _cache.find(key_);
   }
   
   void
