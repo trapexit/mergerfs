@@ -41,8 +41,13 @@ public:
     _cache.insert({key_,val_});
   }
   
-  
-  void erase(const char *fusepath);
+  void
+  erase(const char *key_)
+  {
+    _cache.erase(key_);
+  }
+
+    
   void cleanup(const int prob = 1);
   void clear(void);
 
