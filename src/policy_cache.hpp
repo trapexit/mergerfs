@@ -49,5 +49,5 @@ public:
 
 private:
   pthread_mutex_t             _lock;
-  std::unordered_map<std::string,Value> _cache;
+  std::unordered_map<std::string,std::string> _cache;
 };
