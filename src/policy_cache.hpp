@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <boost/unordered/unordered_flat_map.hpp>
 
 
 class PolicyCache
@@ -78,5 +79,5 @@ public:
 
 private:
   unsigned _max_size;
-  std::unordered_map<std::string,std::string> _cache;
+  boost::unordered_flat_map<std::string,std::string> _cache;
 };
