@@ -44,10 +44,7 @@ public:
                  const char           *fusepath,
                  StrVec               *paths);
 
-public:
-  uint64_t timeout;
-
 private:
-  pthread_mutex_t             _lock;
+  unsigned _max_size;
   std::unordered_map<std::string,std::string> _cache;
 };
