@@ -118,6 +118,7 @@ public:
   Categories     category;
   ConfigBOOL     direct_io;
   ConfigBOOL     dropcacheonclose;
+  ConfigBOOL     export_support;
   FlushOnClose   flushonclose;
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;

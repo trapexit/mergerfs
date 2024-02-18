@@ -58,6 +58,7 @@ namespace l
     IFERT("branches-mount-timeout");
     IFERT("cache.symlinks");
     IFERT("cache.writeback");
+    IFERT("export-support");
     IFERT("fsname");
     IFERT("fuse_msg_size");
     IFERT("mount");
@@ -94,6 +95,7 @@ Config::Config()
     category(func),
     direct_io(false),
     dropcacheonclose(false),
+    export_support(true),
     flushonclose(FlushOnClose::ENUM::OPENED_FOR_WRITE),
     follow_symlinks(FollowSymlinks::ENUM::NEVER),
     fsname(),
@@ -149,6 +151,7 @@ Config::Config()
   _map["category.search"]        = &category.search;
   _map["direct_io"]              = &direct_io;
   _map["dropcacheonclose"]       = &dropcacheonclose;
+  _map["export-support"]         = &export_support;
   _map["flush-on-close"]         = &flushonclose;
   _map["follow-symlinks"]        = &follow_symlinks;
   _map["fsname"]                 = &fsname;
