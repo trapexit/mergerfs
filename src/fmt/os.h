@@ -13,11 +13,13 @@
 #include <cstdio>
 #include <system_error>  // std::system_error
 
-#if defined __APPLE__ || defined(__FreeBSD__)
-#  include <xlocale.h>  // for LC_NUMERIC_MASK on OS X
-#endif
-
 #include "format.h"
+
+#if defined __APPLE__ || defined(__FreeBSD__)
+#  if FMT_HAS_INCLUDE(<xlocale.h>)
+#    include <xlocale.h>  // for LC_NUMERIC_MASK on OS X
+#  endif
+#endif
 
 #ifndef FMT_USE_FCNTL
 // UWP doesn't provide _pipe.
@@ -46,6 +48,7 @@
 
 // Calls to system functions are wrapped in FMT_SYSTEM for testability.
 #ifdef FMT_SYSTEM
+#  define FMT_HAS_SYSTEM
 #  define FMT_POSIX_CALL(call) FMT_SYSTEM(call)
 #else
 #  define FMT_SYSTEM(call) ::call
@@ -114,7 +117,7 @@ template <typename Char> class basic_cstring_view {
   basic_cstring_view(const std::basic_string<Char>& s) : data_(s.c_str()) {}
 
   /** Returns the pointer to a C string. */
-  const Char* c_str() const { return data_; }
+  auto c_str() const -> const Char* { return data_; }
 };
 
 using cstring_view = basic_cstring_view<char>;
@@ -123,10 +126,10 @@ using wcstring_view = basic_cstring_view<wchar_t>;
 #ifdef _WIN32
 FMT_API const std::error_category& system_category() noexcept;
 
-FMT_BEGIN_DETAIL_NAMESPACE
+namespace detail {
 FMT_API void format_windows_error(buffer<char>& out, int error_code,
                                   const char* message) noexcept;
-FMT_END_DETAIL_NAMESPACE
+}
 
 FMT_API std::system_error vwindows_error(int error_code, string_view format_str,
                                          format_args args);
@@ -169,7 +172,7 @@ std::system_error windows_error(int error_code, string_view message,
 // Can be used to report errors from destructors.
 FMT_API void report_windows_error(int error_code, const char* message) noexcept;
 #else
-inline const std::error_category& system_category() noexcept {
+inline auto system_category() noexcept -> const std::error_category& {
   return std::system_category();
 }
 #endif  // _WIN32
@@ -206,7 +209,7 @@ class buffered_file {
     other.file_ = nullptr;
   }
 
-  buffered_file& operator=(buffered_file&& other) {
+  auto operator=(buffered_file&& other) -> buffered_file& {
     close();
     file_ = other.file_;
     other.file_ = nullptr;
@@ -220,9 +223,9 @@ class buffered_file {
   FMT_API void close();
 
   // Returns the pointer to a FILE object representing this file.
-  FILE* get() const noexcept { return file_; }
+  auto get() const noexcept -> FILE* { return file_; }
 
-  FMT_API int descriptor() const;
+  FMT_API auto descriptor() const -> int;
 
   void vprint(string_view format_str, format_args args) {
     fmt::vprint(file_, format_str, args);
@@ -272,7 +275,7 @@ class FMT_API file {
   file(file&& other) noexcept : fd_(other.fd_) { other.fd_ = -1; }
 
   // Move assignment is not noexcept because close may throw.
-  file& operator=(file&& other) {
+  auto operator=(file&& other) -> file& {
     close();
     fd_ = other.fd_;
     other.fd_ = -1;
@@ -283,24 +286,24 @@ class FMT_API file {
   ~file() noexcept;
 
   // Returns the file descriptor.
-  int descriptor() const noexcept { return fd_; }
+  auto descriptor() const noexcept -> int { return fd_; }
 
   // Closes the file.
   void close();
 
   // Returns the file size. The size has signed type for consistency with
   // stat::st_size.
-  long long size() const;
+  auto size() const -> long long;
 
   // Attempts to read count bytes from the file into the specified buffer.
-  size_t read(void* buffer, size_t count);
+  auto read(void* buffer, size_t count) -> size_t;
 
   // Attempts to write count bytes from the specified buffer to the file.
-  size_t write(const void* buffer, size_t count);
+  auto write(const void* buffer, size_t count) -> size_t;
 
   // Duplicates a file descriptor with the dup function and returns
   // the duplicate as a file object.
-  static file dup(int fd);
+  static auto dup(int fd) -> file;
 
   // Makes fd be the copy of this file descriptor, closing fd first if
   // necessary.
@@ -312,11 +315,12 @@ class FMT_API file {
 
   // Creates a pipe setting up read_end and write_end file objects for reading
   // and writing respectively.
+  // DEPRECATED! Taking files as out parameters is deprecated.
   static void pipe(file& read_end, file& write_end);
 
   // Creates a buffered_file object associated with this file and detaches
   // this file object from the file.
-  buffered_file fdopen(const char* mode);
+  auto fdopen(const char* mode) -> buffered_file;
 
 #  if defined(_WIN32) && !defined(__MINGW32__)
   // Opens a file and constructs a file object representing this file by
@@ -326,14 +330,14 @@ class FMT_API file {
 };
 
 // Returns the memory page size.
-long getpagesize();
+auto getpagesize() -> long;
 
-FMT_BEGIN_DETAIL_NAMESPACE
+namespace detail {
 
 struct buffer_size {
   buffer_size() = default;
   size_t value = 0;
-  buffer_size operator=(size_t val) const {
+  auto operator=(size_t val) const -> buffer_size {
     auto bs = buffer_size();
     bs.value = val;
     return bs;
@@ -387,7 +391,7 @@ class file_buffer final : public buffer<char> {
   }
 };
 
-FMT_END_DETAIL_NAMESPACE
+}  // namespace detail
 
 // Added {} below to work around default constructor error known to
 // occur in Xcode versions 7.2.1 and 8.2.1.
@@ -410,7 +414,7 @@ class FMT_API ostream {
   void flush() { buffer_.flush(); }
 
   template <typename... T>
-  friend ostream output_file(cstring_view path, T... params);
+  friend auto output_file(cstring_view path, T... params) -> ostream;
 
   void close() { buffer_.close(); }
 
@@ -419,7 +423,7 @@ class FMT_API ostream {
     output to the file.
    */
   template <typename... T> void print(format_string<T...> fmt, T&&... args) {
-    vformat_to(detail::buffer_appender<char>(buffer_), fmt,
+    vformat_to(std::back_inserter(buffer_), fmt,
                fmt::make_format_args(args...));
   }
 };
@@ -440,7 +444,7 @@ class FMT_API ostream {
   \endrst
  */
 template <typename... T>
-inline ostream output_file(cstring_view path, T... params) {
+inline auto output_file(cstring_view path, T... params) -> ostream {
   return {path, detail::ostream_params(params...)};
 }
 #endif  // FMT_USE_FCNTL

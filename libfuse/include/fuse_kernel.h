@@ -206,6 +206,11 @@
  *  - add extension header
  *  - add FUSE_EXT_GROUPS
  *  - add FUSE_CREATE_SUPP_GROUP
+ *  - add FUSE_HAS_EXPIRE_ONLY
+ *
+ *  7.39
+ *  - add FUSE_DIRECT_IO_ALLOW_MMAP
+ *  - add FUSE_STATX and related structures
  */
 
 #ifndef _LINUX_FUSE_H
@@ -241,7 +246,7 @@
 #define FUSE_KERNEL_VERSION 7
 
 /** Minor version number of this interface */
-#define FUSE_KERNEL_MINOR_VERSION 38
+#define FUSE_KERNEL_MINOR_VERSION 39
 
 /** The node ID of the root inode */
 #define FUSE_ROOT_ID 1
@@ -268,6 +273,40 @@ struct fuse_attr {
 	uint32_t	flags;
 };
 
+/*
+ * The following structures are bit-for-bit compatible with the statx(2) ABI in
+ * Linux.
+ */
+struct fuse_sx_time {
+	int64_t		tv_sec;
+	uint32_t	tv_nsec;
+	int32_t		__reserved;
+};
+
+struct fuse_statx {
+	uint32_t	mask;
+	uint32_t	blksize;
+	uint64_t	attributes;
+	uint32_t	nlink;
+	uint32_t	uid;
+	uint32_t	gid;
+	uint16_t	mode;
+	uint16_t	__spare0[1];
+	uint64_t	ino;
+	uint64_t	size;
+	uint64_t	blocks;
+	uint64_t	attributes_mask;
+	struct fuse_sx_time	atime;
+	struct fuse_sx_time	btime;
+	struct fuse_sx_time	ctime;
+	struct fuse_sx_time	mtime;
+	uint32_t	rdev_major;
+	uint32_t	rdev_minor;
+	uint32_t	dev_major;
+	uint32_t	dev_minor;
+	uint64_t	__spare2[14];
+};
+
 struct fuse_kstatfs {
 	uint64_t	blocks;
 	uint64_t	bfree;
@@ -291,18 +330,18 @@ struct fuse_file_lock {
 /**
  * Bitmasks for fuse_setattr_in.valid
  */
-#define FATTR_MODE         (1 << 0)
-#define FATTR_UID          (1 << 1)
-#define FATTR_GID          (1 << 2)
-#define FATTR_SIZE         (1 << 3)
-#define FATTR_ATIME        (1 << 4)
-#define FATTR_MTIME        (1 << 5)
-#define FATTR_FH           (1 << 6)
-#define FATTR_ATIME_NOW    (1 << 7)
-#define FATTR_MTIME_NOW    (1 << 8)
-#define FATTR_LOCKOWNER    (1 << 9)
-#define FATTR_CTIME        (1 << 10)
-#define FATTR_KILL_SUIDGID (1 << 11)
+#define FATTR_MODE	(1 << 0)
+#define FATTR_UID	(1 << 1)
+#define FATTR_GID	(1 << 2)
+#define FATTR_SIZE	(1 << 3)
+#define FATTR_ATIME	(1 << 4)
+#define FATTR_MTIME	(1 << 5)
+#define FATTR_FH	(1 << 6)
+#define FATTR_ATIME_NOW	(1 << 7)
+#define FATTR_MTIME_NOW	(1 << 8)
+#define FATTR_LOCKOWNER	(1 << 9)
+#define FATTR_CTIME	(1 << 10)
+#define FATTR_KILL_SUIDGID	(1 << 11)
 
 /**
  * Flags returned by the OPEN request
@@ -315,13 +354,13 @@ struct fuse_file_lock {
  * FOPEN_NOFLUSH: don't flush data cache on close (unless FUSE_WRITEBACK_CACHE)
  * FOPEN_PARALLEL_DIRECT_WRITES: Allow concurrent direct writes on the same inode
  */
-#define FOPEN_DIRECT_IO              (1 << 0)
-#define FOPEN_KEEP_CACHE             (1 << 1)
-#define FOPEN_NONSEEKABLE            (1 << 2)
-#define FOPEN_CACHE_DIR              (1 << 3)
-#define FOPEN_STREAM                 (1 << 4)
-#define FOPEN_NOFLUSH                (1 << 5)
-#define FOPEN_PARALLEL_DIRECT_WRITES (1 << 6)
+#define FOPEN_DIRECT_IO		(1 << 0)
+#define FOPEN_KEEP_CACHE	(1 << 1)
+#define FOPEN_NONSEEKABLE	(1 << 2)
+#define FOPEN_CACHE_DIR		(1 << 3)
+#define FOPEN_STREAM		(1 << 4)
+#define FOPEN_NOFLUSH		(1 << 5)
+#define FOPEN_PARALLEL_DIRECT_WRITES	(1 << 6)
 
 /**
  * INIT request/reply flags
@@ -369,43 +408,50 @@ struct fuse_file_lock {
  * FUSE_HAS_INODE_DAX:  use per inode DAX
  * FUSE_CREATE_SUPP_GROUP: add supplementary group info to create, mkdir,
  *			symlink and mknod (single group that matches parent)
+ * FUSE_HAS_EXPIRE_ONLY: kernel supports expiry-only entry invalidation
+ * FUSE_DIRECT_IO_ALLOW_MMAP: allow shared mmap in FOPEN_DIRECT_IO mode.
  */
-#define FUSE_ASYNC_READ          (1 << 0)
-#define FUSE_POSIX_LOCKS         (1 << 1)
-#define FUSE_FILE_OPS            (1 << 2)
-#define FUSE_ATOMIC_O_TRUNC      (1 << 3)
-#define FUSE_EXPORT_SUPPORT      (1 << 4)
-#define FUSE_BIG_WRITES          (1 << 5)
-#define FUSE_DONT_MASK           (1 << 6)
-#define FUSE_SPLICE_WRITE        (1 << 7)
-#define FUSE_SPLICE_MOVE         (1 << 8)
-#define FUSE_SPLICE_READ         (1 << 9)
-#define FUSE_FLOCK_LOCKS         (1 << 10)
-#define FUSE_HAS_IOCTL_DIR       (1 << 11)
-#define FUSE_AUTO_INVAL_DATA     (1 << 12)
-#define FUSE_DO_READDIRPLUS      (1 << 13)
-#define FUSE_READDIRPLUS_AUTO    (1 << 14)
-#define FUSE_ASYNC_DIO           (1 << 15)
-#define FUSE_WRITEBACK_CACHE     (1 << 16)
-#define FUSE_NO_OPEN_SUPPORT     (1 << 17)
-#define FUSE_PARALLEL_DIROPS     (1 << 18)
-#define FUSE_HANDLE_KILLPRIV     (1 << 19)
-#define FUSE_POSIX_ACL           (1 << 20)
-#define FUSE_ABORT_ERROR         (1 << 21)
-#define FUSE_MAX_PAGES           (1 << 22)
-#define FUSE_CACHE_SYMLINKS      (1 << 23)
-#define FUSE_NO_OPENDIR_SUPPORT  (1 << 24)
+#define FUSE_ASYNC_READ		(1 << 0)
+#define FUSE_POSIX_LOCKS	(1 << 1)
+#define FUSE_FILE_OPS		(1 << 2)
+#define FUSE_ATOMIC_O_TRUNC	(1 << 3)
+#define FUSE_EXPORT_SUPPORT	(1 << 4)
+#define FUSE_BIG_WRITES		(1 << 5)
+#define FUSE_DONT_MASK		(1 << 6)
+#define FUSE_SPLICE_WRITE	(1 << 7)
+#define FUSE_SPLICE_MOVE	(1 << 8)
+#define FUSE_SPLICE_READ	(1 << 9)
+#define FUSE_FLOCK_LOCKS	(1 << 10)
+#define FUSE_HAS_IOCTL_DIR	(1 << 11)
+#define FUSE_AUTO_INVAL_DATA	(1 << 12)
+#define FUSE_DO_READDIRPLUS	(1 << 13)
+#define FUSE_READDIRPLUS_AUTO	(1 << 14)
+#define FUSE_ASYNC_DIO		(1 << 15)
+#define FUSE_WRITEBACK_CACHE	(1 << 16)
+#define FUSE_NO_OPEN_SUPPORT	(1 << 17)
+#define FUSE_PARALLEL_DIROPS    (1 << 18)
+#define FUSE_HANDLE_KILLPRIV	(1 << 19)
+#define FUSE_POSIX_ACL		(1 << 20)
+#define FUSE_ABORT_ERROR	(1 << 21)
+#define FUSE_MAX_PAGES		(1 << 22)
+#define FUSE_CACHE_SYMLINKS	(1 << 23)
+#define FUSE_NO_OPENDIR_SUPPORT (1 << 24)
 #define FUSE_EXPLICIT_INVAL_DATA (1 << 25)
-#define FUSE_MAP_ALIGNMENT       (1 << 26)
-#define FUSE_SUBMOUNTS           (1 << 27)
-#define FUSE_HANDLE_KILLPRIV_V2  (1 << 28)
-#define FUSE_SETXATTR_EXT        (1 << 29)
-#define FUSE_INIT_EXT            (1 << 30)
-#define FUSE_INIT_RESERVED       (1 << 31)
+#define FUSE_MAP_ALIGNMENT	(1 << 26)
+#define FUSE_SUBMOUNTS		(1 << 27)
+#define FUSE_HANDLE_KILLPRIV_V2	(1 << 28)
+#define FUSE_SETXATTR_EXT	(1 << 29)
+#define FUSE_INIT_EXT		(1 << 30)
+#define FUSE_INIT_RESERVED	(1 << 31)
 /* bits 32..63 get shifted down 32 bits into the flags2 field */
-#define FUSE_SECURITY_CTX        (1ULL << 32)
-#define FUSE_HAS_INODE_DAX       (1ULL << 33)
-#define FUSE_CREATE_SUPP_GROUP   (1ULL << 34)
+#define FUSE_SECURITY_CTX	(1ULL << 32)
+#define FUSE_HAS_INODE_DAX	(1ULL << 33)
+#define FUSE_CREATE_SUPP_GROUP	(1ULL << 34)
+#define FUSE_HAS_EXPIRE_ONLY	(1ULL << 35)
+#define FUSE_DIRECT_IO_ALLOW_MMAP (1ULL << 36)
+
+/* Obsolete alias for FUSE_DIRECT_IO_ALLOW_MMAP */
+#define FUSE_DIRECT_IO_RELAX	FUSE_DIRECT_IO_ALLOW_MMAP
 
 /**
  * CUSE INIT request/reply flags
@@ -417,8 +463,8 @@ struct fuse_file_lock {
 /**
  * Release flags
  */
-#define FUSE_RELEASE_FLUSH        (1 << 0)
-#define FUSE_RELEASE_FLOCK_UNLOCK (1 << 1)
+#define FUSE_RELEASE_FLUSH	(1 << 0)
+#define FUSE_RELEASE_FLOCK_UNLOCK	(1 << 1)
 
 /**
  * Getattr flags
@@ -572,6 +618,7 @@ enum fuse_opcode {
 	FUSE_REMOVEMAPPING	= 49,
 	FUSE_SYNCFS		= 50,
 	FUSE_TMPFILE		= 51,
+	FUSE_STATX		= 52,
 
 	/* CUSE specific operations */
 	CUSE_INIT		= 4096,
@@ -634,6 +681,22 @@ struct fuse_attr_out {
 	uint32_t	attr_valid_nsec;
 	uint32_t	dummy;
 	struct fuse_attr attr;
+};
+
+struct fuse_statx_in {
+	uint32_t	getattr_flags;
+	uint32_t	reserved;
+	uint64_t	fh;
+	uint32_t	sx_flags;
+	uint32_t	sx_mask;
+};
+
+struct fuse_statx_out {
+	uint64_t	attr_valid;	/* Cache timeout for the attributes */
+	uint32_t	attr_valid_nsec;
+	uint32_t	flags;
+	uint64_t	spare[2];
+	struct fuse_statx stat;
 };
 
 #define FUSE_COMPAT_MKNOD_IN_SIZE 8

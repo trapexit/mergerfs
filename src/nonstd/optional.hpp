@@ -12,7 +12,7 @@
 #define NONSTD_OPTIONAL_LITE_HPP
 
 #define optional_lite_MAJOR  3
-#define optional_lite_MINOR  5
+#define optional_lite_MINOR  6
 #define optional_lite_PATCH  0
 
 #define optional_lite_VERSION  optional_STRINGIFY(optional_lite_MAJOR) "." optional_STRINGIFY(optional_lite_MINOR) "." optional_STRINGIFY(optional_lite_PATCH)
@@ -1555,7 +1555,7 @@ private:
     void initialize( V && value )
     {
         assert( ! has_value()  );
-        contained.construct_value( std::move( value ) );
+        contained.construct_value( std::forward<V>( value ) );
         has_value_ = true;
     }
 
