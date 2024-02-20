@@ -33,6 +33,10 @@ is similar to **mhddfs**, **unionfs**, and **aufs**.
 * Support for POSIX ACLs
 * Misc other things
 
+# TRAPS
+
+* `mv` deletes your files. Just copy!
+* Some applications need special settings. (NFS, torrents)
 
 # HOW IT WORKS
 
@@ -97,11 +101,11 @@ start with one of the following option sets.
 
 ### Command Line
 
-`mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media`
+`mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd\*:/mnt/otherhdd:/mnt/rohdd=RO /media`
 
 ### /etc/fstab
 
-`/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
+`/mnt/hdd*:/mnt/otherhdd:/mnt/rohdd=RO /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
 
 ### systemd mount
 
@@ -376,7 +380,7 @@ branch. If not set the global value is used.
 To make it easier to include multiple branches mergerfs supports
 [globbing](http://linux.die.net/man/7/glob). **The globbing tokens
 MUST be escaped when using via the shell else the shell itself will
-apply the glob itself.**
+apply the glob itself. Do not escape the glob in `fstab`.**
 
 
 ```
@@ -1839,6 +1843,8 @@ most recent mtime then use the `newest` policy for `getattr`.
 
 #### 'mv /mnt/pool/foo /mnt/disk1/foo' removes 'foo'
 
+**You read that correctly: moving a file deletes it!**
+
 This is not a bug.
 
 Run in verbose mode to better understand what's happening:
@@ -1856,9 +1862,10 @@ then removing the source. Since the source **is** the target in this
 case, depending on the unlink policy, it will remove the just copied
 file and other files across the branches.
 
-If you want to move files to one filesystem just copy them there and
-use mergerfs.dedup to clean up the old paths or manually remove them
-from the branches directly.
+If you want to move files to one filesystem just **copy** them there and
+use `mergerfs.dedup` to clean up the old paths or manually remove them
+from the underlying paths / branches directly. (Or just move them using 
+the underlying paths.)
 
 
 #### cached memory appears greater than it should be
