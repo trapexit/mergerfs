@@ -1523,7 +1523,6 @@ fuse_lib_init(void                  *data,
 
   memset(c,0,sizeof(*c));
   c->ctx.fuse = f;
-  conn->want |= FUSE_CAP_EXPORT_SUPPORT;
   f->fs->op.init(conn);
 }
 

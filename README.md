@@ -180,6 +180,9 @@ These options are the same regardless of whether you use them with the
   link to always use the non-path preserving behavior. This means
   files, when renamed or linked, will stay on the same
   filesystem. (default: false)
+* **export-support=BOOL**: Sets a low-level FUSE feature intended to
+  indicate the filesystem can support being exported via
+  NFS. (default: true)
 * **security_capability=BOOL**: If false return ENOATTR when xattr
   security.capability is queried. (default: true)
 * **xattr=passthrough|noattr|nosys**: Runtime control of
@@ -415,7 +418,7 @@ or file is to be selected or something changes out of band it becomes
 unclear what value should be used. Most software does not to care what
 the values are but those that do often break if a value changes
 unexpectedly. The tool `find` will abort a directory walk if it sees a
-directory inode change. NFS will return stale handle errors if the
+directory inode change. NFS can return stale handle errors if the
 inode changes out of band. File dedup tools will usually leverage
 device ids and inodes as a shortcut in searching for duplicate files
 and would resort to full file comparisons should it find different
@@ -672,6 +675,27 @@ security and behavior and as such is `off` by default. If set to `git`
 it will only perform the hack when the path in question includes
 `/.git/`. `all` will result it applying anytime a read-only file which
 is empty is opened for writing.
+
+
+### export-support
+
+In theory this flag should not be exposed to the end user. It is a
+low-level FUSE flag which indicates whether or not the kernel can send
+certain kinds of messages to it for the purposes of using with
+NFS. mergerfs does support these messages but due to a possible bug in
+the Linux kernel this option needs to be configurable. As it turns out
+at least certain versions of NFS can still work when disabled and no
+longer triggers the bug.
+
+While it may be safe to default this setting to `false` in an
+abundance of caution it is being left enabled by default.
+
+Given that this flag is set when the FUSE connection is first
+initiated it is not possible to change during run time.
+
+See [Kernel Issues &
+Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
+for more details.
 
 
 # FUNCTIONS, CATEGORIES and POLICIES
@@ -1845,13 +1869,9 @@ on page caching.
 
 #### NFS clients returning ESTALE / Stale file handle
 
-NFS does not like out of band changes. That is especially true of
-inode values.
-
-Be sure to use the following options:
-
-* noforget
-* inodecalc=path-hash
+NFS generally does not like out of band changes. Take a look at the
+section on NFS in the [#remote-filesystems](#remote-filesystems) for
+more details.
 
 
 #### rtorrent fails with ENODEV (No such device)
@@ -1999,6 +2019,123 @@ implemented and would be limited to Linux and the /etc/group
 DB. Preferably users would mount in the host group file into the
 containers or use a standard shared user & groups technology like NIS
 or LDAP.
+
+
+# Remote Filesystems
+
+Many users ask about compatibility with remote filesystems. This
+section is to describe any known issues or quirks when using mergerfs
+with common remote filesystems.
+
+Keep in mind that, like with caching, it is not a good idea to change
+the contents of the remote filesystem
+[out-of-band](https://en.wikipedia.org/wiki/Out-of-band). Meaning that
+you really shouldn't change the contents of the underlying
+filesystems or mergerfs on the server hosting the remote
+filesystem. Doing so can lead to weird behavior, inconsistency,
+errors, and even data corruption should multiple programs try to write
+or read the same data at the same time. This isn't to say you can't do
+it or that data corruption is likely but it *could* happen. It is
+better to always use the remote filesystem. Even on the machine
+serving it.
+
+
+## NFS
+
+[NFS](https://en.wikipedia.org/wiki/Network_File_System) is a common
+remote filesystem on Unix/POSIX systems. Due to how NFS works there
+are some settings which need to be set in order for mergerfs to work
+with it.
+
+It should be noted that NFS and FUSE (the technology mergerfs uses)
+do not work perfectly with one another due to certain design
+choices in FUSE (and mergerfs.) Due to these issues it is
+generally recommended to use SMB when possible till situations
+change. That said issues should still be reported. NFS is not really
+recommended but it isn't unsupported.
+
+When exporting mergerfs via NFS ensure to set the following config:
+* noforget
+* inodecalc=path-hash
+* export-support=false (only available in v2.40.0 and above)
+
+`noforget` is needed because NFS uses the `name_to_handle_at` and
+`open_by_handle_at` functions which allow a program to keep a
+reference to a file without technically having it open in the typical
+sense. The problem is that FUSE has no way to know that NFS has a
+handle that it will later use to open the file again. As a result it
+is possible for the kernel to tell mergerfs to forget about the node
+and should NFS ever ask for that node's details in the future it would
+have nothing to respond with. Keeping nodes around forever is not
+ideal but at the moment the only way to manage the situation.
+
+`inodecalc=path-hash` is needed because NFS is sensitive to
+out-of-band changes. FUSE doesn't care if a file's inode value changes
+but NFS, being stateful, does. So if you used the default inode
+calculation algorithm then it is possible that if you changed a file
+or updated a directory the file mergerfs will use will be on a
+different branch and therefore the inode would change. This isn't an
+ideal solution and others are being considered but it works for most
+situations. It might be possible to leave the default value of
+`hybrid-hash` if `export-support=false` but it hasn't been fully
+tested yet.
+
+`export-support=false` is a low-level FUSE option that is needed as a
+workaround to a Linux kernel bug. Technically this option should be
+set to `true` when expecting to use mergerfs with NFS but it turns out
+that at least some versions of NFS work when not enabled. At the
+moment it is unclear if this has any negative side effects but when
+disabled NFS appears to work alright and the kernel no longer sends
+invalid requests. When the issue is resolved in the kernel these docs
+will be updated with appropriate details.
+
+Also see [Kernel Issues &
+Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
+for more details.
+
+
+## SMB / CIFS
+
+[SMB](https://en.wikipedia.org/wiki/Server_Message_Block) is a
+protocol most used by Microsoft Windows systems to share file shares,
+printers, etc. However, due to the popularity for Windows, it is also
+supported on many other platforms including Linux. The most popular
+way of supporting SMB on Linux is via the software Samba.
+
+[Samba](https://en.wikipedia.org/wiki/Samba_(software)), and other
+ways of serving Linux filesystems, via SMB should work fine with
+mergerfs. The services do not tend to use the same technologies which
+NFS uses and therefore don't have the same issues. There should not be
+an special settings required to use mergerfs with Samba. However,
+[CIFSD](https://en.wikipedia.org/wiki/CIFSD) and other programs have
+not been extensively tested. If you use mergerfs with CIFSD or other
+SMB servers please submit your experiences so these docs can be
+updated.
+
+
+## SSHFS
+
+[SSHFS](https://en.wikipedia.org/wiki/SSHFS) is a FUSE filesystem
+leveraging SSH as the connection and transport layer. While often
+simpler to setup when compared to NFS or Samba the performance can be
+lacking and the project is very much in maintenance mode.
+
+There are no known issues using sshfs with mergerfs. You may want to
+use the following arguments to improve performance but your millage
+may vary.
+
+* `-o Ciphers=arcfour`
+* `-o Compression=no`
+
+More info can be found
+[here](https://ideatrash.net/2016/08/odds-and-ends-optimizing-sshfs-moving.html).
+
+
+## Other
+
+There are other remote filesystems but none popularly used to serve
+mergerfs. If you use something not listed above feel free to reach out
+and I will add it to the list.
 
 
 # FAQ
@@ -2237,8 +2374,8 @@ values are correct and that directories have their executable bit
 set. A common mistake by users new to Linux is to `chmod -R 644` when
 they should have `chmod -R u=rwX,go=rX`.
 
-If using a network filesystem such as NFS, SMB, CIFS (Samba) be sure
-to pay close attention to anything regarding permissioning and
+If using a network filesystem such as NFS or SMB (Samba) be sure to
+pay close attention to anything regarding permissioning and
 users. Root squashing and user translation for instance has bitten a
 few mergerfs users. Some of these also affect the use of mergerfs from
 container platforms such as Docker.
@@ -2360,37 +2497,13 @@ it won't show up.
 You can remove the reserve by running: `tune2fs -m 0 <device>`
 
 
-#### Can mergerfs mounts be exported over NFS?
-
-Yes, however if you do anything which may changes files out of band
-(including for example using the `newest` policy) it will result in
-"stale file handle" errors unless properly setup.
-
-Be sure to use the following options:
-
-* noforget
-* inodecalc=path-hash
-
-
-#### Can mergerfs mounts be exported over Samba / SMB?
-
-Yes. While some users have reported problems it appears to always be
-related to how Samba is setup in relation to permissions.
-
-
-#### Can mergerfs mounts be used over SSHFS?
-
-Yes.
-
-
 #### I notice massive slowdowns of writes when enabling cache.files.
 
-When file caching is enabled in any form (`cache.files!=off` or
-`direct_io=false`) it will issue `getxattr` requests for
-`security.capability` prior to *every single write*. This will usually
-result in a performance degradation, especially when using a network
-filesystem (such as NFS or CIFS/SMB/Samba.) Unfortunately at this
-moment the kernel is not caching the response.
+When file caching is enabled in any form (`cache.files!=off`) it will
+issue `getxattr` requests for `security.capability` prior to *every
+single write*. This will usually result in a performance degradation,
+especially when using a network filesystem (such as NFS or SMB.)
+Unfortunately at this moment the kernel is not caching the response.
 
 To work around this situation mergerfs offers a few solutions.
 
