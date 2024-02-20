@@ -2591,9 +2591,10 @@ use SMB when possible till situations change.
 That said issues should still be reported.
 NFS is not really recommended but it isn\[cq]t unsupported.
 .PP
-When exporting mergerfs via NFS ensure to set the following config: *
-noforget * inodecalc=path-hash * export-support=false (only available in
-v2.40.0 and above)
+mergerfs settings: * noforget * inodecalc=path-hash *
+export-support=false (only available in v2.40.0 and above)
+.PP
+NFS export settings: * fsid=UUID * no_root_squash
 .PP
 \f[C]noforget\f[R] is needed because NFS uses the
 \f[C]name_to_handle_at\f[R] and \f[C]open_by_handle_at\f[R] functions
@@ -2635,6 +2636,17 @@ appropriate details.
 Also see Kernel Issues &
 Bugs (https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
 for more details.
+.PP
+\f[C]fsid=UUID\f[R] is needed because FUSE filesystems don\[cq]t have
+different \f[C]st_dev\f[R] values which can cause issues when exporting.
+The easiest thing to do is set each mergerfs export \f[C]fsid\f[R] to
+some random value.
+An easy way to generate a random value is to use the command line tool
+\f[C]uuidgen\f[R] or through a website such as
+uuidgenerator.net (https://www.uuidgenerator.net/).
+.PP
+\f[C]no_root_squash\f[R] is not strictly necessary but can lead to
+confusing permission and ownership issues.
 .SS SMB / CIFS
 .PP
 SMB (https://en.wikipedia.org/wiki/Server_Message_Block) is a protocol

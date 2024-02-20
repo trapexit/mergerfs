@@ -2054,10 +2054,14 @@ generally recommended to use SMB when possible till situations
 change. That said issues should still be reported. NFS is not really
 recommended but it isn't unsupported.
 
-When exporting mergerfs via NFS ensure to set the following config:
+mergerfs settings:
 * noforget
 * inodecalc=path-hash
 * export-support=false (only available in v2.40.0 and above)
+
+NFS export settings:
+* fsid=UUID
+* no\_root\_squash
 
 `noforget` is needed because NFS uses the `name_to_handle_at` and
 `open_by_handle_at` functions which allow a program to keep a
@@ -2092,6 +2096,16 @@ will be updated with appropriate details.
 Also see [Kernel Issues &
 Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
 for more details.
+
+`fsid=UUID` is needed because FUSE filesystems don't have different
+`st_dev` values which can cause issues when exporting. The easiest
+thing to do is set each mergerfs export `fsid` to some random
+value. An easy way to generate a random value is to use the command
+line tool `uuidgen` or through a website such as
+[uuidgenerator.net](https://www.uuidgenerator.net/).
+
+`no_root_squash` is not strictly necessary but can lead to confusing
+permission and ownership issues.
 
 
 ## SMB / CIFS
