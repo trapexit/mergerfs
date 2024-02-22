@@ -146,7 +146,7 @@ namespace l
         nonstd::optional<std::string> basepath;
 
         basepath = cache.find(fusepath_);
-        if(basepath == NULL)
+        if(!basepath)
           {
             rv = searchFunc_(branches_,fusepath_,&basepaths);
             if(rv == -1)
