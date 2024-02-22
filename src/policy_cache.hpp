@@ -68,19 +68,6 @@ public:
   void
   erase(const char *key_)
   {
-    _cache.erase(key_);
-  }
-
-  void
-  cleanup()
-  {
-    while(_cache.size() > _max_size)
-      _cache.erase(_cache.begin());
-  }
-
-  void
-  clear()
-  {
 
   }
 
