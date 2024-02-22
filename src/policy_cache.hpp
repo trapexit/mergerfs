@@ -20,10 +20,11 @@
 
 #include "nonstd/optional.hpp"
 
+#include <boost/unordered/concurrent_flat_map.hpp>
+
 #include <cstdint>
 #include <string>
-#include <unordered_map>
-#include <boost/unordered/concurrent_flat_map.hpp>
+
 
 class PolicyCache
 {
@@ -49,7 +50,7 @@ public:
   std::string
   find(char const *key_)
   {
-    std::string *rv ;
+    std::string rv ;
 
     rv = nullptr;
     auto func =
