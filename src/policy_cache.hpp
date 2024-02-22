@@ -43,7 +43,7 @@ public:
   insert(std::string const &key_,
          std::string       &val_)
   {
-    if(_cache.size() > _max_size)
+    if(_cache.size() >= _max_size)
       _cache.erase(_cache.begin());
     return &_cache.insert({key_,val_}).first->second;
   }
