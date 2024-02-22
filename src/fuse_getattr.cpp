@@ -155,7 +155,7 @@ namespace l
             i = cache.insert(fusepath_,basepaths[0]);
           }
 
-        fullpath = fs::path::make(*i,fusepath_);
+        fullpath = fs::path::make(basepath,fusepath_);
 
         rv = l::getattr(fullpath,followsymlinks_,st_);
         if(rv == 0)
