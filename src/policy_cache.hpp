@@ -54,7 +54,7 @@ public:
     _cache.visit(key_,
                  [&](Map::value_type &v_)
                  {
-                   rv = v_;
+                   rv = v_.second;
                  });
 
     return rv;
