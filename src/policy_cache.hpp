@@ -47,7 +47,7 @@ public:
 
   const
   nonstd::optional<std::string>
-  find(char const *key_)
+  find(std::string const key_)
   {
     nonstd::optional<std::string> rv;
 
