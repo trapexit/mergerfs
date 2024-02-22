@@ -162,8 +162,6 @@ namespace l
           break;
         if((rv == -1) && (errno != ENOENT))
           break;
-
-        cache.erase(fusepath_);
       }
 
     if(rv == -1)
