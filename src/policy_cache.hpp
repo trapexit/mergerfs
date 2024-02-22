@@ -51,13 +51,14 @@ public:
   std::string*
   find(char const *key_)
   {
-    Map::const_iterator i;
-
-    i = _cache.find(key_);
-    if(i == _cache.end())
-      return NULL;
-
-    return &i->second;
+    std::string rv;
+    auto func =
+      [&](const auto &v)
+      {
+        rv = v;
+      };
+    
+    _cache.visit(key_, []
   }
 
   void
