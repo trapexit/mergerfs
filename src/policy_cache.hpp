@@ -57,7 +57,7 @@ public:
         rv = v_;
       };
     
-    _cache.visit(std::string(key_),func);
+    _cache.visit(key_,func);
 
     return rv;
   }
