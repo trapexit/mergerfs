@@ -42,7 +42,7 @@ public:
   insert(std::string const &key_,
          std::string       &val_)
   {
-    return NULL;
+    _cache.insert_or_assign(key_,val_);
   }
 
   const
