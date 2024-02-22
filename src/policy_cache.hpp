@@ -49,7 +49,7 @@ public:
   nonstd::optional<std::string>
   find(char const *key_)
   {
-    nonstd::optional<std::string>
+    nonstd::optional<std::string> rv;
 
     auto func =
       [&](const auto &v)
