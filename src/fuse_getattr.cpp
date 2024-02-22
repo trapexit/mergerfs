@@ -152,7 +152,7 @@ namespace l
             if(rv == -1)
               return -errno;
 
-            i = cache.insert(fusepath_,basepaths[0]);
+            basepath = cache.insert(fusepath_,basepaths[0]);
           }
 
         fullpath = fs::path::make(basepath,fusepath_);
