@@ -143,7 +143,7 @@ namespace l
 
     for(int c = 0; c < 2; c++)
       {
-        std::stringc const *basepath;
+        std::string const *basepath;
 
         basepath = cache.find(fusepath_);
         if(basepath == NULL)
