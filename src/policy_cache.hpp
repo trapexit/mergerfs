@@ -51,6 +51,7 @@ public:
   {
     std::string rv;
 
+    _cache.visit(key_,[](std::string &v){});
 
     return rv;
   }
