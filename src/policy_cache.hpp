@@ -52,7 +52,7 @@ public:
     nonstd::optional<std::string> rv;
 
     _cache.visit(key_,
-                 [](Map::value_type &v_)
+                 [&](Map::value_type &v_)
                  {
                    rv = v_;
                  });
