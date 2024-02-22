@@ -58,7 +58,9 @@ public:
         rv = v;
       };
     
-    _cache.visit(key_, []
+    _cache.visit(key_,func);
+
+    return rv;
   }
 
   void
