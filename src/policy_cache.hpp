@@ -66,12 +66,6 @@ public:
     return rv;
   }
 
-  void
-  erase(const char *key_)
-  {
-
-  }
-
 private:
   unsigned _max_size;
   Map      _cache;
