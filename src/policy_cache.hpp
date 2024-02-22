@@ -23,13 +23,12 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
-#include <boost/unordered/unordered_flat_map.hpp>
-
+#include <boost/unordered/concurrent_flat_map.hpp>
 
 class PolicyCache
 {
 public:
-  typedef boost::unordered_flat_map<std::string,std::string> Map;
+  typedef boost::concurrent_flat_map<std::string,std::string> Map;
 
 public:
   PolicyCache()
