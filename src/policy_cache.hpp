@@ -43,6 +43,8 @@ public:
          std::string       &val_)
   {
     _cache.insert_or_assign(key_,val_);
+
+    return val_;
   }
 
   const
