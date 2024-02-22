@@ -38,7 +38,7 @@ public:
 
 public:
   const
-  std::string*
+  std::string
   insert(std::string const &key_,
          std::string       &val_)
   {
@@ -46,7 +46,7 @@ public:
   }
 
   const
-  std::string*
+  std::string
   find(char const *key_)
   {
     std::string *rv ;
