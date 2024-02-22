@@ -50,12 +50,11 @@ public:
   find(char const *key_)
   {
     nonstd::optional<std::string>
-    std::string rv ;
 
     auto func =
       [&](const auto &v)
       {
-        rv = &v;
+        rv = v;
       };
     
     _cache.visit(key_,func);
