@@ -49,12 +49,12 @@ public:
   nonstd::optional<std::string>
   find(std::string const key_)
   {
-    nonstd::optional<std::string> rv;
+    std::string rv;
 
     _cache.visit(key_,
                  [&](std::string &v_)
                  {
-                   
+
                  });
 
     return rv;
