@@ -51,12 +51,6 @@ public:
   {
     nonstd::optional<std::string> rv;
 
-    auto func =
-      [&](std::string &v_)
-      {
-        rv = v_;
-      };
-    
     _cache.visit(key_,
                  [&](std::string &v_)
                  {
