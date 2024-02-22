@@ -52,9 +52,9 @@ public:
     nonstd::optional<std::string> rv;
 
     auto func =
-      [&](const auto &v)
+      [&](const auto &v_)
       {
-        rv = v;
+        rv = v_;
       };
     
     _cache.visit(key_,func);
