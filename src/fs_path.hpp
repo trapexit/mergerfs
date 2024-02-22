@@ -85,5 +85,14 @@ namespace fs
     {
       return (base_ + suffix_);
     }
+
+    static
+    inline
+    std::string
+    make(const std::string *base_,
+         const std::string &suffix_)
+    {
+      return (*base_ + suffix_);
+    }
   }
 };
