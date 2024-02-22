@@ -51,7 +51,7 @@ public:
   {
     std::string rv;
 
-    _cache.visit(key_,[](std::string &v){});
+    _cache.visit(key_,[](Map::value_type &v){});
 
     return rv;
   }
