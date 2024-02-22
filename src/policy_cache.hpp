@@ -46,12 +46,12 @@ public:
   }
 
   const
-  std::string
+  nonstd::optional<std::string>
   find(char const *key_)
   {
+    nonstd::optional<std::string>
     std::string rv ;
 
-    rv = nullptr;
     auto func =
       [&](const auto &v)
       {
