@@ -146,7 +146,7 @@ namespace l
         std::stringc const *basepath;
 
         basepath = cache.find(fusepath_);
-        if(i == NULL)
+        if(basepath == NULL)
           {
             rv = searchFunc_(branches_,fusepath_,&basepaths);
             if(rv == -1)
