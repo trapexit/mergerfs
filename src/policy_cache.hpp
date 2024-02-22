@@ -49,9 +49,13 @@ public:
   nonstd::optional<std::string>
   find(std::string const key_)
   {
-    std::string rv;
+    nonstd::optional<std::string> rv;
 
-    _cache.visit(key_,[](Map::value_type &v){});
+    _cache.visit(key_,
+                 [](Map::value_type &v_)
+                 {
+                   rv = v_;
+                 });
 
     return rv;
   }
