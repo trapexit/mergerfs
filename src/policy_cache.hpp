@@ -52,7 +52,7 @@ public:
     nonstd::optional<std::string> rv;
 
     auto func =
-      [&](const nonstd::optional<std::string> &v_)
+      [&](const std::string &v_)
       {
         rv = v_;
       };
