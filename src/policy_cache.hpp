@@ -37,8 +37,7 @@ public:
   }
 
 public:
-  const
-  std::string
+  void
   insert(std::string const &key_,
          std::string       &val_)
   {
