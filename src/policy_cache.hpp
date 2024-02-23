@@ -43,6 +43,7 @@ public:
   {
     _cache.visit_while([&](Map::value_type &v_)
     {
+      _cache.erase(v_);
       return (_cache.size() > _max_size);
     });
     
