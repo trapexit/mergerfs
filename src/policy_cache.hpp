@@ -43,7 +43,7 @@ public:
   {
     _cache.visit_while([&](Map::value_type &v_)
     {
-      return false;
+      return (_cache.size() > _max_size);
     });
     
     _cache.insert_or_assign(key_,val_);
