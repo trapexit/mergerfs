@@ -41,7 +41,10 @@ public:
   insert(std::string const &key_,
          std::string       &val_)
   {
-    auto i = std::begin(_cache);
+    _cache.visit_while([&](Map::value_type &v_)
+    {
+      return false;
+    });
     
     _cache.insert_or_assign(key_,val_);
   }
