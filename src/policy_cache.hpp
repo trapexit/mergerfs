@@ -41,6 +41,8 @@ public:
   insert(std::string const &key_,
          std::string       &val_)
   {
+    auto i = _cache.begin();
+    
     _cache.insert_or_assign(key_,val_);
   }
 
