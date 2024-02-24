@@ -101,7 +101,7 @@ start with one of the following option sets.
 
 ### /etc/fstab
 
-`/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
+`/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
 
 ### systemd mount
 
@@ -388,8 +388,8 @@ The above line will use all mount points in /mnt prefixed with **hdd** and **ssd
 To have the pool mounted at boot or otherwise accessible from related tools use **/etc/fstab**.
 
 ```
-# <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/hdd*:/mnt/ssd    /media          fuse.mergerfs  minfreespace=16G      0       0
+# <file system>        <mount point>  <type>    <options>             <dump>  <pass>
+/mnt/hdd*:/mnt/ssd    /media          mergerfs  minfreespace=16G      0       0
 ```
 
 **NOTE:** the globbing is done at mount or when updated using the
@@ -1178,8 +1178,8 @@ mount. If you plan on changing settings with the new mount you should
 ```
 $ sudo mount /mnt/mergerfs
 $ mount | grep mergerfs
-media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
-media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media on /mnt/mergerfs type mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media on /mnt/mergerfs type mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
 ```
 
 A problem with this approach is that the underlying instance will
