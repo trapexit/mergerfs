@@ -115,7 +115,7 @@ start with one of the following option sets.
 \f[C]mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media\f[R]
 .SS /etc/fstab
 .PP
-\f[C]/mnt/hdd0:/mnt/hdd1 /media fuse.mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0\f[R]
+\f[C]/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0\f[R]
 .SS systemd mount
 .PP
 https://github.com/trapexit/mergerfs/wiki/systemd
@@ -516,8 +516,8 @@ tools use \f[B]/etc/fstab\f[R].
 .IP
 .nf
 \f[C]
-# <file system>        <mount point>  <type>         <options>             <dump>  <pass>
-/mnt/hdd*:/mnt/ssd    /media          fuse.mergerfs  minfreespace=16G      0       0
+# <file system>        <mount point>  <type>    <options>             <dump>  <pass>
+/mnt/hdd*:/mnt/ssd    /media          mergerfs  minfreespace=16G      0       0
 \f[R]
 .fi
 .PP
@@ -847,20 +847,12 @@ In theory this flag should not be exposed to the end user.
 It is a low-level FUSE flag which indicates whether or not the kernel
 can send certain kinds of messages to it for the purposes of using with
 NFS.
-mergerfs does support these messages but due to a possible bug in the
-Linux kernel this option needs to be configurable.
-As it turns out at least certain versions of NFS can still work when
-disabled and no longer triggers the bug.
-.PP
-While it may be safe to default this setting to \f[C]false\f[R] in an
-abundance of caution it is being left enabled by default.
+mergerfs does support these messages but due bugs and quirks found in
+the kernel and mergerfs this option is provided just in case it is
+needed for debugging.
 .PP
 Given that this flag is set when the FUSE connection is first initiated
 it is not possible to change during run time.
-.PP
-See Kernel Issues &
-Bugs (https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
-for more details.
 .SH FUNCTIONS, CATEGORIES and POLICIES
 .PP
 The POSIX filesystem API is made up of a number of functions.
@@ -1577,8 +1569,8 @@ apply those before mounting the new version.
 \f[C]
 $ sudo mount /mnt/mergerfs
 $ mount | grep mergerfs
-media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
-media on /mnt/mergerfs type fuse.mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media on /mnt/mergerfs type mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
+media on /mnt/mergerfs type mergerfs (rw,relatime,user_id=0,group_id=0,default_permissions,allow_other)
 \f[R]
 .fi
 .PP
@@ -2588,11 +2580,13 @@ It should be noted that NFS and FUSE (the technology mergerfs uses) do
 not work perfectly with one another due to certain design choices in
 FUSE (and mergerfs.) Due to these issues it is generally recommended to
 use SMB when possible till situations change.
-That said issues should still be reported.
-NFS is not really recommended but it isn\[cq]t unsupported.
+That said mergerfs should generally work as an export of NFS and issues
+discovered should still be reported.
 .PP
-mergerfs settings: * noforget * inodecalc=path-hash *
-export-support=false (only available in v2.40.0 and above)
+To ensure compatibility between mergerfs and NFS use the following
+settings.
+.PP
+mergerfs settings: * noforget * inodecalc=path-hash
 .PP
 NFS export settings: * fsid=UUID * no_root_squash
 .PP
@@ -2618,35 +2612,17 @@ mergerfs will use will be on a different branch and therefore the inode
 would change.
 This isn\[cq]t an ideal solution and others are being considered but it
 works for most situations.
-It might be possible to leave the default value of \f[C]hybrid-hash\f[R]
-if \f[C]export-support=false\f[R] but it hasn\[cq]t been fully tested
-yet.
-.PP
-\f[C]export-support=false\f[R] is a low-level FUSE option that is needed
-as a workaround to a Linux kernel bug.
-Technically this option should be set to \f[C]true\f[R] when expecting
-to use mergerfs with NFS but it turns out that at least some versions of
-NFS work when not enabled.
-At the moment it is unclear if this has any negative side effects but
-when disabled NFS appears to work alright and the kernel no longer sends
-invalid requests.
-When the issue is resolved in the kernel these docs will be updated with
-appropriate details.
-.PP
-Also see Kernel Issues &
-Bugs (https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
-for more details.
 .PP
 \f[C]fsid=UUID\f[R] is needed because FUSE filesystems don\[cq]t have
 different \f[C]st_dev\f[R] values which can cause issues when exporting.
 The easiest thing to do is set each mergerfs export \f[C]fsid\f[R] to
 some random value.
 An easy way to generate a random value is to use the command line tool
-\f[C]uuidgen\f[R] or through a website such as
+\f[C]uuid\f[R] or \f[C]uuidgen\f[R] or through a website such as
 uuidgenerator.net (https://www.uuidgenerator.net/).
 .PP
 \f[C]no_root_squash\f[R] is not strictly necessary but can lead to
-confusing permission and ownership issues.
+confusing permission and ownership issues if root squashing is enabled.
 .SS SMB / CIFS
 .PP
 SMB (https://en.wikipedia.org/wiki/Server_Message_Block) is a protocol

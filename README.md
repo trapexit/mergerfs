@@ -682,20 +682,12 @@ is empty is opened for writing.
 In theory this flag should not be exposed to the end user. It is a
 low-level FUSE flag which indicates whether or not the kernel can send
 certain kinds of messages to it for the purposes of using with
-NFS. mergerfs does support these messages but due to a possible bug in
-the Linux kernel this option needs to be configurable. As it turns out
-at least certain versions of NFS can still work when disabled and no
-longer triggers the bug.
-
-While it may be safe to default this setting to `false` in an
-abundance of caution it is being left enabled by default.
+NFS. mergerfs does support these messages but due bugs and quirks
+found in the kernel and mergerfs this option is provided just in case
+it is needed for debugging.
 
 Given that this flag is set when the FUSE connection is first
 initiated it is not possible to change during run time.
-
-See [Kernel Issues &
-Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
-for more details.
 
 
 # FUNCTIONS, CATEGORIES and POLICIES
@@ -2047,17 +2039,19 @@ remote filesystem on Unix/POSIX systems. Due to how NFS works there
 are some settings which need to be set in order for mergerfs to work
 with it.
 
-It should be noted that NFS and FUSE (the technology mergerfs uses)
-do not work perfectly with one another due to certain design
-choices in FUSE (and mergerfs.) Due to these issues it is
-generally recommended to use SMB when possible till situations
-change. That said issues should still be reported. NFS is not really
-recommended but it isn't unsupported.
+It should be noted that NFS and FUSE (the technology mergerfs uses) do
+not work perfectly with one another due to certain design choices in
+FUSE (and mergerfs.) Due to these issues it is generally recommended
+to use SMB when possible till situations change. That said mergerfs
+should generally work as an export of NFS and issues discovered should
+still be reported.
+
+To ensure compatibility between mergerfs and NFS use the following
+settings.
 
 mergerfs settings:
 * noforget
 * inodecalc=path-hash
-* export-support=false (only available in v2.40.0 and above)
 
 NFS export settings:
 * fsid=UUID
@@ -2080,32 +2074,17 @@ calculation algorithm then it is possible that if you changed a file
 or updated a directory the file mergerfs will use will be on a
 different branch and therefore the inode would change. This isn't an
 ideal solution and others are being considered but it works for most
-situations. It might be possible to leave the default value of
-`hybrid-hash` if `export-support=false` but it hasn't been fully
-tested yet.
-
-`export-support=false` is a low-level FUSE option that is needed as a
-workaround to a Linux kernel bug. Technically this option should be
-set to `true` when expecting to use mergerfs with NFS but it turns out
-that at least some versions of NFS work when not enabled. At the
-moment it is unclear if this has any negative side effects but when
-disabled NFS appears to work alright and the kernel no longer sends
-invalid requests. When the issue is resolved in the kernel these docs
-will be updated with appropriate details.
-
-Also see [Kernel Issues &
-Bugs](https://github.com/trapexit/mergerfs/wiki/Kernel-Issues-&-Bugs)
-for more details.
+situations.
 
 `fsid=UUID` is needed because FUSE filesystems don't have different
 `st_dev` values which can cause issues when exporting. The easiest
 thing to do is set each mergerfs export `fsid` to some random
 value. An easy way to generate a random value is to use the command
-line tool `uuidgen` or through a website such as
+line tool `uuid` or `uuidgen` or through a website such as
 [uuidgenerator.net](https://www.uuidgenerator.net/).
 
 `no_root_squash` is not strictly necessary but can lead to confusing
-permission and ownership issues.
+permission and ownership issues if root squashing is enabled.
 
 
 ## SMB / CIFS
