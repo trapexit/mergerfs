@@ -294,6 +294,11 @@ fuse_reply_entry(fuse_req_t                     req,
 
   fill_entry(&arg, e);
 
+#ifdef NDEBUG
+  // TODO: Add checks for cases where a node could be marked bad by
+  // the kernel.
+#endif
+
   return send_reply_ok(req, &arg, size);
 }
 

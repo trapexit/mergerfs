@@ -1375,7 +1375,7 @@ set_path_info(struct fuse             *f,
     return -ENOMEM;
 
   e->ino        = node->nodeid;
-  e->generation = f->nodeid_gen.generation;
+  e->generation = ((e->ino == FUSE_ROOT_ID) ? 0 : f->nodeid_gen.generation);
 
   pthread_mutex_lock(&f->lock);
   update_stat(node,&e->attr);
@@ -1386,6 +1386,15 @@ set_path_info(struct fuse             *f,
   return 0;
 }
 
+/*
+  lookup requests only come in for FUSE_ROOT_ID when a "parent of
+  child of root node" request is made. This can happen when using
+  EXPORT_SUPPORT=true and a file handle is used to keep a reference to
+  a node which has been forgotten. Mostly a NFS concern but not
+  excluslively. Root node always has a nodeid of 1 and generation of
+  0. To ensure this set_path_info() explicitly ensures the root id has
+  a generation of 0.
+ */
 static
 int
 lookup_path(struct fuse             *f,
