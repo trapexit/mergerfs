@@ -107,7 +107,7 @@ open(const char *pathname_,
   LOAD_FUNC(open);
 
   mode = 0;
-  if(flags_ & O_CREAT)
+  if(flags_ & (O_CREAT|O_TMPFILE))
     {
       va_list args;
       va_start(args,flags_);
@@ -119,7 +119,7 @@ open(const char *pathname_,
   if(fd == -1)
     return -1;
 
-  if(flags_ & (O_DIRECTORY|O_PATH))
+  if(flags_ & (O_DIRECTORY|O_PATH|O_TMPFILE))
     return fd;
   rv = fstat(fd,&st);
   if(rv == -1)
@@ -155,7 +155,7 @@ open64(const char *pathname_,
   LOAD_FUNC(open64);
 
   mode = 0;
-  if(flags_ & O_CREAT)
+  if(flags_ & (O_CREAT|O_TMPFILE))
     {
       va_list args;
       va_start(args,flags_);
@@ -167,7 +167,7 @@ open64(const char *pathname_,
   if(fd == -1)
     return -1;
 
-  if(flags_ & (O_DIRECTORY|O_PATH))
+  if(flags_ & (O_DIRECTORY|O_PATH|O_TMPFILE))
     return fd;
   rv = fstat(fd,&st);
   if(rv == -1)
@@ -204,7 +204,7 @@ openat(int         dirfd_,
   LOAD_FUNC(openat);
 
   mode = 0;
-  if(flags_ & O_CREAT)
+  if(flags_ & (O_CREAT|O_TMPFILE))
     {
       va_list args;
       va_start(args,flags_);
@@ -216,7 +216,7 @@ openat(int         dirfd_,
   if(fd == -1)
     return -1;
 
-  if(flags_ & (O_DIRECTORY|O_PATH))
+  if(flags_ & (O_DIRECTORY|O_PATH|O_TMPFILE))
     return fd;
   rv = fstat(fd,&st);
   if(rv == -1)
@@ -253,7 +253,7 @@ openat64(int         dirfd_,
   LOAD_FUNC(openat64);
 
   mode = 0;
-  if(flags_ & O_CREAT)
+  if(flags_ & (O_CREAT|O_TMPFILE))
     {
       va_list args;
       va_start(args,flags_);
@@ -265,7 +265,7 @@ openat64(int         dirfd_,
   if(fd == -1)
     return -1;
 
-  if(flags_ & (O_DIRECTORY|O_PATH))
+  if(flags_ & (O_DIRECTORY|O_PATH|O_TMPFILE))
     return fd;
   rv = fstat(fd,&st);
   if(rv == -1)
