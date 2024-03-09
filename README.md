@@ -923,7 +923,7 @@ work while still obeying mergerfs' policies. Below is the basic logic.
     * Remove the target from all branches with no source file
     * Remove the source from all branches which failed to rename
 
-The the removals are subject to normal entitlement checks.
+The removals are subject to normal entitlement checks.
 
 The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
