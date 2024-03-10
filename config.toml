@@ -107,9 +107,10 @@ mode = 'RW'
 [[branches.tier.branch]]
 enabled = true
 name = 'branch1'
-type = 'scan'
+type = 'literal'
 path = '/mnt/branch1'
 mode = 'RW'
+exclude = ['*.png']
 [[branches.tier.branch]]
 enabled = true
 path = '/mnt/*'

@@ -75,16 +75,3 @@ BranchTier::BranchTier(toml::value const &v_)
         l::load_branch_scan(table,_branches);
     }
 }
-
-void
-BranchTier::copy_enabled_rw(BranchTier &bt_) const
-{
-  for(auto const &b : _branches)
-    {
-      if(b.enabled == false)
-        continue;
-      if(b.mode != +Branch2::Mode::RW)
-        continue;
-      bt_._branches.emplace_back(b);
-    }
-}
