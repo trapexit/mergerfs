@@ -313,8 +313,7 @@ main(int    argc_,
   Branch2 b,c;
   b = c;
   
-  state.create(branches,
-               "",
+  state.create("",
                O_RDWR,
                &ffi);
 
