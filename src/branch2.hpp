@@ -16,10 +16,10 @@ public:
 
 public:
   Branch2();
-  Branch2(Branch2 const &,
-          uint64_t const min_free_space);
+  Branch2(Branch2 const &);
   Branch2(Branch2 &&);
-  Branch2(toml::value const &);
+  Branch2(toml::value const &value,
+          uint64_t const     min_free_space);
   ~Branch2();
   Branch2& operator=(Branch2 const &);
 
