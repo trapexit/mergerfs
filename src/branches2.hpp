@@ -24,7 +24,7 @@ public:
   std::vector<BranchTier>::const_iterator end() const { return _branches.end(); }
   
 public:
-  uint64_t min_free_space;
+  nonstd::optional<uint64_t> min_free_space;
   
 private:
   std::vector<BranchTier> _branches;
