@@ -304,7 +304,7 @@ main(int    argc_,
 
   c.insert("foo","bar");
 
-
+  return 0;
   
   return l::main(argc_,argv_);
 }
