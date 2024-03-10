@@ -323,7 +323,7 @@ main(int    argc_,
     {
       for(auto &branch : branch_tier)
         {
-          fmt::print("{}\n",branch.name);
+          fmt::print("{}\n",branch.path);
         }
     }
 
