@@ -32,7 +32,7 @@ public:
 
 public:
   PolicyCache()
-    : _max_size(256)
+    : _max_size(1)
   {
   }
 
