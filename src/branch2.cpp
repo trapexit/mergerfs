@@ -44,7 +44,7 @@ Branch2::Branch2(toml::value const &v_,
 {
   enabled        = v_.at("enabled").as_boolean();
   mode           = Mode::_from_string(toml::find<std::string>(v_,"mode").c_str());
-  min_free_space = toml::find_or<uint64_t>(v_,"min-free-space",0);
+  min_free_space = toml::find_or<uint64_t>(v_,"min-free-space",min_free_space_);
   path           = toml::find<std::string>(v_,"path");
 
   int const flags = O_DIRECTORY | O_PATH | O_NOATIME;
