@@ -21,7 +21,7 @@
 #include "nonstd/optional.hpp"
 #include "boost/unordered/concurrent_flat_map.hpp"
 
-#include "fmt.hpp"
+#include "fmt/core.h"
 
 #include <cstdint>
 #include <string>
