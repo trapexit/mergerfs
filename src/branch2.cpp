@@ -42,15 +42,12 @@ Branch2::Branch2(toml::value const &v_,
                  uint64_t const     min_free_space_)
   : mode(Mode::RW)
 {
-  enabled        = v_.at("enabled").as_boolean();
   mode           = Mode::_from_string(toml::find<std::string>(v_,"mode").c_str());
   min_free_space = toml::find_or(v_,"min-free-space",min_free_space);
   path           = toml::find<std::string>(v_,"path");
 
   int const flags = O_DIRECTORY | O_PATH | O_NOATIME;
   fd = openat(AT_FDCWD,path.string().c_str(),flags);
-  if(fd < 0)
-    enabled = false;
 }
 
 Branch2::~Branch2()
