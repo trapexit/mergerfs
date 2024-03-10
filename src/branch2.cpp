@@ -78,6 +78,8 @@ Branch2::matches_exclude(ghc::filesystem::path const &path_) const
       int rv;
 
       rv = ::fnmatch(pattern.c_str(),path,FNM_EXTMATCH);
+      if(rv == 0)
+        return true;
     }
 
   return false;
