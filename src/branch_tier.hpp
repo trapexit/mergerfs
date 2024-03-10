@@ -22,5 +22,5 @@ public:
   std::vector<Branch2>::const_iterator end() const { return _branches.end(); }
 
 private:
-  std::vector<Branch2>  _branches;
+  std::vector<Branch2> _branches;
 };
