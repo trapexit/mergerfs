@@ -64,6 +64,6 @@ Branch2::operator=(Branch2 const &b_)
   min_free_space = b_.min_free_space;
   path           = b_.path;
   fd             = b_.fd;
-  
+
   return *this;
 }
