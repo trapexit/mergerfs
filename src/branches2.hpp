@@ -23,9 +23,6 @@ public:
   std::vector<BranchTier>::const_iterator begin() const { return _branches.begin(); }
   std::vector<BranchTier>::const_iterator end() const { return _branches.end(); }
 
-public:
-  uint64_t min_free_space;
-
 private:
   std::vector<BranchTier> _branches;
 };
