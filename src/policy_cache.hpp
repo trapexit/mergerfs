@@ -39,9 +39,9 @@ public:
 public:
   void
   insert(std::string const &key_,
-         std::string       &val_)
+         std::string const &val_)
   {
-    _cache.visit_while([&](Map::value_type &v_)
+    _cache.visit_while([&](Map::value_type const &v_)
     {
       _cache.erase(v_.first);
       return (_cache.size() > _max_size);
