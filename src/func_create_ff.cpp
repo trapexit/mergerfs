@@ -65,16 +65,8 @@ namespace l
           {
             if(branch.mode != +Branch2::Mode::RW)
               continue;
-            for(auto const &fnmatch : branch.exclude)
-              {
-                int rv;
-                const char *pattern = "*";
-
-                rv = fnmatch(pattern,fusepath_.string().c_str(),FNM_CASEFOLD);
-
-                if(rv == 0)
-                  continue;
-              }
+            if(branch.matches_exclude(fusepath_))
+              continue;
             rv = fs::info(branch.path,&info);
             if(rv == -1)
               continue;
