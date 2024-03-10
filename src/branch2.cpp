@@ -39,7 +39,7 @@ Branch2::Branch2(Branch2 &&v_)
 }
 
 Branch2::Branch2(toml::value const &v_,
-                 uint64_t const min_free_space_)
+                 uint64_t const     min_free_space_)
   : mode(Mode::RW)
 {
   enabled        = v_.at("enabled").as_boolean();
