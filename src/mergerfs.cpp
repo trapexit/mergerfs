@@ -308,6 +308,7 @@ main(int    argc_,
 
   fuse_file_info_t ffi;
   Branches2 branches(data["branches"]);
+  state.branches = branches;
 
   Branch2 b,c;
   b = c;
