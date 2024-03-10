@@ -47,7 +47,7 @@ public:
     
     _cache.visit_while([&](Map::value_type const &v_)
     {
-      _cache.erase(v_.first);
+      //      _cache.erase(v_.first);
       --size;
       fmt::print("{} > {}\n",size,_max_size);
       return (size > _max_size);
