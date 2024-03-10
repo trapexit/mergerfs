@@ -62,7 +62,7 @@ BranchTier::BranchTier(toml::value const &v_)
       std::string type;
       auto const &table = branch.as_table();
 
-      enabled = toml::find_or(v_,"enabled",false);
+      enabled = toml::find_or(table,"enabled",false);
       if(!enabled)
         continue;
 
