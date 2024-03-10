@@ -71,10 +71,10 @@ BranchTier::BranchTier(toml::value const &v_
 
       type = table.at("type").as_string();
       if(type == "literal")
-        l::load_branch_literal(table,min_free_space_,_branches);
+        l::load_branch_literal(table,min_free_space,_branches);
       else if(type == "glob")
-        l::load_branch_glob(table,min_free_space_,_branches);
+        l::load_branch_glob(table,min_free_space,_branches);
       else if(type == "scan")
-        l::load_branch_scan(table,min_free_space_,_branches);
+        l::load_branch_scan(table,min_free_space,_branches);
     }
 }
