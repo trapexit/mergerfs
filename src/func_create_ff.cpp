@@ -28,6 +28,22 @@ Func2::CreateFF::~CreateFF()
 
 namespace l
 {
+  bool
+  fnmatch(std::vector<std::string> const &patterns_,
+          const char                     *string_)
+  {
+    int rv;
+    
+    for(auto const &pattern : patterns_)
+      {
+        rv = ::fnmatch(patterns_.c_str(),string_,FNM_EXTMATCH);
+        if(rv == 0)
+          return true;
+      }
+
+    return false;
+  }
+  
   static
   int
   create(Branches2        &branches_,
