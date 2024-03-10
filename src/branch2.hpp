@@ -24,6 +24,9 @@ public:
   Branch2& operator=(Branch2 const &);
 
 public:
+  bool matches_exclude(ghc::filesystem::path const &path);
+
+public:
   bool enabled;
   Mode mode;
   uint64_t min_free_space;
