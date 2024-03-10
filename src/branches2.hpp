@@ -14,9 +14,6 @@ public:
   Branches2(toml::value const &);
 
 public:
-  void copy_enabled_rw(Branches2 &) const;
-  
-public:
   int clonepath(ghc::filesystem::path basepath,
                 ghc::filesystem::path fusepath);
 
