@@ -41,10 +41,13 @@ public:
   insert(std::string const &key_,
          std::string const &val_)
   {
+    auto size = _cache.size();
+    
     _cache.visit_while([&](Map::value_type const &v_)
     {
       _cache.erase(v_.first);
-      return (_cache.size() > _max_size);
+      --size;
+      return (size > _max_size);
     });
     
     _cache.insert_or_assign(key_,val_);
