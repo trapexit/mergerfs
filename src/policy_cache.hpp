@@ -47,6 +47,7 @@ public:
     {
       _cache.erase(v_.first);
       --size;
+      fmt::print("{} > {}\n",size,_max_size);
       return (size > _max_size);
     });
     
