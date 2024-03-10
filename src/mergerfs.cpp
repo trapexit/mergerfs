@@ -302,7 +302,14 @@ main(int    argc_,
 {
   PolicyCache c;
 
-  c.insert("foo","bar");
+  for(int x = 0; x < 1000; x++)
+    {
+      std::string k;
+
+      k = fmt::format("{}",x);
+      
+      c.insert(k,"bar");
+    }
 
   return 0;
   
