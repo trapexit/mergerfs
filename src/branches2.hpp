@@ -3,8 +3,8 @@
 #include "branch2.hpp"
 #include "branch_tier.hpp"
 
-#include "toml.hpp"
 #include "nonstd/optional.hpp"
+#include "toml.hpp"
 
 #include <vector>
 
