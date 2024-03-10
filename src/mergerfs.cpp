@@ -310,10 +310,6 @@ main(int    argc_,
   Branches2 branches(data["branches"]);
   state.branches = branches;
 
-  state.create("foo",
-               O_RDWR,
-               &ffi);
-
   std::cout << data["branches"] << '\n';
 
   for(auto &branch_tier : branches)
