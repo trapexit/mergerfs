@@ -49,6 +49,11 @@ namespace l
           {
             if(branch.mode != +Branch2::Mode::RW)
               continue;
+            for(auto const &fnmatch : branch.exclude)
+              {
+
+              }
+            
             rv = fs::info(branch.path,&info);
             if(rv == -1)
               continue;
