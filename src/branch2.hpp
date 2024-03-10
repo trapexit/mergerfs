@@ -24,7 +24,7 @@ public:
   Branch2& operator=(Branch2 const &);
 
 public:
-  bool matches_exclude(ghc::filesystem::path const &path);
+  bool matches_exclude(ghc::filesystem::path const &path) const;
 
 public:
   bool enabled;
