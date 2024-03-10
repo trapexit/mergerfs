@@ -10,7 +10,8 @@ class BranchTier
 {
 public:
   BranchTier();
-  BranchTier(toml::value const &);
+  BranchTier(toml::value const &,
+             uint64_t const min_free_space = 0);
 
 public:
   std::vector<Branch2>::iterator begin() { return _branches.begin(); }
