@@ -55,8 +55,10 @@ BranchTier::BranchTier()
 BranchTier::BranchTier(toml::value const &v_
                        uint64_t const     min_free_space_)
 {
+  uint64_t min_free_space;
   auto const &branches = toml::find(v_,"branch").as_array();
 
+  min_free_space = toml::find_or(v_,"min-free-space",min_free_space_);
   for(auto const &branch : branches)
     {
       bool enabled;
