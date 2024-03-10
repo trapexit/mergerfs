@@ -294,13 +294,14 @@ namespace l
   }
 }
 
+#include "policy_cache.hpp"
+
 int
 main(int    argc_,
      char **argv_)
 {
   PolicyCache c;
 
-  
 
   
   return l::main(argc_,argv_);
