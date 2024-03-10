@@ -27,7 +27,7 @@ Branches2::Branches2(toml::value const &v_)
       if(!enabled)
         continue;
       
-      _branches.emplace_back(tier);
+      _branches.emplace_back(tier,min_free_space);
     }
 }
 
