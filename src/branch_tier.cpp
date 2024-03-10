@@ -58,8 +58,13 @@ BranchTier::BranchTier(toml::value const &v_)
 
   for(auto const &branch : branches)
     {
+      bool enabled;
       std::string type;
       auto const &table = branch.as_table();
+
+      enabled = toml::find_or(v_,"enabled",false);
+      if(!enabled)
+        continue;
 
       type = table.at("type").as_string();
       if(type == "literal")
