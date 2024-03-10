@@ -310,9 +310,6 @@ main(int    argc_,
   Branches2 branches(data["branches"]);
   state.branches = branches;
 
-  Branch2 b,c;
-  b = c;
-  
   state.create("",
                O_RDWR,
                &ffi);
