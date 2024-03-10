@@ -51,9 +51,14 @@ namespace l
               continue;
             for(auto const &fnmatch : branch.exclude)
               {
+                int rv;
+                const char *pattern = "*";
 
+                rv = fnmatch(pattern,fusepath_.string().c_str(),FNM_CASEFOLD);
+
+                if(rv == 0)
+                  continue;
               }
-            
             rv = fs::info(branch.path,&info);
             if(rv == -1)
               continue;
