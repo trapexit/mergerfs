@@ -66,3 +66,9 @@ Branch2::operator=(Branch2 const &b_)
 
   return *this;
 }
+
+bool
+Branch2::matches_exclude(ghc::filesystem::path const &path_) const
+{
+
+}
