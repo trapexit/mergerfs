@@ -32,4 +32,5 @@ public:
   uint64_t min_free_space;
   int fd;
   ghc::filesystem::path path;
+  std::vector<std::string> excludes;
 };
