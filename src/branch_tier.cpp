@@ -15,12 +15,13 @@ namespace l
                       uint64_t const        min_free_space_,
                       std::vector<Branch2> &branches_)
   {
-    branches_.emplace_back(v_);
+    branches_.emplace_back(v_,min_free_space_);
   }
 
   static
   void
   load_branch_glob(toml::table const    &v_,
+                   uint64_t const        min_free_space_,
                    std::vector<Branch2> &branches_)
   {
     toml::table table;
