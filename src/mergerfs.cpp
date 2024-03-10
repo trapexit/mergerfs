@@ -302,6 +302,8 @@ main(int    argc_,
 {
   PolicyCache c;
 
+  c.insert("foo","bar");
+
 
   
   return l::main(argc_,argv_);
