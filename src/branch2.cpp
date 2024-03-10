@@ -70,7 +70,7 @@ Branch2::operator=(Branch2 const &b_)
 bool
 Branch2::matches_exclude(ghc::filesystem::path const &path_) const
 {
-  int rv;  
+  int rv;
   const char *path;
 
   path = path_.string().c_str();
