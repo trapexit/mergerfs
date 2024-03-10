@@ -3,7 +3,6 @@
 #include "branch2.hpp"
 #include "branch_tier.hpp"
 
-#include "nonstd/optional.hpp"
 #include "toml.hpp"
 
 #include <vector>
@@ -25,7 +24,7 @@ public:
   std::vector<BranchTier>::const_iterator end() const { return _branches.end(); }
   
 public:
-  nonstd::optional<uint64_t> min_free_space;
+  uint64_t min_free_space;
   
 private:
   std::vector<BranchTier> _branches;
