@@ -70,5 +70,15 @@ Branch2::operator=(Branch2 const &b_)
 bool
 Branch2::matches_exclude(ghc::filesystem::path const &path_) const
 {
+  const char *path;
 
+  path = path_.string().c_str();
+  for(auto const &pattern : exclude_patterns)
+    {
+      int rv;
+
+      rv = ::fnmatch(pattern.c_str(),path,FNM_EXTMATCH);
+    }
+
+  return false;
 }
