@@ -83,6 +83,8 @@ min-free-space = 123
 
 # TIER 0
 [[branches.tier]]
+enabled = true
+
 [branches.tier.func.create]
 policy.default = 'mfs'
 [[branches.tier.func.create.policy.overrides]]
@@ -115,10 +117,11 @@ type = 'glob'
 mode = 'RW'
 if-not-mountpoint = 'fail' # 'fail' | 'deactivate' ?
 
+
 # TIER 1
 [[branches.tier]]
 [[branches.tier.branch]]
-enabled = true
+enabled = false
 name = 'branch0'
 type = 'literal'
 path = '/mnt/*'

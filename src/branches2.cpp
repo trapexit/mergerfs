@@ -19,6 +19,12 @@ Branches2::Branches2(toml::value const &v_)
 
   for(auto const &tier : tiers.as_array())
     {
+      bool enabled;
+
+      enabled = toml::find_or(tier,"enabled",false);
+      if(!enabled)
+        continue;
+      
       _branches.emplace_back(tier);
     }
 }
