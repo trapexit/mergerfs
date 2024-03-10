@@ -55,7 +55,7 @@ BranchTier::BranchTier()
 
 }
 
-BranchTier::BranchTier(toml::value const &v_
+BranchTier::BranchTier(toml::value const &v_,
                        uint64_t const     min_free_space_)
 {
   uint64_t min_free_space;
