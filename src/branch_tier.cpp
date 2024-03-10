@@ -12,6 +12,7 @@ namespace l
   static
   void
   load_branch_literal(toml::table const    &v_,
+                      uint64_t const        min_free_space_,
                       std::vector<Branch2> &branches_)
   {
     branches_.emplace_back(v_);
