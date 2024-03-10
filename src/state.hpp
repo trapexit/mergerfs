@@ -6,7 +6,7 @@
 class State
 {
   typedef ghc::filesystem::path Path;
-  
+
 public:
   State();
 
@@ -21,7 +21,7 @@ public:
   {
     return _create(branches,fusepath_,mode_,ffi_);
   }
-  
+
 private:
   Func2::Create _create;
 };
