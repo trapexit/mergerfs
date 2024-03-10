@@ -18,6 +18,7 @@ Branches2::Branches2(toml::value const &v_)
 {
   auto const &tiers = toml::find(v_,"tier");
 
+  min_free_space = toml::find_or(v_,"min-free-space",0);
   for(auto const &tier : tiers.as_array())
     {
       bool enabled;
