@@ -27,7 +27,7 @@ Branches2::Branches2(toml::value const &v_)
       enabled = toml::find_or(tier,"enabled",false);
       if(!enabled)
         continue;
-      
+
       _branches.emplace_back(tier,min_free_space);
     }
 }
