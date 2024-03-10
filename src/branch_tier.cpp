@@ -43,6 +43,7 @@ namespace l
   static
   void
   load_branch_scan(toml::table const    &v_,
+                   uint64_t const        min_free_space_,
                    std::vector<Branch2> &branches_)
   {
     assert(("not currently supported",0));
