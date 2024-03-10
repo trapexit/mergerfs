@@ -18,6 +18,6 @@ public:
              mode_t const      mode,
              fuse_file_info_t *ffi);
   
-public:
-  Func2::Create create;
+private:
+  Func2::Create _create;
 };
