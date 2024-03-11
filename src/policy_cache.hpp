@@ -62,8 +62,8 @@ public:
   {
     nonstd::optional<std::string> rv;
 
-    _cache.visit(key_,
-                 [&](Map::value_type &v_)
+    _cache.cvisit(key_,
+                 [&](Map::value_type const &v_)
                  {
                    rv = v_.second;
                  });
