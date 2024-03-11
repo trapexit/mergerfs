@@ -62,7 +62,7 @@ public:
 
   const
   nonstd::optional<std::string>
-  find(std::string const key_)
+  find(std::string const &key_)
   {
     nonstd::optional<std::string> rv;
 
