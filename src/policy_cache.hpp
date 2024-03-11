@@ -55,7 +55,6 @@ public:
         });
 
         _cache.erase(key);
-        fmt::print("{} > {} - {}\n",_cache.size(),_max_size,key);
       }
     
     _cache.insert_or_assign(key_,val_);
