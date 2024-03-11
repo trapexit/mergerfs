@@ -63,10 +63,10 @@ public:
     nonstd::optional<std::string> rv;
 
     _cache.cvisit(key_,
-                 [&](Map::value_type const &v_)
-                 {
-                   rv = v_.second;
-                 });
+                  [&](Map::value_type const &v_)
+                  {
+                    rv = v_.second;
+                  });
 
     return rv;
   }
