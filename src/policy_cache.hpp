@@ -54,7 +54,7 @@ public:
 
         _cache.erase(key);
       }
-    
+
     _cache.insert_or_assign(key_,val_);
   }
 
