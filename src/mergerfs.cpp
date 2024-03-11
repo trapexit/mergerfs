@@ -300,18 +300,5 @@ int
 main(int    argc_,
      char **argv_)
 {
-  PolicyCache c;
-
-  for(int x = 0; x < 1000; x++)
-    {
-      std::string k;
-
-      k = fmt::format("{}",x);
-      
-      c.insert(k,"bar");
-    }
-
-  return 0;
-  
   return l::main(argc_,argv_);
 }
