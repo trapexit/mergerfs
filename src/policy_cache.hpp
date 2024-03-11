@@ -52,7 +52,6 @@ public:
           return false;
         });
 
-        fmt::print("erase {}\n",key);
         _cache.erase(key);
       }
     
