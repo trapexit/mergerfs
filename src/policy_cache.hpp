@@ -33,8 +33,8 @@ public:
   typedef boost::concurrent_flat_map<std::string,std::string> Map;
 
 public:
-  PolicyCache()
-    : _max_size(1)
+  PolicyCache(unsigned const max_size_ = 256)
+    : _max_size(max_size_)
   {
   }
 
