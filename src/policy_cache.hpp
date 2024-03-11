@@ -48,7 +48,7 @@ public:
     while(_cache.size() > _max_size)
       {
         std::string key;
-        _cache.visit_while([&](Map::value_type const &v_)
+        _cache.cvisit_while([&](Map::value_type const &v_)
         {
           key = v_.first;
           return false;
