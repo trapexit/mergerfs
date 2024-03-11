@@ -43,8 +43,6 @@ public:
   insert(std::string const &key_,
          std::string const &val_)
   {
-    auto size = _cache.size();
-
     while(_cache.size() > _max_size)
       {
         std::string key;
