@@ -44,14 +44,19 @@ public:
          std::string const &val_)
   {
     auto size = _cache.size();
-    
-    _cache.visit_while([&](Map::value_type const &v_)
-    {
-      //      _cache.erase(v_.first);
-      --size;
-      fmt::print("{} > {}\n",size,_max_size);
-      return (size > _max_size);
-    });
+
+    while(_cache.size() > _max_size)
+      {
+        std::string key;
+        _cache.visit_while([&](Map::value_type const &v_)
+        {
+          key = v_.first;
+          return false;
+        });
+
+        _cache.erase(key);
+        fmt::print("{} > {} - {}\n",_cache.size(),_max_size,key);
+      }
     
     _cache.insert_or_assign(key_,val_);
   }
