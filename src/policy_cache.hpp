@@ -20,6 +20,7 @@
 
 #include "nonstd/optional.hpp"
 #include "boost/unordered/concurrent_flat_map.hpp"
+#include "boost/flyweight
 #include "wyhash.h"
 
 #include "fmt/core.h"
@@ -31,7 +32,8 @@
 class PolicyCache
 {
 public:
-  typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
+  typedef boost::flyweight<std::string,boost::flyweight::no_tracking> fwstr;
+  typedef boost::concurrent_flat_map<uint64_t,fwstr> Map;
 
 public:
   PolicyCache(unsigned const max_size_ = 256)
