@@ -44,6 +44,7 @@ public:
   insert(std::string const &key_,
          std::string const &val_)
   {
+    uint64_t hash;    
     // while(_cache.size() > _max_size)
     //   {
     //     std::string key;
@@ -59,7 +60,9 @@ public:
     fmt::print("insert {}={}\n",
                key_,
                val_);
-    _cache.insert_or_assign(key_,val_);
+
+    hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);    
+    _cache.insert_or_assign(hash,val_);
   }
 
   const
