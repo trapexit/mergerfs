@@ -33,7 +33,7 @@
 class PolicyCache
 {
 public:
-  typedef boost::flyweight<std::string,boost::flyweight::no_tracking> fwstr;
+  typedef boost::flyweight<std::string> fwstr;
   typedef boost::concurrent_flat_map<uint64_t,fwstr> Map;
 
 public:
