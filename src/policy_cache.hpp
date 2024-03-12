@@ -55,6 +55,9 @@ public:
         _cache.erase(key);
       }
 
+    fmt::print("insert {}={}\n",
+               key_,
+               val_);
     _cache.insert_or_assign(key_,val_);
   }
 
