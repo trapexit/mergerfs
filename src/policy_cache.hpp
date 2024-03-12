@@ -66,8 +66,10 @@ public:
   nonstd::optional<std::string>
   find(std::string const &key_)
   {
+    uint64_t hash;
     nonstd::optional<std::string> rv;
 
+    hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
     _cache.cvisit(key_,
                   [&](Map::value_type const &v_)
                   {
