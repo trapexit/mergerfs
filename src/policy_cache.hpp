@@ -31,7 +31,7 @@
 class PolicyCache
 {
 public:
-  typedef boost::concurrent_flat_map<std::string,std::string> Map;
+  typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
 
 public:
   PolicyCache(unsigned const max_size_ = 256)
