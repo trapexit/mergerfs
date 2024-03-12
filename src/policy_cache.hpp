@@ -53,8 +53,8 @@ public:
     //       return false;
     //     });
 
-        _cache.erase(key);
-      }
+      //   _cache.erase(key);
+      // }
 
     fmt::print("insert {}={}\n",
                key_,
