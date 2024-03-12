@@ -47,17 +47,6 @@ public:
          std::string const &val_)
   {
     uint64_t hash;    
-    // while(_cache.size() > _max_size)
-    //   {
-    //     std::string key;
-    //     _cache.cvisit_while([&](Map::value_type const &v_)
-    //     {
-    //       key = v_.first;
-    //       return false;
-    //     });
-
-      //   _cache.erase(key);
-      // }
 
     fmt::print("insert {}={}\n",
                key_,
