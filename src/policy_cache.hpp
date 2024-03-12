@@ -70,6 +70,9 @@ public:
     _cache.cvisit(key_,
                   [&](Map::value_type const &v_)
                   {
+                    fmt::print("get {}={}\n",
+                               key_,
+                               v_.second);
                     rv = v_.second;
                   });
 
