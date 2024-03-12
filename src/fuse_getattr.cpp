@@ -139,7 +139,7 @@ namespace l
     int rv;
     std::string fullpath;
     StrVec basepaths;
-    static PolicyCache cache;
+    static PolicyCache cache(4096);
 
     for(int c = 0; c < 2; c++)
       {
