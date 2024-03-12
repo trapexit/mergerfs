@@ -44,14 +44,14 @@ public:
   insert(std::string const &key_,
          std::string const &val_)
   {
-    while(_cache.size() > _max_size)
-      {
-        std::string key;
-        _cache.cvisit_while([&](Map::value_type const &v_)
-        {
-          key = v_.first;
-          return false;
-        });
+    // while(_cache.size() > _max_size)
+    //   {
+    //     std::string key;
+    //     _cache.cvisit_while([&](Map::value_type const &v_)
+    //     {
+    //       key = v_.first;
+    //       return false;
+    //     });
 
         _cache.erase(key);
       }
