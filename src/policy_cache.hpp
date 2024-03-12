@@ -21,6 +21,7 @@
 #include "nonstd/optional.hpp"
 #include "boost/unordered/concurrent_flat_map.hpp"
 #include "boost/flyweight/flyweight.hpp"
+#include "boost/flyweight/no_tracking.hpp"
 #include "wyhash.h"
 
 #include "fmt/core.h"
