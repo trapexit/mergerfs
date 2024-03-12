@@ -294,8 +294,6 @@ namespace l
   }
 }
 
-#include "policy_cache.hpp"
-
 int
 main(int    argc_,
      char **argv_)
