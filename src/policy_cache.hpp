@@ -70,7 +70,7 @@ public:
     nonstd::optional<std::string> rv;
 
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
-    _cache.cvisit(key_,
+    _cache.cvisit(hash,
                   [&](Map::value_type const &v_)
                   {
                     fmt::print("get {}={}\n",
