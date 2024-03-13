@@ -53,13 +53,16 @@ public:
   insert(std::string const &key_,
          std::string const &val_)
   {
-    uint64_t hash;    
+    uint64_t hash;
+    const char *val;
 
     fmt::print("insert {}={}\n",
                key_,
                val_);
 
-    hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);    
+    hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
+    
+    
     _cache.insert_or_assign(hash,val_);
   }
 
