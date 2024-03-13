@@ -29,11 +29,13 @@
 #include <cstdint>
 #include <string>
 
+using namespace boost::flyweights;
+
 
 class PolicyCache
 {
 public:
-  typedef boost::flyweights::flyweight<std::string,boost::flyweights::no_tracking> fwstr;
+  typedef flyweight<std::string,no_tracking> fwstr;
   typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
 
   fwstr foo;
