@@ -57,14 +57,16 @@ public:
     const char *ptr;
     STRPOOL_U64 token;
 
-    fmt::print("insert {}={}\n",
-               key_,
-               val_);
-
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
     token = strpool_inject(&_strpool,val_.c_str(),val_.size());
     ptr   = strpool_cstr(&_strpool,token);
     _cache.insert_or_assign(hash,val_);
+
+    fmt::print("insert {}={} token={} ptr={}\n",
+               key_,
+               val_,
+               token,
+               ptr);
   }
 
   const
