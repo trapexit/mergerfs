@@ -70,11 +70,11 @@ public:
   }
 
   const
-  nonstd::optional<std::string>
-  find(std::string const &key_)
+  char*
+  find(std::string const &key_) const
   {
     uint64_t hash;
-    nonstd::optional<std::string> rv;
+    const char *rv;
 
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
     _cache.cvisit(hash,
