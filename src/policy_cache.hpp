@@ -55,7 +55,7 @@ public:
   {
     uint64_t hash;
     STRPOOL_U64 str;
-    const char *val;
+    const char *ptr;
 
     fmt::print("insert {}={}\n",
                key_,
