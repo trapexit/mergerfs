@@ -35,7 +35,7 @@ using namespace boost::flyweights;
 class PolicyCache
 {
 public:
-  typedef flyweight<std::string,no_tracking> fwstr;
+  typedef flyweight<std::string> fwstr;
   typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
 
   fwstr foo;
