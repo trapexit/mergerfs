@@ -54,15 +54,16 @@ public:
          std::string const &val_)
   {
     uint64_t hash;
-    STRPOOL_U64 str;
     const char *ptr;
+    STRPOOL_U64 token;
 
     fmt::print("insert {}={}\n",
                key_,
                val_);
 
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
-    val = 
+    token = strpool_inject(&_strpool,val_.c_str(),val_.size());
+    ptr 
     _cache.insert_or_assign(hash,val_);
   }
 
