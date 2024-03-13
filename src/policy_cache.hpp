@@ -36,6 +36,8 @@ public:
   typedef boost::flyweight<std::string,boost::flyweights::no_tracking> fwstr;
   typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
 
+  fwstr foo;
+  
 public:
   PolicyCache(unsigned const max_size_ = 256)
     : _max_size(max_size_)
