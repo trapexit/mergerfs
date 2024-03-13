@@ -28,8 +28,6 @@
 #include <cstdint>
 #include <string>
 
-using namespace boost::flyweights;
-
 
 class PolicyCache
 {
