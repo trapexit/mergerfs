@@ -54,6 +54,7 @@ public:
          std::string const &val_)
   {
     uint64_t hash;
+    STRPOOL_U64 key;
     const char *val;
 
     fmt::print("insert {}={}\n",
@@ -61,8 +62,7 @@ public:
                val_);
 
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
-    
-    
+    val = 
     _cache.insert_or_assign(hash,val_);
   }
 
