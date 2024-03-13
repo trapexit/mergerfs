@@ -40,7 +40,7 @@ public:
   {
     strpool_config_t config = strpool_default_config;
 
-    strpool_init(_strpool,&config);
+    strpool_init(&_strpool,&config);
   }
 
 public:
