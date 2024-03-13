@@ -156,7 +156,7 @@ namespace l
             basepath = basepaths[0].c_str();
           }
 
-        fullpath = fs::path::make(basepath.value(),fusepath_);
+        fullpath = fs::path::make(basepath,fusepath_);
 
         rv = l::getattr(fullpath,followsymlinks_,st_);
         if(rv == 0)
