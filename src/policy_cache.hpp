@@ -34,7 +34,7 @@ class PolicyCache
 {
 public:
   typedef boost::flyweight<std::string,boost::flyweights::no_tracking> fwstr;
-  typedef boost::concurrent_flat_map<uint64_t,fwstr> Map;
+  typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
 
 public:
   PolicyCache(unsigned const max_size_ = 256)
