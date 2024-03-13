@@ -32,7 +32,7 @@
 class PolicyCache
 {
 public:
-  typedef boost::concurrent_flat_map<uint64_t,std::string> Map;
+  typedef boost::concurrent_flat_map<uint64_t,> Map;
 
 public:
   PolicyCache(unsigned const max_size_ = 256)
@@ -41,6 +41,11 @@ public:
     strpool_config_t config = strpool_default_config;
 
     strpool_init(&_strpool,&config);
+  }
+
+  ~PolicyCache()
+  {
+    strpool_term(&_strpool);
   }
 
 public:
