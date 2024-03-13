@@ -63,7 +63,7 @@ public:
 
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
     token = strpool_inject(&_strpool,val_.c_str(),val_.size());
-    ptr 
+    ptr   = strpool_cstr(&_strpool,token);
     _cache.insert_or_assign(hash,val_);
   }
 
