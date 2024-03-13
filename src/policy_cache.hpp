@@ -54,7 +54,7 @@ public:
          std::string const &val_)
   {
     uint64_t hash;
-    STRPOOL_U64 key;
+    STRPOOL_U64 str;
     const char *val;
 
     fmt::print("insert {}={}\n",
