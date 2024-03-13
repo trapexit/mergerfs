@@ -38,6 +38,11 @@ public:
   PolicyCache(unsigned const max_size_ = 256)
     : _max_size(max_size_)
   {
+    strpool_config_t config = {0};
+
+    
+    
+    strpool_init(_strpool,&config);
   }
 
 public:
