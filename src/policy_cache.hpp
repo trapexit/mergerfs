@@ -49,7 +49,8 @@ public:
   }
 
 public:
-  void
+  const
+  char*
   insert(std::string const &key_,
          std::string const &val_)
   {
@@ -67,6 +68,8 @@ public:
                val_,
                token,
                ptr);
+
+    return ptr;
   }
 
   const
