@@ -141,6 +141,16 @@ namespace l
     StrVec basepaths;
     static PolicyCache cache(1024*1024);
 
+
+    basepath = cache.find(fusepath_);
+    while(true)
+      {
+        
+      }
+
+    
+
+    
     for(int c = 0; c < 2; c++)
       {
         const char *basepath;
@@ -162,6 +172,8 @@ namespace l
           break;
         if((rv == -1) && (errno != ENOENT))
           break;
+
+        
       }
 
     if(rv == -1)
