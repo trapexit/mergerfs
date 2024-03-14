@@ -155,36 +155,13 @@ namespace l
     fullpath = fs::path::make(basepath,fusepath_);
 
     rv = l::getattr(fullpath,followsymlinks_,st_);
-    if(rv == 0)
-      break;
     if((rv == -1) && (errno != ENOENT))
-      break;
-
-
-    
-    for(int c = 0; c < 2; c++)
       {
-        const char *basepath;
+        rv = searchFunc_(branches_,fusepath_,&basepaths);
+        if(rv == -1)
+          return -errno;
 
-        basepath = cache.find(fusepath_);
-        if(!basepath)
-          {
-            rv = searchFunc_(branches_,fusepath_,&basepaths);
-            if(rv == -1)
-              return -errno;
-
-            basepath = cache.insert(fusepath_,basepaths[0]);
-          }
-
-        fullpath = fs::path::make(basepath,fusepath_);
-
-        rv = l::getattr(fullpath,followsymlinks_,st_);
-        if(rv == 0)
-          break;
-        if((rv == -1) && (errno != ENOENT))
-          break;
-
-        
+        basepath = cache.insert(fusepath_,basepaths[0]);
       }
 
     if(rv == -1)
