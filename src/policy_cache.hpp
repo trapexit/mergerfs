@@ -93,6 +93,12 @@ public:
     return rv;
   }
 
+  void
+  erase(std::string const &key_)
+  {
+
+  }
+
 private:
   unsigned  _max_size;
   Map       _cache;
