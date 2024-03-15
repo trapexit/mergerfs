@@ -67,9 +67,7 @@ public:
     STRPOOL_U64 token;
 
     hash = wyhash(key_,keylen_,0xdeadbeef,_wyp);
-    token = strpool_inject(&_strpool,val_.c_str(),val_.size());
-    ptr   = strpool_cstr(&_strpool,token);
-    _cache.insert_or_assign(hash,ptr);
+    _cache.insert_or_assign(hash,val_);
 
     fmt::print("insert {}={} token={} ptr={}\n",
                key_,
