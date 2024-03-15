@@ -85,7 +85,7 @@ public:
                   val_);
   }
 
-  Key
+  Val
   insert(std::string const &key_,
          std::string const &val_)
   {
