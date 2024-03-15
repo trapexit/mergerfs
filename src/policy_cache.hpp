@@ -134,5 +134,4 @@ public:
 private:
   unsigned  _max_size;
   Map       _cache;
-  strpool_t _strpool;
 };
