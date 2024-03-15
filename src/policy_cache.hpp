@@ -77,8 +77,7 @@ public:
     return ptr;
   }
 
-  const
-  char*
+  Key
   insert(char const        *key_,
          std::string const &val_)
   {
@@ -87,8 +86,7 @@ public:
                   val_);
   }
 
-  const
-  char*
+  Key
   insert(std::string const &key_,
          std::string const &val_)
   {
@@ -97,7 +95,6 @@ public:
                   val_);
   }
 
-  const
   Key
   find(std::string const &key_) const
   {
