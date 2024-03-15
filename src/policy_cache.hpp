@@ -68,7 +68,7 @@ public:
                val_,
                token,
                ptr);
-    
+
     return ptr;
   }
 
