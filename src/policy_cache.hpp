@@ -78,22 +78,9 @@ public:
   insert(std::string const &key_,
          std::string const &val_)
   {
-    uint64_t hash;
-    const char *ptr;
-    STRPOOL_U64 token;
-
-    hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
-    token = strpool_inject(&_strpool,val_.c_str(),val_.size());
-    ptr   = strpool_cstr(&_strpool,token);
-    _cache.insert_or_assign(hash,ptr);
-
-    fmt::print("insert {}={} token={} ptr={}\n",
-               key_,
-               val_,
-               token,
-               ptr);
-
-    return ptr;
+    return insert(key_.c_str(),
+                  key_.size(),
+                  val_);
   }
 
   const
