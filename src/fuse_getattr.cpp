@@ -159,7 +159,10 @@ namespace l
       {
         rv = searchFunc_(branches_,fusepath_,&basepaths);
         if(rv == -1)
-          return -errno;
+          {
+            _cache.erase(fusepath_);
+            return -errno;
+          }
 
         basepath = cache.insert(fusepath_,basepaths[0]);
 
@@ -167,7 +170,10 @@ namespace l
       }
 
     if(rv == -1)
-      return -errno;
+      {
+        
+        return -errno;
+      }
 
     if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
       symlinkify::convert(fullpath,st_);
