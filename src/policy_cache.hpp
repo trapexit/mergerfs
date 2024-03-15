@@ -74,7 +74,7 @@ public:
                token);
 
 
-    return key;
+    return val;
   }
 
   Key
