@@ -61,16 +61,15 @@ public:
   {
     Val val;
     uint64_t hash;
-    STRPOOL_U64 token;
 
     val = val_;
     hash = wyhash(key_,keylen_,0xdeadbeef,_wyp);
     _cache.insert_or_assign(hash,val_);
 
-    fmt::print("insert {}={} token={}\n",
+    fmt::print("insert {}={}\n",
                key_,
-               val_,
-               token);
+               val.get());
+
 
 
     return val;
