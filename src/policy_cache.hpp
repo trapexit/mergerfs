@@ -54,8 +54,7 @@ public:
   }
 
 public:
-  const
-  char*
+  Val
   insert(char const        *key_,
          size_t const       keylen_,
          std::string const &val_)
@@ -77,7 +76,7 @@ public:
     return val;
   }
 
-  Key
+  Val
   insert(char const        *key_,
          std::string const &val_)
   {
@@ -95,7 +94,7 @@ public:
                   val_);
   }
 
-  Key
+  Val
   find(std::string const &key_) const
   {
     uint64_t hash;
