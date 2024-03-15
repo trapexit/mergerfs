@@ -37,7 +37,7 @@
 class PolicyCache
 {
 public:
-  typedef boost::flyweight::flyweight<std::string> Val;
+  typedef boost::flyweight<std::string> Val;
   typedef boost::concurrent_flat_map<uint64_t,const char*> Map;
 
 public:
