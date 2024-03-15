@@ -60,7 +60,7 @@ public:
          size_t const       keylen_,
          std::string const &val_)
   {
-    Key key;
+    Val val;
     uint64_t hash;
     STRPOOL_U64 token;
 
