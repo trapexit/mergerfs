@@ -143,7 +143,7 @@ namespace l
     static PolicyCache cache(1024*1024);
 
     basepath = cache.find(fusepath_);
-    if(basepath == NULL)
+    if(basepath.get().empty())
       {
         rv = searchFunc_(branches_,fusepath_,&basepaths);
         if(rv == -1)
