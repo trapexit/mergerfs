@@ -75,6 +75,14 @@ public:
 
   const
   char*
+  insert(char const        *key_,
+         std::string const &val_)
+  {
+
+  }
+
+  const
+  char*
   insert(std::string const &key_,
          std::string const &val_)
   {
