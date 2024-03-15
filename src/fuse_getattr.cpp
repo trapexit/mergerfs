@@ -160,7 +160,7 @@ namespace l
         rv = searchFunc_(branches_,fusepath_,&basepaths);
         if(rv == -1)
           {
-            _cache.erase(fusepath_);
+            cache.erase(fusepath_);
             return -errno;
           }
 
