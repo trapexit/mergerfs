@@ -60,19 +60,21 @@ public:
          size_t const       keylen_,
          std::string const &val_)
   {
+    Key key;
     uint64_t hash;
     STRPOOL_U64 token;
 
+    key = key_;
     hash = wyhash(key_,keylen_,0xdeadbeef,_wyp);
     _cache.insert_or_assign(hash,val_);
 
-    fmt::print("insert {}={} token={} ptr={}\n",
+    fmt::print("insert {}={} token={}\n",
                key_,
                val_,
-               token,
-               ptr);
+               token);
 
-    return ptr;
+
+    return key;
   }
 
   Key
