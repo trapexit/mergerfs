@@ -70,8 +70,6 @@ public:
                key_,
                val.get());
 
-
-
     return val;
   }
 
