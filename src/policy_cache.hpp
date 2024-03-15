@@ -99,7 +99,7 @@ public:
     uint64_t hash;
 
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
-    
+
     _cache.erase(hash);
   }
 
