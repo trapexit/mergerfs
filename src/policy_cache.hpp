@@ -64,7 +64,7 @@ public:
     uint64_t hash;
     STRPOOL_U64 token;
 
-    key = std::string(key_);
+    val = val_;
     hash = wyhash(key_,keylen_,0xdeadbeef,_wyp);
     _cache.insert_or_assign(hash,val_);
 
