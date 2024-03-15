@@ -98,7 +98,7 @@ public:
   }
 
   const
-  Key&
+  Key
   find(std::string const &key_) const
   {
     uint64_t hash;
