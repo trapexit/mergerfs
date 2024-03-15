@@ -59,7 +59,7 @@ public:
     const char *ptr;
     STRPOOL_U64 token;
 
-    hash = wyhash(key_,key_.size(),0xdeadbeef,_wyp);
+    hash = wyhash(key_,keylen_,0xdeadbeef,_wyp);
     token = strpool_inject(&_strpool,val_.c_str(),val_.size());
     ptr   = strpool_cstr(&_strpool,token);
     _cache.insert_or_assign(hash,ptr);
