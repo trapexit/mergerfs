@@ -139,7 +139,7 @@ namespace l
     int rv;
     std::string fullpath;
     StrVec basepaths;
-    const char *basepath;
+    PolicyCache::Key basepath;
     static PolicyCache cache(1024*1024);
 
     basepath = cache.find(fusepath_);
