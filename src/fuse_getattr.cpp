@@ -162,6 +162,8 @@ namespace l
           return -errno;
 
         basepath = cache.insert(fusepath_,basepaths[0]);
+
+        rv = l::getattr(fullpath,followsymlinks_,st_);        
       }
 
     if(rv == -1)
