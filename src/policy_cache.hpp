@@ -100,7 +100,6 @@ public:
     Val rv;    
     uint64_t hash;
 
-    rv = NULL;
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
     _cache.cvisit(hash,
                   [&](Map::value_type const &v_)
