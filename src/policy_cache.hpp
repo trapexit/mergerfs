@@ -45,14 +45,12 @@ public:
   PolicyCache(unsigned const max_size_ = 256)
     : _max_size(max_size_)
   {
-    strpool_config_t config = strpool_default_config;
 
-    strpool_init(&_strpool,&config);
   }
 
   ~PolicyCache()
   {
-    strpool_term(&_strpool);
+
   }
 
 public:
