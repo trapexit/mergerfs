@@ -78,7 +78,9 @@ public:
   insert(char const        *key_,
          std::string const &val_)
   {
-
+    return insert(key_,
+                  strlen(key_),
+                  val_);
   }
 
   const
