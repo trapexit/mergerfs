@@ -96,7 +96,11 @@ public:
   void
   erase(std::string const &key_)
   {
-    _cache.erase(key_);
+    uint64_t hash;
+
+    hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
+    
+    _cache.erase(hash);
   }
 
 private:
