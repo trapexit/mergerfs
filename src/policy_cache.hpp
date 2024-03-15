@@ -106,7 +106,7 @@ public:
                   {
                     fmt::print("get {}={}\n",
                                key_,
-                               v_.second);
+                               v_.second.get());
                     rv = v_.second;
                   });
 
