@@ -97,8 +97,8 @@ public:
   Val
   find(std::string const &key_) const
   {
+    Val rv;    
     uint64_t hash;
-    Val rv;
 
     rv = NULL;
     hash = wyhash(key_.c_str(),key_.size(),0xdeadbeef,_wyp);
