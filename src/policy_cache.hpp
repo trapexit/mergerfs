@@ -96,7 +96,7 @@ public:
   void
   erase(std::string const &key_)
   {
-
+    _cache.erase(key_);
   }
 
 private:
