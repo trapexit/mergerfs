@@ -18,8 +18,13 @@
 
 #pragma once
 
+// This uses a hashed key to limit the size of the data
+// structure. This could lead to choosing the wrong value but given
+// its usecase that really isn't a big deal.
+
 #include "nonstd/optional.hpp"
 #include "boost/unordered/concurrent_flat_map.hpp"
+#include "boost/flyweight.hpp"
 #include "wyhash.h"
 #include "strpool.h"
 
