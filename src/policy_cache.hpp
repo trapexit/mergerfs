@@ -63,7 +63,6 @@ public:
          std::string const &val_)
   {
     uint64_t hash;
-    const char *ptr;
     STRPOOL_U64 token;
 
     hash = wyhash(key_,keylen_,0xdeadbeef,_wyp);
