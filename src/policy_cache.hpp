@@ -71,7 +71,7 @@ public:
 
     return ptr;
   }
-  
+
   const
   char*
   insert(std::string const &key_,
