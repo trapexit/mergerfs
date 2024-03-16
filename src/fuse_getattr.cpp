@@ -171,7 +171,7 @@ namespace l
 
     if(rv == -1)
       {
-        
+        cache.erase(fusepath_);
         return -errno;
       }
 
