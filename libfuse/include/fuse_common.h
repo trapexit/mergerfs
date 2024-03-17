@@ -108,23 +108,26 @@ struct fuse_file_info_t
  * FUSE_CAP_IOCTL_DIR: ioctl support on directories
  * FUSE_CAP_CACHE_SYMLINKS: cache READLINK responses
  */
-#define FUSE_CAP_ASYNC_READ        (1 << 0)
-#define FUSE_CAP_POSIX_LOCKS       (1 << 1)
-#define FUSE_CAP_ATOMIC_O_TRUNC    (1 << 3)
-#define FUSE_CAP_EXPORT_SUPPORT    (1 << 4)
-#define FUSE_CAP_BIG_WRITES        (1 << 5)
-#define FUSE_CAP_DONT_MASK         (1 << 6)
-#define FUSE_CAP_FLOCK_LOCKS       (1 << 10)
-#define FUSE_CAP_IOCTL_DIR         (1 << 11)
-#define FUSE_CAP_READDIR_PLUS      (1 << 13)
-#define FUSE_CAP_READDIR_PLUS_AUTO (1 << 14)
-#define FUSE_CAP_ASYNC_DIO         (1 << 15)
-#define FUSE_CAP_WRITEBACK_CACHE   (1 << 16)
-#define FUSE_CAP_PARALLEL_DIROPS   (1 << 18)
-#define FUSE_CAP_POSIX_ACL         (1 << 19)
-#define FUSE_CAP_CACHE_SYMLINKS    (1 << 20)
-#define FUSE_CAP_MAX_PAGES         (1 << 21)
-#define FUSE_CAP_SETXATTR_EXT      (1 << 22)
+#define FUSE_CAP_ASYNC_READ           (1ULL << 0)
+#define FUSE_CAP_POSIX_LOCKS          (1ULL << 1)
+#define FUSE_CAP_ATOMIC_O_TRUNC       (1ULL << 3)
+#define FUSE_CAP_EXPORT_SUPPORT       (1ULL << 4)
+#define FUSE_CAP_BIG_WRITES           (1ULL << 5)
+#define FUSE_CAP_DONT_MASK            (1ULL << 6)
+#define FUSE_CAP_FLOCK_LOCKS          (1ULL << 10)
+#define FUSE_CAP_IOCTL_DIR            (1ULL << 11)
+#define FUSE_CAP_READDIR_PLUS         (1ULL << 13)
+#define FUSE_CAP_READDIR_PLUS_AUTO    (1ULL << 14)
+#define FUSE_CAP_ASYNC_DIO            (1ULL << 15)
+#define FUSE_CAP_WRITEBACK_CACHE      (1ULL << 16)
+#define FUSE_CAP_PARALLEL_DIROPS      (1ULL << 18)
+#define FUSE_CAP_POSIX_ACL            (1ULL << 19)
+#define FUSE_CAP_CACHE_SYMLINKS       (1ULL << 20)
+#define FUSE_CAP_MAX_PAGES            (1ULL << 21)
+#define FUSE_CAP_SETXATTR_EXT         (1ULL << 22)
+#define FUSE_CAP_DIRECT_IO_ALLOW_MMAP (1ULL << 23)
+#define FUSE_CAP_CREATE_SUPP_GROUP    (1ULL << 24)
+
 
 /**
  * Ioctl flags
@@ -150,56 +153,17 @@ struct fuse_file_info_t
  * indicate the value requested by the filesystem.  The requested
  * value must usually be smaller than the indicated value.
  */
-struct fuse_conn_info {
-  /**
-   * Major version of the protocol (read-only)
-   */
+struct fuse_conn_info
+{
   unsigned proto_major;
-
-  /**
-   * Minor version of the protocol (read-only)
-   */
   unsigned proto_minor;
-
-  /**
-   * Maximum size of the write buffer
-   */
   unsigned max_write;
-
-  /**
-   * Maximum readahead
-   */
   unsigned max_readahead;
-
-  /**
-   * Capability flags, that the kernel supports
-   */
-  unsigned capable;
-
-  /**
-   * Capability flags, that the filesystem wants to enable
-   */
-  unsigned want;
-
-  /**
-   * Maximum number of backgrounded requests
-   */
+  uint64_t capable;
+  uint64_t want;
   unsigned max_background;
-
-  /**
-   * Kernel congestion threshold parameter
-   */
   unsigned congestion_threshold;
-
-  /**
-   * Max pages
-   */
   uint16_t max_pages;
-
-  /**
-   * For future use.
-   */
-  unsigned reserved[22];
 };
 
 struct fuse_session;

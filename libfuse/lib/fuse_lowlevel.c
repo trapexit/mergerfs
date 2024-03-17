@@ -1097,6 +1097,11 @@ do_init(fuse_req_t             req,
   struct fuse_init_in *arg = (struct fuse_init_in *) &hdr_[1];
   struct fuse_ll *f = req->f;
   size_t bufsize = fuse_chan_bufsize(req->ch);
+  uint64_t inargflags;
+  uint64_t outargflags;
+
+  inargflags = 0;
+  outargflags = 0;
 
   if(f->debug)
     debug_fuse_init_in(arg);
@@ -1127,40 +1132,49 @@ do_init(fuse_req_t             req,
 
   if(arg->minor >= 6)
     {
+      inargflags = arg->flags;
+      if(inargflags & FUSE_INIT_EXT)
+        inargflags |= (((uint64_t)arg->flags2) << 32);
+
       if(arg->max_readahead < f->conn.max_readahead)
         f->conn.max_readahead = arg->max_readahead;
-      if(arg->flags & FUSE_ASYNC_READ)
+
+      if(inargflags & FUSE_ASYNC_READ)
         f->conn.capable |= FUSE_CAP_ASYNC_READ;
-      if(arg->flags & FUSE_POSIX_LOCKS)
+      if(inargflags & FUSE_POSIX_LOCKS)
         f->conn.capable |= FUSE_CAP_POSIX_LOCKS;
-      if(arg->flags & FUSE_ATOMIC_O_TRUNC)
+      if(inargflags & FUSE_ATOMIC_O_TRUNC)
         f->conn.capable |= FUSE_CAP_ATOMIC_O_TRUNC;
-      if(arg->flags & FUSE_EXPORT_SUPPORT)
+      if(inargflags & FUSE_EXPORT_SUPPORT)
         f->conn.capable |= FUSE_CAP_EXPORT_SUPPORT;
-      if(arg->flags & FUSE_BIG_WRITES)
+      if(inargflags & FUSE_BIG_WRITES)
         f->conn.capable |= FUSE_CAP_BIG_WRITES;
-      if(arg->flags & FUSE_DONT_MASK)
+      if(inargflags & FUSE_DONT_MASK)
         f->conn.capable |= FUSE_CAP_DONT_MASK;
-      if(arg->flags & FUSE_FLOCK_LOCKS)
+      if(inargflags & FUSE_FLOCK_LOCKS)
         f->conn.capable |= FUSE_CAP_FLOCK_LOCKS;
-      if(arg->flags & FUSE_POSIX_ACL)
+      if(inargflags & FUSE_POSIX_ACL)
         f->conn.capable |= FUSE_CAP_POSIX_ACL;
-      if(arg->flags & FUSE_CACHE_SYMLINKS)
+      if(inargflags & FUSE_CACHE_SYMLINKS)
         f->conn.capable |= FUSE_CAP_CACHE_SYMLINKS;
-      if(arg->flags & FUSE_ASYNC_DIO)
+      if(inargflags & FUSE_ASYNC_DIO)
         f->conn.capable |= FUSE_CAP_ASYNC_DIO;
-      if(arg->flags & FUSE_PARALLEL_DIROPS)
+      if(inargflags & FUSE_PARALLEL_DIROPS)
         f->conn.capable |= FUSE_CAP_PARALLEL_DIROPS;
-      if(arg->flags & FUSE_MAX_PAGES)
+      if(inargflags & FUSE_MAX_PAGES)
         f->conn.capable |= FUSE_CAP_MAX_PAGES;
-      if(arg->flags & FUSE_WRITEBACK_CACHE)
+      if(inargflags & FUSE_WRITEBACK_CACHE)
         f->conn.capable |= FUSE_CAP_WRITEBACK_CACHE;
-      if(arg->flags & FUSE_DO_READDIRPLUS)
+      if(inargflags & FUSE_DO_READDIRPLUS)
         f->conn.capable |= FUSE_CAP_READDIR_PLUS;
-      if(arg->flags & FUSE_READDIRPLUS_AUTO)
+      if(inargflags & FUSE_READDIRPLUS_AUTO)
         f->conn.capable |= FUSE_CAP_READDIR_PLUS_AUTO;
-      if(arg->flags & FUSE_SETXATTR_EXT)
+      if(inargflags & FUSE_SETXATTR_EXT)
         f->conn.capable |= FUSE_CAP_SETXATTR_EXT;
+      if(inargflags & FUSE_DIRECT_IO_ALLOW_MMAP)
+        f->conn.capable |= FUSE_CAP_DIRECT_IO_ALLOW_MMAP;
+      if(inargflags & FUSE_CREATE_SUPP_GROUP)
+        f->conn.capable |= FUSE_CAP_CREATE_SUPP_GROUP;
     }
   else
     {
@@ -1191,44 +1205,57 @@ do_init(fuse_req_t             req,
   if(f->op.init)
     f->op.init(f->userdata, &f->conn);
 
-  if((arg->flags & FUSE_MAX_PAGES) && (f->conn.want & FUSE_CAP_MAX_PAGES))
+  outargflags = outarg.flags;
+  if((inargflags & FUSE_MAX_PAGES) && (f->conn.want & FUSE_CAP_MAX_PAGES))
     {
-      outarg.flags     |= FUSE_MAX_PAGES;
+      outargflags     |= FUSE_MAX_PAGES;
       outarg.max_pages  = f->conn.max_pages;
 
       msgbuf_set_bufsize(outarg.max_pages + 1);
     }
 
   if(f->conn.want & FUSE_CAP_ASYNC_READ)
-    outarg.flags |= FUSE_ASYNC_READ;
+    outargflags |= FUSE_ASYNC_READ;
   if(f->conn.want & FUSE_CAP_POSIX_LOCKS)
-    outarg.flags |= FUSE_POSIX_LOCKS;
+    outargflags |= FUSE_POSIX_LOCKS;
   if(f->conn.want & FUSE_CAP_ATOMIC_O_TRUNC)
-    outarg.flags |= FUSE_ATOMIC_O_TRUNC;
+    outargflags |= FUSE_ATOMIC_O_TRUNC;
   if(f->conn.want & FUSE_CAP_EXPORT_SUPPORT)
-    outarg.flags |= FUSE_EXPORT_SUPPORT;
+    outargflags |= FUSE_EXPORT_SUPPORT;
   if(f->conn.want & FUSE_CAP_BIG_WRITES)
-    outarg.flags |= FUSE_BIG_WRITES;
+    outargflags |= FUSE_BIG_WRITES;
   if(f->conn.want & FUSE_CAP_DONT_MASK)
-    outarg.flags |= FUSE_DONT_MASK;
+    outargflags |= FUSE_DONT_MASK;
   if(f->conn.want & FUSE_CAP_FLOCK_LOCKS)
-    outarg.flags |= FUSE_FLOCK_LOCKS;
+    outargflags |= FUSE_FLOCK_LOCKS;
   if(f->conn.want & FUSE_CAP_POSIX_ACL)
-    outarg.flags |= FUSE_POSIX_ACL;
+    outargflags |= FUSE_POSIX_ACL;
   if(f->conn.want & FUSE_CAP_CACHE_SYMLINKS)
-    outarg.flags |= FUSE_CACHE_SYMLINKS;
+    outargflags |= FUSE_CACHE_SYMLINKS;
   if(f->conn.want & FUSE_CAP_ASYNC_DIO)
-    outarg.flags |= FUSE_ASYNC_DIO;
+    outargflags |= FUSE_ASYNC_DIO;
   if(f->conn.want & FUSE_CAP_PARALLEL_DIROPS)
-    outarg.flags |= FUSE_PARALLEL_DIROPS;
+    outargflags |= FUSE_PARALLEL_DIROPS;
   if(f->conn.want & FUSE_CAP_WRITEBACK_CACHE)
-    outarg.flags |= FUSE_WRITEBACK_CACHE;
+    outargflags |= FUSE_WRITEBACK_CACHE;
   if(f->conn.want & FUSE_CAP_READDIR_PLUS)
-    outarg.flags |= FUSE_DO_READDIRPLUS;
+    outargflags |= FUSE_DO_READDIRPLUS;
   if(f->conn.want & FUSE_CAP_READDIR_PLUS_AUTO)
-    outarg.flags |= FUSE_READDIRPLUS_AUTO;
+    outargflags |= FUSE_READDIRPLUS_AUTO;
   if(f->conn.want & FUSE_CAP_SETXATTR_EXT)
-    outarg.flags |= FUSE_SETXATTR_EXT;
+    outargflags |= FUSE_SETXATTR_EXT;
+  if(f->conn.want & FUSE_CAP_CREATE_SUPP_GROUP)
+    outargflags |= FUSE_CREATE_SUPP_GROUP;
+  if(f->conn.want & FUSE_CAP_DIRECT_IO_ALLOW_MMAP)
+    outargflags |= FUSE_DIRECT_IO_ALLOW_MMAP;
+
+  if(inargflags & FUSE_INIT_EXT)
+    {
+      outargflags |= FUSE_INIT_EXT;
+      outarg.flags2 = (outargflags >> 32);
+    }
+
+  outarg.flags = outargflags;
 
   outarg.max_readahead = f->conn.max_readahead;
   outarg.max_write = f->conn.max_write;
@@ -1246,6 +1273,9 @@ do_init(fuse_req_t             req,
       outarg.max_background = f->conn.max_background;
       outarg.congestion_threshold = f->conn.congestion_threshold;
     }
+
+  if(f->conn.proto_minor >= 23)
+    outarg.time_gran = 1;
 
   size_t outargsize;
   if(arg->minor < 5)

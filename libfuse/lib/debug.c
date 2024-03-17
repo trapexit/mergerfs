@@ -158,9 +158,9 @@ open_flag_to_str(const uint64_t offset_)
 static
 const
 char*
-fuse_flag_to_str(const uint32_t offset_)
+fuse_flag_to_str(const uint64_t offset_)
 {
-  switch(1 << offset_)
+  switch(1ULL << offset_)
     {
       FUSE_INIT_FLAG_CASE(ASYNC_READ);
       FUSE_INIT_FLAG_CASE(POSIX_LOCKS);
@@ -189,6 +189,16 @@ fuse_flag_to_str(const uint32_t offset_)
       FUSE_INIT_FLAG_CASE(NO_OPENDIR_SUPPORT);
       FUSE_INIT_FLAG_CASE(EXPLICIT_INVAL_DATA);
       FUSE_INIT_FLAG_CASE(MAP_ALIGNMENT);
+      FUSE_INIT_FLAG_CASE(SUBMOUNTS);
+      FUSE_INIT_FLAG_CASE(HANDLE_KILLPRIV_V2);
+      FUSE_INIT_FLAG_CASE(SETXATTR_EXT);
+      FUSE_INIT_FLAG_CASE(INIT_EXT);
+      FUSE_INIT_FLAG_CASE(INIT_RESERVED);
+      FUSE_INIT_FLAG_CASE(SECURITY_CTX);
+      FUSE_INIT_FLAG_CASE(HAS_INODE_DAX);
+      FUSE_INIT_FLAG_CASE(CREATE_SUPP_GROUP);
+      FUSE_INIT_FLAG_CASE(HAS_EXPIRE_ONLY);
+      FUSE_INIT_FLAG_CASE(DIRECT_IO_ALLOW_MMAP);
     }
 
   return NULL;
@@ -200,7 +210,7 @@ static
 void
 debug_open_flags(const uint32_t flags_)
 {
-  fprintf(stderr,"%s,",open_accmode_to_str(flags_));
+  fprintf(stderr,"%s, ",open_accmode_to_str(flags_));
   for(int i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
@@ -212,7 +222,7 @@ debug_open_flags(const uint32_t flags_)
       if(str == NULL)
         continue;
 
-      fprintf(stderr,"%s,",str);
+      fprintf(stderr,"%s, ",str);
     }
 }
 
@@ -717,28 +727,31 @@ debug_fuse_fallocate_in(const void *arg_)
 void
 debug_fuse_init_in(const struct fuse_init_in *arg_)
 {
+  uint64_t flags;
+
+  flags = (((uint64_t)arg_->flags) | ((uint64_t)arg_->flags2) << 32);
   fprintf(g_OUTPUT,
           "FUSE_INIT_IN: "
           " major=%u;"
           " minor=%u;"
           " max_readahead=%u;"
-          " flags=0x%08X (",
+          " flags=0x%016lx (",
           arg_->major,
           arg_->minor,
           arg_->max_readahead,
-          arg_->flags);
-  for(uint64_t i = 0; i < (sizeof(arg_->flags)*8); i++)
+          flags);
+  for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
     {
       const char *str;
 
-      if(!(arg_->flags & (1ULL << i)))
+      if(!(flags & (1ULL << i)))
         continue;
 
       str = fuse_flag_to_str(i);
       if(str == NULL)
         continue;
 
-      fprintf(g_OUTPUT,"%s,",str);
+      fprintf(g_OUTPUT,"%s, ",str);
     }
   fprintf(g_OUTPUT,")\n");
 }
@@ -748,7 +761,10 @@ debug_fuse_init_out(const uint64_t              unique_,
                     const struct fuse_init_out *arg_,
                     const uint64_t              argsize_)
 {
+  uint64_t flags;
   const struct fuse_init_out *arg = arg_;
+
+  flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
   fprintf(g_OUTPUT,
           /* "unique=0x%016"PRIx64";" */
           /* " opcode=RESPONSE;" */
@@ -758,27 +774,27 @@ debug_fuse_init_out(const uint64_t              unique_,
           " major=%u;"
           " minor=%u;"
           " max_readahead=%u;"
-          " flags=0x%08X ("
+          " flags=0x%016lx ("
           ,
           /* unique_, */
           /* sizeof(struct fuse_out_header) + argsize_, */
           arg->major,
           arg->minor,
           arg->max_readahead,
-          arg->flags);
+          flags);
 
-  for(uint64_t i = 0; i < (sizeof(arg->flags)*8); i++)
+  for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
     {
       const char *str;
 
-      if(!(arg->flags & (1ULL << i)))
+      if(!(flags & (1ULL << i)))
         continue;
 
       str = fuse_flag_to_str(i);
       if(str == NULL)
         continue;
 
-      fprintf(g_OUTPUT,"%s,",str);
+      fprintf(g_OUTPUT,"%s, ",str);
     }
 
   fprintf(g_OUTPUT,

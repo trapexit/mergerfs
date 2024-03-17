@@ -106,16 +106,22 @@ If you don\[cq]t already know that you have a special use case then just
 start with one of the following option sets.
 .SS You need \f[C]mmap\f[R] (used by rtorrent and many sqlite3 base software)
 .PP
-\f[C]cache.files=partial,dropcacheonclose=true,category.create=mfs\f[R]
+\f[C]cache.files=auto-full,dropcacheonclose=true,category.create=mfs\f[R]
+.PP
+or if you are on a Linux kernel >= 6.6.x mergerfs will enable a mode
+that allows shared mmap when \f[C]cache.files=off\f[R].
+To be sure of the best performance between \f[C]cache.files=off\f[R] and
+\f[C]cache.files=auto-full\f[R] you\[cq]ll need to do your own
+benchmarking but often \f[C]off\f[R] is faster.
 .SS You don\[cq]t need \f[C]mmap\f[R]
 .PP
 \f[C]cache.files=off,dropcacheonclose=true,category.create=mfs\f[R]
 .SS Command Line
 .PP
-\f[C]mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media\f[R]
+\f[C]mergerfs -o cache.files=auto-full,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media\f[R]
 .SS /etc/fstab
 .PP
-\f[C]/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0\f[R]
+\f[C]/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=auto-full,dropcacheonclose=true,category.create=mfs 0 0\f[R]
 .SS systemd mount
 .PP
 https://github.com/trapexit/mergerfs/wiki/systemd
@@ -130,7 +136,7 @@ Type=simple
 KillMode=none
 ExecStart=/usr/bin/mergerfs \[rs]
   -f \[rs]
-  -o cache.files=partial \[rs]
+  -o cache.files=auto-full \[rs]
   -o dropcacheonclose=true \[rs]
   -o category.create=mfs \[rs]
   /mnt/hdd0:/mnt/hdd1 \[rs]
@@ -184,6 +190,13 @@ Recommended when
 \f[B]cache.files=partial|full|auto-full|per-process\f[R] to limit double
 caching.
 (default: false)
+.IP \[bu] 2
+\f[B]direct-io-allow-mmap=BOOL\f[R]: On newer kernels (>= 6.6) it is
+possible to disable file page caching while still allowing for shared
+mmap support.
+mergerfs will enable this feature if available but an option is provided
+to turn it off for testing and debugging purposes.
+(default: true)
 .IP \[bu] 2
 \f[B]symlinkify=BOOL\f[R]: When enabled and a file is not writable and
 its mtime or ctime is older than \f[B]symlinkify_timeout\f[R] files will
@@ -2396,8 +2409,8 @@ Take a look at the section on NFS in the #remote-filesystems for more
 details.
 .SS rtorrent fails with ENODEV (No such device)
 .PP
-Be sure to set \f[C]cache.files=partial|full|auto-full|per-processe\f[R]
-or turn off \f[C]direct_io\f[R].
+Be sure to set
+\f[C]cache.files=partial|full|auto-full|per-processe\f[R].
 rtorrent and some other applications use
 mmap (http://linux.die.net/man/2/mmap) to read and write to files and
 offer no fallback to traditional methods.
