@@ -91,6 +91,11 @@ start with one of the following option sets.
 
 `cache.files=auto-full,dropcacheonclose=true,category.create=mfs`
 
+or if you are on a Linux kernel >= 6.6.x mergerfs will enable a mode
+that allows shared mmap when `cache.files=off`. To be sure of the best
+performance between `cache.files=off` and `cache.files=auto-full`
+you'll need to do your own benchmarking but often `off` is faster.
+
 #### You don't need `mmap`
 
 `cache.files=off,dropcacheonclose=true,category.create=mfs`
@@ -162,6 +167,11 @@ These options are the same regardless of whether you use them with the
   longer need the data and it can drop its cache. Recommended when
   **cache.files=partial|full|auto-full|per-process** to limit double
   caching. (default: false)
+* **direct-io-allow-mmap=BOOL**: On newer kernels (>= 6.6) it is
+  possible to disable file page caching while still allowing for
+  shared mmap support. mergerfs will enable this feature if available
+  but an option is provided to turn it off for testing and debugging
+  purposes. (default: true)
 * **symlinkify=BOOL**: When enabled and a file is not writable and its
   mtime or ctime is older than **symlinkify_timeout** files will be
   reported as symlinks to the original files. Please read more below

@@ -117,6 +117,7 @@ public:
   ConfigBOOL     cache_symlinks;
   Categories     category;
   ConfigBOOL     direct_io;
+  ConfigBOOL     direct_io_allow_mmap;
   ConfigBOOL     dropcacheonclose;
   ConfigBOOL     export_support;
   FlushOnClose   flushonclose;
