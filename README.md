@@ -89,7 +89,7 @@ start with one of the following option sets.
 
 #### You need `mmap` (used by rtorrent and many sqlite3 base software)
 
-`cache.files=partial,dropcacheonclose=true,category.create=mfs`
+`cache.files=auto-full,dropcacheonclose=true,category.create=mfs`
 
 #### You don't need `mmap`
 
@@ -97,11 +97,11 @@ start with one of the following option sets.
 
 ### Command Line
 
-`mergerfs -o cache.files=partial,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media`
+`mergerfs -o cache.files=auto-full,dropcacheonclose=true,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media`
 
 ### /etc/fstab
 
-`/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0`
+`/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=auto-full,dropcacheonclose=true,category.create=mfs 0 0`
 
 ### systemd mount
 
@@ -116,7 +116,7 @@ Type=simple
 KillMode=none
 ExecStart=/usr/bin/mergerfs \
   -f \
-  -o cache.files=partial \
+  -o cache.files=auto-full \
   -o dropcacheonclose=true \
   -o category.create=mfs \
   /mnt/hdd0:/mnt/hdd1 \
@@ -1868,16 +1868,17 @@ more details.
 
 #### rtorrent fails with ENODEV (No such device)
 
-Be sure to set `cache.files=partial|full|auto-full|per-processe` or
-turn off `direct_io`. rtorrent and some other applications use
-[mmap](http://linux.die.net/man/2/mmap) to read and write to files and
-offer no fallback to traditional methods. FUSE does not currently
-support mmap while using `direct_io`. There may be a performance
-penalty on writes with `direct_io` off as well as the problem of
-double caching but it's the only way to get such applications to
-work. If the performance loss is too high for other apps you can mount
-mergerfs twice. Once with `direct_io` enabled and one without it. Be
-sure to set `dropcacheonclose=true` if not using `direct_io`.
+Be sure to set
+`cache.files=partial|full|auto-full|per-processe`. rtorrent and some
+other applications use [mmap](http://linux.die.net/man/2/mmap) to read
+and write to files and offer no fallback to traditional methods. FUSE
+does not currently support mmap while using `direct_io`. There may be
+a performance penalty on writes with `direct_io` off as well as the
+problem of double caching but it's the only way to get such
+applications to work. If the performance loss is too high for other
+apps you can mount mergerfs twice. Once with `direct_io` enabled and
+one without it. Be sure to set `dropcacheonclose=true` if not using
+`direct_io`.
 
 
 #### Plex doesn't work with mergerfs
