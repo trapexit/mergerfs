@@ -28,9 +28,9 @@
 #include <string.h>
 #include <sys/stat.h>
 
-typedef uint64_t (*inodefunc_t)(const char*,const uint64_t,const mode_t,const dev_t,const ino_t);
+typedef uint64_t (*inodefunc_t)(const char*,const uint64_t,const mode_t,const dev_t,const ino_t,const std::string&);
 
-static uint64_t hybrid_hash(const char*,const uint64_t,const mode_t,const dev_t,const ino_t);
+static uint64_t hybrid_hash(const char*,const uint64_t,const mode_t,const dev_t,const ino_t,const std::string&);
 
 static inodefunc_t g_func = hybrid_hash;
 
@@ -48,7 +48,8 @@ passthrough(const char     *fusepath_,
             const uint64_t  fusepath_len_,
             const mode_t    mode_,
             const dev_t     dev_,
-            const ino_t     ino_)
+            const ino_t     ino_,
+            const std::string &basepath_)
 {
   return ino_;
 }
@@ -59,7 +60,8 @@ path_hash(const char     *fusepath_,
           const uint64_t  fusepath_len_,
           const mode_t    mode_,
           const dev_t     dev_,
-          const ino_t     ino_)
+          const ino_t     ino_,
+          const std::string &basepath_)
 {
   return wyhash(fusepath_,
                 fusepath_len_,
@@ -73,7 +75,8 @@ path_hash32(const char     *fusepath_,
             const uint64_t  fusepath_len_,
             const mode_t    mode_,
             const dev_t     dev_,
-            const ino_t     ino_)
+            const ino_t     ino_,
+            const std::string &basepath_)
 {
   uint64_t h;
 
@@ -81,7 +84,8 @@ path_hash32(const char     *fusepath_,
                 fusepath_len_,
                 mode_,
                 dev_,
-                ino_);
+                ino_,
+                basepath_);
 
   return h64_to_h32(h);
 }
@@ -92,7 +96,8 @@ devino_hash(const char     *fusepath_,
             const uint64_t  fusepath_len_,
             const mode_t    mode_,
             const dev_t     dev_,
-            const ino_t     ino_)
+            const ino_t     ino_,
+            const std::string &basepath_)
 {
   uint64_t buf[2];
 
@@ -111,7 +116,8 @@ devino_hash32(const char     *fusepath_,
               const uint64_t  fusepath_len_,
               const mode_t    mode_,
               const dev_t     dev_,
-              const ino_t     ino_)
+              const ino_t     ino_,
+              const std::string &basepath_)
 {
   uint64_t h;
 
@@ -119,7 +125,47 @@ devino_hash32(const char     *fusepath_,
                   fusepath_len_,
                   mode_,
                   dev_,
-                  ino_);
+                  ino_,
+                  basepath_);
+
+  return h64_to_h32(h);
+}
+
+static
+uint64_t
+basepath_hash(const char     *fusepath_,
+            const uint64_t  fusepath_len_,
+            const mode_t    mode_,
+            const dev_t     dev_,
+            const ino_t     ino_,
+            const std::string &basepath_)
+{
+
+  std::string buf = std::to_string(ino_) + basepath_;
+
+  return wyhash(buf.c_str(),
+              buf.length(),
+              fs::inode::MAGIC,
+              _wyp);
+}
+
+static
+uint64_t
+basepath_hash32(const char     *fusepath_,
+              const uint64_t  fusepath_len_,
+              const mode_t    mode_,
+              const dev_t     dev_,
+              const ino_t     ino_,
+              const std::string &basepath_)
+{
+  uint64_t h;
+
+  h = basepath_hash(fusepath_,
+                  fusepath_len_,
+                  mode_,
+                  dev_,
+                  ino_,
+                  basepath_);
 
   return h64_to_h32(h);
 }
@@ -130,11 +176,12 @@ hybrid_hash(const char     *fusepath_,
             const uint64_t  fusepath_len_,
             const mode_t    mode_,
             const dev_t     dev_,
-            const ino_t     ino_)
+            const ino_t     ino_,
+            const std::string &basepath_)
 {
   return (S_ISDIR(mode_) ?
-          path_hash(fusepath_,fusepath_len_,mode_,dev_,ino_) :
-          devino_hash(fusepath_,fusepath_len_,mode_,dev_,ino_));
+          path_hash(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_) :
+          devino_hash(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_));
 }
 
 static
@@ -143,11 +190,40 @@ hybrid_hash32(const char     *fusepath_,
               const uint64_t  fusepath_len_,
               const mode_t    mode_,
               const dev_t     dev_,
-              const ino_t     ino_)
+              const ino_t     ino_,
+              const std::string &basepath_)
 {
   return (S_ISDIR(mode_) ?
-          path_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_) :
-          devino_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_));
+          path_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_) :
+          devino_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_));
+}
+
+static
+uint64_t
+basehybrid_hash(const char     *fusepath_,
+            const uint64_t  fusepath_len_,
+            const mode_t    mode_,
+            const dev_t     dev_,
+            const ino_t     ino_,
+            const std::string &basepath_)
+{
+  return (S_ISDIR(mode_) ?
+          path_hash(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_) :
+          basepath_hash(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_));
+}
+
+static
+uint64_t
+basehybrid_hash32(const char     *fusepath_,
+              const uint64_t  fusepath_len_,
+              const mode_t    mode_,
+              const dev_t     dev_,
+              const ino_t     ino_,
+              const std::string &basepath_)
+{
+  return (S_ISDIR(mode_) ?
+          path_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_) :
+          basepath_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_));
 }
 
 namespace fs
@@ -171,6 +247,14 @@ namespace fs
         g_func = hybrid_hash;
       ef(algo_ == "hybrid-hash32")
         g_func = hybrid_hash32;
+      ef(algo_ == "basepath-hash")
+        g_func = basepath_hash;
+      ef(algo_ == "basepath-hash32")
+        g_func = basepath_hash32;
+      ef(algo_ == "basehybrid-hash")
+        g_func = basehybrid_hash;
+      ef(algo_ == "basehybrid-hash32")
+        g_func = basehybrid_hash32;
       else
         return -EINVAL;
 
@@ -194,6 +278,14 @@ namespace fs
         return "hybrid-hash";
       if(g_func == hybrid_hash32)
         return "hybrid-hash32";
+      if(g_func == basepath_hash)
+        return "basepath-hash";
+      if(g_func == basepath_hash)
+        return "basepath-hash32";
+      if(g_func == basehybrid_hash)
+        return "basehybrid-hash";
+      if(g_func == basehybrid_hash)
+        return "basehybrid-hash32";
 
       return std::string();
     }
@@ -203,48 +295,55 @@ namespace fs
          const uint64_t  fusepath_len_,
          const mode_t    mode_,
          const dev_t     dev_,
-         const ino_t     ino_)
+         const ino_t     ino_,
+         const std::string &basepath_)
     {
-      return g_func(fusepath_,fusepath_len_,mode_,dev_,ino_);
+      return g_func(fusepath_,fusepath_len_,mode_,dev_,ino_,basepath_);
     }
 
     uint64_t
     calc(std::string const &fusepath_,
          const mode_t       mode_,
          const dev_t        dev_,
-         const ino_t        ino_)
+         const ino_t        ino_,
+         const std::string &basepath_)
     {
       return calc(fusepath_.c_str(),
                   fusepath_.size(),
                   mode_,
                   dev_,
-                  ino_);
+                  ino_,
+                  basepath_);
     }
 
     void
     calc(const char     *fusepath_,
          const uint64_t  fusepath_len_,
-         struct stat    *st_)
+         struct stat    *st_,
+         const std::string &basepath_)
     {
       st_->st_ino = calc(fusepath_,
                          fusepath_len_,
                          st_->st_mode,
                          st_->st_dev,
-                         st_->st_ino);
+                         st_->st_ino,
+                         basepath_);
     }
 
     void
     calc(const char  *fusepath_,
-         struct stat *st_)
+         struct stat *st_,
+         const std::string &basepath_)
     {
-      calc(fusepath_,strlen(fusepath_),st_);
+      calc(fusepath_,strlen(fusepath_),st_, basepath_);
     }
 
     void
     calc(const std::string &fusepath_,
-         struct stat       *st_)
+         struct stat       *st_,
+         const std::string &basepath_)
     {
-      calc(fusepath_.c_str(),fusepath_.size(),st_);
+      calc(fusepath_.c_str(),fusepath_.size(),st_, basepath_);
     }
   }
 }

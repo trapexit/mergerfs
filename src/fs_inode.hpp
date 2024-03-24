@@ -37,18 +37,23 @@ namespace fs
                   const uint64_t  fusepath_len,
                   const mode_t    mode,
                   const dev_t     dev,
-                  const ino_t     ino);
+                  const ino_t     ino,
+                  const std::string &basepath = "");
     uint64_t calc(std::string const &fusepath,
                   mode_t const       mode,
                   dev_t const        dev,
-                  ino_t              ino);
+                  ino_t              ino,
+                  const std::string &basepath = "");
     void calc(const char     *fusepath,
               const uint64_t  fusepath_len,
-              struct stat    *st);
+              struct stat    *st,
+              const std::string &basepath = "");
     void calc(const char  *fusepath,
-              struct stat *st);
+              struct stat *st,
+              const std::string &basepath = "");
     void calc(const std::string &fusepath,
-              struct stat       *st);
+              struct stat       *st,
+              const std::string &basepath = "");
 
   }
 }
