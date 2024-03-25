@@ -88,26 +88,18 @@ struct fuse_file_info_t
 
   uint32_t noflush:1;
 
+  uint32_t passthrough:1;
+
   /** File handle.  May be filled in by filesystem in open().
       Available in all other file operations */
   uint64_t fh;
+
+  uint32_t backing_id;
 
   /** Lock owner id.  Available in locking operations and flush */
   uint64_t lock_owner;
 };
 
-/**
- * Capability bits for 'fuse_conn_info.capable' and 'fuse_conn_info.want'
- *
- * FUSE_CAP_ASYNC_READ: filesystem supports asynchronous read requests
- * FUSE_CAP_POSIX_LOCKS: filesystem supports "remote" locking
- * FUSE_CAP_ATOMIC_O_TRUNC: filesystem handles the O_TRUNC open flag
- * FUSE_CAP_EXPORT_SUPPORT: filesystem handles lookups of "." and ".."
- * FUSE_CAP_BIG_WRITES: filesystem can handle write size larger than 4kB
- * FUSE_CAP_DONT_MASK: don't apply umask to file mode on create operations
- * FUSE_CAP_IOCTL_DIR: ioctl support on directories
- * FUSE_CAP_CACHE_SYMLINKS: cache READLINK responses
- */
 #define FUSE_CAP_ASYNC_READ           (1ULL << 0)
 #define FUSE_CAP_POSIX_LOCKS          (1ULL << 1)
 #define FUSE_CAP_ATOMIC_O_TRUNC       (1ULL << 3)
@@ -127,6 +119,9 @@ struct fuse_file_info_t
 #define FUSE_CAP_SETXATTR_EXT         (1ULL << 22)
 #define FUSE_CAP_DIRECT_IO_ALLOW_MMAP (1ULL << 23)
 #define FUSE_CAP_CREATE_SUPP_GROUP    (1ULL << 24)
+#define FUSE_CAP_PASSTHROUGH          (1ULL << 25)
+#define FUSE_CAP_HANDLE_KILLPRIV      (1ULL << 26)
+#define FUSE_CAP_HANDLE_KILLPRIV_V2   (1ULL << 27)
 
 
 /**

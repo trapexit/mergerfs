@@ -47,6 +47,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 #ifdef HAVE_MALLOC_TRIM
 #include <malloc.h>
@@ -3682,6 +3683,12 @@ fuse_get_context(void)
   return &fuse_get_context_internal()->ctx;
 }
 
+int
+fuse_get_dev_fuse_fd(const struct fuse_context *fc_)
+{
+  return fuse_chan_fd(fc_->fuse->se->ch);
+}
+
 enum {
       KEY_HELP,
 };
@@ -4155,4 +4162,31 @@ int
 fuse_log_metrics_get(void)
 {
   return g_LOG_METRICS;
+}
+
+int
+fuse_passthrough_open(const struct fuse_context *fc_,
+                      const int                  fd_)
+{
+  int rv;
+  int dev_fuse_fd;
+  struct fuse_backing_map bm = {0};
+
+  dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
+  bm.fd       = fd_;
+
+  rv = ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_OPEN,&bm);
+
+  return rv;
+}
+
+int
+fuse_passthrough_close(const struct fuse_context *fc_,
+                       const int                  backing_id_)
+{
+  int dev_fuse_fd;
+
+  dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
+
+  return ioctl(dev_fuse_fd, FUSE_DEV_IOC_BACKING_CLOSE, &backing_id_);
 }

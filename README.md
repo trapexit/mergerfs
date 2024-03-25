@@ -167,7 +167,10 @@ These options are the same regardless of whether you use them with the
   longer need the data and it can drop its cache. Recommended when
   **cache.files=partial|full|auto-full|per-process** to limit double
   caching. (default: false)
-* **direct-io-allow-mmap=BOOL**: On newer kernels (>= 6.6) it is
+* **passthrough=off|ro|wo|rw**: On Linux 6.9 and above passthrough allows for
+  near native IO performance. See below for more details. (default:
+  off)
+* **direct-io-allow-mmap=BOOL**: On Linux 6.6 and above it is
   possible to disable file page caching while still allowing for
   shared mmap support. mergerfs will enable this feature if available
   but an option is provided to turn it off for testing and debugging
@@ -409,6 +412,32 @@ fact it will not be automatically included.
 **NOTE:** for mounting via **fstab** to work you must have
 **mount.fuse** installed. For Ubuntu/Debian it is included in the
 **fuse** package.
+
+
+### passthrough
+
+With Linux 6.9 and above there is a feature in FUSE called
+"passthrough" which can improve performance by allowing a union or
+overlay filesystem (like mergerfs) to pass the file descriptor of a
+file opened on an underlying filesystem to the kernel to work on
+directly rather than calls always having to go to the FUSE server
+(mergerfs). As of Linux 6.9 the functions that can be passthroughed
+are regular file read/write IO and mmap. Other functions may be added
+in the future.
+
+Passthrough requires `cache.files` to be enabled. `cache.files=off`
+(which enables FUSE direct-io feature) will override `passthrough` and
+read/write requests will still be sent to mergerfs.
+
+If `cache.files=off` and `direct-io-allow-mmap=true` (the default)
+then regular read/write IO will be handled by mergerfs but mmap will
+be passthroughed.
+
+NOTE: `moveonenospc` will not work when using `passthrough` as it
+removes mergerfs entirely from the read/write process. If an ENOSPC
+error occurs it will be returned to the caller app immediately. Since
+mergerfs won't be handling the IO it therefore won't be able to handle
+any error returned by said IO.
 
 
 ### inodecalc
@@ -1664,6 +1693,8 @@ over the suggestions below (including the benchmarking section.)
 NOTE: be sure to read about these features before changing them to
 understand what behaviors it may impact
 
+* test theoretical performance using `nullrw` or mounting a ram disk
+* enable `passthrough`
 * disable `security_capability` and/or `xattr`
 * increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
 * enable (or disable) page caching (`cache.files`)
@@ -1675,7 +1706,6 @@ understand what behaviors it may impact
 * change the number of worker threads
 * disable `posix_acl`
 * disable `async_read`
-* test theoretical performance using `nullrw` or mounting a ram disk
 * use `symlinkify` if your data is largely static and read-only
 * use tiered cache devices
 * use LVM and LVM cache to place a SSD in front of your HDDs
@@ -1879,7 +1909,7 @@ more details.
 #### rtorrent fails with ENODEV (No such device)
 
 Be sure to set
-`cache.files=partial|full|auto-full|per-processe`. rtorrent and some
+`cache.files=partial|full|auto-full|per-process`. rtorrent and some
 other applications use [mmap](http://linux.die.net/man/2/mmap) to read
 and write to files and offer no fallback to traditional methods. FUSE
 does not currently support mmap while using `direct_io`. There may be

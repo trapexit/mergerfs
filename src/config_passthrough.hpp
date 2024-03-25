@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+  ISC License
+
+  Copyright (c) 2024, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,29 +18,11 @@
 
 #pragma once
 
-#include "fh.hpp"
+#include "better_enum.hpp"
 
-#include <cstdint>
-#include <string>
-#include <mutex>
+#include "enum.hpp"
 
 
-class FileInfo : public FH
-{
-public:
-  FileInfo(int const   fd_,
-           char const *fusepath_,
-           bool const  direct_io_)
-    : FH(fusepath_),
-      fd(fd_),
-      backing_id(0),
-      direct_io(direct_io_)
-  {
-  }
+BETTER_ENUM(PassthroughEnum, uint8_t, off, r, w, ro, wo, rw);
 
-public:
-  int fd;
-  int backing_id;
-  uint32_t direct_io:1;
-  std::mutex mutex;
-};
+typedef Enum<PassthroughEnum> Passthrough;

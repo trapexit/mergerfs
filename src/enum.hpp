@@ -60,6 +60,12 @@ public:
     return _data;
   }
 
+  ENUM
+  operator+() const
+  {
+    return _data;
+  }
+
 public:
   bool operator==(const ENUM data_) const
   {

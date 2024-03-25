@@ -21,12 +21,13 @@
 #include "config_cachefiles.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
-#include "config_pid.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
 #include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
+#include "config_passthrough.hpp"
+#include "config_pid.hpp"
 #include "config_rename_exdev.hpp"
 #include "config_set.hpp"
 #include "config_statfs.hpp"
@@ -125,6 +126,8 @@ public:
   ConfigSTR      fsname;
   Funcs          func;
   ConfigUINT64   fuse_msg_size;
+  ConfigBOOL     handle_killpriv;
+  ConfigBOOL     handle_killpriv_v2;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
@@ -137,6 +140,7 @@ public:
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
   ConfigBOOL     parallel_direct_writes;
+  Passthrough    passthrough;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
   ConfigUINT64   readahead;

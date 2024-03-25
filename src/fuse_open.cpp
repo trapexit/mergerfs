@@ -220,6 +220,29 @@ namespace l
 
   static
   int
+  passthrough(const fuse_context *fc_,
+              fuse_file_info_t   *ffi_)
+  {
+    int backing_id;
+    FileInfo *fi;
+    const ugid::SetRootGuard ugid;
+
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    backing_id = fuse_passthrough_open(fc_,fi->fd);
+    if(backing_id <= 0)
+      return 0;
+
+    ffi_->passthrough = true;
+    ffi_->keep_cache  = true;
+    fi->backing_id    = backing_id;
+    ffi_->backing_id  = backing_id;
+
+    return 0;
+  }
+
+  static
+  int
   open(const Policy::Search &searchFunc_,
        const Branches       &branches_,
        const char           *fusepath_,
@@ -236,6 +259,15 @@ namespace l
 
     return l::open_core(basepaths[0],fusepath_,ffi_,link_cow_,nfsopenhack_);
   }
+}
+
+constexpr
+const
+uint64_t
+_(const PassthroughEnum e_,
+  const uint64_t        m_)
+{
+  return ((((uint64_t)e_) << 32) | (m_ & O_ACCMODE));
 }
 
 namespace FUSE
@@ -263,6 +295,23 @@ namespace FUSE
                  ffi_,
                  cfg->link_cow,
                  cfg->nfsopenhack);
+
+    if(rv != 0)
+      return rv;
+
+    switch(_(cfg->passthrough,ffi_->flags))
+      {
+      case _(PassthroughEnum::r, O_RDONLY):
+      case _(PassthroughEnum::r, O_RDWR):
+      case _(PassthroughEnum::w, O_WRONLY):
+      case _(PassthroughEnum::w, O_RDWR):
+      case _(PassthroughEnum::ro,O_RDONLY):
+      case _(PassthroughEnum::wo,O_WRONLY):
+      case _(PassthroughEnum::rw,O_RDONLY):
+      case _(PassthroughEnum::rw,O_WRONLY):
+      case _(PassthroughEnum::rw,O_RDWR):
+        return l::passthrough(fc,ffi_);
+      }
 
     return rv;
   }

@@ -1,5 +1,7 @@
-/*
-  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+#/*
+  ISC License
+
+  Copyright (c) 2024, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -14,31 +16,28 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "config_passthrough.hpp"
+#include "ef.hpp"
+#include "errno.hpp"
 
-#include "fh.hpp"
-
-#include <cstdint>
-#include <string>
-#include <mutex>
-
-
-class FileInfo : public FH
+template<>
+std::string
+Passthrough::to_string() const
 {
-public:
-  FileInfo(int const   fd_,
-           char const *fusepath_,
-           bool const  direct_io_)
-    : FH(fusepath_),
-      fd(fd_),
-      backing_id(0),
-      direct_io(direct_io_)
-  {
-  }
+  return _data._to_string();
+}
 
-public:
-  int fd;
-  int backing_id;
-  uint32_t direct_io:1;
-  std::mutex mutex;
-};
+template<>
+int
+Passthrough::from_string(const std::string &s_)
+{
+  better_enums::optional<PassthroughEnum> e;
+
+  e = PassthroughEnum::_from_string_nothrow(s_.c_str());
+  if(!e)
+    return -EINVAL;
+  
+  _data = *e;
+
+  return 0;
+}

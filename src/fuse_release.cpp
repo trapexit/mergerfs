@@ -19,6 +19,7 @@
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
 #include "fs_fadvise.hpp"
+#include "ugid.hpp"
 
 #include "fuse.h"
 
@@ -38,6 +39,16 @@ namespace l
       {
         fs::fadvise_dontneed(fi_->fd);
         fs::fadvise_dontneed(fi_->fd);
+      }
+
+    if(fi_->backing_id)
+      {
+        const fuse_context *fc;
+        const ugid::SetRootGuard ugid;
+
+        fc = fuse_get_context();
+
+        fuse_passthrough_close(fc,fi_->backing_id);
       }
 
     fs::close(fi_->fd);
