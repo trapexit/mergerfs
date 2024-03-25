@@ -220,6 +220,28 @@ namespace l
 
   static
   int
+  passthrough(const fuse_context *fc_,
+              fuse_file_info_t   *ffi_)
+  {
+    int backing_id;
+    FileInfo *fi;
+
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    backing_id = fuse_passthrough_open(fc_,fi->fd);
+    if(backing_id <= 0)
+      return 0;
+
+    ffi_->passthrough = true;
+    ffi_->keep_cache  = false;
+    fi->backing_id    = backing_id;
+    ffi_->backing_id  = backing_id;
+
+    return 0;
+  }
+
+  static
+  int
   open(const Policy::Search &searchFunc_,
        const Branches       &branches_,
        const char           *fusepath_,
@@ -264,6 +286,9 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
-    return rv;
+    if((rv != 0) || (cfg->passthrough == false))
+      return rv;
+
+    return l::passthrough(fc,ffi_);
   }
 }

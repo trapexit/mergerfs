@@ -62,6 +62,8 @@ namespace l
     IFERT("export-support");
     IFERT("fsname");
     IFERT("fuse_msg_size");
+    IFERT("handle-killpriv");
+    IFERT("handle-killpriv-v2");
     IFERT("mount");
     IFERT("nullrw");
     IFERT("pid");
@@ -103,6 +105,8 @@ Config::Config()
     fsname(),
     func(),
     fuse_msg_size(FUSE_MAX_MAX_PAGES),
+    handle_killpriv(true),
+    handle_killpriv_v2(true),
     ignorepponrename(false),
     inodecalc("hybrid-hash"),
     lazy_umount_mountpoint(false),
@@ -114,6 +118,7 @@ Config::Config()
     nfsopenhack(NFSOpenHack::ENUM::OFF),
     nullrw(false),
     parallel_direct_writes(false),
+    passthrough(false),
     posix_acl(false),
     readahead(0),
     readdir("seq"),
@@ -180,6 +185,8 @@ Config::Config()
   _map["func.unlink"]            = &func.unlink;
   _map["func.utimens"]           = &func.utimens;
   _map["fuse_msg_size"]          = &fuse_msg_size;
+  _map["handle-killpriv"]        = &handle_killpriv;
+  _map["handle-killpriv-v2"]     = &handle_killpriv_v2;
   _map["ignorepponrename"]       = &ignorepponrename;
   _map["inodecalc"]              = &inodecalc;
   _map["kernel_cache"]           = &kernel_cache;
@@ -194,6 +201,7 @@ Config::Config()
   _map["nullrw"]                 = &nullrw;
   _map["pid"]                    = &pid;
   _map["parallel-direct-writes"] = &parallel_direct_writes;
+  _map["passthrough"]            = &passthrough;
   _map["pin-threads"]            = &fuse_pin_threads;
   _map["posix_acl"]              = &posix_acl;
   _map["readahead"]              = &readahead;

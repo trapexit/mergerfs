@@ -40,6 +40,15 @@ namespace l
         fs::fadvise_dontneed(fi_->fd);
       }
 
+    if(fi_->backing_id)
+      {
+        const fuse_context *fc;
+
+        fc = fuse_get_context();
+
+        fuse_passthrough_close(fc,fi_->backing_id);
+      }
+
     fs::close(fi_->fd);
 
     delete fi_;

@@ -199,6 +199,7 @@ fuse_flag_to_str(const uint64_t offset_)
       FUSE_INIT_FLAG_CASE(CREATE_SUPP_GROUP);
       FUSE_INIT_FLAG_CASE(HAS_EXPIRE_ONLY);
       FUSE_INIT_FLAG_CASE(DIRECT_IO_ALLOW_MMAP);
+      FUSE_INIT_FLAG_CASE(PASSTHROUGH);
     }
 
   return NULL;

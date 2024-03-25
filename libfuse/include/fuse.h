@@ -667,6 +667,8 @@ int fuse_loop_mt(struct fuse *f);
  */
 struct fuse_context *fuse_get_context(void);
 
+int fuse_get_dev_fuse_fd(const struct fuse_context *);
+
 /**
  * Check if the current request has already been interrupted
  *
@@ -778,6 +780,11 @@ struct fuse_session *fuse_get_session(struct fuse *f);
 void fuse_gc1();
 void fuse_gc();
 void fuse_invalidate_all_nodes();
+
+int fuse_passthrough_open(const struct fuse_context *fc,
+                          const int                  fd);
+int fuse_passthrough_close(const struct fuse_context *fc,
+                           const int                  backing_id);
 
 EXTERN_C_END
 

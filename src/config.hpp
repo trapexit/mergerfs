@@ -125,6 +125,8 @@ public:
   ConfigSTR      fsname;
   Funcs          func;
   ConfigUINT64   fuse_msg_size;
+  ConfigBOOL     handle_killpriv;
+  ConfigBOOL     handle_killpriv_v2;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
@@ -137,6 +139,7 @@ public:
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
   ConfigBOOL     parallel_direct_writes;
+  ConfigBOOL     passthrough;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
   ConfigUINT64   readahead;

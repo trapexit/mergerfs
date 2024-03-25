@@ -31,12 +31,14 @@ public:
            bool const  direct_io_)
     : FH(fusepath_),
       fd(fd_),
+      backing_id(0),
       direct_io(direct_io_)
   {
   }
 
 public:
   int fd;
+  int backing_id;
   uint32_t direct_io:1;
   std::mutex mutex;
 };
