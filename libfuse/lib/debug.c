@@ -775,7 +775,7 @@ debug_fuse_init_out(const uint64_t              unique_,
           " major=%u;"
           " minor=%u;"
           " max_readahead=%u;"
-          " flags=0x%016lx ("
+          " flags=0x%08lx ("
           ,
           /* unique_, */
           /* sizeof(struct fuse_out_header) + argsize_, */
