@@ -805,6 +805,7 @@ debug_fuse_init_out(const uint64_t              unique_,
           " time_gran=%u;"
           " max_pages=%u;"
           " map_alignment=%u;"
+          " max_stack_depth=%u;"
           "\n",
           arg->max_background,
           arg->congestion_threshold,
