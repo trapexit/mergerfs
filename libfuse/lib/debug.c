@@ -736,7 +736,7 @@ debug_fuse_init_in(const struct fuse_init_in *arg_)
           " major=%u;"
           " minor=%u;"
           " max_readahead=%u;"
-          " flags=0x%016lx (",
+          " flags=0x%08lx (",
           arg_->major,
           arg_->minor,
           arg_->max_readahead,
@@ -767,7 +767,7 @@ debug_fuse_init_out(const uint64_t              unique_,
 
   flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
   fprintf(g_OUTPUT,
-          /* "unique=0x%016"PRIx64";" */
+          /* "unique=0x%08"PRIx64";" */
           /* " opcode=RESPONSE;" */
           /* " error=0 (Success);" */
           /* " len=%"PRIu64"; || " */
@@ -822,7 +822,7 @@ debug_fuse_attr(const struct fuse_attr *attr_)
 {
   fprintf(g_OUTPUT,
           "attr:"
-          " ino=0x%016"PRIx64";"
+          " ino=0x%08"PRIx64";"
           " size=%"PRIu64";"
           " blocks=%"PRIu64";"
           " atime=%"PRIu64";"
@@ -861,8 +861,8 @@ debug_fuse_entry(const struct fuse_entry_out *entry_)
 {
   fprintf(g_OUTPUT,
           " fuse_entry_out:"
-          " nodeid=0x%016"PRIx64";"
-          " generation=0x%016"PRIx64";"
+          " nodeid=0x%08"PRIx64";"
+          " generation=0x%08"PRIx64";"
           " entry_valid=%"PRIu64";"
           " entry_valid_nsec=%u;"
           " attr_valid=%"PRIu64";"
@@ -883,7 +883,7 @@ debug_fuse_entry_out(const uint64_t               unique_,
                      const uint64_t               argsize_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -900,7 +900,7 @@ debug_fuse_attr_out(const uint64_t              unique_,
                     const uint64_t              argsize_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -952,7 +952,7 @@ debug_fuse_interrupt_in(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_interrupt_in:"
-          " unique=0x%016"PRIx64";"
+          " unique=0x%08"PRIx64";"
           "\n"
           ,
           arg->unique);
@@ -1026,7 +1026,7 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
   const void *arg = &hdr_[1];
 
   fprintf(stderr,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=%s (%u);"
           " nodeid=%zu;"
           " uid=%u;"
@@ -1139,7 +1139,7 @@ void
 debug_fuse_out_header(const struct fuse_out_header *hdr_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=%d (%s);"
           " len=%"PRIu64";"
@@ -1156,7 +1156,7 @@ debug_fuse_entry_open_out(const uint64_t               unique_,
                           const struct fuse_open_out  *open_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -1172,7 +1172,7 @@ debug_fuse_readlink(const uint64_t  unique_,
                     const char     *linkname_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -1189,7 +1189,7 @@ debug_fuse_write_out(const uint64_t               unique_,
                      const struct fuse_write_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -1207,7 +1207,7 @@ debug_fuse_statfs_out(const uint64_t                unique_,
                       const struct fuse_statfs_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -1239,7 +1239,7 @@ debug_fuse_getxattr_out(const uint64_t            unique_,
                         const struct fuse_getxattr_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -1258,7 +1258,7 @@ debug_fuse_lk_out(const uint64_t            unique_,
                   const struct fuse_lk_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
@@ -1282,7 +1282,7 @@ debug_fuse_bmap_out(const uint64_t              unique_,
                     const struct fuse_bmap_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%08"PRIx64";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
           " len=%"PRIu64"; || "
