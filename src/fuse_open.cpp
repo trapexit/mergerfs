@@ -275,6 +275,7 @@ namespace FUSE
 	struct fuse_backing_map bm = {0};
 
 	bm.fd = reinterpret_cast<FileInfo*>(ffi_->fh)->fd;
+        ugid::SetRootGuard g;
 	rv = fs::ioctl(fd, FUSE_DEV_IOC_BACKING_OPEN, &bm);
 	if(rv >= 0)
 	  {
@@ -290,3 +291,4 @@ namespace FUSE
     return rv;
   }
 }
+//ioctl(4, _IOC(_IOC_WRITE, 0xe5, 0x1, 0x10), 0x751b1cbf72a0)
