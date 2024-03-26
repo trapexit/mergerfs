@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_dup.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
@@ -23,11 +25,14 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "fs_stat.hpp"
+#include "fs_ioctl.hpp"
 #include "procfs_get_name.hpp"
 #include "stat_util.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
+
+#include "fuse_kernel.h"
 
 #include <set>
 #include <string>
@@ -263,6 +268,24 @@ namespace FUSE
                  ffi_,
                  cfg->link_cow,
                  cfg->nfsopenhack);
+
+    if(rv == 0)
+      {
+	int fd = fuse_get_dev_fuse_fd(fc);
+	struct fuse_backing_map bm = {0};
+
+	bm.fd = reinterpret_cast<FileInfo*>(ffi_->fh)->fd;
+	rv = fs::ioctl(fd, FUSE_DEV_IOC_BACKING_OPEN, &bm);
+	if(rv >= 0)
+	  {
+	    ffi_->passthrough = true;
+	    ffi_->backing_id = rv;
+	  }
+	else
+	  {
+	    rv = 0;
+	  }
+      }
 
     return rv;
   }

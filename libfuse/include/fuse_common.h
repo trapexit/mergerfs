@@ -88,9 +88,13 @@ struct fuse_file_info_t
 
   uint32_t noflush:1;
 
+  uint32_t passthrough:1;
+
   /** File handle.  May be filled in by filesystem in open().
       Available in all other file operations */
   uint64_t fh;
+
+  uint32_t backing_id;
 
   /** Lock owner id.  Available in locking operations and flush */
   uint64_t lock_owner;
@@ -127,6 +131,7 @@ struct fuse_file_info_t
 #define FUSE_CAP_SETXATTR_EXT         (1ULL << 22)
 #define FUSE_CAP_DIRECT_IO_ALLOW_MMAP (1ULL << 23)
 #define FUSE_CAP_CREATE_SUPP_GROUP    (1ULL << 24)
+#define FUSE_CAP_PASSTHROUGH          (1ULL << 25)
 
 
 /**

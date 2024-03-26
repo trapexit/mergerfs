@@ -3682,6 +3682,12 @@ fuse_get_context(void)
   return &fuse_get_context_internal()->ctx;
 }
 
+int
+fuse_get_dev_fuse_fd(const struct fuse_context *fc_)
+{
+  return fuse_chan_fd(fc_->fuse->se->ch);
+}
+
 enum {
       KEY_HELP,
 };

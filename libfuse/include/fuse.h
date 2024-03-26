@@ -667,6 +667,8 @@ int fuse_loop_mt(struct fuse *f);
  */
 struct fuse_context *fuse_get_context(void);
 
+int fuse_get_dev_fuse_fd(const struct fuse_context *);
+
 /**
  * Check if the current request has already been interrupted
  *
