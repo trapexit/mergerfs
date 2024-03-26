@@ -252,8 +252,7 @@ namespace FUSE
     int rv;
     Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
-    //    const ugid::Set     ugid(fc->uid,fc->gid);
-    ugid::SetRootGuard g;    
+    const ugid::Set     ugid(fc->uid,fc->gid);
 
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
@@ -276,7 +275,7 @@ namespace FUSE
 	struct fuse_backing_map bm = {0};
 
 	bm.fd = reinterpret_cast<FileInfo*>(ffi_->fh)->fd;
-
+        ugid::SetRootGuard g;    
 	rv = fs::ioctl(fd, FUSE_DEV_IOC_BACKING_OPEN, &bm);
 	if(rv >= 0)
 	  {
