@@ -812,7 +812,8 @@ debug_fuse_init_out(const uint64_t              unique_,
           arg->max_write,
           arg->time_gran,
           arg->max_pages,
-          arg->map_alignment);
+          arg->map_alignment,
+          arg->max_stack_depth);
 }
 
 static
