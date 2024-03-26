@@ -1261,8 +1261,6 @@ do_init(fuse_req_t             req,
       outarg.max_stack_depth = 10;
     }
 
-  outargflags |= (1ULL << 55);
-
   if(inargflags & FUSE_INIT_EXT)
     {
       outargflags |= FUSE_INIT_EXT;
