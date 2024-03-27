@@ -1300,6 +1300,10 @@ do_init(fuse_req_t             req,
   if(f->debug)
     debug_fuse_init_out(req->unique,&outarg,outargsize);
 
+  fprintf(stderr, "flags=%08x; flags2=%08x\n",
+          outarg.flags,
+          outarg.flags2);
+
   send_reply_ok(req, &outarg, outargsize);
 }
 
