@@ -1255,7 +1255,7 @@ do_init(fuse_req_t             req,
     outargflags |= FUSE_CREATE_SUPP_GROUP;
   if(f->conn.want & FUSE_CAP_DIRECT_IO_ALLOW_MMAP)
     outargflags |= FUSE_DIRECT_IO_ALLOW_MMAP;
-  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
+  //  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
       outarg.max_stack_depth = 10;
