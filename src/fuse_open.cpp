@@ -290,4 +290,3 @@ namespace FUSE
     return rv;
   }
 }
-//ioctl(4, _IOC(_IOC_WRITE, 0xe5, 0x1, 0x10), 0x751b1cbf72a0)
