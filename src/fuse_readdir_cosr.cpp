@@ -52,6 +52,7 @@ namespace l
   {
     DIR *dir;
     int  err;
+    std::string basepath;
   };
 
   struct Error
@@ -119,6 +120,7 @@ namespace l
           errno  = 0;
           rv.dir = fs::opendir(basepath);
           rv.err = errno;
+          rv.basepath = branch.path;
 
           return rv;
         };
@@ -169,7 +171,8 @@ namespace l
               continue;
 
             fullpath  = fs::path::make(dirname_,de->d_name);
-            de->d_ino = fs::inode::calc(fullpath,
+            de->d_ino = fs::inode::calc(dirrv.basepath,
+                                        fullpath,
                                         DTTOIF(de->d_type),
                                         dev,
                                         de->d_ino);
