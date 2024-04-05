@@ -155,8 +155,8 @@ These options are the same regardless of whether you use them with the
   the file. An attempt to move the file to that branch will occur
   (keeping all metadata possible) and if successful the original is
   unlinked and the write retried. (default: false, true = mfs)
-* **inodecalc=passthrough|path-hash|devino-hash|hybrid-hash**: Selects
-  the inode calculation algorithm. (default: hybrid-hash)
+* **inodecalc=passthrough|path-hash|devino-hash|basepath-hash|hybrid-hash|basehybrid-hash**:
+  Selects the inode calculation algorithm. (default: hybrid-hash)
 * **dropcacheonclose=BOOL**: When a file is requested to be closed
   call `posix_fadvise` on it first to instruct the kernel that we no
   longer need the data and it can drop its cache. Recommended when
@@ -444,12 +444,23 @@ covering different usecases.
   different file or files move out of band but will present the same
   inode for underlying files that do too.
 * devino-hash32: 32bit version of devino-hash.
+* basepath-hash: Hashes the branch base path along with
+  the inode of the underlying entry.  This has a similar purpose to
+  devino-hash, but by using the path instead of the device-id, the inodes
+  will be guaranteed to be stable across reboots.  Useful for backup or
+  deduplication systems that rely on a static inode.  Note that if the
+  root directory is below the mountpoint of the underlying storage,
+  duplicate inodes are possible.
+* basepath-hash32: 32bit version of basepath-hash.
 * hybrid-hash: Performs `path-hash` on directories and `devino-hash`
   on other file types. Since directories can't have hard links the
   static value won't make a difference and the files will get values
   useful for finding duplicates. Probably the best to use if not using
   NFS. As such it is the default.
 * hybrid-hash32: 32bit version of hybrid-hash.
+* basehybrid-hash: Serves the same purpose as `hybrid-hash` but using
+  the `basepath-hash` algorithm for files.
+* basehybrid-hash32: 32bit version of basehybrid-hash
 
 32bit versions are provided as there is some software which does not
 handle 64bit inodes well.

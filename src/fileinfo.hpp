@@ -27,16 +27,19 @@ class FileInfo : public FH
 {
 public:
   FileInfo(int const   fd_,
+           const std::string &basepath_,
            char const *fusepath_,
            bool const  direct_io_)
     : FH(fusepath_),
       fd(fd_),
+      basepath(basepath_),
       direct_io(direct_io_)
   {
   }
 
 public:
   int fd;
+  const std::string basepath;
   uint32_t direct_io:1;
   std::mutex mutex;
 };

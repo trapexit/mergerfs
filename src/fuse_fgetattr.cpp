@@ -28,6 +28,7 @@ namespace l
   static
   int
   fgetattr(const int          fd_,
+           const std::string &basepath_,
            const std::string &fusepath_,
            struct stat       *st_)
   {
@@ -37,7 +38,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    fs::inode::calc(fusepath_,st_);
+    fs::inode::calc(basepath_,fusepath_,st_);
 
     return 0;
   }
@@ -54,7 +55,7 @@ namespace FUSE
     Config::Read cfg;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    rv = l::fgetattr(fi->fd,fi->fusepath,st_);
+    rv = l::fgetattr(fi->fd,fi->basepath,fi->fusepath,st_);
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :

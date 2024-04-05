@@ -125,7 +125,8 @@ namespace l
               continue;
 
             fullpath = fs::path::make(dirname_,de->d_name);
-            de->d_ino = fs::inode::calc(fullpath,
+            de->d_ino = fs::inode::calc(branch.path,
+                                        fullpath,
                                         DTTOIF(de->d_type),
                                         dev,
                                         de->d_ino);
