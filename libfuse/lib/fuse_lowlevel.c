@@ -1263,7 +1263,7 @@ do_init(fuse_req_t             req,
     outargflags |= FUSE_HANDLE_KILLPRIV;
   if(f->conn.want & FUSE_CAP_HANDLE_KILLPRIV_V2)
     outargflags |= FUSE_HANDLE_KILLPRIV_V2;
-  //  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
+  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
       outarg.max_stack_depth = 2;
