@@ -225,6 +225,7 @@ namespace l
   {
     int backing_id;
     FileInfo *fi;
+    const ugid::SetRoot ugid;
 
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
