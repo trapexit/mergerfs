@@ -271,8 +271,6 @@ namespace FUSE
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    ffi_->flags |= O_RDWR;
-    
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
