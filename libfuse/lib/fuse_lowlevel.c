@@ -1266,7 +1266,7 @@ do_init(fuse_req_t             req,
   //  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
-      outarg.max_stack_depth = 1;
+      outarg.max_stack_depth = 2;
     }
 
   if(inargflags & FUSE_INIT_EXT)
