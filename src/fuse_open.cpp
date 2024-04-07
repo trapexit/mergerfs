@@ -279,6 +279,7 @@ namespace FUSE
     ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                         ffi_->flags);
 
+    ffi_->flags |= O_RDWR;
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
