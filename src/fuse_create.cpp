@@ -272,10 +272,15 @@ namespace FUSE
 
     if(rv != 0)
       return rv;
+
     switch(+cfg->passthrough)
       {
+      case PassthroughEnum::off:
+        return rv;
+      case PassthroughEnum::ro:
+      case PassthroughEnum::wo:
+      case PassthroughEnum::rw:        
+        return l::passthrough(fc,ffi_);        
       }
-
-    return l::passthrough(fc,ffi_);
   }
 }
