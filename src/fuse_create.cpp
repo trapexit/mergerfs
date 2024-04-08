@@ -270,8 +270,11 @@ namespace FUSE
                        fc->umask);
       }
 
-    if((rv != 0) || (cfg->passthrough == false))
+    if(rv != 0)
       return rv;
+    switch(cfg->passthrough)
+      {
+      }
 
     return l::passthrough(fc,ffi_);
   }
