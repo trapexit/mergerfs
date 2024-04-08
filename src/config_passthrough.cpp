@@ -31,7 +31,6 @@ template<>
 int
 Passthrough::from_string(const std::string &s_)
 {
-  _data = BE_Passthrough::_from_string_nothrow(s_.c_str())._to_integral();
   if(s_ == "off")
     _data = Passthrough::ENUM::OFF;
   ef(s_ == "ro")
