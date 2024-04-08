@@ -60,6 +60,13 @@ namespace l
 
   static
   bool
+  wronly(const int flags_)
+  {
+    return ((flags_ & O_ACCMODE) == O_WRONLY);
+  }
+
+  static
+  bool
   calculate_flush(FlushOnClose const flushonclose_,
                   int const          flags_)
   {
@@ -278,6 +285,7 @@ namespace FUSE
       case PassthroughEnum::off:
         return rv;
       case PassthroughEnum::ro:
+        if(ffi_->flags & O_
       case PassthroughEnum::wo:
       case PassthroughEnum::rw:        
         return l::passthrough(fc,ffi_);        
