@@ -60,6 +60,7 @@ public:
     return _data;
   }
 
+  ENUM
   operator+() const
   {
     return _data;
