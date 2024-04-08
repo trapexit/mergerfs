@@ -34,11 +34,10 @@ Passthrough::from_string(const std::string &s_)
   better_enums::optional<PassthroughEnum> e;
 
   e = PassthroughEnum::_from_string_nothrow(s_.c_str());
-
-  if(!x)
+  if(!e)
     return -EINVAL;
   
-  _data = *x;
+  _data = *e;
 
   return 0;
 }
