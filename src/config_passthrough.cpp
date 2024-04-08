@@ -28,7 +28,7 @@ Passthrough::to_string() const
 
   return x._to_string();
 
-  return BE_Passthrough::_from_integral(_data).to_string();
+  return BE_Passthrough::_from_integral(_data.to_int()).to_string();
 }
 
 template<>
