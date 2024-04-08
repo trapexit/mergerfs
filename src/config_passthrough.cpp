@@ -31,7 +31,7 @@ template<>
 int
 Passthrough::from_string(const std::string &s_)
 {
-  auto x = PassthroughEnum::_from_string_nothrow(s_);
+  auto x = PassthroughEnum::_from_string_nothrow(s_.c_str());
 
   if(!x)
     return -EINVAL;
