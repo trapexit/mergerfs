@@ -43,6 +43,7 @@ namespace l
     if(fi_->backing_id)
       {
         const fuse_context *fc;
+        const ugid::SetRootGuard ugid;
 
         fc = fuse_get_context();
 
