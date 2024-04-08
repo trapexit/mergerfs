@@ -36,7 +36,7 @@ Passthrough::from_string(const std::string &s_)
   if(!x)
     return -EINVAL;
   
-  _data = x;
+  _data = *x;
 
   return 0;
 }
