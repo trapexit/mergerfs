@@ -287,8 +287,8 @@ namespace FUSE
       case PassthroughEnum::ro:
         if(ffi_->flags & O_
       case PassthroughEnum::wo:
-      case PassthroughEnum::rw:        
-        return l::passthrough(fc,ffi_);        
+      case PassthroughEnum::rw:
+        return l::passthrough(fc,ffi_);
       }
   }
 }
