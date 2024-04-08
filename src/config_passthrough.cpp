@@ -31,7 +31,12 @@ template<>
 int
 Passthrough::from_string(const std::string &s_)
 {
-  _data = PassthroughEnum::_from_string_nothrow(s_);
+  auto x = PassthroughEnum::_from_string_nothrow(s_);
+
+  if(!x)
+    return -EINVAL;
+  
+  _data = x;
 
   return 0;
 }
