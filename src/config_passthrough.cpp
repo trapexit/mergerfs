@@ -25,7 +25,9 @@ std::string
 Passthrough::to_string() const
 {
   BE_Passthrough x;
-  return BE_Passthrough::_to_string(x);
+
+  return x._to_string();
+
   switch(_data)
     {
     case Passthrough::ENUM::OFF:
