@@ -31,6 +31,7 @@ template<>
 int
 Passthrough::from_string(const std::string &s_)
 {
+  _data = (int)BE_Passthrough::_from_string(s_);
   if(s_ == "off")
     _data = Passthrough::ENUM::OFF;
   ef(s_ == "ro")
