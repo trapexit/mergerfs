@@ -168,9 +168,8 @@ These options are the same regardless of whether you use them with the
   **cache.files=partial|full|auto-full|per-process** to limit double
   caching. (default: false)
 * **passthrough=BOOL**: On Linux 6.9 and above passthrough allows for
-  near native IO performance. cache.files=off will disable passthrough
-  but if direct-io-allow-mmap=true then mmap will be
-  passthroughed. `moveonenospc` will no longer function.
+  near native IO performance. See below for more details. (default:
+  false)
 * **direct-io-allow-mmap=BOOL**: On Linux 6.6 and above it is
   possible to disable file page caching while still allowing for
   shared mmap support. mergerfs will enable this feature if available
@@ -413,6 +412,32 @@ fact it will not be automatically included.
 **NOTE:** for mounting via **fstab** to work you must have
 **mount.fuse** installed. For Ubuntu/Debian it is included in the
 **fuse** package.
+
+
+### passthrough
+
+With Linux 6.9 and above there is a feature in FUSE called
+"passthrough" which can improve performance by allowing a union or
+overlay filesystem (like mergerfs) to pass the file descriptor of a
+file opened on an underlying filesystem to the kernel to work on
+directly rather than calls always having to go to the FUSE server
+(mergerfs). As of Linux 6.9 the functions that can be passthroughed
+are regular file read/write IO and mmap. Other functions may be added
+in the future.
+
+Passthrough requires `cache.files` to be enabled. `cache.files=off`
+(which enables FUSE direct-io feature) will override `passthrough` and
+read/write requests will still be sent to mergerfs.
+
+If `cache.files=off` and `direct-io-allow-mmap=true` (the default)
+then regular read/write IO will be handled by mergerfs but mmap will
+be passthroughed.
+
+NOTE: `moveonenospc` will not work when using `passthrough` as it
+removes mergerfs entirely from the read/write process. If an ENOSPC
+error occurs it will be returned to the caller app immediately. Since
+mergerfs won't be handling the IO it therefore won't be able to handle
+any error returned by said IO.
 
 
 ### inodecalc
