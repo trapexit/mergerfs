@@ -272,7 +272,7 @@ namespace FUSE
 
     if(rv != 0)
       return rv;
-    switch(cfg->passthrough)
+    switch(+cfg->passthrough)
       {
       }
 
