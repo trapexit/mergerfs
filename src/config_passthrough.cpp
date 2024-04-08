@@ -31,16 +31,7 @@ template<>
 int
 Passthrough::from_string(const std::string &s_)
 {
-  if(s_ == "off")
-    _data = Passthrough::ENUM::OFF;
-  ef(s_ == "ro")
-    _data = Passthrough::ENUM::RO;
-  ef(s_ == "wo")
-    _data = Passthrough::ENUM::WO;
-  ef(s_ == "rw")
-    _data = Passthrough::ENUM::RW;
-  else
-    return -EINVAL;
+  _data = PassthroughEnum::_from_string_nothrow(s_);
 
   return 0;
 }
