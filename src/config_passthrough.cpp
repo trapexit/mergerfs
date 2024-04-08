@@ -27,20 +27,6 @@ Passthrough::to_string() const
   BE_Passthrough x = BE_Passthrough::_from_integral(_data);
 
   return x._to_string();
-
-  switch(_data)
-    {
-    case Passthrough::ENUM::OFF:
-      return "off";
-    case Passthrough::ENUM::RO:
-      return "ro";
-    case Passthrough::ENUM::WO:
-      return "wo";
-    case Passthrough::ENUM::RW:
-      return "rw";
-    }
-
-  return "invalid";
 }
 
 template<>
