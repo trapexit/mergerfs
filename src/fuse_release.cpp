@@ -19,6 +19,7 @@
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
 #include "fs_fadvise.hpp"
+#include "ugid.hpp"
 
 #include "fuse.h"
 
