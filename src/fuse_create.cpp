@@ -67,6 +67,13 @@ namespace l
 
   static
   bool
+  rdwr(const int flags_)
+  {
+    return ((flags_ & O_ACCMODE) == O_RDWR);
+  }
+
+  static
+  bool
   calculate_flush(FlushOnClose const flushonclose_,
                   int const          flags_)
   {
