@@ -23,14 +23,6 @@
 #include "enum.hpp"
 
 
-BETTER_ENUM(BE_Passthrough, uint8_t, off, ro, wo, rw);
-
-enum class PassthroughEnum
-  {
-    OFF,
-    RO,
-    WO,
-    RW
-  };
+BETTER_ENUM(PassthroughEnum, uint8_t, off, ro, wo, rw);
 
 typedef Enum<PassthroughEnum> Passthrough;
