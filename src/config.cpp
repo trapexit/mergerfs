@@ -118,7 +118,7 @@ Config::Config()
     nfsopenhack(NFSOpenHack::ENUM::OFF),
     nullrw(false),
     parallel_direct_writes(false),
-    passthrough(Passthrough::OFF),
+    passthrough(PassthroughEnum::OFF),
     posix_acl(false),
     readahead(0),
     readdir("seq"),
