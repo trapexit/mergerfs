@@ -24,7 +24,8 @@ template<>
 std::string
 Passthrough::to_string() const
 {
-  return BE_Passthrough::_to_string(_data);
+  BE_Passthrough x;
+  return BE_Passthrough::_to_string(x);
   switch(_data)
     {
     case Passthrough::ENUM::OFF:
