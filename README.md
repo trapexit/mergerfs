@@ -167,9 +167,9 @@ These options are the same regardless of whether you use them with the
   longer need the data and it can drop its cache. Recommended when
   **cache.files=partial|full|auto-full|per-process** to limit double
   caching. (default: false)
-* **passthrough=BOOL**: On Linux 6.9 and above passthrough allows for
+* **passthrough=off|ro|wo|rw**: On Linux 6.9 and above passthrough allows for
   near native IO performance. See below for more details. (default:
-  false)
+  off)
 * **direct-io-allow-mmap=BOOL**: On Linux 6.6 and above it is
   possible to disable file page caching while still allowing for
   shared mmap support. mergerfs will enable this feature if available
