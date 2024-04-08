@@ -24,7 +24,7 @@ template<>
 std::string
 Passthrough::to_string() const
 {
-  BE_Passthrough x = BE_Passthrough::_from_intergral(0);
+  BE_Passthrough x = BE_Passthrough::_from_integral(0);
 
   return x._to_string();
 
