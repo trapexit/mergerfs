@@ -262,9 +262,10 @@ namespace l
 }
 
 constexpr
+const
 uint64_t
-_(PassthroughEnum e,
-        uint64_t        m)
+_(const PassthroughEnum e,
+  const uint64_t        m)
 {
   return ((((uint64_t)e) << 32) | (m & O_ACCMODE));
 }
