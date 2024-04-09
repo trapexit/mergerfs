@@ -282,8 +282,7 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    const uint64_t x = _(cfg->passthrough,ffi_->flags);
-    switch(x)
+    switch(_(cfg->passthrough,ffi_->flags))
       {
       case _(PassthroughEnum::ro,O_RDONLY):
       case _(PassthroughEnum::wo,O_WRONLY):
