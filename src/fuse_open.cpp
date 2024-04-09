@@ -287,9 +287,18 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
-    if((rv != 0) || (cfg->passthrough == false))
+    if(rv != 0)
       return rv;
 
-    return l::passthrough(fc,ffi_);
+    uint64_t x = combine(cfg->passthrough,ffi_->flags);
+    switch(x)
+      {
+      case combine(PassthroughEnum::ro,O_RDONLY):
+      case combine(PassthroughEnum::wo,O_WRONLY):
+      case combine(PassthroughEnum::rw,O_RDWR):
+        return l::passthrough(fc,ffi_);
+      }
+
+    return rv;
   }
 }
