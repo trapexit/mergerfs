@@ -293,7 +293,6 @@ namespace FUSE
       case PassthroughEnum::off:
         return rv;
       case PassthroughEnum::ro:
-        if(ffi_->flags & O_
       case PassthroughEnum::wo:
       case PassthroughEnum::rw:
         return l::passthrough(fc,ffi_);
