@@ -301,8 +301,8 @@ namespace FUSE
       default:
         return rv;
       case combine(PassthroughEnum::ro,O_RDONLY):
-      case PassthroughEnum::wo:
-      case PassthroughEnum::rw:
+      case combine(PassthroughEnum::wo,O_WRONLY):
+      case combine(PassthroughEnum::rw,O_RDWR):
         return l::passthrough(fc,ffi_);
       }
   }
