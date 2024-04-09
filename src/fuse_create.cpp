@@ -300,7 +300,7 @@ namespace FUSE
       {
       default:
         return rv;
-      case ((uint64_t)PassthroughEnum::ro << 32) | O_RDONLY:
+      case combine(PassthroughEnum::ro,O_RDONLY):
       case PassthroughEnum::wo:
       case PassthroughEnum::rw:
         return l::passthrough(fc,ffi_);
