@@ -290,7 +290,7 @@ namespace FUSE
     uint64_t x = ((((uint64_t)+cfg->passthrough) << 32) | (ffi_->flags & O_ACCMODE));
     switch(+cfg->passthrough)
       {
-      case PassthroughEnum::off:
+      default:
         return rv;
       case PassthroughEnum::ro:
       case PassthroughEnum::wo:
