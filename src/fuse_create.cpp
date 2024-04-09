@@ -287,7 +287,7 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    uint64_t x = ((((uint64_t)+cfg->passthrough) << 32));
+    uint64_t x = ((((uint64_t)+cfg->passthrough) << 32) | (ffi_->flags & O_ACCMODE));
     switch(+cfg->passthrough)
       {
       case PassthroughEnum::off:
