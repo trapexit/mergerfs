@@ -281,12 +281,12 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    uint64_t x = combine(cfg->passthrough,ffi_->flags);
+    uint64_t x = _(cfg->passthrough,ffi_->flags);
     switch(x)
       {
-      case combine(PassthroughEnum::ro,O_RDONLY):
-      case combine(PassthroughEnum::wo,O_WRONLY):
-      case combine(PassthroughEnum::rw,O_RDWR):
+      case _(PassthroughEnum::ro,O_RDONLY):
+      case _(PassthroughEnum::wo,O_WRONLY):
+      case _(PassthroughEnum::rw,O_RDWR):
         return l::passthrough(fc,ffi_);
       }
 
