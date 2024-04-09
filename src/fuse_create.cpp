@@ -288,7 +288,7 @@ namespace FUSE
       return rv;
 
     uint64_t x = ((((uint64_t)+cfg->passthrough) << 32) | (ffi_->flags & O_ACCMODE));
-    switch(+cfg->passthrough)
+    switch(x)
       {
       default:
         return rv;
