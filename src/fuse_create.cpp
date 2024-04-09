@@ -245,6 +245,14 @@ namespace l
   }
 }
 
+constexpr
+uint64_t
+combine(PassthroughEnum e,
+        uint64_t        m)
+{
+  return ((((uint64_t)e) << 32) | (m & O_ACCMODE));
+}
+
 namespace FUSE
 {
   int
