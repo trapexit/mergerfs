@@ -281,7 +281,7 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    uint64_t x = _(cfg->passthrough,ffi_->flags);
+    uint64_t x = ::_(cfg->passthrough,ffi_->flags);
     switch(x)
       {
       case _(PassthroughEnum::ro,O_RDONLY):
