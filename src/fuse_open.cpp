@@ -262,6 +262,7 @@ namespace l
 }
 
 constexpr
+const
 uint64_t
 combine(PassthroughEnum e,
         uint64_t        m)
