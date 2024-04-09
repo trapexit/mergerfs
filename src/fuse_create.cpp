@@ -232,9 +232,10 @@ namespace l
 }
 
 constexpr
+const
 uint64_t
-combine(PassthroughEnum e,
-        uint64_t        m)
+_(const PassthroughEnum e,
+  const uint64_t        m)
 {
   return ((((uint64_t)e) << 32) | (m & O_ACCMODE));
 }
@@ -281,7 +282,7 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    uint64_t x = combine(cfg->passthrough,ffi_->flags);
+    uint64_t x = _(cfg->passthrough,ffi_->flags);
     switch(x)
       {
       case _(PassthroughEnum::ro,O_RDONLY):
