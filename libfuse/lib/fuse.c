@@ -2249,7 +2249,7 @@ open_auto_cache(struct fuse      *f,
                 fuse_file_info_t *fi)
 {
   node_t *node;
-  fuse_timeouts_t timeout;
+  fuse_timeouts_t timeout = {1,1};
 
   pthread_mutex_lock(&f->lock);
 
