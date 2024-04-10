@@ -313,6 +313,6 @@ namespace FUSE
         return l::passthrough(fc,ffi_);
       }
 
-    return rv;
+    return 0;
   }
 }
