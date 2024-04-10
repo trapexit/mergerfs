@@ -311,7 +311,6 @@ namespace FUSE
       case _(PassthroughEnum::rw,O_WRONLY):
       case _(PassthroughEnum::rw,O_RDWR):
         rv = l::passthrough(fc,ffi_);
-        Config::Write()->passthrough = PassthroughEnum::off;
         break;
       }
 
