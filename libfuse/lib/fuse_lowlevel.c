@@ -280,6 +280,7 @@ fill_open(struct fuse_open_out   *arg_,
   if(ffi_->passthrough)
     {
       arg_->open_flags |= FOPEN_PASSTHROUGH;
+      arg_->open_flags &= ~FOPEN_KEEP_CACHE;
       arg_->backing_id  = ffi_->backing_id;
     }
 }
