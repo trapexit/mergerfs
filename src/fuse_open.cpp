@@ -299,6 +299,8 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
+    return l::passthrough(fc,ffi_);
+    
     switch(_(cfg->passthrough,ffi_->flags))
       {
       case _(PassthroughEnum::r, O_RDONLY):
