@@ -283,7 +283,8 @@ fill_open(struct fuse_open_out   *arg_,
       arg_->backing_id  = ffi_->backing_id;
     }
 
-  fprintf("%d %d\n",
+  fprintf(stderr,
+          "%d %d\n",
           !!(arg_->open_flags | FOPEN_KEEP_CACHE),
           !!(arg_->passthrough | FOPEN_PASSTHROUGH));
 }
