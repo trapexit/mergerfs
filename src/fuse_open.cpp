@@ -299,7 +299,6 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    return 0;
     return l::passthrough(fc,ffi_);
     
     switch(_(cfg->passthrough,ffi_->flags))
