@@ -310,7 +310,9 @@ namespace FUSE
       case _(PassthroughEnum::rw,O_RDONLY):
       case _(PassthroughEnum::rw,O_WRONLY):
       case _(PassthroughEnum::rw,O_RDWR):
-        return l::passthrough(fc,ffi_);
+        rv = l::passthrough(fc,ffi_);
+        cfg->passthrough = PassthroughEnum::off;
+        break;
       }
 
     return rv;
