@@ -235,6 +235,7 @@ namespace l
 
     ffi_->passthrough = true;
     ffi_->keep_cache  = false;
+    ffi_->noflush     = true;
     fi->backing_id    = backing_id;
     ffi_->backing_id  = backing_id;
 
