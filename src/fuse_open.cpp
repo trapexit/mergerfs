@@ -234,7 +234,7 @@ namespace l
       return 0;
 
     ffi_->passthrough = true;
-    ffi_->keep_cache  = false;
+    ffi_->keep_cache  = true;
     fi->backing_id    = backing_id;
     ffi_->backing_id  = backing_id;
 
