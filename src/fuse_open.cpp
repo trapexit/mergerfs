@@ -345,6 +345,10 @@ namespace FUSE
        fuse_file_info_t *ffi_)
   {
     pt.emplace();
+    pt.visit(fusepath_,
+             [](const PTMap::value_type &x_)
+             {
+             });
     
 
 
