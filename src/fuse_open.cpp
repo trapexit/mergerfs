@@ -335,6 +335,7 @@ namespace FUSE
        fuse_file_info_t *ffi_)
   {
     pt.emplace_or_visit(std::string{fusepath_},
+                        std::mutex{},
                         [](const PTMap::value_type &x_)
                         {
                           
