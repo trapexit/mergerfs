@@ -331,12 +331,8 @@ namespace FUSE
   {
     std::mutex *m = nullptr;
 
-    pt.insert(PTMap::value_type{fusepath_,PT{}});
-    pt.visit(fusepath_,
-             [&](const PTMap::value_type &x_)
-             {
-               m = &x_.second.mutex;
-             });
+    m = PassthroughMutex::get_mutex(fusepath_);
+
     fmt::print("lock {}\n",(void*)m);
     const std::lock_guard<std::mutex> lock(*m);
     fmt::print("locked {}\n",fusepath_);
