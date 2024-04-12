@@ -38,8 +38,7 @@
 
 struct PT
 {
-  PT(std::mutex &&m)
-    : mutex{m}
+  PT()
   {
   }
   
