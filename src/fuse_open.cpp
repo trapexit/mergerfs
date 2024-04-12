@@ -233,9 +233,9 @@ namespace l
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
     foo.visit(fi->fusepath,
-              [&](const std::pair<std::string,int> &backing_id_)
+              [&](const std::pair<std::string,int> &e_)
               {
-                backing_id = backing_id_;
+                backing_id = e_.second;
               });
 
     backing_id = fuse_passthrough_open(fc_,fi->fd);
