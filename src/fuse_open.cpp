@@ -233,7 +233,7 @@ namespace l
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
     foo.visit(fi->fusepath,
-              [&](int backing_id_)
+              [&](int &backing_id_)
               {
                 backing_id = backing_id_;
               });
