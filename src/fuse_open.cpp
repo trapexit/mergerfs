@@ -35,6 +35,12 @@
 #include <string>
 #include <vector>
 
+struct PT
+{
+  int backing_id;
+  std::mutex mutex;
+};
+
 static boost::unordered::concurrent_flat_map<std::string,int> pt;
 
 
@@ -328,7 +334,8 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-
+    pt.try_emplace_or_visit(fusepath_,
+                            
 
 
     return open2(fusepath_,ffi_);
