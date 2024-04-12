@@ -36,23 +36,6 @@
 #include <vector>
 #include <mutex>
 
-struct PT
-{
-  PT()
-  {
-  }
-
-  PT(PT &&pt_)
-  {
-    x = pt_.x;
-  }
-
-  int x;
-  mutable std::mutex mutex;
-};
-
-typedef boost::unordered::concurrent_flat_map<std::string,PT> PTMap;;
-static PTMap pt;
 
 namespace l
 {
