@@ -345,9 +345,9 @@ namespace FUSE
        fuse_file_info_t *ffi_)
   {
     pt.emplace_or_visit(std::string{fusepath_},
-                                    [](const PTMap::value_type &x_)
-                                    {
-                                    });
+                        [](const PTMap::value_type &x_)
+                        {
+                        });
 
     return open2(fusepath_,ffi_);
   }
