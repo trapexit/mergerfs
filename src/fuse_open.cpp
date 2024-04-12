@@ -38,6 +38,11 @@
 
 struct PT
 {
+  PT(std::mutex &&m)
+    : mutex{m}
+  {
+  }
+  
   std::mutex mutex;
 };
 
