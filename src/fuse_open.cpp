@@ -331,7 +331,7 @@ namespace FUSE
   {
     std::mutex *m = nullptr;
 
-    m = PassthroughMutex::get_mutex(fusepath_);
+    m = PassthroughStuff::get_mutex(fusepath_);
 
     fmt::print("lock {}\n",(void*)m);
     const std::lock_guard<std::mutex> lock(*m);
