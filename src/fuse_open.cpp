@@ -352,6 +352,7 @@ namespace FUSE
                m = &x_.second.mutex;
              });
     const std::lock_guard<std::mutex> lock(*m);
+    fmt::print("locked {}\n",fusepath_);
 
     return open2(fusepath_,ffi_);
   }
