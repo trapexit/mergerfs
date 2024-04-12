@@ -243,7 +243,7 @@ namespace l
         backing_id = fuse_passthrough_open(fc_,fi->fd);
         if(backing_id <= 0)
           return 0;
-        foo.insert(fi->fusepath,backing_id);
+        foo.insert({fi->fusepath,backing_id});
       }
 
     ffi_->passthrough = true;
