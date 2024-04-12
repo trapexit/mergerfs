@@ -345,7 +345,8 @@ namespace FUSE
        fuse_file_info_t *ffi_)
   {
     std::mutex *m = nullptr;
-    pt.insert(PTMap::value_type{fusepath_,{}});
+
+    pt.insert(PTMap::value_type{});
     pt.visit(fusepath_,
              [&](const PTMap::value_type &x_)
              {
