@@ -349,7 +349,7 @@ namespace FUSE
     pt.visit(fusepath_,
              [&](const PTMap::value_type &x_)
              {
-               m = x_.second.mutex;
+               m = &x_.second.mutex;
              });
     const std::lock_guard<std::mutex> lock(*m);
 
