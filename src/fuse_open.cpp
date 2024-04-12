@@ -338,9 +338,9 @@ namespace FUSE
     pt.try_emplace_or_visit(fusepath_,
                             [](const PTMap::value_type &x_)
                             {
-                              
+
                             });
-                            
+
 
 
     return open2(fusepath_,ffi_);
