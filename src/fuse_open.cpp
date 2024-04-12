@@ -233,7 +233,7 @@ namespace l
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
     foo.visit(fi->fusepath,
-              []{});
+              [auto &x]{});
     
     backing_id = fuse_passthrough_open(fc_,fi->fd);
     if(backing_id <= 0)
