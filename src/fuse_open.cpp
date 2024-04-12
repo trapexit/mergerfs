@@ -329,6 +329,11 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
+    Config::Read cfg;
+
+    if(cfg->passthrough);
+
+    
     PTInfo *pti;
 
     pti = PassthroughStuff::get_pti(fusepath_);
