@@ -348,7 +348,7 @@ namespace FUSE
     pt.visit(fusepath_,
              [](const PTMap::value_type &x_)
              {
-               std::lock(x_.second.mutex);
+               x_.second.mutex.lock();
              });
 
     return open2(fusepath_,ffi_);
