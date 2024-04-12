@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "passthrough.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
