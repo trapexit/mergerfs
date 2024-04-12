@@ -233,11 +233,6 @@ namespace l
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
     backing_id = 0;
-    foo.visit(fi->fusepath,
-              [&](const std::pair<std::string,int> &e_)
-              {
-                backing_id = e_.second;
-              });
     if(backing_id == 0)
       {
         backing_id = fuse_passthrough_open(fc_,fi->fd);
