@@ -41,8 +41,9 @@ struct PT
   PT()
   {
   }
-  
-  std::mutex mutex;
+
+  int x;
+  //std::mutex mutex;
 };
 
 typedef boost::unordered::concurrent_flat_map<std::string,PT> PTMap;;
