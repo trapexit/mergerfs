@@ -232,11 +232,12 @@ namespace l
 
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    foo.visit(fi->fusepath,
-              [&](int &backing_id_)
-              {
-                backing_id = backing_id_;
-              });
+    fi->fusepath;
+    // foo.visit(fi->fusepath,
+    //           [&](int &backing_id_)
+    //           {
+    //             backing_id = backing_id_;
+    //           });
     
     backing_id = fuse_passthrough_open(fc_,fi->fd);
     if(backing_id <= 0)
