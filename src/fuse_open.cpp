@@ -333,8 +333,8 @@ namespace FUSE
 
     pti = PassthroughStuff::get_pti(fusepath_);
 
-    fmt::print("lock {}\n",(void*)m);
-    const std::lock_guard<std::mutex> lock(*m);
+    fmt::print("lock {}\n",(void*)pti);
+    const std::lock_guard<std::mutex> lock(pti->mutex);
     fmt::print("locked {}\n",fusepath_);
     sleep(10);
 
