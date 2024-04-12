@@ -19,6 +19,8 @@ struct node_s
   int32_t treelock;
   lock_t *locks;
 
+  uint32_t backing_id;
+
   uint32_t stat_crc32b;
   uint8_t is_stat_cache_valid:1;
 };
