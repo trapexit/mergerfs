@@ -281,16 +281,6 @@ _(const PassthroughEnum e_,
 namespace FUSE
 {
   int
-  open(const char       *fusepath_,
-       fuse_file_info_t *ffi_)
-  {
-
-
-
-    return open2(fusepath_,ffi_);
-  }
-  
-  int
   open2(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
@@ -332,5 +322,15 @@ namespace FUSE
       }
 
     return 0;
+  }
+
+  int
+  open(const char       *fusepath_,
+       fuse_file_info_t *ffi_)
+  {
+
+
+
+    return open2(fusepath_,ffi_);
   }
 }
