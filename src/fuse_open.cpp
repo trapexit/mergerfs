@@ -43,8 +43,7 @@ struct PT
 };
 
 typedef boost::unordered::concurrent_flat_map<std::string,PT> PTMap;;
-static boost::unordered::concurrent_flat_map<std::string,PT> pt;
-
+static PTMap pt;
 
 namespace l
 {
