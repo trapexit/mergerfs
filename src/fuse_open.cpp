@@ -353,6 +353,7 @@ namespace FUSE
              });
     const std::lock_guard<std::mutex> lock(*m);
     fmt::print("locked {}\n",fusepath_);
+    sleep(10);
 
     return open2(fusepath_,ffi_);
   }
