@@ -338,7 +338,7 @@ namespace FUSE
     pt.try_emplace_or_visit(fusepath_,
                             [](const PTMap::value_type &x_)
                             {
-
+                              
                             });
                             
 
