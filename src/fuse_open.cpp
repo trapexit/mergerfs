@@ -344,9 +344,8 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    PT *p;
-
-    p = &pt[std::string{fusepath_}];
+    pt.emplace();
+    
 
 
     return open2(fusepath_,ffi_);
