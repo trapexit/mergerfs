@@ -335,7 +335,7 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    pt.emplace_or_visit(0,std::mutex{},
+    pt.emplace_or_visit(0,
                         [](const PTMap::value_type &x_)
                         {
                           
