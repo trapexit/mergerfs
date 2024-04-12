@@ -41,7 +41,7 @@ struct PT
   PT()
   {
   }
-  
+
   PT(PT &&pt_)
   {
     x = pt_.x;
@@ -349,7 +349,7 @@ namespace FUSE
              [](const PTMap::value_type &x_)
              {
              });
-    
+
     return open2(fusepath_,ffi_);
   }
 }
