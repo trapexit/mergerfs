@@ -72,7 +72,8 @@ CFLAGS      ?= ${OPT_FLAGS}
 CFLAGS      := ${CFLAGS} \
                -Wall \
                -Wno-unused-result
-CXXFLAGS    ?= ${OPT_FLAGS}
+CXXFLAGS    ?= ${OPT_FLAGS} \
+		-Isrc
 CXXFLAGS    := \
               ${CXXFLAGS} \
               -std=c++11 \

@@ -35,6 +35,7 @@
 #include <string>
 #include <vector>
 
+static boost::unordered::concurrent_flat_map<std::string,id> foo;
 
 namespace l
 {
