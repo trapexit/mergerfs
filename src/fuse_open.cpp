@@ -344,11 +344,12 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
+    std::mutex *m;
     pt.emplace();
     pt.visit(fusepath_,
-             [](const PTMap::value_type &x_)
+             [&](const PTMap::value_type &x_)
              {
-               x_.second.mutex.lock();
+               m = x_.second.mutex;
              });
 
     return open2(fusepath_,ffi_);
