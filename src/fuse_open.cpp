@@ -42,6 +42,7 @@ struct PT
   std::mutex mutex;
 };
 
+typedef boost::unordered::concurrent_flat_map<std::string,PT> PTMap;;
 static boost::unordered::concurrent_flat_map<std::string,PT> pt;
 
 
@@ -335,8 +336,8 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    PT x;
-    //    pt.try_emplace_or_visit(fusepath_,
+    pt.try_emplace_or_visit(fusepath_,
+                            [](const std::pair<std::string,PT>
                             
 
 
