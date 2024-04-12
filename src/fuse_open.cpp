@@ -331,7 +331,7 @@ namespace FUSE
   {
     Config::Read cfg;
 
-    if(cfg->passthrough);
+    if(+cfg->passthrough);
 
     
     PTInfo *pti;
