@@ -44,6 +44,7 @@ struct PT
   
   PT(PT &&pt_)
   {
+    x = pt_.x;
   }
 
   int x;
