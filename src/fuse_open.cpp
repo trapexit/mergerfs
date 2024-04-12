@@ -38,9 +38,6 @@
 
 struct PT
 {
-  PT() {};
-  
-  int backing_id;
   std::mutex mutex;
 };
 
