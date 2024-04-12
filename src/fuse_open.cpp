@@ -232,15 +232,19 @@ namespace l
 
     fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
+    backing_id = 0;
     foo.visit(fi->fusepath,
               [&](const std::pair<std::string,int> &e_)
               {
                 backing_id = e_.second;
               });
-
-    backing_id = fuse_passthrough_open(fc_,fi->fd);
-    if(backing_id <= 0)
-      return 0;
+    if(backing_id == 0)
+      {
+        backing_id = fuse_passthrough_open(fc_,fi->fd);
+        if(backing_id <= 0)
+          return 0;
+        foo.insert(fi->fusepath,backing_id);
+      }
 
     ffi_->passthrough = true;
     ffi_->keep_cache  = true;
