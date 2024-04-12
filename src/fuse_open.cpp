@@ -329,7 +329,6 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    std::mutex *m = nullptr;
     PTInfo *pti;
 
     pti = PassthroughStuff::get_pti(fusepath_);
