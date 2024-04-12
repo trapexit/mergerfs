@@ -346,7 +346,7 @@ namespace FUSE
   {
     std::mutex *m = nullptr;
 
-    pt.insert(PTMap::value_type{});
+    pt.insert(PTMap::value_type{fusepath_});
     pt.visit(fusepath_,
              [&](const PTMap::value_type &x_)
              {
