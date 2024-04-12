@@ -369,8 +369,6 @@ namespace FUSE
     return 0;
   }
 
-  
-
   int
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
