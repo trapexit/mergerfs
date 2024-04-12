@@ -331,8 +331,10 @@ namespace FUSE
   {
     Config::Read cfg;
 
-    if(+cfg->passthrough);
+    if(+cfg->passthrough)
+      return open_passthrough(fusepath_,ffi_);
 
+    return open2(fusepath_,ffi_);
     
     PTInfo *pti;
 
