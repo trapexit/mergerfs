@@ -350,8 +350,6 @@ namespace FUSE
              {
              });
     
-
-
     return open2(fusepath_,ffi_);
   }
 }
