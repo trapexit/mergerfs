@@ -38,6 +38,10 @@
 
 struct PT
 {
+  PT()
+  {
+  }
+  
   PT(PT &&pt_)
   {
   }
