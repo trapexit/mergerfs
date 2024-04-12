@@ -343,7 +343,7 @@ namespace FUSE
     //                     std::mutex{},
     //                     [](const PTMap::value_type &x_)
     //                     {
-                          
+
     //                     });
     pt.emplace();
 
