@@ -330,8 +330,9 @@ namespace FUSE
        fuse_file_info_t *ffi_)
   {
     std::mutex *m = nullptr;
+    PTInfo *pti;
 
-    m = PassthroughStuff::get_mutex(fusepath_);
+    pti = PassthroughStuff::get_pti(fusepath_;);
 
     fmt::print("lock {}\n",(void*)m);
     const std::lock_guard<std::mutex> lock(*m);
