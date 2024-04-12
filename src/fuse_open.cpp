@@ -334,7 +334,7 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    pt.try_emplace_or_visit(fusepath_,
+    //    pt.try_emplace_or_visit(fusepath_,
                             
 
 
