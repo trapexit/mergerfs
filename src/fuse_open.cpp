@@ -234,7 +234,7 @@ namespace l
 
     backing_id = 0;
     foo.visit(fi->fusepath,
-              [&](const std::pair<std::string,int> &e_)
+              [&](const foo::value_type &e_)
               {
                 backing_id = e_.second;
               });
