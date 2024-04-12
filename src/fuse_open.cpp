@@ -334,11 +334,11 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    pt.emplace_or_visit(
-                        [](const PTMap::value_type &x_)
-                        {
+    // pt.emplace_or_visit(
+    //                     [](const PTMap::value_type &x_)
+    //                     {
 
-                        });
+    //                     });
 
 
 
