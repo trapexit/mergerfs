@@ -389,6 +389,6 @@ namespace FUSE
     fmt::print("locked {}\n",fusepath_);
     sleep(10);
 
-    return open2(fusepath_,ffi_);
+    return 0;
   }
 }
