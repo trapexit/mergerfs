@@ -351,6 +351,7 @@ namespace FUSE
              {
                m = x_.second.mutex;
              });
+    m->lock();
 
     return open2(fusepath_,ffi_);
   }
