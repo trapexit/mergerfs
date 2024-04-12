@@ -284,6 +284,16 @@ namespace FUSE
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
+
+
+
+    return open2(fusepath_,ffi_);
+  }
+  
+  int
+  open2(const char       *fusepath_,
+       fuse_file_info_t *ffi_)
+  {
     int rv;
     Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
