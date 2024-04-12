@@ -39,7 +39,7 @@
 struct PT
 {
   PT(int x) { backing_id = x }
-    
+
   int backing_id;
   std::mutex mutex;
 };
