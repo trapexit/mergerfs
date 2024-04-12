@@ -346,7 +346,7 @@ namespace FUSE
   {
     PT *p;
 
-    p = &pt[fusepath_];
+    p = &pt[std::string{fusepath_}];
 
 
     return open2(fusepath_,ffi_);
