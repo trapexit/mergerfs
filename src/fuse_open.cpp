@@ -345,7 +345,7 @@ namespace FUSE
     //                     {
                           
     //                     });
-    pt.emplace();
+    pt.emplace(std::mutex{});
 
 
     return open2(fusepath_,ffi_);
