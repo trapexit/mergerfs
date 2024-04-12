@@ -380,7 +380,7 @@ namespace FUSE
     if(+cfg->passthrough)
       return open_passthrough(fusepath_,ffi_);
 
-    return l::open2(fusepath_,ffi_);
+    return open_regular(fusepath_,ffi_);
     
     PTInfo *pti;
 
