@@ -41,7 +41,7 @@ struct PT
   std::mutex mutex;
 };
 
-static boost::unordered::concurrent_flat_map<std::string,int> pt;
+static boost::unordered::concurrent_flat_map<std::string,PT> pt;
 
 
 namespace l
