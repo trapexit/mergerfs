@@ -248,6 +248,9 @@ namespace l
     fi->backing_id    = backing_id;
     ffi_->backing_id  = backing_id;
 
+    pti_->fd          = fi->fd;
+    pti_->backing_id  = backing_id;
+
     return 0;
   }
 
