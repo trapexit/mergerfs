@@ -20,6 +20,7 @@
 #include "fs_close.hpp"
 #include "fs_fadvise.hpp"
 #include "ugid.hpp"
+#include "passthrough.hpp"
 
 #include "fuse.h"
 
@@ -41,7 +42,7 @@ namespace l
         fs::fadvise_dontneed(fi_->fd);
       }
 
-    if(fi_->fusepath.empty());
+    
     
     if(fi_->backing_id)
       {
