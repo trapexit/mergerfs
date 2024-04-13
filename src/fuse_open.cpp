@@ -338,7 +338,7 @@ namespace FUSE
     if(rv != 0)
       return 0;
 
-    
+
 
     return rv;
   }
