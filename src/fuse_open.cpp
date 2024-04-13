@@ -14,6 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_openat.hpp"
 #include "passthrough.hpp"
 
 #include "config.hpp"
