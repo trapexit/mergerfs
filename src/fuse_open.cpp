@@ -334,12 +334,10 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    rv = l::passthrough(fc,ffi_);
+    rv = l::passthrough(fc,ffi_,pti);
     if(rv != 0)
       return 0;
-
-
-
+    
     return rv;
   }
 
