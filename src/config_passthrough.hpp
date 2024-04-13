@@ -23,6 +23,6 @@
 #include "enum.hpp"
 
 
-BETTER_ENUM(PassthroughEnum, uint8_t, false, true);
+BETTER_ENUM(PassthroughEnum, uint8_t, "false", "true");
 
 typedef Enum<PassthroughEnum> Passthrough;
