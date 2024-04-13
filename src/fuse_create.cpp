@@ -231,15 +231,6 @@ namespace l
   }
 }
 
-constexpr
-const
-uint64_t
-_(const PassthroughEnum e_,
-  const uint64_t        m_)
-{
-  return ((((uint64_t)e_) << 32) | (m_ & O_ACCMODE));
-}
-
 namespace FUSE
 {
   int
