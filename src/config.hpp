@@ -26,7 +26,6 @@
 #include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
-#include "config_passthrough.hpp"
 #include "config_pid.hpp"
 #include "config_rename_exdev.hpp"
 #include "config_set.hpp"
