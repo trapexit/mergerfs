@@ -316,6 +316,8 @@ namespace FUSE
     pti = PassthroughStuff::get_pti(fusepath_);
     const std::lock_guard<std::mutex> lg(pti->mutex);
 
+    if(pti->open_count)
+    
     if(pti->backing_id)
       {
         int fd;
