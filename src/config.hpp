@@ -139,7 +139,7 @@ public:
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
   ConfigBOOL     parallel_direct_writes;
-  Passthrough    passthrough;
+  ConfigBool     passthrough;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
   ConfigUINT64   readahead;
