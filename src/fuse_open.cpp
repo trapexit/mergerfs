@@ -339,21 +339,7 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    switch(_(cfg->passthrough,ffi_->flags))
-      {
-      case _(PassthroughEnum::r, O_RDONLY):
-      case _(PassthroughEnum::r, O_RDWR):
-      case _(PassthroughEnum::w, O_WRONLY):
-      case _(PassthroughEnum::w, O_RDWR):
-      case _(PassthroughEnum::ro,O_RDONLY):
-      case _(PassthroughEnum::wo,O_WRONLY):
-      case _(PassthroughEnum::rw,O_RDONLY):
-      case _(PassthroughEnum::rw,O_WRONLY):
-      case _(PassthroughEnum::rw,O_RDWR):
-        return l::passthrough(fc,ffi_);
-      }
-
-    return 0;
+    return l::passthrough(fc,ffi_);
   }
 
   int
