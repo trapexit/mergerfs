@@ -41,7 +41,7 @@ namespace l
         fs::fadvise_dontneed(fi_->fd);
       }
 
-    if(fi->fusepath.empty());
+    if(fi_->fusepath.empty());
     
     if(fi_->backing_id)
       {
