@@ -351,16 +351,5 @@ namespace FUSE
       return open_passthrough(fusepath_,ffi_);
 
     return open_regular(fusepath_,ffi_);
-
-    PTInfo *pti;
-
-    pti = PassthroughStuff::get_pti(fusepath_);
-
-    fmt::print("ptr {}\n",(void*)pti);
-    const std::lock_guard<std::mutex> lock(pti->mutex);
-    fmt::print("locked {}\n",fusepath_);
-    sleep(10);
-
-    return 0;
   }
 }
