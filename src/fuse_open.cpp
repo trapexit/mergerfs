@@ -226,7 +226,7 @@ namespace l
   static
   int
   passthrough(const fuse_context *fc_,
-              fuse_file_info_t   *ffi_
+              fuse_file_info_t   *ffi_,
               PTInfo             *pti_)
   {
     int backing_id;
