@@ -318,11 +318,12 @@ namespace FUSE
 
     if(pti->backing_id)
       {
+        int fd;
         std::string proc_filepath;
         ffi_->backing_id = pti->backing_id;
 
         proc_filepath = fmt::format("/proc/self/fd/{}",ffi_->fd);
-
+        fd = fs::open(proc_filepath,ffi_->flags);
         
       }
     
