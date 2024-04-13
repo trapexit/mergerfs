@@ -313,10 +313,13 @@ namespace FUSE
                    fuse_file_info_t *ffi_)
   {
     int rv;
+    PTInfo *pti;
     Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
+    pti = PassthroughStuff::get_pti(fusepath_);
+    
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
