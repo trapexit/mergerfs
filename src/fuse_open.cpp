@@ -319,6 +319,7 @@ namespace FUSE
     if(pti->backing_id)
       {
         int fd;
+        FileInfo *fi;
         std::string proc_filepath;
         ffi_->backing_id = pti->backing_id;
 
@@ -326,6 +327,10 @@ namespace FUSE
         fd = fs::open(proc_filepath,ffi_->flags);
         if(fd == -1)
           return -errno;
+
+        fi = new FileInfo(fd,fusepath_,ffi_->direct_io);
+        
+        return 0;
       }
     
 
