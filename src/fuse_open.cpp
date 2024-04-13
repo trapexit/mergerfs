@@ -221,9 +221,6 @@ namespace l
 
     ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
-    fs::openat(fd,".",O_PATH);
-    
-
     return 0;
   }
 
