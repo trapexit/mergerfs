@@ -307,7 +307,7 @@ namespace FUSE
 
     return 0;
   }
-  
+
   int
   open_passthrough(const char       *fusepath_,
                    fuse_file_info_t *ffi_)
@@ -320,7 +320,7 @@ namespace FUSE
 
     pti = PassthroughStuff::get_pti(fusepath_);
     const std::lock_guard<std::mutex> lg(pti->mutex);
-    
+
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
@@ -366,7 +366,7 @@ namespace FUSE
       return open_passthrough(fusepath_,ffi_);
 
     return open_regular(fusepath_,ffi_);
-    
+
     PTInfo *pti;
 
     pti = PassthroughStuff::get_pti(fusepath_);
