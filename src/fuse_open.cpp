@@ -324,7 +324,8 @@ namespace FUSE
 
         proc_filepath = fmt::format("/proc/self/fd/{}",ffi_->fd);
         fd = fs::open(proc_filepath,ffi_->flags);
-        
+        if(fd == -1)
+          return -errno;
       }
     
 
