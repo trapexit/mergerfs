@@ -329,10 +329,10 @@ namespace FUSE
           return -errno;
 
         fi = new FileInfo(fd,fusepath_,ffi_->direct_io);
-        
+
         return 0;
       }
-    
+
 
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
