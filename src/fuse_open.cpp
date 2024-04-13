@@ -272,6 +272,16 @@ namespace l
 
     return l::open_core(basepaths[0],fusepath_,ffi_,link_cow_,nfsopenhack_);
   }
+
+  static
+  int
+  open(const Policy::Search &searchFunc_,
+       const Branches       &branches_,
+       const char           *fusepath_,
+       fuse_file_info_t     *ffi_,
+       const bool            link_cow_,
+       const NFSOpenHack     nfsopenhack_)
+
 }
 
 namespace FUSE
@@ -316,7 +326,10 @@ namespace FUSE
     pti = PassthroughStuff::get_pti(fusepath_);
     const std::lock_guard<std::mutex> lg(pti->mutex);
 
-    if(pti->open_count)
+    if(pti->open_count == 0)
+      {
+        
+      }
     
     if(pti->backing_id)
       {
