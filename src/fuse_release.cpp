@@ -42,7 +42,7 @@ namespace l
         fs::fadvise_dontneed(fi_->fd);
       }
 
-    PTInfo *pti = PassthroughStuff::get_pti(fi_->fusepath);
+    PTInfo *pti = PassthroughStuff::get_pti(fi_->fusepath.c_str());
     
     if(fi_->backing_id)
       {
