@@ -316,6 +316,17 @@ namespace FUSE
     pti = PassthroughStuff::get_pti(fusepath_);
     const std::lock_guard<std::mutex> lg(pti->mutex);
 
+    if(pti->backing_id)
+      {
+        std::string proc_filepath;
+        ffi_->backing_id = pti->backing_id;
+
+        proc_filepath = fmt::format("/proc/self/fd/{}",ffi_->fd);
+
+        
+      }
+    
+
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
