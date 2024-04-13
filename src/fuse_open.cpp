@@ -335,7 +335,6 @@ namespace FUSE
         return 0;
       }
 
-
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
