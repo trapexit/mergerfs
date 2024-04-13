@@ -323,7 +323,7 @@ namespace FUSE
         std::string proc_filepath;
         ffi_->backing_id = pti->backing_id;
 
-        proc_filepath = fmt::format("/proc/self/fd/{}",pti->fd);
+        proc_filepath = fmt::format("/proc/self/fd/{}",pti->path_fd);
         fd = fs::open(proc_filepath,ffi_->flags);
         if(fd == -1)
           return -errno;
