@@ -319,6 +319,7 @@ namespace FUSE
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     pti = PassthroughStuff::get_pti(fusepath_);
+    std::lock_guard<std::mutex> lg(pti->mutex);
     
     l::config_to_ffi_flags(cfg,fc->pid,ffi_);
 
