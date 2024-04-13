@@ -270,15 +270,6 @@ namespace l
   }
 }
 
-constexpr
-const
-uint64_t
-_(const PassthroughEnum e_,
-  const uint64_t        m_)
-{
-  return ((((uint64_t)e_) << 32) | (m_ & O_ACCMODE));
-}
-
 namespace FUSE
 {
   int
@@ -339,7 +330,13 @@ namespace FUSE
     if(rv != 0)
       return rv;
 
-    return l::passthrough(fc,ffi_);
+    rv = l::passthrough(fc,ffi_);
+    if(rv != 0)
+      return 0;
+
+    
+
+    return rv;
   }
 
   int
