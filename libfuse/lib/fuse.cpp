@@ -2568,7 +2568,7 @@ fuse_lib_readdir_plus(fuse_req_t             req_,
   fuse_file_info_t llffi = {0};
   struct fuse_read_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   size = arg->size;
   llffi.fh = arg->fh;
 
