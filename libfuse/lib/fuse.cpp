@@ -3832,7 +3832,7 @@ metrics_log_nodes_info(struct fuse *f_,
 
   snprintf(buf,sizeof(buf),
            "time: %s\n"
-           "sizeof(node): %"PRIu64"\n"
+           "sizeof(node): %" PRIu64 "\n"
            "node id_table size: %"PRIu64"\n"
            "node id_table usage: %"PRIu64"\n"
            "node id_table total allocated memory: %"PRIu64"\n"
