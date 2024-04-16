@@ -3375,7 +3375,7 @@ fuse_lib_ioctl(fuse_req_t                   req,
   uint32_t out_size;
   const struct fuse_ioctl_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_ioctl_in*)fuse_hdr_arg(hdr_);
   if((arg->flags & FUSE_IOCTL_DIR) && !(req->f->conn.want & FUSE_CAP_IOCTL_DIR))
     {
       fuse_reply_err(req,ENOTTY);
