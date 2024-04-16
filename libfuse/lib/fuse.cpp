@@ -1630,7 +1630,7 @@ fuse_lib_forget(fuse_req_t             req,
   struct fuse_forget_in *arg;
 
   f   = req_fuse(req);
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_forget_in*)fuse_hdr_arg(hdr_);
 
   forget_node(f,hdr_->nodeid,arg->nlookup);
 
