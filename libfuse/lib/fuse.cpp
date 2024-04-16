@@ -2638,7 +2638,7 @@ fuse_lib_fsyncdir(fuse_req_t             req,
   fuse_file_info_t llffi = {0};
   struct fuse_fsync_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_fsync_in*)fuse_hdr_arg(hdr_);
   llffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
