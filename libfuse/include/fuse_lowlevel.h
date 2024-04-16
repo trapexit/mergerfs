@@ -141,74 +141,10 @@ struct fuse_lowlevel_ops
   void (*mknod)(fuse_req_t             req,                struct fuse_in_header *hdr);
   void (*mkdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
   void (*unlink)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-
-  /**
-   * Remove a directory
-   *
-   * If the directory's inode's lookup count is non-zero, the
-   * file system is expected to postpone any removal of the
-   * inode until the lookup count reaches zero (see description
-   * of the forget function).
-   *
-   * Valid replies:
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param parent inode number of the parent directory
-   * @param name to remove
-   */
-  void (*rmdir)(fuse_req_t             req,
-                struct fuse_in_header *hdr);
-
-  /**
-   * Create a symbolic link
-   *
-   * Valid replies:
-   *   fuse_reply_entry
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param link the contents of the symbolic link
-   * @param parent inode number of the parent directory
-   * @param name to create
-   */
-  void (*symlink)(fuse_req_t             req,
-                  struct fuse_in_header *hdr);
-
-  /** Rename a file
-   *
-   * If the target exists it should be atomically replaced. If
-   * the target's inode's lookup count is non-zero, the file
-   * system is expected to postpone any removal of the inode
-   * until the lookup count reaches zero (see description of the
-   * forget function).
-   *
-   * Valid replies:
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param parent inode number of the old parent directory
-   * @param name old name
-   * @param newparent inode number of the new parent directory
-   * @param newname new name
-   */
-  void (*rename)(fuse_req_t             req,
-                 struct fuse_in_header *hdr);
-
-  /**
-   * Create a hard link
-   *
-   * Valid replies:
-   *   fuse_reply_entry
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param ino the old inode number
-   * @param newparent inode number of the new parent directory
-   * @param newname new name to create
-   */
-  void (*link)(fuse_req_t             req,
-               struct fuse_in_header *hdr);
+  void (*rmdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*symlink)(fuse_req_t             req,                  struct fuse_in_header *hdr);
+  void (*rename)(fuse_req_t             req,                 struct fuse_in_header *hdr);
+  void (*link)(fuse_req_t             req,               struct fuse_in_header *hdr);
 
   /**
    * Open a file
