@@ -134,55 +134,8 @@ struct fuse_lowlevel_ops
   void (*init)(void *userdata, struct fuse_conn_info *conn);
   void (*destroy)(void *userdata);
   void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
-
-  /**
-   * Forget about an inode
-   *
-   * This function is called when the kernel removes an inode
-   * from its internal caches.
-   *
-   * The inode's lookup count increases by one for every call to
-   * fuse_reply_entry and fuse_reply_create. The nlookup parameter
-   * indicates by how much the lookup count should be decreased.
-   *
-   * Inodes with a non-zero lookup count may receive request from
-   * the kernel even after calls to unlink, rmdir or (when
-   * overwriting an existing file) rename. Filesystems must handle
-   * such requests properly and it is recommended to defer removal
-   * of the inode until the lookup count reaches zero. Calls to
-   * unlink, remdir or rename will be followed closely by forget
-   * unless the file or directory is open, in which case the
-   * kernel issues forget only after the release or releasedir
-   * calls.
-   *
-   * Note that if a file system will be exported over NFS the
-   * inodes lifetime must extend even beyond forget. See the
-   * generation field in struct fuse_entry_param above.
-   *
-   * On unmount the lookup count for all inodes implicitly drops
-   * to zero. It is not guaranteed that the file system will
-   * receive corresponding forget messages for the affected
-   * inodes.
-   *
-   * Valid replies:
-   *   fuse_reply_none
-   *
-   * @param req request handle
-   * @param ino the inode number
-   * @param nlookup the number of lookups to forget
-   */
-  void (*forget)(fuse_req_t             req,
-                 struct fuse_in_header *hdr);
-
-  /**
-   * Get file attributes
-   *
-   * Valid replies:
-   *   fuse_reply_attr
-   *   fuse_reply_err
-   */
-  void (*getattr)(fuse_req_t              req,
-                  struct fuse_in_header  *hdr);
+  void (*forget)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*getattr)(fuse_req_t req, struct fuse_in_header  *hdr);
 
   /**
    * Set file attributes
