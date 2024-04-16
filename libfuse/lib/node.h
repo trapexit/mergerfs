@@ -1,3 +1,5 @@
+#pragma once
+
 #include "lock.h"
 #include "lfmp.h"
 
@@ -23,8 +25,18 @@ struct node_s
   uint8_t is_stat_cache_valid:1;
 };
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 node_t *node_alloc();
 void    node_free(node_t*);
 int     node_gc1();
 void    node_gc();
 lfmp_t *node_lfmp();
+
+
+#ifdef __cplusplus
+}
+#endif

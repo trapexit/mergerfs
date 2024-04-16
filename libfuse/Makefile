@@ -71,6 +71,8 @@ CFLAGS := \
 	-Wall \
 	-pipe \
 	-MMD
+CXXFLAGS ?= \
+	$(OPT_FLAGS)
 CXXFLAGS := \
 	${CXXFLAGS} \
 	$(LTO_FLAGS) \
