@@ -3343,7 +3343,7 @@ fuse_lib_bmap(fuse_req_t                   req,
   uint64_t block;
   const struct fuse_bmap_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_bmap_in*)fuse_hdr_arg(hdr_);
   block = arg->block;
 
   f = req_fuse_prepare(req);
