@@ -1803,7 +1803,7 @@ fuse_lib_setattr(fuse_req_t             req,
           if(arg->valid & FATTR_MTIME_NOW)
             tv[1].tv_nsec = UTIME_NOW;
           else if(arg->valid & FATTR_MTIME)
-            tv[1] = (struct timespec){ arg->mtime, arg->mtimensec };
+            tv[1] = (struct timespec){ static_cast<time_t>(arg->mtime), arg->mtimensec };
 
           err = ((fi == NULL) ?
                  f->fs->op.utimens(path,tv) :
