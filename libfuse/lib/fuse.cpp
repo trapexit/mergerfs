@@ -2367,7 +2367,7 @@ fuse_lib_write(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_write_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_write_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
   ffi.writepage = !!(arg->write_flags & 1);
   if(req->f->conn.proto_minor < 9)
