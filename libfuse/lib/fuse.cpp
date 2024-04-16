@@ -3607,7 +3607,7 @@ fuse_prune_remembered_nodes(struct fuse *f_)
 static struct fuse_lowlevel_ops fuse_path_ops =
   {
    .access          = fuse_lib_access,
-   .create          = fuse_lib_create,   
+   .create          = fuse_lib_create,
    .bmap            = fuse_lib_bmap,
    .copy_file_range = fuse_lib_copy_file_range,
 
