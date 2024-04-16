@@ -2402,7 +2402,7 @@ fuse_lib_fsync(fuse_req_t             req,
   struct fuse_fsync_in *arg;
   fuse_file_info_t ffi = {0};
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_fsync_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
