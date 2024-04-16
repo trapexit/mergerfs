@@ -3208,7 +3208,7 @@ fuse_lib_flush(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_flush_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_flush_in*)fuse_hdr_arg(hdr_);
 
   ffi.fh = arg->fh;
   ffi.flush = 1;
