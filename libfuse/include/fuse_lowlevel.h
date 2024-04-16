@@ -131,41 +131,9 @@ struct fuse_ctx
  */
 struct fuse_lowlevel_ops
 {
-  /**
-   * Initialize filesystem
-   *
-   * Called before any other filesystem method
-   *
-   * There's no reply to this function
-   *
-   * @param userdata the user data passed to fuse_lowlevel_new()
-   */
   void (*init)(void *userdata, struct fuse_conn_info *conn);
-
-  /**
-   * Clean up filesystem
-   *
-   * Called on filesystem exit
-   *
-   * There's no reply to this function
-   *
-   * @param userdata the user data passed to fuse_lowlevel_new()
-   */
   void (*destroy)(void *userdata);
-
-  /**
-   * Look up a directory entry by name and get its attributes.
-   *
-   * Valid replies:
-   *   fuse_reply_entry
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param parent inode number of the parent directory
-   * @param name the name to look up
-   */
-  void (*lookup)(fuse_req_t             req,
-                 struct fuse_in_header *hdr);
+  void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
 
   /**
    * Forget about an inode
