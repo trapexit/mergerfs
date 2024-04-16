@@ -131,8 +131,8 @@ struct fuse_ctx
  */
 struct fuse_lowlevel_ops
 {
-  void (*access)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-  void (*bmap)(fuse_req_t                   req,               const struct fuse_in_header *hdr);
+  void (*access)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*bmap)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*copy_file_range)(fuse_req_t                   req,                          const struct fuse_in_header *hdr);
   void (*create)(fuse_req_t             req,                 struct fuse_in_header *hdr);
   void (*destroy)(void *userdata);
