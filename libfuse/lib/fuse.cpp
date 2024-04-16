@@ -2289,7 +2289,7 @@ fuse_lib_open(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_open_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_open_in*))fuse_hdr_arg(hdr_);
 
   ffi.flags = arg->flags;
 
