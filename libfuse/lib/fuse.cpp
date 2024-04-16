@@ -3496,8 +3496,8 @@ int
 remembered_node_cmp(const void *a_,
                     const void *b_)
 {
-  const remembered_node_t *a = a_;
-  const remembered_node_t *b = b_;
+  const remembered_node_t *a = (const remembered_node_t*)a_;
+  const remembered_node_t *b = (const remembered_node_t*)b_;
 
   return (a->time - b->time);
 }
