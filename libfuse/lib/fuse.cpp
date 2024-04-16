@@ -3057,7 +3057,7 @@ locks_insert(node_t *node,
             lock->start = l->start;
           if(lock->end < l->end)
             lock->end   = l->end;
-          goto delete;
+          goto delete_lock;
         }
       else
         {
@@ -3087,7 +3087,7 @@ locks_insert(node_t *node,
       lp = &l->next;
       continue;
 
-    delete:
+    delete_lock:
       delete_lock(lp);
     }
   if(lock->type != F_UNLCK)
