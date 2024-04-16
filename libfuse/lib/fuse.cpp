@@ -859,7 +859,7 @@ try_get_path(struct fuse  *f,
   *path = NULL;
 
   err = -ENOMEM;
-  buf = malloc(bufsize);
+  buf = (char*)malloc(bufsize);
   if(buf == NULL)
     goto out_err;
 
