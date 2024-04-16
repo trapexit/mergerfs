@@ -2869,7 +2869,7 @@ fuse_lib_copy_file_range(fuse_req_t                   req_,
   fuse_file_info_t ffi_out = {0};
   const struct fuse_copy_file_range_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_copy_file_range_in*)fuse_hdr_arg(hdr_);
   ffi_in.fh  = arg->fh_in;
   ffi_out.fh = arg->fh_out;
 
