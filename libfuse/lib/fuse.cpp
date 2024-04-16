@@ -3478,7 +3478,7 @@ fuse_lib_fallocate(fuse_req_t                   req,
   fuse_file_info_t ffi = {0};
   const struct fuse_fallocate_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_fallocate_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
