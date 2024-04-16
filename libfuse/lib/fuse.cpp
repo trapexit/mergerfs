@@ -3028,8 +3028,8 @@ locks_insert(node_t *node,
 
   if(lock->type != F_UNLCK || lock->start != 0 || lock->end != OFFSET_MAX)
     {
-      newl1 = malloc(sizeof(lock_t));
-      newl2 = malloc(sizeof(lock_t));
+      newl1 = (lock_t*)malloc(sizeof(lock_t));
+      newl2 = (lock_t*)malloc(sizeof(lock_t));
 
       if(!newl1 || !newl2)
         {
