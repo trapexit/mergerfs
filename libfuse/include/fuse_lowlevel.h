@@ -136,101 +136,11 @@ struct fuse_lowlevel_ops
   void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*forget)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*getattr)(fuse_req_t req, struct fuse_in_header  *hdr);
-
-  /**
-   * Set file attributes
-   *
-   * In the 'attr' argument only members indicated by the 'to_set'
-   * bitmask contain valid values.  Other members contain undefined
-   * values.
-   *
-   * If the setattr was invoked from the ftruncate() system call
-   * under Linux kernel versions 2.6.15 or later, the fi->fh will
-   * contain the value set by the open method or will be undefined
-   * if the open method didn't set any value.  Otherwise (not
-   * ftruncate call, or kernel version earlier than 2.6.15) the fi
-   * parameter will be NULL.
-   *
-   * Valid replies:
-   *   fuse_reply_attr
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param ino the inode number
-   * @param attr the attributes
-   * @param to_set bit mask of attributes which should be set
-   * @param fi file information, or NULL
-   *
-   * Changed in version 2.5:
-   *     file information filled in for ftruncate
-   */
-  void (*setattr)(fuse_req_t             req,
-                  struct fuse_in_header *hdr);
-
-  /**
-   * Read symbolic link
-   *
-   * Valid replies:
-   *   fuse_reply_readlink
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param ino the inode number
-   */
-  void (*readlink)(fuse_req_t             req,
-                   struct fuse_in_header *hdr);
-
-  /**
-   * Create file node
-   *
-   * Create a regular file, character device, block device, fifo or
-   * socket node.
-   *
-   * Valid replies:
-   *   fuse_reply_entry
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param parent inode number of the parent directory
-   * @param name to create
-   * @param mode file type and mode with which to create the new file
-   * @param rdev the device number (only valid if created file is a device)
-   */
-  void (*mknod)(fuse_req_t             req,
-                struct fuse_in_header *hdr);
-
-  /**
-   * Create a directory
-   *
-   * Valid replies:
-   *   fuse_reply_entry
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param parent inode number of the parent directory
-   * @param name to create
-   * @param mode with which to create the new file
-   */
-  void (*mkdir)(fuse_req_t             req,
-                struct fuse_in_header *hdr);
-
-  /**
-   * Remove a file
-   *
-   * If the file's inode's lookup count is non-zero, the file
-   * system is expected to postpone any removal of the inode
-   * until the lookup count reaches zero (see description of the
-   * forget function).
-   *
-   * Valid replies:
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param parent inode number of the parent directory
-   * @param name to remove
-   */
-  void (*unlink)(fuse_req_t             req,
-                 struct fuse_in_header *hdr);
+  void (*setattr)(fuse_req_t             req, struct fuse_in_header *hdr);
+  void (*readlink)(fuse_req_t             req,                   struct fuse_in_header *hdr);
+  void (*mknod)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*mkdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*unlink)(fuse_req_t             req,                 struct fuse_in_header *hdr);
 
   /**
    * Remove a directory
