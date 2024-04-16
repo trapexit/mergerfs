@@ -797,7 +797,7 @@ add_name(char       **buf,
             newbufsize *= 2;
         }
 
-      newbuf = realloc(*buf,newbufsize);
+      newbuf = (char*)realloc(*buf,newbufsize);
       if(newbuf == NULL)
         return NULL;
 
