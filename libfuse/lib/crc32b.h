@@ -19,6 +19,11 @@
 #ifndef CRC32B_H_INCLUDED
 #define CRC32B_H_INCLUDED
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef unsigned int crc32b_t;
 
 crc32b_t crc32b_start(void);
@@ -28,5 +33,9 @@ crc32b_t crc32b_continue(const void     *buf,
 crc32b_t crc32b_finish(const crc32b_t crc);
 
 crc32b_t crc32b(const void *buf, crc32b_t len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
