@@ -2844,7 +2844,7 @@ fuse_lib_removexattr(fuse_req_t                   req,
   const char *name;
   struct fuse *f;
 
-  name = fuse_hdr_arg(hdr_);
+  name = (const char*)fuse_hdr_arg(hdr_);
 
   f = req_fuse_prepare(req);
 
