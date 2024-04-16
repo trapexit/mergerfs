@@ -3170,7 +3170,7 @@ fuse_lib_release(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_release_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
   ffi.fh    = arg->fh;
   ffi.flags = arg->flags;
   if(req->f->conn.proto_minor >= 8)
