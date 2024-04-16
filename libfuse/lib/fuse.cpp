@@ -3405,7 +3405,7 @@ fuse_lib_ioctl(fuse_req_t                   req,
   if(out_size)
     {
       err = -ENOMEM;
-      out_buf = malloc(out_size);
+      out_buf = (char*)malloc(out_size);
       if(!out_buf)
         goto err;
     }
