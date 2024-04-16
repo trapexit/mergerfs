@@ -1564,7 +1564,7 @@ fuse_lib_lookup(fuse_req_t             req,
   node_t *dot = NULL;
   struct fuse_entry_param e = {0};
 
-  name   = fuse_hdr_arg(hdr_);
+  name   = (const char*)fuse_hdr_arg(hdr_);
   nodeid = hdr_->nodeid;
   f      = req_fuse_prepare(req);
 
