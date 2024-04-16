@@ -2609,7 +2609,7 @@ fuse_lib_releasedir(fuse_req_t             req_,
   fuse_file_info_t llffi = {0};
   struct fuse_release_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
   llffi.fh    = arg->fh;
   llffi.flags = arg->flags;
 
