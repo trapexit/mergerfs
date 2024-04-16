@@ -1855,7 +1855,7 @@ fuse_lib_access(fuse_req_t             req,
   struct fuse *f;
   struct fuse_access_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_access_in*)fuse_hdr_arg(hdr_);
 
   f = req_fuse_prepare(req);
 
