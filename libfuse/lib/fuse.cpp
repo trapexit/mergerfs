@@ -452,7 +452,7 @@ node_table_resize(struct node_table *t)
   if(newarray == NULL)
     return -1;
 
-  t->array = newarray;
+  t->array = (node_t**)newarray;
   memset(t->array + t->size,0,t->size * sizeof(node_t*));
   t->size = newsize;
   t->split = 0;
