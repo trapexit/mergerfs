@@ -2804,7 +2804,7 @@ fuse_lib_listxattr(fuse_req_t             req,
   struct fuse *f;
   struct fuse_getxattr_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_getxattr_in*)fuse_hdr_arg(hdr_);
 
   f = req_fuse_prepare(req);
 
