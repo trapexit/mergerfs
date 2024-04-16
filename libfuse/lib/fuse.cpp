@@ -3066,7 +3066,7 @@ locks_insert(node_t *node,
           if(lock->end < l->start)
             break;
           if(lock->start <= l->start && l->end <= lock->end)
-            goto delete;
+            goto delete_lock;
           if(l->end <= lock->end)
             {
               l->end = lock->start - 1;
