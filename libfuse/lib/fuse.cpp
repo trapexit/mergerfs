@@ -1993,7 +1993,7 @@ fuse_lib_unlink(fuse_req_t             req,
   const char *name;
   node_t *wnode;
 
-  name = PARAM(hdr_);
+  name = (const char*)PARAM(hdr_);
 
   f = req_fuse_prepare(req);
   err = get_path_wrlock(f,hdr_->nodeid,name,&path,&wnode);
