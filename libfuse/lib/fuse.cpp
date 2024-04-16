@@ -3913,7 +3913,7 @@ fuse_invalidate_all_nodes()
   syslog(LOG_INFO,"invalidating file entries");
 
   pthread_mutex_lock(&f->lock);
-  for(int i = 0; i < f->id_table.size; i++)
+  for(size_t i = 0; i < f->id_table.size; i++)
     {
       node_t *node;
 
