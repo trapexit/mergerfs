@@ -1647,7 +1647,7 @@ fuse_lib_forget_multi(fuse_req_t             req,
   struct fuse_forget_one      *entry;
 
   f     = req_fuse(req);
-  arg   = fuse_hdr_arg(hdr_);
+  arg   = (fuse_batch_forget_in*)fuse_hdr_arg(hdr_);
   entry = PARAM(arg);
 
   for(uint32_t i = 0; i < arg->count; i++)
