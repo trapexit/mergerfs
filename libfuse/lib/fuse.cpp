@@ -2692,7 +2692,7 @@ fuse_lib_setxattr(fuse_req_t             req,
 
   arg   = (fuse_setxattr_in*)fuse_hdr_arg(hdr_);
   if((req->f->conn.capable & FUSE_SETXATTR_EXT) && (req->f->conn.want & FUSE_SETXATTR_EXT))
-    name = PARAM(arg);
+    name = (const char*)PARAM(arg);
   else
     name = (((char*)arg) + FUSE_COMPAT_SETXATTR_IN_SIZE);
 
