@@ -131,148 +131,52 @@ struct fuse_ctx
  */
 struct fuse_lowlevel_ops
 {
-  void (*init)(void *userdata, struct fuse_conn_info *conn);
+  void (*access)(fuse_req_t             req,                 struct fuse_in_header *hdr);
+  void (*bmap)(fuse_req_t                   req,               const struct fuse_in_header *hdr);
+  void (*copy_file_range)(fuse_req_t                   req,                          const struct fuse_in_header *hdr);
+  void (*create)(fuse_req_t             req,                 struct fuse_in_header *hdr);
   void (*destroy)(void *userdata);
-  void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*forget)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*getattr)(fuse_req_t req, struct fuse_in_header  *hdr);
-  void (*setattr)(fuse_req_t             req, struct fuse_in_header *hdr);
-  void (*readlink)(fuse_req_t             req,                   struct fuse_in_header *hdr);
-  void (*mknod)(fuse_req_t             req,                struct fuse_in_header *hdr);
-  void (*mkdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
-  void (*unlink)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-  void (*rmdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
-  void (*symlink)(fuse_req_t             req,                  struct fuse_in_header *hdr);
-  void (*rename)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-  void (*link)(fuse_req_t             req,               struct fuse_in_header *hdr);
-  void (*open)(fuse_req_t             req,               struct fuse_in_header *hdr);
-  void (*read)(fuse_req_t             req,              struct fuse_in_header *hdr);
-  void (*write)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*fallocate)(fuse_req_t                   req,                    const struct fuse_in_header *hdr);
+  void (*flock)(fuse_req_t req, uint64_t ino,                fuse_file_info_t *fi, int op);
   void (*flush)(fuse_req_t             req,                struct fuse_in_header *hdr);
-  void (*release)(fuse_req_t             req,                  struct fuse_in_header *hdr);
+  void (*forget)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*forget_multi)(fuse_req_t             req,                       struct fuse_in_header *hdr);
   void (*fsync)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*fsyncdir)(fuse_req_t             req,                   struct fuse_in_header *hdr);
+  void (*getattr)(fuse_req_t req, struct fuse_in_header  *hdr);
+  void (*getlk)(fuse_req_t                   req,                const struct fuse_in_header *hdr);
+  void (*getxattr)(fuse_req_t             req,                   struct fuse_in_header *hdr);
+  void (*init)(void *userdata, struct fuse_conn_info *conn);
+  void (*ioctl)(fuse_req_t                   req,                const struct fuse_in_header *hdr);
+  void (*link)(fuse_req_t             req,               struct fuse_in_header *hdr);
+  void (*listxattr)(fuse_req_t             req,                    struct fuse_in_header *hdr);
+  void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*mkdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*mknod)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*open)(fuse_req_t             req,               struct fuse_in_header *hdr);
   void (*opendir)(fuse_req_t req,                  struct fuse_in_header *hdr);
+  void (*poll)(fuse_req_t                   req,               const struct fuse_in_header *hdr);
+  void (*read)(fuse_req_t             req,              struct fuse_in_header *hdr);
   void (*readdir)(fuse_req_t             req,                  struct fuse_in_header *hdr);
   void (*readdir_plus)(fuse_req_t             req,                       struct fuse_in_header *hdr);
+  void (*readlink)(fuse_req_t             req,                   struct fuse_in_header *hdr);
+  void (*release)(fuse_req_t             req,                  struct fuse_in_header *hdr);
   void (*releasedir)(fuse_req_t             req,                     struct fuse_in_header *hdr);
-  void (*fsyncdir)(fuse_req_t             req,                   struct fuse_in_header *hdr);
-  void (*statfs)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-  void (*setxattr)(fuse_req_t             req,                   struct fuse_in_header *hdr);
-  void (*getxattr)(fuse_req_t             req,                   struct fuse_in_header *hdr);
-  void (*listxattr)(fuse_req_t             req,                    struct fuse_in_header *hdr);
+  void (*removemapping)(fuse_req_t                   req,                        const struct fuse_in_header *hdr);
   void (*removexattr)(fuse_req_t                   req,                      const struct fuse_in_header *hdr);
-  void (*access)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-  void (*create)(fuse_req_t             req,                 struct fuse_in_header *hdr);
-  void (*getlk)(fuse_req_t                   req,                const struct fuse_in_header *hdr);
-  void (*setlk)(fuse_req_t req, uint64_t ino,                fuse_file_info_t *fi,                struct flock *lock, int sleep);
-  void (*bmap)(fuse_req_t                   req,               const struct fuse_in_header *hdr);
-  void (*ioctl)(fuse_req_t                   req,                const struct fuse_in_header *hdr);
-  void (*poll)(fuse_req_t                   req,               const struct fuse_in_header *hdr);
+  void (*rename)(fuse_req_t             req,                 struct fuse_in_header *hdr);
   void (*retrieve_reply)(fuse_req_t req,                         void *cookie,                         uint64_t ino, off_t offset);
-
-  /**
-   * Forget about multiple inodes
-   *
-   * See description of the forget function for more
-   * information.
-   *
-   * Introduced in version 2.9
-   *
-   * Valid replies:
-   *   fuse_reply_none
-   *
-   * @param req request handle
-   */
-  void (*forget_multi)(fuse_req_t             req,
-                       struct fuse_in_header *hdr);
-
-  /**
-   * Acquire, modify or release a BSD file lock
-   *
-   * Note: if the locking methods are not implemented, the kernel
-   * will still allow file locking to work locally.  Hence these are
-   * only interesting for network filesystems and similar.
-   *
-   * Introduced in version 2.9
-   *
-   * Valid replies:
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param ino the inode number
-   * @param fi file information
-   * @param op the locking operation, see flock(2)
-   */
-  void (*flock)(fuse_req_t req, uint64_t ino,
-                fuse_file_info_t *fi, int op);
-
-  /**
-   * Allocate requested space. If this function returns success then
-   * subsequent writes to the specified range shall not fail due to the lack
-   * of free space on the file system storage media.
-   *
-   * Introduced in version 2.9
-   *
-   * Valid replies:
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param ino the inode number
-   * @param offset starting point for allocated region
-   * @param length size of allocated region
-   * @param mode determines the operation to be performed on the given range,
-   *             see fallocate(2)
-   */
-  void (*fallocate)(fuse_req_t                   req,
-                    const struct fuse_in_header *hdr);
-
-  /**
-   * Copy a range of data from one file to another
-   *
-   * Performs an optimized copy between two file descriptors without
-   * the
-   * additional cost of transferring data through the FUSE kernel
-   * module
-   * to user space (glibc) and then back into the FUSE filesystem
-   * again.
-   *
-   * In case this method is not implemented, glibc falls back to
-   * reading
-   * data from the source and writing to the destination. Effectively
-   * doing an inefficient copy of the data.
-   *
-   * If this request is answered with an error code of ENOSYS, this is
-   * treated as a permanent failure with error code EOPNOTSUPP,
-   * i.e. all
-   * future copy_file_range() requests will fail with EOPNOTSUPP
-   * without
-   * being send to the filesystem process.
-   *
-   * Valid replies:
-   *   fuse_reply_write
-   *   fuse_reply_err
-   *
-   * @param req request handle
-   * @param ino_in the inode number of the source file
-   * @param off_in starting point from were the data should be read
-   * @param fi_in file information of the source file
-   * @param ino_out the inode number of the destination file
-   * @param off_out starting point where the data should be written
-   * @param fi_out file information of the destination file
-   * @param len maximum size of the data to copy
-   * @param flags passed along with the copy_file_range() syscall
-   */
-  void (*copy_file_range)(fuse_req_t                   req,
-                          const struct fuse_in_header *hdr);
-
-  void (*setupmapping)(fuse_req_t                   req,
-                       const struct fuse_in_header *hdr);
-  void (*removemapping)(fuse_req_t                   req,
-                        const struct fuse_in_header *hdr);
-  void (*syncfs)(fuse_req_t                   req,
-                 const struct fuse_in_header *hdr);
-  void (*tmpfile)(fuse_req_t                   req,
-                  const struct fuse_in_header *hdr);
+  void (*rmdir)(fuse_req_t             req,                struct fuse_in_header *hdr);
+  void (*setattr)(fuse_req_t             req, struct fuse_in_header *hdr);
+  void (*setlk)(fuse_req_t req, uint64_t ino,                fuse_file_info_t *fi,                struct flock *lock, int sleep);
+  void (*setupmapping)(fuse_req_t                   req,                       const struct fuse_in_header *hdr);
+  void (*setxattr)(fuse_req_t             req,                   struct fuse_in_header *hdr);
+  void (*statfs)(fuse_req_t             req,                 struct fuse_in_header *hdr);
+  void (*symlink)(fuse_req_t             req,                  struct fuse_in_header *hdr);
+  void (*syncfs)(fuse_req_t                   req,                 const struct fuse_in_header *hdr);
+  void (*tmpfile)(fuse_req_t                   req,                  const struct fuse_in_header *hdr);
+  void (*unlink)(fuse_req_t             req,                 struct fuse_in_header *hdr);
+  void (*write)(fuse_req_t             req,                struct fuse_in_header *hdr);
 };
 
 /**
