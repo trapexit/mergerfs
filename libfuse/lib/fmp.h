@@ -328,7 +328,7 @@ fmp_gc_slab(fmp_t    *fmp_,
 
   slab_idx_ = (slab_idx_ % kv_size(fmp_->slabs));
 
-  slab = kv_A(fmp_->slabs,slab_idx_);
+  slab = (char*)kv_A(fmp_->slabs,slab_idx_);
 
   objs_per_slab = fmp_objs_per_slab(fmp_);
   objs_in_slab  = fmp_objs_in_slab(fmp_,slab);
