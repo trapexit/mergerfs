@@ -2087,7 +2087,7 @@ fuse_lib_rename(fuse_req_t             req,
   struct fuse_rename_in *arg;
 
   arg     = (fuse_rename_in*)fuse_hdr_arg(hdr_);
-  oldname = PARAM(arg);
+  oldname = (const char*)PARAM(arg);
   newname = (oldname + strlen(oldname) + 1);
 
   f = req_fuse_prepare(req);
