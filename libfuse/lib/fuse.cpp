@@ -2188,8 +2188,8 @@ fuse_lib_create(fuse_req_t             req,
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_create_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
 
   ffi.flags = arg->flags;
 
