@@ -2334,7 +2334,7 @@ fuse_lib_read(fuse_req_t             req,
   struct fuse_read_in *arg;
   fuse_msgbuf_t *msgbuf;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
   if(req->f->conn.proto_minor >= 9)
     {
