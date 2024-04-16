@@ -220,14 +220,14 @@ fuse_hdr_arg(const struct fuse_in_header *hdr_)
 
 static
 void
-list_add(struct list_head *new,
-         struct list_head *prev,
-         struct list_head *next)
+list_add(struct list_head *new_,
+         struct list_head *prev_,
+         struct list_head *next_)
 {
-  next->prev = new;
-  new->next = next;
-  new->prev = prev;
-  prev->next = new;
+  next_->prev = new_;
+  new_->next  = next_;
+  new_->prev  = prev_;
+  prev_->next = new_;
 }
 
 static
