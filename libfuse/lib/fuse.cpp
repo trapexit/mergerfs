@@ -1737,7 +1737,7 @@ fuse_lib_setattr(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_setattr_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_setattr_in*)fuse_hdr_arg(hdr_);
 
   fi = NULL;
   if(arg->valid & FATTR_FH)
