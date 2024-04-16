@@ -242,10 +242,10 @@ list_add_head(struct list_head *new_,
 static
 inline
 void
-list_add_tail(struct list_head *new,
-              struct list_head *head)
+list_add_tail(struct list_head *new_,
+              struct list_head *head_)
 {
-  list_add(new,head->prev,head);
+  list_add(new_,head_->prev,head_);
 }
 
 static
