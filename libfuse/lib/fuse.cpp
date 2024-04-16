@@ -2378,7 +2378,7 @@ fuse_lib_write(fuse_req_t             req,
     {
       ffi.flags = arg->flags;
       ffi.lock_owner = arg->lock_owner;
-      data = PARAM(arg);
+      data = (char*)PARAM(arg);
     }
 
   f = req_fuse_prepare(req);
