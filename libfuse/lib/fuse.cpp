@@ -1964,7 +1964,7 @@ fuse_lib_mkdir(fuse_req_t             req,
   struct fuse_mkdir_in *arg;
 
   arg  = (fuse_mkdir_in*)fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  name = (const char*)PARAM(arg);
   if(req->f->conn.proto_minor >= 12)
     req->ctx.umask = arg->umask;
 
