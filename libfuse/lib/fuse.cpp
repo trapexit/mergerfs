@@ -386,7 +386,7 @@ node_table_reduce(struct node_table *t)
 
   newarray = realloc(t->array,sizeof(node_t*) * newsize);
   if(newarray != NULL)
-    t->array = newarray;
+    t->array = (node_t**)newarray;
 
   t->size = newsize;
   t->split = t->size / 2;
