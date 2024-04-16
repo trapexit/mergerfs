@@ -165,7 +165,7 @@ struct fuse_lowlevel_ops
   void (*removemapping)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*removexattr)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*rename)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*retrieve_reply)(fuse_req_t req, void *cookie,                         uint64_t ino, off_t offset);
+  void (*retrieve_reply)(fuse_req_t req, void *cookie, uint64_t ino, off_t offset);
   void (*rmdir)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*setattr)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*setlk)(fuse_req_t req, uint64_t ino, fuse_file_info_t *fi, struct flock *lock, int sleep);
