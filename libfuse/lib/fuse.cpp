@@ -2743,7 +2743,7 @@ fuse_lib_getxattr(fuse_req_t             req,
   const char* name;
   struct fuse_getxattr_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
+  arg  = (fuse_getxattr_in*)fuse_hdr_arg(hdr_);
   name = PARAM(arg);
 
   f = req_fuse_prepare(req);
