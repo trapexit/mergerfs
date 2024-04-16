@@ -1911,8 +1911,8 @@ fuse_lib_mknod(fuse_req_t             req,
   struct fuse_entry_param e;
   struct fuse_mknod_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_mknod_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
   if(req->f->conn.proto_minor >= 12)
     req->ctx.umask = arg->umask;
   else
