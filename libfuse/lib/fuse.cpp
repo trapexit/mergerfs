@@ -1675,7 +1675,7 @@ fuse_lib_getattr(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   const struct fuse_getattr_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_getattr_in*)fuse_hdr_arg(hdr_);
   f   = req_fuse_prepare(req);
 
   if(arg->getattr_flags & FUSE_GETATTR_FH)
