@@ -3443,7 +3443,7 @@ fuse_lib_poll(fuse_req_t                   req,
   fuse_pollhandle_t *ph = NULL;
   const struct fuse_poll_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_poll_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
 
   if(arg->flags & FUSE_POLL_SCHEDULE_NOTIFY)
