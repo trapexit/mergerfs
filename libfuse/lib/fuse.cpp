@@ -2054,7 +2054,7 @@ fuse_lib_symlink(fuse_req_t             req_,
   const char *linkname;
   struct fuse_entry_param e = {0};
 
-  name     = fuse_hdr_arg(hdr_);
+  name     = (const char*)fuse_hdr_arg(hdr_);
   linkname = (name + strlen(name) + 1);
 
   f = req_fuse_prepare(req_);
