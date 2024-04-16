@@ -2124,8 +2124,8 @@ fuse_lib_link(fuse_req_t             req,
   struct fuse_link_in *arg;
   struct fuse_entry_param e = {0};
 
-  arg = fuse_hdr_arg(hdr_);
-  newname = PARAM(arg);
+  arg = (fuse_link_in*)fuse_hdr_arg(hdr_);
+  newname = (const char*)PARAM(arg);
 
   f = req_fuse_prepare(req);
 
