@@ -2086,7 +2086,7 @@ fuse_lib_rename(fuse_req_t             req,
   node_t *wnode2;
   struct fuse_rename_in *arg;
 
-  arg     = fuse_hdr_arg(hdr_);
+  arg     = (fuse_rename_in*)fuse_hdr_arg(hdr_);
   oldname = PARAM(arg);
   newname = (oldname + strlen(oldname) + 1);
 
