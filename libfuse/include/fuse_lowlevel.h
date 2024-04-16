@@ -142,8 +142,8 @@ struct fuse_lowlevel_ops
   void (*forget)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*forget_multi)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*fsync)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*fsyncdir)(fuse_req_t req, struct fuse_in_header      *hdr);
-  void (*getattr)(fuse_req_t req, struct fuse_in_header      *hdr);
+  void (*fsyncdir)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*getattr)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*getlk)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*getxattr)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*init)(void *userdata, struct fuse_conn_info *conn);
