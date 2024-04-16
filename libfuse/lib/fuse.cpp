@@ -2437,7 +2437,7 @@ fuse_lib_opendir(fuse_req_t             req,
   struct fuse *f;
   struct fuse_open_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_open_in*)fuse_hdr_arg(hdr_);
   llffi.flags = arg->flags;
 
   f = req_fuse_prepare(req);
