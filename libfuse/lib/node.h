@@ -27,7 +27,7 @@ struct node_s
 
 #ifdef __cplusplus
 extern "C" {
-#endif  
+#endif
 
 node_t *node_alloc();
 void    node_free(node_t*);
@@ -38,4 +38,4 @@ lfmp_t *node_lfmp();
 
 #ifdef __cplusplus
 }
-#endif  
+#endif
