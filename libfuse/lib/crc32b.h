@@ -20,7 +20,8 @@
 #define CRC32B_H_INCLUDED
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 typedef unsigned int crc32b_t;
