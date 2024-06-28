@@ -454,7 +454,7 @@ covering different usecases.
 32bit versions are provided as there is some software which does not
 handle 64bit inodes well.
 
-While there is a risk of hash collision in tests of a couple million
+While there is a risk of hash collision in tests of a couple of million
 entries there were zero collisions. Unlike a typical filesystem FUSE
 filesystems can reuse inodes and not refer to the same entry. The
 internal identifier used to reference a file in FUSE is different from
@@ -483,7 +483,7 @@ should always be managing inode values.
 ### pin-threads
 
 Simple strategies for pinning read and/or process threads. If process
-threads are not enabled than the strategy simply works on the read
+threads are not enabled then the strategy simply works on the read
 threads. Invalid values are ignored.
 
 * R1L: All read threads pinned to a single logical CPU.
@@ -497,15 +497,15 @@ threads. Invalid values are ignored.
 * RPSL: All read and process threads are spread across all logical CPUs.
 * RPSP: All read and process threads are spread across all physical CPUs.
 * R1PPSP: All read threads are pinned to a single physical CPU while
-  process threads are spread across all other phsycial CPUs.
+  process threads are spread across all other physical CPUs.
 
 
 ### fuse_msg_size
 
 FUSE applications communicate with the kernel over a special character
 device: `/dev/fuse`. A large portion of the overhead associated with
-FUSE is the cost of going back and forth from user space and kernel
-space over that device. Generally speaking the fewer trips needed the
+FUSE is the cost of going back and forth between user space and kernel
+space over that device. Generally speaking, the fewer trips needed the
 better the performance will be. Reducing the number of trips can be
 done a number of ways. Kernel level caching and increasing message
 sizes being two significant ones. When it comes to reads and writes if
@@ -517,7 +517,7 @@ max message size. Since the size is in multiples of
 [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the
 feature is called `max_pages`. There is a maximum `max_pages` value of
 256 (1MiB) and minimum of 1 (4KiB). The default used by Linux >=4.20,
-and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs its
+and hardcoded value used before 4.20, is 32 (128KiB). In mergerfs it's
 referred to as `fuse_msg_size` to make it clear what it impacts and
 provide some abstraction.
 
@@ -563,11 +563,11 @@ the `newpath`. The `target` value is determined by the value of
 
 * passthrough: Return EXDEV as normal.
 * rel-symlink: A relative path from the `newpath`.
-* abs-base-symlink: A absolute value using the underlying branch.
-* abs-pool-symlink: A absolute value using the mergerfs mount point.
+* abs-base-symlink: An absolute value using the underlying branch.
+* abs-pool-symlink: An absolute value using the mergerfs mount point.
 
 NOTE: It is possible that some applications check the file they
-link. In those cases it is possible it will error or complain.
+link. In those cases, it is possible it will error or complain.
 
 
 ### rename-exdev
@@ -581,7 +581,7 @@ The `target` value is determined by the value of `rename-exdev`.
 
 * passthrough: Return EXDEV as normal.
 * rel-symlink: A relative path from the `newpath`.
-* abs-symlink: A absolute value using the mergerfs mount point.
+* abs-symlink: An absolute value using the mergerfs mount point.
 
 NOTE: It is possible that some applications check the file they
 rename. In those cases it is possible it will error or complain.
@@ -609,7 +609,7 @@ something to keep in mind.
 the target of a symlink. If using this feature it will be necessary to
 point any backup software to the original filesystems or configure the
 software to follow symlinks if such an option is available.
-Alternatively create two mounts. One for backup and one for general
+Alternatively, create two mounts. One for backup and one for general
 consumption.
 
 
@@ -673,16 +673,16 @@ writable.
 Even though it's a more niche situation this hack breaks normal
 security and behavior and as such is `off` by default. If set to `git`
 it will only perform the hack when the path in question includes
-`/.git/`. `all` will result it applying anytime a read-only file which
+`/.git/`. `all` will result in it applying anytime a read-only file which
 is empty is opened for writing.
 
 
 ### export-support
 
-In theory this flag should not be exposed to the end user. It is a
+In theory, this flag should not be exposed to the end user. It is a
 low-level FUSE flag which indicates whether or not the kernel can send
-certain kinds of messages to it for the purposes of using with
-NFS. mergerfs does support these messages but due bugs and quirks
+certain kinds of messages to it for the purposes of using it with
+NFS. mergerfs does support these messages but due to bugs and quirks
 found in the kernel and mergerfs this option is provided just in case
 it is needed for debugging.
 
@@ -694,7 +694,7 @@ initiated it is not possible to change during run time.
 
 The POSIX filesystem API is made up of a number of
 functions. **creat**, **stat**, **chown**, etc. For ease of
-configuration in mergerfs most of the core functions are grouped into
+configuration in mergerfs, most of the core functions are grouped into
 3 categories: **action**, **create**, and **search**. These functions
 and categories can be assigned a policy which dictates which branch is
 chosen when performing that function.
@@ -768,7 +768,7 @@ device) depending on the most recent reason for filtering a
 branch. **ENOENT** will be returned if no eligible branch is found.
 
 If **create**, **mkdir**, **mknod**, or **symlink** fail with `EROFS`
-or other fundimental errors then mergerfs will mark any branch found
+or other fundamental errors then mergerfs will mark any branch found
 to be read-only as such (IE will set the mode `RO`) and will rerun the
 policy and try again. This is mostly for `ext4` filesystems that can
 suddenly become read-only when it encounters an error.
@@ -923,7 +923,7 @@ work while still obeying mergerfs' policies. Below is the basic logic.
     * Remove the target from all branches with no source file
     * Remove the source from all branches which failed to rename
 
-The the removals are subject to normal entitlement checks.
+The removals are subject to normal entitlement checks.
 
 The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
@@ -949,7 +949,7 @@ The options `statfs` and `statfs_ignore` can be used to modify
 
 https://lkml.kernel.org/linux-fsdevel/20211024132607.1636952-1-amir73il@gmail.com/T/
 
-By default FUSE would issue a flush before the release of a file
+By default, FUSE would issue a flush before the release of a file
 descriptor. This was considered a bit aggressive and a feature added
 to give the FUSE server the ability to choose when that happens.
 
@@ -990,14 +990,14 @@ value.
 1) if no errors: return 0 (success)
 2) return first error
 
-Older version of mergerfs would return success if any success occurred
+Older versions of mergerfs would return success if any success occurred
 but for unlink and rmdir there are downstream assumptions that, while
 not impossible to occur, can confuse some software.
 
 
 ### others
 
-For search functions there is always a single thing acted on and as
+For search functions, there is always a single thing acted on and as
 such whatever return value that comes from the single function call is
 returned.
 
@@ -1021,7 +1021,7 @@ distros are below.
 
 Most Debian installs are of a stable branch and therefore do not have
 the most up to date software. While mergerfs is available via `apt` it
-is suggested that uses install the most recent version available from
+is suggested that users install the most recent version available from
 the [releases page](https://github.com/trapexit/mergerfs/releases).
 
 #### prebuilt deb
@@ -1042,7 +1042,7 @@ sudo apt install -y mergerfs
 
 Most Ubuntu installs are of a stable branch and therefore do not have
 the most up to date software. While mergerfs is available via `apt` it
-is suggested that uses install the most recent version available from
+is suggested that users install the most recent version available from
 the [releases page](https://github.com/trapexit/mergerfs/releases).
 
 #### prebuilt deb
@@ -1106,7 +1106,7 @@ users: https://github.com/trapexit/mergerfs/releases
 branches should be considered works in progress.
 
 
-First get the code from [github](https://github.com/trapexit/mergerfs).
+First, get the code from [github](https://github.com/trapexit/mergerfs).
 
 ```
 $ git clone https://github.com/trapexit/mergerfs.git
@@ -1333,7 +1333,7 @@ because mergerfs is no longer part of the workflow. Keep in mind that
 this also means certain mergerfs features that work by interrupting
 the read/write workflow, such as `moveonenospc`, will no longer work.
 
-Also understand that this will only work on dynamically linked
+Also, understand that this will only work on dynamically linked
 software. Anything statically compiled will not work. Many GoLang and
 Rust apps are statically compiled.
 
@@ -1465,11 +1465,11 @@ to enable `dropcacheonclose` regardless of caching mode in order to
 minimize buffer bloat.
 
 It is difficult to balance memory usage, cache bloat & duplication,
-and performance. Ideally mergerfs would be able to disable caching for
+and performance. Ideally, mergerfs would be able to disable caching for
 the files it reads/writes but allow page caching for itself. That
 would limit the FUSE overhead. However, there isn't a good way to
 achieve this. It would need to open all files with O_DIRECT which
-places limitations on the what underlying filesystems would be
+places limitations on what the underlying filesystems would be
 supported and complicates the code.
 
 kernel documentation: https://www.kernel.org/doc/Documentation/filesystems/fuse-io.txt
@@ -1539,7 +1539,7 @@ creates because the available space won't be updated for that time.
 As of version 4.20 Linux supports symlink caching. Significant
 performance increases can be had in workloads which use a lot of
 symlinks. Setting `cache.symlinks=true` will result in requesting
-symlink caching from the kernel only if supported. As a result its
+symlink caching from the kernel only if supported. As a result it's
 safe to enable it on systems prior to 4.20. That said it is disabled
 by default for now. You can see if caching is enabled by querying the
 xattr `user.mergerfs.cache.symlinks` but given it must be requested at
@@ -1680,9 +1680,9 @@ both against your normal setup, a singular branch, and with
 # BENCHMARKING
 
 Filesystems are complicated. They do many things and many of those are
-interconnected. Additionally, the OS, drivers, hardware, etc. all can
+interconnected. Additionally, the OS, drivers, hardware, etc. can all
 impact performance. Therefore, when benchmarking, it is **necessary**
-that the test focus as narrowly as possible.
+that the test focuses as narrowly as possible.
 
 For most throughput is the key benchmark. To test throughput `dd` is
 useful but **must** be used with the correct settings in order to
@@ -1694,7 +1694,7 @@ representative of the device's true performance.
 When benchmarking through mergerfs ensure you only use 1 branch to
 remove any possibility of the policies complicating the
 situation. Benchmark the underlying filesystem first and then mount
-mergerfs over it and test again. If you're experience speeds below
+mergerfs over it and test again. If you're experiencing speeds below
 your expectation you will need to narrow down precisely which
 component is leading to the slowdown. Preferably test the following in
 the order listed (but not combined).
@@ -1725,7 +1725,7 @@ investigate further.
 Sometimes the problem is really the application accessing or writing
 data through mergerfs. Some software use small buffer sizes which can
 lead to more requests and therefore greater overhead. You can test
-this out yourself by replace `bs=1M` in the examples below with `ibs`
+this out yourself by replacing `bs=1M` in the examples below with `ibs`
 or `obs` and using a size of `512` instead of `1M`. In one example
 test using `nullrw` the write speed dropped from 4.9GB/s to 69.7MB/s
 when moving from `1M` to `512`. Similar results were had when testing
@@ -1796,10 +1796,9 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches
 * Some policies mixed with some functions may result in strange
   behaviors. Not that some of these behaviors and race conditions
   couldn't happen outside **mergerfs** but that they are far more
-  likely to occur on account of the attempt to merge together multiple
-  sources of data which could be out of sync due to the different
-  policies.
-* For consistency its generally best to set **category** wide policies
+  likely to occur on account of the attempt to merge multiple sources
+  of data which could be out of sync due to the different policies.
+* For consistency it's generally best to set **category** wide policies
   rather than individual **func**'s. This will help limit the
   confusion of tools such as
   [rsync](http://linux.die.net/man/1/rsync). However, the flexibility
@@ -1897,7 +1896,7 @@ you're having troubles with and asking them to add a fallback to
 regular file IO when mmap is unavailable.
 
 If the issue is that scanning doesn't seem to pick up media then be
-sure to set `func.getattr=newest` though generally a full scan will
+sure to set `func.getattr=newest`, though generally, a full scan will
 pick up all media anyway.
 
 
@@ -1945,7 +1944,7 @@ move files around on that SMB share to fail with a IO error.
 
 [GVFS-fuse v1.22.0](https://bugzilla.gnome.org/show_bug.cgi?id=734568)
 and above fixed this issue but a large number of systems use the older
-release. On Ubuntu the version can be checked by issuing `apt-cache
+release. On Ubuntu, the version can be checked by issuing `apt-cache
 showpkg gvfs-fuse`. Most distros released in 2015 seem to have the
 updated release and will work fine but older systems may
 not. Upgrading gvfs-fuse or the distro in general will address the
@@ -1953,7 +1952,7 @@ problem.
 
 In Apple's MacOSX 10.9 they replaced Samba (client and server) with
 their own product. It appears their new client does not handle
-**EXDEV** either and responds similar to older release of gvfs on
+**EXDEV** either and responds similarly to older releases of gvfs on
 Linux.
 
 
@@ -1992,7 +1991,7 @@ compatible with older systems which may not have C++11
 compilers. There is enough storage for 256 users' supplemental
 groups. Each user is allowed up to 32 supplemental groups. Linux >=
 2.6.3 allows up to 65535 groups per user but most other *nixs allow
-far less. NFS allowing only 16. The system does handle overflow
+far less. NFS allows only 16. The system does handle overflow
 gracefully. If the user has more than 32 supplemental groups only the
 first 32 will be used. If more than 256 users are using the system
 when an uncached user is found it will evict an existing user's cache
@@ -2041,7 +2040,7 @@ with it.
 
 It should be noted that NFS and FUSE (the technology mergerfs uses) do
 not work perfectly with one another due to certain design choices in
-FUSE (and mergerfs.) Due to these issues it is generally recommended
+FUSE (and mergerfs.) Due to these issues, it is generally recommended
 to use SMB when possible till situations change. That said mergerfs
 should generally work as an export of NFS and issues discovered should
 still be reported.
@@ -2061,7 +2060,7 @@ NFS export settings:
 `open_by_handle_at` functions which allow a program to keep a
 reference to a file without technically having it open in the typical
 sense. The problem is that FUSE has no way to know that NFS has a
-handle that it will later use to open the file again. As a result it
+handle that it will later use to open the file again. As a result, it
 is possible for the kernel to tell mergerfs to forget about the node
 and should NFS ever ask for that node's details in the future it would
 have nothing to respond with. Keeping nodes around forever is not
@@ -2091,7 +2090,7 @@ permission and ownership issues if root squashing is enabled.
 
 [SMB](https://en.wikipedia.org/wiki/Server_Message_Block) is a
 protocol most used by Microsoft Windows systems to share file shares,
-printers, etc. However, due to the popularity for Windows, it is also
+printers, etc. However, due to the popularity of Windows, it is also
 supported on many other platforms including Linux. The most popular
 way of supporting SMB on Linux is via the software Samba.
 
@@ -2099,7 +2098,7 @@ way of supporting SMB on Linux is via the software Samba.
 ways of serving Linux filesystems, via SMB should work fine with
 mergerfs. The services do not tend to use the same technologies which
 NFS uses and therefore don't have the same issues. There should not be
-an special settings required to use mergerfs with Samba. However,
+special settings required to use mergerfs with Samba. However,
 [CIFSD](https://en.wikipedia.org/wiki/CIFSD) and other programs have
 not been extensively tested. If you use mergerfs with CIFSD or other
 SMB servers please submit your experiences so these docs can be
@@ -2240,7 +2239,7 @@ is to consolidate them back.
 
 #### What settings should I use?
 
-Depends on what features you want. Generally speaking there are no
+Depends on what features you want. Generally speaking, there are no
 "wrong" settings. All settings are performance or feature related. The
 best bet is to read over the available options and choose what fits
 your situation. If something isn't clear from the documentation please
@@ -2274,7 +2273,7 @@ you'll need to perform the manual act of creating paths on the
 filesystems you want the data to land on before transferring your
 data. Setting `func.mkdir=epall` can simplify managing path
 preservation for `create`. Or use `func.mkdir=rand` if you're
-interested in just grouping together directory content by filesystem.
+interested in just grouping directory content by filesystem.
 
 
 #### Do hardlinks work?
@@ -2323,7 +2322,7 @@ Keep in mind that you **MUST** consider identity when using
 containers. For example: supplemental groups will be picked up from
 the container unless you properly manage users and groups by sharing
 relevant /etc files or by using some other means to share identity
-across containers. Similarly if you use "rootless" containers and user
+across containers. Similarly, if you use "rootless" containers and user
 namespaces to do uid/gid translations you **MUST** consider that while
 managing shared files.
 
@@ -2376,7 +2375,7 @@ container platforms such as Docker.
 
 #### Why use FUSE? Why not a kernel based solution?
 
-As with any solutions to a problem there are advantages and
+As with any solution to a problem, there are advantages and
 disadvantages to each one.
 
 A FUSE based solution has all the downsides of FUSE:
@@ -2417,8 +2416,8 @@ permissions.
 
 #### Why was splice support removed?
 
-After a lot of testing over the years splicing always appeared to be
-at best provide equivalent performance and in cases worse
+After a lot of testing over the years, splicing always appeared to
+at best, provide equivalent performance, and in some cases, worse
 performance. Splice is not supported on other platforms forcing a
 traditional read/write fallback to be provided. The splice code was
 removed to simplify the codebase.
@@ -2440,7 +2439,7 @@ removed to simplify the codebase.
 
 #### Can filesystems be written to directly? Outside of mergerfs while pooled?
 
-Yes, however it's not recommended to use the same file from within the
+Yes, however, it's not recommended to use the same file from within the
 pool and from without at the same time (particularly
 writing). Especially if using caching of any kind (cache.files,
 cache.entry, cache.attr, cache.negative_entry, cache.symlinks,
@@ -2494,9 +2493,9 @@ You can remove the reserve by running: `tune2fs -m 0 <device>`
 
 When file caching is enabled in any form (`cache.files!=off`) it will
 issue `getxattr` requests for `security.capability` prior to *every
-single write*. This will usually result in a performance degradation,
+single write*. This will usually result in performance degradation,
 especially when using a network filesystem (such as NFS or SMB.)
-Unfortunately at this moment the kernel is not caching the response.
+Unfortunately at this moment, the kernel is not caching the response.
 
 To work around this situation mergerfs offers a few solutions.
 
@@ -2513,7 +2512,7 @@ To work around this situation mergerfs offers a few solutions.
    forwarded to mergerfs. The downside is that also means the xattr
    based config and query functionality won't work either.
 4. Disable file caching. If you aren't using applications which use
-   `mmap` it's probably simpler to just disable it all together. The
+   `mmap` it's probably simpler to just disable it altogether. The
    kernel won't send the requests when caching is disabled.
 
 
@@ -2527,7 +2526,7 @@ and if it returns **0** then it will
 race condition but it doesn't handle other situations. Rather than
 attempting to simulate POSIX ACL behavior the proper way to manage
 this is to use [seteuid](http://linux.die.net/man/2/seteuid) and
-[setegid](http://linux.die.net/man/2/setegid), in effect becoming the
+[setegid](http://linux.die.net/man/2/setegid), in effect, becoming the
 user making the original call, and perform the action as them. This is
 what mergerfs does and why mergerfs should always run as root.
 
@@ -2539,7 +2538,7 @@ thread only. Jumping back to **root** as necessary should escalated
 privileges be needed (for instance: to clone paths between
 filesystems).
 
-For non-Linux systems mergerfs uses a read-write lock and changes
+For non-Linux systems, mergerfs uses a read-write lock and changes
 credentials only when necessary. If multiple threads are to be user X
 then only the first one will need to change the processes
 credentials. So long as the other threads need to be user X they will
@@ -2656,7 +2655,7 @@ There are a lot of misc differences between the two projects but most
 features in DrivePool can be replicated with external tools in
 combination with mergerfs.
 
-Additionally DrivePool is a closed source commercial product vs
+Additionally, DrivePool is a closed source commercial product vs
 mergerfs a ISC licensed OSS project.
 
 
