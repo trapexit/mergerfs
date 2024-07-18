@@ -74,7 +74,7 @@ namespace l
       {
         fs::lstat(fullnewpath,st_);
         if(st_->st_ino != 0)
-          fs::inode::calc(linkpath_,st_);
+          fs::inode::calc(newbasepath_,linkpath_,st_);
       }
 
     return error::calc(rv,error_,errno);
