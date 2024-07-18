@@ -17,5 +17,5 @@ do
                   head -n 1 | \
                   cut -d' ' -f2-)
     test -n "${FILE}"
-    rsync -axqHAXWESR --preallocate --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
+    rsync -axqHAXWESR --preallocate --relative --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
 done
