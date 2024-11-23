@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "func_getattr_combine.hpp"
+
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
@@ -166,6 +168,8 @@ public:
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;
   XAttr          xattr;
+
+  Func2::GetattrCombine getattr;
 
 private:
   bool _initialized;

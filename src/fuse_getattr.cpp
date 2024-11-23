@@ -155,17 +155,22 @@ namespace l
           fuse_timeouts_t *timeout_)
   {
     int rv;
-    Config::Read cfg;
+    Config::Write cfg;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    rv = l::getattr(cfg->func.getattr.policy,
-                    cfg->branches,
-                    fusepath_,
-                    st_,
-                    cfg->symlinkify,
-                    cfg->symlinkify_timeout,
-                    cfg->follow_symlinks);
+    rv = cfg->getattr.process(cfg->branches,
+                              fusepath_,
+                              st_,
+                              timeout_);
+    
+    // rv = l::getattr(cfg->func.getattr.policy,
+    //                 cfg->branches,
+    //                 fusepath_,
+    //                 st_,
+    //                 cfg->symlinkify,
+    //                 cfg->symlinkify_timeout,
+    //                 cfg->follow_symlinks);
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :
