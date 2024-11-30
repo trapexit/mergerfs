@@ -2306,6 +2306,55 @@ mergerfs pool that includes all the paths you need if you want links
 to work.
 
 
+#### How does mergerfs handle moving and copying of files?
+
+This is a *very* common mistaken assumption regarding how filesystems
+work. There is no such thing as "move" or "copy." These concepts are
+high level behaviors made up of numerous independent steps and *not*
+individual filesystem functions.
+
+A "move" can include a "copy" so lets describe copy first.
+
+When an application copies a file from source to destination it can do
+so in a number of ways but the basics are the following.
+
+1. `open` the source file.
+2. `create` the destination file.
+3. `read` a chunk of data from source and `write` to
+   destination. Continue till it runs out of data to copy.
+4. Copy file metadata (`stat`) such as ownership (`chown`),
+   permissions (`chmod`), timestamps (`utimes`), extended attributes
+   (`getxattr`, `setxattr`), etc.
+5. `close` source and destination files.
+
+"move" is typically a `rename(src,dst)` and if that errors with
+`EXDEV` (meaning the source and destination are on different
+filesystems) the application will "copy" the file as described above
+and then it removes (`unlink`) the source.
+
+The `rename(src,dst)`, `open(src)`, `create(dst)`, data copying,
+metadata copying, `unlink(src)`, etc. are entirely distinct and
+separate events. There is really no practical way to know that what is
+ultimately occurring is the "copying" of a file or what the source
+file would be. Since the source is not known there is no way to know
+how large a created file is destined to become. This is why it is
+impossible for mergerfs to choose the branch for a `create` based on
+file size. The only context provided when a file is created, besides
+the name, is the permissions, if it is to be read and/or written, and
+some low level settings for the operating system.
+
+All of this means that mergerfs can not make decisions when a file is
+created based on file size or the source of the data. That information
+is simply not available. At best mergerfs could respond to files
+reaching a certain size when writing data or when a file is closed.
+
+Related: if a user wished to have mergerfs perform certain activities
+based on the name of a file it is common and even best practice for a
+program to write to a temporary file first and then rename to its
+final destination. That temporary file name will typically be random
+and have no indication of the type of file being written.
+
+
 #### Does FICLONE or FICLONERANGE work?
 
 Unfortunately not. FUSE, the technology mergerfs is based on, does not
