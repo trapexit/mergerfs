@@ -16,7 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "fuse_kernel.h"
 
@@ -211,7 +213,7 @@ void
 debug_open_flags(const uint32_t flags_)
 {
   fprintf(stderr,"%s, ",open_accmode_to_str(flags_));
-  for(int i = 0; i < (sizeof(flags_) * 8); i++)
+  for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
 
@@ -252,11 +254,11 @@ debug_fuse_open_out(const struct fuse_open_out *arg_)
 {
   fprintf(stderr,
           "fuse_open_out:"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " open_flags=0x%X (",
           arg_->fh,
           arg_->open_flags);
-  for(int i = 0; i < (sizeof(arg_->open_flags) * 8); i++)
+  for(size_t i = 0; i < (sizeof(arg_->open_flags) * 8); i++)
     {
       const char *str;
 
@@ -276,7 +278,7 @@ static
 void
 debug_fuse_lookup(const void *arg_)
 {
-  const char *name = arg_;
+  const char *name = (const char*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_lookup:"
@@ -290,12 +292,12 @@ static
 void
 debug_fuse_getattr_in(const void *arg_)
 {
-  const struct fuse_getattr_in *arg = arg_;
+  const struct fuse_getattr_in *arg = (const fuse_getattr_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_getattr_in:"
           " getattr_flags=0x%08X;"
-          " fh=0x%"PRIx64";\n",
+          " fh=0x%" PRIx64 ";\n",
           arg->getattr_flags,
           arg->fh);
 }
@@ -304,12 +306,12 @@ static
 void
 debug_fuse_setattr_in(const void *arg_)
 {
-  const struct fuse_setattr_in *arg = arg_;
+  const struct fuse_setattr_in *arg = (const fuse_setattr_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_setattr_in:"
           " valid=%u;"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " size=%zu;"
           " lock_owner=%zu;"
           " atime=%zu;"
@@ -342,7 +344,7 @@ static
 void
 debug_fuse_access_in(const void *arg_)
 {
-  const struct fuse_access_in *arg = arg_;
+  const struct fuse_access_in *arg = (const fuse_access_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_access_in:"
@@ -356,7 +358,7 @@ static
 void
 debug_fuse_mknod_in(const void *arg_)
 {
-  const struct fuse_mknod_in *arg = arg_;
+  const struct fuse_mknod_in *arg = (const fuse_mknod_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_mknod_in:"
@@ -374,7 +376,7 @@ static
 void
 debug_fuse_mkdir_in(const void *arg_)
 {
-  const struct fuse_mkdir_in *arg = arg_;
+  const struct fuse_mkdir_in *arg = (const fuse_mkdir_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_mkdir_in:"
@@ -392,7 +394,7 @@ static
 void
 debug_fuse_unlink(const void *arg_)
 {
-  const char *name = arg_;
+  const char *name = (const char*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_unlink:"
@@ -406,7 +408,7 @@ static
 void
 debug_fuse_rmdir(const void *arg_)
 {
-  const char *name = arg_;
+  const char *name = (const char*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_mkdir:"
@@ -423,7 +425,7 @@ debug_fuse_symlink(const void *arg_)
   const char *name;
   const char *linkname;
 
-  name     = arg_;
+  name     = (const char*)arg_;
   linkname = (name + (strlen(name) + 1));
 
   fprintf(g_OUTPUT,
@@ -442,7 +444,7 @@ debug_fuse_rename_in(const void *arg_)
 {
   const char *oldname;
   const char *newname;
-  const struct fuse_rename_in *arg = arg_;
+  const struct fuse_rename_in *arg = (const fuse_rename_in*)arg_;
 
   oldname = PARAM(arg);
   newname = (oldname + strlen(oldname) + 1);
@@ -464,7 +466,7 @@ void
 debug_fuse_link_in(const void *arg_)
 {
   const char *name;
-  const struct fuse_link_in *arg = arg_;
+  const struct fuse_link_in *arg = (const fuse_link_in*)arg_;
 
   name = PARAM(arg);
 
@@ -483,7 +485,7 @@ void
 debug_fuse_create_in(const void *arg_)
 {
   const char *name;
-  const struct fuse_create_in *arg = arg_;
+  const struct fuse_create_in *arg = (const fuse_create_in*)arg_;
 
   name = PARAM(arg);
 
@@ -505,7 +507,7 @@ static
 void
 debug_fuse_open_in(const void *arg_)
 {
-  const struct fuse_open_in *arg = arg_;
+  const struct fuse_open_in *arg = (const fuse_open_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_open_in:"
@@ -519,15 +521,15 @@ static
 void
 debug_fuse_read_in(const void *arg_)
 {
-  const struct fuse_read_in *arg = arg_;
+  const struct fuse_read_in *arg = (const fuse_read_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_read_in:"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " offset=%zu;"
           " size=%u;"
           " read_flags=%X;"
-          " lock_owner=0x%"PRIx64";"
+          " lock_owner=0x%" PRIx64 ";"
           " flags=0x%X ("
           ,
           arg->fh,
@@ -544,14 +546,14 @@ static
 void
 debug_fuse_write_in(const void *arg_)
 {
-  const struct fuse_write_in *arg = arg_;
+  const struct fuse_write_in *arg = (const fuse_write_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_write_in:"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " offset=%zu;"
           " size=%u;"
-          " lock_owner=0x%"PRIx64";"
+          " lock_owner=0x%" PRIx64 ";"
           " flags=0x%X ("
           ,
           arg->fh,
@@ -563,7 +565,7 @@ debug_fuse_write_in(const void *arg_)
   fprintf(g_OUTPUT,
           "); write_flags=0x%X (",
           arg->write_flags);
-  for(int i = 0; i < (sizeof(arg->write_flags) * 8); i++)
+  for(size_t i = 0; i < (sizeof(arg->write_flags) * 8); i++)
     {
       const char *str;
 
@@ -583,12 +585,12 @@ static
 void
 debug_fuse_flush_in(const void *arg_)
 {
-  const struct fuse_flush_in *arg = arg_;
+  const struct fuse_flush_in *arg = (const fuse_flush_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_flush_in:"
-          " fh=0x%"PRIx64";"
-          " lock_owner=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
+          " lock_owner=0x%" PRIx64 ";"
           "\n"
           ,
           arg->fh,
@@ -599,13 +601,13 @@ static
 void
 debug_fuse_release_in(const void *arg_)
 {
-  const struct fuse_release_in *arg = arg_;
+  const struct fuse_release_in *arg = (const fuse_release_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_release_in:"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " release_flags=0x%X;"
-          " lock_owner=0x%"PRIx64";"
+          " lock_owner=0x%" PRIx64 ";"
           " flags=0x%X ("
           ,
           arg->fh,
@@ -620,11 +622,11 @@ static
 void
 debug_fuse_fsync_in(const void *arg_)
 {
-  const struct fuse_fsync_in *arg = arg_;
+  const struct fuse_fsync_in *arg = (const fuse_fsync_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_fsync_in:"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " fsync_flags=0x%X;"
           "\n"
           ,
@@ -638,7 +640,7 @@ debug_fuse_setxattr_in(const void *arg_)
 {
   const char *name;
   const char *value;
-  const struct fuse_setxattr_in *arg = arg_;
+  const struct fuse_setxattr_in *arg = (const fuse_setxattr_in*)arg_;
 
   name  = PARAM(arg);
   value = (name + strlen(name) + 1);
@@ -662,7 +664,7 @@ void
 debug_fuse_getxattr_in(const void *arg_)
 {
   const char *name;
-  const struct fuse_getxattr_in *arg = arg_;
+  const struct fuse_getxattr_in *arg = (const fuse_getxattr_in*)arg_;
 
   name = PARAM(arg);
 
@@ -680,7 +682,7 @@ static
 void
 debug_fuse_listxattr(const void *arg_)
 {
-  const struct fuse_getxattr_in *arg = arg_;
+  const struct fuse_getxattr_in *arg = (const fuse_getxattr_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_listxattr:"
@@ -694,7 +696,7 @@ static
 void
 debug_fuse_removexattr(const void *arg_)
 {
-  const char *name = arg_;
+  const char *name = (const char*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_removexattr:"
@@ -708,11 +710,11 @@ static
 void
 debug_fuse_fallocate_in(const void *arg_)
 {
-  const struct fuse_fallocate_in *arg = arg_;
+  const struct fuse_fallocate_in *arg = (const fuse_fallocate_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_fallocate_in:"
-          " fh=0x%"PRIx64";"
+          " fh=0x%" PRIx64 ";"
           " offset=%zu;"
           " length=%zu;"
           " mode=%o;"
@@ -766,10 +768,10 @@ debug_fuse_init_out(const uint64_t              unique_,
 
   flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
   fprintf(g_OUTPUT,
-          /* "unique=0x%016"PRIx64";" */
+          /* "unique=0x%016" PRIx64 ";" */
           /* " opcode=RESPONSE;" */
           /* " error=0 (Success);" */
-          /* " len=%"PRIu64"; || " */
+          /* " len=%" PRIu64 "; || " */
           "FUSE_INIT_OUT:"
           " major=%u;"
           " minor=%u;"
@@ -819,14 +821,14 @@ debug_fuse_attr(const struct fuse_attr *attr_)
 {
   fprintf(g_OUTPUT,
           "attr:"
-          " ino=0x%016"PRIx64";"
-          " size=%"PRIu64";"
-          " blocks=%"PRIu64";"
-          " atime=%"PRIu64";"
+          " ino=0x%016" PRIx64 ";"
+          " size=%" PRIu64 ";"
+          " blocks=%" PRIu64 ";"
+          " atime=%" PRIu64 ";"
           " atimensec=%u;"
-          " mtime=%"PRIu64";"
+          " mtime=%" PRIu64 ";"
           " mtimensec=%u;"
-          " ctime=%"PRIu64";"
+          " ctime=%" PRIu64 ";"
           " ctimesec=%u;"
           " mode=%o;"
           " nlink=%u;"
@@ -858,11 +860,11 @@ debug_fuse_entry(const struct fuse_entry_out *entry_)
 {
   fprintf(g_OUTPUT,
           " fuse_entry_out:"
-          " nodeid=0x%016"PRIx64";"
-          " generation=0x%016"PRIx64";"
-          " entry_valid=%"PRIu64";"
+          " nodeid=0x%016" PRIx64 ";"
+          " generation=0x%016" PRIx64 ";"
+          " entry_valid=%" PRIu64 ";"
           " entry_valid_nsec=%u;"
-          " attr_valid=%"PRIu64";"
+          " attr_valid=%" PRIu64 ";"
           " attr_valid_nsec=%u;"
           " ",
           entry_->nodeid,
@@ -880,10 +882,10 @@ debug_fuse_entry_out(const uint64_t               unique_,
                      const uint64_t               argsize_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           ,
           unique_,
           sizeof(struct fuse_out_header) + argsize_);
@@ -897,10 +899,10 @@ debug_fuse_attr_out(const uint64_t              unique_,
                     const uint64_t              argsize_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           "fuse_attr_out:"
           " attr_valid=%zu;"
           " attr_valid_nsec=%u;"
@@ -945,11 +947,11 @@ static
 void
 debug_fuse_interrupt_in(const void *arg_)
 {
-  const struct fuse_interrupt_in *arg = arg_;
+  const struct fuse_interrupt_in *arg = (const fuse_interrupt_in*)arg_;
 
   fprintf(g_OUTPUT,
           "fuse_interrupt_in:"
-          " unique=0x%016"PRIx64";"
+          " unique=0x%016" PRIx64 ";"
           "\n"
           ,
           arg->unique);
@@ -962,53 +964,54 @@ opcode_name(enum fuse_opcode op_)
 {
   static const char *names[] =
     {
-      [FUSE_LOOKUP]          = "LOOKUP",
-      [FUSE_FORGET]	     = "FORGET",
-      [FUSE_GETATTR]	     = "GETATTR",
-      [FUSE_SETATTR]	     = "SETATTR",
-      [FUSE_READLINK]	     = "READLINK",
-      [FUSE_SYMLINK]	     = "SYMLINK",
-      [FUSE_MKNOD]	     = "MKNOD",
-      [FUSE_MKDIR]	     = "MKDIR",
-      [FUSE_UNLINK]	     = "UNLINK",
-      [FUSE_RMDIR]	     = "RMDIR",
-      [FUSE_RENAME]	     = "RENAME",
-      [FUSE_LINK]	     = "LINK",
-      [FUSE_OPEN]	     = "OPEN",
-      [FUSE_READ]	     = "READ",
-      [FUSE_WRITE]	     = "WRITE",
-      [FUSE_STATFS]	     = "STATFS",
-      [FUSE_RELEASE]	     = "RELEASE",
-      [FUSE_FSYNC]	     = "FSYNC",
-      [FUSE_SETXATTR]	     = "SETXATTR",
-      [FUSE_GETXATTR]	     = "GETXATTR",
-      [FUSE_LISTXATTR]	     = "LISTXATTR",
-      [FUSE_REMOVEXATTR]     = "REMOVEXATTR",
-      [FUSE_FLUSH]	     = "FLUSH",
-      [FUSE_INIT]	     = "INIT",
-      [FUSE_OPENDIR]	     = "OPENDIR",
-      [FUSE_READDIR]	     = "READDIR",
-      [FUSE_RELEASEDIR]	     = "RELEASEDIR",
-      [FUSE_FSYNCDIR]	     = "FSYNCDIR",
-      [FUSE_GETLK]	     = "GETLK",
-      [FUSE_SETLK]	     = "SETLK",
-      [FUSE_SETLKW]	     = "SETLKW",
-      [FUSE_ACCESS]	     = "ACCESS",
-      [FUSE_CREATE]	     = "CREATE",
-      [FUSE_INTERRUPT]	     = "INTERRUPT",
-      [FUSE_BMAP]	     = "BMAP",
-      [FUSE_DESTROY]	     = "DESTROY",
-      [FUSE_IOCTL]	     = "IOCTL",
-      [FUSE_POLL]	     = "POLL",
-      [FUSE_NOTIFY_REPLY]    = "NOTIFY_REPLY",
-      [FUSE_BATCH_FORGET]    = "BATCH_FORGET",
-      [FUSE_FALLOCATE]	     = "FALLOCATE",
-      [FUSE_READDIRPLUS]     = "READDIRPLUS",
-      [FUSE_RENAME2]	     = "RENAME2",
-      [FUSE_LSEEK]	     = "LSEEK",
-      [FUSE_COPY_FILE_RANGE] = "COPY_FILE_RANGE",
-      [FUSE_SETUPMAPPING]    = "SETUPMAPPING",
-      [FUSE_REMOVEMAPPING]   = "REMOVEMAPPING"
+      "INVALID",
+      "LOOKUP",
+      "FORGET",
+      "GETATTR",
+      "SETATTR",
+      "READLINK",
+      "SYMLINK",
+      "MKNOD",
+      "MKDIR",
+      "UNLINK",
+      "RMDIR",
+      "RENAME",
+      "LINK",
+      "OPEN",
+      "READ",
+      "WRITE",
+      "STATFS",
+      "RELEASE",
+      "FSYNC",
+      "SETXATTR",
+      "GETXATTR",
+      "LISTXATTR",
+      "REMOVEXATTR",
+      "FLUSH",
+      "INIT",
+      "OPENDIR",
+      "READDIR",
+      "RELEASEDIR",
+      "FSYNCDIR",
+      "GETLK",
+      "SETLK",
+      "SETLKW",
+      "ACCESS",
+      "CREATE",
+      "INTERRUPT",
+      "BMAP",
+      "DESTROY",
+      "IOCTL",
+      "POLL",
+      "NOTIFY_REPLY",
+      "BATCH_FORGET",
+      "FALLOCATE",
+      "READDIRPLUS",
+      "RENAME2",
+      "LSEEK",
+      "COPY_FILE_RANGE",
+      "SETUPMAPPING",
+      "REMOVEMAPPING"
     };
 
   if(op_ >= (sizeof(names) / sizeof(names[0])))
@@ -1023,14 +1026,14 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
   const void *arg = &hdr_[1];
 
   fprintf(stderr,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=%s (%u);"
           " nodeid=%zu;"
           " uid=%u;"
           " gid=%u;"
           " pid=%u; || ",
           hdr_->unique,
-          opcode_name(hdr_->opcode),
+          opcode_name((fuse_opcode)hdr_->opcode),
           hdr_->opcode,
           hdr_->nodeid,
           hdr_->uid,
@@ -1043,7 +1046,7 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
       debug_fuse_lookup(arg);
       break;
     case FUSE_INIT:
-      debug_fuse_init_in(arg);
+      debug_fuse_init_in((const fuse_init_in*)arg);
       break;
     case FUSE_GETATTR:
       debug_fuse_getattr_in(arg);
@@ -1136,10 +1139,10 @@ void
 debug_fuse_out_header(const struct fuse_out_header *hdr_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=%d (%s);"
-          " len=%"PRIu64";"
+          " len=%" PRIu64 ";"
           ,
           hdr_->unique,
           hdr_->error,
@@ -1153,10 +1156,10 @@ debug_fuse_entry_open_out(const uint64_t               unique_,
                           const struct fuse_open_out  *open_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           ,
           unique_,
           sizeof(struct fuse_entry_out) + sizeof(struct fuse_open_out));
@@ -1169,10 +1172,10 @@ debug_fuse_readlink(const uint64_t  unique_,
                     const char     *linkname_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           "readlink: linkname=%s"
           "\n"
           ,
@@ -1186,10 +1189,10 @@ debug_fuse_write_out(const uint64_t               unique_,
                      const struct fuse_write_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           " fuse_write_out:"
           " size=%u"
           "\n"
@@ -1204,16 +1207,16 @@ debug_fuse_statfs_out(const uint64_t                unique_,
                       const struct fuse_statfs_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           " fuse_statfs_out:"
-          " blocks=%"PRIu64";"
-          " bfree=%"PRIu64";"
-          " bavail=%"PRIu64";"
-          " files=%"PRIu64";"
-          " ffree=%"PRIu64";"
+          " blocks=%" PRIu64 ";"
+          " bfree=%" PRIu64 ";"
+          " bavail=%" PRIu64 ";"
+          " files=%" PRIu64 ";"
+          " ffree=%" PRIu64 ";"
           " bsize=%u;"
           " namelen=%u;"
           " frsize=%u;"
@@ -1236,10 +1239,10 @@ debug_fuse_getxattr_out(const uint64_t            unique_,
                         const struct fuse_getxattr_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           " fuse_getxattr_out:"
           " size=%u;"
           "\n"
@@ -1255,13 +1258,13 @@ debug_fuse_lk_out(const uint64_t            unique_,
                   const struct fuse_lk_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           " fuse_file_lock:"
-          " start=%"PRIu64";"
-          " end=%"PRIu64";"
+          " start=%" PRIu64 ";"
+          " end=%" PRIu64 ";"
           " type=%u;"
           " pid=%u;"
           "\n"
@@ -1279,12 +1282,12 @@ debug_fuse_bmap_out(const uint64_t              unique_,
                     const struct fuse_bmap_out *arg_)
 {
   fprintf(g_OUTPUT,
-          "unique=0x%016"PRIx64";"
+          "unique=0x%016" PRIx64 ";"
           " opcode=RESPONSE;"
           " error=0 (Success);"
-          " len=%"PRIu64"; || "
+          " len=%" PRIu64 "; || "
           " fuse_bmap_out:"
-          " block=%"PRIu64";"
+          " block=%" PRIu64 ";"
           "\n"
           ,
           unique_,

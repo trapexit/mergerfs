@@ -151,6 +151,7 @@ struct fuse_lowlevel_ops
   void (*link)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*listxattr)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*lseek)(fuse_req_t req, struct fuse_in_header *hdr);  
   void (*mkdir)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*mknod)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*open)(fuse_req_t req, struct fuse_in_header *hdr);
@@ -165,6 +166,7 @@ struct fuse_lowlevel_ops
   void (*removemapping)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*removexattr)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*rename)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*rename2)(fuse_req_t req, struct fuse_in_header *hdr);  
   void (*retrieve_reply)(fuse_req_t req, void *cookie, uint64_t ino, off_t offset);
   void (*rmdir)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*setattr)(fuse_req_t req, struct fuse_in_header *hdr);
@@ -172,6 +174,7 @@ struct fuse_lowlevel_ops
   void (*setupmapping)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*setxattr)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*statfs)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*statx)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*symlink)(fuse_req_t req, struct fuse_in_header *hdr);
   void (*syncfs)(fuse_req_t req, const struct fuse_in_header *hdr);
   void (*tmpfile)(fuse_req_t req, const struct fuse_in_header *hdr);
