@@ -77,7 +77,8 @@ namespace l
   static
   inline
   int
-  readdir(std::string     basepath_,
+  readdir(const std::string    &branchdir_,
+          std::string    basepath_,
           HashSet        &names_,
           fuse_dirents_t *buf_,
           std::mutex     &mutex_)
@@ -122,7 +123,8 @@ namespace l
               continue;
 
             filepath = fs::path::make(basepath_,d->name);
-            d->ino = fs::inode::calc(filepath,
+            d->ino = fs::inode::calc(branchdir_,
+                                     filepath,
                                      DTTOIF(d->type),
                                      dev,
                                      d->ino);
@@ -161,7 +163,7 @@ namespace l
 
           basepath = fs::path::make(branch.path,dirname_);
 
-          return l::readdir(basepath,names,buf_,mutex);
+          return l::readdir(branch.path,basepath,names,buf_,mutex);
         };
 
         auto rv = tp_.enqueue_task(func);
