@@ -1,0 +1,66 @@
+site_name: mergerfs
+site_description: mergerfs - a featureful union filesystem
+site_url: http://127.0.0.1:8000
+repo_name: GitHub
+repo_url: https://github.com/oregonpillow/oregonpillow.github.io
+edit_uri: tree/latest-release/mkdocs/docs/
+docs_dir: docs
+markdown_extensions:
+- pymdownx.arithmatex
+- pymdownx.extra
+- pymdownx.magiclink
+- pymdownx.tilde
+- pymdownx.tasklist
+- pymdownx.smartsymbols
+- pymdownx.mark
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.tabbed
+- admonition
+- footnotes
+- toc
+theme:
+  name: material
+  logo: logo.jpeg
+  features:
+  - content.action.edit
+nav:
+- About: index.md
+- Documentation:
+  - pages/documentation/how_it_works.md
+  - pages/documentation/terminology.md
+  - pages/documentation/basic_setup.md
+  - pages/documentation/options.md
+  - pages/documentation/functions_categories_and_policies.md
+  - pages/documentation/error_handling.md
+  - pages/documentation/install.md
+  - pages/documentation/build.md
+  - pages/documentation/upgrade.md
+  - pages/documentation/runtime_interfaces.md
+  - pages/documentation/tooling.md
+  - pages/documentation/caching.md
+  - pages/documentation/performance.md
+  - pages/documentation/benchmarking.md
+  - pages/documentation/tips_notes.md
+  - pages/documentation/known_issues_bugs.md
+  - pages/documentation/remote_filesystems.md
+  - pages/documentation/mergerfs_versus_x.md
+  - pages/documentation/support.md
+  - pages/documentation/links.md
+- FAQ:
+  - pages/faq/compatibility_and_integration.md
+  - pages/faq/configuration_and_policies.md
+  - pages/faq/general_information_and_overview.md
+  - pages/faq/recommendations_and_warnings.md
+  - pages/faq/technical_behavior_and_limitations.md
+  - pages/faq/usage_and_functionality.md
+- Wiki:
+  - pages/wiki/projects_using_mergerfs.md
+  - pages/wiki/installing_mergerfs_on_a_synology_nas.md
+  - pages/wiki/testimonials.md
+  - pages/wiki/real_world_deployments.md
+  - pages/wiki/systemd.md
+  - pages/wiki/kernel_issues_and_bugs.md
+  - pages/wiki/featured_media_and_publicity.md
+  - pages/wiki/limit_drive_spinup.md
+  - pages/wiki/links.md

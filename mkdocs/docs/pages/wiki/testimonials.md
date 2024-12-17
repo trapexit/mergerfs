@@ -1,0 +1,4 @@
+- mergerfs rocks! And you rock too! Keep going! Plus, I just found your posting about using mergerfs on Synology and that made me love it even more! Thank you! - Vladimir
+- mergerfs is pretty awesome - [RUakij](https://www.reddit.com/r/homelab/comments/109rka2/comment/j401lyc/?utm_source=reddit&utm_medium=web2x&context=3)
+- mergerfs is surprisingly pleasant - [@blankxk](https://twitter.com/blankxk/status/1619385944578347008)
+- mergerfs good - SE
