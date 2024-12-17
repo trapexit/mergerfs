@@ -28,7 +28,7 @@ mergerfs -o&lt;options&gt; &lt;branches&gt; &lt;mountpoint&gt;
 
 ## DOCUMENTATION
 
-- [https://oregonpillow.github.io/](https://oregonpillow.github.io/)
+- [https://trapexit.github.io/mergerfs/](https://trapexit.github.io/mergerfs/)
 
 ## TOOLS
 
