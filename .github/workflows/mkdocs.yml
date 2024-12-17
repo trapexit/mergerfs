@@ -38,4 +38,4 @@ jobs:
       - name: Build MkDocs site
         run: |
           cd docs
-          mkdocs build
+          mkdocs gh-deploy --force
