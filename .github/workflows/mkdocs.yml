@@ -1,0 +1,40 @@
+name: Build and Deploy MkDocs
+
+on:
+  push:
+    branches:
+      - docstest
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Use Ubuntu as the runner environment
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"  # Specify the Python version
+
+      # Step 3: Install MkDocs and dependencies
+      - name: Install MkDocs
+        run: |
+          pip install mkdocs
+          pip install mkdocs-material  # Optional: MkDocs Material theme
+
+      # Step 4: Build and Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site  # Directory to publish (MkDocs builds here by default)
+          # Optional: Add "cname: www.example.com" if using a custom domain
+
+      # Step 5: Build MkDocs site
+      - name: Build MkDocs site
+        run: |
+          mkdocs build
