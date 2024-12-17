@@ -37,4 +37,5 @@ jobs:
       # Step 5: Build MkDocs site
       - name: Build MkDocs site
         run: |
+          cd docs
           mkdocs build
