@@ -23,3 +23,8 @@ debian/changelog
 
 # RPM files
 rpmbuild/
+
+# mkdocs files
+mkdocs/env
+mkdocs/.env
+__pycache__/
