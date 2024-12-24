@@ -1,6 +1,6 @@
 site_name: mergerfs
 site_description: mergerfs - a featureful union filesystem
-site_url: https://trapexit.github.io/mergerfs
+site_url: https://trapexit.github.io/mergerfs/
 repo_name: mergerfs
 repo_url: https://github.com/trapexit/mergerfs
 edit_uri: tree/master/mkdocs/docs/
@@ -10,43 +10,94 @@ theme:
   logo: logo.jpeg
   features:
   - content.action.edit
+  - content.action.view
+  - content.code.copy
+  - content.code.select
+  - navigation.footer
+  - navigation.instant
+  - navigation.instant.prefetch
+  - navigation.path
+  - navigation.top
+  - navigation.tracking
+  - optimize
+  - search.share
+  - toc.follow
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+markdown_extensions:
+  - footnotes
+  - pymdownx.highlight:
+      auto_title: false
+      linenums_style: pymdownx-inline
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 nav:
-- About: index.md
-- Documentation:
-  - pages/documentation/how_it_works.md
-  - pages/documentation/terminology.md
-  - pages/documentation/basic_setup.md
-  - pages/documentation/options.md
-  - pages/documentation/functions_categories_and_policies.md
-  - pages/documentation/error_handling.md
-  - pages/documentation/install.md
-  - pages/documentation/build.md
-  - pages/documentation/upgrade.md
-  - pages/documentation/runtime_interfaces.md
-  - pages/documentation/tooling.md
-  - pages/documentation/caching.md
-  - pages/documentation/performance.md
-  - pages/documentation/benchmarking.md
-  - pages/documentation/tips_notes.md
-  - pages/documentation/known_issues_bugs.md
-  - pages/documentation/remote_filesystems.md
-  - pages/documentation/mergerfs_versus_x.md
-  - pages/documentation/support.md
-  - pages/documentation/links.md
+- Home: index.md
+- QuickStart: quickstart.md
+- Installation:
+  - setup/installation.md
+  - setup/upgrade.md
+  - setup/build.md
+- Config:
+  - config/terminology.md
+  - config/options.md
+  - config/deprecated_options.md
+  - config/branches.md
+  - config/functions_categories_and_policies.md
+  - config/func_readdir.md
+  - config/rename_and_link.md
+  - config/cache.md
+  - config/readahead.md
+  - config/inodecalc.md
+  - config/threads.md
+  - config/pin-threads.md
+  - config/link_cow.md
+  - config/fuse_msg_size.md
+  - config/follow-symlinks.md
+  - config/link-exdev.md
+  - config/rename-exdev.md
+  - config/symlinkify.md
+  - config/nullrw.md
+  - config/xattr.md
+  - config/nfsopenhack.md
+  - config/statfs.md
+  - config/flush-on-close.md
+  - config/export-support.md
+- error_handling.md
+- runtime_interfaces.md
+- remote_filesystems.md
+- tips_notes.md
+- known_issues_bugs.md
+- project_comparisons.md
+- performance.md
+- benchmarking.md
+- tooling.md
 - FAQ:
-  - pages/faq/compatibility_and_integration.md
-  - pages/faq/configuration_and_policies.md
-  - pages/faq/general_information_and_overview.md
-  - pages/faq/recommendations_and_warnings.md
-  - pages/faq/technical_behavior_and_limitations.md
-  - pages/faq/usage_and_functionality.md
-- Wiki:
-  - pages/wiki/projects_using_mergerfs.md
-  - pages/wiki/installing_mergerfs_on_a_synology_nas.md
-  - pages/wiki/testimonials.md
-  - pages/wiki/real_world_deployments.md
-  - pages/wiki/systemd.md
-  - pages/wiki/kernel_issues_and_bugs.md
-  - pages/wiki/featured_media_and_publicity.md
-  - pages/wiki/limit_drive_spinup.md
-  - pages/wiki/links.md
+  - faq/reliability_and_scalability.md
+  - faq/usage_and_functionality.md
+  - faq/configuration_and_policies.md
+  - faq/compatibility_and_integration.md
+  - faq/recommendations_and_warnings.md
+  - faq/technical_behavior_and_limitations.md
+  - faq/limit_drive_spinup.md
+- related_projects.md
+- media_and_publicity.md
+- support.md
+- sponsorship_and_donations.md
