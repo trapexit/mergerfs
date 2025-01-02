@@ -1589,7 +1589,7 @@ commodity storage devices. It is similar to <strong>mhddfs</strong>, <strong>uni
 and <strong>aufs</strong>.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li>Logicially combine numerous filesystems/paths into a single
+<li>Logically combine numerous filesystems/paths into a single
   mount point</li>
 <li>Combine paths of the same or different filesystems</li>
 <li>Ability to add or remove filesystems/paths without impacting the
@@ -1607,10 +1607,10 @@ and <strong>aufs</strong>.</p>
 </ul>
 <h2 id="non-features">Non-features</h2>
 <ul>
-<li>Read/write overlay on top of readonly filesystem like OverlayFS</li>
+<li>Read/write overlay on top of read-only filesystem like OverlayFS</li>
 <li>File whiteout</li>
 <li>RAID like parity calculation</li>
-<li>Redundency</li>
+<li>Redundancy</li>
 <li>Splitting of files across branches</li>
 </ul>
 <h2 id="how-it-works">How it works</h2>
@@ -1622,7 +1622,7 @@ list of files from each directory, deduplicating entries, and returns
 that list.</p>
 <p>When a file or directory is created a policy is first run to determine
 which branch will be selected for the creation.</p>
-<p>For functions which chant attributes or remove the file the behavior
+<p>For functions which change attributes or remove the file the behavior
 may be applied to all instances found.</p>
 <p>Read more about <a href="config/functions_categories_and_policies/">policies here</a>.</p>
 <h3 id="visualization">Visualization</h3>
