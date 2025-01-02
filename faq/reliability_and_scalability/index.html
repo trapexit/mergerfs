@@ -1549,13 +1549,13 @@ pooling filesystems.</p>
 <a href="../../known_issues_bugs/#fuse-and-linux-kernel">kernel bugs</a>. All of
 which are fixed in stable releases.</p>
 <h2 id="how-well-does-mergerfs-scale">How well does mergerfs scale?</h2>
-<p>Users have reported running mergerfs on everything from a Raspberry Pi
-to multi-socket Xeon enterprise servers.</p>
+<p>Users have reported running mergerfs on everything from OpenWRT
+routers and Raspberry Pi SBCs to multi-socket Xeon enterprise servers.</p>
 <p>Users have pooled everything from USB thumb drives to enterprise NVME
 SSDs to remote filesystems and rclone mounts.</p>
 <p>The cost of many calls can be <code>O(n)</code> meaning adding more branches to
 the pool will increase the cost of certain functions but there are a
-number of caches and stategies in place to limit overhead where
+number of caches and strategies in place to limit overhead where
 possible.</p>
 
 
