@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://trapexit.github.io/mergerfs/config/statfs/">
       
       
-        <link rel="prev" href="../ioctl/">
+        <link rel="prev" href="../nfsopenhack/">
       
       
         <link rel="next" href="../flush-on-close/">
@@ -888,27 +888,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -921,6 +900,17 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    statfs / statvfs
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -930,6 +920,34 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#statfs_ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      statfs_ignore
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1337,7 +1355,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1454,6 +1472,23 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#statfs_ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      statfs_ignore
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1484,6 +1519,12 @@
 
 
 <h1 id="statfs-statvfs">statfs / statvfs</h1>
+<ul>
+<li><code>statfs=base</code>: Aggregate details from all branches using their base directory.</li>
+<li><code>statfs=full</code>: Aggregate details using the full path of the file
+  requested. Limiting it to only branches where the file exists.</li>
+<li>Defaults to <code>base</code>. </li>
+</ul>
 <p><a href="http://linux.die.net/man/2/statvfs">statvfs</a> normalizes the source
 filesystems based on the fragment size and sums the number of adjusted
 blocks and inodes. This means you will see the combined space of all
@@ -1491,8 +1532,17 @@ sources. Total, used, and free. The sources however are dedupped based
 on the filesystem so multiple sources on the same drive will not result in
 double counting its space. Other filesystems mounted further down the tree
 of the branch will not be included when checking the mount's stats.</p>
-<p>The options <code>statfs</code> and <code>statfs_ignore</code> can be used to modify
-<code>statfs</code> behavior.</p>
+<h2 id="statfs_ignore">statfs_ignore</h2>
+<p>Modifies how <code>statfs</code> works. Will cause it to ignore branches of a
+certain mode.</p>
+<ul>
+<li><code>statfs_ignore=none</code>: Include all branches.</li>
+<li><code>statfs_ignore=ro</code>: Ignore available space for branches mounted as
+  read-only or have a mode <code>RO</code> or <code>NC</code>.</li>
+<li><code>statfs_ignore=nc</code>: Ignore available space for branches with a mode
+  of <code>NC</code>.</li>
+<li>Defaults to <code>none</code>.</li>
+</ul>
 
 
 
@@ -1528,7 +1578,7 @@ of the branch will not be included when checking the mount's stats.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../ioctl/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ioctl">
+          <a href="../nfsopenhack/" class="md-footer__link md-footer__link--prev" aria-label="Previous: nfsopenhack">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1538,7 +1588,7 @@ of the branch will not be included when checking the mount's stats.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                ioctl
+                nfsopenhack
               </div>
             </div>
           </a>

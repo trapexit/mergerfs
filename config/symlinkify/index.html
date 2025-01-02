@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1484,6 +1463,10 @@
 
 
 <h1 id="symlinkify">symlinkify</h1>
+<ul>
+<li><code>symlinkify=true|false</code></li>
+<li>Defaults to <code>false</code>.</li>
+</ul>
 <p>Due to the levels of indirection introduced by mergerfs and the
 underlying technology FUSE there can be varying levels of performance
 degradation. This feature will turn non-directories which are not

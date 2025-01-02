@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1495,6 +1474,7 @@ the newpath. The target value is determined by the value of
   underlying branch.</li>
 <li><code>link-exdev=abs-pool-symlink</code>: An absolute value using the mergerfs
   mount point.</li>
+<li>Defaults to <code>passthrough</code>.</li>
 </ul>
 <p><strong>NOTE:</strong> It is possible that some applications check the file they
 link. In those cases, it is possible it will error or complain.</p>

@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1495,6 +1474,7 @@
 <li><code>rename-exdev=rel-symlink</code>: A relative path from the  <code>newpath</code>.</li>
 <li><code>rename-exdev=abs-symlink</code>: An absolute value using the mergerfs
   mount point.</li>
+<li>Defaults to <code>passthrough</code>.</li>
 </ul>
 <p><strong>NOTE:</strong> It is possible that some applications check the file they
 rename. In those cases it is possible it will error or complain.</p>

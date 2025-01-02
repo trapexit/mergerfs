@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1484,6 +1463,37 @@
 
 
 <h1 id="readahead">readahead</h1>
+<p>Sets the mergerfs and underlying filesystem <code>readahead</code> values. The
+value unit is in kibibytes.</p>
+<ul>
+<li><code>readahead=1024</code></li>
+</ul>
+<p>While the max size of messages sent between the kernel and mergerfs is
+configurable via the <a href="../fuse_msg_size/">fuse_msg_size</a> option that
+doesn't mean that is the size used by the kernel for read and
+writes.</p>
+<p>Linux has a max read/write size of 2GB. Since the max FUSE message
+size is just over 1MB the kernel will break up read and write requests
+with buffers larger than that 1MB.</p>
+<p>When page caching is disabled (<code>cache.files=off</code>), besides the kernel
+breaking up requests with larger buffers, requests are effectively one
+for one to mergerfs. A read or write request for X bytes is made to
+the kernel and a request for X bytes is made to mergerfs. No
+<a href="https://en.wikipedia.org/wiki/Readahead">readahead</a> behavior will
+occur because there is no page cache available for it to store that
+data. In FUSE this is referred to as "direct IO". Note that "direct
+IO" is not the same as <code>O_DIRECT</code>.</p>
+<p>When page caching is enabled the kernel can and will utilize
+<code>readahead</code>. However, there are two values which impact the size of
+the <code>readahead</code> requests. The filesystem's <code>readahead</code> value and the
+FUSE <code>max_readahead</code> value. Whichever is lowest is used. The default
+<code>max_readahead</code> in mergerfs is maxed out meaning only the filesystem
+<code>readahead</code> value is relevant.</p>
+<p>Preferably this value would be set by the user externally since it is
+a generic feature but there is no standard way to do so mergerfs added
+this feature to make it easier to set.</p>
+<p>There is currently no way to set separate values for different
+branches through mergerfs.</p>
 
 
 

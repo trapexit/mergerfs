@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1488,6 +1467,7 @@
 <li><code>xattr=passthrough</code>: Passes through all requests to underlying file.</li>
 <li><code>xattr=noattr</code>: mergerfs receives the request but returns <code>NOATTR</code>.</li>
 <li><code>xattr=nosys</code>: Tells the kernel to reject all <code>xattr</code> requests.</li>
+<li>Defaults to <code>passthrough</code>.</li>
 </ul>
 <p>Runtime extended attribute support can be managed via the <code>xattr</code>
 option. By default it will passthrough any xattr calls. Given xattr

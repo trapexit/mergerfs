@@ -891,27 +891,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1376,7 +1355,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1543,13 +1522,13 @@
 <p>By default, FUSE would issue a flush before the release of a file
 descriptor. This was considered a bit aggressive and a feature added
 to give the FUSE server the ability to choose when that happens.</p>
-<p>Options:</p>
 <ul>
-<li>always</li>
-<li>never</li>
-<li>opened-for-write</li>
+<li><code>flush-on-close=always</code></li>
+<li><code>flush-on-close=never</code></li>
+<li><code>flush-on-close=opened-for-write</code></li>
+<li>Defaults to <code>opened-for-write</code>.</li>
 </ul>
-<p>For now it defaults to "opened-for-write" which is less aggressive
+<p>For now it defaults to <code>opened-for-write</code> which is less aggressive
 than the behavior before this feature was added. It should not be a
 problem because the flush is really only relevant when a file is
 written to. Given flush is irrelevant for many filesystems in the

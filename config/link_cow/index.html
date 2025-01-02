@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1484,6 +1463,17 @@
 
 
 <h1 id="link_cow">link_cow</h1>
+<ul>
+<li><code>link_cow=true|false</code></li>
+<li>Defaults to <code>false</code></li>
+</ul>
+<p>This feature offers similar functionality to what
+<a href="https://manpages.ubuntu.com/manpages/noble/man1/cow-shell.1.html">cow-shell</a>
+offers. </p>
+<p>When enabled if mergerfs is asked to open a file to write and the link
+count on the file is greater than 1 it will copy the file to a
+temporary new file and then rename it over the original. This will
+atomically "break" the link. After that it will open the new file.</p>
 
 
 

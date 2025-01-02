@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1498,6 +1477,7 @@ symlink itself and not that which it points to.</p>
 <li><code>follow-symlinks=regular</code>: Resolve symlinks only which point to regular files.</li>
 <li><code>follow-symlinks=all</code>: Resolve all symlinks to that which they point
   to. Symlinks which do not point to anything are left as is.</li>
+<li>Defaults to <code>never</code>.</li>
 </ul>
 <p><strong>WARNING:</strong> This feature should be considered experimental. There
 might be edge cases yet found. If you find any odd behaviors please

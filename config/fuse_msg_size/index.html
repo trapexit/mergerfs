@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1484,6 +1463,10 @@
 
 
 <h1 id="fuse_msg_size">fuse_msg_size</h1>
+<ul>
+<li><code>fuse_msg_size=UINT</code></li>
+<li>Defaults to <code>256</code></li>
+</ul>
 <p>FUSE applications communicate with the kernel over a special character
 device: <code>/dev/fuse</code>. A large portion of the overhead associated with
 FUSE is the cost of going back and forth between user space and kernel

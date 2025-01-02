@@ -958,27 +958,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1394,7 +1373,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1576,9 +1555,49 @@
 
 
 <h1 id="threads">threads</h1>
+<p>There are multiple thread pools used in mergerfs to provide
+parallel behaviors.</p>
 <h2 id="read-thread-count">read-thread-count</h2>
+<p>The number of threads used to read (and possibly process) messages
+from the kernel.</p>
+<ul>
+<li><code>read-thread-count=0</code>: Create a thread pool sized to the number of
+  logical CPUs.</li>
+<li><code>read-thread-count=N</code> where <code>N&gt;0</code>: Create a thread pool of <code>N</code> threads.</li>
+<li><code>read-thread-count=N</code> where <code>N&lt;0</code>: Create a thread pool of <code>CPUCount /
+  -N</code> threads.</li>
+<li><code>read-thread-count=-1</code> where <code>process-thread-count=-1</code>: Creates <code>2</code>
+  read threads and <code>max(2,CPUCount-2)</code> process threads.</li>
+<li>Defaults to <code>0</code>.</li>
+</ul>
+<p>When <code>process-thread-count=-1</code> (the default) this option sets the
+number of threads which read and then process requests from the
+kernel.</p>
+<p>When <code>process-thread-count</code> is set to anything else mergerfs will
+create two thread pools. A "read" thread pool which just reads from
+the kernel and hands off requests to the "process" thread pool.</p>
+<p>Generally, only 1 or 2 "read" threads are necessary.</p>
 <h2 id="process-thread-count">process-thread-count</h2>
+<p>When enabled this sets the number of threads in the message processing pool.</p>
+<ul>
+<li><code>process-thread-count=-1</code>: Process thread pool is disabled.</li>
+<li><code>process-thread-count=0</code>: Create a thread pool sized to the number
+  of logical CPUs.</li>
+<li><code>process-thread-count=N</code> where <code>N&gt;0</code>: Create a thread pool of <code>N</code> threads.</li>
+<li><code>process-thread-count=N</code> where <code>N&lt;-1</code>: Create a thread pool of <code>CPUCount /
+  -N</code> threads.</li>
+<li>Defaults to <code>-1</code>.</li>
+</ul>
 <h2 id="process-thread-queue-depth">process-thread-queue-depth</h2>
+<ul>
+<li><code>process-thread-queue-depth=N</code> where <code>N&gt;0</code>: Sets the number of outstanding
+  requests that a process thread can have to N. If requests come in
+  faster than can be processed and the max queue depth hit then
+  queuing the request will block in order to limit memory growth.</li>
+<li><code>process-thread-queue-depth=0</code>: Sets the queue depth to the thread
+  pool count.</li>
+<li>Defaults to <code>0</code>.</li>
+</ul>
 
 
 

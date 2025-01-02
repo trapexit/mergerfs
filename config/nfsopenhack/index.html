@@ -16,7 +16,7 @@
         <link rel="prev" href="../xattr/">
       
       
-        <link rel="next" href="../ioctl/">
+        <link rel="next" href="../statfs/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -901,27 +901,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../statfs/" class="md-nav__link">
         
   
@@ -1337,7 +1316,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1489,6 +1468,7 @@
 <li><code>nfsopenhack=git</code>: Apply hack if path includes <code>/.git/</code>.</li>
 <li><code>nfsopenhack=all</code>: Apply hack on all empty read-only files opened
   for writing.</li>
+<li>Defaults to <code>off</code>.</li>
 </ul>
 <p>NFS is not fully POSIX compliant and historically certain behaviors,
 such as opening files with <code>O_EXCL</code>, are not or not well
@@ -1558,13 +1538,13 @@ which is empty is opened for writing.</p>
         
         
           
-          <a href="../ioctl/" class="md-footer__link md-footer__link--next" aria-label="Next: ioctl">
+          <a href="../statfs/" class="md-footer__link md-footer__link--next" aria-label="Next: statfs / statvfs">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ioctl
+                statfs / statvfs
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -633,57 +633,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#funcreaddir" class="md-nav__link">
-    <span class="md-ellipsis">
-      func.readdir
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ioctl" class="md-nav__link">
-    <span class="md-ellipsis">
-      ioctl
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="ioctl">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rename-and-link" class="md-nav__link">
-    <span class="md-ellipsis">
-      rename and link
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#statfs-statvfs" class="md-nav__link">
-    <span class="md-ellipsis">
-      statfs / statvfs
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flush-on-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      flush-on-close
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1020,27 +969,6 @@
   
   <span class="md-ellipsis">
     nfsopenhack
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
   </span>
   
 
@@ -1472,7 +1400,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1646,57 +1574,6 @@
       Defaults
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#funcreaddir" class="md-nav__link">
-    <span class="md-ellipsis">
-      func.readdir
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ioctl" class="md-nav__link">
-    <span class="md-ellipsis">
-      ioctl
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="ioctl">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rename-and-link" class="md-nav__link">
-    <span class="md-ellipsis">
-      rename and link
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#statfs-statvfs" class="md-nav__link">
-    <span class="md-ellipsis">
-      statfs / statvfs
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flush-on-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      flush-on-close
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1946,129 +1823,6 @@ policies is not appropriate.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="funcreaddir">func.readdir</h2>
-<p>examples: <code>func.readdir=seq</code>, <code>func.readdir=cor:4</code></p>
-<p><code>readdir</code> has policies to control how it manages reading directory
-content.</p>
-<table>
-<thead>
-<tr>
-<th>Policy</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>seq</td>
-<td>"sequential" : Iterate over branches in the order defined. This is the default and traditional behavior found prior to the readdir policy introduction. This will be increasingly slower the more banches are defined. Especially if waiting for drives to spinup or network filesystems to respond.</td>
-</tr>
-<tr>
-<td>cosr</td>
-<td>"concurrent open, sequential read" : Concurrently open branch directories using a thread pool and process them in order of definition. This keeps memory and CPU usage low while also reducing the time spent waiting on branches to respond. Number of threads defaults to the number of logical cores. Can be overwritten via the syntax <code>func.readdir=cosr:N</code> where <code>N</code> is the number of threads.</td>
-</tr>
-<tr>
-<td>cor</td>
-<td>"concurrent open and read" : Concurrently open branch directories and immediately start reading their contents using a thread pool. This will result in slightly higher memory and CPU usage but reduced latency. Particularly when using higher latency / slower speed network filesystem branches. Unlike <code>seq</code> and <code>cosr</code> the order of files could change due the async nature of the thread pool. Number of threads defaults to the number of logical cores. Can be overwritten via the syntax <code>func.readdir=cor:N</code> where <code>N</code> is the number of threads.</td>
-</tr>
-</tbody>
-</table>
-<p>Keep in mind that <code>readdir</code> mostly just provides a list of file names
-in a directory and possibly some basic metadata about said files. To
-know details about the files, as one would see from commands like
-<code>find</code> or <code>ls</code>, it is required to call <code>stat</code> on the file which is
-controlled by <code>fuse.getattr</code>.</p>
-<h2 id="ioctl">ioctl</h2>
-<p>When <code>ioctl</code> is used with an open file then it will use the file
-handle which was created at the original <code>open</code> call. However, when
-using <code>ioctl</code> with a directory mergerfs will use the <code>open</code> policy to
-find the directory to act on.</p>
-<h4 id="rename-and-link">rename and link</h4>
-<p><strong>NOTE:</strong> If you're receiving errors from software when files are
-moved / renamed / linked then you should consider changing the create
-policy to one which is <strong>not</strong> path preserving, enabling
-<code>ignorepponrename</code>, or contacting the author of the offending software
-and requesting that <code>EXDEV</code> (cross device / improper link) be properly
-handled.</p>
-<p><code>rename</code> and <code>link</code> are tricky functions in a union
-filesystem. <code>rename</code> only works within a single filesystem or
-device. If a rename can't be done atomically due to the source and
-destination paths existing on different mount points it will return
-<strong>-1</strong> with <strong>errno = EXDEV</strong> (cross device / improper link). So if a
-<code>rename</code>'s source and target are on different filesystems within the pool
-it creates an issue.</p>
-<p>Originally mergerfs would return EXDEV whenever a rename was requested
-which was cross directory in any way. This made the code simple and
-was technically compliant with POSIX requirements. However, many
-applications fail to handle EXDEV at all and treat it as a normal
-error or otherwise handle it poorly. Such apps include: gvfsd-fuse
-v1.20.3 and prior, Finder / CIFS/SMB client in Apple OSX 10.9+,
-NZBGet, Samba's recycling bin feature.</p>
-<p>As a result a compromise was made in order to get most software to
-work while still obeying mergerfs' policies. Below is the basic logic.</p>
-<ul>
-<li>If using a <strong>create</strong> policy which tries to preserve directory paths (epff,eplfs,eplus,epmfs)</li>
-<li>Using the <strong>rename</strong> policy get the list of files to rename</li>
-<li>For each file attempt rename:<ul>
-<li>If failure with ENOENT (no such file or directory) run <strong>create</strong> policy</li>
-<li>If create policy returns the same branch as currently evaluating then clone the path</li>
-<li>Re-attempt rename</li>
-</ul>
-</li>
-<li>If <strong>any</strong> of the renames succeed the higher level rename is considered a success</li>
-<li>If <strong>no</strong> renames succeed the first error encountered will be returned</li>
-<li>On success:<ul>
-<li>Remove the target from all branches with no source file</li>
-<li>Remove the source from all branches which failed to rename</li>
-</ul>
-</li>
-<li>If using a <strong>create</strong> policy which does <strong>not</strong> try to preserve directory paths</li>
-<li>Using the <strong>rename</strong> policy get the list of files to rename</li>
-<li>Using the <strong>getattr</strong> policy get the target path</li>
-<li>For each file attempt rename:<ul>
-<li>If the source branch != target branch:</li>
-<li>Clone target path from target branch to source branch</li>
-<li>Rename</li>
-</ul>
-</li>
-<li>If <strong>any</strong> of the renames succeed the higher level rename is considered a success</li>
-<li>If <strong>no</strong> renames succeed the first error encountered will be returned</li>
-<li>On success:<ul>
-<li>Remove the target from all branches with no source file</li>
-<li>Remove the source from all branches which failed to rename</li>
-</ul>
-</li>
-</ul>
-<p>The removals are subject to normal entitlement checks.</p>
-<p>The above behavior will help minimize the likelihood of EXDEV being
-returned but it will still be possible.</p>
-<p><strong>link</strong> uses the same strategy but without the removals.</p>
-<h4 id="statfs-statvfs">statfs / statvfs</h4>
-<p><a href="http://linux.die.net/man/2/statvfs">statvfs</a> normalizes the source
-filesystems based on the fragment size and sums the number of adjusted
-blocks and inodes. This means you will see the combined space of all
-sources. Total, used, and free. The sources however are dedupped based
-on the filesystem so multiple sources on the same drive will not result in
-double counting its space. Other filesystems mounted further down the tree
-of the branch will not be included when checking the mount's stats.</p>
-<p>The options <code>statfs</code> and <code>statfs_ignore</code> can be used to modify
-<code>statfs</code> behavior.</p>
-<h4 id="flush-on-close">flush-on-close</h4>
-<p>https://lkml.kernel.org/linux-fsdevel/20211024132607.1636952-1-amir73il@gmail.com/T/</p>
-<p>By default, FUSE would issue a flush before the release of a file
-descriptor. This was considered a bit aggressive and a feature added
-to give the FUSE server the ability to choose when that happens.</p>
-<p>Options:</p>
-<ul>
-<li>always</li>
-<li>never</li>
-<li>opened-for-write</li>
-</ul>
-<p>For now it defaults to "opened-for-write" which is less aggressive
-than the behavior before this feature was added. It should not be a
-problem because the flush is really only relevant when a file is
-written to. Given flush is irrelevant for many filesystems in the
-future a branch specific flag may be added so only files opened on a
-specific branch would be flushed on close.</p>
 
 
 

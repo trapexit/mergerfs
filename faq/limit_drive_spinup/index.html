@@ -24,7 +24,7 @@
     
     
       
-        <title>Limit drive spinup - mergerfs</title>
+        <title>Limiting drive spinup - mergerfs</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#what-if-you-assume-no-out-of-band-changes-and-cache-everything" class="md-skip">
+        <a href="#limiting-drive-spinup" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Limit drive spinup
+              Limiting drive spinup
             
           </span>
         </div>
@@ -889,27 +889,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/ioctl/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ioctl
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../config/statfs/" class="md-nav__link">
         
   
@@ -1329,12 +1308,14 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1345,7 +1326,7 @@
         
   
   <span class="md-ellipsis">
-    Limit drive spinup
+    Limiting drive spinup
   </span>
   
 
@@ -1357,6 +1338,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1365,6 +1348,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#how-can-i-setup-my-system-to-limit-drive-spinup" class="md-nav__link">
+    <span class="md-ellipsis">
+      How can I setup my system to limit drive spinup?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How can I setup my system to limit drive spinup?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#what-if-you-assume-no-out-of-band-changes-and-cache-everything" class="md-nav__link">
     <span class="md-ellipsis">
       What if you assume no out of band changes and cache everything?
@@ -1372,8 +1365,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#what-if-you-only-query-already-active-drives" class="md-nav__link">
     <span class="md-ellipsis">
       What if you only query already active drives?
@@ -1381,13 +1374,18 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#is-there-anything-that-can-be-done-where-mergerfs-is-involved" class="md-nav__link">
     <span class="md-ellipsis">
       Is there anything that can be done where mergerfs is involved?
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1504,6 +1502,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1512,6 +1512,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#how-can-i-setup-my-system-to-limit-drive-spinup" class="md-nav__link">
+    <span class="md-ellipsis">
+      How can I setup my system to limit drive spinup?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How can I setup my system to limit drive spinup?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#what-if-you-assume-no-out-of-band-changes-and-cache-everything" class="md-nav__link">
     <span class="md-ellipsis">
       What if you assume no out of band changes and cache everything?
@@ -1519,8 +1529,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#what-if-you-only-query-already-active-drives" class="md-nav__link">
     <span class="md-ellipsis">
       What if you only query already active drives?
@@ -1528,13 +1538,18 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#is-there-anything-that-can-be-done-where-mergerfs-is-involved" class="md-nav__link">
     <span class="md-ellipsis">
       Is there anything that can be done where mergerfs is involved?
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1569,8 +1584,8 @@
   
 
 
-  <h1>Limit drive spinup</h1>
-
+<h1 id="limiting-drive-spinup">Limiting drive spinup</h1>
+<h2 id="how-can-i-setup-my-system-to-limit-drive-spinup">How can I setup my system to limit drive spinup?</h2>
 <p>TL;DR: You really can't. Not through mergerfs alone.</p>
 <p>mergerfs is a proxy. Not a cache. It proxies calls between client software and underlying filesystems. If a client does an <code>open</code>, <code>readdir</code>, <code>stat</code>, etc. it must translate that into something that makes sense across N filesystems. For <code>readdir</code> that means running the call against all branches and aggregating the output. For <code>open</code> that means finding the file to open and doing so. The only way to find the file to open is to scan across all branches and sort the results and pick one. There is no practical way to do otherwise. Especially given so many mergerfs users expect out of band changes to "just work."</p>
 <p>The best way to limit spinup of drives is to limit their usage at the client level. Meaning keeping software from interacting with the filesystem all together.</p>
