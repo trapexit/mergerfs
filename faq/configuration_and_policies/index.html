@@ -1564,7 +1564,13 @@ if you prefer a slightly different distribution of data if you have a
 mix of smaller and larger filesystems. Generally though <code>mfs</code>, <code>lus</code>,
 or even <code>rand</code> are good for the general use case. If you are starting
 with an imbalanced pool you can use the tool <strong>mergerfs.balance</strong> to
-redistribute files across the pool.</p>
+redistribute files across the pool. That said "balancing" really
+should not be needed. There is really no inherent issue with being
+unbalanced. "Optimal" layout is related to usage patterns and most
+people don't have patterns that are performance sensitive or specific
+enough to do anything about. Additionally, the balance tool is very
+simplistic and was not written to be as serious tool that accounts for
+edge cases.</p>
 <p>If you really wish to try to colocate files based on directory you can
 set <code>func.create</code> to <code>epmfs</code> or similar and <code>func.mkdir</code> to <code>rand</code> or
 <code>eprand</code> depending on if you just want to colocate generally or on
