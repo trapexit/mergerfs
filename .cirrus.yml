@@ -1,128 +1,3 @@
-freebsd_task:
-  name: "freebsd:11.4"
-  freebsd_instance:
-    image_family: freebsd-11-4
-  env:
-    ASSUME_ALWAYS_YES: yes
-  script:
-    - buildtools/install-build-pkgs
-    - gmake -j4
-
-freebsd_task:
-  name: "freebsd:12.1"
-  freebsd_instance:
-    image_family: freebsd-12-1
-  env:
-    ASSUME_ALWAYS_YES: yes
-  script:
-    - buildtools/install-build-pkgs
-    - gmake -j4
-
-freebsd_task:
-  name: "freebsd:12.2"
-  freebsd_instance:
-    image_family: freebsd-12-2
-  env:
-    ASSUME_ALWAYS_YES: yes
-  script:
-    - buildtools/install-build-pkgs
-    - gmake -j4
-
-freebsd_task:
-  name: "freebsd:13.0"
-  freebsd_instance:
-    image_family: freebsd-13-0
-  env:
-    ASSUME_ALWAYS_YES: yes
-  script:
-    - buildtools/install-build-pkgs
-    - gmake -j4
-
-
-#macos_task:
-#  osx_instance:
-#    image: catalina-base
-#  script:
-#    - buildtools/install-build-pkgs
-#    - gmake -j4
-
-linux_task:
-  name: "alpine:3.11"
-  container:
-    image: alpine:3.11
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
-linux_task:
-  name: "alpine:3.12"
-  container:
-    image: alpine:3.12
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
-linux_task:
-  name: "alpine:3.13"
-  container:
-    image: alpine:3.13
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
-linux_task:
-  name: "alpine:3.14"
-  container:
-    image: alpine:3.14
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
-linux_task:
-  name: "alpine:3.15"
-  container:
-    image: alpine:3.15
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
-linux_task:
-  name: "alpine:3.16"
-  container:
-    image: alpine:3.16
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
-linux_task:
-  name: "alpine:3.17"
-  container:
-    image: alpine:3.17
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make STATIC=1 LTO=1
-
 linux_task:
   name: "alpine:latest"
   container:
@@ -146,9 +21,9 @@ linux_task:
     - make STATIC=1 LTO=1
 
 linux_task:
-  name: "centos:7"
+  name: "fedora:41"
   container:
-    image: centos:7
+    image: fedora:41
     cpu: 4
     memory: 4G
   timeout_in: 15m
@@ -158,141 +33,9 @@ linux_task:
     - make rpm
 
 linux_task:
-  name: "rocky:8"
-  container:
-    image: rocky:8
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:30"
-  container:
-    image: fedora:30
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:31"
-  container:
-    image: fedora:31
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:32"
-  container:
-    image: fedora:32
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:33"
-  container:
-    image: fedora:33
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:34"
-  container:
-    image: fedora:34
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:35"
-  container:
-    image: fedora:35
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:36"
-  container:
-    image: fedora:36
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:37"
-  container:
-    image: fedora:37
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:38"
-  container:
-    image: fedora:38
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora:latest"
-  container:
-    image: fedora:latest
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - make
-    - make rpm
-
-linux_task:
-  name: "fedora-arm:latest"
+  name: "fedora-arm:41"
   arm_container:
-    image: fedora:latest
+    image: fedora:41
     cpu: 4
     memory: 4G
   timeout_in: 15m
@@ -300,71 +43,26 @@ linux_task:
     - buildtools/install-build-pkgs
     - make
     - make rpm
-
-linux_task:
-  name: "ubuntu:14.04"
-  container:
-    image: ubuntu:14.04
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "ubuntu:16.04"
-  container:
-    image: ubuntu:16.04
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "ubuntu:18.04"
-  container:
-    image: ubuntu:18.04
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "ubuntu:20.04"
-  container:
-    image: ubuntu:20.04
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
 
 linux_task:
   name: "ubuntu:22.04"
   container:
     image: ubuntu:22.04
+    cpu: 4
+    memory: 4G
+  timeout_in: 15m
+  script:
+    - buildtools/install-build-pkgs
+    - git fetch
+    - make deb
+    - apt-get -y install fuse
+    - dpkg -i ../*.deb
+    - mergerfs -v || true
+
+linux_task:
+  name: "ubuntu:24.04"
+  container:
+    image: ubuntu:24.04
     cpu: 4
     memory: 4G
   timeout_in: 15m
@@ -395,81 +93,6 @@ linux_task:
   name: "ubuntu-arm:latest"
   arm_container:
     image: ubuntu:latest
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "debian:7"
-  container:
-    image: debian:8
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "debian:8"
-  container:
-    image: debian:8
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "debian:9"
-  container:
-    image: debian:9
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "debian:10"
-  container:
-    image: debian:10
-    cpu: 4
-    memory: 4G
-  timeout_in: 15m
-  script:
-    - buildtools/install-build-pkgs
-    - git fetch
-    - make deb
-    - apt-get -y install fuse
-    - dpkg -i ../*.deb
-    - mergerfs -v || true
-
-linux_task:
-  name: "debian:11"
-  container:
-    image: debian:11
     cpu: 4
     memory: 4G
   timeout_in: 15m
