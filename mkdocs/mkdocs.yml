@@ -89,6 +89,7 @@ nav:
 - performance.md
 - benchmarking.md
 - tooling.md
+- usage_patterns.md
 - FAQ:
   - faq/reliability_and_scalability.md
   - faq/usage_and_functionality.md
