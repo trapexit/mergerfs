@@ -6,12 +6,14 @@
   See the file COPYING.LIB
 */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "lfmp.h"
 
 #include "config.h"
-#include "debug.h"
+#include "debug.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_opt.h"
@@ -41,7 +43,7 @@
 #define OFFSET_MAX 0x7fffffffffffffffLL
 
 #define container_of(ptr, type, member) ({                      \
-      const typeof( ((type*)0)->member ) *__mptr = (ptr);       \
+      const decltype( ((type*)0)->member ) *__mptr = (ptr);       \
       (type *)( (char*)__mptr - offsetof(type,member) );})
 
 static size_t pagesize;
@@ -135,7 +137,7 @@ fuse_send_msg(struct fuse_ll   *f,
               int               count)
 {
   int rv;
-  struct fuse_out_header *out = iov[0].iov_base;
+  struct fuse_out_header *out = (fuse_out_header*)iov[0].iov_base;
 
   out->len = iov_length(iov, count);
 
@@ -410,7 +412,7 @@ fuse_send_data_iov_fallback(struct fuse_ll     *f,
     return -ENOMEM;
 
   mem_buf.buf[0].mem = msgbuf->mem;
-  res = fuse_buf_copy(&mem_buf, buf, 0);
+  res = fuse_buf_copy(&mem_buf, buf, (fuse_buf_copy_flags)0);
   if(res < 0)
     {
       msgbuf_free(msgbuf);
@@ -550,7 +552,7 @@ fuse_ioctl_iovec_copy(const struct iovec *iov,
   struct fuse_ioctl_iovec *fiov;
   size_t i;
 
-  fiov = malloc(sizeof(fiov[0]) * count);
+  fiov = (fuse_ioctl_iovec*)malloc(sizeof(fiov[0]) * count);
   if(!fiov)
     return NULL;
 
@@ -683,7 +685,7 @@ fuse_reply_ioctl_iov(fuse_req_t          req,
   struct fuse_ioctl_out arg = {0};
   int res;
 
-  padded_iov = malloc((count + 2) * sizeof(struct iovec));
+  padded_iov = (iovec*)malloc((count + 2) * sizeof(struct iovec));
   if(padded_iov == NULL)
     return fuse_reply_err(req, ENOMEM);
 
@@ -896,8 +898,8 @@ do_readdir(fuse_req_t             req,
 
 static
 void
-do_readdir_plus(fuse_req_t             req_,
-                struct fuse_in_header *hdr_)
+do_readdirplus(fuse_req_t             req_,
+               struct fuse_in_header *hdr_)
 {
   req_->f->op.readdir_plus(req_,hdr_);
 }
@@ -1372,7 +1374,6 @@ void
 do_setupmapping(fuse_req_t                req_,
                    struct fuse_in_header *hdr_)
 {
-  printf("setupmapping\n");
   req_->f->op.setupmapping(req_,hdr_);
 }
 
@@ -1381,7 +1382,6 @@ void
 do_removemapping(fuse_req_t             req_,
                  struct fuse_in_header *hdr_)
 {
-  printf("removemapping\n");
   req_->f->op.removemapping(req_,hdr_);
 }
 
@@ -1390,7 +1390,6 @@ void
 do_syncfs(fuse_req_t             req_,
           struct fuse_in_header *hdr_)
 {
-  printf("syncfs\n");
   req_->f->op.syncfs(req_,hdr_);
 }
 
@@ -1399,8 +1398,31 @@ void
 do_tmpfile(fuse_req_t             req_,
            struct fuse_in_header *hdr_)
 {
-  printf("tmpfile\n");
   req_->f->op.tmpfile(req_,hdr_);
+}
+
+static
+void
+do_statx(fuse_req_t             req_,
+         struct fuse_in_header *hdr_)
+{
+  req_->f->op.statx(req_,hdr_);
+}
+
+static
+void
+do_rename2(fuse_req_t             req_,
+           struct fuse_in_header *hdr_)
+{
+  req_->f->op.rename2(req_,hdr_);
+}
+
+static
+void
+do_lseek(fuse_req_t             req_,
+         struct fuse_in_header *hdr_)
+{
+  req_->f->op.lseek(req_,hdr_);
 }
 
 static
@@ -1624,7 +1646,7 @@ fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
   if(f->conn.proto_minor < 15)
     return -ENOSYS;
 
-  rreq = malloc(sizeof(*rreq));
+  rreq = (fuse_retrieve_req*)malloc(sizeof(*rreq));
   if(rreq == NULL)
     return -ENOMEM;
 
@@ -1668,61 +1690,69 @@ fuse_req_ctx(fuse_req_t req)
   return &req->ctx;
 }
 
-static struct {
-  void (*func)(fuse_req_t, struct fuse_in_header *);
-  const char *name;
-} fuse_ll_ops[] =
+#define FUSE_OPCODE_LEN (FUSE_STATX + 1)
+
+typedef void (*fuse_ll_func)(fuse_req_t, struct fuse_in_header *);
+const
+fuse_ll_func
+fuse_ll_funcs[FUSE_OPCODE_LEN] =
   {
-    [FUSE_LOOKUP]          = { do_lookup,          "LOOKUP"	     },
-    [FUSE_FORGET]          = { do_forget,          "FORGET"	     },
-    [FUSE_GETATTR]         = { do_getattr,         "GETATTR"         },
-    [FUSE_SETATTR]         = { do_setattr,         "SETATTR"         },
-    [FUSE_READLINK]        = { do_readlink,        "READLINK"        },
-    [FUSE_SYMLINK]         = { do_symlink,         "SYMLINK"         },
-    [FUSE_MKNOD]           = { do_mknod,           "MKNOD"	     },
-    [FUSE_MKDIR]           = { do_mkdir,           "MKDIR"	     },
-    [FUSE_UNLINK]          = { do_unlink,          "UNLINK"	     },
-    [FUSE_RMDIR]           = { do_rmdir,           "RMDIR"	     },
-    [FUSE_RENAME]          = { do_rename,          "RENAME"	     },
-    [FUSE_LINK]            = { do_link,	           "LINK"	     },
-    [FUSE_OPEN]            = { do_open,	           "OPEN"	     },
-    [FUSE_READ]            = { do_read,	           "READ"	     },
-    [FUSE_WRITE]           = { do_write,           "WRITE"	     },
-    [FUSE_STATFS]          = { do_statfs,          "STATFS"	     },
-    [FUSE_RELEASE]         = { do_release,         "RELEASE"         },
-    [FUSE_FSYNC]           = { do_fsync,           "FSYNC"	     },
-    [FUSE_SETXATTR]        = { do_setxattr,        "SETXATTR"        },
-    [FUSE_GETXATTR]        = { do_getxattr,        "GETXATTR"        },
-    [FUSE_LISTXATTR]       = { do_listxattr,       "LISTXATTR"       },
-    [FUSE_REMOVEXATTR]     = { do_removexattr,     "REMOVEXATTR"     },
-    [FUSE_FLUSH]           = { do_flush,           "FLUSH"	     },
-    [FUSE_INIT]            = { do_init,	           "INIT"	     },
-    [FUSE_OPENDIR]         = { do_opendir,         "OPENDIR"         },
-    [FUSE_READDIR]         = { do_readdir,         "READDIR"         },
-    [FUSE_READDIRPLUS]     = { do_readdir_plus,    "READDIR_PLUS"    },
-    [FUSE_RELEASEDIR]      = { do_releasedir,      "RELEASEDIR"      },
-    [FUSE_FSYNCDIR]        = { do_fsyncdir,        "FSYNCDIR"        },
-    [FUSE_GETLK]           = { do_getlk,           "GETLK"	     },
-    [FUSE_SETLK]           = { do_setlk,           "SETLK"	     },
-    [FUSE_SETLKW]          = { do_setlkw,          "SETLKW"	     },
-    [FUSE_ACCESS]          = { do_access,          "ACCESS"	     },
-    [FUSE_CREATE]          = { do_create,          "CREATE"	     },
-    [FUSE_INTERRUPT]       = { do_interrupt,       "INTERRUPT"       },
-    [FUSE_BMAP]            = { do_bmap,	           "BMAP"	     },
-    [FUSE_IOCTL]           = { do_ioctl,           "IOCTL"	     },
-    [FUSE_POLL]            = { do_poll,            "POLL"	     },
-    [FUSE_FALLOCATE]       = { do_fallocate,       "FALLOCATE"       },
-    [FUSE_DESTROY]         = { do_destroy,         "DESTROY"         },
-    [FUSE_NOTIFY_REPLY]    = { do_notify_reply,    "NOTIFY_REPLY"    },
-    [FUSE_BATCH_FORGET]    = { do_batch_forget,    "BATCH_FORGET"    },
-    [FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
-    [FUSE_SETUPMAPPING]    = { do_setupmapping,    "SETUPMAPPING"    },
-    [FUSE_REMOVEMAPPING]   = { do_removemapping,   "REMOVEMAPPING"   },
-    [FUSE_SYNCFS]          = { do_syncfs,          "SYNCFS"          },
-    [FUSE_TMPFILE]         = { do_tmpfile,         "TMPFILE"         }
+    NULL,
+    do_lookup,
+    do_forget,
+    do_getattr,
+    do_setattr,
+    do_readlink,
+    do_symlink,
+    NULL,
+    do_mknod,
+    do_mkdir,
+    do_unlink,
+    do_rmdir,
+    do_rename,
+    do_link,
+    do_open,
+    do_read,
+    do_write,
+    do_statfs,
+    do_release,
+    NULL,
+    do_fsync,
+    do_setxattr,
+    do_getxattr,
+    do_listxattr,
+    do_removexattr,
+    do_flush,
+    do_init,
+    do_opendir,
+    do_readdir,
+    do_releasedir,
+    do_fsyncdir,
+    do_getlk,
+    do_setlk,
+    do_setlkw,
+    do_access,
+    do_create,
+    do_interrupt,
+    do_bmap,
+    do_destroy,
+    do_ioctl,
+    do_poll,
+    do_notify_reply,
+    do_batch_forget,
+    do_fallocate,
+    do_readdirplus,
+    do_rename2,
+    do_lseek,
+    do_copy_file_range,
+    do_setupmapping,
+    do_removemapping,
+    do_syncfs,
+    do_tmpfile,
+    do_statx
   };
 
-#define FUSE_MAXOP (sizeof(fuse_ll_ops) / sizeof(fuse_ll_ops[0]))
+#define FUSE_MAXOPS (sizeof(fuse_ll_funcs) / sizeof(fuse_ll_funcs[0]))
 
 enum {
   KEY_HELP,
@@ -1816,7 +1846,7 @@ fuse_ll_destroy(void *data)
         f->op.destroy(f->userdata);
     }
 
-  llp = pthread_getspecific(f->pipe_key);
+  llp = (fuse_ll_pipe*)pthread_getspecific(f->pipe_key);
   if(llp != NULL)
     fuse_ll_pipe_free(llp);
   pthread_key_delete(f->pipe_key);
@@ -1830,7 +1860,7 @@ static
 void
 fuse_ll_pipe_destructor(void *data)
 {
-  struct fuse_ll_pipe *llp = data;
+  struct fuse_ll_pipe *llp = (fuse_ll_pipe*)data;
   fuse_ll_pipe_free(llp);
 }
 
@@ -1872,7 +1902,7 @@ fuse_ll_buf_receive_read(struct fuse_session *se_,
   if(rv == -1)
     return -errno;
 
-  if(rv < sizeof(struct fuse_in_header))
+  if(rv < (int)sizeof(struct fuse_in_header))
     {
       fprintf(stderr, "short read from fuse device\n");
       return -EIO;
@@ -1892,8 +1922,6 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
 
   in = (struct fuse_in_header*)msgbuf_->mem;
 
-  //  printf("%d\n",in->opcode);
-
   req = fuse_ll_alloc_req(se_->f);
   if(req == NULL)
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
@@ -1905,12 +1933,12 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   req->ch      = se_->ch;
 
   err = ENOSYS;
-  if(in->opcode >= FUSE_MAXOP)
+  if(in->opcode >= FUSE_MAXOPS)
     goto reply_err;
-  if(fuse_ll_ops[in->opcode].func == NULL)
+  if(fuse_ll_funcs[in->opcode] == NULL)
     goto reply_err;
 
-  fuse_ll_ops[in->opcode].func(req, in);
+  fuse_ll_funcs[in->opcode](req, in);
 
   return;
 
@@ -1943,12 +1971,12 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   err = EIO;
   if(in->opcode != FUSE_INIT)
     goto reply_err;
-  if(fuse_ll_ops[in->opcode].func == NULL)
+  if(fuse_ll_funcs[FUSE_INIT] == NULL)
     goto reply_err;
 
   se_->process_buf = fuse_ll_buf_process_read;
 
-  fuse_ll_ops[in->opcode].func(req, in);
+  fuse_ll_funcs[in->opcode](req,in);
 
   return;
 
@@ -2007,9 +2035,9 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   f->userdata = userdata;
 
   se = fuse_session_new(f,
-                        fuse_ll_buf_receive_read,
-                        fuse_ll_buf_process_read_init,
-                        fuse_ll_destroy);
+                        (void*)fuse_ll_buf_receive_read,
+                        (void*)fuse_ll_buf_process_read_init,
+                        (void*)fuse_ll_destroy);
 
   if(!se)
     goto out_key_destroy;
