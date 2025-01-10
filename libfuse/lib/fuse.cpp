@@ -7,7 +7,9 @@
 */
 
 /* For pthread_rwlock_t */
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "crc32b.h"
 #include "fuse_node.h"
@@ -24,6 +26,9 @@
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
+
+#include <vector>
+#include <string>
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -103,13 +108,6 @@ struct node_table
   size_t   size;
   size_t   split;
 };
-
-#define container_of(ptr,type,member) ({                        \
-      const typeof( ((type *)0)->member ) *__mptr = (ptr);      \
-      (type *)( (char *)__mptr - offsetof(type,member) );})
-
-#define list_entry(ptr,type,member)             \
-  container_of(ptr,type,member)
 
 struct list_head
 {
@@ -218,32 +216,32 @@ fuse_hdr_arg(const struct fuse_in_header *hdr_)
 
 static
 void
-list_add(struct list_head *new,
-         struct list_head *prev,
-         struct list_head *next)
+list_add(struct list_head *new_,
+         struct list_head *prev_,
+         struct list_head *next_)
 {
-  next->prev = new;
-  new->next = next;
-  new->prev = prev;
-  prev->next = new;
+  next_->prev = new_;
+  new_->next  = next_;
+  new_->prev  = prev_;
+  prev_->next = new_;
 }
 
 static
 inline
 void
-list_add_head(struct list_head *new,
-              struct list_head *head)
+list_add_head(struct list_head *new_,
+              struct list_head *head_)
 {
-  list_add(new,head,head->next);
+  list_add(new_,head_,head_->next);
 }
 
 static
 inline
 void
-list_add_tail(struct list_head *new,
-              struct list_head *head)
+list_add_tail(struct list_head *new_,
+              struct list_head *head_)
 {
-  list_add(new,head->prev,head);
+  list_add(new_,head_->prev,head_);
 }
 
 static
@@ -384,7 +382,7 @@ node_table_reduce(struct node_table *t)
 
   newarray = realloc(t->array,sizeof(node_t*) * newsize);
   if(newarray != NULL)
-    t->array = newarray;
+    t->array = (node_t**)newarray;
 
   t->size = newsize;
   t->split = t->size / 2;
@@ -450,7 +448,7 @@ node_table_resize(struct node_table *t)
   if(newarray == NULL)
     return -1;
 
-  t->array = newarray;
+  t->array = (node_t**)newarray;
   memset(t->array + t->size,0,t->size * sizeof(node_t*));
   t->size = newsize;
   t->split = 0;
@@ -795,7 +793,7 @@ add_name(char       **buf,
             newbufsize *= 2;
         }
 
-      newbuf = realloc(*buf,newbufsize);
+      newbuf = (char*)realloc(*buf,newbufsize);
       if(newbuf == NULL)
         return NULL;
 
@@ -857,7 +855,7 @@ try_get_path(struct fuse  *f,
   *path = NULL;
 
   err = -ENOMEM;
-  buf = malloc(bufsize);
+  buf = (char*)malloc(bufsize);
   if(buf == NULL)
     goto out_err;
 
@@ -1562,7 +1560,7 @@ fuse_lib_lookup(fuse_req_t             req,
   node_t *dot = NULL;
   struct fuse_entry_param e = {0};
 
-  name   = fuse_hdr_arg(hdr_);
+  name   = (const char*)fuse_hdr_arg(hdr_);
   nodeid = hdr_->nodeid;
   f      = req_fuse_prepare(req);
 
@@ -1628,7 +1626,7 @@ fuse_lib_forget(fuse_req_t             req,
   struct fuse_forget_in *arg;
 
   f   = req_fuse(req);
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_forget_in*)fuse_hdr_arg(hdr_);
 
   forget_node(f,hdr_->nodeid,arg->nlookup);
 
@@ -1645,8 +1643,8 @@ fuse_lib_forget_multi(fuse_req_t             req,
   struct fuse_forget_one      *entry;
 
   f     = req_fuse(req);
-  arg   = fuse_hdr_arg(hdr_);
-  entry = PARAM(arg);
+  arg   = (fuse_batch_forget_in*)fuse_hdr_arg(hdr_);
+  entry = (fuse_forget_one*)PARAM(arg);
 
   for(uint32_t i = 0; i < arg->count; i++)
     {
@@ -1673,7 +1671,7 @@ fuse_lib_getattr(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   const struct fuse_getattr_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_getattr_in*)fuse_hdr_arg(hdr_);
   f   = req_fuse_prepare(req);
 
   if(arg->getattr_flags & FUSE_GETATTR_FH)
@@ -1735,7 +1733,7 @@ fuse_lib_setattr(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_setattr_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_setattr_in*)fuse_hdr_arg(hdr_);
 
   fi = NULL;
   if(arg->valid & FATTR_FH)
@@ -1796,12 +1794,12 @@ fuse_lib_setattr(fuse_req_t             req,
           if(arg->valid & FATTR_ATIME_NOW)
             tv[0].tv_nsec = UTIME_NOW;
           else if(arg->valid & FATTR_ATIME)
-            tv[0] = (struct timespec){ arg->atime, arg->atimensec };
+            tv[0] = (struct timespec){ static_cast<time_t>(arg->atime), arg->atimensec };
 
           if(arg->valid & FATTR_MTIME_NOW)
             tv[1].tv_nsec = UTIME_NOW;
           else if(arg->valid & FATTR_MTIME)
-            tv[1] = (struct timespec){ arg->mtime, arg->mtimensec };
+            tv[1] = (struct timespec){ static_cast<time_t>(arg->mtime), arg->mtimensec };
 
           err = ((fi == NULL) ?
                  f->fs->op.utimens(path,tv) :
@@ -1853,7 +1851,7 @@ fuse_lib_access(fuse_req_t             req,
   struct fuse *f;
   struct fuse_access_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_access_in*)fuse_hdr_arg(hdr_);
 
   f = req_fuse_prepare(req);
 
@@ -1909,8 +1907,8 @@ fuse_lib_mknod(fuse_req_t             req,
   struct fuse_entry_param e;
   struct fuse_mknod_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_mknod_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
   if(req->f->conn.proto_minor >= 12)
     req->ctx.umask = arg->umask;
   else
@@ -1961,8 +1959,8 @@ fuse_lib_mkdir(fuse_req_t             req,
   struct fuse_entry_param e;
   struct fuse_mkdir_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_mkdir_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
   if(req->f->conn.proto_minor >= 12)
     req->ctx.umask = arg->umask;
 
@@ -1991,7 +1989,7 @@ fuse_lib_unlink(fuse_req_t             req,
   const char *name;
   node_t *wnode;
 
-  name = PARAM(hdr_);
+  name = (const char*)PARAM(hdr_);
 
   f = req_fuse_prepare(req);
   err = get_path_wrlock(f,hdr_->nodeid,name,&path,&wnode);
@@ -2024,7 +2022,7 @@ fuse_lib_rmdir(fuse_req_t             req,
   const char *name;
   node_t *wnode;
 
-  name = PARAM(hdr_);
+  name = (const char*)PARAM(hdr_);
 
   f = req_fuse_prepare(req);
 
@@ -2052,7 +2050,7 @@ fuse_lib_symlink(fuse_req_t             req_,
   const char *linkname;
   struct fuse_entry_param e = {0};
 
-  name     = fuse_hdr_arg(hdr_);
+  name     = (const char*)fuse_hdr_arg(hdr_);
   linkname = (name + strlen(name) + 1);
 
   f = req_fuse_prepare(req_);
@@ -2084,8 +2082,8 @@ fuse_lib_rename(fuse_req_t             req,
   node_t *wnode2;
   struct fuse_rename_in *arg;
 
-  arg     = fuse_hdr_arg(hdr_);
-  oldname = PARAM(arg);
+  arg     = (fuse_rename_in*)fuse_hdr_arg(hdr_);
+  oldname = (const char*)PARAM(arg);
   newname = (oldname + strlen(oldname) + 1);
 
   f = req_fuse_prepare(req);
@@ -2122,8 +2120,8 @@ fuse_lib_link(fuse_req_t             req,
   struct fuse_link_in *arg;
   struct fuse_entry_param e = {0};
 
-  arg = fuse_hdr_arg(hdr_);
-  newname = PARAM(arg);
+  arg = (fuse_link_in*)fuse_hdr_arg(hdr_);
+  newname = (const char*)PARAM(arg);
 
   f = req_fuse_prepare(req);
 
@@ -2186,8 +2184,8 @@ fuse_lib_create(fuse_req_t             req,
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_create_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
 
   ffi.flags = arg->flags;
 
@@ -2287,7 +2285,7 @@ fuse_lib_open(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_open_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_open_in*)fuse_hdr_arg(hdr_);
 
   ffi.flags = arg->flags;
 
@@ -2332,7 +2330,7 @@ fuse_lib_read(fuse_req_t             req,
   struct fuse_read_in *arg;
   fuse_msgbuf_t *msgbuf;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
   if(req->f->conn.proto_minor >= 9)
     {
@@ -2365,7 +2363,7 @@ fuse_lib_write(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_write_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_write_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
   ffi.writepage = !!(arg->write_flags & 1);
   if(req->f->conn.proto_minor < 9)
@@ -2376,7 +2374,7 @@ fuse_lib_write(fuse_req_t             req,
     {
       ffi.flags = arg->flags;
       ffi.lock_owner = arg->lock_owner;
-      data = PARAM(arg);
+      data = (char*)PARAM(arg);
     }
 
   f = req_fuse_prepare(req);
@@ -2400,7 +2398,7 @@ fuse_lib_fsync(fuse_req_t             req,
   struct fuse_fsync_in *arg;
   fuse_file_info_t ffi = {0};
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_fsync_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
@@ -2435,7 +2433,7 @@ fuse_lib_opendir(fuse_req_t             req,
   struct fuse *f;
   struct fuse_open_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_open_in*)fuse_hdr_arg(hdr_);
   llffi.flags = arg->flags;
 
   f = req_fuse_prepare(req);
@@ -2522,7 +2520,7 @@ fuse_lib_readdir(fuse_req_t             req_,
   fuse_file_info_t llffi = {0};
   struct fuse_read_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   size = arg->size;
   llffi.fh = arg->fh;
 
@@ -2566,7 +2564,7 @@ fuse_lib_readdir_plus(fuse_req_t             req_,
   fuse_file_info_t llffi = {0};
   struct fuse_read_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   size = arg->size;
   llffi.fh = arg->fh;
 
@@ -2607,7 +2605,7 @@ fuse_lib_releasedir(fuse_req_t             req_,
   fuse_file_info_t llffi = {0};
   struct fuse_release_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
   llffi.fh    = arg->fh;
   llffi.flags = arg->flags;
 
@@ -2636,7 +2634,7 @@ fuse_lib_fsyncdir(fuse_req_t             req,
   fuse_file_info_t llffi = {0};
   struct fuse_fsync_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_fsync_in*)fuse_hdr_arg(hdr_);
   llffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
@@ -2688,9 +2686,9 @@ fuse_lib_setxattr(fuse_req_t             req,
   struct fuse *f;
   struct fuse_setxattr_in *arg;
 
-  arg   = fuse_hdr_arg(hdr_);
+  arg   = (fuse_setxattr_in*)fuse_hdr_arg(hdr_);
   if((req->f->conn.capable & FUSE_SETXATTR_EXT) && (req->f->conn.want & FUSE_SETXATTR_EXT))
-    name = PARAM(arg);
+    name = (const char*)PARAM(arg);
   else
     name = (((char*)arg) + FUSE_COMPAT_SETXATTR_IN_SIZE);
 
@@ -2741,8 +2739,8 @@ fuse_lib_getxattr(fuse_req_t             req,
   const char* name;
   struct fuse_getxattr_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_getxattr_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
 
   f = req_fuse_prepare(req);
 
@@ -2802,7 +2800,7 @@ fuse_lib_listxattr(fuse_req_t             req,
   struct fuse *f;
   struct fuse_getxattr_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_getxattr_in*)fuse_hdr_arg(hdr_);
 
   f = req_fuse_prepare(req);
 
@@ -2842,7 +2840,7 @@ fuse_lib_removexattr(fuse_req_t                   req,
   const char *name;
   struct fuse *f;
 
-  name = fuse_hdr_arg(hdr_);
+  name = (const char*)fuse_hdr_arg(hdr_);
 
   f = req_fuse_prepare(req);
 
@@ -2867,7 +2865,7 @@ fuse_lib_copy_file_range(fuse_req_t                   req_,
   fuse_file_info_t ffi_out = {0};
   const struct fuse_copy_file_range_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_copy_file_range_in*)fuse_hdr_arg(hdr_);
   ffi_in.fh  = arg->fh_in;
   ffi_out.fh = arg->fh_out;
 
@@ -2927,8 +2925,8 @@ fuse_lib_tmpfile(fuse_req_t                   req_,
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
 
-  arg  = fuse_hdr_arg(hdr_);
-  name = PARAM(arg);
+  arg  = (fuse_create_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
 
   ffi.flags = arg->flags;
 
@@ -3026,8 +3024,8 @@ locks_insert(node_t *node,
 
   if(lock->type != F_UNLCK || lock->start != 0 || lock->end != OFFSET_MAX)
     {
-      newl1 = malloc(sizeof(lock_t));
-      newl2 = malloc(sizeof(lock_t));
+      newl1 = (lock_t*)malloc(sizeof(lock_t));
+      newl2 = (lock_t*)malloc(sizeof(lock_t));
 
       if(!newl1 || !newl2)
         {
@@ -3055,7 +3053,7 @@ locks_insert(node_t *node,
             lock->start = l->start;
           if(lock->end < l->end)
             lock->end   = l->end;
-          goto delete;
+          goto delete_lock;
         }
       else
         {
@@ -3064,7 +3062,7 @@ locks_insert(node_t *node,
           if(lock->end < l->start)
             break;
           if(lock->start <= l->start && l->end <= lock->end)
-            goto delete;
+            goto delete_lock;
           if(l->end <= lock->end)
             {
               l->end = lock->start - 1;
@@ -3085,7 +3083,7 @@ locks_insert(node_t *node,
       lp = &l->next;
       continue;
 
-    delete:
+    delete_lock:
       delete_lock(lp);
     }
   if(lock->type != F_UNLCK)
@@ -3168,7 +3166,7 @@ fuse_lib_release(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_release_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
   ffi.fh    = arg->fh;
   ffi.flags = arg->flags;
   if(req->f->conn.proto_minor >= 8)
@@ -3206,7 +3204,7 @@ fuse_lib_flush(fuse_req_t             req,
   fuse_file_info_t ffi = {0};
   struct fuse_flush_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_flush_in*)fuse_hdr_arg(hdr_);
 
   ffi.fh = arg->fh;
   ffi.flush = 1;
@@ -3265,7 +3263,7 @@ fuse_lib_getlk(fuse_req_t                   req,
   fuse_file_info_t ffi = {0};
   const struct fuse_lk_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg            = (fuse_lk_in*)fuse_hdr_arg(hdr_);
   ffi.fh         = arg->fh;
   ffi.lock_owner = arg->owner;
 
@@ -3341,7 +3339,7 @@ fuse_lib_bmap(fuse_req_t                   req,
   uint64_t block;
   const struct fuse_bmap_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_bmap_in*)fuse_hdr_arg(hdr_);
   block = arg->block;
 
   f = req_fuse_prepare(req);
@@ -3373,7 +3371,7 @@ fuse_lib_ioctl(fuse_req_t                   req,
   uint32_t out_size;
   const struct fuse_ioctl_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_ioctl_in*)fuse_hdr_arg(hdr_);
   if((arg->flags & FUSE_IOCTL_DIR) && !(req->f->conn.want & FUSE_CAP_IOCTL_DIR))
     {
       fuse_reply_err(req,ENOTTY);
@@ -3403,7 +3401,7 @@ fuse_lib_ioctl(fuse_req_t                   req,
   if(out_size)
     {
       err = -ENOMEM;
-      out_buf = malloc(out_size);
+      out_buf = (char*)malloc(out_size);
       if(!out_buf)
         goto err;
     }
@@ -3441,7 +3439,7 @@ fuse_lib_poll(fuse_req_t                   req,
   fuse_pollhandle_t *ph = NULL;
   const struct fuse_poll_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_poll_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
 
   if(arg->flags & FUSE_POLL_SCHEDULE_NOTIFY)
@@ -3476,7 +3474,7 @@ fuse_lib_fallocate(fuse_req_t                   req,
   fuse_file_info_t ffi = {0};
   const struct fuse_fallocate_in *arg;
 
-  arg = fuse_hdr_arg(hdr_);
+  arg = (fuse_fallocate_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
@@ -3494,8 +3492,8 @@ int
 remembered_node_cmp(const void *a_,
                     const void *b_)
 {
-  const remembered_node_t *a = a_;
-  const remembered_node_t *b = b_;
+  const remembered_node_t *a = (const remembered_node_t*)a_;
+  const remembered_node_t *b = (const remembered_node_t*)b_;
 
   return (a->time - b->time);
 }
@@ -3830,21 +3828,21 @@ metrics_log_nodes_info(struct fuse *f_,
 
   snprintf(buf,sizeof(buf),
            "time: %s\n"
-           "sizeof(node): %"PRIu64"\n"
-           "node id_table size: %"PRIu64"\n"
-           "node id_table usage: %"PRIu64"\n"
-           "node id_table total allocated memory: %"PRIu64"\n"
-           "node name_table size: %"PRIu64"\n"
-           "node name_table usage: %"PRIu64"\n"
-           "node name_table total allocated memory: %"PRIu64"\n"
-           "node memory pool slab count: %"PRIu64"\n"
+           "sizeof(node): %" PRIu64 "\n"
+           "node id_table size: %" PRIu64 "\n"
+           "node id_table usage: %" PRIu64 "\n"
+           "node id_table total allocated memory: %" PRIu64 "\n"
+           "node name_table size: %" PRIu64 "\n"
+           "node name_table usage: %" PRIu64 "\n"
+           "node name_table total allocated memory: %" PRIu64 "\n"
+           "node memory pool slab count: %" PRIu64 "\n"
            "node memory pool usage ratio: %f\n"
-           "node memory pool avail objs: %"PRIu64"\n"
-           "node memory pool total allocated memory: %"PRIu64"\n"
-           "msgbuf bufsize: %"PRIu64"\n"
-           "msgbuf allocation count: %"PRIu64"\n"
-           "msgbuf available count: %"PRIu64"\n"
-           "msgbuf total allocated memory: %"PRIu64"\n"
+           "node memory pool avail objs: %" PRIu64 "\n"
+           "node memory pool total allocated memory: %" PRIu64 "\n"
+           "msgbuf bufsize: %" PRIu64 "\n"
+           "msgbuf allocation count: %" PRIu64 "\n"
+           "msgbuf available count: %" PRIu64 "\n"
+           "msgbuf total allocated memory: %" PRIu64 "\n"
            "\n"
            ,
            time_str,
@@ -3907,11 +3905,10 @@ void
 fuse_invalidate_all_nodes()
 {
   struct fuse *f = fuse_get_fuse_obj();
-
-  syslog(LOG_INFO,"invalidating file entries");
+  std::vector<std::string> names;
 
   pthread_mutex_lock(&f->lock);
-  for(int i = 0; i < f->id_table.size; i++)
+  for(size_t i = 0; i < f->id_table.size; i++)
     {
       node_t *node;
 
@@ -3919,16 +3916,28 @@ fuse_invalidate_all_nodes()
         {
           if(node->nodeid == FUSE_ROOT_ID)
             continue;
+          if(node->name == NULL)
+            continue;
+          if(node->parent == NULL)
+            continue;
           if(node->parent->nodeid != FUSE_ROOT_ID)
             continue;
 
-          fuse_lowlevel_notify_inval_entry(f->se->ch,
-                                           node->parent->nodeid,
-                                           node->name,
-                                           strlen(node->name));
+          names.emplace_back(node->name);
         }
     }
   pthread_mutex_unlock(&f->lock);
+
+  syslog(LOG_INFO,
+         "invalidating %ld file entries",
+         names.size());
+  for(auto &name : names)
+    {
+      fuse_lowlevel_notify_inval_entry(f->se->ch,
+                                       FUSE_ROOT_ID,
+                                       name.c_str(),
+                                       name.size());
+    }
 }
 
 void
