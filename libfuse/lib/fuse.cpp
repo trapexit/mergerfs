@@ -27,6 +27,9 @@
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
 
+#include <vector>
+#include <string>
+
 #include <assert.h>
 #include <dlfcn.h>
 #include <errno.h>
@@ -3902,8 +3905,7 @@ void
 fuse_invalidate_all_nodes()
 {
   struct fuse *f = fuse_get_fuse_obj();
-
-  syslog(LOG_INFO,"invalidating file entries");
+  std::vector<std::string> names;
 
   pthread_mutex_lock(&f->lock);
   for(size_t i = 0; i < f->id_table.size; i++)
@@ -3914,16 +3916,28 @@ fuse_invalidate_all_nodes()
         {
           if(node->nodeid == FUSE_ROOT_ID)
             continue;
+          if(node->name == NULL)
+            continue;
+          if(node->parent == NULL)
+            continue;
           if(node->parent->nodeid != FUSE_ROOT_ID)
             continue;
 
-          fuse_lowlevel_notify_inval_entry(f->se->ch,
-                                           node->parent->nodeid,
-                                           node->name,
-                                           strlen(node->name));
+          names.emplace_back(node->name);
         }
     }
   pthread_mutex_unlock(&f->lock);
+
+  syslog(LOG_INFO,
+         "invalidating %ld file entries",
+         names.size());
+  for(auto &name : names)
+    {
+      fuse_lowlevel_notify_inval_entry(f->se->ch,
+                                       FUSE_ROOT_ID,
+                                       name.c_str(),
+                                       name.size());
+    }
 }
 
 void
