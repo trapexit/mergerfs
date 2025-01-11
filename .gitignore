@@ -25,6 +25,5 @@ debian/changelog
 rpmbuild/
 
 # mkdocs files
-mkdocs/env
-mkdocs/.env
+mkdocs/venv
 __pycache__/
