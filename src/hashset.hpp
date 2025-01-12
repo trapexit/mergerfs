@@ -40,7 +40,7 @@ bool
 vt_cmpr_uint64(const uint64_t key_1,
                const uint64_t key_2)
 {
-  return (strcmp(key_1,key_2) == 0);
+  return (key_1 == key_2);
 }
 
 #define NAME str_set
