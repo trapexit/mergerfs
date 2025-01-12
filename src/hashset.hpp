@@ -64,7 +64,7 @@ public:
   ~HashSet()
   {
     kh_destroy(hashset,_set);
-    str_set_cleanup(&_str_set);
+    u64_set_cleanup(&_str_set);
   }
 
   inline
