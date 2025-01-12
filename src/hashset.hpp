@@ -22,7 +22,7 @@
 #include "wyhash.h"
 
 #define NAME str_set
-#define KEY_TY char*
+#define KEY_TY const char*
 #define HASH_FN vt_hash_string
 #define CMPR_FN vt_cmpr_string
 #include "verstable.h"
@@ -52,6 +52,7 @@ public:
     size_t size;
     str_set_itr itr;
 
+    size = 
     itr = str_set_get_or_insert(&_str_set,str_);
 
     
