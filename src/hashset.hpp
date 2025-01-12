@@ -76,6 +76,8 @@ public:
     size_t size;
     u64_set_itr itr;
 
+    hashval = rapidhash((void*)str_,len_);
+    
     size = u64_set_size(&_u64_set);
     itr = u64_set_get_or_insert(&_u64_set,hashval);
 
