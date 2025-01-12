@@ -13,7 +13,6 @@
 
 #include "crc32b.h"
 #include "fuse_node.h"
-#include "khash.h"
 #include "kvec.h"
 
 #include "node.h"
