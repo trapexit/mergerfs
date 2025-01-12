@@ -35,9 +35,18 @@ the [releases page](https://github.com/trapexit/mergerfs/releases).
 
 ### prebuilt deb
 
+**Debian**
+
 ```
 wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs_<ver>.debian-<rel>_<arch>.deb
 sudo dpkg -i mergerfs_<ver>.debian-<rel>_<arch>.deb
+```
+
+**Ubuntu**
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<version>/mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
+sudo dpkg -i mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
 ```
 
 ### apt
