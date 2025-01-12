@@ -51,7 +51,7 @@ public:
   {
     str_set_itr itr;
 
-    itr = str_set_insert(&_str_set,str_);
+    itr = str_set_get_or_insert(&_str_set,str_);
 
     
     int rv;
