@@ -24,7 +24,7 @@
 #define NAME str_set
 #define KEY_TY int
 #define HASH_FN vt_hash_string
-#define CMPR_FN vt_cmpr_integer
+#define CMPR_FN vt_cmpr_string
 #include "verstable.h"
 
 KHASH_SET_INIT_INT64(hashset);
