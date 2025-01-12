@@ -37,8 +37,8 @@ vt_hash_uint64(const uint64_t hash_)
 static
 inline
 bool
-vt_cmpr_const_string(const char *key_1,
-                     const char *key_2)
+vt_cmpr_uint64(const uint64_t key_1,
+               const uint64_t key_2)
 {
   return (strcmp(key_1,key_2) == 0);
 }
