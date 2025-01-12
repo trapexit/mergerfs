@@ -43,7 +43,14 @@ vt_hash_const_string(const char *key_)
   return hash;  
 }
 
-
+static
+inline
+bool
+vt_cmpr_const_string(const char *key_1,
+                     const char *key_2)
+{
+  return (strcmp(key_1,key_2) == 0);
+}
 
 class HashSet
 {
