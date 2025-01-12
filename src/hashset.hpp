@@ -29,7 +29,7 @@
 static
 inline
 uint64_t
-vt_hash_uint64(const uint64_t hash_)
+vt_hash_u64(const uint64_t hash_)
 {
   return hash_;
 }
@@ -37,16 +37,16 @@ vt_hash_uint64(const uint64_t hash_)
 static
 inline
 bool
-vt_cmpr_uint64(const uint64_t key_1,
-               const uint64_t key_2)
+vt_cmpr_u64(const uint64_t key_1,
+            const uint64_t key_2)
 {
   return (key_1 == key_2);
 }
 
 #define NAME u64_set
 #define KEY_TY uint64_t
-#define HASH_FN vt_hash_const_string
-#define CMPR_FN vt_cmpr_const_string
+#define HASH_FN vt_hash_u64
+#define CMPR_FN vt_cmpr_u64
 #include "verstable.h"
 
 KHASH_SET_INIT_INT64(hashset);
