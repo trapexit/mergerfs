@@ -113,5 +113,5 @@ public:
 
 private:
   khash_t(hashset) *_set;
-  str_set _str_set;
+  u64_set _u64_set;
 };
