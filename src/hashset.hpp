@@ -21,9 +21,6 @@
 #define RAPIDHASH_FAST
 #define RAPIDHASH_UNROLLED
 
-#include "rapidhash.h"
-#include <cstdint>
-
 static
 inline
 uint64_t
@@ -46,9 +43,8 @@ vt_cmpr_u64(const uint64_t key_1,
 #define HASH_FN vt_hash_u64
 #define CMPR_FN vt_cmpr_u64
 #include "verstable.h"
-
-KHASH_SET_INIT_INT64(hashset);
-
+#include "rapidhash.h"
+#include <cstdint>
 
 class HashSet
 {
