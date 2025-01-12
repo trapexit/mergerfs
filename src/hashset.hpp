@@ -29,14 +29,9 @@
 static
 inline
 uint64_t
-vt_hash_const_string(const char *key_)
+vt_hash_uint64(const uint64_t hash_)
 {
-  uint64_t hash = 0xcbf29ce484222325ull;
-
-  while(*key_)
-    hash = (((const unsigned char)*key_++ ^ hash) * 0x100000001b3ull);
-
-  return hash;  
+  return hash_;
 }
 
 static
