@@ -72,11 +72,12 @@ public:
   put(const char     *str_,
       const uint64_t  len_)
   {
+    uint64_t hashval;
     size_t size;
     str_set_itr itr;
 
-    size = str_set_size(&_str_set);
-    itr = str_set_get_or_insert(&_str_set,str_);
+    size = u64_set_size(&_u64_set);
+    itr = str_set_get_or_insert(&_u64_set,hashval);
 
     return (size == size);
     
