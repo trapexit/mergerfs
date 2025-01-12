@@ -81,7 +81,7 @@ public:
     size = u64_set_size(&_u64_set);
     itr = u64_set_get_or_insert(&_u64_set,hashval);
 
-    return (size == size);
+    return (size == u64_set_size(&_u64_set));
     
     int rv;
     uint64_t h;
