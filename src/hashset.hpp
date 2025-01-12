@@ -21,6 +21,8 @@
 #include "khash.h"
 #include "wyhash.h"
 
+#include "verstable.h"
+
 KHASH_SET_INIT_INT64(hashset);
 
 class HashSet
