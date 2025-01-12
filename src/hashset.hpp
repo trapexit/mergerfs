@@ -20,6 +20,7 @@
 
 #include "khash.h"
 #include "wyhash.h"
+#include <cstdint>
 
 #define NAME str_set
 #define KEY_TY const char*
@@ -28,6 +29,18 @@
 #include "verstable.h"
 
 KHASH_SET_INIT_INT64(hashset);
+
+static
+inline
+uint64_t
+vt_hash_const_string(const char *key_)
+{
+  int64_t hash = 0xcbf29ce484222325ull;
+  while( *key )
+    hash = ( (unsigned char)*key++ ^ hash ) * 0x100000001b3ull;
+
+  return hash;  
+}
 
 class HashSet
 {
