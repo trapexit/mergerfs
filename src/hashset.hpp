@@ -43,7 +43,7 @@ vt_cmpr_uint64(const uint64_t key_1,
   return (key_1 == key_2);
 }
 
-#define NAME str_set
+#define NAME u64_set
 #define KEY_TY uint64_t
 #define HASH_FN vt_hash_const_string
 #define CMPR_FN vt_cmpr_const_string
