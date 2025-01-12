@@ -43,6 +43,8 @@ vt_hash_const_string(const char *key_)
   return hash;  
 }
 
+
+
 class HashSet
 {
 public:
