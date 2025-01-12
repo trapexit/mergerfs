@@ -3,7 +3,7 @@ site_description: mergerfs - a featureful union filesystem
 site_url: https://trapexit.github.io/mergerfs/
 repo_name: mergerfs
 repo_url: https://github.com/trapexit/mergerfs
-edit_uri: tree/master/mkdocs/docs/
+edit_uri: edit/master/mkdocs/docs/
 docs_dir: docs
 theme:
   name: material
