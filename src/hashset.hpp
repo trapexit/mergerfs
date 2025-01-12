@@ -22,14 +22,6 @@
 #include "wyhash.h"
 #include <cstdint>
 
-#define NAME str_set
-#define KEY_TY const char*
-#define HASH_FN vt_hash_const_string
-#define CMPR_FN vt_cmpr_const_string
-#include "verstable.h"
-
-KHASH_SET_INIT_INT64(hashset);
-
 static
 inline
 uint64_t
@@ -51,6 +43,15 @@ vt_cmpr_const_string(const char *key_1,
 {
   return (strcmp(key_1,key_2) == 0);
 }
+
+#define NAME str_set
+#define KEY_TY const char*
+#define HASH_FN vt_hash_const_string
+#define CMPR_FN vt_cmpr_const_string
+#include "verstable.h"
+
+KHASH_SET_INIT_INT64(hashset);
+
 
 class HashSet
 {
