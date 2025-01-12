@@ -5,7 +5,13 @@
 #endif
 
 #include <pthread.h>
-#include <sched.h>
+
+#ifdef __FreeBSD__
+# define sched_getaffinity(pid, size, set) 0
+# define pthread_setaffinity_np(thread, size, set) 0
+#else
+# include <sched.h>
+#endif
 
 #include <set>
 #include <unordered_map>

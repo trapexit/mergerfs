@@ -25,7 +25,11 @@
 #include <fstream>
 #include <string>
 
-#include <sys/sysmacros.h>
+#ifdef __FreeBSD__
+# include <sys/types.h>
+#else
+# include <sys/sysmacros.h>
+#endif
 
 namespace l
 {

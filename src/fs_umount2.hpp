@@ -18,8 +18,16 @@
 
 #pragma once
 
+#ifdef __FreeBSD__
+# include <sys/param.h>
+# include <sys/mount.h>
+# define umount2(target,flags) unmount(target,flags)
+# define MNT_DETACH 0
+#else
+# include <sys/mount.h>
+#endif
+
 #include <errno.h>
-#include <sys/mount.h>
 
 #include <string>
 
