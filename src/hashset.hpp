@@ -77,7 +77,7 @@ public:
     str_set_itr itr;
 
     size = u64_set_size(&_u64_set);
-    itr = str_set_get_or_insert(&_u64_set,hashval);
+    itr = u64_set_get_or_insert(&_u64_set,hashval);
 
     return (size == size);
     
