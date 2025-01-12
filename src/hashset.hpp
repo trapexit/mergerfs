@@ -79,6 +79,7 @@ public:
     size = str_set_size(&_str_set);
     itr = str_set_get_or_insert(&_str_set,str_);
 
+    return (size == size);
     
     int rv;
     uint64_t h;
