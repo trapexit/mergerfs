@@ -107,7 +107,7 @@ public:
   int
   size(void)
   {
-    return str_set_size(&_str_set);
+    return u64_set_size(&_str_set);
     return kh_size(_set);
   }
 
