@@ -51,13 +51,11 @@ class HashSet
 public:
   HashSet()
   {
-    _set = kh_init(hashset);
     u64_set_init(&_u64_set);
   }
 
   ~HashSet()
   {
-    kh_destroy(hashset,_set);
     u64_set_cleanup(&_u64_set);
   }
 
