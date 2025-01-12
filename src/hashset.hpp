@@ -74,7 +74,7 @@ public:
   {
     uint64_t hashval;
     size_t size;
-    str_set_itr itr;
+    u64_set_itr itr;
 
     size = u64_set_size(&_u64_set);
     itr = u64_set_get_or_insert(&_u64_set,hashval);
