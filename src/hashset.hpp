@@ -49,6 +49,7 @@ public:
   put(const char     *str_,
       const uint64_t  len_)
   {
+    size_t size;
     str_set_itr itr;
 
     itr = str_set_get_or_insert(&_str_set,str_);
