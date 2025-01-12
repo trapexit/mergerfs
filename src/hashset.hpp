@@ -49,6 +49,11 @@ public:
   put(const char     *str_,
       const uint64_t  len_)
   {
+    str_set_itr itr;
+
+    itr = str_set_insert(&_str_set,str_);
+
+    
     int rv;
     uint64_t h;
     khint_t key;
