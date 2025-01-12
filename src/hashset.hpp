@@ -20,6 +20,7 @@
 
 #include "khash.h"
 #include "wyhash.h"
+#include "rapidhash.h"
 #include <cstdint>
 
 static
