@@ -22,7 +22,7 @@
 #include "wyhash.h"
 
 #define NAME str_set
-#define KEY_TY int
+#define KEY_TY char*
 #define HASH_FN vt_hash_string
 #define CMPR_FN vt_cmpr_string
 #include "verstable.h"
