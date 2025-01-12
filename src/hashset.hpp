@@ -21,6 +21,8 @@
 #include "khash.h"
 #include "wyhash.h"
 
+#define NAME str_set
+#define KEY_TY int
 #include "verstable.h"
 
 KHASH_SET_INIT_INT64(hashset);
