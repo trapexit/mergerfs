@@ -88,10 +88,8 @@ public:
   size(void)
   {
     return u64_set_size(&_u64_set);
-    return kh_size(_set);
   }
 
 private:
-  khash_t(hashset) *_set;
   u64_set _u64_set;
 };
