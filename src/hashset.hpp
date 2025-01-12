@@ -18,6 +18,9 @@
 
 #pragma once
 
+#define RAPIDHASH_FAST
+#define RAPIDHASH_UNROLLED
+
 #include "khash.h"
 #include "wyhash.h"
 #include "rapidhash.h"
