@@ -33,9 +33,9 @@ $ su -
 # rpm -i rpmbuild/RPMS/<arch>/mergerfs-<version>.<arch>.rpm
 ```
 
-## Generic 
+## Generic Linux
 
-Have git, g++, make, python installed.
+Have git, g++ or clang, make, python installed.
 
 
 ```
@@ -43,6 +43,17 @@ $ cd mergerfs
 $ make
 $ sudo make install
 ```
+
+## FreeBSD
+
+Have git, g++ or clang, gmake, python installed.
+
+```
+$ cd mergerfs
+$ gmake
+$ gmake install # as root
+```
+
 
 ## Build options
 

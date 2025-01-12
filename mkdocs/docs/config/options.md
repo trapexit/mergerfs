@@ -54,7 +54,8 @@ These options are the same regardless of whether you use them with the
   mergerfs. (default: false)
 - **lazy-umount-mountpoint=BOOL**: mergerfs will attempt to "lazy
   umount" the mountpoint before mounting itself. Useful when
-  performing live upgrades of mergerfs. (default: false)
+  performing live upgrades of mergerfs. May not work on
+  FreeBSD. (default: false)
 - **ignorepponrename=BOOL**: Ignore path preserving on
   rename. Typically rename and link act differently depending on the
   policy of `create` (read below). Enabling this will cause rename and

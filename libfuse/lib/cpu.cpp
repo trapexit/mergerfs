@@ -1,22 +1,37 @@
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
+/*
+  ISC License
+
+  Copyright (c) 2024, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
 
 #include "cpu.hpp"
 #include "ghc/filesystem.hpp"
 #include "fmt/core.h"
 
+#include <pthread.h>
 #include <sched.h>
 
 #include <fstream>
 
 
 int
-CPU::getaffinity(const pthread_t  thread_id_,
-                 cpu_set_t       *cpuset_)
+CPU::getaffinity(cpu_set_t *cpuset_)
 {
+  const pid_t pid = 0;
   CPU_ZERO(cpuset_);
-  return sched_getaffinity(thread_id_,
+  return sched_getaffinity(pid,
                            sizeof(cpu_set_t),
                            cpuset_);
 }
@@ -70,7 +85,7 @@ CPU::count()
   int rv;
   cpu_set_t cpuset;
 
-  rv = CPU::getaffinity(0,&cpuset);
+  rv = CPU::getaffinity(&cpuset);
   if(rv < 0)
     return rv;
 
@@ -83,7 +98,7 @@ CPU::cpus()
   cpu_set_t cpuset;
   CPU::CPUVec cpuvec;
 
-  CPU::getaffinity(0,&cpuset);
+  CPU::getaffinity(&cpuset);
 
   for(int i = 0; i < CPU_SETSIZE; i++)
     {
@@ -102,7 +117,7 @@ CPU::cpu2core()
   cpu_set_t cpuset;
   CPU::CPU2CoreMap c2c;
 
-  CPU::getaffinity(0,&cpuset);
+  CPU::getaffinity(&cpuset);
 
   for(int i = 0; i < CPU_SETSIZE; i++)
     {
@@ -135,7 +150,7 @@ CPU::core2cpus()
   cpu_set_t cpuset;
   CPU::Core2CPUsMap c2c;
 
-  CPU::getaffinity(0,&cpuset);
+  CPU::getaffinity(&cpuset);
 
   for(int i = 0; i < CPU_SETSIZE; i++)
     {

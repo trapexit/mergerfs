@@ -213,3 +213,27 @@ at best, provide equivalent performance, and in some cases, worse
 performance. Splice is not supported on other platforms forcing a
 traditional read/write fallback to be provided. The splice code was
 removed to simplify the codebase.
+
+
+## How does mergerfs handle credentials?
+
+
+mergerfs is a multithreaded application in order to handle requests
+from the kernel concurrently. Each FUSE message has a header with
+certain details about the request include the process ID (pid) of the
+requestion application, the process' effective user id (uid), and
+group id (gid). To ensure proper POSIX filesystem behavior and
+security mergerfs must change its identity to match that of the
+requester when performing the core filesystem function on the
+underlying filesystem. On most Unix/POSIX based system a process and
+all its threads are under the same uid and gid. However, on Linux each
+thread may have its own credentials. This allows mergerfs to be
+multithreaded and for each thread to change to the credentials
+(seteuid,setegid) as required by the incoming message it is
+handling. However, on FreeBSD this is not possible at the moment
+(though there has been
+[discussions](https://wiki.freebsd.org/Per-Thread%20Credentials) and
+as such must change the credentials of the whole application when
+actioning messages. mergerfs does optimize this behavior by only
+changing credentials and locking the thread to do so if the process is
+currently not the same as what is necessary by the incoming request.

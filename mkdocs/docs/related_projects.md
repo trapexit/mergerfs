@@ -37,8 +37,8 @@
 
 mergerfs can be found in the
 [repositories](https://pkgs.org/download/mergerfs) of [many
-Linux](https://repology.org/project/mergerfs/versions) (and maybe
-FreeBSD) distributions.
+Linux](https://repology.org/project/mergerfs/versions) distributions
+and FreeBSD.
 
 Note: Any non-rolling release based distro is likely to have
 out-of-date versions.
@@ -51,6 +51,7 @@ out-of-date versions.
 * [Gentoo](https://packages.gentoo.org/packages/sys-fs/mergerfs)
 * [Arch (AUR)](https://aur.archlinux.org/packages/mergerfs)
 * [Void](https://voidlinux.org/packages/?arch=x86_64&q=mergerfs)
-* [NixOS](https://search.nixos.org/packages?channel=22.11&show=mergerfs&from=0&size=50&sort=relevance&type=packages&query=mergerfs)
+* [NixOS](https://search.nixos.org/packages?type=packages&query=mergerfs)
 * [Guix]()
 * [Slackware](https://slackbuilds.org/repository/15.0/system/mergerfs/?search=mergerfs)
+* [FreeBSD](https://www.freshports.org/filesystems/mergerfs)
