@@ -44,7 +44,7 @@ vt_cmpr_uint64(const uint64_t key_1,
 }
 
 #define NAME str_set
-#define KEY_TY const char*
+#define KEY_TY uint64_t
 #define HASH_FN vt_hash_const_string
 #define CMPR_FN vt_cmpr_const_string
 #include "verstable.h"
