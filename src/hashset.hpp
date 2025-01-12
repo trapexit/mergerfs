@@ -58,7 +58,7 @@ public:
   HashSet()
   {
     _set = kh_init(hashset);
-    u64_set_init(&_str_set);
+    u64_set_init(&_u64_set);
   }
 
   ~HashSet()
