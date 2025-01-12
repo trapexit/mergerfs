@@ -35,6 +35,7 @@ public:
   HashSet()
   {
     _set = kh_init(hashset);
+    str_set_init(&_str_set);
   }
 
   ~HashSet()
