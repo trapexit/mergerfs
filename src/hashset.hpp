@@ -29,7 +29,7 @@ vt_hash_const_string(const char *key_)
 {
   uint64_t hash = 0xcbf29ce484222325ull;
 
-  while( *key )
+  while( *key_ )
     hash = ( (unsigned char)*key++ ^ hash ) * 0x100000001b3ull;
 
   return hash;  
