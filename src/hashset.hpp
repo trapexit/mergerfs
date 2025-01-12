@@ -76,7 +76,7 @@ public:
     size_t size;
     str_set_itr itr;
 
-    size = 
+    size = str_set_size(&_str_set);
     itr = str_set_get_or_insert(&_str_set,str_);
 
     
