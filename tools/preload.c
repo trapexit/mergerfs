@@ -16,8 +16,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifdef __FreeBSD__
+#define O_TMPFILE 0
+#else
 #define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
+//#define _POSIX_C_SOURCE 200809L
+#endif
 
 #include <assert.h>
 #include <dlfcn.h>

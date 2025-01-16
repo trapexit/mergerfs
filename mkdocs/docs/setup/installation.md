@@ -81,6 +81,14 @@ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>
 sudo rpm -i mergerfs-<ver>.el<rel>.<arch>.rpm
 ```
 
+## NixOS
+
+[search.nixos.org](https://search.nixos.org/packages?channel=unstable&show=mergerfs&from=0&size=50&sort=relevance&type=packages&query=mergerfs)
+
+```
+nix-env -iA nixos.mergerfs
+```
+
 
 ## ArchLinux
 
@@ -88,14 +96,29 @@ sudo rpm -i mergerfs-<ver>.el<rel>.<arch>.rpm
 2. `pacman -S mergerfs`
 
 
-## Other
+## Other Linux Distros
 
-Static binaries are provided for situations where native packages are
-unavailable.
+[Check your distro.](../related_projects.md#distributions-including-mergerfs)
+
+
+## Static Linux Binaries
+
+If your distro does not package mergerfs there are static binaries
+provided.
 
 Get the tarball from the [releases page](https://github.com/trapexit/mergerfs/releases).
 
 ```
 wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-static-linux_<arch>.tar.gz
 sudo tar xvf mergerfs-static-linux_<arch>.tar.gz -C /
+```
+
+
+## FreeBSD
+
+[https://www.freshports.org/filesystems/mergerfs](https://www.freshports.org/filesystems/mergerfs)
+
+
+```
+pkg install filesystems/mergerfs
 ```
