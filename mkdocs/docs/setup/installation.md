@@ -10,67 +10,10 @@ latest release to confirm they still exist.
 
 All provided packages can be found at [https://github.com/trapexit/mergerfs/releases](https://github.com/trapexit/mergerfs/releases)
 
+## ArchLinux
 
-## Debian
-
-Most Debian installs are of a stable branch and therefore do not have
-the most up to date software. While mergerfs is available via `apt` it
-is suggested that users install the most recent version available from
-the [releases page](https://github.com/trapexit/mergerfs/releases).
-
-
-### prebuilt deb
-
-```
-wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs_<ver>.debian-<rel>_<arch>.deb
-sudo dpkg -i mergerfs_<ver>.debian-<rel>_<arch>.deb
-```
-
-
-### apt
-
-```
-sudo apt install -y mergerfs
-```
-
-
-## Ubuntu
-
-Most Ubuntu installs are of a stable branch and therefore do not have
-the most up to date software. While mergerfs is available via `apt` it
-is suggested that users install the most recent version available from
-the [releases page](https://github.com/trapexit/mergerfs/releases).
-
-
-### prebuilt deb
-
-```
-wget https://github.com/trapexit/mergerfs/releases/download/<version>/mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
-sudo dpkg -i mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
-```
-
-
-### apt
-
-```
-sudo apt install -y mergerfs
-```
-
-
-## Raspberry Pi OS
-
-The same as Debian or Ubuntu.
-
-
-## Fedora
-
-Get the RPM from the [releases page](https://github.com/trapexit/mergerfs/releases).
-
-```
-wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>.fc<rel>.<arch>.rpm
-sudo rpm -i mergerfs-<ver>.fc<rel>.<arch>.rpm
-```
-
+1. Setup AUR
+2. `pacman -S mergerfs`
 
 ## CentOS / Rocky
 
@@ -81,6 +24,54 @@ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>
 sudo rpm -i mergerfs-<ver>.el<rel>.<arch>.rpm
 ```
 
+## Debian based OS
+
+Debian/Ubuntu/Raspberry Pi
+
+Most Debian based OS installs are of a stable branch and therefore do not have
+the most up to date software. While mergerfs is available via `apt` it
+is suggested that users install the most recent version available from
+the [releases page](https://github.com/trapexit/mergerfs/releases).
+
+### prebuilt deb
+
+#### Debian
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs_<ver>.debian-<rel>_<arch>.deb
+sudo dpkg -i mergerfs_<ver>.debian-<rel>_<arch>.deb
+```
+
+#### Ubuntu
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<version>/mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
+sudo dpkg -i mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
+```
+
+### apt
+
+```
+sudo apt install -y mergerfs
+```
+
+## Fedora
+
+Get the RPM from the [releases page](https://github.com/trapexit/mergerfs/releases).
+
+```
+wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>.fc<rel>.<arch>.rpm
+sudo rpm -i mergerfs-<ver>.fc<rel>.<arch>.rpm
+```
+
+## FreeBSD
+
+[https://www.freshports.org/filesystems/mergerfs](https://www.freshports.org/filesystems/mergerfs)
+
+```
+pkg install filesystems/mergerfs
+```
+
 ## NixOS
 
 [search.nixos.org](https://search.nixos.org/packages?channel=unstable&show=mergerfs&from=0&size=50&sort=relevance&type=packages&query=mergerfs)
@@ -89,17 +80,9 @@ sudo rpm -i mergerfs-<ver>.el<rel>.<arch>.rpm
 nix-env -iA nixos.mergerfs
 ```
 
-
-## ArchLinux
-
-1. Setup AUR
-2. `pacman -S mergerfs`
-
-
 ## Other Linux Distros
 
 [Check your distro.](../related_projects.md#distributions-including-mergerfs)
-
 
 ## Static Linux Binaries
 
@@ -111,14 +94,4 @@ Get the tarball from the [releases page](https://github.com/trapexit/mergerfs/re
 ```
 wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-static-linux_<arch>.tar.gz
 sudo tar xvf mergerfs-static-linux_<arch>.tar.gz -C /
-```
-
-
-## FreeBSD
-
-[https://www.freshports.org/filesystems/mergerfs](https://www.freshports.org/filesystems/mergerfs)
-
-
-```
-pkg install filesystems/mergerfs
 ```
