@@ -21,16 +21,33 @@
 
 ## Software and services commonly used with mergerfs
 
-* [snapraid](https://www.snapraid.it/)
-* [rclone](https://rclone.org/)
-  * rclone's [union](https://rclone.org/union/) feature is based on
-    mergerfs policies
-* [ZFS](https://openzfs.org/): Common to use ZFS w/ mergerfs
+* [snapraid](https://www.snapraid.it/): a backup program designed for
+  disk arrays, storing parity information for data recovery in the
+  event of up to six disk failures.
+* [rclone](https://rclone.org/): a command-line program to manage
+  files on cloud storage. It is a feature-rich alternative to cloud
+  vendors' web storage interfaces. rclone's
+  [union](https://rclone.org/union/) feature is based on mergerfs
+  policies.
+* [ZFS](https://openzfs.org/): Common to use ZFS w/ mergerfs. ZFS for
+  important data and mergerfs pool for replacable media.
 * [UnRAID](https://unraid.net): While UnRAID has its own union
   filesystem it isn't uncommon to see UnRAID users leverage mergerfs
-  given the differences in the technologies.
-* For a time there were a number of Chia miners recommending mergerfs
-* [cloudboxes.io](https://cloudboxes.io/wiki/how-to/apps/set-up-mergerfs-using-ssh)
+  given the differences in the technologies. There is a [plugin
+  available by
+  Rysz](https://forums.unraid.net/topic/144999-plugin-mergerfs-for-unraid-support-topic/)
+  to ease installation and setup.
+* [TrueNAS](https://www.truenas.com): Some users are requesting
+  mergerfs be [made part
+  of](https://forums.truenas.com/t/add-unionfs-or-mergerfs-and-rdam-enhancement-then-beat-all-other-nas-systems/23218)
+  TrueNAS.
+* For a time there were a number of Chia miners recommending mergerfs.
+* [cloudboxes.io](https://cloudboxes.io): VPS provider. Includes
+  details [on their
+  wiki](https://cloudboxes.io/wiki/how-to/apps/set-up-mergerfs-using-ssh):
+  on how to setup mergerfs.
+* [QNAP](https://www.myqnap.org/product/mergerfs-apache83/): Someone
+  has create builds of mergerfs for different QNAP devices.
 
 
 ## Distributions including mergerfs
