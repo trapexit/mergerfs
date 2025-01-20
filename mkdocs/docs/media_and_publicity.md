@@ -20,12 +20,16 @@
 - 2020-08-20 - [Setting up Rclone, Mergerfs and Crontab for automated cloud storage](https://bytesized-hosting.com/pages/setting-up-rclone-mergerfs-and-crontab-for-automated-cloud-storage)
 - 2020-11-22 - [Introducing… MergerFS – My FREE UNRAID alternative](https://supertechfreaks.com/introducing-mergerfs-free-unraid-alternative/)
 - 2020-12-30 - [Perfect Media Server](https://perfectmediaserver.com) (a new site with docs fully fleshing out the 'Perfect Media Server' blog series)
+- 2021-07-24 - [Building the Ultimate Linux Home Server - Part 1: Intro, MergerFS, and SnapRAID](https://blog.karaolidis.com/ultimate-home-server-part-1/)
 - 2021-10-31 - [Better Home Storage: MergerFS + SnapRAID on OpenMediaVault](https://blog.sakuragawa.moe/better-home-storage-mergerfs-snapraid-on-openmediavault/)
 - 2021-11-28 - [Linux Magazine: Come Together - Merging file systems for a simple NAS with MergerFS](https://www.linux-magazine.com/Issues/2022/254/MergerFS)
 - 2022-06-04 - [MergerFS + SnapRaid Study](https://crashlaker.github.io/2022/06/04/mergerfs_+_snapraid_study.html)
 - 2022-12-31 - [Merge Storages in CasaOS: A secret beta feature you know now](https://blog.casaos.io/blog/13.html)
 - 2023-02-03 - [(MergerFS + SnapRAID) is the new RAID 5](https://thenomadcode.tech/mergerfs-snapraid-is-the-new-raid-5)
 - 2024-02-07 - [Designing & Deploying MANS - A Hybrid NAS Approach with SnapRAID, MergerFS, and OpenZFS](https://blog.muffn.io/posts/part-3-mini-100tb-nas)
+- 2024-03-11 - [Using MergerFS to combine multiple hard drives into one unified media storage](https://fullmetalbrackets.com/blog/two-drives-mergerfs/)
+- 2024-12-20 - [Pooling multiple drives on my Raspberry Pi with mergerfs](https://sebi.io/posts/2024-12-20-pooling-multiple-drives-with-mergerfs/)
+
 
 ## Videos
 
@@ -56,7 +60,10 @@
 - 2023-06-26 - [How to install and setup MergerFS](https://www.youtube.com/watch?v=n7piuhTXeG4)
 - 2023-07-31 - [How to recover a dead drive using Snapraid](https://www.youtube.com/watch?v=fmuiRLPcuJE)
 - 2024-01-05 - [OpenMediaVault MergerFS Tutorial (Portuguese)](https://www.youtube.com/watch?v=V6Yw86dRUPQ)
+- 2024-02-19 - [Setup and Install MergerFS and SnapRAID (Part 1)](https://noted.lol/mergerfs-and-snapraid-setup-1/)
+- 2024-02-22 - [Setup and Install MergerFS and SnapRAID (Part 2)](https://noted.lol/mergerfs-and-snapraid-setup-part-2/)
 - 2024-11-15 - [Meu servidor NAS - Parte 18: Recuperando um HD, recuperando o MergerFS e os próximos passos do NAS!](https://www.youtube.com/watch?v=5fy98kPzE3s)
+
 
 ## Podcasts
 
@@ -64,8 +71,10 @@
 - 2019-11-07 - [Jupiter Broadcasting: ZFS Isn’t the Only Option | Self-Hosted 5](https://www.youtube.com/watch?v=JEW7UuKhMJ8)
 - 2023-10-08 - [Self Hosted Episode 105 - Sleeper Storage Technology](https://selfhosted.show/105)
 
+
 ## Social Media
 
 - [Reddit](https://www.reddit.com/search/?q=mergerfs&sort=new)
-- [Twitter](https://twitter.com/search?q=mergerfs&src=spelling_expansion_revert_click&f=live)
+- [X](https://x.com/search?q=mergerfs&src=spelling_expansion_revert_click&f=live)
 - [YouTube](https://www.youtube.com/results?search_query=mergerfs&sp=CAI%253D)
+- [ServeTheHome Forum](https://forums.servethehome.com/index.php?search/3105813/&q=mergerfs&o=date)

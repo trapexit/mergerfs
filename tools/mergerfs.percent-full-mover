@@ -1,21 +1,37 @@
 #!/usr/bin/env sh
 
 if [ $# != 3 ]; then
-  echo "usage: $0 <cache-fs> <backing-pool> <percentage>"
-  exit 1
+    echo "usage: $0 <cache-fs> <base-pool> <percentage>"
+    exit 1
 fi
 
-CACHE="${1}"
-BACKING="${2}"
+CACHEFS="${1}"
+BASEPOOL="${2}"
 PERCENTAGE=${3}
 
 set -o errexit
-while [ $(df --output=pcent "${CACHE}" | grep -v Use | cut -d'%' -f1) -gt ${PERCENTAGE} ]
+while [ $(df "${CACHE}" | tail -n1 | awk '{print $5}' | cut -d'%' -f1) -gt ${PERCENTAGE} ]
 do
+    # Find the file with the oldest access time
     FILE=$(find "${CACHE}" -type f -printf '%A@ %P\n' | \
-                  sort | \
-                  head -n 1 | \
-                  cut -d' ' -f2-)
-    test -n "${FILE}"
-    rsync -axqHAXWESR --preallocate --relative --remove-source-files "${CACHE}/./${FILE}" "${BACKING}/"
+               sort | \
+               head -n 1 | \
+               cut -d' ' -f2-)
+    # If no file found, exit
+    test -n "${FILE}" || exit 0
+    # Move file
+    rsync \
+        --archive \
+        --acls \
+        --xattrs \
+        --atimes \
+        --hard-links \
+        --one-file-system \
+        --quiet \
+        --preallocate \
+        --remove-source-files \
+        --relative \
+        --log-file=/tmp/mergerfs-cache-rsync.log \
+        "${CACHE}/./${FILE}" \
+        "${BACKING}/"
 done
