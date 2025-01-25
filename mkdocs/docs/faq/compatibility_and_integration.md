@@ -26,17 +26,35 @@ pool.
 Yes. With Docker you'll need to include `--cap-add=SYS_ADMIN
 --device=/dev/fuse --security-opt=apparmor:unconfined` or similar with
 other container runtimes. You should also be running it as root or
-given sufficient caps to change user and group identity as well as
-have root like filesystem permissions.
-
-Keep in mind that you **MUST** consider identity when using
-containers. For example: supplemental groups will be picked up from
-the container unless you properly manage users and groups by sharing
-relevant /etc files or by using some other means to share identity
-across containers. Similarly, if you use "rootless" containers and user
-namespaces to do uid/gid translations you **MUST** consider that while
-managing shared files.
+given sufficient caps to allow mergerfs to change user and group
+identity as well as have root like filesystem permissions. This
+ability is critical to how mergerfs works.
 
 Also, as mentioned by [hotio](https://hotio.dev/containers/mergerfs),
 with Docker you should probably be mounting with `bind-propagation`
 set to `slave`.
+
+
+## How does mergerfs interact with user namespaces?
+
+FUSE does not have any special integration with Linux user namespaces
+used by container runtime platforms like Docker, Podman, etc. The
+uid/gid values passed to mergerfs will be the host level values rather
+than that seen inside the container. Meaning `root` in a container
+with user namespaces configured will not be `root` to mergerfs. Same
+with any other uid/gid. Meaning your permissions on your branches must
+work with the translated values from the id mapping.
+
+It is generally recommended to not use user namespacing / id mapping
+given the complication it introduces.
+
+
+## Can mergerfs be used with NFS root squash?
+
+If mergerfs is pooling a NFS mount then root squash should be disabled
+as mergerfs needs to be able to have elevated privilages to do what it
+does.
+
+If you are exporting mergerfs over NFS then it is not really necessary.
+
+See the [section on remote filesystems.](../remote_filesystems.md)
