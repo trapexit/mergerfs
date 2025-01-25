@@ -29,16 +29,24 @@
   vendors' web storage interfaces. rclone's
   [union](https://rclone.org/union/) feature is based on mergerfs
   policies.
-* [ZFS](https://openzfs.org/): Common to use ZFS w/ mergerfs. ZFS for
-  important data and mergerfs pool for replacable media.
-* [UnRAID](https://unraid.net): While UnRAID has its own union
-  filesystem it isn't uncommon to see UnRAID users leverage mergerfs
-  given the differences in the technologies. There is a [plugin
-  available by
+* [ZFS](https://openzfs.org/): A popular filesystem and volume
+  management platform originally part of Sun Solaris and later ported
+  to other operating systems. It is common to use ZFS with
+  mergerfs. ZFS for important data and mergerfs pool for replacable
+  media.
+* [Proxmox](https://www.proxmox.com/): Proxmox is a popular, Debian
+  based, virtualization platform. Users tend to install mergerfs on
+  the host and pass the mount into containers.
+* [UnRAID](https://unraid.net): "Unraid is a powerful, easy-to-use
+  operating system for self-hosted servers and network-attached
+  storage." While UnRAID has its own union filesystem it isn't
+  uncommon to see UnRAID users leverage mergerfs given the differences
+  in the technologies. There is a [plugin available by
   Rysz](https://forums.unraid.net/topic/144999-plugin-mergerfs-for-unraid-support-topic/)
   to ease installation and setup.
-* [TrueNAS](https://www.truenas.com): Some users are requesting
-  mergerfs be [made part
+* [TrueNAS SCALE](https://www.truenas.com/truenas-scale/): An
+  enterprise focused NAS operating system with OpenZFS support. A Some
+  users are requesting mergerfs be [made part
   of](https://forums.truenas.com/t/add-unionfs-or-mergerfs-and-rdam-enhancement-then-beat-all-other-nas-systems/23218)
   TrueNAS.
 * For a time there were a number of Chia miners recommending mergerfs.
@@ -46,8 +54,9 @@
   details [on their
   wiki](https://cloudboxes.io/wiki/how-to/apps/set-up-mergerfs-using-ssh):
   on how to setup mergerfs.
-* [QNAP](https://www.myqnap.org/product/mergerfs-apache83/): Someone
-  has create builds of mergerfs for different QNAP devices.
+* [QNAP](https://www.myqnap.org/product/mergerfs-apache83/): A company
+  known for their turnkey, consumer focused NAS devices. Someone has
+  created builds of mergerfs for different QNAP devices.
 
 
 ## Distributions including mergerfs

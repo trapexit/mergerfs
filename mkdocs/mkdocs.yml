@@ -55,8 +55,8 @@ nav:
   - setup/installation.md
   - setup/upgrade.md
   - setup/build.md
+- terminology.md
 - Config:
-  - config/terminology.md
   - config/options.md
   - config/deprecated_options.md
   - config/branches.md
