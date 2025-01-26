@@ -20,7 +20,7 @@ usecases.
 
 * cache.files=off
 * category.create=mfs
-* dropecacheonclose=false
+* dropcacheonclose=false
 
 In previous versions of Linux it was unable to support `mmap` if page
 caching was disabled (ie: `cache.files=off`). However, it now will
