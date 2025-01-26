@@ -1,4 +1,6 @@
-# Error Handling
+# Error Handling and Logging
+
+## Error Handling
 
 POSIX filesystem functions offer a single return code meaning that
 there is some complication regarding the handling of multiple branches
@@ -35,3 +37,16 @@ For create functions `mkdir`, `mknod`, and `symlink` which don't
 return a file descriptor and therefore can have `all` or `epall`
 policies it will return success if any of the calls succeed and an
 error otherwise.
+
+
+## Logging
+
+Filesystems, and therefore mergerfs, are doing lots of small actions
+at high speed. It simply isn't reasonable to log all the actions of
+the system. That said: certain details are logged at startup and when
+performing mainance tasks. These are logged via `syslog` and on
+`systemd` based systems can be viewed by running
+
+```
+journalctl -t mergerfs
+```
