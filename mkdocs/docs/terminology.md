@@ -11,7 +11,7 @@
 * `path`: A location within a filesystem. mergerfs can work with any
   path within a filesystem and not simply the root.
 * `branch`: A base path used in a mergerfs pool. mergerfs can
-  accomidate multiple paths pointing to the same filesystem.
+  accommodate multiple paths pointing to the same filesystem.
 * `pool`: The mergerfs mount. The union of the branches. The instance
   of mergerfs. You can mount multiple mergerfs pools. Even with the
   same branches.
