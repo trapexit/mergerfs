@@ -44,7 +44,7 @@ There is no need to do so. See the previous questions.
 
 Nothing special needs to be done. Remove the branch from mergerfs'
 config and copy (rsync) the data from the removed filesystem into the
-pool. The same as if it were you transfering data from one filesystem
+pool. The same as if it were you transferring data from one filesystem
 to another.
 
 If you wish to continue using the pool with all data available while
@@ -57,19 +57,28 @@ good practice to run rsync or rclone again after the first copy
 finishes to ensure nothing is left behind.
 
 NOTE: Above recommends to "copy" rather than "move" because you want
-to ensure that your data is transfered before wiping the drive or
+to ensure that your data is transferred before wiping the drive or
 filesystem.
 
 
 ## Can filesystems still be used directly? Outside of mergerfs while pooled?
 
-Yes, out-of-band interaction is generally fine. Remember that mergerfs
-is just a userland application like any other software so its
-interactions with the underlying filesystems is no different. It would
-be like two normal applications interacting with the
-filesystem. However, it's not recommended to write to the same file
-from within the pool and from without at the same time. Especially if
-using page caching (`cache.files!=off`) or writeback caching
-(`cache.writeback=true`). That said this risk is really not
-really different from the risk of two applications writing to
-the same file under normal conditions.
+Yes, [out-of-band](https://en.wikipedia.org/wiki/Out-of-band)
+interaction is generally fine. Remember that mergerfs is a userland
+application so any interaction with the underlying filesystem is the
+same as multiple normal applications interacting. However, it is not
+recommended to write to the same file from within the pool and from
+without at the same time. Especially if using page caching
+(`cache.files!=off`) or writeback caching
+(`cache.writeback=true`). That said this risk is really not different
+from the risk of two applications writing to the same file under
+normal conditions.
+
+Keep in mind that if out-of-band changes are made while also
+leveraging any caching of the filesystem layout such as with
+`cache.entry`, `cache.negative_entry`, `cache.attr`, `cache.symlinks`,
+or `cache.readdir` you may experience temporary inconsistency till the
+cache expires. mergerfs is not actively watching all branches for
+changes and the kernel will have no way to know anything changed so as
+to clear or ignore the cache. This is the same issue you can have with
+[remote filesystems](../remote_filesystems.md).
