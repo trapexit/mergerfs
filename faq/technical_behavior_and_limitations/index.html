@@ -1,0 +1,2058 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="mergerfs - a featureful union filesystem">
+      
+      
+      
+        <link rel="canonical" href="https://trapexit.github.io/mergerfs/faq/technical_behavior_and_limitations/">
+      
+      
+        <link rel="prev" href="../recommendations_and_warnings/">
+      
+      
+        <link rel="next" href="../why_isnt_it_working/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+    
+    
+      
+        <title>Technical Behavior and Limitations - mergerfs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8608ea7d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#technical-behavior-and-limitations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="mergerfs" class="md-header__button md-logo" aria-label="mergerfs" data-md-component="logo">
+      
+  <img src="../../logo.jpeg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mergerfs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Technical Behavior and Limitations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/trapexit/mergerfs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    mergerfs
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="mergerfs" class="md-nav__button md-logo" aria-label="mergerfs" data-md-component="logo">
+      
+  <img src="../../logo.jpeg" alt="logo">
+
+    </a>
+    mergerfs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/trapexit/mergerfs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    mergerfs
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    QuickStart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/upgrade/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Upgrade
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/build/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Build
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../terminology/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Terminology
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Config
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Config
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/options/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/deprecated_options/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/branches/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    branches
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/functions_categories_and_policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    functions, categories and policies
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/func_readdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    func.readdir
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/rename_and_link/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    rename and link
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/cache/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    caching
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/readahead/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    readahead
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/inodecalc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    inodecalc
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/threads/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    threads
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/pin-threads/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pin-threads
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/link_cow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    link_cow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/fuse_msg_size/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    fuse_msg_size
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/follow-symlinks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    follow-symlinks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/link-exdev/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    link-exdev
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/rename-exdev/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    rename-exdev
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/symlinkify/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    symlinkify
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/nullrw/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    nullrw
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/xattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    xattr
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/nfsopenhack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    nfsopenhack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/statfs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    statfs / statvfs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/flush-on-close/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    flush-on-close
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/export-support/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    export-support
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../error_handling_and_logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Error Handling and Logging
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../runtime_interfaces/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Runtime Interfaces
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote_filesystems/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Remote Filesystems
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tips_notes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tips and Notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../known_issues_bugs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Known Issues and Bugs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_comparisons/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Comparisons
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tweaking Performance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarking/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Benchmarking
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tooling/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tooling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage_patterns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage Patterns
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_16" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            FAQ
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability_and_scalability/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reliability and Scalability
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage_and_functionality/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage and Functionality
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration_and_policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration and Policies
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility_and_integration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Compatibility and Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recommendations_and_warnings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recommendations and Warnings
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Technical Behavior and Limitations
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Technical Behavior and Limitations
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#do-hardlinks-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Do hardlinks work?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-does-mergerfs-handle-moving-and-copying-of-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      How does mergerfs handle moving and copying of files?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#does-ficlone-or-ficlonerange-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Does FICLONE or FICLONERANGE work?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-do-i-get-an-out-of-space-no-space-left-on-device-enospc-error-even-though-there-appears-to-be-lots-of-space-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-does-the-total-available-space-in-mergerfs-not-equal-outside" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why does the total available space in mergerfs not equal outside?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#i-notice-massive-slowdowns-of-writes-when-enabling-cachefiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      I notice massive slowdowns of writes when enabling cache.files.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-use-fuse-why-not-a-kernel-based-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why use FUSE? Why not a kernel based solution?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#is-my-oss-libfuse-needed-for-mergerfs-to-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Is my OS's libfuse needed for mergerfs to work?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-was-splice-support-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why was splice support removed?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-does-mergerfs-handle-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      How does mergerfs handle credentials?
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why_isnt_it_working/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    "Why isn't it working?"
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limit_drive_spinup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Limiting drive spinup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../related_projects/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Related Projects
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_and_publicity/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Media and Publicity
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../support/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Support
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sponsorship_and_donations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sponsorship and Donations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#do-hardlinks-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Do hardlinks work?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-does-mergerfs-handle-moving-and-copying-of-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      How does mergerfs handle moving and copying of files?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#does-ficlone-or-ficlonerange-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Does FICLONE or FICLONERANGE work?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-do-i-get-an-out-of-space-no-space-left-on-device-enospc-error-even-though-there-appears-to-be-lots-of-space-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-does-the-total-available-space-in-mergerfs-not-equal-outside" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why does the total available space in mergerfs not equal outside?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#i-notice-massive-slowdowns-of-writes-when-enabling-cachefiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      I notice massive slowdowns of writes when enabling cache.files.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-use-fuse-why-not-a-kernel-based-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why use FUSE? Why not a kernel based solution?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#is-my-oss-libfuse-needed-for-mergerfs-to-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Is my OS's libfuse needed for mergerfs to work?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-was-splice-support-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why was splice support removed?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-does-mergerfs-handle-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      How does mergerfs handle credentials?
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/trapexit/mergerfs/edit/master/mkdocs/docs/faq/technical_behavior_and_limitations.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/trapexit/mergerfs/raw/master/mkdocs/docs/faq/technical_behavior_and_limitations.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="technical-behavior-and-limitations">Technical Behavior and Limitations</h1>
+<h2 id="do-hardlinks-work">Do hardlinks work?</h2>
+<p>Yes. There is no option to enable or disable links. They are
+fundimentally supported in compatible situations. That said the inode
+of a file is not necessarily indicitive of two file names linking to
+the same underlying data. See also the option <code>inodecalc</code> for how
+inode values are calculated.</p>
+<p>What mergerfs does not do is fake hard links across branches. Read the
+section <a href="../../config/rename_and_link/">rename &amp; link</a> for how it
+works.</p>
+<p>Remember that hardlinks will <strong>NOT</strong> work across devices. That
+includes between the original filesystem and a mergerfs pool, between
+two separate pools of the same underlying filesystems, or bind mounts
+of paths within the mergerfs pool. The latter is common when using
+Docker or Podman. Multiple volumes (bind mounts) to the same
+underlying filesystem are considered different devices. There is no
+way to link or rename between them. You should mount in the highest
+directory in the mergerfs pool that includes all the paths you need if
+you want links and rename to work.</p>
+<h2 id="how-does-mergerfs-handle-moving-and-copying-of-files">How does mergerfs handle moving and copying of files?</h2>
+<p>This is a <em>very</em> common mistaken assumption regarding how filesystems
+work. There is no such thing as "move" or "copy." These concepts are
+high level behaviors made up of numerous independent steps and <em>not</em>
+individual filesystem functions.</p>
+<p>A "move" can include a "copy" so lets describe copy first.</p>
+<p>When an application copies a file from "source" to "destination" it
+can do so in a number of ways but the basics are the following.</p>
+<ol>
+<li><code>open</code> the source file.</li>
+<li><code>create</code> the destination file.</li>
+<li><code>read</code> a chunk of data from source and <code>write</code> to
+   destination. Continue till it runs out of data to copy.</li>
+<li>Copy file metadata (<code>stat</code>) such as ownership (<code>chown</code>),
+   permissions (<code>chmod</code>), timestamps (<code>utimes</code>), extended attributes
+   (<code>getxattr</code>, <code>setxattr</code>), etc.</li>
+<li><code>close</code> source and destination files.</li>
+</ol>
+<p>"move" is typically a <code>rename(src,dst)</code> and if that errors with
+<code>EXDEV</code> (meaning the source and destination are on different
+filesystems) the application will "copy" the file as described above
+and then it removes (<code>unlink</code>) the source.</p>
+<p>The <code>rename(src,dst)</code>, <code>open(src)</code>, <code>create(dst)</code>, data copying,
+metadata copying, <code>unlink(src)</code>, etc. are entirely distinct and
+separate events. There is really no practical way to know that what is
+ultimately occurring is the "copying" of a file or what the source
+file would be. Since the source is not known there is no way to know
+how large a created file is destined to become. This is why it is
+impossible for mergerfs to choose the branch for a <code>create</code> based on
+file size. The only context provided when a file is created, besides
+the name, is the permissions, if it is to be read and/or written, and
+some low level settings for the operating system.</p>
+<p>All of this means that mergerfs can not make decisions when a file is
+created based on file size or the source of the data. That information
+is simply not available. At best mergerfs could respond to files
+reaching a certain size when writing data, a file is closed, or
+renamed.</p>
+<p>Related: if a user wished to have mergerfs perform certain activities
+based on the name of a file it is common and even best practice for a
+program to write to a temporary file first and then rename to its
+final destination. That temporary file name will typically be random
+and have no indication of the type of file being written. At best
+something could be done on rename.</p>
+<h2 id="does-ficlone-or-ficlonerange-work">Does FICLONE or FICLONERANGE work?</h2>
+<p>Unfortunately not. FUSE, the technology mergerfs is based on, does not
+support the <code>clone_file_range</code> feature needed for it to work. mergerfs
+won't even know such a request is made. The kernel will simply return
+an error back to the application making the request.</p>
+<p>Should FUSE gain the ability mergerfs will be updated to support it.</p>
+<h2 id="why-do-i-get-an-out-of-space-no-space-left-on-device-enospc-error-even-though-there-appears-to-be-lots-of-space-available">Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?</h2>
+<p>First make sure you've read the sections above about policies, path
+preservation, branch filtering, and the options <code>minfreespace</code>,
+<code>moveonenospc</code>, <code>statfs</code>, and <code>statfs_ignore</code>.</p>
+<p>mergerfs is simply presenting a union of the content within multiple
+branches. The reported free space is an aggregate of space available
+within the pool (behavior modified by <code>statfs</code> and
+<code>statfs_ignore</code>). It does not represent a contiguous space. In the
+same way that read-only filesystems, those with quotas, or reserved
+space report the full theoretical space available.</p>
+<p>Due to path preservation, branch tagging, read-only status, and
+<code>minfreespace</code> settings it is perfectly valid that <code>ENOSPC</code> / "out of
+space" / "no space left on device" be returned. It is doing what was
+asked of it: filtering possible branches due to those settings. Only
+one error can be returned and if one of the reasons for filtering a
+branch was <code>minfreespace</code> then it will be returned as
+such. <code>moveonenospc</code> is only relevant to writing a file which is too
+large for the filesystem it's currently on.</p>
+<p>It is also possible that the filesystem selected has run out of
+inodes. Use <code>df -i</code> to list the total and available inodes per
+filesystem.</p>
+<p>If you don't care about path preservation then simply change the
+<code>create</code> policy to one which isn't. <code>mfs</code> is probably what most are
+looking for. The reason it's not default is because it was originally
+set to <code>epmfs</code> and changing it now would change people's setup. Such a
+setting change will likely occur in mergerfs 3.</p>
+<h2 id="why-does-the-total-available-space-in-mergerfs-not-equal-outside">Why does the total available space in mergerfs not equal outside?</h2>
+<p>Are you using ext2/3/4? With reserve for root? mergerfs uses available
+space for statfs calculations. If you've reserved space for root then
+it won't show up.</p>
+<p>You can remove the reserve by running: <code>tune2fs -m 0 &lt;device&gt;</code></p>
+<h2 id="i-notice-massive-slowdowns-of-writes-when-enabling-cachefiles">I notice massive slowdowns of writes when enabling cache.files.</h2>
+<p>When file caching is enabled in any form (<code>cache.files!=off</code>) it will
+issue <code>getxattr</code> requests for <code>security.capability</code> prior to <em>every
+single write</em>. This will usually result in performance degradation,
+especially when using a network filesystem (such as NFS or SMB.)
+Unfortunately at this moment, the kernel is not caching the response.</p>
+<p>To work around this situation mergerfs offers a few solutions.</p>
+<ol>
+<li>Set <code>security_capability=false</code>. It will short circuit any call and
+   return <code>ENOATTR</code>. This still means though that mergerfs will
+   receive the request before every write but at least it doesn't get
+   passed through to the underlying filesystem.</li>
+<li>Set <code>xattr=noattr</code>. Same as above but applies to <em>all</em> calls to
+   getxattr. Not just <code>security.capability</code>. This will not be cached
+   by the kernel either but mergerfs' runtime config system will still
+   function.</li>
+<li>Set <code>xattr=nosys</code>. Results in mergerfs returning <code>ENOSYS</code> which
+   <em>will</em> be cached by the kernel. No future xattr calls will be
+   forwarded to mergerfs. The downside is that also means the xattr
+   based config and query functionality won't work either.</li>
+<li>Disable file caching. If you aren't using applications which use
+   <code>mmap</code> it's probably simpler to just disable it altogether. The
+   kernel won't send the requests when caching is disabled.</li>
+</ol>
+<h2 id="why-use-fuse-why-not-a-kernel-based-solution">Why use FUSE? Why not a kernel based solution?</h2>
+<p>As with any solution to a problem, there are advantages and
+disadvantages to each one.</p>
+<p>A FUSE based solution has all the downsides of FUSE:</p>
+<ul>
+<li>Higher IO latency due to the trips in and out of kernel space</li>
+<li>Higher general overhead due to trips in and out of kernel space</li>
+<li>Double caching when using page caching</li>
+<li>Misc limitations due to FUSE's design</li>
+</ul>
+<p>But FUSE also has a lot of upsides:</p>
+<ul>
+<li>Easier to offer a cross platform solution</li>
+<li>Easier forward and backward compatibility</li>
+<li>Easier updates for users</li>
+<li>Easier and faster release cadence</li>
+<li>Allows more flexibility in design and features</li>
+<li>Overall easier to write, secure, and maintain</li>
+<li>Much lower barrier to entry (getting code into the kernel takes a
+  lot of time and effort initially)</li>
+</ul>
+<h2 id="is-my-oss-libfuse-needed-for-mergerfs-to-work">Is my OS's libfuse needed for mergerfs to work?</h2>
+<p>No. Normally <code>mount.fuse</code> is needed to get mergerfs (or any FUSE
+filesystem to mount using the <code>mount</code> command but in vendoring the
+libfuse library the <code>mount.fuse</code> app has been renamed to
+<code>mount.mergerfs</code> meaning the filesystem type in <code>fstab</code> can simply be
+<code>mergerfs</code>. That said there should be no harm in having it installed
+and continuing to using <code>fuse.mergerfs</code> as the type in <code>/etc/fstab</code>.</p>
+<p>If <code>mergerfs</code> doesn't work as a type it could be due to how the
+<code>mount.mergerfs</code> tool was installed. Must be in <code>/sbin/</code> with proper
+permissions.</p>
+<h2 id="why-was-splice-support-removed">Why was splice support removed?</h2>
+<p>After a lot of testing over the years, splicing always appeared to
+at best, provide equivalent performance, and in some cases, worse
+performance. Splice is not supported on other platforms forcing a
+traditional read/write fallback to be provided. The splice code was
+removed to simplify the codebase.</p>
+<h2 id="how-does-mergerfs-handle-credentials">How does mergerfs handle credentials?</h2>
+<p>mergerfs is a multithreaded application in order to handle requests
+from the kernel concurrently. Each FUSE message has a header with
+certain details about the request include the process ID (pid) of the
+requestion application, the process' effective user id (uid), and
+group id (gid). To ensure proper POSIX filesystem behavior and
+security mergerfs must change its identity to match that of the
+requester when performing the core filesystem function on the
+underlying filesystem. On most Unix/POSIX based system a process and
+all its threads are under the same uid and gid. However, on Linux each
+thread may have its own credentials. This allows mergerfs to be
+multithreaded and for each thread to change to the credentials
+(seteuid,setegid) as required by the incoming message it is
+handling. However, on FreeBSD this is not possible at the moment
+(though there has been
+<a href="https://wiki.freebsd.org/Per-Thread%20Credentials">discussions</a> and
+as such must change the credentials of the whole application when
+actioning messages. mergerfs does optimize this behavior by only
+changing credentials and locking the thread to do so if the process is
+currently not the same as what is necessary by the incoming request.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../recommendations_and_warnings/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Recommendations and Warnings">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Recommendations and Warnings
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../why_isnt_it_working/" class="md-footer__link md-footer__link--next" aria-label="Next: &#34;Why isn&#39;t it working?&#34;">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                "Why isn't it working?"
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.select", "navigation.footer", "navigation.instant", "navigation.instant.prefetch", "navigation.path", "navigation.top", "navigation.tracking", "optimize", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      
+    
+  </body>
+</html>
