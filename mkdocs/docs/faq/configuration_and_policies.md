@@ -79,28 +79,3 @@ If you wish to move files around or balance the pool you can:
    [mergerfs.balance](https://github.com/trapexit/mergerfs-tools/blob/master/src/mergerfs.balance). Keep
    in mind that this tool is really just an example of how to
    accomplish such a task.
-
-
-
-## Why are all my files ending up on 1 filesystem?!
-
-Did you start with empty filesystems? Did you explicitly configure a
-`category.create` policy? Are you using an `existing path` / `path
-preserving` policy?
-
-The default create policy is `epmfs`. That is a path preserving
-algorithm. With such a policy for `mkdir` and `create` with a set of
-empty filesystems it will select only 1 filesystem when the first
-directory is created. Anything, files or directories, created in that
-directory will be placed on the same branch because it is preserving
-paths.
-
-This may catch new users off guard but this policy is the safest
-policy to start with as it will not change the general layout of the
-underlying filesystems. If you do not care about path preservation
-(most shouldn't) and wish your files to be spread across all your
-filesystems change to `rand`, `pfrd`, `mfs` or similar
-[policy](../config/functions_categories_and_policies.md). If you do
-want path preservation you'll need to perform the manual act of
-creating paths on the filesystems you want the data to land on before
-writing said data.
