@@ -58,3 +58,33 @@ does.
 If you are exporting mergerfs over NFS then it is not really necessary.
 
 See the [section on remote filesystems.](../remote_filesystems.md)
+
+
+## Does inotify and fanotify work?
+
+Yes. You can test by using
+[inotifywait](https://man7.org/linux/man-pages/man1/inotifywait.1.html) or
+[inotifywatch](https://man7.org/linux/man-pages/man1/inotifywatch.1.html).
+
+However, you can not get notifications for events that occur outside
+of the mergerfs mount. For instance if you are doing
+[out-of-band](usage_and_functionality.md#can-filesystems-be-removed-from-the-pool-without-affecting-them)
+changes it is not possible to get those events forwarded through
+mergerfs. FUSE offers no mechanism to publish events and even if it
+did it would require somewhat expensive
+[inotify](https://man7.org/linux/man-pages/man7/inotify.7.html) or
+[fanotify](https://man7.org/linux/man-pages/man7/fanotify.7.html)
+watches on all branches.
+
+Most software which has the ability to actively monitor a filesystem
+(such as Plex, Emby, Jellyfin, Airsonic, etc.) are using `inotify` or
+`fanotify`.
+
+If you must add content out-of-band the only way to get real-time
+updates (via inotify or fanotify) is to add the underlying branches to
+the software rather than using the mergerfs mount. An alternative is
+to enable regular library scanning. Plex, for instance, has "Scan my
+library periodically". Additionally, if you are using software such as
+Radarr, Sonarr, or Lidarr you can configure it to trigger library
+updates in a number of services. This can be found under `Settings >
+Connect`.
