@@ -1,5 +1,22 @@
 # Compatibility and Integration
 
+## What filesystems can be used as branches?
+
+ext4, btrfs, xfs, f2fs, zfs, nfs, etc.
+
+On the surface any filesystem should work but there could be issues
+with non-POSIX compliant filesystems such as vfat, ntfs, cifs, exfat,
+etc. When directories need to be created or files moved by mergerfs if
+the filesystem returns errors due to not supporting certain POSIX
+filesystem features it could result in the core functions failing.
+
+Since mergerfs is not generally used with non-POSIX filesystems this
+has not been a problem for users and there are some checks for known
+edgecases but it is possible some are not accounted for. If use with a
+filesystem results in issues please [file a
+ticket](https://github.com/trapexit/mergerfs/issues) with the details.
+
+
 ## Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
 
 Yes. They are completely unrelated pieces of software that just happen
@@ -52,7 +69,7 @@ given the complication it introduces.
 ## Can mergerfs be used with NFS root squash?
 
 If mergerfs is pooling a NFS mount then root squash should be disabled
-as mergerfs needs to be able to have elevated privilages to do what it
+as mergerfs needs to be able to have elevated privileges to do what it
 does.
 
 If you are exporting mergerfs over NFS then it is not really necessary.

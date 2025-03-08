@@ -21,20 +21,24 @@ NOTE: Be sure to [read about these features](config/options.md) before
 changing them to understand how functionality will change.
 
 * test theoretical performance using `nullrw` or mounting a ram disk
-* increase readahead: `readahead=1024`
+* change read or process [thread pools](config/threads.md)
+* change [func.readdir](config/func_readdir.md)
+* increase [readahead](config/readahead.md): `readahead=1024`
 * disable `security_capability` and/or `xattr`
-* increase cache timeouts `cache.attr`, `cache.entry`, `cache.negative_entry`
-* enable (or disable) page caching (`cache.files`)
+* increase cache timeouts [cache.attr](config/cache.md#cacheattr),
+  [cache.entry](config/cache.md#cacheentry),
+  [cache.negative_entry](config/cache.md#cachenegative_entry)
+* enable (or disable) page caching ([cache.files](config/cache.md#cachefiles))
 * enable `parallel-direct-writes`
-* enable `cache.writeback`
-* enable `cache.statfs`
-* enable `cache.symlinks`
-* enable `cache.readdir`
-* change the number of threads available
+* enable [cache.writeback](config/cache.md#cachewriteback)
+* enable [cache.statfs](config/cache.md#cachestatfs)
+* enable [cache.symlinks](config/cache.md#cachesymlinks)
+* enable [cache.readdir](config/cache.md#cachereaddir)
 * disable `posix_acl`
 * disable `async_read`
-* use `symlinkify` if your data is largely static and read-only
-* use tiered cache devices
+* use [symlinkify](config/symlinkify.md) if your data is largely
+  static and read-only
+* use [tiered cache](usage_patterns.md) devices
 * use LVM and LVM cache to place a SSD in front of your HDDs
 
 If you come across a setting that significantly impacts performance
