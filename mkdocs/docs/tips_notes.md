@@ -1,8 +1,12 @@
 # Tips and Notes
 
-* This document is literal and reasonably thorough. If a suspected
-  feature isn't mentioned it doesn't exist. If certain `libfuse`
-  arguments aren't listed they probably shouldn't be used.
+* The documentation is explicit, literal, and reasonably thorough. If
+  a suspected feature is not mentioned it does not exist. Do not read
+  into the wording. What is described is how it functions. If you feel
+  like something is not explained sufficiently please [file a
+  ticket.](https://github.com/trapexit/mergerfs/issues)
+* If a `libfuse` argument is not listed it probably shouldn't be used
+  and are unsupported.
 * Ensure you're using the latest version. Especially before submitting
   bug reports.
 * Run mergerfs as `root`. mergerfs is designed and intended to be run

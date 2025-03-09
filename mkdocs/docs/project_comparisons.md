@@ -101,6 +101,22 @@ used those other technologies. Meaning you can't create a file greater
 than 1TB on a pool of 2 1TB filesystems.
 
 
+## RAID5, RAID6
+
+* [RAID5](https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_5)
+* [RAID6](https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_6)
+
+mergerfs offers no parity or redundancy features so in that regard the
+technologies are not comparable. [SnapRAID](https://www.snapraid.it)
+can be used in combination with mergerfs to provide redundancy. Unlike
+traditional RAID5 or RAID6 SnapRAID works with drives of different
+sizes and can have more than 2 parity drives. However, parity
+calculations are not done in real-time.
+
+See [https://www.snapraid.it/compare](https://www.snapraid.it/compare)
+for more details and comparisons.
+
+
 ## UnRAID
 
 * [https://unraid.net](https://unraid.net)
@@ -112,7 +128,7 @@ mergerfs offers more features and due to the lack of real-time parity
 calculation can have higher peak performance. Some users also prefer
 an open source solution.
 
-For semi-static data mergerfs + [SnapRaid](http://www.snapraid.it)
+For semi-static data mergerfs + [SnapRAID](http://www.snapraid.it)
 provides a similar, but not real-time, solution.
 
 
@@ -168,3 +184,23 @@ creating a file it will be created on the first directory in the
 union.
 
 Plan 9 isn't a widely used OS so this comparison is mostly academic.
+
+
+## SnapRAID pooling
+
+[SnapRAID](https://www.snapraid.it/manual) has a pooling feature which
+creates "a read-only virtual view of all the files in your array using
+symbolic links."
+
+As mentioned in the description this "view" is just the creation of
+the same directory layout with symlinks to all files. This means that
+reads (and writes) to files are at native speeds but limited in that
+it can not practically be used as a target for writing new files and
+is only updated when `snapraid pool` is run. Note that some software
+treat symlinks differently than regular files. For instance some
+backup software will skip symlinks by default.
+
+mergerfs has the feature [symlinkify](config/symlinkify.md) which
+provides a similar behavior but is more flexible in that it is not
+read-only. That said there can still be some software that won't like
+that kind of setup.
