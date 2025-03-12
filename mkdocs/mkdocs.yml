@@ -21,6 +21,7 @@ theme:
   - navigation.tracking
   - optimize
   - search.share
+  - search.suggest
   - toc.follow
   palette:
     - media: "(prefers-color-scheme)"
@@ -91,13 +92,13 @@ nav:
 - tooling.md
 - usage_patterns.md
 - FAQ:
+  - faq/why_isnt_it_working.md
   - faq/reliability_and_scalability.md
   - faq/usage_and_functionality.md
   - faq/configuration_and_policies.md
   - faq/compatibility_and_integration.md
   - faq/recommendations_and_warnings.md
   - faq/technical_behavior_and_limitations.md
-  - faq/why_isnt_it_working.md
   - faq/limit_drive_spinup.md
 - related_projects.md
 - media_and_publicity.md

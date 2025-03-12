@@ -1,12 +1,5 @@
 # rename and link
 
-**NOTE:** If you're receiving errors from software when files are
-moved / renamed / linked then you should consider changing the create
-policy to one which is **not** path preserving, enabling
-`ignorepponrename`, or contacting the author of the offending software
-and requesting that `EXDEV` (cross device / improper link) be properly
-handled.
-
 `rename` and `link` are arguably the most complicated functions to
 create in a union filesystem. `rename` only works within a single
 filesystem or device. If a `rename` can not be done due to the source
@@ -42,9 +35,9 @@ below.
     * Using the **rename** policy get the list of files to rename
     * Using the **getattr** policy get the target path
     * For each file attempt rename:
-      * If the source branch != target branch:
-        * Clone target path from target branch to source branch
-      * rename
+        * If the target path does not exist on the source branch:
+            * Clone target path from target branch to source branch
+        * rename
     * If **any** of the renames succeed the higher level rename is considered a success
     * If **no** renames succeed the first error encountered will be returned
     * On success:
@@ -58,3 +51,10 @@ The above behavior will help minimize the likelihood of EXDEV being
 returned but it will still be possible.
 
 **link** uses the same strategy but without the removals.
+
+
+## Additional Reading
+
+* [Do hardlinks work?](../faq/technical_behavior_and_limitations.md#do-hardlinks-work)
+* [How does mergerfs handle moving and copying of files?](../faq/technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
+* [Why are file moves and renames failing?](../faq/why_isnt_it_working.md#why-are-file-moves-renames-linkshardlinks-failing)

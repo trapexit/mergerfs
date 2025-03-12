@@ -71,6 +71,8 @@ Use `cache.files=off` and/or `dropcacheonclose=true`. See the section
 on [page caching](config/cache.md).
 
 
+## 3rd Party Software
+
 ### NFS clients returning ESTALE / Stale file handle
 
 NFS generally does not like out of band changes. Take a look at the
@@ -78,55 +80,34 @@ section on NFS in the [remote-filesystems](remote_filesystems.md) for
 more details.
 
 
-### rtorrent fails with ENODEV (No such device)
-
-Be sure to set
-[cache.files=partial|full|auto-full|per-process](config/cache.md)
-or use Linux kernel v6.6 or above. rtorrent and some other
-applications use [mmap](http://linux.die.net/man/2/mmap) to read and
-write to files and offer no fallback to traditional methods.
-
-
-### Plex / Jellyfin doesn't work with mergerfs
+### SQLite3, Plex, Jellyfin do not work with mergerfs
 
  It does. If you're trying to put the software's config / metadata /
 database on mergerfs you can't set
 [cache.files=off](config/cache.md) (unless you use Linux v6.6 or
-above) because Plex is using **sqlite3** with **mmap** enabled.
+above) because they are using **sqlite3** with **mmap** enabled.
 
 That said it is recommended that config and runtime files be stored on
-SSDs on a regular filesystem for performance reasons and if you are
-using HDDs in your pool to help limit spinup.
+SSDs on a regular filesystem for performance reasons. See [What should
+mergerfs NOT be used for?](faq/recommendations_and_warnings.md).
 
 Other software that leverages **sqlite3** which require **mmap**
-includes Radarr, Sonarr, Lidarr.
+includes Radarr, Sonarr, and Lidarr. That said many programs use
+**sqlite3** and do not require **mmap**.
 
 It is recommended that you reach out to the developers of the software
-you're having troubles with and asking them to add a fallback to
+you are having troubles with and asking them to add a fallback to
 regular file IO when **mmap** is unavailable. It is not only more
 compatible and resilient but also can be more performant in certain
 situations.
 
 If the issue is that quick scanning doesn't seem to pick up media then
-be sure to set `func.getattr=newest`, though generally, a full scan
-will pick up all media anyway.
-
-
-### When a program tries to move or rename a file it fails
-
-Please read the docs regarding [rename and
-link](config/rename_and_link.md).
-
-The problem is that many applications do not properly handle `EXDEV`
-errors which `rename` and `link` may return even though they are
-perfectly valid situations which do not indicate actual device,
-filesystem, or OS errors. The error will only be returned by mergerfs
-if using a path preserving policy as described in the policy section
-above. If you do not care about path preservation simply change the
-mergerfs policy to the non-path preserving version. For example: `-o
-category.create=mfs` Ideally the offending software would be fixed and
-it is recommended that if you run into this problem you contact the
-software's author and request proper handling of `EXDEV` errors.
+be sure to set `func.getattr=newest`. That said a full scan will pick
+up all media and it will put less load on the host to use time based
+library scans or to configure downloading software to trigger a scan
+when files are added to the pool. See [Does inotify and fanotify
+work?](faq/compatibility_and_integration.md#does-inotify-and-fanotify-work)
+for more details.
 
 
 ### my 32bit software has problems

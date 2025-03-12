@@ -28,13 +28,13 @@ directory will be placed on the same branch because it is preserving
 paths. That is the expected behavior.
 
 This may catch new users off guard but this policy is the safest
-policy to start with as it will not change the general layout of the
-underlying branches. If you do not care about path preservation ([most
-should
+policy to have as default as it will not change the general layout of
+the underlying branches. If you do not care about path preservation
+([most should
 not](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-same-branch))
-and wish your files to be spread across all your filesystems change to
-`pfrd`, `rand`, `mfs` or similar
-[policy](../config/functions_categories_and_policies.md).
+and wish your files to be spread across all your filesystems change
+`create.category` to `pfrd`, `rand`, `mfs` or a similarly non-path
+restrictive [policy](../config/functions_categories_and_policies.md).
 
 
 ## Why isn't the create policy working?
@@ -75,10 +75,10 @@ the files could be created on the same branch. As the files are
 written to, or resized immediately afterwards to the total size of the
 file being downloaded, the files will take up more space but there is
 no mechanism to move them as they grow. Nor would it be a good idea to
-do so as it would be expensive to continuously calculate their size and
-perform the move while the file is still being written to. As such an
-imbalance will occur that wouldn't if the files had been downloaded
-one at a time.
+do so as it would be expensive to continuously calculate their size
+and perform the move while the file is still being written to. As such
+an imbalance will occur that wouldn't if the files had been created
+and resized one at a time.
 
 If you wish to reduce the likelihood of this happening a policy that
 does not make decisions on available space alone such as `pfrd` or
@@ -110,3 +110,108 @@ permissioning and users. Root squashing and user translation for
 instance has bitten a few mergerfs users. Some of these also affect
 the use of mergerfs from [container platforms such as
 Docker.](compatibility_and_integration.md)
+
+
+## Why are file moves, renames, links/hardlinks failing?
+
+mergerfs fully supports rename and link functions to the degree that
+is possible in a union filesystem. Problems related to rename and link
+are almost exclusively due to incorrect setup of software or poorly
+written software.
+
+
+### Docker, Podman, and other container runtimes
+
+Keep in mind that [rename and link](../config/rename_and_link.md) will
+**NOT** work across devices. That includes between the original
+filesystem and a mergerfs pool, between two separate pools of the same
+underlying filesystems, or bind mounts of paths within the mergerfs
+pool. The latter is common when using Docker, Podman, or other
+container runtimes. Multiple volumes (bind mounts) to the same
+underlying filesystem are considered different devices. There is no
+way to link or rename between them despite them binding to the same
+underlying filesystem. Neither mergerfs or any other filesystem has a
+say in this behavior as the kernel is erroring out before the request
+even gets to the filesystems in question.
+
+To work around this situation the highest directory in the mergerfs
+pool that includes all the paths you need is what should be bind'ed
+into the container if you want links and rename to work between the
+paths in question.
+
+This is a common problem for users of Radarr, Sonarr, Lidarr,
+etc. when they use the default volume mount options suggested by
+projects like
+[LinuxServer.io](https://docs.linuxserver.io/images/docker-radarr/?h=radarr#docker-compose-recommended-click-here-for-more-info). Do
+not use separate "movies" and "downloads" volumes.
+
+```
+# NO
+volumes:
+  - /mnt/pool/movies:/movies
+  - /mnt/pool/downloads:/downloads
+
+# YES
+volumes:
+  - /mnt/pool:/media
+# Then use /media/movies and /media/downloads in your software.
+```
+
+
+### Path-Preserving Create Policies
+
+As described in the [rename and link](../config/rename_and_link.md)
+docs if a path-preserving create
+[policy](../config/functions_categories_and_policies.md) is configured
+then mergerfs, in order to follow that restrictive policy, must return
+an error
+([EXDEV](https://man7.org/linux/man-pages/man2/rename.2.html)) if the
+target path of a rename or link is not found on the target branch.
+
+```
+EXDEV  oldpath and newpath are not on the same mounted filesystem.
+       (Linux permits a filesystem to be mounted at multiple
+       points, but rename() does not work across different mount
+       points, even if the same filesystem is mounted on both.)
+```
+
+[Most
+users](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-same-branch)
+do not have a need for path-preserving policies but if you intend on
+using path-preserving policies you must accept that `EXDEV` errors are
+more likely to occur. You could enable
+[ignorepponrename](../config/options.md) however doing so would
+contradict the intention of using a path restrictive policy.
+
+
+### Poorly written software
+
+There are some pieces of software that do not properly handle `EXDEV`
+errors which `rename` and `link` may return even though they are
+perfectly valid situations and do not indicate actual device,
+filesystem, or OS problems. The error will rarely be returned by
+mergerfs if using a non-path preserving
+[policy](../config/functions_categories_and_policies.md) however there
+are edge cases where it may (such as mounting another filesystem into
+the mergerfs pool.) If you do not care about path preservation set the
+mergerfs policy to the non-path preserving variant. For example: `-o
+category.create=pfrd`. Ideally the offending software would be fixed and
+it is recommended that if you run into this problem you contact the
+software's author and request proper handling of `EXDEV` errors.
+
+
+### Additional Reading
+
+* [rename and link](../config/rename_and_link.md)
+* [Do hardlinks work?](technical_behavior_and_limitations.md#do-hardlinks-work)
+* [How does mergerfs handle moving and copying of files?](technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
+* [Moving files and directories fails with Samba](../known_issues_bugs.md#moving-files-and-directories-fails-with-samba)
+
+
+## Why is rtorrent failing with ENODEV (No such device)?
+
+Be sure to set
+[cache.files=partial|full|auto-full|per-process](../config/cache.md)
+or use Linux kernel v6.6 or above. rtorrent and some other
+applications use [mmap](http://linux.die.net/man/2/mmap) to read and
+write to files and offer no fallback to traditional methods.
