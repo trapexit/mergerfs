@@ -2,11 +2,11 @@
 
 ## Do hardlinks work?
 
-Yes. There is no option to enable or disable links. They are
-fundimentally supported in compatible situations. That said the inode
-of a file is not necessarily indicitive of two file names linking to
-the same underlying data. See also the option `inodecalc` for how
-inode values are calculated.
+Yes. There is no option to enable or disable links (or renames.) They
+are fundamentally supported in compatible situations. That said the
+inode of a file is not necessarily indicative of two file names
+linking to the same underlying data. See also the option `inodecalc`
+for how inode values are calculated.
 
 What mergerfs does not do is fake hard links across branches. Read the
 section [rename & link](../config/rename_and_link.md) for how it
@@ -206,7 +206,7 @@ removed to simplify the codebase.
 mergerfs is a multithreaded application in order to handle requests
 from the kernel concurrently. Each FUSE message has a header with
 certain details about the request include the process ID (pid) of the
-requestion application, the process' effective user id (uid), and
+requesting application, the process' effective user id (uid), and
 group id (gid). To ensure proper POSIX filesystem behavior and
 security mergerfs must change its identity to match that of the
 requester when performing the core filesystem function on the

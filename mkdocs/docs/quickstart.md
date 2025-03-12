@@ -7,31 +7,35 @@ First ensure you have the [latest version installed](setup/installation.md).
 
 ## Configuration
 
-mergerfs has many options and effectively all of them are functional
-in nature. What that means is that there is no "best" or "fastest"
-configuration. No "make faster" options. Everything changes
-behavior. Sometimes those changes in behavior affect performance.
+mergerfs has many [options](config/options.md) and effectively all of
+them are functional in nature. What that means is that there is no
+"best" or "fastest" configuration. No "make faster"
+options. Everything changes behavior. Sometimes those changes in
+behavior affect performance.
 
-That said: If you don't already know that you have a special use case
-then use one of the following option sets as it will cover most casual
-usecases.
+If you don't already know that you have special requirements then use
+one of the following option sets as it will cover the common use
+cases.
+
 
 ### You use Linux v6.6 or above
 
 * cache.files=off
-* category.create=mfs
+* category.create=pfrd
 * dropcacheonclose=false
 
-In previous versions of Linux it was unable to support `mmap` if page
-caching was disabled (ie: `cache.files=off`). However, it now will
-enable page caching if needed for a particular file if mmap is
-requested.
+In previous versions of Linux it was unable to support `mmap` if [page
+caching](config/cache.md) was disabled (ie:
+`cache.files=off`). However, it now will enable page caching if needed
+for a particular file if `mmap` is requested.
 
 `mmap` is needed by certain software to read and write to a
 file. However, many software could work without it and fail to have
 proper error handling. Many programs that use sqlite3 will require
-`mmap` despite sqlite3 working perfectly fine without it (and in some
-cases can be more performant with regular file IO.)
+`mmap` despite [sqlite3 working perfectly
+fine](known_issues_bugs.md#sqlite3-plex-jellyfin-do-not-work-with-mergerfs)
+without it (and in some cases can be more performant with regular file
+IO.)
 
 
 ### You use Linux v6.5 or below
@@ -39,14 +43,14 @@ cases can be more performant with regular file IO.)
 #### You need `mmap` (used by rtorrent and many sqlite3 base software)
 
 * cache.files=auto-full
-* category.create=mfs
+* category.create=pfrd
 * dropcacheonclose=true
 
 
 #### You don't need `mmap`
 
 * cache.files=off
-* category.create=mfs
+* category.create=pfrd
 * dropcacheonclose=false
 
 
@@ -55,14 +59,14 @@ cases can be more performant with regular file IO.)
 ### Command Line
 
 ```
-mergerfs -o cache.files=off,dropcacheonclose=false,category.create=mfs /mnt/hdd0:/mnt/hdd1 /media
+mergerfs -o cache.files=off,dropcacheonclose=false,category.create=pfrd /mnt/hdd0:/mnt/hdd1 /media
 ```
 
 
 ### /etc/fstab
 
 ```
-/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=off,dropcacheonclose=false,category.create=mfs 0 0
+/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=off,dropcacheonclose=false,category.create=pfrd 0 0
 ```
 
 ### /etc/fstab w/ config file
@@ -81,7 +85,7 @@ For more complex setups it can be useful to separate out the config.
 
 ```ini title="media.ini" linenums="1"
 cache.files=off
-category.create=mfs
+category.create=pfrd
 dropcacheonclose=false
 ```
 
@@ -114,7 +118,7 @@ KillMode=none
 ExecStart=/usr/bin/mergerfs \
   -f \
   -o cache.files=off \
-  -o category.create=mfs \
+  -o category.create=pfrd \
   -o dropcacheonclose=false \
   /mnt/hdd0:/mnt/hdd1 \
   /media
@@ -177,7 +181,7 @@ KillMode=none
 ExecStart=/usr/bin/mergerfs \
   -f \
   -o cache.files=off \
-  -o category.create=mfs \
+  -o category.create=pfrd \
   -o dropcacheonclose=false \
   /mnt/hdd0:/mnt/hdd1 \
   /media

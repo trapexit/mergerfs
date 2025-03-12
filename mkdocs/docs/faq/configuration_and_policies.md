@@ -78,4 +78,7 @@ If you wish to move files around or balance the pool you can:
 3. Use
    [mergerfs.balance](https://github.com/trapexit/mergerfs-tools/blob/master/src/mergerfs.balance). Keep
    in mind that this tool is really just an example of how to
-   accomplish such a task.
+   accomplish such a task. The tool does not keep track of links so
+   you may encounter an increase in used space if you rely on links to
+   reduce redundency. However, you can run a file dedup program like
+   [rdfind](https://github.com/pauldreik/rdfind) to restore the links.
