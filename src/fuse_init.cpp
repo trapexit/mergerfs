@@ -23,7 +23,10 @@
 
 #include "fuse.h"
 
+#include "ghc/filesystem.hpp"
+
 #include <thread>
+#include <algorithm>
 
 
 namespace l
@@ -68,15 +71,67 @@ namespace l
     *want_ = false;
   }
 
+  #define MAX_FUSE_MSG_SIZE 65535
+  static const char MAX_PAGES_LIMIT_FILEPATH[] = "/proc/sys/fs/fuse/max_pages_limit";
+
   static
   void
   want_if_capable_max_pages(fuse_conn_info *conn_,
                             Config::Write  &cfg_)
   {
+    std::fstream f;
+    uint64_t max_pages_limit;
+
+    if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
+      {
+        if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
+          syslog_info("fuse_msg_size > %u: setting it to %u",
+                      MAX_FUSE_MSG_SIZE,
+                      MAX_FUSE_MSG_SIZE);
+        cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
+                                       (uint64_t)MAX_FUSE_MSG_SIZE);
+
+        f.open(MAX_PAGES_LIMIT_FILEPATH,f.in|f.out);
+        if(f.is_open())
+          {
+            f >> max_pages_limit;
+            syslog_info("%s currently set to %u",
+                        MAX_PAGES_LIMIT_FILEPATH,
+                        (uint64_t)max_pages_limit);
+            if(cfg_->fuse_msg_size > max_pages_limit)
+              {
+                f.seekp(0);
+                f << (uint64_t)cfg_->fuse_msg_size;
+                f.flush();
+                syslog_info("%s changed to %u",
+                            MAX_PAGES_LIMIT_FILEPATH,
+                            (uint64_t)cfg_->fuse_msg_size);
+              }
+            f.close();
+          }
+        else
+          {
+            if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
+              syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
+          }
+      }
+    else
+      {
+        if(cfg_->fuse_msg_size > FUSE_DEFAULT_MAX_MAX_PAGES)
+          syslog_info("fuse_msg_size request %u > %u: setting it to %u",
+                      (uint64_t)cfg_->fuse_msg_size,
+                      FUSE_DEFAULT_MAX_MAX_PAGES,
+                      FUSE_DEFAULT_MAX_MAX_PAGES);
+        cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
+                                       (uint64_t)FUSE_DEFAULT_MAX_MAX_PAGES);
+      }
+
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
         l::want(conn_,FUSE_CAP_MAX_PAGES);
         conn_->max_pages = cfg_->fuse_msg_size;
+        syslog_info("requesting max pages size of %u",
+                    (uint64_t)cfg_->fuse_msg_size);
       }
     else
       {

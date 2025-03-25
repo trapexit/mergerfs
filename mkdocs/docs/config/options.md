@@ -8,7 +8,9 @@ These options are the same regardless of whether you use them with the
 - BOOL = 'true' | 'false'
 - INT = [MIN_INT,MAX_INT]
 - UINT = [0,MAX_INT]
-- SIZE = 'NNM'; NN = INT, M = 'K' | 'M' | 'G' | 'T'
+- SIZE = 'NNM'; NN = INT, M = 'B' | 'K' | 'M' | 'G' | 'T'
+- PAGESIZE = UINT (representing number of pages) | SIZE (in bytes
+  which will be converted to pages)
 - STR = string (may refer to an enumerated value, see details of
   argument)
 - FUNC = filesystem function
@@ -109,9 +111,9 @@ These options are the same regardless of whether you use them with the
   unavailable the kernel will ensure there is at most one pending read
   request per file handle and will attempt to order requests by
   offset. (default: true)
-- **[fuse_msg_size](fuse_msg_size.md)=UINT**: Set the max number of
+- **[fuse_msg_size](fuse_msg_size.md)=PAGESIZE**: Set the max number of
   pages per FUSE message. Only available on Linux >= 4.20 and ignored
-  otherwise. (min: 1; max: 256; default: 256)
+  otherwise. (min: 1; max: 65535; default: "1M")
 - **[threads](threads.md)=INT**: Number of threads to use. When used
   alone (`process-thread-count=-1`) it sets the number of threads
   reading and processing FUSE messages. When used together it sets the

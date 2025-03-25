@@ -11,8 +11,9 @@ doesn't mean that is the size used by the kernel for read and
 writes.
 
 Linux has a max read/write size of 2GB. Since the max FUSE message
-size is just over 1MB the kernel will break up read and write requests
-with buffers larger than that 1MB.
+size is just over 1MiB (by default on more recent kernels) the kernel
+will break up read and write requests with buffers larger than that
+1MiB.
 
 When page caching is disabled (`cache.files=off`), besides the kernel
 breaking up requests with larger buffers, requests are effectively one
@@ -35,4 +36,5 @@ a generic feature but there is no standard way to do so mergerfs added
 this feature to make it easier to set.
 
 There is currently no way to set separate values for different
-branches through mergerfs.
+branches through mergerfs. In fact at some point the feature may be
+changed to only set mergerfs' readahead.

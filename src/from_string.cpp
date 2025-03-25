@@ -76,6 +76,11 @@ namespace str
     tmp = ::strtoll(value_.c_str(),&endptr,10);
     switch(*endptr)
       {
+      case 'b':
+      case 'B':
+        tmp *= 1ULL;
+        break;
+
       case 'k':
       case 'K':
         tmp *= 1024ULL;

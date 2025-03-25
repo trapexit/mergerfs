@@ -21,12 +21,13 @@
 #include "config_cachefiles.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
-#include "config_pid.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
 #include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
+#include "config_pagesize.hpp"
+#include "config_pid.hpp"
 #include "config_rename_exdev.hpp"
 #include "config_set.hpp"
 #include "config_statfs.hpp"
@@ -124,7 +125,7 @@ public:
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;
   Funcs          func;
-  ConfigUINT64   fuse_msg_size;
+  ConfigPageSize fuse_msg_size;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
