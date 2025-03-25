@@ -102,7 +102,7 @@ Config::Config()
     follow_symlinks(FollowSymlinks::ENUM::NEVER),
     fsname(),
     func(),
-    fuse_msg_size(FUSE_MAX_MAX_PAGES),
+    fuse_msg_size(FUSE_DEFAULT_MAX_MAX_PAGES),
     ignorepponrename(false),
     inodecalc("hybrid-hash"),
     lazy_umount_mountpoint(false),
