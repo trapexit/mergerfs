@@ -87,9 +87,8 @@ namespace l
       {
         f << "1234\n";
         f.flush();
-        syslog_info("/proc/sys/fs/fuse/max_pages_limit changed to %d %d",
-                    (uint64_t)cfg_->fuse_msg_size,
-                    f.bad());
+        syslog_info("/proc/sys/fs/fuse/max_pages_limit changed to %d",
+                    (uint64_t)cfg_->fuse_msg_size);
       }
     f.close();
     
