@@ -104,7 +104,7 @@ namespace l
       }
     else
       {
-        syslog_info("/proc/sys/fs/fuse/max_pages_limit");
+        syslog_info("/proc/sys/fs/fuse/max_pages_limit doesn't exist or unable to open");
       }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
