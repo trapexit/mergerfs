@@ -73,7 +73,7 @@ msgbuf_constructor()
 {
   g_PAGESIZE = sysconf(_SC_PAGESIZE);
   // FUSE_MAX_MAX_PAGES for payload + 1 for message header
-  msgbuf_set_bufsize(FUSE_MAX_MAX_PAGES + 1);
+  msgbuf_set_bufsize(FUSE_DEFAULT_MAX_MAX_PAGES + 1);
 }
 
 static
