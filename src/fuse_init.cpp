@@ -82,7 +82,7 @@ namespace l
     f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
     f >> max_pages_limit;
     if(cfg_->fuse_msg_size > max_pages_limit)
-      f << cfg_->fuse_msg_size;
+      f << *cfg_->fuse_msg_size;
     f.close();
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
