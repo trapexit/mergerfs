@@ -114,6 +114,7 @@ namespace l
         if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
           syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
       }
+      }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
