@@ -69,6 +69,8 @@ namespace l
     *want_ = false;
   }
 
+#define MAX_FUSE_MSG_SIZE 65535
+  
   static
   void
   want_if_capable_max_pages(fuse_conn_info *conn_,
