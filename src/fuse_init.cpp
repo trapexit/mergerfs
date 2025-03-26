@@ -109,8 +109,11 @@ namespace l
       }
     else
       {
-        if(ghc::filesystem::exists(
-        syslog_info("/proc/sys/fs/fuse/max_pages_limit doesn't exist or unable to open");
+        if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
+          syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
+        else
+          syslog_inf("%s does not exist. Must be kernel prior to v6.13",
+                     MAX_PAGES_LIMIT_FILEPATH);
       }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
