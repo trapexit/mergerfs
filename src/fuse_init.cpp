@@ -82,7 +82,9 @@ namespace l
     std::fstream f;    
     uint64_t max_pages_limit;
 
-    if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
+    if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
+      {
+        if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
       syslog_info("fuse_msg_size > %d: setting it to %d",
                   MAX_FUSE_MSG_SIZE,
                   MAX_FUSE_MSG_SIZE);
@@ -110,13 +112,7 @@ namespace l
     else
       {
         if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
-          {
-            if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
-              syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
-            else
-              syslog_info("%s does not exist. Must be kernel prior to v6.13.",
-                          MAX_PAGES_LIMIT_FILEPATH);
-          }
+          syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
       }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
