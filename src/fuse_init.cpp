@@ -72,6 +72,7 @@ namespace l
   }
 
 #define MAX_FUSE_MSG_SIZE 65535
+  static const char MAX_PAGES_LIMIT_FILEPATH[] = "/proc/sys/fs/fuse/max_pages_limit";
   
   static
   void
@@ -106,6 +107,7 @@ namespace l
       }
     else
       {
+        if(ghc::filesystem::exists(
         syslog_info("/proc/sys/fs/fuse/max_pages_limit doesn't exist or unable to open");
       }
     
