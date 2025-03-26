@@ -89,7 +89,7 @@ namespace l
     cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
                                    (uint64_t)MAX_FUSE_MSG_SIZE);
 
-    f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
+    f.open(MAX_PAGES_LIMIT_FILEPATH,f.in|f.out);
     if(f.is_open())
       {
         f >> max_pages_limit;
