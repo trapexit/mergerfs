@@ -85,7 +85,7 @@ namespace l
                 (uint64_t)max_pages_limit);
     if(cfg_->fuse_msg_size > max_pages_limit)
       {
-        f << "1234";
+        f << "1234\n";
         f.flush();
         syslog_info("/proc/sys/fs/fuse/max_pages_limit changed to %d",
                     (uint64_t)cfg_->fuse_msg_size);
