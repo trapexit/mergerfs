@@ -25,6 +25,8 @@
 
 #include <thread>
 
+#include <algorithm>
+
 
 namespace l
 {
