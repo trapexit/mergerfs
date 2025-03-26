@@ -258,7 +258,7 @@ fuse_mount_common(const char       *mountpoint_,
     return NULL;
 
   pagesize = sysconf(_SC_PAGESIZE);
-  bufsize  = ((FUSE_MAX_MAX_PAGES + 1) * pagesize);
+  bufsize  = ((FUSE_DEFAULT_MAX_MAX_PAGES + 1) * pagesize);
 
   ch = fuse_chan_new(fd,bufsize);
   if(!ch)
