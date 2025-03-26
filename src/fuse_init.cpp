@@ -95,6 +95,10 @@ namespace l
           }
         f.close();
       }
+    else
+      {
+        syslog_info("/proc/sys/fs/fuse/max_pages_limit");
+      }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
