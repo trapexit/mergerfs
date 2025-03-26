@@ -109,7 +109,7 @@ namespace l
       }
     else
       {
-        if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
+        if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES);
         if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
           syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
         else
