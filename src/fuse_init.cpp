@@ -24,7 +24,6 @@
 #include "fuse.h"
 
 #include <thread>
-
 #include <algorithm>
 
 
