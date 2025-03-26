@@ -80,18 +80,21 @@ namespace l
     cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,(uint64_t)65535);
 
     f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
-    f >> max_pages_limit;
-    syslog_info("/proc/sys/fs/fuse/max_pages_limit currently set to %d",
-                (uint64_t)max_pages_limit);
-    if(cfg_->fuse_msg_size > max_pages_limit)
+    if(f.is_open())
       {
-        f.seekp(0);
-        f << (uint64_t)cfg_->fuse_msg_size;
-        f.flush();
-        syslog_info("/proc/sys/fs/fuse/max_pages_limit changed to %d",
-                    (uint64_t)cfg_->fuse_msg_size);
+        f >> max_pages_limit;
+        syslog_info("/proc/sys/fs/fuse/max_pages_limit currently set to %d",
+                    (uint64_t)max_pages_limit);
+        if(cfg_->fuse_msg_size > max_pages_limit)
+          {
+            f.seekp(0);
+            f << (uint64_t)cfg_->fuse_msg_size;
+            f.flush();
+            syslog_info("/proc/sys/fs/fuse/max_pages_limit changed to %d",
+                        (uint64_t)cfg_->fuse_msg_size);
+          }
+        f.close();
       }
-    f.close();
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
