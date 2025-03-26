@@ -74,13 +74,14 @@ namespace l
   want_if_capable_max_pages(fuse_conn_info *conn_,
                             Config::Write  &cfg_)
   {
-    uint32_t max_pages_limit;
+    uint64_t max_pages_limit;
     std::ifstream f;
 
     cfg_->fuse_msg_size = std::min(cfg_->fuse_msg_size,65535);
 
     f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
     f >> max_pages_limit;
+    if(cfg_->fuse_msg_size)
     f.close();
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
