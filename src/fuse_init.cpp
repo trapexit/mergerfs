@@ -78,8 +78,7 @@ namespace l
     uint64_t max_pages_limit;
 
     if(cfg_->fuse_msg_size >= 65536)
-      
-
+      syslog_info("fuse_msg_size >= 65536: setting it to 65535");
     cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,(uint64_t)65535);
 
     f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
