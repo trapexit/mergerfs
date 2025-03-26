@@ -112,7 +112,7 @@ namespace l
         if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
           syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
         else
-          syslog_info("%s does not exist. Must be kernel prior to v6.13",
+          syslog_info("%s does not exist. Must be kernel prior to v6.13.",
                       MAX_PAGES_LIMIT_FILEPATH);
       }
     
