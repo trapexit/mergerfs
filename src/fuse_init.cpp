@@ -23,6 +23,8 @@
 
 #include "fuse.h"
 
+#include "ghc/filesystem.hpp"
+
 #include <thread>
 #include <algorithm>
 
