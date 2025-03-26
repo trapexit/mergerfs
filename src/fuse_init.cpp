@@ -79,8 +79,10 @@ namespace l
     std::fstream f;    
     uint64_t max_pages_limit;
 
-    if(cfg_->fuse_msg_size >= 65536)
-      syslog_info("fuse_msg_size >= 65536: setting it to 65535");
+    if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
+      syslog_info("fuse_msg_size > %d: setting it to %d",
+                  MAX_FUSE_MSG_SIZE,
+                  MAX_FUSE_MSG_SIZE);
     cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,(uint64_t)65535);
 
     f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
