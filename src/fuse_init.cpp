@@ -85,35 +85,35 @@ namespace l
     if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
       {
         if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
-      syslog_info("fuse_msg_size > %d: setting it to %d",
-                  MAX_FUSE_MSG_SIZE,
-                  MAX_FUSE_MSG_SIZE);
-    cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
-                                   (uint64_t)MAX_FUSE_MSG_SIZE);
+          syslog_info("fuse_msg_size > %d: setting it to %d",
+                      MAX_FUSE_MSG_SIZE,
+                      MAX_FUSE_MSG_SIZE);
+        cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
+                                       (uint64_t)MAX_FUSE_MSG_SIZE);
 
-    f.open(MAX_PAGES_LIMIT_FILEPATH,f.in|f.out);
-    if(f.is_open())
-      {
-        f >> max_pages_limit;
-        syslog_info("%s currently set to %d",
-                    MAX_PAGES_LIMIT_FILEPATH,
-                    (uint64_t)max_pages_limit);
-        if(cfg_->fuse_msg_size > max_pages_limit)
+        f.open(MAX_PAGES_LIMIT_FILEPATH,f.in|f.out);
+        if(f.is_open())
           {
-            f.seekp(0);
-            f << (uint64_t)cfg_->fuse_msg_size;
-            f.flush();
-            syslog_info("%s changed to %d",
+            f >> max_pages_limit;
+            syslog_info("%s currently set to %d",
                         MAX_PAGES_LIMIT_FILEPATH,
-                        (uint64_t)cfg_->fuse_msg_size);
+                        (uint64_t)max_pages_limit);
+            if(cfg_->fuse_msg_size > max_pages_limit)
+              {
+                f.seekp(0);
+                f << (uint64_t)cfg_->fuse_msg_size;
+                f.flush();
+                syslog_info("%s changed to %d",
+                            MAX_PAGES_LIMIT_FILEPATH,
+                            (uint64_t)cfg_->fuse_msg_size);
+              }
+            f.close();
           }
-        f.close();
-      }
-    else
-      {
-        if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
-          syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
-      }
+        else
+          {
+            if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
+              syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
+          }
       }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
