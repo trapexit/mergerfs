@@ -93,7 +93,8 @@ namespace l
     if(f.is_open())
       {
         f >> max_pages_limit;
-        syslog_info("/proc/sys/fs/fuse/max_pages_limit currently set to %d",
+        syslog_info("%s currently set to %d",
+                    MAX_PAGES_LIMIT_FILEPATH,
                     (uint64_t)max_pages_limit);
         if(cfg_->fuse_msg_size > max_pages_limit)
           {
