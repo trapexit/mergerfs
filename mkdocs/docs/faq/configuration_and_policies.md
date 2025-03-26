@@ -19,6 +19,14 @@ filesystems and can be added or removed without any impact it is
 extremely easy to test and experiment with different settings.
 
 
+## Why is epmfs the default create policy?
+
+Because it is a strict policy and therefore does not increase entropy
+of the filesystem layout. If you don't explicitly choose a policy then
+the layout stays the same. It is far easier to stop being strict than
+fix the layout after having a loose policy.
+
+
 ## How can I ensure files are collocated on the same branch?
 
 Many people like the idea of ensuring related files, such as all the
