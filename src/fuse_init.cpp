@@ -75,6 +75,9 @@ namespace l
                             Config::Write  &cfg_)
   {
     cfg_->fuse_msg_size = std::min(cfg_->fuse_msg_size,65535);
+    std::ifstream f;
+
+    f.open("/proc/sys/fs/fuse/max_pages_limit",f.in|f.out);
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
