@@ -75,7 +75,7 @@ namespace l
                             Config::Write  &cfg_)
   {
     uint64_t max_pages_limit;
-    std::ifstream f;
+    std::fstream f;
 
     cfg_->fuse_msg_size = std::min(cfg_->fuse_msg_size,(uint64_t)65535);
 
