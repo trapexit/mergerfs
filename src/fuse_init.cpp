@@ -120,6 +120,8 @@ namespace l
       {
         l::want(conn_,FUSE_CAP_MAX_PAGES);
         conn_->max_pages = cfg_->fuse_msg_size;
+        syslog_info("requesting max pages size of %d",
+                    cfg_->fuse_msg_size);
       }
     else
       {
