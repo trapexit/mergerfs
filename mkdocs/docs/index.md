@@ -52,7 +52,7 @@ For functions which change attributes or remove the file the behavior
 may be applied to all instances found.
 
 Read more about [policies
-here](config/functions_categories_and_policies.md).
+here](config/functions_categories_policies.md).
 
 
 ### Visualization
