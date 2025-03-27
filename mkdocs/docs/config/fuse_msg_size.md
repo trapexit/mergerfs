@@ -1,6 +1,6 @@
 # fuse_msg_size
 
-* `fuse_msg_size=UINT`
+* `fuse_msg_size=UINT (1 to 65535)`
 * Defaults to `256`
 
 FUSE applications communicate with the kernel over a special character
