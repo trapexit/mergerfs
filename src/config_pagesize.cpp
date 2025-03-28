@@ -32,6 +32,11 @@ ConfigPageSize::ConfigPageSize(const uint64_t v_)
 
 }
 
+ConfigPageSize::ConfigPageSize(const std::string &s_)
+{
+  from_string(s_);
+}
+
 std::string
 ConfigPageSize::to_string(void) const
 {
