@@ -1,7 +1,7 @@
 # fuse_msg_size
 
-* `fuse_msg_size=UINT (1 to 65535)`
-* Defaults to `256`
+* `fuse_msg_size=UINT|SIZE`
+* Defaults to `1M`
 
 FUSE applications communicate with the kernel over a special character
 device: `/dev/fuse`. A large portion of the overhead associated with
