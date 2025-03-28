@@ -85,7 +85,7 @@ namespace l
     if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
       {
         if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
-          syslog_info("fuse_msg_size > %d: setting it to %d",
+          syslog_info("fuse_msg_size > %u: setting it to %u",
                       MAX_FUSE_MSG_SIZE,
                       MAX_FUSE_MSG_SIZE);
         cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
@@ -95,7 +95,7 @@ namespace l
         if(f.is_open())
           {
             f >> max_pages_limit;
-            syslog_info("%s currently set to %d",
+            syslog_info("%s currently set to %u",
                         MAX_PAGES_LIMIT_FILEPATH,
                         (uint64_t)max_pages_limit);
             if(cfg_->fuse_msg_size > max_pages_limit)
