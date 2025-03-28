@@ -57,11 +57,12 @@ nav:
   - setup/upgrade.md
   - setup/build.md
 - terminology.md
+- intro_to_filesystems.md
 - Config:
   - config/options.md
   - config/deprecated_options.md
   - config/branches.md
-  - config/functions_categories_and_policies.md
+  - config/functions_categories_policies.md
   - config/func_readdir.md
   - config/rename_and_link.md
   - config/cache.md

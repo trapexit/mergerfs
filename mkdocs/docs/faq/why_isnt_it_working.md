@@ -34,7 +34,7 @@ the underlying branches. If you do not care about path preservation
 not](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-same-branch))
 and wish your files to be spread across all your filesystems change
 `create.category` to `pfrd`, `rand`, `mfs` or a similarly non-path
-restrictive [policy](../config/functions_categories_and_policies.md).
+restrictive [policy](../config/functions_categories_policies.md).
 
 
 ## Why isn't the create policy working?
@@ -162,7 +162,7 @@ volumes:
 
 As described in the [rename and link](../config/rename_and_link.md)
 docs if a path-preserving create
-[policy](../config/functions_categories_and_policies.md) is configured
+[policy](../config/functions_categories_policies.md) is configured
 then mergerfs, in order to follow that restrictive policy, must return
 an error
 ([EXDEV](https://man7.org/linux/man-pages/man2/rename.2.html)) if the
@@ -191,13 +191,13 @@ errors which `rename` and `link` may return even though they are
 perfectly valid situations and do not indicate actual device,
 filesystem, or OS problems. The error will rarely be returned by
 mergerfs if using a non-path preserving
-[policy](../config/functions_categories_and_policies.md) however there
-are edge cases where it may (such as mounting another filesystem into
-the mergerfs pool.) If you do not care about path preservation set the
+[policy](../config/functions_categories_policies.md) however there are
+edge cases where it may (such as mounting another filesystem into the
+mergerfs pool.) If you do not care about path preservation set the
 mergerfs policy to the non-path preserving variant. For example: `-o
-category.create=pfrd`. Ideally the offending software would be fixed and
-it is recommended that if you run into this problem you contact the
-software's author and request proper handling of `EXDEV` errors.
+category.create=pfrd`. Ideally the offending software would be fixed
+and it is recommended that if you run into this problem you contact
+the software's author and request proper handling of `EXDEV` errors.
 
 
 ### Additional Reading

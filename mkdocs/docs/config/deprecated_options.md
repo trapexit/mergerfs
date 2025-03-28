@@ -1,7 +1,7 @@
 # Deprecated Options
 
 These are old, deprecated options which may no longer have any
-function or have been replaced.
+function or have been replaced. **They should not be used.**
 
 * **direct_io**: Bypass page cache. Use `cache.files=off`
   instead.
