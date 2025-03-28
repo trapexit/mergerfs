@@ -124,7 +124,7 @@ public:
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;
   Funcs          func;
-  ConfigUINT64   fuse_msg_size;
+  ConfigPageSize fuse_msg_size;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
