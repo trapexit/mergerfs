@@ -79,8 +79,8 @@ namespace str
       case 'b':
       case 'B':
         tmp *= 1ULL;
-        break;        
-        
+        break;
+
       case 'k':
       case 'K':
         tmp *= 1024ULL;
