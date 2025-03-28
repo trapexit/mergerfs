@@ -103,7 +103,7 @@ namespace l
                 f.seekp(0);
                 f << (uint64_t)cfg_->fuse_msg_size;
                 f.flush();
-                syslog_info("%s changed to %d",
+                syslog_info("%s changed to %u",
                             MAX_PAGES_LIMIT_FILEPATH,
                             (uint64_t)cfg_->fuse_msg_size);
               }
