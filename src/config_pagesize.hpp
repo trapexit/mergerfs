@@ -29,6 +29,7 @@ private:
   
 public:
   ConfigPageSize(const uint64_t);
+  ConfigPageSize(const std::string);
 
 public:
   std::string to_string(void) const final;
