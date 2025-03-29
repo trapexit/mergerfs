@@ -117,6 +117,11 @@ namespace l
       }
     else
       {
+        if(cfg_->fuse_msg_size > FUSE_DEFAULT_MAX_MAX_PAGES)
+          syslog_info("fuse_msg_size > %u: setting it to %u",
+                      MAX_FUSE_MSG_SIZE,
+                      MAX_FUSE_MSG_SIZE);
+        
         cfg_->fuse_msg_size = FUSE_DEFAULT_MAX_MAX_PAGES;
       }
     
