@@ -19,11 +19,13 @@ max message size. Since the size is in multiples of
 [pages](https://en.wikipedia.org/wiki/Page_(computer_memory)) the
 feature is called `max_pages`. In versions of Linux prior to v6.13
 there is a maximum `max_pages` value of 256 (1MiB) and minimum of 1
-(4KiB). In Linux v6.13 and above the max value supported by the kernel
-can range from 1 (4KiB) to 65535 (~256MiB). The default used by Linux
->=4.20, and hardcoded value used before 4.20, is 32 (128KiB). In
-mergerfs it's referred to as fuse_msg_size to make it clear what it
-impacts and provide some abstraction.
+(4KiB). In [Linux
+v6.13](https://web.git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=2b3933b1e0a0a4b758fbc164bb31db0c113a7e2c)
+and above the max value supported by the kernel can range from 1
+(4KiB) to 65535 (~256MiB). The default used by Linux >=4.20, and
+hardcoded value used before 4.20, is 32 (128KiB). In mergerfs it's
+referred to as fuse_msg_size to make it clear what it impacts and
+provide some abstraction.
 
 If the `fuse_msg_size` value provided is more than the systemwide
 maximum mergerfs will attempt to increase the systemwide value to keep
