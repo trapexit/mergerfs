@@ -123,7 +123,7 @@ namespace l
                       FUSE_DEFAULT_MAX_MAX_PAGES,
                       FUSE_DEFAULT_MAX_MAX_PAGES);
         cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
-                                       FUSE_DEFAULT_MAX_MAX_PAGES);
+                                       (uint64_t)FUSE_DEFAULT_MAX_MAX_PAGES);
       }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
