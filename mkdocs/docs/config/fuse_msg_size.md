@@ -2,6 +2,7 @@
 
 * `fuse_msg_size=UINT|SIZE`
 * Defaults to `1M`
+* Performance improvements often peak at about `4M`
 
 FUSE applications communicate with the kernel over a special character
 device: `/dev/fuse`. A large portion of the overhead associated with
@@ -26,8 +27,8 @@ impacts and provide some abstraction.
 
 If the `fuse_msg_size` value provided is less than the systemwide
 maximum mergerfs will attempt to increase the systemwide value to keep
-the user from needing to set the value using `sysctl` or
-`/etc/sysctl.conf`.
+the user from needing to set the value using `sysctl`,
+`/etc/sysctl.conf`, or `/proc/sys/fs/fuse/max_pages_limit`.
 
 The main downside to increasing the value is that memory usage will
 increase approximately relative to the number of [processing

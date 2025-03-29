@@ -115,6 +115,10 @@ namespace l
               syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
           }
       }
+    else
+      {
+        
+      }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
       {
