@@ -117,7 +117,7 @@ namespace l
       }
     else
       {
-        
+        cfg_->fuse_msg_size = FUSE_DEFAULT_MAX_MAX_PAGES;
       }
     
     if(l::capable(conn_,FUSE_CAP_MAX_PAGES))
