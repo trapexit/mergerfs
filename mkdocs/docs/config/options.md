@@ -8,7 +8,7 @@ These options are the same regardless of whether you use them with the
 - BOOL = 'true' | 'false'
 - INT = [MIN_INT,MAX_INT]
 - UINT = [0,MAX_INT]
-- SIZE = 'NNM'; NN = INT, M = 'K' | 'M' | 'G' | 'T'
+- SIZE = 'NNM'; NN = INT, M = 'B' | 'K' | 'M' | 'G' | 'T'
 - PAGESIZE = UINT (representing number of pages) | SIZE (in bytes
   which will be converted to pages)
 - STR = string (may refer to an enumerated value, see details of

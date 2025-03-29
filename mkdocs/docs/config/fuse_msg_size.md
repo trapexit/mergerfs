@@ -25,7 +25,7 @@ can range from 1 (4KiB) to 65535 (~256MiB). The default used by Linux
 mergerfs it's referred to as fuse_msg_size to make it clear what it
 impacts and provide some abstraction.
 
-If the `fuse_msg_size` value provided is less than the systemwide
+If the `fuse_msg_size` value provided is more than the systemwide
 maximum mergerfs will attempt to increase the systemwide value to keep
 the user from needing to set the value using `sysctl`,
 `/etc/sysctl.conf`, or `/proc/sys/fs/fuse/max_pages_limit`.
@@ -35,6 +35,9 @@ increase approximately relative to the number of [processing
 threads](threads.md) configured. Keep this in mind for systems with
 lower amounts of memory like most SBCs.
 
-On kernels before v4.20 the value has no effect. On kernels between
-v4.20 and v6.13 it will ignore values above 256. On kernels >= v6.13
-values above 65535 will be set to 65535.
+On kernels before v4.20 the option has no effect. On kernels between
+v4.20 and v6.13 the max value is 256. On kernels >= v6.13 the maxium
+value is 65535.
+
+Since page size can differ between systems mergerfs can take a value in
+bytes and will convert it to the proper number of pages (rounded up).
