@@ -1720,6 +1720,78 @@ fuse_lib_getattr(fuse_req_t             req,
 
 static
 void
+fuse_lib_statx_path(fuse_req_t             req_,
+                    struct fuse_in_header *hdr_,
+                    struct fuse           *f_,
+                    fuse_statx_in         *inarg_)
+{
+  int err;
+  char *fusepath;
+  struct fuse_statx st{};
+  fuse_timeouts_t timeouts{};
+
+  err = get_path(f_,hdr_->nodeid,&fusepath);
+  if(err)
+    {
+      fuse_reply_err(req_,err);
+      return;
+    }
+
+  err = f_->fs->op.statx(fusepath,
+                         inarg_->sx_flags,
+                         inarg_->sx_mask,
+                         &st,
+                         &timeouts);
+
+  free_path(f_,hdr_->nodeid,fusepath);
+
+  if(err)
+    fuse_reply_err(req_,err);
+  else
+    fuse_reply_statx(req_,0,&st,timeouts.attr);
+}
+
+static
+void
+fuse_lib_statx_fh(fuse_req_t req_,
+                  struct fuse_in_header *hdr_,
+                  struct fuse *f_,
+                  fuse_statx_in *inarg_)
+{
+  int err;
+  struct fuse_statx st{};
+  fuse_timeouts_t timeouts{};
+
+  err = f_->fs->op.statx_fh(inarg_->fh,
+                            inarg_->sx_flags,
+                            inarg_->sx_mask,
+                            &st,
+                            &timeouts);
+
+  if(err)
+    fuse_reply_err(req_,err);
+  else
+    fuse_reply_statx(req_,0,&st,timeouts.attr);
+}
+
+static
+void
+fuse_lib_statx(fuse_req_t             req_,
+               struct fuse_in_header *hdr_)
+{
+  struct fuse *f = req_fuse_prepare(req_);
+  fuse_statx_in *inarg;
+
+  inarg = (fuse_statx_in*)fuse_hdr_arg(hdr_);
+
+  if(inarg->getattr_flags & FUSE_GETATTR_FH)
+    fuse_lib_statx_fh(req_,hdr_,f,inarg);
+  else
+    fuse_lib_statx_path(req_,hdr_,f,inarg);
+}
+
+static
+void
 fuse_lib_setattr(fuse_req_t             req,
                  struct fuse_in_header *hdr_)
 {
@@ -3643,6 +3715,7 @@ static struct fuse_lowlevel_ops fuse_path_ops =
    .setupmapping    = fuse_lib_setupmapping,
    .setxattr        = fuse_lib_setxattr,
    .statfs          = fuse_lib_statfs,
+   .statx           = fuse_lib_statx,
    .symlink         = fuse_lib_symlink,
    .syncfs          = fuse_lib_syncfs,
    .tmpfile         = fuse_lib_tmpfile,

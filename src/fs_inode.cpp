@@ -16,9 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_inode.hpp"
+
 #include "ef.hpp"
 #include "errno.hpp"
-#include "fs_inode.hpp"
 #include "rapidhash.h"
 
 #include <cstdint>
@@ -39,7 +40,9 @@ static
 uint32_t
 h64_to_h32(uint64_t h_)
 {
-  return (h_ - (h_ >> 32));
+  h_ ^= (h_ >> 32);
+  h_ *= 0x9E3779B9;
+  return h_;
 }
 
 static
@@ -228,8 +231,27 @@ namespace fs
     }
 
     void
+    calc(const char        *fusepath_,
+         const uint64_t     fusepath_len_,
+         struct fuse_statx *st_)
+    {
+      st_->ino = calc(fusepath_,
+                      fusepath_len_,
+                      st_->mode,
+                      st_->dev_major ^ st_->dev_minor,
+                      st_->ino);
+    }
+
+    void
     calc(const char  *fusepath_,
          struct stat *st_)
+    {
+      calc(fusepath_,strlen(fusepath_),st_);
+    }
+
+    void
+    calc(const char        *fusepath_,
+         struct fuse_statx *st_)
     {
       calc(fusepath_,strlen(fusepath_),st_);
     }

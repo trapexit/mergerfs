@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fuse_kernel.h"
+
 #include <sys/stat.h>
 #include <time.h>
 
@@ -44,6 +46,22 @@ namespace symlinkify
 
   static
   inline
+  bool
+  can_be_symlink(const struct fuse_statx &st_,
+                 const time_t             timeout_)
+  {
+    if(S_ISDIR(st_.mode) ||
+       (st_.mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
+      return false;
+
+    const time_t now = ::time(NULL);
+
+    return (((now - st_.mtime.tv_sec) > timeout_) &&
+            ((now - st_.ctime.tv_sec) > timeout_));
+  }
+
+  static
+  inline
   void
   convert(const std::string &target_,
           struct stat       *st_)
@@ -51,5 +69,16 @@ namespace symlinkify
     st_->st_mode = (((st_->st_mode & ~S_IFMT) | S_IFLNK) | 0777);
     st_->st_size = target_.size();
     st_->st_blocks = 0;
+  }
+
+  static
+  inline
+  void
+  convert(const std::string &target_,
+          struct fuse_statx *st_)
+  {
+    st_->mode = (((st_->mode & ~S_IFMT) | S_IFLNK) | 0777);
+    st_->size = target_.size();
+    st_->blocks = 0;
   }
 }

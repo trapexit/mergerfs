@@ -344,6 +344,22 @@ fuse_reply_attr(fuse_req_t         req,
 }
 
 int
+fuse_reply_statx(fuse_req_t         req_,
+                 int                flags_,
+                 struct fuse_statx *st_,
+                 uint64_t           timeout_)
+{
+  struct fuse_statx_out outarg{};
+
+  outarg.flags           = flags_;
+  outarg.attr_valid      = timeout_;
+  outarg.attr_valid_nsec = 0;
+  outarg.stat            = *(struct fuse_statx*)st_;
+
+  return send_reply_ok(req_,&outarg,sizeof(outarg));
+}
+
+int
 fuse_reply_readlink(fuse_req_t  req,
                     const char *linkname)
 {
