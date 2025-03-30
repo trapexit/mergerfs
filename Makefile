@@ -210,15 +210,6 @@ uninstall-mount.mergerfs:
 uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
-$(MANPAGE): README.md
-ifneq ($(shell $(PANDOC) --version 2> /dev/null),)
-	$(PANDOC) -s -t man -o "man/$(MANPAGE)" README.md
-else
-	$(warning "pandoc does not appear available: unable to build manpage")
-endif
-
-man: $(MANPAGE)
-
 .PHONY: tarball
 tarball: man changelog version
 	$(eval VERSION := $(shell cat VERSION))
