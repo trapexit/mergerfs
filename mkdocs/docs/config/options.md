@@ -35,7 +35,7 @@ These options are the same regardless of whether you use them with the
   exceeded) the policy selected will run to find a new location for
   the file. An attempt to move the file to that branch will occur
   (keeping all metadata possible) and if successful the original is
-  unlinked and the write retried. (default: false, true = mfs)
+  unlinked and the write retried. (default: pfrd)
 - **[inodecalc](inodecalc.md)=passthrough|path-hash|devino-hash|hybrid-hash**:
   Selects the inode calculation algorithm. (default: hybrid-hash)
 - **dropcacheonclose=BOOL**: When a file is requested to be closed
@@ -160,7 +160,7 @@ These options are the same regardless of whether you use them with the
   epall)
 - **[category.create](functions_categories_policies.md)=POLICY**: Sets
   policy of all FUSE functions in the create category. (default:
-  epmfs)
+  pfrd)
 - **[category.search](functions_categories_policies.md)=POLICY**: Sets
   policy of all FUSE functions in the search category. (default: ff)
 - **[cache.statfs](cache.md#cachestatfs)=UINT**: 'statfs' cache
@@ -171,8 +171,8 @@ These options are the same regardless of whether you use them with the
   timeout in seconds. (default: 1)
 - **[cache.negative_entry](cache.md#cachenegative_entry)=UINT**:
   Negative file name lookup cache timeout in seconds. (default: 0)
-- **[cache.files](cache.md#cachefiles)=libfuse|off|partial|full|auto-full|per-process**:
-  File page caching mode (default: libfuse)
+- **[cache.files](cache.md#cachefiles)=off|partial|full|auto-full|per-process**:
+  File page caching mode (default: off)
 - **cache.files.process-names=LIST**: A pipe | delimited list of
   process [comm](https://man7.org/linux/man-pages/man5/proc.5.html)
   names to enable page caching for when
