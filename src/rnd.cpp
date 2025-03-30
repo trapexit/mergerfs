@@ -18,7 +18,7 @@
 
 #include "rnd.hpp"
 
-#include "wyhash.h"
+#include "rapidhash.h"
 
 #include <cstdint>
 
@@ -41,21 +41,30 @@ _constructor()
   G_SEED  |= tv.tv_usec;
 }
 
+// Lifted from wyhash.h's wyrand()
+static
+uint64_t
+_rapidhash_rand(uint64_t *seed_)
+{
+  *seed_ += 0x2d358dccaa6c78a5ull;
+  return rapid_mix(*seed_,*seed_ ^ 0x8bb84b93962eacc9ull);
+}
+
 uint64_t
 RND::rand64(void)
 {
-  return wyrand(&G_SEED);
+  return _rapidhash_rand(&G_SEED);
 }
 
 uint64_t
 RND::rand64(const uint64_t max_)
 {
-  return (wyrand(&G_SEED) % max_);
+  return (RND::rand64() % max_);
 }
 
 uint64_t
 RND::rand64(const uint64_t min_,
             const uint64_t max_)
 {
-  return (min_ + (wyrand(&G_SEED) % (max_ - min_)));
+  return (min_ + (RND::rand64() % (max_ - min_)));
 }

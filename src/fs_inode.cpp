@@ -19,7 +19,7 @@
 #include "ef.hpp"
 #include "errno.hpp"
 #include "fs_inode.hpp"
-#include "wyhash.h"
+#include "rapidhash.h"
 
 #include <cstdint>
 #include <string>
@@ -61,10 +61,7 @@ path_hash(const char     *fusepath_,
           const dev_t     dev_,
           const ino_t     ino_)
 {
-  return wyhash(fusepath_,
-                fusepath_len_,
-                fs::inode::MAGIC,
-                _wyp);
+  return rapidhash(fusepath_,fusepath_len_);
 }
 
 static
@@ -99,10 +96,7 @@ devino_hash(const char     *fusepath_,
   buf[0] = dev_;
   buf[1] = ino_;
 
-  return wyhash((void*)&buf[0],
-                sizeof(buf),
-                fs::inode::MAGIC,
-                _wyp);
+  return rapidhash((void*)&buf[0],sizeof(buf));
 }
 
 static
