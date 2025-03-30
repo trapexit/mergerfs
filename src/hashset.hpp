@@ -19,7 +19,7 @@
 #pragma once
 
 #include "khash.h"
-#include "wyhash.h"
+#include "rapidhash.h"
 
 KHASH_SET_INIT_INT64(hashset);
 
@@ -45,7 +45,7 @@ public:
     uint64_t h;
     khint_t key;
 
-    h = wyhash(str_,len_,0x7472617065786974,_wyp);
+    h = rapidhash(str_,len_);
 
     key = kh_put(hashset,_set,h,&rv);
     if(rv == 0)
