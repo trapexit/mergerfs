@@ -22,6 +22,7 @@ cases.
 
 * cache.files=off
 * category.create=pfrd
+* func.getattr=newest
 * dropcacheonclose=false
 
 In previous versions of Linux it was unable to support `mmap` if [page
@@ -44,6 +45,7 @@ IO.)
 
 * cache.files=auto-full
 * category.create=pfrd
+* func.getattr=newest
 * dropcacheonclose=true
 
 
@@ -51,6 +53,7 @@ IO.)
 
 * cache.files=off
 * category.create=pfrd
+* func.getattr=newest
 * dropcacheonclose=false
 
 
@@ -59,14 +62,14 @@ IO.)
 ### Command Line
 
 ```
-mergerfs -o cache.files=off,dropcacheonclose=false,category.create=pfrd /mnt/hdd0:/mnt/hdd1 /media
+mergerfs -o cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false /mnt/hdd0:/mnt/hdd1 /media
 ```
 
 
 ### /etc/fstab
 
 ```
-/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=off,dropcacheonclose=false,category.create=pfrd 0 0
+/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false 0 0
 ```
 
 ### /etc/fstab w/ config file
@@ -86,6 +89,7 @@ For more complex setups it can be useful to separate out the config.
 ```ini title="media.ini" linenums="1"
 cache.files=off
 category.create=pfrd
+func.getattr=newest
 dropcacheonclose=false
 ```
 
@@ -119,6 +123,7 @@ ExecStart=/usr/bin/mergerfs \
   -f \
   -o cache.files=off \
   -o category.create=pfrd \
+  -o func.getattr=newest \
   -o dropcacheonclose=false \
   /mnt/hdd0:/mnt/hdd1 \
   /media
@@ -182,6 +187,7 @@ ExecStart=/usr/bin/mergerfs \
   -f \
   -o cache.files=off \
   -o category.create=pfrd \
+  -o func.getattr=newest \
   -o dropcacheonclose=false \
   /mnt/hdd0:/mnt/hdd1 \
   /media

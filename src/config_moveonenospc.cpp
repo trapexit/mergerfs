@@ -31,11 +31,13 @@ MoveOnENOSPC::from_string(const std::string &s_)
 
   rv = str::from(s_,&enabled);
   if((rv == 0) && (enabled == true))
-    s = "mfs";
+    s = "pfrd";
+  ef((rv == 0) && (enabled == false))
+    return (enabled = false,0);
   ef(rv != 0)
     s = s_;
   else
-    return 0;
+    return -EINVAL;
 
   tmp = Policies::Create::find(s);
   if(tmp == NULL)

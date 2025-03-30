@@ -87,7 +87,7 @@ namespace Func
     {
     public:
       CreateDefault()
-        : Func::Base::Create(&Policies::Create::epmfs)
+        : Func::Base::Create(&Policies::Create::pfrd)
       {
       }
     };

@@ -30,7 +30,7 @@ class MoveOnENOSPC : public ToFromString
 public:
   MoveOnENOSPC(const bool enabled_)
     : enabled(enabled_),
-      policy(&Policies::Create::mfs)
+      policy(&Policies::Create::pfrd)
   {
   }
 

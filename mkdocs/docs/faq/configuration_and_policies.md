@@ -19,12 +19,12 @@ filesystems and can be added or removed without any impact it is
 extremely easy to test and experiment with different settings.
 
 
-## Why is epmfs the default create policy?
+## Why is pfrd the default create policy?
 
-Because it is a strict policy and therefore does not increase entropy
-of the filesystem layout. If you don't explicitly choose a policy then
-the layout stays the same. It is far easier to stop being strict than
-fix the layout after having a loose policy.
+Originally the default was `epmfs` however it was found to cause
+significant confusion among new users who expected mergerfs to always
+choose a branch with available space. For mergerfs v2.41.0 it was
+decided to change the default to the less restrictive policy `pfrd`.
 
 
 ## How can I ensure files are collocated on the same branch?
@@ -88,5 +88,5 @@ If you wish to move files around or balance the pool you can:
    in mind that this tool is really just an example of how to
    accomplish such a task. The tool does not keep track of links so
    you may encounter an increase in used space if you rely on links to
-   reduce redundency. However, you can run a file dedup program like
+   reduce redundancy. However, you can run a file dedup program like
    [rdfind](https://github.com/pauldreik/rdfind) to restore the links.
