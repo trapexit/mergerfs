@@ -37,9 +37,10 @@ and **aufs**.
 
 ## How it works
 
-mergerfs logically merges multiple filesystem paths together. It acts
-as a proxy to the underlying filesystem paths. Combining the behaviors
-of some functions and being a selector for others.
+mergerfs logically merges multiple filesystem paths together. Not
+block devices, not filesystem mounts, just paths. It acts as a proxy
+to the underlying filesystem paths. Combining the behaviors of some
+functions and being a selector for others.
 
 When the contents of a directory are requested mergerfs combines the
 list of files from each directory, deduplicating entries, and returns
@@ -77,3 +78,7 @@ A         +      B        =       C
                                   |
                                   +-- file6
 ```
+
+## Getting Started
+
+Head to the [quick start guide](quickstart.md).

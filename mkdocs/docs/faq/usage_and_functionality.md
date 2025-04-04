@@ -9,15 +9,10 @@ other application does. It can not do anything that any other random
 piece of software can't do.
 
 mergerfs is **not** a traditional filesystem that takes control over
-the underlying disk or block device. mergerfs is **not** RAID. It does
-**not** manipulate the data that passes through it. It does **not**
-shard data across filesystems. It only shards some **behavior** and
-aggregates others.
-
-
-## Can filesystems be removed from the pool without affecting them?
-
-Yes. See previous question's answer.
+the underlying drive, block device, or partition. mergerfs is **not**
+RAID. It does **not** manipulate the data that passes through it. It
+does **not** shard data across filesystems. It only shards some
+**behavior** and aggregates others.
 
 
 ## Can mergerfs be removed without affecting the data?
@@ -25,9 +20,32 @@ Yes. See previous question's answer.
 Yes. See the previous question's answer.
 
 
+## Can filesystems be removed from the pool without affecting them?
+
+Yes. See previous question's answer.
+
+This is true for planned removal by unmounting mergerfs and changing
+the config, changes made to mergerfs at
+[runtime](../runtime_interfaces.md), umounting of the branch's
+filesystem on the fly (whether on purpose or due to error), etc.
+
+
+## What happens if a filesystem disappears at runtime?
+
+By "disappear" meaning explicitly unmounted or due to an error the OS
+removes it.
+
+Nothing explicitly happens. mergerfs works on paths, not mounts. If
+the branch path still exists mergerfs will treat it the same as it did
+before. It just may not have any data there. If the branch no longer
+exists it will be ignored. If the OS returns errors then mergerfs will
+return those errors where appropriate. See [Error Handling and
+Logging](../error_handling_and_logging.md).
+
+
 ## Can filesystems be moved to another pool?
 
-Yes. See the previous question's answer.
+Yes.
 
 
 ## Can filesystems be part of multiple pools?
@@ -37,7 +55,9 @@ Yes.
 
 ## How do I migrate data into or out of the pool when adding/removing filesystems?
 
-There is no need to do so. See the previous questions.
+There is no need to do so. mergerfs is a union filesystem. It works
+**on top** of existing filesystems. It does **not** replace them. See
+the previous questions and answers.
 
 
 ## How do I remove a filesystem but keep the data in the pool?
