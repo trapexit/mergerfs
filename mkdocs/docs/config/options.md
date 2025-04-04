@@ -13,9 +13,9 @@ These options are the same regardless of whether you use them with the
   which will be converted to pages)
 - STR = string (may refer to an enumerated value, see details of
   argument)
-- FUNC = filesystem function
-- CATEGORY = function category
-- POLICY = mergerfs function policy
+- FUNC = filesystem [function](functions_categories_policies.md)
+- CATEGORY = function [category](functions_categories_policies.md)
+- POLICY = mergerfs function [policy](functions_categories_policies.md)
 
 
 ### mount options
