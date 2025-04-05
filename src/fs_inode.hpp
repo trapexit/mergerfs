@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fuse_kernel.h"
+
 #include <cstdint>
 #include <string>
 
@@ -42,13 +44,20 @@ namespace fs
                   mode_t const       mode,
                   dev_t const        dev,
                   ino_t              ino);
+
     void calc(const char     *fusepath,
               const uint64_t  fusepath_len,
               struct stat    *st);
+    void calc(const char        *fusepath,
+              const uint64_t     fusepath_len,
+              struct fuse_statx *st);
+
     void calc(const char  *fusepath,
               struct stat *st);
+    void calc(const char        *fusepath,
+              struct fuse_statx *st);
+
     void calc(const std::string &fusepath,
               struct stat       *st);
-
   }
 }

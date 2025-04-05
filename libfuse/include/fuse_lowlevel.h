@@ -257,6 +257,12 @@ int fuse_reply_attr(fuse_req_t         req,
                     const struct stat *attr,
                     const uint64_t     timeout);
 
+
+int fuse_reply_statx(fuse_req_t         req,
+                     int                flags,
+                     struct fuse_statx *st,
+                     const uint64_t     timeout);
+
 /**
  * Reply with the contents of a symbolic link
  *

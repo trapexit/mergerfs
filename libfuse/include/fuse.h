@@ -549,6 +549,16 @@ struct fuse_operations
   int (*removemapping)();
   int (*syncfs)();
   int (*tmpfile)(const char *, mode_t, fuse_file_info_t *);
+  int (*statx)(const char        *fusepath,
+               const uint32_t     flags,
+               const uint32_t     mask,
+               struct fuse_statx *st,
+               fuse_timeouts_t   *timeout);
+  int (*statx_fh)(const uint64_t     fh,
+                  const uint32_t     flags,
+                  const uint32_t     mask,
+                  struct fuse_statx *st,
+                  fuse_timeouts_t   *timeout);
 };
 
 /** Extra context that may be needed by some filesystems

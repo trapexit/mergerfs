@@ -71,6 +71,7 @@
 #include "fuse_setupmapping.hpp"
 #include "fuse_setxattr.hpp"
 #include "fuse_statfs.hpp"
+#include "fuse_statx.hpp"
 #include "fuse_symlink.hpp"
 #include "fuse_syncfs.hpp"
 #include "fuse_tmpfile.hpp"
@@ -139,6 +140,8 @@ namespace l
     ops_.setupmapping    = FUSE::setupmapping;
     ops_.setxattr        = FUSE::setxattr;
     ops_.statfs          = FUSE::statfs;
+    ops_.statx           = FUSE::statx;
+    ops_.statx_fh        = FUSE::statx_fh;
     ops_.symlink         = FUSE::symlink;
     ops_.syncfs          = FUSE::syncfs;
     ops_.tmpfile         = FUSE::tmpfile;
