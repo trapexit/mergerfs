@@ -31,6 +31,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+using namespace nostd;
+
 typedef uint64_t (*inodefunc_t)(const nonstd::string_view,
                                 const mode_t,
                                 const ino_t);
