@@ -89,11 +89,9 @@ path_hash32(const string_view fusepath_,
 
 static
 uint64_t
-devino_hash(const char     *fusepath_,
-            const uint64_t  fusepath_len_,
-            const mode_t    mode_,
-            const dev_t     dev_,
-            const ino_t     ino_)
+devino_hash(const string_view fusepath_,
+            const mode_t      mode_,
+            const ino_t       ino_)
 {
   uint64_t buf[2];
 
