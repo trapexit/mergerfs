@@ -211,19 +211,5 @@ namespace fs
                       st_->mode,
                       st_->ino);
     }
-
-    void
-    calc(const string_view  fusepath_,
-         struct stat       *st_)
-    {
-      calc(&fusepath_[0],fusepath_.size(),st_);
-    }
-
-    void
-    calc(const string_view  fusepath_,
-         struct fuse_statx *st_)
-    {
-      calc(&fusepath_[0],fusepath_.size(),st_);
-    }
   }
 }
