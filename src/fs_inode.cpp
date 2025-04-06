@@ -204,8 +204,7 @@ namespace fs
     }
 
     void
-    calc(const char        *fusepath_,
-         const uint64_t     fusepath_len_,
+    calc(const string_view  fusepath_,
          struct fuse_statx *st_)
     {
       st_->ino = calc(fusepath_,
