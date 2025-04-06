@@ -39,6 +39,7 @@ static uint64_t hybrid_hash(const nonstd::string_view,
                             const mode_t,
                             const ino_t);
 
+
 static inodefunc_t g_func = hybrid_hash;
 
 
