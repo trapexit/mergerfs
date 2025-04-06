@@ -20,7 +20,6 @@
 #include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_close.hpp"
-#include "fs_devid.hpp"
 #include "fs_getdents64.hpp"
 #include "fs_inode.hpp"
 #include "fs_open.hpp"
