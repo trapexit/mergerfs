@@ -84,7 +84,6 @@ namespace l
   {
     int rv;
     int dfd;
-    dev_t dev;
     std::string filepath;
 
     dfd = fs::open_dir_ro(basepath_);
@@ -92,8 +91,6 @@ namespace l
       return errno;
 
     DEFER{ fs::close(dfd); };
-
-    dev = fs::devid(dfd);
 
     rv = 0;
     for(;;)
