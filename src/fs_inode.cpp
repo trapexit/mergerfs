@@ -95,7 +95,7 @@ devino_hash(const string_view fusepath_,
 {
   uint64_t buf[2];
 
-  buf[0] = dev_;
+  buf[0] = 0;
   buf[1] = ino_;
 
   return rapidhash((void*)&buf[0],sizeof(buf));
