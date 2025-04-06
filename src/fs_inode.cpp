@@ -208,9 +208,7 @@ namespace fs
          struct fuse_statx *st_)
     {
       st_->ino = calc(fusepath_,
-                      fusepath_len_,
                       st_->mode,
-                      st_->dev_major ^ st_->dev_minor,
                       st_->ino);
     }
 
