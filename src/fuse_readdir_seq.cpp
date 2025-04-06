@@ -99,7 +99,6 @@ namespace l
       {
         int rv;
         DIR *dh;
-        dev_t dev;
 
         basepath = fs::path::make(branch.path,dirname_);
 
@@ -127,7 +126,6 @@ namespace l
             fullpath = fs::path::make(dirname_,de->d_name);
             de->d_ino = fs::inode::calc(fullpath,
                                         DTTOIF(de->d_type),
-                                        dev,
                                         de->d_ino);
 
             rv = fuse_dirents_add(buf_,de,namelen);
