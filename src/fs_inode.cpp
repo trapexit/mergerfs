@@ -18,6 +18,8 @@
 
 #include "fs_inode.hpp"
 
+#include "nonstd/string_view.hpp"
+
 #include "ef.hpp"
 #include "errno.hpp"
 #include "rapidhash.h"
@@ -28,8 +30,6 @@
 #include <pthread.h>
 #include <string.h>
 #include <sys/stat.h>
-
-typedef uint64_t (*inodefunc_t)(const char*,const uint64_t,const mode_t,const dev_t,const ino_t);
 
 typedef uint64_t (*inodefunc_t)(const nonstd::string_view,
                                 const mode_t,
