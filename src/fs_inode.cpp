@@ -199,9 +199,7 @@ namespace fs
          struct stat       *st_)
     {
       st_->st_ino = calc(fusepath_,
-                         fusepath_len_,
                          st_->st_mode,
-                         st_->st_dev,
                          st_->st_ino);
     }
 
