@@ -220,8 +220,8 @@ namespace fs
     }
 
     void
-    calc(const nonstd::string_view  fusepath_,
-         struct fuse_statx         *st_)
+    calc(const string_view  fusepath_,
+         struct fuse_statx *st_)
     {
       printf("%.*s\n",
              fusepath_.size(),
