@@ -37,22 +37,13 @@ namespace fs
     int set_algo(const std::string &s);
     std::string get_algo(void);
 
-    uint64_t calc(const char     *fusepath,
-                  const uint64_t  fusepath_len,
-                  const mode_t    mode,
-                  const dev_t     dev,
-                  const ino_t     ino);
+    uint64_t calc(const nostd::string_view fusepath,
+                  const mode_t             mode,
+                  const ino_t              ino);
     uint64_t calc(std::string const &fusepath,
                   mode_t const       mode,
                   dev_t const        dev,
                   ino_t              ino);
-
-    void calc(const char     *fusepath,
-              const uint64_t  fusepath_len,
-              struct stat    *st);
-    void calc(const char        *fusepath,
-              const uint64_t     fusepath_len,
-              struct fuse_statx *st);
 
     void calc(const nonstd::string_view  fusepath,
               struct stat               *st);
