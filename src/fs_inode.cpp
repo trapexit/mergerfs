@@ -33,11 +33,11 @@
 
 using namespace nostd;
 
-typedef uint64_t (*inodefunc_t)(const nonstd::string_view,
+typedef uint64_t (*inodefunc_t)(const string_view,
                                 const mode_t,
                                 const ino_t);
 
-static uint64_t hybrid_hash(const nonstd::string_view,
+static uint64_t hybrid_hash(const string_view,
                             const mode_t,
                             const ino_t);
 
