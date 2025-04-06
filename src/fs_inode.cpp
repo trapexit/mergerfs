@@ -243,24 +243,17 @@ namespace fs
     }
 
     void
-    calc(const char  *fusepath_,
-         struct stat *st_)
+    calc(const nonstd::string_view  fusepath_,
+         struct stat               *st_)
     {
-      calc(fusepath_,strlen(fusepath_),st_);
+      calc(&fusepath_[0],fusepath_.size(),st_);
     }
 
     void
-    calc(const char        *fusepath_,
-         struct fuse_statx *st_)
+    calc(const nonstd::string_view  fusepath_,
+         struct fuse_statx         *st_)
     {
-      calc(fusepath_,strlen(fusepath_),st_);
-    }
-
-    void
-    calc(const std::string &fusepath_,
-         struct stat       *st_)
-    {
-      calc(fusepath_.c_str(),fusepath_.size(),st_);
+      calc(&fusepath_[0],fusepath_.size(),st_);
     }
   }
 }

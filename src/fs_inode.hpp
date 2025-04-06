@@ -20,6 +20,8 @@
 
 #include "fuse_kernel.h"
 
+#include "nonstd/string_view.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -52,12 +54,9 @@ namespace fs
               const uint64_t     fusepath_len,
               struct fuse_statx *st);
 
-    void calc(const char  *fusepath,
-              struct stat *st);
-    void calc(const char        *fusepath,
-              struct fuse_statx *st);
-
-    void calc(const std::string &fusepath,
-              struct stat       *st);
+    void calc(const nonstd::string_view  fusepath,
+              struct stat               *st);
+    void calc(const nonstd::string_view  fusepath,
+              struct fuse_statx         *st);    
   }
 }
