@@ -145,7 +145,6 @@ namespace l
     for(auto &dh_future : dh_futures_)
       {
         int rv;
-        dev_t dev;
         DirRV dirrv;
 
         dirrv = dh_future.get();
@@ -154,8 +153,6 @@ namespace l
           continue;
 
         DEFER { fs::closedir(dirrv.dir); };
-
-        dev = fs::devid(dirrv.dir);
 
         rv = 0;
         for(dirent *de = fs::readdir(dirrv.dir); de && !rv; de = fs::readdir(dirrv.dir))
