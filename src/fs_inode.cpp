@@ -134,8 +134,8 @@ hybrid_hash32(const string_view fusepath_,
               const ino_t       ino_)
 {
   return (S_ISDIR(mode_) ?
-          path_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_) :
-          devino_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_));
+          path_hash32(fusepath_,mode_,ino_) :
+          devino_hash32(fusepath_,mode_,ino_));
 }
 
 namespace fs
