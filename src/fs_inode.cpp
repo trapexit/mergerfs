@@ -187,11 +187,9 @@ namespace fs
     }
 
     uint64_t
-    calc(const char     *fusepath_,
-         const uint64_t  fusepath_len_,
-         const mode_t    mode_,
-         const dev_t     dev_,
-         const ino_t     ino_)
+    calc(const string_view fusepath_,
+         const mode_t      mode_,
+         const ino_t       ino_)
     {
       return g_func(fusepath_,fusepath_len_,mode_,dev_,ino_);
     }
