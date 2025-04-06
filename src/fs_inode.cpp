@@ -56,7 +56,7 @@ h64_to_h32(uint64_t h_)
 
 static
 uint64_t
-passthrough(const nonstd::string_view fusepath_,
+passthrough(const string_view fusepath_,
             const mode_t              mode_,
             const ino_t               ino_)
 {
