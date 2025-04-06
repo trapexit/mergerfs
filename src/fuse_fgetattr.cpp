@@ -23,26 +23,6 @@
 #include "fuse.h"
 
 
-namespace l
-{
-  static
-  int
-  fgetattr(const int          fd_,
-           const std::string &fusepath_,
-           struct stat       *st_)
-  {
-    int rv;
-
-    rv = fs::fstat(fd_,st_);
-    if(rv == -1)
-      return -errno;
-
-    fs::inode::calc(fusepath_,st_);
-
-    return 0;
-  }
-}
-
 namespace FUSE
 {
   int
@@ -54,7 +34,13 @@ namespace FUSE
     Config::Read cfg;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    rv = l::fgetattr(fi->fd,fi->fusepath,st_);
+    rv = fs::fstat(fi->fd,st_);
+    if(rv == -1)
+      return -errno;
+
+    fs::inode::calc(fi->branchpath,
+                    fi->fusepath,
+                    st_);
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :

@@ -29,9 +29,18 @@
 #include <string.h>
 #include <sys/stat.h>
 
-typedef uint64_t (*inodefunc_t)(const char*,const uint64_t,const mode_t,const dev_t,const ino_t);
+using namespace nonstd;
 
-static uint64_t hybrid_hash(const char*,const uint64_t,const mode_t,const dev_t,const ino_t);
+typedef uint64_t (*inodefunc_t)(const string_view,
+                                const string_view,
+                                const mode_t,
+                                const ino_t);
+
+static uint64_t hybrid_hash(const string_view,
+                            const string_view,
+                            const mode_t,
+                            const ino_t);
+
 
 static inodefunc_t g_func = hybrid_hash;
 
@@ -47,40 +56,40 @@ h64_to_h32(uint64_t h_)
 
 static
 uint64_t
-passthrough(const char     *fusepath_,
-            const uint64_t  fusepath_len_,
-            const mode_t    mode_,
-            const dev_t     dev_,
-            const ino_t     ino_)
+passthrough(const string_view branch_path_,
+            const string_view fusepath_,
+            const mode_t      mode_,
+            const ino_t       ino_)
 {
   return ino_;
 }
 
 static
 uint64_t
-path_hash(const char     *fusepath_,
-          const uint64_t  fusepath_len_,
-          const mode_t    mode_,
-          const dev_t     dev_,
-          const ino_t     ino_)
+path_hash(const string_view branch_path_,
+          const string_view fusepath_,
+          const mode_t      mode_,
+          const ino_t       ino_)
 {
-  return rapidhash(fusepath_,fusepath_len_);
+  uint64_t seed;
+
+  seed = rapidhash(&fusepath_[0],fusepath_.size());
+
+  return seed;
 }
 
 static
 uint64_t
-path_hash32(const char     *fusepath_,
-            const uint64_t  fusepath_len_,
-            const mode_t    mode_,
-            const dev_t     dev_,
-            const ino_t     ino_)
+path_hash32(const string_view branch_path_,
+            const string_view fusepath_,
+            const mode_t      mode_,
+            const ino_t       ino_)
 {
   uint64_t h;
 
-  h = path_hash(fusepath_,
-                fusepath_len_,
+  h = path_hash(branch_path_,
+                fusepath_,
                 mode_,
-                dev_,
                 ino_);
 
   return h64_to_h32(h);
@@ -88,34 +97,31 @@ path_hash32(const char     *fusepath_,
 
 static
 uint64_t
-devino_hash(const char     *fusepath_,
-            const uint64_t  fusepath_len_,
-            const mode_t    mode_,
-            const dev_t     dev_,
-            const ino_t     ino_)
+devino_hash(const string_view branch_path_,
+            const string_view fusepath_,
+            const mode_t      mode_,
+            const ino_t       ino_)
 {
-  uint64_t buf[2];
+  uint64_t seed;
 
-  buf[0] = dev_;
-  buf[1] = ino_;
+  seed = rapidhash(&branch_path_[0],branch_path_.size());
+  seed = rapidhash_withSeed(&ino_,sizeof(ino_),seed);
 
-  return rapidhash((void*)&buf[0],sizeof(buf));
+  return seed;
 }
 
 static
 uint64_t
-devino_hash32(const char     *fusepath_,
-              const uint64_t  fusepath_len_,
-              const mode_t    mode_,
-              const dev_t     dev_,
-              const ino_t     ino_)
+devino_hash32(const string_view branch_path_,
+              const string_view fusepath_,
+              const mode_t      mode_,
+              const ino_t       ino_)
 {
   uint64_t h;
 
-  h = devino_hash(fusepath_,
-                  fusepath_len_,
+  h = devino_hash(branch_path_,
+                  fusepath_,
                   mode_,
-                  dev_,
                   ino_);
 
   return h64_to_h32(h);
@@ -123,28 +129,26 @@ devino_hash32(const char     *fusepath_,
 
 static
 uint64_t
-hybrid_hash(const char     *fusepath_,
-            const uint64_t  fusepath_len_,
-            const mode_t    mode_,
-            const dev_t     dev_,
-            const ino_t     ino_)
+hybrid_hash(const string_view branch_path_,
+            const string_view fusepath_,
+            const mode_t      mode_,
+            const ino_t       ino_)
 {
   return (S_ISDIR(mode_) ?
-          path_hash(fusepath_,fusepath_len_,mode_,dev_,ino_) :
-          devino_hash(fusepath_,fusepath_len_,mode_,dev_,ino_));
+          path_hash(branch_path_,fusepath_,mode_,ino_) :
+          devino_hash(branch_path_,fusepath_,mode_,ino_));
 }
 
 static
 uint64_t
-hybrid_hash32(const char     *fusepath_,
-              const uint64_t  fusepath_len_,
-              const mode_t    mode_,
-              const dev_t     dev_,
-              const ino_t     ino_)
+hybrid_hash32(const string_view branch_path_,
+              const string_view fusepath_,
+              const mode_t      mode_,
+              const ino_t       ino_)
 {
   return (S_ISDIR(mode_) ?
-          path_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_) :
-          devino_hash32(fusepath_,fusepath_len_,mode_,dev_,ino_));
+          path_hash32(branch_path_,fusepath_,mode_,ino_) :
+          devino_hash32(branch_path_,fusepath_,mode_,ino_));
 }
 
 namespace fs
@@ -196,71 +200,34 @@ namespace fs
     }
 
     uint64_t
-    calc(const char     *fusepath_,
-         const uint64_t  fusepath_len_,
-         const mode_t    mode_,
-         const dev_t     dev_,
-         const ino_t     ino_)
+    calc(const string_view branch_path_,
+         const string_view fusepath_,
+         const mode_t      mode_,
+         const ino_t       ino_)
     {
-      return g_func(fusepath_,fusepath_len_,mode_,dev_,ino_);
-    }
-
-    uint64_t
-    calc(std::string const &fusepath_,
-         const mode_t       mode_,
-         const dev_t        dev_,
-         const ino_t        ino_)
-    {
-      return calc(fusepath_.c_str(),
-                  fusepath_.size(),
-                  mode_,
-                  dev_,
-                  ino_);
+      return g_func(branch_path_,fusepath_,mode_,ino_);
     }
 
     void
-    calc(const char     *fusepath_,
-         const uint64_t  fusepath_len_,
-         struct stat    *st_)
+    calc(const string_view  branch_path_,
+         const string_view  fusepath_,
+         struct stat       *st_)
     {
-      st_->st_ino = calc(fusepath_,
-                         fusepath_len_,
+      st_->st_ino = calc(branch_path_,
+                         fusepath_,
                          st_->st_mode,
-                         st_->st_dev,
                          st_->st_ino);
     }
 
     void
-    calc(const char        *fusepath_,
-         const uint64_t     fusepath_len_,
+    calc(const string_view  branch_path_,
+         const string_view  fusepath_,
          struct fuse_statx *st_)
     {
-      st_->ino = calc(fusepath_,
-                      fusepath_len_,
+      st_->ino = calc(branch_path_,
+                      fusepath_,
                       st_->mode,
-                      st_->dev_major ^ st_->dev_minor,
                       st_->ino);
-    }
-
-    void
-    calc(const char  *fusepath_,
-         struct stat *st_)
-    {
-      calc(fusepath_,strlen(fusepath_),st_);
-    }
-
-    void
-    calc(const char        *fusepath_,
-         struct fuse_statx *st_)
-    {
-      calc(fusepath_,strlen(fusepath_),st_);
-    }
-
-    void
-    calc(const std::string &fusepath_,
-         struct stat       *st_)
-    {
-      calc(fusepath_.c_str(),fusepath_.size(),st_);
     }
   }
 }

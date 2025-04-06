@@ -11,6 +11,7 @@
 
 #include "extern_c.h"
 #include "fuse_common.h"
+#include "fuse_kernel.h"
 
 #include <fcntl.h>
 #include <time.h>

@@ -23,7 +23,6 @@
 #include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_closedir.hpp"
-#include "fs_devid.hpp"
 #include "fs_dirfd.hpp"
 #include "fs_inode.hpp"
 #include "fs_opendir.hpp"
@@ -85,33 +84,30 @@ namespace l
   static
   int
   readdir(const Branches::CPtr &branches_,
-          const char           *dirname_,
+          const std::string    &rel_dirpath_,
           fuse_dirents_t       *buf_)
   {
     Error error;
     HashSet names;
-    std::string basepath;
-    std::string fullpath;
+    std::string rel_filepath;
+    std::string abs_dirpath;
 
     fuse_dirents_reset(buf_);
 
-    for(auto const &branch : *branches_)
+    for(const auto &branch : *branches_)
       {
         int rv;
         DIR *dh;
-        dev_t dev;
 
-        basepath = fs::path::make(branch.path,dirname_);
+        abs_dirpath = fs::path::make(branch.path,rel_dirpath_);
 
         errno = 0;
-        dh = fs::opendir(basepath);
+        dh = fs::opendir(abs_dirpath);
         error = errno;
         if(!dh)
           continue;
 
         DEFER{ fs::closedir(dh); };
-
-        dev = fs::devid(dh);
 
         rv = 0;
         for(dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
@@ -124,10 +120,10 @@ namespace l
             if(rv == 0)
               continue;
 
-            fullpath = fs::path::make(dirname_,de->d_name);
-            de->d_ino = fs::inode::calc(fullpath,
+            rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
+            de->d_ino = fs::inode::calc(branch.path,
+                                        rel_filepath,
                                         DTTOIF(de->d_type),
-                                        dev,
                                         de->d_ino);
 
             rv = fuse_dirents_add(buf_,de,namelen);
@@ -150,6 +146,6 @@ FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   return l::readdir(cfg->branches,
-                    di->fusepath.c_str(),
+                    di->fusepath,
                     buf_);
 }

@@ -60,7 +60,7 @@ _statx_controlfile(struct fuse_statx *st_)
   static const gid_t  gid = ::getgid();
   static const time_t now = ::time(NULL);
 
-  st_->ino     = fs::inode::MAGIC;
+  st_->ino     = 0;
   st_->mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
   st_->nlink   = 1;
   st_->uid     = uid;
@@ -124,7 +124,7 @@ _statx(const Policy::Search &searchFunc_,
   if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
     symlinkify::convert(fullpath,st_);
 
-  fs::inode::calc(fusepath_,st_);
+  fs::inode::calc(basepaths[0],fusepath_,st_);
 
   return 0;
 }
