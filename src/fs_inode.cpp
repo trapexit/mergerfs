@@ -194,19 +194,6 @@ namespace fs
       return g_func(fusepath_,mode_,ino_);
     }
 
-    uint64_t
-    calc(std::string const &fusepath_,
-         const mode_t       mode_,
-         const dev_t        dev_,
-         const ino_t        ino_)
-    {
-      return calc(fusepath_.c_str(),
-                  fusepath_.size(),
-                  mode_,
-                  dev_,
-                  ino_);
-    }
-
     void
     calc(const char     *fusepath_,
          const uint64_t  fusepath_len_,
