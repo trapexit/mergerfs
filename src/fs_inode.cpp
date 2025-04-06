@@ -69,7 +69,7 @@ path_hash(const string_view fusepath_,
           const mode_t      mode_,
           const ino_t       ino_)
 {
-  return rapidhash(fusepath_,fusepath_len_);
+  return rapidhash(&fusepath_[0],fusepath_.size());
 }
 
 static
