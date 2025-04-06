@@ -35,7 +35,9 @@ typedef uint64_t (*inodefunc_t)(const nonstd::string_view,
                                 const mode_t,
                                 const ino_t);
 
-static uint64_t hybrid_hash(const char*,const uint64_t,const mode_t,const dev_t,const ino_t);
+static uint64_t hybrid_hash(const nonstd::string_view,
+                            const mode_t,
+                            const ino_t);
 
 static inodefunc_t g_func = hybrid_hash;
 
