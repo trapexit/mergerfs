@@ -246,6 +246,9 @@ namespace fs
     calc(const nonstd::string_view  fusepath_,
          struct stat               *st_)
     {
+      printf("%.*s\n",
+             fusepath_.size(),
+             &fusepath_[0]);      
       calc(&fusepath_[0],fusepath_.size(),st_);
     }
 
