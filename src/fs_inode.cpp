@@ -191,7 +191,7 @@ namespace fs
          const mode_t      mode_,
          const ino_t       ino_)
     {
-      return g_func(fusepath_,fusepath_len_,mode_,dev_,ino_);
+      return g_func(fusepath_,mode_,ino_);
     }
 
     uint64_t
