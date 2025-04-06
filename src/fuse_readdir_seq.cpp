@@ -110,8 +110,6 @@ namespace l
 
         DEFER{ fs::closedir(dh); };
 
-        dev = fs::devid(dh);
-
         rv = 0;
         for(dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
           {
