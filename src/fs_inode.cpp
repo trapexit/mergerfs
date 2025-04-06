@@ -110,9 +110,7 @@ devino_hash32(const string_view fusepath_,
   uint64_t h;
 
   h = devino_hash(fusepath_,
-                  fusepath_len_,
                   mode_,
-                  dev_,
                   ino_);
 
   return h64_to_h32(h);
