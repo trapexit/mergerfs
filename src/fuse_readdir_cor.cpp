@@ -124,7 +124,6 @@ namespace l
             filepath = fs::path::make(basepath_,d->name);
             d->ino = fs::inode::calc(filepath,
                                      DTTOIF(d->type),
-                                     dev,
                                      d->ino);
 
             rv = fuse_dirents_add_linux(buf_,d,namelen);
