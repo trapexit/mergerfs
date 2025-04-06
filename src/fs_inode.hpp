@@ -40,10 +40,6 @@ namespace fs
     uint64_t calc(const nostd::string_view fusepath,
                   const mode_t             mode,
                   const ino_t              ino);
-    uint64_t calc(std::string const &fusepath,
-                  mode_t const       mode,
-                  dev_t const        dev,
-                  ino_t              ino);
 
     void calc(const nonstd::string_view  fusepath,
               struct stat               *st);
