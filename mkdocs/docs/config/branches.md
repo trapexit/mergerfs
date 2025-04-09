@@ -14,6 +14,7 @@ and a individual minfreespace value. The values are set by prepending
 an `=` at the end of a branch designation and using commas as
 delimiters. Example: `/mnt/drive=RW,1234`
 
+
 ### branch mode
 
 - RW: (read/write) - Default behavior. Will be eligible in all policy
@@ -24,10 +25,12 @@ delimiters. Example: `/mnt/drive=RW,1234`
 - NC: (no-create) - Will be excluded from `create` policies. You can't
   create on that branch but you can change or delete.
 
+
 ### minfreespace
 
-Same purpose and syntax as the global option but specific to the
-branch. If not set the global value is used.
+Same purpose and syntax as the [global option](minfreespace.md) but
+specific to the branch. If not set the global value is used.
+
 
 ### globbing
 

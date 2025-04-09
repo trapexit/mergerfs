@@ -23,6 +23,7 @@ some may not be very useful in practice. For instance: **rand**
 very odd behavior if used for `chmod` if there were more than one copy
 of the file.
 
+
 ## Functions and their Category classifications
 
 | Category | Functions |
@@ -35,14 +36,16 @@ of the file.
 In cases where something may be searched for (such as a path to clone)
 **getattr** will usually be used.
 
+
 ## Policies
 
-A policy is the algorithm used to choose a branch or branches for a
-function to work on or generally how the function behaves.
+A policy is an algorithm designed to select one or more branches for a
+function to operate on.
 
 Any function in the `create` category will clone the relative path if
 needed. Some other functions (`rename`,`link`,`ioctl`) have special
 requirements or behaviors which you can read more about below.
+
 
 ## Filtering
 
@@ -73,6 +76,7 @@ to be read-only as such (IE will set the mode `RO`) and will rerun the
 policy and try again. This is mostly for `ext4` filesystems that can
 suddenly become read-only when it encounters an error.
 
+
 ## Path Preservation
 
 Policies, as described below, are of two basic classifications. `path
@@ -93,6 +97,7 @@ With the `msp` or `most shared path` policies they are defined as
 behaviors since `ignorepponrename` is available to disable that
 behavior.
 
+
 ## Policy descriptions
 
 A policy's behavior differs, as mentioned above, based on the function
@@ -102,25 +107,25 @@ but it makes things a bit more uniform.
 
 | Policy                                                          | Description                                                                                                                                                                     |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| all                                                             | Search: For **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**.                                                                  |
-| epall (existing path, all)                                      | For **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
-| epff (existing path, first found)                               | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists.                                  |
-| eplfs (existing path, least free space)                         | Of all the branches on which the relative path exists choose the branch with the least free space.                                                                              |
-| eplus (existing path, least used space)                         | Of all the branches on which the relative path exists choose the branch with the least used space.                                                                              |
-| epmfs (existing path, most free space)                          | Of all the branches on which the relative path exists choose the branch with the most free space.                                                                               |
-| eppfrd (existing path, percentage free random distribution)     | Like **pfrd** but limited to existing paths.                                                                                                                                    |
-| eprand (existing path, random)                                  | Calls **epall** and then randomizes. Returns 1.                                                                                                                                 |
+| pfrd (percentage free random distribution)                      | Selects a branch randomly, with the probability of selection proportional to its available space relative to the total available space across all branches. For instance, if Branch A has 100 GB free and Branch B has 50 GB free, Branch A is twice as likely to be chosen. |
+| rand (random)                                                   | Calls **all** and then randomizes. Returns 1 branch.                                                                                                                            |
+| mfs (most free space)                                           | Pick the branch with the most available free space.                                                                                                                             |
 | ff (first found)                                                | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found.                                                                 |
 | lfs (least free space)                                          | Pick the branch with the least available free space.                                                                                                                            |
 | lus (least used space)                                          | Pick the branch with the least used space.                                                                                                                                      |
-| mfs (most free space)                                           | Pick the branch with the most available free space.                                                                                                                             |
+| all                                                             | Search: For **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**.                                                                  |
+| msppfrd (most shared path, percentage free random distribution) | Like **eppfrd** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                          |
+| mspmfs (most shared path, most free space)                      | Like **epmfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                           |
 | msplfs (most shared path, least free space)                     | Like **eplfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                           |
 | msplus (most shared path, least used space)                     | Like **eplus** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                           |
-| mspmfs (most shared path, most free space)                      | Like **epmfs** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                           |
-| msppfrd (most shared path, percentage free random distribution) | Like **eppfrd** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                          |
+| eppfrd (existing path, percentage free random distribution)     | Like **pfrd** but limited to existing paths.                                                                                                                                    |
+| epmfs (existing path, most free space)                          | Of all the branches on which the relative path exists choose the branch with the most free space.                                                                               |
+| eprand (existing path, random)                                  | Calls **epall** and then randomizes. Returns 1.                                                                                                                                 |
+| epff (existing path, first found)                               | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists.                                  |
+| eplfs (existing path, least free space)                         | Of all the branches on which the relative path exists choose the branch with the least free space.                                                                              |
+| eplus (existing path, least used space)                         | Of all the branches on which the relative path exists choose the branch with the least used space.                                                                              |
+| epall (existing path, all)                                      | For **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
 | newest                                                          | Pick the file / directory with the largest mtime.                                                                                                                               |
-| pfrd (percentage free random distribution)                      | Chooses a branch at random with the likelihood of selection based on a branch's available space relative to the total.                                                          |
-| rand (random)                                                   | Calls **all** and then randomizes. Returns 1 branch.                                                                                                                            |
 
 **NOTE:** If you are using an underlying filesystem that reserves
 blocks such as ext2, ext3, or ext4 be aware that mergerfs respects the
@@ -129,6 +134,7 @@ unprivileged users) rather than `f_bfree` (number of free blocks) in
 policy calculations. **df** does NOT use `f_bavail`, it uses
 `f_bfree`, so direct comparisons between **df** output and mergerfs'
 policies is not appropriate.
+
 
 ## Defaults
 

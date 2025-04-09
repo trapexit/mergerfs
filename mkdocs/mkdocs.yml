@@ -63,8 +63,10 @@ nav:
   - config/deprecated_options.md
   - config/branches.md
   - config/functions_categories_policies.md
+  - config/minfreespace.md
   - config/func_readdir.md
   - config/rename_and_link.md
+  - config/moveonenospc.md
   - config/cache.md
   - config/readahead.md
   - config/inodecalc.md
@@ -100,6 +102,7 @@ nav:
   - faq/compatibility_and_integration.md
   - faq/recommendations_and_warnings.md
   - faq/technical_behavior_and_limitations.md
+  - faq/have_you_considered.md
   - faq/limit_drive_spinup.md
 - related_projects.md
 - media_and_publicity.md

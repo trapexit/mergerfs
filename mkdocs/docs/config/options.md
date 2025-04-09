@@ -24,18 +24,19 @@ These options are the same regardless of whether you use them with the
   key=val / ini style format.
 - **[branches](branches.md)**: Colon delimited list of branches. Used
   primarily in config file.
-- **minfreespace=SIZE**: The minimum available space of a branch
-  necessary to be considered for a create
+- **[minfreespace](minfreespace.md)=SIZE**: The minimum available
+  space of a branch necessary to be considered for a create
   [policy](functions_categories_policies.md). This is a default value
   applied to all branches and can be overwritten when configuring
   [branches](branches.md). Understands 'K', 'M', and 'G' to represent
   kilobyte, megabyte, and gigabyte respectively. (default: 4G)
-- **moveonenospc=BOOL|POLICY**: When enabled if a **write** fails with
-  **ENOSPC** (no space left on device) or **EDQUOT** (disk quota
-  exceeded) the policy selected will run to find a new location for
-  the file. An attempt to move the file to that branch will occur
-  (keeping all metadata possible) and if successful the original is
-  unlinked and the write retried. (default: pfrd)
+- **[moveonenospc](moveonenospc.md)=BOOL|POLICY**: When enabled if a
+  **write** fails with **ENOSPC** (no space left on device) or
+  **EDQUOT** (disk quota exceeded) the policy selected will run to
+  find a new location for the file. An attempt to move the file to
+  that branch will occur (keeping all metadata possible) and if
+  successful the original is unlinked and the write retried. (default:
+  pfrd)
 - **[inodecalc](inodecalc.md)=passthrough|path-hash|devino-hash|hybrid-hash**:
   Selects the inode calculation algorithm. (default: hybrid-hash)
 - **dropcacheonclose=BOOL**: When a file is requested to be closed
