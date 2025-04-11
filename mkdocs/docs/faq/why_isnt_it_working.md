@@ -2,23 +2,22 @@
 
 ## I modified mergerfs' config but it still behaves the same.
 
-mergerfs, like most filesystems, are given their options/arguments
-at mount time. Unlike most filesystems, mergerfs also has the ability
-to modify certain options at [runtime](../runtime_interfaces.md).
+mergerfs, like other filesystems, are given their options/arguments at
+mount time. You can not simply modify the [source of the
+configuration](../quickstart.md#usage) and have those settings applied
+any more than you would for other filesystems. It is the user's
+responsibility to [restart](../setup/upgrade.md) mergerfs to pick up
+the changes or use the [runtime interface](../runtime_interfaces.md).
 
-That said: mergerfs does not actively try to monitor typical methods
-of configuration (nor should it.) As such if changes are made to
-`/etc/fstab`, a systemd unit file, etc. it will have no knowledge of
-those changes. It is the user's responsibility to
-[restart](../setup/upgrade.md) mergerfs to pick up the changes or use
-the [runtime interface](../runtime_interfaces.md).
+NOTE: the [runtime interface](../runtime_interfaces.md) is **just**
+for runtime changes. It does **NOT** save those changed values
+anywhere.
 
 
 ## Why are all my files ending up on 1 filesystem?!
 
-Did you start with empty filesystems? Did you explicitly configure a
-`category.create` policy? Are you using an `existing path` / `path
-preserving` policy?
+Did you start with empty filesystems? Are you using an `existing path`
+policy?
 
 The default create policy is `epmfs`. That is a path preserving
 algorithm. With such a policy for `mkdir` and `create` with a set of
@@ -35,6 +34,39 @@ not](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-
 and wish your files to be spread across all your filesystems change
 `create.category` to `pfrd`, `rand`, `mfs` or a similarly non-path
 restrictive [policy](../config/functions_categories_policies.md).
+
+
+## Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
+
+First make sure you've read the sections above about [policies, path
+preservation, branch
+filtering,](../config/functions_categories_policies.md) and the
+options `minfreespace`, [moveonenospc](../config/moveonenospc.md),
+[statfs](../config/statfs.md), and
+[statfs_ignore](../config/statfs.md#statfs_ignore).
+
+mergerfs is simply presenting a union of the content within multiple
+branches. The reported free space is an aggregate of space available
+within the pool (behavior modified by `statfs` and
+`statfs_ignore`). It does not represent a contiguous space. In the
+same way that read-only filesystems, those with quotas, or reserved
+space report the full theoretical space available. Not the practical
+usable space.
+
+Due to using an `existing path` based policy, setting a [branch's
+mode](../config/branches.md#branch-mode) to `NC` or `RO`, a
+filesystems read-only status, and/or `minfreespace` setting it is
+[perfectly
+valid](../config/functions_categories_policies.md#filtering) that
+`ENOSPC` / "out of space" / "no space left on device" be returned when
+attempting to create a file despite there being actual space available
+somewhere in the pool. It is doing what was asked of it: filtering
+possible branches due to those settings. If that is not the behavior
+you want you need to modify the settings accordingly.
+
+It is also possible that the filesystem selected has run out of
+inodes. Use `df -i` to list the total and available inodes per
+filesystem.
 
 
 ## Why isn't the create policy working?

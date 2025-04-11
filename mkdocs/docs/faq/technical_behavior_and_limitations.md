@@ -84,39 +84,6 @@ an error back to the application making the request.
 Should FUSE gain the ability mergerfs will be updated to support it.
 
 
-## Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
-
-First make sure you've read the sections above about policies, path
-preservation, branch filtering, and the options `minfreespace`,
-`moveonenospc`, `statfs`, and `statfs_ignore`.
-
-mergerfs is simply presenting a union of the content within multiple
-branches. The reported free space is an aggregate of space available
-within the pool (behavior modified by `statfs` and
-`statfs_ignore`). It does not represent a contiguous space. In the
-same way that read-only filesystems, those with quotas, or reserved
-space report the full theoretical space available.
-
-Due to path preservation, branch tagging, read-only status, and
-`minfreespace` settings it is perfectly valid that `ENOSPC` / "out of
-space" / "no space left on device" be returned. It is doing what was
-asked of it: filtering possible branches due to those settings. Only
-one error can be returned and if one of the reasons for filtering a
-branch was `minfreespace` then it will be returned as
-such. `moveonenospc` is only relevant to writing a file which is too
-large for the filesystem it's currently on.
-
-It is also possible that the filesystem selected has run out of
-inodes. Use `df -i` to list the total and available inodes per
-filesystem.
-
-If you don't care about path preservation then simply change the
-`create` policy to one which isn't. `mfs` is probably what most are
-looking for. The reason it's not default is because it was originally
-set to `epmfs` and changing it now would change people's setup. Such a
-setting change will likely occur in mergerfs 3.
-
-
 ## Why does the total available space in mergerfs not equal outside?
 
 Are you using ext2/3/4? With reserve for root? mergerfs uses available
