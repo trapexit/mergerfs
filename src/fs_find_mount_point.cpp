@@ -21,6 +21,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
       if(rv == -1)
         return {};
 
+      tmp_path = tmp_path.parent_path();
     }
 
   return 0;
