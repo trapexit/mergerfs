@@ -307,7 +307,7 @@ main(int    argc_,
   
   fmt::print("{} : {}\n",
              path.string(),
-             fs::find_mount_point(path).string());
+             fs::find_mount_point(path)->string());
 
   return 0;
   
