@@ -7,7 +7,7 @@ inline
 std::error_code
 ecerrno(const int errno_)
 {
-  
+  return std::make_error_code(errno_,std::generic_category());
 }
 
 fs::ecpath
