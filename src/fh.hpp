@@ -22,6 +22,12 @@
 class FH
 {
 public:
+  FH(const std::string fusepath_)
+    : fusepath(std::move(fusepath_))
+  {
+
+  }
+
   FH(const char *fusepath_)
     : fusepath(fusepath_)
   {

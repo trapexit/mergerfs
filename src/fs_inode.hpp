@@ -20,6 +20,9 @@
 
 #include "fuse_kernel.h"
 
+#include "nonstd/string_view.hpp"
+#include "ghc/filesystem.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -30,34 +33,19 @@ namespace fs
 {
   namespace inode
   {
-    static const uint64_t MAGIC = 0x7472617065786974;
-
     int set_algo(const std::string &s);
     std::string get_algo(void);
 
-    uint64_t calc(const char     *fusepath,
-                  const uint64_t  fusepath_len,
-                  const mode_t    mode,
-                  const dev_t     dev,
-                  const ino_t     ino);
-    uint64_t calc(std::string const &fusepath,
-                  mode_t const       mode,
-                  dev_t const        dev,
-                  ino_t              ino);
+    uint64_t calc(const nonstd::string_view basepath,
+                  const nonstd::string_view fusepath,
+                  const mode_t              mode,
+                  const ino_t               ino);
 
-    void calc(const char     *fusepath,
-              const uint64_t  fusepath_len,
-              struct stat    *st);
-    void calc(const char        *fusepath,
-              const uint64_t     fusepath_len,
-              struct fuse_statx *st);
-
-    void calc(const char  *fusepath,
-              struct stat *st);
-    void calc(const char        *fusepath,
-              struct fuse_statx *st);
-
-    void calc(const std::string &fusepath,
-              struct stat       *st);
+    void calc(const nonstd::string_view  basepath,
+              const nonstd::string_view  fusepath,
+              struct stat               *st);
+    void calc(const nonstd::string_view  basepath,
+              const nonstd::string_view  fusepath,
+              struct fuse_statx         *st);
   }
 }

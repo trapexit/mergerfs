@@ -20,7 +20,6 @@
 #include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_closedir.hpp"
-#include "fs_devid.hpp"
 #include "fs_dirfd.hpp"
 #include "fs_inode.hpp"
 #include "fs_opendir.hpp"
@@ -50,6 +49,7 @@ namespace l
 {
   struct DirRV
   {
+    const std::string *branch_path;
     DIR *dir;
     int  err;
   };
@@ -99,29 +99,30 @@ namespace l
   std::vector<std::future<DirRV>>
   opendir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
-          char const           *dirname_,
+          const std::string    &rel_dirpath_,
           uid_t const           uid_,
           gid_t const           gid_)
   {
     std::vector<std::future<DirRV>> futures;
 
     futures.reserve(branches_->size());
+
     for(auto const &branch : *branches_)
       {
-        auto func = [&branch,dirname_,uid_,gid_]()
-        {
-          DirRV rv;
-          std::string basepath;
-          ugid::Set const ugid(uid_,gid_);
+        auto func =
+          [&branch,&rel_dirpath_,uid_,gid_]()
+          {
+            DIR *dir;
+            std::string abs_dirpath;
+            const ugid::Set ugid(uid_,gid_);
 
-          basepath = fs::path::make(branch.path,dirname_);
+            abs_dirpath = fs::path::make(branch.path,rel_dirpath_);
 
-          errno  = 0;
-          rv.dir = fs::opendir(basepath);
-          rv.err = errno;
+            errno  = 0;
+            dir = fs::opendir(abs_dirpath);
 
-          return rv;
-        };
+            return DirRV{&branch.path,dir,errno};
+          };
 
         auto rv = tp_.enqueue_task(func);
 
@@ -135,27 +136,25 @@ namespace l
   inline
   int
   readdir(std::vector<std::future<DirRV>> &dh_futures_,
-          char const                      *dirname_,
+          const std::string               &rel_dirpath_,
           fuse_dirents_t                  *buf_)
   {
     Error error;
     HashSet names;
-    std::string fullpath;
+    std::string rel_filepath;
 
     for(auto &dh_future : dh_futures_)
       {
         int rv;
-        dev_t dev;
         DirRV dirrv;
 
         dirrv = dh_future.get();
+
         error = dirrv.err;
         if(dirrv.dir == NULL)
           continue;
 
         DEFER { fs::closedir(dirrv.dir); };
-
-        dev = fs::devid(dirrv.dir);
 
         rv = 0;
         for(dirent *de = fs::readdir(dirrv.dir); de && !rv; de = fs::readdir(dirrv.dir))
@@ -168,11 +167,11 @@ namespace l
             if(rv == 0)
               continue;
 
-            fullpath  = fs::path::make(dirname_,de->d_name);
-            de->d_ino = fs::inode::calc(fullpath,
-                                        DTTOIF(de->d_type),
-                                        dev,
-                                        de->d_ino);
+            rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
+            de->d_ino    = fs::inode::calc(*dirrv.branch_path,
+                                           rel_filepath,
+                                           DTTOIF(de->d_type),
+                                           de->d_ino);
 
             rv = fuse_dirents_add(buf_,de,namelen);
             if(rv == 0)
@@ -190,7 +189,7 @@ namespace l
   int
   readdir(ThreadPool           &tp_,
           const Branches::CPtr &branches_,
-          const char           *dirname_,
+          const std::string    &rel_dirpath_,
           fuse_dirents_t       *buf_,
           uid_t const           uid_,
           gid_t const           gid_)
@@ -200,8 +199,8 @@ namespace l
 
     fuse_dirents_reset(buf_);
 
-    futures = l::opendir(tp_,branches_,dirname_,uid_,gid_);
-    rv      = l::readdir(futures,dirname_,buf_);
+    futures = l::opendir(tp_,branches_,rel_dirpath_,uid_,gid_);
+    rv      = l::readdir(futures,rel_dirpath_,buf_);
 
     return rv;
   }
@@ -217,7 +216,7 @@ FUSE::ReadDirCOSR::operator()(fuse_file_info_t const *ffi_,
 
   return l::readdir(_tp,
                     cfg->branches,
-                    di->fusepath.c_str(),
+                    di->fusepath,
                     buf_,
                     fc->uid,
                     fc->gid);

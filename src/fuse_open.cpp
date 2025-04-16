@@ -211,7 +211,7 @@ namespace l
     if(fd == -1)
       return -errno;
 
-    fi = new FileInfo(fd,fusepath_,ffi_->direct_io);
+    fi = new FileInfo(fd,basepath_,fusepath_,ffi_->direct_io);
 
     ffi_->fh = reinterpret_cast<uint64_t>(fi);
 

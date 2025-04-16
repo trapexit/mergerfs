@@ -20,7 +20,6 @@
 #include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_close.hpp"
-#include "fs_devid.hpp"
 #include "fs_getdents64.hpp"
 #include "fs_inode.hpp"
 #include "fs_open.hpp"
@@ -77,23 +76,24 @@ namespace l
   static
   inline
   int
-  readdir(std::string     basepath_,
-          HashSet        &names_,
-          fuse_dirents_t *buf_,
-          std::mutex     &mutex_)
+  readdir(const std::string &branch_path_,
+          const std::string &rel_dirpath_,
+          HashSet           &names_,
+          fuse_dirents_t    *buf_,
+          std::mutex        &mutex_)
   {
     int rv;
     int dfd;
-    dev_t dev;
-    std::string filepath;
+    std::string rel_filepath;
+    std::string abs_dirpath;
 
-    dfd = fs::open_dir_ro(basepath_);
+    abs_dirpath = fs::path::make(branch_path_,rel_dirpath_);
+
+    dfd = fs::open_dir_ro(abs_dirpath);
     if(dfd == -1)
       return errno;
 
     DEFER{ fs::close(dfd); };
-
-    dev = fs::devid(dfd);
 
     rv = 0;
     for(;;)
@@ -121,10 +121,10 @@ namespace l
             if(rv == 0)
               continue;
 
-            filepath = fs::path::make(basepath_,d->name);
-            d->ino = fs::inode::calc(filepath,
+            rel_filepath = fs::path::make(rel_dirpath_,d->name);
+            d->ino = fs::inode::calc(branch_path_,
+                                     rel_filepath,
                                      DTTOIF(d->type),
-                                     dev,
                                      d->ino);
 
             rv = fuse_dirents_add_linux(buf_,d,namelen);
@@ -142,27 +142,31 @@ namespace l
   int
   concurrent_readdir(ThreadPool           &tp_,
                      const Branches::CPtr &branches_,
-                     const char           *dirname_,
+                     const std::string    &rel_dirpath_,
                      fuse_dirents_t       *buf_,
-                     uid_t const           uid_,
-                     gid_t const           gid_)
+                     const uid_t           uid_,
+                     const gid_t           gid_)
   {
     HashSet names;
     std::mutex mutex;
     std::vector<std::future<int>> futures;
 
+    fuse_dirents_reset(buf_);
     futures.reserve(branches_->size());
-    for(auto const &branch : *branches_)
+
+    for(const auto &branch : *branches_)
       {
-        auto func = [&,dirname_,buf_,uid_,gid_]()
-        {
-          std::string basepath;
-          ugid::Set const ugid(uid_,gid_);
+        auto func =
+          [&,buf_,uid_,gid_]()
+          {
+            const ugid::Set ugid(uid_,gid_);
 
-          basepath = fs::path::make(branch.path,dirname_);
-
-          return l::readdir(basepath,names,buf_,mutex);
-        };
+            return l::readdir(branch.path,
+                              rel_dirpath_,
+                              names,
+                              buf_,
+                              mutex);
+          };
 
         auto rv = tp_.enqueue_task(func);
 
@@ -175,20 +179,6 @@ namespace l
 
     return -error;
   }
-
-  static
-  int
-  readdir(ThreadPool           &tp_,
-          const Branches::CPtr &branches_,
-          const char           *dirname_,
-          fuse_dirents_t       *buf_,
-          uid_t const           uid_,
-          gid_t const           gid_)
-  {
-    fuse_dirents_reset(buf_);
-
-    return l::concurrent_readdir(tp_,branches_,dirname_,buf_,uid_,gid_);
-  }
 }
 
 int
@@ -199,10 +189,10 @@ FUSE::ReadDirCOR::operator()(fuse_file_info_t const *ffi_,
   DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
 
-  return l::readdir(_tp,
-                    cfg->branches,
-                    di->fusepath.c_str(),
-                    buf_,
-                    fc->uid,
-                    fc->gid);
+  return l::concurrent_readdir(_tp,
+                               cfg->branches,
+                               di->fusepath,
+                               buf_,
+                               fc->uid,
+                               fc->gid);
 }

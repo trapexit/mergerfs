@@ -163,7 +163,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    fi = new FileInfo(rv,fusepath_,ffi_->direct_io);
+    fi = new FileInfo(rv,createpath_,fusepath_,ffi_->direct_io);
 
     ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
