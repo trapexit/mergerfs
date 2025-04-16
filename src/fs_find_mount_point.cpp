@@ -19,7 +19,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
     {
       rv = fs::lstat(tmp_path,&tmp_st);
       if(rv == -1)
-        return -1;
+        return {};
 
     }
 
