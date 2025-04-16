@@ -5,9 +5,9 @@
 static
 inline
 std::error_code
-_ecerrno(const int errno_ = errno)
+_ecerrno(void)
 {
-  return std::make_error_code(errno_,std::generic_category());
+  return std::make_error_code(errno,std::generic_category());
 }
 
 fs::ecpath
