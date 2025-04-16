@@ -5,7 +5,7 @@
 static
 inline
 std::error_code
-ecerrno(const int errno_)
+ecerrno(const int errno_ = errno)
 {
   return std::make_error_code(errno_,std::generic_category());
 }
