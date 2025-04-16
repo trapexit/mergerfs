@@ -2,6 +2,14 @@
 
 #include "fs_lstat.hpp"
 
+static
+inline
+std::error_code
+_ec(const int errno_)
+{
+  
+}
+
 fs::ecpath
 fs::find_mount_point(const ghc::filesystem::path &path_)
 {
