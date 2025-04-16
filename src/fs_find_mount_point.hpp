@@ -22,5 +22,5 @@
 
 namespace fs
 {
-  int find_mount_point(const ghc::filesystem::path &path);
+  ghc::filesystem::path find_mount_point(const ghc::filesystem::path &path);
 }
