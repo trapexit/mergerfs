@@ -297,9 +297,18 @@ namespace l
   }
 }
 
+#include "fs_find_mount_point.hpp"
+
 int
 main(int    argc_,
      char **argv_)
 {
+  ghc::filesystem::path path{argv_[1]};
+  
+  fmt::print("{} : {}\n",
+             path,
+             fs::find_mount_point(path));
+             
+  
   return l::main(argc_,argv_);
 }
