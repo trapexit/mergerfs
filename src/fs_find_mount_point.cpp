@@ -2,7 +2,7 @@
 
 #include "fs_lstat.hpp"
 
-int
+ghc::filesystem::path
 fs::find_mount_point(const ghc::filesystem::path &path_)
 {
   int rv;
