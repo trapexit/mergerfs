@@ -2,6 +2,8 @@
 
 #include "fs_lstat.hpp"
 
+#include <errno.h>
+
 static
 inline
 std::error_code
