@@ -7,13 +7,13 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
 {
   int rv;
   struct stat initial_st;
-  struct stat lower_st;
+  struct stat tmp_st;
 
   rv = fs::lstat(path_,&initial_st);
   if(rv == -1)
     return -1;
 
-  
+  while(path
 
   return 0;
 }
