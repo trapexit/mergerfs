@@ -30,7 +30,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
 
   rv = fs::lstat(can_path,&initial_st);
   if(rv == -1)
-    return nonstd::make_unexpected(::_ecerrno())
+    return nonstd::make_unexpected(::_ecerrno());
 
   tmp_path = can_path;
   while(tmp_path != tmp_path.root_path())
