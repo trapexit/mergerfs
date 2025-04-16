@@ -304,10 +304,13 @@ main(int    argc_,
      char **argv_)
 {
   ghc::filesystem::path path{argv_[1]};
-  
-  fmt::print("{} : {}\n",
-             path.string(),
-             fs::find_mount_point(path)->string());
+  fs::ecpath ecpath;
+
+  ecpath = fs::find_mount_point(path);
+  if(ecpath)
+    fmt::print("{} : {}\n",
+               path.string(),
+               ec->string());
 
   return 0;
   
