@@ -19,9 +19,10 @@
 #pragma once
 
 #include "ghc/filesystem.hpp"
-#include "nonstd/expected.hpp"
+
+#include "fs_ecpath.hpp"
 
 namespace fs
 {
-  ghc::filesystem::path find_mount_point(const ghc::filesystem::path &path);
+  fs::ECPath find_mount_point(const ghc::filesystem::path &path);
 }
