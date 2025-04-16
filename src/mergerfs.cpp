@@ -310,7 +310,7 @@ main(int    argc_,
   if(ecpath)
     fmt::print("{} : {}\n",
                path.string(),
-               ec->string());
+               ecpath->string());
   else
     fmt::print("{}\n",
                ecpath.error().value());
