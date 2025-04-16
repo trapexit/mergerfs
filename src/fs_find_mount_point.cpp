@@ -23,10 +23,12 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
   ghc::filesystem::path tmp_path;
 
   can_path = ghc::filesystem::weakly_canonical(path_,ec);
+  fmt::print("{}\n",can_path);
   if(ec)
     can_path = ghc::filesystem::absolute(path_,ec);
   if(ec)
     return nonstd::make_unexpected(ec);
+  fmt::print("{}\n",can_path);  
 
   rv = fs::lstat(can_path,&initial_st);
   if(rv == -1)
