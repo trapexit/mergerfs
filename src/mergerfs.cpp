@@ -311,6 +311,9 @@ main(int    argc_,
     fmt::print("{} : {}\n",
                path.string(),
                ec->string());
+  else
+    fmt::print("{}\n",
+               ecpath.error());
 
   return 0;
   
