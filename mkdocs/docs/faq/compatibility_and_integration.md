@@ -1,5 +1,34 @@
 # Compatibility and Integration
 
+## What operating systems does mergerfs support?
+
+[Primarily Linux.](../setup/installation.md) FreeBSD is casually
+supported but not well tested.
+
+
+### Why not support MacOS?
+
+* Last checked the support for FUSE on MacOS was in flux.
+* MacOS is not an OS commonly used for NASs and other use cases
+  for which mergerfs is used.
+* trapexit does not own a MacOS based system.
+
+
+### Why not support Windows?
+
+[WinFSP](https://winfsp.dev/) does implement a libfuse compatible API
+for Windows however mergerfs does not use libfuse (perhaps
+[ironically](https://github.com/libfuse/libfuse/blob/master/AUTHORS).)
+Even if mergerfs was ported to use libfuse it would require the use of
+the low level API. WinFSP does not appear to support libfuse's low
+level API.
+
+Windows, while used for NAS systems more often than MacOS, is still
+relatively uncommon when compared to Linux. [Drive
+Pool](../project_comparisons.md#stablebits-drivepool) is a reasonable
+alternative.
+
+
 ## What filesystems can be used as branches?
 
 ext4, btrfs, xfs, f2fs, zfs, nfs, etc.
