@@ -19,9 +19,11 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
     return nonstd::make_unexpected(ec);
 
   rv = fs::lstat(can_path,&initial_st);
-  ec.assign(errno,std::generic_category());
   if(rv == -1)
-    return nonstd::make_unexpected(ec);
+    {
+      ec.assign(errno,std::generic_category());      
+      return nonstd::make_unexpected(ec);
+    }
 
   tmp_path = can_path;
   while(tmp_path != tmp_path.root_path())
