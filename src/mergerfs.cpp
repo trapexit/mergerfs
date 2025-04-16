@@ -308,7 +308,8 @@ main(int    argc_,
   fmt::print("{} : {}\n",
              path,
              fs::find_mount_point(path));
-             
+
+  return 0;
   
   return l::main(argc_,argv_);
 }
