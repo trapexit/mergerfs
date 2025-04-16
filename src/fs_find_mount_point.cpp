@@ -20,9 +20,11 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
       rv = fs::lstat(tmp_path.parent_path(),&tmp_st);
       if(rv == -1)
         return {};
-      printf("%d %d\n",
+      printf("%d:%s %d:%s\n",
              tmp_st.st_dev,
-             initial_st.st_dev);
+             tmp_path.parent_path().string().c_str(),
+             initial_st.st_dev,
+             path_.string().c_str());
       if(tmp_st.st_dev != initial_st.st_dev)
         return tmp_path;
       
