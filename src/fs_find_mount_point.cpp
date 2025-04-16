@@ -8,8 +8,12 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
   int rv;
   struct stat initial_st;
   struct stat tmp_st;
+  std::error_code ec;
+  ghc::filesystem::path can_path;
   ghc::filesystem::path tmp_path;
 
+  can_path = ghc::filesystem::weakly_canonical(path_,ec);
+  
   rv = fs::lstat(path_,&initial_st);
   if(rv == -1)
     return {};
