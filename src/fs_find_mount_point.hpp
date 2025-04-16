@@ -18,3 +18,13 @@
 
 #pragma once
 
+#include "ghc/filesystem.hpp"
+
+namespace fs
+{
+  int
+  find_mount_point(const ghc::filesystem::path &path_)
+  {
+        
+  }
+}
