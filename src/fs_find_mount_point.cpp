@@ -16,7 +16,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
   if(ec)
     can_path = ghc::filesystem::absolute(path_,ec);
   if(ec)
-    return nonstd::make_unexpected(ec;
+    return nonstd::make_unexpected(ec);
   
   rv = fs::lstat(can_path,&initial_st);
   if(rv == -1)
