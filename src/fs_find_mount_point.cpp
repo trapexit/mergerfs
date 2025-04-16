@@ -21,7 +21,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
     return {};
 
   tmp_path = can_path;
-  while(tmp_path != "/")
+  while(tmp_path != tmp_path.root_path())
     {
       rv = fs::lstat(tmp_path.parent_path(),&tmp_st);
       if(rv == -1)
