@@ -23,6 +23,5 @@
 
 namespace fs
 {
-  typedef ECPath nonstd::expected<
   ghc::filesystem::path find_mount_point(const ghc::filesystem::path &path);
 }
