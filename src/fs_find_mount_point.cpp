@@ -14,7 +14,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
 
   can_path = ghc::filesystem::weakly_canonical(path_,ec);
   
-  rv = fs::lstat(path_,&initial_st);
+  rv = fs::lstat(can_path,&initial_st);
   if(rv == -1)
     return {};
 
