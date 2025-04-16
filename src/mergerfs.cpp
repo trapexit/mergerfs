@@ -312,8 +312,9 @@ main(int    argc_,
                path.string(),
                ecpath->string());
   else
-    fmt::print("{}\n",
-               ecpath.error().value());
+    fmt::print("{} {}\n",
+               ecpath.error().value(),
+               ecpath.error().message());
 
   return 0;
   
