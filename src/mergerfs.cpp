@@ -313,7 +313,7 @@ main(int    argc_,
                ec->string());
   else
     fmt::print("{}\n",
-               ecpath.error());
+               ecpath.error().value());
 
   return 0;
   
