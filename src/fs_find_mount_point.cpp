@@ -13,6 +13,8 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
   ghc::filesystem::path tmp_path;
 
   can_path = ghc::filesystem::weakly_canonical(path_,ec);
+  printf("%s\n",
+         can_path.root_path().string().c_str());
   
   rv = fs::lstat(can_path,&initial_st);
   if(rv == -1)
