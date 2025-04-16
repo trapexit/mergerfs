@@ -20,7 +20,7 @@ fs::find_mount_point(const ghc::filesystem::path &path_)
   
   rv = fs::lstat(can_path,&initial_st);
   if(rv == -1)
-    return std::error_code(-errno);
+    return std::error_code(-errno,std::system_category());
 
   tmp_path = can_path;
   while(tmp_path != tmp_path.root_path())
