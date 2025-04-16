@@ -9,7 +9,7 @@ inline
 std::error_code
 _ecerrno(void)
 {
-  return std::make_error_code(errno,std::generic_category());
+  return std::error_code(errno,std::generic_category());
 }
 
 fs::ecpath
