@@ -306,8 +306,8 @@ main(int    argc_,
   ghc::filesystem::path path{argv_[1]};
   
   fmt::print("{} : {}\n",
-             path,
-             fs::find_mount_point(path));
+             path.string(),
+             fs::find_mount_point(path).string());
 
   return 0;
   
