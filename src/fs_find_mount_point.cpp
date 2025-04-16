@@ -5,7 +5,7 @@
 static
 inline
 std::error_code
-_ec(const int errno_)
+ecerrno(const int errno_)
 {
   
 }
