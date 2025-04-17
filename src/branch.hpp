@@ -60,6 +60,8 @@ public:
 public:
   Mode mode;
   std::string path;
+  ghc::filesystem::path mount_path;
+  uint64_t mount_hash_digest;
 
 private:
   nonstd::optional<uint64_t>  _minfreespace;
