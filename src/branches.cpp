@@ -208,7 +208,6 @@ namespace l
         ecpath = fs::find_mount_point(b.path);
         if(ecpath)
           b.mount_path = *ecpath;
-        
       }
 
     return 0;
