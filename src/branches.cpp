@@ -210,8 +210,7 @@ namespace l
         ecpath = fs::find_mount_point(b.path);
         if(ecpath)
           b.mount_path = *ecpath;
-        fmt::println("branch: {}; mount point: {}",
-                     b.path,
+        fmt::println("mount point: {}",
                      b.mount_path.string());
         b.mount_hash_digest = 0;
       }
