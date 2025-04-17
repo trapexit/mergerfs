@@ -206,6 +206,7 @@ namespace l
       {
         fs::ecpath ecpath;
 
+        fmt::println("branch: {};",b.path);
         ecpath = fs::find_mount_point(b.path);
         if(ecpath)
           b.mount_path = *ecpath;
