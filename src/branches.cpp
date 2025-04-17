@@ -28,6 +28,7 @@
 #include "str.hpp"
 #include "syslog.hpp"
 #include "fs_find_mount_point.hpp"
+#include "fmt/core.h"
 
 #include <string>
 
