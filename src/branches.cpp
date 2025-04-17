@@ -27,6 +27,7 @@
 #include "num.hpp"
 #include "str.hpp"
 #include "syslog.hpp"
+#include "fs_find_mount_point.hpp"
 
 #include <string>
 
