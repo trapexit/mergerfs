@@ -303,6 +303,9 @@ int
 main(int    argc_,
      char **argv_)
 {
+  return l::main(argc_,argv_);
+
+  
   ghc::filesystem::path path{argv_[1]};
   fs::ecpath ecpath;
 
