@@ -200,6 +200,11 @@ namespace l
         branches_->push_back(branch);
       }
 
+    for(auto &b : *branches_)
+      {
+
+      }
+
     return 0;
   }
 
