@@ -21,6 +21,7 @@
 #include "nonstd/optional.hpp"
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
+#include "ghc/filesystem.hpp"
 
 #include <cstdint>
 #include <string>
