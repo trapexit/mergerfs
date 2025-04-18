@@ -56,6 +56,7 @@ namespace l
   {
     IFERT("async_read");
     IFERT("branches-mount-timeout");
+    IFERT("branches-mount-timeout-fail");
     IFERT("cache.symlinks");
     IFERT("cache.writeback");
     IFERT("direct-io-allow-mmap");
@@ -85,6 +86,7 @@ Config::Config()
     minfreespace(MINFREESPACE_DEFAULT),
     branches(minfreespace),
     branches_mount_timeout(0),
+    branches_mount_timeout_fail(false),
     cache_attr(1),
     cache_entry(1),
     cache_files(CacheFiles::ENUM::OFF),
@@ -139,6 +141,7 @@ Config::Config()
   _map["auto_cache"]             = &auto_cache;
   _map["branches"]               = &branches;
   _map["branches-mount-timeout"] = &branches_mount_timeout;
+  _map["branches-mount-timeout-fail"] = &branches_mount_timeout_fail;
   _map["cache.attr"]             = &cache_attr;
   _map["cache.entry"]            = &cache_entry;
   _map["cache.files"]            = &cache_files;

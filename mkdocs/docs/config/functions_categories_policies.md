@@ -1,27 +1,15 @@
 # functions, categories and policies
 
-The POSIX filesystem API is made up of a number of
-functions. **creat**, **stat**, **chown**, etc. For ease of
-configuration in mergerfs, most of the core functions are grouped into
-3 categories: **action**, **create**, and **search**. These functions
-and categories can be assigned a policy which dictates which branch is
-chosen when performing that function.
+The POSIX filesystem API is made up of a number of functions. `creat`,
+`stat`, `chown`, etc. For ease of configuration in mergerfs, most of
+the core functions are grouped into 3 categories: `action`, `create`,
+and `search`. These functions and categories can be assigned a policy
+which dictates which branch is chosen when performing that
+function.
 
 Some functions, listed in the category `N/A` below, can not be
 assigned the normal policies because they are directly related to a
 file which has already been opened.
-
-When using policies which are based on a branch's available space the
-base path provided is used. Not the full path to the file in
-question. Meaning that mounts in the branch won't be considered in the
-space calculations. The reason is that it doesn't really work for
-non-path preserving policies and can lead to non-obvious behaviors.
-
-NOTE: While any policy can be assigned to a function or category,
-some may not be very useful in practice. For instance: **rand**
-(random) may be useful for file creation (create) but could lead to
-very odd behavior if used for `chmod` if there were more than one copy
-of the file.
 
 
 ## Functions and their Category classifications
@@ -34,43 +22,61 @@ of the file.
 | N/A      | fchmod, fchown, futimens, ftruncate, fallocate, fgetattr, fsync, ioctl (files), read, readdir, release, statfs, write, copy_file_range |
 
 In cases where something may be searched for (such as a path to clone)
-**getattr** will usually be used.
+`getattr` will usually be used.
 
 
 ## Policies
 
+See below for [available policies and their descriptions](#policy-descriptions).
+
 A policy is an algorithm designed to select one or more branches for a
 function to operate on.
 
-Any function in the `create` category will clone the relative path if
-needed. Some other functions (`rename`,`link`,`ioctl`) have special
-requirements or behaviors which you can read more about below.
+Policies do not actually manage the filesystem or layout. They are
+strictly responsible for deciding which files or branches will be
+worked on in relation to the function being performed. Once the branch
+is chosen other parts of the system does what is necessary to
+accomplish the function. Such as the cloning of directories between
+branches.
+
+When using policies which are based on a branch's available space the
+branch base path provided is used. Not the full path to the file or
+directory in question. Meaning that mounts within the branch will not
+be considered in the space calculations.
+
+NOTE: While any policy can be assigned to a function or category, some
+may not be very useful in practice. For instance: `rand` (random) may
+be useful for file creation but could lead to very odd behavior if
+used for `chmod` if there were more than one copy of the file. Unless
+users find this flexibility useful it will likely be removed in the
+future.
 
 
 ## Filtering
 
-Most policies basically search branches and create a list of files / paths
-for functions to work on. The policy is responsible for filtering and
-sorting the branches. Filters include **minfreespace**, whether or not
-a branch is mounted read-only, and the branch tagging
+Most policies search branches and create a list of files / paths for
+functions to work on. The policy is responsible for filtering and
+sorting the branches. Filters include [minfreespace](minfreespace.md),
+whether or not a branch is mounted read-only, and the branch mode
 (RO,NC,RW). These filters are applied across most policies.
 
-- No **search** function policies filter.
-- All **action** function policies filter out branches which are
-  mounted **read-only** or tagged as **RO (read-only)**.
-- All **create** function policies filter out branches which are
-  mounted **read-only**, tagged **RO (read-only)** or **NC (no
-  create)**, or has available space less than `minfreespace`.
+- No `search` function policies filter.
+- All `action` function policies filter out branches which are
+  mounted **read-only** or mode is **RO (read-only)**.
+- All `create` function policies filter out branches which are
+  mounted **read-only**, mode **RO (read-only)** or **NC (no
+  create)**, or has available space less than
+  [minfreespace](minfreespace.md).
 
 Policies may have their own additional filtering such as those that
 require existing paths to be present.
 
 If all branches are filtered an error will be returned. Typically
-**EROFS** (read-only filesystem) or **ENOSPC** (no space left on
+`EROFS` (read-only filesystem) or `ENOSPC` (no space left on
 device) depending on the most recent reason for filtering a
-branch. **ENOENT** will be returned if no eligible branch is found.
+branch.
 
-If **create**, **mkdir**, **mknod**, or **symlink** fail with `EROFS`
+If `create`, `mkdir`, `mknod`, or `symlink` fail with `EROFS`
 or other fundamental errors then mergerfs will mark any branch found
 to be read-only as such (IE will set the mode `RO`) and will rerun the
 policy and try again. This is mostly for `ext4` filesystems that can
@@ -82,15 +88,11 @@ suddenly become read-only when it encounters an error.
 Policies, as described below, are of two basic classifications. `path
 preserving` and `non-path preserving`.
 
-All policies which start with `ep` (**epff**, **eplfs**, **eplus**,
-**epmfs**, **eprand**) are `path preserving`. `ep` stands for
-`existing path`.
+All policies which start with `ep` (`epff`, `eplfs`, `eplus`, `epmfs`,
+`eprand`) are `path preserving`. `ep` stands for `existing path`.
 
 A path preserving policy will only consider branches where the relative
 path being accessed already exists.
-
-When using non-path preserving policies paths will be cloned to target
-branches as necessary.
 
 With the `msp` or `most shared path` policies they are defined as
 `path preserving` for the purpose of controlling `link` and `rename`'s
@@ -141,5 +143,5 @@ policies is not appropriate.
 | Category | Policy |
 | -------- | ------ |
 | action   | epall  |
-| create   | epmfs  |
+| create   | pfrd   |
 | search   | ff     |

@@ -30,7 +30,7 @@
 #define PAD_LEN             16
 #define MAX_ATTEMPTS        3
 
-static char const   CHARS[]    = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static char const CHARS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static size_t const CHARS_SIZE = (sizeof(CHARS) - 1);
 
 
@@ -57,8 +57,8 @@ namespace l
 namespace fs
 {
   std::tuple<int,std::string>
-  mktemp_in_dir(std::string const dirpath_,
-                int const         flags_)
+  mktemp_in_dir(const std::string dirpath_,
+                const int         flags_)
   {
     int fd;
     int count;
@@ -85,10 +85,10 @@ namespace fs
   }
 
   std::tuple<int,std::string>
-  mktemp(std::string const filepath_,
-         int const         flags_)
+  mktemp(const std::string filepath_,
+         const int         flags_)
   {
-    ghc::filesystem::path filepath{filepath_};
+    fs::Path filepath{filepath_};
 
     return fs::mktemp_in_dir(filepath.parent_path(),flags_);
   }

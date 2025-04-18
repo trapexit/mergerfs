@@ -41,6 +41,8 @@
 #include "rwlock.hpp"
 #include "tofrom_wrapper.hpp"
 
+#include "ghc/filesystem.hpp"
+
 #include "fuse.h"
 
 #include <cstdint>
@@ -55,6 +57,7 @@ typedef ToFromWrapper<bool>                 ConfigBOOL;
 typedef ToFromWrapper<uint64_t>             ConfigUINT64;
 typedef ToFromWrapper<int>                  ConfigINT;
 typedef ToFromWrapper<std::string>          ConfigSTR;
+typedef ToFromWrapper<ghc::filesystem::path> ConfigPath;
 typedef std::map<std::string,ToFromString*> Str2TFStrMap;
 
 extern const std::string CONTROLFILE;
@@ -108,6 +111,7 @@ public:
   ConfigUINT64   minfreespace;
   Branches       branches;
   ConfigUINT64   branches_mount_timeout;
+  ConfigBOOL     branches_mount_timeout_fail;
   ConfigUINT64   cache_attr;
   ConfigUINT64   cache_entry;
   CacheFiles     cache_files;
@@ -133,7 +137,7 @@ public:
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
   LogMetrics     log_metrics;
-  ConfigSTR      mountpoint;
+  ConfigPath     mountpoint;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;

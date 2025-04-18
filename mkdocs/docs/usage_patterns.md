@@ -4,14 +4,15 @@
 
 Some storage technologies support what is called "tiered" caching. The
 placing of smaller, faster storage as a transparent cache to larger,
-slower storage. NVMe, SSD, Optane in front of traditional HDDs for
+slower storage. NVMe, SSD, or Optane in front of traditional HDDs for
 instance.
 
-mergerfs does not natively support any sort of tiered caching. Most
-users have no use for such a feature and its inclusion would
-complicate the code as it exists today. However, there are a few
-situations where a cache filesystem could help with a typical mergerfs
-setup.
+mergerfs does not natively support any sort of tiered caching
+currently. The truth is for many users a cache would have little or no
+advantage over reading and writing directly. They would be
+bottlenecked by their network, internet connection, or limited size of
+the cache. However, there are a few situations where a tiered cache
+setup could help.
 
 1.  Fast network, slow filesystems, many readers: You've a 10+Gbps
     network with many readers and your regular filesystems can't keep
@@ -34,7 +35,7 @@ dm-cache but there is another solution which requires only mergerfs, a
 script to move files around, and a cron job to run said script.
 
 * Create two mergerfs pools. One which includes just the **slow**
-  branches and one which has both the **fast** branches
+  branches and one which has **both** the **fast** branches
   (SSD,NVME,etc.) and **slow** branches. The **base** pool and the
   **cache** pool.
 * The **cache** pool should have the cache branches listed first in
@@ -43,7 +44,7 @@ script to move files around, and a cron job to run said script.
   probably be `ff`, `lus`, or `lfs`. The latter two under the
   assumption that the cache filesystem(s) are far smaller than the
   backing filesystems.
-* You can also set the **slow** filesystems mode to `NC` which would
+* You can also set the **slow** branches' mode to `NC` which would
   give you the ability to use other `create` policies though that'd
   mean if the cache filesystems fill you'd get "out of space"
   errors. This however may be good as it would indicate the script

@@ -421,7 +421,7 @@ check_for_mount_loop(Config::Write  &cfg_,
   fs::PathVector branches;
   std::error_code ec;
 
-  mount    = (std::string)cfg_->mountpoint;
+  mount    = *cfg_->mountpoint;
   branches = cfg_->branches->to_paths();
   for(const auto &branch : branches)
     {

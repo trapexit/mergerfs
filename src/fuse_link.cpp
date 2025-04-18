@@ -32,7 +32,6 @@
 
 using std::string;
 using std::vector;
-namespace gfs = ghc::filesystem;
 
 namespace error
 {
@@ -230,8 +229,8 @@ namespace l
                          fuse_timeouts_t *timeouts_)
   {
     int rv;
-    gfs::path target(oldpath_);
-    gfs::path linkpath(newpath_);
+    fs::Path target(oldpath_);
+    fs::Path linkpath(newpath_);
 
     target = target.lexically_relative(linkpath.parent_path());
 
@@ -278,11 +277,11 @@ namespace l
 
   static
   int
-  link_exdev_abs_pool_symlink(const std::string &mount_,
-                              const char        *oldpath_,
-                              const char        *newpath_,
-                              struct stat       *st_,
-                              fuse_timeouts_t   *timeouts_)
+  link_exdev_abs_pool_symlink(const fs::Path   mount_,
+                              const char      *oldpath_,
+                              const char      *newpath_,
+                              struct stat     *st_,
+                              fuse_timeouts_t *timeouts_)
   {
     int rv;
     StrVec basepaths;

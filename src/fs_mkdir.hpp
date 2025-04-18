@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "ghc/filesystem.hpp"
+#include "fs_path.hpp"
 
 #include <string>
 
@@ -49,8 +49,8 @@ namespace fs
   static
   inline
   int
-  mkdir(const ghc::filesystem::path &path_,
-        const mode_t                 mode_)
+  mkdir(const fs::Path &path_,
+        const mode_t    mode_)
   {
     return fs::mkdir(path_.c_str(),mode_);
   }

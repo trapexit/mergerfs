@@ -1,6 +1,5 @@
 /*
   ISC License
-
   Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -29,7 +28,7 @@
 
 namespace fs
 {
-  void
+  int
   wait_for_mount(const fs::Path                  &srcpath,
                  const fs::PathVector            &tgtpaths,
                  const std::chrono::milliseconds &timeout);

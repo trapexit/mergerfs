@@ -16,11 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "from_string.hpp"
+
 #include "ef.hpp"
 #include "errno.hpp"
-
-#include <cstdint>
-#include <string>
 
 #include <stdlib.h>
 
@@ -127,5 +126,14 @@ namespace str
        const std::string *key_)
   {
     return -EINVAL;
+  }
+
+  int
+  from(const std::string &value_,
+       fs::Path          *path_)
+  {
+    *path_ = value_;
+
+    return 0;
   }
 }
