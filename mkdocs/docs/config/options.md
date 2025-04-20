@@ -1,9 +1,18 @@
 # Options
 
-These options are the same regardless of whether you use them with the
-`mergerfs` commandline program, in fstab, or in a config file.
+mergerfs has many options to control it many features. For the average
+use case the options listed in the [quickstart](../quickstart.md) are
+sufficient. Most options are related to operating system or filesystem
+related concepts so having a [basic
+background](../intro_to_filesystems.md) in such things is recommended
+for more advanced configurations.
 
-### types
+These option names and values are the same regardless of whether you
+use them with the `mergerfs` commandline program, in fstab, or in a
+config file.
+
+
+## types
 
 - BOOL = 'true' | 'false'
 - INT = [MIN_INT,MAX_INT]
@@ -18,7 +27,7 @@ These options are the same regardless of whether you use them with the
 - POLICY = mergerfs function [policy](functions_categories_policies.md)
 
 
-### mount options
+## mount options
 
 - **config**: Path to a config file. Same arguments as below in
   key=val / ini style format.

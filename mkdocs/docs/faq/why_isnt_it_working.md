@@ -247,3 +247,13 @@ Be sure to set
 or use Linux kernel v6.6 or above. rtorrent and some other
 applications use [mmap](http://linux.die.net/man/2/mmap) to read and
 write to files and offer no fallback to traditional methods.
+
+
+## Why don't I see mergerfs options in mount command or /proc/mounts?
+
+FUSE filesystems, such as mergerfs, are interpreting most of the
+possible options rather than being given to the kernel where those
+options in the `mount` command and /proc/mounts come from.
+
+If you want to see the options of a running instance of mergerfs you
+can use the [runtime interface](../runtime_interfaces.md).
