@@ -7,7 +7,7 @@ edit_uri: edit/master/mkdocs/docs/
 docs_dir: docs
 theme:
   name: material
-  logo: logo.jpeg
+  logo: logo.png
   features:
   - content.action.edit
   - content.action.view

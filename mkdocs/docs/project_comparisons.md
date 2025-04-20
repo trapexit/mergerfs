@@ -101,6 +101,15 @@ used those other technologies. Meaning you can't create a file greater
 than 1TB on a pool of 2 1TB filesystems.
 
 
+## BTRFS Single Data Profile
+
+[BTRFS'](https://btrfs.readthedocs.io) `single` data profile is
+similar to RAID0 but BTRFS can more explicitly place data and metadata
+on multiple devices. However, like RAID0 and similar technologies if a
+single device fails you may lose all data in the pool. BTRFS does have
+some abilities to recover data but this is not guaranteed.
+
+
 ## RAID5, RAID6
 
 * [RAID5](https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_5)
