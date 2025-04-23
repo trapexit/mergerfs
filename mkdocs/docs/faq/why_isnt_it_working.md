@@ -17,31 +17,30 @@ anywhere.
 ## Why are all my files ending up on 1 filesystem?!
 
 Did you start with empty filesystems? Are you using an `existing path`
-policy?
+policy such as `epmfs`?
 
-The default create policy is `epmfs`. That is a path preserving
-algorithm. With such a policy for `mkdir` and `create` with a set of
-empty filesystems it will select only 1 filesystem when the first
-directory is created. Anything, files or directories, created in that
-directory will be placed on the same branch because it is preserving
-paths. That is the expected behavior.
+If starting with a set of empty filesystems such a policy will select
+only 1 filesystem when the first directory is created. Anything
+created in that directory will be placed on the same branch because
+that is the point of such a policy. That is the expected behavior.
 
-This may catch new users off guard but this policy is the safest
-policy to have as default as it will not change the general layout of
-the underlying branches. If you do not care about path preservation
-([most should
-not](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-same-branch))
-and wish your files to be spread across all your filesystems change
-`create.category` to `pfrd`, `rand`, `mfs` or a similarly non-path
-restrictive [policy](../config/functions_categories_policies.md).
+This may catch users off guard but the point of those `existing path`
+policies is to preserve the directory layout and you need to consider
+what that means one event at a time.
+
+To "fix" this situation change the policy. Most users [have little
+reason](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-same-branch)
+to use such a policy. See the [quick start guide](../quickstart.md)
+and [FAQ](configuration_and_policies.md) for policy recommendations.
 
 
 ## Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
 
-First make sure you've read the sections above about [policies, path
+First make sure you've read the sections about [policies, path
 preservation, branch
 filtering,](../config/functions_categories_policies.md) and the
-options `minfreespace`, [moveonenospc](../config/moveonenospc.md),
+options [minfreespace](../config/minfreespace.md),
+[moveonenospc](../config/moveonenospc.md),
 [statfs](../config/statfs.md), and
 [statfs_ignore](../config/statfs.md#statfs_ignore).
 

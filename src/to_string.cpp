@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "to_string.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -54,5 +56,11 @@ namespace str
   to(const std::string &s_)
   {
     return s_;
+  }
+
+  std::string
+  to(const fs::Path &path_)
+  {
+    return path_.string();
   }
 }

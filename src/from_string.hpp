@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -29,4 +31,5 @@ namespace str
   int from(const std::string &, uint64_t *);
   int from(const std::string &, std::string *);
   int from(const std::string &, const std::string *);
+  int from(const std::string &, fs::Path *);
 }

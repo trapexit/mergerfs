@@ -165,26 +165,51 @@ namespace l
   }
 
   static
-  void
+  bool
   wait_for_mount(const Config::Read &cfg_)
   {
+    int failures;
     fs::PathVector paths;
     std::chrono::milliseconds timeout;
 
     paths = cfg_->branches->to_paths();
 
-    syslog_info("Waiting %u seconds for branches to mount",
-                (uint64_t)cfg_->branches_mount_timeout);
+    syslog_info("Waiting %u seconds for %zu branches to mount",
+                (uint64_t)cfg_->branches_mount_timeout,
+                paths.size());
 
     timeout = std::chrono::milliseconds(cfg_->branches_mount_timeout * 1000);
-    fs::wait_for_mount((std::string)cfg_->mountpoint,
-                       paths,
-                       timeout);
+    failures = fs::wait_for_mount(cfg_->mountpoint,
+                                  paths,
+                                  timeout);
+    if(failures)
+      {
+        if(cfg_->branches_mount_timeout_fail)
+          {
+            syslog_error("%d of %zu branches were not mounted"
+                         " within the timeout of %zus. Exiting",
+                         failures,
+                         paths.size(),
+                         (uint64_t)cfg_->branches_mount_timeout);
+            return true;
+          }
+
+        syslog_warning("Continuing to mount mergerfs despite %d branches not "
+                       "being different from the mountpoint filesystem",
+                       failures);
+      }
+    else
+      {
+        syslog_info("All %zd branches are mounted",
+                    paths.size());
+      }
+
+    return false;
   }
 
   static
   void
-  lazy_umount(const std::string target_)
+  lazy_umount(const fs::Path target_)
   {
     int rv;
 
@@ -276,7 +301,13 @@ namespace l
       }
 
     if(cfg->branches_mount_timeout > 0)
-      l::wait_for_mount(cfg);
+      {
+        bool failure;
+
+        failure = l::wait_for_mount(cfg);
+        if(failure)
+          return 1;
+      }
 
     l::setup_resources(cfg->scheduling_priority);
     l::setup_signal_handlers();

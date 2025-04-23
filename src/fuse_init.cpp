@@ -19,11 +19,12 @@
 #include "fs_readahead.hpp"
 #include "syslog.hpp"
 
+#include "fs_path.hpp"
+#include "fs_exists.hpp"
+
 #include "fmt/core.h"
 
 #include "fuse.h"
-
-#include "ghc/filesystem.hpp"
 
 #include <thread>
 #include <algorithm>
@@ -82,7 +83,7 @@ namespace l
     std::fstream f;
     uint64_t max_pages_limit;
 
-    if(ghc::filesystem::exists(MAX_PAGES_LIMIT_FILEPATH))
+    if(fs::exists(MAX_PAGES_LIMIT_FILEPATH))
       {
         if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
           syslog_info("fuse_msg_size > %u: setting it to %u",
@@ -141,8 +142,8 @@ namespace l
 
   static
   void
-  readahead(const std::string path_,
-            const int         readahead_)
+  readahead(const fs::Path path_,
+            const int      readahead_)
   {
     int rv;
 

@@ -315,7 +315,7 @@ namespace l
   int
   rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
                            const Branches::CPtr &branches_,
-                           const std::string    &mount_,
+                           const gfs::path      &mount_,
                            const gfs::path      &oldfusepath_,
                            const gfs::path      &newfusepath_)
   {

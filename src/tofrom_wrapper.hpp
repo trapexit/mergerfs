@@ -64,6 +64,13 @@ public:
     return _data;
   }
 
+  const
+  T&
+  operator*() const
+  {
+    return _data;
+  }
+
   T*
   operator->()
   {

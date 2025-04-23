@@ -5,6 +5,9 @@ repo_name: mergerfs
 repo_url: https://github.com/trapexit/mergerfs
 edit_uri: edit/master/mkdocs/docs/
 docs_dir: docs
+plugins:
+  - search
+  - tags
 theme:
   name: material
   logo: logo.png
@@ -62,6 +65,7 @@ nav:
   - config/options.md
   - config/deprecated_options.md
   - config/branches.md
+  - config/branches_mount_timeout.md
   - config/functions_categories_policies.md
   - config/minfreespace.md
   - config/func_readdir.md

@@ -1,0 +1,21 @@
+#pragma once
+
+#include "fs_path.hpp"
+
+#include <vector>
+
+
+namespace fs
+{
+  struct Mount
+  {
+    fs::Path dir;
+    std::string fsname;
+    std::string type;
+    std::string opts;
+  };
+
+  typedef std::vector<fs::Mount> MountVec;
+
+  void mounts(fs::MountVec &mounts);
+}

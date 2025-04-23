@@ -19,6 +19,10 @@
 #include "fs_wait_for_mount.hpp"
 #include "syslog.hpp"
 
+#include "fs_exists.hpp"
+#include "fs_lstat.hpp"
+#include "fs_lgetxattr.hpp"
+
 #include <functional>
 #include <thread>
 #include <unordered_set>
@@ -45,6 +49,40 @@ namespace std
 }
 
 static
+bool
+_branch_is_mounted(const struct stat &src_st_,
+                   const fs::Path    &branch_path_)
+{
+  int rv;
+  struct stat st;
+  fs::Path filepath;
+
+  rv = fs::lgetxattr(branch_path_,"user.mergerfs.branch",NULL,0);
+  if(rv != -1)
+    return true;
+
+  filepath = branch_path_ / ".mergerfs.branch";
+  rv = fs::exists(filepath);
+  if(rv)
+    return true;
+
+  rv = fs::lgetxattr(branch_path_,"user.mergerfs.branch_mounts_here",NULL,0);
+  if(rv != -1)
+    return false;
+
+  filepath = branch_path_ / ".mergerfs.branch_mounts_here";
+  rv = fs::exists(filepath);
+  if(rv)
+    return false;
+
+  rv = fs::lstat(branch_path_,&st);
+  if(rv == 0)
+    return (st.st_dev != src_st_.st_dev);
+
+  return false;
+}
+
+static
 void
 _check_mounted(const struct stat &src_st_,
                const fs::PathSet &tgt_paths_,
@@ -56,30 +94,23 @@ _check_mounted(const struct stat &src_st_,
 
   for(auto const &tgt_path : tgt_paths_)
     {
-      int         rv;
-      struct stat tgt_st;
+      bool mounted;
 
-      rv = fs::stat(tgt_path,&tgt_st);
-      if(rv == 0)
-        {
-          if(tgt_st.st_dev != src_st_.st_dev)
-            successes.push_back(tgt_path);
-          else
-            failures.push_back(tgt_path);
-        }
+      mounted = ::_branch_is_mounted(src_st_,tgt_path);
+      if(mounted)
+        successes.push_back(tgt_path);
       else
-        {
-          failures.push_back(tgt_path);
-        }
+        failures.push_back(tgt_path);
     }
 }
 
 static
-void
+int
 _wait_for_mount(const struct stat               &src_st_,
                 const fs::PathVector            &tgt_paths_,
                 const std::chrono::milliseconds &timeout_)
 {
+  bool first_loop;
   fs::PathVector                                     successes;
   fs::PathVector                                     failures;
   std::unordered_set<fs::Path>                       tgt_paths;
@@ -90,6 +121,7 @@ _wait_for_mount(const struct stat               &src_st_,
   now      = std::chrono::steady_clock::now();
   deadline = now + timeout_;
 
+  first_loop = true;
   while(true)
     {
       if(tgt_paths.empty())
@@ -100,10 +132,17 @@ _wait_for_mount(const struct stat               &src_st_,
       successes.clear();
       failures.clear();
       ::_check_mounted(src_st_,tgt_paths,&successes,&failures);
-      for(auto const &path : successes)
+      for(const auto &path : successes)
         {
           tgt_paths.erase(path);
-          syslog_info("%s is mounted",path.string().c_str());
+          syslog_info("%s is mounted",path.c_str());
+        }
+
+      if(first_loop)
+        {
+          for(const auto &path : failures)
+            syslog_notice("%s is not mounted, waiting",path.c_str());
+          first_loop = false;
         }
 
       std::this_thread::sleep_for(SLEEP_DURATION);
@@ -111,26 +150,24 @@ _wait_for_mount(const struct stat               &src_st_,
     }
 
   for(auto const &path : failures)
-    syslog_notice("%s not mounted within timeout",path.string().c_str());
-  if(!failures.empty())
-    syslog_warning("Continuing to mount mergerfs despite %u branches not "
-                   "being different from the mountpoint filesystem",
-                   failures.size());
+    syslog_notice("%s not mounted within timeout",path.c_str());
+
+  return failures.size();
 }
 
-void
+int
 fs::wait_for_mount(const fs::Path                  &src_path_,
                    const fs::PathVector            &tgt_paths_,
                    const std::chrono::milliseconds &timeout_)
 {
   int rv;
-  struct stat src_st;
+  struct stat src_st = {0};
 
   rv = fs::stat(src_path_,&src_st);
   if(rv == -1)
-    return syslog_error("Error stat'ing mount path: %s (%s)",
-                        src_path_.c_str(),
-                        strerror(errno));
+    syslog_error("Error stat'ing mount path: %s (%s)",
+                 src_path_.c_str(),
+                 strerror(errno));
 
-  ::_wait_for_mount(src_st,tgt_paths_,timeout_);
+  return ::_wait_for_mount(src_st,tgt_paths_,timeout_);
 }

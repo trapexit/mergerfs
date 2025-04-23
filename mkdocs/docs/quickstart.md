@@ -59,6 +59,10 @@ IO.)
 
 ## Usage
 
+For some suggestions on branch setup see [the page on
+branches](config/branches.md#branch-setup).
+
+
 ### Command Line
 
 ```
