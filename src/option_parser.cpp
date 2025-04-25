@@ -32,11 +32,14 @@
 #include "fuse.h"
 #include "fuse_config.hpp"
 
+#include "nonstd/string_view.hpp"
+
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <array>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -114,9 +117,12 @@ set_subtype(fuse_args *args_)
 
 static
 void
-set_default_options(fuse_args *args_)
+set_default_options(fuse_args     *args_,
+                    Config::Write &cfg_)
 {
-  set_option("default_permissions",args_);
+  if(cfg_->kernel_permissions_check)
+    set_option("default_permissions",args_);
+
   if(geteuid() == 0)
     set_option("allow_other",args_);
   else
@@ -127,7 +133,7 @@ static
 bool
 should_ignore(const std::string &key_)
 {
-  static const std::set<std::string> IGNORED_KEYS =
+  constexpr const std::array<nonstd::string_view,13> ignored_keys =
     {
       "atomic_o_trunc",
       "big_writes",
@@ -144,7 +150,13 @@ should_ignore(const std::string &key_)
       "use_ino",
     };
 
-  return (IGNORED_KEYS.find(key_) != IGNORED_KEYS.end());
+  for(const auto &key : ignored_keys)
+    {
+      if(key == key_)
+        return true;
+    }
+
+  return false;
 }
 
 static
@@ -464,7 +476,7 @@ namespace options
 
     check_for_mount_loop(cfg,errs_);
 
-    set_default_options(args_);
+    set_default_options(args_,cfg);
     set_fsname(cfg,args_);
     set_subtype(args_);
     set_fuse_threads(cfg);

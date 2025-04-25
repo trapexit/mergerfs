@@ -133,6 +133,7 @@ public:
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
+  ConfigBOOL     kernel_permissions_check = true;
   ConfigBOOL     lazy_umount_mountpoint;
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;

@@ -1,7 +1,8 @@
 # export-support
 
 * `export-support=true|false`
-* Defaults to `true`.
+* Default: `true`
+
 
 In theory, this flag should not be exposed to the end user. It is a
 low-level FUSE flag which indicates whether or not the kernel can send
