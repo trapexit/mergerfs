@@ -194,8 +194,19 @@ namespace l
       paths.push_back(glob);
 
     fs::realpathize(&paths);
-    for(auto &path : paths)
+    for(const auto &path : paths)
       {
+        bool is_dir;
+        std::error_code ec;
+
+        is_dir = ghc::filesystem::is_directory(path,ec);
+        if(!ec && !is_dir)
+          {
+            syslog_notice("branch path '%s' is not a directory, ignoring",
+                          path.c_str());
+            continue;
+          }
+        
         branch.path = path;
         branches_->push_back(branch);
       }
