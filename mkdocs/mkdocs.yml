@@ -88,6 +88,7 @@ nav:
   - config/statfs.md
   - config/flush-on-close.md
   - config/export-support.md
+  - config/kernel-permissions-check.md
 - error_handling_and_logging.md
 - runtime_interfaces.md
 - remote_filesystems.md

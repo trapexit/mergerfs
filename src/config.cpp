@@ -63,6 +63,7 @@ namespace l
     IFERT("export-support");
     IFERT("fsname");
     IFERT("fuse_msg_size");
+    IFERT("kernel-permissions-check");
     IFERT("mount");
     IFERT("nullrw");
     IFERT("pid");
@@ -186,6 +187,7 @@ Config::Config()
   _map["ignorepponrename"]       = &ignorepponrename;
   _map["inodecalc"]              = &inodecalc;
   _map["kernel_cache"]           = &kernel_cache;
+  _map["kernel-permissions-check"] = &kernel_permissions_check;
   _map["lazy-umount-mountpoint"] = &lazy_umount_mountpoint;
   _map["link_cow"]               = &link_cow;
   _map["link-exdev"]             = &link_exdev;
