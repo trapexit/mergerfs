@@ -206,7 +206,7 @@ namespace l
                           path.c_str());
             continue;
           }
-        
+
         branch.path = path;
         branches_->push_back(branch);
       }
