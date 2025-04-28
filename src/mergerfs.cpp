@@ -14,18 +14,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_readahead.hpp"
-#include "fs_wait_for_mount.hpp"
-#include "syslog.hpp"
+#include "mergerfs.hpp"
 
 #include "fs_path.hpp"
+#include "fs_readahead.hpp"
 #include "fs_umount2.hpp"
-#include "mergerfs.hpp"
+#include "fs_wait_for_mount.hpp"
+#include "gidcache.hpp"
 #include "option_parser.hpp"
 #include "procfs_get_name.hpp"
 #include "resources.hpp"
 #include "strvec.hpp"
-#include "gidcache.hpp"
+#include "syslog.hpp"
+#include "version.hpp"
 
 #include "fuse_access.hpp"
 #include "fuse_bmap.hpp"
@@ -174,9 +175,9 @@ namespace l
 
     paths = cfg_->branches->to_paths();
 
-    syslog_info("Waiting %u seconds for %zu branches to mount",
-                (uint64_t)cfg_->branches_mount_timeout,
-                paths.size());
+    SysLog::info("Waiting {} seconds for {} branches to mount",
+                 (uint64_t)cfg_->branches_mount_timeout,
+                 paths.size());
 
     timeout = std::chrono::milliseconds(cfg_->branches_mount_timeout * 1000);
     failures = fs::wait_for_mount(cfg_->mountpoint,
@@ -186,22 +187,22 @@ namespace l
       {
         if(cfg_->branches_mount_timeout_fail)
           {
-            syslog_error("%d of %zu branches were not mounted"
-                         " within the timeout of %zus. Exiting",
-                         failures,
-                         paths.size(),
-                         (uint64_t)cfg_->branches_mount_timeout);
+            SysLog::error("{} of {} branches were not mounted"
+                         " within the timeout of {}s. Exiting",
+                          failures,
+                          paths.size(),
+                          (uint64_t)cfg_->branches_mount_timeout);
             return true;
           }
 
-        syslog_warning("Continuing to mount mergerfs despite %d branches not "
-                       "being different from the mountpoint filesystem",
-                       failures);
+        SysLog::warning("Continuing to mount mergerfs despite {} branches not "
+                        "being different from the mountpoint filesystem",
+                        failures);
       }
     else
       {
-        syslog_info("All %zd branches are mounted",
-                    paths.size());
+        SysLog::info("All {} branches are mounted",
+                     paths.size());
       }
 
     return false;
@@ -217,18 +218,18 @@ namespace l
     switch(rv)
       {
       case 0:
-        syslog_notice("%s has been successfully lazily unmounted",
-                      target_.c_str());
+        SysLog::notice("{} has been successfully lazily unmounted",
+                       target_.string());
         break;
       case -EINVAL:
-        syslog_notice("%s was not a mount point needing to be unmounted",
-                      target_.c_str());
+        SysLog::notice("{} was not a mount point needing to be unmounted",
+                       target_.string());
         break;
       default:
-        syslog_error("Error unmounting %s: %d - %s",
-                     target_.c_str(),
-                     -rv,
-                     strerror(-rv));
+        SysLog::error("Error unmounting {}: {} - {}",
+                      target_.string(),
+                      -rv,
+                      strerror(-rv));
         break;
       }
   }
@@ -237,7 +238,7 @@ namespace l
   void
   usr1_signal_handler(int signal_)
   {
-    syslog_info("Received SIGUSR1 - invalidating all nodes");
+    SysLog::info("Received SIGUSR1 - invalidating all nodes");
     fuse_invalidate_all_nodes();
   }
 
@@ -245,7 +246,7 @@ namespace l
   void
   usr2_signal_handler(int signal_)
   {
-    syslog_info("Received SIGUSR2 - triggering thorough gc");
+    SysLog::info("Received SIGUSR2 - triggering thorough gc");
     fuse_gc();
     GIDCache::invalidate_all_caches();
   }
@@ -270,7 +271,7 @@ namespace l
 
     char const *s = "mergerfs is not running as root and may not work correctly\n";
     fprintf(stderr,"warning: %s",s);
-    syslog_warning(s);
+    SysLog::warning(s);
   }
 
   int
@@ -283,7 +284,8 @@ namespace l
     fuse_args       args;
     fuse_operations ops;
 
-    syslog_open();
+    SysLog::open();
+    SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
 
     l::warn_if_not_root();
 
@@ -322,7 +324,9 @@ namespace l
                    args.argv,
                    &ops);
 
-    syslog_info("exiting main loop with return code %d",rv);
+    SysLog::info("exiting main loop with return code {}",rv);
+
+    SysLog::close();
 
     return rv;
   }

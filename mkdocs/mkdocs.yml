@@ -11,6 +11,7 @@ plugins:
 theme:
   name: material
   logo: logo.png
+  favicon: logo.png
   features:
   - content.action.edit
   - content.action.view

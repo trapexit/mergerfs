@@ -135,13 +135,13 @@ _wait_for_mount(const struct stat               &src_st_,
       for(const auto &path : successes)
         {
           tgt_paths.erase(path);
-          syslog_info("%s is mounted",path.c_str());
+          SysLog::info("{} is mounted",path.string());
         }
 
       if(first_loop)
         {
           for(const auto &path : failures)
-            syslog_notice("%s is not mounted, waiting",path.c_str());
+            SysLog::notice("{} is not mounted, waiting",path.string());
           first_loop = false;
         }
 
@@ -150,7 +150,7 @@ _wait_for_mount(const struct stat               &src_st_,
     }
 
   for(auto const &path : failures)
-    syslog_notice("%s not mounted within timeout",path.c_str());
+    SysLog::notice("{} not mounted within timeout",path.string());
 
   return failures.size();
 }
@@ -165,9 +165,9 @@ fs::wait_for_mount(const fs::Path                  &src_path_,
 
   rv = fs::stat(src_path_,&src_st);
   if(rv == -1)
-    syslog_error("Error stat'ing mount path: %s (%s)",
-                 src_path_.c_str(),
-                 strerror(errno));
+    SysLog::error("Error stat'ing mount path: {} ({})",
+                  src_path_.string(),
+                  strerror(errno));
 
   return ::_wait_for_mount(src_st,tgt_paths_,timeout_);
 }

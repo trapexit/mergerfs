@@ -75,7 +75,7 @@ CFLAGS      := ${CFLAGS} \
 CXXFLAGS    ?= ${OPT_FLAGS}
 CXXFLAGS    := \
               ${CXXFLAGS} \
-              -std=c++11 \
+              -std=c++17 \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
               -Wall \

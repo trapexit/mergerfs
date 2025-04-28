@@ -52,12 +52,13 @@ SRC_C = \
 	lib/helper.c \
 	lib/mount.c
 SRC_CPP = \
-	lib/format.cpp \
-	lib/os.cpp \
 	lib/cpu.cpp \
 	lib/fuse_config.cpp \
 	lib/fuse_loop.cpp \
-	lib/fuse_msgbuf.cpp
+	lib/fuse_msgbuf.cpp \
+	lib/pin_threads.cpp \
+	lib/format.cpp
+
 OBJS_C   = $(SRC_C:lib/%.c=build/%.o)
 OBJS_CPP = $(SRC_CPP:lib/%.cpp=build/%.o)
 DEPS_C   = $(SRC_C:lib/%.c=build/%.d)
@@ -76,7 +77,7 @@ CXXFLAGS ?= \
 CXXFLAGS := \
 	${CXXFLAGS} \
 	$(LTO_FLAGS) \
-	-std=c++11 \
+	-std=c++17 \
 	-Wall \
 	-pipe \
 	-MMD

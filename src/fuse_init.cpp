@@ -15,14 +15,12 @@
 */
 
 #include "config.hpp"
-#include "ugid.hpp"
 #include "fs_readahead.hpp"
 #include "syslog.hpp"
+#include "ugid.hpp"
 
 #include "fs_path.hpp"
 #include "fs_exists.hpp"
-
-#include "fmt/core.h"
 
 #include "fuse.h"
 
@@ -86,9 +84,9 @@ namespace l
     if(fs::exists(MAX_PAGES_LIMIT_FILEPATH))
       {
         if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
-          syslog_info("fuse_msg_size > %u: setting it to %u",
-                      MAX_FUSE_MSG_SIZE,
-                      MAX_FUSE_MSG_SIZE);
+          SysLog::info("fuse_msg_size > {}: setting it to {}",
+                       MAX_FUSE_MSG_SIZE,
+                       MAX_FUSE_MSG_SIZE);
         cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
                                        (uint64_t)MAX_FUSE_MSG_SIZE);
 
@@ -96,33 +94,33 @@ namespace l
         if(f.is_open())
           {
             f >> max_pages_limit;
-            syslog_info("%s currently set to %u",
-                        MAX_PAGES_LIMIT_FILEPATH,
-                        (uint64_t)max_pages_limit);
+            SysLog::info("{} currently set to {}",
+                         MAX_PAGES_LIMIT_FILEPATH,
+                         max_pages_limit);
             if(cfg_->fuse_msg_size > max_pages_limit)
               {
                 f.seekp(0);
                 f << (uint64_t)cfg_->fuse_msg_size;
                 f.flush();
-                syslog_info("%s changed to %u",
-                            MAX_PAGES_LIMIT_FILEPATH,
-                            (uint64_t)cfg_->fuse_msg_size);
+                SysLog::info("{} changed to {}",
+                             MAX_PAGES_LIMIT_FILEPATH,
+                             (uint64_t)cfg_->fuse_msg_size);
               }
             f.close();
           }
         else
           {
             if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
-              syslog_info("unable to open %s",MAX_PAGES_LIMIT_FILEPATH);
+              SysLog::info("unable to open {}",MAX_PAGES_LIMIT_FILEPATH);
           }
       }
     else
       {
         if(cfg_->fuse_msg_size > FUSE_DEFAULT_MAX_MAX_PAGES)
-          syslog_info("fuse_msg_size request %u > %u: setting it to %u",
-                      (uint64_t)cfg_->fuse_msg_size,
-                      FUSE_DEFAULT_MAX_MAX_PAGES,
-                      FUSE_DEFAULT_MAX_MAX_PAGES);
+          SysLog::info("fuse_msg_size request {} > {}: setting it to {}",
+                       (uint64_t)cfg_->fuse_msg_size,
+                       FUSE_DEFAULT_MAX_MAX_PAGES,
+                       FUSE_DEFAULT_MAX_MAX_PAGES);
         cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
                                        (uint64_t)FUSE_DEFAULT_MAX_MAX_PAGES);
       }
@@ -131,8 +129,8 @@ namespace l
       {
         l::want(conn_,FUSE_CAP_MAX_PAGES);
         conn_->max_pages = cfg_->fuse_msg_size;
-        syslog_info("requesting max pages size of %u",
-                    (uint64_t)cfg_->fuse_msg_size);
+        SysLog::info("requesting max pages size of {}",
+                     (uint64_t)cfg_->fuse_msg_size);
       }
     else
       {
@@ -149,9 +147,9 @@ namespace l
 
     rv = fs::readahead(path_,readahead_);
     if(rv == 0)
-      syslog_info("%s - readahead set to %d",path_.c_str(),readahead_);
+      SysLog::info("{} - readahead set to {}",path_.string(),readahead_);
     else
-      syslog_error("%s - unable to set readahead",path_.c_str());
+      SysLog::error("{} - unable to set readahead",path_.string());
   }
 
   static

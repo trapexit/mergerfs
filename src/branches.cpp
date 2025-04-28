@@ -428,8 +428,8 @@ Branches::find_and_set_mode_ro()
       if(!fs::is_rofs_but_not_mounted_ro(branch.path))
         continue;
 
-      syslog_warning("Branch %s found to be readonly - setting its mode to RO",
-                     branch.path.c_str());
+      SysLog::warning("Branch {} found to be readonly - setting its mode to RO",
+                      branch.path);
 
       branch.mode = Branch::Mode::RO;
     }

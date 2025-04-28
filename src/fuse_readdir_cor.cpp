@@ -139,6 +139,7 @@ namespace l
   }
 
   static
+  inline
   int
   concurrent_readdir(ThreadPool           &tp_,
                      const Branches::CPtr &branches_,
@@ -168,7 +169,7 @@ namespace l
                               mutex);
           };
 
-        auto rv = tp_.enqueue_task(func);
+        auto rv = tp_.enqueue_task(std::move(func));
 
         futures.emplace_back(std::move(rv));
       }
@@ -182,7 +183,7 @@ namespace l
 }
 
 int
-FUSE::ReadDirCOR::operator()(fuse_file_info_t const *ffi_,
+FUSE::ReadDirCOR::operator()(const fuse_file_info_t *ffi_,
                              fuse_dirents_t         *buf_)
 {
   Config::Read        cfg;

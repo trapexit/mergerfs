@@ -1,6 +1,8 @@
 #pragma once
 
 #include "moodycamel/blockingconcurrentqueue.h"
+#include "moodycamel/lightweightsemaphore.h"
+#include "invocable.h"
 
 #include <algorithm>
 #include <atomic>
@@ -13,8 +15,21 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <utility>
 
+#include <pthread.h>
 #include <syslog.h>
+
+#define SEM
+//#undef SEM
+
+#ifdef SEM
+#define SEMA_WAIT(S) (S.wait())
+#define SEMA_SIGNAL(S) (S.signal())
+#else
+#define SEMA_WAIT(S)
+#define SEMA_SIGNAL(S)
+#endif
 
 
 struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
@@ -25,157 +40,217 @@ struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 
 class ThreadPool
 {
+public:
+  using PToken = moodycamel::ProducerToken;
+  using CToken = moodycamel::ConsumerToken;
+
 private:
-  using Func  = std::function<void(void)>;
+  using Func  = ofats::any_invocable<void()>;
   using Queue = moodycamel::BlockingConcurrentQueue<Func,ThreadPoolTraits>;
 
 public:
   explicit
-  ThreadPool(unsigned const thread_count_    = std::thread::hardware_concurrency(),
-             unsigned const max_queue_depth_ = std::thread::hardware_concurrency(),
-             std::string const name_         = {})
-    : _queue(),
-      _queue_depth(0),
-      _max_queue_depth(std::max(thread_count_,max_queue_depth_)),
-      _name(name_)
-  {
-    syslog(LOG_DEBUG,
-           "threadpool (%s): spawning %u threads w/ max queue depth %u%s",
-           _name.c_str(),
-           thread_count_,
-           _max_queue_depth,
-           ((_max_queue_depth != max_queue_depth_) ? " (adjusted)" : ""));
-
-    sigset_t oldset;
-    sigset_t newset;
-
-    sigfillset(&newset);
-    pthread_sigmask(SIG_BLOCK,&newset,&oldset);
-
-    _threads.reserve(thread_count_);
-    for(std::size_t i = 0; i < thread_count_; ++i)
-      {
-        int rv;
-        pthread_t t;
-
-        rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
-        if(rv != 0)
-          {
-            syslog(LOG_WARNING,
-                   "threadpool (%s): error spawning thread - %d (%s)",
-                   _name.c_str(),
-                   rv,
-                   strerror(rv));
-            continue;
-          }
-
-        if(!_name.empty())
-          pthread_setname_np(t,_name.c_str());
-
-        _threads.push_back(t);
-      }
-
-    pthread_sigmask(SIG_SETMASK,&oldset,NULL);
-
-    if(_threads.empty())
-      throw std::runtime_error("threadpool: failed to spawn any threads");
-  }
-
-  ~ThreadPool()
-  {
-    syslog(LOG_DEBUG,
-           "threadpool (%s): destroying %lu threads",
-           _name.c_str(),
-           _threads.size());
-
-    auto func = []() { pthread_exit(NULL); };
-    for(std::size_t i = 0; i < _threads.size(); i++)
-      _queue.enqueue(func);
-
-    for(auto t : _threads)
-      pthread_cancel(t);
-
-    for(auto t : _threads)
-      pthread_join(t,NULL);
-  }
+  ThreadPool(const unsigned thread_count_    = std::thread::hardware_concurrency(),
+             const unsigned max_queue_depth_ = std::thread::hardware_concurrency(),
+             std::string const name_         = {});
+  ~ThreadPool();
 
 private:
-  static
-  void*
-  start_routine(void *arg_)
-  {
-    ThreadPool *btp = static_cast<ThreadPool*>(arg_);
-    ThreadPool::Func func;
-    ThreadPool::Queue &q = btp->_queue;
-    std::atomic<unsigned> &queue_depth = btp->_queue_depth;
-    moodycamel::ConsumerToken ctok(btp->_queue);
-
-    while(true)
-      {
-        q.wait_dequeue(ctok,func);
-
-        func();
-
-        queue_depth.fetch_sub(1,std::memory_order_release);
-      }
-
-    return NULL;
-  }
+  static void *start_routine(void *arg_);
 
 public:
-  int
-  add_thread(std::string const name_ = {})
-  {
-    int rv;
-    pthread_t t;
-    sigset_t oldset;
-    sigset_t newset;
-    std::string name;
+  int add_thread(std::string const name = {});
+  int remove_thread(void);
+  int set_threads(const std::size_t count);
 
-    name = (name_.empty() ? _name : name_);
+  void shutdown(void);
 
-    sigfillset(&newset);
-    pthread_sigmask(SIG_BLOCK,&newset,&oldset);
-    rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
-    pthread_sigmask(SIG_SETMASK,&oldset,NULL);
+public:
+  template<typename FuncType>
+  void
+  enqueue_work(ThreadPool::PToken  &ptok_,
+               FuncType           &&func_);
 
-    if(rv != 0)
-      {
-        syslog(LOG_WARNING,
-               "threadpool (%s): error spawning thread - %d (%s)",
-               _name.c_str(),
-               rv,
-               strerror(rv));
-        return -rv;
-      }
+  template<typename FuncType>
+  void
+  enqueue_work(FuncType &&func_);
 
-    if(!name.empty())
-      pthread_setname_np(t,name.c_str());
+  template<typename FuncType>
+  [[nodiscard]]
+  std::future<typename std::result_of<FuncType()>::type>
+  enqueue_task(FuncType&& func_);
 
+public:
+  std::vector<pthread_t> threads() const;
+  ThreadPool::PToken ptoken();
+
+private:
+  Queue _queue;
+  moodycamel::LightweightSemaphore _sema;
+
+private:
+  std::string const      _name;
+  std::vector<pthread_t> _threads;
+  mutable std::mutex     _threads_mutex;
+};
+
+
+
+inline
+ThreadPool::ThreadPool(const unsigned    thread_count_,
+                       const unsigned    max_queue_depth_,
+                       const std::string name_)
+  : _queue(),
+    _sema(max_queue_depth_),
+    _name(name_)
+{
+  sigset_t oldset;
+  sigset_t newset;
+
+  sigfillset(&newset);
+  pthread_sigmask(SIG_BLOCK,&newset,&oldset);
+
+  _threads.reserve(thread_count_);
+  for(std::size_t i = 0; i < thread_count_; ++i)
     {
-      std::lock_guard<std::mutex> lg(_threads_mutex);
+      int rv;
+      pthread_t t;
+
+      rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
+      if(rv != 0)
+        {
+          syslog(LOG_WARNING,
+                 "threadpool (%s): error spawning thread - %d (%s)",
+                 _name.c_str(),
+                 rv,
+                 strerror(rv));
+          continue;
+        }
+
+      if(!_name.empty())
+        pthread_setname_np(t,_name.c_str());
+
       _threads.push_back(t);
     }
 
-    syslog(LOG_DEBUG,
-           "threadpool (%s): 1 thread added named '%s'",
-           _name.c_str(),
-           name.c_str());
+  pthread_sigmask(SIG_SETMASK,&oldset,NULL);
 
-    return 0;
-  }
+  if(_threads.empty())
+    throw std::runtime_error("threadpool: failed to spawn any threads");
 
-  int
-  remove_thread(void)
-  {
+  syslog(LOG_DEBUG,
+         "threadpool (%s): spawned %zu threads w/ max queue depth %u",
+         _name.c_str(),
+         _threads.size(),
+         max_queue_depth_);
+}
+
+
+inline
+ThreadPool::~ThreadPool()
+{
+  syslog(LOG_DEBUG,
+         "threadpool (%s): destroying %zu threads",
+         _name.c_str(),
+         _threads.size());
+
+  for(auto t : _threads)
+    pthread_cancel(t);
+  for(auto t : _threads)
+    pthread_join(t,NULL);
+}
+
+
+inline
+void*
+ThreadPool::start_routine(void *arg_)
+{
+  ThreadPool *btp = static_cast<ThreadPool*>(arg_);
+
+  bool done;
+  ThreadPool::Func func;
+  ThreadPool::Queue &q = btp->_queue;
+  moodycamel::LightweightSemaphore &sema = btp->_sema;
+  ThreadPool::CToken ctok(btp->_queue);
+
+  done = false;
+  while(!done)
     {
-      std::lock_guard<std::mutex> lg(_threads_mutex);
-      if(_threads.size() <= 1)
-        return -EINVAL;
+      q.wait_dequeue(ctok,func);
+
+      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+
+      try
+        {
+          func();
+        }
+      catch(std::exception &e)
+        {
+          done = true;
+        }
+
+      SEMA_SIGNAL(sema);
+
+      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
     }
 
-    std::promise<pthread_t> promise;
-    auto func = [&]()
+  return nullptr;
+}
+
+
+
+inline
+int
+ThreadPool::add_thread(const std::string name_)
+{
+  int rv;
+  pthread_t t;
+  sigset_t oldset;
+  sigset_t newset;
+  std::string name;
+
+  name = (name_.empty() ? _name : name_);
+
+  sigfillset(&newset);
+  pthread_sigmask(SIG_BLOCK,&newset,&oldset);
+  rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
+  pthread_sigmask(SIG_SETMASK,&oldset,NULL);
+
+  if(rv != 0)
+    {
+      syslog(LOG_WARNING,
+             "threadpool (%s): error spawning thread - %d (%s)",
+             _name.c_str(),
+             rv,
+             strerror(rv));
+      return -rv;
+    }
+
+  if(!name.empty())
+    pthread_setname_np(t,name.c_str());
+
+  {
+    std::lock_guard<std::mutex> lg(_threads_mutex);
+    _threads.push_back(t);
+  }
+
+  return 0;
+}
+
+
+inline
+int
+ThreadPool::remove_thread(void)
+{
+  {
+    std::lock_guard<std::mutex> lg(_threads_mutex);
+    if(_threads.size() <= 1)
+      return -EINVAL;
+  }
+
+  std::promise<pthread_t> promise;
+  auto func =
+    [this,&promise]()
     {
       pthread_t t;
 
@@ -195,124 +270,120 @@ public:
           }
       }
 
-      syslog(LOG_DEBUG,
-             "threadpool (%s): 1 thread removed",
-             _name.c_str());
-
       pthread_exit(NULL);
     };
 
-    enqueue_work(func);
-    pthread_join(promise.get_future().get(),NULL);
+  enqueue_work(std::move(func));
+  pthread_join(promise.get_future().get(),NULL);
 
-    return 0;
-  }
+  return 0;
+}
 
-  int
-  set_threads(std::size_t const count_)
-  {
-    int diff;
-    {
-      std::lock_guard<std::mutex> lg(_threads_mutex);
 
-      diff = ((int)count_ - (int)_threads.size());
-    }
-
-    for(auto i = diff; i > 0; --i)
-      add_thread();
-    for(auto i = diff; i < 0; ++i)
-      remove_thread();
-
-    return diff;
-  }
-
-public:
-  template<typename FuncType>
-  void
-  enqueue_work(moodycamel::ProducerToken  &ptok_,
-               FuncType                  &&f_)
-  {
-    timespec ts = {0,1000};
-    for(unsigned i = 0; i < 1000000; i++)
-      {
-        if(_queue_depth.load(std::memory_order_acquire) < _max_queue_depth)
-          break;
-        ::nanosleep(&ts,NULL);
-      }
-
-    _queue.enqueue(ptok_,f_);
-    _queue_depth.fetch_add(1,std::memory_order_release);
-  }
-
-  template<typename FuncType>
-  void
-  enqueue_work(FuncType &&f_)
-  {
-    timespec ts = {0,1000};
-    for(unsigned i = 0; i < 1000000; i++)
-      {
-        if(_queue_depth.load(std::memory_order_acquire) < _max_queue_depth)
-          break;
-        ::nanosleep(&ts,NULL);
-      }
-
-    _queue.enqueue(f_);
-    _queue_depth.fetch_add(1,std::memory_order_release);
-  }
-
-  template<typename FuncType>
-  [[nodiscard]]
-  std::future<typename std::result_of<FuncType()>::type>
-  enqueue_task(FuncType&& f_)
-  {
-    using TaskReturnType = typename std::result_of<FuncType()>::type;
-    using Promise        = std::promise<TaskReturnType>;
-
-    auto promise = std::make_shared<Promise>();
-    auto future  = promise->get_future();
-
-    auto work = [=]()
-    {
-      auto rv = f_();
-      promise->set_value(rv);
-    };
-
-    timespec ts = {0,1000};
-    for(unsigned i = 0; i < 1000000; i++)
-      {
-        if(_queue_depth.load(std::memory_order_acquire) < _max_queue_depth)
-          break;
-        ::nanosleep(&ts,NULL);
-      }
-
-    _queue.enqueue(work);
-    _queue_depth.fetch_add(1,std::memory_order_release);
-
-    return future;
-  }
-
-public:
-  std::vector<pthread_t>
-  threads() const
+inline
+int
+ThreadPool::set_threads(std::size_t const count_)
+{
+  int diff;
   {
     std::lock_guard<std::mutex> lg(_threads_mutex);
 
-    return _threads;
+    diff = ((int)count_ - (int)_threads.size());
   }
 
-  moodycamel::ProducerToken
-  ptoken()
-  {
-    return moodycamel::ProducerToken(_queue);
-  }
+  for(auto i = diff; i > 0; --i)
+    add_thread();
+  for(auto i = diff; i < 0; ++i)
+    remove_thread();
 
-private:
-  Queue _queue;
-  std::atomic<unsigned> _queue_depth;
-  unsigned const        _max_queue_depth;
+  return diff;
+}
 
-private:
-  std::string const      _name;
-  std::vector<pthread_t> _threads;
-  mutable std::mutex     _threads_mutex;
-};
+
+inline
+void
+ThreadPool::shutdown(void)
+{
+  std::lock_guard<std::mutex> lg(_threads_mutex);
+
+  for(pthread_t tid : _threads)
+    pthread_cancel(tid);
+  for(pthread_t tid : _threads)
+    pthread_join(tid,NULL);
+
+  _threads.clear();
+}
+
+
+template<typename FuncType>
+inline
+void
+ThreadPool::enqueue_work(ThreadPool::PToken  &ptok_,
+                         FuncType           &&func_)
+{
+  SEMA_WAIT(_sema);
+  _queue.enqueue(ptok_,
+                 std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+inline
+void
+ThreadPool::enqueue_work(FuncType &&func_)
+{
+  SEMA_WAIT(_sema);
+  _queue.enqueue(std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+[[nodiscard]]
+inline
+std::future<typename std::result_of<FuncType()>::type>
+ThreadPool::enqueue_task(FuncType&& func_)
+{
+  using TaskReturnType = typename std::result_of<FuncType()>::type;
+  using Promise        = std::promise<TaskReturnType>;
+
+  Promise promise;
+  auto    future = promise.get_future();
+
+  auto work =
+    [promise_ = std::move(promise),
+     func_    = std::forward<FuncType>(func_)]() mutable
+    {
+      try
+        {
+          auto rv = func_();
+          promise_.set_value(std::move(rv));
+        }
+      catch(...)
+        {
+          promise_.set_exception(std::current_exception());
+        }
+    };
+
+  SEMA_WAIT(_sema);
+  _queue.enqueue(std::move(work));
+
+  return future;
+}
+
+
+inline
+std::vector<pthread_t>
+ThreadPool::threads() const
+{
+  std::lock_guard<std::mutex> lg(_threads_mutex);
+
+  return _threads;
+}
+
+
+inline
+ThreadPool::PToken
+ThreadPool::ptoken()
+{
+  return ThreadPool::PToken(_queue);
+}
