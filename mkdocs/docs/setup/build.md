@@ -18,7 +18,7 @@ $ wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ve
 
 ```
 $ cd mergerfs
-$ sudo tools/install-build-pkgs
+$ sudo buildtools/install-build-pkgs
 $ make deb
 $ sudo dpkg -i ../mergerfs_<version>_<arch>.deb
 ```
