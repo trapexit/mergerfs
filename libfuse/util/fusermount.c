@@ -1165,8 +1165,7 @@ static void usage(void)
 
 static void show_version(void)
 {
-	printf("fusermount version: %s\n", PACKAGE_VERSION);
-	exit(0);
+  exit(0);
 }
 
 int main(int argc, char *argv[])

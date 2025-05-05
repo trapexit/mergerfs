@@ -23,13 +23,13 @@
 #include <sys/stat.h>
 
 #ifdef __linux__
-#warning "using fs_futimens_linux.hpp"
+#pragma message "using fs_futimens_linux.hpp"
 #include "fs_futimens_linux.hpp"
 #elif __FreeBSD__ >= 11
-#warning "using fs_futimens_freebsd_11.hpp"
+#pragma message "using fs_futimens_freebsd_11.hpp"
 #include "fs_futimens_freebsd_11.hpp"
 #else
-#warning "using fs_futimens_generic.hpp"
+#pragma message "using fs_futimens_generic.hpp"
 #include "fs_futimens_generic.hpp"
 #endif
 

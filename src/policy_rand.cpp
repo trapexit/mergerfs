@@ -18,8 +18,7 @@
 #include "policy.hpp"
 #include "policy_rand.hpp"
 #include "policies.hpp"
-
-#include <algorithm>
+#include "rnd.hpp"
 
 int
 Policy::Rand::Action::operator()(const Branches::CPtr &branches_,
@@ -30,10 +29,7 @@ Policy::Rand::Action::operator()(const Branches::CPtr &branches_,
 
   rv = Policies::Action::all(branches_,fusepath_,paths_);
   if(rv == 0)
-    {
-      std::random_shuffle(paths_->begin(),paths_->end());
-      paths_->resize(1);
-    }
+    RND::shrink_to_rand_elem(*paths_);
 
   return rv;
 }
@@ -47,10 +43,7 @@ Policy::Rand::Create::operator()(const Branches::CPtr &branches_,
 
   rv = Policies::Create::all(branches_,fusepath_,paths_);
   if(rv == 0)
-    {
-      std::random_shuffle(paths_->begin(),paths_->end());
-      paths_->resize(1);
-    }
+    RND::shrink_to_rand_elem(*paths_);
 
   return rv;
 }
@@ -64,10 +57,7 @@ Policy::Rand::Search::operator()(const Branches::CPtr &branches_,
 
   rv = Policies::Search::all(branches_,fusepath_,paths_);
   if(rv == 0)
-    {
-      std::random_shuffle(paths_->begin(),paths_->end());
-      paths_->resize(1);
-    }
+    RND::shrink_to_rand_elem(*paths_);
 
   return rv;
 }

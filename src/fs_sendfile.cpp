@@ -15,9 +15,9 @@
 */
 
 #ifdef __linux__
-#warning "using fs_sendfile_linux.icpp"
+#pragma message "using fs_sendfile_linux.icpp"
 #include "fs_sendfile_linux.icpp"
 #else
-#warning "using fs_sendfile_unsupported.icpp"
+#pragma message "using fs_sendfile_unsupported.icpp"
 #include "fs_sendfile_unsupported.icpp"
 #endif

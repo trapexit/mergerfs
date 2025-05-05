@@ -7,34 +7,37 @@ if [ -e /usr/bin/apt-get ]; then
 	    install \
             ca-certificates \
             build-essential \
+            dpkg \
             git \
             g++ \
             debhelper \
-            automake \
-	    fakeroot \
-            libtool \
-            lsb-release
-    apt-get -qy --no-install-suggests --no-install-recommends install python
-    apt-get -qy --no-install-suggests --no-install-recommends install python3
+            lsb-release \
+            fakeroot
+    apt-get -qy --force-yes --no-install-suggests --no-install-recommends install python
+    apt-get -qy --force-yes --no-install-suggests --no-install-recommends install python3
 elif [ -e /usr/bin/dnf ]; then
     dnf -y update
     dnf -y install \
-        git rpm-build gcc-c++ make which python3 automake \
-        libtool gettext-devel
+        git rpm-build gcc-c++ make which python3
 elif [ -e /usr/bin/yum ]; then
     yum -y update
     yum -y install \
         git rpm-build gcc-c++ make which \
-        python python-argparse \
-        automake libtool gettext-devel
+        python python-argparse
+    yum -y install centos-release-scl
+    yum -y install devtoolset-9-gcc\*
+elif [ -e /usr/bin/zypper ]; then
+    zypper update -y
+    zypper install -y \
+        git rpm-build gcc-c++ make which \
+        python
 elif [ -e /sbin/apk ]; then
     apk add \
-        abuild git gcc g++ make autoconf \
-        automake libtool gettext-dev linux-headers
+        abuild git gcc g++ make \
+        linux-headers
 elif [ -e /usr/sbin/pkg ]; then
     pkg install \
-        git gmake gcc autoconf automake libtool \
-        gettext-tools
+        git gmake gcc
 fi
 
 if [ ! -e /usr/bin/python ]; then

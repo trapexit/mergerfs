@@ -77,11 +77,6 @@ static void helper_help(void)
           );
 }
 
-static void helper_version(void)
-{
-  fprintf(stderr, "FUSE library version: %s\n", PACKAGE_VERSION);
-}
-
 static int fuse_helper_opt_proc(void *data, const char *arg, int key,
 				struct fuse_args *outargs)
 {
@@ -97,7 +92,6 @@ static int fuse_helper_opt_proc(void *data, const char *arg, int key,
     return fuse_opt_add_arg(outargs, "-h");
 
   case KEY_VERSION:
-    helper_version();
     return 1;
 
   case FUSE_OPT_KEY_NONOPT:

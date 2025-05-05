@@ -17,10 +17,10 @@
 #include <fcntl.h>
 
 #if _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
-#warning "using fs_fadvise_posix.icpp"
+#pragma message "using fs_fadvise_posix.icpp"
 #include "fs_fadvise_posix.icpp"
 #else
-#warning "using fs_fadvise_unsupported.icpp"
+#pragma message "using fs_fadvise_unsupported.icpp"
 #include "fs_fadvise_unsupported.icpp"
 #endif
 

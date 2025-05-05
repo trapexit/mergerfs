@@ -17,9 +17,9 @@
 */
 
 #ifdef __linux__
-#warning "using fs_ficlone_linux.icpp"
+#pragma message "using fs_ficlone_linux.icpp"
 #include "fs_ficlone_linux.icpp"
 #else
-#warning "using fs_ficlone_unsupported.icpp"
+#pragma message "using fs_ficlone_unsupported.icpp"
 #include "fs_ficlone_unsupported.icpp"
 #endif

@@ -1,0 +1,49 @@
+#!/bin/sh
+
+BRANCH="${1:-master}"
+SRCDIR="/tmp/mergerfs"
+
+git clone https://github.com/trapexit/mergerfs "${SRCDIR}" -b "${BRANCH}"
+
+cd "${SRCDIR}"
+
+git log HEAD^1..
+
+mkdir /build
+if [ -e /usr/bin/apt-get ]; then
+    make deb
+    if [ $? -ne 0 ]; then
+        . /etc/lsb-release
+        cp -v /etc/lsb-release "/build/${DISTRIB_ID}.${DISTRIB_CODENAME}.${DISTRIB_RELEASE}.$(arch).FAILED"
+    fi
+    find /tmp/ \
+         -type f \
+         -name "*.deb" \
+         -not -name "*dbgsym*" \
+         -exec cp -v {} /build/ \;
+elif [ -e /usr/bin/dnf ]; then
+    make rpm
+    if [ $? -ne 0 ]; then
+        . /etc/lsb-release
+        cp -v /etc/lsb-release "/build/${DISTRIB_ID}.${DISTRIB_CODENAME}.${DISTRIB_RELEASE}.$(arch).FAILED"
+    fi
+    find /tmp/ \
+         -type f \
+         -name "*.rpm" \
+         -not -name "*sym*" \
+         -not -name "*src.rpm" \
+         -exec cp -v {} /build/ \;
+elif [ -e /usr/bin/yum ]; then
+    . /opt/rh/devtoolset-9/enable
+    make rpm
+    find /tmp/ \
+         -type f \
+         -name "*.rpm" \
+         -not -name "*sym*" \
+         -not -name "*src.rpm" \
+         -exec cp -v {} /build/ \;
+elif [ -e /sbin/apk ]; then
+    echo "NOT YET SUPPORTED"
+elif [ -e /usr/sbin/pkg ]; then
+    echo "NOT YET SUPPORTED"
+fi

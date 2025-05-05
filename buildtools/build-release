@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+
+import subprocess
+import sys
+import os
+import argparse
+import time
+
+
+def build(containerfile,
+          pkgdirpath,
+          branch):
+    timestamp = time.time_ns()
+    args = ['podman',
+            'build',
+            '--pull=always',
+            '--force-rm',
+            '-o',pkgdirpath,
+            '-f',containerfile,
+            f'--build-arg=BRANCH={branch}',
+            f'--build-arg=BUILD_TIMESTAMP={timestamp}',
+            'buildtools/']
+    print(args)
+    subprocess.run(args)
+
+
+def setup():
+    args = ['sudo',
+            'apt-get',
+            'install',
+            '-fy',
+            'qemu-user-static',
+            'qemu-user-binfmt']
+    print(args)
+    subprocess.run(args)
+
+
+def podman_cleanup():
+    args = ['podman',
+            'system',
+            'prune',
+            '-af']
+    print(args)
+    subprocess.run(args)
+
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument('--target',
+                   default='debian.12.amd64')
+    p.add_argument('--pkgdirpath',
+                   default='build/pkgs/')
+    p.add_argument('--branch',
+                   default='master')
+    p.add_argument('--setup',
+                   required=False,
+                   action='store_true')
+    p.add_argument('--cleanup',
+                   required=False,
+                   action='store_true')
+
+    return p.parse_args()
+
+
+def main():
+    args = parse_args()
+    print(args)
+
+    if args.setup:
+        setup()
+        sys.exit(0)
+
+    containerfiles = []
+    basepath = 'buildtools/containerfiles'
+    if os.path.exists(f'{basepath}/{args.target}'):
+        containerfiles.append(f'{basepath}/{args.target}')
+    elif args.target == 'all':
+        for root,dirnames,filenames in os.walk(basepath):
+            for filename in filenames:
+                containerfile = f'buildtools/containerfiles/{filename}'
+                containerfiles.append(containerfile)
+    else:
+        for root,dirnames,filenames in os.walk(basepath):
+            for filename in filenames:
+                if args.target not in filename:
+                    continue
+                containerfile = f'buildtools/containerfiles/{filename}'
+                containerfiles.append(containerfile)
+
+    for containerfile in containerfiles:
+        if args.cleanup:
+            podman_cleanup()
+        build(containerfile,
+              args.pkgdirpath,
+              args.branch)
+
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

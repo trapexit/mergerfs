@@ -19,12 +19,12 @@
 #pragma once
 
 #ifdef __linux__
-#warning "using fs_utimensat_linux.hpp"
+#pragma message "using fs_utimensat_linux.hpp"
 #include "fs_utimensat_linux.hpp"
 #elif __FreeBSD__
-#warning "using fs_utimensat_freebsd.hpp"
+#pragma message "using fs_utimensat_freebsd.hpp"
 #include "fs_utimensat_freebsd.hpp"
 #else
-#warning "using fs_utimensat_generic.hpp"
+#pragma message "using fs_utimensat_generic.hpp"
 #include "fs_utimensat_generic.hpp"
 #endif

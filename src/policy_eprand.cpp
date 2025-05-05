@@ -18,8 +18,8 @@
 #include "policies.hpp"
 #include "policy.hpp"
 #include "policy_eprand.hpp"
+#include "rnd.hpp"
 
-#include <algorithm>
 
 int
 Policy::EPRand::Action::operator()(const Branches::CPtr &branches_,
@@ -30,10 +30,7 @@ Policy::EPRand::Action::operator()(const Branches::CPtr &branches_,
 
   rv = Policies::Action::epall(branches_,fusepath_,paths_);
   if(rv == 0)
-    {
-      std::random_shuffle(paths_->begin(),paths_->end());
-      paths_->resize(1);
-    }
+    RND::shrink_to_rand_elem(*paths_);
 
   return rv;
 }
@@ -47,10 +44,7 @@ Policy::EPRand::Create::operator()(const Branches::CPtr &branches_,
 
   rv = Policies::Create::epall(branches_,fusepath_,paths_);
   if(rv == 0)
-    {
-      std::random_shuffle(paths_->begin(),paths_->end());
-      paths_->resize(1);
-    }
+    RND::shrink_to_rand_elem(*paths_);
 
   return rv;
 }
@@ -64,10 +58,7 @@ Policy::EPRand::Search::operator()(const Branches::CPtr &branches_,
 
   rv = Policies::Search::epall(branches_,fusepath_,paths_);
   if(rv == 0)
-    {
-      std::random_shuffle(paths_->begin(),paths_->end());
-      paths_->resize(1);
-    }
+    RND::shrink_to_rand_elem(*paths_);
 
   return rv;
 }

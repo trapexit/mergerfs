@@ -1,0 +1,21 @@
+#include "fuse_statx.hpp"
+
+int
+FUSE::statx(const char        *fusepath_,
+            const uint32_t     flags_,
+            const uint32_t     mask_,
+            struct fuse_statx *st_,
+            fuse_timeouts_t   *timeout_)
+{
+  return -ENOSYS;
+}
+
+int
+FUSE::statx_fh(const uint64_t     fh_,
+               const uint32_t     flags_,
+               const uint32_t     mask_,
+               struct fuse_statx *st_,
+               fuse_timeouts_t   *timeout_)
+{
+  return -ENOSYS;
+}

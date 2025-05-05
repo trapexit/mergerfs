@@ -30,11 +30,11 @@ public:
   typedef E ENUM;
 
 public:
-  Enum<ENUM>()
+  Enum()
   {
   }
 
-  Enum<ENUM>(const ENUM data_)
+  Enum(const ENUM data_)
     : _data(data_)
   {
   }

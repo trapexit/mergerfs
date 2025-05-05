@@ -28,9 +28,9 @@ namespace ugid
 }
 
 #if defined __linux__ and UGID_USE_RWLOCK == 0
-#warning "using ugid_linux.hpp"
+#pragma message "using ugid_linux.hpp"
 #include "ugid_linux.hpp"
 #else
-#warning "using ugid_rwlock.hpp"
+#pragma message "using ugid_rwlock.hpp"
 #include "ugid_rwlock.hpp"
 #endif

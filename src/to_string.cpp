@@ -18,6 +18,8 @@
 
 #include "to_string.hpp"
 
+#include "fmt/core.h"
+
 #include <cstdint>
 #include <string>
 
@@ -35,21 +37,13 @@ namespace str
   std::string
   to(const int int_)
   {
-    char buf[24];
-
-    sprintf(buf,"%d",int_);
-
-    return buf;
+    return fmt::format("{}",int_);
   }
 
   std::string
   to(const uint64_t uint64_)
   {
-    char buf[64];
-
-    sprintf(buf,"%llu",(unsigned long long)uint64_);
-
-    return buf;
+    return fmt::format("{}",uint64_);
   }
 
   std::string
