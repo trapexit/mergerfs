@@ -15,7 +15,8 @@ template FMT_API auto dragonbox::to_decimal(float x) noexcept
 template FMT_API auto dragonbox::to_decimal(double x) noexcept
     -> dragonbox::decimal_fp<double>;
 
-#ifndef FMT_STATIC_THOUSANDS_SEPARATOR
+#if FMT_USE_LOCALE
+// DEPRECATED! locale_ref in the detail namespace
 template FMT_API locale_ref::locale_ref(const std::locale& loc);
 template FMT_API auto locale_ref::get<std::locale>() const -> std::locale;
 #endif
@@ -26,14 +27,12 @@ template FMT_API auto thousands_sep_impl(locale_ref)
     -> thousands_sep_result<char>;
 template FMT_API auto decimal_point_impl(locale_ref) -> char;
 
+// DEPRECATED!
 template FMT_API void buffer<char>::append(const char*, const char*);
 
 // DEPRECATED!
-// There is no correspondent extern template in format.h because of
-// incompatibility between clang and gcc (#2377).
 template FMT_API void vformat_to(buffer<char>&, string_view,
-                                 basic_format_args<FMT_BUFFER_CONTEXT(char)>,
-                                 locale_ref);
+                                 typename vformat_args<>::type, locale_ref);
 
 // Explicit instantiations for wchar_t.
 

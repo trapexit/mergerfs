@@ -33,10 +33,10 @@ namespace FUSE
                unsigned max_queue_depth);
     ~ReadDirCOR();
 
-    int operator()(fuse_file_info_t const *ffi,
+    int operator()(const fuse_file_info_t *ffi,
                    fuse_dirents_t         *buf);
 
   private:
-    ThreadPool _tp;
+    mutable ThreadPool _tp;
   };
 }

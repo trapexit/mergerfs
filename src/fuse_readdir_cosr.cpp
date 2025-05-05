@@ -107,7 +107,7 @@ namespace l
 
     futures.reserve(branches_->size());
 
-    for(auto const &branch : *branches_)
+    for(const auto &branch : *branches_)
       {
         auto func =
           [&branch,&rel_dirpath_,uid_,gid_]()
@@ -124,7 +124,7 @@ namespace l
             return DirRV{&branch.path,dir,errno};
           };
 
-        auto rv = tp_.enqueue_task(func);
+        auto rv = tp_.enqueue_task(std::move(func));
 
         futures.emplace_back(std::move(rv));
       }

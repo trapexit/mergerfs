@@ -28,50 +28,53 @@
 #include <cstdlib>
 #include <set>
 
-#define DEFAULT_MAX_QUEUE_DEPTH 3
 
-namespace l
+static
+void
+_read_cfg(std::string const  str_,
+          std::string       &type_,
+          unsigned          &concurrency_,
+          unsigned          &max_queue_depth_)
 {
-  static
-  void
-  read_cfg(std::string const  str_,
-           std::string       &type_,
-           unsigned          &concurrency_,
-           unsigned          &max_queue_depth_)
-  {
-    char type[16];
-    int concurrency;
-    int max_queue_depth;
+  char type[16];
+  int concurrency;
+  int max_queue_depth;
 
-    concurrency = 0;
-    max_queue_depth = 0;
-    std::sscanf(str_.c_str(),
-                "%15[a-z]:%d:%d",
-                type,
-                &concurrency,
-                &max_queue_depth);
+  concurrency = 0;
+  max_queue_depth = 0;
+  std::sscanf(str_.c_str(),
+              "%15[a-z]:%d:%d",
+              type,
+              &concurrency,
+              &max_queue_depth);
 
-    if(concurrency == 0)
+  if(concurrency == 0)
+    {
       concurrency = std::thread::hardware_concurrency();
-    else if(concurrency < 0)
+      if(concurrency > 8)
+        concurrency = 8;
+    }
+  else if(concurrency < 0)
+    {
       concurrency = (std::thread::hardware_concurrency() / std::abs(concurrency));
+    }
 
-    if(concurrency == 0)
-      concurrency = 1;
+  if(concurrency <= 0)
+    concurrency = 1;
 
-    if(max_queue_depth == 0)
-      max_queue_depth = DEFAULT_MAX_QUEUE_DEPTH;
+  if(max_queue_depth <= 0)
+    max_queue_depth = 2;
 
-    max_queue_depth *= concurrency;
+  max_queue_depth *= concurrency;
 
-    type_            = type;
-    concurrency_     = concurrency;
-    max_queue_depth_ = max_queue_depth;
-  }
+  type_            = type;
+  concurrency_     = concurrency;
+  max_queue_depth_ = max_queue_depth;
 }
 
+
 bool
-FUSE::ReadDirFactory::valid(std::string const str_)
+FUSE::ReadDirFactory::valid(const std::string str_)
 {
   unsigned concurrency;
   unsigned max_queue_depth;
@@ -81,7 +84,7 @@ FUSE::ReadDirFactory::valid(std::string const str_)
       "seq", "cosr", "cor"
     };
 
-  l::read_cfg(str_,type,concurrency,max_queue_depth);
+  ::_read_cfg(str_,type,concurrency,max_queue_depth);
 
   if(types.find(type) == types.end())
     return false;
@@ -101,7 +104,7 @@ FUSE::ReadDirFactory::make(std::string const str_)
   if(!valid(str_))
     return {};
 
-  l::read_cfg(str_,type,concurrency,max_queue_depth);
+  ::_read_cfg(str_,type,concurrency,max_queue_depth);
 
   if(type == "seq")
     return std::make_shared<FUSE::ReadDirSeq>();
