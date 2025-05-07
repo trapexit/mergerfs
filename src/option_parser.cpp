@@ -126,7 +126,7 @@ set_default_options(fuse_args     *args_,
   if(geteuid() == 0)
     set_option("allow_other",args_);
   else
-    syslog_notice("not auto setting allow_other since not running as root");
+    SysLog::notice("not auto setting allow_other since not running as root");
 }
 
 static
