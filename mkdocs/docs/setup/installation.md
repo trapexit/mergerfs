@@ -66,14 +66,14 @@ sudo rpm -i mergerfs-<ver>.fc<rel>.<arch>.rpm
 
 ## SUSE/OpenSUSE
 
-Avaliable at [filesystems repo](https://build.opensuse.org/package/show/filesystems/mergerfs-tools)
+Avaliable at [filesystems repo](https://build.opensuse.org/package/show/filesystems/mergerfs)
 
 if you have not added the repo (e.g. in case of OpenSUSE Tumbleweed, rel=openSUSE_Tumbleweed): 
 
 ```
 zypper addrepo https://download.opensuse.org/repositories/filesystems/<rel>/filesystems.repo
 zypper refresh
-zypper install mergerfs-tools
+zypper install mergerfs
 ```
 
 ## FreeBSD
