@@ -10,10 +10,14 @@
 #include "fs_openat.hpp"
 #include "fs_read.hpp"
 
+#include "fmt/core.h"
+
+#include <array>
+
 #include <pthread.h>
 
 static int g_PROCFS_DIR_FD = -1;
-const char PROCFS_PATH[] = "/proc";
+constexpr const char PROCFS_PATH[] = "/proc";
 
 int
 procfs::init()
@@ -33,15 +37,17 @@ procfs::get_name(const int tid_)
 {
   int fd;
   int rv;
-  char commpath[256];
+  std::array<char,256> commpath;
+  fmt::format_to_n_result<char*> frv;
 
-  snprintf(commpath,sizeof(commpath),"%d/comm",tid_);
+  frv = fmt::format_to_n(commpath.data(),commpath.size()-1,"{}/comm",tid_);
+  frv.out[0] = '\0';
 
-  fd = fs::openat(g_PROCFS_DIR_FD,commpath,O_RDONLY);
+  fd = fs::openat(g_PROCFS_DIR_FD,commpath.data(),O_RDONLY);
   if(fd < 0)
     return {};
 
-  rv = fs::read(fd,commpath,sizeof(commpath));
+  rv = fs::read(fd,commpath.data(),commpath.size());
   if(rv == -1)
     return {};
 
@@ -50,5 +56,5 @@ procfs::get_name(const int tid_)
 
   fs::close(fd);
 
-  return commpath;
+  return commpath.data();
 }

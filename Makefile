@@ -23,9 +23,7 @@ FIND 	  = find
 INSTALL   = install
 MKTEMP    = mktemp
 STRIP     = strip
-PANDOC    = pandoc
 SED       = sed
-RPMBUILD  = rpmbuild
 GIT2DEBCL = ./buildtools/git2debcl
 PKGCONFIG = pkg-config
 
@@ -39,10 +37,10 @@ endif
 USE_XATTR = 1
 UGID_USE_RWLOCK = 0
 
-ifeq ($(DEBUG),1)
-OPT_FLAGS := -O0 -g -fsanitize=undefined
-else
+ifeq ($(NDEBUG),1)
 OPT_FLAGS := -O2 -DNDEBUG
+else
+OPT_FLAGS := -O0 -DDEBUG -g -fsanitize=undefined
 endif
 
 ifeq ($(STATIC),1)
@@ -187,7 +185,7 @@ install-mount-tools: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(MAKE) -C libfuse install
 
-install-man: $(MANPAGE)
+install-man: man/$(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"
 	$(INSTALL) -v -m 0644 "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
@@ -210,17 +208,8 @@ uninstall-mount.mergerfs:
 uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
-$(MANPAGE): README.md
-ifneq ($(shell $(PANDOC) --version 2> /dev/null),)
-	$(PANDOC) -s -t man -o "man/$(MANPAGE)" README.md
-else
-	$(warning "pandoc does not appear available: unable to build manpage")
-endif
-
-man: $(MANPAGE)
-
 .PHONY: tarball
-tarball: man changelog version
+tarball: changelog version
 	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
 	$(eval FILENAME := mergerfs-$(VERSION))
@@ -260,7 +249,7 @@ rpm: tarball
 	$(SED) 's/__VERSION__/$(VERSION)/g' mergerfs.spec > \
 		rpmbuild/SOURCES/mergerfs.spec
 	cp -ar mergerfs-$(VERSION).tar.gz rpmbuild/SOURCES
-	$(RPMBUILD) -ba rpmbuild/SOURCES/mergerfs.spec \
+	rpmbuild -ba rpmbuild/SOURCES/mergerfs.spec \
 		--define "_topdir $(CURDIR)/rpmbuild"
 
 .PHONY: install-build-pkgs
@@ -269,6 +258,29 @@ install-build-pkgs:
 
 .PHONY: libfuse
 libfuse:
-	$(MAKE) DEBUG=$(DEBUG) -C libfuse
+	$(MAKE) NDEBUG=$(NDEBUG) -C libfuse
+
+.PHONY: release release-amd64
+release:
+	./buildtools/build-release \
+		--target=all \
+		--cleanup \
+		--branch=$(shell git branch --show-current)
+release-amd64:
+	./buildtools/build-release \
+		--target=amd64 \
+		--cleanup \
+		--branch=$(shell git branch --show-current)
+release-arm64:
+	./buildtools/build-release \
+		--target=arm64 \
+		--cleanup \
+		--branch=$(shell git branch --show-current)
+release-static:
+	./buildtools/build-release \
+		--target=static \
+		--cleanup \
+		--branch=$(shell git branch --show-current)
+
 
 -include $(DEPS)

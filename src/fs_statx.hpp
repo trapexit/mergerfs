@@ -11,6 +11,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#ifdef STATX_TYPE
+#define MERGERFS_STATX_SUPPORTED
+#endif
+
 namespace fs
 {
   static
@@ -22,7 +26,7 @@ namespace fs
         const unsigned int  mask_,
         struct fuse_statx  *st_)
   {
-#ifdef STATX_TYPE
+#ifdef MERGERFS_STATX_SUPPORTED
     int rv;
 
     rv = ::statx(dirfd_,

@@ -41,11 +41,11 @@ public:
   }
 
 public:
-  ToFromWrapper<T>()
+  ToFromWrapper()
   {
   }
 
-  ToFromWrapper<T>(const T data_)
+  ToFromWrapper(const T data_)
     : _data(data_)
   {
   }
@@ -112,11 +112,11 @@ public:
   }
 
 public:
-  ROToFromWrapper<T>()
+  ROToFromWrapper()
   {
   }
 
-  ROToFromWrapper<T>(const T data_)
+  ROToFromWrapper(const T data_)
     : _data(data_)
   {
   }

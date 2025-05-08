@@ -16,6 +16,8 @@
 
 #include "ef.hpp"
 
+#include "fmt/core.h"
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,21 +116,17 @@ namespace num
   std::string
   humanize(const uint64_t bytes_)
   {
-    char buf[64];
-
     if(bytes_ < KB)
-      sprintf(buf,"%" PRIu64 "",bytes_);
+      return fmt::format("{}",bytes_);
     ef(((bytes_ / TB) * TB) == bytes_)
-      sprintf(buf,"%" PRIu64 "T",bytes_ / TB);
+      return fmt::format("{}T",bytes_ / TB);
     ef(((bytes_ / GB) * GB) == bytes_)
-      sprintf(buf,"%" PRIu64 "G",bytes_ / GB);
+      return fmt::format("{}G",bytes_ / GB);
     ef(((bytes_ / MB) * MB) == bytes_)
-      sprintf(buf,"%" PRIu64 "M",bytes_ / MB);
+      return fmt::format("{}M",bytes_ / MB);
     ef(((bytes_ / KB) * KB) == bytes_)
-      sprintf(buf,"%" PRIu64 "K",bytes_ / KB);
-    else
-      sprintf(buf,"%" PRIu64 "",bytes_);
+      return fmt::format("{}K",bytes_ / KB);
 
-    return std::string(buf);
+    return fmt::format("{}",bytes_);
   }
 }

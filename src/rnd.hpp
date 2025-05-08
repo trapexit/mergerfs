@@ -19,7 +19,7 @@
 #pragma once
 
 #include <cstdint>
-
+#include <random>
 
 class RND
 {
@@ -31,4 +31,21 @@ public:
   static uint64_t rand64(const uint64_t max_);
   static uint64_t rand64(const uint64_t min_,
                          const uint64_t max_);
+
+  template<typename T>
+  static
+  void
+  shrink_to_rand_elem(std::vector<T> &v_)
+  {
+    static std::mt19937 gen(std::random_device{}());
+
+    if(v_.size() <= 1)
+      return;
+
+    std::uniform_int_distribution<> dist(0,(v_.size() - 1));
+
+    std::swap(v_[0],v_[dist(gen)]);
+
+    v_.resize(1);
+  }
 };

@@ -1619,6 +1619,14 @@ fuse_lib_lookup(fuse_req_t             req,
 
 static
 void
+fuse_lib_lseek(fuse_req_t             req_,
+               struct fuse_in_header *hdr_)
+{
+  fuse_reply_err(req_,ENOSYS);
+}
+
+static
+void
 fuse_lib_forget(fuse_req_t             req,
                 struct fuse_in_header *hdr_)
 {
@@ -2177,6 +2185,24 @@ fuse_lib_rename(fuse_req_t             req,
     }
 
   fuse_reply_err(req,err);
+}
+
+static
+void
+fuse_lib_rename2(fuse_req_t             req_,
+                 struct fuse_in_header *hdr_)
+{
+  fuse_reply_err(req_,ENOSYS);
+}
+
+static
+void
+fuse_lib_retrieve_reply(fuse_req_t  req_,
+                        void       *cookie_,
+                        uint64_t    ino_,
+                        off_t       offset_)
+{
+
 }
 
 static
@@ -3674,53 +3700,55 @@ fuse_prune_remembered_nodes(struct fuse *f_)
 
 static struct fuse_lowlevel_ops fuse_path_ops =
   {
-   .access          = fuse_lib_access,
-   .bmap            = fuse_lib_bmap,
-   .copy_file_range = fuse_lib_copy_file_range,
-   .create          = fuse_lib_create,
-   .destroy         = fuse_lib_destroy,
-   .fallocate       = fuse_lib_fallocate,
-   .flock           = fuse_lib_flock,
-   .flush           = fuse_lib_flush,
-   .forget          = fuse_lib_forget,
-   .forget_multi    = fuse_lib_forget_multi,
-   .fsync           = fuse_lib_fsync,
-   .fsyncdir        = fuse_lib_fsyncdir,
-   .getattr         = fuse_lib_getattr,
-   .getlk           = fuse_lib_getlk,
-   .getxattr        = fuse_lib_getxattr,
-   .init            = fuse_lib_init,
-   .ioctl           = fuse_lib_ioctl,
-   .link            = fuse_lib_link,
-   .listxattr       = fuse_lib_listxattr,
-   .lookup          = fuse_lib_lookup,
-   .mkdir           = fuse_lib_mkdir,
-   .mknod           = fuse_lib_mknod,
-   .open            = fuse_lib_open,
-   .opendir         = fuse_lib_opendir,
-   .poll            = fuse_lib_poll,
-   .read            = fuse_lib_read,
-   .readdir         = fuse_lib_readdir,
-   .readdir_plus    = fuse_lib_readdir_plus,
-   .readlink        = fuse_lib_readlink,
-   .release         = fuse_lib_release,
-   .releasedir      = fuse_lib_releasedir,
-   .removemapping   = fuse_lib_removemapping,
-   .removexattr     = fuse_lib_removexattr,
-   .rename          = fuse_lib_rename,
-   .retrieve_reply  = NULL,
-   .rmdir           = fuse_lib_rmdir,
-   .setattr         = fuse_lib_setattr,
-   .setlk           = fuse_lib_setlk,
-   .setupmapping    = fuse_lib_setupmapping,
-   .setxattr        = fuse_lib_setxattr,
-   .statfs          = fuse_lib_statfs,
-   .statx           = fuse_lib_statx,
-   .symlink         = fuse_lib_symlink,
-   .syncfs          = fuse_lib_syncfs,
-   .tmpfile         = fuse_lib_tmpfile,
-   .unlink          = fuse_lib_unlink,
-   .write           = fuse_lib_write,
+    .access          = fuse_lib_access,
+    .bmap            = fuse_lib_bmap,
+    .copy_file_range = fuse_lib_copy_file_range,
+    .create          = fuse_lib_create,
+    .destroy         = fuse_lib_destroy,
+    .fallocate       = fuse_lib_fallocate,
+    .flock           = fuse_lib_flock,
+    .flush           = fuse_lib_flush,
+    .forget          = fuse_lib_forget,
+    .forget_multi    = fuse_lib_forget_multi,
+    .fsync           = fuse_lib_fsync,
+    .fsyncdir        = fuse_lib_fsyncdir,
+    .getattr         = fuse_lib_getattr,
+    .getlk           = fuse_lib_getlk,
+    .getxattr        = fuse_lib_getxattr,
+    .init            = fuse_lib_init,
+    .ioctl           = fuse_lib_ioctl,
+    .link            = fuse_lib_link,
+    .listxattr       = fuse_lib_listxattr,
+    .lookup          = fuse_lib_lookup,
+    .lseek           = fuse_lib_lseek,
+    .mkdir           = fuse_lib_mkdir,
+    .mknod           = fuse_lib_mknod,
+    .open            = fuse_lib_open,
+    .opendir         = fuse_lib_opendir,
+    .poll            = fuse_lib_poll,
+    .read            = fuse_lib_read,
+    .readdir         = fuse_lib_readdir,
+    .readdir_plus    = fuse_lib_readdir_plus,
+    .readlink        = fuse_lib_readlink,
+    .release         = fuse_lib_release,
+    .releasedir      = fuse_lib_releasedir,
+    .removemapping   = fuse_lib_removemapping,
+    .removexattr     = fuse_lib_removexattr,
+    .rename          = fuse_lib_rename,
+    .rename2         = fuse_lib_rename2,
+    .retrieve_reply  = fuse_lib_retrieve_reply,
+    .rmdir           = fuse_lib_rmdir,
+    .setattr         = fuse_lib_setattr,
+    .setlk           = fuse_lib_setlk,
+    .setupmapping    = fuse_lib_setupmapping,
+    .setxattr        = fuse_lib_setxattr,
+    .statfs          = fuse_lib_statfs,
+    .statx           = fuse_lib_statx,
+    .symlink         = fuse_lib_symlink,
+    .syncfs          = fuse_lib_syncfs,
+    .tmpfile         = fuse_lib_tmpfile,
+    .unlink          = fuse_lib_unlink,
+    .write           = fuse_lib_write,
   };
 
 int

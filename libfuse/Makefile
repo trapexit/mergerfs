@@ -9,10 +9,10 @@ UTILS :=
 INSTALLUTILS :=
 endif
 
-ifeq ($(DEBUG),1)
-OPT_FLAGS := -O0 -g -fsanitize=undefined
+ifeq ($(NDEBUG),1)
+OPT_FLAGS := -O2 -DNDEBUG
 else
-OPT_FLAGS := -O2
+OPT_FLAGS := -O0 -DDEBUG -g -fsanitize=undefined
 endif
 
 ifeq ($(LTO),1)
@@ -41,7 +41,6 @@ SRC_C = \
 	lib/buffer.c \
 	lib/crc32b.c \
 	lib/debug.c \
-	lib/fuse.c \
 	lib/fuse_dirents.c \
 	lib/fuse_lowlevel.c \
 	lib/node.c \
@@ -52,6 +51,7 @@ SRC_C = \
 	lib/helper.c \
 	lib/mount.c
 SRC_CPP = \
+	lib/fuse.cpp \
 	lib/cpu.cpp \
 	lib/fuse_config.cpp \
 	lib/fuse_loop.cpp \
@@ -87,7 +87,6 @@ FUSE_FLAGS = \
 	-Ibuild \
 	-D_REENTRANT \
 	-D_FILE_OFFSET_BITS=64 \
-	-DPACKAGE_VERSION=\"$(VERSION)\" \
 	-DFUSERMOUNT_DIR=\"$(FUSERMOUNT_DIR)\"
 LDFLAGS := \
 	${LDFLAGS} \

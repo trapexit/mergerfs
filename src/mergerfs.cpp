@@ -269,8 +269,8 @@ namespace l
     if(uid == 0)
       return;
 
-    char const *s = "mergerfs is not running as root and may not work correctly\n";
-    fprintf(stderr,"warning: %s",s);
+    const char s[] = "mergerfs is not running as root and may not work correctly\n";
+    fmt::print(stderr,"warning: {}",s);
     SysLog::warning(s);
   }
 
@@ -286,8 +286,6 @@ namespace l
 
     SysLog::open();
     SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
-
-    l::warn_if_not_root();
 
     memset(&ops,0,sizeof(fuse_operations));
 
@@ -310,6 +308,8 @@ namespace l
         if(failure)
           return 1;
       }
+
+    l::warn_if_not_root();
 
     l::setup_resources(cfg->scheduling_priority);
     l::setup_signal_handlers();
