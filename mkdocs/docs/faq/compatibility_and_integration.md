@@ -5,6 +5,17 @@
 [Primarily Linux.](../setup/installation.md) FreeBSD is casually
 supported but not well tested.
 
+With FreeBSD certain Linux functions and FUSE features are not
+supported. In many cases the absense will not be noticed however
+performance may be impacted due to a core mergerfs design decision
+relying on a Linux feature.
+
+Linux allows individual threads to change credentials whereas [FreeBSD
+does not](https://wiki.freebsd.org/Per-Thread%20Credentials). As a
+result mergerfs must use a lock to ensure critical sections which need
+to change credentials are safeguarded. This will limit throughput on
+systems where requests to mergerfs come from multiple user identities.
+
 
 ### Why not support MacOS?
 

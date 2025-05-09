@@ -1,25 +1,27 @@
 # inodecalc
 
-Inodes (`st_ino`) are unique identifiers within a filesystem. Each
-mounted filesystem has device ID (st_dev) as well and together they
-can uniquely identify a file on the whole of the system. Entries on
-the same device with the same inode are in fact references to the same
-underlying file. It is a many to one relationship between names and an
-inode. Directories, however, do not have multiple links on most
-systems due to the complexity they add.
+[Inodes](https://en.wikipedia.org/wiki/Inode) (`st_ino`) are unique
+identifiers for files within a filesystem. Each mounted filesystem
+also has a (typically) unique device ID (`st_dev`) as well and
+together they can uniquely identify a file on the whole of the
+system. Entries on the same device with the same inode are (generally)
+in fact references to the same underlying file. It is a many to one
+relationship between names and an inode. Directories, however, do not
+have multiple links on most systems due to the complexity that would
+add.
 
-FUSE allows the server (mergerfs) to set inode values but not device
-IDs. Creating an inode value is somewhat complex in mergerfs' case as
-files aren't really in its control. If a policy changes what directory
-or file is to be selected or something changes out of band it becomes
-unclear what value should be used. Most software does not to care what
-the values are but those that do often break if a value changes
-unexpectedly. The tool find will abort a directory walk if it sees a
-directory inode change. NFS can return stale handle errors if the
-inode changes out of band. File dedup tools will usually leverage
-device ids and inodes as a shortcut in searching for duplicate files
-and would resort to full file comparisons should it find different
-inode values.
+FUSE allows the server (in this case `mergerfs`) to set inode values
+but not device IDs. Creating an inode value is somewhat complex in
+mergerfs' case as files aren't really in its control. If a policy
+changes what directory or file is to be selected or changes are made
+to branches out of band it becomes unclear what value should be
+used. Most software does not to care what the values are but those
+that do often break if a value changes unexpectedly. For instance: the
+tool `find` will abort a directory walk if it sees a directory inode
+change. NFS can return stale handle errors if the inode changes
+out-of-band. File dedup tools will usually leverage device ids and
+inodes as a shortcut in searching for duplicate files and would resort
+to full file comparisons should it find different inode values.
 
 mergerfs offers multiple ways to calculate the inode in hopes of
 covering different usecases.
@@ -36,10 +38,13 @@ covering different usecases.
   the same file will not be recognizable via inodes. That does not
   mean hard links don't work. They will.
 * `path-hash32`: 32bit version of path-hash.
-* `devino-hash`: Hashes the device id and inode of the underlying
+* `devino-hash`: Hashes the branch path and inode of the underlying
   entry. This won't prevent issues with NFS should the policy pick a
   different file or files move out of band but will present the same
-  inode for underlying files that do too.
+  inode for underlying files that share the same inode. Previous
+  releases of mergerfs used the device ID but that changes on
+  reboot. The downside to using the branch path is inodes for files on
+  the same underlying filesystem will be different.
 * `devino-hash32`: 32bit version of devino-hash.
 * `hybrid-hash`: Performs path-hash on directories and devino-hash on
   other file types. Since directories can't have hard links the static
