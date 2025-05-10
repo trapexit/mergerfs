@@ -30,8 +30,6 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
 namespace error
 {
@@ -57,27 +55,27 @@ namespace l
 {
   static
   int
-  link_create_path_loop(const StrVec &oldbasepaths_,
-                        const string &newbasepath_,
-                        const char   *oldfusepath_,
-                        const char   *newfusepath_,
-                        const string &newfusedirpath_)
+  link_create_path_loop(const std::vector<Branch*> &oldbranches_,
+                        const Branch               *newbranch_,
+                        const char                 *oldfusepath_,
+                        const char                 *newfusepath_,
+                        const std::string          &newfusedirpath_)
   {
     int rv;
     int error;
-    string oldfullpath;
-    string newfullpath;
+    std::string oldfullpath;
+    std::string newfullpath;
 
     error = -1;
-    for(auto &oldbasepath : oldbasepaths_)
+    for(auto &oldbranch : oldbranches_)
       {
-        oldfullpath = fs::path::make(oldbasepath,oldfusepath_);
-        newfullpath = fs::path::make(oldbasepath,newfusepath_);
+        oldfullpath = fs::path::make(oldbranch->path,oldfusepath_);
+        newfullpath = fs::path::make(oldbranch->path,newfusepath_);
 
         rv = fs::link(oldfullpath,newfullpath);
         if((rv == -1) && (errno == ENOENT))
           {
-            rv = fs::clonepath_as_root(newbasepath_,oldbasepath,newfusedirpath_);
+            rv = fs::clonepath_as_root(newbranch_->path,oldbranch->path,newfusedirpath_);
             if(rv == 0)
               rv = fs::link(oldfullpath,newfullpath);
           }
@@ -92,41 +90,41 @@ namespace l
   int
   link_create_path(const Policy::Search &searchFunc_,
                    const Policy::Action &actionFunc_,
-                   const Branches       &branches_,
+                   const Branches       &ibranches_,
                    const char           *oldfusepath_,
                    const char           *newfusepath_)
   {
     int rv;
-    string newfusedirpath;
-    StrVec oldbasepaths;
-    StrVec newbasepaths;
+    std::string newfusedirpath;
+    std::vector<Branch*> oldbranches;
+    std::vector<Branch*> newbranches;
 
-    rv = actionFunc_(branches_,oldfusepath_,&oldbasepaths);
+    rv = actionFunc_(ibranches_,oldfusepath_,oldbranches);
     if(rv == -1)
       return -errno;
 
     newfusedirpath = fs::path::dirname(newfusepath_);
 
-    rv = searchFunc_(branches_,newfusedirpath,&newbasepaths);
+    rv = searchFunc_(ibranches_,newfusedirpath,newbranches);
     if(rv == -1)
       return -errno;
 
-    return l::link_create_path_loop(oldbasepaths,newbasepaths[0],
+    return l::link_create_path_loop(oldbranches,newbranches[0],
                                     oldfusepath_,newfusepath_,
                                     newfusedirpath);
   }
 
   static
   int
-  link_preserve_path_core(const string &oldbasepath_,
-                          const char   *oldfusepath_,
-                          const char   *newfusepath_,
-                          struct stat  *st_,
-                          const int     error_)
+  link_preserve_path_core(const std::string &oldbasepath_,
+                          const char        *oldfusepath_,
+                          const char        *newfusepath_,
+                          struct stat       *st_,
+                          const int          error_)
   {
     int rv;
-    string oldfullpath;
-    string newfullpath;
+    std::string oldfullpath;
+    std::string newfullpath;
 
     oldfullpath = fs::path::make(oldbasepath_,oldfusepath_);
     newfullpath = fs::path::make(oldbasepath_,newfusepath_);
@@ -142,17 +140,17 @@ namespace l
 
   static
   int
-  link_preserve_path_loop(const StrVec &oldbasepaths_,
-                          const char   *oldfusepath_,
-                          const char   *newfusepath_,
-                          struct stat  *st_)
+  link_preserve_path_loop(const std::vector<Branch*> &oldbranches_,
+                          const char            *oldfusepath_,
+                          const char            *newfusepath_,
+                          struct stat           *st_)
   {
     int error;
 
     error = -1;
-    for(auto &oldbasepath : oldbasepaths_)
+    for(auto &oldbranch : oldbranches_)
       {
-        error = l::link_preserve_path_core(oldbasepath,
+        error = l::link_preserve_path_core(oldbranch->path,
                                            oldfusepath_,
                                            newfusepath_,
                                            st_,
@@ -171,13 +169,13 @@ namespace l
                      struct stat          *st_)
   {
     int rv;
-    StrVec oldbasepaths;
+    std::vector<Branch*> oldbranches;
 
-    rv = actionFunc_(branches_,oldfusepath_,&oldbasepaths);
+    rv = actionFunc_(branches_,oldfusepath_,oldbranches);
     if(rv == -1)
       return -errno;
 
-    return l::link_preserve_path_loop(oldbasepaths,
+    return l::link_preserve_path_loop(oldbranches,
                                       oldfusepath_,
                                       newfusepath_,
                                       st_);
@@ -248,21 +246,21 @@ namespace l
   static
   int
   link_exdev_abs_base_symlink(const Policy::Search &openPolicy_,
-                              const Branches::CPtr &branches_,
+                              const Branches::Ptr  &ibranches_,
                               const char           *oldpath_,
                               const char           *newpath_,
                               struct stat          *st_,
                               fuse_timeouts_t      *timeouts_)
   {
     int rv;
-    StrVec basepaths;
     std::string target;
+    std::vector<Branch*> obranches;
 
-    rv = openPolicy_(branches_,oldpath_,&basepaths);
+    rv = openPolicy_(ibranches_,oldpath_,obranches);
     if(rv == -1)
       return -errno;
 
-    target = fs::path::make(basepaths[0],oldpath_);
+    target = fs::path::make(obranches[0]->path,oldpath_);
 
     rv = FUSE::symlink(target.c_str(),newpath_);
     if(rv == 0)

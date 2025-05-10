@@ -38,7 +38,7 @@ namespace FUSE
     if(rv == -1)
       return -errno;
 
-    fs::inode::calc(fi->branchpath,
+    fs::inode::calc(fi->branch.path,
                     fi->fusepath,
                     st_);
 

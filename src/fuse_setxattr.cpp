@@ -41,26 +41,6 @@ using std::vector;
 namespace l
 {
   static
-  int
-  get_error(const PolicyRV &prv_,
-            const string   &basepath_)
-  {
-    for(int i = 0, ei = prv_.success.size(); i < ei; i++)
-      {
-        if(prv_.success[i].basepath == basepath_)
-          return prv_.success[i].rv;
-      }
-
-    for(int i = 0, ei = prv_.error.size(); i < ei; i++)
-      {
-        if(prv_.error[i].basepath == basepath_)
-          return prv_.error[i].rv;
-      }
-
-    return 0;
-  }
-
-  static
   bool
   is_attrname_security_capability(const char *attrname_)
   {
@@ -119,19 +99,22 @@ namespace l
 
   static
   void
-  setxattr_loop(const StrVec &basepaths_,
-                const char   *fusepath_,
-                const char   *attrname_,
-                const char   *attrval_,
-                const size_t  attrvalsize_,
-                const int     flags_,
-                PolicyRV     *prv_)
+  setxattr_loop(const std::vector<Branch*> &branches_,
+                const char                 *fusepath_,
+                const char                 *attrname_,
+                const char                 *attrval_,
+                const size_t                attrvalsize_,
+                const int                   flags_,
+                PolicyRV                   *prv_)
   {
-    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+    for(auto &branch : branches_)
       {
-        l::setxattr_loop_core(basepaths_[i],fusepath_,
-                              attrname_,attrval_,attrvalsize_,
-                              flags_,prv_);
+        l::setxattr_loop_core(branch->path,
+                              fusepath_,
+                              attrname_,
+                              attrval_,attrvalsize_,
+                              flags_,
+                              prv_);
       }
   }
 
@@ -148,24 +131,24 @@ namespace l
   {
     int rv;
     PolicyRV prv;
-    StrVec basepaths;
+    std::vector<Branch*> branches;
 
-    rv = setxattrPolicy_(branches_,fusepath_,&basepaths);
+    rv = setxattrPolicy_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    l::setxattr_loop(basepaths,fusepath_,attrname_,attrval_,attrvalsize_,flags_,&prv);
-    if(prv.error.empty())
+    l::setxattr_loop(branches,fusepath_,attrname_,attrval_,attrvalsize_,flags_,&prv);
+    if(prv.errors.empty())
       return 0;
-    if(prv.success.empty())
-      return prv.error[0].rv;
+    if(prv.successes.empty())
+      return prv.errors[0].rv;
 
-    basepaths.clear();
-    rv = getxattrPolicy_(branches_,fusepath_,&basepaths);
+    branches.clear();
+    rv = getxattrPolicy_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    return l::get_error(prv,basepaths[0]);
+    return prv.get_error(branches[0]->path);
   }
 
   int

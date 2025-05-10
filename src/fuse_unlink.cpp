@@ -27,9 +27,6 @@
 
 #include <unistd.h>
 
-using std::string;
-using std::vector;
-
 
 namespace error
 {
@@ -52,14 +49,14 @@ namespace l
 {
   static
   int
-  unlink_loop_core(const string &basepath_,
-                   const char   *fusepath_,
-                   const int     error_)
+  unlink_loop_core(const std::string &branch_,
+                   const char        *fusepath_,
+                   const int          error_)
   {
     int rv;
-    string fullpath;
+    std::string fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+    fullpath = fs::path::make(branch_,fusepath_);
 
     rv = fs::unlink(fullpath);
 
@@ -68,15 +65,15 @@ namespace l
 
   static
   int
-  unlink_loop(const vector<string> &basepaths_,
-              const char           *fusepath_)
+  unlink_loop(const std::vector<Branch*> &branches_,
+              const char                 *fusepath_)
   {
     int error;
 
     error = 0;
-    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+    for(auto &branch : branches_)
       {
-        error = l::unlink_loop_core(basepaths_[i],fusepath_,error);
+        error = l::unlink_loop_core(branch->path,fusepath_,error);
       }
 
     return -error;
@@ -89,13 +86,13 @@ namespace l
          const char           *fusepath_)
   {
     int rv;
-    vector<string> basepaths;
+    std::vector<Branch*> branches;
 
-    rv = unlinkPolicy_(branches_,fusepath_,&basepaths);
+    rv = unlinkPolicy_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    return l::unlink_loop(basepaths,fusepath_);
+    return l::unlink_loop(branches,fusepath_);
   }
 }
 

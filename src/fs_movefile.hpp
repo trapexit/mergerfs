@@ -26,13 +26,13 @@ namespace fs
 {
   int
   movefile(const Policy::Create &policy,
-           const Branches::CPtr &branches,
+           const Branches::Ptr  &branches,
            const std::string    &fusepath,
            int                   origfd);
 
   int
   movefile_as_root(const Policy::Create &policy,
-                   const Branches::CPtr &branches,
+                   const Branches::Ptr  &branches,
                    const std::string    &fusepath,
                    int                   origfd);
 }

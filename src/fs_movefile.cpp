@@ -40,9 +40,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-using std::string;
-using std::vector;
-
 
 static
 int
@@ -64,8 +61,8 @@ namespace l
   static
   int
   movefile(const Policy::Create &createFunc_,
-           const Branches::CPtr &branches_,
-           const string         &fusepath_,
+           const Branches::Ptr  &branches_,
+           const std::string    &fusepath_,
            int                   origfd_)
   {
     int rv;
@@ -74,12 +71,12 @@ namespace l
     int dstfd_flags;
     int origfd_flags;
     int64_t srcfd_size;
-    string fusedir;
-    string srcfd_branch;
-    string srcfd_filepath;
-    string dstfd_filepath;
-    string dstfd_tmp_filepath;
-    vector<string> dstfd_branch;
+    std::string fusedir;
+    std::string srcfd_branch;
+    std::string srcfd_filepath;
+    std::string dstfd_filepath;
+    std::string dstfd_tmp_filepath;
+    std::vector<Branch*> dstfd_branch;
 
     srcfd = -1;
     dstfd = -1;
@@ -88,7 +85,7 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusepath_,&dstfd_branch);
+    rv = createFunc_(branches_,fusepath_.c_str(),dstfd_branch);
     if(rv == -1)
       return -errno;
 
@@ -100,12 +97,12 @@ namespace l
     if(srcfd_size == -1)
       return -errno;
 
-    if(fs::has_space(dstfd_branch[0],srcfd_size) == false)
+    if(fs::has_space(dstfd_branch[0]->path,srcfd_size) == false)
       return -ENOSPC;
 
     fusedir = fs::path::dirname(fusepath_);
 
-    rv = fs::clonepath(srcfd_branch,dstfd_branch[0],fusedir);
+    rv = fs::clonepath(srcfd_branch,dstfd_branch[0]->path,fusedir);
     if(rv == -1)
       return -ENOSPC;
 
@@ -115,7 +112,7 @@ namespace l
     if(srcfd == -1)
       return -ENOSPC;
 
-    dstfd_filepath = dstfd_branch[0];
+    dstfd_filepath = dstfd_branch[0]->path;
     fs::path::append(dstfd_filepath,fusepath_);
     std::tie(dstfd,dstfd_tmp_filepath) = fs::mktemp(dstfd_filepath,O_WRONLY);
     if(dstfd < 0)
@@ -163,8 +160,8 @@ namespace fs
 {
   int
   movefile(const Policy::Create &policy_,
-           const Branches::CPtr &basepaths_,
-           const string         &fusepath_,
+           const Branches::Ptr  &basepaths_,
+           const std::string    &fusepath_,
            int                   origfd_)
   {
     return l::movefile(policy_,basepaths_,fusepath_,origfd_);
@@ -172,8 +169,8 @@ namespace fs
 
   int
   movefile_as_root(const Policy::Create &policy_,
-                   const Branches::CPtr &basepaths_,
-                   const string         &fusepath_,
+                   const Branches::Ptr  &basepaths_,
+                   const std::string    &fusepath_,
                    int                   origfd_)
   {
     const ugid::Set ugid(0,0);

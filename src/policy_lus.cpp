@@ -35,18 +35,18 @@ namespace lus
 {
   static
   int
-  create(const Branches::CPtr &branches_,
-         StrVec               *paths_)
+  create(const Branches::Ptr  &branches_,
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t lus;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     lus = std::numeric_limits<uint64_t>::max();
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
@@ -61,39 +61,39 @@ namespace lus
         if(info.spaceused >= lus)
           continue;
 
-        lus      = info.spaceused;
-        basepath = &branch.path;
+        lus = info.spaceused;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(!obranch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.push_back(obranch);
 
     return 0;
   }
 }
 
 int
-Policy::LUS::Action::operator()(const Branches::CPtr &branches_,
+Policy::LUS::Action::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplus(branches_,fusepath_,paths_);
 }
 
 int
-Policy::LUS::Create::operator()(const Branches::CPtr &branches_,
+Policy::LUS::Create::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &paths_) const
 {
   return ::lus::create(branches_,paths_);
 }
 
 int
-Policy::LUS::Search::operator()(const Branches::CPtr &branches_,
+Policy::LUS::Search::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplus(branches_,fusepath_,paths_);
 }

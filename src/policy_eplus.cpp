@@ -33,19 +33,19 @@ namespace eplus
 {
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t eplus;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     eplus = std::numeric_limits<uint64_t>::max();
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
@@ -63,32 +63,32 @@ namespace eplus
           continue;
 
         eplus = info.spaceused;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  action(const Branches::CPtr &branches_,
+  action(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t eplus;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     eplus = std::numeric_limits<uint64_t>::max();
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(branch.ro())
@@ -104,30 +104,30 @@ namespace eplus
           continue;
 
         eplus = info.spaceused;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  search(const Branches::CPtr &branches_,
+  search(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     uint64_t eplus;
     uint64_t spaceused;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     eplus = 0;
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(!fs::exists(branch.path,fusepath_))
@@ -139,38 +139,38 @@ namespace eplus
           continue;
 
         eplus = spaceused;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=ENOENT,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 }
 
 int
-Policy::EPLUS::Action::operator()(const Branches::CPtr &branches_,
-                                  const char          *fusepath_,
-                                  StrVec              *paths_) const
+Policy::EPLUS::Action::operator()(const Branches::Ptr  &branches_,
+                                  const char           *fusepath_,
+                                  std::vector<Branch*> &paths_) const
 {
   return ::eplus::action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPLUS::Create::operator()(const Branches::CPtr &branches_,
+Policy::EPLUS::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::eplus::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPLUS::Search::operator()(const Branches::CPtr &branches_,
+Policy::EPLUS::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::eplus::search(branches_,fusepath_,paths_);
 }

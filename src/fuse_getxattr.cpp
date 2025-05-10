@@ -35,8 +35,6 @@
 
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
-using std::string;
-
 
 namespace l
 {
@@ -49,10 +47,10 @@ namespace l
 
   static
   int
-  lgetxattr(const string &path_,
-            const char   *attrname_,
-            void         *value_,
-            const size_t  size_)
+  lgetxattr(const std::string &path_,
+            const char        *attrname_,
+            void              *value_,
+            const size_t       size_)
   {
     int rv;
 
@@ -70,8 +68,8 @@ namespace l
   {
     int rv;
     size_t len;
-    string key;
-    string val;
+    std::string key;
+    std::string val;
     StrVec attr;
 
     if(!str::startswith(attrname_,"user.mergerfs."))
@@ -97,9 +95,9 @@ namespace l
 
   static
   int
-  getxattr_from_string(char         *destbuf_,
-                       const size_t  destbufsize_,
-                       const string &src_)
+  getxattr_from_string(char              *destbuf_,
+                       const size_t       destbufsize_,
+                       const std::string &src_)
   {
     const size_t srcbufsize = src_.size();
 
@@ -116,12 +114,12 @@ namespace l
 
   static
   int
-  getxattr_user_mergerfs_allpaths(const Branches::CPtr &branches_,
-                                  const char           *fusepath_,
-                                  char                 *buf_,
-                                  const size_t          count_)
+  getxattr_user_mergerfs_allpaths(const Branches::Ptr &branches_,
+                                  const char          *fusepath_,
+                                  char                *buf_,
+                                  const size_t         count_)
   {
-    string concated;
+    std::string concated;
     StrVec paths;
     StrVec branches;
 
@@ -136,13 +134,13 @@ namespace l
 
   static
   int
-  getxattr_user_mergerfs(const string         &basepath_,
-                         const char           *fusepath_,
-                         const string         &fullpath_,
-                         const Branches       &branches_,
-                         const char           *attrname_,
-                         char                 *buf_,
-                         const size_t          count_)
+  getxattr_user_mergerfs(const std::string &basepath_,
+                         const char        *fusepath_,
+                         const std::string &fullpath_,
+                         const Branches    &branches_,
+                         const char        *attrname_,
+                         char              *buf_,
+                         const size_t       count_)
   {
     StrVec attr;
 
@@ -170,17 +168,17 @@ namespace l
            const size_t          count_)
   {
     int rv;
-    string fullpath;
-    StrVec basepaths;
+    std::string fullpath;
+    std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(branches[0]->path,fusepath_);
 
     if(str::startswith(attrname_,"user.mergerfs."))
-      return l::getxattr_user_mergerfs(basepaths[0],
+      return l::getxattr_user_mergerfs(branches[0]->path,
                                        fusepath_,
                                        fullpath,
                                        branches_,

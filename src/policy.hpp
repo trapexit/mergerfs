@@ -20,6 +20,9 @@
 #include "strvec.hpp"
 
 #include <string>
+#include <memory>
+#include <vector>
+
 
 namespace Policy
 {
@@ -33,7 +36,9 @@ namespace Policy
 
   public:
     std::string name;
-    virtual int operator()(const Branches::CPtr&,const char*,StrVec*) const = 0;
+    virtual int operator()(const Branches::Ptr&,
+                           const char*,
+                           std::vector<Branch*>&) const = 0;
   };
 
   class Action
@@ -58,19 +63,19 @@ namespace Policy
     }
 
     int
-    operator()(const Branches::CPtr &branches_,
-               const char           *fusepath_,
-               StrVec               *paths_) const
+    operator()(const Branches::Ptr &branches_,
+               const char          *fusepath_,
+               std::vector<Branch*> &output_) const
     {
-      return (*impl)(branches_,fusepath_,paths_);
+      return (*impl)(branches_,fusepath_,output_);
     }
 
     int
-    operator()(const Branches::CPtr &branches_,
+    operator()(const Branches::Ptr  &branches_,
                const std::string    &fusepath_,
-               StrVec               *paths_) const
+               std::vector<Branch*> &output_) const
     {
-      return (*impl)(branches_,fusepath_.c_str(),paths_);
+      return (*impl)(branches_,fusepath_.c_str(),output_);
     }
 
     operator bool() const
@@ -92,8 +97,10 @@ namespace Policy
 
   public:
     std::string name;
-    virtual int operator()(const Branches::CPtr&,const char*,StrVec*) const = 0;
     virtual bool path_preserving(void) const = 0;
+    virtual int operator()(const Branches::Ptr&,
+                           const char*,
+                           std::vector<Branch*>&) const = 0;
   };
 
   class Create
@@ -124,19 +131,19 @@ namespace Policy
     }
 
     int
-    operator()(const Branches::CPtr &branches_,
+    operator()(const Branches::Ptr  &branches_,
                const char           *fusepath_,
-               StrVec               *paths_) const
+               std::vector<Branch*> &output_) const
     {
-      return (*impl)(branches_,fusepath_,paths_);
+      return (*impl)(branches_,fusepath_,output_);
     }
 
     int
-    operator()(const Branches::CPtr &branches_,
+    operator()(const Branches::Ptr  &branches_,
                const std::string    &fusepath_,
-               StrVec               *paths_) const
+               std::vector<Branch*> &output_) const
     {
-      return (*impl)(branches_,fusepath_.c_str(),paths_);
+      return (*impl)(branches_,fusepath_.c_str(),output_);
     }
 
     operator bool() const
@@ -158,7 +165,9 @@ namespace Policy
 
   public:
     std::string name;
-    virtual int operator()(const Branches::CPtr&,const char*,StrVec*) const = 0;
+    virtual int operator()(const Branches::Ptr&,
+                           const char*,
+                           std::vector<Branch*>&) const = 0;
   };
 
   class Search
@@ -183,19 +192,19 @@ namespace Policy
     }
 
     int
-    operator()(const Branches::CPtr &branches_,
+    operator()(const Branches::Ptr  &branches_,
                const char           *fusepath_,
-               StrVec               *paths_) const
+               std::vector<Branch*> &output_) const
     {
-      return (*impl)(branches_,fusepath_,paths_);
+      return (*impl)(branches_,fusepath_,output_);
     }
 
     int
-    operator()(const Branches::CPtr &branches_,
+    operator()(const Branches::Ptr  &branches_,
                const std::string    &fusepath_,
-               StrVec               *paths_) const
+               std::vector<Branch*> &output_) const
     {
-      return (*impl)(branches_,fusepath_.c_str(),paths_);
+      return (*impl)(branches_,fusepath_.c_str(),output_);
     }
 
     operator bool() const

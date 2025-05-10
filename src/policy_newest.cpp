@@ -35,20 +35,20 @@ namespace newest
 {
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     time_t newest;
     struct stat st;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     newest = std::numeric_limits<time_t>::min();
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
@@ -66,33 +66,33 @@ namespace newest
           error_and_continue(error,ENOSPC);
 
         newest = st.st_mtime;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(!obranch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  action(const Branches::CPtr &branches_,
+  action(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     bool readonly;
     time_t newest;
     struct stat st;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     newest = std::numeric_limits<time_t>::min();
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(branch.ro())
@@ -108,29 +108,29 @@ namespace newest
           error_and_continue(error,EROFS);
 
         newest = st.st_mtime;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(!obranch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  search(const Branches::CPtr &branches_,
+  search(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     time_t newest;
     struct stat st;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     newest = std::numeric_limits<time_t>::min();
-    basepath = NULL;
     for(auto &branch : *branches_)
       {
         if(!fs::exists(branch.path,fusepath_,&st))
@@ -139,38 +139,38 @@ namespace newest
           continue;
 
         newest = st.st_mtime;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(!obranch)
       return (errno=ENOENT,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 }
 
 int
-Policy::Newest::Action::operator()(const Branches::CPtr &branches_,
+Policy::Newest::Action::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
-                                   StrVec               *paths_) const
+                                   std::vector<Branch*> &paths_) const
 {
   return ::newest::action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::Newest::Create::operator()(const Branches::CPtr &branches_,
+Policy::Newest::Create::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
-                                   StrVec               *paths_) const
+                                   std::vector<Branch*> &paths_) const
 {
   return ::newest::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::Newest::Search::operator()(const Branches::CPtr &branches_,
+Policy::Newest::Search::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
-                                   StrVec               *paths_) const
+                                   std::vector<Branch*> &paths_) const
 {
   return ::newest::search(branches_,fusepath_,paths_);
 }

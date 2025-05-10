@@ -39,12 +39,13 @@ namespace l
     int rv;
     string fullpath;
     StrVec basepaths;
+    std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(branches[0]->path,fusepath_);
 
     rv = fs::eaccess(fullpath,mask_);
 

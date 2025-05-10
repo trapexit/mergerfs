@@ -35,9 +35,9 @@ namespace epff
 {
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
@@ -58,7 +58,7 @@ namespace epff
         if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
-        paths_->push_back(branch.path);
+        paths_.push_back(&branch);
 
         return 0;
       }
@@ -68,9 +68,9 @@ namespace epff
 
   static
   int
-  action(const Branches::CPtr &branches_,
+  action(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
@@ -89,7 +89,7 @@ namespace epff
         if(readonly)
           error_and_continue(error,EROFS);
 
-        paths_->push_back(branch.path);
+        paths_.push_back(&branch);
 
         return 0;
       }
@@ -99,16 +99,16 @@ namespace epff
 
   static
   int
-  search(const Branches::CPtr &branches_,
+  search(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     for(auto &branch : *branches_)
       {
         if(!fs::exists(branch.path,fusepath_))
           continue;
 
-        paths_->push_back(branch.path);
+        paths_.push_back(&branch);
 
         return 0;
       }
@@ -118,25 +118,25 @@ namespace epff
 }
 
 int
-Policy::EPFF::Action::operator()(const Branches::CPtr &branches_,
-                                 const char          *fusepath_,
-                                 StrVec              *paths_) const
+Policy::EPFF::Action::operator()(const Branches::Ptr  &branches_,
+                                 const char           *fusepath_,
+                                 std::vector<Branch*> &paths_) const
 {
   return ::epff::action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPFF::Create::operator()(const Branches::CPtr &branches_,
+Policy::EPFF::Create::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   return ::epff::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPFF::Search::operator()(const Branches::CPtr &branches_,
+Policy::EPFF::Search::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   return ::epff::search(branches_,fusepath_,paths_);
 }

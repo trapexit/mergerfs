@@ -93,7 +93,7 @@ namespace l
   static
   int
   readlink(const Policy::Search &searchFunc_,
-           const Branches       &branches_,
+           const Branches       &ibranches_,
            const char           *fusepath_,
            char                 *buf_,
            const size_t          size_,
@@ -102,13 +102,18 @@ namespace l
   {
     int rv;
     StrVec basepaths;
+    std::vector<Branch*> obranches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(ibranches_,fusepath_,obranches);
     if(rv == -1)
       return -errno;
 
-    return l::readlink_core(basepaths[0],fusepath_,buf_,size_,
-                            symlinkify_,symlinkify_timeout_);
+    return l::readlink_core(obranches[0]->path,
+                            fusepath_,
+                            buf_,
+                            size_,
+                            symlinkify_,
+                            symlinkify_timeout_);
   }
 }
 

@@ -33,26 +33,6 @@ using std::string;
 namespace l
 {
   static
-  int
-  get_error(const PolicyRV &prv_,
-            const string   &basepath_)
-  {
-    for(int i = 0, ei = prv_.success.size(); i < ei; i++)
-      {
-        if(prv_.success[i].basepath == basepath_)
-          return prv_.success[i].rv;
-      }
-
-    for(int i = 0, ei = prv_.error.size(); i < ei; i++)
-      {
-        if(prv_.error[i].basepath == basepath_)
-          return prv_.error[i].rv;
-      }
-
-    return 0;
-  }
-
-  static
   void
   utimens_loop_core(const string   &basepath_,
                     const char     *fusepath_,
@@ -71,14 +51,14 @@ namespace l
 
   static
   void
-  utimens_loop(const StrVec   &basepaths_,
-               const char     *fusepath_,
-               const timespec  ts_[2],
-               PolicyRV       *prv_)
+  utimens_loop(const std::vector<Branch*> &branches_,
+               const char                 *fusepath_,
+               const timespec              ts_[2],
+               PolicyRV                   *prv_)
   {
-    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+    for(auto &branch : branches_)
       {
-        l::utimens_loop_core(basepaths_[i],fusepath_,ts_,prv_);
+        l::utimens_loop_core(branch->path,fusepath_,ts_,prv_);
       }
   }
 
@@ -92,24 +72,24 @@ namespace l
   {
     int rv;
     PolicyRV prv;
-    StrVec basepaths;
+    std::vector<Branch*> branches;
 
-    rv = utimensPolicy_(branches_,fusepath_,&basepaths);
+    rv = utimensPolicy_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    l::utimens_loop(basepaths,fusepath_,ts_,&prv);
-    if(prv.error.empty())
+    l::utimens_loop(branches,fusepath_,ts_,&prv);
+    if(prv.errors.empty())
       return 0;
-    if(prv.success.empty())
-      return prv.error[0].rv;
+    if(prv.successes.empty())
+      return prv.errors[0].rv;
 
-    basepaths.clear();
-    rv = getattrPolicy_(branches_,fusepath_,&basepaths);
+    branches.clear();
+    rv = getattrPolicy_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    return l::get_error(prv,basepaths[0]);
+    return prv.get_error(branches[0]->path);
   }
 }
 

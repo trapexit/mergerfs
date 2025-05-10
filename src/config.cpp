@@ -246,17 +246,11 @@ Config::has_key(const std::string &key_) const
 void
 Config::keys(std::string &s_) const
 {
-  Str2TFStrMap::const_iterator i;
-  Str2TFStrMap::const_iterator ei;
-
   s_.reserve(512);
 
-  i  = _map.begin();
-  ei = _map.end();
-
-  for(; i != ei; ++i)
+  for(const auto &[key,val] : _map)
     {
-      s_ += i->first;
+      s_ += key;
       s_ += '\0';
     }
 
@@ -267,14 +261,11 @@ Config::keys(std::string &s_) const
 void
 Config::keys_xattr(std::string &s_) const
 {
-  Str2TFStrMap::const_iterator i;
-  Str2TFStrMap::const_iterator ei;
-
   s_.reserve(1024);
-  for(i = _map.begin(), ei = _map.end(); i != ei; ++i)
+  for(const auto &[key,val] : _map)
     {
       s_ += "user.mergerfs.";
-      s_ += i->first;
+      s_ += key;
       s_ += '\0';
     }
 }
@@ -396,13 +387,8 @@ std::ostream&
 operator<<(std::ostream &os_,
            const Config &c_)
 {
-  Str2TFStrMap::const_iterator i;
-  Str2TFStrMap::const_iterator ei;
-
-  for(i = c_._map.begin(), ei = c_._map.end(); i != ei; ++i)
-    {
-      os_ << i->first << '=' << i->second->to_string() << std::endl;
-    }
+  for(const auto &[key,val] : c_._map)
+    os_ << key << '=' << val->to_string() << std::endl;
 
   return os_;
 }

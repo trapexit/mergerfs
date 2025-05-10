@@ -27,9 +27,6 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
-
 
 namespace error
 {
@@ -56,10 +53,10 @@ namespace l
   static
   inline
   int
-  mknod_core(const string &fullpath_,
-             mode_t        mode_,
-             const mode_t  umask_,
-             const dev_t   dev_)
+  mknod_core(const std::string &fullpath_,
+             mode_t             mode_,
+             const mode_t       umask_,
+             const dev_t        dev_)
   {
     if(!fs::acl::dir_has_defaults(fullpath_))
       mode_ &= ~umask_;
@@ -69,17 +66,17 @@ namespace l
 
   static
   int
-  mknod_loop_core(const string &createpath_,
-                  const char   *fusepath_,
-                  const mode_t  mode_,
-                  const mode_t  umask_,
-                  const dev_t   dev_,
-                  const int     error_)
+  mknod_loop_core(const std::string &createbranch_,
+                  const char        *fusepath_,
+                  const mode_t       mode_,
+                  const mode_t       umask_,
+                  const dev_t        dev_,
+                  const int          error_)
   {
     int rv;
-    string fullpath;
+    std::string fullpath;
 
-    fullpath = fs::path::make(createpath_,fusepath_);
+    fullpath = fs::path::make(createbranch_,fusepath_);
 
     rv = l::mknod_core(fullpath,mode_,umask_,dev_);
 
@@ -88,25 +85,27 @@ namespace l
 
   static
   int
-  mknod_loop(const string         &existingpath_,
-             const vector<string> &createpaths_,
-             const char           *fusepath_,
-             const string         &fusedirpath_,
-             const mode_t          mode_,
-             const mode_t          umask_,
-             const dev_t           dev_)
+  mknod_loop(const std::string          &existingbranch_,
+             const std::vector<Branch*> &createbranches_,
+             const char                 *fusepath_,
+             const std::string          &fusedirpath_,
+             const mode_t                mode_,
+             const mode_t                umask_,
+             const dev_t                 dev_)
   {
     int rv;
     int error;
 
     error = -1;
-    for(size_t i = 0, ei = createpaths_.size(); i != ei; i++)
+    for(auto &createbranch : createbranches_)
       {
-        rv = fs::clonepath_as_root(existingpath_,createpaths_[i],fusedirpath_);
+        rv = fs::clonepath_as_root(existingbranch_,
+                                   createbranch->path,
+                                   fusedirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::mknod_loop_core(createpaths_[i],
+          error = l::mknod_loop_core(createbranch->path,
                                      fusepath_,
                                      mode_,umask_,dev_,error);
       }
@@ -125,23 +124,27 @@ namespace l
         const dev_t           dev_)
   {
     int rv;
-    string fusedirpath;
-    vector<string> createpaths;
-    vector<string> existingpaths;
+    std::string fusedirpath;
+    std::vector<Branch*> createbranches;
+    std::vector<Branch*> existingbranches;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,&existingpaths);
+    rv = searchFunc_(branches_,fusedirpath,existingbranches);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,&createpaths);
+    rv = createFunc_(branches_,fusedirpath,createbranches);
     if(rv == -1)
       return -errno;
 
-    return l::mknod_loop(existingpaths[0],createpaths,
-                         fusepath_,fusedirpath,
-                         mode_,umask_,dev_);
+    return l::mknod_loop(existingbranches[0]->path,
+                         createbranches,
+                         fusepath_,
+                         fusedirpath,
+                         mode_,
+                         umask_,
+                         dev_);
   }
 }
 

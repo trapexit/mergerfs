@@ -141,12 +141,12 @@ namespace l
   static
   inline
   int
-  concurrent_readdir(ThreadPool           &tp_,
-                     const Branches::CPtr &branches_,
-                     const std::string    &rel_dirpath_,
-                     fuse_dirents_t       *buf_,
-                     const uid_t           uid_,
-                     const gid_t           gid_)
+  concurrent_readdir(ThreadPool          &tp_,
+                     const Branches::Ptr &branches_,
+                     const std::string   &rel_dirpath_,
+                     fuse_dirents_t      *buf_,
+                     const uid_t          uid_,
+                     const gid_t          gid_)
   {
     HashSet names;
     std::mutex mutex;

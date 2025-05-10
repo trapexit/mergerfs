@@ -81,16 +81,16 @@ namespace l
 
   static
   int
-  rmdir_loop(const StrVec         &basepaths_,
-             const char           *fusepath_,
-             const FollowSymlinks  followsymlinks_)
+  rmdir_loop(const std::vector<Branch*> &branches_,
+             const char                 *fusepath_,
+             const FollowSymlinks        followsymlinks_)
   {
     int error;
 
     error = 0;
-    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+    for(auto &branch : branches_)
       {
-        error = l::rmdir_core(basepaths_[i],fusepath_,followsymlinks_,error);
+        error = l::rmdir_core(branch->path,fusepath_,followsymlinks_,error);
       }
 
     return -error;
@@ -104,13 +104,13 @@ namespace l
         const char           *fusepath_)
   {
     int rv;
-    vector<string> basepaths;
+    std::vector<Branch*> branches;
 
-    rv = actionFunc_(branches_,fusepath_,&basepaths);
+    rv = actionFunc_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    return l::rmdir_loop(basepaths,fusepath_,followsymlinks_);
+    return l::rmdir_loop(branches,fusepath_,followsymlinks_);
   }
 }
 

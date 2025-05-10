@@ -23,21 +23,18 @@
 #include "fs_glob.hpp"
 #include "fs_is_rofs.hpp"
 #include "fs_realpathize.hpp"
-#include "nonstd/optional.hpp"
+#include "int_types.h"
 #include "num.hpp"
 #include "str.hpp"
 #include "syslog.hpp"
 
 #include <string>
+#include <optional>
 
 #include <fnmatch.h>
 
-using std::string;
-using std::vector;
-using nonstd::optional;
 
-
-Branches::Impl::Impl(const uint64_t &default_minfreespace_)
+Branches::Impl::Impl(const u64 &default_minfreespace_)
   : _default_minfreespace(default_minfreespace_)
 {
 }
@@ -45,8 +42,9 @@ Branches::Impl::Impl(const uint64_t &default_minfreespace_)
 Branches::Impl&
 Branches::Impl::operator=(Branches::Impl &rval_)
 {
-  auto this_base = dynamic_cast<Branch::Vector*>(this);
-  auto rval_base = dynamic_cast<Branch::Vector*>(&rval_);
+  using type = std::vector<std::shared_ptr<Branch>>;
+  auto this_base = dynamic_cast<type*>(this);
+  auto rval_base = dynamic_cast<type*>(&rval_);
 
   *this_base = *rval_base;
 
@@ -56,8 +54,9 @@ Branches::Impl::operator=(Branches::Impl &rval_)
 Branches::Impl&
 Branches::Impl::operator=(Branches::Impl &&rval_)
 {
-  auto this_base = dynamic_cast<Branch::Vector*>(this);
-  auto rval_base = dynamic_cast<Branch::Vector*>(&rval_);
+  using type = std::vector<std::shared_ptr<Branch>>;
+  auto this_base = dynamic_cast<type*>(this);
+  auto rval_base = dynamic_cast<type*>(&rval_);
 
   *this_base = std::move(*rval_base);
 
@@ -65,7 +64,7 @@ Branches::Impl::operator=(Branches::Impl &&rval_)
 }
 
 const
-uint64_t&
+u64&
 Branches::Impl::minfreespace(void) const
 {
   return _default_minfreespace;
@@ -79,7 +78,7 @@ namespace l
         std::string       *instr_,
         std::string       *values_)
   {
-    uint64_t offset;
+    u64 offset;
 
     offset = s_.find_first_not_of("+<>-=");
     if (offset == std::string::npos) {
@@ -94,8 +93,8 @@ namespace l
 
   static
   int
-  parse_mode(const string &str_,
-             Branch::Mode *mode_)
+  parse_mode(const std::string &str_,
+             Branch::Mode      *mode_)
   {
     if(str_ == "RW")
       *mode_ = Branch::Mode::RW;
@@ -111,11 +110,11 @@ namespace l
 
   static
   int
-  parse_minfreespace(const string       &str_,
-                     optional<uint64_t> *minfreespace_)
+  parse_minfreespace(const std::string  &str_,
+                     std::optional<u64> *minfreespace_)
   {
     int rv;
-    uint64_t uint64;
+    u64 uint64;
 
     rv = str::from(str_,&uint64);
     if(rv < 0)
@@ -128,14 +127,14 @@ namespace l
 
   static
   int
-  parse_branch(const string       &str_,
-               string             *glob_,
+  parse_branch(const std::string  &str_,
+               std::string        *glob_,
                Branch::Mode       *mode_,
-               optional<uint64_t> *minfreespace_)
+               std::optional<u64> *minfreespace_)
   {
     int rv;
-    string options;
-    vector<string> v;
+    std::string options;
+    std::vector<std::string> v;
 
     str::rsplit1(str_,'=',&v);
     switch(v.size())
@@ -173,21 +172,23 @@ namespace l
 
   static
   int
-  parse(const string   &str_,
-        Branches::Impl *branches_)
+  parse(const std::string &str_,
+        Branches::Impl    *branches_)
   {
     int rv;
-    string glob;
+    std::string glob;
     StrVec paths;
-    optional<uint64_t> minfreespace;
-    Branch branch(branches_->minfreespace());
+    Branch branch;
+    std::optional<u64> minfreespace;
+
+    branch._minfreespace = &branches_->minfreespace();
 
     rv = l::parse_branch(str_,&glob,&branch.mode,&minfreespace);
     if(rv < 0)
       return rv;
 
     if(minfreespace.has_value())
-      branch.set_minfreespace(minfreespace.value());
+      branch._minfreespace = minfreespace.value();
 
     fs::glob(glob,&paths);
     if(paths.empty())
@@ -197,7 +198,7 @@ namespace l
     for(auto &path : paths)
       {
         branch.path = path;
-        branches_->push_back(branch);
+        branches_->emplace_back(branch);
       }
 
     return 0;
@@ -231,7 +232,7 @@ namespace l
             Branches::Impl    *branches_)
   {
     int rv;
-    vector<string> paths;
+    std::vector<std::string> paths;
     Branches::Impl tmp_branches(branches_->minfreespace());
 
     str::split(str_,':',&paths);
@@ -302,10 +303,13 @@ namespace l
     for(auto i = branches_->begin(); i != branches_->end();)
       {
         int match = FNM_NOMATCH;
+        Branch &branch = *i;
 
         for(auto pi = patterns.cbegin(); pi != patterns.cend() && match != 0; ++pi)
           {
-            match = ::fnmatch(pi->c_str(),i->path.c_str(),0);
+            match = ::fnmatch(pi->c_str(),
+                              branch.path.c_str(),
+                              0);
           }
 
         i = ((match == 0) ? branches_->erase(i) : (i+1));
@@ -346,7 +350,7 @@ Branches::Impl::from_string(const std::string &s_)
 std::string
 Branches::Impl::to_string(void) const
 {
-  string tmp;
+  std::string tmp;
 
   if(empty())
     return tmp;
@@ -409,7 +413,7 @@ Branches::from_string(const std::string &str_)
   return 0;
 }
 
-string
+std::string
 Branches::to_string(void) const
 {
   std::lock_guard<std::mutex> lock_guard(_mutex);
@@ -452,7 +456,7 @@ std::string
 SrcMounts::to_string(void) const
 {
   std::string rv;
-  Branches::CPtr branches = _branches;
+  Branches::Ptr branches = _branches;
 
   if(branches->empty())
     return rv;

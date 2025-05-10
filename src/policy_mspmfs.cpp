@@ -28,27 +28,22 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
-
 
 namespace mspmfs
 {
   static
-  const
-  string*
-  create_1(const Branches::CPtr &branches_,
-           const string         &fusepath_,
-           int                  *err_)
+  Branch*
+  create_1(const Branches::Ptr &branches_,
+           const std::string   &fusepath_,
+           int                 *err_)
   {
     int rv;
     uint64_t mfs;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
-    basepath = NULL;
     mfs = std::numeric_limits<uint64_t>::min();
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
           error_and_continue(*err_,EROFS);
@@ -65,63 +60,63 @@ namespace mspmfs
           continue;
 
         mfs = info.spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    return basepath;
+    return obranch;
   }
 
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int error;
-    string fusepath;
-    const string *basepath;
+    std::string fusepath;
+    Branch *branch;
 
     error = ENOENT;
     fusepath = fusepath_;
     for(;;)
       {
-        basepath = mspmfs::create_1(branches_,fusepath,&error);
-        if(basepath)
+        branch = mspmfs::create_1(branches_,fusepath,&error);
+        if(branch)
           break;
         if(fusepath == "/")
           break;
         fusepath = fs::path::dirname(fusepath);
       }
 
-    if(basepath == NULL)
+    if(!branch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(branch);
 
     return 0;
   }
 }
 
 int
-Policy::MSPMFS::Action::operator()(const Branches::CPtr &branches_,
+Policy::MSPMFS::Action::operator()(const Branches::Ptr &branches_,
                                    const char           *fusepath_,
-                                   StrVec               *paths_) const
+                                   std::vector<Branch*> &paths_) const
 {
   return Policies::Action::epmfs(branches_,fusepath_,paths_);
 }
 
 int
-Policy::MSPMFS::Create::operator()(const Branches::CPtr &branches_,
+Policy::MSPMFS::Create::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
-                                   StrVec               *paths_) const
+                                   std::vector<Branch*> &paths_) const
 {
   return ::mspmfs::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::MSPMFS::Search::operator()(const Branches::CPtr &branches_,
+Policy::MSPMFS::Search::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
-                                   StrVec               *paths_) const
+                                   std::vector<Branch*> &paths_) const
 {
   return Policies::Search::epmfs(branches_,fusepath_,paths_);
 }

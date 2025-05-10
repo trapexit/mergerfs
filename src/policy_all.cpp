@@ -31,15 +31,15 @@ namespace all
 {
   static
   int
-  create(const Branches::CPtr &branches_,
-         StrVec               *paths_)
+  create(const Branches::Ptr  &ibranches_,
+         std::vector<Branch*> &obranches_)
   {
     int rv;
     int error;
     fs::info_t info;
 
     error = ENOENT;
-    for(auto &branch : *branches_)
+    for(auto &branch : *ibranches_)
       {
         if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
@@ -51,10 +51,10 @@ namespace all
         if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
-        paths_->push_back(branch.path);
+        obranches_.push_back(&branch);
       }
 
-    if(paths_->empty())
+    if(obranches_.empty())
       return (errno=error,-1);
 
     return 0;
@@ -62,25 +62,25 @@ namespace all
 }
 
 int
-Policy::All::Action::operator()(const Branches::CPtr &branches_,
+Policy::All::Action::operator()(const Branches::Ptr  &ibranches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &obranches_) const
 {
-  return Policies::Action::epall(branches_,fusepath_,paths_);
+  return Policies::Action::epall(ibranches_,fusepath_,obranches_);
 }
 
 int
-Policy::All::Create::operator()(const Branches::CPtr &branches_,
+Policy::All::Create::operator()(const Branches::Ptr  &ibranches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &obranches_) const
 {
-  return ::all::create(branches_,paths_);
+  return ::all::create(ibranches_,obranches_);
 }
 
 int
-Policy::All::Search::operator()(const Branches::CPtr &branches_,
+Policy::All::Search::operator()(const Branches::Ptr  &ibranches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &obranches_) const
 {
-  return Policies::Search::epall(branches_,fusepath_,paths_);
+  return Policies::Search::epall(ibranches_,fusepath_,obranches_);
 }

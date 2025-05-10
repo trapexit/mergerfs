@@ -94,7 +94,7 @@ int
 PolicyCache::operator()(const Policy::Search &policy_,
                         const Branches       &branches_,
                         const char           *fusepath_,
-                        StrVec               *paths_)
+                        std::vector<Branch*> &paths_)
 {
   int rv;
   Value *v;
@@ -118,11 +118,11 @@ PolicyCache::operator()(const Policy::Search &policy_,
 
       pthread_mutex_lock(&_lock);
       v->time  = now;
-      v->paths = *paths_;
+      v->paths = paths_;
     }
   else
     {
-      *paths_ = v->paths;
+      paths_ = v->paths;
     }
 
   pthread_mutex_unlock(&_lock);

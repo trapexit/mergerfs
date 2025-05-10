@@ -30,29 +30,26 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
 struct BranchInfo
 {
-  uint64_t      spaceavail;
-  const string *basepath;
+  u64     spaceavail;
+  Branch *branch;
 };
 
-typedef vector<BranchInfo> BranchInfoVec;
+typedef std::vector<BranchInfo> BranchInfoVec;
 
 namespace msppfrd
 {
   static
   int
-  create_1(const Branches::CPtr &branches_,
-           const string         &fusepath_,
-           BranchInfoVec        *branchinfo_,
-           uint64_t             *sum_)
+  create_1(const Branches::Ptr &branches_,
+           const std::string   &fusepath_,
+           BranchInfoVec       *branchinfo_,
+           uint64_t            *sum_)
   {
     int rv;
     int error;
-    BranchInfo bi;
     fs::info_t info;
 
     *sum_ = 0;
@@ -73,9 +70,7 @@ namespace msppfrd
 
         *sum_ += info.spaceavail;
 
-        bi.spaceavail = info.spaceavail;
-        bi.basepath   = &branch.path;
-        branchinfo_->push_back(bi);
+        branchinfo_->push_back({info.spaceavail,&branch});
       }
 
     return error;
@@ -83,13 +78,13 @@ namespace msppfrd
 
   static
   int
-  get_branchinfo(const Branches::CPtr &branches_,
-                 const char           *fusepath_,
-                 BranchInfoVec        *branchinfo_,
-                 uint64_t             *sum_)
+  get_branchinfo(const Branches::Ptr &branches_,
+                 const char          *fusepath_,
+                 BranchInfoVec       *branchinfo_,
+                 uint64_t            *sum_)
   {
     int error;
-    string fusepath;
+    std::string fusepath;
 
     fusepath = fusepath_;
     for(;;)
@@ -106,8 +101,7 @@ namespace msppfrd
   }
 
   static
-  const
-  string*
+  Branch*
   get_branch(const BranchInfoVec &branchinfo_,
              const uint64_t       sum_)
   {
@@ -115,7 +109,7 @@ namespace msppfrd
     uint64_t threshold;
 
     if(sum_ == 0)
-      return NULL;
+      return nullptr;
 
     idx = 0;
     threshold = RND::rand64(sum_);
@@ -126,54 +120,54 @@ namespace msppfrd
         if(idx < threshold)
           continue;
 
-        return branchinfo_[i].basepath;
+        return branchinfo_[i].branch;
       }
 
-    return NULL;
+    return nullptr;
   }
 
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int error;
     uint64_t sum;
-    const string *basepath;
+    Branch *branch;
     BranchInfoVec branchinfo;
 
-    error    = msppfrd::get_branchinfo(branches_,fusepath_,&branchinfo,&sum);
-    basepath = msppfrd::get_branch(branchinfo,sum);
-    if(basepath == NULL)
+    error  = msppfrd::get_branchinfo(branches_,fusepath_,&branchinfo,&sum);
+    branch = msppfrd::get_branch(branchinfo,sum);
+    if(!branch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(branch);
 
     return 0;
   }
 }
 
 int
-Policy::MSPPFRD::Action::operator()(const Branches::CPtr &branches_,
+Policy::MSPPFRD::Action::operator()(const Branches::Ptr  &branches_,
                                     const char           *fusepath_,
-                                    StrVec               *paths_) const
+                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eppfrd(branches_,fusepath_,paths_);
 }
 
 int
-Policy::MSPPFRD::Create::operator()(const Branches::CPtr &branches_,
+Policy::MSPPFRD::Create::operator()(const Branches::Ptr  &branches_,
                                     const char           *fusepath_,
-                                    StrVec               *paths_) const
+                                    std::vector<Branch*> &paths_) const
 {
   return ::msppfrd::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::MSPPFRD::Search::operator()(const Branches::CPtr &branches_,
+Policy::MSPPFRD::Search::operator()(const Branches::Ptr  &branches_,
                                     const char           *fusepath_,
-                                    StrVec               *paths_) const
+                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eppfrd(branches_,fusepath_,paths_);
 }
