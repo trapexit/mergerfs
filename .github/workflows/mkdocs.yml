@@ -41,6 +41,5 @@ jobs:
             mike deploy "$REF_NAME" "latest" --push --allow-empty --ignore-remote-status --update-aliases
             mike set-default --push "latest"
           elif [ "$REF_TYPE" = "branch" ] && [ "$REF_NAME" = "master" ]; then
-            mike deploy master --ignore-remote-status --allow-empty
-            git push -f origin gh-pages
+            mike deploy master --push --ignore-remote-status --allow-empty
           fi
