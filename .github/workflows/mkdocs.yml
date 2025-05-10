@@ -38,8 +38,12 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           if [ "$REF_TYPE" = "tag" ]; then
-            mike deploy --push --update-aliases "$REF_NAME" latest
-            mike set-default --push latest
+            mike deploy "$REF_NAME" "latest" --allow-empty --ignore-remote-status --update-aliases
+            mike set-default "latest"
+            git checkout gh-pages
+            git push -f origin gh-pages            
           elif [ "$REF_TYPE" = "branch" ] && [ "$REF_NAME" = "master" ]; then
-            mike deploy --push master
+            mike deploy "master" --ignore-remote-status --allow-empty
+            git checkout gh-pages
+            git push -f origin gh-pages
           fi
