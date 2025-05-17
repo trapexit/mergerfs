@@ -79,11 +79,11 @@ namespace l
 
   static
   int
-  statfs(const Branches::CPtr &branches_,
-         const char           *fusepath_,
-         const StatFS          mode_,
-         const StatFSIgnore    ignore_,
-         struct statvfs       *fsstat_)
+  statfs(const Branches::Ptr &branches_,
+         const char          *fusepath_,
+         const StatFS         mode_,
+         const StatFSIgnore   ignore_,
+         struct statvfs      *fsstat_)
   {
     int rv;
     string fullpath;

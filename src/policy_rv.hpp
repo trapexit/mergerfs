@@ -36,16 +36,34 @@ struct PolicyRV
     std::string basepath;
   };
 
-  std::vector<RV> success;
-  std::vector<RV> error;
+  std::vector<RV> successes;
+  std::vector<RV> errors;
 
   void
   insert(const int          err_,
          const std::string &basepath_)
   {
     if(err_ == 0)
-      success.push_back(RV(err_,basepath_));
+      successes.push_back({err_,basepath_});
     else
-      error.push_back(RV(-err_,basepath_));
+      errors.push_back({-err_,basepath_});
+  }
+
+  int
+  get_error(const std::string &basepath_)
+  {
+    for(const auto &s : successes)
+      {
+        if(s.basepath == basepath_)
+          return s.rv;
+      }
+
+    for(const auto &e : errors)
+      {
+        if(e.basepath == basepath_)
+          return e.rv;
+      }
+
+    return 0;
   }
 };

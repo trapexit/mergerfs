@@ -147,23 +147,23 @@ namespace l
 
   static
   int
-  create_core(const std::string &createpath_,
-              const char        *fusepath_,
-              fuse_file_info_t  *ffi_,
-              const mode_t       mode_,
-              const mode_t       umask_)
+  create_core(const Branch     *branch_,
+              const char       *fusepath_,
+              fuse_file_info_t *ffi_,
+              const mode_t      mode_,
+              const mode_t      umask_)
   {
     int rv;
     FileInfo *fi;
     std::string fullpath;
 
-    fullpath = fs::path::make(createpath_,fusepath_);
+    fullpath = fs::path::make(branch_->path,fusepath_);
 
     rv = l::create_core(fullpath,mode_,umask_,ffi_->flags);
     if(rv == -1)
       return -errno;
 
-    fi = new FileInfo(rv,createpath_,fusepath_,ffi_->direct_io);
+    fi = new FileInfo(rv,branch_,fusepath_,ffi_->direct_io);
 
     ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
@@ -183,20 +183,22 @@ namespace l
     int rv;
     std::string fullpath;
     std::string fusedirpath;
-    StrVec createpaths;
-    StrVec existingpaths;
+    std::vector<Branch*> createpaths;
+    std::vector<Branch*> existingpaths;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = searchFunc_(branches_,fusedirpath,&existingpaths);
+    rv = searchFunc_(branches_,fusedirpath,existingpaths);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,fusedirpath,&createpaths);
+    rv = createFunc_(branches_,fusedirpath,createpaths);
     if(rv == -1)
       return -errno;
 
-    rv = fs::clonepath_as_root(existingpaths[0],createpaths[0],fusedirpath);
+    rv = fs::clonepath_as_root(existingpaths[0]->path,
+                               createpaths[0]->path,
+                               fusedirpath);
     if(rv == -1)
       return -errno;
 

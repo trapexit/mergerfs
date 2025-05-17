@@ -18,31 +18,38 @@
 
 #pragma once
 
-#include "nonstd/optional.hpp"
+#include "int_types.h"
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
 
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
+#include <variant>
 
 
 class Branch final : public ToFromString
 {
 public:
-  typedef std::vector<Branch> Vector;
-
-public:
-  Branch(const uint64_t &default_minfreespace_);
-
-public:
   enum class Mode
     {
-     INVALID,
-     RO,
-     RW,
-     NC
+      INVALID,
+      RO,
+      RW,
+      NC
     };
+
+public:
+  std::variant<u64,const u64*> _minfreespace;
+  Mode mode;
+  std::string path;
+
+public:
+  Branch();
+  Branch(const Branch&);
+  Branch(const u64 &default_minfreespace);
 
 public:
   bool ro(void) const;
@@ -54,14 +61,6 @@ public:
   std::string to_string(void) const final;
 
 public:
-  uint64_t minfreespace() const;
-  void set_minfreespace(const uint64_t);
-
-public:
-  Mode mode;
-  std::string path;
-
-private:
-  nonstd::optional<uint64_t>  _minfreespace;
-  const uint64_t             *_default_minfreespace;
+  u64 minfreespace() const;
+  void set_minfreespace(const u64);
 };

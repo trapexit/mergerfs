@@ -27,8 +27,6 @@
 
 #include <string>
 
-using std::string;
-
 
 namespace error
 {
@@ -54,9 +52,9 @@ namespace l
 {
   static
   int
-  mkdir_core(const string &fullpath_,
-             mode_t        mode_,
-             const mode_t  umask_)
+  mkdir_core(const std::string &fullpath_,
+             mode_t             mode_,
+             const mode_t       umask_)
   {
     if(!fs::acl::dir_has_defaults(fullpath_))
       mode_ &= ~umask_;
@@ -66,14 +64,14 @@ namespace l
 
   static
   int
-  mkdir_loop_core(const string &createpath_,
-                  const char   *fusepath_,
-                  const mode_t  mode_,
-                  const mode_t  umask_,
-                  const int     error_)
+  mkdir_loop_core(const std::string &createpath_,
+                  const char        *fusepath_,
+                  const mode_t       mode_,
+                  const mode_t       umask_,
+                  const int          error_)
   {
     int rv;
-    string fullpath;
+    std::string fullpath;
 
     fullpath = fs::path::make(createpath_,fusepath_);
 
@@ -84,24 +82,26 @@ namespace l
 
   static
   int
-  mkdir_loop(const string &existingpath_,
-             const StrVec &createpaths_,
-             const char   *fusepath_,
-             const string &fusedirpath_,
-             const mode_t  mode_,
-             const mode_t  umask_)
+  mkdir_loop(const Branch               *existingbranch_,
+             const std::vector<Branch*> &createbranches_,
+             const char                 *fusepath_,
+             const std::string          &fusedirpath_,
+             const mode_t                mode_,
+             const mode_t                umask_)
   {
     int rv;
     int error;
 
     error = -1;
-    for(size_t i = 0, ei = createpaths_.size(); i != ei; i++)
+    for(auto &createbranch : createbranches_)
       {
-        rv = fs::clonepath_as_root(existingpath_,createpaths_[i],fusedirpath_);
+        rv = fs::clonepath_as_root(existingbranch_->path,
+                                   createbranch->path,
+                                   fusedirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::mkdir_loop_core(createpaths_[i],
+          error = l::mkdir_loop_core(createbranch->path,
                                      fusepath_,
                                      mode_,
                                      umask_,
@@ -121,22 +121,22 @@ namespace l
         const mode_t          umask_)
   {
     int rv;
-    string fusedirpath;
-    StrVec createpaths;
-    StrVec existingpaths;
+    std::string fusedirpath;
+    std::vector<Branch*> createbranches;
+    std::vector<Branch*> existingbranches;
 
     fusedirpath = fs::path::dirname(fusepath_);
 
-    rv = getattrPolicy_(branches_,fusedirpath.c_str(),&existingpaths);
+    rv = getattrPolicy_(branches_,fusedirpath,existingbranches);
     if(rv == -1)
       return -errno;
 
-    rv = mkdirPolicy_(branches_,fusedirpath.c_str(),&createpaths);
+    rv = mkdirPolicy_(branches_,fusedirpath,createbranches);
     if(rv == -1)
       return -errno;
 
-    return l::mkdir_loop(existingpaths[0],
-                         createpaths,
+    return l::mkdir_loop(existingbranches[0],
+                         createbranches,
                          fusepath_,
                          fusedirpath,
                          mode_,

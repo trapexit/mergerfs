@@ -35,20 +35,20 @@ namespace eplfs
 {
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t eplfs;
+    Branch *obranch;
     fs::info_t info;
-    const string *basepath;
 
+    obranch = nullptr;
     error = ENOENT;
     eplfs = std::numeric_limits<uint64_t>::max();
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
@@ -65,33 +65,33 @@ namespace eplfs
           continue;
 
         eplfs = info.spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  action(const Branches::CPtr &branches_,
+  action(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t eplfs;
+    Branch *obranch;
     fs::info_t info;
-    const string *basepath;
 
+    obranch = nullptr;
     error = ENOENT;
     eplfs = std::numeric_limits<uint64_t>::max();
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(branch.ro())
           error_and_continue(error,EROFS);
@@ -106,31 +106,31 @@ namespace eplfs
           continue;
 
         eplfs = info.spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  search(const Branches::CPtr &branches_,
+  search(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     uint64_t eplfs;
     uint64_t spaceavail;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     eplfs = std::numeric_limits<uint64_t>::max();
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(!fs::exists(branch.path,fusepath_))
           continue;
@@ -141,38 +141,38 @@ namespace eplfs
           continue;
 
         eplfs = spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=ENOENT,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 }
 
 int
-Policy::EPLFS::Action::operator()(const Branches::CPtr &branches_,
+Policy::EPLFS::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::eplfs::action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPLFS::Create::operator()(const Branches::CPtr &branches_,
+Policy::EPLFS::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::eplfs::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPLFS::Search::operator()(const Branches::CPtr &branches_,
+Policy::EPLFS::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::eplfs::search(branches_,fusepath_,paths_);
 }

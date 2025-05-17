@@ -21,43 +21,43 @@
 #include "rnd.hpp"
 
 int
-Policy::Rand::Action::operator()(const Branches::CPtr &branches_,
+Policy::Rand::Action::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   int rv;
 
   rv = Policies::Action::all(branches_,fusepath_,paths_);
   if(rv == 0)
-    RND::shrink_to_rand_elem(*paths_);
+    RND::shrink_to_rand_elem(paths_);
 
   return rv;
 }
 
 int
-Policy::Rand::Create::operator()(const Branches::CPtr &branches_,
+Policy::Rand::Create::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   int rv;
 
   rv = Policies::Create::all(branches_,fusepath_,paths_);
   if(rv == 0)
-    RND::shrink_to_rand_elem(*paths_);
+    RND::shrink_to_rand_elem(paths_);
 
   return rv;
 }
 
 int
-Policy::Rand::Search::operator()(const Branches::CPtr &branches_,
+Policy::Rand::Search::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   int rv;
 
   rv = Policies::Search::all(branches_,fusepath_,paths_);
   if(rv == 0)
-    RND::shrink_to_rand_elem(*paths_);
+    RND::shrink_to_rand_elem(paths_);
 
   return rv;
 }

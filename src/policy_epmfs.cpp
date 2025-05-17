@@ -34,20 +34,20 @@ namespace epmfs
 {
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t epmfs;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     epmfs = std::numeric_limits<uint64_t>::min();
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
@@ -64,33 +64,33 @@ namespace epmfs
           continue;
 
         epmfs = info.spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  action(const Branches::CPtr &branches_,
+  action(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
     uint64_t epmfs;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     epmfs = std::numeric_limits<uint64_t>::min();
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(branch.ro())
           error_and_continue(error,EROFS);
@@ -105,31 +105,31 @@ namespace epmfs
           continue;
 
         epmfs = info.spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 
   static
   int
-  search(const Branches::CPtr &branches_,
+  search(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     uint64_t epmfs;
     uint64_t spaceavail;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     epmfs = 0;
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(!fs::exists(branch.path,fusepath_))
           continue;
@@ -140,38 +140,38 @@ namespace epmfs
           continue;
 
         epmfs = spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(obranch == nullptr)
       return (errno=ENOENT,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(obranch);
 
     return 0;
   }
 }
 
 int
-Policy::EPMFS::Action::operator()(const Branches::CPtr &branches_,
+Policy::EPMFS::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::epmfs::action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPMFS::Create::operator()(const Branches::CPtr &branches_,
+Policy::EPMFS::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::epmfs::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPMFS::Search::operator()(const Branches::CPtr &branches_,
+Policy::EPMFS::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::epmfs::search(branches_,fusepath_,paths_);
 }

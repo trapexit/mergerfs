@@ -32,7 +32,9 @@ namespace Policy
       {}
 
     public:
-      int operator()(const Branches::CPtr&,const char*,StrVec*) const final;
+      int operator()(const Branches::Ptr&,
+                     const char*,
+                     std::vector<Branch*>&) const final;
     };
 
     class Create final : public Policy::CreateImpl
@@ -43,8 +45,11 @@ namespace Policy
       {}
 
     public:
-      int operator()(const Branches::CPtr&,const char*,StrVec*) const final;
       bool path_preserving(void) const final { return false; }
+      int operator()(const Branches::Ptr&,
+                     const char*,
+                     std::vector<Branch*>&) const final;
+
     };
 
     class Search final : public Policy::SearchImpl
@@ -55,7 +60,9 @@ namespace Policy
       {}
 
     public:
-      int operator()(const Branches::CPtr&,const char*,StrVec*) const final;
+      int operator()(const Branches::Ptr&,
+                     const char*,
+                     std::vector<Branch*>&) const final;
     };
   }
 }

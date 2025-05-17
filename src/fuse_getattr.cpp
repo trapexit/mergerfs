@@ -105,13 +105,13 @@ namespace l
   {
     int rv;
     string fullpath;
-    StrVec basepaths;
+    std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(branches[0]->path,fusepath_);
 
     switch(followsymlinks_)
       {
@@ -141,7 +141,7 @@ namespace l
     if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
       symlinkify::convert(fullpath,st_);
 
-    fs::inode::calc(basepaths[0],fusepath_,st_);
+    fs::inode::calc(branches[0]->path,fusepath_,st_);
 
     return 0;
   }

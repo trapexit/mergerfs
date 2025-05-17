@@ -34,9 +34,6 @@
 #include <fcntl.h>
 #include <string.h>
 
-using std::string;
-using std::vector;
-
 #ifndef _IOC_TYPE
 #define _IOC_TYPE(X) (((X) >> 8) & 0xFF)
 #endif
@@ -146,14 +143,14 @@ namespace l
   {
     int fd;
     int rv;
-    string fullpath;
-    StrVec basepaths;
+    std::string fullpath;
+    std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(branches[0]->path,fusepath_);
 
     fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
     if(fd == -1)
@@ -210,13 +207,13 @@ namespace l
                 void                 *data_)
   {
     int rv;
-    StrVec basepaths;
+    std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(branches_,fusepath_,branches);
     if(rv == -1)
       return -errno;
 
-    return l::strcpy(basepaths[0],data_);
+    return l::strcpy(branches[0]->path,data_);
   }
 
   static
@@ -246,19 +243,20 @@ namespace l
   static
   int
   file_fullpath(const Policy::Search &searchFunc_,
-                const Branches       &branches_,
-                const string         &fusepath_,
+                const Branches       &ibranches_,
+                const std::string    &fusepath_,
                 void                 *data_)
   {
     int rv;
-    string fullpath;
     StrVec basepaths;
+    std::string fullpath;
+    std::vector<Branch*> obranches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(ibranches_,fusepath_,obranches);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(obranches[0]->path,fusepath_);
 
     return l::strcpy(fullpath,data_);
   }
@@ -283,10 +281,10 @@ namespace l
                 void                   *data_)
   {
     Config::Read cfg;
-    string concated;
+    std::string concated;
     StrVec paths;
     StrVec branches;
-    string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+    std::string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
 
     cfg->branches->to_paths(branches);
 

@@ -30,19 +30,19 @@ namespace mfs
 {
   static
   int
-  create(const Branches::CPtr &branches_,
-         StrVec               *paths_)
+  create(const Branches::Ptr  &branches_,
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
-    uint64_t mfs;
+    u64 mfs;
     fs::info_t info;
-    const string *basepath;
+    Branch *obranch;
 
+    obranch = nullptr;
     error = ENOENT;
     mfs = 0;
-    basepath = NULL;
-    for(const auto &branch : *branches_)
+    for(auto &branch : *branches_)
       {
         if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
@@ -57,38 +57,38 @@ namespace mfs
           continue;
 
         mfs = info.spaceavail;
-        basepath = &branch.path;
+        obranch = &branch;
       }
 
-    if(basepath == NULL)
+    if(!obranch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.push_back(obranch);
 
     return 0;
   }
 }
 
 int
-Policy::MFS::Action::operator()(const Branches::CPtr &branches_,
+Policy::MFS::Action::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &paths_) const
 {
   return Policies::Action::epmfs(branches_,fusepath_,paths_);
 }
 
 int
-Policy::MFS::Create::operator()(const Branches::CPtr &branches_,
+Policy::MFS::Create::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &paths_) const
 {
   return ::mfs::create(branches_,paths_);
 }
 
 int
-Policy::MFS::Search::operator()(const Branches::CPtr &branches_,
+Policy::MFS::Search::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
-                                StrVec               *paths_) const
+                                std::vector<Branch*> &paths_) const
 {
   return Policies::Search::epmfs(branches_,fusepath_,paths_);
 }

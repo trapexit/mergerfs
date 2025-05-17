@@ -25,21 +25,20 @@
 
 #include <string>
 
-using std::string;
 
 namespace ff
 {
   static
   int
-  create(const Branches::CPtr &branches_,
-         StrVec               *paths_)
+  create(const Branches::Ptr  &ibranches_,
+         std::vector<Branch*> &obranches_)
   {
     int rv;
     int error;
     fs::info_t info;
 
     error = ENOENT;
-    for(auto &branch : *branches_)
+    for(auto &branch : *ibranches_)
       {
         if(branch.ro_or_nc())
           error_and_continue(error,EROFS);
@@ -51,7 +50,7 @@ namespace ff
         if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
-        paths_->push_back(branch.path);
+        obranches_.emplace_back(&branch);
 
         return 0;
       }
@@ -61,25 +60,35 @@ namespace ff
 }
 
 int
-Policy::FF::Action::operator()(const Branches::CPtr &branches_,
+Policy::FF::Action::operator()(const Branches::Ptr  &branches_,
                                const char           *fusepath_,
-                               StrVec               *paths_) const
+                               std::vector<Branch*> &paths_) const
 {
   return Policies::Action::epff(branches_,fusepath_,paths_);
 }
 
 int
-Policy::FF::Create::operator()(const Branches::CPtr &branches_,
+Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
                                const char           *fusepath_,
-                               StrVec               *paths_) const
+                               std::vector<Branch*> &paths_) const
 {
   return ::ff::create(branches_,paths_);
 }
 
 int
-Policy::FF::Search::operator()(const Branches::CPtr &branches_,
+Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
                                const char           *fusepath_,
-                               StrVec               *paths_) const
+                               std::vector<Branch*> &output_) const
 {
-  return Policies::Search::epff(branches_,fusepath_,paths_);
+  for(auto &branch : *branches_)
+    {
+      if(!fs::exists(branch.path,fusepath_))
+        continue;
+
+      output_.emplace_back(&branch);
+
+      return 0;
+    }
+
+  return (errno=ENOENT,-1);
 }

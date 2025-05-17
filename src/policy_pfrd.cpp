@@ -27,28 +27,25 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
 struct BranchInfo
 {
-  uint64_t      spaceavail;
-  const string *basepath;
+  uint64_t  spaceavail;
+  Branch   *branch;
 };
 
-typedef vector<BranchInfo> BranchInfoVec;
+typedef std::vector<BranchInfo> BranchInfoVec;
 
 namespace pfrd
 {
   static
   int
-  get_branchinfo(const Branches::CPtr &branches_,
-                 BranchInfoVec        *branchinfo_,
-                 uint64_t             *sum_)
+  get_branchinfo(const Branches::Ptr &branches_,
+                 BranchInfoVec       *branchinfo_,
+                 uint64_t            *sum_)
   {
     int rv;
     int error;
-    BranchInfo bi;
     fs::info_t info;
 
     *sum_ = 0;
@@ -67,17 +64,14 @@ namespace pfrd
 
         *sum_ += info.spaceavail;
 
-        bi.spaceavail = info.spaceavail;
-        bi.basepath   = &branch.path;
-        branchinfo_->push_back(bi);
+        branchinfo_->push_back({info.spaceavail,&branch});
       }
 
     return error;
   }
 
   static
-  const
-  string*
+  Branch*
   get_branch(const BranchInfoVec &branchinfo_,
              const uint64_t       sum_)
   {
@@ -85,65 +79,65 @@ namespace pfrd
     uint64_t threshold;
 
     if(sum_ == 0)
-      return NULL;
+      return nullptr;
 
     idx = 0;
     threshold = RND::rand64(sum_);
-    for(size_t i = 0; i < branchinfo_.size(); i++)
+    for(auto &bi : branchinfo_)
       {
-        idx += branchinfo_[i].spaceavail;
+        idx += bi.spaceavail;
 
         if(idx < threshold)
           continue;
 
-        return branchinfo_[i].basepath;
+        return bi.branch;
       }
 
-    return NULL;
+    return nullptr;
   }
 
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int error;
     uint64_t sum;
-    const string *basepath;
+    Branch *branch;
     BranchInfoVec branchinfo;
 
-    error    = pfrd::get_branchinfo(branches_,&branchinfo,&sum);
-    basepath = pfrd::get_branch(branchinfo,sum);
-    if(basepath == NULL)
+    error  = pfrd::get_branchinfo(branches_,&branchinfo,&sum);
+    branch = pfrd::get_branch(branchinfo,sum);
+    if(!branch)
       return (errno=error,-1);
 
-    paths_->push_back(*basepath);
+    paths_.emplace_back(branch);
 
     return 0;
   }
 }
 
 int
-Policy::PFRD::Action::operator()(const Branches::CPtr &branches_,
+Policy::PFRD::Action::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eppfrd(branches_,fusepath_,paths_);
 }
 
 int
-Policy::PFRD::Create::operator()(const Branches::CPtr &branches_,
+Policy::PFRD::Create::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   return ::pfrd::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::PFRD::Search::operator()(const Branches::CPtr &branches_,
+Policy::PFRD::Search::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
-                                 StrVec               *paths_) const
+                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eppfrd(branches_,fusepath_,paths_);
 }

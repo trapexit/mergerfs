@@ -29,10 +29,10 @@ namespace l
 {
   static
   int
-  findonfs(const Branches::CPtr &branches_,
-           const std::string    &fusepath_,
-           const int             fd_,
-           std::string          *basepath_)
+  findonfs(const Branches::Ptr &branches_,
+           const std::string   &fusepath_,
+           const int            fd_,
+           std::string         *basepath_)
   {
     int rv;
     dev_t dev;
@@ -67,10 +67,10 @@ namespace l
 namespace fs
 {
   int
-  findonfs(const Branches::CPtr &branches_,
-           const std::string    &fusepath_,
-           const int             fd_,
-           std::string          *basepath_)
+  findonfs(const Branches::Ptr &branches_,
+           const std::string   &fusepath_,
+           const int            fd_,
+           std::string         *basepath_)
   {
     return l::findonfs(branches_,fusepath_,fd_,basepath_);
   }

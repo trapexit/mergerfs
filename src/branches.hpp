@@ -28,43 +28,47 @@
 #include <mutex>
 #include <string>
 #include <vector>
-
+#include <memory>
 
 class Branches final : public ToFromString
 {
 public:
-  class Impl final : public ToFromString, public Branch::Vector
+  class Impl final : public ToFromString,
+                     public std::vector<Branch>
   {
-  public:
-    typedef std::shared_ptr<Impl> Ptr;
-    typedef std::shared_ptr<const Impl> CPtr;
+  private:
+    const u64 &_default_minfreespace;
 
   public:
-    Impl(const uint64_t &default_minfreespace_);
+    using Ptr  = std::shared_ptr<Impl>;
+
+  public:
+    Impl(const u64 &default_minfreespace);
 
   public:
     int from_string(const std::string &str) final;
     std::string to_string(void) const final;
 
   public:
-    const uint64_t& minfreespace(void) const;
+    const u64 &minfreespace(void) const;
     void to_paths(StrVec &strvec) const;
     fs::PathVector to_paths() const;
 
   public:
     Impl& operator=(Impl &impl_);
     Impl& operator=(Impl &&impl_);
-
-  private:
-    const uint64_t &_default_minfreespace;
   };
 
-public:
-  typedef Branches::Impl::Ptr  Ptr;
-  typedef Branches::Impl::CPtr CPtr;
 
 public:
-  Branches(const uint64_t &default_minfreespace_)
+  using Ptr = Branches::Impl::Ptr;
+
+private:
+  mutable std::mutex _mutex;
+  Ptr                _impl;
+
+public:
+  Branches(const u64 &default_minfreespace_)
     : _impl(std::make_shared<Impl>(default_minfreespace_))
   {}
 
@@ -73,21 +77,17 @@ public:
   std::string to_string(void) const final;
 
 public:
-  operator CPtr()   const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
-  CPtr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
+  operator Ptr()   const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
+  Ptr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
 
 public:
   void find_and_set_mode_ro();
-
-private:
-  mutable std::mutex _mutex;
-  Ptr                _impl;
 };
 
 class SrcMounts : public ToFromString
 {
 public:
-  SrcMounts(Branches &b_);
+  SrcMounts(Branches &b);
 
 public:
   int from_string(const std::string &str) final;

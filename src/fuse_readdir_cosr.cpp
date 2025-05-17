@@ -97,11 +97,11 @@ namespace l
   static
   inline
   std::vector<std::future<DirRV>>
-  opendir(ThreadPool           &tp_,
-          const Branches::CPtr &branches_,
-          const std::string    &rel_dirpath_,
-          uid_t const           uid_,
-          gid_t const           gid_)
+  opendir(ThreadPool          &tp_,
+          const Branches::Ptr &branches_,
+          const std::string   &rel_dirpath_,
+          uid_t const          uid_,
+          gid_t const          gid_)
   {
     std::vector<std::future<DirRV>> futures;
 
@@ -187,12 +187,12 @@ namespace l
   static
   inline
   int
-  readdir(ThreadPool           &tp_,
-          const Branches::CPtr &branches_,
-          const std::string    &rel_dirpath_,
-          fuse_dirents_t       *buf_,
-          uid_t const           uid_,
-          gid_t const           gid_)
+  readdir(ThreadPool          &tp_,
+          const Branches::Ptr &branches_,
+          const std::string   &rel_dirpath_,
+          fuse_dirents_t      *buf_,
+          uid_t const          uid_,
+          gid_t const          gid_)
   {
     int rv;
     std::vector<std::future<DirRV>> futures;

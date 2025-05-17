@@ -33,9 +33,9 @@ namespace epall
 {
   static
   int
-  create(const Branches::CPtr &branches_,
+  create(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
@@ -56,10 +56,10 @@ namespace epall
         if(info.spaceavail < branch.minfreespace())
           error_and_continue(error,ENOSPC);
 
-        paths_->push_back(branch.path);
+        paths_.emplace_back(&branch);
       }
 
-    if(paths_->empty())
+    if(paths_.empty())
       return (errno=error,-1);
 
     return 0;
@@ -67,9 +67,9 @@ namespace epall
 
   static
   int
-  action(const Branches::CPtr &branches_,
+  action(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     int rv;
     int error;
@@ -88,10 +88,10 @@ namespace epall
         if(readonly)
           error_and_continue(error,EROFS);
 
-        paths_->push_back(branch.path);
+        paths_.emplace_back(&branch);
       }
 
-    if(paths_->empty())
+    if(paths_.empty())
       return (errno=error,-1);
 
     return 0;
@@ -99,19 +99,19 @@ namespace epall
 
   static
   int
-  search(const Branches::CPtr &branches_,
+  search(const Branches::Ptr  &branches_,
          const char           *fusepath_,
-         StrVec               *paths_)
+         std::vector<Branch*> &paths_)
   {
     for(auto &branch : *branches_)
       {
         if(!fs::exists(branch.path,fusepath_))
           continue;
 
-        paths_->push_back(branch.path);
+        paths_.push_back(&branch);
       }
 
-    if(paths_->empty())
+    if(paths_.empty())
       return (errno=ENOENT,-1);
 
     return 0;
@@ -119,25 +119,25 @@ namespace epall
 }
 
 int
-Policy::EPAll::Action::operator()(const Branches::CPtr &branches_,
+Policy::EPAll::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::epall::action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPAll::Create::operator()(const Branches::CPtr &branches_,
+Policy::EPAll::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return ::epall::create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPAll::Search::operator()(const Branches::CPtr &branches_,
-                                  const char     *fusepath_,
-                                  StrVec         *paths_) const
+Policy::EPAll::Search::operator()(const Branches::Ptr  &branches_,
+                                  const char           *fusepath_,
+                                  std::vector<Branch*> &paths_) const
 {
   return ::epall::search(branches_,fusepath_,paths_);
 }

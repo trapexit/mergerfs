@@ -56,20 +56,20 @@ namespace l
   static
   int
   listxattr(const Policy::Search &searchFunc_,
-            const Branches       &branches_,
+            const Branches       &ibranches_,
             const char           *fusepath_,
             char                 *list_,
             const size_t          size_)
   {
     int rv;
-    string fullpath;
-    StrVec basepaths;
+    std::string fullpath;
+    std::vector<Branch*> obranches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(ibranches_,fusepath_,obranches);
     if(rv == -1)
       return -errno;
 
-    fullpath = fs::path::make(basepaths[0],fusepath_);
+    fullpath = fs::path::make(obranches[0]->path,fusepath_);
 
     rv = fs::llistxattr(fullpath,list_,size_);
 

@@ -157,7 +157,7 @@ namespace l
   set_readahead_on_mount_and_branches()
   {
     Config::Read cfg;
-    Branches::CPtr branches;
+    Branches::Ptr branches;
 
     if((uint64_t)cfg->readahead == 0)
       return;

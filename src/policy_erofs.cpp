@@ -24,25 +24,25 @@ using std::string;
 
 
 int
-Policy::ERoFS::Action::operator()(const Branches::CPtr &branches_,
+Policy::ERoFS::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return (errno=EROFS,-1);
 }
 
 int
-Policy::ERoFS::Create::operator()(const Branches::CPtr &branches_,
+Policy::ERoFS::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return (errno=EROFS,-1);
 }
 
 int
-Policy::ERoFS::Search::operator()(const Branches::CPtr &branches_,
+Policy::ERoFS::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
-                                  StrVec               *paths_) const
+                                  std::vector<Branch*> &paths_) const
 {
   return (errno=EROFS,-1);
 }

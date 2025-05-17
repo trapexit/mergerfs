@@ -58,23 +58,23 @@ namespace l
 {
   static
   int
-  symlink_loop_core(const string &newbasepath_,
-                    const char   *target_,
-                    const char   *linkpath_,
-                    struct stat  *st_,
-                    const int     error_)
+  symlink_loop_core(const std::string &newbranch_,
+                    const char        *target_,
+                    const char        *linkpath_,
+                    struct stat       *st_,
+                    const int          error_)
   {
     int rv;
     string fullnewpath;
 
-    fullnewpath = fs::path::make(newbasepath_,linkpath_);
+    fullnewpath = fs::path::make(newbranch_,linkpath_);
 
     rv = fs::symlink(target_,fullnewpath);
     if((rv != -1) && (st_ != NULL) && (st_->st_ino == 0))
       {
         fs::lstat(fullnewpath,st_);
         if(st_->st_ino != 0)
-          fs::inode::calc(newbasepath_,linkpath_,st_);
+          fs::inode::calc(newbranch_,linkpath_,st_);
       }
 
     return error::calc(rv,error_,errno);
@@ -82,24 +82,26 @@ namespace l
 
   static
   int
-  symlink_loop(const string &existingpath_,
-               const StrVec &newbasepaths_,
-               const char   *target_,
-               const char   *linkpath_,
-               const string &newdirpath_,
-               struct stat  *st_)
+  symlink_loop(const std::string          &existingbranch_,
+               const std::vector<Branch*> &newbranches_,
+               const char                 *target_,
+               const char                 *linkpath_,
+               const std::string          &newdirpath_,
+               struct stat                *st_)
   {
     int rv;
     int error;
 
     error = -1;
-    for(size_t i = 0, ei = newbasepaths_.size(); i != ei; i++)
+    for(auto &newbranch :newbranches_)
       {
-        rv = fs::clonepath_as_root(existingpath_,newbasepaths_[i],newdirpath_);
+        rv = fs::clonepath_as_root(existingbranch_,
+                                   newbranch->path,
+                                   newdirpath_);
         if(rv == -1)
           error = error::calc(rv,error,errno);
         else
-          error = l::symlink_loop_core(newbasepaths_[i],
+          error = l::symlink_loop_core(newbranch->path,
                                        target_,
                                        linkpath_,
                                        st_,
@@ -120,21 +122,25 @@ namespace l
   {
     int rv;
     string newdirpath;
-    StrVec newbasepaths;
-    StrVec existingpaths;
+    std::vector<Branch*> newbranches;
+    std::vector<Branch*> existingbranches;
 
     newdirpath = fs::path::dirname(linkpath_);
 
-    rv = searchFunc_(branches_,newdirpath,&existingpaths);
+    rv = searchFunc_(branches_,newdirpath,existingbranches);
     if(rv == -1)
       return -errno;
 
-    rv = createFunc_(branches_,newdirpath,&newbasepaths);
+    rv = createFunc_(branches_,newdirpath,newbranches);
     if(rv == -1)
       return -errno;
 
-    return l::symlink_loop(existingpaths[0],newbasepaths,
-                           target_,linkpath_,newdirpath,st_);
+    return l::symlink_loop(existingbranches[0]->path,
+                           newbranches,
+                           target_,
+                           linkpath_,
+                           newdirpath,
+                           st_);
   }
 }
 

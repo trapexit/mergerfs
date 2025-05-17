@@ -21,9 +21,19 @@
 #include "errno.hpp"
 #include "num.hpp"
 
+Branch::Branch()
+{
+}
 
-Branch::Branch(const uint64_t &default_minfreespace_)
-  : _default_minfreespace(&default_minfreespace_)
+Branch::Branch(const Branch &branch_)
+  : _minfreespace(branch_._minfreespace),
+    mode(branch_.mode),
+    path(branch_.path)
+{
+}
+
+Branch::Branch(const u64 &default_minfreespace_)
+  : _minfreespace(&default_minfreespace_)
 {
 }
 
@@ -54,27 +64,27 @@ Branch::to_string(void) const
       break;
     }
 
-  if(_minfreespace.has_value())
+  if(std::holds_alternative<u64>(_minfreespace))
     {
       rv += ',';
-      rv += num::humanize(_minfreespace.value());
+      rv += num::humanize(std::get<u64>(_minfreespace));
     }
 
   return rv;
 }
 
 void
-Branch::set_minfreespace(const uint64_t minfreespace_)
+Branch::set_minfreespace(const u64 minfreespace_)
 {
   _minfreespace = minfreespace_;
 }
 
-uint64_t
+u64
 Branch::minfreespace(void) const
 {
-  if(_minfreespace.has_value())
-    return _minfreespace.value();
-  return *_default_minfreespace;
+  if(std::holds_alternative<const u64*>(_minfreespace))
+    return *std::get<const u64*>(_minfreespace);
+  return std::get<u64>(_minfreespace);
 }
 
 bool

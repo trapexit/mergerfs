@@ -33,16 +33,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-using std::string;
-
 
 namespace l
 {
   static
   int
-  cleanup_on_error(const int     src_fd_,
-                   const int     dst_fd_       = -1,
-                   const string &dst_fullpath_ = string())
+  cleanup_on_error(const int src_fd_,
+                   const int dst_fd_                = -1,
+                   const std::string &dst_fullpath_ = {})
   {
     int error = errno;
 

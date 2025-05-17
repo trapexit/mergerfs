@@ -83,9 +83,9 @@ namespace l
 
   static
   int
-  readdir(const Branches::CPtr &branches_,
-          const std::string    &rel_dirpath_,
-          fuse_dirents_t       *buf_)
+  readdir(const Branches::Ptr &branches_,
+          const std::string   &rel_dirpath_,
+          fuse_dirents_t      *buf_)
   {
     Error error;
     HashSet names;

@@ -19,7 +19,6 @@
 #pragma once
 
 #include "policy.hpp"
-#include "strvec.hpp"
 
 #include <cstdint>
 #include <string>
@@ -36,7 +35,7 @@ public:
     Value();
 
     uint64_t time;
-    StrVec   paths;
+    std::vector<Branch*> paths;
   };
 
 public:
@@ -51,7 +50,7 @@ public:
   int operator()(const Policy::Search &policy,
                  const Branches       &branches,
                  const char           *fusepath,
-                 StrVec               *paths);
+                 std::vector<Branch*> &paths);
 
 public:
   uint64_t timeout;

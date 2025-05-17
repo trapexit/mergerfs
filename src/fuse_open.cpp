@@ -190,7 +190,7 @@ namespace l
 
   static
   int
-  open_core(const std::string &basepath_,
+  open_core(const Branch      *branch_,
             const char        *fusepath_,
             fuse_file_info_t  *ffi_,
             const bool         link_cow_,
@@ -200,7 +200,7 @@ namespace l
     FileInfo *fi;
     std::string fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+    fullpath = fs::path::make(branch_->path,fusepath_);
 
     if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),ffi_->flags))
       fs::cow::break_link(fullpath.c_str());
@@ -211,7 +211,7 @@ namespace l
     if(fd == -1)
       return -errno;
 
-    fi = new FileInfo(fd,basepath_,fusepath_,ffi_->direct_io);
+    fi = new FileInfo(fd,branch_,fusepath_,ffi_->direct_io);
 
     ffi_->fh = reinterpret_cast<uint64_t>(fi);
 
@@ -221,20 +221,24 @@ namespace l
   static
   int
   open(const Policy::Search &searchFunc_,
-       const Branches       &branches_,
+       const Branches       &ibranches_,
        const char           *fusepath_,
        fuse_file_info_t     *ffi_,
        const bool            link_cow_,
        const NFSOpenHack     nfsopenhack_)
   {
     int rv;
-    StrVec basepaths;
+    std::vector<Branch*> obranches;
 
-    rv = searchFunc_(branches_,fusepath_,&basepaths);
+    rv = searchFunc_(ibranches_,fusepath_,obranches);
     if(rv == -1)
       return -errno;
 
-    return l::open_core(basepaths[0],fusepath_,ffi_,link_cow_,nfsopenhack_);
+    return l::open_core(obranches[0],
+                        fusepath_,
+                        ffi_,
+                        link_cow_,
+                        nfsopenhack_);
   }
 }
 
