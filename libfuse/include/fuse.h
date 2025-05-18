@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/uio.h>
+#include <stdint.h>
 
 EXTERN_C_BEGIN
 
@@ -94,15 +95,6 @@ struct fuse_operations
    * */
   int (*mkdir) (const char *, mode_t);
 
-  /** Hide files unlinked / renamed over
-   *
-   * Allows storing of a file handle when a file is unlinked
-   * while open. Helps manage the fact the kernel usually does
-   * not send fh with getattr requests.
-   */
-  int (*prepare_hide)(const char *name_, uint64_t *fh_);
-  int (*free_hide)(const uint64_t fh_);
-
   /** Remove a file */
   int (*unlink) (const char *);
 
@@ -120,11 +112,11 @@ struct fuse_operations
 
   /** Change the permission bits of a file */
   int (*chmod) (const char *, mode_t);
-  int (*fchmod)(const fuse_file_info_t *, const mode_t);
+  int (*fchmod)(const uint64_t, const mode_t);
 
   /** Change the owner and group of a file */
   int (*chown) (const char *, uid_t, gid_t);
-  int (*fchown)(const fuse_file_info_t *, const uid_t, const gid_t);
+  int (*fchown)(const uint64_t, const uid_t, const gid_t);
 
   /** Change the size of a file */
   int (*truncate) (const char *, off_t);
@@ -205,7 +197,7 @@ struct fuse_operations
    *
    * Changed in version 2.2
    */
-  int (*fsync) (const fuse_file_info_t *, int);
+  int (*fsync) (const uint64_t, int);
 
   /** Set extended attributes */
   int (*setxattr) (const char *, const char *, const char *, size_t, int);
@@ -335,7 +327,7 @@ struct fuse_operations
    *
    * Introduced in version 2.5
    */
-  int (*ftruncate) (const fuse_file_info_t *, off_t);
+  int (*ftruncate) (const uint64_t, off_t);
 
   /**
    * Get attributes from an open file
@@ -349,7 +341,7 @@ struct fuse_operations
    *
    * Introduced in version 2.5
    */
-  int (*fgetattr) (const fuse_file_info_t *, struct stat *, fuse_timeouts_t *);
+  int (*fgetattr) (const uint64_t, struct stat *, fuse_timeouts_t *);
 
   /**
    * Perform POSIX file locking operation
@@ -399,7 +391,7 @@ struct fuse_operations
    * Introduced in version 2.6
    */
   int (*utimens)(const char *, const struct timespec tv[2]);
-  int (*futimens)(const fuse_file_info_t *ffi_, const struct timespec tv_[2]);
+  int (*futimens)(const uint64_t fh, const struct timespec tv[2]);
 
   /**
    * Map block index within file to block index within device
@@ -519,7 +511,7 @@ struct fuse_operations
    *
    * Introduced in version 2.9.1
    */
-  int (*fallocate) (const fuse_file_info_t *, int, off_t, off_t);
+  int (*fallocate) (const uint64_t, int, off_t, off_t);
 
   /**
    * Copy a range of data from one file to another
@@ -569,20 +561,14 @@ struct fuse_operations
  */
 struct fuse_context
 {
-  /** Pointer to the fuse object */
+  uint64_t unique;
+  uint64_t nodeid;
+  uint32_t opcode;
+  uid_t    uid;
+  gid_t    gid;
+  pid_t    pid;
+  mode_t   umask;
   struct fuse *fuse;
-
-  /** User ID of the calling process */
-  uid_t uid;
-
-  /** Group ID of the calling process */
-  gid_t gid;
-
-  /** Thread ID of the calling process */
-  pid_t pid;
-
-  /** Umask of the calling process (introduced in version 2.8) */
-  mode_t umask;
 };
 
 /**
@@ -789,6 +775,12 @@ struct fuse_session *fuse_get_session(struct fuse *f);
 void fuse_gc1();
 void fuse_gc();
 void fuse_invalidate_all_nodes();
+
+int fuse_get_dev_fuse_fd(const struct fuse_context *fc);
+int fuse_passthrough_open(const struct fuse_context *fc,
+                          const int                  fd);
+int fuse_passthrough_close(const struct fuse_context *fc,
+                           const int                  backing_id);
 
 EXTERN_C_END
 

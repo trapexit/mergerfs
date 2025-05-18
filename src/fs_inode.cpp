@@ -19,25 +19,20 @@
 #include "fs_inode.hpp"
 
 #include "ef.hpp"
-#include "errno.hpp"
 #include "rapidhash.h"
 
 #include <cstdint>
-#include <string>
 
 #include <pthread.h>
-#include <string.h>
 #include <sys/stat.h>
 
-using namespace nonstd;
-
-typedef uint64_t (*inodefunc_t)(const string_view,
-                                const string_view,
+typedef uint64_t (*inodefunc_t)(const std::string_view,
+                                const std::string_view,
                                 const mode_t,
                                 const ino_t);
 
-static uint64_t hybrid_hash(const string_view,
-                            const string_view,
+static uint64_t hybrid_hash(const std::string_view,
+                            const std::string_view,
                             const mode_t,
                             const ino_t);
 
@@ -56,20 +51,20 @@ h64_to_h32(uint64_t h_)
 
 static
 uint64_t
-passthrough(const string_view branch_path_,
-            const string_view fusepath_,
-            const mode_t      mode_,
-            const ino_t       ino_)
+passthrough(const std::string_view branch_path_,
+            const std::string_view fusepath_,
+            const mode_t           mode_,
+            const ino_t            ino_)
 {
   return ino_;
 }
 
 static
 uint64_t
-path_hash(const string_view branch_path_,
-          const string_view fusepath_,
-          const mode_t      mode_,
-          const ino_t       ino_)
+path_hash(const std::string_view branch_path_,
+          const std::string_view fusepath_,
+          const mode_t           mode_,
+          const ino_t            ino_)
 {
   uint64_t seed;
 
@@ -80,10 +75,10 @@ path_hash(const string_view branch_path_,
 
 static
 uint64_t
-path_hash32(const string_view branch_path_,
-            const string_view fusepath_,
-            const mode_t      mode_,
-            const ino_t       ino_)
+path_hash32(const std::string_view branch_path_,
+            const std::string_view fusepath_,
+            const mode_t           mode_,
+            const ino_t            ino_)
 {
   uint64_t h;
 
@@ -97,10 +92,10 @@ path_hash32(const string_view branch_path_,
 
 static
 uint64_t
-devino_hash(const string_view branch_path_,
-            const string_view fusepath_,
-            const mode_t      mode_,
-            const ino_t       ino_)
+devino_hash(const std::string_view branch_path_,
+            const std::string_view fusepath_,
+            const mode_t           mode_,
+            const ino_t            ino_)
 {
   uint64_t seed;
 
@@ -112,10 +107,10 @@ devino_hash(const string_view branch_path_,
 
 static
 uint64_t
-devino_hash32(const string_view branch_path_,
-              const string_view fusepath_,
-              const mode_t      mode_,
-              const ino_t       ino_)
+devino_hash32(const std::string_view branch_path_,
+              const std::string_view fusepath_,
+              const mode_t           mode_,
+              const ino_t            ino_)
 {
   uint64_t h;
 
@@ -129,10 +124,10 @@ devino_hash32(const string_view branch_path_,
 
 static
 uint64_t
-hybrid_hash(const string_view branch_path_,
-            const string_view fusepath_,
-            const mode_t      mode_,
-            const ino_t       ino_)
+hybrid_hash(const std::string_view branch_path_,
+            const std::string_view fusepath_,
+            const mode_t           mode_,
+            const ino_t            ino_)
 {
   return (S_ISDIR(mode_) ?
           path_hash(branch_path_,fusepath_,mode_,ino_) :
@@ -141,10 +136,10 @@ hybrid_hash(const string_view branch_path_,
 
 static
 uint64_t
-hybrid_hash32(const string_view branch_path_,
-              const string_view fusepath_,
-              const mode_t      mode_,
-              const ino_t       ino_)
+hybrid_hash32(const std::string_view branch_path_,
+              const std::string_view fusepath_,
+              const mode_t           mode_,
+              const ino_t            ino_)
 {
   return (S_ISDIR(mode_) ?
           path_hash32(branch_path_,fusepath_,mode_,ino_) :
@@ -200,18 +195,18 @@ namespace fs
     }
 
     uint64_t
-    calc(const string_view branch_path_,
-         const string_view fusepath_,
-         const mode_t      mode_,
-         const ino_t       ino_)
+    calc(const std::string_view branch_path_,
+         const std::string_view fusepath_,
+         const mode_t           mode_,
+         const ino_t            ino_)
     {
       return g_func(branch_path_,fusepath_,mode_,ino_);
     }
 
     void
-    calc(const string_view  branch_path_,
-         const string_view  fusepath_,
-         struct stat       *st_)
+    calc(const std::string_view  branch_path_,
+         const std::string_view  fusepath_,
+         struct stat            *st_)
     {
       st_->st_ino = calc(branch_path_,
                          fusepath_,
@@ -220,9 +215,9 @@ namespace fs
     }
 
     void
-    calc(const string_view  branch_path_,
-         const string_view  fusepath_,
-         struct fuse_statx *st_)
+    calc(const std::string_view  branch_path_,
+         const std::string_view  fusepath_,
+         struct fuse_statx      *st_)
     {
       st_->ino = calc(branch_path_,
                       fusepath_,

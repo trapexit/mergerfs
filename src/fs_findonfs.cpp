@@ -40,7 +40,7 @@ namespace l
     std::string fullpath;
 
     rv = fs::fstat(fd_,&st);
-    if(rv == -1)
+    if(rv < 0)
       return -1;
 
     dev = st.st_dev;

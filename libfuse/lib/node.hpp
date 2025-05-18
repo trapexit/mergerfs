@@ -16,7 +16,6 @@ struct node_s
   uint64_t nlookup;
   uint32_t refctr;
   uint32_t open_count;
-  uint64_t hidden_fh;
 
   int32_t treelock;
   lock_t *locks;

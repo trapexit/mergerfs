@@ -50,6 +50,13 @@ public:
   {
   }
 
+  FileInfo(const FileInfo *fi_)
+    : FH(fi_->fusepath),
+      fd(fi_->fd),
+      branch(fi_->branch),
+      direct_io(fi_->direct_io)
+  {
+  }
 
 public:
   int fd;

@@ -133,8 +133,8 @@ namespace l
       return 0;
 
     rv = fs::fstatat(dirfd_,path_,&st,flags_);
-    if(rv == -1)
-      return -1;
+    if(rv < 0)
+      return rv;
 
     atime = fs::stat_atime(st);
     mtime = fs::stat_mtime(st);

@@ -18,10 +18,13 @@
 
 #pragma once
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <filesystem>
+#include <string>
+
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace fs
 {
@@ -37,5 +40,29 @@ namespace fs
     rv = ::openat(dirfd_,pathname_,flags_);
 
     return ((rv == -1) ? -errno : rv);
+  }
+
+  static
+  inline
+  int
+  openat(const int          dirfd_,
+         const std::string &pathname_,
+         const int          flags_)
+  {
+    return fs::openat(dirfd_,
+                      pathname_.c_str(),
+                      flags_);
+  }
+
+  static
+  inline
+  int
+  openat(const int                    dirfd_,
+         const std::filesystem::path &pathname_,
+         const int                    flags_)
+  {
+    return fs::openat(dirfd_,
+                      pathname_.c_str(),
+                      flags_);
   }
 }

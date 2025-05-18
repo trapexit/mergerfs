@@ -63,7 +63,7 @@ namespace fs
 
         error = errno;
         rv = fs::fstat(fd_,&tmpst);
-        if(rv == -1)
+        if(rv < 0)
           return -1;
 
         if((st_.st_uid != tmpst.st_uid) ||

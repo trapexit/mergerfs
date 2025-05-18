@@ -4,8 +4,12 @@
 
 * libfuse: https://github.com/libfuse/libfuse (heavily modified fork of v2.x)
 * rapidhash: https://github.com/Nicoshev/rapidhash
-* ghc::filesystem: https://github.com/gulrak/filesystem
-* nonstd::optional: https://github.com/martinmoene/optional-lite
 * fmt: https://github.com/fmtlib/fmt
 * concurrentqueue: https://github.com/cameron314/concurrentqueue
 * scope_guard: https://github.com/Neargye/scope_guard
+* boost
+  * download boost
+  * ./bootstrap.sh
+  * ./b2 tools/bcp
+  * ./dist/bin/bcp pool/pool.hpp <target_dir>
+  * ./dist/bin/bcp unordered/concurrent_flat_map.hpp <target_dir>

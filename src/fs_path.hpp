@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "ghc/filesystem.hpp"
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 
 namespace fs
 {
-  typedef ghc::filesystem::path Path;
+  typedef std::filesystem::path Path;
 
   namespace path
   {

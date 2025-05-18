@@ -37,7 +37,6 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -45,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/time.h>
@@ -363,9 +363,6 @@ free_node(struct fuse *f_,
           node_t      *node_)
 {
   filename_free(f_,node_->name);
-
-  if(node_->hidden_fh)
-    f_->fs->op.free_hide(node_->hidden_fh);
 
   node_free(node_);
 }
@@ -938,8 +935,8 @@ try_get_path2(struct fuse  *f,
               const char   *name2,
               char        **path1,
               char        **path2,
-              node_t **wnode1,
-              node_t **wnode2)
+              node_t      **wnode1,
+              node_t      **wnode2)
 {
   int err;
 
@@ -1160,7 +1157,7 @@ static
 void
 free_path_wrlock(struct fuse *f,
                  uint64_t     nodeid,
-                 node_t *wnode,
+                 node_t      *wnode,
                  char        *path)
 {
   mutex_lock(&f->lock);
@@ -1408,7 +1405,7 @@ lookup_path(struct fuse             *f,
 
   rv = ((fi == NULL) ?
         f->fs->op.getattr(path,&e->attr,&e->timeout) :
-        f->fs->op.fgetattr(fi,&e->attr,&e->timeout));
+        f->fs->op.fgetattr(fi->fh,&e->attr,&e->timeout));
 
   if(rv)
     return rv;
@@ -1487,14 +1484,19 @@ static
 struct fuse*
 req_fuse_prepare(fuse_req_t req)
 {
-  struct fuse_context_i *c = fuse_get_context_internal();
+  struct fuse_context_i *c   = fuse_get_context_internal();
   const struct fuse_ctx *ctx = fuse_req_ctx(req);
-  c->req = req;
-  c->ctx.fuse = req_fuse(req);
-  c->ctx.uid = ctx->uid;
-  c->ctx.gid = ctx->gid;
-  c->ctx.pid = ctx->pid;
-  c->ctx.umask = ctx->umask;
+
+  c->req        = req;
+  c->ctx.fuse   = req_fuse(req);
+  c->ctx.opcode = ctx->opcode;
+  c->ctx.unique = ctx->unique;
+  c->ctx.nodeid = ctx->nodeid;
+  c->ctx.uid    = ctx->uid;
+  c->ctx.gid    = ctx->gid;
+  c->ctx.pid    = ctx->pid;
+  c->ctx.umask  = ctx->umask;
+
   return c->ctx.fuse;
 }
 
@@ -1672,41 +1674,36 @@ fuse_lib_getattr(fuse_req_t             req,
 {
   int err;
   char *path;
+  uint64_t fh;
   struct fuse *f;
   struct stat buf;
   node_t *node;
   fuse_timeouts_t timeout;
-  fuse_file_info_t ffi = {0};
   const struct fuse_getattr_in *arg;
 
   arg = (fuse_getattr_in*)fuse_hdr_arg(hdr_);
   f   = req_fuse_prepare(req);
 
+  fh = 0;
   if(arg->getattr_flags & FUSE_GETATTR_FH)
-    {
-      ffi.fh = arg->fh;
-    }
-  else
-    {
-      mutex_lock(&f->lock);
-      node = get_node(f,hdr_->nodeid);
-      if(node->hidden_fh)
-        ffi.fh = node->hidden_fh;
-      mutex_unlock(&f->lock);
-    }
+    fh = arg->fh;
 
   memset(&buf,0,sizeof(buf));
 
   err = 0;
   path = NULL;
-  if(ffi.fh == 0)
-    err = get_path(f,hdr_->nodeid,&path);
+  if(fh == 0)
+    {
+      err = get_path(f,hdr_->nodeid,&path);
+      if(err == -ESTALE) // unlinked but open
+        err = 0;
+    }
 
   if(!err)
     {
-      err = ((ffi.fh == 0) ?
+      err = ((path != NULL) ?
              f->fs->op.getattr(path,&buf,&timeout) :
-             f->fs->op.fgetattr(&ffi,&buf,&timeout));
+             f->fs->op.fgetattr(fh,&buf,&timeout));
 
       free_path(f,hdr_->nodeid,path);
     }
@@ -1738,6 +1735,7 @@ fuse_lib_statx_path(fuse_req_t             req_,
   struct fuse_statx st{};
   fuse_timeouts_t timeouts{};
 
+  // TODO: if node unlinked... but FUSE may not send it
   err = get_path(f_,hdr_->nodeid,&fusepath);
   if(err)
     {
@@ -1803,63 +1801,51 @@ void
 fuse_lib_setattr(fuse_req_t             req,
                  struct fuse_in_header *hdr_)
 {
+  uint64_t fh;
   struct fuse *f = req_fuse_prepare(req);
   struct stat stbuf = {0};
   char *path;
   int err;
-  node_t *node;
   fuse_timeouts_t timeout;
-  fuse_file_info_t *fi;
-  fuse_file_info_t ffi = {0};
   struct fuse_setattr_in *arg;
 
   arg = (fuse_setattr_in*)fuse_hdr_arg(hdr_);
 
-  fi = NULL;
+  fh = 0;
   if(arg->valid & FATTR_FH)
-    {
-      fi = &ffi;
-      fi->fh = arg->fh;
-    }
-  else
-    {
-      mutex_lock(&f->lock);
-      node = get_node(f,hdr_->nodeid);
-      if(node->hidden_fh)
-        {
-          fi = &ffi;
-          fi->fh = node->hidden_fh;
-        }
-      mutex_unlock(&f->lock);
-    }
+    fh = arg->fh;
 
   err = 0;
   path = NULL;
-  if(fi == NULL)
-    err = get_path(f,hdr_->nodeid,&path);
+  if(fh == 0)
+    {
+      err = get_path(f,hdr_->nodeid,&path);
+      if(err == -ESTALE)
+        err = 0;
+    }
 
   if(!err)
     {
       err = 0;
       if(!err && (arg->valid & FATTR_MODE))
-        err = ((fi == NULL) ?
+        err = ((path != NULL) ?
                f->fs->op.chmod(path,arg->mode) :
-               f->fs->op.fchmod(fi,arg->mode));
+               f->fs->op.fchmod(fh,arg->mode));
 
       if(!err && (arg->valid & (FATTR_UID | FATTR_GID)))
         {
           uid_t uid = ((arg->valid & FATTR_UID) ? arg->uid : (uid_t)-1);
           gid_t gid = ((arg->valid & FATTR_GID) ? arg->gid : (gid_t)-1);
 
-          err = ((fi == NULL) ?
+          err = ((path != NULL) ?
                  f->fs->op.chown(path,uid,gid) :
-                 f->fs->op.fchown(fi,uid,gid));
+                 f->fs->op.fchown(fh,uid,gid));
         }
 
       if(!err && (arg->valid & FATTR_SIZE))
-        err = ((fi == NULL) ?
+        err = ((path != NULL) ?
                f->fs->op.truncate(path,arg->size) :
-               f->fs->op.ftruncate(fi,arg->size));
+               f->fs->op.ftruncate(fh,arg->size));
 
 #ifdef HAVE_UTIMENSAT
       if(!err && (arg->valid & (FATTR_ATIME | FATTR_MTIME)))
@@ -1881,9 +1867,9 @@ fuse_lib_setattr(fuse_req_t             req,
           else if(arg->valid & FATTR_MTIME)
             tv[1] = (struct timespec){ static_cast<time_t>(arg->mtime), arg->mtimensec };
 
-          err = ((fi == NULL) ?
+          err = ((path != NULL) ?
                  f->fs->op.utimens(path,tv) :
-                 f->fs->op.futimens(fi,tv));
+                 f->fs->op.futimens(fh,tv));
         }
       else
 #endif
@@ -1894,15 +1880,15 @@ fuse_lib_setattr(fuse_req_t             req,
             tv[0].tv_nsec = arg->atimensec;
             tv[1].tv_sec  = arg->mtime;
             tv[1].tv_nsec = arg->mtimensec;
-            err = ((fi == NULL) ?
+            err = ((path != NULL) ?
                    f->fs->op.utimens(path,tv) :
-                   f->fs->op.futimens(fi,tv));
+                   f->fs->op.futimens(fh,tv));
           }
 
       if(!err)
-        err = ((fi == NULL) ?
+        err = ((path != NULL) ?
                f->fs->op.getattr(path,&stbuf,&timeout) :
-               f->fs->op.fgetattr(fi,&stbuf,&timeout));
+               f->fs->op.fgetattr(fh,&stbuf,&timeout));
 
       free_path(f,hdr_->nodeid,path);
     }
@@ -2076,10 +2062,8 @@ fuse_lib_unlink(fuse_req_t             req,
 
   if(!err)
     {
-      mutex_lock(&f->lock);
       if(node_open(wnode))
-        err = f->fs->op.prepare_hide(path,&wnode->hidden_fh);
-      mutex_unlock(&f->lock);
+        fuse_get_context()->nodeid = wnode->nodeid;
 
       err = f->fs->op.unlink(path);
       if(!err)
@@ -2172,11 +2156,6 @@ fuse_lib_rename(fuse_req_t             req,
 
   if(!err)
     {
-      mutex_lock(&f->lock);
-      if(node_open(wnode2))
-        err = f->fs->op.prepare_hide(newpath,&wnode2->hidden_fh);
-      mutex_unlock(&f->lock);
-
       err = f->fs->op.rename(oldpath,newpath);
       if(!err)
         err = rename_node(f,hdr_->nodeid,oldname,arg->newdir,newname);
@@ -2244,10 +2223,7 @@ fuse_do_release(struct fuse      *f,
                 uint64_t          ino,
                 fuse_file_info_t *fi)
 {
-  uint64_t fh;
   node_t *node;
-
-  fh = 0;
 
   f->fs->op.release(fi);
 
@@ -2256,17 +2232,8 @@ fuse_do_release(struct fuse      *f,
     node = get_node(f,ino);
     assert(node->open_count > 0);
     node->open_count--;
-
-    if(node->hidden_fh && (node->open_count == 0))
-      {
-        fh = node->hidden_fh;
-        node->hidden_fh = 0;
-      }
   }
   mutex_unlock(&f->lock);
-
-  if(fh)
-    f->fs->op.free_hide(fh);
 }
 
 static
@@ -2278,6 +2245,7 @@ fuse_lib_create(fuse_req_t             req,
   char *path;
   struct fuse *f;
   const char *name;
+  uint64_t new_nodeid;
   fuse_file_info_t ffi = {0};
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
@@ -2293,6 +2261,14 @@ fuse_lib_create(fuse_req_t             req,
     name = (char*)arg + sizeof(struct fuse_open_in);
 
   f = req_fuse_prepare(req);
+
+  // opportunistically allocate a node so we have a new nodeid for
+  // later in the actual create. Added for use with passthrough.
+  {
+    node_t *node = find_node(f,hdr_->nodeid,name);
+    new_nodeid = node->nodeid;
+    fuse_get_context()->nodeid = new_nodeid;
+  }
 
   err = get_path_name(f,hdr_->nodeid,name,&path);
   if(!err)
@@ -2330,6 +2306,7 @@ fuse_lib_create(fuse_req_t             req,
     }
   else
     {
+      forget_node(f,new_nodeid,1);
       fuse_reply_err(req,err);
     }
 
@@ -2355,7 +2332,7 @@ open_auto_cache(struct fuse      *f,
       struct stat stbuf;
 
       mutex_unlock(&f->lock);
-      err = f->fs->op.fgetattr(fi,&stbuf,&timeout);
+      err = f->fs->op.fgetattr(fi->fh,&stbuf,&timeout);
       mutex_lock(&f->lock);
 
       if(!err)
@@ -2494,14 +2471,12 @@ fuse_lib_fsync(fuse_req_t             req,
   int err;
   struct fuse *f;
   struct fuse_fsync_in *arg;
-  fuse_file_info_t ffi = {0};
 
   arg = (fuse_fsync_in*)fuse_hdr_arg(hdr_);
-  ffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
 
-  err = f->fs->op.fsync(&ffi,
+  err = f->fs->op.fsync(arg->fh,
                         !!(arg->fsync_flags & 1));
 
   fuse_reply_err(req,err);
@@ -3569,15 +3544,13 @@ fuse_lib_fallocate(fuse_req_t                   req,
 {
   int err;
   struct fuse *f;
-  fuse_file_info_t ffi = {0};
   const struct fuse_fallocate_in *arg;
 
   arg = (fuse_fallocate_in*)fuse_hdr_arg(hdr_);
-  ffi.fh = arg->fh;
 
   f = req_fuse_prepare(req);
 
-  err = f->fs->op.fallocate(&ffi,
+  err = f->fs->op.fallocate(arg->fh,
                             arg->mode,
                             arg->offset,
                             arg->length);
@@ -4218,20 +4191,6 @@ fuse_destroy(struct fuse *f)
 
       memset(c,0,sizeof(*c));
       c->ctx.fuse = f;
-
-      for(i = 0; i < f->id_table.size; i++)
-        {
-          node_t *node;
-
-          for(node = f->id_table.array[i]; node != NULL; node = node->id_next)
-            {
-              if(!node->hidden_fh)
-                continue;
-
-              f->fs->op.free_hide(node->hidden_fh);
-              node->hidden_fh = 0;
-            }
-        }
     }
 
   for(i = 0; i < f->id_table.size; i++)
@@ -4265,4 +4224,37 @@ int
 fuse_log_metrics_get(void)
 {
   return g_LOG_METRICS;
+}
+
+int
+fuse_get_dev_fuse_fd(const struct fuse_context *fc_)
+{
+  return fuse_chan_fd(fc_->fuse->se->ch);
+}
+
+int
+fuse_passthrough_open(const struct fuse_context *fc_,
+                      const int                  fd_)
+{
+  int rv;
+  int dev_fuse_fd;
+  struct fuse_backing_map bm = {0};
+
+  dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
+  bm.fd       = fd_;
+
+  rv = ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_OPEN,&bm);
+
+  return rv;
+}
+
+int
+fuse_passthrough_close(const struct fuse_context *fc_,
+                       const int                  backing_id_)
+{
+  int dev_fuse_fd;
+
+  dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
+
+  return ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_CLOSE,&backing_id_);
 }

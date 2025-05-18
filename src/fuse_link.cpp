@@ -22,11 +22,11 @@
 #include "fs_path.hpp"
 #include "fuse_getattr.hpp"
 #include "fuse_symlink.hpp"
-#include "ghc/filesystem.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
 
+#include <filesystem>
 #include <string>
 #include <vector>
 

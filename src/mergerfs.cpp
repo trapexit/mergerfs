@@ -41,7 +41,6 @@
 #include "fuse_fgetattr.hpp"
 #include "fuse_flock.hpp"
 #include "fuse_flush.hpp"
-#include "fuse_free_hide.hpp"
 #include "fuse_fsync.hpp"
 #include "fuse_fsyncdir.hpp"
 #include "fuse_ftruncate.hpp"
@@ -58,7 +57,6 @@
 #include "fuse_open.hpp"
 #include "fuse_opendir.hpp"
 #include "fuse_poll.hpp"
-#include "fuse_prepare_hide.hpp"
 #include "fuse_read.hpp"
 #include "fuse_readdir.hpp"
 #include "fuse_readdir_plus.hpp"
@@ -110,7 +108,6 @@ namespace l
     ops_.fgetattr        = FUSE::fgetattr;
     ops_.flock           = FUSE::flock;
     ops_.flush           = FUSE::flush;
-    ops_.free_hide       = FUSE::free_hide;
     ops_.fsync           = FUSE::fsync;
     ops_.fsyncdir        = FUSE::fsyncdir;
     ops_.ftruncate       = FUSE::ftruncate;
@@ -127,7 +124,6 @@ namespace l
     ops_.open            = FUSE::open;
     ops_.opendir         = FUSE::opendir;
     ops_.poll            = FUSE::poll;;
-    ops_.prepare_hide    = FUSE::prepare_hide;
     ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
     ops_.readdir         = FUSE::readdir;
     ops_.readdir_plus    = FUSE::readdir_plus;

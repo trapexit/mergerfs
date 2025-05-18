@@ -22,7 +22,7 @@
 namespace FUSE
 {
   int
-  fchown(const fuse_file_info_t *ffi,
-         uid_t                   uid,
-         gid_t                   gid);
+  fchown(const uint64_t fh,
+         uid_t          uid,
+         gid_t          gid);
 }
