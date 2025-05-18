@@ -20,7 +20,13 @@
 #define _GNU_SOURCE
 #endif
 
+#include "syslog.hpp"
+
 #include "fuse_kernel.h"
+
+#include "fmt/core.h"
+
+#include <string>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -201,9 +207,66 @@ fuse_flag_to_str(const uint64_t offset_)
       FUSE_INIT_FLAG_CASE(CREATE_SUPP_GROUP);
       FUSE_INIT_FLAG_CASE(HAS_EXPIRE_ONLY);
       FUSE_INIT_FLAG_CASE(DIRECT_IO_ALLOW_MMAP);
+      FUSE_INIT_FLAG_CASE(PASSTHROUGH);
+      FUSE_INIT_FLAG_CASE(NO_EXPORT_SUPPORT);
+      FUSE_INIT_FLAG_CASE(HAS_RESEND);
+      FUSE_INIT_FLAG_CASE(ALLOW_IDMAP);
+      FUSE_INIT_FLAG_CASE(OVER_IO_URING);
     }
 
   return NULL;
+}
+
+std::string
+fuse_debug_init_flag_name(const uint64_t flag_)
+{
+  switch(flag_)
+    {
+      FUSE_INIT_FLAG_CASE(ASYNC_READ);
+      FUSE_INIT_FLAG_CASE(POSIX_LOCKS);
+      FUSE_INIT_FLAG_CASE(FILE_OPS);
+      FUSE_INIT_FLAG_CASE(ATOMIC_O_TRUNC);
+      FUSE_INIT_FLAG_CASE(EXPORT_SUPPORT);
+      FUSE_INIT_FLAG_CASE(BIG_WRITES);
+      FUSE_INIT_FLAG_CASE(DONT_MASK);
+      FUSE_INIT_FLAG_CASE(SPLICE_WRITE);
+      FUSE_INIT_FLAG_CASE(SPLICE_MOVE);
+      FUSE_INIT_FLAG_CASE(SPLICE_READ);
+      FUSE_INIT_FLAG_CASE(FLOCK_LOCKS);
+      FUSE_INIT_FLAG_CASE(HAS_IOCTL_DIR);
+      FUSE_INIT_FLAG_CASE(AUTO_INVAL_DATA);
+      FUSE_INIT_FLAG_CASE(DO_READDIRPLUS);
+      FUSE_INIT_FLAG_CASE(READDIRPLUS_AUTO);
+      FUSE_INIT_FLAG_CASE(ASYNC_DIO);
+      FUSE_INIT_FLAG_CASE(WRITEBACK_CACHE);
+      FUSE_INIT_FLAG_CASE(NO_OPEN_SUPPORT);
+      FUSE_INIT_FLAG_CASE(PARALLEL_DIROPS);
+      FUSE_INIT_FLAG_CASE(HANDLE_KILLPRIV);
+      FUSE_INIT_FLAG_CASE(POSIX_ACL);
+      FUSE_INIT_FLAG_CASE(ABORT_ERROR);
+      FUSE_INIT_FLAG_CASE(MAX_PAGES);
+      FUSE_INIT_FLAG_CASE(CACHE_SYMLINKS);
+      FUSE_INIT_FLAG_CASE(NO_OPENDIR_SUPPORT);
+      FUSE_INIT_FLAG_CASE(EXPLICIT_INVAL_DATA);
+      FUSE_INIT_FLAG_CASE(MAP_ALIGNMENT);
+      FUSE_INIT_FLAG_CASE(SUBMOUNTS);
+      FUSE_INIT_FLAG_CASE(HANDLE_KILLPRIV_V2);
+      FUSE_INIT_FLAG_CASE(SETXATTR_EXT);
+      FUSE_INIT_FLAG_CASE(INIT_EXT);
+      FUSE_INIT_FLAG_CASE(INIT_RESERVED);
+      FUSE_INIT_FLAG_CASE(SECURITY_CTX);
+      FUSE_INIT_FLAG_CASE(HAS_INODE_DAX);
+      FUSE_INIT_FLAG_CASE(CREATE_SUPP_GROUP);
+      FUSE_INIT_FLAG_CASE(HAS_EXPIRE_ONLY);
+      FUSE_INIT_FLAG_CASE(DIRECT_IO_ALLOW_MMAP);
+      FUSE_INIT_FLAG_CASE(PASSTHROUGH);
+      FUSE_INIT_FLAG_CASE(NO_EXPORT_SUPPORT);
+      FUSE_INIT_FLAG_CASE(HAS_RESEND);
+      FUSE_INIT_FLAG_CASE(ALLOW_IDMAP);
+      FUSE_INIT_FLAG_CASE(OVER_IO_URING);
+    }
+
+  return "unknown";
 }
 
 #undef FUSE_INIT_FLAG_CASE
@@ -759,6 +822,69 @@ debug_fuse_init_in(const struct fuse_init_in *arg_)
 }
 
 void
+fuse_syslog_fuse_init_in(const struct fuse_init_in *arg_)
+{
+  uint64_t flags;
+  std::string output;
+
+  flags = (((uint64_t)arg_->flags) | ((uint64_t)arg_->flags2) << 32);
+  output = fmt::format("fuse_init_in:"
+                       " major={};"
+                       " minor={};"
+                       " flags=(",
+                       arg_->major,
+                       arg_->minor);
+
+  for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
+    {
+      if(!(flags & (1ULL << i)))
+        continue;
+
+      output += fuse_debug_init_flag_name(1ULL << i);
+
+      output += ",";
+    }
+
+  output.pop_back();
+  output += ");";
+
+  SysLog::info(output);
+}
+
+void
+fuse_syslog_fuse_init_out(const struct fuse_init_out *arg_)
+{
+  uint64_t flags;
+  std::string output;
+
+  flags = (((uint64_t)arg_->flags) | ((uint64_t)arg_->flags2) << 32);
+  output = fmt::format("fuse_init_out:"
+                       " major={};"
+                       " minor={};"
+                       " max_pages={};"
+                       " flags=(",
+                       arg_->major,
+                       arg_->minor,
+                       arg_->max_pages);
+
+  for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
+    {
+      if(!(flags & (1ULL << i)))
+        continue;
+
+      output += fuse_debug_init_flag_name(1ULL << i);
+
+      output += ",";
+    }
+
+  output.pop_back();
+  output += ");";
+
+  SysLog::info(output);
+}
+
+
+void
 debug_fuse_init_out(const uint64_t              unique_,
                     const struct fuse_init_out *arg_,
                     const uint64_t              argsize_)
@@ -768,10 +894,6 @@ debug_fuse_init_out(const uint64_t              unique_,
 
   flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
   fprintf(g_OUTPUT,
-          /* "unique=0x%016" PRIx64 ";" */
-          /* " opcode=RESPONSE;" */
-          /* " error=0 (Success);" */
-          /* " len=%" PRIu64 "; || " */
           "FUSE_INIT_OUT:"
           " major=%u;"
           " minor=%u;"

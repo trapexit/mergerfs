@@ -6,10 +6,11 @@ import tempfile
 
 (fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.fstat(fd)
+x = os.lstat(filepath)
+x = os.fstat(fd)
 
 os.unlink(filepath)
 
-os.fstat(fd)
+y = os.fstat(fd)
 
 os.close(fd)

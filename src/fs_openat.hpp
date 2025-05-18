@@ -18,24 +18,56 @@
 
 #pragma once
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <filesystem>
+#include <string>
+
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace fs
 {
   static
   inline
   int
-  openat(const int   dirfd_,
-         const char *pathname_,
-         const int   flags_)
+  openat(const int     dirfd_,
+         const char   *pathname_,
+         const int     flags_,
+         const mode_t  mode_ = 0)
   {
     int rv;
 
-    rv = ::openat(dirfd_,pathname_,flags_);
+    rv = ::openat(dirfd_,pathname_,flags_,mode_);
 
     return ((rv == -1) ? -errno : rv);
+  }
+
+  static
+  inline
+  int
+  openat(const int          dirfd_,
+         const std::string &pathname_,
+         const int          flags_,
+         const mode_t       mode_ = 0)
+  {
+    return fs::openat(dirfd_,
+                      pathname_.c_str(),
+                      flags_,
+                      mode_);
+  }
+
+  static
+  inline
+  int
+  openat(const int                    dirfd_,
+         const std::filesystem::path &pathname_,
+         const int                    flags_,
+         const mode_t                 mode_ = 0)
+  {
+    return fs::openat(dirfd_,
+                      pathname_.c_str(),
+                      flags_,
+                      mode_);
   }
 }

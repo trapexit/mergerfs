@@ -27,6 +27,7 @@
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
 #include "config_pagesize.hpp"
+#include "config_passthrough.hpp"
 #include "config_pid.hpp"
 #include "config_rename_exdev.hpp"
 #include "config_set.hpp"
@@ -41,11 +42,10 @@
 #include "rwlock.hpp"
 #include "tofrom_wrapper.hpp"
 
-#include "ghc/filesystem.hpp"
-
 #include "fuse.h"
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -53,12 +53,12 @@
 
 #include <sys/stat.h>
 
-typedef ToFromWrapper<bool>                 ConfigBOOL;
-typedef ToFromWrapper<uint64_t>             ConfigUINT64;
-typedef ToFromWrapper<int>                  ConfigINT;
-typedef ToFromWrapper<std::string>          ConfigSTR;
-typedef ToFromWrapper<ghc::filesystem::path> ConfigPath;
-typedef std::map<std::string,ToFromString*> Str2TFStrMap;
+typedef ToFromWrapper<bool>                  ConfigBOOL;
+typedef ToFromWrapper<uint64_t>              ConfigUINT64;
+typedef ToFromWrapper<int>                   ConfigINT;
+typedef ToFromWrapper<std::string>           ConfigSTR;
+typedef ToFromWrapper<std::filesystem::path> ConfigPath;
+typedef std::map<std::string,ToFromString*>  Str2TFStrMap;
 
 extern const std::string CONTROLFILE;
 
@@ -130,6 +130,8 @@ public:
   ConfigSTR      fsname;
   Funcs          func;
   ConfigPageSize fuse_msg_size;
+  ConfigBOOL     handle_killpriv = true;
+  ConfigBOOL     handle_killpriv_v2 = true;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
   ConfigBOOL     kernel_cache;
@@ -142,6 +144,7 @@ public:
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
+  Passthrough    passthrough = Passthrough::ENUM::OFF;
   ConfigBOOL     parallel_direct_writes;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;

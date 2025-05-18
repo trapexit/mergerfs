@@ -32,14 +32,14 @@
 #include "fuse.h"
 #include "fuse_config.hpp"
 
-#include "nonstd/string_view.hpp"
-
+#include <array>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
-#include <array>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -133,7 +133,7 @@ static
 bool
 should_ignore(const std::string &key_)
 {
-  constexpr const std::array<nonstd::string_view,13> ignored_keys =
+  constexpr const std::array<std::string_view,13> ignored_keys =
     {
       "atomic_o_trunc",
       "big_writes",
@@ -437,7 +437,7 @@ check_for_mount_loop(Config::Write  &cfg_,
   branches = cfg_->branches->to_paths();
   for(const auto &branch : branches)
     {
-      if(ghc::filesystem::equivalent(branch,mount,ec))
+      if(std::filesystem::equivalent(branch,mount,ec))
         {
           std::string errstr;
 
@@ -473,6 +473,28 @@ namespace options
       errs_->push_back({0,"branches not set"});
     if(cfg->mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
+
+    if(cfg->passthrough != Passthrough::ENUM::OFF)
+      {
+        if(cfg->cache_files == CacheFiles::ENUM::OFF)
+          {
+            SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
+                            " Setting 'cache.files=auto-full'");
+            cfg->cache_files = CacheFiles::ENUM::AUTO_FULL;
+          }
+
+        if(cfg->writeback_cache == true)
+          {
+            SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
+                            " Setting 'cache.writeback=false'");
+            cfg->writeback_cache = false;
+          }
+
+        if(cfg->moveonenospc.enabled == true)
+          {
+            SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
+          }
+      }
 
     check_for_mount_loop(cfg,errs_);
 

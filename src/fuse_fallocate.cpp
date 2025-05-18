@@ -41,12 +41,12 @@ namespace l
 namespace FUSE
 {
   int
-  fallocate(const fuse_file_info_t *ffi_,
-            int                     mode_,
-            off_t                   offset_,
-            off_t                   len_)
+  fallocate(const uint64_t fh_,
+            int            mode_,
+            off_t          offset_,
+            off_t          len_)
   {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
 
     return l::fallocate(fi->fd,
                         mode_,

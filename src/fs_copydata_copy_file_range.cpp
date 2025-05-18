@@ -62,7 +62,7 @@ namespace fs
     struct stat st;
 
     rv = fs::fstat(src_fd_,&st);
-    if(rv == -1)
+    if(rv < 0)
       return -1;
 
     return l::copydata_copy_file_range(src_fd_,

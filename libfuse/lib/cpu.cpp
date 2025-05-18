@@ -17,12 +17,12 @@
 */
 
 #include "cpu.hpp"
-#include "ghc/filesystem.hpp"
 #include "fmt/core.h"
 
 #include <pthread.h>
 #include <sched.h>
 
+#include <filesystem>
 #include <fstream>
 
 
@@ -71,10 +71,10 @@ CPU::setaffinity(const pthread_t     thread_id_,
 }
 
 static
-ghc::filesystem::path
+std::filesystem::path
 generate_cpu_core_id_path(const int cpu_id_)
 {
-  const ghc::filesystem::path basepath{"/sys/devices/system/cpu"};
+  const std::filesystem::path basepath{"/sys/devices/system/cpu"};
 
   return basepath / fmt::format("cpu{}",cpu_id_) / "topology" / "core_id";
 }
@@ -123,7 +123,7 @@ CPU::cpu2core()
     {
       int core_id;
       std::ifstream ifs;
-      ghc::filesystem::path path;
+      std::filesystem::path path;
 
       if(!CPU_ISSET(i,&cpuset))
         continue;
@@ -156,7 +156,7 @@ CPU::core2cpus()
     {
       int core_id;
       std::ifstream ifs;
-      ghc::filesystem::path path;
+      std::filesystem::path path;
 
       if(!CPU_ISSET(i,&cpuset))
         continue;

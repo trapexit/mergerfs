@@ -20,8 +20,9 @@
 #include "syslog.hpp"
 
 #include "fs_exists.hpp"
-#include "fs_lstat.hpp"
 #include "fs_lgetxattr.hpp"
+#include "fs_lstat.hpp"
+#include "fs_stat.hpp"
 
 #include <functional>
 #include <thread>
@@ -34,19 +35,6 @@ namespace fs
 }
 
 constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(333);
-
-namespace std
-{
-  template<>
-  struct hash<fs::Path>
-  {
-    std::size_t
-    operator()(fs::Path const &path_) const noexcept
-    {
-      return std::hash<std::string>{}(path_.string());
-    }
-  };
-}
 
 static
 bool

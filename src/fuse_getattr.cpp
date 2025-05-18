@@ -16,10 +16,13 @@
 
 #include "config.hpp"
 #include "errno.hpp"
+#include "fs_fstat.hpp"
 #include "fs_inode.hpp"
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fs_stat.hpp"
+#include "fuse_fgetattr.hpp"
+#include "state.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
 

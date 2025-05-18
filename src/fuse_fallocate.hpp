@@ -22,8 +22,8 @@
 namespace FUSE
 {
   int
-  fallocate(const fuse_file_info_t *ffi,
-            int                     mode,
-            off_t                   offset,
-            off_t                   len);
+  fallocate(const uint64_t fh,
+            int            mode,
+            off_t          offset,
+            off_t          len);
 }

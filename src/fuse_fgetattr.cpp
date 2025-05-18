@@ -19,34 +19,61 @@
 #include "fileinfo.hpp"
 #include "fs_fstat.hpp"
 #include "fs_inode.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
+
+static
+int
+_fgetattr(const FileInfo  *fi_,
+          struct stat     *st_,
+          fuse_timeouts_t *timeout_)
+{
+  int rv;
+  Config::Read cfg;
+
+  rv = fs::fstat(fi_->fd,st_);
+  if(rv < 0)
+    return rv;
+
+  fs::inode::calc(fi_->branch.path,
+                  fi_->fusepath,
+                  st_);
+
+  timeout_->entry = ((rv >= 0) ?
+                     cfg->cache_entry :
+                     cfg->cache_negative_entry);
+  timeout_->attr  = cfg->cache_attr;
+
+  return rv;
+}
 
 
 namespace FUSE
 {
   int
-  fgetattr(const fuse_file_info_t *ffi_,
-           struct stat            *st_,
-           fuse_timeouts_t        *timeout_)
+  fgetattr(const uint64_t   fh_,
+           struct stat     *st_,
+           fuse_timeouts_t *timeout_)
   {
-    int rv;
-    Config::Read cfg;
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    uint64_t fh;
+    const fuse_context *fc = fuse_get_context();
 
-    rv = fs::fstat(fi->fd,st_);
-    if(rv == -1)
-      return -errno;
+    fh = fh_;
+    if(fh == 0)
+      {
+        state.open_files.cvisit(fc->nodeid,
+                                [&](auto &val_)
+                                {
+                                  fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                                });
+      }
 
-    fs::inode::calc(fi->branch.path,
-                    fi->fusepath,
-                    st_);
+    if(fh == 0)
+      return -ENOENT;
+    
+    FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
 
-    timeout_->entry = ((rv >= 0) ?
-                       cfg->cache_entry :
-                       cfg->cache_negative_entry);
-    timeout_->attr  = cfg->cache_attr;
-
-    return rv;
+    return ::_fgetattr(fi,st_,timeout_);
   }
 }

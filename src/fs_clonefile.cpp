@@ -53,7 +53,7 @@ namespace fs
     struct stat src_st;
 
     rv = fs::fstat(src_fd_,&src_st);
-    if(rv == -1)
+    if(rv < 0)
       return -1;
 
     rv = fs::copydata(src_fd_,dst_fd_,src_st.st_size);
