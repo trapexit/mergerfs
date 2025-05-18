@@ -345,7 +345,7 @@ main(int    argc_,
   map.visit("key",
             [](const auto &pair_)
             {
-              
+              fmt::print("{}={}\n",pair_.first,pair_.second);
             });
 
   return 0;
