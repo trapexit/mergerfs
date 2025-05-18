@@ -340,8 +340,13 @@ main(int    argc_,
 {
   boost::concurrent_flat_map<std::string,int> map;
 
-  map.emplace("key",0);
-  
+  map.emplace("key",69);
+
+  map.visit("key",
+            [](const auto &[key,val])
+            {
+
+            });
 
   return 0;
   return l::main(argc_,argv_);
