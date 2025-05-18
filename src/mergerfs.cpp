@@ -332,6 +332,8 @@ namespace l
   }
 }
 
+#include <boost/unordered/concurrent_flat_map.hpp>
+
 int
 main(int    argc_,
      char **argv_)
