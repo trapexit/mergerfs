@@ -338,7 +338,7 @@ int
 main(int    argc_,
      char **argv_)
 {
-  boost::concurrent_flat_map<int, std::string> map;
+  boost::concurrent_flat_map<std::string,int> map;
   
 
   return 0;
