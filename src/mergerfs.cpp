@@ -339,6 +339,8 @@ main(int    argc_,
      char **argv_)
 {
   boost::concurrent_flat_map<std::string,int> map;
+
+  map.emplace("key",0);
   
 
   return 0;
