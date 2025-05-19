@@ -3,7 +3,7 @@
 #include "boost/unordered/concurrent_flat_map.hpp"
 
 #include <filesystem>
-
+#include <atomic>
 
 class State
 {
