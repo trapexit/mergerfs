@@ -5,6 +5,13 @@
 #include <filesystem>
 #include <atomic>
 
+#include "int_types.h"
+
+struct PassthroughDetails
+{
+  std::atomic<u64>
+};
+
 class State
 {
 public:
