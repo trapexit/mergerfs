@@ -16,7 +16,7 @@ struct PassthroughDetails
 class State
 {
 public:
-  boost::concurrent_flat_map<std::filesystem::path,int> passthrough;
+  boost::concurrent_flat_map<std::filesystem::path,PassthroughDetails> passthrough;
 };
 
 extern State state;
