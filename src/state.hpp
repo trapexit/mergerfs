@@ -10,7 +10,7 @@
 struct PassthroughDetails
 {
   std::atomic<u64> ref_count;
-  int backing_id;
+  int              backing_id;
 };
 
 class State
