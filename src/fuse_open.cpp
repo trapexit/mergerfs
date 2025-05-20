@@ -243,7 +243,7 @@ namespace l
                       nfsopenhack_);
 
     state.branch_usage.visit(obranches[0]->path,
-                             []()
+                             [](auto &p)
                              {
 
                              });
