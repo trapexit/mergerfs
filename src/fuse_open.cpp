@@ -240,6 +240,8 @@ namespace l
                       link_cow_,
                       nfsopenhack_);
 
+    state.branch_usage[obranches[0]->path]++;
+
     return rv;
   }
 }
