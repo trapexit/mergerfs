@@ -17,6 +17,8 @@ class State
 {
 public:
   using PassthroughDetailMap = boost::concurrent_flat_map<std::filesystem::path,PassthroughDetails>;
+  using BranchUsageMap = boost::concurrent_flat_map<std::filesystem::path,u64>;
+
 
 public:
   PassthroughDetailMap passthrough;
