@@ -252,7 +252,7 @@ namespace l
                                        PassthroughDetails{1,0},
                                        [](auto &p)
                                        {
-
+                                         p.second.ref_count++;
                                        });
     return rv;
   }
