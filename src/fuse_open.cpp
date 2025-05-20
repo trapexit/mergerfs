@@ -234,11 +234,13 @@ namespace l
     if(rv == -1)
       return -errno;
 
-    return l::open_core(obranches[0],
-                        fusepath_,
-                        ffi_,
-                        link_cow_,
-                        nfsopenhack_);
+    rv = l::open_core(obranches[0],
+                      fusepath_,
+                      ffi_,
+                      link_cow_,
+                      nfsopenhack_);
+
+    return rv;
   }
 }
 
