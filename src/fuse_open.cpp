@@ -249,7 +249,7 @@ namespace l
                                           p.second++;
                                         });
     state.passthrough.emplace_or_visit(fusepath_,
-                                       {1,0},
+                                       PassthroughDetails{1,0},
                                        [](auto &p)
                                        {
 
