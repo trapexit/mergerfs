@@ -42,7 +42,7 @@ Branches::Impl::Impl(const u64 &default_minfreespace_)
 Branches::Impl&
 Branches::Impl::operator=(Branches::Impl &rval_)
 {
-  using type = std::vector<std::shared_ptr<Branch>>;
+  using type = std::vector<Branch>;
   auto this_base = dynamic_cast<type*>(this);
   auto rval_base = dynamic_cast<type*>(&rval_);
 
@@ -54,7 +54,7 @@ Branches::Impl::operator=(Branches::Impl &rval_)
 Branches::Impl&
 Branches::Impl::operator=(Branches::Impl &&rval_)
 {
-  using type = std::vector<std::shared_ptr<Branch>>;
+  using type = std::vector<Branch>;  
   auto this_base = dynamic_cast<type*>(this);
   auto rval_base = dynamic_cast<type*>(&rval_);
 
