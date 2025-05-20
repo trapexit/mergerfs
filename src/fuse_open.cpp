@@ -242,7 +242,11 @@ namespace l
                       link_cow_,
                       nfsopenhack_);
 
-    state.branch_usage[obranches[0]->path]++;
+    state.branch_usage.visit(obranches[0]->path,
+                             []()
+                             {
+
+                             });
 
     return rv;
   }
