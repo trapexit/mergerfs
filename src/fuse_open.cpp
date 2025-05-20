@@ -242,8 +242,6 @@ namespace l
   }
 }
 
-// fusepath -> {fd,backing_id,ref_count,}
-
 namespace FUSE
 {
   int
