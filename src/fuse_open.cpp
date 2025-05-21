@@ -308,7 +308,7 @@ _create_open_first_lambda(const char       *fusepath_,
   return
     [&](auto &val)
     {
-      rv_ = 1;
+      rv_ = 0;
     }
 }
 
