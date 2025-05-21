@@ -332,7 +332,7 @@ namespace l
   }
 }
 
-#include <threads>
+#include <thread>
 #include "boost/unordered/concurrent_flat_map.hpp"
 
 int
@@ -340,7 +340,6 @@ main(int    argc_,
      char **argv_)
 {
   boost::concurrent_flat_map<int,int> map;
-  ThreadPool tp;
 
   map.visit(0,
             [](const auto &pair_)
