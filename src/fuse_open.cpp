@@ -376,14 +376,6 @@ _open_again_lambda(const char       *fusepath_,
                    val.second.ref_count);
 
       rv_ = ::_open_again(val.second.branch_path,fusepath_,ffi_);
-      if(rv_ >= 0)
-        {
-          FileInfo *fi;
-
-          fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-          val.second.backing_id = ffi_->backing_id;
-          val.second.filepath = fi->branch.path;
-        }
     };
 }
 
