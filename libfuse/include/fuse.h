@@ -790,6 +790,8 @@ void fuse_gc1();
 void fuse_gc();
 void fuse_invalidate_all_nodes();
 
+int fuse_get_dev_fuse_fd(const struct fuse_context*);
+
 EXTERN_C_END
 
 #endif /* _FUSE_H_ */
