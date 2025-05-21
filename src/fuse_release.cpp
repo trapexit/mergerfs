@@ -48,7 +48,9 @@ namespace l
                                [](auto &val)
                                {
                                  val.second.ref_count--;
-
+                                 fmt::println("release: {}; refcount: {}",
+                                              val.first.string(),
+                                              val.second.ref_count);
                                  return (val.second.ref_count == 0);
                                });
 
