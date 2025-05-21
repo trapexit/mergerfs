@@ -45,11 +45,13 @@ namespace l
     fs::close(fi_->fd);
 
     state.passthrough.erase_if(fi_->fusepath,
-                               [](auto &p)
+                               [](auto &val)
                                {
-                                 p.second.ref_count--;
-                                 fmt::print("");
-                                 return (p.second.ref_count == 0);
+                                 val.second.ref_count--;
+                                 fmt::print("release {}; ref: {}\n",
+                                            val.first,
+                                            val.second.ref_count);
+                                 return (val.second.ref_count == 0);
                                });
 
     delete fi_;
