@@ -320,6 +320,7 @@ namespace FUSE
                                               if((rv >= 0) && (ffi_->backing_id >= 0))
                                                 {
                                                   val.second.backing_id = ffi_->backing_id;
+                                                  val.second.filepath = "";
                                                 }
                                             },
                                             [](auto &val)
