@@ -9,6 +9,21 @@
 
 struct PassthroughDetails
 {
+  PassthroughDetails()
+    : ref_count(0),
+      backing_id(-1),
+      mutex(std::make_unique<std::mutex>())
+  {
+  }
+
+  PassthroughDetails(const int ref_count_,
+                     const int backing_id_)
+    : ref_count(0),
+      backing_id(-1),
+      mutex(std::make_unique<std::mutex>())
+  {
+  }
+
   u64 ref_count;
   int backing_id;
   std::unique_ptr<std::mutex> mutex;
