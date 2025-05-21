@@ -272,13 +272,13 @@ namespace FUSE
                                         ffi_->flags);
 
     std::pair<std::string,PassthroughDetails> x;
-    state.passthrough.insert_and_visit(x,
-                                       [](auto &val)
-                                       {
-                                       },
-                                       [](auto &val)
-                                       {
-                                       });
+    // state.passthrough.insert_and_visit(x,
+    //                                    [](auto &val)
+    //                                    {
+    //                                    },
+    //                                    [](auto &val)
+    //                                    {
+    //                                    });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
