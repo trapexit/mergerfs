@@ -279,7 +279,7 @@ namespace FUSE
                                             },
                                             [&](auto &val)
                                             {
-                                              backing_id = val.second.backing_id;
+
                                             });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
@@ -303,6 +303,7 @@ namespace FUSE
                                   val.second.backing_id = backing_id;
                                   val.second.ref_count++;
                                 }
+                              val.second.mutex->unlock();
                             });
 
     if((rv >= 0) && (backing_id != -1))
