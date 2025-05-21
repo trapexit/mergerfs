@@ -11,6 +11,7 @@ struct PassthroughDetails
 {
   u64 ref_count;
   int backing_id;
+  std::mutex mutex;
 };
 
 class State
