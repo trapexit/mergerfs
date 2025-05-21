@@ -279,7 +279,7 @@ namespace FUSE
                                                          fusepath_,
                                                          val.second.ref_count);
                                             },
-                                            [&](auto &val)
+                                            [=](auto &val)
                                             {
                                               val.second.ref_count++;
                                               fmt::print("open {}; ref: {}\n",
