@@ -284,12 +284,6 @@ namespace FUSE
                                             },
                                             [](auto &val)
                                             {
-                                              fmt::print("open {}; ref: {}\n",
-                                                         val.first.string(),
-                                                         val.second.ref_count);
-                                              fmt::print("open {}; ref: {}\n",
-                                                         val.first.string(),
-                                                         val.second.ref_count);
                                             });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
