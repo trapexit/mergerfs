@@ -314,7 +314,6 @@ _open_first(const char       *fusepath_,
   return rv;
 }
 
-
 namespace FUSE
 {
   int
