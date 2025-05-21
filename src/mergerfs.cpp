@@ -341,7 +341,7 @@ main(int    argc_,
   boost::concurrent_flat_map<int,int> map;
   ThreadPool tp{4};
 
-  map.visit("key",
+  map.visit(0,
             [](const auto &pair_)
             {
               fmt::print("{}={}\n",pair_.first,pair_.second);
