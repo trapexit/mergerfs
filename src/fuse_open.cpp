@@ -330,7 +330,7 @@ _open_again(const std::filesystem::path &branch_path_,
     {
       ffi_->passthrough = true;
       ffi_->keep_cache  = false;
-      ffi_->backing_id  = backing_id;
+      ffi_->backing_id  = backing_id_;
     }
 
   return rv;
