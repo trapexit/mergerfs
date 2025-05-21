@@ -274,6 +274,7 @@ namespace FUSE
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
+                                              fmt::print("{}\n",&val.second);
                                               fmt::print("initial open {}; ref: {}\n",
                                                          val.first.string(),
                                                          val.second.ref_count);
