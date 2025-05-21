@@ -11,22 +11,19 @@ struct PassthroughDetails
 {
   PassthroughDetails()
     : ref_count(0),
-      backing_id(-1),
-      mutex(std::make_unique<std::mutex>())
+      backing_id(-1)
   {
   }
 
   PassthroughDetails(const int ref_count_,
                      const int backing_id_)
     : ref_count(ref_count_),
-      backing_id(backing_id_),
-      mutex(std::make_unique<std::mutex>())
+      backing_id(backing_id_)
   {
   }
 
   u64 ref_count;
   int backing_id;
-  std::unique_ptr<std::mutex> mutex;
 };
 
 class State
