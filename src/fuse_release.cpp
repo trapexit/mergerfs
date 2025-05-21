@@ -51,7 +51,7 @@ namespace l
                                  if(val.second.ref_count == 0)
                                    {
                                      const fuse_context *fc = fuse_get_context();
-                                     fuse_pass
+                                     fuse_passthrough_close(fc,val.second.backing_id);
                                    }
                                  fmt::println("release: {}; refcount: {}",
                                               val.first.string(),
