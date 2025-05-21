@@ -319,7 +319,7 @@ _open_again(const Branch     *branch_,
   ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  rv = l::open_core(branch_path_.string(),
+  rv = l::open_core(branch_,
                     fusepath_,
                     ffi_,
                     cfg->link_cow,
