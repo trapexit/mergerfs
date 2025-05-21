@@ -345,13 +345,6 @@ _open_first_lambda(const char       *fusepath_,
       val.second.ref_count = 1;
 
       rv_ = ::_open_first(fusepath_,ffi_);
-
-      fmt::println("{} {} {} {}",
-                   fusepath_,
-                   (void*)ffi_,
-                   ffi_->backing_id,
-                   rv_);
-
       if((rv_ >= 0) && (ffi_->backing_id >= 0))
         {
           FileInfo *fi;
