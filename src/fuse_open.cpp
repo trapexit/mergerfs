@@ -276,7 +276,9 @@ namespace FUSE
                                         PassthroughDetails{},
                                         [](auto &val)
                                         {
+                                          val.second.mutex = std::make_unique<std::mutex>();
                                           val.second.mutex->lock();
+
                                         },
                                         [&](auto &val)
                                         {
