@@ -1277,6 +1277,15 @@ do_init(fuse_req_t             req,
     outargflags |= FUSE_CREATE_SUPP_GROUP;
   if(f->conn.want & FUSE_CAP_DIRECT_IO_ALLOW_MMAP)
     outargflags |= FUSE_DIRECT_IO_ALLOW_MMAP;
+  if(f->conn.want & FUSE_CAP_HANDLE_KILLPRIV)
+    outargflags |= FUSE_HANDLE_KILLPRIV;
+  if(f->conn.want & FUSE_CAP_HANDLE_KILLPRIV_V2)
+    outargflags |= FUSE_HANDLE_KILLPRIV_V2;
+  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
+    {
+      outargflags |= FUSE_PASSTHROUGH;
+      outarg.max_stack_depth = 2;
+    }
 
   if(inargflags & FUSE_INIT_EXT)
     {
