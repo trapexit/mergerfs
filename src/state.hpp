@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <atomic>
+#include <mutex>
 
 #include "int_types.h"
 
