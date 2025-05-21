@@ -290,7 +290,7 @@ _open_first(const char       *fusepath_,
                cfg->nfsopenhack);
 
   if(cfg->passthrough)
-    return ::__passthrough(fc,ffi_);
+    return ::_passthrough(fc,ffi_);
 
   return rv;
 }
