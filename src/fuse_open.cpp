@@ -275,11 +275,10 @@ namespace FUSE
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
-                                              val.second.mutex->lock();
+
                                             },
                                             [&](auto &val)
                                             {
-                                              val.second.mutex->lock();
                                               backing_id = val.second.backing_id;
                                             });
     rv = l::open(cfg->func.open.policy,
