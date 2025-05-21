@@ -275,7 +275,7 @@ namespace FUSE
                                             [](auto &val)
                                             {
                                               val.second.ref_count = 1;
-                                              fmt::print("open {}; ref: {}\n",
+                                              fmt::print("initial open {}; ref: {}\n",
                                                          val.first.string(),
                                                          val.second.ref_count);
                                             },
