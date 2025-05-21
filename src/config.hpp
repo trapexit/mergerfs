@@ -142,7 +142,7 @@ public:
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
-  ConfigBOOL     passthrough;
+  ConfigBOOL     passthrough = false;
   ConfigBOOL     parallel_direct_writes;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
