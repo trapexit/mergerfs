@@ -12,7 +12,7 @@ struct PassthroughDetails
   PassthroughDetails()
     : ref_count(0),
       backing_id(-1),
-      mutex(std::make_unique<std::mutex>())
+      mutex()
   {
   }
 
