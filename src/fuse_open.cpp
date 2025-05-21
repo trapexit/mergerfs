@@ -340,7 +340,7 @@ _open_first_lambda(const char       *fusepath_,
     {
       rv_ = ::_open_first(fusepath_,ffi_);
 
-      fmt::println("{} {} {}",
+      fmt::println("{} {} {} {}",
                    fusepath_,
                    (void*)ffi_,
                    ffi_->backing_id,
