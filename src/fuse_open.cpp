@@ -272,6 +272,47 @@ static
 int
 _open_first(const char       *fusepath_,
             fuse_file_info_t *ffi_)
+{
+  int rv;
+  Config::Read cfg;
+  const fuse_context *fc  = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  l::config_to_ffi_flags(cfg,fc->pid,ffi_);
+
+  if(cfg->writeback_cache)
+    l::tweak_flags_writeback_cache(&ffi_->flags);
+
+  ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+                                      ffi_->flags);
+
+  state.passthrough.try_emplace_and_visit(fusepath_,
+                                          [](auto &val)
+                                          {
+                                            val.second.ref_count=1;
+                                            fmt::println("open: {}; ref_count: {}",
+                                                         val.second.filepath.string(),
+                                                         val.second.ref_count);
+                                          },
+                                          [](auto &val)
+                                          {
+                                            val.second.ref_count++;
+                                            fmt::println("open: {}; ref_count: {}",
+                                                         val.second.filepath.string(),
+                                                         val.second.ref_count);
+                                          });
+  rv = l::open(cfg->func.open.policy,
+               cfg->branches,
+               fusepath_,
+               ffi_,
+               cfg->link_cow,
+               cfg->nfsopenhack);
+
+  if(cfg->passthrough)
+    return l::_passthrough(fc,ffi_);
+
+  return rv;
+}
 
 
 namespace FUSE
