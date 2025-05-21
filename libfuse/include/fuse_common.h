@@ -92,6 +92,7 @@ struct fuse_file_info_t
   /** File handle.  May be filled in by filesystem in open().
       Available in all other file operations */
   uint64_t fh;
+
   int32_t  backing_id;
 
   /** Lock owner id.  Available in locking operations and flush */
