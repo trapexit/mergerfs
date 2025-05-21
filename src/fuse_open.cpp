@@ -105,7 +105,7 @@ _nfsopenhack(const std::string &fullpath_,
 */
 static
 void
-tweak_flags_writeback_cache(int *flags_)
+_tweak_flags_writeback_cache(int *flags_)
 {
   if((*flags_ & O_ACCMODE) == O_WRONLY)
     *flags_ = ((*flags_ & ~O_ACCMODE) | O_RDWR);
@@ -115,8 +115,8 @@ tweak_flags_writeback_cache(int *flags_)
 
 static
 bool
-calculate_flush(FlushOnClose const flushonclose_,
-                int const          flags_)
+_calculate_flush(FlushOnClose const flushonclose_,
+                 int const          flags_)
 {
   switch(flushonclose_)
     {
