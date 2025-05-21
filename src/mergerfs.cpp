@@ -340,48 +340,5 @@ int
 main(int    argc_,
      char **argv_)
 {
-  boost::concurrent_flat_map<int,int> map;
-
-  fmt::print("foobar\n");
-
-  map.try_emplace(0,0);
-  map.try_emplace(1,1);
-
-  std::thread t0{[&]()
-  {
-    map.visit(0,
-              [](auto &pair_)
-              {
-                fmt::print("thread0: sleeping 5s\n");
-                std::this_thread::sleep_for(std::chrono::seconds(5));
-                pair_.second = 69;
-                fmt::print("thread0: {}={}\n",pair_.first,pair_.second);
-              });
-  }};
-
-  std::thread t1{[&]()
-  {
-    map.visit(0,
-              [](const auto &pair_)
-              {
-                fmt::print("thread1: {}={}\n",pair_.first,pair_.second);
-              });
-  }};
-
-  std::thread t2{[&]()
-  {
-    map.visit(1,
-              [](const auto &pair_)
-              {
-                fmt::print("thread2: {}={}\n",pair_.first,pair_.second);
-              });
-  }};
-
-
-  t0.join();
-  t1.join();
-  t2.join();
-
-  return 0;
   return l::main(argc_,argv_);
 }
