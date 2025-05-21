@@ -271,9 +271,9 @@ namespace FUSE
     ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                         ffi_->flags);
 
-    state.passthrough.emplace_and_visit(fusepath_,
-                                        PassthroughDetails{1,-1,std::mutex{}},
-                                        [](auto &val)
+    state.passthrough.insert_and_visit(std::make_pair(fusepath_,
+                                                      PassthroughDetails{1,-1,std::mutex{}}),
+                                       [](auto &val)
                                         {
                                           val.second.mutex.lock();
                                         },
