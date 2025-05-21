@@ -359,14 +359,8 @@ namespace FUSE
 
     rv = EINVAL;
     state.passthrough.try_emplace_and_visit(fusepath_,
-                                            ::_create_open_first_lambda(fusepath_,ffi_,rv),
-                                            [](auto &val)
-                                            {
-                                              val.second.ref_count++;
-                                              fmt::println("open: {}; ref_count: {}",
-                                                           val.second.filepath.string(),
-                                                           val.second.ref_count);
-                                            });
+                                            ::_open_first_lambda(fusepath_,ffi_,rv),
+                                            ::_open_again_lambda(fusepath_,ffi_,rv));
 
     return rv;
   }
