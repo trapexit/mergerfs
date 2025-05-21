@@ -363,7 +363,7 @@ _open_again_lambda(const char       *fusepath_,
                    int              &rv_)
 {
   return
-    [&](auto &val)
+    [=,&rv_](auto &val)
     {
       rv_ = ::_open_again(&val.second.branch,
                           val.second.backing_id,
