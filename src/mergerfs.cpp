@@ -372,7 +372,7 @@ main(int    argc_,
     map.visit(1,
               [](const auto &pair_)
               {
-                fmt::print("thread1: {}={}\n",pair_.first,pair_.second);
+                fmt::print("thread2: {}={}\n",pair_.first,pair_.second);
               });
   }};
 
