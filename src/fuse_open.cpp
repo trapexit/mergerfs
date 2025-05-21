@@ -272,7 +272,7 @@ namespace FUSE
                                         ffi_->flags);
 
     state.passthrough.emplace_and_visit(fusepath_,
-                                        PassthroughDetails{1,-1,{}},
+                                        1,-1,std::mutex{},
                                         [](auto &val)
                                         {
                                           val.second.mutex.lock();
