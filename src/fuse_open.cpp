@@ -133,9 +133,9 @@ _calculate_flush(FlushOnClose const flushonclose_,
 
 static
 void
-config_to_ffi_flags(Config::Read     &cfg_,
-                    const int         tid_,
-                    fuse_file_info_t *ffi_)
+_config_to_ffi_flags(Config::Read     &cfg_,
+                     const int         tid_,
+                     fuse_file_info_t *ffi_)
 {
   switch(cfg_->cache_files)
     {
