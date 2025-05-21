@@ -44,7 +44,14 @@ namespace l
 
     fs::close(fi_->fd);
 
+    state.passthrough.erase_if(fi_->fusepath,
+                               [](const auto &p)
+                               {
+                                 return false;
+                               });
+
     delete fi_;
+
 
     return 0;
   }
