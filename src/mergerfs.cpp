@@ -367,7 +367,7 @@ main(int    argc_,
               });
   }};
 
-  std::thread t1{[&]()
+  std::thread t2{[&]()
   {
     map.visit(1,
               [](const auto &pair_)
