@@ -271,7 +271,6 @@ namespace FUSE
     ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                         ffi_->flags);
 
-    int backing_id = -1;
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
