@@ -189,11 +189,11 @@ _config_to_ffi_flags(Config::Read     &cfg_,
 
 static
 int
-open_core(const Branch      *branch_,
-          const char        *fusepath_,
-          fuse_file_info_t  *ffi_,
-          const bool         link_cow_,
-          const NFSOpenHack  nfsopenhack_)
+_open_core(const Branch      *branch_,
+           const char        *fusepath_,
+           fuse_file_info_t  *ffi_,
+           const bool         link_cow_,
+           const NFSOpenHack  nfsopenhack_)
 {
   int fd;
   FileInfo *fi;
