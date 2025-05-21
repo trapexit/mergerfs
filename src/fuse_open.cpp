@@ -305,7 +305,32 @@ _open_again(const std::filesystem::path &branch_path_,
             const int                    backing_id_,
             const char                  *fusepath_,
             fuse_file_info_t            *ffi_)
+{
+  int rv;
+  Config::Read cfg;
+  const fuse_context *fc  = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
+  l::config_to_ffi_flags(cfg,fc->pid,ffi_);
+
+  if(cfg->writeback_cache)
+    l::tweak_flags_writeback_cache(&ffi_->flags);
+
+  ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+                                      ffi_->flags);
+
+  std::string fullpath = branch_path_ + fusepath_;
+  rv = l::open_core(branch_path_,
+                    fusepath_,
+                    ffi_,
+                    cfg->link_cow,
+                    cfg->nfsopenhack);
+
+  if(cfg->passthrough)
+    return l::_passthrough(fc,ffi_);
+
+  return rv;
+}
 
 
 constexpr
