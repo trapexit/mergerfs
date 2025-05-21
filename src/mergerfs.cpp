@@ -344,7 +344,8 @@ main(int    argc_,
 
   fmt::print("foobar\n");
 
-  map.try_emplace(0);
+  map.try_emplace(0,0);
+
   std::thread t0{[&]()
   {
     map.visit(0,
