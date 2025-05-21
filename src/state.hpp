@@ -3,7 +3,6 @@
 #include "boost/unordered/concurrent_flat_map.hpp"
 
 #include <filesystem>
-#include <atomic>
 #include <mutex>
 
 #include "int_types.h"
