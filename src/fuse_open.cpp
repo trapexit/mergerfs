@@ -286,21 +286,6 @@ _open_first(const char       *fusepath_,
   ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  state.passthrough.try_emplace_and_visit(fusepath_,
-                                          [](auto &val)
-                                          {
-                                            val.second.ref_count=1;
-                                            fmt::println("open: {}; ref_count: {}",
-                                                         val.second.filepath.string(),
-                                                         val.second.ref_count);
-                                          },
-                                          [](auto &val)
-                                          {
-                                            val.second.ref_count++;
-                                            fmt::println("open: {}; ref_count: {}",
-                                                         val.second.filepath.string(),
-                                                         val.second.ref_count);
-                                          });
   rv = l::open(cfg->func.open.policy,
                cfg->branches,
                fusepath_,
