@@ -341,13 +341,26 @@ main(int    argc_,
 {
   boost::concurrent_flat_map<int,int> map;
 
-  std::thread t0{[]() {}};
+  std::thread t0{[]()
+  {
+    map.visit(0,
+              [](const auto &pair_)
+              {
+                fmt::print("{}={}\n",pair_.first,pair_.second);
+              });
+  }};
 
-  map.visit(0,
-            [](const auto &pair_)
-            {
-              fmt::print("{}={}\n",pair_.first,pair_.second);
-            });
+  std::thread t1{[]()
+  {
+    map.visit(0,
+              [](const auto &pair_)
+              {
+                fmt::print("{}={}\n",pair_.first,pair_.second);
+              });
+  }};
+
+
+
 
   return 0;
   return l::main(argc_,argv_);
