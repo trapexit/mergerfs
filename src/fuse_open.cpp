@@ -273,7 +273,6 @@ namespace FUSE
 
     int backing_id = -1;
     state.passthrough.try_emplace_and_visit(fusepath_,
-                                            PassthroughDetails{},
                                             [](auto &val)
                                             {
                                               val.second.mutex = std::make_unique<std::mutex>();
