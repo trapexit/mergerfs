@@ -284,6 +284,9 @@ namespace FUSE
                                             },
                                             [](auto &val)
                                             {
+                                              fmt::print("open {}; ref: {}\n",
+                                                         val.first.string(),
+                                                         val.second.ref_count);
                                               val.second.ref_count++;
                                               fmt::print("open {}; ref: {}\n",
                                                          val.first.string(),
