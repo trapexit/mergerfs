@@ -325,12 +325,9 @@ _open_again(const std::filesystem::path &branch_path_,
                     cfg->link_cow,
                     cfg->nfsopenhack);
 
-  if(cfg->passthrough)
-    {
-      ffi_->passthrough = true;
-      ffi_->keep_cache  = false;
-      ffi_->backing_id  = backing_id_;
-    }
+  ffi_->passthrough = true;
+  ffi_->keep_cache  = false;
+  ffi_->backing_id  = backing_id_;
 
   return rv;
 }
