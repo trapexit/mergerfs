@@ -15,7 +15,7 @@ struct PassthroughDetails
   {
   }
 
-  PassthroughDetails(const int ref_count_,
+  PassthroughDetails(const u64 ref_count_,
                      const int backing_id_)
     : ref_count(ref_count_),
       backing_id(backing_id_)
