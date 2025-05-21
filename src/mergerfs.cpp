@@ -332,6 +332,7 @@ namespace l
   }
 }
 
+#include "thread_pool.hpp"
 #include "boost/unordered/concurrent_flat_map.hpp"
 
 int
