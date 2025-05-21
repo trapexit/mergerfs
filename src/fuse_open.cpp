@@ -346,6 +346,7 @@ _open_first_lambda(const char       *fusepath_,
           fi = reinterpret_cast<FileInfo*>(ffi_->fh);
           val.second.backing_id = ffi_->backing_id;
           val.second.branch     = fi->branch;
+          val.second.ref_count  = 1;
         }
 
       fmt::println("open: {}; ref_count: {}",
