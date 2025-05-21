@@ -291,6 +291,7 @@ namespace FUSE
     state.passthrough.visit(fusepath_,
                             [](auto &val)
                             {
+                              val.second.ref_count++;
                             });
 
     return rv;
