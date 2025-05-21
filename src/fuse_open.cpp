@@ -309,7 +309,7 @@ _create_open_first_lambda(const char       *fusepath_,
     [&](auto &val)
     {
       rv_ = 0;
-    }
+    };
 }
 
 namespace FUSE
