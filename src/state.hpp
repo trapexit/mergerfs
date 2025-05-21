@@ -20,7 +20,7 @@ struct PassthroughDetails
                      const int backing_id_)
     : ref_count(ref_count_),
       backing_id(backing_id_),
-      mutex(std::make_unique<std::mutex>())
+      mutex()
   {
   }
 
