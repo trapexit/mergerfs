@@ -275,7 +275,7 @@ namespace FUSE
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
-                                              val.second.mutex = std::make_unique<std::mutex>();
+                                              //val.second.mutex = std::make_unique<std::mutex>();
                                               val.second.mutex->lock();
                                             },
                                             [&](auto &val)
