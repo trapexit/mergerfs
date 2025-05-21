@@ -275,11 +275,11 @@ namespace FUSE
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
-
+                                              val.second.ref_count = 1;
                                             },
                                             [&](auto &val)
                                             {
-
+                                              val.second.ref_count++;
                                             });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
