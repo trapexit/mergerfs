@@ -334,7 +334,7 @@ namespace FUSE
 
     rv = EINVAL;
     state.passthrough.try_emplace_and_visit(fusepath_,
-                                            ::_create_open_first_lambda(fusepath_,ffi_,&rv),
+                                            ::_create_open_first_lambda(fusepath_,ffi_,rv),
                                             [](auto &val)
                                             {
                                               val.second.ref_count++;
