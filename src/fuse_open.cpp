@@ -338,10 +338,6 @@ _open_first_lambda(const char       *fusepath_,
   return
     [&](auto &val)
     {
-      fmt::println("open: {}; ref_count: {}",
-                   val.second.branch.path,
-                   val.second.ref_count);
-
       rv_ = ::_open_first(fusepath_,ffi_);
       if((rv_ >= 0) && (ffi_->backing_id >= 0))
         {
@@ -351,6 +347,9 @@ _open_first_lambda(const char       *fusepath_,
           val.second.backing_id = ffi_->backing_id;
           val.second.branch     = fi->branch;
         }
+      fmt::println("open: {}; ref_count: {}",
+                   val.second.branch.path,
+                   val.second.ref_count);
     };
 }
 
