@@ -51,6 +51,7 @@ namespace l
                                  if(val.second.ref_count == 0)
                                    {
                                      const fuse_context *fc = fuse_get_context();
+                                     fuse_pass
                                    }
                                  fmt::println("release: {}; refcount: {}",
                                               val.first.string(),
@@ -59,7 +60,6 @@ namespace l
                                });
 
     delete fi_;
-
 
     return 0;
   }
