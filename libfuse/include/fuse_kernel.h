@@ -211,6 +211,24 @@
  *  7.39
  *  - add FUSE_DIRECT_IO_ALLOW_MMAP
  *  - add FUSE_STATX and related structures
+ *
+ *  7.40
+ *  - add max_stack_depth to fuse_init_out, add FUSE_PASSTHROUGH init flag
+ *  - add backing_id to fuse_open_out, add FOPEN_PASSTHROUGH open flag
+ *  - add FUSE_NO_EXPORT_SUPPORT init flag
+ *  - add FUSE_NOTIFY_RESEND, add FUSE_HAS_RESEND init flag
+ *
+ *  7.41
+ *  - add FUSE_ALLOW_IDMAP
+ *  7.42
+ *  - Add FUSE_OVER_IO_URING and all other io-uring related flags and data
+ *    structures:
+ *    - struct fuse_uring_ent_in_out
+ *    - struct fuse_uring_req_header
+ *    - struct fuse_uring_cmd_req
+ *    - FUSE_URING_IN_OUT_HEADER_SZ
+ *    - FUSE_URING_OP_IN_OUT_SZ
+ *    - enum fuse_uring_cmd
  */
 
 #ifndef _LINUX_FUSE_H
@@ -246,7 +264,7 @@
 #define FUSE_KERNEL_VERSION 7
 
 /** Minor version number of this interface */
-#define FUSE_KERNEL_MINOR_VERSION 39
+#define FUSE_KERNEL_MINOR_VERSION 42
 
 /** The node ID of the root inode */
 #define FUSE_ROOT_ID 1
@@ -353,6 +371,7 @@ struct fuse_file_lock {
  * FOPEN_STREAM: the file is stream-like (no file position at all)
  * FOPEN_NOFLUSH: don't flush data cache on close (unless FUSE_WRITEBACK_CACHE)
  * FOPEN_PARALLEL_DIRECT_WRITES: Allow concurrent direct writes on the same inode
+ * FOPEN_PASSTHROUGH: passthrough read/write io for this open file
  */
 #define FOPEN_DIRECT_IO		(1 << 0)
 #define FOPEN_KEEP_CACHE	(1 << 1)
@@ -361,6 +380,7 @@ struct fuse_file_lock {
 #define FOPEN_STREAM		(1 << 4)
 #define FOPEN_NOFLUSH		(1 << 5)
 #define FOPEN_PARALLEL_DIRECT_WRITES	(1 << 6)
+#define FOPEN_PASSTHROUGH	(1 << 7)
 
 /**
  * INIT request/reply flags
@@ -410,6 +430,11 @@ struct fuse_file_lock {
  *			symlink and mknod (single group that matches parent)
  * FUSE_HAS_EXPIRE_ONLY: kernel supports expiry-only entry invalidation
  * FUSE_DIRECT_IO_ALLOW_MMAP: allow shared mmap in FOPEN_DIRECT_IO mode.
+ * FUSE_NO_EXPORT_SUPPORT: explicitly disable export support
+ * FUSE_HAS_RESEND: kernel supports resending pending requests, and the high bit
+ *		    of the request ID indicates resend requests
+ * FUSE_ALLOW_IDMAP: allow creation of idmapped mounts
+ * FUSE_OVER_IO_URING: Indicate that client supports io-uring
  */
 #define FUSE_ASYNC_READ		(1 << 0)
 #define FUSE_POSIX_LOCKS	(1 << 1)
@@ -442,16 +467,21 @@ struct fuse_file_lock {
 #define FUSE_HANDLE_KILLPRIV_V2	(1 << 28)
 #define FUSE_SETXATTR_EXT	(1 << 29)
 #define FUSE_INIT_EXT		(1 << 30)
-#define FUSE_INIT_RESERVED	(1ULL << 31)
+#define FUSE_INIT_RESERVED	(1 << 31)
 /* bits 32..63 get shifted down 32 bits into the flags2 field */
 #define FUSE_SECURITY_CTX	(1ULL << 32)
 #define FUSE_HAS_INODE_DAX	(1ULL << 33)
 #define FUSE_CREATE_SUPP_GROUP	(1ULL << 34)
 #define FUSE_HAS_EXPIRE_ONLY	(1ULL << 35)
 #define FUSE_DIRECT_IO_ALLOW_MMAP (1ULL << 36)
+#define FUSE_PASSTHROUGH	(1ULL << 37)
+#define FUSE_NO_EXPORT_SUPPORT	(1ULL << 38)
+#define FUSE_HAS_RESEND		(1ULL << 39)
 
 /* Obsolete alias for FUSE_DIRECT_IO_ALLOW_MMAP */
 #define FUSE_DIRECT_IO_RELAX	FUSE_DIRECT_IO_ALLOW_MMAP
+#define FUSE_ALLOW_IDMAP	(1ULL << 40)
+#define FUSE_OVER_IO_URING	(1ULL << 41)
 
 /**
  * CUSE INIT request/reply flags
@@ -635,6 +665,7 @@ enum fuse_notify_code {
 	FUSE_NOTIFY_STORE = 4,
 	FUSE_NOTIFY_RETRIEVE = 5,
 	FUSE_NOTIFY_DELETE = 6,
+	FUSE_NOTIFY_RESEND = 7,
 	FUSE_NOTIFY_CODE_MAX,
 };
 
@@ -761,7 +792,7 @@ struct fuse_create_in {
 struct fuse_open_out {
 	uint64_t	fh;
 	uint32_t	open_flags;
-	uint32_t	padding;
+	int32_t		backing_id;
 };
 
 struct fuse_release_in {
@@ -877,7 +908,8 @@ struct fuse_init_out {
 	uint16_t	max_pages;
 	uint16_t	map_alignment;
 	uint32_t	flags2;
-	uint32_t	unused[7];
+	uint32_t	max_stack_depth;
+	uint32_t	unused[6];
 };
 
 #define CUSE_INIT_INFO_MAX 4096
@@ -959,6 +991,29 @@ struct fuse_fallocate_in {
 	uint32_t	mode;
 	uint32_t	padding;
 };
+
+/**
+ * FUSE request unique ID flag
+ *
+ * Indicates whether this is a resend request. The receiver should handle this
+ * request accordingly.
+ */
+#define FUSE_UNIQUE_RESEND (1ULL << 63)
+
+/**
+ * This value will be set by the kernel to
+ * (struct fuse_in_header).{uid,gid} fields in
+ * case when:
+ * - fuse daemon enabled FUSE_ALLOW_IDMAP
+ * - idmapping information is not available and uid/gid
+ *   can not be mapped in accordance with an idmapping.
+ *
+ * Note: an idmapping information always available
+ * for inode creation operations like:
+ * FUSE_MKNOD, FUSE_SYMLINK, FUSE_MKDIR, FUSE_TMPFILE,
+ * FUSE_CREATE and FUSE_RENAME2 (with RENAME_WHITEOUT).
+ */
+#define FUSE_INVALID_UIDGID ((uint32_t)(-1))
 
 struct fuse_in_header {
 	uint32_t	len;
@@ -1049,112 +1104,18 @@ struct fuse_notify_retrieve_in {
 	uint64_t	dummy4;
 };
 
-/* Device ioctls: */
-#define FUSE_DEV_IOC_MAGIC		229
-#define FUSE_DEV_IOC_CLONE		_IOR(FUSE_DEV_IOC_MAGIC, 0, uint32_t)
-
-struct fuse_lseek_in {
-	uint64_t	fh;
-	uint64_t	offset;
-	uint32_t	whence;
-	uint32_t	padding;
-};
-
-struct fuse_lseek_out {
-	uint64_t	offset;
-};
-
-struct fuse_copy_file_range_in {
-	uint64_t	fh_in;
-	uint64_t	off_in;
-	uint64_t	nodeid_out;
-	uint64_t	fh_out;
-	uint64_t	off_out;
-	uint64_t	len;
-	uint64_t	flags;
-};
-
-#define FUSE_SETUPMAPPING_FLAG_WRITE (1ull << 0)
-#define FUSE_SETUPMAPPING_FLAG_READ (1ull << 1)
-struct fuse_setupmapping_in {
-	/* An already open handle */
-	uint64_t	fh;
-	/* Offset into the file to start the mapping */
-	uint64_t	foffset;
-	/* Length of mapping required */
-	uint64_t	len;
-	/* Flags, FUSE_SETUPMAPPING_FLAG_* */
-	uint64_t	flags;
-	/* Offset in Memory Window */
-	uint64_t	moffset;
-};
-
-struct fuse_removemapping_in {
-	/* number of fuse_removemapping_one follows */
-	uint32_t        count;
-};
-
-struct fuse_removemapping_one {
-	/* Offset into the dax window start the unmapping */
-	uint64_t        moffset;
-	/* Length of mapping required */
-	uint64_t	len;
-};
-
-#define FUSE_REMOVEMAPPING_MAX_ENTRY   \
-		(PAGE_SIZE / sizeof(struct fuse_removemapping_one))
-
-struct fuse_syncfs_in {
+struct fuse_backing_map {
+	int32_t		fd;
+	uint32_t	flags;
 	uint64_t	padding;
 };
 
-/*
- * For each security context, send fuse_secctx with size of security context
- * fuse_secctx will be followed by security context name and this in turn
- * will be followed by actual context label.
- * fuse_secctx, name, context
- */
-struct fuse_secctx {
-	uint32_t	size;
-	uint32_t	padding;
-};
-
-/*
- * Contains the information about how many fuse_secctx structures are being
- * sent and what's the total size of all security contexts (including
- * size of fuse_secctx_header).
- *
- */
-struct fuse_secctx_header {
-	uint32_t	size;
-	uint32_t	nr_secctx;
-};
-
-/**
- * struct fuse_ext_header - extension header
- * @size: total size of this extension including this header
- * @type: type of extension
- *
- * This is made compatible with fuse_secctx_header by using type values >
- * FUSE_MAX_NR_SECCTX
- */
-struct fuse_ext_header {
-	uint32_t	size;
-	uint32_t	type;
-};
-
-/**
- * struct fuse_supp_groups - Supplementary group extension
- * @nr_groups: number of supplementary groups
- * @groups: flexible array of group IDs
- */
-struct fuse_supp_groups {
-	uint32_t	nr_groups;
-	uint32_t	groups[];
-};
-
-#endif /* _LINUX_FUSE_H */
-
+/* Device ioctls: */
+#define FUSE_DEV_IOC_MAGIC		229
+#define FUSE_DEV_IOC_CLONE		_IOR(FUSE_DEV_IOC_MAGIC, 0, uint32_t)
+#define FUSE_DEV_IOC_BACKING_OPEN	_IOW(FUSE_DEV_IOC_MAGIC, 1, \
+					     struct fuse_backing_map)
+#define FUSE_DEV_IOC_BACKING_CLOSE	_IOW(FUSE_DEV_IOC_MAGIC, 2, uint32_t)
 
 struct fuse_lseek_in {
 	uint64_t	fh;
