@@ -222,6 +222,28 @@ namespace l
 
   static
   int
+  _passthrough(const fuse_context *fc_,
+               fuse_file_info_t   *ffi_)
+  {
+    int backing_id;
+    FileInfo *fi;
+    const ugid::SetRootGuard ugid;
+
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    backing_id = fuse_passthrough_open(fc_,fi->fd);
+    if(backing_id <= 0)
+      return 0;
+
+    ffi_->passthrough = true;
+    ffi_->keep_cache  = false;
+    ffi_->backing_id  = backing_id;
+
+    return 0;
+  }
+
+  static
+  int
   open(const Policy::Search &searchFunc_,
        const Branches       &ibranches_,
        const char           *fusepath_,
