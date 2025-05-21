@@ -367,6 +367,16 @@ main(int    argc_,
               });
   }};
 
+  std::thread t1{[&]()
+  {
+    map.visit(1,
+              [](const auto &pair_)
+              {
+                fmt::print("thread1: {}={}\n",pair_.first,pair_.second);
+              });
+  }};
+
+
   t0.join();
   t1.join();
 
