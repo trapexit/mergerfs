@@ -203,6 +203,7 @@ namespace FUSE
     l::want_if_capable(conn_,FUSE_CAP_EXPORT_SUPPORT,&cfg->export_support);
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
+    l::want_if_capable(conn_,FUSE_CAP_PASSTHROUGH);
     l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&cfg->posix_acl);
     l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg->readdirplus);
     l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg->writeback_cache);
