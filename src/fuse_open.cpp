@@ -82,15 +82,15 @@ _nfsopenhack(const std::string &fullpath_,
     case NFSOpenHack::ENUM::OFF:
       return (errno=EACCES,-1);
     case NFSOpenHack::ENUM::GIT:
-      if(l::rdonly(flags_))
+      if(::_rdonly(flags_))
         return (errno=EACCES,-1);
       if(fullpath_.find("/.git/") == std::string::npos)
         return (errno=EACCES,-1);
-      return l::lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+      return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
     case NFSOpenHack::ENUM::ALL:
-      if(l::rdonly(flags_))
+      if(::_rdonly(flags_))
         return (errno=EACCES,-1);
-      return l::lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+      return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
     }
 }
 
@@ -123,7 +123,7 @@ _calculate_flush(FlushOnClose const flushonclose_,
     case FlushOnCloseEnum::NEVER:
       return false;
     case FlushOnCloseEnum::OPENED_FOR_WRITE:
-      return !l::rdonly(flags_);
+      return !::_rdonly(flags_);
     case FlushOnCloseEnum::ALWAYS:
       return true;
     }
@@ -206,7 +206,7 @@ _open_core(const Branch      *branch_,
 
   fd = fs::open(fullpath,ffi_->flags);
   if((fd == -1) && (errno == EACCES))
-    fd = l::nfsopenhack(fullpath,ffi_->flags,nfsopenhack_);
+    fd = ::_nfsopenhack(fullpath,ffi_->flags,nfsopenhack_);
   if(fd == -1)
     return -errno;
 
@@ -255,7 +255,7 @@ _open(const Policy::Search &searchFunc_,
   if(rv == -1)
     return -errno;
 
-  rv = l::open_core(obranches[0],
+  rv = ::_open_core(obranches[0],
                     fusepath_,
                     ffi_,
                     link_cow_,
@@ -274,15 +274,15 @@ _open_first(const char       *fusepath_,
   const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  l::config_to_ffi_flags(cfg,fc->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
 
   if(cfg->writeback_cache)
-    l::tweak_flags_writeback_cache(&ffi_->flags);
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
 
-  ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  rv = l::open(cfg->func.open.policy,
+  rv = ::_open(cfg->func.open.policy,
                cfg->branches,
                fusepath_,
                ffi_,
@@ -290,7 +290,7 @@ _open_first(const char       *fusepath_,
                cfg->nfsopenhack);
 
   if(cfg->passthrough)
-    return l::_passthrough(fc,ffi_);
+    return ::__passthrough(fc,ffi_);
 
   return rv;
 }
@@ -307,15 +307,15 @@ _open_again(const Branch     *branch_,
   const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  l::config_to_ffi_flags(cfg,fc->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
 
   if(cfg->writeback_cache)
-    l::tweak_flags_writeback_cache(&ffi_->flags);
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
 
-  ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  rv = l::open_core(branch_,
+  rv = ::_open_core(branch_,
                     fusepath_,
                     ffi_,
                     cfg->link_cow,
