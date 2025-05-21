@@ -249,6 +249,22 @@ namespace FUSE
                        fc->umask);
       }
 
+    state.passthrough.try_emplace_and_visit(fusepath_,
+                                            [](auto &val)
+                                            {
+                                              val.second.ref_count=1;
+                                              fmt::println("open: {}; ref_count: {}",
+                                                           val.first.string(),
+                                                           val.second.ref_count);
+                                            },
+                                            [](auto &val)
+                                            {
+                                              val.second.ref_count++;
+                                              fmt::println("open: {}; ref_count: {}",
+                                                           val.first.string(),
+                                                           val.second.ref_count);
+                                            });
+
     return rv;
   }
 }
