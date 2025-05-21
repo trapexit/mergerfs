@@ -342,7 +342,8 @@ _open_first_lambda(const char       *fusepath_,
   return
     [=,&rv_](auto &val)
     {
-      val.second.ref_count = 1;
+      val.second.ref_count  = 1;
+      val.second.backing_id = -1;
 
       rv_ = ::_open_first(fusepath_,ffi_);
       if((rv_ >= 0) && (ffi_->backing_id >= 0))
