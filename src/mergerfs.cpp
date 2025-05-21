@@ -349,7 +349,7 @@ main(int    argc_,
   std::thread t0{[&]()
   {
     map.visit(0,
-              [](const auto &pair_)
+              [](auto &pair_)
               {
                 fmt::print("thread0: sleeping 1s\n");
                 std::this_thread::sleep_for(std::chrono::seconds(1));
