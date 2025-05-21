@@ -272,18 +272,18 @@ namespace FUSE
                                         ffi_->flags);
 
     int backing_id = -1;
-    state.passthrough.emplace_and_visit(fusepath_,
-                                        PassthroughDetails{},
-                                        [](auto &val)
-                                        {
-                                          val.second.mutex = std::make_unique<std::mutex>();
-                                          val.second.mutex->lock();
-                                        },
-                                        [&](auto &val)
-                                        {
-                                          val.second.mutex->lock();
-                                          backing_id = val.second.backing_id;
-                                        });
+    state.passthrough.try_emplace_and_visit(fusepath_,
+                                            PassthroughDetails{},
+                                            [](auto &val)
+                                            {
+                                              val.second.mutex = std::make_unique<std::mutex>();
+                                              val.second.mutex->lock();
+                                            },
+                                            [&](auto &val)
+                                            {
+                                              val.second.mutex->lock();
+                                              backing_id = val.second.backing_id;
+                                            });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
