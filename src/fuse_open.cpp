@@ -353,7 +353,7 @@ _open_first_lambda(const char       *fusepath_,
 
           fi = reinterpret_cast<FileInfo*>(ffi_->fh);
           val.second.backing_id = ffi_->backing_id;
-          val.second.filepath = fi->branch.path;
+          val.second.filepath = fi->branch;
         }
     };
 }
