@@ -17,6 +17,7 @@ struct PassthroughDetails
 class State
 {
 public:
+  // fusepath -> PassthroughDetails
   using PassthroughDetailMap = boost::concurrent_flat_map<std::filesystem::path,
                                                           PassthroughDetails>;
 
