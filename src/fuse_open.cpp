@@ -289,7 +289,10 @@ _open_first(const char       *fusepath_,
                cfg->link_cow,
                cfg->nfsopenhack);
 
-  return ::_passthrough(fc,ffi_);
+  if(rv >= 0)
+    return ::_passthrough(fc,ffi_);
+
+  return rv;
 }
 
 static
