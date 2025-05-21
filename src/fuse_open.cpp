@@ -289,6 +289,13 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
+    if((rv >= 0) && (backing_id == -1))
+      {
+        // allocate backing_id
+
+        //backing_id =
+      }
+
     state.passthrough.visit(fusepath_,
                             [=](auto &val)
                             {
