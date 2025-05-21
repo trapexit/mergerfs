@@ -339,7 +339,7 @@ main(int    argc_,
      char **argv_)
 {
   boost::concurrent_flat_map<int,int> map;
-
+  ThreadPool tp{4};
 
 
   map.visit("key",
