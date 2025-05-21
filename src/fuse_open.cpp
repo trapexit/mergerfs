@@ -343,6 +343,7 @@ _open_first_lambda(const char       *fusepath_,
       fmt::println("{} {} {}",
                    fusepath_,
                    (void*)ffi_,
+                   ffi_->backing_id,
                    rv_);
 
       if((rv_ >= 0) && (ffi_->backing_id >= 0))
