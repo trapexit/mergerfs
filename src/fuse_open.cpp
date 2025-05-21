@@ -289,9 +289,10 @@ namespace FUSE
                  cfg->nfsopenhack);
 
     state.passthrough.visit(fusepath_,
-                            [](auto &val)
+                            [=](auto &val)
                             {
-                              val.second.ref_count++;
+                              if(rv >= 0)
+                                val.second.ref_count++;
                             });
 
     return rv;
