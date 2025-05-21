@@ -4268,6 +4268,12 @@ fuse_log_metrics_get(void)
 }
 
 int
+fuse_get_dev_fuse_fd(const struct fuse_context *fc_)
+{
+  return fuse_chan_fd(fc_->fuse->se->ch);
+}
+
+int
 fuse_passthrough_open(const struct fuse_context *fc_,
                       const int                  fd_)
 {
