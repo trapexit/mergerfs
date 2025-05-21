@@ -319,7 +319,6 @@ _open_again(const std::filesystem::path &branch_path_,
   ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  std::string fullpath = branch_path_ + fusepath_;
   rv = l::open_core(branch_path_,
                     fusepath_,
                     ffi_,
