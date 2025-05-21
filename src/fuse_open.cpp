@@ -368,7 +368,7 @@ _open_again_lambda(const char       *fusepath_,
     [&](auto &val)
     {
       fmt::println("open: {}; ref_count: {}",
-                   val.second.branch.path.string(),
+                   val.second.branch.path,
                    val.second.ref_count);
 
       rv_ = ::_open_again(val.second.branch_path,fusepath_,ffi_);
