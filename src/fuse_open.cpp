@@ -302,8 +302,8 @@ _open_first(const char       *fusepath_,
 constexpr
 auto
 _open_first_lambda(const char       *fusepath_,
-                          fuse_file_info_t *ffi_,
-                          int              &rv_)
+                   fuse_file_info_t *ffi_,
+                   int              &rv_)
 {
   return
     [&](auto &val)
