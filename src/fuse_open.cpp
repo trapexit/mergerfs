@@ -308,7 +308,19 @@ _create_open_first_lambda(const char       *fusepath_,
   return
     [&](auto &val)
     {
-      rv_ = 0;
+      fmt::println("open: {}; ref_count: {}",
+                   val.second.filepath.string(),
+                   val.second.ref_count);
+
+      rv = ::_open_first(fusepath_,ffi_);
+      if((rv >= 0) && (ffi_->backing_id >= 0))
+        {
+          FileInfo *fi;
+
+          fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+          val.second.backing_id = ffi_->backing_id;
+          val.second.filepath = fi->branch.path;
+        }
     };
 }
 
