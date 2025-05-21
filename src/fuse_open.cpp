@@ -242,12 +242,6 @@ namespace l
                       link_cow_,
                       nfsopenhack_);
 
-    state.branch_usage.emplace_or_visit(obranches[0]->path,
-                                        1,
-                                        [](auto &p)
-                                        {
-                                          p.second++;
-                                        });
     state.passthrough.emplace_or_visit(fusepath_,
                                        PassthroughDetails{1,0},
                                        [](auto &p)
