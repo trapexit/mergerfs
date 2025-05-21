@@ -4266,3 +4266,19 @@ fuse_log_metrics_get(void)
 {
   return g_LOG_METRICS;
 }
+
+int
+fuse_passthrough_open(const struct fuse_context *fc_,
+                      const int                  fd_)
+{
+  int rv;
+  int dev_fuse_fd;
+  struct fuse_backing_map bm = {0};
+
+  dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
+  bm.fd       = fd_;
+
+  rv = ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_OPEN,&bm);
+
+  return rv;
+}
