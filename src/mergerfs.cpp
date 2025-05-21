@@ -352,8 +352,8 @@ main(int    argc_,
     map.visit(0,
               [](auto &pair_)
               {
-                fmt::print("thread0: sleeping 10s\n");
-                std::this_thread::sleep_for(std::chrono::seconds(10));
+                fmt::print("thread0: sleeping 5s\n");
+                std::this_thread::sleep_for(std::chrono::seconds(5));
                 pair_.second = 69;
                 fmt::print("thread0: {}={}\n",pair_.first,pair_.second);
               });
