@@ -272,7 +272,11 @@ namespace FUSE
                                         ffi_->flags);
 
     state.passthough.emplace_or_visit(fusepath_,
-                                      PassthroughDetails{1,-1,
+                                      PassthroughDetails{1,-1,{}},
+                                      [](auto &val)
+                                      {
+
+                                      });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
