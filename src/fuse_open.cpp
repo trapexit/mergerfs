@@ -315,6 +315,7 @@ namespace FUSE
                                               fmt::println("open: {}; ref_count: {}",
                                                            val.second.filepath.string(),
                                                            val.second.ref_count);
+
                                               rv = ::_open_first(fusepath_,ffi_);
                                               if(rv >= 0)
                                                 {
