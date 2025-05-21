@@ -272,6 +272,7 @@ namespace FUSE
                                         ffi_->flags);
 
     state.passthrough.emplace_and_visit(fusepath_,
+                                        PassthroughDetails{},
                                         [](auto &val)
                                         {
                                         },
