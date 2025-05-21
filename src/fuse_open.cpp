@@ -299,6 +299,15 @@ _open_first(const char       *fusepath_,
   return rv;
 }
 
+static
+int
+_open_again(const std::filesystem::path &branch_path_,
+            const int                    backing_id_,
+            const char                  *fusepath_,
+            fuse_file_info_t            *ffi_)
+
+
+
 constexpr
 auto
 _open_first_lambda(const char       *fusepath_,
