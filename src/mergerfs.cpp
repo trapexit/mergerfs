@@ -353,6 +353,7 @@ main(int    argc_,
               {
                 fmt::print("thread0: sleeping 1s\n");
                 std::this_thread::sleep_for(std::chrono::seconds(1));
+                pair_.second = 69;
                 fmt::print("thread0: {}={}\n",pair_.first,pair_.second);
               });
   }};
