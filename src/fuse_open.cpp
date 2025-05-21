@@ -278,9 +278,10 @@ namespace FUSE
                                         {
                                           val.second.mutex->lock();
                                         },
-                                        [](auto &val)
+                                        [&](auto &val)
                                         {
                                           val.second.mutex->lock();
+                                          backing_id = val.second.backing_id;
                                         });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
