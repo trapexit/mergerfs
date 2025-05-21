@@ -309,6 +309,9 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
+    if(cfg->passthrough)
+      return l::_passthrough(fc_,ffi_);
+
     return rv;
   }
 }
