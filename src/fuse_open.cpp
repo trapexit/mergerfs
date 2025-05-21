@@ -72,9 +72,9 @@ _lchmod_and_open_if_not_writable_and_empty(const std::string &fullpath_,
 
 static
 int
-nfsopenhack(const std::string &fullpath_,
-            const int          flags_,
-            const NFSOpenHack  nfsopenhack_)
+_nfsopenhack(const std::string &fullpath_,
+             const int          flags_,
+             const NFSOpenHack  nfsopenhack_)
 {
   switch(nfsopenhack_)
     {
