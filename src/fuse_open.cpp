@@ -293,6 +293,7 @@ namespace FUSE
                             {
                               if(rv >= 0)
                                 val.second.ref_count++;
+                              val.second.mutex->unlock();
                             });
 
     return rv;
