@@ -21,7 +21,6 @@ public:
 
 public:
   PassthroughDetailMap passthrough;
-  BranchUsageMap branch_usage;
 };
 
 extern State state;
