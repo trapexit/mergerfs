@@ -268,7 +268,7 @@ namespace FUSE
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
-                                              val.second.ref_count=10;
+                                              val.second.ref_count=1;
                                             },
                                             [](auto &val)
                                             {
