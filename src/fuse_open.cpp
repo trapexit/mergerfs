@@ -275,7 +275,6 @@ namespace FUSE
                                                       PassthroughDetails{1,-1,std::mutex{}}),
                                        [](auto &val)
                                         {
-                                          val.second.mutex.lock();
                                         },
                                         [](auto &val)
                                         {
