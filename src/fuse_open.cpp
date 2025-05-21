@@ -342,6 +342,8 @@ _open_first_lambda(const char       *fusepath_,
   return
     [=,&rv_](auto &val)
     {
+      val.second.ref_count = 1;
+
       rv_ = ::_open_first(fusepath_,ffi_);
 
       fmt::println("{} {} {} {}",
@@ -357,7 +359,6 @@ _open_first_lambda(const char       *fusepath_,
           fi = reinterpret_cast<FileInfo*>(ffi_->fh);
           val.second.backing_id = ffi_->backing_id;
           val.second.branch     = fi->branch;
-          val.second.ref_count  = 1;
           fmt::println("open: {}; ref_count: {}",
                        val.second.branch.path,
                        val.second.ref_count);
