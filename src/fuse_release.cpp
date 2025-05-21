@@ -48,6 +48,7 @@ namespace l
                                [](auto &p)
                                {
                                  p.second.ref_count--;
+                                 fmt::print("");
                                  return (p.second.ref_count == 0);
                                });
 
