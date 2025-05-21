@@ -341,6 +341,8 @@ main(int    argc_,
 {
   boost::concurrent_flat_map<int,int> map;
 
+  std::thread t0{[]() {}};
+
   map.visit(0,
             [](const auto &pair_)
             {
