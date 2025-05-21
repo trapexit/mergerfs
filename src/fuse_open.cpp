@@ -292,7 +292,7 @@ namespace FUSE
                                             {
                                               val.second.ref_count=1;
                                               fmt::println("open: {}; ref_count: {}",
-                                                           val.first.string(),
+                                                           val.second.filepath.string(),
                                                            val.second.ref_count);
                                             },
                                             [](auto &val)
