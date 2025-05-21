@@ -309,7 +309,7 @@ namespace FUSE
 
     rv = EINVAL;
     state.passthrough.try_emplace_and_visit(fusepath_,
-                                            [](auto &val)
+                                            [&](auto &val)
                                             {
                                               val.second.ref_count=1;
                                               fmt::println("open: {}; ref_count: {}",
