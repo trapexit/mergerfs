@@ -346,7 +346,7 @@ main(int    argc_,
     map.visit(0,
               [](const auto &pair_)
               {
-                fmt::print("{}={}\n",pair_.first,pair_.second);
+                fmt::print("thread0: {}={}\n",pair_.first,pair_.second);
               });
   }};
 
@@ -355,7 +355,7 @@ main(int    argc_,
     map.visit(0,
               [](const auto &pair_)
               {
-                fmt::print("{}={}\n",pair_.first,pair_.second);
+                fmt::print("thread1: {}={}\n",pair_.first,pair_.second);
               });
   }};
 
