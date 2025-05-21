@@ -323,7 +323,7 @@ namespace FUSE
 
                                                   fi = reinterpret_cast<FileInfo*>(ffi_->fh);
                                                   val.second.backing_id = ffi_->backing_id;
-                                                  val.second.filepath = "";
+                                                  val.second.filepath = fi->branch.path;
                                                 }
                                             },
                                             [](auto &val)
