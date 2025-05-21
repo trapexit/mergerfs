@@ -371,7 +371,10 @@ _open_again_lambda(const char       *fusepath_,
                    val.second.branch.path,
                    val.second.ref_count);
 
-      rv_ = ::_open_again(&val.second.branch,fusepath_,ffi_);
+      rv_ = ::_open_again(&val.second.branch,
+                          val.second.backing_id,
+                          fusepath_,
+                          ffi_);
     };
 }
 
