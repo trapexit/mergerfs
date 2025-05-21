@@ -340,7 +340,7 @@ main(int    argc_,
 {
   boost::concurrent_flat_map<int,int> map;
 
-  map.emplace("key",69);
+
 
   map.visit("key",
             [](const auto &pair_)
