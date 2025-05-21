@@ -1198,6 +1198,12 @@ do_init(fuse_req_t             req,
         f->conn.capable |= FUSE_CAP_DIRECT_IO_ALLOW_MMAP;
       if(inargflags & FUSE_CREATE_SUPP_GROUP)
         f->conn.capable |= FUSE_CAP_CREATE_SUPP_GROUP;
+      if(inargflags & FUSE_PASSTHROUGH)
+        f->conn.capable |= FUSE_CAP_PASSTHROUGH;
+      if(inargflags & FUSE_HANDLE_KILLPRIV)
+        f->conn.capable |= FUSE_CAP_HANDLE_KILLPRIV;
+      if(inargflags & FUSE_HANDLE_KILLPRIV_V2)
+        f->conn.capable |= FUSE_CAP_HANDLE_KILLPRIV_V2;
     }
   else
     {
