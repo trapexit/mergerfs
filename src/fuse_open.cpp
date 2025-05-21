@@ -317,7 +317,7 @@ namespace FUSE
                                                            val.second.ref_count);
 
                                               rv = ::_open_first(fusepath_,ffi_);
-                                              if(rv >= 0)
+                                              if((rv >= 0) && (ffi_->backing_id >= 0))
                                                 {
                                                   val.second.backing_id = ffi_->backing_id;
                                                 }
