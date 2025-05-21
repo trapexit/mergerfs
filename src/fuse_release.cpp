@@ -48,6 +48,10 @@ namespace l
                                [](auto &val)
                                {
                                  val.second.ref_count--;
+                                 if(val.second.ref_count == 0)
+                                   {
+                                     const fuse_context *fc = fuse_get_context();
+                                   }
                                  fmt::println("release: {}; refcount: {}",
                                               val.first.string(),
                                               val.second.ref_count);
