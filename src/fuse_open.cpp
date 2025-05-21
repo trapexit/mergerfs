@@ -271,6 +271,8 @@ namespace FUSE
     ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                         ffi_->flags);
 
+    state.passthough.emplace_or_visit(fusepath_,
+                                      PassthroughDetails{1,-1,
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
