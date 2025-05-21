@@ -275,9 +275,11 @@ namespace FUSE
                                         PassthroughDetails{},
                                         [](auto &val)
                                         {
+                                          val.second.mutex->lock();
                                         },
                                         [](auto &val)
                                         {
+                                          val.second.mutex->lock();
                                         });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
