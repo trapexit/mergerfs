@@ -305,6 +305,7 @@ namespace FUSE
       {
         ffi_->passthrough = true;
         ffi_->backing_id = backing_id;
+        ffi_->keep_cache = false;
       }
 
 
