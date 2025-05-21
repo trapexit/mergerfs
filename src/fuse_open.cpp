@@ -371,7 +371,7 @@ _open_again_lambda(const char       *fusepath_,
                           val.second.backing_id,
                           fusepath_,
                           ffi_);
-      if(rv >= 0)
+      if(rv_ >= 0)
         val.second.ref_count++;
     };
 }
