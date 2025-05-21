@@ -2,6 +2,8 @@
 
 #include "boost/unordered/concurrent_flat_map.hpp"
 
+#include "branch.hpp"
+
 #include <filesystem>
 #include <mutex>
 
