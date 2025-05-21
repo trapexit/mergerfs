@@ -284,6 +284,12 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
+    state.passthough.visit(fusepath_,
+                           [](auto &val)
+                           {
+                             val.second.mutex.unlock();
+                           });
+
     return rv;
   }
 }
