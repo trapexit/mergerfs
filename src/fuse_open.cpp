@@ -35,15 +35,12 @@
 #include <string>
 #include <vector>
 
-
-namespace l
+static
+bool
+_rdonly(const int flags_)
 {
-  static
-  bool
-  rdonly(const int flags_)
-  {
-    return ((flags_ & O_ACCMODE) == O_RDONLY);
-  }
+  return ((flags_ & O_ACCMODE) == O_RDONLY);
+}
 
   static
   int
@@ -266,7 +263,6 @@ namespace l
 
     return rv;
   }
-}
 
 static
 int
