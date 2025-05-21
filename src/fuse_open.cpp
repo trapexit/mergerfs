@@ -336,7 +336,7 @@ _open_first_lambda(const char       *fusepath_,
                    int              &rv_)
 {
   return
-    [&](auto &val)
+    [=,&rv_](auto &val)
     {
       rv_ = ::_open_first(fusepath_,ffi_);
       fmt::println("{} {}",fusepath_,(void*)ffi_);
