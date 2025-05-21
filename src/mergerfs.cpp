@@ -342,6 +342,8 @@ main(int    argc_,
 {
   boost::concurrent_flat_map<int,int> map;
 
+  fmt::print("foobar\n");
+
   std::thread t0{[&]()
   {
     map.visit(0,
