@@ -45,7 +45,7 @@ namespace l
     fs::close(fi_->fd);
 
     state.passthrough.erase_if(fi_->fusepath,
-                               [](const auto &p)
+                               [](auto &p)
                                {
                                  p.second.ref_count--;
                                  return (p.second.ref_count == 0);
