@@ -303,7 +303,6 @@ namespace FUSE
                                   val.second.backing_id = backing_id;
                                   val.second.ref_count++;
                                 }
-                              val.second.mutex->unlock();
                             });
 
     if((rv >= 0) && (backing_id != -1))
