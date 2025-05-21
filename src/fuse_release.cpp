@@ -51,10 +51,10 @@ namespace l
                                  fmt::print("release {}; ref: {}\n",
                                             val.first.string(),
                                             val.second.ref_count);
-                                 val.second.ref_count--;
-                                 fmt::print("release {}; ref: {}\n",
-                                            val.first.string(),
-                                            val.second.ref_count);
+                                 // val.second.ref_count--;
+                                 // fmt::print("release {}; ref: {}\n",
+                                 //            val.first.string(),
+                                 //            val.second.ref_count);
                                  return (val.second.ref_count == 0);
                                });
 
