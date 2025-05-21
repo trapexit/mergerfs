@@ -301,6 +301,31 @@ _open_first(const char       *fusepath_,
 
 constexpr
 auto
+_open_first_lambda(const char       *fusepath_,
+                          fuse_file_info_t *ffi_,
+                          int              &rv_)
+{
+  return
+    [&](auto &val)
+    {
+      fmt::println("open: {}; ref_count: {}",
+                   val.second.filepath.string(),
+                   val.second.ref_count);
+
+      rv_ = ::_open_first(fusepath_,ffi_);
+      if((rv_ >= 0) && (ffi_->backing_id >= 0))
+        {
+          FileInfo *fi;
+
+          fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+          val.second.backing_id = ffi_->backing_id;
+          val.second.filepath = fi->branch.path;
+        }
+    };
+}
+
+constexpr
+auto
 _create_open_first_lambda(const char       *fusepath_,
                           fuse_file_info_t *ffi_,
                           int              &rv_)
