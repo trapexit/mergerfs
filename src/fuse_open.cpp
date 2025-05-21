@@ -307,6 +307,7 @@ namespace FUSE
   {
     int rv;
 
+    rv = EINVAL;
     state.passthrough.try_emplace_and_visit(fusepath_,
                                             [](auto &val)
                                             {
