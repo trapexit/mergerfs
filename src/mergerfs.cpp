@@ -341,7 +341,7 @@ main(int    argc_,
 {
   boost::concurrent_flat_map<int,int> map;
 
-  std::thread t0{[]()
+  std::thread t0{[&]()
   {
     map.visit(0,
               [](const auto &pair_)
@@ -350,7 +350,7 @@ main(int    argc_,
               });
   }};
 
-  std::thread t1{[]()
+  std::thread t1{[&]()
   {
     map.visit(0,
               [](const auto &pair_)
