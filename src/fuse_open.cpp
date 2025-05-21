@@ -299,7 +299,7 @@ _open_first(const char       *fusepath_,
   return rv;
 }
 
-static
+constexpr
 inline
 auto
 _create_open_first_lambda(const char       *fusepath_,
