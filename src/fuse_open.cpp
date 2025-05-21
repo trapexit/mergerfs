@@ -268,6 +268,12 @@ namespace l
   }
 }
 
+static
+int
+_open_first(const char       *fusepath_,
+            fuse_file_info_t *ffi_)
+
+
 namespace FUSE
 {
   int
