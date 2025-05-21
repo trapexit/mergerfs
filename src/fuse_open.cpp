@@ -347,6 +347,7 @@ _open_first_lambda(const char       *fusepath_,
           val.second.backing_id = ffi_->backing_id;
           val.second.branch     = fi->branch;
         }
+
       fmt::println("open: {}; ref_count: {}",
                    val.second.branch.path,
                    val.second.ref_count);
