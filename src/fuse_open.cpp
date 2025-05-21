@@ -241,13 +241,6 @@ namespace l
                       ffi_,
                       link_cow_,
                       nfsopenhack_);
-
-    state.passthrough.emplace_or_visit(fusepath_,
-                                       PassthroughDetails{1,0},
-                                       [](auto &p)
-                                       {
-                                         p.second.ref_count++;
-                                       });
     return rv;
   }
 }
