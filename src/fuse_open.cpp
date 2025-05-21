@@ -274,12 +274,11 @@ namespace FUSE
     state.passthrough.insert_and_visit(std::make_pair(fusepath_,
                                                       PassthroughDetails{1,-1,std::mutex{}}),
                                        [](auto &val)
-                                        {
-                                        },
-                                        [](auto &val)
-                                        {
-
-                                        });
+                                       {
+                                       },
+                                       [](auto &val)
+                                       {
+                                       });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
