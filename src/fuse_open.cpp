@@ -229,6 +229,10 @@ _passthrough(const fuse_context *fc_,
   fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
   backing_id = fuse_passthrough_open(fc_,fi->fd);
+  fmt::println("{} {}",
+               fi->fd,
+               backing_id);
+
   if(backing_id <= 0)
     return 0;
 
