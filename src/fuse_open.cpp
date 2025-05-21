@@ -320,8 +320,6 @@ namespace FUSE
                                               if(rv >= 0)
                                                 {
                                                   val.second.backing_id = ffi_->backing_id;
-
-
                                                 }
                                             },
                                             [](auto &val)
