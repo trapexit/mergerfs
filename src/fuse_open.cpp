@@ -288,30 +288,6 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
-    if((rv >= 0) && (backing_id == -1))
-      {
-        // allocate backing_id
-
-        //backing_id =
-      }
-
-    state.passthrough.visit(fusepath_,
-                            [=](auto &val)
-                            {
-                              if(rv >= 0)
-                                {
-                                  val.second.backing_id = backing_id;
-                                  val.second.ref_count++;
-                                }
-                            });
-
-    if((rv >= 0) && (backing_id != -1))
-      {
-        // ffi_->passthrough = true;
-        // ffi_->backing_id = backing_id;
-        ffi_->keep_cache = false;
-      }
-
     return rv;
   }
 }
