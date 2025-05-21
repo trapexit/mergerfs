@@ -289,7 +289,6 @@ namespace FUSE
     state.passthrough.visit(fusepath_,
                             [](auto &val)
                             {
-                              val.second.mutex.unlock();
                             });
 
     return rv;
