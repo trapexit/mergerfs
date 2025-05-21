@@ -301,6 +301,13 @@ namespace FUSE
                               val.second.mutex->unlock();
                             });
 
+    if((rv >= 0) && (backing_id != -1))
+      {
+        ffi_->passthrough = true;
+        ffi_->backing_id = backing_id;
+      }
+
+
     return rv;
   }
 }
