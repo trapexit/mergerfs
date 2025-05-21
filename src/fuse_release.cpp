@@ -47,6 +47,9 @@ namespace l
     state.passthrough.erase_if(fi_->fusepath,
                                [](auto &val)
                                {
+                                 fmt::print("release {}; ref: {}\n",
+                                            val.first.string(),
+                                            val.second.ref_count);
                                  val.second.ref_count--;
                                  fmt::print("release {}; ref: {}\n",
                                             val.first.string(),
