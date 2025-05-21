@@ -319,6 +319,7 @@ namespace FUSE
                                               rv = ::_open_first(fusepath_,ffi_);
                                               if((rv >= 0) && (ffi_->backing_id >= 0))
                                                 {
+                                                  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
                                                   val.second.backing_id = ffi_->backing_id;
                                                   val.second.filepath = "";
                                                 }
