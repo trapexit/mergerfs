@@ -24,6 +24,7 @@ struct PassthroughDetails
 
   u64 ref_count;
   int backing_id;
+  std::filesystem::path filepath;
 };
 
 class State
