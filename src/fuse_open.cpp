@@ -276,6 +276,10 @@ namespace FUSE
                                        [](auto &val)
                                        {
                                          val.second.mutex.lock();
+                                       },
+                                       [](auto &val)
+                                       {
+
                                        });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
