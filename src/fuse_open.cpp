@@ -343,7 +343,7 @@ _open_first_lambda(const char       *fusepath_,
     [&](auto &val)
     {
       fmt::println("open: {}; ref_count: {}",
-                   val.second.branch_path.string(),
+                   val.second.branch.path.string(),
                    val.second.ref_count);
 
       rv_ = ::_open_first(fusepath_,ffi_);
