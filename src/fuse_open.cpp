@@ -278,7 +278,6 @@ namespace FUSE
                                         {
                                           val.second.mutex = std::make_unique<std::mutex>();
                                           val.second.mutex->lock();
-
                                         },
                                         [&](auto &val)
                                         {
