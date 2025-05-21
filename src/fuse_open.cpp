@@ -271,16 +271,16 @@ namespace FUSE
     ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
                                         ffi_->flags);
 
-    state.passthough.emplace_and_visit(fusepath_,
-                                       PassthroughDetails{1,-1,{}},
-                                       [](auto &val)
-                                       {
-                                         val.second.mutex.lock();
-                                       },
-                                       [](auto &val)
-                                       {
+    state.passthrough.emplace_and_visit(fusepath_,
+                                        PassthroughDetails{1,-1,{}},
+                                        [](auto &val)
+                                        {
+                                          val.second.mutex.lock();
+                                        },
+                                        [](auto &val)
+                                        {
 
-                                       });
+                                        });
     rv = l::open(cfg->func.open.policy,
                  cfg->branches,
                  fusepath_,
@@ -288,11 +288,11 @@ namespace FUSE
                  cfg->link_cow,
                  cfg->nfsopenhack);
 
-    state.passthough.visit(fusepath_,
-                           [](auto &val)
-                           {
-                             val.second.mutex.unlock();
-                           });
+    state.passthrough.visit(fusepath_,
+                            [](auto &val)
+                            {
+                              val.second.mutex.unlock();
+                            });
 
     return rv;
   }
