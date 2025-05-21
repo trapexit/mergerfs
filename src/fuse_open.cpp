@@ -272,18 +272,18 @@ namespace FUSE
                                         ffi_->flags);
 
     state.passthrough.try_emplace_and_visit(fusepath_,
-                                            [=](auto &val)
+                                            [](auto &val)
                                             {
                                               val.second.ref_count = 1;
                                               fmt::print("open {}; ref: {}\n",
-                                                         fusepath_,
+                                                         val.first,
                                                          val.second.ref_count);
                                             },
-                                            [=](auto &val)
+                                            [](auto &val)
                                             {
                                               val.second.ref_count++;
                                               fmt::print("open {}; ref: {}\n",
-                                                         fusepath_,
+                                                         val.first,
                                                          val.second.ref_count);
                                             });
     rv = l::open(cfg->func.open.policy,
