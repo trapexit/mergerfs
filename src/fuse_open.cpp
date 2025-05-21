@@ -314,7 +314,6 @@ namespace FUSE
         ffi_->keep_cache = false;
       }
 
-
     return rv;
   }
 }
