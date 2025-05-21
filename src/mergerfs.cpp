@@ -346,6 +346,7 @@ main(int    argc_,
     map.visit(0,
               [](const auto &pair_)
               {
+                std::this_thread::sleep_for(1s);
                 fmt::print("thread0: {}={}\n",pair_.first,pair_.second);
               });
   }};
