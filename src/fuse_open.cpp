@@ -305,7 +305,11 @@ _create_open_first_lambda(const char       *fusepath_,
                           fuse_file_info_t *ffi_,
                           int              &rv_)
 {
-
+  return
+    [&](auto &val)
+    {
+      rv_ = 1;
+    }
 }
 
 namespace FUSE
