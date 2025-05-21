@@ -241,12 +241,12 @@ _passthrough(const fuse_context *fc_,
 
 static
 int
-open(const Policy::Search &searchFunc_,
-     const Branches       &ibranches_,
-     const char           *fusepath_,
-     fuse_file_info_t     *ffi_,
-     const bool            link_cow_,
-     const NFSOpenHack     nfsopenhack_)
+_open(const Policy::Search &searchFunc_,
+      const Branches       &ibranches_,
+      const char           *fusepath_,
+      fuse_file_info_t     *ffi_,
+      const bool            link_cow_,
+      const NFSOpenHack     nfsopenhack_)
 {
   int rv;
   std::vector<Branch*> obranches;
