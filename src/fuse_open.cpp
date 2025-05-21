@@ -310,7 +310,7 @@ namespace FUSE
                  cfg->nfsopenhack);
 
     if(cfg->passthrough)
-      return l::_passthrough(fc_,ffi_);
+      return l::_passthrough(fc,ffi_);
 
     return rv;
   }
