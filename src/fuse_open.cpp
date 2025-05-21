@@ -315,6 +315,11 @@ namespace FUSE
                                               fmt::println("open: {}; ref_count: {}",
                                                            val.second.filepath.string(),
                                                            val.second.ref_count);
+                                              rv = ::_open(fusepath_,ffi_);
+                                              if(rv >= 0)
+                                                {
+                                                  val.second.backing_id = ffi_->backing_id;
+                                                }
                                             },
                                             [](auto &val)
                                             {
