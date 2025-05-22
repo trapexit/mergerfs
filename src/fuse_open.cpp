@@ -380,10 +380,10 @@ _open_passthrough_first_lambda(const fuse_context *fc_,
       val.second.ref_count++;
       val.second.fi = fi;
 
+      const ugid::SetRootGuard ugid;
 
-      ::_passthrough(fc_,
-
-      val.second.backing_id = ffi_->backing_id =
+      ffi_->backing_id = fuse_passthrough_open(fc_,fi->fd);
+      val.second.backing_id = ffi_->backing_id;
 
     };
 }
