@@ -24,8 +24,9 @@
 
 #include "fuse.h"
 
-#include <thread>
 #include <algorithm>
+#include <fstream>
+#include <thread>
 
 
 namespace l
