@@ -449,7 +449,7 @@ namespace FUSE
        fuse_file_info_t *ffi_)
   {
     Config::Read cfg;
-    const fuse_context *fc  = fuse_get_context();
+    const fuse_context *fc = fuse_get_context();
 
     if(cfg->passthrough)
       return ::_open_passthrough(fusepath_,ffi_);
