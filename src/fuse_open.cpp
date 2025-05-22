@@ -230,7 +230,7 @@ _passthrough(const fuse_context *fc_,
 
   backing_id = fuse_passthrough_open(fc_,fi->fd);
   if(backing_id <= 0)
-    return 0;
+    return -1;
 
   ffi_->passthrough = true;
   ffi_->keep_cache  = false;
