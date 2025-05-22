@@ -386,9 +386,10 @@ _open_passthrough_first_lambda(const fuse_context *fc_,
       rv = fuse_passthrough_open(fc_,fi->fd);
       if(rv >= 0)
         {
-          ffi_->passthrough = true;
-          ffi_->backing_id  = rv;
-          ffi_->keep_cache  = false;
+          ffi_->passthrough     = true;
+          ffi_->backing_id      = rv;
+          val.second.backing_id = rv;
+          ffi_->keep_cache      = false;
         }
     };
 }
