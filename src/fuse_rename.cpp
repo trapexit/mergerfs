@@ -297,11 +297,11 @@ namespace l
 
   static
   int
-  rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
-                           const Branches::Ptr  &branches_,
-                           const std::filesystem::path      &mount_,
-                           const std::filesystem::path      &oldfusepath_,
-                           const std::filesystem::path      &newfusepath_)
+  rename_exdev_abs_symlink(const Policy::Action        &actionPolicy_,
+                           const Branches::Ptr         &branches_,
+                           const std::filesystem::path &mount_,
+                           const std::filesystem::path &oldfusepath_,
+                           const std::filesystem::path &newfusepath_)
   {
     int rv;
     std::filesystem::path target;
