@@ -33,7 +33,7 @@ auto
 _erase_if_lambda(FileInfo *fi_)
 {
   return
-    [](auto &val)
+    [=](auto &val)
     {
       val.second.ref_count--;
       fmt::println("release: {}; refcount: {}; backing_id: {};",
