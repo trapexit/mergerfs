@@ -88,11 +88,11 @@ namespace l
 
   static
   int
-  rename_create_path(const Policy::Search &searchPolicy_,
-                     const Policy::Action &actionPolicy_,
-                     const Branches::Ptr  &branches_,
-                     const gfs::path      &oldfusepath_,
-                     const gfs::path      &newfusepath_)
+  rename_create_path(const Policy::Search        &searchPolicy_,
+                     const Policy::Action        &actionPolicy_,
+                     const Branches::Ptr         &branches_,
+                     const std::filesystem::path &oldfusepath_,
+                     const std::filesystem::path &newfusepath_)
   {
     int rv;
     int error;
