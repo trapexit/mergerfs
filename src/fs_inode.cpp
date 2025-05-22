@@ -110,8 +110,8 @@ static
 uint64_t
 devino_hash32(const std::string_view branch_path_,
               const std::string_view fusepath_,
-              const mode_t      mode_,
-              const ino_t       ino_)
+              const mode_t           mode_,
+              const ino_t            ino_)
 {
   uint64_t h;
 
