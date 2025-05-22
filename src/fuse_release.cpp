@@ -44,7 +44,7 @@ _erase_if_lambda()
         {
           const fuse_context *fc = fuse_get_context();
           int rv = fuse_passthrough_close(fc,val.second.backing_id);
-
+          fmt::println("fuse_passthrough_close() = {}",rv);
         }
       return (val.second.ref_count == 0);
     };
