@@ -374,7 +374,7 @@ _open_passthrough_first_lambda(const char       *fusepath_,
       if(rv_ < 0)
         return;
 
-
+      val.second.ref_count++;
 
 
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
