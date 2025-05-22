@@ -374,14 +374,13 @@ _open_passthrough_first_lambda(const char       *fusepath_,
       if(rv_ < 0)
         return;
 
-      val.second.ref_count++;
-
-
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      val.second.fd         = fi->fd;
+      val.second.ref_count++;
+      val.second.fd = fi->fd;
+
+
       val.second.backing_id = ffi_->backing_id;
-      val.second.branch     = fi->branch;
 
 
       val.second.ref_count  =  1;
