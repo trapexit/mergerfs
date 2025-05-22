@@ -27,8 +27,6 @@
 #include "fuse_symlink.hpp"
 #include "ugid.hpp"
 
-#include "ghc/filesystem.hpp"
-
 #include <algorithm>
 #include <string>
 #include <vector>
