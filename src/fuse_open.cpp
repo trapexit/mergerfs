@@ -270,8 +270,8 @@ _open(const Policy::Search &searchFunc_,
 
 static
 int
-_open_first(const char       *fusepath_,
-            fuse_file_info_t *ffi_)
+_open_passthrough_first(const char       *fusepath_,
+                        fuse_file_info_t *ffi_)
 {
   int rv;
   Config::Read cfg;
