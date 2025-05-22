@@ -340,6 +340,7 @@ _open_passthrough_first_lambda(const char       *fusepath_,
   return
     [=,&rv_](auto &val)
     {
+      rv_ = ::_open(fusepath_,ffi_);
 
 
 
@@ -390,10 +391,13 @@ _open_passthrough(const char       *fusepath_,
   int rv;
   auto &pt = state.passthrough;
 
-  rv = EINVAL;
+  rv = -EINVAL;
   pt.try_emplace_and_visit(fusepath_,
                            ::_open_passthrough_first_lambda(fusepath_,ffi_,rv),
                            ::_open_passthrough_again_lambda(fusepath_,ffi_,rv));
+  if(rv < 0)
+
+
 
   return rv;
 }
