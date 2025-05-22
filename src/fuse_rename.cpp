@@ -299,13 +299,13 @@ namespace l
   int
   rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
                            const Branches::Ptr  &branches_,
-                           const gfs::path      &mount_,
-                           const gfs::path      &oldfusepath_,
-                           const gfs::path      &newfusepath_)
+                           const std::filesystem::path      &mount_,
+                           const std::filesystem::path      &oldfusepath_,
+                           const std::filesystem::path      &newfusepath_)
   {
     int rv;
-    gfs::path target;
-    gfs::path linkpath;
+    std::filesystem::path target;
+    std::filesystem::path linkpath;
     std::vector<Branch*> branches;
 
     rv = l::rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,branches);
@@ -326,9 +326,9 @@ namespace l
 
   static
   int
-  rename_exdev(Config::Read    &cfg_,
-               const gfs::path &oldfusepath_,
-               const gfs::path &newfusepath_)
+  rename_exdev(Config::Read                &cfg_,
+               const std::filesystem::path &oldfusepath_,
+               const std::filesystem::path &newfusepath_)
   {
     switch(cfg_->rename_exdev)
       {
