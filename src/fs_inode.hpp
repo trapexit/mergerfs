@@ -20,7 +20,6 @@
 
 #include "fuse_kernel.h"
 
-#include "nonstd/string_view.hpp"
 #include "ghc/filesystem.hpp"
 
 #include <cstdint>
