@@ -302,7 +302,7 @@ _open_passthrough_first(const fuse_context *fc_,
   Config::Read cfg;
   const ugid::Set ugid(fc_->uid,fc_->gid);
 
-  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
 
   if(cfg->writeback_cache)
     ::_tweak_flags_writeback_cache(&ffi_->flags);
