@@ -26,7 +26,6 @@
 #include <string>
 
 #include <pthread.h>
-#include <string.h>
 #include <sys/stat.h>
 
 typedef uint64_t (*inodefunc_t)(const string_view,
