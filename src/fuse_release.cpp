@@ -29,7 +29,7 @@
 static
 constexpr
 auto
-_erase_if_lambda(void)
+_erase_if_lambda()
 {
   return
     [](auto &val)
