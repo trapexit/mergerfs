@@ -4297,5 +4297,5 @@ fuse_passthrough_close(const struct fuse_context *fc_,
 
   dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
 
-  return ioctl(dev_fuse_fd, FUSE_DEV_IOC_BACKING_CLOSE, &backing_id_);
+  return ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_CLOSE,&backing_id_);
 }
