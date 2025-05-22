@@ -227,8 +227,8 @@ namespace l
                              std::vector<Branch*>        &obranches_)
   {
     int rv;
-    gfs::path clonesrc;
-    gfs::path clonetgt;
+    std::filesystem::path clonesrc;
+    std::filesystem::path clonetgt;
 
     rv = actionPolicy_(ibranches_,oldfusepath_,obranches_);
     if(rv == -1)
