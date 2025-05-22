@@ -123,7 +123,7 @@ CPU::cpu2core()
     {
       int core_id;
       std::ifstream ifs;
-      ghc::filesystem::path path;
+      std::filesystem::path path;
 
       if(!CPU_ISSET(i,&cpuset))
         continue;
