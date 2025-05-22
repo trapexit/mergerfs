@@ -396,7 +396,11 @@ _open_passthrough(const char       *fusepath_,
                            ::_open_passthrough_first_lambda(fusepath_,ffi_,rv),
                            ::_open_passthrough_again_lambda(fusepath_,ffi_,rv));
   if(rv < 0)
-
+    pt.erase_if(fusepath_,
+                [](auto &val)
+                {
+                  return (val.second.ref_count == 0);
+                });
 
 
   return rv;
