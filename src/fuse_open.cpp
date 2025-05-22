@@ -233,7 +233,7 @@ _passthrough(const fuse_context *fc_,
                fi->fd,
                backing_id);
 
-  if(backing_id < 0)
+  if(backing_id <= 0)
     return 0;
 
   ffi_->passthrough = true;
