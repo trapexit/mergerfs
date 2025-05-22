@@ -36,11 +36,6 @@ _erase_if_lambda(FileInfo *fi_)
     [=](auto &val)
     {
       val.second.ref_count--;
-      fmt::println("release: {}; refcount: {}; backing_id: {};",
-                   val.first.string(),
-                   val.second.ref_count,
-                   val.second.backing_id);
-
       if(val.second.ref_count == 0)
         {
           const ugid::SetRootGuard ugid;
