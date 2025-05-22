@@ -17,7 +17,6 @@
 */
 
 #include "cpu.hpp"
-#include "ghc/filesystem.hpp"
 #include "fmt/core.h"
 
 #include <pthread.h>
