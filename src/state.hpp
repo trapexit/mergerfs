@@ -13,14 +13,13 @@ struct PassthroughDetails
 {
   PassthroughDetails()
     : ref_count(0),
-      fd(-1),
       backing_id(-1)
   {
   }
 
-  FileInfo *fi;
   int ref_count;
   int backing_id;
+  FileInfo *fi;
 };
 
 class State
