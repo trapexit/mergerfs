@@ -15,8 +15,8 @@ constexpr int INVALID_BACKING_ID = -1;
 struct PassthroughDetails
 {
   PassthroughDetails()
-    : ref_count(-1),
-      backing_id(-1),
+    : ref_count(INVALID_REFCOUNT),
+      backing_id(INVALID_BACKING_ID),
       fi(nullptr)
   {
   }
