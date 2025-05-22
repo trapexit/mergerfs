@@ -361,8 +361,8 @@ _open_first_lambda(const char       *fusepath_,
     };
 }
 
-constexpr
 static
+constexpr
 auto
 _open_again_lambda(const char       *fusepath_,
                    fuse_file_info_t *ffi_,
