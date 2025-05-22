@@ -371,10 +371,10 @@ _open_passthrough_again_lambda(const char       *fusepath_,
   return
     [=,&rv_](auto &val)
     {
-      rv_ = ::_open_again(&val.second.branch,
-                          val.second.backing_id,
-                          fusepath_,
-                          ffi_);
+      rv_ = ::_open_passthrough_again(&val.second.branch,
+                                      val.second.backing_id,
+                                      fusepath_,
+                                      ffi_);
       if(rv_ >= 0)
         val.second.ref_count++;
       fmt::println("open: {}; ref_count: {}; backing_id: {};",
