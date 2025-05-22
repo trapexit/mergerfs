@@ -32,14 +32,14 @@
 #include "fuse.h"
 #include "fuse_config.hpp"
 
-#include "nonstd/string_view.hpp"
 
+#include <array>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
-#include <array>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -133,7 +133,7 @@ static
 bool
 should_ignore(const std::string &key_)
 {
-  constexpr const std::array<nonstd::string_view,13> ignored_keys =
+  constexpr const std::array<std::string_view,13> ignored_keys =
     {
       "atomic_o_trunc",
       "big_writes",
