@@ -26,6 +26,8 @@
 
 #include <string>
 
+namespace l
+{
 static
 constexpr
 auto
@@ -66,13 +68,13 @@ _release(FileInfo   *fi_,
   fs::close(fi_->fd);
 
   state.passthrough.erase_if(fi_->fusepath,
-                             [](auto &p) { return true; });
+
 
   delete fi_;
 
   return 0;
 }
-
+}
 
 namespace FUSE
 {
