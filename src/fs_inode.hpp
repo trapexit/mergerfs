@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
-#include <filesystem>
 
 #include <sys/stat.h>
 
