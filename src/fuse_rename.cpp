@@ -33,7 +33,6 @@
 
 #include <iostream>
 
-namespace gfs = ghc::filesystem;
 
 namespace error
 {
