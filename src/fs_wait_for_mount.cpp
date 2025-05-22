@@ -20,8 +20,9 @@
 #include "syslog.hpp"
 
 #include "fs_exists.hpp"
-#include "fs_lstat.hpp"
 #include "fs_lgetxattr.hpp"
+#include "fs_lstat.hpp"
+#include "fs_stat.hpp"
 
 #include <functional>
 #include <thread>
