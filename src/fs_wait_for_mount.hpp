@@ -18,7 +18,6 @@
 #pragma once
 
 #include "fs_pathvector.hpp"
-#include "fs_stat.hpp"
 
 #include <chrono>
 #include <vector>
