@@ -274,10 +274,10 @@ static
 inline
 constexpr
 auto
-_open_passthrough_first_lambda(const fuse_context *fc_,
-                               const char         *fusepath_,
-                               fuse_file_info_t   *ffi_,
-                               int                &rv_)
+_open_passthrough_insert_lambda(const fuse_context *fc_,
+                                const char         *fusepath_,
+                                fuse_file_info_t   *ffi_,
+                                int                &rv_)
 {
   return
     [=,&rv_](auto &val)
@@ -311,10 +311,10 @@ static
 inline
 constexpr
 auto
-_open_passthrough_again_lambda(const fuse_context *fc_,
-                               const char         *fusepath_,
-                               fuse_file_info_t   *ffi_,
-                               int                &rv_)
+_open_passthrough_update_lambda(const fuse_context *fc_,
+                                const char         *fusepath_,
+                                fuse_file_info_t   *ffi_,
+                                int                &rv_)
 {
   return
     [=,&rv_](auto &val)
