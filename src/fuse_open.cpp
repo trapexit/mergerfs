@@ -266,8 +266,9 @@ _open(const Policy::Search &searchFunc_,
 
 static
 int
-_open(const char       *fusepath_,
-      fuse_file_info_t *ffi_)
+_open(const fuse_context *fc_,
+      const char         *fusepath_,
+      fuse_file_info_t   *ffi_)
 {
   int rv;
   Config::Read cfg;
