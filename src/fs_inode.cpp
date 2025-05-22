@@ -22,7 +22,6 @@
 #include "rapidhash.h"
 
 #include <cstdint>
-#include <string>
 
 #include <pthread.h>
 #include <sys/stat.h>
