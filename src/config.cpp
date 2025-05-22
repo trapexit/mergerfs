@@ -197,6 +197,7 @@ Config::Config()
   _map["moveonenospc"]           = &moveonenospc;
   _map["nfsopenhack"]            = &nfsopenhack;
   _map["nullrw"]                 = &nullrw;
+  _map["passthrough"]            = &passthrough;
   _map["pid"]                    = &pid;
   _map["parallel-direct-writes"] = &parallel_direct_writes;
   _map["pin-threads"]            = &fuse_pin_threads;
