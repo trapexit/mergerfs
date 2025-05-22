@@ -300,7 +300,6 @@ _open_passthrough_first(const fuse_context *fc_,
 {
   int rv;
   Config::Read cfg;
-  const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
