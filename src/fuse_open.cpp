@@ -369,6 +369,9 @@ _open_passthrough_first_lambda(const char       *fusepath_,
     [=,&rv_](auto &val)
     {
       rv_ = ::_open(fusepath_,ffi_);
+      if(rv_ < 0)
+        return;
+
       if(rv >= 0)
         {
           FileInfo *fi;
