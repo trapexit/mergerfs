@@ -18,7 +18,7 @@ struct PassthroughDetails
   {
   }
 
-  u64 ref_count;
+  int ref_count;
   int fd;
   int backing_id;
   Branch branch;
