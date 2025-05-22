@@ -125,6 +125,8 @@ public:
   ConfigBOOL     dropcacheonclose;
   ConfigBOOL     export_support;
   FlushOnClose   flushonclose;
+  ConfigBOOL     handle_killpriv = true;
+  ConfigBOOL     handle_killpriv_v2 = true;
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;
   Funcs          func;
