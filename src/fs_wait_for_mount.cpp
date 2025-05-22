@@ -36,19 +36,6 @@ namespace fs
 
 constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(333);
 
-namespace std
-{
-  template<>
-  struct hash<fs::Path>
-  {
-    std::size_t
-    operator()(fs::Path const &path_) const noexcept
-    {
-      return std::hash<std::string>{}(path_.string());
-    }
-  };
-}
-
 static
 bool
 _branch_is_mounted(const struct stat &src_st_,
