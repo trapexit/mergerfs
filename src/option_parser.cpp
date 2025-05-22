@@ -33,6 +33,7 @@
 #include "fuse_config.hpp"
 
 #include <array>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
