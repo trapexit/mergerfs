@@ -284,7 +284,7 @@ _open_passthrough_first_lambda(const fuse_context *fc_,
     {
       FileInfo *fi;
 
-      rv_ = ::_open(fusepath_,ffi_);
+      rv_ = ::_open(fc_,fusepath_,ffi_);
       if(rv_ < 0)
         return;
 
