@@ -266,6 +266,34 @@ _open(const Policy::Search &searchFunc_,
 
 static
 int
+_open(const char       *fusepath_,
+      fuse_file_info_t *ffi_)
+{
+  int rv;
+  Config::Read cfg;
+  const fuse_context *fc  = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
+
+  if(cfg->writeback_cache)
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
+
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+                                      ffi_->flags);
+
+  rv = ::_open(cfg->func.open.policy,
+               cfg->branches,
+               fusepath_,
+               ffi_,
+               cfg->link_cow,
+               cfg->nfsopenhack);
+
+  return rv;
+}
+
+static
+int
 _open_passthrough_first(const char       *fusepath_,
                         fuse_file_info_t *ffi_)
 {
@@ -406,33 +434,7 @@ _open_passthrough(const char       *fusepath_,
   return rv;
 }
 
-static
-int
-_open(const char       *fusepath_,
-      fuse_file_info_t *ffi_)
-{
-  int rv;
-  Config::Read cfg;
-  const fuse_context *fc  = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
 
-  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
-
-  if(cfg->writeback_cache)
-    ::_tweak_flags_writeback_cache(&ffi_->flags);
-
-  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
-                                      ffi_->flags);
-
-  rv = ::_open(cfg->func.open.policy,
-               cfg->branches,
-               fusepath_,
-               ffi_,
-               cfg->link_cow,
-               cfg->nfsopenhack);
-
-  return rv;
-}
 
 namespace FUSE
 {
