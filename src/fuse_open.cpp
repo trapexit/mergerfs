@@ -377,25 +377,10 @@ _open_passthrough_first_lambda(const char       *fusepath_,
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
       val.second.ref_count++;
-      val.second.fd = fi->fd;
+      val.second.fi = fi;
 
 
       val.second.backing_id = ffi_->backing_id;
-
-
-      val.second.ref_count  =  1;
-      val.second.backing_id = -1;
-
-      rv_ = ::_open_passthrough_first(fusepath_,ffi_);
-      if((rv_ >= 0) && (ffi_->backing_id >= 0))
-        {
-          FileInfo *fi;
-
-          fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-          val.second.fd         = fi->fd;
-          val.second.backing_id = ffi_->backing_id;
-          val.second.branch     = fi->branch;
-        }
     };
 }
 
