@@ -32,7 +32,6 @@
 #include "fuse.h"
 #include "fuse_config.hpp"
 
-
 #include <array>
 #include <fstream>
 #include <iomanip>
