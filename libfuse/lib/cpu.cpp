@@ -71,7 +71,7 @@ CPU::setaffinity(const pthread_t     thread_id_,
 }
 
 static
-ghc::filesystem::path
+std::filesystem::path
 generate_cpu_core_id_path(const int cpu_id_)
 {
   const ghc::filesystem::path basepath{"/sys/devices/system/cpu"};
