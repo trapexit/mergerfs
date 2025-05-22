@@ -418,7 +418,7 @@ _open(const char       *fusepath_,
   ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  rv = l::open(cfg->func.open.policy,
+  rv = ::_open(cfg->func.open.policy,
                cfg->branches,
                fusepath_,
                ffi_,
