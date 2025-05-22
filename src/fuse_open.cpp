@@ -414,6 +414,4 @@ namespace FUSE
 
     return ::_open(fusepath_,ffi_);
   }
-
-
 }
