@@ -22,7 +22,6 @@ struct PassthroughDetails
   int ref_count;
   int fd;
   int backing_id;
-  Branch branch;
 };
 
 class State
