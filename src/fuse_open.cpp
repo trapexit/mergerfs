@@ -452,8 +452,8 @@ namespace FUSE
     const fuse_context *fc = fuse_get_context();
 
     if(cfg->passthrough)
-      return ::_open_passthrough(fusepath_,ffi_);
+      return ::_open_passthrough(fc,fusepath_,ffi_);
 
-    return ::_open(fusepath_,ffi_);
+    return ::_open(fc,fusepath_,ffi_);
   }
 }
