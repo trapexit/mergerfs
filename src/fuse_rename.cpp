@@ -352,9 +352,9 @@ namespace l
 
   static
   int
-  rename(Config::Read    &cfg_,
-         const gfs::path &oldpath_,
-         const gfs::path &newpath_)
+  rename(Config::Read                &cfg_,
+         const std::filesystem::path &oldpath_,
+         const std::filesystem::path &newpath_)
   {
     if(cfg_->func.create.policy.path_preserving() && !cfg_->ignorepponrename)
       return l::rename_preserve_path(cfg_->func.rename.policy,
