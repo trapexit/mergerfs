@@ -431,7 +431,8 @@ _open_passthrough(const fuse_context *fc_,
                            ::_open_passthrough_first_lambda(fusepath_,ffi_,rv),
                            ::_open_passthrough_again_lambda(fusepath_,ffi_,rv));
 
-  // There is a chance something came in and
+  // Can't abort an emplace_and_visit and can't assume another thread
+  // hasn't created this.
   if(rv < 0)
     pt.erase_if(fusepath_,
                 [](auto &val)
