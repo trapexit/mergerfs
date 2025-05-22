@@ -20,11 +20,10 @@
 
 #include "fuse_kernel.h"
 
-#include "ghc/filesystem.hpp"
-
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <filesystem>
 
 #include <sys/stat.h>
 
