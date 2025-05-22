@@ -200,8 +200,8 @@ namespace l
 
   static
   void
-  rename_exdev_rename_back(const std::vector<Branch*> &branches_,
-                           const gfs::path       &oldfusepath_)
+  rename_exdev_rename_back(const std::vector<Branch*>  &branches_,
+                           const std::filesystem::path &oldfusepath_)
   {
     gfs::path oldpath;
     gfs::path newpath;
