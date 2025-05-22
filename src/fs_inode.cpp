@@ -54,8 +54,8 @@ static
 uint64_t
 passthrough(const std::string_view branch_path_,
             const std::string_view fusepath_,
-            const mode_t      mode_,
-            const ino_t       ino_)
+            const mode_t           mode_,
+            const ino_t            ino_)
 {
   return ino_;
 }
@@ -64,8 +64,8 @@ static
 uint64_t
 path_hash(const std::string_view branch_path_,
           const std::string_view fusepath_,
-          const mode_t      mode_,
-          const ino_t       ino_)
+          const mode_t           mode_,
+          const ino_t            ino_)
 {
   uint64_t seed;
 
@@ -78,8 +78,8 @@ static
 uint64_t
 path_hash32(const std::string_view branch_path_,
             const std::string_view fusepath_,
-            const mode_t      mode_,
-            const ino_t       ino_)
+            const mode_t           mode_,
+            const ino_t            ino_)
 {
   uint64_t h;
 
