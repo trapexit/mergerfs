@@ -315,10 +315,11 @@ _open_passthrough_again(const Branch     *branch_,
   ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
+  // link_cow disabled
   rv = ::_open_core(branch_,
                     fusepath_,
                     ffi_,
-                    cfg->link_cow,
+                    false, //cfg->link_cow,
                     cfg->nfsopenhack);
 
   ffi_->passthrough = true;
