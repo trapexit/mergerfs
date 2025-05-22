@@ -412,6 +412,7 @@ namespace FUSE
     if(cfg->passthrough)
       return ::_open_passthrough(fusepath_,ffi_);
 
-    return ::_open(fusepath_,ffi_);
+    return 0;
+    //    return ::_open(fusepath_,ffi_);
   }
 }
