@@ -9,6 +9,9 @@
 
 #include "int_types.h"
 
+constexpr int INVALID_REFCOUNT   = -1;
+constexpr int INVALID_BACKING_ID = -1;
+
 struct PassthroughDetails
 {
   PassthroughDetails()
