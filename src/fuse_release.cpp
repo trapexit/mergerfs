@@ -30,7 +30,7 @@
 static
 constexpr
 auto
-_erase_if_lambda()
+_erase_if_lambda(FileInfo *fi_)
 {
   return
     [](auto &val)
