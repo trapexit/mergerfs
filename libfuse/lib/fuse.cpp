@@ -4296,6 +4296,6 @@ fuse_passthrough_close(const struct fuse_context *fc_,
   int dev_fuse_fd;
 
   dev_fuse_fd = fuse_get_dev_fuse_fd(fc_);
-
+  fmt::print("close: {} {}\n",dev_fuse_fd,backing_id_);
   return ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_CLOSE,&backing_id_);
 }
