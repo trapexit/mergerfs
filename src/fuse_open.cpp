@@ -334,8 +334,8 @@ _open_passthrough(const fuse_context *fc_,
 
   rv = -EINVAL;
   pt.try_emplace_and_visit(fusepath_,
-                           ::_open_passthrough_first_lambda(fc_,fusepath_,ffi_,rv),
-                           ::_open_passthrough_again_lambda(fc_,fusepath_,ffi_,rv));
+                           ::_open_passthrough_insert_lambda(fc_,fusepath_,ffi_,rv),
+                           ::_open_passthrough_update_lambda(fc_,fusepath_,ffi_,rv));
 
   // Can't abort an emplace_and_visit and can't assume another thread
   // hasn't created this.
