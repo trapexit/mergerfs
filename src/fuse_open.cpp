@@ -364,9 +364,9 @@ _open_passthrough_first_lambda(const char       *fusepath_,
 static
 constexpr
 auto
-_open_again_lambda(const char       *fusepath_,
-                   fuse_file_info_t *ffi_,
-                   int              &rv_)
+_open_passthrough_again_lambda(const char       *fusepath_,
+                               fuse_file_info_t *ffi_,
+                               int              &rv_)
 {
   return
     [=,&rv_](auto &val)
