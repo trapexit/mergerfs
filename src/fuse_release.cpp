@@ -28,7 +28,6 @@
 
 namespace l
 {
-  static
   constexpr
   auto
   _erase_if_lambda(void)
