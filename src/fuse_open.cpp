@@ -219,28 +219,6 @@ _open_core(const Branch      *branch_,
 
 static
 int
-_passthrough(const fuse_context *fc_,
-             fuse_file_info_t   *ffi_)
-{
-  FileInfo *fi;
-  int backing_id;
-  const ugid::SetRootGuard ugid;
-
-  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-
-  backing_id = fuse_passthrough_open(fc_,fi->fd);
-  if(backing_id <= 0)
-    return -1;
-
-  ffi_->passthrough = true;
-  ffi_->keep_cache  = false;
-  ffi_->backing_id  = backing_id;
-
-  return 0;
-}
-
-static
-int
 _open(const Policy::Search &searchFunc_,
       const Branches       &ibranches_,
       const char           *fusepath_,
