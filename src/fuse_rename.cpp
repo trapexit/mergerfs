@@ -203,8 +203,8 @@ namespace l
   rename_exdev_rename_back(const std::vector<Branch*>  &branches_,
                            const std::filesystem::path &oldfusepath_)
   {
-    gfs::path oldpath;
-    gfs::path newpath;
+    std::filesystem::path oldpath;
+    std::filesystem::path newpath;
 
     for(auto &branch : branches_)
       {
