@@ -361,9 +361,10 @@ static
 inline
 constexpr
 auto
-_open_passthrough_first_lambda(const char       *fusepath_,
-                               fuse_file_info_t *ffi_,
-                               int              &rv_)
+_open_passthrough_first_lambda(const fuse_context *fc_,
+                               const char         *fusepath_,
+                               fuse_file_info_t   *ffi_,
+                               int                &rv_)
 {
   return
     [=,&rv_](auto &val)
@@ -380,7 +381,10 @@ _open_passthrough_first_lambda(const char       *fusepath_,
       val.second.fi = fi;
 
 
-      val.second.backing_id = ffi_->backing_id;
+      ::_passthrough(fc_,
+
+      val.second.backing_id = ffi_->backing_id =
+
     };
 }
 
