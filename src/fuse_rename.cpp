@@ -99,8 +99,8 @@ namespace l
     StrVec toremove;
     std::vector<Branch*> newbranches;
     std::vector<Branch*> oldbranches;
-    gfs::path oldfullpath;
-    gfs::path newfullpath;
+    std::filesystem::path oldfullpath;
+    std::filesystem::path newfullpath;
 
     rv = actionPolicy_(branches_,oldfusepath_,oldbranches);
     if(rv == -1)
