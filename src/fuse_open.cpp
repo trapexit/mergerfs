@@ -301,10 +301,10 @@ _open_passthrough_first(const char       *fusepath_,
 
 static
 int
-_open_again(const Branch     *branch_,
-            const int         backing_id_,
-            const char       *fusepath_,
-            fuse_file_info_t *ffi_)
+_open_passthrough_again(const Branch     *branch_,
+                        const int         backing_id_,
+                        const char       *fusepath_,
+                        fuse_file_info_t *ffi_)
 {
   int rv;
   Config::Read cfg;
