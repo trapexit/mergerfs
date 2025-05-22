@@ -430,11 +430,13 @@ _open_passthrough(const fuse_context *fc_,
   pt.try_emplace_and_visit(fusepath_,
                            ::_open_passthrough_first_lambda(fusepath_,ffi_,rv),
                            ::_open_passthrough_again_lambda(fusepath_,ffi_,rv));
+
+  // There is a chance something came in and
   if(rv < 0)
     pt.erase_if(fusepath_,
                 [](auto &val)
                 {
-                  return (val.second.ref_count == 0);
+                  return (val.second.ref_count <= 0);
                 });
 
 
