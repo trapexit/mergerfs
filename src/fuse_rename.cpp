@@ -221,10 +221,10 @@ namespace l
 
   static
   int
-  rename_exdev_rename_target(const Policy::Action &actionPolicy_,
-                             const Branches::Ptr  &ibranches_,
-                             const gfs::path      &oldfusepath_,
-                             std::vector<Branch*> &obranches_)
+  rename_exdev_rename_target(const Policy::Action        &actionPolicy_,
+                             const Branches::Ptr         &ibranches_,
+                             const std::filesystem::path &oldfusepath_,
+                             std::vector<Branch*>        &obranches_)
   {
     int rv;
     gfs::path clonesrc;
