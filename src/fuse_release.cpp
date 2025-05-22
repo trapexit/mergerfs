@@ -26,6 +26,29 @@
 
 #include <string>
 
+static
+constexpr
+auto
+_erase_if_lambda()
+{
+  return
+    [](auto &val)
+    {
+      val.second.ref_count--;
+      fmt::println("release: {}; refcount: {}; backing_id: {};",
+                   val.first.string(),
+                   val.second.ref_count,
+                   val.second.backing_id);
+
+      if(val.second.ref_count == 0)
+        {
+          const fuse_context *fc = fuse_get_context();
+          int rv = fuse_passthrough_close(fc,val.second.backing_id);
+
+        }
+      return (val.second.ref_count == 0);
+    };
+}
 
 static
 int
