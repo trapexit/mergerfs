@@ -271,40 +271,6 @@ _open(const fuse_context *fc_,
 }
 
 static
-int
-_open_passthrough_again(const Branch     *branch_,
-                        const int         backing_id_,
-                        const char       *fusepath_,
-                        fuse_file_info_t *ffi_)
-{
-  int rv;
-  Config::Read cfg;
-  const fuse_context *fc  = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
-
-  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
-
-  if(cfg->writeback_cache)
-    ::_tweak_flags_writeback_cache(&ffi_->flags);
-
-  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
-                                      ffi_->flags);
-
-  // link_cow disabled
-  rv = ::_open_core(branch_,
-                    fusepath_,
-                    ffi_,
-                    false, //cfg->link_cow,
-                    cfg->nfsopenhack);
-
-  ffi_->passthrough = true;
-  ffi_->keep_cache  = false;
-  ffi_->backing_id  = backing_id_;
-
-  return rv;
-}
-
-static
 inline
 constexpr
 auto
