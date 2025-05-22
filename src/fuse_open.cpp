@@ -397,6 +397,7 @@ _open_passthrough(const char *fusepath_,
   state.passthrough.try_emplace_and_visit(fusepath_,
                                           first_lambda,
                                           again_lambda);
+
   return rv;
 }
 
