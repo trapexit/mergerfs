@@ -19,7 +19,6 @@
 #include "fs_inode.hpp"
 
 #include "ef.hpp"
-#include "errno.hpp"
 #include "rapidhash.h"
 
 #include <cstdint>
