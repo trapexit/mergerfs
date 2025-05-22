@@ -269,10 +269,10 @@ namespace l
 
   static
   int
-  rename_exdev_rel_symlink(const Policy::Action &actionPolicy_,
-                           const Branches::Ptr  &branches_,
-                           const gfs::path      &oldfusepath_,
-                           const gfs::path      &newfusepath_)
+  rename_exdev_rel_symlink(const Policy::Action        &actionPolicy_,
+                           const Branches::Ptr         &branches_,
+                           const std::filesystem::path &oldfusepath_,
+                           const std::filesystem::path &newfusepath_)
   {
     int rv;
     gfs::path target;
