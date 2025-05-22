@@ -41,11 +41,10 @@
 #include "rwlock.hpp"
 #include "tofrom_wrapper.hpp"
 
-#include "ghc/filesystem.hpp"
-
 #include "fuse.h"
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
