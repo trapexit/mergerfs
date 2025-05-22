@@ -36,7 +36,7 @@ _erase_if_lambda(FileInfo *fi_)
     [=](auto &val)
     {
       val.second.ref_count--;
-      if(val.second.ref_count == 0)
+      if(val.second.ref_count <= 0)
         {
           const ugid::SetRootGuard ugid;
           const fuse_context *fc = fuse_get_context();
