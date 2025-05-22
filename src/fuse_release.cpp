@@ -68,22 +68,22 @@ namespace l
     fs::close(fi_->fd);
 
     state.passthrough.erase_if(fi_->fusepath,
+                               l::_erase_if_lambda());
 
+    delete fi_;
 
-                               delete fi_;
-
-                               return 0;
-                               }
+    return 0;
   }
+}
 
-  namespace FUSE
+namespace FUSE
+{
+  int
+  release(const fuse_file_info_t *ffi_)
   {
-    int
-    release(const fuse_file_info_t *ffi_)
-    {
-      Config::Read cfg;
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    Config::Read cfg;
+    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return l::_release(fi,cfg->dropcacheonclose);
-    }
+    return l::_release(fi,cfg->dropcacheonclose);
   }
+}
