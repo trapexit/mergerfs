@@ -26,46 +26,53 @@
 
 #include <string>
 
-namespace l
+static
+constexpr
+auto
+_erase_if_lambda(void)
 {
-  static
-  int
-  _release(FileInfo   *fi_,
-           const bool  dropcacheonclose_)
-  {
-    // according to Feh of nocache calling it once doesn't always work
-    // https://github.com/Feh/nocache
-    if(dropcacheonclose_)
-      {
-        fs::fadvise_dontneed(fi_->fd);
-        fs::fadvise_dontneed(fi_->fd);
-      }
+  return
+    [](auto &val)
+    {
+      val.second.ref_count--;
+      fmt::println("release: {}; refcount: {}; backing_id: {};",
+                   val.first.string(),
+                   val.second.ref_count,
+                   val.second.backing_id);
 
-    fs::close(fi_->fd);
-
-    state.passthrough.erase_if(fi_->fusepath,
-                               [](auto &val)
-                               {
-                                 val.second.ref_count--;
-                                 fmt::println("release: {}; refcount: {}; backing_id: {};",
-                                              val.first.string(),
-                                              val.second.ref_count,
-                                              val.second.backing_id);
-
-                                 if(val.second.ref_count == 0)
-                                   {
-                                     const fuse_context *fc = fuse_get_context();
-                                     int rv = fuse_passthrough_close(fc,val.second.backing_id);
-                                     fmt::println("fuse_passthrough_close() = {}",rv);
-                                   }
-                                 return (val.second.ref_count == 0);
-                               });
-
-    delete fi_;
-
-    return 0;
-  }
+      if(val.second.ref_count == 0)
+        {
+          const fuse_context *fc = fuse_get_context();
+          int rv = fuse_passthrough_close(fc,val.second.backing_id);
+          fmt::println("fuse_passthrough_close() = {}",rv);
+        }
+      return (val.second.ref_count == 0);
+    };
 }
+
+static
+int
+_release(FileInfo   *fi_,
+         const bool  dropcacheonclose_)
+{
+  // according to Feh of nocache calling it once doesn't always work
+  // https://github.com/Feh/nocache
+  if(dropcacheonclose_)
+    {
+      fs::fadvise_dontneed(fi_->fd);
+      fs::fadvise_dontneed(fi_->fd);
+    }
+
+  fs::close(fi_->fd);
+
+  state.passthrough.erase_if(fi_->fusepath,
+                             ::_erase_if_lambda());
+
+  delete fi_;
+
+  return 0;
+}
+
 
 namespace FUSE
 {
@@ -75,6 +82,6 @@ namespace FUSE
     Config::Read cfg;
     FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    return l::_release(fi,cfg->dropcacheonclose);
+    return ::_release(fi,cfg->dropcacheonclose);
   }
 }
