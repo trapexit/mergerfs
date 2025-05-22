@@ -27,45 +27,44 @@
 #include <string>
 
 
-namespace l
+static
+int
+_release(FileInfo   *fi_,
+         const bool  dropcacheonclose_)
 {
-  static
-  int
-  release(FileInfo   *fi_,
-          const bool  dropcacheonclose_)
-  {
-    // according to Feh of nocache calling it once doesn't always work
-    // https://github.com/Feh/nocache
-    if(dropcacheonclose_)
-      {
-        fs::fadvise_dontneed(fi_->fd);
-        fs::fadvise_dontneed(fi_->fd);
-      }
+  // according to Feh of nocache calling it once doesn't always work
+  // https://github.com/Feh/nocache
+  if(dropcacheonclose_)
+    {
+      fs::fadvise_dontneed(fi_->fd);
+      fs::fadvise_dontneed(fi_->fd);
+    }
 
-    fs::close(fi_->fd);
+  fs::close(fi_->fd);
 
-    state.passthrough.erase_if(fi_->fusepath,
-                               [](auto &val)
-                               {
-                                 val.second.ref_count--;
-                                 fmt::println("release: {}; refcount: {}; backing_id: {};",
-                                              val.first.string(),
-                                              val.second.ref_count,
-                                              val.second.backing_id);
+  state.passthrough.erase_if(fi_->fusepath,
+                             [](auto &val)
+                             {
+                               val.second.ref_count--;
+                               fmt::println("release: {}; refcount: {}; backing_id: {};",
+                                            val.first.string(),
+                                            val.second.ref_count,
+                                            val.second.backing_id);
 
-                                 if(val.second.ref_count == 0)
-                                   {
-                                     const fuse_context *fc = fuse_get_context();
-                                     fuse_passthrough_close(fc,val.second.backing_id);
-                                   }
-                                 return (val.second.ref_count == 0);
-                               });
+                               if(val.second.ref_count == 0)
+                                 {
+                                   const fuse_context *fc = fuse_get_context();
+                                   int rv = fuse_passthrough_close(fc,val.second.backing_id);
 
-    delete fi_;
+                                 }
+                               return (val.second.ref_count == 0);
+                             });
 
-    return 0;
-  }
+  delete fi_;
+
+  return 0;
 }
+
 
 namespace FUSE
 {
