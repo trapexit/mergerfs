@@ -371,10 +371,6 @@ _open_passthrough_again_lambda(const char       *fusepath_,
                                       ffi_);
       if(rv_ >= 0)
         val.second.ref_count++;
-      fmt::println("open: {}; ref_count: {}; backing_id: {};",
-                   val.second.branch.path,
-                   val.second.ref_count,
-                   val.second.backing_id);
     };
 }
 
