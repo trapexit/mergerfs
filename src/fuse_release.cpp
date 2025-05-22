@@ -75,16 +75,22 @@ _release(FileInfo   *fi_,
   return 0;
 }
 
+static
+int
+_release(const fuse_file_info_t *ffi_)
+{
+  Config::Read cfg;
+  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+  return ::_release(fi,
+                    cfg->dropcacheonclose);
+}
 
 namespace FUSE
 {
   int
   release(const fuse_file_info_t *ffi_)
   {
-    Config::Read cfg;
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-
-    return ::_release(fi,
-                      cfg->dropcacheonclose);
+    return ::_release(ffi_);
   }
 }
