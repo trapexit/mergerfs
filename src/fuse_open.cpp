@@ -304,6 +304,10 @@ _open_passthrough_first_lambda(const fuse_context *fc_,
           val.second.backing_id = rv;
           ffi_->keep_cache      = false;
         }
+
+      fmt::println("{} {}",
+                   fi->fd,
+                   val.second.backing_id);
     };
 }
 
