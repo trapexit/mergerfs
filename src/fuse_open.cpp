@@ -362,6 +362,7 @@ _open_passthrough_first_lambda(const char       *fusepath_,
 }
 
 static
+inline
 constexpr
 auto
 _open_passthrough_again_lambda(const char       *fusepath_,
