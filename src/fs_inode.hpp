@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 #include <sys/stat.h>
 
