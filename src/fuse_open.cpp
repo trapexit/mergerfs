@@ -400,6 +400,14 @@ _open_passthrough(const char       *fusepath_,
   return rv;
 }
 
+static
+int
+_open(const char       *fusepath_,
+      fuse_file_info_t *ffi_)
+{
+
+}
+
 namespace FUSE
 {
   int
