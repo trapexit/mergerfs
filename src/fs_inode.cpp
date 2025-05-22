@@ -198,8 +198,8 @@ namespace fs
     uint64_t
     calc(const std::string_view branch_path_,
          const std::string_view fusepath_,
-         const mode_t      mode_,
-         const ino_t       ino_)
+         const mode_t           mode_,
+         const ino_t            ino_)
     {
       return g_func(branch_path_,fusepath_,mode_,ino_);
     }
