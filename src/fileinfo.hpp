@@ -50,7 +50,6 @@ public:
   {
   }
 
-
 public:
   int fd;
   Branch branch;
