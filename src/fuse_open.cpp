@@ -386,7 +386,7 @@ _open_passthrough_again_lambda(const char       *fusepath_,
 
 static
 int
-_open_passthrough(const char *fusepath_,
+_open_passthrough(const char       *fusepath_,
                   fuse_file_info_t *ffi_)
 {
   int rv;
