@@ -37,8 +37,8 @@ namespace fs
 
     uint64_t calc(const std::string_view basepath,
                   const std::string_view fusepath,
-                  const mode_t              mode,
-                  const ino_t               ino);
+                  const mode_t           mode,
+                  const ino_t            ino);
 
     void calc(const std::string_view  basepath,
               const std::string_view  fusepath,
