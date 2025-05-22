@@ -340,6 +340,12 @@ _open_passthrough_first_lambda(const char       *fusepath_,
   return
     [=,&rv_](auto &val)
     {
+
+
+
+
+      return;
+
       val.second.ref_count  =  1;
       val.second.backing_id = -1;
 
