@@ -333,6 +333,7 @@ _open_passthrough_again(const Branch     *branch_,
 }
 
 static
+inline
 constexpr
 auto
 _open_passthrough_first_lambda(const char       *fusepath_,
