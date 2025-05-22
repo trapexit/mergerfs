@@ -74,7 +74,7 @@ static
 std::filesystem::path
 generate_cpu_core_id_path(const int cpu_id_)
 {
-  const ghc::filesystem::path basepath{"/sys/devices/system/cpu"};
+  const std::filesystem::path basepath{"/sys/devices/system/cpu"};
 
   return basepath / fmt::format("cpu{}",cpu_id_) / "topology" / "core_id";
 }
