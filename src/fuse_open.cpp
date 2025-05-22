@@ -454,6 +454,6 @@ namespace FUSE
     if(cfg->passthrough)
       return ::_open_passthrough(fc,fusepath_,ffi_);
 
-    return ::_open(fc,fusepath_,ffi_);
+    return ::_open_normal(fc,fusepath_,ffi_);
   }
 }
