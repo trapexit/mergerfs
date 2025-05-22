@@ -378,8 +378,8 @@ namespace FUSE
   {
     int rv;
     Config::Read cfg;
-    gfs::path oldfusepath(oldfusepath_);
-    gfs::path newfusepath(newfusepath_);
+    std::filesystem::path oldfusepath(oldfusepath_);
+    std::filesystem::path newfusepath(newfusepath_);
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
