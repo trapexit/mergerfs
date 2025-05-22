@@ -390,13 +390,14 @@ _open_passthrough(const char *fusepath_,
                   fuse_file_info_t *ffi_)
 {
   int rv;
-  constexpr auto first_lambda = ::_open_passthrough_first_lambda(fusepath_,ffi_,rv);
-  constexpr auto again_lambda = ::_open_passthrough_again_lambda(fusepath_,ffi_,rv);
+  constexpr auto first_lambda =
+  constexpr auto again_lambda =
 
   rv = EINVAL;
   state.passthrough.try_emplace_and_visit(fusepath_,
-                                          first_lambda,
-                                          again_lambda);
+                                          ::_open_passthrough_first_lambda(fusepath_,ffi_,rv),
+                                          ::_open_passthrough_again_lambda(fusepath_,ffi_,rv));
+
 
   return rv;
 }
