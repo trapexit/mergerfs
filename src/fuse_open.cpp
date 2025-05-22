@@ -384,19 +384,34 @@ _open_passthrough_again_lambda(const char       *fusepath_,
     };
 }
 
+static
+int
+_open_passthrough(const char *fusepath_,
+                  fuse_file_info_t *ffi_)
+{
+  int rv;
+
+  rv = EINVAL;
+  state.passthrough.try_emplace_and_visit(fusepath_,
+                                          ::_open_first_lambda(fusepath_,ffi_,rv),
+                                          ::_open_again_lambda(fusepath_,ffi_,rv));
+
+  return rv;
+}
+
 namespace FUSE
 {
   int
   open(const char       *fusepath_,
        fuse_file_info_t *ffi_)
   {
-    int rv;
+    Config::Read cfg;
 
-    rv = EINVAL;
-    state.passthrough.try_emplace_and_visit(fusepath_,
-                                            ::_open_first_lambda(fusepath_,ffi_,rv),
-                                            ::_open_again_lambda(fusepath_,ffi_,rv));
+    if(cfg->passthrough)
+      return ::_open_passthrough(fusepath_,ffi_);
 
-    return rv;
+    return ::_open(fusepath_,ffi_);
   }
+
+
 }
