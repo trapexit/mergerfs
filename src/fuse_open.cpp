@@ -290,8 +290,8 @@ _open_passthrough_first_lambda(const fuse_context *fc_,
 
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      val.second.ref_count++;
-      val.second.fi = fi;
+      val.second.ref_count = 1;
+      val.second.fi        = fi;
 
       int rv;
       const ugid::SetRootGuard ugid;
