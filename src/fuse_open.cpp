@@ -410,12 +410,12 @@ _open(const char       *fusepath_,
   const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  l::config_to_ffi_flags(cfg,fc->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
 
   if(cfg->writeback_cache)
-    l::tweak_flags_writeback_cache(&ffi_->flags);
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
 
-  ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
   rv = l::open(cfg->func.open.policy,
