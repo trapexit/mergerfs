@@ -406,7 +406,7 @@ _open_passthrough_again_lambda(const fuse_context *fc_,
   return
     [=,&rv_](auto &val)
     {
-      rv_ = 0;
+      rv_ = -EINVAL;
     };
 }
 
