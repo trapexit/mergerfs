@@ -18,6 +18,7 @@ struct PassthroughDetails
   {
   }
 
+  FileInfo *fi;
   int ref_count;
   int fd;
   int backing_id;
