@@ -436,7 +436,7 @@ check_for_mount_loop(Config::Write  &cfg_,
   branches = cfg_->branches->to_paths();
   for(const auto &branch : branches)
     {
-      if(ghc::filesystem::equivalent(branch,mount,ec))
+      if(std::filesystem::equivalent(branch,mount,ec))
         {
           std::string errstr;
 
