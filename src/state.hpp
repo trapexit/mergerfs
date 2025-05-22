@@ -12,7 +12,7 @@
 struct PassthroughDetails
 {
   PassthroughDetails()
-    : ref_count(-1),
+    : ref_count(0),
       backing_id(-1),
       fi(nullptr)
   {
