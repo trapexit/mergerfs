@@ -184,6 +184,8 @@ Config::Config()
   _map["func.unlink"]            = &func.unlink;
   _map["func.utimens"]           = &func.utimens;
   _map["fuse_msg_size"]          = &fuse_msg_size;
+  _map["handle-killpriv"]        = &handle_killpriv;
+  _map["handle-killpriv-v2"]     = &handle_killpriv_v2;
   _map["ignorepponrename"]       = &ignorepponrename;
   _map["inodecalc"]              = &inodecalc;
   _map["kernel_cache"]           = &kernel_cache;
