@@ -18,13 +18,6 @@ struct PassthroughDetails
   {
   }
 
-  PassthroughDetails(const u64 ref_count_,
-                     const int backing_id_)
-    : ref_count(ref_count_),
-      backing_id(backing_id_)
-  {
-  }
-
   u64 ref_count;
   int fd;
   int backing_id;
