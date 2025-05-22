@@ -26,6 +26,7 @@
 
 #include "fuse.h"
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
