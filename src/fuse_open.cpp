@@ -331,7 +331,7 @@ _open_for_update_lambda(const fuse_context *fc_,
                        &pd_->fi->branch,
                        fusepath_,
                        ffi_,
-                       false, // link_cow
+                       false, // link_cow, need to always open the original
                        cfg->nfsopenhack);
   if(*_rv_ < 0)
     return;
