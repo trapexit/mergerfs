@@ -30,7 +30,8 @@
 static
 constexpr
 auto
-_erase_if_lambda(FileInfo *fi_)
+_erase_if_lambda(FileInfo *fi_,
+                 bool     &existed_in_map_)
 {
   return
     [=](auto &val)
