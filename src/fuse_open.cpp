@@ -313,6 +313,7 @@ _open_for_update_lambda(const fuse_context *fc_,
                         fuse_file_info_t   *ffi_,
                         PassthroughDetails *pd_)
 {
+  int rv;
   Config::Read cfg;
   std::string fdpath;
   const ugid::Set ugid(fc_->uid,fc_->gid);
@@ -327,14 +328,14 @@ _open_for_update_lambda(const fuse_context *fc_,
 
   fdpath = fmt::format("/proc/self/fd/{}",pd_->fi->fd);
 
-  *_rv_ = ::_open_core(fdpath,
-                       &pd_->fi->branch,
-                       fusepath_,
-                       ffi_,
-                       false, // link_cow, need to always open the original
-                       cfg->nfsopenhack);
-  if(*_rv_ < 0)
-    return;
+  rv = ::_open_core(fdpath,
+                    &pd_->fi->branch,
+                    fusepath_,
+                    ffi_,
+                    false, // link_cow, need to always open the original
+                    cfg->nfsopenhack);
+  if(rv < 0)
+    return rv;
 
   val.second.ref_count++;
 
