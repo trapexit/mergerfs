@@ -274,10 +274,10 @@ _open(const fuse_context *fc_,
 
 static
 int
-_open_for_first_lambda(const fuse_context *fc_,
-                       const char         *fusepath_,
-                       fuse_file_info_t   *ffi_,
-                       PassthroughDetails *pd_)
+_open_for_insert_lambda(const fuse_context *fc_,
+                        const char         *fusepath_,
+                        fuse_file_info_t   *ffi_,
+                        PassthroughDetails *pd_)
 {
   int rv;
   FileInfo *fi;
