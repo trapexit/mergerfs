@@ -204,7 +204,7 @@ _open_core(const std::string &filepath_,
 
   fd = fs::open(filepath_,ffi_->flags);
   if((fd == -1) && (errno == EACCES))
-    fd = ::_nfsopenhack(fullpath,ffi_->flags,nfsopenhack_);
+    fd = ::_nfsopenhack(filepath_,ffi_->flags,nfsopenhack_);
   if(fd == -1)
     return -errno;
 
