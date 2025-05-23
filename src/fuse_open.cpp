@@ -342,6 +342,8 @@ _open_for_update_lambda(const fuse_context *fc_,
   ffi_->backing_id  = val.second.backing_id;
   ffi_->passthrough = true;
   ffi_->keep_cache  = false;
+
+  return rv;
 }
 
 static
