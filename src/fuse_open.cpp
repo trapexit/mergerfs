@@ -284,8 +284,8 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
     {
       FileInfo *fi;
 
-      *_rv_ = ::_open(fc_,fusepath_,ffi_);
-      if(*_rv_ < 0)
+      _rv_ = ::_open(fc_,fusepath_,ffi_);
+      if(_rv_ < 0)
         return;
 
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
@@ -317,7 +317,7 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
                                 int                &_rv_)
 {
   return
-    [=](auto &val)
+    [=,&_rv_](auto &val)
     {
       _rv_ = -EINVAL;
     };
