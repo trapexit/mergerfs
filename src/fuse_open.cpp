@@ -332,6 +332,8 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
                            ffi_,
                            false, // link_cow
                            cfg->nfsopenhack);
+      if(*_rv_ < 0)
+        return;
 
       ffi_->backing_id  = val.second.backing_id;
       ffi_->passthrough = true;
