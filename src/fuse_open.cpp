@@ -232,7 +232,7 @@ _open(const Policy::Search &searchFunc_,
   if(rv == -1)
     return -errno;
 
-  filepath = fs::path::make(obranches[0]->path,filepath_);
+  filepath = fs::path::make(obranches[0]->path,fusepath_);
   rv = ::_open_core(filepath,
                     obranches[0],
                     fusepath_,
