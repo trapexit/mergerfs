@@ -287,7 +287,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
       if(*_rv_ < 0)
         return;
 
-      auto fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
       val.second.ref_count = 1;
       val.second.fi        = fi;
