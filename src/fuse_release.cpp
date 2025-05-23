@@ -52,6 +52,8 @@ int
 _release(FileInfo   *fi_,
          const bool  dropcacheonclose_)
 {
+  bool existed_in_map;
+
   // according to Feh of nocache calling it once doesn't always work
   // https://github.com/Feh/nocache
   if(dropcacheonclose_)
@@ -60,6 +62,7 @@ _release(FileInfo   *fi_,
       fs::fadvise_dontneed(fi_->fd);
     }
 
+  existed_in_map = false;
   state.passthrough.erase_if(fi_->fusepath,
                              ::_erase_if_lambda(fi_));
 
