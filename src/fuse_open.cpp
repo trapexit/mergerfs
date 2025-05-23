@@ -286,8 +286,8 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
 
       throw std::runtime_error("foo");
 
-      rv_ = ::_open(fc_,fusepath_,ffi_);
-      if(rv_ < 0)
+      $rv_ = ::_open(fc_,fusepath_,ffi_);
+      if($rv_ < 0)
         return;
 
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
