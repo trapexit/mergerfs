@@ -289,14 +289,14 @@ _open_for_lambda(const fuse_context *fc_,
 
   fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-  val.second.ref_count = 1;
-  val.second.fi        = fi;
+  pd_.ref_count = 1;
+  pd_.fi        = fi;
 
-      int backing_id;
+  int backing_id;
 
-      backing_id = FUSE::passthrough_open(fc_,fi->fd);
-      if(backing_id < 0)
-        return;
+  backing_id = FUSE::passthrough_open(fc_,fi->fd);
+  if(backing_id < 0)
+    return 0;
 
       val.second.backing_id = backing_id;
       ffi_->backing_id      = backing_id;
