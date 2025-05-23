@@ -199,7 +199,7 @@ _open_core(const std::string &filepath_,
   FileInfo *fi;
 
   if(link_cow_ && fs::cow::is_eligible(filepath_.c_str(),ffi_->flags))
-    fs::cow::break_link(fullpath.c_str());
+    fs::cow::break_link(filepath_.c_str());
 
   fd = fs::open(fullpath,ffi_->flags);
   if((fd == -1) && (errno == EACCES))
