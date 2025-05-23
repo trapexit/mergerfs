@@ -298,13 +298,13 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
       int backing_id;
 
       backing_id = FUSE::passthrough_open(fc_,fi->fd);
-      if(rv >= 0)
-        {
-          val.second.backing_id = backing_id;
-          ffi_->backing_id      = backing_id;
-          ffi_->passthrough     = true;
-          ffi_->keep_cache      = false;
-        }
+      if(rv < 0)
+        return;
+
+      val.second.backing_id = backing_id;
+      ffi_->backing_id      = backing_id;
+      ffi_->passthrough     = true;
+      ffi_->keep_cache      = false;
     };
 }
 
