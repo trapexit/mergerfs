@@ -335,6 +335,8 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
       if(*_rv_ < 0)
         return;
 
+      val.second.ref_count++;
+
       ffi_->backing_id  = val.second.backing_id;
       ffi_->passthrough = true;
       ffi_->keep_cache  = false;
