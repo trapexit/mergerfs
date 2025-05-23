@@ -298,7 +298,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
       int backing_id;
 
       backing_id = FUSE::passthrough_open(fc_,fi->fd);
-      if(rv < 0)
+      if(backing_id < 0)
         return;
 
       val.second.backing_id = backing_id;
