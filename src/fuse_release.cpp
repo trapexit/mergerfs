@@ -43,7 +43,8 @@ _erase_if_lambda(FileInfo *fi_,
         {
           const ugid::SetRootGuard ugid;
           const fuse_context *fc = fuse_get_context();
-          fuse_passthrough_close(fc,val.second.backing_id);
+          if(val.second.backing_id > 0)
+            fuse_passthrough_close(fc,val.second.backing_id);
           fs::close(fi_->fd);
           delete fi_;
         }
