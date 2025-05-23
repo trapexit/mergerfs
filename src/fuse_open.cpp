@@ -405,9 +405,9 @@ _open_passthrough(const fuse_context *fc_,
   // ref_count is default (0).
   if(rv < 0)
     pt.erase_if(fusepath_,
-                [](auto &val)
+                [](auto &val_)
                 {
-                  return (val.second.ref_count <= 0);
+                  return (val_.second.ref_count <= 0);
                 });
 
   return rv;
