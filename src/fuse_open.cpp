@@ -333,7 +333,7 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
                                 int                *_rv_)
 {
   return
-    [=](auto &val)
+    [=](auto &val_)
     {
       if(val.second.ref_count == 0)
         {
