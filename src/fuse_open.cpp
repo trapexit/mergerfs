@@ -261,7 +261,7 @@ _open(const Policy::Search &searchFunc_,
   if(rv == -1)
     return -errno;
 
-  filepath = fs::path::make(branch_->path,fusepath_);
+  filepath = fs::path::make(obranches[0]->path,fusepath_);
   rv = ::_open_core(obranches[0],
                     fusepath_,
                     ffi_,
