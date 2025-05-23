@@ -225,13 +225,16 @@ _open(const Policy::Search &searchFunc_,
       const NFSOpenHack     nfsopenhack_)
 {
   int rv;
+  std::string filepath;
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
   if(rv == -1)
     return -errno;
 
-  rv = ::_open_core(obranches[0],
+  filepath = fs::path::make(obranches[0]->path,filepath_);
+  rv = ::_open_core(filepath,
+                    obranches[0],
                     fusepath_,
                     ffi_,
                     link_cow_,
