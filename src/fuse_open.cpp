@@ -277,9 +277,31 @@ inline
 int
 _open_for_lambda(const fuse_context *fc_,
                  const char         *fusepath_,
-                 fuse_file_info_t   *ffi_)
+                 fuse_file_info_t   *ffi_,
+                 PassthroughDetails &pd_)
 {
+  int rv;
+  FileInfo *fi;
 
+  rv = ::_open(fc_,fusepath_,ffi_);
+  if(rv < 0)
+    return rv;
+
+  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+  val.second.ref_count = 1;
+  val.second.fi        = fi;
+
+      int backing_id;
+
+      backing_id = FUSE::passthrough_open(fc_,fi->fd);
+      if(backing_id < 0)
+        return;
+
+      val.second.backing_id = backing_id;
+      ffi_->backing_id      = backing_id;
+      ffi_->passthrough     = true;
+      ffi_->keep_cache      = false;
 }
 
 
