@@ -277,7 +277,7 @@ int
 _open_for_insert_lambda(const fuse_context *fc_,
                         const char         *fusepath_,
                         fuse_file_info_t   *ffi_,
-8                        PassthroughDetails *pd_)
+                        PassthroughDetails *pd_)
 {
   int rv;
   FileInfo *fi;
