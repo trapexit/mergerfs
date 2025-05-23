@@ -374,6 +374,7 @@ _open_passthrough(const fuse_context *fc_,
                 {
                   return (val.second.ref_count <= 0);
                 });
+
   return rv;
 }
 
