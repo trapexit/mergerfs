@@ -402,7 +402,7 @@ _open_passthrough(const fuse_context *fc_,
 
   // Can't abort an emplace_and_visit and can't assume another thread
   // hasn't created an entry since this failure so erase only if
-  // ref_count is default.
+  // ref_count is default (0).
   if(rv < 0)
     pt.erase_if(fusepath_,
                 [](auto &val)
