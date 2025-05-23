@@ -44,7 +44,6 @@ _erase_if_lambda(FileInfo *fi_,
           delete fi_;
         }
 
-
       val.second.ref_count--;
       if(val.second.ref_count > 0)
         return false;
