@@ -326,7 +326,9 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
 
       *_rv_ = fs::open(fdpath,ffi_->flags);
 
-      ffi_->backing_id = val.second.backing_id;
+      ffi_->backing_id  = val.second.backing_id;
+      ffi_->passthrough = true;
+      ffi_->keep_cache  = false;
     };
 }
 
