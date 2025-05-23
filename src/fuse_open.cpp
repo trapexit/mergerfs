@@ -277,7 +277,7 @@ auto
 _open_passthrough_insert_lambda(const fuse_context *fc_,
                                 const char         *fusepath_,
                                 fuse_file_info_t   *ffi_,
-                                [[gnu::out]] int                *_rv_)
+                                int                *_rv_)
 {
   return
     [=](auto &val)
