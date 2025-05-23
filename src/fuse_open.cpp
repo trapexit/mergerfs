@@ -273,7 +273,6 @@ _open(const fuse_context *fc_,
 }
 
 static
-inline
 int
 _open_for_first_lambda(const fuse_context *fc_,
                        const char         *fusepath_,
