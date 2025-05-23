@@ -285,7 +285,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
       FileInfo *fi;
 
       *$rv_ = ::_open(fc_,fusepath_,ffi_);
-      if($rv_ < 0)
+      if(*$rv_ < 0)
         return;
 
       fi = reinterpret_cast<FileInfo*>(ffi_->fh);
