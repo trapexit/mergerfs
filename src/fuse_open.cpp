@@ -197,9 +197,6 @@ _open_core(const std::string &filepath_,
 {
   int fd;
   FileInfo *fi;
-  std::string fullpath;
-
-  fullpath = fs::path::make(branch_->path,fusepath_);
 
   if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),ffi_->flags))
     fs::cow::break_link(fullpath.c_str());
