@@ -302,6 +302,8 @@ _open_for_lambda(const fuse_context *fc_,
   ffi_->backing_id      = backing_id;
   ffi_->passthrough     = true;
   ffi_->keep_cache      = false;
+
+  return 0;
 }
 
 
