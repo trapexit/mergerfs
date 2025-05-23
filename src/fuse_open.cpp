@@ -280,7 +280,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
                                 int                *_rv_)
 {
   return
-    [=,&_rv_](auto &val)
+    [=](auto &val)
     {
       FileInfo *fi;
 
