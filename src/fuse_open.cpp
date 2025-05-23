@@ -319,7 +319,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
   return
     [=](auto &val_)
     {
-      *_rv_ = ::_open_for_lambda(fc_,fusepath_,ffi_,&val_.second);
+      *_rv_ = ::_open_for_first_lambda(fc_,fusepath_,ffi_,&val_.second);
     };
 }
 
