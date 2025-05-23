@@ -295,7 +295,6 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
       val.second.fi        = fi;
 
       int rv;
-      const ugid::SetRootGuard ugid;
 
       rv = fuse_passthrough_open(fc_,fi->fd);
       if(rv >= 0)
