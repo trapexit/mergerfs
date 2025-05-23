@@ -17,11 +17,10 @@
 #include "state.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
 #include "fs_fadvise.hpp"
-#include "ugid.hpp"
+#include "fuse_passthrough.hpp"
 
 #include "fuse.h"
 
