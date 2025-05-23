@@ -321,7 +321,7 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
-      $rv_ = -EINVAL;
+      *$rv_ = -EINVAL;
     };
 }
 
