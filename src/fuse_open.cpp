@@ -319,10 +319,12 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
+      int rv;
       std::string fdpath;
 
       fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
 
+      *_rv_ = fs::open(fdpath,ffi_->flags);
     };
 }
 
