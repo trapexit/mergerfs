@@ -278,7 +278,7 @@ int
 _open_for_lambda(const fuse_context *fc_,
                  const char         *fusepath_,
                  fuse_file_info_t   *ffi_,
-                 PassthroughDetails &pd_)
+                 PassthroughDetails *pd_)
 {
   int rv;
   FileInfo *fi;
@@ -319,6 +319,8 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
+      *_rv_ = ::_open_for_lambda(fc_,fusepath_,ffi_,&val.
+
       *_rv_ = ::_open(fc_,fusepath_,ffi_);
       if(*_rv_ < 0)
         return;
