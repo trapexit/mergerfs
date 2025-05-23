@@ -414,7 +414,6 @@ _open_passthrough(const fuse_context *fc_,
 }
 
 
-
 namespace FUSE
 {
   int
