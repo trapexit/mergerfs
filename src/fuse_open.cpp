@@ -322,8 +322,6 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
       FileInfo *fi;
       std::string fdpath;
 
-      fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-
       fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
     };
 }
