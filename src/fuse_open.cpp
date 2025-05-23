@@ -343,7 +343,7 @@ _open_passthrough(const fuse_context *fc_,
     }
   catch(...)
     {
-      fmt::println("{}",pt.count());
+      fmt::println("{}",pt.size());
     }
 
   // Can't abort an emplace_and_visit and can't assume another thread
