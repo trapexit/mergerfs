@@ -331,7 +331,7 @@ _open_passthrough(const fuse_context *fc_,
                   const char         *fusepath_,
                   fuse_file_info_t   *ffi_)
 {
-  int rv;
+  int $rv;
   auto &pt = state.passthrough;
 
   rv = -EINVAL;
