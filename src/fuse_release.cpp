@@ -38,6 +38,13 @@ _erase_if_lambda(FileInfo *fi_,
     {
       *existed_in_map_ = true;
 
+      if(fi_ != val.second.fi)
+        {
+          fs::close(fi_->fd);
+          delete fi_;
+        }
+
+
       val.second.ref_count--;
       if(val.second.ref_count > 0)
         return false;
