@@ -45,6 +45,7 @@ _erase_if_lambda(FileInfo *fi_,
           const fuse_context *fc = fuse_get_context();
           fuse_passthrough_close(fc,val.second.backing_id);
           fs::close(fi_->fd);
+          delete fi_;
         }
       return (val.second.ref_count == 0);
     };
@@ -68,8 +69,6 @@ _release(FileInfo   *fi_,
   existed_in_map = false;
   state.passthrough.erase_if(fi_->fusepath,
                              ::_erase_if_lambda(fi_,&existed_in_map));
-
-  delete fi_;
 
   return 0;
 }
