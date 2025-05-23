@@ -41,7 +41,6 @@ _erase_if_lambda(FileInfo *fi_)
           const ugid::SetRootGuard ugid;
           const fuse_context *fc = fuse_get_context();
           int rv = fuse_passthrough_close(fc,val.second.backing_id);
-          fmt::println("fuse_passthrough_close() = {} {} {}",rv,errno,strerror(errno));
           fs::close(fi_->fd);
         }
       return (val.second.ref_count == 0);
