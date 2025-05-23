@@ -68,6 +68,9 @@ _release(FileInfo   *fi_,
       fs::fadvise_dontneed(fi_->fd);
     }
 
+  // Because of course the API doesn't tell you if the key
+  // existed. Just how many it erased and in this case I only want to
+  // erase if there are no more references to it.
   existed_in_map = false;
   state.passthrough.erase_if(fi_->fusepath,
                              ::_erase_if_lambda(fi_,&existed_in_map));
