@@ -69,6 +69,11 @@ _release(FileInfo   *fi_,
   existed_in_map = false;
   state.passthrough.erase_if(fi_->fusepath,
                              ::_erase_if_lambda(fi_,&existed_in_map));
+  if(existed_in_map)
+    return 0;
+
+  fs::close(fi_->fd);
+  delete fi_;
 
   return 0;
 }
