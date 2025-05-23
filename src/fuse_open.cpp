@@ -313,7 +313,34 @@ _open_for_update_lambda(const fuse_context *fc_,
                         fuse_file_info_t   *ffi_,
                         PassthroughDetails *pd_)
 {
+  Config::Read cfg;
+  std::string fdpath;
+  const ugid::Set ugid(fc_->uid,fc_->gid);
 
+  ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
+
+  if(cfg->writeback_cache)
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
+
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+                                      ffi_->flags);
+
+  fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
+
+  *_rv_ = ::_open_core(fdpath,
+                       &val.second.fi->branch,
+                       fusepath_,
+                       ffi_,
+                       false, // link_cow
+                       cfg->nfsopenhack);
+  if(*_rv_ < 0)
+    return;
+
+  val.second.ref_count++;
+
+  ffi_->backing_id  = val.second.backing_id;
+  ffi_->passthrough = true;
+  ffi_->keep_cache  = false;
 }
 
 static
@@ -353,34 +380,7 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
           return;
         }
 
-      Config::Read cfg;
-      std::string fdpath;
-      const ugid::Set ugid(fc_->uid,fc_->gid);
 
-      ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
-
-      if(cfg->writeback_cache)
-        ::_tweak_flags_writeback_cache(&ffi_->flags);
-
-      ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
-                                          ffi_->flags);
-
-      fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
-
-      *_rv_ = ::_open_core(fdpath,
-                           &val.second.fi->branch,
-                           fusepath_,
-                           ffi_,
-                           false, // link_cow
-                           cfg->nfsopenhack);
-      if(*_rv_ < 0)
-        return;
-
-      val.second.ref_count++;
-
-      ffi_->backing_id  = val.second.backing_id;
-      ffi_->passthrough = true;
-      ffi_->keep_cache  = false;
     };
 }
 
