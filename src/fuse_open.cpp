@@ -335,9 +335,11 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
-      // TODO: put insert in function to call here
       if(val.second.ref_count == 0)
-        return;
+        {
+          *_rv_ = ::_open_for_lambda(fc_,fusepath_,ffi_,&val_.second);
+          return;
+        }
 
       Config::Read cfg;
       std::string fdpath;
