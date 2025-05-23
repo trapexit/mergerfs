@@ -325,7 +325,7 @@ _open_for_update_lambda(const fuse_context *fc_,
   ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
+  fdpath = fmt::format("/proc/self/fd/{}",pd_->fi->fd);
 
   *_rv_ = ::_open_core(fdpath,
                        &val.second.fi->branch,
