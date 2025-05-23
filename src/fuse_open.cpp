@@ -362,6 +362,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
 }
 
 static
+inline
 constexpr
 auto
 _open_passthrough_update_lambda(const fuse_context *fc_,
