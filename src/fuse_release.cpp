@@ -36,6 +36,7 @@ _erase_if_lambda(FileInfo *fi_,
   return
     [=](auto &val)
     {
+      *existed_in_map_ = true;
 
       val.second.ref_count--;
       if(val.second.ref_count <= 0)
