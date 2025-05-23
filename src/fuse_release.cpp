@@ -24,8 +24,6 @@
 
 #include "fuse.h"
 
-#include <string>
-
 static
 constexpr
 auto
