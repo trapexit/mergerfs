@@ -379,11 +379,11 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
       // to abort an insert.
       if(val_.second.ref_count == 0)
         {
-          *_rv_ = ::_open_for_lambda(fc_,fusepath_,ffi_,&val_.second);
+          *_rv_ = ::_open_for_insert_lambda(fc_,fusepath_,ffi_,&val_.second);
           return;
         }
 
-
+      *_rv_ = ::_open_for_update_lambda(fc_,fusepath_,ffi_,&val_.second);
     };
 }
 
