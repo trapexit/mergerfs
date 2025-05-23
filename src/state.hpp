@@ -7,8 +7,6 @@
 #include <filesystem>
 #include <mutex>
 
-#include "int_types.h"
-
 constexpr int INVALID_BACKING_ID = -1;
 
 struct PassthroughDetails
