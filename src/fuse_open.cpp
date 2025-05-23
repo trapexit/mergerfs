@@ -283,13 +283,11 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
-      FileInfo *fi;
-
       *_rv_ = ::_open(fc_,fusepath_,ffi_);
       if(*_rv_ < 0)
         return;
 
-      fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+      auto fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
       val.second.ref_count = 1;
       val.second.fi        = fi;
