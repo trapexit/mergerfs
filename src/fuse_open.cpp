@@ -318,8 +318,6 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
                                 fuse_file_info_t   *ffi_,
                                 int                *$rv_)
 {
-  int &$rv = *rv_;
-
   return
     [=](auto &val)
     {
