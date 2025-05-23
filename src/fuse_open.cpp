@@ -327,6 +327,11 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
 
       ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
 
+      if(cfg->writeback_cache)
+        ::_tweak_flags_writeback_cache(&ffi_->flags);
+
+      ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+                                          ffi_->flags);
       fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
 
       *_rv_ = ::_open_core(fdpath,
