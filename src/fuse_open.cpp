@@ -272,6 +272,34 @@ _open(const fuse_context *fc_,
 }
 
 static
+int
+_open_passthrough(const fuse_context *fc_,
+                  const char         *fusepath_,
+                  fuse_file_info_t   *ffi_)
+{
+  int rv;
+  Config::Read cfg;
+  const ugid::Set ugid(fc_->uid,fc_->gid);
+
+  ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
+
+  if(cfg->writeback_cache)
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
+
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+                                      ffi_->flags);
+
+  rv = ::_open(cfg->func.open.policy,
+               cfg->branches,
+               fusepath_,
+               ffi_,
+               cfg->link_cow,
+               cfg->nfsopenhack);
+
+  return rv;
+}
+
+static
 inline
 constexpr
 auto
