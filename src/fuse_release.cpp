@@ -49,7 +49,7 @@ _erase_if_lambda(FileInfo *fi_,
       fs::close(fi_->fd);
       delete fi_;
 
-      return (val.second.ref_count == 0);
+      return true;
     };
 }
 
