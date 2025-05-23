@@ -34,24 +34,24 @@ _erase_if_lambda(FileInfo *fi_,
                  bool     *existed_in_map_)
 {
   return
-    [=](auto &val)
+    [=](auto &val_)
     {
       *existed_in_map_ = true;
 
-      if(fi_ != val.second.fi)
+      if(fi_ != val_.second.fi)
         {
           fs::close(fi_->fd);
           delete fi_;
         }
 
-      val.second.ref_count--;
-      if(val.second.ref_count > 0)
+      val_.second.ref_count--;
+      if(val_.second.ref_count > 0)
         return false;
 
       const ugid::SetRootGuard ugid;
       const fuse_context *fc = fuse_get_context();
-      if(val.second.backing_id > 0)
-        fuse_passthrough_close(fc,val.second.backing_id);
+      if(val_.second.backing_id > 0)
+        fuse_passthrough_close(fc,val_.second.backing_id);
       fs::close(fi_->fd);
       delete fi_;
 
