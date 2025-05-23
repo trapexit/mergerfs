@@ -39,15 +39,16 @@ _erase_if_lambda(FileInfo *fi_,
       *existed_in_map_ = true;
 
       val.second.ref_count--;
-      if(val.second.ref_count <= 0)
-        {
-          const ugid::SetRootGuard ugid;
-          const fuse_context *fc = fuse_get_context();
-          if(val.second.backing_id > 0)
-            fuse_passthrough_close(fc,val.second.backing_id);
-          fs::close(fi_->fd);
-          delete fi_;
-        }
+      if(val.second.ref_count > 0)
+        return false;
+
+      const ugid::SetRootGuard ugid;
+      const fuse_context *fc = fuse_get_context();
+      if(val.second.backing_id > 0)
+        fuse_passthrough_close(fc,val.second.backing_id);
+      fs::close(fi_->fd);
+      delete fi_;
+
       return (val.second.ref_count == 0);
     };
 }
