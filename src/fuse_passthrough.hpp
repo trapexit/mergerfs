@@ -7,6 +7,7 @@
 namespace FUSE
 {
   static
+  inline
   int
   passthrough_open(const fuse_context *fc_,
                    const int           fd_)
@@ -17,6 +18,7 @@ namespace FUSE
   }
 
   static
+  inline
   int
   passthrough_close(const fuse_context *fc_,
                     const int           backing_id_)
