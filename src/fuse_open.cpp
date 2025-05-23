@@ -339,7 +339,7 @@ _open_for_update_lambda(const fuse_context *fc_,
 
   pd_->ref_count++;
 
-  ffi_->backing_id  = val.second.backing_id;
+  ffi_->backing_id  = pd_->backing_id;
   ffi_->passthrough = true;
   ffi_->keep_cache  = false;
 
