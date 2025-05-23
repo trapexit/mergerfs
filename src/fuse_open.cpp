@@ -191,6 +191,7 @@ static
 int
 _open_core(const std::string &filepath_,
            const Branch      *branch_,
+           const char        *fusepath_,
            fuse_file_info_t  *ffi_,
            const bool         link_cow_,
            const NFSOpenHack  nfsopenhack_)
