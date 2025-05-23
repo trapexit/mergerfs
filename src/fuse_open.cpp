@@ -335,9 +335,16 @@ _open_passthrough(const fuse_context *fc_,
   auto &pt = state.passthrough;
 
   rv = -EINVAL;
-  pt.try_emplace_and_visit(fusepath_,
-                           ::_open_passthrough_insert_lambda(fc_,fusepath_,ffi_,rv),
-                           ::_open_passthrough_update_lambda(fc_,fusepath_,ffi_,rv));
+  try
+    {
+      pt.try_emplace_and_visit(fusepath_,
+                               ::_open_passthrough_insert_lambda(fc_,fusepath_,ffi_,rv),
+                               ::_open_passthrough_update_lambda(fc_,fusepath_,ffi_,rv));
+    }
+  catch(...)
+    {
+      fmt::println("{}",pt.count());
+    }
 
   // Can't abort an emplace_and_visit and can't assume another thread
   // hasn't created this.
