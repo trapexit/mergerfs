@@ -189,6 +189,36 @@ _config_to_ffi_flags(Config::Read     &cfg_,
 
 static
 int
+_open_core(const std::string &filepath_,
+           const Branch      *branch_,
+           fuse_file_info_t  *ffi_,
+           const bool         link_cow_,
+           const NFSOpenHack  nfsopenhack_)
+{
+  int fd;
+  FileInfo *fi;
+  std::string fullpath;
+
+  fullpath = fs::path::make(branch_->path,fusepath_);
+
+  if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),ffi_->flags))
+    fs::cow::break_link(fullpath.c_str());
+
+  fd = fs::open(fullpath,ffi_->flags);
+  if((fd == -1) && (errno == EACCES))
+    fd = ::_nfsopenhack(fullpath,ffi_->flags,nfsopenhack_);
+  if(fd == -1)
+    return -errno;
+
+  fi = new FileInfo(fd,branch_,fusepath_,ffi_->direct_io);
+
+  ffi_->fh = reinterpret_cast<uint64_t>(fi);
+
+  return 0;
+}
+
+static
+int
 _open_core(const Branch      *branch_,
            const char        *fusepath_,
            fuse_file_info_t  *ffi_,
