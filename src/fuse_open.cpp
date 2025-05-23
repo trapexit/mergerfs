@@ -328,7 +328,7 @@ _open_for_update_lambda(const fuse_context *fc_,
   fdpath = fmt::format("/proc/self/fd/{}",pd_->fi->fd);
 
   *_rv_ = ::_open_core(fdpath,
-                       &val.second.fi->branch,
+                       &pd_->fi->branch,
                        fusepath_,
                        ffi_,
                        false, // link_cow
