@@ -319,29 +319,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
-      *_rv_ = ::_open_for_lambda(fc_,fusepath_,ffi_,&val.
-
-      *_rv_ = ::_open(fc_,fusepath_,ffi_);
-      if(*_rv_ < 0)
-        return;
-
-      FileInfo *fi;
-
-      fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-
-      val.second.ref_count = 1;
-      val.second.fi        = fi;
-
-      int backing_id;
-
-      backing_id = FUSE::passthrough_open(fc_,fi->fd);
-      if(backing_id < 0)
-        return;
-
-      val.second.backing_id = backing_id;
-      ffi_->backing_id      = backing_id;
-      ffi_->passthrough     = true;
-      ffi_->keep_cache      = false;
+      *_rv_ = ::_open_for_lambda(fc_,fusepath_,ffi_,&val.second);
     };
 }
 
