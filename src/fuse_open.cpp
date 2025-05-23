@@ -320,7 +320,7 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
   return
     [=](auto &val)
     {
-      // TODO
+      // TODO: put insert in function to call here
       if(val.second.ref_count == 0)
         return;
 
