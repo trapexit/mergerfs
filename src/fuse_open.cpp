@@ -322,10 +322,16 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
     {
       int rv;
       std::string fdpath;
+      Config::Read cfg;
 
       fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
 
-      *_rv_ = fs::open(fdpath,ffi_->flags);
+      *_rv_ = ::_open_core(fdpath,
+                           &val.second.fi->branch,
+                           fusepath_,
+                           ffi_,
+                           false, // link_cow
+                           cfg->nfsopenhack);
 
       ffi_->backing_id  = val.second.backing_id;
       ffi_->passthrough = true;
