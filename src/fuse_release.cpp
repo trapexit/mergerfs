@@ -63,8 +63,6 @@ _release(FileInfo   *fi_,
   state.passthrough.erase_if(fi_->fusepath,
                              ::_erase_if_lambda(fi_));
 
-  fs::close(fi_->fd);
-
   delete fi_;
 
   return 0;
