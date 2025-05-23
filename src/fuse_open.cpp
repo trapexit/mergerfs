@@ -296,7 +296,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
 
       int rv;
 
-      rv = fuse_passthrough_open(fc_,fi->fd);
+      rv = FUSE::passthrough_open(fc_,fi->fd);
       if(rv >= 0)
         {
           ffi_->passthrough     = true;
