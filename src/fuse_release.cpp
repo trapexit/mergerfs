@@ -31,11 +31,12 @@ static
 constexpr
 auto
 _erase_if_lambda(FileInfo *fi_,
-                 bool     &existed_in_map_)
+                 bool     *existed_in_map_)
 {
   return
     [=](auto &val)
     {
+
       val.second.ref_count--;
       if(val.second.ref_count <= 0)
         {
