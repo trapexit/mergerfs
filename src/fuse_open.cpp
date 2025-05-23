@@ -325,6 +325,8 @@ _open_passthrough_update_lambda(const fuse_context *fc_,
       std::string fdpath;
       const ugid::Set ugid(fc_->uid,fc_->gid);
 
+      ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
+
       fdpath = fmt::format("/proc/self/fd/{}",val.second.fi->fd);
 
       *_rv_ = ::_open_core(fdpath,
