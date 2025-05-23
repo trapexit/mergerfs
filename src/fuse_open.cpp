@@ -202,7 +202,7 @@ _open_core(const std::string &filepath_,
   if(link_cow_ && fs::cow::is_eligible(filepath_.c_str(),ffi_->flags))
     fs::cow::break_link(filepath_.c_str());
 
-  fd = fs::open(fullpath,ffi_->flags);
+  fd = fs::open(filepath_,ffi_->flags);
   if((fd == -1) && (errno == EACCES))
     fd = ::_nfsopenhack(fullpath,ffi_->flags,nfsopenhack_);
   if(fd == -1)
