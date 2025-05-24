@@ -363,8 +363,7 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
                                         &val_.second);
       fmt::print("open passthrough insert: nodeid={}; backing_id={};\n",
                  val_.first,
-                 val_.second.backing_id)
-
+                 val_.second.backing_id);
     };
 }
 
