@@ -226,7 +226,7 @@ _create_for_update_lambda(const fuse_context *fc_,
                           const char         *fusepath_,
                           const mode_t        mode_,
                           fuse_file_info_t   *ffi_,
-                          PassthroughDetails &pd_)
+                          PassthroughDetails *pd_)
 {
   return 0;
 }
@@ -248,7 +248,7 @@ _create_passthrough_insert_lambda(const fuse_context *fc_,
                                           fusepath_,
                                           mode_,
                                           ffi_,
-                                          val_.second);
+                                          &val_.second);
     };
 }
 
