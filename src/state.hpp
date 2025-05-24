@@ -28,8 +28,7 @@ class State
 {
 public:
   // nodeid -> PassthroughDetails
-  using PassthroughDetailMap = boost::concurrent_flat_map<std::filesystem::path,
-                                                          PassthroughDetails>;
+  using PassthroughDetailMap = boost::concurrent_flat_map<u64,PassthroughDetails>;
 
 public:
   PassthroughDetailMap passthrough;
