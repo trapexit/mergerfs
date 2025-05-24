@@ -268,21 +268,21 @@ _create_passthrough_update_lambda(const fuse_context *fc_,
       // For the edge case where insert succeeded but the open failed
       // and hadn't been cleaned up yet. There unfortunately is no way
       // to abort an insert.
-      // if(val_.second.ref_count <= 0)
-      //   {
-      //     *_rv_ = ::_create_for_insert_lambda(fc_,
-      //                                         fusepath_,
-      //                                         mode_,
-      //                                         ffi_,
-      //                                         &val_.second);
-      //     return;
-      //   }
+      if(val_.second.ref_count <= 0)
+        {
+          *_rv_ = ::_create_for_insert_lambda(fc_,
+                                              fusepath_,
+                                              mode_,
+                                              ffi_,
+                                              &val_.second);
+          return;
+        }
 
-      // *_rv_ = ::_create_for_update_lambda(fc_,
-      //                                     fusepath_,
-      //                                     mode_,
-      //                                     ffi_,
-      //                                     &val_.second);
+      *_rv_ = ::_create_for_update_lambda(fc_,
+                                          fusepath_,
+                                          mode_,
+                                          ffi_,
+                                          &val_.second);
     };
 }
 
