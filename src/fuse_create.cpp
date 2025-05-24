@@ -370,7 +370,7 @@ _create_passthrough_update_lambda(const fuse_context *fc_,
                                           mode_,
                                           ffi_,
                                           &val_.second);
-      fmt::print("open passthrough insert: nodeid={}; backing_id={};\n",
+      fmt::print("create passthrough insert: nodeid={}; backing_id={};\n",
                  val_.first,
                  val_.second.backing_id);
     };
