@@ -328,7 +328,8 @@ _create_passthrough_insert_lambda(const fuse_context *fc_,
                                           mode_,
                                           ffi_,
                                           &val_.second);
-      fmt::print("create passthrough insert\n");
+      fmt::print("create passthrough insert: {}\n",
+                 ffi_->backing_id);
     };
 }
 
