@@ -216,7 +216,16 @@ _create_passthrough(const fuse_context *fc_,
                     mode_t              mode_,
                     fuse_file_info_t   *ffi_)
 {
+  int rv;
+  auto &pt = state.passthrough;
 
+  rv = -EINVAL;
+  pt.try_emplace_and_visit(fusepath_,
+                           ::_create_passthrough_insert_lambda(fc_,fusepath_,mode_,ffi_,&rv),
+                           ::_create_passthrough_update_lambda(fc_,fusepath_,mode_,ffi_,&rv),
+
+
+  return rv;
 }
 
 static
