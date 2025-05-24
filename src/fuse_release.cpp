@@ -102,6 +102,6 @@ namespace FUSE
   {
     const fuse_context *fc = fuse_get_context();
 
-    return ::_release(ffi_);
+    return ::_release(fc_,ffi_);
   }
 }
