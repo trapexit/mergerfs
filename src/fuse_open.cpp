@@ -436,10 +436,6 @@ namespace FUSE
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
 
-    fmt::print("opcode: {}; unique: {}; nodeid: {};\n",
-               fc->opcode,
-               fc->unique,
-               fc->nodeid);
     if(cfg->passthrough)
       return ::_open_passthrough(fc,fusepath_,ffi_);
 
