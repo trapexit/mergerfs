@@ -294,6 +294,10 @@ _create_for_update_lambda(const fuse_context *fc_,
                           fuse_file_info_t   *ffi_,
                           PassthroughDetails *pd_)
 {
+  int rv;
+
+  rv = ::_create(fc_,fusepath_,mode_,ffi_);
+
   return 0;
 }
 
