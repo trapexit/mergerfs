@@ -574,6 +574,8 @@ struct fuse_context
   gid_t gid;
   pid_t pid;
   mode_t umask;
+  uint64_t unique;
+  uint64_t nodeid;
 };
 
 /**
