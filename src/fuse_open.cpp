@@ -361,8 +361,10 @@ _open_passthrough_insert_lambda(const fuse_context *fc_,
                                         fusepath_,
                                         ffi_,
                                         &val_.second);
-      fmt::print("open passthrough insert: {}\n",
-                 ffi_->backing_id);
+      fmt::print("open passthrough update: nodeid={}; backing_id={};\n",
+                 val_.first,
+                 val_.second.backing_id)
+
     };
 }
 
