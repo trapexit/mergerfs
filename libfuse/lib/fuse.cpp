@@ -2281,6 +2281,7 @@ fuse_lib_create(fuse_req_t             req,
 {
   int err;
   char *path;
+  uint64_t new_nodeid;
   struct fuse *f;
   const char *name;
   fuse_file_info_t ffi = {0};
