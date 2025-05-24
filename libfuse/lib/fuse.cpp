@@ -2305,7 +2305,7 @@ fuse_lib_create(fuse_req_t             req,
   {
     node_t *new_node = find_node(f,hdr_->nodeid,name);
     new_nodeid = node->nodeid;
-    fuse_get_context()->nodeid = nodeid;
+    fuse_get_context()->nodeid = new_nodeid;
   }
 
   err = get_path_name(f,hdr_->nodeid,name,&path);
