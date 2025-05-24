@@ -104,6 +104,8 @@ namespace FUSE
   {
     const fuse_context *fc = fuse_get_context();
 
+    fmt::print("release: nodeid={};\n",fc->nodeid);
+
     return ::_release(fc,ffi_);
   }
 }
