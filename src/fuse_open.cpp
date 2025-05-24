@@ -435,7 +435,6 @@ namespace FUSE
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
 
-    fmt::print("open: nodeid={};\n",fc->nodeid);
     if(cfg->passthrough)
       return ::_open_passthrough(fc,fusepath_,ffi_);
 
