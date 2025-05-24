@@ -266,6 +266,7 @@ _create_for_insert_lambda(const fuse_context *fc_,
   if(rv < 0)
     return rv;
 
+  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
 
   return 0;
