@@ -2330,11 +2330,6 @@ fuse_lib_create(fuse_req_t             req,
         {
           forget_node(f,node->nodeid,1);
         }
-
-      fprintf(stderr,
-              "fuse.cpp get_node(%zu) = %p\n",
-              nodeid,
-              get_node_nocheck(f,nodeid));
     }
 
   if(!err)
