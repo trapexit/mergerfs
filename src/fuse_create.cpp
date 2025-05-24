@@ -259,6 +259,15 @@ _create_for_insert_lambda(const fuse_context *fc_,
                           fuse_file_info_t   *ffi_,
                           PassthroughDetails *pd_)
 {
+  int rv;
+  FileInfo *fi;
+
+  rv = ::_create(fc_,fusepath_,mode_,ffi_);
+  if(rv < 0)
+    return rv;
+
+
+
   return 0;
 }
 
