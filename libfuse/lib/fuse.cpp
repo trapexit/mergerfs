@@ -2302,7 +2302,7 @@ fuse_lib_create(fuse_req_t             req,
   //TODO: REMOVE?
   node_t *node;
   node = find_node(f,hdr_->nodeid,name);
-  printf("create: nodeid=%zu",node->nodeid);
+  printf("create: nodeid=%zu\n",node->nodeid);
 
   err = get_path_name(f,hdr_->nodeid,name,&path);
   if(!err)
