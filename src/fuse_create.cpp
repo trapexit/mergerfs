@@ -219,7 +219,6 @@ _create_passthrough(const fuse_context *fc_,
 
 }
 
-
 static
 int
 _create(const char       *fusepath_,
