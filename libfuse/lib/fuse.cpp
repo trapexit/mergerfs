@@ -2074,6 +2074,8 @@ fuse_lib_unlink(fuse_req_t             req,
   f = req_fuse_prepare(req);
   err = get_path_wrlock(f,hdr_->nodeid,name,&path,&wnode);
 
+  pthread_mutex_timedlock(&f->lock,{1,0});
+
   if(!err)
     {
       pthread_mutex_lock(&f->lock);
