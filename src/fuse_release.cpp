@@ -51,7 +51,9 @@ _erase_if_lambda(FileInfo *fi_,
       fs::close(val_.second.fi->fd);
       delete val_.second.fi;
 
-      fmt::print("release passthrough erase: {}\n",val_.first);
+      fmt::print("release passthrough erase: nodeid={}; backing_id={}\n",
+                 val_.first,
+                 val_.second.backing_id);
 
       return true;
     };
