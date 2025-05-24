@@ -1641,8 +1641,6 @@ fuse_lib_forget(fuse_req_t             req,
   f   = req_fuse(req);
   arg = (fuse_forget_in*)fuse_hdr_arg(hdr_);
 
-  printf("forget: %zu\n",hdr_->nodeid);
-
   forget_node(f,hdr_->nodeid,arg->nlookup);
 
   fuse_reply_none(req);
