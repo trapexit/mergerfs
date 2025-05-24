@@ -51,6 +51,8 @@ _erase_if_lambda(FileInfo *fi_,
       fs::close(val_.second.fi->fd);
       delete val_.second.fi;
 
+      fmt::print("release passthrough erase: {}\n",val_.first);
+
       return true;
     };
 }
