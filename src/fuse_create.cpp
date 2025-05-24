@@ -298,7 +298,7 @@ _create_for_update_lambda(const fuse_context *fc_,
 
   rv = ::_create(fc_,fusepath_,mode_,ffi_);
 
-  return 0;
+  return rv;
 }
 
 static
