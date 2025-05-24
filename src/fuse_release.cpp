@@ -57,8 +57,9 @@ _erase_if_lambda(FileInfo *fi_,
 
 static
 int
-_release(FileInfo   *fi_,
-         const bool  dropcacheonclose_)
+_release(const fuse_context *fc_,
+         FileInfo           *fi_,
+         const bool          dropcacheonclose_)
 {
   bool existed_in_map;
 
