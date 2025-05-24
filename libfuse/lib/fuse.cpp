@@ -2323,7 +2323,8 @@ fuse_lib_create(fuse_req_t             req,
             }
         }
 
-      fprintf(stderr,"fuse.cpp get_node(%zu) = %p\n",
+      fprintf(stderr,
+              "fuse.cpp get_node(%zu) = %p\n",
               node->nodeid,
               get_node_nocheck(f,node->nodeid);
     }
