@@ -1663,7 +1663,6 @@ fuse_lib_forget_multi(fuse_req_t             req,
 
   for(uint32_t i = 0; i < arg->count; i++)
     {
-      printf("forget: %zu\n",entry[i].nodeid);
       forget_node(f,
                 entry[i].nodeid,
                 entry[i].nlookup);
