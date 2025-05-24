@@ -2351,7 +2351,7 @@ fuse_lib_create(fuse_req_t             req,
   fprintf(stderr,
           "fuse.cpp get_node(%zu) = %p\n",
           new_nodeid,
-          get_node_nocheck(f,nodeid));
+          get_node_nocheck(f,new_nodeid));
 
   free_path(f,hdr_->nodeid,path);
 }
