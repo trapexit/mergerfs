@@ -1160,7 +1160,7 @@ static
 void
 free_path_wrlock(struct fuse *f,
                  uint64_t     nodeid,
-                 node_t *wnode,
+                 node_t      *wnode,
                  char        *path)
 {
   pthread_mutex_lock(&f->lock);
