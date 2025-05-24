@@ -100,6 +100,8 @@ namespace FUSE
   int
   release(const fuse_file_info_t *ffi_)
   {
+    const fuse_context *fc = fuse_get_context();
+
     return ::_release(ffi_);
   }
 }
