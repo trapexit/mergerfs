@@ -261,8 +261,8 @@ namespace FUSE
     const fuse_context *fc = fuse_get_context();
 
     if(cfg->passthrough)
-      return ::_create_passthrough(fc,fusepath_,ffi_);
+      return ::_create_passthrough(fc,fusepath_,mode_,ffi_);
 
-    return ::_create(fc,fusepath_,ffi_);
+    return ::_create(fc,fusepath_,mode_,ffi_);
   }
 }
