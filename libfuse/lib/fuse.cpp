@@ -2302,9 +2302,9 @@ fuse_lib_create(fuse_req_t             req,
   f = req_fuse_prepare(req);
 
   // opportunistically allocate a node so we have a new nodeid
-  new_node = find_node(f,hdr_->nodeid,name);
-  nodeid = node->nodeid;
-    fprintf(stderr,"fuse.cpp: create: nodeid=%zu\n",node->nodeid);
+  {
+    node_t *new_node = find_node(f,hdr_->nodeid,name);
+    nodeid = node->nodeid;
   }
 
   err = get_path_name(f,hdr_->nodeid,name,&path);
