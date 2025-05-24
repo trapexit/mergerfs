@@ -417,7 +417,7 @@ _open_passthrough(const fuse_context *fc_,
   // hasn't created an entry since this failure so erase only if
   // ref_count is default (0).
   if(rv < 0)
-    pt.erase_if(fusepath_,
+    pt.erase_if(fc_->nodeid,
                 [](auto &val_)
                 {
                   return (val_.second.ref_count <= 0);
