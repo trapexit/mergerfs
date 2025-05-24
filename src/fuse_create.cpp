@@ -224,7 +224,6 @@ _create_passthrough(const fuse_context *fc_,
                            ::_create_passthrough_insert_lambda(fc_,fusepath_,mode_,ffi_,&rv),
                            ::_create_passthrough_update_lambda(fc_,fusepath_,mode_,ffi_,&rv));
 
-
   return rv;
 }
 
