@@ -257,5 +257,8 @@ namespace FUSE
          mode_t            mode_,
          fuse_file_info_t *ffi_)
   {
+    Config::Read cfg;
+
+
   }
 }
