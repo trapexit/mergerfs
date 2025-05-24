@@ -1963,6 +1963,9 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
 
   req->unique  = in->unique;
+  req->ctx.unique = in->unique;
+  req->ctx.nodeid = in->nodeid;
+  req->ctx.opcode = in->opcode;
   req->ctx.uid = in->uid;
   req->ctx.gid = in->gid;
   req->ctx.pid = in->pid;
