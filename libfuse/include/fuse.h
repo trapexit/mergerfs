@@ -569,13 +569,13 @@ struct fuse_operations
  */
 struct fuse_context
 {
-  uint64_t unique;
-  uint64_t nodeid;
-  uint32_t opcode;  
-  uid_t uid;
-  gid_t gid;
-  pid_t pid;
-  mode_t umask;
+  uint64_t     unique;
+  uint64_t     nodeid;
+  uint32_t     opcode;  
+  uid_t        uid;
+  gid_t        gid;
+  pid_t        pid;
+  mode_t       umask;
   struct fuse *fuse;
 };
 
