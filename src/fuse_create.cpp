@@ -248,7 +248,7 @@ _create_passthrough_insert_lambda(const fuse_context *fc_,
                                           fusepath_,
                                           mode_,
                                           ffi_,
-                                          &val_.second);
+                                          val_.second);
     };
 }
 
