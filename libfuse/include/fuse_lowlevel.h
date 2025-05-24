@@ -91,16 +91,9 @@ struct fuse_entry_param
 /** Additional context associated with requests */
 struct fuse_ctx
 {
-  /** User ID of the calling process */
   uid_t uid;
-
-  /** Group ID of the calling process */
   gid_t gid;
-
-  /** Thread ID of the calling process */
   pid_t pid;
-
-  /** Umask of the calling process (introduced in version 2.8) */
   mode_t umask;
 };
 
