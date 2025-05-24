@@ -222,6 +222,23 @@ _create_passthrough_update_lambda(const fuse_context *fc_<
   return
     [=](auto &val_)
     {
+      *_rv_ = ::_create_for_insert_lambda(fc_,fusepath_,ffi_,&val_.second);
+    };
+}
+
+static
+inline
+constexpr
+auto
+_create_passthrough_update_lambda(const fuse_context *fc_<
+                                  const char       *fusepath_,
+                                  const mode_t      mode_,
+                                  fuse_file_info_t *ffi_,
+                                  int              *_rv_)
+{
+  return
+    [=](auto &val_)
+    {
       // For the edge case where insert succeeded but the open failed
       // and hadn't been cleaned up yet. There unfortunately is no way
       // to abort an insert.
