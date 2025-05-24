@@ -23,6 +23,7 @@
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
+#include "fuse_passthrough.hpp"
 #include "procfs_get_name.hpp"
 #include "ugid.hpp"
 
