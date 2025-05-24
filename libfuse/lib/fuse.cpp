@@ -2281,9 +2281,10 @@ fuse_lib_create(fuse_req_t             req,
 {
   int err;
   char *path;
-  uint64_t new_nodeid;
   struct fuse *f;
   const char *name;
+  node_t *new_node;
+  uint64_t new_nodeid;
   fuse_file_info_t ffi = {0};
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
@@ -2300,10 +2301,10 @@ fuse_lib_create(fuse_req_t             req,
 
   f = req_fuse_prepare(req);
 
-  //TODO: REMOVE?
-  node_t *node;
-  uint64_t nodeid;
-  node = find_node(f,hdr_->nodeid,name);
+  {
+    node_t *node;
+
+    node = find_node(f,hdr_->nodeid,name);
   nodeid = node->nodeid;
   fprintf(stderr,"fuse.cpp: create: nodeid=%zu\n",node->nodeid);
 
