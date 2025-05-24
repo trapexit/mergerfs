@@ -2328,7 +2328,7 @@ fuse_lib_create(fuse_req_t             req,
         }
       else
         {
-          forget_node(f,nodeid,1);
+          forget_node(f,new_nodeid,1);
         }
     }
 
