@@ -2302,11 +2302,11 @@ fuse_lib_create(fuse_req_t             req,
   f = req_fuse_prepare(req);
 
   {
-    node_t *node;
+    new_node = find_node(f,hdr_->nodeid,name);
 
-    node = find_node(f,hdr_->nodeid,name);
-  nodeid = node->nodeid;
-  fprintf(stderr,"fuse.cpp: create: nodeid=%zu\n",node->nodeid);
+    nodeid = node->nodeid;
+    fprintf(stderr,"fuse.cpp: create: nodeid=%zu\n",node->nodeid);
+  }
 
   err = get_path_name(f,hdr_->nodeid,name,&path);
   if(!err)
