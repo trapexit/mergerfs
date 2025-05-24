@@ -93,7 +93,7 @@ _release(const fuse_context     *fc_,
   Config::Read cfg;
   FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-  return ::_release(fi,cfg->dropcacheonclose);
+  return ::_release(fc_,fi,cfg->dropcacheonclose);
 }
 
 namespace FUSE
