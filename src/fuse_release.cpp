@@ -91,6 +91,7 @@ _release(const fuse_context     *fc_,
          const fuse_file_info_t *ffi_)
 {
   Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
   FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
   return ::_release(fi,cfg->dropcacheonclose);
@@ -101,8 +102,6 @@ namespace FUSE
   int
   release(const fuse_file_info_t *ffi_)
   {
-    const fuse_context *fc = fuse_get_context();
-
-    return ::_release(fc_,ffi_);
+    return ::_release(ffi_);
   }
 }
