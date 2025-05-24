@@ -68,7 +68,7 @@ _calculate_flush(FlushOnClose const flushonclose_,
     case FlushOnCloseEnum::NEVER:
       return false;
     case FlushOnCloseEnum::OPENED_FOR_WRITE:
-      return !l::rdonly(flags_);
+      return !::_rdonly(flags_);
     case FlushOnCloseEnum::ALWAYS:
       return true;
     }
@@ -159,7 +159,7 @@ _create_core(const Branch     *branch_,
 
   fullpath = fs::path::make(branch_->path,fusepath_);
 
-  rv = l::create_core(fullpath,mode_,umask_,ffi_->flags);
+  rv = ::_create_core(fullpath,mode_,umask_,ffi_->flags);
   if(rv == -1)
     return -errno;
 
@@ -202,7 +202,7 @@ _create(const Policy::Search &searchFunc_,
   if(rv == -1)
     return -errno;
 
-  return l::create_core(createpaths[0],
+  return ::_create_core(createpaths[0],
                         fusepath_,
                         ffi_,
                         mode_,
@@ -222,15 +222,15 @@ namespace FUSE
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    l::config_to_ffi_flags(cfg,fc->pid,ffi_);
+    ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
 
     if(cfg->writeback_cache)
-      l::tweak_flags_writeback_cache(&ffi_->flags);
+      ::_tweak_flags_writeback_cache(&ffi_->flags);
 
-    ffi_->noflush = !l::calculate_flush(cfg->flushonclose,
+    ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                         ffi_->flags);
 
-    rv = l::create(cfg->func.getattr.policy,
+    rv = ::_create(cfg->func.getattr.policy,
                    cfg->func.create.policy,
                    cfg->branches,
                    fusepath_,
@@ -240,7 +240,7 @@ namespace FUSE
     if(rv == -EROFS)
       {
         Config::Write()->branches.find_and_set_mode_ro();
-        rv = l::create(cfg->func.getattr.policy,
+        rv = ::_create(cfg->func.getattr.policy,
                        cfg->func.create.policy,
                        cfg->branches,
                        fusepath_,
