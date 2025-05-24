@@ -91,6 +91,9 @@ struct fuse_entry_param
 /** Additional context associated with requests */
 struct fuse_ctx
 {
+  uint64_t unique;
+  uint64_t nodeid;
+  uint32_t opcode;
   uid_t    uid;
   gid_t    gid;
   pid_t    pid;
