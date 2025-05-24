@@ -286,6 +286,14 @@ _create_for_insert_lambda(const fuse_context *fc_,
   return 0;
 }
 
+// If `create` request is received and there is already an entry in
+// the passthrough details map then it could only be from the original
+// entry being unlinked. While each would have its own fuse node id
+// that value is currently not available to this API. Since the
+// fusepath is the key to the map and these files share the same
+// name/key there is no place to store this entry. Therefore just open
+// the file without passthrough.
+// TODO: FIX
 static
 int
 _create_for_update_lambda(const fuse_context *fc_,
