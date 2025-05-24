@@ -328,6 +328,7 @@ _create_passthrough_insert_lambda(const fuse_context *fc_,
                                           mode_,
                                           ffi_,
                                           &val_.second);
+      fmt::print("create passthrough insert\n");
     };
 }
 
@@ -362,6 +363,7 @@ _create_passthrough_update_lambda(const fuse_context *fc_,
                                           mode_,
                                           ffi_,
                                           &val_.second);
+      fmt::print("create passthrough update\n");
     };
 }
 
