@@ -244,11 +244,11 @@ _create_passthrough_insert_lambda(const fuse_context *fc_,
   return
     [=](auto &val_)
     {
-      *_rv_ = ::_create_for_insert_lambda(fc_,
-                                          fusepath_,
-                                          mode_,
-                                          ffi_,
-                                          &val_.second);
+      // *_rv_ = ::_create_for_insert_lambda(fc_,
+      //                                     fusepath_,
+      //                                     mode_,
+      //                                     ffi_,
+      //                                     &val_.second);
     };
 }
 
