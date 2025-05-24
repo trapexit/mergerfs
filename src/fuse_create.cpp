@@ -388,6 +388,16 @@ _create_passthrough(const fuse_context *fc_,
                            ::_create_passthrough_insert_lambda(fc_,fusepath_,mode_,ffi_,&rv),
                            ::_create_passthrough_update_lambda(fc_,fusepath_,mode_,ffi_,&rv));
 
+  // Can't abort an emplace_and_visit and can't assume another thread
+  // hasn't created an entry since this failure so erase only if
+  // ref_count is default (0).
+  if(rv < 0)
+    pt.erase_if(fc_->nodeid,
+                [](auto &val_)
+                {
+                  return (val_.second.ref_count <= 0);
+                });
+
   return rv;
 }
 
