@@ -1492,7 +1492,7 @@ req_fuse_prepare(fuse_req_t req)
 
   c->req        = req;
   c->ctx.fuse   = req_fuse(req);
-  c->ctx.opcode = ctx->opcode;  
+  c->ctx.opcode = ctx->opcode;
   c->ctx.unique = ctx->unique;
   c->ctx.nodeid = ctx->nodeid;
   c->ctx.uid    = ctx->uid;
@@ -2298,6 +2298,11 @@ fuse_lib_create(fuse_req_t             req,
     name = (char*)arg + sizeof(struct fuse_open_in);
 
   f = req_fuse_prepare(req);
+
+  //TODO: REMOVE?
+  node_t *node;
+  node = find_node(f,hdr_->nodeid,name);
+  fmt::println("create: nodeid={}",node->nodeid)
 
   err = get_path_name(f,hdr_->nodeid,name,&path);
   if(!err)
