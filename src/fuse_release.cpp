@@ -49,7 +49,7 @@ _erase_if_lambda(FileInfo *fi_,
       if(val_.second.backing_id > 0)
         FUSE::passthrough_close(fc,val_.second.backing_id);
       fs::close(fi_->fd);
-      delete fi_;
+      delete val_.second.fi;
 
       return true;
     };
