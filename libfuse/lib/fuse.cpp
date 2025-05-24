@@ -2356,6 +2356,11 @@ fuse_lib_create(fuse_req_t             req,
       fuse_reply_err(req,err);
     }
 
+  fprintf(stderr,
+          "fuse.cpp get_node(%zu) = %p\n",
+          nodeid,
+          get_node_nocheck(f,nodeid));
+
   free_path(f,hdr_->nodeid,path);
 }
 
