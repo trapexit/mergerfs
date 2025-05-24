@@ -338,7 +338,6 @@ _create_passthrough_update_lambda(const fuse_context *fc_,
     };
 }
 
-
 static
 int
 _create_passthrough(const fuse_context *fc_,
@@ -356,8 +355,6 @@ _create_passthrough(const fuse_context *fc_,
 
   return rv;
 }
-
-
 
 namespace FUSE
 {
