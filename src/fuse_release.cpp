@@ -87,7 +87,8 @@ _release(FileInfo   *fi_,
 
 static
 int
-_release(const fuse_file_info_t *ffi_)
+_release(const fuse_context     *fc_,
+         const fuse_file_info_t *ffi_)
 {
   Config::Read cfg;
   FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
