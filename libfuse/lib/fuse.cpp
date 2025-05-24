@@ -2304,7 +2304,7 @@ fuse_lib_create(fuse_req_t             req,
   // opportunistically allocate a node so we have a new nodeid
   {
     node_t *new_node = find_node(f,hdr_->nodeid,name);
-    nodeid = node->nodeid;
+    new_nodeid = node->nodeid;
     fuse_get_context()->nodeid = nodeid;
   }
 
