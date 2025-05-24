@@ -2326,9 +2326,6 @@ fuse_lib_create(fuse_req_t             req,
               forget_node(f,e.ino,1);
             }
         }
-      else
-        {
-        }
     }
 
   if(!err)
