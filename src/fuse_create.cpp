@@ -268,6 +268,8 @@ _create_for_insert_lambda(const fuse_context *fc_,
 
   fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
+  pd_->ref_count = 1;
+  pd_->fi        = fi;
 
   return 0;
 }
