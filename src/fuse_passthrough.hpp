@@ -25,6 +25,6 @@ namespace FUSE
   {
     const ugid::SetRootGuard _;
 
-    return fuse_passthrough_open(fc_,backing_id_);
+    return fuse_passthrough_close(fc_,backing_id_);
   }
 }
