@@ -576,6 +576,7 @@ struct fuse_context
   mode_t umask;
   uint64_t unique;
   uint64_t nodeid;
+  uint32_t opcode;
 };
 
 /**
