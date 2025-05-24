@@ -75,7 +75,7 @@ _release(const fuse_context *fc_,
   // existed. Just how many it erased and in this case I only want to
   // erase if there are no more open files.
   existed_in_map = false;
-  state.passthrough.erase_if(fi_->fusepath,
+  state.passthrough.erase_if(fc_->nodeid,
                              ::_erase_if_lambda(fi_,&existed_in_map));
   if(existed_in_map)
     return 0;
