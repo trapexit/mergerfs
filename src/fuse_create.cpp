@@ -209,6 +209,46 @@ _create(const Policy::Search &searchFunc_,
                         umask_);
 }
 
+static
+int
+_create(const char       *fusepath_,
+        mode_t            mode_,
+        fuse_file_info_t *ffi_)
+{
+  int rv;
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
+
+  if(cfg->writeback_cache)
+    ::_tweak_flags_writeback_cache(&ffi_->flags);
+
+  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+                                      ffi_->flags);
+
+  rv = ::_create(cfg->func.getattr.policy,
+                 cfg->func.create.policy,
+                 cfg->branches,
+                 fusepath_,
+                 ffi_,
+                 mode_,
+                 fc->umask);
+  if(rv == -EROFS)
+    {
+      Config::Write()->branches.find_and_set_mode_ro();
+      rv = ::_create(cfg->func.getattr.policy,
+                     cfg->func.create.policy,
+                     cfg->branches,
+                     fusepath_,
+                     ffi_,
+                     mode_,
+                     fc->umask);
+    }
+
+  return rv;
+}
 
 namespace FUSE
 {
@@ -217,54 +257,5 @@ namespace FUSE
          mode_t            mode_,
          fuse_file_info_t *ffi_)
   {
-    int rv;
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
-
-    ::_config_to_ffi_flags(cfg,fc->pid,ffi_);
-
-    if(cfg->writeback_cache)
-      ::_tweak_flags_writeback_cache(&ffi_->flags);
-
-    ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
-                                        ffi_->flags);
-
-    rv = ::_create(cfg->func.getattr.policy,
-                   cfg->func.create.policy,
-                   cfg->branches,
-                   fusepath_,
-                   ffi_,
-                   mode_,
-                   fc->umask);
-    if(rv == -EROFS)
-      {
-        Config::Write()->branches.find_and_set_mode_ro();
-        rv = ::_create(cfg->func.getattr.policy,
-                       cfg->func.create.policy,
-                       cfg->branches,
-                       fusepath_,
-                       ffi_,
-                       mode_,
-                       fc->umask);
-      }
-
-    state.passthrough.try_emplace_and_visit(fusepath_,
-                                            [](auto &val)
-                                            {
-                                              val.second.ref_count=1;
-                                              fmt::println("open: {}; ref_count: {}",
-                                                           val.first.string(),
-                                                           val.second.ref_count);
-                                            },
-                                            [](auto &val)
-                                            {
-                                              val.second.ref_count++;
-                                              fmt::println("open: {}; ref_count: {}",
-                                                           val.first.string(),
-                                                           val.second.ref_count);
-                                            });
-
-    return rv;
   }
 }
