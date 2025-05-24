@@ -235,7 +235,7 @@ static
 inline
 constexpr
 auto
-_create_passthrough_update_lambda(const fuse_context *fc_,
+_create_passthrough_insert_lambda(const fuse_context *fc_,
                                   const char         *fusepath_,
                                   const mode_t        mode_,
                                   fuse_file_info_t   *ffi_,
