@@ -1495,10 +1495,10 @@ req_fuse_prepare(fuse_req_t req)
   c->ctx.opcode = ctx->opcode;  
   c->ctx.unique = ctx->unique;
   c->ctx.nodeid = ctx->nodeid;
-  c->ctx.uid = ctx->uid;
-  c->ctx.gid = ctx->gid;
-  c->ctx.pid = ctx->pid;
-  c->ctx.umask = ctx->umask;
+  c->ctx.uid    = ctx->uid;
+  c->ctx.gid    = ctx->gid;
+  c->ctx.pid    = ctx->pid;
+  c->ctx.umask  = ctx->umask;
 
   return c->ctx.fuse;
 }
