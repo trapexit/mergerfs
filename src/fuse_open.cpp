@@ -409,7 +409,7 @@ _open_passthrough(const fuse_context *fc_,
   auto &pt = state.passthrough;
 
   rv = -EINVAL;
-  pt.try_emplace_and_visit(fusepath_,
+  pt.try_emplace_and_visit(fc_->nodeid,
                            ::_open_passthrough_insert_lambda(fc_,fusepath_,ffi_,&rv),
                            ::_open_passthrough_update_lambda(fc_,fusepath_,ffi_,&rv));
 
