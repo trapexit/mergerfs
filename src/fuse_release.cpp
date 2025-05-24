@@ -48,7 +48,7 @@ _erase_if_lambda(FileInfo *fi_,
       const fuse_context *fc = fuse_get_context();
       if(val_.second.backing_id > 0)
         FUSE::passthrough_close(fc,val_.second.backing_id);
-      fs::close(fi_->fd);
+      fs::close(val_.second.fi->fd);
       delete val_.second.fi;
 
       return true;
