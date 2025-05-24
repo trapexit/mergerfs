@@ -569,19 +569,10 @@ struct fuse_operations
  */
 struct fuse_context
 {
-  /** Pointer to the fuse object */
   struct fuse *fuse;
-
-  /** User ID of the calling process */
   uid_t uid;
-
-  /** Group ID of the calling process */
   gid_t gid;
-
-  /** Thread ID of the calling process */
   pid_t pid;
-
-  /** Umask of the calling process (introduced in version 2.8) */
   mode_t umask;
 };
 
