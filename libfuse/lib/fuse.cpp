@@ -1487,7 +1487,7 @@ static
 struct fuse*
 req_fuse_prepare(fuse_req_t req)
 {
-  struct fuse_context_i *c = fuse_get_context_internal();
+  struct fuse_context_i *c   = fuse_get_context_internal();
   const struct fuse_ctx *ctx = fuse_req_ctx(req);
 
   c->req        = req;
