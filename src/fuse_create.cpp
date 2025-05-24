@@ -411,6 +411,7 @@ namespace FUSE
     Config::Read cfg;
     const fuse_context *fc = fuse_get_context();
 
+    fmt::print("create: nodeid={};\n",fc->nodeid);
     if(cfg->passthrough)
       return ::_create_passthrough(fc,fusepath_,mode_,ffi_);
 
