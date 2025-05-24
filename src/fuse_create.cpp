@@ -306,6 +306,10 @@ _create_for_update_lambda(const fuse_context *fc_,
   int rv;
 
   rv = ::_create(fc_,fusepath_,mode_,ffi_);
+  if(rv < 0)
+    return rv;
+
+  pd_->ref_count++;
 
   return rv;
 }
