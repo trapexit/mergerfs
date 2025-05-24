@@ -286,11 +286,6 @@ _create_for_insert_lambda(const fuse_context *fc_,
   return 0;
 }
 
-open(fileA) -> entry in map
-unlink(fileA)
-create(fileA_prime) -> just don't do it
-close(fileA)
-
 static
 int
 _create_for_update_lambda(const fuse_context *fc_,
