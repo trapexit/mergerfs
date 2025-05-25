@@ -1,4 +1,4 @@
-#include "node.h"
+#include "node.hpp"
 
 #include "lfmp.h"
 
@@ -20,10 +20,10 @@ node_destructor()
   lfmp_destroy(&g_NODE_FMP);
 }
 
-node_t *
+node_t*
 node_alloc()
 {
-  return lfmp_calloc(&g_NODE_FMP);
+  return (node_t*)lfmp_calloc(&g_NODE_FMP);
 }
 
 void

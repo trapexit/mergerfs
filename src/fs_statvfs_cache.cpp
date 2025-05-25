@@ -19,6 +19,8 @@
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
+#include "mutex.hpp"
+
 #include <cstdint>
 #include <map>
 #include <string>
@@ -82,7 +84,7 @@ namespace fs
     rv = 0;
     now = l::get_time();
 
-    pthread_mutex_lock(&g_cache_lock);
+    mutex_lock(&g_cache_lock);
 
     e = &g_cache[path_];
 
@@ -94,7 +96,7 @@ namespace fs
 
     *st_ = e->st;
 
-    pthread_mutex_unlock(&g_cache_lock);
+    mutex_unlock(&g_cache_lock);
 
     return rv;
   }

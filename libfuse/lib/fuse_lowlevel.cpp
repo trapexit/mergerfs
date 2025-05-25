@@ -10,6 +10,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include "mutex.hpp"
 #include "lfmp.h"
 
 #include "config.h"
@@ -1361,7 +1362,7 @@ do_notify_reply(fuse_req_t             req,
   struct fuse_notify_req *nreq;
   struct fuse_notify_req *head;
 
-  pthread_mutex_lock(&f->lock);
+  mutex_lock(&f->lock);
   head = &f->notify_list;
   for(nreq = head->next; nreq != head; nreq = nreq->next)
     {
@@ -1371,7 +1372,7 @@ do_notify_reply(fuse_req_t             req,
           break;
         }
     }
-  pthread_mutex_unlock(&f->lock);
+  mutex_unlock(&f->lock);
 
   if(nreq != head)
     nreq->reply(nreq, req, hdr_->nodeid, &hdr_[1]);
@@ -1666,12 +1667,12 @@ fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
   if(rreq == NULL)
     return -ENOMEM;
 
-  pthread_mutex_lock(&f->lock);
+  mutex_lock(&f->lock);
   rreq->cookie = cookie;
   rreq->nreq.unique = f->notify_ctr++;
   rreq->nreq.reply = fuse_ll_retrieve_reply;
   list_add_nreq(&rreq->nreq, &f->notify_list);
-  pthread_mutex_unlock(&f->lock);
+  mutex_unlock(&f->lock);
 
   outarg.notify_unique = rreq->nreq.unique;
   outarg.nodeid = ino;
@@ -1684,9 +1685,9 @@ fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
   err = send_notify_iov(f, ch, FUSE_NOTIFY_RETRIEVE, iov, 2);
   if(err)
     {
-      pthread_mutex_lock(&f->lock);
+      mutex_lock(&f->lock);
       list_del_nreq(&rreq->nreq);
-      pthread_mutex_unlock(&f->lock);
+      mutex_unlock(&f->lock);
       free(rreq);
     }
 
@@ -1866,7 +1867,7 @@ fuse_ll_destroy(void *data)
   if(llp != NULL)
     fuse_ll_pipe_free(llp);
   pthread_key_delete(f->pipe_key);
-  pthread_mutex_destroy(&f->lock);
+  mutex_destroy(&f->lock);
   free(f);
 
   lfmp_clear(&g_FMP_fuse_req);
@@ -2033,7 +2034,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   f->conn.max_readahead = UINT_MAX;
   list_init_nreq(&f->notify_list);
   f->notify_ctr = 1;
-  fuse_mutex_init(&f->lock);
+  mutex_init(&f->lock);
 
   err = pthread_key_create(&f->pipe_key, fuse_ll_pipe_destructor);
   if(err)
@@ -2063,7 +2064,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
  out_key_destroy:
   pthread_key_delete(f->pipe_key);
  out_free:
-  pthread_mutex_destroy(&f->lock);
+  mutex_destroy(&f->lock);
   free(f);
  out:
   return NULL;
