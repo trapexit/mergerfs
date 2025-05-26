@@ -20,7 +20,10 @@
 
 #include "fixed_mem_pool.hpp"
 
+#include "mutex.hpp"
+
 #include <pthread.h>
+
 
 template<size_t SIZE>
 class LockedFixedMemPool
@@ -28,12 +31,12 @@ class LockedFixedMemPool
 public:
   LockedFixedMemPool()
   {
-    pthread_mutex_init(&_mutex,NULL);
+    mutex_init(&_mutex);
   }
 
   ~LockedFixedMemPool()
   {
-    pthread_mutex_destroy(&_mutex);
+    mutex_destroy(&_mutex);
   }
 
 public:
@@ -42,9 +45,9 @@ public:
   {
     void *mem;
 
-    pthread_mutex_lock(&_mutex);
+    mutex_lock(&_mutex);
     mem = _fmp.alloc();
-    pthread_mutex_unlock(&_mutex);
+    mutex_unlock(&_mutex);
 
     return mem;
   }
@@ -52,9 +55,9 @@ public:
   void
   free(void *mem_)
   {
-    pthread_mutex_lock(&_mutex);
+    mutex_lock(&_mutex);
     _fmp.free(mem_);
-    pthread_mutex_unlock(&_mutex);
+    mutex_unlock(&_mutex);
   }
 
   uint64_t

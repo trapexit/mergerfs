@@ -1,5 +1,7 @@
 #include "policy_cache.hpp"
 
+#include "mutex.hpp"
+
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -36,7 +38,7 @@ PolicyCache::Value::Value()
 PolicyCache::PolicyCache(void)
   : timeout(DEFAULT_TIMEOUT)
 {
-  pthread_mutex_init(&_lock,NULL);
+  mutex_init(&_lock);
 }
 
 void
@@ -45,11 +47,11 @@ PolicyCache::erase(const char *fusepath_)
   if(timeout == 0)
     return;
 
-  pthread_mutex_lock(&_lock);
+  mutex_lock(&_lock);
 
   _cache.erase(fusepath_);
 
-  pthread_mutex_unlock(&_lock);
+  mutex_unlock(&_lock);
 }
 
 void
@@ -66,7 +68,7 @@ PolicyCache::cleanup(const int prob_)
 
   now = l::get_time();
 
-  pthread_mutex_lock(&_lock);
+  mutex_lock(&_lock);
 
   i = _cache.begin();
   while(i != _cache.end())
@@ -77,17 +79,17 @@ PolicyCache::cleanup(const int prob_)
         ++i;
     }
 
-  pthread_mutex_unlock(&_lock);
+  mutex_unlock(&_lock);
 }
 
 void
 PolicyCache::clear(void)
 {
-  pthread_mutex_lock(&_lock);
+  mutex_lock(&_lock);
 
   _cache.clear();
 
-  pthread_mutex_unlock(&_lock);
+  mutex_unlock(&_lock);
 }
 
 int
@@ -105,18 +107,18 @@ PolicyCache::operator()(const Policy::Search &policy_,
 
   now = l::get_time();
 
-  pthread_mutex_lock(&_lock);
+  mutex_lock(&_lock);
   v = &_cache[fusepath_];
 
   if((now - v->time) >= timeout)
     {
-      pthread_mutex_unlock(&_lock);
+      mutex_unlock(&_lock);
 
       rv = policy_(branches_,fusepath_,paths_);
       if(rv == -1)
         return -1;
 
-      pthread_mutex_lock(&_lock);
+      mutex_lock(&_lock);
       v->time  = now;
       v->paths = paths_;
     }
@@ -125,7 +127,7 @@ PolicyCache::operator()(const Policy::Search &policy_,
       paths_ = v->paths;
     }
 
-  pthread_mutex_unlock(&_lock);
+  mutex_unlock(&_lock);
 
   return 0;
 }
