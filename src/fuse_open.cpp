@@ -328,6 +328,7 @@ _open_for_update_lambda(const fuse_context *fc_,
                     ffi_,
                     false, // link_cow, need to always open the original
                     cfg->nfsopenhack);
+  ffi_->flags |= AT_EMPTY_PATH;
   rv = ::_open_core(of_->fi->fd,
                     "",
                     &of_->fi->branch,
