@@ -223,6 +223,8 @@ namespace FUSE
       state.proc_self_fd_fd = open("/dev/fd",O_RDWR|O_PATH|O_DIRECTORY);
     assert(state.proc_self_fd_fd != -1);
 
+    system("ls -lh /dev/fd");
+
     return NULL;
   }
 }
