@@ -33,7 +33,8 @@ namespace fs
   int
   openat(const int   dirfd_,
          const char *pathname_,
-         const int   flags_)
+         const int   flags_,
+         const int   mode_ = 0)
   {
     int rv;
 
