@@ -214,8 +214,8 @@ _open_core(const int          dirfd_,
              filepath_);
   if((fd < 0) && (fd == -EACCES))
     fd = ::_nfsopenhack(filepath_,ffi_->flags,nfsopenhack_);
-  if(fd == -1)
-    return -errno;
+  if(fd < 0)
+    return fd;
 
   fi = new FileInfo(fd,branch_,fusepath_,ffi_->direct_io);
 
