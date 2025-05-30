@@ -219,6 +219,8 @@ namespace FUSE
     l::spawn_thread_to_set_readahead();
 
     state.proc_self_fd_fd = open("/proc/self/fd",O_RDWR|O_PATH|O_DIRECTORY);
+    if(state.proc_self_fd_fd == -1)
+      state.proc_self_fd_fd = open("/dev/fd",O_RDWR|O_PATH|O_DIRECTORY);
     assert(state.proc_self_fd_fd != -1);
 
     return NULL;
