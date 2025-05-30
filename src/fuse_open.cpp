@@ -323,7 +323,10 @@ _open_for_update_lambda(const fuse_context *fc_,
                     ffi_,
                     false, // link_cow, need to always open the original
                     cfg->nfsopenhack);
-  fmt::print("open update {} {}\n",rv,strerror(rv));
+  fmt::print("open update {} {} {}\n",
+             of_->fi->fd,
+             rv,
+             strerror(rv));
   if(rv < 0)
     return rv;
 
