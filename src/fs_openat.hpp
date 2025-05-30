@@ -48,11 +48,13 @@ namespace fs
   int
   openat(const int          dirfd_,
          const std::string &pathname_,
-         const int          flags_)
+         const int          flags_,
+         const mode_t       mode_ = 0)
   {
     return fs::openat(dirfd_,
                       pathname_.c_str(),
-                      flags_);
+                      flags_,
+                      mode_);
   }
 
   static
@@ -60,10 +62,12 @@ namespace fs
   int
   openat(const int                    dirfd_,
          const std::filesystem::path &pathname_,
-         const int                    flags_)
+         const int                    flags_,
+         const mode_t                 mode_ = 0)
   {
     return fs::openat(dirfd_,
                       pathname_.c_str(),
-                      flags_);
+                      flags_,
+                      mode_);
   }
 }
