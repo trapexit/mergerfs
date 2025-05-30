@@ -208,6 +208,10 @@ _open_core(const int          dirfd_,
     fs::cow::break_link(filepath_.c_str());
 
   fd = fs::openat(dirfd_,filepath_,ffi_->flags);
+  fmt::print("{} = fs::openat({},{})\n",
+             fd,
+             dirfd_,
+             filepath_);
   if((fd == -1) && (errno == EACCES))
     fd = ::_nfsopenhack(filepath_,ffi_->flags,nfsopenhack_);
   if(fd == -1)
