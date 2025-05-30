@@ -212,7 +212,7 @@ _open_core(const int          dirfd_,
              fd,
              dirfd_,
              filepath_);
-  if((fd == -1) && (errno == EACCES))
+  if((fd < 0) && (fd == -EACCES))
     fd = ::_nfsopenhack(filepath_,ffi_->flags,nfsopenhack_);
   if(fd == -1)
     return -errno;
