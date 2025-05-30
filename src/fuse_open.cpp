@@ -315,7 +315,6 @@ _open_for_update_lambda(const fuse_context *fc_,
   ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
                                       ffi_->flags);
 
-  // TODO: This won't work on FreeBSD?
   rv = ::_open_core(state.proc_self_fd_fd,
                     fmt::format("{}",of_->fi->fd),
                     &of_->fi->branch,
