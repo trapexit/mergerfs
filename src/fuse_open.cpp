@@ -327,6 +327,9 @@ _open_for_update_lambda(const fuse_context *fc_,
 
   of_->ref_count++;
 
+  if(cfg->passthrough == false)
+    return 0;
+
   ffi_->backing_id  = of_->backing_id;
   ffi_->passthrough = true;
   ffi_->keep_cache  = false;
