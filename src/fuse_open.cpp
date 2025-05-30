@@ -326,6 +326,9 @@ _open_for_update_lambda(const fuse_context *fc_,
              of_->fi->fd,
              rv,
              strerror(rv));
+  fmt::print("read: {}\n",
+             fs::read(of_->fi->fd,(void*)&rv,sizeof(rv)));
+  rv = 0;
   if(rv < 0)
     return rv;
 
