@@ -207,7 +207,7 @@ _open_core(const int          dirfd_,
   if(link_cow_ && fs::cow::is_eligible(filepath_.c_str(),ffi_->flags))
     fs::cow::break_link(filepath_.c_str());
 
-  fd = fs::openat(dirfd_,filepath_,ffi_->flags|AT_EMPTY_PATH);
+  fd = fs::openat(dirfd_,filepath_,ffi_->flags);
   fmt::print("{} = fs::openat({},{})\n",
              fd,
              dirfd_,
