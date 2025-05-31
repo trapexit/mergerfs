@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "procfs_get_name.hpp"
+#include "procfs.hpp"
 
 #include "errno.hpp"
 #include "fs_close.hpp"
