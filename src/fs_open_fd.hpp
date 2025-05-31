@@ -22,6 +22,6 @@ namespace fs
     return 0;
   }
 #else
-
+#error "Not supported"  
 #endif
 }
