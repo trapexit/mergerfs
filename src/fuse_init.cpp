@@ -16,6 +16,7 @@
 
 #include "config.hpp"
 #include "fs_readahead.hpp"
+#include "procfs.hpp"
 #include "state.hpp"
 #include "syslog.hpp"
 #include "ugid.hpp"
