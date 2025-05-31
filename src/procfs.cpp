@@ -13,6 +13,7 @@
 #include "fmt/core.h"
 
 #include <array>
+#include <cassert>
 
 #include <pthread.h>
 
