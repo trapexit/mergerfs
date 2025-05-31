@@ -32,7 +32,6 @@ procfs::init()
     return -errno;
 
   g_PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,O_PATH|O_DIRECTORY);
-  assert(g_PROC_SELF_FD_FD >= 0);
 
   return 0;
 }
