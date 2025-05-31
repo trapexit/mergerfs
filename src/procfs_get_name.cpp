@@ -17,6 +17,7 @@
 #include <pthread.h>
 
 static int g_PROCFS_DIR_FD = -1;
+int g_PROC_SELF_FD_FD = -1;
 constexpr const char PROCFS_PATH[] = "/proc";
 
 int
