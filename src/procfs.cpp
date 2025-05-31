@@ -28,7 +28,7 @@ _open_proc_self_fd()
 {
 #if defined(__linux__)
   procfs::PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,O_PATH|O_DIRECTORY);
-  assert(g_PROC_SELF_FD_FD >= 0);
+  assert(procfs::PROC_SELF_FD_FD >= 0);
 #endif  
 }
 
