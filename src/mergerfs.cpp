@@ -22,7 +22,7 @@
 #include "fs_wait_for_mount.hpp"
 #include "gidcache.hpp"
 #include "option_parser.hpp"
-#include "procfs_get_name.hpp"
+#include "procfs.hpp"
 #include "resources.hpp"
 #include "strvec.hpp"
 #include "syslog.hpp"
