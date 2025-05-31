@@ -191,6 +191,7 @@ namespace FUSE
   {
     Config::Write cfg;
 
+    procfs::init();
     ugid::init();
 
     cfg->readdir.initialize();
