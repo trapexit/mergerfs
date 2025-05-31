@@ -18,7 +18,8 @@
 
 static int g_PROCFS_DIR_FD = -1;
 int g_PROC_SELF_FD_FD = -1;
-constexpr const char PROCFS_PATH[] = "/proc";
+static constexpr const char PROCFS_PATH[] = "/proc";
+static constexpr const char PROC_SELF_FD[] = "/proc/self/fd";
 
 int
 procfs::init()
@@ -29,6 +30,8 @@ procfs::init()
   g_PROCFS_DIR_FD = fs::open(PROCFS_PATH,O_PATH|O_DIRECTORY);
   if(g_PROCFS_DIR_FD == -1)
     return -errno;
+
+  
 
   return 0;
 }
