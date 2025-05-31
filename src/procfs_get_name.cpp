@@ -21,6 +21,16 @@ int g_PROC_SELF_FD_FD = -1;
 static constexpr const char PROCFS_PATH[] = "/proc";
 static constexpr const char PROC_SELF_FD[] = "/proc/self/fd";
 
+static
+void
+_open_proc_self_fd()
+{
+#if defined(__linux__)
+  g_PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,O_PATH|O_DIRECTORY);
+  assert(g_PROC_SELF_FD_FD >= 0);
+#endif  
+}
+
 int
 procfs::init()
 {
