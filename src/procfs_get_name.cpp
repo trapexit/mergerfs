@@ -31,7 +31,7 @@ procfs::init()
   if(g_PROCFS_DIR_FD == -1)
     return -errno;
 
-  
+  g_PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,
 
   return 0;
 }
