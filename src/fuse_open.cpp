@@ -29,7 +29,7 @@
 #include "fs_path.hpp"
 #include "fs_stat.hpp"
 #include "fuse_passthrough.hpp"
-#include "procfs_get_name.hpp"
+#include "procfs.hpp"
 #include "stat_util.hpp"
 #include "ugid.hpp"
 
