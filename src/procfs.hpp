@@ -22,6 +22,7 @@
 
 namespace procfs
 {
+  extern int PROC_SELF_FD_FD;
   int init();
   std::string get_name(const int tid);
 }
