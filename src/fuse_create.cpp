@@ -24,7 +24,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "fuse_passthrough.hpp"
-#include "procfs_get_name.hpp"
+#include "procfs.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
