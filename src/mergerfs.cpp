@@ -314,8 +314,6 @@ namespace l
     if(cfg->lazy_umount_mountpoint)
       l::lazy_umount(cfg->mountpoint);
 
-    procfs::init();
-
     rv = fuse_main(args.argc,
                    args.argv,
                    &ops);
