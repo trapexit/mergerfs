@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "fuse_kernel.h"
 
 void debug_fuse_open_out(const uint64_t              unique,
@@ -51,5 +53,6 @@ void debug_fuse_bmap_out(const uint64_t              unique,
 void debug_fuse_in_header(const struct fuse_in_header *hdr);
 
 std::string fuse_debug_init_flag_name(const uint64_t);
+
 void fuse_syslog_fuse_init_in(const struct fuse_init_in *arg);
 void fuse_syslog_fuse_init_out(const struct fuse_init_out *arg);

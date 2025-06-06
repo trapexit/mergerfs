@@ -42,6 +42,7 @@ namespace mspmfs
     fs::info_t info;
     Branch *obranch;
 
+    obranch = nullptr;
     mfs = std::numeric_limits<uint64_t>::min();
     for(auto &branch : *branches_)
       {

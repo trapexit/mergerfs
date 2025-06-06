@@ -40,7 +40,7 @@ UGID_USE_RWLOCK = 0
 ifeq ($(NDEBUG),1)
 OPT_FLAGS := -O2 -DNDEBUG
 else
-OPT_FLAGS := -O0 -DDEBUG -g -fsanitize=undefined
+OPT_FLAGS := -O0 -DDEBUG -g
 endif
 
 ifeq ($(STATIC),1)
@@ -93,7 +93,8 @@ TESTS_FLAGS = \
 LDFLAGS := \
     ${LDFLAGS} \
     -pthread \
-    -lrt
+    -lrt \
+    -lstdc++fs
 
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
 DESTDIR       =

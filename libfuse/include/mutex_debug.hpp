@@ -7,6 +7,10 @@
 #include <pthread.h>
 #include <time.h>
 
+#ifndef PTHREAD_MUTEX_ADAPTIVE_NP
+# define PTHREAD_MUTEX_ADAPTIVE_NP PTHREAD_MUTEX_NORMAL
+#endif
+
 #define mutex_init(M)    _mutex_init(M,__FILE__,__func__,__LINE__)
 #define mutex_destroy(M) _mutex_destroy(M,__FILE__,__func__,__LINE__)
 #define mutex_lock(M)    _mutex_lock(M,__FILE__,__func__,__LINE__)
@@ -97,7 +101,7 @@ _mutex_lock(pthread_mutex_t *mutex_,
         case 0:
           return;
         case ETIMEDOUT:
-          cnt++;          
+          cnt++;
           fmt::println(stderr,
                        "NOTICE: pthread_mutex_timedlock expired - count={}; ({}:{}:{})",
                        cnt,

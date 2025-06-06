@@ -4,6 +4,10 @@
 
 #include <pthread.h>
 
+#ifndef PTHREAD_MUTEX_ADAPTIVE_NP
+# define PTHREAD_MUTEX_ADAPTIVE_NP PTHREAD_MUTEX_NORMAL
+#endif
+
 
 static
 inline
