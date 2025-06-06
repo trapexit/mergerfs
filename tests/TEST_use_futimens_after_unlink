@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+atime = 1234
+mtime = 1234
+(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
+
+os.utime(fd,(atime,mtime))
+
+os.unlink(filepath)
+
+os.utime(fd,(atime,mtime))
+
+os.close(fd)

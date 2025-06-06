@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -32,6 +33,10 @@ namespace fs
   fstat(const int    fd_,
         struct stat *st_)
   {
-    return ::fstat(fd_,st_);
+    int rv;
+
+    rv = ::fstat(fd_,st_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 }

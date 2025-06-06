@@ -16,6 +16,8 @@
 
 #include "config.hpp"
 #include "fs_readahead.hpp"
+#include "procfs.hpp"
+#include "state.hpp"
 #include "syslog.hpp"
 #include "ugid.hpp"
 
@@ -24,8 +26,9 @@
 
 #include "fuse.h"
 
-#include <thread>
 #include <algorithm>
+#include <fstream>
+#include <thread>
 
 
 namespace l
@@ -189,6 +192,7 @@ namespace FUSE
   {
     Config::Write cfg;
 
+    procfs::init();
     ugid::init();
 
     cfg->readdir.initialize();
@@ -201,8 +205,11 @@ namespace FUSE
     l::want_if_capable(conn_,FUSE_CAP_DIRECT_IO_ALLOW_MMAP,&cfg->direct_io_allow_mmap);
     l::want_if_capable(conn_,FUSE_CAP_DONT_MASK);
     l::want_if_capable(conn_,FUSE_CAP_EXPORT_SUPPORT,&cfg->export_support);
+    l::want_if_capable(conn_,FUSE_CAP_HANDLE_KILLPRIV,&cfg->handle_killpriv);
+    l::want_if_capable(conn_,FUSE_CAP_HANDLE_KILLPRIV_V2,&cfg->handle_killpriv_v2);
     l::want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
     l::want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
+    l::want_if_capable(conn_,FUSE_CAP_PASSTHROUGH);
     l::want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&cfg->posix_acl);
     l::want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg->readdirplus);
     l::want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg->writeback_cache);
@@ -212,6 +219,24 @@ namespace FUSE
     conn_->want &= ~FUSE_CAP_FLOCK_LOCKS;
 
     l::spawn_thread_to_set_readahead();
+
+    if(!(conn_->capable & FUSE_CAP_PASSTHROUGH) && (cfg->passthrough != Passthrough::ENUM::OFF))
+      {
+        SysLog::warning("passthrough enabled but not supported by kernel. disabling.");
+        cfg->passthrough = Passthrough::ENUM::OFF;
+      }
+
+    if((cfg->passthrough != Passthrough::ENUM::OFF) &&
+       (cfg->cache_files == CacheFiles::ENUM::OFF))
+      {
+        SysLog::warning("passthrough enabled and cache.files disabled: passthrough will not function");
+      }
+
+    if((cfg->passthrough != Passthrough::ENUM::OFF) &&
+       (cfg->writeback_cache == true))
+      {
+        SysLog::warning("passthrough and cache.writeback are incompatible. ");
+      }
 
     return NULL;
   }

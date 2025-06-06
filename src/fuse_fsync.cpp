@@ -45,10 +45,10 @@ namespace l
 namespace FUSE
 {
   int
-  fsync(const fuse_file_info_t *ffi_,
-        int                     isdatasync_)
+  fsync(const uint64_t fh_,
+        int            isdatasync_)
   {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
 
     return l::fsync(fi->fd,isdatasync_);
   }

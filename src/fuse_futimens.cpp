@@ -17,6 +17,7 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_futimens.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -43,10 +44,23 @@ namespace l
 namespace FUSE
 {
   int
-  futimens(const fuse_file_info_t *ffi_,
-           const struct timespec   ts_[2])
+  futimens(const uint64_t        fh_,
+           const struct timespec ts_[2])
   {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    uint64_t fh;
+    const fuse_context *fc = fuse_get_context();
+
+    fh = fh_;
+    if(fh == 0)
+      {
+        state.open_files.cvisit(fc->nodeid,
+                                [&](auto &val_)
+                                {
+                                  fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                                });
+      }
+
+    FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
 
     return l::futimens(fi->fd,ts_);
   }

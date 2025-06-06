@@ -34,10 +34,14 @@ namespace fs
           struct stat *statbuf_,
           const int    flags_)
   {
-    return ::fstatat(dirfd_,
-                     pathname_,
-                     statbuf_,
-                     flags_);
+    int rv;
+
+    rv = ::fstatat(dirfd_,
+                   pathname_,
+                   statbuf_,
+                   flags_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static

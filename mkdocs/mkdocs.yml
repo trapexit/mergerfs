@@ -76,6 +76,7 @@ nav:
   - config/rename_and_link.md
   - config/moveonenospc.md
   - config/cache.md
+  - config/passthrough.md
   - config/readahead.md
   - config/inodecalc.md
   - config/threads.md

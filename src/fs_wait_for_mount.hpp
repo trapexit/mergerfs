@@ -17,10 +17,7 @@
 
 #pragma once
 
-#include "ghc/filesystem.hpp"
-
 #include "fs_pathvector.hpp"
-#include "fs_stat.hpp"
 
 #include <chrono>
 #include <vector>

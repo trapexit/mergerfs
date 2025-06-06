@@ -61,7 +61,7 @@ namespace fs
 
         error = errno;
         rv = fs::fstat(fd_,&tmpst);
-        if(rv == -1)
+        if(rv < 0)
           return -1;
 
         if((st_.st_mode & MODE_BITS) != (tmpst.st_mode & MODE_BITS))

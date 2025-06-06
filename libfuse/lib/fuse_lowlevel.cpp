@@ -280,6 +280,11 @@ fill_open(struct fuse_open_out   *arg_,
     arg_->open_flags |= FOPEN_PARALLEL_DIRECT_WRITES;
   if(ffi_->noflush)
     arg_->open_flags |= FOPEN_NOFLUSH;
+  if(ffi_->passthrough && (ffi_->backing_id > 0))
+    {
+      arg_->open_flags |= FOPEN_PASSTHROUGH;
+      arg_->backing_id  = ffi_->backing_id;
+    }
 }
 
 int
@@ -1122,8 +1127,7 @@ do_init(fuse_req_t             req,
   inargflags = 0;
   outargflags = 0;
 
-  if(f->debug)
-    debug_fuse_init_in(arg);
+  fuse_syslog_fuse_init_in(arg);
 
   f->conn.proto_major = arg->major;
   f->conn.proto_minor = arg->minor;
@@ -1194,6 +1198,12 @@ do_init(fuse_req_t             req,
         f->conn.capable |= FUSE_CAP_DIRECT_IO_ALLOW_MMAP;
       if(inargflags & FUSE_CREATE_SUPP_GROUP)
         f->conn.capable |= FUSE_CAP_CREATE_SUPP_GROUP;
+      if(inargflags & FUSE_PASSTHROUGH)
+        f->conn.capable |= FUSE_CAP_PASSTHROUGH;
+      if(inargflags & FUSE_HANDLE_KILLPRIV)
+        f->conn.capable |= FUSE_CAP_HANDLE_KILLPRIV;
+      if(inargflags & FUSE_HANDLE_KILLPRIV_V2)
+        f->conn.capable |= FUSE_CAP_HANDLE_KILLPRIV_V2;
     }
   else
     {
@@ -1267,6 +1277,15 @@ do_init(fuse_req_t             req,
     outargflags |= FUSE_CREATE_SUPP_GROUP;
   if(f->conn.want & FUSE_CAP_DIRECT_IO_ALLOW_MMAP)
     outargflags |= FUSE_DIRECT_IO_ALLOW_MMAP;
+  if(f->conn.want & FUSE_CAP_HANDLE_KILLPRIV)
+    outargflags |= FUSE_HANDLE_KILLPRIV;
+  if(f->conn.want & FUSE_CAP_HANDLE_KILLPRIV_V2)
+    outargflags |= FUSE_HANDLE_KILLPRIV_V2;
+  if(f->conn.want & FUSE_CAP_PASSTHROUGH)
+    {
+      outargflags |= FUSE_PASSTHROUGH;
+      outarg.max_stack_depth = 2;
+    }
 
   if(inargflags & FUSE_INIT_EXT)
     {
@@ -1304,8 +1323,7 @@ do_init(fuse_req_t             req,
   else
     outargsize = sizeof(outarg);
 
-  if(f->debug)
-    debug_fuse_init_out(req->unique,&outarg,outargsize);
+  fuse_syslog_fuse_init_out(&outarg);
 
   send_reply_ok(req, &outarg, outargsize);
 }
@@ -1943,11 +1961,14 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   if(req == NULL)
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
 
-  req->unique  = in->unique;
-  req->ctx.uid = in->uid;
-  req->ctx.gid = in->gid;
-  req->ctx.pid = in->pid;
-  req->ch      = se_->ch;
+  req->unique     = in->unique;
+  req->ctx.opcode = in->opcode;
+  req->ctx.unique = in->unique;
+  req->ctx.nodeid = in->nodeid;
+  req->ctx.uid    = in->uid;
+  req->ctx.gid    = in->gid;
+  req->ctx.pid    = in->pid;
+  req->ch         = se_->ch;
 
   err = ENOSYS;
   if(in->opcode >= FUSE_MAXOPS)
@@ -1979,11 +2000,14 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   if(req == NULL)
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
 
-  req->unique  = in->unique;
-  req->ctx.uid = in->uid;
-  req->ctx.gid = in->gid;
-  req->ctx.pid = in->pid;
-  req->ch      = se_->ch;
+  req->unique     = in->unique;
+  req->ctx.opcode = in->opcode;
+  req->ctx.unique = in->unique;
+  req->ctx.nodeid = in->nodeid;
+  req->ctx.uid    = in->uid;
+  req->ctx.gid    = in->gid;
+  req->ctx.pid    = in->pid;
+  req->ch         = se_->ch;
 
   err = EIO;
   if(in->opcode != FUSE_INIT)
