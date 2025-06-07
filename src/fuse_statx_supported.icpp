@@ -24,7 +24,7 @@ _set_stat_if_leads_to_dir(const std::string &path_,
   int rv;
   struct fuse_statx st;
 
-  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,st_);
+  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,&st);
   if(rv < 0)
     return;
 
@@ -42,7 +42,7 @@ _set_stat_if_leads_to_reg(const std::string &path_,
   int rv;
   struct fuse_statx st;
 
-  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,st_);
+  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,&st);
   if(rv < 0)
     return;
 

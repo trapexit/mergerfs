@@ -26,12 +26,12 @@
 
 #include <functional>
 #include <thread>
-#include <unordered_set>
+#include <set>
 
 
 namespace fs
 {
-  typedef std::unordered_set<fs::Path> PathSet;
+  typedef std::set<fs::Path> PathSet;
 }
 
 constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(333);
@@ -99,9 +99,9 @@ _wait_for_mount(const struct stat               &src_st_,
                 const std::chrono::milliseconds &timeout_)
 {
   bool first_loop;
-  fs::PathVector                                     successes;
-  fs::PathVector                                     failures;
-  std::unordered_set<fs::Path>                       tgt_paths;
+  fs::PathVector successes;
+  fs::PathVector failures;
+  fs::PathSet    tgt_paths;
   std::chrono::time_point<std::chrono::steady_clock> now;
   std::chrono::time_point<std::chrono::steady_clock> deadline;
 

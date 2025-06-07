@@ -12,7 +12,7 @@ endif
 ifeq ($(NDEBUG),1)
 OPT_FLAGS := -O2 -DNDEBUG
 else
-OPT_FLAGS := -O0 -DDEBUG -g -fsanitize=undefined
+OPT_FLAGS := -O0 -DDEBUG -g
 endif
 
 ifeq ($(LTO),1)
