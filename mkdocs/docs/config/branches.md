@@ -66,8 +66,8 @@ A convenient way to configure branches is to use
 
 ## branch setup
 
-mergerfs does not require any special setup of branch paths in order
-to be used however here are some suggestions.
+`mergerfs` does **not** require any special setup of branch paths in
+order to be used however here are some suggestions.
 
 
 ### layout
@@ -132,12 +132,13 @@ $ sudo chattr +i /mnt/hdd/10T-XYZ
 ```
 
 The extended attribute `user.mergerfs.branch_mounts_here` is used by
-the [branches-mount-timeout](branches_mount_timeout.md) option to
+the [branches-mount-timeout](branches-mount-timeout.md) option to
 recognize whether or not a mergerfs branch path points to the intended
 filesystem.
 
 The `chattr` is likely to only work on EXT{2,3,4} filesystems but will
-restrict even `root` from modifying the directory or its content.
+restrict even `root` from modifying the directory or its content but
+is still able to be a mount point.
 
 
 #### mounted filesystems
