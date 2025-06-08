@@ -36,7 +36,7 @@ config file.
 * **[branches-mount-timeout](branches-mount-timeout.md)=UINT**: Number
   of seconds to wait at startup for branches to be a mount other than
   the mountpoint's filesystem. (default: 0)
-* **[branches-mount-timeout-fail](branches-mount-timeout.md##branches-mount-timeout-fail)=BOOL**:
+* **[branches-mount-timeout-fail](branches-mount-timeout.md#branches-mount-timeout-fail)=BOOL**:
   If set to `true` then if `branches-mount-timeout` expires it will
   exit rather than continuing. (default: false)
 * **[minfreespace](minfreespace.md)=SIZE**: The minimum available
