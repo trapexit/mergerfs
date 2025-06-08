@@ -19,6 +19,7 @@
 #include "fs_wait_for_mount.hpp"
 #include "syslog.hpp"
 
+#include "fs_mount.hpp"
 #include "fs_exists.hpp"
 #include "fs_lgetxattr.hpp"
 #include "fs_lstat.hpp"
@@ -123,13 +124,13 @@ _wait_for_mount(const struct stat               &src_st_,
       for(const auto &path : successes)
         {
           tgt_paths.erase(path);
-          SysLog::info("{} is mounted",path.string());
+          SysLog::info("{} is ready",path.string());
         }
 
       if(first_loop)
         {
           for(const auto &path : failures)
-            SysLog::notice("{} is not mounted, waiting",path.string());
+            SysLog::notice("{} is not ready, waiting",path.string());
           first_loop = false;
         }
 
@@ -138,7 +139,7 @@ _wait_for_mount(const struct stat               &src_st_,
     }
 
   for(auto const &path : failures)
-    SysLog::notice("{} not mounted within timeout",path.string());
+    SysLog::notice("{} not ready within timeout",path.string());
 
   return failures.size();
 }
@@ -156,6 +157,19 @@ fs::wait_for_mount(const fs::Path                  &src_path_,
     SysLog::error("Error stat'ing mount path: {} ({})",
                   src_path_.string(),
                   strerror(errno));
+
+  for(auto &tgt_path : tgt_paths_)
+    {
+      int rv;
+
+      if(_branch_is_mounted(src_st,tgt_path))
+        continue;
+
+      rv = fs::mount(tgt_path);
+      SysLog::notice("mount {}: {}",
+                     tgt_path.string(),
+                     ((rv == 0) ? "success" : "fail"));
+    }
 
   return ::_wait_for_mount(src_st,tgt_paths_,timeout_);
 }

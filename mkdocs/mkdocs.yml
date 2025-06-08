@@ -69,7 +69,7 @@ nav:
   - config/options.md
   - config/deprecated_options.md
   - config/branches.md
-  - config/branches_mount_timeout.md
+  - config/branches-mount-timeout.md
   - config/functions_categories_policies.md
   - config/minfreespace.md
   - config/func_readdir.md

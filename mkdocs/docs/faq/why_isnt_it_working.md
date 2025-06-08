@@ -36,36 +36,27 @@ and [FAQ](configuration_and_policies.md) for policy recommendations.
 
 ## Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
 
-First make sure you've read the sections about [policies, path
-preservation, branch
-filtering,](../config/functions_categories_policies.md) and the
-options [minfreespace](../config/minfreespace.md),
-[moveonenospc](../config/moveonenospc.md),
-[statfs](../config/statfs.md), and
-[statfs_ignore](../config/statfs.md#statfs_ignore).
+One or multiple of the below are likely causing branches
 
-mergerfs is simply presenting a union of the content within multiple
+* [minfreespace](../config/minfreespace.md) could be filtering out
+  branches
+* if using an `ep*`
+  [policy](../config/functions_categories_policies.md) there may not
+  be an available branch
+* due to [branch modes](../config/branches.md#branch-mode) being set
+  to to `NC` or `RO` branches will be excluded from consideration
+* if using `ext4` ensure you are not running into reserve limits (use
+  `tune2fs -m 0` to remove the reserve)
+* it is possible that the filesystem selected by the policy has run
+  out of inodes (check with `df -i`)
+
+mergerfs is presenting a union of the content within multiple
 branches. The reported free space is an aggregate of space available
-within the pool (behavior modified by `statfs` and
-`statfs_ignore`). It does not represent a contiguous space. In the
-same way that read-only filesystems, those with quotas, or reserved
-space report the full theoretical space available. Not the practical
-usable space.
-
-Due to using an `existing path` based policy, setting a [branch's
-mode](../config/branches.md#branch-mode) to `NC` or `RO`, a
-filesystems read-only status, and/or `minfreespace` setting it is
-[perfectly
-valid](../config/functions_categories_policies.md#filtering) that
-`ENOSPC` / "out of space" / "no space left on device" be returned when
-attempting to create a file despite there being actual space available
-somewhere in the pool. It is doing what was asked of it: filtering
-possible branches due to those settings. If that is not the behavior
-you want you need to modify the settings accordingly.
-
-It is also possible that the filesystem selected has run out of
-inodes. Use `df -i` to list the total and available inodes per
-filesystem.
+within the pool (behavior modified by [statfs](../config/statfs.md)
+and [statfs_ignore](../config/statfs.md#statfs_ignore)). It does not
+represent a contiguous space. In the same way that read-only
+filesystems, those with quotas, or reserved space report the full
+theoretical space available. Not the practical usable space.
 
 
 ## Why isn't the create policy working?
@@ -76,7 +67,7 @@ First, confirm the policy is configured as expected by using the
 [runtime interface](../runtime_interfaces.md).
 
 ```shell
-$ getfattr -n user.mergerfs.category.create /mnt/mergerfs/.mergerfs
+$ sudo getfattr -n user.mergerfs.category.create /mnt/mergerfs/.mergerfs
 # file: mnt/mergerfs/.mergerfs
 user.mergerfs.category.create="mfs"
 ```
@@ -87,8 +78,8 @@ where it was created.
 
 
 ```shell
-$ touch /mnt/mergerfs/new-file
-$ getfattr -n user.mergerfs.allpaths /mnt/mergerfs/new-file
+$ sudo touch /mnt/mergerfs/new-file
+$ sudo getfattr -n user.mergerfs.allpaths /mnt/mergerfs/new-file
 # file: mnt/mergerfs/new-file
 user.mergerfs.allpaths="/mnt/hdd/drive1/new-file"
 ```

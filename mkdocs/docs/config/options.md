@@ -33,6 +33,12 @@ config file.
   key=val / ini style format.
 * **[branches](branches.md)**: Colon delimited list of branches. Used
   primarily in config file.
+* **[branches-mount-timeout](branches-mount-timeout.md)=UINT**: Number
+  of seconds to wait at startup for branches to be a mount other than
+  the mountpoint's filesystem. (default: 0)
+* **[branches-mount-timeout-fail](branches-mount-timeout.md##branches-mount-timeout-fail)=BOOL**:
+  If set to `true` then if `branches-mount-timeout` expires it will
+  exit rather than continuing. (default: false)
 * **[minfreespace](minfreespace.md)=SIZE**: The minimum available
   space of a branch necessary to be considered for a create
   [policy](functions_categories_policies.md). This is a default value
@@ -102,9 +108,6 @@ config file.
 * **nfsopenhack=off|git|all**: A workaround for exporting mergerfs
   over NFS where there are issues with creating files for write while
   setting the mode to read-only. (default: off)
-* **branches-mount-timeout=UINT**: Number of seconds to wait at
-  startup for branches to be a mount other than the mountpoint's
-  filesystem. (default: 0)
 * **[follow-symlinks](follow-symlinks.md)=never|directory|regular|all**:
   Turns symlinks into what they point to. (default: never)
 * **[link-exdev](link-exdev.md)=passthrough|rel-symlink|abs-base-symlink|abs-pool-symlink**:
