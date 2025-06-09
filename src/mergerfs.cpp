@@ -265,7 +265,7 @@ namespace l
     if(uid == 0)
       return;
 
-    const char s[] = "mergerfs is not running as root and may not work correctly\n";
+    constexpr const char s[] = "mergerfs is not running as root and may not work correctly\n";
     fmt::print(stderr,"warning: {}",s);
     SysLog::warning(s);
   }
@@ -282,6 +282,7 @@ namespace l
 
     SysLog::open();
     SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
+    SysLog::info("Go to https://trapexit.github.io/mergerfs/support for support");
 
     memset(&ops,0,sizeof(fuse_operations));
 
