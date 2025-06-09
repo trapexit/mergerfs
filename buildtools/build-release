@@ -62,6 +62,12 @@ def parse_args():
     return p.parse_args()
 
 
+def should_skip(filename):
+    if filename.endswith('~'):
+        return True
+    return False
+
+
 def main():
     args = parse_args()
     print(args)
@@ -77,6 +83,8 @@ def main():
     elif args.target == 'all':
         for root,dirnames,filenames in os.walk(basepath):
             for filename in filenames:
+                if should_skip(filename):
+                    continue                
                 containerfile = f'buildtools/containerfiles/{filename}'
                 containerfiles.append(containerfile)
     else:
@@ -84,6 +92,8 @@ def main():
             for filename in filenames:
                 if args.target not in filename:
                     continue
+                if should_skip(filename):
+                    continue                
                 containerfile = f'buildtools/containerfiles/{filename}'
                 containerfiles.append(containerfile)
 
