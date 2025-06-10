@@ -5,7 +5,7 @@
 #include "timespec_utils.hpp"
 
 int
-Func2::GetattrCombine::process(const Branches  &branches_,
+Func2::GetAttrCombine::process(const Branches  &branches_,
                                const fs::Path  &fusepath_,
                                struct stat     *st_,
                                fuse_timeouts_t *timeout_)
@@ -25,7 +25,7 @@ Func2::GetattrCombine::process(const Branches  &branches_,
       rv = fs::lstat(fullpath.c_str(),&st);
       if(rv == -1)
         continue;
-      
+
       if(st_->st_ino == 0)
         {
           *st_ = st;
