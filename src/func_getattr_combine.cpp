@@ -11,7 +11,7 @@ Func2::GetAttrCombine::process(const Branches  &branches_,
                                fuse_timeouts_t *timeout_)
 {
   int rv;
-  Branches::CPtr branches;
+  Branches::Ptr branches;
   fs::Path fullpath;
 
   branches = branches_;
