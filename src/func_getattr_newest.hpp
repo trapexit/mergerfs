@@ -2,11 +2,11 @@
 
 namespace Func2
 {
-  class GetattrNewest : public GetattrBase
+  class GetAttrNewest : public GetAttrBase
   {
   public:
-    GetattrNewest() {}
-    ~GetattrNewest() {}
+    GetAttrNewest() {}
+    ~GetAttrNewest() {}
 
   public:
     int process(const Branches &branches,
