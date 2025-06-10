@@ -12,7 +12,7 @@ Func2::GetattrNewest::process(const Branches  &branches_,
 {
   int rv;
   fs::Path fullpath;
-  Branches::CPtr branches;
+  Branches::Ptr branches;
   const Branch *newest_branch;
 
   branches = branches_;
