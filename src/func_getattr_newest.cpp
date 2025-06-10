@@ -5,7 +5,7 @@
 #include "timespec_utils.hpp"
 
 int
-Func2::GetattrNewest::process(const Branches  &branches_,
+Func2::GetAttrNewest::process(const Branches  &branches_,
                               const fs::Path  &fusepath_,
                               struct stat     *st_,
                               fuse_timeouts_t *timeout_)
