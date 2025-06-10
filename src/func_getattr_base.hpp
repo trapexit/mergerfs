@@ -11,11 +11,11 @@
 
 namespace Func2
 {
-  class GetattrBase
+  class GetAttrBase
   {
   public:
-    GetattrBase() {}
-    ~GetattrBase() {}
+    GetAttrBase() {}
+    ~GetAttrBase() {}
   public:
     virtual int process(const Branches &branches,
                         const fs::Path &fusepath,
