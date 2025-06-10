@@ -2,11 +2,11 @@
 
 namespace Func2
 {
-  class GetattrCombine : public GetattrBase
+  class GetAttrCombine : public GetAttrBase
   {
   public:
-    GetattrCombine() {}
-    ~GetattrCombine() {}
+    GetAttrCombine() {}
+    ~GetAttrCombine() {}
 
   public:
     int process(const Branches &branches,
