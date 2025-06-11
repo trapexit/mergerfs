@@ -3,6 +3,12 @@
 #include "fs_lstat.hpp"
 #include "fs_inode.hpp"
 
+std::string_view
+Func2::GetAttrFF::name() const
+{
+  return "ff";
+}
+
 int
 Func2::GetAttrFF::operator()(const Branches  &branches_,
                              const fs::Path  &fusepath_,
