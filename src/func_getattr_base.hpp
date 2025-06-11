@@ -16,6 +16,7 @@ namespace Func2
   public:
     GetAttrBase() {}
     ~GetAttrBase() {}
+
   public:
     virtual int operator()(const Branches &branches,
                            const fs::Path &fusepath,
