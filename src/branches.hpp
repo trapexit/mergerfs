@@ -81,6 +81,10 @@ public:
   Ptr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
 
 public:
+  Impl::iterator begin() { return _impl->begin(); }
+  Impl::iterator end() { return _impl->end(); }
+
+public:
   void find_and_set_mode_ro();
 };
 
