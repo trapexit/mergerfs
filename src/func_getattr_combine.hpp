@@ -9,7 +9,7 @@ namespace Func2
     ~GetAttrCombine() {}
 
   public:
-    std::string name() const;
+    const std::string& name() const;
 
   public:
     int operator()(const Branches  &branches,
