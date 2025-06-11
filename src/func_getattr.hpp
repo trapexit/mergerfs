@@ -16,7 +16,6 @@ namespace Func2
   public:
     GetAttr()
     {
-      _impl = std::make_shared<Func2::GetAttrCombine>();
     }
 
   public:
