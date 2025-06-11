@@ -12,13 +12,10 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
 {
   int rv;
   fs::Path fullpath;
-  Branches::Ptr branches;
   const Branch *newest_branch;
 
-  branches = branches_;
   newest_branch = nullptr;
-
-  for(const auto &branch : *branches)
+  for(const auto &branch : branches_)
     {
       struct stat tmp_st;
 
