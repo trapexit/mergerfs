@@ -18,7 +18,7 @@ namespace Func2
     ~GetAttrBase() {}
 
   public:
-    virtual std::string name() const;
+    virtual std::string name() const = 0;
 
   public:
     virtual int operator()(const Branches &branches,
