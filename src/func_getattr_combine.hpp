@@ -9,10 +9,10 @@ namespace Func2
     ~GetAttrCombine() {}
 
   public:
-    int operator(const Branches &branches,
-                const fs::Path &fusepath,
-                struct stat *st,
-                fuse_timeouts_t *timeout);
+    int operator()(const Branches &branches,
+                   const fs::Path &fusepath,
+                   struct stat *st,
+                   fuse_timeouts_t *timeout);
     int process(const Branches &branches,
                 const fs::Path &fusepath,
                 struct stat *st,
