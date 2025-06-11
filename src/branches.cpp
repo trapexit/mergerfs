@@ -39,22 +39,22 @@ Branches::Impl::Impl(const u64 &default_minfreespace_)
 {
 }
 
-Branches::Impl&
-Branches::Impl::operator=(Branches::Impl &rval_)
-{
-  using type = std::vector<Branch>;
-  auto this_base = dynamic_cast<type*>(this);
-  auto rval_base = dynamic_cast<type*>(&rval_);
+// Branches::Impl&
+// Branches::Impl::operator=(Branches::Impl &rval_)
+// {
+//   using type = std::vector<Branch>;
+//   auto this_base = dynamic_cast<type*>(this);
+//   auto rval_base = dynamic_cast<type*>(&rval_);
 
-  *this_base = *rval_base;
+//   *this_base = *rval_base;
 
-  return *this;
-}
+//   return *this;
+// }
 
 Branches::Impl&
 Branches::Impl::operator=(Branches::Impl &&rval_)
 {
-  using type = std::vector<Branch>;  
+  using type = std::vector<Branch>;
   auto this_base = dynamic_cast<type*>(this);
   auto rval_base = dynamic_cast<type*>(&rval_);
 
