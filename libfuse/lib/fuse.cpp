@@ -1566,6 +1566,9 @@ fuse_lib_lookup(fuse_req_t             req,
   nodeid = hdr_->nodeid;
   f      = req_fuse_prepare(req);
 
+  fmt::print("lookup: {}\n",
+             nodeid);
+
   if(name[0] == '.')
     {
       if(name[1] == '\0')
