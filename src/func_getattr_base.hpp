@@ -5,6 +5,8 @@
 
 #include "fuse.h"
 
+#include <string_view>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
