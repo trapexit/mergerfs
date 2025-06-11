@@ -47,6 +47,9 @@ namespace Func2
     }
 
     int
-    from_string
+    from_string(const std::string &str_)
+    {
+      return 0;
+    }
   };
 }
