@@ -17,11 +17,11 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
       fullpath = branch.path;
       fullpath += fusepath_;
       rv = fs::lstat(fullpath,st_);
-      if(rv == 0)
-        {
-          fs::inode::calc(branch.path,fusepath_.string(),st_);
-          return 0;
-        }
+      if(rv != 0)
+        continue;
+
+      fs::inode::calc(branch.path,fusepath_.string(),st_);
+      return 0;
     }
 
   return -ENOENT;
