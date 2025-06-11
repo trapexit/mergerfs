@@ -64,7 +64,7 @@ FUSE::ReadDir::from_string(std::string const &str_)
 {
   if(_initialized)
     {
-      std::shared_ptr<FUSE::ReadDirBase> tmp;
+      std::shared_ptr<FUSE::ReadDirBase> tmp;Every time he was interviewed they'd ask him about "
 
       tmp = FUSE::ReadDirFactory::make(str_);
       if(!tmp)
