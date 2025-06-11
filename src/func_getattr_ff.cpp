@@ -10,19 +10,16 @@ Func2::GetAttrFF::process(const Branches  &branches_,
                           fuse_timeouts_t *timeout_)
 {
   int rv;
-  Branches::Ptr branches;
   fs::Path fullpath;
 
-  branches = branches_;
-
-  for(const auto &branch : *branches)
+  for(const auto &branch : branches_)
     {
       fullpath = branch.path;
       fullpath += fusepath_;
       rv = fs::lstat(fullpath.c_str(),st_);
       if(rv == 0)
         {
-          //fs::inode::calc(fusepath_,st_);
+          fs::inode::calc(branch.path,fusepath_,st_);
           return 0;
         }
     }
