@@ -28,7 +28,6 @@ namespace Func2
 
       {
         std::lock_guard<std::mutex> guard{_lock};
-        p = std::atomic_load(&_impl);
         p = _impl;
       }
 
