@@ -9,6 +9,9 @@ namespace Func2
     ~GetAttrCombine() {}
 
   public:
+    std::string name() const;
+
+  public:
     int operator()(const Branches  &branches,
                    const fs::Path  &fusepath,
                    struct stat     *st,
