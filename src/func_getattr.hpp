@@ -24,7 +24,9 @@ namespace Func2
                struct stat     *st_,
                fuse_timeouts_t *timeout_)
     {
-      std::lock_guard<std::mutex> guard{_lock};
+      std::shared_ptr<Func2::GetAttrBase> p;
+
+      p = std::atomic_load(&_impl);
 
       return (*_impl)(branches_,fusepath_,st_,timeout_);
     }
