@@ -43,7 +43,7 @@ namespace Func2
 
       p = std::atomic_load(&_impl);
 
-      return p->name();
+      return std::string(p->name());
     }
 
     int
