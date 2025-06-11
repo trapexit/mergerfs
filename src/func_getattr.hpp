@@ -13,6 +13,9 @@ namespace Func2
 {
   class GetAttr : public ToFromString
   {
+  private:
+    std::shared_ptr<Func2::GetAttrBase> _impl;
+
   public:
     GetAttr()
     {
@@ -32,7 +35,5 @@ namespace Func2
       return (*p)(branches_,fusepath_,st_,timeout_);
     }
 
-  private:
-    std::shared_ptr<Func2::GetAttrBase> _impl;
   };
 }
