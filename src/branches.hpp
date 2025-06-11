@@ -83,6 +83,9 @@ public:
 public:
   Impl::iterator begin() { return _impl->begin(); }
   Impl::iterator end() { return _impl->end(); }
+  Impl::iterator begin() const { return _impl->begin(); }
+  Impl::iterator end() const { return _impl->end(); }
+
 
 public:
   void find_and_set_mode_ro();
