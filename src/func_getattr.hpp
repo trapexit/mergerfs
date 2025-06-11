@@ -49,7 +49,7 @@ namespace Func2
     int
     from_string(const std::string &str_)
     {
-      std::lock_guard<std::mutex> _(_lock);
+
 
       return 0;
     }
