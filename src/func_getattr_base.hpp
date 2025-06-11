@@ -20,7 +20,7 @@ namespace Func2
     ~GetAttrBase() {}
 
   public:
-    virtual const std::string& name() const = 0;
+    virtual std::string_view name() const = 0;
 
   public:
     virtual int operator()(const Branches &branches,
