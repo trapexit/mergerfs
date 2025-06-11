@@ -1,7 +1,6 @@
 #pragma once
 
-#include "func_getattr_base.hpp"
-#include "func_getattr_combine.hpp"
+#include "tofrom_string.hpp"
 
 #include "fmt/core.h"
 
@@ -9,7 +8,7 @@
 
 namespace Func2
 {
-  class GetAttr
+  class GetAttr : public ToFromString
   {
   public:
     GetAttr()
