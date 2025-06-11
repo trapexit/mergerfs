@@ -16,7 +16,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
     {
       fullpath = branch.path;
       fullpath += fusepath_;
-      rv = fs::lstat(fullpath.c_str(),st_);
+      rv = fs::lstat(fullpath,st_);
       if(rv == 0)
         {
           fs::inode::calc(branch.path,fusepath_.string(),st_);
