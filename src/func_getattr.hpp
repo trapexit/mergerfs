@@ -39,8 +39,11 @@ namespace Func2
     std::string
     to_string() const
     {
-      std::lock_guard<std::mutex> _(_lock);
-      return _type;
+      std::shared_ptr<Func2::GetAttrBase> p;
+
+      p = std::atomic_load(&_impl);
+
+      return p->name();
     }
 
     int
