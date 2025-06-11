@@ -37,7 +37,7 @@ namespace Func2
 
   public:
     std::string
-    Func2::GetAttr::to_string() const
+    to_string() const
     {
       switch(typeid(*_impl.get()))
         {
@@ -45,5 +45,8 @@ namespace Func2
           return "";
         }
     }
+
+    int
+    from_string
   };
 }
