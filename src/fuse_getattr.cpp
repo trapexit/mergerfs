@@ -159,10 +159,10 @@ namespace l
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    rv = cfg->getattr.process(cfg->branches,
-                              fusepath_,
-                              st_,
-                              timeout_);
+    rv = cfg->getattr(cfg->branches,
+                      fusepath_,
+                      st_,
+                      timeout_);
 
     // rv = l::getattr(cfg->func.getattr.policy,
     //                 cfg->branches,
