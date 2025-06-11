@@ -36,7 +36,7 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
     return -ENOENT;
 
   newest_branch->path;
-  //  fs::inode::calc(fusepath_,st_);
+  fs::inode::calc(fusepath_,st_);
 
   return 0;
 }
