@@ -42,7 +42,6 @@ Func2::GetAttrCombine::process(const Branches  &branches_,
     return -ENOENT;
 
   fs::inode::calc("/",fusepath_,st_);
-  //  fs::inode::calc(fusepath_,st_);
 
   return 0;
 }
