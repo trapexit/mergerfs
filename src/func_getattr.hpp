@@ -6,7 +6,7 @@
 
 #include "fmt/core.h"
 
-#include <memory>
+#include <atomic>
 
 
 namespace Func2
