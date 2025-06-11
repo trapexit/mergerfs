@@ -83,8 +83,8 @@ public:
 public:
   Impl::iterator begin() { return _impl->begin(); }
   Impl::iterator end() { return _impl->end(); }
-  Impl::iterator begin() const { return _impl->begin(); }
-  Impl::iterator end() const { return _impl->end(); }
+  Impl::const_iterator begin() const { return _impl->begin(); }
+  Impl::const_iterator end() const { return _impl->end(); }
 
 
 public:
