@@ -19,7 +19,7 @@ Func2::GetAttrFF::process(const Branches  &branches_,
       rv = fs::lstat(fullpath.c_str(),st_);
       if(rv == 0)
         {
-          fs::inode::calc(branch.path,fusepath_,st_);
+          fs::inode::calc(branch.path,fusepath_.string(),st_);
           return 0;
         }
     }
