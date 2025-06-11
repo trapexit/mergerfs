@@ -14,7 +14,6 @@ namespace Func2
   class GetAttr : public ToFromString
   {
   private:
-    std::string _type;
     std::shared_ptr<Func2::GetAttrBase> _impl;
 
   public:
