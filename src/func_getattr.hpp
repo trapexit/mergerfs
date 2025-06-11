@@ -35,5 +35,15 @@ namespace Func2
       return (*p)(branches_,fusepath_,st_,timeout_);
     }
 
+  public:
+    std::string
+    Func2::GetAttr::to_string() const
+    {
+      switch(typeid(*_impl.get()))
+        {
+        default:
+          return "";
+        }
+    }
   };
 }
