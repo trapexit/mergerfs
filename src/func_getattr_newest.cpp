@@ -21,7 +21,7 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
 
       fullpath = branch.path;
       fullpath += fusepath_;
-      rv = fs::lstat(fullpath.c_str(),&tmp_st);
+      rv = fs::lstat(fullpath,&tmp_st);
       if(rv == -1)
         continue;
 
