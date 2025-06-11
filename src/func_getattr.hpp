@@ -49,6 +49,10 @@ namespace Func2
     int
     from_string(const std::string &str_)
     {
+      std::shared_ptr<Func2::GetAttrBase> p;
+
+      p = std::atomic_load(&_impl);
+
 
 
       return 0;
