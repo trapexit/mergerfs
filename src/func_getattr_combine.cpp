@@ -8,7 +8,7 @@ const
 std::string&
 Func2::GetAttrCombine::name() const
 {
-  static std::string NAME{""};
+  static const std::string NAME{""};
   return NAME;
 }
 
