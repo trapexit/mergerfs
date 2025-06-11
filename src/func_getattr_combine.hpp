@@ -13,9 +13,5 @@ namespace Func2
                    const fs::Path  &fusepath,
                    struct stat     *st,
                    fuse_timeouts_t *timeout);
-    int process(const Branches &branches,
-                const fs::Path &fusepath,
-                struct stat *st,
-                fuse_timeouts_t *timeout);
   };
 }
