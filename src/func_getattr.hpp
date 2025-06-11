@@ -26,16 +26,12 @@ namespace Func2
     {
       std::shared_ptr<Func2::GetAttrBase> p;
 
-      {
-        std::lock_guard<std::mutex> guard{_lock};
-        p = _impl;
-      }
+      p = std::atomic_load(&_impl);
 
       return (*p)(branches_,fusepath_,st_,timeout_);
     }
 
   private:
-    std::mutex _lock;
     std::shared_ptr<Func2::GetAttrBase> _impl;
   };
 }
