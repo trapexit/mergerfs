@@ -74,6 +74,7 @@ CXXFLAGS    ?= ${OPT_FLAGS}
 CXXFLAGS    := \
               ${CXXFLAGS} \
               -std=c++17 \
+	      -fno-rtti \
               $(STATIC_FLAGS) \
               $(LTO_FLAGS) \
 	      -Isrc \
