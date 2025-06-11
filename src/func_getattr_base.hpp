@@ -20,7 +20,7 @@ namespace Func2
   public:
     virtual int operator()(const Branches &branches,
                            const fs::Path &fusepath,
-                           struct stat *st,
+                           struct stat    *st,
                            fuse_timeouts_t *timeout) = 0;
   };
 }
