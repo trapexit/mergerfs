@@ -10,15 +10,6 @@ Func2::GetAttrCombine::operator()(const Branches  &branches_,
                                   struct stat     *st_,
                                   fuse_timeouts_t *timeout_)
 {
-  return process(branches_,fusepath_,st_,timeout_);
-}
-
-int
-Func2::GetAttrCombine::process(const Branches  &branches_,
-                               const fs::Path  &fusepath_,
-                               struct stat     *st_,
-                               fuse_timeouts_t *timeout_)
-{
   int rv;
   Branches::Ptr branches;
   fs::Path fullpath;
