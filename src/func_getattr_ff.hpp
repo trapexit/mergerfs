@@ -9,9 +9,9 @@ namespace Func2
     ~GetAttrFF() {}
 
   public:
-    int operator()(const Branches &branches,
-                   const fs::Path &fusepath,
-                   struct stat *st,
+    int operator()(const Branches  &branches,
+                   const fs::Path  &fusepath,
+                   struct stat     *st,
                    fuse_timeouts_t *timeout);
   };
 }
