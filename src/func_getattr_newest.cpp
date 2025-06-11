@@ -5,10 +5,10 @@
 #include "timespec_utils.hpp"
 
 int
-Func2::GetAttrNewest::process(const Branches  &branches_,
-                              const fs::Path  &fusepath_,
-                              struct stat     *st_,
-                              fuse_timeouts_t *timeout_)
+Func2::GetAttrNewest::operator()(const Branches  &branches_,
+                                 const fs::Path  &fusepath_,
+                                 struct stat     *st_,
+                                 fuse_timeouts_t *timeout_)
 {
   int rv;
   fs::Path fullpath;
