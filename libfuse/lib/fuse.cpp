@@ -1687,6 +1687,9 @@ fuse_lib_getattr(fuse_req_t             req,
   arg = (fuse_getattr_in*)fuse_hdr_arg(hdr_);
   f   = req_fuse_prepare(req);
 
+  fmt::print("getattr: {}\n",
+             arg->nodeid);
+
   fh = 0;
   if(arg->getattr_flags & FUSE_GETATTR_FH)
     fh = arg->fh;
