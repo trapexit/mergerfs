@@ -39,11 +39,7 @@ namespace Func2
     std::string
     to_string() const
     {
-      switch(typeid(*_impl.get()))
-        {
-        default:
-          return "";
-        }
+      return _type;
     }
 
     int
