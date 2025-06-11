@@ -35,7 +35,7 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
   if(newest_branch == nullptr)
     return -ENOENT;
 
-  fs::inode::calc(newest_branch->path,fusepath_,st_);
+  fs::inode::calc(newest_branch->path,fusepath_.string(),st_);
 
   return 0;
 }
