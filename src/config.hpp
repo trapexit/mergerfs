@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "func_getattr_combine.hpp"
+#include "func_getattr.hpp"
 
 #include "branches.hpp"
 #include "category.hpp"
