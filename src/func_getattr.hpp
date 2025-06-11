@@ -53,8 +53,6 @@ namespace Func2
 
       p = std::atomic_load(&_impl);
 
-
-
       return 0;
     }
   };
