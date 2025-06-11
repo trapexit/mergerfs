@@ -4,10 +4,10 @@
 #include "fs_inode.hpp"
 
 int
-Func2::GetAttrFF::process(const Branches  &branches_,
-                          const fs::Path  &fusepath_,
-                          struct stat     *st_,
-                          fuse_timeouts_t *timeout_)
+Func2::GetAttrFF::operator()(const Branches  &branches_,
+                             const fs::Path  &fusepath_,
+                             struct stat     *st_,
+                             fuse_timeouts_t *timeout_)
 {
   int rv;
   fs::Path fullpath;
