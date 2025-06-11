@@ -18,6 +18,9 @@ namespace Func2
     ~GetAttrBase() {}
 
   public:
+    virtual std::string name() const;
+
+  public:
     virtual int operator()(const Branches &branches,
                            const fs::Path &fusepath,
                            struct stat    *st,
