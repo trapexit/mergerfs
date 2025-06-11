@@ -11,10 +11,7 @@ Func2::GetAttrCombine::operator()(const Branches  &branches_,
                                   fuse_timeouts_t *timeout_)
 {
   int rv;
-  Branches::Ptr branches;
   fs::Path fullpath;
-
-  branches = branches_;
 
   for(const auto &branch : branches_)
     {
