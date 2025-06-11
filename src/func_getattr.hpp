@@ -8,6 +8,7 @@
 
 #include <memory>
 
+
 namespace Func2
 {
   class GetAttr : public ToFromString
