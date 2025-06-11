@@ -9,7 +9,7 @@ namespace Func2
     ~GetAttrNewest() {}
 
   public:
-    std::string name() const;
+    std::string_view name() const;
 
   public:
     int operator()(const Branches  &branches,
