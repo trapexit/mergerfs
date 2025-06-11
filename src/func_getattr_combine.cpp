@@ -4,13 +4,10 @@
 #include "fs_inode.hpp"
 #include "timespec_utils.hpp"
 
-const
-std::string&
+std::string_view
 Func2::GetAttrCombine::name() const
 {
-  static const std::string name{"combine"};
-
-  return name;
+  return "combine";
 }
 
 int
