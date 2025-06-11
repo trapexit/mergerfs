@@ -1794,6 +1794,9 @@ fuse_lib_statx(fuse_req_t             req_,
   struct fuse *f = req_fuse_prepare(req_);
   fuse_statx_in *inarg;
 
+  fmt::print("statx: {}\n",
+             hdr_->nodeid);
+
   inarg = (fuse_statx_in*)fuse_hdr_arg(hdr_);
 
   if(inarg->getattr_flags & FUSE_GETATTR_FH)
