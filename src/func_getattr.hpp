@@ -25,7 +25,7 @@ namespace Func2
     GetAttr(const std::string &name_)
     {
       _impl = Func2::GetAttrFactory::make(name_);
-      assert(_impl.valid());
+      assert(_impl);
     }
 
   public:
