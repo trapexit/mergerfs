@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "config_follow_symlinks.hpp"
+#include "follow_symlinks_enum.hpp"
 
 #include <string>
 
