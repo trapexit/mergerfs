@@ -8,7 +8,7 @@
 std::string_view
 Func2::GetAttrFF::name() const
 {
-  return "ff"sv;
+  return "ff";
 }
 
 int
