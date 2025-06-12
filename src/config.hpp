@@ -169,7 +169,7 @@ public:
   ConfigBOOL     writeback_cache;
   XAttr          xattr;
 
-  Func2::GetAttr getattr{"combinea"};
+  Func2::GetAttr getattr{"combine"};
 
 private:
   bool _initialized;
