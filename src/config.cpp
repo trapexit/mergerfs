@@ -221,7 +221,7 @@ Config::Config()
   _map["version"]                = &version;
   _map["xattr"]                  = &xattr;
 
-  _map["getattr"] = &getattr;
+  _map["func2.getattr"] = &getattr;
 }
 
 Config&
