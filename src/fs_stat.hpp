@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "config_follow_symlinks.hpp"
+
 #include <string>
 
 #include <sys/stat.h>
