@@ -1,6 +1,7 @@
 #pragma once
 
 #include "func_getattr_base.hpp"
+#include "func_getattr_factory.hpp"
 
 #include "tofrom_string.hpp"
 
