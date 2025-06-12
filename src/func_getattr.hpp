@@ -63,9 +63,6 @@ namespace Func2
 
       _impl = std::atomic_load(&p);
 
-      fmt::print("getattr: {}\n",
-                 _impl->name());
-
       return 0;
     }
   };
