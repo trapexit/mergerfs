@@ -220,6 +220,8 @@ Config::Config()
   _map["process-thread-queue-depth"] = &fuse_process_thread_queue_depth;
   _map["version"]                = &version;
   _map["xattr"]                  = &xattr;
+
+  _map["getattr"] = &getattr;
 }
 
 Config&
