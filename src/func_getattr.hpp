@@ -51,7 +51,11 @@ namespace Func2
     {
       std::shared_ptr<Func2::GetAttrBase> p;
 
-      p = std::atomic_load(&_impl);
+      p = Func2::GetAttrFactory::make(str_);
+      if(!p)
+        return -EINVAL;
+
+      _impl = std::atomic_load(&p);
 
       return 0;
     }
