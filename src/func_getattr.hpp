@@ -22,6 +22,11 @@ namespace Func2
     {
     }
 
+    GetAttr(const std::string &name_)
+    {
+      _impl = Func2::GetAttrFactory::make(str_);
+    }
+
   public:
     int
     operator()(const Branches  &branches_,
