@@ -9,6 +9,7 @@
 
 #include <atomic>
 
+#include <cassert>
 
 namespace Func2
 {
