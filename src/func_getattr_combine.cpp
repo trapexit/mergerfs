@@ -22,7 +22,6 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
   fs::Path fullpath;
   fs::Path first_branch_path;
 
-  first_branch = nullptr;
   for(const auto &branch : branches_)
     {
       struct stat st;
