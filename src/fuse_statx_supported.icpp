@@ -61,7 +61,7 @@ _statx(const Policy::Search &searchFunc_,
 
   fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-  rv = fs::statx(AT_FDCWD,fullpath,flags_,st_,followsymlinks_);
+  rv = fs::statx(AT_FDCWD,fullpath,flags_,mask_,st_,followsymlinks_);
   if(rv < 0)
     return rv;
 
