@@ -26,7 +26,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
 
       fullpath = branch.path;
       fullpath += fusepath_;
-      rv = fs::lstat(fullpath.c_str(),&st);
+      rv = fs::stat(fullpath.c_str(),&st,follow_symlinks_);
       if(rv == -1)
         continue;
 
@@ -45,6 +45,8 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
 
   if(st_->st_ino == 0)
     return -ENOENT;
+
+
 
   return 0;
 }
