@@ -1,5 +1,7 @@
 #pragma once
 
+#include "follow_symlinks_enum.hpp"
+
 #include "fs_path.hpp"
 #include "branches.hpp"
 
