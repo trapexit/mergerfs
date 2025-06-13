@@ -20,7 +20,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
 {
   int rv;
   fs::Path fullpath;
-  const Branch *first_branch;
+  fs::Path first_branch_path;
 
   first_branch = nullptr;
   for(const auto &branch : branches_)
