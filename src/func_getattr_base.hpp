@@ -26,6 +26,8 @@ namespace Func2
     virtual int operator()(const Branches &branches,
                            const fs::Path &fusepath,
                            struct stat    *st,
-                           fuse_timeouts_t *timeout) = 0;
+                           const bool      follow_symlinks_,
+                           const uint64_t symlinkify_timeout_) = 0;
+
   };
 }
