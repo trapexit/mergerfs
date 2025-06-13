@@ -36,42 +36,6 @@ using std::string;
 namespace l
 {
   static
-  void
-  set_stat_if_leads_to_dir(const std::string &path_,
-                           struct stat       *st_)
-  {
-    int rv;
-    struct stat st;
-
-    rv = fs::stat(path_,&st);
-    if(rv == -1)
-      return;
-
-    if(S_ISDIR(st.st_mode))
-      *st_ = st;
-
-    return;
-  }
-
-  static
-  void
-  set_stat_if_leads_to_reg(const std::string &path_,
-                           struct stat       *st_)
-  {
-    int rv;
-    struct stat st;
-
-    rv = fs::stat(path_,&st);
-    if(rv == -1)
-      return;
-
-    if(S_ISREG(st.st_mode))
-      *st_ = st;
-
-    return;
-  }
-
-  static
   int
   getattr_controlfile(struct stat *st_)
   {
