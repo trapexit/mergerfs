@@ -11,9 +11,9 @@ Func2::GetAttrCombine::name() const
 }
 
 int
-Func2::GetAttrCombine::operator()(const Branches  &branches_,
-                                  const fs::Path  &fusepath_,
-                                  struct stat     *st_,
+Func2::GetAttrCombine::operator()(const Branches &branches_,
+                                  const fs::Path &fusepath_,
+                                  struct stat    *st_,
                                   const FollowSymlinksEnum follow_symlinks_,
                                   const uint64_t symlinkify_timeout_)
 {
