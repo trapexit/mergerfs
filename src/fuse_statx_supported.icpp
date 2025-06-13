@@ -16,41 +16,6 @@
 #include <string>
 
 
-static
-void
-_set_stat_if_leads_to_dir(const std::string &path_,
-                          struct fuse_statx *st_)
-{
-  int rv;
-  struct fuse_statx st;
-
-  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,&st);
-  if(rv < 0)
-    return;
-
-  if(S_ISDIR(st.mode))
-    *st_ = st;
-
-  return;
-}
-
-static
-void
-_set_stat_if_leads_to_reg(const std::string &path_,
-                          struct fuse_statx *st_)
-{
-  int rv;
-  struct fuse_statx st;
-
-  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,&st);
-  if(rv < 0)
-    return;
-
-  if(S_ISREG(st.mode))
-    *st_ = st;
-
-  return;
-}
 
 static
 int
