@@ -49,6 +49,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
   if(!first_branch)
     return -ENOENT;
 
+  fullpath = first_branch->path + fusepath_;
   symlinkify::convert_if_can_be_symlink(fullpath,
                                         st_,
                                         symlinkify_timeout_);
