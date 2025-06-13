@@ -53,7 +53,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
                                         st_,
                                         symlinkify_timeout_);
 
-  fs::inode::calc(*first_branch,fusepath_.string(),st_);
+  fs::inode::calc(first_branch,fusepath_.string(),st_);
 
   return 0;
 }
