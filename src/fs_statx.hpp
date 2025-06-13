@@ -1,5 +1,7 @@
 #pragma once
 
+#include "follow_symlinks_enum.hpp"
+
 #include "fuse_kernel.h"
 
 #include <string>
