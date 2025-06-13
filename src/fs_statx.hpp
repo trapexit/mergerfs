@@ -62,4 +62,20 @@ namespace fs
         const unsigned int  mask,
         struct fuse_statx  *st,
         FollowSymlinksEnum  follow);
+
+  int
+  statx(const int           dirfd_,
+        const std::string  &pathname_,
+        const int           flags_,
+        const unsigned int  mask_,
+        struct fuse_statx  *st_,
+        FollowSymlinksEnum  follow_)
+  {
+    return fs::statx(dirfd_,
+                     pathname_.c_str(),
+                     flags_,
+                     mask_,
+                     st_,
+                     follow_);
+  }
 }
