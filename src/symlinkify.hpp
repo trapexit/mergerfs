@@ -86,10 +86,10 @@ namespace symlinkify
   inline
   void
   convert_if_can_be_symlink(const std::string &target_,
-                            const fuse_statx  &st_,
+                            fuse_statx        *st_,
                             const time_t       timeout_)
   {
     if(symlinkify::can_be_symlink(st_,timeout_))
-      symlinkify::convert(target_,st_);
+      symlinkify::convert(target_,&st_);
   }
 }
