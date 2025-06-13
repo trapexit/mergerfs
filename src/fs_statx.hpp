@@ -101,8 +101,7 @@ namespace fs
         struct fuse_statx  *st_,
         FollowSymlinksEnum  follow_)
   {
-    return fs::statx(AT_FDCWD,
-                     pathname_.c_str(),
+    return fs::statx(pathname_.c_str(),
                      flags_,
                      mask_,
                      st_,
