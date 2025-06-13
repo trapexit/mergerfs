@@ -89,7 +89,7 @@ namespace symlinkify
                             fuse_statx        *st_,
                             const time_t       timeout_)
   {
-    if(symlinkify::can_be_symlink(st_,timeout_))
+    if(symlinkify::can_be_symlink(*st_,timeout_))
       symlinkify::convert(target_,st_);
   }
 }
