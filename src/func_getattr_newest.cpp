@@ -14,7 +14,8 @@ int
 Func2::GetAttrNewest::operator()(const Branches  &branches_,
                                  const fs::Path  &fusepath_,
                                  struct stat     *st_,
-                                 fuse_timeouts_t *timeout_)
+                                 const FollowSymlinksEnum follow_symlinks_,
+                                 const time_t symlinkify_timeout_)
 {
   int rv;
   fs::Path fullpath;
