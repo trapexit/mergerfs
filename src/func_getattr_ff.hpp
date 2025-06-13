@@ -12,9 +12,10 @@ namespace Func2
     std::string_view name() const;
 
   public:
-    int operator()(const Branches  &branches,
-                   const fs::Path  &fusepath,
-                   struct stat     *st,
-                   fuse_timeouts_t *timeout);
+    int operator()(const Branches &branches,
+                   const fs::Path &fusepath,
+                   struct stat    *st,
+                   const bool      follow_symlinks,
+                   const uint64_t  symlinkify_timeout);
   };
 }
