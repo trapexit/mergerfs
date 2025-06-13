@@ -20,8 +20,9 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
 {
   int rv;
   fs::Path fullpath;
-  fs::Path first_branch_path;
+  const Branch *first_branch;
 
+  first_branch = nullptr;
   for(const auto &branch : branches_)
     {
       struct stat st;
@@ -32,10 +33,10 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       if(rv == -1)
         continue;
 
-      if(first_branch_path.empty())
+      if(!first_branch)
         {
           *st_ = st;
-          first_branch_path = fullpath;
+          first_branch = &branch;
           continue;
         }
 
@@ -45,7 +46,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       st_->st_nlink += st.st_nlink;
     }
 
-  if(first_branch_path.empty())
+  if(!first_branch)
     return -ENOENT;
 
   symlinkify::convert_if_can_be_symlink(fullpath,
