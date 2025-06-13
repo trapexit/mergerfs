@@ -63,6 +63,7 @@ namespace fs
         struct fuse_statx  *st,
         FollowSymlinksEnum  follow);
 
+  static
   int
   statx(const int           dirfd_,
         const std::string  &pathname_,
@@ -79,6 +80,7 @@ namespace fs
                      follow_);
   }
 
+  static
   int
   statx(const char         *pathname_,
         const int           flags_,
@@ -94,6 +96,8 @@ namespace fs
                      follow_);
   }
 
+  static
+  inline
   int
   statx(const std::string  &pathname_,
         const int           flags_,
