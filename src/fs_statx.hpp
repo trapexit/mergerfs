@@ -80,15 +80,14 @@ namespace fs
   }
 
   int
-  statx(const int           dirfd_,
-        const std::string  &pathname_,
+  statx(const char         *pathname_,
         const int           flags_,
         const unsigned int  mask_,
         struct fuse_statx  *st_,
         FollowSymlinksEnum  follow_)
   {
-    return fs::statx(dirfd_,
-                     pathname_.c_str(),
+    return fs::statx(AT_FDCWD,
+                     pathname_,
                      flags_,
                      mask_,
                      st_,
