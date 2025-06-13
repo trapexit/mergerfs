@@ -27,7 +27,7 @@ namespace Func2
                            const fs::Path &fusepath,
                            struct stat    *st,
                            const bool      follow_symlinks_,
-                           const uint64_t symlinkify_timeout_) = 0;
+                           const uint64_t  symlinkify_timeout_) = 0;
 
   };
 }
