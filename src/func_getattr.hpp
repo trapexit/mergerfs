@@ -34,7 +34,7 @@ namespace Func2
     operator()(const Branches  &branches_,
                const fs::Path  &fusepath_,
                struct stat     *st_,
-               FollowSymlinksEnum follow_symlinks_,
+               const FollowSymlinksEnum follow_symlinks_,
                const time_t symlinkify_timeout_)
     {
       std::shared_ptr<Func2::GetAttrBase> p;
