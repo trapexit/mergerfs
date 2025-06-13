@@ -52,4 +52,12 @@ namespace fs
   {
     return fs::statx(dirfd_,pathname_.c_str(),flags_,mask_,st_);
   }
+
+  int
+  statx(const int           dirfd,
+        const char         *pathname,
+        const int           flags,
+        const unsigned int  mask,
+        struct fuse_statx  *st,
+        FollowSymlinksEnum  follow);
 }
