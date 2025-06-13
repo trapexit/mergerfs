@@ -93,6 +93,7 @@ namespace symlinkify
       return;
     if(!symlinkify::can_be_symlink(*st_,timeout_))
       return;
+
     symlinkify::convert(target_,st_);
   }
 }
