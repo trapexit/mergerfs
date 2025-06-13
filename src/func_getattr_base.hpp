@@ -25,9 +25,9 @@ namespace Func2
     virtual std::string_view name() const = 0;
 
   public:
-    virtual int operator()(const Branches           &branches,
-                           const fs::Path           &fusepath,
-                           struct stat              *st,
+    virtual int operator()(const Branches &branches,
+                           const fs::Path &fusepath,
+                           struct stat    *st,
                            const FollowSymlinksEnum  follow_symlinks,
                            const uint64_t            symlinkify_timeout) = 0;
   };
