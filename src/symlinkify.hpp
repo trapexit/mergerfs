@@ -81,4 +81,14 @@ namespace symlinkify
     st_->size = target_.size();
     st_->blocks = 0;
   }
+
+  static
+  inline
+  void
+  convert_if_can_be_symlink(const std::string &target_,
+                            const fuse_statx  &st_,
+                            const time_t       timeout_)
+  {
+
+  }
 }
