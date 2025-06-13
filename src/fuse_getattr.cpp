@@ -116,28 +116,7 @@ namespace l
 
     fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-    switch(followsymlinks_)
-      {
-      case FollowSymlinks::ENUM::NEVER:
-        rv = fs::lstat(fullpath,st_);
-        break;
-      case FollowSymlinks::ENUM::DIRECTORY:
-        rv = fs::lstat(fullpath,st_);
-        if(S_ISLNK(st_->st_mode))
-          l::set_stat_if_leads_to_dir(fullpath,st_);
-        break;
-      case FollowSymlinks::ENUM::REGULAR:
-        rv = fs::lstat(fullpath,st_);
-        if(S_ISLNK(st_->st_mode))
-          l::set_stat_if_leads_to_reg(fullpath,st_);
-        break;
-      case FollowSymlinks::ENUM::ALL:
-        rv = fs::stat(fullpath,st_);
-        if(rv != 0)
-          rv = fs::lstat(fullpath,st_);
-        break;
-      }
-
+    rv = fs::stat(fullpath.c_ptr(),st_,followsymlinks_);
     if(rv == -1)
       return -errno;
 
