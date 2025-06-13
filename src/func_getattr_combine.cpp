@@ -2,6 +2,7 @@
 
 #include "fs_stat.hpp"
 #include "fs_inode.hpp"
+#include "symlinkify.hpp"
 #include "timespec_utils.hpp"
 
 std::string_view
