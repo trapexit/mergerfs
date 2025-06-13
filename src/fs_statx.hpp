@@ -81,6 +81,7 @@ namespace fs
   }
 
   static
+  inline
   int
   statx(const char         *pathname_,
         const int           flags_,
