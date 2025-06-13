@@ -33,7 +33,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       if(rv == -1)
         continue;
 
-      if(first_branch == 0)
+      if(first_branch == nullptr)
         {
           *st_ = st;
           first_branch = &branch;
