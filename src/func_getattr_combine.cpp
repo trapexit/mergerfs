@@ -35,7 +35,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       if(st_->st_ino == 0)
         {
           *st_ = st;
-          fs::inode::calc(branch.path,fusepath_.string(),st_);
+          first_branch = &branch;
           continue;
         }
 
@@ -51,6 +51,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
   symlinkify::convert_if_can_be_symlink(fullpath,
                                         st_,
                                         symlinkify_timeout_);
+  fs::inode::calc(branch.path,fusepath_.string(),st_);
 
   return 0;
 }
