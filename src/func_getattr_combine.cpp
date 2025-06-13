@@ -32,10 +32,10 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       if(rv == -1)
         continue;
 
-      if(!first_branch)
+      if(first_branch_path.empty())
         {
           *st_ = st;
-          first_branch = &branch;
+          first_branch_path = fullpath;
           continue;
         }
 
