@@ -86,7 +86,7 @@ namespace symlinkify
   inline
   void
   convert_if_can_be_symlink(const std::string &target_,
-                            struct stat*      *st_,
+                            struct stat       *st_,
                             const time_t       timeout_)
   {
     if(timeout_ == 0)
