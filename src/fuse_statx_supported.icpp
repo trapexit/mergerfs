@@ -114,7 +114,11 @@ FUSE::statx(const char        *fusepath_,
   if(fusepath_ == CONTROLFILE)
     return ::_statx_controlfile(st_);
 
-  return ::_statx(fusepath_,flags_|AT_STATX_DONT_SYNC,mask_,st_,timeout_);
+  return ::_statx(fusepath_,
+                  flags_|AT_STATX_DONT_SYNC,
+                  mask_,
+                  st_,
+                  timeout_);
 }
 
 int
