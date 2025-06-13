@@ -64,6 +64,7 @@ namespace fs
         FollowSymlinksEnum  follow);
 
   static
+  inline
   int
   statx(const int           dirfd_,
         const std::string  &pathname_,
