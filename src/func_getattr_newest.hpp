@@ -15,7 +15,7 @@ namespace Func2
     int operator()(const Branches &branches,
                    const fs::Path &fusepath,
                    struct stat    *st,
-                   const bool      follow_symlinks,
-                   const uint64_t  symlinkify_timeout);
+                   const FollowSymlinksEnum follow_symlinks,
+                   const time_t symlinkify_timeout);
   };
 }
