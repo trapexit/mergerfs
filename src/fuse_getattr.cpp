@@ -80,7 +80,7 @@ namespace l
 
     fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-    rv = fs::stat(fullpath.c_ptr(),st_,followsymlinks_);
+    rv = fs::stat(fullpath.c_str(),st_,followsymlinks_);
     if(rv == -1)
       return -errno;
 
