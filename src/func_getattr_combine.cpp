@@ -45,7 +45,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       st_->st_nlink += st.st_nlink;
     }
 
-  if(!first_branch)
+  if(first_branch_path.empty())
     return -ENOENT;
 
   symlinkify::convert_if_can_be_symlink(fullpath,
