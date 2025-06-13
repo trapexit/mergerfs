@@ -46,9 +46,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
   if(st_->st_ino == 0)
     return -ENOENT;
 
-  if((symlinkify_timeout_ > 0) &&
-     symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
-    symlinkify::convert(fullpath,st_);
+  symlinkify::convert_if_can_be_symlink(fullpath,st_,symlinkify_timeout_);
 
   return 0;
 }
