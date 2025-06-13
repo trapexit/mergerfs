@@ -28,6 +28,5 @@ namespace Func2
                            struct stat    *st,
                            const bool      follow_symlinks_,
                            const uint64_t  symlinkify_timeout_) = 0;
-
   };
 }
