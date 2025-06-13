@@ -34,13 +34,18 @@ namespace Func2
     operator()(const Branches  &branches_,
                const fs::Path  &fusepath_,
                struct stat     *st_,
-               fuse_timeouts_t *timeout_)
+               FollowSymlinksEnum follow_symlinks_,
+               const time_t symlinkify_timeout_)
     {
       std::shared_ptr<Func2::GetAttrBase> p;
 
       p = std::atomic_load(&_impl);
 
-      return (*p)(branches_,fusepath_,st_,timeout_);
+      return (*p)(branches_,
+                  fusepath_,
+                  st_,
+                  follow_symlinks_,
+                  symlinkify_timeout_);
     }
 
   public:
