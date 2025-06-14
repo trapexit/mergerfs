@@ -337,8 +337,10 @@ _pick_app(int    argc_,
   appname = argv_[0];
   appname = appname.filename();
 
-  fmt::print("{}\n",appname.string());
-  return 0;
+  if(appname == "fsck.mergerfs")
+    return ::_fsck_mergerfs(argc_,argv_);
+
+  return l::main(argc_,argv_);
 }
 
 int
@@ -346,6 +348,4 @@ main(int    argc_,
      char **argv_)
 {
   return ::_pick_app(argc_,argv_);
-
-  return l::main(argc_,argv_);
 }
