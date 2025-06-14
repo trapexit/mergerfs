@@ -35,7 +35,7 @@ namespace Func2
                const fs::Path  &fusepath_,
                struct stat     *st_,
                const FollowSymlinksEnum follow_symlinks_,
-               const time_t symlinkify_timeout_)
+               const s64 symlinkify_timeout_)
     {
       std::shared_ptr<Func2::GetAttrBase> p;
 
