@@ -102,7 +102,7 @@ namespace symlinkify
                             fuse_statx        *st_,
                             const s64          timeout_)
   {
-    if(timeout_ == 0)
+    if(timeout_ < 0)
       return;
     if(!symlinkify::can_be_symlink(*st_,timeout_))
       return;
