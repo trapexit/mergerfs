@@ -496,6 +496,9 @@ namespace options
           }
       }
 
+    if(!cfg->symlinkify)
+      cfg->symlinkify_timeout = -1;
+
     check_for_mount_loop(cfg,errs_);
 
     set_default_options(args_,cfg);
