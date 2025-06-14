@@ -451,23 +451,23 @@ static
 void
 _print_warnings(Config::Write &cfg_)
 {
-  if(cfg->passthrough != Passthrough::ENUM::OFF)
+  if(cfg_->passthrough != Passthrough::ENUM::OFF)
     {
-      if(cfg->cache_files == CacheFiles::ENUM::OFF)
+      if(cfg_->cache_files == CacheFiles::ENUM::OFF)
         {
           SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
                           " Setting 'cache.files=auto-full'");
-          cfg->cache_files = CacheFiles::ENUM::AUTO_FULL;
+          cfg_->cache_files = CacheFiles::ENUM::AUTO_FULL;
         }
 
-      if(cfg->writeback_cache == true)
+      if(cfg_->writeback_cache == true)
         {
           SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
                           " Setting 'cache.writeback=false'");
-          cfg->writeback_cache = false;
+          cfg_->writeback_cache = false;
         }
 
-      if(cfg->moveonenospc.enabled == true)
+      if(cfg_->moveonenospc.enabled == true)
         {
           SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
         }
