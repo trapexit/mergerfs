@@ -4,8 +4,6 @@
 #include "fs_inode.hpp"
 #include "symlinkify.hpp"
 
-#include <string_view>
-
 
 std::string_view
 Func2::GetAttrFF::name() const
