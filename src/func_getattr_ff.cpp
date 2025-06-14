@@ -34,6 +34,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
                                             symlinkify_timeout_);
 
       fs::inode::calc(branch.path,fusepath_.string(),st_);
+
       return 0;
     }
 
