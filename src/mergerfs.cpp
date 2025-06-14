@@ -335,8 +335,9 @@ _pick_app(int    argc_,
   std::filesystem::path appname;
 
   appname = argv_[0];
+  appname = appname.filename();
 
-  fmt::print("{}\n",appname.filename().string());
+  fmt::print("{}\n",appname.string());
   return 0;
 }
 
