@@ -502,6 +502,7 @@ namespace options
     if(cfg->mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
 
+    ::_print_warnings(cfg);
 
     if(!cfg->symlinkify)
       cfg->symlinkify_timeout = -1;
