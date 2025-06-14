@@ -346,7 +346,7 @@ _pick_app_and_run(int    argc_,
   appname = appname.filename();
 
   if(appname == "fsck.mergerfs")
-    return ::_fsck_mergerfs(argc_,argv_);
+    return fsck::main(argc_,argv_);
 
   return l::main(argc_,argv_);
 }
