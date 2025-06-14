@@ -41,6 +41,8 @@ namespace l
         rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,nleft,0);
         if((rv == -1) && (errno == EINTR))
           continue;
+        if((rv == -1) && (errno == EAGAIN))
+          continue;
         if(rv == -1)
           return -1;
 

@@ -22,12 +22,14 @@
 #include "rnd.hpp"
 
 #include <limits.h>
+#include <unistd.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <tuple>
 
-#define PAD_LEN             16
+#define PAD_LEN             6ULL
 #define MAX_ATTEMPTS        3
 
 static char const CHARS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -38,16 +40,28 @@ namespace l
 {
   static
   std::string
-  generate_tmp_path(std::string const base_)
+  generate_tmp_path(const std::string &dirpath_,
+                    const std::string &filename_)
   {
+    long name_max;
+    size_t substr_len;
     fs::Path path;
     std::string filename;
 
-    filename  = '.';
-    for(int i = 0; i < PAD_LEN; i++)
+    name_max = pathconf(dirpath_.c_str(),_PC_NAME_MAX);
+    if(name_max == -1)
+      name_max = NAME_MAX;
+
+    substr_len = std::min(filename_.size(),
+                          (size_t)(name_max - PAD_LEN - 2ULL));
+
+    filename = '.';
+    filename += filename_.substr(0,substr_len);
+    filename += '_';
+    for(size_t i = 0; i < PAD_LEN; i++)
       filename += CHARS[RND::rand64(CHARS_SIZE)];
 
-    path = base_;
+    path = dirpath_;
     path /= filename;
 
     return path.string();
@@ -57,7 +71,8 @@ namespace l
 namespace fs
 {
   std::tuple<int,std::string>
-  mktemp_in_dir(const std::string dirpath_,
+  mktemp_in_dir(const std::string &dirpath_,
+                const std::string &filename_,
                 const int         flags_)
   {
     int fd;
@@ -67,12 +82,12 @@ namespace fs
 
     fd    = -1;
     count = MAX_ATTEMPTS;
-    flags = (flags_ | O_EXCL | O_CREAT | O_TRUNC);
+    flags = (flags_ | O_EXCL | O_CREAT);
     while(count-- > 0)
       {
-        tmp_filepath = l::generate_tmp_path(dirpath_);
+        tmp_filepath = l::generate_tmp_path(dirpath_,filename_);
 
-        fd = fs::open(tmp_filepath,flags,S_IWUSR);
+        fd = fs::open(tmp_filepath,flags,S_IRUSR|S_IWUSR);
         if((fd == -1) && (errno == EEXIST))
           continue;
         if(fd == -1)
@@ -85,11 +100,13 @@ namespace fs
   }
 
   std::tuple<int,std::string>
-  mktemp(const std::string filepath_,
-         const int         flags_)
+  mktemp(const std::string &filepath_,
+         const int          flags_)
   {
     fs::Path filepath{filepath_};
 
-    return fs::mktemp_in_dir(filepath.parent_path(),flags_);
+    return fs::mktemp_in_dir(filepath.parent_path(),
+                             filepath.filename(),
+                             flags_);
   }
 }

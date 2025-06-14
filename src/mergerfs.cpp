@@ -15,6 +15,7 @@
 */
 
 #include "mergerfs.hpp"
+#include "fsck_mergerfs.hpp"
 
 #include "fs_path.hpp"
 #include "fs_readahead.hpp"
@@ -327,9 +328,25 @@ namespace l
   }
 }
 
+static
+int
+_pick_app_and_run(int    argc_,
+                  char **argv_)
+{
+  std::filesystem::path appname;
+
+  appname = argv_[0];
+  appname = appname.filename();
+
+  if(appname == "fsck.mergerfs")
+    return fsck::main(argc_,argv_);
+
+  return l::main(argc_,argv_);
+}
+
 int
 main(int    argc_,
      char **argv_)
 {
-  return l::main(argc_,argv_);
+  return ::_pick_app_and_run(argc_,argv_);
 }

@@ -34,6 +34,7 @@ make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 %files
 /usr/bin/mergerfs
 /usr/bin/mergerfs-fusermount
+/usr/bin/fsck.mergerfs
 /sbin/mount.mergerfs
 /usr/lib/mergerfs/preload.so
 %doc %{_mandir}/*
