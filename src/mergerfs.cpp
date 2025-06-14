@@ -333,13 +333,14 @@ _pick_app(int    argc_,
           char **argv_)
 {
   fmt::print("{}\n",argv_[0]);
+  return 0;
 }
 
 int
 main(int    argc_,
      char **argv_)
 {
-  _pick_app(argc_,argv_);
-  return 0;
+  return _pick_app(argc_,argv_);
+
   return l::main(argc_,argv_);
 }
