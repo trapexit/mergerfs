@@ -25,6 +25,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "gidcache.hpp"
+#include "mergerfs_ioctl.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 
