@@ -16,7 +16,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
                              const fs::Path  &fusepath_,
                              struct stat     *st_,
                              const FollowSymlinksEnum follow_symlinks_,
-                             const time_t symlinkify_timeout_)
+                             const s64 symlinkify_timeout_)
 {
   int rv;
   fs::Path fullpath;
