@@ -26,7 +26,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
     {
       fullpath = branch.path;
       fullpath += fusepath_;
-      rv = fs::stat(fullpath,st_,follow_symlinks_);
+      rv = fs::stat(fullpath.string(),st_,follow_symlinks_);
       if(rv != 0)
         continue;
 
