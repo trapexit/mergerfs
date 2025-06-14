@@ -347,5 +347,5 @@ int
 main(int    argc_,
      char **argv_)
 {
-  return ::_pick_app(argc_,argv_);
+  return ::_pick_app_and_run(argc_,argv_);
 }
