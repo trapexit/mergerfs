@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 
 #ifdef STATX_TYPE
-#define MERGERFS_STATX_SUPPORTED
+//#define MERGERFS_STATX_SUPPORTED
 #endif
 
 namespace fs
