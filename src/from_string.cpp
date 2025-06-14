@@ -70,7 +70,7 @@ namespace str
        int64_t           *int64_)
   {
     char *endptr;
-    uint64_t tmp;
+    int64_t tmp;
 
     tmp = ::strtoll(value_.c_str(),&endptr,10);
     switch(*endptr)
