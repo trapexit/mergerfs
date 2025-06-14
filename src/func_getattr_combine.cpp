@@ -50,10 +50,13 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
   if(!first_branch)
     return -ENOENT;
 
-  fullpath = fs::path::make(first_branch->path,fusepath_);
-  symlinkify::convert_if_can_be_symlink(fullpath,
-                                        st_,
-                                        symlinkify_timeout_);
+  if(symlinkify_timeout_ >= 0)
+    {
+      fullpath = fs::path::make(first_branch->path,fusepath_);
+      symlinkify::convert_if_can_be_symlink(fullpath,
+                                            st_,
+                                            symlinkify_timeout_);
+    }
 
   fs::inode::calc(first_branch->path,fusepath_.string(),st_);
 
