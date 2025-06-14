@@ -107,7 +107,7 @@ namespace str
         return -EINVAL;
       }
 
-    *uint64_ = tmp;
+    *int64_ = tmp;
 
     return 0;
   }
