@@ -4,6 +4,8 @@
 #include "func_getattr_ff.hpp"
 #include "func_getattr_newest.hpp"
 
+#include "policies.hpp"
+
 bool
 Func2::GetAttrFactory::valid(const std::string str_)
 {
