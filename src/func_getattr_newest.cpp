@@ -44,10 +44,12 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
   if(!newest_branch)
     return -ENOENT;
 
-  fullpath = fs::path::make(newest_branch->path,fusepath_);
-  symlinkify::convert_if_can_be_symlink(fullpath,
-                                        st_,
-                                        symlinkify_timeout_);
+  if(symlinkify_timeout_ >= 0)
+    {
+      fullpath = fs::path::make(newest_branch->path,fusepath_);
+      symlinkify::convert_if_can_be_symlink(fullpath,
+                                            st_,
+                                            symlinkify_timeout_);
 
   fs::inode::calc(newest_branch->path,fusepath_.string(),st_);
 
