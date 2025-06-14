@@ -3,6 +3,8 @@
 #include "fs_stat.hpp"
 #include "fs_inode.hpp"
 #include "timespec_utils.hpp"
+#include "symlinkify.hpp"
+
 
 std::string_view
 Func2::GetAttrNewest::name() const
