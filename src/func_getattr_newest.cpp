@@ -50,6 +50,7 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
       symlinkify::convert_if_can_be_symlink(fullpath,
                                             st_,
                                             symlinkify_timeout_);
+    }
 
   fs::inode::calc(newest_branch->path,fusepath_.string(),st_);
 
