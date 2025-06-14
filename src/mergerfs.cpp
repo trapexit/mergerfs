@@ -340,7 +340,7 @@ int
 main(int    argc_,
      char **argv_)
 {
-  return _pick_app(argc_,argv_);
+  return ::_pick_app(argc_,argv_);
 
   return l::main(argc_,argv_);
 }
