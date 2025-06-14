@@ -478,8 +478,8 @@ static
 void
 _cleanup_options(Config::Write &cfg_)
 {
-  if(!cfg->symlinkify)
-    cfg->symlinkify_timeout = -1;
+  if(!cfg_->symlinkify)
+    cfg_->symlinkify_timeout = -1;
 }
 
 namespace options
