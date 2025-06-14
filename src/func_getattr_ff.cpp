@@ -29,6 +29,10 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
       if(rv != 0)
         continue;
 
+      symlinkify::convert_if_can_be_symlink(fullpath,
+                                            st_,
+                                            symlinkify_timeout_);
+
       fs::inode::calc(branch.path,fusepath_.string(),st_);
       return 0;
     }
