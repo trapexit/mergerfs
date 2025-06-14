@@ -103,7 +103,7 @@ namespace l
     const ugid::Set     ugid(fc->uid,fc->gid);
 
     rv = cfg->getattr(cfg->branches,
-                      fusepath_,
+                      fs::Path{fusepath_},
                       st_,
                       cfg->follow_symlinks,
                       (time_t)cfg->symlinkify_timeout);
