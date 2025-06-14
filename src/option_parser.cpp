@@ -474,6 +474,13 @@ _print_warnings(Config::Write &cfg_)
     }
 }
 
+static
+void
+_cleanup_options(Config::Write &cfg_)
+{
+  if(!cfg->symlinkify)
+    cfg->symlinkify_timeout = -1;
+}
 
 namespace options
 {
@@ -504,8 +511,6 @@ namespace options
 
     ::_print_warnings(cfg);
     ::_cleanup_options(cfg);
-    if(!cfg->symlinkify)
-      cfg->symlinkify_timeout = -1;
 
     check_for_mount_loop(cfg,errs_);
 
