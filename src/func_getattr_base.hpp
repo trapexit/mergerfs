@@ -4,6 +4,7 @@
 
 #include "fs_path.hpp"
 #include "branches.hpp"
+#include "int_types.h"
 
 #include "fuse.h"
 
