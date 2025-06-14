@@ -328,7 +328,11 @@ namespace l
 }
 
 static
-
+int
+_pick_app(int    argc_,
+          char **argv_)
+{
+}
 
 int
 main(int    argc_,
