@@ -136,6 +136,7 @@ build/tests: build/mergerfs tests-objects
 	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
 
 mergerfs: build/mergerfs
+	ln -fs "mergerfs" "build/fsck.mergerfs"
 
 tests: build/tests
 
@@ -181,7 +182,7 @@ install: install-base install-mount-tools install-preload install-man
 
 install-base: build/mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(INSTALL) -v -m 0755 build/mergerfs "$(INSTALLBINDIR)/mergerfs"
+	$(INSTALL) -v -m 0755 "build/mergerfs" "$(INSTALLBINDIR)/mergerfs"
 
 install-mount-tools: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
