@@ -161,7 +161,7 @@ public:
   StatFS         statfs;
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
-  ConfigSINT64   symlinkify_timeout;
+  ConfigS64      symlinkify_timeout;
   ConfigINT      fuse_read_thread_count;
   ConfigINT      fuse_process_thread_count;
   ConfigINT      fuse_process_thread_queue_depth;
