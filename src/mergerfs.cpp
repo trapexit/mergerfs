@@ -329,8 +329,8 @@ namespace l
 
 static
 int
-_fsck_mergerfs(int   argc_,
-               char *argv_)
+_fsck_mergerfs(int    argc_,
+               char **argv_)
 {
   return 0;
 }
