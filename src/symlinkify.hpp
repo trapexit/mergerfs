@@ -46,7 +46,7 @@ namespace symlinkify
   inline
   bool
   can_be_symlink(const struct fuse_statx &st_,
-                 const s64             timeout_)
+                 const s64                timeout_)
   {
     if(S_ISDIR(st_.mode) ||
        (st_.mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
