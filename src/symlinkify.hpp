@@ -30,7 +30,7 @@ namespace symlinkify
   inline
   bool
   can_be_symlink(const struct stat &st_,
-                 const s64       timeout_)
+                 const s64          timeout_)
   {
     if(S_ISDIR(st_.st_mode) ||
        (st_.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
