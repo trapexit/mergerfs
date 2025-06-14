@@ -19,9 +19,7 @@
 #pragma once
 
 #include "fuse_kernel.h"
-
-#include <sys/stat.h>
-#include <time.h>
+#include "int_types.h"
 
 #include <string>
 
