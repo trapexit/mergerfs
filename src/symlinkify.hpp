@@ -85,9 +85,9 @@ namespace symlinkify
   void
   convert_if_can_be_symlink(const std::string &target_,
                             struct stat       *st_,
-                            const s64       timeout_)
+                            const s64          timeout_)
   {
-    if(timeout_ == 0)
+    if(timeout_ < 0)
       return;
     if(!symlinkify::can_be_symlink(*st_,timeout_))
       return;
