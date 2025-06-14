@@ -105,8 +105,8 @@ namespace l
     rv = cfg->getattr(cfg->branches,
                       fusepath_,
                       st_,
-                      cfg->symlinkify_timeout,
-                      cfg->follow_symlinks);
+                      cfg->follow_symlinks,
+                      cfg->symlinkify_timeout);
 
     rv = l::getattr(cfg->func.getattr.policy,
                     cfg->branches,
