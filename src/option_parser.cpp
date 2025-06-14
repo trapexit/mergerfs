@@ -447,6 +447,34 @@ check_for_mount_loop(Config::Write  &cfg_,
     }
 }
 
+static
+void
+_print_warnings(Config::Write &cfg_)
+{
+  if(cfg->passthrough != Passthrough::ENUM::OFF)
+    {
+      if(cfg->cache_files == CacheFiles::ENUM::OFF)
+        {
+          SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
+                          " Setting 'cache.files=auto-full'");
+          cfg->cache_files = CacheFiles::ENUM::AUTO_FULL;
+        }
+
+      if(cfg->writeback_cache == true)
+        {
+          SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
+                          " Setting 'cache.writeback=false'");
+          cfg->writeback_cache = false;
+        }
+
+      if(cfg->moveonenospc.enabled == true)
+        {
+          SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
+        }
+    }
+}
+
+
 namespace options
 {
   void
@@ -474,27 +502,6 @@ namespace options
     if(cfg->mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
 
-    if(cfg->passthrough != Passthrough::ENUM::OFF)
-      {
-        if(cfg->cache_files == CacheFiles::ENUM::OFF)
-          {
-            SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
-                            " Setting 'cache.files=auto-full'");
-            cfg->cache_files = CacheFiles::ENUM::AUTO_FULL;
-          }
-
-        if(cfg->writeback_cache == true)
-          {
-            SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
-                            " Setting 'cache.writeback=false'");
-            cfg->writeback_cache = false;
-          }
-
-        if(cfg->moveonenospc.enabled == true)
-          {
-            SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
-          }
-      }
 
     if(!cfg->symlinkify)
       cfg->symlinkify_timeout = -1;
