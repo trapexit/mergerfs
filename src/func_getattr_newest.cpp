@@ -44,7 +44,7 @@ Func2::GetAttrNewest::operator()(const Branches  &branches_,
   if(!newest_branch)
     return -ENOENT;
 
-  fullpath = fs::path::make(first_branch->path,fusepath_);
+  fullpath = fs::path::make(newest_branch->path,fusepath_);
   symlinkify::convert_if_can_be_symlink(fullpath,
                                         st_,
                                         symlinkify_timeout_);
