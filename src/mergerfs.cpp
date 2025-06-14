@@ -336,7 +336,7 @@ _pick_app(int    argc_,
 
   appname = argv_[0];
 
-  fmt::print("{}\n",appname.string());
+  fmt::print("{}\n",appname.filename().string());
   return 0;
 }
 
