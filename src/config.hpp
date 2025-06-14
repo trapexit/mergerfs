@@ -57,6 +57,7 @@
 
 typedef ToFromWrapper<bool>                  ConfigBOOL;
 typedef ToFromWrapper<uint64_t>              ConfigUINT64;
+typedef ToFromWrapper<uint64_t>              ConfigS64;
 typedef ToFromWrapper<int>                   ConfigINT;
 typedef ToFromWrapper<std::string>           ConfigSTR;
 typedef ToFromWrapper<std::filesystem::path> ConfigPath;
