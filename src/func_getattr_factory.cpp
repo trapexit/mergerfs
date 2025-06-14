@@ -30,7 +30,8 @@ Func2::GetAttrFactory::make(const std::string str_)
   if(str_ == "newest")
     return std::make_shared<Func2::GetAttrNewest>();
 
-
+  if(Policies::Search::find(str_))
+    return std::make_shared<Func2::GetAttrCombine>();
 
   return {};
 }
