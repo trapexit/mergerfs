@@ -1,6 +1,6 @@
 #include "func_getattr_ff.hpp"
 
-#include "fs_lstat.hpp"
+#include "fs_stat.hpp"
 #include "fs_inode.hpp"
 
 #include <string_view>
