@@ -98,7 +98,7 @@ namespace l
           fuse_timeouts_t *timeout_)
   {
     int rv;
-    Config::Read cfg;
+    Config::Write cfg;
     const fuse_context *fc = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
