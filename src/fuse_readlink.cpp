@@ -66,7 +66,6 @@ namespace l
     if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
       return l::readlink_core_standard(fullpath_,buf_,size_);
 
-    fmt::println("readlink: {} {}",fullpath_,size_);
     strncpy(buf_,fullpath_.c_str(),size_);
 
     return 0;
