@@ -332,6 +332,7 @@ int
 _pick_app(int    argc_,
           char **argv_)
 {
+  fmt::print("{}\n",argv_[0]);
 }
 
 int
