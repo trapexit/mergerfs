@@ -340,5 +340,6 @@ main(int    argc_,
      char **argv_)
 {
   _pick_app(argc_,argv_);
+  return 0;
   return l::main(argc_,argv_);
 }
