@@ -104,6 +104,8 @@ _fsck(const FS::path &path_)
   int rv;
   std::vector<std::string> paths;
 
+  ::_get_allpaths(path_,paths);
+
   auto opts = FS::directory_options::skip_permission_denied;
   auto rdi = FS::recursive_directory_iterator(path_,opts);
   for(const auto &de : rdi)
