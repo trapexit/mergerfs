@@ -113,8 +113,6 @@ _fsck(const FS::path &path_)
       if(rv == -1)
         continue;
 
-
-
       ::_compare_files(de.path(),paths);
     }
 }
