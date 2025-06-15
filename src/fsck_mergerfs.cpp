@@ -44,6 +44,8 @@ _compare_files(const std::string              &path_,
   struct stat st;
   std::vector<struct stat> stats;
 
+  fmt::print("{}\n",path_);
+
   if(paths_.size() <= 1)
     return;
 
