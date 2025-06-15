@@ -98,8 +98,6 @@ _fsck(const FS::path &path_)
       if(rv == -1)
         continue;
 
-      fmt::println("{}",std::string{buf,rv});
-
       paths.clear();
       str::split(buf,'\0',&paths);
       ::_compare_files(de.path(),paths);
