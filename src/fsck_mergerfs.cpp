@@ -94,7 +94,7 @@ _get_allpaths(const std::string        &path_,
 
   str::split_on_null(buf,rv,&paths_);
 
-  return rv;
+  return 0;
 }
 
 static
