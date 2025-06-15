@@ -50,7 +50,7 @@ _compare_files(const std::string              &path_,
   for(const auto &path : paths_)
     {
       st.st_size = -1;
-      rv = fs::lstat(paths,&st);
+      rv = fs::lstat(path,&st);
       stats.emplace_back(st);
     }
 
