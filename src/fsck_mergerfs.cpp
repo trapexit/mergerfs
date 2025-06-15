@@ -108,11 +108,12 @@ _fsck(const FS::path &path_)
   auto rdi = FS::recursive_directory_iterator(path_,opts);
   for(const auto &de : rdi)
     {
+      paths.clear();
       rv = ::_get_allpaths(de.path(),paths);
       if(rv == -1)
         continue;
 
-      paths.clear();
+
 
       ::_compare_files(de.path(),paths);
     }
