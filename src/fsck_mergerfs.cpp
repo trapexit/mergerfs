@@ -61,7 +61,11 @@ _compare_files(const std::string              &path_,
         {
           fmt::println(" * {}\n"
                        "   uid: {}; gid: {}; mode: {}; size: {};",
-                       paths_[i]);
+                       paths_[i],
+                       stats[i].st_uid,
+                       stats[i].st_gid,
+                       stats[i].st_mode,
+                       stats[i].st_size);
 
         }
     }
