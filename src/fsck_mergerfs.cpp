@@ -16,6 +16,18 @@ namespace FS = std::filesystem;
 
 static
 void
+_compare_files(const std::vector<std::string> &paths_)
+{
+  struct stat st;
+
+  if(paths_.size() <= 1)
+    return;
+
+
+}
+
+static
+void
 _fsck(const FS::path &path_)
 {
   IOCTL_BUF buf;
