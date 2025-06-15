@@ -86,7 +86,7 @@ _get_allpaths(const std::string        &path_,
 
   fd = fs::open(path_,O_RDONLY|O_NOFOLLOW);
   if(fd == -1)
-    continue;
+    return -errno;
 
   rv = fs::ioctl(fd,IOCTL_FILE_INFO,buf);
 
