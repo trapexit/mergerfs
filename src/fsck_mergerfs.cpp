@@ -92,6 +92,8 @@ _get_allpaths(const std::string        &path_,
 
   fs::close(fd);
 
+  str::split_on_null(buf,rv,&paths_);
+
   return rv;
 }
 
@@ -111,7 +113,7 @@ _fsck(const FS::path &path_)
         continue;
 
       paths.clear();
-      str::split_on_null(buf,rv,&paths);
+
       ::_compare_files(de.path(),paths);
     }
 }
