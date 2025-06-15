@@ -19,7 +19,10 @@ static
 bool
 _files_differ(const std::vector<struct stat> &stats_)
 {
+  for(u64 i = 1; i < stats_.size(); i++)
+    {
 
+    }
 }
 
 static
