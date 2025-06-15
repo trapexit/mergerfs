@@ -1,9 +1,10 @@
 #include "fsck_mergerfs.hpp"
 
-#include "fs_lgetxattr.hpp"
-#include "fs_ioctl.hpp"
-#include "fs_open.hpp"
 #include "fs_close.hpp"
+#include "fs_ioctl.hpp"
+#include "fs_lgetxattr.hpp"
+#include "fs_lstat.hpp"
+#include "fs_open.hpp"
 #include "mergerfs_ioctl.hpp"
 #include "str.hpp"
 
