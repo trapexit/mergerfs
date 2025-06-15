@@ -118,9 +118,8 @@ fsck::main(int    argc_,
   CLI::App app{"fsck.mergerfs"};
   FS::path path;
 
-  app.add_option("path",
-                 path,
-                 "mergerfs path")
+  app.add_option("path",path)
+    ->description("mergerfs path")
     ->required();
 
   CLI11_PARSE(app,argc_,argv_);
