@@ -113,7 +113,7 @@ _fsck(const FS::path &path_)
   for(const auto &de : rdi)
     {
       paths.clear();
-      fmt::print("check {}\n",de.path());
+      fmt::print("check {}\n",de.path().string());
       rv = ::_get_allpaths(de.path(),paths);
       if(rv == -1)
         continue;
