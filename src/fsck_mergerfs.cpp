@@ -101,7 +101,7 @@ _fsck(const FS::path &path_)
         continue;
 
       paths.clear();
-      str::split(std::string{buf,rv},'\0',&paths);
+      str::split_on_null(buf,rv,&paths);
       ::_compare_files(de.path(),paths);
     }
 }
