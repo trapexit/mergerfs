@@ -42,6 +42,7 @@ namespace str
 
   void
   split_on_null(const char               *str,
+                const size_t              len,
                 std::vector<std::string> *result);
 
   void
