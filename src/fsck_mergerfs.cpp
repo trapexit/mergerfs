@@ -54,7 +54,10 @@ _compare_files(const std::string              &path_,
       stats.emplace_back(st);
     }
 
-  if(::_files_differ(stats);
+  if(::_files_differ(stats))
+    {
+
+    }
 }
 
 static
@@ -80,6 +83,8 @@ _fsck(const FS::path &path_)
         continue;
 
       rv = fs::ioctl(fd,IOCTL_FILE_INFO,buf);
+
+      fs::close(fd);
       if(rv != -1)
         {
           paths.clear();
@@ -87,7 +92,7 @@ _fsck(const FS::path &path_)
           ::_compare_files(paths);
         }
 
-      fs::close(fd);
+
     }
 }
 
