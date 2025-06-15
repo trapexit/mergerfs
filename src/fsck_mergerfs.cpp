@@ -37,7 +37,8 @@ _files_differ(const std::vector<struct stat> &stats_)
 
 static
 void
-_compare_files(const std::vector<std::string> &paths_)
+_compare_files(const std::string              &path_,
+               const std::vector<std::string> &paths_)
 {
   int rv;
   struct stat st;
@@ -53,7 +54,7 @@ _compare_files(const std::vector<std::string> &paths_)
       stats.emplace_back(st);
     }
 
-  ::_files_differ(stats);
+  if(::_files_differ(stats);
 }
 
 static
