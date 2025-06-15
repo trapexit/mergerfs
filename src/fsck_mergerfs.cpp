@@ -21,6 +21,14 @@ _files_differ(const std::vector<struct stat> &stats_)
 {
   for(u64 i = 1; i < stats_.size(); i++)
     {
+      if(stats_[i].st_mode != stats_[0].st_mode)
+        return true;
+      if(stats_[i].st_uid != stats_[0].st_uid)
+        return true;
+      if(stats_[i].st_gid != stats_[0].st_gid)
+        return true;
+      if(stats_[i].st_size != stats_[0].st_size)
+        return true;
 
     }
 }
