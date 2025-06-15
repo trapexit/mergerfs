@@ -73,6 +73,13 @@ _compare_files(const std::string              &path_,
 
 static
 void
+_check_path(const std::string &path_)
+{
+
+}
+
+static
+void
 _fsck(const FS::path &path_)
 {
   IOCTL_BUF buf;
