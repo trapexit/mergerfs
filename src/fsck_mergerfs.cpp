@@ -49,7 +49,8 @@ _compare_files(const std::string              &path_,
 
   for(const auto &path : paths_)
     {
-      st = {};
+      struct stat st{};
+
       rv = fs::lstat(path,&st);
       if(rv == -1)
         st.st_size = -errno;
