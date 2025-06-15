@@ -16,6 +16,13 @@
 namespace FS = std::filesystem;
 
 static
+bool
+_files_differ(const std::vector<struct stat> &stats_)
+{
+
+}
+
+static
 void
 _compare_files(const std::vector<std::string> &paths_)
 {
