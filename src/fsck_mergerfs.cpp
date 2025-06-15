@@ -63,7 +63,7 @@ _compare_files(const std::string              &path_,
         {
           fmt::println(" * {}",paths_[i]);
           if(stats[i].st_size < 0)
-            fmt::println("    err: {}",strerror(-stats[i].st_size));
+            fmt::println("   err: {}",strerror(-stats[i].st_size));
           fmt::println("   uid: {}; gid: {}; mode: {}; size: {};",
                        stats[i].st_uid,
                        stats[i].st_gid,
