@@ -99,15 +99,14 @@ static
 void
 _fsck(const FS::path &path_)
 {
-
+  int rv;
   std::vector<std::string> paths;
 
   auto opts = FS::directory_options::skip_permission_denied;
   auto rdi = FS::recursive_directory_iterator(path_,opts);
   for(const auto &de : rdi)
     {
-
-
+      rv = ::_get_allpaths(de.path(),paths);
       if(rv == -1)
         continue;
 
