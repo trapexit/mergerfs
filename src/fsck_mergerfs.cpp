@@ -30,7 +30,6 @@ _compare_files(const std::vector<std::string> &paths_)
     {
       st.st_size = -1;
       rv = fs::lstat(paths_[0],&st);
-
       stats.emplace_back(st);
     }
 
