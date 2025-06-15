@@ -78,32 +78,35 @@ int
 _get_allpaths(const std::string        &path_,
               std::vector<std::string> &paths_)
 {
+  int fd;
+  int rv;
+  IOCTL_BUF buf;
 
+  strcpy(buf,"allpaths");
+
+  fd = fs::open(de.path().string(),O_RDONLY|O_NOFOLLOW);
+  if(fd == -1)
+    continue;
+
+  rv = fs::ioctl(fd,IOCTL_FILE_INFO,buf);
+
+  fs::close(fd);
+
+  return rv;
 }
 
 static
 void
 _fsck(const FS::path &path_)
 {
-  IOCTL_BUF buf;
+
   std::vector<std::string> paths;
 
   auto opts = FS::directory_options::skip_permission_denied;
   auto rdi = FS::recursive_directory_iterator(path_,opts);
   for(const auto &de : rdi)
     {
-      strcpy(buf,"allpaths");
 
-      int fd;
-      int rv;
-
-      fd = fs::open(de.path().string(),O_RDONLY|O_NOFOLLOW);
-      if(fd == -1)
-        continue;
-
-      rv = fs::ioctl(fd,IOCTL_FILE_INFO,buf);
-
-      fs::close(fd);
 
       if(rv == -1)
         continue;
