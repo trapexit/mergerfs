@@ -7,6 +7,7 @@
 #include "fs_open.hpp"
 #include "mergerfs_ioctl.hpp"
 #include "str.hpp"
+#include "int_types.h"
 
 #include "fmt/core.h"
 #include "CLI11.hpp"
