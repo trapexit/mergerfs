@@ -69,7 +69,6 @@ _compare_files(const std::string              &path_,
                        stats[i].st_gid,
                        stats[i].st_mode,
                        stats[i].st_size);
-
         }
     }
 }
