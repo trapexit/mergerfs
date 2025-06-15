@@ -28,6 +28,7 @@ _compare_files(const std::vector<std::string> &paths_)
 
   for(const auto &path : paths_)
     {
+      st.st_size = -1;
       rv = fs::lstat(paths_[0],&st);
       if(rv == -1)
         continue;
