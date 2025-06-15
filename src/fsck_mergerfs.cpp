@@ -84,7 +84,7 @@ _get_allpaths(const std::string        &path_,
 
   strcpy(buf,"allpaths");
 
-  fd = fs::open(de.path().string(),O_RDONLY|O_NOFOLLOW);
+  fd = fs::open(path_,O_RDONLY|O_NOFOLLOW);
   if(fd == -1)
     continue;
 
