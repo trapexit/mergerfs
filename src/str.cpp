@@ -81,7 +81,7 @@ namespace str
     while(start < end)
       {
         result_.emplace_back(start);
-        start += (result_.back().size() + 1);
+        start += (result_->back().size() + 1);
       }
   }
 
