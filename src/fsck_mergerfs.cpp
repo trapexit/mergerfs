@@ -82,8 +82,6 @@ _fsck(const FS::path &path_)
   auto rdi = FS::recursive_directory_iterator(path_,opts);
   for(const auto &de : rdi)
     {
-      fmt::println("{}",de.path().string());
-
       strcpy(buf,"allpaths");
 
       int fd;
