@@ -49,8 +49,10 @@ _compare_files(const std::string              &path_,
 
   for(const auto &path : paths_)
     {
-      st.st_size = -1;
+      st = {};
       rv = fs::lstat(path,&st);
+      if(rv == -1)
+        st.st_size = -errno;
       stats.emplace_back(st);
     }
 
@@ -61,8 +63,7 @@ _compare_files(const std::string              &path_,
         {
           fmt::println(" * {}",paths_[i]);
           if(stats[i].st_size == -1)
-            {
-              fmt::println("");
+            fmt::println("    ");
               continue;
             }
 
