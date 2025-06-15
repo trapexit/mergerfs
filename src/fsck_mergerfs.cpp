@@ -31,6 +31,8 @@ _files_differ(const std::vector<struct stat> &stats_)
         return true;
 
     }
+
+  return false;
 }
 
 static
