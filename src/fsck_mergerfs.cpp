@@ -85,14 +85,13 @@ _fsck(const FS::path &path_)
       rv = fs::ioctl(fd,IOCTL_FILE_INFO,buf);
 
       fs::close(fd);
-      if(rv != -1)
-        {
-          paths.clear();
-          str::split(buf,'\0',&paths);
-          ::_compare_files(paths);
-        }
 
+      if(rv == -1)
+        continue;
 
+      paths.clear();
+      str::split(buf,'\0',&paths);
+      ::_compare_files(paths);
     }
 }
 
