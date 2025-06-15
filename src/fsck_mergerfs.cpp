@@ -75,8 +75,8 @@ _compare_files(const std::string              &path_,
 
 static
 int
-_get_allpaths(const std::string &path_,
-              std::vector<std::string> &paths_))
+_get_allpaths(const std::string        &path_,
+              std::vector<std::string> &paths_)
 {
 
 }
