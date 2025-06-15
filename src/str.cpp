@@ -80,7 +80,7 @@ namespace str
     end   = start + len_;
     while(start < end)
       {
-        result_.emplace_back(start);
+        result_->emplace_back(start);
         start += (result_->back().size() + 1);
       }
   }
