@@ -18,12 +18,13 @@ static
 void
 _compare_files(const std::vector<std::string> &paths_)
 {
+  int rv;
   struct stat st;
 
   if(paths_.size() <= 1)
     return;
 
-
+  rv = fs::lstat(paths_[0],&st);
 }
 
 static
