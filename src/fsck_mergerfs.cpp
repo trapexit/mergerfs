@@ -98,7 +98,7 @@ _fsck(const FS::path &path_)
       if(rv == -1)
         continue;
 
-      fmt::println("{}",buf);
+      fmt::println("{}",std::string{buf,rv});
 
       paths.clear();
       str::split(buf,'\0',&paths);
