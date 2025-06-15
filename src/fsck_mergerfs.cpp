@@ -41,7 +41,6 @@ _compare_files(const std::string              &path_,
                const std::vector<std::string> &paths_)
 {
   int rv;
-  struct stat st;
   std::vector<struct stat> stats;
 
   if(paths_.size() <= 1)
