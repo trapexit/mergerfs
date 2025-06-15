@@ -29,7 +29,6 @@ _files_differ(const std::vector<struct stat> &stats_)
         return true;
       if(stats_[i].st_size != stats_[0].st_size)
         return true;
-
     }
 
   return false;
