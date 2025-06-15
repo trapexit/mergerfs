@@ -33,6 +33,10 @@ _compare_files(const std::vector<std::string> &paths_)
       stats.emplace_back(st);
     }
 
+  for(u64 i = 1; i < paths_.size(); i++)
+    {
+
+    }
 }
 
 static
