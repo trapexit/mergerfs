@@ -69,9 +69,9 @@ namespace str
   }
 
   void
-  split(const char   *str_,
-        const size_t  len_,
-        std::vector<std::string> *result_)
+  split_on_null(const char   *str_,
+                const size_t  len_,
+                std::vector<std::string> *result_)
   {
     const char *start;
     const char *end;
