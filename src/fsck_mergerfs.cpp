@@ -121,7 +121,7 @@ fsck::main(int    argc_,
   app.add_option("path",
                  path,
                  "mergerfs path")
-    .required();
+    ->required();
 
   CLI11_PARSE(app,argc_,argv_);
 
