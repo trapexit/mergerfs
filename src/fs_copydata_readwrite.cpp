@@ -42,6 +42,8 @@ namespace l
         rv = fs::write(fd_,buf_,nleft);
         if((rv == -1) && (errno == EINTR))
           continue;
+        if((rv == -1) && (errno == EAGAIN))
+          continue;
         if(rv == -1)
           return -1;
 
@@ -75,6 +77,8 @@ namespace l
         if(nr == 0)
           return totalwritten;
         if((nr == -1) && (errno == EINTR))
+          continue;
+        if((nr == -1) && (errno == EAGAIN))
           continue;
         if(nr == -1)
           return -1;

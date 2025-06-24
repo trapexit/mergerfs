@@ -7,7 +7,7 @@ if [ -e /usr/bin/apt-get ]; then
 	    install \
             ca-certificates \
             build-essential \
-            dpkg \
+            dpkg-dev \
             git \
             g++ \
             debhelper \

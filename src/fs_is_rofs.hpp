@@ -52,7 +52,7 @@ namespace fs
     int fd;
     std::string tmp_filepath;
 
-    std::tie(fd,tmp_filepath) = fs::mktemp_in_dir(path_,O_WRONLY);
+    std::tie(fd,tmp_filepath) = fs::mktemp_in_dir(path_,"",O_WRONLY);
     if(fd < 0)
       return (fd == -EROFS);
 

@@ -25,6 +25,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "gidcache.hpp"
+#include "mergerfs_ioctl.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
 
@@ -33,19 +34,6 @@
 
 #include <fcntl.h>
 #include <string.h>
-
-#ifndef _IOC_TYPE
-#define _IOC_TYPE(X) (((X) >> 8) & 0xFF)
-#endif
-
-typedef char IOCTL_BUF[4096];
-#define IOCTL_APP_TYPE             0xDF
-#define IOCTL_FILE_INFO            _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
-#define IOCTL_GC                   _IO(IOCTL_APP_TYPE,1)
-#define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
-#define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
-#define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
-
 
 // From linux/btrfs.h
 #define BTRFS_IOCTL_MAGIC 0x94

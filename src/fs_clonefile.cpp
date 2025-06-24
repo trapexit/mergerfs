@@ -60,6 +60,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
+    // TODO: should not copy "immutable" flag till last
     rv = fs::attr::copy(src_fd_,dst_fd_);
     if((rv == -1) && !l::ignorable_error(errno))
       return -1;

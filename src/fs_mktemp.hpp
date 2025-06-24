@@ -23,11 +23,13 @@
 
 namespace fs
 {
-  std::tuple<int,std::string>
-  mktemp(std::string const filepath,
-         int const         flags);
 
   std::tuple<int,std::string>
-  mktemp_in_dir(std::string const dirpath,
+  mktemp_in_dir(const std::string &dirpath,
+                const std::string &filename,
                 int const         flags);
+
+  std::tuple<int,std::string>
+  mktemp(const std::string &filepath,
+         const int          flags);
 }

@@ -69,6 +69,23 @@ namespace str
   }
 
   void
+  split_on_null(const char   *str_,
+                const size_t  len_,
+                std::vector<std::string> *result_)
+  {
+    const char *start;
+    const char *end;
+
+    start = str_;
+    end   = start + len_;
+    while(start < end)
+      {
+        result_->emplace_back(start);
+        start += (result_->back().size() + 1);
+      }
+  }
+
+  void
   rsplit1(const string   &str_,
           const char      delimiter_,
           vector<string> *result_)

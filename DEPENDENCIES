@@ -8,6 +8,7 @@
 * concurrentqueue: https://github.com/cameron314/concurrentqueue
 * scope_guard: https://github.com/Neargye/scope_guard
 * subprocess: https://github.com/arun11299/cpp-subprocess
+* CLI11: https://github.com/CLIUtils/CLI11
 * boost
   * download boost
   * ./bootstrap.sh

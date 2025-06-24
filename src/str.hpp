@@ -41,6 +41,11 @@ namespace str
         std::set<std::string> *result);
 
   void
+  split_on_null(const char               *str,
+                const size_t              len,
+                std::vector<std::string> *result);
+
+  void
   rsplit1(const std::string        &str,
           const char                delimiter,
           std::vector<std::string> *result);
