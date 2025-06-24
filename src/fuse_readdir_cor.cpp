@@ -20,9 +20,10 @@
 #include "dirinfo.hpp"
 #include "errno.hpp"
 #include "fs_close.hpp"
+#include "fs_closedir.hpp"
 #include "fs_getdents64.hpp"
 #include "fs_inode.hpp"
-#include "fs_open.hpp"
+#include "fs_opendir.hpp"
 #include "fs_path.hpp"
 #include "fs_readdir.hpp"
 #include "hashset.hpp"
@@ -31,6 +32,10 @@
 
 #include "fuse_dirents.h"
 #include "linux_dirent64.h"
+
+#include "int_types.h"
+
+#define MAX_ENTRIES_PER_LOOP 64
 
 
 FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_,
@@ -43,6 +48,19 @@ FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_,
 FUSE::ReadDirCOR::~ReadDirCOR()
 {
 
+}
+
+static
+u64
+_dirent_exact_namelen(const struct dirent *d_)
+{
+#ifdef _D_EXACT_NAMLEN
+  return _D_EXACT_NAMLEN(d_);
+#elif defined _DIRENT_HAVE_D_NAMLEN
+  return d_->d_namlen;
+#else
+  return strlen(d_->d_name);
+#endif
 }
 
 namespace l
@@ -83,51 +101,53 @@ namespace l
           std::mutex        &mutex_)
   {
     int rv;
-    int dfd;
+    DIR *dir;
     std::string rel_filepath;
     std::string abs_dirpath;
 
     abs_dirpath = fs::path::make(branch_path_,rel_dirpath_);
 
-    dfd = fs::open_dir_ro(abs_dirpath);
-    if(dfd == -1)
+    errno = 0;
+    dir = fs::opendir(abs_dirpath);
+    if(dir == NULL)
       return errno;
 
-    DEFER{ fs::close(dfd); };
+    DEFER{ fs::closedir(dir); };
 
-    rv = 0;
-    for(;;)
+    // The default buffer size in glibc is 32KB. 64 is based on a
+    // guess of an average size of 512B per entry. This is to limit
+    // contention on the lock when needing to request more data from
+    // the kernel. This could be handled better by using getdents but
+    // due to the differences between Linux and FreeBSD a more
+    // complicated abstraction needs to be created to handle them to
+    // make it easier to use across the codebase.
+    // * https://man7.org/linux/man-pages/man2/getdents.2.html
+    // * https://man.freebsd.org/cgi/man.cgi?query=getdents
+    while(true)
       {
-        long nread;
-        char buf[32 * 1024];
-
-        nread = fs::getdents_64(dfd,buf,sizeof(buf));
-        if(nread == -1)
-          return errno;
-        if(nread == 0)
-          break;
-
-        linux_dirent64_t *d;
         std::lock_guard<std::mutex> lk(mutex_);
-        for(long pos = 0; pos < nread; pos += d->reclen)
+        for(int i = 0; i < MAX_ENTRIES_PER_LOOP; i++)
           {
-            std::uint64_t namelen;
+            dirent *de;
+            u64 namelen;
 
-            d = (linux_dirent64_t*)&buf[pos];
+            de = fs::readdir(dir);
+            if(de == NULL)
+              return 0;
 
-            namelen = DIRENT_NAMELEN(d);
+            namelen = ::_dirent_exact_namelen(de);
 
-            rv = names_.put(d->name,namelen);
+            rv = names_.put(de->d_name,namelen);
             if(rv == 0)
               continue;
 
-            rel_filepath = fs::path::make(rel_dirpath_,d->name);
-            d->ino = fs::inode::calc(branch_path_,
-                                     rel_filepath,
-                                     DTTOIF(d->type),
-                                     d->ino);
+            rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
+            de->d_ino = fs::inode::calc(branch_path_,
+                                        rel_filepath,
+                                        DTTOIF(de->d_type),
+                                        de->d_ino);
 
-            rv = fuse_dirents_add_linux(buf_,d,namelen);
+            rv = fuse_dirents_add(buf_,de,namelen);
             if(rv >= 0)
               continue;
 
