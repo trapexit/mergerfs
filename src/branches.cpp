@@ -54,7 +54,7 @@ Branches::Impl::operator=(Branches::Impl &rval_)
 Branches::Impl&
 Branches::Impl::operator=(Branches::Impl &&rval_)
 {
-  using type = std::vector<Branch>;  
+  using type = std::vector<Branch>;
   auto this_base = dynamic_cast<type*>(this);
   auto rval_base = dynamic_cast<type*>(&rval_);
 
@@ -192,11 +192,27 @@ namespace l
 
     fs::glob(glob,&paths);
     if(paths.empty())
-      paths.push_back(glob);
+      {
+        SysLog::notice("branch glob `{}` found no matches,"
+                       " adding the literal to branches",glob);
+        paths.push_back(glob);
+      }
 
     fs::realpathize(&paths);
     for(auto &path : paths)
       {
+        std::error_code ec;
+
+        if(!std::filesystem::exists(path))
+          {
+            SysLog::notice("branch `{}` does not currently exist",path);
+          }
+        else if(!std::filesystem::is_directory(path,ec))
+          {
+            SysLog::warning("branch `{}` is not a directory, skipping",path);
+            continue;
+          }
+
         branch.path = path;
         branches_->emplace_back(branch);
       }
@@ -432,7 +448,7 @@ Branches::find_and_set_mode_ro()
       if(!fs::is_rofs_but_not_mounted_ro(branch.path))
         continue;
 
-      SysLog::warning("Branch {} found to be readonly - setting its mode to RO",
+      SysLog::warning("branch `{}` found to be readonly - setting its mode=RO",
                       branch.path);
 
       branch.mode = Branch::Mode::RO;

@@ -23,6 +23,13 @@
 using std::string;
 using std::vector;
 
+#ifndef GLOB_BRACE
+#define GLOB_BRACE 0
+#endif
+
+#ifndef GLOB_ONLYDIR
+#define GLOB_ONLYDIR 0
+#endif
 
 namespace fs
 {
@@ -33,7 +40,7 @@ namespace fs
     int flags;
     glob_t gbuf = {0};
 
-    flags = GLOB_NOCHECK;
+    flags = (GLOB_BRACE|GLOB_ONLYDIR);
     ::glob(pattern_.c_str(),flags,NULL,&gbuf);
 
     for(size_t i = 0; i < gbuf.gl_pathc; i++)
