@@ -59,8 +59,8 @@ enum
 
 static
 void
-set_option(const std::string &option_,
-           fuse_args         *args_)
+_set_option(const std::string &option_,
+            fuse_args         *args_)
 {
 
   fuse_opt_add_arg(args_,"-o");
@@ -69,20 +69,20 @@ set_option(const std::string &option_,
 
 static
 void
-set_kv_option(const std::string &key_,
-              const std::string &val_,
-              fuse_args         *args_)
+_set_kv_option(const std::string &key_,
+               const std::string &val_,
+               fuse_args         *args_)
 {
   std::string option;
 
   option = key_ + '=' + val_;
 
-  set_option(option,args_);
+  ::_set_option(option,args_);
 }
 
 static
 void
-set_fuse_threads(Config::Write &cfg_)
+_set_fuse_threads(Config::Write &cfg_)
 {
   fuse_config_set_read_thread_count(cfg_->fuse_read_thread_count);
   fuse_config_set_process_thread_count(cfg_->fuse_process_thread_count);
@@ -92,8 +92,8 @@ set_fuse_threads(Config::Write &cfg_)
 
 static
 void
-set_fsname(Config::Write &cfg_,
-           fuse_args     *args_)
+_set_fsname(Config::Write &cfg_,
+            fuse_args     *args_)
 {
   if(cfg_->fsname->empty())
     {
@@ -105,33 +105,33 @@ set_fsname(Config::Write &cfg_,
         cfg_->fsname = str::remove_common_prefix_and_join(paths,':');
     }
 
-  set_kv_option("fsname",cfg_->fsname,args_);
+  ::_set_kv_option("fsname",cfg_->fsname,args_);
 }
 
 static
 void
-set_subtype(fuse_args *args_)
+_set_subtype(fuse_args *args_)
 {
-  set_kv_option("subtype","mergerfs",args_);
+  ::_set_kv_option("subtype","mergerfs",args_);
 }
 
 static
 void
-set_default_options(fuse_args     *args_,
-                    Config::Write &cfg_)
+_set_default_options(fuse_args     *args_,
+                     Config::Write &cfg_)
 {
   if(cfg_->kernel_permissions_check)
-    set_option("default_permissions",args_);
+    ::_set_option("default_permissions",args_);
 
   if(geteuid() == 0)
-    set_option("allow_other",args_);
+    ::_set_option("allow_other",args_);
   else
     SysLog::notice("not auto setting allow_other since not running as root");
 }
 
 static
 bool
-should_ignore(const std::string &key_)
+_should_ignore(const std::string &key_)
 {
   constexpr const std::array<std::string_view,13> ignored_keys =
     {
@@ -161,10 +161,10 @@ should_ignore(const std::string &key_)
 
 static
 int
-parse_and_process_kv_arg(Config::Write     &cfg_,
-                         Config::ErrVec    *errs_,
-                         const std::string &key_,
-                         const std::string &val_)
+_parse_and_process_kv_arg(Config::Write     &cfg_,
+                          Config::ErrVec    *errs_,
+                          const std::string &key_,
+                          const std::string &val_)
 {
   int rv;
   std::string key(key_);
@@ -189,7 +189,7 @@ parse_and_process_kv_arg(Config::Write     &cfg_,
     val = "true";
   ef(key == "sync_read" && val.empty())
     {key = "async_read", val = "false";}
-  ef(::should_ignore(key_))
+  ef(::_should_ignore(key_))
     return 0;
 
   if(cfg_->has_key(key) == false)
@@ -215,7 +215,7 @@ process_opt(Config::Write     &cfg_,
   key = str::trim(key);
   val = str::trim(val);
 
-  return parse_and_process_kv_arg(cfg_,errs_,key,val);
+  return ::_parse_and_process_kv_arg(cfg_,errs_,key,val);
 }
 
 static
@@ -254,120 +254,38 @@ process_mount(Config::Write  &cfg_,
 
 static
 void
-usage(void)
+_postprocess_passthrough(Config::Write &cfg_)
 {
-  std::cout <<
-    "Usage: mergerfs [options] <branches> <destpath>\n"
-    "\n"
-    "    -o [opt,...]           mount options\n"
-    "    -h --help              print help\n"
-    "    -v --version           print version\n"
-    "    -f                     run mergerfs in foreground\n"
-    "    -d, -o debug           enable debug output (enables -f)\n"
-    "\n"
-    "mergerfs options:\n"
-    "    <branches>             ':' delimited list of directories. Supports\n"
-    "                           shell globbing (must be escaped in shell)\n"
-    "    -o config=FILE         Read options from file in key=val format\n"
-    "    -o func.FUNC=POLICY    Set function FUNC to policy POLICY\n"
-    "    -o category.CAT=POLICY Set functions in category CAT to POLICY\n"
-    "    -o fsname=STR          Sets the name of the filesystem.\n"
-    "    -o read-thread-count=INT\n"
-    "                           Number of threads used to read from FUSE (and process)\n"
-    "                           * 0 = number of logical cores\n"
-    "                           * negative value = number of logical cores / abs(value)\n"
-    "                           * -1 in combination with process-thread-count=-1 will\n"
-    "                           split thread count among read and process threads\n"
-    "                           default=0\n"
-    "    -o process-thread-count=INT\n"
-    "                           Same as read-thread-count but for FUSE message processing\n"
-    "                           If not set then read threads will do both read and process\n"
-    "    -o cache.statfs=INT    'statfs' cache timeout in seconds. Used by\n"
-    "                           policies. default = 0 (disabled)\n"
-    "    -o cache.files=libfuse|off|partial|full|auto-full|per-process\n"
-    "                           * libfuse: Use direct_io, kernel_cache, auto_cache\n"
-    "                             values directly\n"
-    "                           * off: Disable page caching\n"
-    "                           * partial: Clear page cache on file open\n"
-    "                           * full: Keep cache on file open\n"
-    "                           * auto-full: Keep cache if mtime & size not changed\n"
-    "                           * per-process: Enable caching for only for processes\n"
-    "                             which comm name match value in cache.files.process-names\n"
-    "                           default = libfuse\n"
-    "    -o cache.files.process-names=STRLIST\n"
-    "                           Pipe delimited list of process comm names.\n"
-    "                           defulat=rtorrent|qbittorrent-nox\n"
-    "    -o cache.writeback=BOOL\n"
-    "                           Enable kernel writeback caching (if supported)\n"
-    "                           cache.files must be enabled as well.\n"
-    "                           default = false\n"
-    "    -o cache.symlinks=BOOL\n"
-    "                           Enable kernel caching of symlinks (if supported)\n"
-    "                           default = false\n"
-    "    -o cache.readdir=BOOL\n"
-    "                           Enable kernel caching readdir (if supported)\n"
-    "                           default = false\n"
-    "    -o cache.attr=INT      File attribute cache timeout in seconds.\n"
-    "                           default = 1\n"
-    "    -o cache.entry=INT     File name lookup cache timeout in seconds.\n"
-    "                           default = 1\n"
-    "    -o cache.negative_entry=INT\n"
-    "                           Negative file name lookup cache timeout in\n"
-    "                           seconds. default = 0\n"
-    "    -o inodecalc=passthrough|path-hash|devino-hash|hybrid-hash\n"
-    "                           Selects the inode calculation algorithm.\n"
-    "                           default = hybrid-hash\n"
-    "    -o minfreespace=INT    Minimum free space needed for certain policies.\n"
-    "                           default = 4G\n"
-    "    -o moveonenospc=BOOL   Try to move file to another drive when ENOSPC\n"
-    "                           on write. default = false\n"
-    "    -o dropcacheonclose=BOOL\n"
-    "                           When a file is closed suggest to OS it drop\n"
-    "                           the file's cache. This is useful when using\n"
-    "                           'cache.files'. default = false\n"
-    "    -o symlinkify=BOOL     Read-only files, after a timeout, will be turned\n"
-    "                           into symlinks. Read docs for limitations and\n"
-    "                           possible issues. default = false\n"
-    "    -o symlinkify_timeout=INT\n"
-    "                           Timeout in seconds before files turn to symlinks.\n"
-    "                           default = 3600\n"
-    "    -o nullrw=BOOL         Disables reads and writes. For benchmarking.\n"
-    "                           default = false\n"
-    "    -o ignorepponrename=BOOL\n"
-    "                           Ignore path preserving when performing renames\n"
-    "                           and links. default = false\n"
-    "    -o link_cow=BOOL       Delink/clone file on open to simulate CoW.\n"
-    "                           default = false\n"
-    "    -o nfsopenhack=off|git|all\n"
-    "                           A workaround for exporting mergerfs over NFS\n"
-    "                           where there are issues with creating files for\n"
-    "                           write while setting the mode to read-only.\n"
-    "                           default = off\n"
-    "    -o security_capability=BOOL\n"
-    "                           When disabled return ENOATTR when the xattr\n"
-    "                           security.capability is queried. default = true\n"
-    "    -o xattr=passthrough|noattr|nosys\n"
-    "                           Runtime control of xattrs. By default xattr\n"
-    "                           requests will pass through to the underlying\n"
-    "                           filesystems. notattr will short circuit as if\n"
-    "                           nothing exists. nosys will respond as if not\n"
-    "                           supported or disabled. default = passthrough\n"
-    "    -o statfs=base|full    When set to 'base' statfs will use all branches\n"
-    "                           when performing statfs calculations. 'full' will\n"
-    "                           only include branches on which that path is\n"
-    "                           available. default = base\n"
-    "    -o statfs_ignore=none|ro|nc\n"
-    "                           'ro' will cause statfs calculations to ignore\n"
-    "                           available space for branches mounted or tagged\n"
-    "                           as 'read only' or 'no create'. 'nc' will ignore\n"
-    "                           available space for branches tagged as\n"
-    "                           'no create'. default = none\n"
-    "    -o posix_acl=BOOL      Enable POSIX ACL support. default = false\n"
-    "    -o async_read=BOOL     If disabled or unavailable the kernel will\n"
-    "                           ensure there is at most one pending read \n"
-    "                           request per file and will attempt to order\n"
-    "                           requests by offset. default = true\n"
-            << std::endl;
+  if(cfg_->passthrough == Passthrough::ENUM::OFF)
+    return;
+
+  if(cfg_->cache_files == CacheFiles::ENUM::OFF)
+    {
+      SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
+                      " Setting 'cache.files=auto-full'");
+      cfg_->cache_files = CacheFiles::ENUM::AUTO_FULL;
+    }
+
+  if(cfg_->writeback_cache == true)
+    {
+      SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
+                      " Setting 'cache.writeback=false'");
+      cfg_->writeback_cache = false;
+    }
+
+  if(cfg_->moveonenospc.enabled == true)
+    {
+      SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
+    }
+}
+
+static
+void
+_usage(void)
+{
+  fmt::print("Usage: mergerfs [options] <branches> <mountpoint>\n"
+             "\n"
+             "Visit https://trapexit.github.io/mergerfs for options.\n\n");
 }
 
 static
@@ -392,15 +310,16 @@ option_processor(void       *data_,
         return process_mount(cfg,errs,arg_);
 
     case MERGERFS_OPT_HELP:
-      usage();
+      ::_usage();
       exit(0);
 
     case MERGERFS_OPT_VERSION:
       fmt::print("mergerfs v{}\n\n"
                  "https://github.com/trapexit/mergerfs\n"
+                 "https://trapexit.github.io/mergerfs\n"
                  "https://github.com/trapexit/support\n\n"
                  "ISC License (ISC)\n\n"
-                 "Copyright 2023, Antonio SJ Musumeci <trapexit@spawn.link>\n\n"
+                 "Copyright 2025, Antonio SJ Musumeci <trapexit@spawn.link>\n\n"
                  "Permission to use, copy, modify, and/or distribute this software for\n"
                  "any purpose with or without fee is hereby granted, provided that the\n"
                  "above copyright notice and this permission notice appear in all\n"
@@ -426,8 +345,8 @@ option_processor(void       *data_,
 
 static
 void
-check_for_mount_loop(Config::Write  &cfg_,
-                     Config::ErrVec *errs_)
+_check_for_mount_loop(Config::Write  &cfg_,
+                      Config::ErrVec *errs_)
 {
   fs::Path mount;
   fs::PathVector branches;
@@ -441,7 +360,8 @@ check_for_mount_loop(Config::Write  &cfg_,
         {
           std::string errstr;
 
-          errstr = fmt::format("branches can not include the mountpoint: {}",branch.string());
+          errstr = fmt::format("branches can not include the mountpoint: {}",
+                               branch.string());
           errs_->push_back({0,errstr});
         }
     }
@@ -474,34 +394,12 @@ namespace options
     if(cfg->mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
 
-    if(cfg->passthrough != Passthrough::ENUM::OFF)
-      {
-        if(cfg->cache_files == CacheFiles::ENUM::OFF)
-          {
-            SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
-                            " Setting 'cache.files=auto-full'");
-            cfg->cache_files = CacheFiles::ENUM::AUTO_FULL;
-          }
-
-        if(cfg->writeback_cache == true)
-          {
-            SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
-                            " Setting 'cache.writeback=false'");
-            cfg->writeback_cache = false;
-          }
-
-        if(cfg->moveonenospc.enabled == true)
-          {
-            SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
-          }
-      }
-
-    check_for_mount_loop(cfg,errs_);
-
-    set_default_options(args_,cfg);
-    set_fsname(cfg,args_);
-    set_subtype(args_);
-    set_fuse_threads(cfg);
+    ::_postprocess_passthrough(cfg);
+    ::_check_for_mount_loop(cfg,errs_);
+    ::_set_default_options(args_,cfg);
+    ::_set_fsname(cfg,args_);
+    ::_set_subtype(args_);
+    ::_set_fuse_threads(cfg);
 
     cfg->finish_initializing();
   }
