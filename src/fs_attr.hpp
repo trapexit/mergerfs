@@ -18,13 +18,18 @@
 
 #include <string>
 
+#include "int_types.h"
+
+#define FS_ATTR_NONE (0)
+#define FS_ATTR_CLEAR_IMMUTABLE (1 << 0)
 
 namespace fs
 {
   namespace attr
   {
-    int copy(const int fdin,
-             const int fdout);
+    int copy(const int  fdin,
+             const int  fdout,
+             const u32  flags);
     int copy(const std::string &from,
              const std::string &to);
   }

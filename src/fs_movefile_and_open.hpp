@@ -16,10 +16,25 @@
 
 #pragma once
 
+#include "branches.hpp"
+#include "policy.hpp"
+
+#include <string>
+
 
 namespace fs
 {
   int
-  clonefile(const int src_fd,
-            const int dst_fd);
+  movefile_and_open(const Policy::Create &policy,
+                    const Branches::Ptr  &branches_,
+                    const std::string    &branchpath,
+                    const std::string    &fusepath,
+                    const int                   origfd);
+
+  int
+  movefile_and_open_as_root(const Policy::Create &policy,
+                            const Branches::Ptr  &branches_,
+                            const std::string    &branchpath,
+                            const std::string    &fusepath,
+                            int                   origfd);
 }

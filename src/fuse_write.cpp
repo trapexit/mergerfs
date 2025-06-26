@@ -19,7 +19,7 @@
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
 #include "fs_dup2.hpp"
-#include "fs_movefile.hpp"
+#include "fs_movefile_and_open.hpp"
 #include "fs_pwrite.hpp"
 #include "fs_pwriten.hpp"
 
@@ -51,10 +51,11 @@ namespace l
     if(cfg->moveonenospc.enabled == false)
       return err_;
 
-    rv = fs::movefile_as_root(cfg->moveonenospc.policy,
-                              cfg->branches,
-                              fi_->fusepath,
-                              fi_->fd);
+    rv = fs::movefile_and_open_as_root(cfg->moveonenospc.policy,
+                                       cfg->branches,
+                                       fi_->branch.path,
+                                       fi_->fusepath,
+                                       fi_->fd);
     if(rv < 0)
       return err_;
 
@@ -82,10 +83,11 @@ namespace l
     if(cfg->moveonenospc.enabled == false)
       return err_;
 
-    rv = fs::movefile_as_root(cfg->moveonenospc.policy,
-                              cfg->branches,
-                              fi_->fusepath,
-                              fi_->fd);
+    rv = fs::movefile_and_open_as_root(cfg->moveonenospc.policy,
+                                       cfg->branches,
+                                       fi_->branch.path,
+                                       fi_->fusepath,
+                                       fi_->fd);
     if(rv < 0)
       return err_;
 

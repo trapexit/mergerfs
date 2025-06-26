@@ -16,17 +16,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
-#include "fs_clonefile.hpp"
-#include "fs_close.hpp"
-#include "fs_lstat.hpp"
-#include "fs_mktemp.hpp"
-#include "fs_open.hpp"
-#include "fs_path.hpp"
-#include "fs_rename.hpp"
-#include "fs_unlink.hpp"
+#include "fs_cow.hpp"
 
-#include <string>
+#include "errno.hpp"
+#include "fs_lstat.hpp"
+#include "fs_copyfile.hpp"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -34,102 +28,51 @@
 #include <unistd.h>
 
 
-namespace l
+bool
+fs::cow::is_eligible(const int flags_)
 {
-  static
-  int
-  cleanup_on_error(const int src_fd_,
-                   const int dst_fd_                = -1,
-                   const std::string &dst_fullpath_ = {})
-  {
-    int error = errno;
+  int accmode;
 
-    if(src_fd_ >= 0)
-      fs::close(src_fd_);
-    if(dst_fd_ >= 0)
-      fs::close(dst_fd_);
-    if(!dst_fullpath_.empty())
-      fs::unlink(dst_fullpath_);
+  accmode = (flags_ & O_ACCMODE);
 
-    errno = error;
-
-    return -1;
-  }
+  return ((accmode == O_RDWR) ||
+          (accmode == O_WRONLY));
 }
 
-namespace fs
+bool
+fs::cow::is_eligible(const struct stat &st_)
 {
-  namespace cow
-  {
-    bool
-    is_eligible(const int flags_)
-    {
-      int accmode;
+  return ((S_ISREG(st_.st_mode)) && (st_.st_nlink > 1));
+}
 
-      accmode = (flags_ & O_ACCMODE);
+bool
+fs::cow::is_eligible(const int          flags_,
+                     const struct stat &st_)
+{
+  return (is_eligible(flags_) && is_eligible(st_));
+}
 
-      return ((accmode == O_RDWR) ||
-              (accmode == O_WRONLY));
-    }
+bool
+fs::cow::is_eligible(const char *fullpath_,
+                     const int   flags_)
+{
+  int rv;
+  struct stat st;
 
-    bool
-    is_eligible(const struct stat &st_)
-    {
-      return ((S_ISREG(st_.st_mode)) && (st_.st_nlink > 1));
-    }
+  if(!fs::cow::is_eligible(flags_))
+    return false;
 
-    bool
-    is_eligible(const int          flags_,
-                const struct stat &st_)
-    {
-      return (is_eligible(flags_) && is_eligible(st_));
-    }
+  rv = fs::lstat(fullpath_,&st);
+  if(rv == -1)
+    return false;
 
-    bool
-    is_eligible(const char *fullpath_,
-                const int   flags_)
-    {
-      int rv;
-      struct stat st;
+  return fs::cow::is_eligible(st);
+}
 
-      if(!fs::cow::is_eligible(flags_))
-        return false;
-
-      rv = fs::lstat(fullpath_,&st);
-      if(rv == -1)
-        return false;
-
-      return fs::cow::is_eligible(st);
-    }
-
-    int
-    break_link(const char *src_fullpath_)
-    {
-      int rv;
-      int src_fd;
-      int dst_fd;
-      std::string dst_fullpath;
-
-      src_fd = fs::open(src_fullpath_,O_RDONLY|O_NOFOLLOW);
-      if(src_fd == -1)
-        return -1;
-
-      std::tie(dst_fd,dst_fullpath) = fs::mktemp(src_fullpath_,O_WRONLY);
-      if(dst_fd < 0)
-        return l::cleanup_on_error(src_fd);
-
-      rv = fs::clonefile(src_fd,dst_fd);
-      if(rv == -1)
-        return l::cleanup_on_error(src_fd,dst_fd,dst_fullpath);
-
-      rv = fs::rename(dst_fullpath,src_fullpath_);
-      if(rv == -1)
-        return l::cleanup_on_error(src_fd,dst_fd,dst_fullpath);
-
-      fs::close(src_fd);
-      fs::close(dst_fd);
-
-      return 0;
-    }
-  }
+int
+fs::cow::break_link(const char *src_filepath_)
+{
+  return fs::copyfile(src_filepath_,
+                      src_filepath_,
+                      FS_COPYFILE_CLEANUP_FAILURE);
 }

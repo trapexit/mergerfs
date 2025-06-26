@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_copydata_readwrite.hpp"
+
 #include "errno.hpp"
 #include "fs_fstat.hpp"
 #include "fs_lseek.hpp"
@@ -22,93 +24,83 @@
 
 #include <vector>
 
-using std::vector;
 
-
-namespace l
+static
+s64
+_writen(const int   fd_,
+        const char *buf_,
+        const u64   size_)
 {
-  static
-  int
-  writen(const int     fd_,
-         const char   *buf_,
-         const size_t  size_)
-  {
-    ssize_t rv;
-    size_t nleft;
+  s64 rv;
+  u64 nleft;
 
-    nleft = size_;
-    do
-      {
-        rv = fs::write(fd_,buf_,nleft);
-        if((rv == -1) && (errno == EINTR))
-          continue;
-        if((rv == -1) && (errno == EAGAIN))
-          continue;
-        if(rv == -1)
-          return -1;
+  nleft = size_;
+  do
+    {
+      rv = fs::write(fd_,buf_,nleft);
+      if((rv == -1) && (errno == EINTR))
+        continue;
+      if((rv == -1) && (errno == EAGAIN))
+        continue;
+      if(rv == -1)
+        return -1;
 
-        nleft -= rv;
-        buf_  += rv;
-      }
-    while(nleft > 0);
+      nleft -= rv;
+      buf_  += rv;
+    }
+  while(nleft > 0);
 
-    return size_;
-  }
-
-  static
-  int
-  copydata_readwrite(const int    src_fd_,
-                     const int    dst_fd_,
-                     const size_t count_)
-  {
-    ssize_t nr;
-    ssize_t nw;
-    ssize_t bufsize;
-    size_t  totalwritten;
-    vector<char> buf;
-
-    bufsize = (1024 * 1024);
-    buf.resize(bufsize);
-
-    totalwritten = 0;
-    while(totalwritten < count_)
-      {
-        nr = fs::read(src_fd_,&buf[0],bufsize);
-        if(nr == 0)
-          return totalwritten;
-        if((nr == -1) && (errno == EINTR))
-          continue;
-        if((nr == -1) && (errno == EAGAIN))
-          continue;
-        if(nr == -1)
-          return -1;
-
-        nw = l::writen(dst_fd_,&buf[0],nr);
-        if(nw == -1)
-          return -1;
-
-        totalwritten += nw;
-      }
-
-    return totalwritten;
-  }
+  return size_;
 }
+
+static
+s64
+_copydata_readwrite(const int src_fd_,
+                    const int dst_fd_,
+                    const u64 count_)
+{
+  s64 nr;
+  s64 nw;
+  s64 bufsize;
+  u64 totalwritten;
+  std::vector<char> buf;
+
+  bufsize = (1024 * 1024);
+  buf.resize(bufsize);
+
+  totalwritten = 0;
+  while(totalwritten < count_)
+    {
+      nr = fs::read(src_fd_,&buf[0],bufsize);
+      if(nr == 0)
+        return totalwritten;
+      if((nr == -1) && (errno == EINTR))
+        continue;
+      if((nr == -1) && (errno == EAGAIN))
+        continue;
+      if(nr == -1)
+        return -1;
+
+      nw = ::_writen(dst_fd_,&buf[0],nr);
+      if(nw == -1)
+        return -1;
+
+      totalwritten += nw;
+    }
+
+  return totalwritten;
+}
+
 
 namespace fs
 {
-  int
+  s64
   copydata_readwrite(const int src_fd_,
-                     const int dst_fd_)
+                     const int dst_fd_,
+                     const u64 count_)
   {
-    int rv;
-    struct stat st;
-
-    rv = fs::fstat(src_fd_,&st);
-    if(rv < 0)
-      return -1;
-
-    return l::copydata_readwrite(src_fd_,
+    return ::_copydata_readwrite(src_fd_,
                                  dst_fd_,
-                                 st.st_size);
+                                 count_);
   }
 }

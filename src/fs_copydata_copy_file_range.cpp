@@ -18,57 +18,49 @@
 #include "fs_copy_file_range.hpp"
 #include "fs_fstat.hpp"
 
-#include <cstdint>
+#include "int_types.h"
 
 
-namespace l
+static
+s64
+_copydata_copy_file_range(const int src_fd_,
+                          const int dst_fd_,
+                          const u64 size_)
 {
-  int64_t
-  copydata_copy_file_range(const int src_fd_,
-                           const int dst_fd_,
-                           uint64_t  size_)
-  {
-    int64_t  rv;
-    uint64_t nleft;
-    int64_t  src_off;
-    int64_t  dst_off;
+  s64 rv;
+  u64 nleft;
+  s64 src_off;
+  s64 dst_off;
 
-    src_off = 0;
-    dst_off = 0;
-    nleft   = size_;
-    do
-      {
-        rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,nleft,0);
-        if((rv == -1) && (errno == EINTR))
-          continue;
-        if((rv == -1) && (errno == EAGAIN))
-          continue;
-        if(rv == -1)
-          return -1;
+  src_off = 0;
+  dst_off = 0;
+  nleft   = size_;
+  do
+    {
+      rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,nleft,0);
+      if((rv == -1) && (errno == EINTR))
+        continue;
+      if((rv == -1) && (errno == EAGAIN))
+        continue;
+      if(rv == -1)
+        return -1;
 
-        nleft -= rv;
-      }
-    while(nleft > 0);
+      nleft -= rv;
+    }
+  while(nleft > 0);
 
-    return size_;
-  }
+  return size_;
 }
 
 namespace fs
 {
-  int64_t
+  s64
   copydata_copy_file_range(const int src_fd_,
-                           const int dst_fd_)
+                           const int dst_fd_,
+                           const u64 count_)
   {
-    int rv;
-    struct stat st;
-
-    rv = fs::fstat(src_fd_,&st);
-    if(rv < 0)
-      return -1;
-
-    return l::copydata_copy_file_range(src_fd_,
+    return ::_copydata_copy_file_range(src_fd_,
                                        dst_fd_,
-                                       st.st_size);
+                                       count_);
   }
 }
