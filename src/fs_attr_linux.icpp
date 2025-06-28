@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_attr.hpp"
+
 #include "errno.hpp"
 #include "fs_close.hpp"
 #include "fs_open.hpp"
@@ -26,115 +28,112 @@
 
 using std::string;
 
-
-namespace fs
+static
+int
+_get_fs_ioc_flags(const int  fd,
+                 int       &flags)
 {
-  namespace attr
-  {
-    static
-    int
-    get_fs_ioc_flags(const int  fd,
-                     int       &flags)
+  int rv;
+
+  rv = fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
+  if((rv == -1) && (errno == EINVAL))
+    errno = ENOTSUP;
+
+  return rv;
+}
+
+static
+int
+_get_fs_ioc_flags(const string &file,
+                 int          &flags)
+{
+  int fd;
+  int rv;
+  const int openflags = O_RDONLY|O_NONBLOCK;
+
+  fd = fs::open(file,openflags);
+  if(fd == -1)
+    return -1;
+
+  rv = ::_get_fs_ioc_flags(fd,flags);
+  if(rv == -1)
     {
-      int rv;
-
-      rv = fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
-      if((rv == -1) && (errno == EINVAL))
-        errno = ENOTSUP;
-
-      return rv;
+      int error = errno;
+      fs::close(fd);
+      errno = error;
+      return -1;
     }
 
-    static
-    int
-    get_fs_ioc_flags(const string &file,
-                     int          &flags)
+  return fs::close(fd);
+}
+
+static
+int
+_set_fs_ioc_flags(const int fd,
+                 const int flags)
+{
+  int rv;
+
+  rv = fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
+  if((rv == -1) && (errno == EINVAL))
+    errno = ENOTSUP;
+
+  return rv;
+}
+
+static
+int
+_set_fs_ioc_flags(const string &file,
+                 const int     flags)
+{
+  int fd;
+  int rv;
+  const int openflags = O_RDONLY|O_NONBLOCK;
+
+  fd = fs::open(file,openflags);
+  if(fd == -1)
+    return -1;
+
+  rv = ::_set_fs_ioc_flags(fd,flags);
+  if(rv == -1)
     {
-      int fd;
-      int rv;
-      const int openflags = O_RDONLY|O_NONBLOCK;
-
-      fd = fs::open(file,openflags);
-      if(fd == -1)
-        return -1;
-
-      rv = get_fs_ioc_flags(fd,flags);
-      if(rv == -1)
-        {
-          int error = errno;
-          fs::close(fd);
-          errno = error;
-          return -1;
-        }
-
-      return fs::close(fd);
+      int error = errno;
+      fs::close(fd);
+      errno = error;
+      return -1;
     }
 
-    static
-    int
-    set_fs_ioc_flags(const int fd,
-                     const int flags)
-    {
-      int rv;
+  return fs::close(fd);
+}
 
-      rv = fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
-      if((rv == -1) && (errno == EINVAL))
-        errno = ENOTSUP;
+int
+fs::attr::copy(const int  fdin,
+               const int  fdout,
+               const u32  flags_)
+{
+  int rv;
+  int flags;
 
-      return rv;
-    }
+  rv = ::_get_fs_ioc_flags(fdin,flags);
+  if(rv == -1)
+    return -1;
 
-    static
-    int
-    set_fs_ioc_flags(const string &file,
-                     const int     flags)
-    {
-      int fd;
-      int rv;
-      const int openflags = O_RDONLY|O_NONBLOCK;
+  if(flags_ & FS_ATTR_CLEAR_IMMUTABLE)
+    flags = (flags & ~FS_IMMUTABLE_FL);
 
-      fd = fs::open(file,openflags);
-      if(fd == -1)
-        return -1;
+  return ::_set_fs_ioc_flags(fdout,flags);
+}
 
-      rv = set_fs_ioc_flags(fd,flags);
-      if(rv == -1)
-        {
-          int error = errno;
-          fs::close(fd);
-          errno = error;
-          return -1;
-        }
+int
+fs::attr::copy(const string &from,
+               const string &to)
+{
+  int rv;
+  int flags;
 
-      return fs::close(fd);
-    }
+  rv = ::_get_fs_ioc_flags(from,flags);
+  if(rv == -1)
+    return -1;
 
-    int
-    copy(const int fdin,
-         const int fdout)
-    {
-      int rv;
-      int flags;
-
-      rv = get_fs_ioc_flags(fdin,flags);
-      if(rv == -1)
-        return -1;
-
-      return set_fs_ioc_flags(fdout,flags);
-    }
-
-    int
-    copy(const string &from,
-         const string &to)
-    {
-      int rv;
-      int flags;
-
-      rv = get_fs_ioc_flags(from,flags);
-      if(rv == -1)
-        return -1;
-
-      return set_fs_ioc_flags(to,flags);
-    }
-  }
+  return ::_set_fs_ioc_flags(to,flags);
 }

@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "int_types.h"
 
 namespace fs
 {
-  int
+  s64
   copydata_readwrite(const int src_fd,
-                     const int dst_fd);
+                     const int dst_fd,
+                     const u64 count);
 }

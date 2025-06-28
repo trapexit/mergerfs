@@ -16,11 +16,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
 #include "fs_copydata_copy_file_range.hpp"
 #include "fs_copydata_readwrite.hpp"
 #include "fs_fadvise.hpp"
+#include "fs_fallocate.hpp"
 #include "fs_ficlone.hpp"
-#include "fs_ftruncate.hpp"
 
 #include <stddef.h>
 
@@ -34,9 +35,9 @@ namespace fs
   {
     int rv;
 
-    rv = fs::ftruncate(dst_fd_,count_);
-    if(rv == -1)
-      return -1;
+    rv = fs::fallocate(dst_fd_,0,0,count_);
+    if((rv == -1) && (errno == ENOSPC))
+      return rv;
 
     rv = fs::ficlone(src_fd_,dst_fd_);
     if(rv != -1)
@@ -45,10 +46,10 @@ namespace fs
     fs::fadvise_willneed(src_fd_,0,count_);
     fs::fadvise_sequential(src_fd_,0,count_);
 
-    rv = fs::copydata_copy_file_range(src_fd_,dst_fd_);
+    rv = fs::copydata_copy_file_range(src_fd_,dst_fd_,count_);
     if(rv != -1)
       return rv;
 
-    return fs::copydata_readwrite(src_fd_,dst_fd_);
+    return fs::copydata_readwrite(src_fd_,dst_fd_,count_);
   }
 }

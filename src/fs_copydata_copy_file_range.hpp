@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <cstdint>
+#include "int_types.h"
 
 
 namespace fs
 {
-  int64_t
+  s64
   copydata_copy_file_range(const int src_fd,
-                           const int dst_fd);
+                           const int dst_fd,
+                           const u64 count);
 }
