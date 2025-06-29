@@ -16,11 +16,11 @@
         <link rel="prev" href="../known_issues_bugs/">
       
       
-        <link rel="next" href="../performance/">
+        <link rel="next" href="../benchmarking/">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+      <link rel="icon" href="../logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -85,6 +85,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -94,7 +98,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="mergerfs" class="md-header__button md-logo" aria-label="mergerfs" data-md-component="logo">
       
-  <img src="../logo.jpeg" alt="logo">
+  <img src="../logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -159,11 +163,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -187,6 +193,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -200,13 +208,14 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
         <a href="https://github.com/trapexit/mergerfs" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
   </div>
   <div class="md-source__repository">
     mergerfs
@@ -241,7 +250,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="mergerfs" class="md-nav__button md-logo" aria-label="mergerfs" data-md-component="logo">
       
-  <img src="../logo.jpeg" alt="logo">
+  <img src="../logo.png" alt="logo">
 
     </a>
     mergerfs
@@ -251,7 +260,7 @@
       <a href="https://github.com/trapexit/mergerfs" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
   </div>
   <div class="md-source__repository">
     mergerfs
@@ -271,8 +280,10 @@
       <a href=".." class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Home
+    
   </span>
   
 
@@ -291,8 +302,10 @@
       <a href="../quickstart/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     QuickStart
+    
   </span>
   
 
@@ -311,6 +324,7 @@
     
     
     
+    
     <li class="md-nav__item md-nav__item--nested">
       
         
@@ -321,8 +335,10 @@
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
+  
   <span class="md-ellipsis">
     Installation
+    
   </span>
   
 
@@ -346,8 +362,10 @@
       <a href="../setup/installation/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Installation
+    
   </span>
   
 
@@ -367,8 +385,10 @@
       <a href="../setup/upgrade/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Upgrade
+    
   </span>
   
 
@@ -388,8 +408,10 @@
       <a href="../setup/build/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Build
+    
   </span>
   
 
@@ -412,6 +434,51 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../terminology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Terminology
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intro_to_filesystems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro to Filesystems
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
     
     
     
@@ -420,22 +487,24 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
+  
   
   <span class="md-ellipsis">
     Config
+    
   </span>
   
 
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Config
           </label>
@@ -448,32 +517,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/terminology/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Terminology
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../config/options/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Options
+    
   </span>
   
 
@@ -493,8 +543,10 @@
       <a href="../config/deprecated_options/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Deprecated Options
+    
   </span>
   
 
@@ -514,8 +566,10 @@
       <a href="../config/branches/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     branches
+    
   </span>
   
 
@@ -532,11 +586,59 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/functions_categories_and_policies/" class="md-nav__link">
+      <a href="../config/branches-mount-timeout/" class="md-nav__link">
         
+  
+  
+  <span class="md-ellipsis">
+    branches-mount-timeout
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/functions_categories_policies/" class="md-nav__link">
+        
+  
   
   <span class="md-ellipsis">
     functions, categories and policies
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/minfreespace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    minfreespace
+    
   </span>
   
 
@@ -556,8 +658,10 @@
       <a href="../config/func_readdir/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     func.readdir
+    
   </span>
   
 
@@ -577,8 +681,33 @@
       <a href="../config/rename_and_link/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     rename and link
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/moveonenospc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    moveonenospc
+    
   </span>
   
 
@@ -598,8 +727,33 @@
       <a href="../config/cache/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     caching
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/passthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    passthrough
+    
   </span>
   
 
@@ -619,8 +773,10 @@
       <a href="../config/readahead/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     readahead
+    
   </span>
   
 
@@ -640,8 +796,10 @@
       <a href="../config/inodecalc/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     inodecalc
+    
   </span>
   
 
@@ -661,8 +819,10 @@
       <a href="../config/threads/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     threads
+    
   </span>
   
 
@@ -682,8 +842,10 @@
       <a href="../config/pin-threads/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     pin-threads
+    
   </span>
   
 
@@ -703,8 +865,10 @@
       <a href="../config/link_cow/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     link_cow
+    
   </span>
   
 
@@ -724,8 +888,10 @@
       <a href="../config/fuse_msg_size/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     fuse_msg_size
+    
   </span>
   
 
@@ -745,8 +911,10 @@
       <a href="../config/follow-symlinks/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     follow-symlinks
+    
   </span>
   
 
@@ -766,8 +934,10 @@
       <a href="../config/link-exdev/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     link-exdev
+    
   </span>
   
 
@@ -787,8 +957,10 @@
       <a href="../config/rename-exdev/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     rename-exdev
+    
   </span>
   
 
@@ -808,8 +980,10 @@
       <a href="../config/symlinkify/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     symlinkify
+    
   </span>
   
 
@@ -829,8 +1003,10 @@
       <a href="../config/nullrw/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     nullrw
+    
   </span>
   
 
@@ -850,8 +1026,10 @@
       <a href="../config/xattr/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     xattr
+    
   </span>
   
 
@@ -871,8 +1049,10 @@
       <a href="../config/nfsopenhack/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     nfsopenhack
+    
   </span>
   
 
@@ -892,8 +1072,10 @@
       <a href="../config/statfs/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     statfs / statvfs
+    
   </span>
   
 
@@ -913,8 +1095,10 @@
       <a href="../config/flush-on-close/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     flush-on-close
+    
   </span>
   
 
@@ -934,8 +1118,33 @@
       <a href="../config/export-support/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     export-support
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/kernel-permissions-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    kernel-permissions-check
+    
   </span>
   
 
@@ -959,11 +1168,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../error_handling/" class="md-nav__link">
+      <a href="../error_handling_and_logging/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
-    Error Handling
+    Error Handling and Logging
+    
   </span>
   
 
@@ -982,8 +1193,10 @@
       <a href="../runtime_interfaces/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Runtime Interfaces
+    
   </span>
   
 
@@ -1002,8 +1215,10 @@
       <a href="../remote_filesystems/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Remote Filesystems
+    
   </span>
   
 
@@ -1022,8 +1237,10 @@
       <a href="../tips_notes/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Tips and Notes
+    
   </span>
   
 
@@ -1042,8 +1259,10 @@
       <a href="../known_issues_bugs/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Known Issues and Bugs
+    
   </span>
   
 
@@ -1071,8 +1290,10 @@
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
   
+  
   <span class="md-ellipsis">
     Project Comparisons
+    
   </span>
   
 
@@ -1082,8 +1303,10 @@
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
+  
   <span class="md-ellipsis">
     Project Comparisons
+    
   </span>
   
 
@@ -1123,9 +1346,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#linux-unionfs" class="md-nav__link">
+  <a href="#unionfs" class="md-nav__link">
     <span class="md-ellipsis">
-      Linux unionfs
+      unionfs
     </span>
   </a>
   
@@ -1150,9 +1373,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#raid0-jbod-drive-concatenation-striping" class="md-nav__link">
+  <a href="#raid0-jbod-span-drive-concatenation-striping" class="md-nav__link">
     <span class="md-ellipsis">
-      RAID0, JBOD, drive concatenation, striping
+      RAID0, JBOD, SPAN, drive concatenation, striping
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#btrfs-single-data-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      BTRFS Single Data Profile
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#raid5-raid6" class="md-nav__link">
+    <span class="md-ellipsis">
+      RAID5, RAID6
     </span>
   </a>
   
@@ -1177,6 +1418,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#zfs-anyraid" class="md-nav__link">
+    <span class="md-ellipsis">
+      ZFS AnyRAID
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stablebits-drivepool" class="md-nav__link">
     <span class="md-ellipsis">
       StableBit's DrivePool
@@ -1189,6 +1439,15 @@
   <a href="#plan9-binds" class="md-nav__link">
     <span class="md-ellipsis">
       Plan9 binds
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapraid-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      SnapRAID pooling
     </span>
   </a>
   
@@ -1209,11 +1468,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../performance/" class="md-nav__link">
+      <a href="../benchmarking/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
-    Tweaking Performance
+    Benchmarking
+    
   </span>
   
 
@@ -1229,11 +1490,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../benchmarking/" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
-    Benchmarking
+    Tweaking Performance
+    
   </span>
   
 
@@ -1252,8 +1515,32 @@
       <a href="../tooling/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Tooling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Usage Patterns
+    
   </span>
   
 
@@ -1272,26 +1559,29 @@
     
     
     
+    
     <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_17" >
         
           
-          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="0">
             
+  
   
   <span class="md-ellipsis">
     FAQ
+    
   </span>
   
 
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_14">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
             <span class="md-nav__icon md-icon"></span>
             FAQ
           </label>
@@ -1304,11 +1594,36 @@
   
   
     <li class="md-nav__item">
+      <a href="../faq/why_isnt_it_working/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    "Why isn't it working?"
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/reliability_and_scalability/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Reliability and Scalability
+    
   </span>
   
 
@@ -1328,8 +1643,10 @@
       <a href="../faq/usage_and_functionality/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Usage and Functionality
+    
   </span>
   
 
@@ -1349,8 +1666,10 @@
       <a href="../faq/configuration_and_policies/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Configuration and Policies
+    
   </span>
   
 
@@ -1370,8 +1689,10 @@
       <a href="../faq/compatibility_and_integration/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Compatibility and Integration
+    
   </span>
   
 
@@ -1391,8 +1712,10 @@
       <a href="../faq/recommendations_and_warnings/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Recommendations and Warnings
+    
   </span>
   
 
@@ -1412,8 +1735,33 @@
       <a href="../faq/technical_behavior_and_limitations/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Technical Behavior and Limitations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/have_you_considered/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    "Have You Considered?"
+    
   </span>
   
 
@@ -1433,8 +1781,10 @@
       <a href="../faq/limit_drive_spinup/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Limiting drive spinup
+    
   </span>
   
 
@@ -1461,8 +1811,10 @@
       <a href="../related_projects/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Related Projects
+    
   </span>
   
 
@@ -1481,8 +1833,10 @@
       <a href="../media_and_publicity/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Media and Publicity
+    
   </span>
   
 
@@ -1501,8 +1855,10 @@
       <a href="../support/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Support
+    
   </span>
   
 
@@ -1521,8 +1877,10 @@
       <a href="../sponsorship_and_donations/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Sponsorship and Donations
+    
   </span>
   
 
@@ -1576,9 +1934,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#linux-unionfs" class="md-nav__link">
+  <a href="#unionfs" class="md-nav__link">
     <span class="md-ellipsis">
-      Linux unionfs
+      unionfs
     </span>
   </a>
   
@@ -1603,9 +1961,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#raid0-jbod-drive-concatenation-striping" class="md-nav__link">
+  <a href="#raid0-jbod-span-drive-concatenation-striping" class="md-nav__link">
     <span class="md-ellipsis">
-      RAID0, JBOD, drive concatenation, striping
+      RAID0, JBOD, SPAN, drive concatenation, striping
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#btrfs-single-data-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      BTRFS Single Data Profile
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#raid5-raid6" class="md-nav__link">
+    <span class="md-ellipsis">
+      RAID5, RAID6
     </span>
   </a>
   
@@ -1630,6 +2006,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#zfs-anyraid" class="md-nav__link">
+    <span class="md-ellipsis">
+      ZFS AnyRAID
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stablebits-drivepool" class="md-nav__link">
     <span class="md-ellipsis">
       StableBit's DrivePool
@@ -1642,6 +2027,15 @@
   <a href="#plan9-binds" class="md-nav__link">
     <span class="md-ellipsis">
       Plan9 binds
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapraid-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      SnapRAID pooling
     </span>
   </a>
   
@@ -1661,8 +2055,9 @@
                 
                   
 
+
   
-    <a href="https://github.com/trapexit/mergerfs/tree/master/mkdocs/docs/project_comparisons.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/trapexit/mergerfs/edit/master/mkdocs/docs/project_comparisons.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1671,7 +2066,7 @@
     
       
     
-    <a href="https://github.com/trapexit/mergerfs/tree/master/mkdocs/docs/project_comparisons.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/trapexit/mergerfs/raw/master/mkdocs/docs/project_comparisons.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
@@ -1680,65 +2075,143 @@
 
 <h1 id="project-comparisons">Project Comparisons</h1>
 <h2 id="mhddfs">mhddfs</h2>
+<ul>
+<li><a href="https://romanrm.net/mhddfs">https://romanrm.net/mhddfs</a></li>
+</ul>
 <p>mhddfs had not been updated in over a decade and has known stability
-and security issues. mergerfs provides a superset of mhddfs' features
-and offers better performance.</p>
+and security issues. mergerfs provides a super set of mhddfs' features
+and offers better performance. In fact, as of 2020, the author of
+mhddfs has <a href="https://romanrm.net/mhddfs#update">moved to using
+mergerfs.</a></p>
 <p>Below is an example of mhddfs and mergerfs setup to work similarly.</p>
 <p><code>mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool</code></p>
 <p><code>mergerfs -o minfreespace=4G,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool</code></p>
 <h2 id="aufs">aufs</h2>
-<p>aufs is abandoned and no longer available in most Linux distros.</p>
-<p>While aufs can offer better peak performance mergerfs provides more
-configurability and is generally easier to use. mergerfs however does
-not offer the overlay / copy-on-write (CoW) features which aufs has.</p>
-<h2 id="linux-unionfs">Linux unionfs</h2>
-<p>FILL IN</p>
+<ul>
+<li><a href="https://aufs.sourceforge.net">https://aufs.sourceforge.net</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Aufs">https://en.wikipedia.org/wiki/Aufs</a></li>
+</ul>
+<p>While aufs still is maintained it failed to be included in the
+mainline kernel and is no longer available in most Linux distros
+making it harder to get installed for the average user.</p>
+<p>While aufs can often offer better peak performance due to being
+primarily kernel based, mergerfs provides more configurability and is
+generally easier to use. mergerfs however does not offer the overlay /
+copy-on-write (CoW) features which aufs has.</p>
+<h2 id="unionfs">unionfs</h2>
+<ul>
+<li><a href="https://unionfs.filesystems.org">https://unionfs.filesystems.org</a></li>
+</ul>
+<p>unionfs for Linux is a "stackable unification file system" which
+functions like many other union filesystems. unionfs has not been
+maintained and was last released for Linux v3.14 back in 2014.</p>
+<p>Documentation is sparse so a comparison of features is not possible
+but given the lack of maintenance and support for modern kernels there
+is little reason to consider it as a solution.</p>
 <h2 id="unionfs-fuse">unionfs-fuse</h2>
-<p>unionfs-fuse is more like aufs than mergerfs in that it offers overlay
-/ copy-on-write (CoW) features. If you're just looking to create a
-union of filesystems and want flexibility in file/directory placement
-then mergerfs offers that whereas unionfs-fuse is more for overlaying
-read/write filesystems over read-only ones. Largely unionfs-fuse has
-been replaced by overlayfs.</p>
+<ul>
+<li><a href="https://github.com/rpodgorny/unionfs-fuse">https://github.com/rpodgorny/unionfs-fuse</a></li>
+</ul>
+<p>unionfs-fuse is more like unionfs, aufs, and overlayfs than mergerfs
+in that it offers overlay / copy-on-write (CoW) features. If you're
+just looking to create a union of filesystems and want flexibility in
+file/directory placement then mergerfs offers that whereas
+unionfs-fuse is more for overlaying read/write filesystems over
+read-only ones.</p>
+<p>Since unionfs-fuse, as the name suggests, is a FUSE based technology
+it can be used without elevated privileges that kernel solutions such
+as unionfs, aufs, and overlayfs require.</p>
 <h2 id="overlayfs">overlayfs</h2>
-<p>overlayfs is similar to aufs and unionfs-fuse in that it also is
-primarily used to layer a read/write filesystem over one or more
-read-only filesystems. It does not have the ability to spread
-files/directories across numerous filesystems. It is the successor to
-unionfs, unionfs-fuse, and aufs and widely used by container platforms
-such as Docker.</p>
-<p>If your usecase is layering a writable filesystem on top of readonly
-filesystems then you should look first to overlayfs.</p>
-<h2 id="raid0-jbod-drive-concatenation-striping">RAID0, JBOD, drive concatenation, striping</h2>
-<p>With simple JBOD / drive concatenation / stripping / RAID0 a single
-drive failure will result in full pool failure. mergerfs performs a
-similar function without the possibility of catastrophic failure and
-the difficulties in recovery. Drives may fail but all other
-filesystems and their data will continue to be accessible.</p>
-<p>The main practical difference with mergerfs is the fact you don't
-actually have contiguous space as large as if you used those other
-technologies. Meaning you can't create a 2TB file on a pool of 2 1TB
-filesystems.</p>
+<ul>
+<li><a href="https://docs.kernel.org/filesystems/overlayfs.html">https://docs.kernel.org/filesystems/overlayfs.html</a></li>
+</ul>
+<p>overlayfs is effectively the successor to unionfs, unionfs-fuse, and
+aufs and is widely used by Linux container platforms such as Docker and
+Podman. It was developed and is maintained by the same developer who
+created FUSE.</p>
+<p>If your use case is layering a writable filesystem on top of read-only
+filesystems then you should look first to overlayfs. Its feature set
+however is very different from mergerfs and solve different problems.</p>
+<h2 id="raid0-jbod-span-drive-concatenation-striping">RAID0, JBOD, SPAN, drive concatenation, striping</h2>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_0">RAID0</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Non-RAID_drive_architectures#JBOD">JBOD</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Non-RAID_drive_architectures#Concatenation_(SPAN,_BIG)">SPAN</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Data_striping">striping</a></li>
+</ul>
+<p>These are block device technologies which in some form aggregate
+devices into what appears to be a singular device on which a
+traditional filesystem can be used. The filesystem has no
+understanding of the underlying block layout and should one of those
+underlying devices fail or be removed the filesystem will be missing
+that chunk which could contain critical information and the whole
+filesystem may become unrecoverable. Even if the data from the
+filesystem is recoverable it will take using specialized tooling to do
+so.</p>
+<p>In contrast, with mergerfs you can format devices as one normally
+would or take existing filesystems and then combine them in a pool to
+aggregate their storage. The failure of any one device will have no
+impact on the other devices. The downside to mergerfs' technique is
+the fact you don't actually have contiguous space as large as if you
+used those other technologies. Meaning you can't create a file greater
+than 1TB on a pool of 2 1TB filesystems.</p>
+<h2 id="btrfs-single-data-profile">BTRFS Single Data Profile</h2>
+<p><a href="https://btrfs.readthedocs.io">BTRFS'</a> <code>single</code> data profile is
+similar to RAID0 but BTRFS can more explicitly place data and metadata
+on multiple devices. However, like RAID0 and similar technologies if a
+single device fails you may lose all data in the pool. BTRFS does have
+some abilities to recover data but this is not guaranteed.</p>
+<h2 id="raid5-raid6">RAID5, RAID6</h2>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_5">RAID5</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_6">RAID6</a></li>
+</ul>
+<p>mergerfs offers no parity or redundancy features so in that regard the
+technologies are not comparable. <a href="https://www.snapraid.it">SnapRAID</a>
+can be used in combination with mergerfs to provide redundancy. Unlike
+traditional RAID5 or RAID6 SnapRAID works with drives of different
+sizes and can have more than 2 parity drives. However, parity
+calculations are not done in real-time.</p>
+<p>See <a href="https://www.snapraid.it/compare">https://www.snapraid.it/compare</a>
+for more details and comparisons.</p>
 <h2 id="unraid">UnRAID</h2>
+<ul>
+<li><a href="https://unraid.net">https://unraid.net</a></li>
+</ul>
 <p>UnRAID is a full OS and offers a (FUSE based?) filesystem which
 provides a union of filesystems like mergerfs but with the addition of
 live parity calculation and storage. Outside parity calculations
-mergerfs offers more features and due to the lack of realtime parity
-calculation can have high peak performance. Some users also prefer an
-open source solution.</p>
-<p>For semi-static data mergerfs + <a href="http://www.snapraid.it">SnapRaid</a>
-provides a similar solution.</p>
+mergerfs offers more features and due to the lack of real-time parity
+calculation can have higher peak performance. Some users also prefer
+an open source solution.</p>
+<p>For semi-static data mergerfs + <a href="http://www.snapraid.it">SnapRAID</a>
+provides a similar, but not real-time, solution.</p>
 <h2 id="zfs">ZFS</h2>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/ZFS">https://en.wikipedia.org/wiki/ZFS</a></li>
+</ul>
 <p>mergerfs is very different from ZFS. mergerfs is intended to provide
 flexible pooling of arbitrary filesystems (local or remote), of
-arbitrary sizes, and arbitrary filesystems. Primarily in <code>write once, read
-many</code> usecases such as bulk media storage. Where data integrity and
-backup is managed in other ways. In those usecases ZFS can introduce a
-number of costs and limitations as described
+arbitrary sizes, and arbitrary filesystems. Particularly in <code>write
+once, read many</code> use cases such as bulk media storage. Where data
+integrity and backup is managed in other ways. In those use cases ZFS
+can introduce a number of costs and limitations as described
 <a href="http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html">here</a>,
 <a href="https://markmcb.com/2020/01/07/five-years-of-btrfs/">here</a>, and
 <a href="https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping">here</a>.</p>
+<h2 id="zfs-anyraid">ZFS AnyRAID</h2>
+<p><a href="https://hexos.com/blog/introducing-zfs-anyraid-sponsored-by-eshtek">ZFS
+AnyRAID</a>
+is a feature being developed for ZFS which is intended to provide more
+flexibility in ZFS pools. Allowing a mix of capacity disks to have
+greater capacity than traditional RAID and would allow for partial
+upgrades while keeping live redundency.</p>
+<p>This ZFS feature, as of mid-2025, is extremely early in its development
+and there are no timelines or estimates for when it may be released.</p>
 <h2 id="stablebits-drivepool">StableBit's DrivePool</h2>
+<ul>
+<li><a href="https://stablebit.com">https://stablebit.com</a></li>
+</ul>
 <p>DrivePool works only on Windows so not as common an alternative as
 other Linux solutions. If you want to use Windows then DrivePool is a
 good option. Functionally the two projects work a bit
@@ -1757,11 +2230,31 @@ combination with mergerfs.</p>
 <p>Additionally, DrivePool is a closed source commercial product vs
 mergerfs a ISC licensed open source project.</p>
 <h2 id="plan9-binds">Plan9 binds</h2>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Plan_9_from_Bell_Labs#Union_directories_and_namespaces">https://en.wikipedia.org/wiki/Plan_9_from_Bell_Labs#Union_directories_and_namespaces</a></li>
+</ul>
 <p>Plan9 has the native ability to bind multiple paths/filesystems
-together which can be compared to a simplified union filesystem. Such
-bind mounts choose files in a "first found" in the order they are
-listed similar to mergerfs' <code>ff</code> policy. File creation is limited
-to... FILL ME IN. REFERENCE DOCS.</p>
+together to create a setup similar to simplified union
+filesystem. Such bind mounts choose files in a "first found" in the
+order they are listed similar to mergerfs' <code>ff</code> policy. Similar, when
+creating a file it will be created on the first directory in the
+union.</p>
+<p>Plan 9 isn't a widely used OS so this comparison is mostly academic.</p>
+<h2 id="snapraid-pooling">SnapRAID pooling</h2>
+<p><a href="https://www.snapraid.it/manual">SnapRAID</a> has a pooling feature which
+creates "a read-only virtual view of all the files in your array using
+symbolic links."</p>
+<p>As mentioned in the description this "view" is just the creation of
+the same directory layout with symlinks to all files. This means that
+reads (and writes) to files are at native speeds but limited in that
+it can not practically be used as a target for writing new files and
+is only updated when <code>snapraid pool</code> is run. Note that some software
+treat symlinks differently than regular files. For instance some
+backup software will skip symlinks by default.</p>
+<p>mergerfs has the feature <a href="../config/symlinkify/">symlinkify</a> which
+provides a similar behavior but is more flexible in that it is not
+read-only. That said there can still be some software that won't like
+that kind of setup.</p>
 
 
 
@@ -1814,13 +2307,13 @@ to... FILL ME IN. REFERENCE DOCS.</p>
         
         
           
-          <a href="../performance/" class="md-footer__link md-footer__link--next" aria-label="Next: Tweaking Performance">
+          <a href="../benchmarking/" class="md-footer__link md-footer__link--next" aria-label="Next: Benchmarking">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Tweaking Performance
+                Benchmarking
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1854,10 +2347,12 @@ to... FILL ME IN. REFERENCE DOCS.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.select", "navigation.footer", "navigation.instant", "navigation.instant.prefetch", "navigation.path", "navigation.top", "navigation.tracking", "optimize", "search.share", "toc.follow"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.select", "navigation.footer", "navigation.instant", "navigation.instant.prefetch", "navigation.path", "navigation.top", "navigation.tracking", "optimize", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
     
   </body>
