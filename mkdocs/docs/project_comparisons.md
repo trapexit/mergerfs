@@ -156,6 +156,19 @@ can introduce a number of costs and limitations as described
 [here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
 
 
+## ZFS AnyRAID
+
+[ZFS
+AnyRAID](https://hexos.com/blog/introducing-zfs-anyraid-sponsored-by-eshtek)
+is a feature being developed for ZFS which is intended to provide more
+flexibility in ZFS pools. Allowing a mix of capacity disks to have
+greater capacity than traditional RAID and would allow for partial
+upgrades while keeping live redundency.
+
+This ZFS feature, as of mid-2025, is extremely early in its development
+and there are no timelines or estimates for when it may be released.
+
+
 ## StableBit's DrivePool
 
 * [https://stablebit.com](https://stablebit.com)

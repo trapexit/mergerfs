@@ -61,6 +61,7 @@ but if you run into problems it may be worth trying Samba/SMB.
 
 * `noforget`
 * `inodecalc=path-hash`
+* `lazy-umount-mountpoint=false`
 
 `noforget` is needed because NFS uses the `name_to_handle_at` and
 `open_by_handle_at` functions which allow a program to keep a
@@ -80,6 +81,12 @@ updated a directory the file mergerfs will use will be on a different
 branch and therefore the inode would change. This isn't an ideal
 solution and others are being considered but it works for most
 situations.
+
+`lazy-umount-mountpoint=false` is needed (or left unset) as lazy
+umount can cause problems with NFS. It won't impact the NFS export at
+first but followup mounts of mergerfs to the same mount point will
+lead to new remote mounts hanging till `exportfs` is run again.
+
 
 **NFS export settings:**
 
@@ -127,6 +134,12 @@ special settings required export mergerfs with Samba. However,
 not been extensively tested. If you use mergerfs with CIFSD or other
 SMB servers please submit your experiences so these docs can be
 updated.
+
+NOTE: Some users have reported that when deleting files from certain
+Android file managers they get errors from the app and Samba but the
+file gets removed. This is due to a bug in Samba which has been fixed
+in more recent releases such as 4.21. If using Debian you can enable
+[backports repo](https://backports.debian.org/Instructions).
 
 
 ## SSHFS
