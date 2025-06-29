@@ -1,9 +1,14 @@
 [
   {
-    "version": "preview",
-    "title": "preview",
+    "version": "preview2",
+    "title": "preview2",
     "aliases": [
       "latest"
     ]
+  },
+  {
+    "version": "preview",
+    "title": "preview",
+    "aliases": []
   }
 ]
