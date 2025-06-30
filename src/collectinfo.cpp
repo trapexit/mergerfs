@@ -27,6 +27,9 @@ _mounts(const char *output_)
       "cat",
       "/proc/mounts"
     };
+
+  subprocess::call(args,
+                   subprocess::output{output_});
 }
 
 int
