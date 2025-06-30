@@ -1,6 +1,7 @@
 #include "collectinfo.hpp"
 
 #include "fs_mounts.hpp"
+#include "fs_unlink.hpp"
 
 #include "subprocess.hpp"
 #include "CLI11.hpp"
