@@ -33,7 +33,7 @@ collectinfo::main(int    argc_,
     std::string output = "/tmp/mergerfs.info.txt";
 
     subprocess::call(args,
-                     subprocess::output{output});
+                     subprocess::output{output.c_str()});
   }
   return 0;
 }
