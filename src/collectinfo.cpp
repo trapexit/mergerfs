@@ -38,17 +38,7 @@ collectinfo::main(int    argc_,
       return app.exit(e);
     }
 
-  {
-    auto args =
-      {
-        "lsblk",
-        "--json",
-        "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
-      };
-    const char *output = "/tmp/mergerfs.info.txt";
+  _lsblk(output);
 
-    subprocess::call(args,
-                     subprocess::output{output});
-  }
   return 0;
 }
