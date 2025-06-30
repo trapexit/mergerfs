@@ -1,5 +1,6 @@
 #include "collectinfo.hpp"
 
+#include "subprocess.hpp"
 #include "CLI11.hpp"
 
 
