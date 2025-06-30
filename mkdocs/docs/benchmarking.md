@@ -61,14 +61,37 @@ author so it may be investigated further.
 ### write benchmark
 
 ```
-$ dd if=/dev/zero of=/mnt/mergerfs/1GB.file bs=1M count=1024 oflag=nocache conv=fdatasync status=progress
+$ dd if=/dev/zero of=/mnt/mergerfs/16GB.file bs=1M count=16384 oflag=nocache conv=fdatasync status=progress
 ```
 
 ### read benchmark
 
 ```
-$ dd if=/mnt/mergerfs/1GB.file of=/dev/null bs=1M count=1024 iflag=nocache conv=fdatasync status=progress
+$ dd if=/mnt/mergerfs/16GB.file of=/dev/null bs=1M iflag=nocache conv=fdatasync status=progress
 ```
+
+
+### fio
+
+`fio` is a popular and flexible benchmarking tool.
+
+Below are some basic tests but also try setting `--direct=0`, changing
+the `ioengine`, or playing with other options.
+
+
+#### write
+
+```
+$ fio --name=writetest --filename=/mnt/mergerfs/16GB.file --size=16Gb --rw=write --bs=1M --direct=1  --numjobs=1 --iodepth=8 --group_reporting --runtime=60 --startdelay=0 --ioengine=psync
+```
+
+
+#### read
+
+```
+$ fio --name=readtest --filename=/mnt/mergerfs/16GB.file --size=16Gb --rw=read --bs=1M --direct=1  --numjobs=1 --iodepth=8 --group_reporting --runtime=60 --startdelay=0 --ioengine=psync
+```
+
 
 ### other benchmarks
 

@@ -9,6 +9,13 @@ pip3 install --no-cache-dir mkdocs mkdocs-material pymdown-extensions mike
 mike serve
 ```
 
+## Deploy
+
+```bash
+mike deploy --push <version_name> --allow-empty
+```
+
+
 ## References
 
 * https://www.mkdocs.org/
