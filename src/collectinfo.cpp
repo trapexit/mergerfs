@@ -34,6 +34,13 @@ _mounts(const char *output_)
                    subprocess::output{output_});
 }
 
+static
+void
+_mergerfs_details(const char *output_)
+{
+
+}
+
 int
 collectinfo::main(int    argc_,
                   char **argv_)
