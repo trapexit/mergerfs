@@ -340,6 +340,8 @@ _pick_app_and_run(int    argc_,
 
   if(appname == "fsck.mergerfs")
     return fsck::main(argc_,argv_);
+  if(appname == "mergerfs.collectinfo")
+    return collectinfo::main(argc_,argv_);
 
   return l::main(argc_,argv_);
 }
