@@ -30,6 +30,6 @@ collectinfo::main(int    argc_,
 
     subprocess::call(args,
                      subprocess::output{"/tmp/mergerfs.info.txt"});
-
+  }
   return 0;
 }
