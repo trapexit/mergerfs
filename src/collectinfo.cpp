@@ -62,6 +62,8 @@ collectinfo::main(int    argc_,
     }
 
   _lsblk(output);
+  _mounts(output);
+  _mergerfs_details(output);
 
   return 0;
 }
