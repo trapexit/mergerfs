@@ -25,8 +25,11 @@ collectinfo::main(int    argc_,
 
   {
     auto args =
-      {"lsblk",
-       "--json"};
+      {
+        "lsblk",
+       "--json",
+       "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
+      };
 
     subprocess::call(args,
                      subprocess::output{"/tmp/mergerfs.info.txt"});
