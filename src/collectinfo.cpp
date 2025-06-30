@@ -7,7 +7,6 @@ static
 void
 _lsblk(const char *output_)
 {
-  const char *output = "/tmp/mergerfs.info.txt";
   auto args =
     {
       "lsblk",
