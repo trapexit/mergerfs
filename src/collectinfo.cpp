@@ -30,7 +30,7 @@ collectinfo::main(int    argc_,
        "--json",
        "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
       };
-    subprocess::output output = "/tmp/mergerfs.info.txt";
+    subprocess::output output{"/tmp/mergerfs.info.txt"};
 
     subprocess::call(args,output);
   }
