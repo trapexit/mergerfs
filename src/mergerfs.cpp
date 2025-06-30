@@ -348,8 +348,8 @@ _pick_app_and_run(int    argc_,
 }
 
 int
-main(int    argc_,
-     char **argv_)
+main(const int    argc_,
+     const char **argv_)
 {
   return ::_pick_app_and_run(argc_,argv_);
 }
