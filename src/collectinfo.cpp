@@ -23,7 +23,7 @@ collectinfo::main(int    argc_,
       return app.exit(e);
     }
 
-  subprocess::call({"ls","-lh"},
+  subprocess::call({"lsblk",""},
                    subprocess::output{"/tmp/mergerfs.info.txt"});
 
   return 0;
