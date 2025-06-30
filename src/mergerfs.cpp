@@ -331,8 +331,8 @@ namespace l
 
 static
 int
-_pick_app_and_run(int    argc_,
-                  char **argv_)
+_pick_app_and_run(const int    argc_,
+                  const char **argv_)
 {
   std::filesystem::path appname;
 
