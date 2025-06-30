@@ -42,6 +42,11 @@ _mergerfs_details(const char *output_)
   fs::MountVec mounts;
 
   fs::mounts(mounts);
+
+  for(const auto &mount : mounts)
+    {
+      mount.dir;
+    }
 }
 
 int
