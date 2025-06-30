@@ -64,6 +64,7 @@ collectinfo::main(int    argc_,
       return app.exit(e);
     }
 
+  fs::unlink(output);
   _lsblk(output);
   _mounts(output);
   _mergerfs_details(output);
