@@ -137,6 +137,7 @@ build/tests: build/mergerfs tests-objects
 
 mergerfs: build/mergerfs
 	ln -fs "mergerfs" "build/fsck.mergerfs"
+	ln -fs "mergerfs" "build/mergerfs.collect-info"
 
 tests: build/tests
 
@@ -184,6 +185,7 @@ install-base: build/mergerfs
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(INSTALL) -v -m 0755 "build/mergerfs" "$(INSTALLBINDIR)/mergerfs"
 	ln -s "mergerfs" "${INSTALLBINDIR}/fsck.mergerfs"
+	ln -s "mergerfs" "${INSTALLBINDIR}/mergerfs.collect-info"
 
 install-mount-tools: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"

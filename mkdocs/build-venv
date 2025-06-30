@@ -1,0 +1,7 @@
+#!/bin/sh
+set -x
+set -e
+
+python3 -m venv venv
+. ./venv/bin/activate
+pip3 install --no-cache-dir mkdocs mkdocs-material pymdown-extensions mike

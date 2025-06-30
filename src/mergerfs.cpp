@@ -15,7 +15,8 @@
 */
 
 #include "mergerfs.hpp"
-#include "fsck_mergerfs.hpp"
+#include "mergerfs_fsck.hpp"
+#include "mergerfs_collect_info.hpp"
 
 #include "fs_path.hpp"
 #include "fs_readahead.hpp"
@@ -272,8 +273,8 @@ namespace l
   }
 
   int
-  main(const int   argc_,
-       char      **argv_)
+  main(int    argc_,
+       char **argv_)
   {
     int rv;
     Config::Read    cfg;
@@ -339,7 +340,9 @@ _pick_app_and_run(int    argc_,
   appname = appname.filename();
 
   if(appname == "fsck.mergerfs")
-    return fsck::main(argc_,argv_);
+    return mergerfs::fsck::main(argc_,argv_);
+  if(appname == "mergerfs.collect-info")
+    return mergerfs::collect_info::main(argc_,argv_);
 
   return l::main(argc_,argv_);
 }
