@@ -38,7 +38,9 @@ static
 void
 _mergerfs_details(const char *output_)
 {
+  fs::MountVec mounts;
 
+  fs::mounts(mounts);
 }
 
 int
