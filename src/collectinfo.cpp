@@ -45,7 +45,7 @@ _mergerfs_details(const char *output_)
 
   for(const auto &mount : mounts)
     {
-      mount.dir;
+      fmt::print("{}\n",mount.dir.string());
     }
 }
 
