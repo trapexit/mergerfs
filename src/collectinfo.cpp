@@ -18,6 +18,17 @@ _lsblk(const char *output_)
                    subprocess::output{output_});
 }
 
+static
+void
+_mounts(const char *output_)
+{
+  auto args =
+    {
+      "cat",
+      "/proc/mounts"
+    };
+}
+
 int
 collectinfo::main(int    argc_,
                   char **argv_)
