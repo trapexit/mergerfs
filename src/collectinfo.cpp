@@ -23,6 +23,7 @@ collectinfo::main(int    argc_,
                   char **argv_)
 {
   CLI::App app;
+  const char *output = "/tmp/mergerfs.info.txt";
 
   app.description("mergerfs.collectinfo:"
                   " Collect info for support requests");
