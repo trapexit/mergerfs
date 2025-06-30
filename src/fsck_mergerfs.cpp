@@ -396,8 +396,8 @@ _fsck(const FS::path &path_,
 }
 
 int
-fsck::main(int    argc_,
-           char **argv_)
+fsck::main(const int    argc_,
+           const char **argv_)
 {
   CLI::App app;
   FS::path path;
