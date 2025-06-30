@@ -23,8 +23,13 @@ collectinfo::main(int    argc_,
       return app.exit(e);
     }
 
-  subprocess::call({"lsblk",""},
-                   subprocess::output{"/tmp/mergerfs.info.txt"});
+  {
+    auto args =
+      {"lsblk",
+       "--json"};
+
+    subprocess::call(args,
+                     subprocess::output{"/tmp/mergerfs.info.txt"});
 
   return 0;
 }
