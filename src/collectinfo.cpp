@@ -3,6 +3,21 @@
 #include "subprocess.hpp"
 #include "CLI11.hpp"
 
+static
+void
+_lsblk(const char *output_)
+{
+  const char *output = "/tmp/mergerfs.info.txt";
+  auto args =
+    {
+      "lsblk",
+      "--json",
+      "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
+    };
+
+  subprocess::call(args,
+                   subprocess::output{output_});
+}
 
 int
 collectinfo::main(int    argc_,
@@ -27,8 +42,8 @@ collectinfo::main(int    argc_,
     auto args =
       {
         "lsblk",
-       "--json",
-       "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
+        "--json",
+        "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
       };
     const char *output = "/tmp/mergerfs.info.txt";
 
