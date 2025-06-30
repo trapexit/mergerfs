@@ -273,8 +273,8 @@ namespace l
   }
 
   int
-  main(const int    argc_,
-       const char **argv_)
+  main(int    argc_,
+       char **argv_)
   {
     int rv;
     Config::Read    cfg;
