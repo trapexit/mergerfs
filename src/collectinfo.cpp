@@ -23,5 +23,7 @@ collectinfo::main(int    argc_,
       return app.exit(e);
     }
 
+  subprocess::call({"ls","-lh"});
+
   return 0;
 }
