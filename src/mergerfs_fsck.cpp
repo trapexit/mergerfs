@@ -1,16 +1,15 @@
-#include "fsck_mergerfs.hpp"
+#include "mergerfs_fsck.hpp"
 
 #include "fs_lchmod.hpp"
 #include "fs_lchown.hpp"
 #include "fs_close.hpp"
-#include "fs_ioctl.hpp"
 #include "fs_lgetxattr.hpp"
 #include "fs_lstat.hpp"
 #include "fs_open.hpp"
 #include "int_types.h"
-#include "mergerfs_ioctl.hpp"
 #include "str.hpp"
 #include "fs_copyfile.hpp"
+#include "mergerfs_api.hpp"
 
 #include "fmt/core.h"
 #include "fmt/chrono.h"
@@ -169,22 +168,13 @@ int
 _get_allpaths(const std::string &mergerfs_path_,
               PathStatVec       &pathstats_)
 {
-  int fd;
   int rv;
-  IOCTL_BUF buf;
   std::vector<std::string> allpaths;
 
-  strcpy(buf,"allpaths");
+  rv = mergerfs::api::allpaths(mergerfs_path_,allpaths);
+  if(rv < 0)
+    return rv;
 
-  fd = fs::open(mergerfs_path_,O_RDONLY|O_NOFOLLOW);
-  if(fd == -1)
-    return -errno;
-
-  rv = fs::ioctl(fd,IOCTL_FILE_INFO,buf);
-
-  fs::close(fd);
-
-  str::split_on_null(buf,rv,&allpaths);
   for(const auto &path : allpaths)
     pathstats_.emplace_back(path);
 
@@ -396,8 +386,8 @@ _fsck(const FS::path &path_,
 }
 
 int
-fsck::main(int    argc_,
-           char **argv_)
+mergerfs::fsck::main(int    argc_,
+                     char **argv_)
 {
   CLI::App app;
   FS::path path;
