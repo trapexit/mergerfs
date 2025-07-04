@@ -1,12 +1,5 @@
 [
   {
-    "version": "master",
-    "title": "master",
-    "aliases": [
-      "latest"
-    ]
-  },
-  {
     "version": "preview",
     "title": "preview",
     "aliases": []
