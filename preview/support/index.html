@@ -1872,31 +1872,32 @@ you are encountering may have been addressed already.</strong></p>
 <p><strong>For commercial support or feature requests please <a href="mailto:support@spawn.link">contact me
 directly.</a></strong></p>
 <h3 id="information-to-include-in-bug-reports">Information to include in bug reports</h3>
-<p>asdf
-* <a href="https://xyproblem.info">Information about the broader problem along with any attempted
-  solutions.</a>
-* Solution already ruled out and why.
-* The details from the output of the <code>mergerfs.collect-info</code> tool:
-   * Version of mergerfs: <code>mergerfs --version</code>
-   * mergerfs settings / arguments: from fstab, systemd unit, command
-    line, OMV plugin, etc.
-   * Version of the OS: <code>uname -a</code> and <code>lsb_release -a</code>
-   * List of branches, their filesystem types, sizes (before and after
-    issue): <code>df -h</code>, <code>lsblk -o NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA</code>
-* <strong>All</strong> information about the relevant paths and files: permissions, ownership, etc.
-* <strong>All</strong> information about the application making the requests: version, uid/gid
-* Runtime environment:
-   * Is mergerfs running within a container?
-   * Are the client apps using mergerfs running in a container?
-* A <code>strace</code> of the app having problems:
-   * <code>strace -fvTtt -s 256 -o /tmp/app.strace.txt &lt;cmd&gt;</code>
-* A <code>strace</code> of mergerfs while the program is trying to do whatever it is failing to do:
-   * <code>strace -fvTtt -s 256 -p &lt;mergerfsPID&gt; -o /tmp/mergerfs.strace.txt</code>
-* <strong>Precise</strong> directions on replicating the issue. Do not leave
-  <strong>anything</strong> out.
-* Try to recreate the problem in the simplest way using standard
+<ul>
+<li><a href="https://xyproblem.info">Information about the broader problem along with any attempted
+  solutions.</a></li>
+<li>Solution already ruled out and why.</li>
+<li>The details from the output of the <code>mergerfs.collect-info</code> tool:</li>
+<li>Version of mergerfs: <code>mergerfs --version</code></li>
+<li>mergerfs settings / arguments: from fstab, systemd unit, command
+    line, OMV plugin, etc.</li>
+<li>Version of the OS: <code>uname -a</code> and <code>lsb_release -a</code></li>
+<li>List of branches, their filesystem types, sizes (before and after
+    issue): <code>df -h</code>, <code>lsblk -o NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA</code></li>
+<li><strong>All</strong> information about the relevant paths and files: permissions, ownership, etc.</li>
+<li><strong>All</strong> information about the application making the requests: version, uid/gid</li>
+<li>Runtime environment:</li>
+<li>Is mergerfs running within a container?</li>
+<li>Are the client apps using mergerfs running in a container?</li>
+<li>A <code>strace</code> of the app having problems:</li>
+<li><code>strace -fvTtt -s 256 -o /tmp/app.strace.txt &lt;cmd&gt;</code></li>
+<li>A <code>strace</code> of mergerfs while the program is trying to do whatever it is failing to do:</li>
+<li><code>strace -fvTtt -s 256 -p &lt;mergerfsPID&gt; -o /tmp/mergerfs.strace.txt</code></li>
+<li><strong>Precise</strong> directions on replicating the issue. Do not leave
+  <strong>anything</strong> out.</li>
+<li>Try to recreate the problem in the simplest way using standard
   programs: <code>ln</code>, <code>mv</code>, <code>cp</code>, <code>ls</code>, <code>dd</code>, etc. With the most
-  simple mergerfs setup possible.</p>
+  simple mergerfs setup possible.</li>
+</ul>
 <h3 id="contact-issue-submission">Contact / Issue submission</h3>
 <ul>
 <li>github.com: <a href="https://github.com/trapexit/mergerfs/issues">https://github.com/trapexit/mergerfs/issues</a></li>
