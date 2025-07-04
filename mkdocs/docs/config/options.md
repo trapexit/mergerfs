@@ -8,7 +8,7 @@ background](../intro_to_filesystems.md) in such things is recommended
 for more advanced configurations.
 
 These option names and values are the same regardless of whether you
-use them with the `mergerfs` commandline program, in fstab, or in a
+use them with the `mergerfs` command line program, in fstab, or in a
 config file.
 
 
@@ -204,6 +204,12 @@ config file.
 * **[passthrough](passthrough.md)**: Enable [FUSE IO
   passthrough](https://kernelnewbies.org/Linux_6.9#Faster_FUSE_I.2FO)
   if available. (default: off)
+* **gid-cache-expire-timeout**: Number of seconds till supplemental
+  group data is refreshed in the [GID
+  cache](../known_issues_bugs.md#supplemental-user-groups). (default:
+  3600)
+* **gid-cache-remove-timeout**: Number of seconds to wait till cached
+  data is removed due to lack of usage. (default: 43200)
 
 **NOTE:** Options are evaluated in the order listed so if the options
 are **func.rmdir=rand,category.action=ff** the **action** category

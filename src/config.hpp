@@ -21,6 +21,7 @@
 #include "config_cachefiles.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
+#include "config_gidcache.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
 #include "config_log_metrics.hpp"
@@ -130,6 +131,8 @@ public:
   ConfigSTR      fsname;
   Funcs          func;
   ConfigPageSize fuse_msg_size;
+  GIDCacheExpireTimeout gid_cache_expire_timeout;
+  GIDCacheRemoveTimeout gid_cache_remove_timeout;
   ConfigBOOL     handle_killpriv = true;
   ConfigBOOL     handle_killpriv_v2 = true;
   ConfigBOOL     ignorepponrename;

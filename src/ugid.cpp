@@ -28,8 +28,6 @@ namespace ugid
   initgroups(const uid_t uid_,
              const gid_t gid_)
   {
-    static thread_local GIDCache cache;
-
-    cache.initgroups(uid_,gid_);
+    GIDCache::initgroups(uid_,gid_);
   }
 }

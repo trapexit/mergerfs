@@ -688,8 +688,7 @@ int fuse_is_lib_option(const char *opt);
  */
 int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op, size_t op_size);
 
-int  fuse_start_maintenance_thread(struct fuse *fuse);
-void fuse_stop_maintenance_thread(struct fuse *fuse);
+void fuse_populate_maintenance_thread(struct fuse *fuse);
 
 int  fuse_log_metrics_get(void);
 void fuse_log_metrics_set(int enabled);

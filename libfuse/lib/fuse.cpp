@@ -27,8 +27,10 @@
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
 
-#include <vector>
+#include "maintenance_thread.hpp"
+
 #include <string>
+#include <vector>
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -141,7 +143,6 @@ struct fuse
   struct fuse_fs *fs;
   struct lock_queue_element *lockq;
 
-  pthread_t maintenance_thread;
   kvec_t(remembered_node_t) remembered_nodes;
 };
 
@@ -4032,49 +4033,26 @@ fuse_gc1()
   fuse_malloc_trim();
 }
 
-static
-void*
-fuse_maintenance_loop(void *fuse_)
-{
-  int loops;
-  int sleep_time;
-  struct fuse *f = (struct fuse*)fuse_;
-
-  pthread_setname_np(pthread_self(),"fuse.maint");
-
-  loops = 0;
-  sleep_time = 60;
-  while(1)
-    {
-      if(remember_nodes(f))
-        fuse_prune_remembered_nodes(f);
-
-      if((loops % 15) == 0)
-        fuse_gc1();
-
-      if(g_LOG_METRICS)
-        metrics_log_nodes_info_to_tmp_dir(f);
-
-      loops++;
-      sleep(sleep_time);
-    }
-
-  return NULL;
-}
-
-int
-fuse_start_maintenance_thread(struct fuse *f_)
-{
-  return fuse_start_thread(&f_->maintenance_thread,fuse_maintenance_loop,f_);
-}
-
 void
-fuse_stop_maintenance_thread(struct fuse *f_)
+fuse_populate_maintenance_thread(struct fuse *f_)
 {
-  mutex_lock(&f_->lock);
-  pthread_cancel(f_->maintenance_thread);
-  mutex_unlock(&f_->lock);
-  pthread_join(f_->maintenance_thread,NULL);
+  MaintenanceThread::push_job([=](int count_)
+  {
+    if(remember_nodes(f_))
+      fuse_prune_remembered_nodes(f_);
+  });
+
+  MaintenanceThread::push_job([](int count_)
+  {
+    if((count_ % 15) == 0)
+      fuse_gc1();
+  });
+
+  MaintenanceThread::push_job([=](int count_)
+  {
+    if(g_LOG_METRICS)
+      metrics_log_nodes_info_to_tmp_dir(f_);
+  });
 }
 
 struct fuse*

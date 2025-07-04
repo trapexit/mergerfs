@@ -29,6 +29,7 @@
 #include "strvec.hpp"
 #include "syslog.hpp"
 #include "version.hpp"
+#include "maintenance_thread.hpp"
 
 #include "fuse_access.hpp"
 #include "fuse_bmap.hpp"
@@ -246,7 +247,7 @@ namespace l
   {
     SysLog::info("Received SIGUSR2 - triggering thorough gc");
     fuse_gc();
-    GIDCache::invalidate_all_caches();
+    GIDCache::clear_all();
   }
 
   static
@@ -310,6 +311,11 @@ namespace l
 
     l::warn_if_not_root();
 
+    MaintenanceThread::push_job([](int count_)
+    {
+      if((count_ % 60) == 0)
+        GIDCache::clear_unused();
+    });
     l::setup_resources(cfg->scheduling_priority);
     l::setup_signal_handlers();
     l::get_fuse_operations(ops,cfg->nullrw);

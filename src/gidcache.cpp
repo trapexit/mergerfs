@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "rnd.hpp"
+#include "gidcache.hpp"
 
 #include <grp.h>
 #include <pwd.h>
@@ -28,94 +28,9 @@
 # include <sys/param.h>
 #endif
 
-#include <cassert>
-#include <cstdlib>
-#include <algorithm>
-#include <unordered_map>
-#include <mutex>
-
-#include "gidcache.hpp"
-
-std::mutex                              g_REGISTERED_CACHES_MUTEX;
-std::unordered_map<pthread_t,GIDCache*> g_REGISTERED_CACHES;
-
-
-inline
-bool
-GIDRecord::operator<(const struct GIDRecord &b) const
-{
-  return uid < b.uid;
-}
-
-GIDCache::GIDCache()
-  : invalidate(false),
-    size(0),
-    recs()
-{
-  std::lock_guard<std::mutex> guard(g_REGISTERED_CACHES_MUTEX);
-
-  bool inserted;
-  pthread_t pthid;
-
-  pthid = pthread_self();
-  inserted = g_REGISTERED_CACHES.emplace(pthid,this).second;
-
-  assert(inserted == true);
-}
-
-inline
-GIDRecord *
-GIDCache::begin(void)
-{
-  return &recs[0];
-}
-
-inline
-GIDRecord *
-GIDCache::end(void)
-{
-  return &recs[size];
-}
-
-inline
-GIDRecord *
-GIDCache::allocrec(void)
-{
-  if(size == MAXRECS)
-    return &recs[RND::rand64(MAXRECS)];
-  else
-    return &recs[size++];
-}
-
-inline
-GIDRecord *
-GIDCache::lower_bound(GIDRecord   *begin,
-                      GIDRecord   *end,
-                      const uid_t  uid)
-{
-  int step;
-  int count;
-  GIDRecord *iter;
-
-  count = std::distance(begin,end);
-  while(count > 0)
-    {
-      iter = begin;
-      step = count / 2;
-      std::advance(iter,step);
-      if(iter->uid < uid)
-        {
-          begin  = ++iter;
-          count -= step + 1;
-        }
-      else
-        {
-          count = step;
-        }
-    }
-
-  return begin;
-}
+int GIDCache::expire_timeout = (60 * 60);
+int GIDCache::remove_timeout = (60 * 60 * 12);
+boost::concurrent_flat_map<uid_t,GIDRecord> GIDCache::_records;
 
 static
 int
@@ -131,85 +46,111 @@ _getgrouplist(const char  *user,
 #endif
 }
 
-GIDRecord *
-GIDCache::cache(const uid_t uid,
-                const gid_t gid)
-{
-  int rv;
-  char buf[4096];
-  struct passwd pwd;
-  struct passwd *pwdrv;
-  GIDRecord *rec;
-
-  rec = allocrec();
-
-  rec->uid = uid;
-  rv = ::getpwuid_r(uid,&pwd,buf,sizeof(buf),&pwdrv);
-  if(pwdrv != NULL && rv == 0)
-    {
-      rec->size = 0;
-      ::_getgrouplist(pwd.pw_name,gid,NULL,&rec->size);
-      rec->size = std::min(MAXGIDS,rec->size);
-      rv = ::_getgrouplist(pwd.pw_name,gid,rec->gids,&rec->size);
-      if(rv == -1)
-        {
-          rec->gids[0] = gid;
-          rec->size    = 1;
-        }
-    }
-
-  return rec;
-}
-
 static
 inline
 int
-setgroups(const GIDRecord *rec)
+_setgroups(const std::vector<gid_t> gids_)
 {
 #if defined __linux__ and UGID_USE_RWLOCK == 0
 # if defined SYS_setgroups32
-  return ::syscall(SYS_setgroups32,rec->size,rec->gids);
+  return ::syscall(SYS_setgroups32,gids_.size(),gids_.data());
 # else
-  return ::syscall(SYS_setgroups,rec->size,rec->gids);
+  return ::syscall(SYS_setgroups,gids_.size(),gids_.data());
 # endif
 #else
-  return ::setgroups(rec->size,rec->gids);
+  return ::setgroups(gids_.size(),gids_.data());
 #endif
 }
 
-int
-GIDCache::initgroups(const uid_t uid,
-                     const gid_t gid)
+static
+void
+_getgroups(const uid_t         uid_,
+           const gid_t         gid_,
+           std::vector<gid_t> &gids_)
 {
   int rv;
-  GIDRecord *rec;
+  int ngroups;
+  char buf[4096];
+  struct passwd pwd;
+  struct passwd *pwdrv;
 
-  if(invalidate)
-    {
-      size       = 0;
-      invalidate = false;
-    }
+  gids_.clear();
+  rv = ::getpwuid_r(uid_,&pwd,buf,sizeof(buf),&pwdrv);
+  if((rv == -1) || (pwdrv == NULL))
+    goto error;
 
-  rec = lower_bound(begin(),end(),uid);
-  if(rec == end() || rec->uid != uid)
-    {
-      rec = cache(uid,gid);
-      rv = ::setgroups(rec);
-      std::sort(begin(),end());
-    }
-  else
-    {
-      rv = ::setgroups(rec);
-    }
+  ngroups = 0;
+  rv = ::_getgrouplist(pwd.pw_name,gid_,NULL,&ngroups);
+  gids_.resize(ngroups);
 
-  return rv;
+  rv = ::_getgrouplist(pwd.pw_name,gid_,gids_.data(),&ngroups);
+  if((size_t)ngroups < gids_.size())
+    gids_.resize(ngroups);
+
+  return;
+
+ error:
+  gids_.clear();
+  gids_.push_back(gid_);
+}
+
+
+int
+GIDCache::initgroups(const uid_t uid_,
+                     const gid_t gid_)
+{
+  auto first_func =
+    [=](auto &x)
+    {
+      x.second.last_update = ::time(NULL);
+      ::_getgroups(uid_,gid_,x.second.gids);
+      ::_setgroups(x.second.gids);
+    };
+  auto exists_func =
+    [=](auto &x)
+    {
+      time_t now;
+
+      now = ::time(NULL);
+      if((now - x.second.last_update) > GIDCache::expire_timeout)
+        {
+          ::_getgroups(uid_,gid_,x.second.gids);
+          x.second.last_update = now;
+        }
+      ::_setgroups(x.second.gids);
+    };
+
+  _records.try_emplace_and_visit(uid_,
+                                 first_func,
+                                 exists_func);
+
+  return 0;
 }
 
 void
-GIDCache::invalidate_all_caches()
+GIDCache::invalidate_all()
 {
-  std::lock_guard<std::mutex> guard(g_REGISTERED_CACHES_MUTEX);
+  _records.visit_all([](auto &x)
+  {
+    x.second.last_update = 0;
+  });
+}
 
-  for(auto &p : g_REGISTERED_CACHES)
-    p.second->invalidate = true;
+void
+GIDCache::clear_all()
+{
+  _records.clear();
+}
+
+void
+GIDCache::clear_unused()
+{
+  time_t now = ::time(NULL);
+  auto erase_func =
+    [=](auto &x)
+    {
+      return ((now - x.second.last_update) > GIDCache::remove_timeout);
+    };
+
+  _records.erase_if(erase_func);
 }
