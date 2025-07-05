@@ -2060,8 +2060,11 @@ config file.</p>
 <li><strong><a href="../passthrough/">passthrough</a></strong>: Enable <a href="https://kernelnewbies.org/Linux_6.9#Faster_FUSE_I.2FO">FUSE IO
   passthrough</a>
   if available. (default: off)</li>
-<li><strong>gid-cache-expire-timeout</strong>: The timeout for the <a href="../../faq/technical_behavior_and_limitations/#how-does-mergerfs-handle-credentials">GID
-  cache</a> (default: 3600)</li>
+<li><strong>gid-cache-expire-timeout</strong>: Number of seconds till supplemental
+  group data is refreshed in the <a href="../../faq/technical_behavior_and_limitations/#how-does-mergerfs-handle-credentials">GID
+  cache</a>. (default: 3600)</li>
+<li><strong>gid-cache-remove-timeout</strong>: Number of seconds to wait till cached
+  data is removed due to lack of usage. (default: 43200)</li>
 </ul>
 <p><strong>NOTE:</strong> Options are evaluated in the order listed so if the options
 are <strong>func.rmdir=rand,category.action=ff</strong> the <strong>action</strong> category
