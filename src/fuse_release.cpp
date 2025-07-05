@@ -46,8 +46,8 @@ _erase_if_lambda(const fuse_context *fc_,
       if(val_.second.ref_count > 0)
         return false;
 
-      // if(val_.second.backing_id > 0)
-      //   FUSE::passthrough_close(fc_,val_.second.backing_id);
+      if(val_.second.backing_id > 0)
+        FUSE::passthrough_close(fc_,val_.second.backing_id);
       fs::close(val_.second.fi->fd);
       delete val_.second.fi;
 
