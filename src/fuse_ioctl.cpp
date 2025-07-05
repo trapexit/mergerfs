@@ -336,7 +336,7 @@ namespace l
         fuse_invalidate_all_nodes();
         return 0;
       case IOCTL_INVALIDATE_GID_CACHE:
-        GIDCache::invalidate_all_caches();
+        GIDCache::invalidate_all();
         break;
       }
 

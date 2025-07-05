@@ -4,25 +4,26 @@
 
 ### Supplemental user groups
 
+#### Supplemental group caching
+
 Due to the overhead of
 [getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs
-utilizes a cache. This cache is opportunistic and per thread. Each
-thread will query the supplemental groups for a user when that
-particular thread needs to change credentials and will keep that data
-for the lifetime of the thread. This means that if a user is added to
-a group it may not be picked up without the restart of
-mergerfs. In the future this may be improved to allow a periodic or
-manual clearing of the cache.
+utilizes a cache. As necessary the supplemental group information will
+be queried and cached. That cached list of groups will be used to set
+the supplement groups as necessary. Due to the high cost of querying
+the group list the default expiry for said data is 1 hour and after 12
+hours of no usage will be removed from the cache all together.
+
+#### Host vs Container identity
 
 While not a bug some users have found when using containers that
 supplemental groups defined inside the container don't work as
 expected. Since mergerfs lives outside the container it is querying
-the host's group database. Effectively containers have their own user
-and group definitions unless setup otherwise just as different systems
-would.
+the host's group database. Containers have their own user and group
+definitions unless setup otherwise just as different systems would.
 
 Users should mount in the host group file into the containers or use a
-standard shared user & groups technology like NIS or LDAP.
+standard shared user and groups technology like NIS or LDAP.
 
 
 ### directory mtime is not being updated

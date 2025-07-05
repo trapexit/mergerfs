@@ -56,7 +56,8 @@ SRC_CPP = \
 	lib/fuse_msgbuf.cpp \
 	lib/pin_threads.cpp \
 	lib/format.cpp \
-	lib/node.cpp
+	lib/node.cpp \
+	lib/maintenance_thread.cpp
 
 OBJS_C   = $(SRC_C:lib/%.c=build/%.o)
 OBJS_CPP = $(SRC_CPP:lib/%.cpp=build/%.o)

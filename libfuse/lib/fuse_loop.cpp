@@ -8,6 +8,7 @@
 #include "scope_guard.hpp"
 #include "thread_pool.hpp"
 #include "syslog.hpp"
+#include "maintenance_thread.hpp"
 
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -317,7 +318,7 @@ fuse_session_loop_mt(struct fuse_session *se_,
                pin_threads_type_);
 
   while(!fuse_session_exited(se_))
-    sem_wait(&finished);  
+    sem_wait(&finished);
 
   sem_destroy(&finished);
 
@@ -325,22 +326,23 @@ fuse_session_loop_mt(struct fuse_session *se_,
 }
 
 int
-fuse_loop_mt(struct fuse *f)
+fuse_loop_mt(struct fuse *f_)
 {
-  if(f == NULL)
+  int res;
+
+  if(f_ == NULL)
     return -1;
 
-  int res = fuse_start_maintenance_thread(f);
-  if(res)
-    return -1;
+  MaintenanceThread::setup();
+  fuse_populate_maintenance_thread(f_);
 
-  res = fuse_session_loop_mt(fuse_get_session(f),
+  res = fuse_session_loop_mt(fuse_get_session(f_),
                              fuse_config_get_read_thread_count(),
                              fuse_config_get_process_thread_count(),
                              fuse_config_get_process_thread_queue_depth(),
                              fuse_config_get_pin_threads());
 
-  fuse_stop_maintenance_thread(f);
+  MaintenanceThread::stop();
 
   return res;
 }

@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include "boost/unordered/concurrent_flat_map.hpp"
+
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <array>
+#include <vector>
 
 #define MAXGIDS 32
 #define MAXRECS 256
@@ -32,42 +35,28 @@
 // told to invalidate the cache on demand. A second instance on the
 // same thread will cause an assert to be triggered.
 
-
 struct GIDRecord
 {
-  uid_t uid;
-  int   size;
-  gid_t gids[MAXGIDS];
-
-  bool
-  operator<(const struct GIDRecord &b) const;
+  std::vector<gid_t> gids;
+  time_t last_update;
 };
 
 struct GIDCache
 {
 public:
-  GIDCache();
-
-public:
-  bool   invalidate;
-  size_t size;
-  std::array<GIDRecord,MAXRECS> recs;
-
-private:
-  GIDRecord *begin(void);
-  GIDRecord *end(void);
-  GIDRecord *allocrec(void);
-  GIDRecord *lower_bound(GIDRecord   *begin,
-                         GIDRecord   *end,
-                         const uid_t  uid);
-  GIDRecord *cache(const uid_t uid,
-                   const gid_t gid);
-
-public:
+  static
   int
   initgroups(const uid_t uid,
              const gid_t gid);
 
+  static void invalidate_all();
+  static void clear_all();
+  static void clear_unused();
+
 public:
-  static void invalidate_all_caches();
+  static int expire_timeout;
+  static int remove_timeout;
+
+private:
+  static boost::concurrent_flat_map<uid_t,GIDRecord> _records;
 };

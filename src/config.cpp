@@ -106,6 +106,8 @@ Config::Config()
     fsname(),
     func(),
     fuse_msg_size("1M"),
+    gid_cache_expire_timeout(60 * 60),
+    gid_cache_remove_timeout(60 * 60 * 12),
     ignorepponrename(false),
     inodecalc("hybrid-hash"),
     lazy_umount_mountpoint(false),
@@ -184,6 +186,8 @@ Config::Config()
   _map["func.unlink"]            = &func.unlink;
   _map["func.utimens"]           = &func.utimens;
   _map["fuse_msg_size"]          = &fuse_msg_size;
+  _map["gid-cache-expire-timeout"] = &gid_cache_expire_timeout;
+  _map["gid-cache-remove-timeout"] = &gid_cache_remove_timeout;
   _map["handle-killpriv"]        = &handle_killpriv;
   _map["handle-killpriv-v2"]     = &handle_killpriv_v2;
   _map["ignorepponrename"]       = &ignorepponrename;
