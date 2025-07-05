@@ -1867,7 +1867,7 @@ related concepts so having a <a href="../../intro_to_filesystems/">basic
 background</a> in such things is recommended
 for more advanced configurations.</p>
 <p>These option names and values are the same regardless of whether you
-use them with the <code>mergerfs</code> commandline program, in fstab, or in a
+use them with the <code>mergerfs</code> command line program, in fstab, or in a
 config file.</p>
 <h2 id="types">types</h2>
 <ul>
@@ -2061,8 +2061,9 @@ config file.</p>
   passthrough</a>
   if available. (default: off)</li>
 <li><strong>gid-cache-expire-timeout</strong>: Number of seconds till supplemental
-  group data is refreshed in the <a href="../../faq/technical_behavior_and_limitations/#how-does-mergerfs-handle-credentials">GID
-  cache</a>. (default: 3600)</li>
+  group data is refreshed in the <a href="../../known_issues_bugs/#supplemental-user-groups">GID
+  cache</a>. (default:
+  3600)</li>
 <li><strong>gid-cache-remove-timeout</strong>: Number of seconds to wait till cached
   data is removed due to lack of usage. (default: 43200)</li>
 </ul>

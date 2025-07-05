@@ -1322,6 +1322,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Supplemental user groups">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supplemental-group-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supplemental group caching
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#host-vs-container-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Host vs Container identity
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1977,6 +2001,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Supplemental user groups">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supplemental-group-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supplemental group caching
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#host-vs-container-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Host vs Container identity
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2166,23 +2214,22 @@
 <h1 id="known-issues-and-bugs">Known Issues and Bugs</h1>
 <h2 id="mergerfs">mergerfs</h2>
 <h3 id="supplemental-user-groups">Supplemental user groups</h3>
+<h4 id="supplemental-group-caching">Supplemental group caching</h4>
 <p>Due to the overhead of
 <a href="http://linux.die.net/man/2/setgroups">getgroups/setgroups</a> mergerfs
-utilizes a cache. This cache is opportunistic and per thread. Each
-thread will query the supplemental groups for a user when that
-particular thread needs to change credentials and will keep that data
-for the lifetime of the thread. This means that if a user is added to
-a group it may not be picked up without the restart of
-mergerfs. In the future this may be improved to allow a periodic or
-manual clearing of the cache.</p>
+utilizes a cache. As necessary the supplemental group information will
+be queried and cached. That cached list of groups will be used to set
+the supplement groups as necessary. Due to the high cost of querying
+the group list the default expiry for said data is 1 hour and after 12
+hours of no usage will be removed from the cache all together.</p>
+<h4 id="host-vs-container-identity">Host vs Container identity</h4>
 <p>While not a bug some users have found when using containers that
 supplemental groups defined inside the container don't work as
 expected. Since mergerfs lives outside the container it is querying
-the host's group database. Effectively containers have their own user
-and group definitions unless setup otherwise just as different systems
-would.</p>
+the host's group database. Containers have their own user and group
+definitions unless setup otherwise just as different systems would.</p>
 <p>Users should mount in the host group file into the containers or use a
-standard shared user &amp; groups technology like NIS or LDAP.</p>
+standard shared user and groups technology like NIS or LDAP.</p>
 <h3 id="directory-mtime-is-not-being-updated">directory mtime is not being updated</h3>
 <p>Remember that the default policy for <code>getattr</code> is <code>ff</code>. The
 information for the first directory found will be returned. If it
