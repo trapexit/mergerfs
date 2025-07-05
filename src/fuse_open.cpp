@@ -334,6 +334,8 @@ _open_for_insert_lambda(const fuse_context *fc_,
   ffi_->passthrough = true;
   ffi_->keep_cache  = false;
 
+  fmt::print("open backing_id: {}\n",ffi_->backing_id);
+
   return 0;
 }
 
