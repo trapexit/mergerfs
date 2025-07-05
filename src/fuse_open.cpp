@@ -284,6 +284,8 @@ _open_for_insert_lambda(const fuse_context *fc_,
                         fuse_file_info_t   *ffi_,
                         State::OpenFile    *of_)
 {
+  fmt::print("open insert {}\n",fc_->nodeid);
+
   int rv;
   FileInfo *fi;
   Config::Read cfg;
@@ -342,6 +344,8 @@ _open_for_update_lambda(const fuse_context *fc_,
                         fuse_file_info_t   *ffi_,
                         State::OpenFile    *of_)
 {
+  fmt::print("open update {}\n",fc_->nodeid);
+
   int rv;
   Config::Read cfg;
   const ugid::Set ugid(fc_->uid,fc_->gid);
