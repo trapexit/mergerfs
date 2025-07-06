@@ -284,8 +284,6 @@ _open_for_insert_lambda(const fuse_context *fc_,
                         fuse_file_info_t   *ffi_,
                         State::OpenFile    *of_)
 {
-  fmt::print("open insert {}\n",fc_->nodeid);
-
   int rv;
   FileInfo *fi;
   Config::Read cfg;
