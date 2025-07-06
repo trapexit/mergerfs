@@ -2373,7 +2373,7 @@ fuse_lib_open(fuse_req_t             req,
       err = f->fs->op.open(path,&ffi);
       if(!err)
         {
-          if(ffi.auto_cache)
+          if(ffi.auto_cache && (ffi.passthrough == false))
             open_auto_cache(f,hdr_->nodeid,path,&ffi);
         }
     }

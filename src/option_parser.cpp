@@ -262,8 +262,8 @@ _postprocess_passthrough(Config::Write &cfg_)
   if(cfg_->cache_files == CacheFiles::ENUM::OFF)
     {
       SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
-                      " Setting 'cache.files=auto-full'");
-      cfg_->cache_files = CacheFiles::ENUM::AUTO_FULL;
+                      " Setting 'cache.files=full'");
+      cfg_->cache_files = CacheFiles::ENUM::FULL;
     }
 
   if(cfg_->writeback_cache == true)
