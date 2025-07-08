@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+import mmap
+import resource
+
+(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
+
+os.ftruncate(fd,resource.getpagesize())
+
+data = mmap.mmap(fileno=fd,
+                 length=resource.getpagesize(),
+                 flags=mmap.MAP_PRIVATE)
+
+data = mmap.mmap(fileno=fd,
+                 length=resource.getpagesize(),
+                 flags=mmap.MAP_SHARED)
+
+os.unlink(filepath)
+os.close(fd)
