@@ -12,9 +12,12 @@ fs::open_fd(const int fd_,
             const int flags_)
 {
   assert(procfs::PROC_SELF_FD_FD > 0);
+
+  const int flags = (flags_ & ~O_NOFOLLOW);
+
   return fs::openat(procfs::PROC_SELF_FD_FD,
                     fmt::format("{}",fd_),
-                    flags_);
+                    flags);
 }
 #elif defined(__FreeBSD__)
 #include "fs_openat.hpp"
@@ -23,13 +26,10 @@ int
 fs::open_fd(const int fd_,
             const int flags_)
 {
-  return fs::openat(fd_,"",flags_|O_EMPTY_PATH);
+  const int flags = ((flags_ | O_EMPTY_PATH) & ~O_NOFOLLOW);
+
+  return fs::openat(fd_,"",flags);
 }
 #else
-int
-fs::open_fd(const int fd_,
-            const int flags_)
-{
-  return -ENOSUP;
-}
+#error "fs::open_fd() not supported on platform"
 #endif
