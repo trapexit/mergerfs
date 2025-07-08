@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import sqlite3
+
+filepath = sys.argv[1] + "test.db"
+
+conn = sqlite3.connect(filepath, isolation_level=None)
+conn.execute('PRAGMA journal_mode=WAL')
+conn.execute('PRAGMA mmap_size=268435456')
+cursor = conn.cursor()
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        age INTEGER
+    )
+''')
+
+cursor.execute("INSERT INTO users (name, age) VALUES (?, ?)", ("Alice", 25))
+cursor.execute("INSERT INTO users (name, age) VALUES (?, ?)", ("Bob", 30))
+
+conn.commit()
+
+cursor.execute("SELECT * FROM users")
+results = cursor.fetchall()
+
+for row in results:
+    print(f"ID: {row[0]}, Name: {row[1]}, Age: {row[2]}")
+
+conn.close()
