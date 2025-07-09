@@ -195,6 +195,9 @@ public:
   int from_stream(std::istream &istrm, ErrVec *errs);
   int from_file(const std::string &filepath, ErrVec *errs);
 
+public:
+  static bool is_controlfile(const char *);
+
 private:
   Str2TFStrMap _map;
 
