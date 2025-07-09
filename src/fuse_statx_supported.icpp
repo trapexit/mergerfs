@@ -167,7 +167,7 @@ FUSE::statx(const char        *fusepath_,
             struct fuse_statx *st_,
             fuse_timeouts_t   *timeout_)
 {
-  if(fusepath_ == CONTROLFILE)
+  if(Config::is_controlfile(fusepath_))
     return ::_statx_controlfile(st_);
 
   return ::_statx(fusepath_,flags_|AT_STATX_DONT_SYNC,mask_,st_,timeout_);
