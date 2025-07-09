@@ -86,7 +86,7 @@ namespace FUSE
   {
     Config::Read cfg;
 
-    if(fusepath_ == CONTROLFILE)
+    if(Config::is_controlfile(fusepath_))
       return l::listxattr_controlfile(cfg,list_,size_);
 
     switch(cfg->xattr)
