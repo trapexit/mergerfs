@@ -101,7 +101,7 @@ namespace FUSE
   {
     Config::Read cfg;
 
-    if(fusepath_ == CONTROLFILE)
+    if(Config::is_ctrl_xattr(fusepath_,attrname_))
       return -ENOATTR;
 
     if(cfg->xattr.to_int())
