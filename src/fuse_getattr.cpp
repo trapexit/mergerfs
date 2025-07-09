@@ -183,7 +183,7 @@ namespace FUSE
           struct stat     *st_,
           fuse_timeouts_t *timeout_)
   {
-    if(strcmp(fusepath_,"/.mergerfs") == 0)
+    if(Config::is_controlfile(fusepath_))
       return l::getattr_controlfile(st_);
 
     return l::getattr(fusepath_,st_,timeout_);
