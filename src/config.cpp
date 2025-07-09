@@ -393,8 +393,7 @@ Config::finish_initializing()
 bool
 Config::is_controlfile(const char *fusepath_)
 {
-  return ((strcmp("/",fusepath_) == 0) ||
-          (strcmp("/.mergerfs",fusepath_) == 0));
+  return ((strcmp("/",fusepath_) == 0) || (strcmp("/.mergerfs",fusepath_) == 0));
 }
 
 std::ostream&
