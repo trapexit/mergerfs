@@ -23,6 +23,7 @@
 #include "fs_stat.hpp"
 #include "fuse_fgetattr.hpp"
 #include "state.hpp"
+#include "str.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
 
@@ -69,6 +70,27 @@ namespace l
       *st_ = st;
 
     return;
+  }
+
+  static
+  int
+  getattr_fake_root(struct stat *st_)
+  {
+    st_->st_dev     = 0;
+    st_->st_ino     = 0;
+    st_->st_mode    = (S_IFDIR|S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+    st_->st_nlink   = 2;
+    st_->st_uid     = 0;
+    st_->st_gid     = 0;
+    st_->st_rdev    = 0;
+    st_->st_size    = 0;
+    st_->st_blksize = 512;
+    st_->st_blocks  = 0;
+    st_->st_atime   = 0;
+    st_->st_mtime   = 0;
+    st_->st_ctime   = 0;
+
+    return 0;
   }
 
   static
@@ -166,6 +188,8 @@ namespace l
                     cfg->symlinkify,
                     cfg->symlinkify_timeout,
                     cfg->follow_symlinks);
+    if((rv < 0) && Config::is_rootdir(fusepath_))
+      return l::getattr_fake_root(st_);
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :
@@ -183,7 +207,7 @@ namespace FUSE
           struct stat     *st_,
           fuse_timeouts_t *timeout_)
   {
-    if(fusepath_ == CONTROLFILE)
+    if(Config::is_controlfile(fusepath_))
       return l::getattr_controlfile(st_);
 
     return l::getattr(fusepath_,st_,timeout_);

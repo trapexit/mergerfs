@@ -39,14 +39,12 @@
 
 #define IFERT(S) if(S == s_) return true
 
-const std::string CONTROLFILE = "/.mergerfs";
 constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
   "rtorrent|"
   "qbittorrent-nox";
 
 
 Config Config::_singleton;
-
 
 namespace l
 {
@@ -277,6 +275,45 @@ Config::keys_xattr(std::string &s_) const
     }
 }
 
+ssize_t
+Config::keys_listxattr_size() const
+{
+  ssize_t rv;
+
+  rv = 0;
+  for(const auto &[key,val] : _map)
+    {
+      rv += sizeof("user.mergerfs.");
+      rv += key.size();
+    }
+
+  return rv;
+}
+
+ssize_t
+Config::keys_listxattr(char   *list_,
+                       size_t  size_) const
+{
+  char    *list = list_;
+  ssize_t  size = size_;
+
+  if(size_ == 0)
+    return keys_listxattr_size();
+
+  for(const auto &[key,val] : _map)
+    {
+      auto rv = fmt::format_to_n(list,size,
+                                 "user.mergerfs.{}\0",
+                                 key);
+      if(rv.out >= (list + size))
+        return -ERANGE;
+      list += rv.size;
+      size -= rv.size;
+    }
+
+  return (list - list_);
+}
+
 int
 Config::get(const std::string &key_,
             std::string       *val_) const
@@ -388,6 +425,43 @@ void
 Config::finish_initializing()
 {
   _initialized = true;
+}
+
+bool
+Config::is_rootdir(const char *fusepath_)
+{
+  return (strcmp("/",fusepath_) == 0);
+}
+
+bool
+Config::is_controlfile(const char *fusepath_)
+{
+  return (strcmp("/.mergerfs",fusepath_) == 0);
+}
+
+bool
+Config::is_ctrl_xattr(const char *attrname_)
+{
+  return str::startswith(attrname_,"user.mergerfs.");
+}
+
+bool
+Config::is_ctrl_xattr(const char *fusepath_,
+                      const char *attrname_)
+{
+  return ((Config::is_rootdir(fusepath_) ||
+           Config::is_controlfile(fusepath_)) &&
+          Config::is_ctrl_xattr(attrname_));
+}
+
+std::string
+Config::prune_ctrl_xattr(const std::string &s_)
+{
+  const size_t offset = (sizeof("user.mergerfs.") - 1);
+
+  if(offset < s_.size())
+    return s_.substr(offset);
+  return {};
 }
 
 std::ostream&

@@ -34,9 +34,6 @@
 
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
-using std::string;
-using std::vector;
-
 
 namespace l
 {
@@ -49,18 +46,18 @@ namespace l
 
   static
   int
-  setxattr_controlfile(const string &attrname_,
-                       const string &attrval_,
+  setxattr_controlfile(const std::string &attrname_,
+                       const std::string &attrval_,
                        const int     flags_)
   {
     int rv;
-    string key;
+    std::string key;
     Config::Write cfg;
 
-    if(!str::startswith(attrname_,"user.mergerfs."))
+    if(!Config::is_ctrl_xattr(attrname_.c_str()))
       return -ENOATTR;
 
-    key = &attrname_[14];
+    key = Config::prune_ctrl_xattr(attrname_);
 
     if(cfg->has_key(key) == false)
       return -ENOATTR;
@@ -79,15 +76,15 @@ namespace l
 
   static
   void
-  setxattr_loop_core(const string &basepath_,
-                     const char   *fusepath_,
-                     const char   *attrname_,
-                     const char   *attrval_,
-                     const size_t  attrvalsize_,
-                     const int     flags_,
-                     PolicyRV     *prv_)
+  setxattr_loop_core(const std::string &basepath_,
+                     const char        *fusepath_,
+                     const char        *attrname_,
+                     const char        *attrval_,
+                     const size_t       attrvalsize_,
+                     const int          flags_,
+                     PolicyRV          *prv_)
   {
-    string fullpath;
+    std::string fullpath;
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
@@ -190,9 +187,9 @@ namespace FUSE
            size_t      attrvalsize_,
            int         flags_)
   {
-    if(fusepath_ == CONTROLFILE)
+    if(Config::is_ctrl_xattr(fusepath_,attrname_))
       return l::setxattr_controlfile(attrname_,
-                                     string(attrval_,attrvalsize_),
+                                     std::string(attrval_,attrvalsize_),
                                      flags_);
 
     return l::setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);

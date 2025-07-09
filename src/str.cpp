@@ -14,6 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "str.hpp"
+
+#include <cstring>
 #include <set>
 #include <sstream>
 #include <string>
@@ -271,4 +274,27 @@ namespace str
 
     return rv;
   }
+}
+
+bool
+str::eq(const char *s0_,
+        const char *s1_)
+{
+  return (strcmp(s0_,s1_) == 0);
+}
+
+bool
+str::startswith(const char *s_,
+                const char *p_)
+{
+  while(*p_)
+    {
+      if(*p_ != *s_)
+        return false;
+
+      p_++;
+      s_++;
+    }
+
+  return true;
 }

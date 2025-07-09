@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstddef>
 
 namespace FUSE
 {
