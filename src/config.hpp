@@ -197,7 +197,8 @@ public:
 
 public:
   static bool is_controlfile(const char *);
-  static bool is_xattr(const char *);
+  static bool is_ctrl_xattr(const char *);
+  static bool is_ctrl_xattr(const char *, const char *);
 
 private:
   Str2TFStrMap _map;
