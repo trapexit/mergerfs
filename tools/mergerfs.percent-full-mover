@@ -10,10 +10,10 @@ BASEPOOL="${2}"
 PERCENTAGE=${3}
 
 set -o errexit
-while [ $(df "${CACHE}" | tail -n1 | awk '{print $5}' | cut -d'%' -f1) -gt ${PERCENTAGE} ]
+while [ $(df "${CACHEFS}" | tail -n1 | awk '{print $5}' | cut -d'%' -f1) -gt ${PERCENTAGE} ]
 do
     # Find the file with the oldest access time
-    FILE=$(find "${CACHE}" -type f -printf '%A@ %P\n' | \
+    FILE=$(find "${CACHEFS}" -type f -printf '%A@ %P\n' | \
                sort | \
                head -n 1 | \
                cut -d' ' -f2-)
@@ -32,6 +32,6 @@ do
         --remove-source-files \
         --relative \
         --log-file=/tmp/mergerfs-cache-rsync.log \
-        "${CACHE}/./${FILE}" \
+        "${CACHEFS}/./${FILE}" \
         "${BACKING}/"
 done
