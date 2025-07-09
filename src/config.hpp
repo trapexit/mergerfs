@@ -196,6 +196,7 @@ public:
   int from_file(const std::string &filepath, ErrVec *errs);
 
 public:
+  static bool is_rootdir(const char *);
   static bool is_controlfile(const char *);
   static bool is_ctrl_xattr(const char *);
   static bool is_ctrl_xattr(const char *, const char *);
