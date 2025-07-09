@@ -46,7 +46,6 @@ constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
 
 Config Config::_singleton;
 
-
 namespace l
 {
   static
