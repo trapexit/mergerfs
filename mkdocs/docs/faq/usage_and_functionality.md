@@ -26,7 +26,7 @@ Yes. See previous question's answer.
 
 This is true for planned removal by unmounting mergerfs and changing
 the config, changes made to mergerfs at
-[runtime](../runtime_interfaces.md), umounting of the branch's
+[runtime](../runtime_interface.md), umounting of the branch's
 filesystem on the fly (whether on purpose or due to error), etc.
 
 

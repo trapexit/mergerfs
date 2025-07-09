@@ -31,7 +31,7 @@ namespace fs
 #ifdef FICLONE
     return fs::ioctl(dst_fd_,FICLONE,src_fd_);
 #else
-    return (errno=EOPNOTSUPP,-1);
+    return -EOPNOTSUPP;
 #endif
   }
 }

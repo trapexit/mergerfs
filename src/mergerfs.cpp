@@ -237,17 +237,17 @@ namespace l
   void
   usr1_signal_handler(int signal_)
   {
-    SysLog::info("Received SIGUSR1 - invalidating all nodes");
-    fuse_invalidate_all_nodes();
+    // SysLog::info("Received SIGUSR1 - invalidating all nodes");
+    // fuse_invalidate_all_nodes();
   }
 
   static
   void
   usr2_signal_handler(int signal_)
   {
-    SysLog::info("Received SIGUSR2 - triggering thorough gc");
-    fuse_gc();
-    GIDCache::clear_all();
+    // SysLog::info("Received SIGUSR2 - triggering thorough gc");
+    // fuse_gc();
+    // GIDCache::clear_all();
   }
 
   static
@@ -284,8 +284,6 @@ namespace l
     fuse_operations ops;
 
     SysLog::open();
-    SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
-    SysLog::info("Go to https://trapexit.github.io/mergerfs/support for support");
 
     memset(&ops,0,sizeof(fuse_operations));
 
@@ -309,6 +307,8 @@ namespace l
           return 1;
       }
 
+    SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
+    SysLog::info("Go to https://trapexit.github.io/mergerfs/support for support");
     l::warn_if_not_root();
 
     MaintenanceThread::push_job([](int count_)

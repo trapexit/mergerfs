@@ -16,6 +16,8 @@
 
 #include "gidcache.hpp"
 
+#include "syslog.hpp"
+
 #include <grp.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -130,27 +132,47 @@ GIDCache::initgroups(const uid_t uid_,
 void
 GIDCache::invalidate_all()
 {
+  size_t size;
+
+  size = _records.size();
   _records.visit_all([](auto &x)
   {
     x.second.last_update = 0;
   });
+
+  SysLog::info("gid cache invalidated, {} entries",size);
 }
 
 void
 GIDCache::clear_all()
 {
+  size_t size;
+
+  size = _records.size();
   _records.clear();
+
+  SysLog::info("gid cache cleared, {} entries",size);
 }
 
 void
 GIDCache::clear_unused()
 {
+  int erased = 0;
   time_t now = ::time(NULL);
   auto erase_func =
-    [=](auto &x)
+    [now,&erased](auto &x)
     {
-      return ((now - x.second.last_update) > GIDCache::remove_timeout);
+      bool should_erase;
+      time_t time_delta;
+
+      time_delta = (now - x.second.last_update);
+      should_erase = (time_delta > GIDCache::remove_timeout);
+      erased += should_erase;
+
+      return should_erase;
     };
 
   _records.erase_if(erase_func);
+
+  SysLog::info("cleared {} unused gid cache entries",erased);
 }

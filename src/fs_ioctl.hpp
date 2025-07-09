@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "errno.hpp"
+
 #include <sys/ioctl.h>
 
 
@@ -29,7 +31,11 @@ namespace fs
   ioctl(const int           fd_,
         const unsigned long request_)
   {
-    return ::ioctl(fd_,request_);
+    int rv;
+
+    rv = ::ioctl(fd_,request_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static
@@ -39,7 +45,11 @@ namespace fs
         const unsigned long  request_,
         void                *data_)
   {
-    return ::ioctl(fd_,request_,data_);
+    int rv;
+
+    rv = ::ioctl(fd_,request_,data_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 
   static
@@ -49,6 +59,10 @@ namespace fs
         const unsigned long request_,
         const int           int_)
   {
-    return ::ioctl(fd_,request_,int_);
+    int rv;
+
+    rv = ::ioctl(fd_,request_,int_);
+
+    return ((rv == -1) ? -errno : rv);
   }
 }

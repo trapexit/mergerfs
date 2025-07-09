@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include <cstddef>
+
 
 namespace FUSE
 {
   int
   getxattr(const char *fusepath,
            const char *attrname,
-           char       *buf,
-           size_t      count);
+           char       *attrvalue,
+           size_t      attrvalue_size);
 }

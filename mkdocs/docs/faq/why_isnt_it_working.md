@@ -7,9 +7,9 @@ mount time. You can not simply modify the [source of the
 configuration](../quickstart.md#usage) and have those settings applied
 any more than you would for other filesystems. It is the user's
 responsibility to [restart](../setup/upgrade.md) mergerfs to pick up
-the changes or use the [runtime interface](../runtime_interfaces.md).
+the changes or use the [runtime interface](../runtime_interface.md).
 
-NOTE: the [runtime interface](../runtime_interfaces.md) is **just**
+NOTE: the [runtime interface](../runtime_interface.md) is **just**
 for runtime changes. It does **NOT** save those changed values
 anywhere.
 
@@ -64,7 +64,7 @@ theoretical space available. Not the practical usable space.
 It probably is. The policies rather straight forward and well tested.
 
 First, confirm the policy is configured as expected by using the
-[runtime interface](../runtime_interfaces.md).
+[runtime interface](../runtime_interface.md).
 
 ```shell
 $ sudo getfattr -n user.mergerfs.category.create /mnt/mergerfs/.mergerfs
@@ -246,4 +246,4 @@ possible options rather than being given to the kernel where those
 options in the `mount` command and /proc/mounts come from.
 
 If you want to see the options of a running instance of mergerfs you
-can use the [runtime interface](../runtime_interfaces.md).
+can use the [runtime interface](../runtime_interface.md).

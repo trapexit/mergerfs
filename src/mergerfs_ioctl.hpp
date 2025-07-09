@@ -1,5 +1,7 @@
 #pragma once
 
+#include "int_types.h"
+
 #include <sys/ioctl.h>
 
 #ifndef _IOC_TYPE
@@ -10,11 +12,16 @@
 #define _IOC_SIZEBITS 14
 #endif
 
-#define IOCTL_BUF_SIZE ((1 << _IOC_SIZEBITS) - 1)
-typedef char IOCTL_BUF[IOCTL_BUF_SIZE];
-#define IOCTL_APP_TYPE             0xDF
-#define IOCTL_FILE_INFO            _IOWR(IOCTL_APP_TYPE,0,IOCTL_BUF)
-#define IOCTL_GC                   _IO(IOCTL_APP_TYPE,1)
-#define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
-#define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
-#define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
+#define MERGERFS_IOCTL_BUF_SIZE ((1 << _IOC_SIZEBITS) - 1)
+
+#pragma pack(push,1)
+struct mergerfs_ioctl_t
+{
+  u32 size;
+  char buf[MERGERFS_IOCTL_BUF_SIZE - sizeof(u32)];
+};
+#pragma pack(pop)
+
+#define MERGERFS_IOCTL_APP_TYPE 0xDF
+#define MERGERFS_IOCTL_GET      _IOWR(MERGERFS_IOCTL_APP_TYPE,0,mergerfs_ioctl_t)
+#define MERGERFS_IOCTL_SET      _IOWR(MERGERFS_IOCTL_APP_TYPE,1,mergerfs_ioctl_t)

@@ -1,3 +1,22 @@
+/*
+  ISC License
+
+  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+
 #include "fuse_statx.hpp"
 
 #include "config.hpp"
@@ -6,6 +25,7 @@
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "fs_statx.hpp"
+#include "str.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
 
@@ -50,6 +70,24 @@ _set_stat_if_leads_to_reg(const std::string &path_,
     *st_ = st;
 
   return;
+}
+
+static
+int
+_statx_fake_root(struct fuse_statx *st_)
+{
+  st_->ino     = 0;
+  st_->mode    = (S_IFDIR|S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+  st_->nlink   = 2;
+  st_->uid     = 0;
+  st_->gid     = 0;
+  st_->size    = 0;
+  st_->blocks  = 0;
+  st_->atime.tv_sec = 0;
+  st_->mtime.tv_sec = 0;
+  st_->ctime.tv_sec = 0;
+
+  return 0;
 }
 
 static
@@ -151,6 +189,8 @@ _statx(const char        *fusepath_,
                 cfg->symlinkify,
                 cfg->symlinkify_timeout,
                 cfg->follow_symlinks);
+  if((rv < 0) && Config::is_rootdir(fusepath_))
+    return ::_statx_fake_root(st_);
 
   timeout_->entry = ((rv >= 0) ?
                      cfg->cache_entry :
@@ -167,7 +207,7 @@ FUSE::statx(const char        *fusepath_,
             struct fuse_statx *st_,
             fuse_timeouts_t   *timeout_)
 {
-  if(fusepath_ == CONTROLFILE)
+  if(Config::is_ctrl_file(fusepath_))
     return ::_statx_controlfile(st_);
 
   return ::_statx(fusepath_,flags_|AT_STATX_DONT_SYNC,mask_,st_,timeout_);

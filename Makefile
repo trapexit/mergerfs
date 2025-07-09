@@ -293,5 +293,12 @@ release-static:
 		--cleanup \
 		--branch=$(shell git branch --show-current)
 
+tags:
+	rm -fv TAGS
+	find . -name "*.c" -print | etags --append -
+	find . -name "*.h" -print | etags --append -
+	find . -name "*.cpp" -print | etags --append -
+	find . -name "*.hpp" -print | etags --append -
+
 
 -include $(DEPS)

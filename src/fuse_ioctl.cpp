@@ -14,6 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_ioctl.hpp"
+
+#include "fuse_getxattr.hpp"
+#include "fuse_setxattr.hpp"
+
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "endian.hpp"
@@ -73,295 +78,123 @@
   https://lwn.net/Articles/575846/
 */
 
-namespace l
+static
+int
+_ioctl(const int       fd_,
+       const uint32_t  cmd_,
+       void           *data_,
+       uint32_t       *out_bufsz_)
 {
-  static
-  int
-  ioctl(const int       fd_,
-        const uint32_t  cmd_,
-        void           *data_,
-        uint32_t       *out_bufsz_)
-  {
-    int rv;
+  int rv;
 
-    switch(cmd_)
-      {
-      case FS_IOC_GETFLAGS:
-      case FS_IOC_SETFLAGS:
-      case FS_IOC_GETVERSION:
-      case FS_IOC_SETVERSION:
-        if(endian::is_big() && (sizeof(long) != sizeof(int)))
-          return -ENOTTY;
-        if((data_ != NULL) && (*out_bufsz_ > 4))
-          *out_bufsz_ = 4;
-        break;
-      }
+  switch(cmd_)
+    {
+    case FS_IOC_GETFLAGS:
+    case FS_IOC_SETFLAGS:
+    case FS_IOC_GETVERSION:
+    case FS_IOC_SETVERSION:
+      if(endian::is_big() && (sizeof(long) != sizeof(int)))
+        return -ENOTTY;
+      if((data_ != NULL) && (*out_bufsz_ > 4))
+        *out_bufsz_ = 4;
+      break;
+    }
 
-    rv = fs::ioctl(fd_,cmd_,data_);
+  rv = fs::ioctl(fd_,cmd_,data_);
 
-    return ((rv == -1) ? -errno : rv);
-  }
+  return rv;
+}
 
-  static
-  int
-  ioctl_file(const fuse_file_info_t *ffi_,
-             const uint32_t          cmd_,
-             void                   *data_,
-             uint32_t               *out_bufsz_)
-  {
-    FileInfo           *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+static
+int
+_ioctl_file(const fuse_file_info_t *ffi_,
+            const uint32_t          cmd_,
+            void                   *data_,
+            uint32_t               *out_bufsz_)
+{
+  FileInfo           *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::ioctl(fi->fd,cmd_,data_,out_bufsz_);
-  }
+  return ::_ioctl(fi->fd,cmd_,data_,out_bufsz_);
+}
 
 #ifndef O_NOATIME
 #define O_NOATIME 0
 #endif
 
-  static
-  int
-  ioctl_dir_base(const Policy::Search &searchFunc_,
-                 const Branches       &branches_,
-                 const char           *fusepath_,
-                 const uint32_t        cmd_,
-                 void                 *data_,
-                 uint32_t             *out_bufsz_)
-  {
-    int fd;
-    int rv;
-    std::string fullpath;
-    std::vector<Branch*> branches;
-
-    rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    fullpath = fs::path::make(branches[0]->path,fusepath_);
-
-    fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
-    if(fd == -1)
-      return -errno;
-
-    rv = l::ioctl(fd,cmd_,data_,out_bufsz_);
-
-    fs::close(fd);
-
-    return rv;
-  }
-
-  static
-  int
-  ioctl_dir(const fuse_file_info_t *ffi_,
-            const uint32_t          cmd_,
-            void                   *data_,
-            uint32_t               *out_bufsz_)
-  {
-    Config::Read        cfg;
-    DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
-
-    return l::ioctl_dir_base(cfg->func.open.policy,
-                             cfg->branches,
-                             di->fusepath.c_str(),
-                             cmd_,
-                             data_,
-                             out_bufsz_);
-  }
-
-  static
-  int
-  strcpy(const std::string &s_,
-         void              *data_)
-  {
-    char *data = (char*)data_;
-
-    if(s_.size() >= (sizeof(IOCTL_BUF) - 1))
-      return -ERANGE;
-
-    memcpy(data,s_.c_str(),s_.size());
-    data[s_.size()] = '\0';
-
-    return s_.size();
-  }
-
-  static
-  int
-  file_basepath(const Policy::Search &searchFunc_,
+static
+int
+_ioctl_dir_base(const Policy::Search &searchFunc_,
                 const Branches       &branches_,
                 const char           *fusepath_,
-                void                 *data_)
-  {
-    int rv;
-    std::vector<Branch*> branches;
+                const uint32_t        cmd_,
+                void                 *data_,
+                uint32_t             *out_bufsz_)
+{
+  int fd;
+  int rv;
+  std::string fullpath;
+  std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
+  rv = searchFunc_(branches_,fusepath_,branches);
+  if(rv == -1)
+    return -errno;
 
-    return l::strcpy(branches[0]->path,data_);
-  }
+  fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-  static
-  int
-  file_basepath(const fuse_file_info_t *ffi_,
-                void                   *data_)
-  {
-    Config::Read cfg;
-    std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+  fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
+  if(fd == -1)
+    return -errno;
 
-    return l::file_basepath(cfg->func.open.policy,
-                            cfg->branches,
-                            fusepath.c_str(),
-                            data_);
-  }
+  rv = ::_ioctl(fd,cmd_,data_,out_bufsz_);
 
-  static
-  int
-  file_relpath(const fuse_file_info_t *ffi_,
-               void                   *data_)
-  {
-    std::string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
+  fs::close(fd);
 
-    return l::strcpy(fusepath,data_);
-  }
-
-  static
-  int
-  file_fullpath(const Policy::Search &searchFunc_,
-                const Branches       &ibranches_,
-                const std::string    &fusepath_,
-                void                 *data_)
-  {
-    int rv;
-    StrVec basepaths;
-    std::string fullpath;
-    std::vector<Branch*> obranches;
-
-    rv = searchFunc_(ibranches_,fusepath_,obranches);
-    if(rv == -1)
-      return -errno;
-
-    fullpath = fs::path::make(obranches[0]->path,fusepath_);
-
-    return l::strcpy(fullpath,data_);
-  }
-
-  static
-  int
-  file_fullpath(const fuse_file_info_t *ffi_,
-                void                   *data_)
-  {
-    Config::Read cfg;
-    std::string  &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
-
-    return l::file_fullpath(cfg->func.open.policy,
-                            cfg->branches,
-                            fusepath,
-                            data_);
-  }
-
-  static
-  int
-  file_allpaths(const fuse_file_info_t *ffi_,
-                void                   *data_)
-  {
-    Config::Read cfg;
-    std::string concated;
-    StrVec paths;
-    StrVec branches;
-    std::string &fusepath = reinterpret_cast<FH*>(ffi_->fh)->fusepath;
-
-    cfg->branches->to_paths(branches);
-
-    fs::findallfiles(branches,fusepath.c_str(),&paths);
-
-    concated = str::join(paths,'\0');
-
-    return l::strcpy(concated,data_);
-  }
-
-  static
-  int
-  file_info(const fuse_file_info_t *ffi_,
-            void                   *data_)
-  {
-    char *key = (char*)data_;
-
-    if(!strcmp("basepath",key))
-      return l::file_basepath(ffi_,data_);
-    if(!strcmp("relpath",key))
-      return l::file_relpath(ffi_,data_);
-    if(!strcmp("fullpath",key))
-      return l::file_fullpath(ffi_,data_);
-    if(!strcmp("allpaths",key))
-      return l::file_allpaths(ffi_,data_);
-
-    return -ENOATTR;
-  }
-
-  static
-  bool
-  is_mergerfs_ioctl_cmd(const unsigned long cmd_)
-  {
-    return (_IOC_TYPE(cmd_) == IOCTL_APP_TYPE);
-  }
-
-  static
-  bool
-  is_btrfs_ioctl_cmd(const unsigned long cmd_)
-  {
-    return (_IOC_TYPE(cmd_) == BTRFS_IOCTL_MAGIC);
-  }
-
-  static
-  int
-  ioctl_custom(const fuse_file_info_t *ffi_,
-               unsigned long           cmd_,
-               void                   *data_)
-  {
-    switch(cmd_)
-      {
-      case IOCTL_FILE_INFO:
-        return l::file_info(ffi_,data_);
-      case IOCTL_GC:
-        fuse_gc();
-        return 0;
-      case IOCTL_GC1:
-        fuse_gc1();
-        return 0;
-      case IOCTL_INVALIDATE_ALL_NODES:
-        fuse_invalidate_all_nodes();
-        return 0;
-      case IOCTL_INVALIDATE_GID_CACHE:
-        GIDCache::invalidate_all();
-        break;
-      }
-
-    return -ENOTTY;
-  }
+  return rv;
 }
 
-namespace FUSE
+static
+int
+_ioctl_dir(const fuse_file_info_t *ffi_,
+           const uint32_t          cmd_,
+           void                   *data_,
+           uint32_t               *out_bufsz_)
 {
-  int
-  ioctl(const fuse_file_info_t *ffi_,
-        unsigned long           cmd_,
-        void                   *arg_,
-        unsigned int            flags_,
-        void                   *data_,
-        uint32_t               *out_bufsz_)
-  {
-    if(l::is_btrfs_ioctl_cmd(cmd_))
-      return -ENOTTY;
-    if(l::is_mergerfs_ioctl_cmd(cmd_))
-      return l::ioctl_custom(ffi_,cmd_,data_);
+  Config::Read        cfg;
+  DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
-    if(flags_ & FUSE_IOCTL_DIR)
-      return l::ioctl_dir(ffi_,cmd_,data_,out_bufsz_);
+  return ::_ioctl_dir_base(cfg->func.open.policy,
+                           cfg->branches,
+                           di->fusepath.c_str(),
+                           cmd_,
+                           data_,
+                           out_bufsz_);
+}
 
-    return l::ioctl_file(ffi_,cmd_,data_,out_bufsz_);
-  }
+static
+bool
+_is_btrfs_ioctl_cmd(const unsigned long cmd_)
+{
+  return (_IOC_TYPE(cmd_) == BTRFS_IOCTL_MAGIC);
+}
+
+
+int
+FUSE::ioctl(const fuse_file_info_t *ffi_,
+            unsigned long           cmd_,
+            void                   *arg_,
+            unsigned int            flags_,
+            void                   *data_,
+            uint32_t               *out_bufsz_)
+{
+  if(::_is_btrfs_ioctl_cmd(cmd_))
+    return -ENOTTY;
+
+  if(flags_ & FUSE_IOCTL_DIR)
+    return ::_ioctl_dir(ffi_,cmd_,data_,out_bufsz_);
+
+  return ::_ioctl_file(ffi_,cmd_,data_,out_bufsz_);
 }
