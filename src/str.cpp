@@ -246,6 +246,13 @@ namespace str
   }
 
   bool
+  startswith(const char *s_,
+             const char *p_)
+  {
+    return (strncmp(s_,p_,strlen(p_)) == 0);
+  }
+
+  bool
   endswith(const string &str_,
            const string &suffix_)
   {
