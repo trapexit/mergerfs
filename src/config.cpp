@@ -389,6 +389,12 @@ Config::finish_initializing()
 }
 
 bool
+Config::is_rootdir(const char *fusepath_)
+{
+  return (strcmp("/",fusepath_) == 0);
+}
+
+bool
 Config::is_controlfile(const char *fusepath_)
 {
   return ((strcmp("/",fusepath_) == 0) || (strcmp("/.mergerfs",fusepath_) == 0));
