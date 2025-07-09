@@ -39,7 +39,6 @@
 
 #define IFERT(S) if(S == s_) return true
 
-const std::string CONTROLFILE = "/.mergerfs";
 constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
   "rtorrent|"
   "qbittorrent-nox";
