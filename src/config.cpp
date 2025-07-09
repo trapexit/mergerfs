@@ -395,9 +395,16 @@ Config::is_controlfile(const char *fusepath_)
 }
 
 bool
-Config::is_xattr(const char *attrname_)
+Config::is_ctrl_xattr(const char *attrname_)
 {
   return str::startswith(attrname_,"user.mergerfs.");
+}
+
+bool
+Config::is_ctrl_xattr(const char *fusepath_,
+                      const char *attrname_)
+{
+  return (Config::is_controlfile(fusepath_) && Config::is_xattr(attrname_));
 }
 
 std::ostream&
