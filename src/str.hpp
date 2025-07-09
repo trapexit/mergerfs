@@ -92,6 +92,10 @@ namespace str
              const std::string &prefix_);
 
   bool
+  startswith(const char *str,
+             const char *prefix);
+
+  bool
   endswith(const std::string &str_,
            const std::string &suffix_);
 
