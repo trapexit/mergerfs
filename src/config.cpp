@@ -410,7 +410,8 @@ bool
 Config::is_ctrl_xattr(const char *fusepath_,
                       const char *attrname_)
 {
-  return (Config::is_controlfile(fusepath_) &&
+  return ((Config::is_rootdir(fusepath_) ||
+           Config::is_controlfile(fusepath_)) &&
           Config::is_ctrl_xattr(attrname_));
 }
 
