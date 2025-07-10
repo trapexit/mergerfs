@@ -33,5 +33,5 @@ do
         --relative \
         --log-file=/tmp/mergerfs-cache-rsync.log \
         "${CACHEFS}/./${FILE}" \
-        "${BACKING}/"
+        "${BASEPOOL}/"
 done
