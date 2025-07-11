@@ -166,6 +166,8 @@ namespace l
                     cfg->symlinkify,
                     cfg->symlinkify_timeout,
                     cfg->follow_symlinks);
+    if(rv == -ENOENT)
+      return l::getattr_controlfile(st_);
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :
