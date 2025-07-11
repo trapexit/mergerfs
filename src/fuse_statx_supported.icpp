@@ -151,6 +151,7 @@ _statx(const char        *fusepath_,
                 cfg->symlinkify,
                 cfg->symlinkify_timeout,
                 cfg->follow_symlinks);
+  fmt::println("getattr: {} {} {}",fusepath_,rv,strerror(-rv));
 
   timeout_->entry = ((rv >= 0) ?
                      cfg->cache_entry :
