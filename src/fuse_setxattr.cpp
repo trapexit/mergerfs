@@ -190,6 +190,10 @@ namespace FUSE
            size_t      attrvalsize_,
            int         flags_)
   {
+    fmt::println("{}: {}={}",
+                 fusepath_,
+                 attrname_,
+                 attrval_);
     if(Config::is_ctrl_xattr(fusepath_,attrname_))
       return l::setxattr_controlfile(attrname_,
                                      string(attrval_,attrvalsize_),
