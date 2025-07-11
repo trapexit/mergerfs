@@ -168,7 +168,10 @@ namespace l
                     cfg->follow_symlinks);
     fmt::println("getattr: {} {} {}",fusepath_,rv,strerror(-rv));
     if((strcmp(fusepath_,"/") == 0) && (rv < 0))
-      return l::getattr_controlfile(st_);
+      {
+        timeout_->entry = timeout_->attr = 0;
+        return l::getattr_controlfile(st_);
+      }
 
     timeout_->entry = ((rv >= 0) ?
                        cfg->cache_entry :
