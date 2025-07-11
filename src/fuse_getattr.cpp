@@ -166,7 +166,7 @@ namespace l
                     cfg->symlinkify,
                     cfg->symlinkify_timeout,
                     cfg->follow_symlinks);
-    fmt::println("getattr: {} {} {}",fusepath_,rv,strerror(-rv));
+    //    fmt::println("getattr: {} {} {}",fusepath_,rv,strerror(-rv));
     if(rv == -ENOENT)
       return l::getattr_controlfile(st_);
 
