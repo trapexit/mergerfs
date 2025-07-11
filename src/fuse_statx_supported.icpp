@@ -153,7 +153,10 @@ _statx(const char        *fusepath_,
                 cfg->follow_symlinks);
   fmt::println("statx: {} {} {}",fusepath_,rv,strerror(-rv));
   if((rv < 0) && (strcmp(fusepath_,"/") == 0))
-    return ::_statx_controlfile(st_);
+    {
+      timeout_->entry = timeout_->attr = 0;
+      return ::_statx_controlfile(st_);
+    }
 
   timeout_->entry = ((rv >= 0) ?
                      cfg->cache_entry :
