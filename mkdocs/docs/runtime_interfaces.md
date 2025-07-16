@@ -26,8 +26,8 @@ config it fits well.
 ```
 
 `mergerfs` provides this pseudo file allows for the runtime
-modification of certain options. The file will not show
-up in **readdir** but can be **stat**'ed and manipulated via
+modification of certain options. The file will not show up in
+**readdir** but can be **stat**'ed and manipulated via
 [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls.
 
 Any changes made at runtime are **not** persisted. If you wish for
