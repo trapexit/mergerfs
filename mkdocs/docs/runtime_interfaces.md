@@ -7,7 +7,8 @@ running.
 These interfaces come in the form of the [extended attributes
 filesystem
 interface](https://en.wikipedia.org/wiki/Extended_file_attributes),
-[ioctl](), and [signals]().
+[ioctl](https://en.wikipedia.org/wiki/Ioctl), and
+[signals](https://en.wikipedia.org/wiki/Signal_(IPC)).
 
 
 ## Runtime Config
