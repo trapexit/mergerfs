@@ -11,7 +11,7 @@ interface](https://en.wikipedia.org/wiki/Extended_file_attributes),
 [signals](https://en.wikipedia.org/wiki/Signal_(IPC)).
 
 
-## Runtime Config
+## xattr
 
 ### .mergerfs pseudo file
 
