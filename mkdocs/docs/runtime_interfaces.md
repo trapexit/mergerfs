@@ -1,8 +1,13 @@
 # Runtime Interfaces
 
-`mergerfs` has a runtime interface allowing users to query certain
+`mergerfs` has runtime interfaces allowing users to query certain
 information, set config, and trigger certain activities while it is
 running.
+
+These interfaces come in the form of the [extended attributes
+filesystem
+interface](https://en.wikipedia.org/wiki/Extended_file_attributes),
+[ioctl](), and [signals]().
 
 
 ## Runtime Config
