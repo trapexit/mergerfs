@@ -14,8 +14,10 @@ interface](https://en.wikipedia.org/wiki/Extended_file_attributes),
 ## xattr
 
 This takes advantage of the POSIX extended attributes filesystem
-API. Effectively namespaced key=value pairs which are associated with
-a file.
+API. Effectively namespaced `key=value` pairs which are associated
+with a file. Since `mergerfs` uses primarily `key=value` pairs for
+config it fits well.
+
 
 ### .mergerfs pseudo file
 
