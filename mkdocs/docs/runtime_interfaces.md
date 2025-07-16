@@ -32,7 +32,7 @@ modification of certain options. The file will not show up in
 
 Any changes made at runtime are **NOT** persisted. If you wish for
 values to persist they must be included as options wherever you
-configure the mounting of mergerfs (/etc/fstab).
+configure the mounting of mergerfs (/etc/fstab, systemd, etc.).
 
 
 #### Keys
