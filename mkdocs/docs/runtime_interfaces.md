@@ -34,9 +34,6 @@ Any changes made at runtime are **NOT** persisted. If you wish for
 values to persist they must be included as options wherever you
 configure the mounting of mergerfs (/etc/fstab, systemd, etc.).
 
-As of v2.41.0 the mount point can also be used and at some point in
-the future I might remove the pseudo file.
-
 
 #### Keys
 
