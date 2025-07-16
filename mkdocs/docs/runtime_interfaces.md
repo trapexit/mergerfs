@@ -30,7 +30,7 @@ modification of certain options. The file will not show up in
 `readdir` but can be `stat`'ed and manipulated via
 [{list,get,set}xattrs](http://linux.die.net/man/2/listxattr) calls.
 
-Any changes made at runtime are **not** persisted. If you wish for
+Any changes made at runtime are **NOT** persisted. If you wish for
 values to persist they must be included as options wherever you
 configure the mounting of mergerfs (/etc/fstab).
 
