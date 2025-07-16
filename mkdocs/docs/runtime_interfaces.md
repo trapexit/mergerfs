@@ -13,6 +13,10 @@ interface](https://en.wikipedia.org/wiki/Extended_file_attributes),
 
 ## xattr
 
+This takes advantage of the POSIX extended attributes filesystem
+API. Effectively namespaced key=value pairs which are associated with
+a file.
+
 ### .mergerfs pseudo file
 
 ```
