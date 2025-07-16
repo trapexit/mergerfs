@@ -1,5 +1,10 @@
 # Runtime Interfaces
 
+`mergerfs` has a runtime interface allowing users to query certain
+information, set config, and trigger certain activities while it is
+running.
+
+
 ## Runtime Config
 
 ### .mergerfs pseudo file
