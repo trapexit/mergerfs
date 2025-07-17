@@ -95,7 +95,7 @@ described in the [branches](config/branches.md) docs.
 | -<       | remove first in list       |
 | ->       | remove last in list        |
 
-`xattr -w user.mergerfs.branches +</mnt/drive3 /mnt/pool/.mergerfs`
+`setfattr -n user.mergerfs.branches "+</mnt/drive3" /mnt/pool/.mergerfs`
 
 The `=NC`, `=RO`, `=RW` syntax works just as on the command line.
 
