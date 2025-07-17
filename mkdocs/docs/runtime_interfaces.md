@@ -116,7 +116,7 @@ user.mergerfs.category.search="mfs"
 
 [trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.category.create -v pfrd .mergerfs
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
-user.mergerfs.category.search="newest"
+user.mergerfs.category.search="prfd"
 ```
 
 ### file / directory xattrs
