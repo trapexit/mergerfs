@@ -95,11 +95,6 @@ described in the [branches](config/branches.md) docs.
 | -<       | remove first in list       |
 | ->       | remove last in list        |
 
-For example the following will prepend `/mnt/fs3` to the beginning
-of the existing list of branches.
-
-`setfattr -n user.mergerfs.branches "+</mnt/fs3" /mountpoint/.mergerfs`
-
 **NOTE:** if the value of `branches` is set to something invalid /
 non-existant `mergerfs` will return a bogus entry when the mount point
 directory is `stat`'ed and create a fake file entry when listing the
