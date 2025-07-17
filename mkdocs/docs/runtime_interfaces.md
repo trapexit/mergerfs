@@ -41,16 +41,35 @@ underlying directories will be mixed in with the `mergerfs` values.
 #### Keys
 
 Use `getfattr -d /mountpoint/.mergerfs` or `xattr -l
-/mountpoint/.mergerfs` to see all supported keys. Some are
-informational and therefore read-only such as certain options which
-set FUSE options that can not be modified after setup. `setxattr` will
-return EROFS (Read-only filesystem) on read-only keys. ENOATTR will be
-returned if the key doesn't exist.
+/mountpoint/.mergerfs` to see all supported keys. It is effectively
+the same as the [options](config/options.md) prefixed with
+`user.mergerfs.`. Some are informational and therefore read-only such
+as certain options which set FUSE options that can not be modified
+after setup. `setxattr` will return EROFS (Read-only filesystem) on
+read-only keys. ENOATTR will be returned if the key doesn't exist.
 
 
 #### Values
 
 Same as the [command line](config/options.md).
+
+
+#### Getting
+
+`getfattr -n user.mergerfs.branches /mountpoint/.mergerfs`
+
+or
+
+`getfattr -n user.mergerfs.branches /mountpoint`
+
+
+#### Setting
+
+`setfattr -n user.mergerfs.branches -v VALUE /mountpoint/.mergerfs`
+
+or
+
+`setfattr -n user.mergerfs.branches -v VALUE /mountpoint`
 
 
 ##### user.mergerfs.branches
