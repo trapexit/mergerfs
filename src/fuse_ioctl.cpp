@@ -338,6 +338,8 @@ namespace l
       case IOCTL_INVALIDATE_GID_CACHE:
         GIDCache::invalidate_all();
         break;
+      case IOCTL_CLEAR_GID_CACHE:
+        GIDCache::clear_all();
       }
 
     return -ENOTTY;
