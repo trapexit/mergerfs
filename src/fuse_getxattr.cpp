@@ -200,7 +200,7 @@ namespace FUSE
   {
     Config::Read cfg;
 
-    if(Config::is_ctrl_xattr(fusepath_,attrname_))
+    if(Config::is_mergerfs_xattr(fusepath_,attrname_))
       return l::getxattr_controlfile(cfg,
                                      attrname_,
                                      buf_,
