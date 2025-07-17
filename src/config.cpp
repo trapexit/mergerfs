@@ -347,7 +347,7 @@ Config::set(const std::string &key_,
             const std::string &value_)
 {
   if(_initialized && l::readonly(key_))
-    return -EPERM;
+    return -EROFS;
 
   return set_raw(key_,value_);
 }
