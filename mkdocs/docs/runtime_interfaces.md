@@ -89,8 +89,8 @@ described in the [branches](config/branches.md) docs.
 | Value    | Description                |
 | -------- | -------------------------- |
 | [list]   | set                        |
-| +<[list] | prepend                    |
-| +>[list] | append                     |
+| +<[list] | prepend to existing list   |
+| +>[list] | append to existing list    |
 | -[list]  | remove all values provided |
 | -<       | remove first in list       |
 | ->       | remove last in list        |
