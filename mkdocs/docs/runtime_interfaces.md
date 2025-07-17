@@ -82,8 +82,8 @@ value attempting to be set is not valid `EINVAL` will be returned.
 
 ##### user.mergerfs.branches
 
-Used to query or modify the list of branches. When modifying there are
-several shortcuts to easy manipulation of the list.
+`branches` has the ability to understand some simple instructions to
+make manipulation of the list easier.
 
 | Value    | Description                |
 | -------- | -------------------------- |
