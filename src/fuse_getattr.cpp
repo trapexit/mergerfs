@@ -207,7 +207,7 @@ namespace FUSE
           struct stat     *st_,
           fuse_timeouts_t *timeout_)
   {
-    if(Config::is_controlfile(fusepath_))
+    if(Config::is_ctrl_file(fusepath_))
       return l::getattr_controlfile(st_);
 
     return l::getattr(fusepath_,st_,timeout_);
