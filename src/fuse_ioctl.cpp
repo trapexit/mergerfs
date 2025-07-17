@@ -340,6 +340,7 @@ namespace l
         break;
       case IOCTL_CLEAR_GID_CACHE:
         GIDCache::clear_all();
+        break;
       }
 
     return -ENOTTY;
