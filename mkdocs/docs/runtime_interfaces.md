@@ -139,14 +139,6 @@ following:
 | user.mergerfs.allpaths | A NULL ('\0') separated list of full paths to all files found. |
 
 
-## Signals
-
-- USR1: This will cause mergerfs to send invalidation notifications to
-  the kernel for all files. This will cause all unused files to be
-  released from memory.
-- USR2: Trigger a general cleanup of currently unused memory. A more
-  thorough version of what happens every ~15 minutes.
-
 ## ioctl
 
 Found in `fuse_ioctl.cpp`:
@@ -171,3 +163,13 @@ typedef char IOCTL_BUF[4096];
 - IOCTL_INVALIDATE_ALL_NODES: Same as SIGUSR1. Send invalidation
   notifications to the kernel for all files causing unused files to be
   released from memory.
+
+
+## Signals
+
+- USR1: This will cause mergerfs to send invalidation notifications to
+  the kernel for all files. This will cause all unused files to be
+  released from memory.
+- USR2: Trigger a general cleanup of currently unused memory. A more
+  thorough version of what happens every ~15 minutes.
+
