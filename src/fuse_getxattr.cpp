@@ -72,7 +72,7 @@ namespace l
     std::string val;
     StrVec attr;
 
-    if(!Config::is_ctrl_xattr(attrname_))
+    if(!Config::is_mergerfs_xattr(attrname_))
       return -ENOATTR;
 
     key = Config::prune_ctrl_xattr(attrname_);
