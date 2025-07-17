@@ -202,7 +202,7 @@ public:
   static bool is_ctrl_file(const char *fusepath);
   static bool is_mergerfs_xattr(const char *attrname);
   static bool is_mergerfs_xattr(const char *fusepath, const char *attrname);
-  static bool is_cmd_xattr(const char *attrname);
+  static bool is_cmd_xattr(const std::string_view &attrname);
   static std::string prune_ctrl_xattr(const std::string &s);
   static std::string_view prune_cmd_xattr(const std::string_view &s);
 
