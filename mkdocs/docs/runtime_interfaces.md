@@ -45,8 +45,7 @@ Use `getfattr -d /mountpoint/.mergerfs` or `xattr -l
 the same as the [options](config/options.md) prefixed with
 `user.mergerfs.`. Some are informational and therefore read-only such
 as certain options which set FUSE options that can not be modified
-after setup. `setxattr` will return EROFS (Read-only filesystem) on
-read-only keys. ENOATTR will be returned if the key doesn't exist.
+after setup.
 
 
 #### Values
@@ -70,6 +69,10 @@ or
 or
 
 `setfattr -n user.mergerfs.branches -v VALUE /mountpoint`
+
+`setxattr` will return `EROFS` (Read-only filesystem) on read-only
+keys. `ENOATTR` will be returned if the key doesn't exist. If the
+value attempting to be set is not valid `EINVAL` will be returned.
 
 
 ##### user.mergerfs.branches
