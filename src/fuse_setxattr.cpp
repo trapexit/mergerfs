@@ -57,6 +57,9 @@ namespace l
     if(!Config::is_mergerfs_xattr(attrname_.c_str()))
       return -ENOATTR;
 
+    if(Config::is_cmd_xattr(attrname_))
+      return ::_setxattr_cmd_xattr(attrname_,attrval_);
+
     key = Config::prune_ctrl_xattr(attrname_);
 
     if(cfg->has_key(key) == false)
