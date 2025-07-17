@@ -61,7 +61,8 @@ or
 
 `getfattr -n user.mergerfs.branches /mountpoint`
 
-`ENOATTR` will be returned if the key doesn't exist as normal with `getxattr`.
+`ENOATTR` will be returned if the key doesn't exist as normal with
+`getxattr`.
 
 
 #### Setting
