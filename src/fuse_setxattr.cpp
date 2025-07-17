@@ -36,7 +36,16 @@ static const char SECURITY_CAPABILITY[] = "security.capability";
 
 
 static
+int
+_setxattr_cmd_xattr(const std::string_view &attrname_,
+                    const std::string_view &attrval_)
+{
+  std::string_view cmd;
 
+  cmd = Config::prune_cmd_xattr(attrname_);
+
+  return 0;
+}
 
 
 namespace l
