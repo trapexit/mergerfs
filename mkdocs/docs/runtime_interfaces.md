@@ -50,7 +50,7 @@ after setup.
 
 #### Values
 
-Same as the [command line](config/options.md).
+Same as the [command line options](config/options.md).
 
 
 #### Getting
