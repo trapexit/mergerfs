@@ -199,7 +199,7 @@ public:
 
 public:
   static bool is_rootdir(const char *);
-  static bool is_controlfile(const char *);
+  static bool is_ctrl_file(const char *);
   static bool is_ctrl_xattr(const char *);
   static bool is_ctrl_xattr(const char *, const char *);
   static std::string prune_ctrl_xattr(const std::string &s);
