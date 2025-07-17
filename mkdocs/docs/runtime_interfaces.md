@@ -134,11 +134,10 @@ following:
 | Key | Return Value |
 | --- | ------------ |
 | user.mergerfs.basepath | The base mount point for the file given the current `getattr` policy. |
+| user.mergerfs.relpath | The relative path of the file from the perspective of the mount point. |
+| user.mergerfs.fullpath | The full path of the original file given the `getattr` policy. |
+| user.mergerfs.allpaths | A NULL ('\0') separated list of full paths to all files found. |
 
-- **user.mergerfs.basepath**: the base mount point for the file given the current getattr policy
-- **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
-- **user.mergerfs.fullpath**: the full path of the original file given the getattr policy
-- **user.mergerfs.allpaths**: a NUL ('\0') separated list of full paths to all files found
 
 ## Signals
 
