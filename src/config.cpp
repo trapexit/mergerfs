@@ -436,7 +436,7 @@ Config::is_rootdir(const char *fusepath_)
 bool
 Config::is_controlfile(const char *fusepath_)
 {
-  return (strcmp("/.mergerfs",fusepath_) == 0);
+  return str::eq(fusepath_,"/.mergerfs");
 }
 
 bool
