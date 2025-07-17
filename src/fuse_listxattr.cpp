@@ -118,7 +118,7 @@ FUSE::listxattr(const char *fusepath_,
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  if(Config::is_controlfile(fusepath_))
+  if(Config::is_ctrl_file(fusepath_))
     return cfg->keys_listxattr(list_,size_);
   if(Config::is_rootdir(fusepath_))
     return ::_root_listxattr(cfg,list_,size_);
