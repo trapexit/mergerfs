@@ -47,6 +47,8 @@ the same as the [options](config/options.md) prefixed with
 as certain options which set FUSE options that can not be modified
 after setup.
 
+Example: option `cache.files` would be `user.mergerfs.cache.files`.
+
 
 #### Values
 
