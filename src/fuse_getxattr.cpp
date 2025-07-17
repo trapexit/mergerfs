@@ -75,7 +75,7 @@ namespace l
     if(!Config::is_ctrl_xattr(attrname_))
       return -ENOATTR;
 
-    key = &attrname_[14];
+    key = Config::prune_ctrl_xattr(attrname_);
     rv = cfg_->get(key,&val);
     if(rv < 0)
       return rv;
