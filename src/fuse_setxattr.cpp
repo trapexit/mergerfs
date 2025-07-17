@@ -48,7 +48,7 @@ namespace l
   int
   setxattr_controlfile(const std::string &attrname_,
                        const std::string &attrval_,
-                       const int     flags_)
+                       const int          flags_)
   {
     int rv;
     std::string key;
