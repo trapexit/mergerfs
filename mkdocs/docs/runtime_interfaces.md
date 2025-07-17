@@ -100,7 +100,6 @@ of the existing list of branches.
 
 `setfattr -n user.mergerfs.branches "+</mnt/drive3" /mnt/pool/.mergerfs`
 
-The `=NC`, `=RO`, `=RW` syntax works just as on the command line.
 
 
 ##### Example
