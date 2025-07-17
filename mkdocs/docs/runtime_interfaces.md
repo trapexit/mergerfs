@@ -154,8 +154,10 @@ typedef char IOCTL_BUF[IOCTL_BUF_SIZE];
 #define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
 ```
 
+| IOCTL Op Code | 
+
 * IOCTL_FILE_INFO: Same as the "file / directory xattrs" mentioned
-  above. Use a buffer size of 4096 bytes. Pass in a string of
+  above. Use a buffer size of  bytes. Pass in a string of
   "basepath", "relpath", "fullpath", or "allpaths". Receive details in
   same buffer.
 * IOCTL_GC: Triggers a thorough garbage collection of excess
