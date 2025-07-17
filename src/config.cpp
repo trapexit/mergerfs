@@ -430,7 +430,7 @@ Config::finish_initializing()
 bool
 Config::is_rootdir(const char *fusepath_)
 {
-  return (strcmp("/",fusepath_) == 0);
+  return str::eq(fusepath_,"/");
 }
 
 bool
