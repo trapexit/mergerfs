@@ -166,7 +166,7 @@ typedef char IOCTL_BUF[IOCTL_BUF_SIZE];
 | IOCTL_GC | Triggers a thorough garbage collection of excess memory. Same as SIGUSR2. |
 | IOCTL_GC1 | Triggers a simple garbage collection of excess memory. Same as what happens every 15 minutes normally. |
 | IOCTL_INVALIDATE_ALL_NODES | Same as SIGUSR1. Send invalidation notifications to the kernel for all files causing unused files to be released from memory. |
-| IOCTL_INVALIDATE_GID_CACHE | Invalidates |
+| IOCTL_INVALIDATE_GID_CACHE | Invalidates all gid cache entries. |
 
 The max buffer size of an `ioctl` call is 16KiB - 1 which is less than
 the typical max of 64KiB for xattr values but should be sufficent for
