@@ -35,6 +35,10 @@
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
 
+static
+
+
+
 namespace l
 {
   static
