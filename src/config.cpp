@@ -440,7 +440,7 @@ Config::is_ctrl_file(const char *fusepath_)
 }
 
 bool
-Config::is_ctrl_xattr(const char *attrname_)
+Config::is_mergerfs_xattr(const char *attrname_)
 {
   return str::startswith(attrname_,"user.mergerfs.");
 }
