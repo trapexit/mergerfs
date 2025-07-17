@@ -100,6 +100,11 @@ of the existing list of branches.
 
 `setfattr -n user.mergerfs.branches "+</mnt/drive3" /mnt/pool/.mergerfs`
 
+NOTE: if the value of `branches` is set to something invalid /
+non-existant `mergerfs` will return a bogus entry when the mount point
+directory is `stat`'ed and create a fake file entry when listing the
+directory telling the user "error: no valid mergerfs branch found,
+check config".
 
 
 ##### Example
