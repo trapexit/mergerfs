@@ -117,6 +117,10 @@ user.mergerfs.category.search="mfs"
 [trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.category.create -v pfrd .mergerfs
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
 user.mergerfs.category.search="prfd"
+
+[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.branches -v "'+</mnt/c=RO .mergerfs
+[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.branches .mergerfs
+user.mergerfs.branches="/mnt/c=RO:/mnt/a=RW:/mnt/b=RW"
 ```
 
 ### file / directory xattrs
