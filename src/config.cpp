@@ -452,7 +452,7 @@ Config::is_mergerfs_xattr(const char *fusepath_,
 {
   return ((Config::is_rootdir(fusepath_) ||
            Config::is_ctrl_file(fusepath_)) &&
-          Config::is_ctrl_xattr(attrname_));
+          Config::is_mergerfs_xattr(attrname_));
 }
 
 bool
