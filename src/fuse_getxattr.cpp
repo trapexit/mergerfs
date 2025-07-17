@@ -148,11 +148,11 @@ namespace l
 
     if(attr[2] == "basepath")
       return l::getxattr_from_string(buf_,count_,basepath_);
-    else if(attr[2] ==  "relpath")
+    if(attr[2] ==  "relpath")
       return l::getxattr_from_string(buf_,count_,fusepath_);
-    else if(attr[2] == "fullpath")
+    if(attr[2] == "fullpath")
       return l::getxattr_from_string(buf_,count_,fullpath_);
-    else if(attr[2] == "allpaths")
+    if(attr[2] == "allpaths")
       return l::getxattr_user_mergerfs_allpaths(branches_,fusepath_,buf_,count_);
 
     return -ENOATTR;
