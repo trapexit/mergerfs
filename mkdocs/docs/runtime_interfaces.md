@@ -158,6 +158,7 @@ typedef char IOCTL_BUF[IOCTL_BUF_SIZE];
 #define IOCTL_GC1                  _IO(IOCTL_APP_TYPE,2)
 #define IOCTL_INVALIDATE_ALL_NODES _IO(IOCTL_APP_TYPE,3)
 #define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
+#define IOCTL_CLEAR_GID_CACHE      _IO(IOCTL_APP_TYPE,5)
 ```
 
 | ioctl op code | description |
