@@ -443,7 +443,6 @@ Config::is_ctrl_file(const char *fusepath_)
 bool
 Config::is_mergerfs_xattr(const char *attrname_)
 {
-  return nonstd::string::starts_with(attrname_,"user.mergerfs.");
   return str::startswith(attrname_,"user.mergerfs.");
 }
 
