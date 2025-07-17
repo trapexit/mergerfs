@@ -141,6 +141,12 @@ following:
 
 ## ioctl
 
+The primary reason to use `ioctl` rather than `xattr` is if `xattr` is
+disabled. It used to be that FUSE could issue certain xattr requests
+while writing data which could significantly slow down IO but modern
+kernels have a feature to limit that behavior making disabling `xattr`
+less common.
+
 Found in [mergerfs_ioctl.hpp](https://github.com/trapexit/mergerfs/blob/master/src/mergerfs_ioctl.hpp):
 
 ```C++
@@ -154,7 +160,7 @@ typedef char IOCTL_BUF[IOCTL_BUF_SIZE];
 #define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
 ```
 
-| ioctl op code | Description |
+| ioctl op code | description |
 | ------------- | ----------- |
 | IOCTL_FILE_INFO | Same as the "file / directory xattrs" mentioned above. Use a buffer size of bytes. Pass in a string of "basepath", "relpath", "fullpath", or "allpaths". Receive details in same buffer. |
 | IOCTL_GC | Triggers a thorough garbage collection of excess memory. Same as SIGUSR2. |
