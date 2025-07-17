@@ -198,11 +198,11 @@ public:
   int from_file(const std::string &filepath, ErrVec *errs);
 
 public:
-  static bool is_rootdir(const char *);
-  static bool is_ctrl_file(const char *);
-  static bool is_mergerfs_xattr(const char *);
+  static bool is_rootdir(const char *fusepath);
+  static bool is_ctrl_file(const char *fusepath);
+  static bool is_mergerfs_xattr(const char *attrname);
   static bool is_mergerfs_xattr(const char *fusepath, const char *attrname);
-  static bool is_cmd_xattr(const char *);
+  static bool is_cmd_xattr(const char *attrname);
   static std::string prune_ctrl_xattr(const std::string &s);
 
 private:
