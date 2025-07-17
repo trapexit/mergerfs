@@ -111,11 +111,11 @@ user.mergerfs.minfreespace="4294967295"
 user.mergerfs.moveonenospc="false"
 ...
 
-[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.search .mergerfs
-user.mergerfs.category.search="ff"
+[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
+user.mergerfs.category.search="mfs"
 
-[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.category.search -v newest .mergerfs
-[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.search .mergerfs
+[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.category.create -v pfrd .mergerfs
+[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
 user.mergerfs.category.search="newest"
 ```
 
