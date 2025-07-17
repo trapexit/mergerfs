@@ -141,7 +141,8 @@ following:
 
 ## ioctl
 
-Found in [mergerfs_ioctl.hpp]():
+Found in
+[mergerfs_ioctl.hpp](https://github.com/trapexit/mergerfs/blob/master/src/mergerfs_ioctl.hpp):
 
 ```C++
 typedef char IOCTL_BUF[4096];
