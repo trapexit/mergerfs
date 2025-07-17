@@ -44,7 +44,7 @@ Use `getfattr -d /mountpoint/.mergerfs` or `xattr -l
 /mountpoint/.mergerfs` to see all supported keys. Some are
 informational and therefore read-only such as certain options which
 set FUSE options that can not be modified after setup. `setxattr` will
-return EINVAL (invalid argument) on read-only keys.
+return EPERM (invalid argument) on read-only keys.
 
 
 #### Values
