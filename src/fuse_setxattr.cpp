@@ -44,6 +44,17 @@ _setxattr_cmd_xattr(const std::string_view &attrname_,
 
   cmd = Config::prune_cmd_xattr(attrname_);
 
+  if(cmd == "gc")
+    return 0;
+  if(cmd == "gc1")
+    return 0;
+  if(cmd == "invalidate-all-nodes")
+    return 0;
+  if(cmd == "invalidate-gid-cache")
+    return 0;
+  if(cmd == "clear-gid-cache")
+    return 0;
+
   return 0;
 }
 
