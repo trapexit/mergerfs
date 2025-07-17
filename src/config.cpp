@@ -23,6 +23,7 @@
 #include "str.hpp"
 #include "to_string.hpp"
 #include "version.hpp"
+#include "nonstd/string.hpp"
 
 #include <algorithm>
 #include <cstdint>
