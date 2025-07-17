@@ -95,6 +95,9 @@ described in the [branches](config/branches.md) docs.
 | -<       | remove first in list       |
 | ->       | remove last in list        |
 
+For example the following will prepend `/mnt/drive3` to the beginning
+of the existing list of branches.
+
 `setfattr -n user.mergerfs.branches "+</mnt/drive3" /mnt/pool/.mergerfs`
 
 The `=NC`, `=RO`, `=RW` syntax works just as on the command line.
