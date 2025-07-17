@@ -434,7 +434,7 @@ Config::is_rootdir(const char *fusepath_)
 }
 
 bool
-Config::is_controlfile(const char *fusepath_)
+Config::is_ctrl_file(const char *fusepath_)
 {
   return str::eq(fusepath_,"/.mergerfs");
 }
