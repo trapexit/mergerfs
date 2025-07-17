@@ -179,5 +179,6 @@ most situations.
   the kernel for all files. This will cause all unused files to be
   released from memory.
 - USR2: Trigger a general cleanup of currently unused memory. A more
-  thorough version of what happens every ~15 minutes.
+  thorough version of what happens every ~15 minutes. Also fully
+  clears the gid cache.
 
