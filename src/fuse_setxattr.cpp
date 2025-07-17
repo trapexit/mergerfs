@@ -55,7 +55,7 @@ _setxattr_cmd_xattr(const std::string_view &attrname_,
   if(cmd == "clear-gid-cache")
     return 0;
 
-  return 0;
+  return -ENOATTR;
 }
 
 
