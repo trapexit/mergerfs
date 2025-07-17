@@ -187,7 +187,7 @@ namespace FUSE
            size_t      attrvalsize_,
            int         flags_)
   {
-    if(Config::is_ctrl_xattr(fusepath_,attrname_))
+    if(Config::is_mergerfs_xattr(fusepath_,attrname_))
       return l::setxattr_controlfile(attrname_,
                                      std::string(attrval_,attrvalsize_),
                                      flags_);
