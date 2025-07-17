@@ -471,6 +471,15 @@ Config::prune_ctrl_xattr(const std::string &s_)
   return {};
 }
 
+std::string_view
+Config::prune_cmd_xattr(const std::string_view &s_)
+{
+  constexpr size_t offset = (sizeof("user.mergerfs.cmd.") - 1);
+
+  if(offset < s_.size())
+    return {s_ + };
+}
+
 std::ostream&
 operator<<(std::ostream &os_,
            const Config &c_)
