@@ -83,7 +83,8 @@ value attempting to be set is not valid `EINVAL` will be returned.
 ##### user.mergerfs.branches
 
 `branches` has the ability to understand some simple instructions to
-make manipulation of the list easier.
+make manipulation of the list easier. The `[list]` is simply what is
+described in the [branches](config/branches.md) docs.
 
 | Value    | Description                |
 | -------- | -------------------------- |
