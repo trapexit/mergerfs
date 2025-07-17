@@ -133,6 +133,7 @@ following:
 
 | Key | Return Value |
 | --- | ------------ |
+| user.mergerfs.basepath | The base mount point for the file given the current `getattr` policy. |
 
 - **user.mergerfs.basepath**: the base mount point for the file given the current getattr policy
 - **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
