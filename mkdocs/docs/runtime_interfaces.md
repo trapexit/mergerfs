@@ -131,6 +131,9 @@ served. To access the values you will need to issue a
 [getxattr](http://linux.die.net/man/2/getxattr) for one of the
 following:
 
+| Key | Return Value |
+| --- | ------------ |
+
 - **user.mergerfs.basepath**: the base mount point for the file given the current getattr policy
 - **user.mergerfs.relpath**: the relative path of the file from the perspective of the mount point
 - **user.mergerfs.fullpath**: the full path of the original file given the getattr policy
