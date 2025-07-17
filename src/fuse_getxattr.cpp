@@ -72,7 +72,7 @@ namespace l
     std::string val;
     StrVec attr;
 
-    if(!str::startswith(attrname_,"user.mergerfs."))
+    if(!Config::is_ctrl_xattr(attrname_))
       return -ENOATTR;
 
     key = &attrname_[14];
