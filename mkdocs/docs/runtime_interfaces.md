@@ -154,15 +154,15 @@ typedef char IOCTL_BUF[IOCTL_BUF_SIZE];
 #define IOCTL_INVALIDATE_GID_CACHE _IO(IOCTL_APP_TYPE,4)
 ```
 
-- IOCTL_FILE_INFO: Same as the "file / directory xattrs" mentioned
+* IOCTL_FILE_INFO: Same as the "file / directory xattrs" mentioned
   above. Use a buffer size of 4096 bytes. Pass in a string of
   "basepath", "relpath", "fullpath", or "allpaths". Receive details in
   same buffer.
-- IOCTL_GC: Triggers a thorough garbage collection of excess
+* IOCTL_GC: Triggers a thorough garbage collection of excess
   memory. Same as SIGUSR2.
-- IOCTL_GC1: Triggers a simple garbage collection of excess
+* IOCTL_GC1: Triggers a simple garbage collection of excess
   memory. Same as what happens every 15 minutes normally.
-- IOCTL_INVALIDATE_ALL_NODES: Same as SIGUSR1. Send invalidation
+* IOCTL_INVALIDATE_ALL_NODES: Same as SIGUSR1. Send invalidation
   notifications to the kernel for all files causing unused files to be
   released from memory.
 
