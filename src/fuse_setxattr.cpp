@@ -54,7 +54,7 @@ namespace l
     std::string key;
     Config::Write cfg;
 
-    if(!Config::is_ctrl_xattr(attrname_.c_str()))
+    if(!Config::is_mergerfs_xattr(attrname_.c_str()))
       return -ENOATTR;
 
     key = Config::prune_ctrl_xattr(attrname_);
