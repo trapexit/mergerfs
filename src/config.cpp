@@ -456,7 +456,7 @@ Config::is_mergerfs_xattr(const char *fusepath_,
 }
 
 bool
-Config::is_cmd_xattr(const char *attrname_)
+Config::is_cmd_xattr(const std::string_view &attrname_)
 {
   return str::startswith(attrname_,"user.mergerfs.cmd.");
 }
