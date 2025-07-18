@@ -142,7 +142,7 @@ namespace l
   {
     std::string key;
 
-    key = Config::prune_ctrl_xattr(atrname_);
+    key = Config::prune_ctrl_xattr(attrname_);
 
     if(key == "basepath")
       return l::getxattr_from_string(buf_,count_,basepath_);
