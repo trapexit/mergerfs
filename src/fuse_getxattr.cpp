@@ -63,10 +63,10 @@ namespace l
 
   static
   int
-  getxattr_controlfile(Config::Read &cfg_,
-                       const char   *attrname_,
-                       char         *buf_,
-                       const size_t  count_)
+  getxattr_ctrl_file(Config::Read &cfg_,
+                     const char   *attrname_,
+                     char         *buf_,
+                     const size_t  count_)
   {
     int rv;
     size_t len;
