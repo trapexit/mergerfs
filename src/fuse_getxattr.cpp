@@ -140,7 +140,6 @@ namespace l
                          char              *buf_,
                          const size_t       count_)
   {
-    StrVec attr;
     std::string key;
 
     key = Config::prune_ctrl_xattr(atrname_);
