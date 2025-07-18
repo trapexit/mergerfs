@@ -54,9 +54,10 @@ _listxattr_size(const std::vector<Branch*> &branches_,
 
 static
 ssize_t
-_root_listxattr(Config::Read &cfg_,
-                char         *list_,
-                size_t        size_)
+_root_listxattr(const std::vector<Branch*> &branches_,
+                const char                 *fusepath_,
+                char                       *list_,
+                size_t                      size_)
 {
   if(size_ == 0)
     return ::_root_listxattr_size(cfg_);
