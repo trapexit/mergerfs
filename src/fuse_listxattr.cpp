@@ -54,10 +54,10 @@ _listxattr_size(const std::vector<Branch*> &branches_,
 
 static
 ssize_t
-_root_listxattr(const std::vector<Branch*> &branches_,
-                const char                 *fusepath_,
-                char                       *list_,
-                size_t                      size_)
+_listxattr(const std::vector<Branch*> &branches_,
+           const char                 *fusepath_,
+           char                       *list_,
+           size_t                      size_)
 {
   ssize_t rv;
   ssize_t size;
