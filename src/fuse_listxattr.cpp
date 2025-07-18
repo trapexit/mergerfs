@@ -43,7 +43,7 @@ _listxattr_size(const std::vector<Branch*> &branches_,
     {
       fullpath = fs::path::make(branch->path,fusepath_);
 
-      rv = fs::llistxattr(branch.path,NULL,0);
+      rv = fs::llistxattr(fullpath,NULL,0);
       if(rv < 0)
         continue;
 
