@@ -46,8 +46,6 @@ _setxattr_cmd_xattr(const std::string_view &attrname_,
 
   cmd = Config::prune_cmd_xattr(attrname_);
 
-  fmt::println("{}",cmd);
-
   if(cmd == "gc")
     return 0;
   if(cmd == "gc1")
