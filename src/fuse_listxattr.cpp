@@ -30,7 +30,8 @@
 
 static
 ssize_t
-_listxattr_size(const std::vector<Branch*> &branches_)
+_listxattr_size(const std::vector<Branch*> &branches_,
+                const char                 *fusepath_)
 {
   ssize_t rv;
   ssize_t size;
