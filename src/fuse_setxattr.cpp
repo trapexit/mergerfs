@@ -216,9 +216,9 @@ FUSE::setxattr(const char *fusepath_,
                int         flags_)
 {
   if(Config::is_ctrl_file(fusepath_))
-    return l::setxattr_controlfile(attrname_,
-                                   std::string(attrval_,attrvalsize_),
-                                   flags_);
+    return l::setxattr_ctrl_file(attrname_,
+                                 std::string(attrval_,attrvalsize_),
+                                 flags_);
 
   return l::setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
 }
