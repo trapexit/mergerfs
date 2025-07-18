@@ -92,7 +92,7 @@ namespace l
 
     memcpy(buf_,val.c_str(),val.size());
 
-    return (int)len;
+    return (int)val.size();
   }
 
   static
