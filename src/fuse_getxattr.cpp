@@ -90,7 +90,7 @@ namespace l
     if(count_ < val.size())
       return -ERANGE;
 
-    memcpy(buf_,val.c_str(),len);
+    memcpy(buf_,val.c_str(),val.size());
 
     return (int)len;
   }
