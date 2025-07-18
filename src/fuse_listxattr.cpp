@@ -30,7 +30,7 @@
 
 static
 ssize_t
-_root_listxattr_size(Config::Read &cfg_)
+_listxattr_size(const std::vector<Branch*>)
 {
   ssize_t rv;
   ssize_t size;
