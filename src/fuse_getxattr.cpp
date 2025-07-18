@@ -71,7 +71,6 @@ namespace l
     int rv;
     std::string key;
     std::string val;
-    StrVec attr;
 
     if(!Config::is_mergerfs_xattr(attrname_))
       return -ENOATTR;
