@@ -69,7 +69,6 @@ namespace l
                      const size_t  count_)
   {
     int rv;
-    size_t len;
     std::string key;
     std::string val;
     StrVec attr;
