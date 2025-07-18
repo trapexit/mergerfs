@@ -35,11 +35,10 @@ _listxattr_size(const std::vector<Branch*> &branches_)
   ssize_t rv;
   ssize_t size;
   std::string fullpath;
-  Branches::Ptr branches;
 
   size = 0;
-  branches = cfg_->branches;
-  for(const auto &branch : *branches)
+
+  for(const auto branch : branches_)
     {
       rv = fs::llistxattr(branch.path,NULL,0);
       if(rv < 0)
