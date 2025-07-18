@@ -80,8 +80,6 @@ namespace l
     if(rv < 0)
       return rv;
 
-    len = val.size();
-
     if(count_ == 0)
       return val.size();
 
