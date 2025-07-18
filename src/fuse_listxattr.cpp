@@ -38,7 +38,6 @@ _listxattr_size(const std::vector<Branch*> &branches_,
   std::string fullpath;
 
   size = 0;
-
   for(const auto branch : branches_)
     {
       fullpath = fs::path::make(branch->path,fusepath_);
