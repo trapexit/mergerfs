@@ -67,7 +67,7 @@ _listxattr(const std::vector<Branch*> &branches_,
   if(size_ == 0)
     return ::_listxattr_size(branches_,fusepath_);
 
-  err = 0;
+  err = ENOENT;
   size = 0;
   for(const auto branch : branches_)
     {
@@ -77,7 +77,10 @@ _listxattr(const std::vector<Branch*> &branches_,
       if(rv == -ERANGE)
         return -ERANGE;
       if(rv < 0)
-        continue;
+        {
+
+          continue;
+        }
 
       list_ += rv;
       size_ -= rv;
