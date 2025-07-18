@@ -85,9 +85,9 @@ namespace l
     len = val.size();
 
     if(count_ == 0)
-      return len;
+      return val.size();
 
-    if(count_ < len)
+    if(count_ < val.size())
       return -ERANGE;
 
     memcpy(buf_,val.c_str(),len);
