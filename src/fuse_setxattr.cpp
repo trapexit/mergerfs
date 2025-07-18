@@ -207,20 +207,18 @@ namespace l
   }
 }
 
-namespace FUSE
-{
-  int
-  setxattr(const char *fusepath_,
-           const char *attrname_,
-           const char *attrval_,
-           size_t      attrvalsize_,
-           int         flags_)
-  {
-    if(Config::is_mergerfs_xattr(fusepath_,attrname_))
-      return l::setxattr_controlfile(attrname_,
-                                     std::string(attrval_,attrvalsize_),
-                                     flags_);
 
-    return l::setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
-  }
+int
+FUSE::setxattr(const char *fusepath_,
+               const char *attrname_,
+               const char *attrval_,
+               size_t      attrvalsize_,
+               int         flags_)
+{
+  if(Config::is_mergerfs_xattr(fusepath_,attrname_))
+    return l::setxattr_controlfile(attrname_,
+                                   std::string(attrval_,attrvalsize_),
+                                   flags_);
+
+  return l::setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
 }
