@@ -47,10 +47,13 @@ _setxattr_cmd_xattr(const std::string_view &attrname_,
   cmd = Config::prune_cmd_xattr(attrname_);
 
   if(cmd == "gc")
+    fuse_gc();
     return 0;
   if(cmd == "gc1")
+    fuse_gc1();
     return 0;
   if(cmd == "invalidate-all-nodes")
+    fuse_invalidate_all_nodes();
     return 0;
   if(cmd == "invalidate-gid-cache")
     return 0;
