@@ -83,6 +83,7 @@ _listxattr(const std::vector<Branch*> &branches_,
           continue;
         }
 
+      err = 0;
       list_ += rv;
       size_ -= rv;
       size  += rv;
