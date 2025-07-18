@@ -66,7 +66,7 @@ _root_listxattr(const std::vector<Branch*> &branches_,
     return ::_listxattr_size(branches_,fusepath_);
 
   size = 0;
-  for(const auto &branch : branches_)
+  for(const auto branch : branches_)
     {
       rv = fs::llistxattr(branch.path,list_,size_);
       if(rv == -ERANGE)
