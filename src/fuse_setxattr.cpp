@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_xattr.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_glob.hpp"
