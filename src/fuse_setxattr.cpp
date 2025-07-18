@@ -72,9 +72,9 @@ namespace l
 
   static
   int
-  setxattr_ctrl_file(const std::string &attrname_,
-                     const std::string &attrval_,
-                     const int          flags_)
+  setxattr_ctrl_file(const char *attrname_,
+                     const char *attrval_,
+                     const int   flags_)
   {
     int rv;
     std::string key;
