@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_setxattr.hpp"
+
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "endian.hpp"
