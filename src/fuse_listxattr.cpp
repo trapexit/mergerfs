@@ -60,6 +60,7 @@ _listxattr(const std::vector<Branch*> &branches_,
            size_t                      size_)
 {
   ssize_t rv;
+  ssize_t err;
   ssize_t size;
   std::string fullpath;
 
