@@ -79,7 +79,7 @@ _listxattr(const std::vector<Branch*> &branches_,
         return -ERANGE;
       if(rv < 0)
         {
-          if(err.has_value())
+          if(!err.has_value() || (err != 0))
             continue;
           err = rv;
           continue;
