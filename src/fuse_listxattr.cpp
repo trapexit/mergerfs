@@ -59,12 +59,13 @@ _root_listxattr(const std::vector<Branch*> &branches_,
                 char                       *list_,
                 size_t                      size_)
 {
+  ssize_t rv;
+  ssize_t size;
+
   if(size_ == 0)
     return ::_listxattr_size(branches_,fusepath_);
 
-  ssize_t rv;
-  ssize_t size = 0;
-  Branches::Ptr branches = cfg_->branches;
+  size = 0;
   for(const auto &branch : *branches)
     {
       rv = fs::llistxattr(branch.path,list_,size_);
