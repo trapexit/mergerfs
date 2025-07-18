@@ -71,7 +71,7 @@ _root_listxattr(const std::vector<Branch*> &branches_,
     {
       fullpath = fs::path::make(branch->path,fusepath_);
 
-      rv = fs::llistxattr(branch.path,list_,size_);
+      rv = fs::llistxattr(fullpath,list_,size_);
       if(rv == -ERANGE)
         return -ERANGE;
       if(rv < 0)
