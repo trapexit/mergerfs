@@ -192,10 +192,9 @@ namespace l
   }
 }
 
-namespace FUSE
-{
+
   int
-  getxattr(const char *fusepath_,
+  FUSE::getxattr(const char *fusepath_,
            const char *attrname_,
            char       *buf_,
            size_t      count_)
@@ -225,4 +224,3 @@ namespace FUSE
                        buf_,
                        count_);
   }
-}
