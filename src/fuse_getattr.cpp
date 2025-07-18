@@ -202,16 +202,14 @@ namespace l
   }
 }
 
-namespace FUSE
-{
-  int
-  getattr(const char      *fusepath_,
-          struct stat     *st_,
-          fuse_timeouts_t *timeout_)
-  {
-    if(Config::is_ctrl_file(fusepath_))
-      return l::getattr_controlfile(st_);
 
-    return l::getattr(fusepath_,st_,timeout_);
-  }
+int
+FUSE::getattr(const char      *fusepath_,
+              struct stat     *st_,
+              fuse_timeouts_t *timeout_)
+{
+  if(Config::is_ctrl_file(fusepath_))
+    return l::getattr_controlfile(st_);
+
+  return l::getattr(fusepath_,st_,timeout_);
 }
