@@ -115,8 +115,6 @@ FUSE::listxattr(const char *fusepath_,
                 size_t      size_)
 {
   Config::Read cfg;
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
 
   if(Config::is_ctrl_file(fusepath_))
     return cfg->keys_listxattr(list_,size_);
@@ -130,6 +128,9 @@ FUSE::listxattr(const char *fusepath_,
     case XAttr::ENUM::NOSYS:
       return -ENOSYS;
     }
+
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
   return ::_listxattr(cfg->func.listxattr.policy,
                       cfg->branches,
