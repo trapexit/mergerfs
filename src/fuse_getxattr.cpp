@@ -202,10 +202,10 @@ FUSE::getxattr(const char *fusepath_,
   Config::Read cfg;
 
   if(Config::is_ctrl_file(fusepath_))
-    return l::getxattr_controlfile(cfg,
-                                   attrname_,
-                                   buf_,
-                                   count_);
+    return l::getxattr_ctrl_file(cfg,
+                                 attrname_,
+                                 buf_,
+                                 count_);
 
   if((cfg->security_capability == false) &&
      l::is_attrname_security_capability(attrname_))
