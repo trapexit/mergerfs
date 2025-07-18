@@ -144,13 +144,13 @@ namespace l
 
     key = Config::prune_ctrl_xattr(atrname_);
 
-    if(attr[2] == "basepath")
+    if(key == "basepath")
       return l::getxattr_from_string(buf_,count_,basepath_);
-    if(attr[2] ==  "relpath")
+    if(key ==  "relpath")
       return l::getxattr_from_string(buf_,count_,fusepath_);
-    if(attr[2] == "fullpath")
+    if(key == "fullpath")
       return l::getxattr_from_string(buf_,count_,fullpath_);
-    if(attr[2] == "allpaths")
+    if(key == "allpaths")
       return l::getxattr_user_mergerfs_allpaths(branches_,fusepath_,buf_,count_);
 
     return -ENOATTR;
