@@ -237,17 +237,17 @@ namespace l
   void
   usr1_signal_handler(int signal_)
   {
-    SysLog::info("Received SIGUSR1 - invalidating all nodes");
-    fuse_invalidate_all_nodes();
+    // SysLog::info("Received SIGUSR1 - invalidating all nodes");
+    // fuse_invalidate_all_nodes();
   }
 
   static
   void
   usr2_signal_handler(int signal_)
   {
-    SysLog::info("Received SIGUSR2 - triggering thorough gc");
-    fuse_gc();
-    GIDCache::clear_all();
+    // SysLog::info("Received SIGUSR2 - triggering thorough gc");
+    // fuse_gc();
+    // GIDCache::clear_all();
   }
 
   static
