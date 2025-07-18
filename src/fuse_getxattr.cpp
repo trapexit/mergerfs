@@ -201,7 +201,7 @@ FUSE::getxattr(const char *fusepath_,
 {
   Config::Read cfg;
 
-  if(Config::is_mergerfs_xattr(fusepath_,attrname_))
+  if(Config::is_ctrl_file(fusepath_))
     return l::getxattr_controlfile(cfg,
                                    attrname_,
                                    buf_,
