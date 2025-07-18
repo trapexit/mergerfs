@@ -80,7 +80,7 @@ namespace l
     std::string key;
     Config::Write cfg;
 
-    if(!Config::is_mergerfs_xattr(attrname_)
+    if(!Config::is_mergerfs_xattr(attrname_))
       return -ENOATTR;
 
     if(Config::is_cmd_xattr(attrname_))
