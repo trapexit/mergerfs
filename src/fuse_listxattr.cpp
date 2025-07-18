@@ -90,7 +90,7 @@ _listxattr(const std::vector<Branch*> &branches_,
       size  += rv;
     }
 
-  return (err ? size : err);
+  return (err.has_value() ? size : err.value());
 }
 
 static
