@@ -141,8 +141,9 @@ namespace l
                          const size_t       count_)
   {
     StrVec attr;
+    std::string key;
 
-    str::split(attrname_,'.',&attr);
+    key = Config::prune_ctrl_xattr(atrname_);
 
     if(attr[2] == "basepath")
       return l::getxattr_from_string(buf_,count_,basepath_);
