@@ -61,6 +61,7 @@ _root_listxattr(const std::vector<Branch*> &branches_,
 {
   ssize_t rv;
   ssize_t size;
+  std::string fullpath;
 
   if(size_ == 0)
     return ::_listxattr_size(branches_,fusepath_);
@@ -68,6 +69,8 @@ _root_listxattr(const std::vector<Branch*> &branches_,
   size = 0;
   for(const auto branch : branches_)
     {
+      fullpath = fs::path::make(branch->path,fusepath_);
+
       rv = fs::llistxattr(branch.path,list_,size_);
       if(rv == -ERANGE)
         return -ERANGE;
