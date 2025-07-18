@@ -193,34 +193,34 @@ namespace l
 }
 
 
-  int
-  FUSE::getxattr(const char *fusepath_,
-           const char *attrname_,
-           char       *buf_,
-           size_t      count_)
-  {
-    Config::Read cfg;
+int
+FUSE::getxattr(const char *fusepath_,
+               const char *attrname_,
+               char       *buf_,
+               size_t      count_)
+{
+  Config::Read cfg;
 
-    if(Config::is_mergerfs_xattr(fusepath_,attrname_))
-      return l::getxattr_controlfile(cfg,
-                                     attrname_,
-                                     buf_,
-                                     count_);
+  if(Config::is_mergerfs_xattr(fusepath_,attrname_))
+    return l::getxattr_controlfile(cfg,
+                                   attrname_,
+                                   buf_,
+                                   count_);
 
-    if((cfg->security_capability == false) &&
-       l::is_attrname_security_capability(attrname_))
-      return -ENOATTR;
+  if((cfg->security_capability == false) &&
+     l::is_attrname_security_capability(attrname_))
+    return -ENOATTR;
 
-    if(cfg->xattr.to_int())
-      return -cfg->xattr.to_int();
+  if(cfg->xattr.to_int())
+    return -cfg->xattr.to_int();
 
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::getxattr(cfg->func.getxattr.policy,
-                       cfg->branches,
-                       fusepath_,
-                       attrname_,
-                       buf_,
-                       count_);
-  }
+  return l::getxattr(cfg->func.getxattr.policy,
+                     cfg->branches,
+                     fusepath_,
+                     attrname_,
+                     buf_,
+                     count_);
+}
