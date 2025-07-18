@@ -101,6 +101,9 @@ _listxattr(const Policy::Search &searchFunc_,
   if(rv == -1)
     return -errno;
 
+  if(size_ == 0)
+    return ::_listxattr_size(obranches,fusepath_,list_,size_);
+
   return ::_listxattr(obranches,fusepath_,list_,size_);
 }
 
