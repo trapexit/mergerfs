@@ -69,7 +69,7 @@ _listxattr(const std::vector<Branch*> &branches_,
     return ::_listxattr_size(branches_,fusepath_);
 
   size = 0;
-  err = -ENOENT;
+  err  = -ENOENT;
   for(const auto branch : branches_)
     {
       fullpath = fs::path::make(branch->path,fusepath_);
