@@ -56,8 +56,10 @@ _setxattr_cmd_xattr(const std::string_view &attrname_,
     fuse_invalidate_all_nodes();
     return 0;
   if(cmd == "invalidate-gid-cache")
+    GIDCache::invalidate_all();
     return 0;
   if(cmd == "clear-gid-cache")
+    GIDCache::clear_all();
     return 0;
 
   return -ENOATTR;
