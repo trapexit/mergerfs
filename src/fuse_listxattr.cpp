@@ -78,11 +78,6 @@ _root_listxattr(Config::Read &cfg_,
       size  += rv;
     }
 
-  rv = cfg_->keys_listxattr(list_,size_);
-  if(rv < 0)
-    return rv;
-  size += rv;
-
   return size;
 }
 
