@@ -22,6 +22,7 @@
 #include "fs_lsetxattr.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
+#include "gidcache.hpp"
 #include "num.hpp"
 #include "policy_rv.hpp"
 #include "str.hpp"
