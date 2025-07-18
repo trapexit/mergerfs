@@ -74,6 +74,7 @@ namespace l
   int
   setxattr_ctrl_file(const char *attrname_,
                      const char *attrval_,
+                     size_t      attrvalsize_,
                      const int   flags_)
   {
     int rv;
