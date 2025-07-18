@@ -60,9 +60,9 @@ _listxattr(const std::vector<Branch*> &branches_,
            size_t                      size_)
 {
   ssize_t rv;
-  ssize_t err;
   ssize_t size;
   std::string fullpath;
+  std::optional<ssize_t> err;
 
   if(size_ == 0)
     return ::_listxattr_size(branches_,fusepath_);
