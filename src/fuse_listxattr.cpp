@@ -67,6 +67,7 @@ _listxattr(const std::vector<Branch*> &branches_,
   if(size_ == 0)
     return ::_listxattr_size(branches_,fusepath_);
 
+  err = 0;
   size = 0;
   for(const auto branch : branches_)
     {
