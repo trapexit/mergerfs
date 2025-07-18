@@ -85,7 +85,7 @@ namespace l
       return -ENOATTR;
 
     if(Config::is_cmd_xattr(attrname_))
-      return ::_setxattr_cmd_xattr(attrname_,attrval_);
+      return ::_setxattr_cmd_xattr(attrname_,attrval_,attrvalsize_);
 
     key = Config::prune_ctrl_xattr(attrname_);
 
