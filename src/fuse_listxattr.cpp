@@ -60,7 +60,7 @@ _root_listxattr(const std::vector<Branch*> &branches_,
                 size_t                      size_)
 {
   if(size_ == 0)
-    return ::_root_listxattr_size(branches_,fusepath_);
+    return ::_listxattr_size(branches_,fusepath_);
 
   ssize_t rv;
   ssize_t size = 0;
