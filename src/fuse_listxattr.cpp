@@ -101,11 +101,7 @@ _listxattr(const Policy::Search &searchFunc_,
   if(rv == -1)
     return -errno;
 
-  fullpath = fs::path::make(obranches[0]->path,fusepath_);
-
-  rv = fs::llistxattr(fullpath,list_,size_);
-
-  return ((rv == -1) ? -errno : rv);
+  return ::_listxattr(obranches,fusepath_,list_,size_);
 }
 
 int
