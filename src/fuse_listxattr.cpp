@@ -80,8 +80,7 @@ _listxattr(const std::vector<Branch*> &branches_,
       if(rv < 0)
         {
           if(!err.has_value() || (err != 0))
-            continue;
-          err = rv;
+            err = rv;
           continue;
         }
 
