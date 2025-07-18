@@ -48,8 +48,6 @@ _root_listxattr_size(Config::Read &cfg_)
       size += rv;
     }
 
-  rv += cfg_->keys_listxattr_size();
-
   return rv;
 }
 
