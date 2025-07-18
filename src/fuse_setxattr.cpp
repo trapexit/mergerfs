@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-#include <string.h>
+#include <cstring>
 
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
