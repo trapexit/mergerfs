@@ -146,7 +146,7 @@ namespace l
 
     if(key == "basepath")
       return l::getxattr_from_string(buf_,count_,basepath_);
-    if(key ==  "relpath")
+    if(key == "relpath")
       return l::getxattr_from_string(buf_,count_,fusepath_);
     if(key == "fullpath")
       return l::getxattr_from_string(buf_,count_,fullpath_);
