@@ -175,7 +175,7 @@ namespace l
 
     fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-    if(str::startswith(attrname_,"user.mergerfs."))
+    if(Config::is_mergerfs_xattr(attrname_))
       return l::getxattr_user_mergerfs(branches[0]->path,
                                        fusepath_,
                                        fullpath,
