@@ -126,7 +126,11 @@ FUSE::listxattr(const char *fusepath_,
   Config::Read cfg;
 
   if(Config::is_ctrl_file(fusepath_))
-    return cfg->keys_listxattr(list_,size_);
+    {
+      if(size_ == 0)
+        return cfg->keys_listxattr_size();
+      return cfg->keys_listxattr(list_,size_);
+    }
 
   switch(cfg->xattr)
     {
