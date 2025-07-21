@@ -26,6 +26,7 @@
 #include "fs_stat.hpp"
 
 #include <functional>
+#include <string.h>
 #include <thread>
 #include <set>
 
@@ -47,7 +48,7 @@ _branch_is_mounted(const struct stat &src_st_,
   fs::Path filepath;
 
   rv = fs::lgetxattr(branch_path_,"user.mergerfs.branch",NULL,0);
-  if(rv != -1)
+  if(rv >= 0)
     return true;
 
   filepath = branch_path_ / ".mergerfs.branch";
@@ -56,7 +57,7 @@ _branch_is_mounted(const struct stat &src_st_,
     return true;
 
   rv = fs::lgetxattr(branch_path_,"user.mergerfs.branch_mounts_here",NULL,0);
-  if(rv != -1)
+  if(rv >= 0)
     return false;
 
   filepath = branch_path_ / ".mergerfs.branch_mounts_here";
@@ -138,7 +139,7 @@ _wait_for_mount(const struct stat               &src_st_,
       now = std::chrono::steady_clock::now();
     }
 
-  for(auto const &path : failures)
+  for(const auto &path : failures)
     SysLog::notice("{} not ready within timeout",path.string());
 
   return failures.size();
@@ -153,16 +154,16 @@ fs::wait_for_mount(const fs::Path                  &src_path_,
   struct stat src_st = {0};
 
   rv = fs::stat(src_path_,&src_st);
-  if(rv == -1)
+  if(rv < 0)
     SysLog::error("Error stat'ing mount path: {} ({})",
                   src_path_.string(),
-                  strerror(errno));
+                  ::strerror(-rv));
 
   for(auto &tgt_path : tgt_paths_)
     {
       int rv;
 
-      if(_branch_is_mounted(src_st,tgt_path))
+      if(::_branch_is_mounted(src_st,tgt_path))
         continue;
 
       rv = fs::mount(tgt_path);

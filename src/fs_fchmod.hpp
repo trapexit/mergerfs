@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fs_fstat.hpp"
+#include "to_neg_errno.hpp"
 
 #include <sys/stat.h>
 
@@ -33,7 +34,11 @@ namespace fs
   fchmod(const int    fd_,
          const mode_t mode_)
   {
-    return ::fchmod(fd_,mode_);
+    int rv;
+
+    rv = ::fchmod(fd_,mode_);
+
+    return ::to_neg_errno(rv);
   }
 
   static
@@ -42,7 +47,7 @@ namespace fs
   fchmod(const int          fd_,
          const struct stat &st_)
   {
-    return ::fchmod(fd_,st_.st_mode);
+    return fs::fchmod(fd_,st_.st_mode);
   }
 
   static
@@ -54,20 +59,20 @@ namespace fs
     int rv;
 
     rv = fs::fchmod(fd_,st_);
-    if(rv == -1)
+    if(rv < 0)
       {
-        int error;
+        int err;
         struct stat tmpst;
 
-        error = errno;
+        err = rv;
         rv = fs::fstat(fd_,&tmpst);
         if(rv < 0)
-          return -1;
+          return rv;
 
         if((st_.st_mode & MODE_BITS) != (tmpst.st_mode & MODE_BITS))
-          return (errno=error,-1);
+          return err;
       }
 
-    return 0;
+    return rv;
   }
 }

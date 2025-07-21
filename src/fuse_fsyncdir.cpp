@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_fsyncdir.hpp"
+
 #include "errno.hpp"
 #include "dirinfo.hpp"
 #include "fs_fsync.hpp"
@@ -24,30 +26,19 @@
 #include <vector>
 
 
-namespace l
+static
+int
+_fsyncdir(const DirInfo *di_,
+          const int      isdatasync_)
 {
-  static
-  int
-  fsyncdir(const DirInfo *di_,
-           const int      isdatasync_)
-  {
-    int rv;
-
-    rv    = -1;
-    errno = ENOSYS;
-
-    return ((rv == -1) ? -errno : 0);
-  }
+  return -ENOSYS;
 }
 
-namespace FUSE
+int
+FUSE::fsyncdir(const fuse_file_info_t *ffi_,
+               int                     isdatasync_)
 {
-  int
-  fsyncdir(const fuse_file_info_t *ffi_,
-           int                     isdatasync_)
-  {
-    DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
 
-    return l::fsyncdir(di,isdatasync_);
-  }
+  return ::_fsyncdir(di,isdatasync_);
 }

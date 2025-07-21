@@ -14,8 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_mkdir.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
+#include "error.hpp"
 #include "fs_acl.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_mkdir.hpp"
@@ -28,150 +31,124 @@
 #include <string>
 
 
-namespace error
+static
+int
+_mkdir_core(const std::string &fullpath_,
+            mode_t             mode_,
+            const mode_t       umask_)
 {
-  static
-  inline
-  int
-  calc(const int rv_,
-       const int prev_,
-       const int cur_)
-  {
-    if(rv_ == -1)
-      {
-        if(prev_ == 0)
-          return 0;
-        return cur_;
-      }
+  if(!fs::acl::dir_has_defaults(fullpath_))
+    mode_ &= ~umask_;
 
-    return 0;
-  }
+  return fs::mkdir(fullpath_,mode_);
 }
 
-namespace l
+static
+int
+_mkdir_loop_core(const std::string &createpath_,
+                 const char        *fusepath_,
+                 const mode_t       mode_,
+                 const mode_t       umask_)
 {
-  static
-  int
-  mkdir_core(const std::string &fullpath_,
-             mode_t             mode_,
-             const mode_t       umask_)
-  {
-    if(!fs::acl::dir_has_defaults(fullpath_))
-      mode_ &= ~umask_;
+  int rv;
+  std::string fullpath;
 
-    return fs::mkdir(fullpath_,mode_);
-  }
+  fullpath = fs::path::make(createpath_,fusepath_);
 
-  static
-  int
-  mkdir_loop_core(const std::string &createpath_,
-                  const char        *fusepath_,
-                  const mode_t       mode_,
-                  const mode_t       umask_,
-                  const int          error_)
-  {
-    int rv;
-    std::string fullpath;
+  rv = ::_mkdir_core(fullpath,mode_,umask_);
 
-    fullpath = fs::path::make(createpath_,fusepath_);
-
-    rv = l::mkdir_core(fullpath,mode_,umask_);
-
-    return error::calc(rv,error_,errno);
-  }
-
-  static
-  int
-  mkdir_loop(const Branch               *existingbranch_,
-             const std::vector<Branch*> &createbranches_,
-             const char                 *fusepath_,
-             const std::string          &fusedirpath_,
-             const mode_t                mode_,
-             const mode_t                umask_)
-  {
-    int rv;
-    int error;
-
-    error = -1;
-    for(auto &createbranch : createbranches_)
-      {
-        rv = fs::clonepath_as_root(existingbranch_->path,
-                                   createbranch->path,
-                                   fusedirpath_);
-        if(rv == -1)
-          error = error::calc(rv,error,errno);
-        else
-          error = l::mkdir_loop_core(createbranch->path,
-                                     fusepath_,
-                                     mode_,
-                                     umask_,
-                                     error);
-      }
-
-    return -error;
-  }
-
-  static
-  int
-  mkdir(const Policy::Search &getattrPolicy_,
-        const Policy::Create &mkdirPolicy_,
-        const Branches       &branches_,
-        const char           *fusepath_,
-        const mode_t          mode_,
-        const mode_t          umask_)
-  {
-    int rv;
-    std::string fusedirpath;
-    std::vector<Branch*> createbranches;
-    std::vector<Branch*> existingbranches;
-
-    fusedirpath = fs::path::dirname(fusepath_);
-
-    rv = getattrPolicy_(branches_,fusedirpath,existingbranches);
-    if(rv == -1)
-      return -errno;
-
-    rv = mkdirPolicy_(branches_,fusedirpath,createbranches);
-    if(rv == -1)
-      return -errno;
-
-    return l::mkdir_loop(existingbranches[0],
-                         createbranches,
-                         fusepath_,
-                         fusedirpath,
-                         mode_,
-                         umask_);
-  }
+  return rv;
 }
 
-namespace FUSE
+static
+int
+_mkdir_loop(const Branch               *existingbranch_,
+            const std::vector<Branch*> &createbranches_,
+            const char                 *fusepath_,
+            const std::string          &fusedirpath_,
+            const mode_t                mode_,
+            const mode_t                umask_)
 {
-  int
-  mkdir(const char *fusepath_,
-        mode_t      mode_)
-  {
-    int rv;
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  int rv;
+  Err err;
 
-    rv = l::mkdir(cfg->func.getattr.policy,
-                  cfg->func.mkdir.policy,
-                  cfg->branches,
-                  fusepath_,
-                  mode_,
-                  fc->umask);
-    if(rv == -EROFS)
-      {
-        Config::Write()->branches.find_and_set_mode_ro();
-        rv = l::mkdir(cfg->func.getattr.policy,
-                      cfg->func.mkdir.policy,
-                      cfg->branches,
-                      fusepath_,
-                      mode_,
-                      fc->umask);
-      }
+  for(const auto &createbranch : createbranches_)
+    {
+      rv = fs::clonepath_as_root(existingbranch_->path,
+                                 createbranch->path,
+                                 fusedirpath_);
+      if(rv < 0)
+        {
+          err = rv;
+          continue;
+        }
 
+      err = ::_mkdir_loop_core(createbranch->path,
+                               fusepath_,
+                               mode_,
+                               umask_);
+    }
+
+  return err;
+}
+
+static
+int
+_mkdir(const Policy::Search &getattrPolicy_,
+       const Policy::Create &mkdirPolicy_,
+       const Branches       &branches_,
+       const char           *fusepath_,
+       const mode_t          mode_,
+       const mode_t          umask_)
+{
+  int rv;
+  std::string fusedirpath;
+  std::vector<Branch*> createbranches;
+  std::vector<Branch*> existingbranches;
+
+  fusedirpath = fs::path::dirname(fusepath_);
+
+  rv = getattrPolicy_(branches_,fusedirpath,existingbranches);
+  if(rv < 0)
     return rv;
-  }
+
+  rv = mkdirPolicy_(branches_,fusedirpath,createbranches);
+  if(rv < 0)
+    return rv;
+
+  return ::_mkdir_loop(existingbranches[0],
+                       createbranches,
+                       fusepath_,
+                       fusedirpath,
+                       mode_,
+                       umask_);
+}
+
+int
+FUSE::mkdir(const char *fusepath_,
+            mode_t      mode_)
+{
+  int rv;
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  rv = ::_mkdir(cfg->func.getattr.policy,
+                cfg->func.mkdir.policy,
+                cfg->branches,
+                fusepath_,
+                mode_,
+                fc->umask);
+  if(rv == -EROFS)
+    {
+      Config::Write()->branches.find_and_set_mode_ro();
+      rv = ::_mkdir(cfg->func.getattr.policy,
+                    cfg->func.mkdir.policy,
+                    cfg->branches,
+                    fusepath_,
+                    mode_,
+                    fc->umask);
+    }
+
+  return rv;
 }

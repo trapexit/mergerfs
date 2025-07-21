@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_fallocate.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fallocate.hpp"
@@ -21,36 +23,30 @@
 #include "fuse.h"
 
 
-namespace l
+static
+int
+_fallocate(const int   fd_,
+           const int   mode_,
+           const off_t offset_,
+           const off_t len_)
 {
-  static
-  int
-  fallocate(const int   fd_,
-            const int   mode_,
-            const off_t offset_,
-            const off_t len_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::fallocate(fd_,mode_,offset_,len_);
+  rv = fs::fallocate(fd_,mode_,offset_,len_);
 
-    return ((rv == -1) ? -errno : 0);
-  }
+  return rv;
 }
 
-namespace FUSE
+int
+FUSE::fallocate(const uint64_t fh_,
+                int            mode_,
+                off_t          offset_,
+                off_t          len_)
 {
-  int
-  fallocate(const uint64_t fh_,
-            int            mode_,
-            off_t          offset_,
-            off_t          len_)
-  {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
+  FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
 
-    return l::fallocate(fi->fd,
-                        mode_,
-                        offset_,
-                        len_);
-  }
+  return ::_fallocate(fi->fd,
+                      mode_,
+                      offset_,
+                      len_);
 }

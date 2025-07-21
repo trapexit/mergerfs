@@ -16,7 +16,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.h"
+#include "fs_copy_file_range.hpp"
+
+#include "errno.hpp"
 
 #include <cstdint>
 
@@ -24,25 +26,22 @@
 #include <sys/types.h>
 
 
-namespace fs
+ssize_t
+fs::copy_file_range(const int           fd_in_,
+                    int64_t            *off_in_,
+                    const int           fd_out_,
+                    int64_t            *off_out_,
+                    const size_t        len_,
+                    const unsigned int  flags_)
 {
-  ssize_t
-  copy_file_range(const int           fd_in_,
-                  int64_t            *off_in_,
-                  const int           fd_out_,
-                  int64_t            *off_out_,
-                  const size_t        len_,
-                  const unsigned int  flags_)
-  {
-    return (errno=EOPNOTSUPP,-1);
-  }
+  return -EOPNOTSUPP;
+}
 
-  ssize_t
-  copy_file_range(const int           fd_in_,
-                  const int           fd_out_,
-                  const size_t        len_,
-                  const unsigned int  flags_)
-  {
-    return (errno=EOPNOTSUPP,-1);
-  }
+ssize_t
+fs::copy_file_range(const int           fd_in_,
+                    const int           fd_out_,
+                    const size_t        len_,
+                    const unsigned int  flags_)
+{
+  return -EOPNOTSUPP;
 }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_readlink.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_lstat.hpp"
@@ -29,111 +31,105 @@
 using std::string;
 
 
-namespace l
+static
+int
+_readlink_core_standard(const string &fullpath_,
+                        char         *buf_,
+                        const size_t  size_)
+
 {
-  static
-  int
-  readlink_core_standard(const string &fullpath_,
-                         char         *buf_,
-                         const size_t  size_)
+  int rv;
 
-  {
-    int rv;
+  rv = fs::readlink(fullpath_,buf_,size_);
+  if(rv < 0)
+    return rv;
 
-    rv = fs::readlink(fullpath_,buf_,size_);
-    if(rv == -1)
-      return -errno;
+  buf_[rv] = '\0';
 
-    buf_[rv] = '\0';
-
-    return 0;
-  }
-
-  static
-  int
-  readlink_core_symlinkify(const string &fullpath_,
-                           char         *buf_,
-                           const size_t  size_,
-                           const time_t  symlinkify_timeout_)
-  {
-    int rv;
-    struct stat st;
-
-    rv = fs::lstat(fullpath_,&st);
-    if(rv == -1)
-      return -errno;
-
-    if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
-      return l::readlink_core_standard(fullpath_,buf_,size_);
-
-    strncpy(buf_,fullpath_.c_str(),size_);
-
-    return 0;
-  }
-
-  static
-  int
-  readlink_core(const string &basepath_,
-                const char   *fusepath_,
-                char         *buf_,
-                const size_t  size_,
-                const bool    symlinkify_,
-                const time_t  symlinkify_timeout_)
-  {
-    string fullpath;
-
-    fullpath = fs::path::make(basepath_,fusepath_);
-
-    if(symlinkify_)
-      return l::readlink_core_symlinkify(fullpath,buf_,size_,symlinkify_timeout_);
-
-    return l::readlink_core_standard(fullpath,buf_,size_);
-  }
-
-  static
-  int
-  readlink(const Policy::Search &searchFunc_,
-           const Branches       &ibranches_,
-           const char           *fusepath_,
-           char                 *buf_,
-           const size_t          size_,
-           const bool            symlinkify_,
-           const time_t          symlinkify_timeout_)
-  {
-    int rv;
-    StrVec basepaths;
-    std::vector<Branch*> obranches;
-
-    rv = searchFunc_(ibranches_,fusepath_,obranches);
-    if(rv == -1)
-      return -errno;
-
-    return l::readlink_core(obranches[0]->path,
-                            fusepath_,
-                            buf_,
-                            size_,
-                            symlinkify_,
-                            symlinkify_timeout_);
-  }
+  return 0;
 }
 
-namespace FUSE
+static
+int
+_readlink_core_symlinkify(const string &fullpath_,
+                          char         *buf_,
+                          const size_t  size_,
+                          const time_t  symlinkify_timeout_)
 {
-  int
-  readlink(const char *fusepath_,
-           char       *buf_,
-           size_t      size_)
-  {
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  int rv;
+  struct stat st;
 
-    return l::readlink(cfg->func.readlink.policy,
-                       cfg->branches,
-                       fusepath_,
-                       buf_,
-                       size_,
-                       cfg->symlinkify,
-                       cfg->symlinkify_timeout);
-  }
+  rv = fs::lstat(fullpath_,&st);
+  if(rv < 0)
+    return rv;
+
+  if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
+    return ::_readlink_core_standard(fullpath_,buf_,size_);
+
+  strncpy(buf_,fullpath_.c_str(),size_);
+
+  return 0;
+}
+
+static
+int
+_readlink_core(const string &basepath_,
+               const char   *fusepath_,
+               char         *buf_,
+               const size_t  size_,
+               const bool    symlinkify_,
+               const time_t  symlinkify_timeout_)
+{
+  string fullpath;
+
+  fullpath = fs::path::make(basepath_,fusepath_);
+
+  if(symlinkify_)
+    return ::_readlink_core_symlinkify(fullpath,buf_,size_,symlinkify_timeout_);
+
+  return ::_readlink_core_standard(fullpath,buf_,size_);
+}
+
+static
+int
+_readlink(const Policy::Search &searchFunc_,
+          const Branches       &ibranches_,
+          const char           *fusepath_,
+          char                 *buf_,
+          const size_t          size_,
+          const bool            symlinkify_,
+          const time_t          symlinkify_timeout_)
+{
+  int rv;
+  StrVec basepaths;
+  std::vector<Branch*> obranches;
+
+  rv = searchFunc_(ibranches_,fusepath_,obranches);
+  if(rv < 0)
+    return rv;
+
+  return ::_readlink_core(obranches[0]->path,
+                          fusepath_,
+                          buf_,
+                          size_,
+                          symlinkify_,
+                          symlinkify_timeout_);
+}
+
+int
+FUSE::readlink(const char *fusepath_,
+               char       *buf_,
+               size_t      size_)
+{
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_readlink(cfg->func.readlink.policy,
+                     cfg->branches,
+                     fusepath_,
+                     buf_,
+                     size_,
+                     cfg->symlinkify,
+                     cfg->symlinkify_timeout);
 }

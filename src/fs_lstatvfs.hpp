@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -19,40 +19,37 @@
 #pragma once
 
 #include "errno.hpp"
-#include "to_neg_errno.hpp"
+#include "fs_close.hpp"
+#include "fs_open.hpp"
+#include "fs_fstatvfs.hpp"
 
-#ifdef __FreeBSD__
-# include <sys/param.h>
-# include <sys/mount.h>
-# define umount2(target,flags) unmount(target,flags)
-# define MNT_DETACH 0
-#else
-# include <sys/mount.h>
+#include <cstdint>
+#include <string>
+
+#ifndef O_PATH
+# define O_PATH 0
 #endif
 
-#include <string>
 
 namespace fs
 {
   static
   inline
   int
-  umount2(const std::string target_,
-          const int         flags_)
+  lstatvfs(const std::string &path_,
+           struct statvfs    *st_)
   {
+    int fd;
     int rv;
 
-    rv = ::umount2(target_.c_str(),
-                   flags_);
+    fd = fs::open(path_,O_RDONLY|O_NOFOLLOW|O_PATH);
+    if(fd < 0)
+      return fd;
 
-    return ::to_neg_errno(rv);
-  }
+    rv = fs::fstatvfs(fd,st_);
 
-  static
-  inline
-  int
-  umount_lazy(const std::string target_)
-  {
-    return fs::umount2(target_,MNT_DETACH);
+    fs::close(fd);
+
+    return rv;
   }
 }

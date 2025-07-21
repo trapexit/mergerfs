@@ -56,19 +56,19 @@ _lchmod_and_open_if_not_writable_and_empty(const std::string &fullpath_,
   struct stat st;
 
   rv = fs::lstat(fullpath_,&st);
-  if(rv == -1)
-    return (errno=EACCES,-1);
+  if(rv < 0)
+    return -EACCES;
 
   if(StatUtil::writable(st))
-    return (errno=EACCES,-1);
+    return -EACCES;
 
   rv = fs::lchmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
-  if(rv == -1)
-    return (errno=EACCES,-1);
+  if(rv < 0)
+    return -EACCES;
 
   rv = fs::open(fullpath_,flags_);
-  if(rv == -1)
-    return (errno=EACCES,-1);
+  if(rv < 0)
+    return -EACCES;
 
   fs::fchmod(rv,st.st_mode);
 
@@ -85,16 +85,16 @@ _nfsopenhack(const std::string &fullpath_,
     {
     default:
     case NFSOpenHack::ENUM::OFF:
-      return (errno=EACCES,-1);
+      return -EACCES;
     case NFSOpenHack::ENUM::GIT:
       if(::_rdonly(flags_))
-        return (errno=EACCES,-1);
+        return -EACCES;
       if(fullpath_.find("/.git/") == std::string::npos)
-        return (errno=EACCES,-1);
+        return -EACCES;
       return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
     case NFSOpenHack::ENUM::ALL:
       if(::_rdonly(flags_))
-        return (errno=EACCES,-1);
+        return -EACCES;
       return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
     }
 }
@@ -204,7 +204,7 @@ _open_path(const std::string &filepath_,
   FileInfo *fi;
 
   fd = fs::openat(AT_FDCWD,filepath_,ffi_->flags);
-  if((fd < 0) && (fd == -EACCES))
+  if(fd == -EACCES)
     fd = ::_nfsopenhack(filepath_,ffi_->flags,nfsopenhack_);
   if(fd < 0)
     return fd;
@@ -251,8 +251,8 @@ _open(const Policy::Search &searchFunc_,
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   filepath = fs::path::make(obranches[0]->path,fusepath_);
 
@@ -380,15 +380,15 @@ auto
 _open_insert_lambda(const fuse_context *fc_,
                     const char         *fusepath_,
                     fuse_file_info_t   *ffi_,
-                    int                *_rv_)
+                    int                *rv_)
 {
   return
     [=](auto &val_)
     {
-      *_rv_ = ::_open_for_insert_lambda(fc_,
-                                        fusepath_,
-                                        ffi_,
-                                        &val_.second);
+      *rv_ = ::_open_for_insert_lambda(fc_,
+                                       fusepath_,
+                                       ffi_,
+                                       &val_.second);
     };
 }
 
@@ -399,7 +399,7 @@ auto
 _open_update_lambda(const fuse_context *fc_,
                     const char         *fusepath_,
                     fuse_file_info_t   *ffi_,
-                    int                *_rv_)
+                    int                *rv_)
 {
   return
     [=](auto &val_)
@@ -409,17 +409,17 @@ _open_update_lambda(const fuse_context *fc_,
       // to abort an insert.
       if(val_.second.ref_count <= 0)
         {
-          *_rv_ = ::_open_for_insert_lambda(fc_,
-                                            fusepath_,
-                                            ffi_,
-                                            &val_.second);
+          *rv_ = ::_open_for_insert_lambda(fc_,
+                                           fusepath_,
+                                           ffi_,
+                                           &val_.second);
           return;
         }
 
-      *_rv_ = ::_open_for_update_lambda(fc_,
-                                        fusepath_,
-                                        ffi_,
-                                        &val_.second);
+      *rv_ = ::_open_for_update_lambda(fc_,
+                                       fusepath_,
+                                       ffi_,
+                                       &val_.second);
     };
 }
 

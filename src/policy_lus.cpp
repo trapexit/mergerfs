@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_lus.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -31,47 +33,44 @@
 using std::string;
 using std::vector;
 
-namespace lus
+static
+int
+_create(const Branches::Ptr  &branches_,
+        std::vector<Branch*> &paths_)
 {
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    uint64_t lus;
-    fs::info_t info;
-    Branch *obranch;
+  int rv;
+  int error;
+  uint64_t lus;
+  fs::info_t info;
+  Branch *obranch;
 
-    obranch = nullptr;
-    error = ENOENT;
-    lus = std::numeric_limits<uint64_t>::max();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
-        if(info.spaceused >= lus)
-          continue;
+  obranch = nullptr;
+  error = ENOENT;
+  lus = std::numeric_limits<uint64_t>::max();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
+      if(info.spaceused >= lus)
+        continue;
 
-        lus = info.spaceused;
-        obranch = &branch;
-      }
+      lus = info.spaceused;
+      obranch = &branch;
+    }
 
-    if(!obranch)
-      return (errno=error,-1);
+  if(!obranch)
+    return -error;
 
-    paths_.push_back(obranch);
+  paths_.push_back(obranch);
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -87,7 +86,7 @@ Policy::LUS::Create::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
-  return ::lus::create(branches_,paths_);
+  return ::_create(branches_,paths_);
 }
 
 int

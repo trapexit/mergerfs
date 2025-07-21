@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_fgetattr.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
@@ -23,14 +25,13 @@
 
 #include "fuse.h"
 
+
 static
 int
 _fgetattr(const FileInfo  *fi_,
-          struct stat     *st_,
-          fuse_timeouts_t *timeout_)
+          struct stat     *st_)
 {
   int rv;
-  Config::Read cfg;
 
   rv = fs::fstat(fi_->fd,st_);
   if(rv < 0)
@@ -40,40 +41,44 @@ _fgetattr(const FileInfo  *fi_,
                   fi_->fusepath,
                   st_);
 
+  return rv;
+}
+
+
+int
+FUSE::fgetattr(const uint64_t   fh_,
+               struct stat     *st_,
+               fuse_timeouts_t *timeout_)
+{
+  int rv;
+  uint64_t fh;
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+
+  fh = fh_;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](const auto &val_)
+                              {
+                                fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                              });
+    }
+
+  if(fh == 0)
+    {
+      timeout_->entry = cfg->cache_negative_entry;
+      return -ENOENT;
+    }
+
+  FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+
+  rv = ::_fgetattr(fi,st_);
+
   timeout_->entry = ((rv >= 0) ?
                      cfg->cache_entry :
                      cfg->cache_negative_entry);
   timeout_->attr  = cfg->cache_attr;
 
   return rv;
-}
-
-
-namespace FUSE
-{
-  int
-  fgetattr(const uint64_t   fh_,
-           struct stat     *st_,
-           fuse_timeouts_t *timeout_)
-  {
-    uint64_t fh;
-    const fuse_context *fc = fuse_get_context();
-
-    fh = fh_;
-    if(fh == 0)
-      {
-        state.open_files.cvisit(fc->nodeid,
-                                [&](auto &val_)
-                                {
-                                  fh = reinterpret_cast<uint64_t>(val_.second.fi);
-                                });
-      }
-
-    if(fh == 0)
-      return -ENOENT;
-    
-    FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
-
-    return ::_fgetattr(fi,st_,timeout_);
-  }
 }

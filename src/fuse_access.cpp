@@ -42,14 +42,14 @@ namespace l
     std::vector<Branch*> branches;
 
     rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
+    if(rv < 0)
+      return rv;
 
     fullpath = fs::path::make(branches[0]->path,fusepath_);
 
     rv = fs::eaccess(fullpath,mask_);
 
-    return ((rv == -1) ? -errno : 0);
+    return rv;
   }
 }
 

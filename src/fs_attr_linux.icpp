@@ -37,7 +37,7 @@ _get_fs_ioc_flags(const int  fd,
 
   rv = fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
   if(rv == -EINVAL)
-    rv = ENOTSUP;
+    rv = -ENOTSUP;
 
   return rv;
 }
@@ -52,8 +52,8 @@ _get_fs_ioc_flags(const string &file,
   const int openflags = O_RDONLY|O_NONBLOCK;
 
   fd = fs::open(file,openflags);
-  if(fd == -1)
-    return -errno;
+  if(fd < 0)
+    return fd;
 
   rv = ::_get_fs_ioc_flags(fd,flags);
   if(rv < 0)
@@ -74,7 +74,7 @@ _set_fs_ioc_flags(const int fd,
 
   rv = fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
   if(rv == -EINVAL)
-    rv = ENOTSUP;
+    rv = -ENOTSUP;
 
   return rv;
 }
@@ -89,8 +89,8 @@ _set_fs_ioc_flags(const string &file,
   const int openflags = O_RDONLY|O_NONBLOCK;
 
   fd = fs::open(file,openflags);
-  if(fd == -1)
-    return -errno;
+  if(fd < 0)
+    return fd;
 
   rv = ::_set_fs_ioc_flags(fd,flags);
   if(rv < 0)

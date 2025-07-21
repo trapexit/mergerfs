@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_ftruncate.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_ftruncate.hpp"
@@ -22,42 +24,36 @@
 #include "fuse.h"
 
 
-namespace l
+static
+int
+_ftruncate(const int   fd_,
+           const off_t size_)
 {
-  static
-  int
-  ftruncate(const int   fd_,
-            const off_t size_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::ftruncate(fd_,size_);
+  rv = fs::ftruncate(fd_,size_);
 
-    return ((rv == -1) ? -errno : 0);
-  }
+  return rv;
 }
 
-namespace FUSE
+int
+FUSE::ftruncate(const uint64_t fh_,
+                off_t          size_)
 {
-  int
-  ftruncate(const uint64_t fh_,
-            off_t          size_)
-  {
-    uint64_t fh;
-    const fuse_context *fc = fuse_get_context();
+  uint64_t fh;
+  const fuse_context *fc = fuse_get_context();
 
-    fh = fh_;
-    if(fh == 0)
-      {
-        state.open_files.cvisit(fc->nodeid,
-                                [&](auto &val_)
-                                {
-                                  fh = reinterpret_cast<uint64_t>(val_.second.fi);
-                                });
-      }
-     
-    FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+  fh = fh_;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](auto &val_)
+                              {
+                                fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                              });
+    }
 
-    return l::ftruncate(fi->fd,size_);
-  }
+  FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+
+  return ::_ftruncate(fi->fd,size_);
 }

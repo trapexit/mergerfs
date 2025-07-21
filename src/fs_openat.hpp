@@ -18,10 +18,11 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <filesystem>
 #include <string>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -40,7 +41,7 @@ namespace fs
 
     rv = ::openat(dirfd_,pathname_,flags_,mode_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 
   static

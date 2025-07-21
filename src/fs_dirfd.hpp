@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <dirent.h>
 #include <sys/types.h>
 
@@ -29,6 +31,10 @@ namespace fs
   int
   dirfd(DIR *dh_)
   {
-    return ::dirfd(dh_);
+    int rv;
+
+    rv = ::dirfd(dh_);
+
+    return ::to_neg_errno(rv);
   }
 }

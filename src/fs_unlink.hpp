@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -30,7 +32,11 @@ namespace fs
   int
   unlink(const char *path_)
   {
-    return ::unlink(path_);
+    int rv;
+
+    rv = ::unlink(path_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

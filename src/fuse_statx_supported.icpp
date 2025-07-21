@@ -129,8 +129,8 @@ _statx(const Policy::Search &searchFunc_,
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   fullpath = fs::path::make(branches[0]->path,fusepath_);
 

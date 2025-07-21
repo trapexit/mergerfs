@@ -161,8 +161,8 @@ _create_core(const Branch     *branch_,
   fullpath = fs::path::make(branch_->path,fusepath_);
 
   rv = ::_create_core(fullpath,mode_,umask_,ffi_->flags);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   fi = new FileInfo(rv,branch_,fusepath_,ffi_->direct_io);
 
@@ -190,18 +190,18 @@ _create(const Policy::Search &searchFunc_,
   fusedirpath = fs::path::dirname(fusepath_);
 
   rv = searchFunc_(branches_,fusedirpath,existingpaths);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   rv = createFunc_(branches_,fusedirpath,createpaths);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   rv = fs::clonepath_as_root(existingpaths[0]->path,
                              createpaths[0]->path,
                              fusedirpath);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   return ::_create_core(createpaths[0],
                         fusepath_,
@@ -319,7 +319,7 @@ _create_update_lambda()
   return
     [=](auto &val_)
     {
-      fmt::print(stderr,"THIS SHOULD NOT HAPPEN");
+      fmt::println(stderr,"THIS SHOULD NOT HAPPEN");
       abort();
     };
 }

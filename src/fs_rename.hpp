@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <stdio.h>
 
 
@@ -29,7 +31,11 @@ namespace fs
   rename(const char *oldpath_,
          const char *newpath_)
   {
-    return ::rename(oldpath_,newpath_);
+    int rv;
+
+    rv = ::rename(oldpath_,newpath_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

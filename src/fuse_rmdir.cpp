@@ -14,8 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_rmdir.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
+#include "error.hpp"
 #include "fs_path.hpp"
 #include "fs_rmdir.hpp"
 #include "fs_unlink.hpp"
@@ -31,101 +34,75 @@ using std::string;
 using std::vector;
 
 
-namespace error
+static
+int
+_should_unlink(int            rv_,
+               FollowSymlinks followsymlinks_)
 {
-  static
-  int
-  calc(const int rv_,
-       const int prev_,
-       const int cur_)
-  {
-    if(prev_ != 0)
-      return prev_;
-    if(rv_ == -1)
-      return cur_;
-    return 0;
-  }
+  return ((rv_ == -ENOTDIR) &&
+          (followsymlinks_ != FollowSymlinks::ENUM::NEVER));
 }
 
-namespace l
+static
+int
+_rmdir_core(const string         &basepath_,
+            const char           *fusepath_,
+            const FollowSymlinks  followsymlinks_)
 {
-  static
-  int
-  should_unlink(int            rv_,
-                int            errno_,
-                FollowSymlinks followsymlinks_)
-  {
-    return ((rv_ == -1) &&
-            (errno_ == ENOTDIR) &&
-            (followsymlinks_ != FollowSymlinks::ENUM::NEVER));
-  }
+  int rv;
+  string fullpath;
 
-  static
-  int
-  rmdir_core(const string         &basepath_,
-             const char           *fusepath_,
-             const FollowSymlinks  followsymlinks_,
-             const int             error_)
-  {
-    int rv;
-    string fullpath;
+  fullpath = fs::path::make(basepath_,fusepath_);
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+  rv = fs::rmdir(fullpath);
+  if(::_should_unlink(rv,followsymlinks_))
+    rv = fs::unlink(fullpath);
 
-    rv = fs::rmdir(fullpath);
-    if(l::should_unlink(rv,errno,followsymlinks_))
-      rv = fs::unlink(fullpath);
-
-    return error::calc(rv,error_,errno);
-  }
-
-  static
-  int
-  rmdir_loop(const std::vector<Branch*> &branches_,
-             const char                 *fusepath_,
-             const FollowSymlinks        followsymlinks_)
-  {
-    int error;
-
-    error = 0;
-    for(auto &branch : branches_)
-      {
-        error = l::rmdir_core(branch->path,fusepath_,followsymlinks_,error);
-      }
-
-    return -error;
-  }
-
-  static
-  int
-  rmdir(const Policy::Action &actionFunc_,
-        const Branches       &branches_,
-        const FollowSymlinks  followsymlinks_,
-        const char           *fusepath_)
-  {
-    int rv;
-    std::vector<Branch*> branches;
-
-    rv = actionFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    return l::rmdir_loop(branches,fusepath_,followsymlinks_);
-  }
+  return rv;
 }
 
-namespace FUSE
+static
+int
+_rmdir_loop(const std::vector<Branch*> &branches_,
+            const char                 *fusepath_,
+            const FollowSymlinks        followsymlinks_)
 {
-  int
-  rmdir(const char *fusepath_)
-  {
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  Err err;
 
-    return l::rmdir(cfg->func.rmdir.policy,
-                    cfg->branches,
-                    cfg->follow_symlinks,
-                    fusepath_);
-  }
+  for(auto &branch : branches_)
+    {
+      err = ::_rmdir_core(branch->path,fusepath_,followsymlinks_);
+    }
+
+  return err;
+}
+
+static
+int
+_rmdir(const Policy::Action &actionFunc_,
+       const Branches       &branches_,
+       const FollowSymlinks  followsymlinks_,
+       const char           *fusepath_)
+{
+  int rv;
+  std::vector<Branch*> branches;
+
+  rv = actionFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  return ::_rmdir_loop(branches,fusepath_,followsymlinks_);
+}
+
+int
+FUSE::rmdir(const char *fusepath_)
+{
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_rmdir(cfg->func.rmdir.policy,
+                  cfg->branches,
+                  cfg->follow_symlinks,
+                  fusepath_);
 }

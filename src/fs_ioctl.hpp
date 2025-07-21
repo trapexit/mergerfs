@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 
 #include <sys/ioctl.h>
 
@@ -35,7 +35,7 @@ namespace fs
 
     rv = ::ioctl(fd_,request_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 
   static
@@ -49,7 +49,7 @@ namespace fs
 
     rv = ::ioctl(fd_,request_,data_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 
   static
@@ -63,6 +63,6 @@ namespace fs
 
     rv = ::ioctl(fd_,request_,int_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 }

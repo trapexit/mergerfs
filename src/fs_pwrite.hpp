@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -34,9 +36,7 @@ namespace fs
     ssize_t rv;
 
     rv = ::pwrite(fd_,buf_,count_,offset_);
-    if(rv == -1)
-      return -errno;
 
-    return rv;
+    return ::to_neg_errno(rv);
   }
 }

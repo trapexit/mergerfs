@@ -19,10 +19,16 @@
 #pragma once
 
 #include "fs_lstat.hpp"
+#include "to_neg_errno.hpp"
 
 #include <string>
 
 #include <sys/stat.h>
+
+#if defined __linux__
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 
 #define MODE_BITS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
 
@@ -36,9 +42,18 @@ namespace fs
          const mode_t  mode_)
   {
 #if defined __linux__
-    return ::chmod(pathname_,mode_);
+    int rv;
+    const int flags = AT_SYMLINK_NOFOLLOW;
+
+    rv = ::fchmodat(AT_FDCWD,pathname_,mode_,flags);
+
+    return ::to_neg_errno(rv);
 #else
-    return ::lchmod(pathname_,mode_);
+    int rv;
+
+    rv = ::lchmod(pathname_,mode_);
+
+    return ::to_neg_errno(rv);
 #endif
   }
 
@@ -60,18 +75,18 @@ namespace fs
     int rv;
 
     rv = fs::lchmod(path_,mode_);
-    if(rv == -1)
+    if(rv < 0)
       {
-        int error;
+        int err;
         struct stat st;
 
-        error = errno;
+        err = rv;
         rv = fs::lstat(path_,&st);
-        if(rv == -1)
-          return -1;
+        if(rv < 0)
+          return rv;
 
         if((st.st_mode & MODE_BITS) != (mode_ & MODE_BITS))
-          return (errno=error,-1);
+          return err;
       }
 
     return 0;

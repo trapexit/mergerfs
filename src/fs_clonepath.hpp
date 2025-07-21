@@ -21,21 +21,21 @@
 
 namespace fs
 {
-  int clonepath(const std::string &from,
-                const std::string &to,
-                const char        *relative,
+  int clonepath(const std::string &srcpath,
+                const std::string &dstpath,
+                const char        *relpath,
                 const bool         return_metadata_errors = false);
-  int clonepath(const std::string &from,
-                const std::string &to,
-                const std::string &relative,
+  int clonepath(const std::string &srcpath,
+                const std::string &dstpath,
+                const std::string &relpath,
                 const bool         return_metadata_errors = false);
 
-  int clonepath_as_root(const std::string &from,
-                        const std::string &to,
-                        const char        *relative,
+  int clonepath_as_root(const std::string &srcpath,
+                        const std::string &dstpath,
+                        const char        *relpath,
                         const bool         return_metadata_errors = false);
-  int clonepath_as_root(const std::string &from,
-                        const std::string &to,
-                        const std::string &relative,
+  int clonepath_as_root(const std::string &srcpath,
+                        const std::string &dstpath,
+                        const std::string &relpath,
                         const bool         return_metadata_errors = false);
 }

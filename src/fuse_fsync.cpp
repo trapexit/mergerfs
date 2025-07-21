@@ -14,10 +14,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_fsync.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fdatasync.hpp"
 #include "fs_fsync.hpp"
+#include "to_neg_errno.hpp"
 
 #include "fuse.h"
 
@@ -25,31 +28,25 @@
 #include <vector>
 
 
-namespace l
+static
+int
+_fsync(const int fd_,
+       const int isdatasync_)
 {
-  static
-  int
-  fsync(const int fd_,
-        const int isdatasync_)
-  {
-    int rv;
+  int rv;
 
-    rv = (isdatasync_ ?
-          fs::fdatasync(fd_) :
-          fs::fsync(fd_));
+  rv = (isdatasync_ ?
+        fs::fdatasync(fd_) :
+        fs::fsync(fd_));
 
-    return ((rv == -1) ? -errno : 0);
-  }
+  return ::to_neg_errno(rv);
 }
 
-namespace FUSE
+int
+FUSE::fsync(const uint64_t fh_,
+            int            isdatasync_)
 {
-  int
-  fsync(const uint64_t fh_,
-        int            isdatasync_)
-  {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
+  FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
 
-    return l::fsync(fi->fd,isdatasync_);
-  }
+  return ::_fsync(fi->fd,isdatasync_);
 }

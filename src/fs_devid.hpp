@@ -34,7 +34,7 @@ namespace fs
 
     rv = fs::fstat(fd_,&st);
     if(rv < 0)
-      return -1;
+      return rv;
 
     return st.st_dev;
   }

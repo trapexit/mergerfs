@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_fchmod.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fchmod.hpp"
@@ -22,47 +24,39 @@
 #include "fuse.h"
 
 
-namespace l
+static
+int
+_fchmod(const int    fd_,
+        const mode_t mode_)
 {
-  static
-  int
-  fchmod(const int    fd_,
-         const mode_t mode_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::fchmod(fd_,mode_);
-    if(rv == -1)
-      return -errno;
+  rv = fs::fchmod(fd_,mode_);
 
-    return rv;
-  }
+  return rv;
 }
 
-namespace FUSE
+int
+FUSE::fchmod(const uint64_t fh_,
+             const mode_t   mode_)
 {
-  int
-  fchmod(const uint64_t fh_,
-         const mode_t   mode_)
-  {
-    uint64_t fh;
-    const fuse_context *fc = fuse_get_context();
+  uint64_t fh;
+  const fuse_context *fc = fuse_get_context();
 
-    fh = fh_;
-    if(fh == 0)
-      {
-        state.open_files.cvisit(fc->nodeid,
-                                [&](auto &val_)
-                                {
-                                  fh = reinterpret_cast<uint64_t>(val_.second.fi);
-                                });
-      }
+  fh = fh_;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](auto &val_)
+                              {
+                                fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                              });
+    }
 
-    if(fh == 0)
-      return -ENOENT;
-      
-    FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+  if(fh == 0)
+    return -ENOENT;
 
-    return l::fchmod(fi->fd,mode_);
-  }
+  FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+
+  return ::_fchmod(fi->fd,mode_);
 }

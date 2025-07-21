@@ -25,6 +25,6 @@ namespace fs
   ficlone(const int src_fd_,
           const int dst_fd_)
   {
-    return (errno=EOPNOTSUPP,-1);
+    return -EOPNOTSUPP;
   }
 }

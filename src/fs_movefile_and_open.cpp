@@ -79,16 +79,16 @@ _movefile_and_open(const Policy::Create &createFunc_,
   src_branch = branchpath_;
 
   rv = createFunc_(branches_,fusepath_.c_str(),dst_branch);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   origfd_flags = fs::getfl(origfd_);
-  if(origfd_flags == -1)
-    return -errno;
+  if(origfd_flags < 0)
+    return origfd_flags;
 
   src_size = fs::file_size(origfd_);
-  if(src_size == -1)
-    return -errno;
+  if(src_size < 0)
+    return src_size;
 
   if(fs::has_space(dst_branch[0]->path,src_size) == false)
     return -ENOSPC;
@@ -96,7 +96,7 @@ _movefile_and_open(const Policy::Create &createFunc_,
   fusedir = fs::path::dirname(fusepath_);
 
   rv = fs::clonepath(src_branch,dst_branch[0]->path,fusedir);
-  if(rv == -1)
+  if(rv < 0)
     return -ENOSPC;
 
   src_filepath = fs::path::make(src_branch,fusepath_);
@@ -108,7 +108,7 @@ _movefile_and_open(const Policy::Create &createFunc_,
 
   dstfd_flags = ::_cleanup_flags(origfd_flags);
   rv = fs::open(dst_filepath,dstfd_flags);
-  if(rv == -1)
+  if(rv < 0)
     return -ENOSPC;
 
   fs::unlink(src_filepath);

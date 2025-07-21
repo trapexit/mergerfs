@@ -163,8 +163,8 @@ _setxattr(const Policy::Action &setxattrPolicy_,
   std::vector<Branch*> branches;
 
   rv = setxattrPolicy_(branches_,fusepath_,branches);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   ::_setxattr_loop(branches,fusepath_,attrname_,attrval_,attrvalsize_,flags_,&prv);
   if(prv.errors.empty())
@@ -174,8 +174,8 @@ _setxattr(const Policy::Action &setxattrPolicy_,
 
   branches.clear();
   rv = getxattrPolicy_(branches_,fusepath_,branches);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   return prv.get_error(branches[0]->path);
 }

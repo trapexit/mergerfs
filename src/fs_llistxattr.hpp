@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 #include "xattr.hpp"
 
 #include <string>
@@ -40,7 +40,7 @@ namespace fs
 
     rv = ::llistxattr(path_,list_,size_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
 #else
     return -ENOTSUP;
 #endif

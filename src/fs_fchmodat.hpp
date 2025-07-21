@@ -18,7 +18,9 @@
 
 #pragma once
 
-#include <string>
+#include "fs_fchmodat.hpp"
+
+#include "to_neg_errno.hpp"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -34,7 +36,11 @@ namespace fs
            const mode_t  mode_,
            const int     flags_)
   {
-    return ::fchmodat(dirfd_,pathname_,mode_,flags_);
+    int rv;
+
+    rv = ::fchmodat(dirfd_,pathname_,mode_,flags_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

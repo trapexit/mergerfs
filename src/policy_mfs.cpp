@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_mfs.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -26,47 +28,45 @@
 
 using std::string;
 
-namespace mfs
+
+static
+int
+_create(const Branches::Ptr  &branches_,
+        std::vector<Branch*> &paths_)
 {
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    u64 mfs;
-    fs::info_t info;
-    Branch *obranch;
+  int rv;
+  int error;
+  u64 mfs;
+  fs::info_t info;
+  Branch *obranch;
 
-    obranch = nullptr;
-    error = ENOENT;
-    mfs = 0;
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
-        if(info.spaceavail < mfs)
-          continue;
+  obranch = nullptr;
+  error = ENOENT;
+  mfs = 0;
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
+      if(info.spaceavail < mfs)
+        continue;
 
-        mfs = info.spaceavail;
-        obranch = &branch;
-      }
+      mfs = info.spaceavail;
+      obranch = &branch;
+    }
 
-    if(!obranch)
-      return (errno=error,-1);
+  if(!obranch)
+    return -error;
 
-    paths_.push_back(obranch);
+  paths_.push_back(obranch);
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -82,7 +82,7 @@ Policy::MFS::Create::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
-  return ::mfs::create(branches_,paths_);
+  return ::_create(branches_,paths_);
 }
 
 int

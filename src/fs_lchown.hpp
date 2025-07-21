@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fs_lstat.hpp"
+#include "to_neg_errno.hpp"
 
 #include <unistd.h>
 
@@ -32,7 +33,11 @@ namespace fs
          const uid_t  uid_,
          const gid_t  gid_)
   {
-    return ::lchown(pathname_,uid_,gid_);
+    int rv;
+
+    rv = ::lchown(pathname_,uid_,gid_);
+
+    return ::to_neg_errno(rv);
   }
 
   static
@@ -72,19 +77,19 @@ namespace fs
     int rv;
 
     rv = fs::lchown(path_,st_);
-    if(rv == -1)
+    if(rv < 0)
       {
-        int error;
+        int err;
         struct stat tmpst;
 
-        error = errno;
+        err = rv;
         rv = fs::lstat(path_,&tmpst);
-        if(rv == -1)
-          return -1;
+        if(rv < 0)
+          return err;
 
         if((st_.st_uid != tmpst.st_uid) ||
            (st_.st_gid != tmpst.st_gid))
-          return (errno=error,-1);
+          return err;
       }
 
     return 0;

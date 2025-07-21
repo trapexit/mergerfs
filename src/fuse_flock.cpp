@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_flock.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_flock.hpp"
@@ -21,29 +23,23 @@
 #include "fuse.h"
 
 
-namespace l
+static
+int
+_flock(const int fd_,
+       const int operation_)
 {
-  static
-  int
-  flock(const int fd_,
-        const int operation_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::flock(fd_,operation_);
+  rv = fs::flock(fd_,operation_);
 
-    return ((rv == -1) ? -errno : 0);
-  }
+  return rv;
 }
 
-namespace FUSE
+int
+FUSE::flock(const fuse_file_info_t *ffi_,
+            int                     op_)
 {
-  int
-  flock(const fuse_file_info_t *ffi_,
-        int                     op_)
-  {
-    FileInfo* fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  FileInfo* fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    return l::flock(fi->fd,op_);
-  }
+  return ::_flock(fi->fd,op_);
 }

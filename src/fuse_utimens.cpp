@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_utimens.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_lutimens.hpp"
@@ -30,83 +32,77 @@
 using std::string;
 
 
-namespace l
+static
+void
+_utimens_loop_core(const string   &basepath_,
+                   const char     *fusepath_,
+                   const timespec  ts_[2],
+                   PolicyRV       *prv_)
 {
-  static
-  void
-  utimens_loop_core(const string   &basepath_,
-                    const char     *fusepath_,
-                    const timespec  ts_[2],
-                    PolicyRV       *prv_)
-  {
-    string fullpath;
+  int rv;
+  string fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = fs::path::make(basepath_,fusepath_);
 
-    errno = 0;
-    fs::lutimens(fullpath,ts_);
+  rv = fs::lutimens(fullpath,ts_);
 
-    prv_->insert(errno,basepath_);
-  }
-
-  static
-  void
-  utimens_loop(const std::vector<Branch*> &branches_,
-               const char                 *fusepath_,
-               const timespec              ts_[2],
-               PolicyRV                   *prv_)
-  {
-    for(auto &branch : branches_)
-      {
-        l::utimens_loop_core(branch->path,fusepath_,ts_,prv_);
-      }
-  }
-
-  static
-  int
-  utimens(const Policy::Action &utimensPolicy_,
-          const Policy::Search &getattrPolicy_,
-          const Branches       &branches_,
-          const char           *fusepath_,
-          const timespec        ts_[2])
-  {
-    int rv;
-    PolicyRV prv;
-    std::vector<Branch*> branches;
-
-    rv = utimensPolicy_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    l::utimens_loop(branches,fusepath_,ts_,&prv);
-    if(prv.errors.empty())
-      return 0;
-    if(prv.successes.empty())
-      return prv.errors[0].rv;
-
-    branches.clear();
-    rv = getattrPolicy_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    return prv.get_error(branches[0]->path);
-  }
+  prv_->insert(rv,basepath_);
 }
 
-namespace FUSE
+static
+void
+_utimens_loop(const std::vector<Branch*> &branches_,
+              const char                 *fusepath_,
+              const timespec              ts_[2],
+              PolicyRV                   *prv_)
 {
-  int
-  utimens(const char     *fusepath_,
-          const timespec  ts_[2])
-  {
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  for(auto &branch : branches_)
+    {
+      ::_utimens_loop_core(branch->path,fusepath_,ts_,prv_);
+    }
+}
 
-    return l::utimens(cfg->func.utimens.policy,
-                      cfg->func.getattr.policy,
-                      cfg->branches,
-                      fusepath_,
-                      ts_);
-  }
+static
+int
+_utimens(const Policy::Action &utimensPolicy_,
+         const Policy::Search &getattrPolicy_,
+         const Branches       &branches_,
+         const char           *fusepath_,
+         const timespec        ts_[2])
+{
+  int rv;
+  PolicyRV prv;
+  std::vector<Branch*> branches;
+
+  rv = utimensPolicy_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  ::_utimens_loop(branches,fusepath_,ts_,&prv);
+  if(prv.errors.empty())
+    return 0;
+  if(prv.successes.empty())
+    return prv.errors[0].rv;
+
+  branches.clear();
+  rv = getattrPolicy_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  return prv.get_error(branches[0]->path);
+}
+
+int
+FUSE::utimens(const char     *fusepath_,
+              const timespec  ts_[2])
+{
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_utimens(cfg->func.utimens.policy,
+                    cfg->func.getattr.policy,
+                    cfg->branches,
+                    fusepath_,
+                    ts_);
 }

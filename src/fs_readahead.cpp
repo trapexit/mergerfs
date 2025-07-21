@@ -31,15 +31,13 @@
 # include <sys/sysmacros.h>
 #endif
 
-namespace l
+
+static
+std::string
+_generate_readahead_sys_path(const std::uint64_t major_,
+                             const std::uint64_t minor_)
 {
-  static
-  std::string
-  generate_readahead_sys_path(const std::uint64_t major_,
-                              const std::uint64_t minor_)
-  {
-    return fmt::format("/sys/class/bdi/{}:{}/read_ahead_kb",major_,minor_);
-  }
+  return fmt::format("/sys/class/bdi/{}:{}/read_ahead_kb",major_,minor_);
 }
 
 int
@@ -50,7 +48,7 @@ fs::readahead(const std::uint64_t major_dev_,
   std::string syspath;
   std::ofstream ofs;
 
-  syspath = l::generate_readahead_sys_path(major_dev_,minor_dev_);
+  syspath = ::_generate_readahead_sys_path(major_dev_,minor_dev_);
 
   ofs.open(syspath);
   if(ofs)
@@ -83,8 +81,8 @@ fs::readahead(const std::string   path_,
   struct stat st;
 
   rv = fs::lstat(path_,&st);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   return fs::readahead(st.st_dev,size_in_kb_);
 }

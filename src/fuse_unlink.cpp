@@ -14,8 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_unlink.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
+#include "error.hpp"
 #include "fs_path.hpp"
 #include "fs_unlink.hpp"
 #include "ugid.hpp"
@@ -28,85 +31,48 @@
 #include <unistd.h>
 
 
-namespace error
+static
+int
+_unlink_loop(const std::vector<Branch*> &branches_,
+             const char                 *fusepath_)
 {
-  static
-  inline
-  int
-  calc(const int rv_,
-       const int prev_,
-       const int cur_)
-  {
-    if(prev_ != 0)
-      return prev_;
-    if(rv_ == -1)
-      return cur_;
-    return 0;
-  }
+  Err err;
+  std::string fullpath;
+
+  for(const auto &branch : branches_)
+    {
+      fullpath = fs::path::make(branch->path,fusepath_);
+
+      err = fs::unlink(fullpath);
+    }
+
+  return err;
 }
 
-namespace l
+static
+int
+_unlink(const Policy::Action &unlinkPolicy_,
+        const Branches       &branches_,
+        const char           *fusepath_)
 {
-  static
-  int
-  unlink_loop_core(const std::string &branch_,
-                   const char        *fusepath_,
-                   const int          error_)
-  {
-    int rv;
-    std::string fullpath;
+  int rv;
+  std::vector<Branch*> branches;
 
-    fullpath = fs::path::make(branch_,fusepath_);
+  rv = unlinkPolicy_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
 
-    rv = fs::unlink(fullpath);
-
-    return error::calc(rv,error_,errno);
-  }
-
-  static
-  int
-  unlink_loop(const std::vector<Branch*> &branches_,
-              const char                 *fusepath_)
-  {
-    int error;
-
-    error = 0;
-    for(auto &branch : branches_)
-      {
-        error = l::unlink_loop_core(branch->path,fusepath_,error);
-      }
-
-    return -error;
-  }
-
-  static
-  int
-  unlink(const Policy::Action &unlinkPolicy_,
-         const Branches       &branches_,
-         const char           *fusepath_)
-  {
-    int rv;
-    std::vector<Branch*> branches;
-
-    rv = unlinkPolicy_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    return l::unlink_loop(branches,fusepath_);
-  }
+  return ::_unlink_loop(branches,fusepath_);
 }
 
-namespace FUSE
+int
+FUSE::unlink(const char *fusepath_)
 {
-  int
-  unlink(const char *fusepath_)
-  {
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::unlink(cfg->func.unlink.policy,
-                     cfg->branches,
-                     fusepath_);
-  }
+  return ::_unlink(cfg->func.unlink.policy,
+                   cfg->branches,
+                   fusepath_);
 }

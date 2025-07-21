@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_mspmfs.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -29,73 +31,70 @@
 #include <vector>
 
 
-namespace mspmfs
+static
+Branch*
+_create_1(const Branches::Ptr &branches_,
+          const std::string   &fusepath_,
+          int                 *err_)
 {
-  static
-  Branch*
-  create_1(const Branches::Ptr &branches_,
-           const std::string   &fusepath_,
-           int                 *err_)
-  {
-    int rv;
-    uint64_t mfs;
-    fs::info_t info;
-    Branch *obranch;
+  int rv;
+  uint64_t mfs;
+  fs::info_t info;
+  Branch *obranch;
 
-    obranch = nullptr;
-    mfs = std::numeric_limits<uint64_t>::min();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(*err_,EROFS);
-        if(!fs::exists(branch.path,fusepath_))
-          error_and_continue(*err_,ENOENT);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(*err_,ENOENT);
-        if(info.readonly)
-          error_and_continue(*err_,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(*err_,ENOSPC);
-        if(info.spaceavail < mfs)
-          continue;
+  obranch = nullptr;
+  mfs = std::numeric_limits<uint64_t>::min();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(*err_,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(*err_,ENOENT);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(*err_,ENOENT);
+      if(info.readonly)
+        error_and_continue(*err_,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(*err_,ENOSPC);
+      if(info.spaceavail < mfs)
+        continue;
 
-        mfs = info.spaceavail;
-        obranch = &branch;
-      }
+      mfs = info.spaceavail;
+      obranch = &branch;
+    }
 
-    return obranch;
-  }
+  return obranch;
+}
 
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int error;
-    std::string fusepath;
-    Branch *branch;
+static
+int
+_create(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int error;
+  std::string fusepath;
+  Branch *branch;
 
-    error = ENOENT;
-    fusepath = fusepath_;
-    for(;;)
-      {
-        branch = mspmfs::create_1(branches_,fusepath,&error);
-        if(branch)
-          break;
-        if(fusepath == "/")
-          break;
-        fusepath = fs::path::dirname(fusepath);
-      }
+  error = ENOENT;
+  fusepath = fusepath_;
+  for(;;)
+    {
+      branch = ::_create_1(branches_,fusepath,&error);
+      if(branch)
+        break;
+      if(fusepath == "/")
+        break;
+      fusepath = fs::path::dirname(fusepath);
+    }
 
-    if(!branch)
-      return (errno=error,-1);
+  if(!branch)
+    return -error;
 
-    paths_.emplace_back(branch);
+  paths_.emplace_back(branch);
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -111,7 +110,7 @@ Policy::MSPMFS::Create::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
-  return ::mspmfs::create(branches_,fusepath_,paths_);
+  return ::_create(branches_,fusepath_,paths_);
 }
 
 int

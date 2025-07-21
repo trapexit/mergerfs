@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -28,6 +30,10 @@ namespace fs
   int
   fsync(const int fd_)
   {
-    return ::fsync(fd_);
+    int rv;
+
+    rv = ::fsync(fd_);
+
+    return ::to_neg_errno(rv);
   }
 }

@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_findonfs.hpp"
+
 #include "branches.hpp"
 #include "errno.hpp"
 #include "fs_fstat.hpp"
@@ -25,53 +27,48 @@
 #include <string>
 
 
-namespace l
+static
+int
+_findonfs(const Branches::Ptr &branches_,
+          const std::string   &fusepath_,
+          const int            fd_,
+          std::string         *basepath_)
 {
-  static
-  int
-  findonfs(const Branches::Ptr &branches_,
-           const std::string   &fusepath_,
-           const int            fd_,
-           std::string         *basepath_)
-  {
-    int rv;
-    dev_t dev;
-    struct stat st;
-    std::string fullpath;
+  int rv;
+  dev_t dev;
+  struct stat st;
+  std::string fullpath;
 
-    rv = fs::fstat(fd_,&st);
-    if(rv < 0)
-      return -1;
+  rv = fs::fstat(fd_,&st);
+  if(rv < 0)
+    return rv;
 
-    dev = st.st_dev;
-    for(const auto &branch : *branches_)
-      {
-        fullpath = fs::path::make(branch.path,fusepath_);
+  dev = st.st_dev;
+  for(const auto &branch : *branches_)
+    {
+      fullpath = fs::path::make(branch.path,fusepath_);
 
-        rv = fs::lstat(fullpath,&st);
-        if(rv == -1)
-          continue;
+      rv = fs::lstat(fullpath,&st);
+      if(rv < 0)
+        continue;
 
-        if(st.st_dev != dev)
-          continue;
+      if(st.st_dev != dev)
+        continue;
 
-        *basepath_ = branch.path;
+      *basepath_ = branch.path;
 
-        return 0;
-      }
+      return 0;
+    }
 
-    return (errno=ENOENT,-1);
-  }
+  return -ENOENT;
 }
 
-namespace fs
+
+int
+fs::findonfs(const Branches::Ptr &branches_,
+             const std::string   &fusepath_,
+             const int            fd_,
+             std::string         *basepath_)
 {
-  int
-  findonfs(const Branches::Ptr &branches_,
-           const std::string   &fusepath_,
-           const int            fd_,
-           std::string         *basepath_)
-  {
-    return l::findonfs(branches_,fusepath_,fd_,basepath_);
-  }
+  return ::_findonfs(branches_,fusepath_,fd_,basepath_);
 }

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <sys/stat.h>
@@ -33,7 +35,11 @@ namespace fs
   stat(const char  *path_,
        struct stat *st_)
   {
-    return ::stat(path_,st_);
+    int rv;
+
+    rv = ::stat(path_,st_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

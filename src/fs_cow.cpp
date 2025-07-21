@@ -63,7 +63,7 @@ fs::cow::is_eligible(const char *fullpath_,
     return false;
 
   rv = fs::lstat(fullpath_,&st);
-  if(rv == -1)
+  if(rv < 0)
     return false;
 
   return fs::cow::is_eligible(st);

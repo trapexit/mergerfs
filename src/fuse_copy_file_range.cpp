@@ -43,7 +43,7 @@ namespace l
                              size_,
                              flags_);
 
-    return ((rv == -1) ? -errno : rv);
+    return rv;
   }
 }
 

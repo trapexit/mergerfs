@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_copydata_copy_file_range.hpp"
+
 #include "errno.hpp"
 #include "fs_copy_file_range.hpp"
 #include "fs_fstat.hpp"
@@ -38,29 +40,28 @@ _copydata_copy_file_range(const int src_fd_,
   do
     {
       rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,nleft,0);
-      if((rv == -1) && (errno == EINTR))
+      if(rv == -EINTR)
         continue;
-      if((rv == -1) && (errno == EAGAIN))
+      if(rv == -EAGAIN)
         continue;
-      if(rv == -1)
-        return -1;
+      if(rv == 0)
+        break;
+      if(rv < 0)
+        return rv;
 
       nleft -= rv;
     }
   while(nleft > 0);
 
-  return size_;
+  return (size_ - nleft);
 }
 
-namespace fs
+s64
+fs::copydata_copy_file_range(const int src_fd_,
+                             const int dst_fd_,
+                             const u64 count_)
 {
-  s64
-  copydata_copy_file_range(const int src_fd_,
-                           const int dst_fd_,
-                           const u64 count_)
-  {
-    return ::_copydata_copy_file_range(src_fd_,
-                                       dst_fd_,
-                                       count_);
-  }
+  return ::_copydata_copy_file_range(src_fd_,
+                                     dst_fd_,
+                                     count_);
 }

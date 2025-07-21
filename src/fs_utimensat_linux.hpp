@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <fcntl.h>
@@ -34,7 +36,11 @@ namespace fs
             const struct timespec  times_[2],
             const int              flags_)
   {
-    return ::utimensat(dirfd_,pathname_,times_,flags_);
+    int rv;
+
+    rv = ::utimensat(dirfd_,pathname_,times_,flags_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

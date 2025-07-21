@@ -1,5 +1,7 @@
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include "fuse_kernel.h"
 
 #include <string>
@@ -35,7 +37,7 @@ namespace fs
                  mask_,
                  (struct statx*)st_);
 
-    return ((rv == -1) ? -errno : 0);
+    return ::to_neg_errno(rv);
 #else
     return -ENOSYS;
 #endif

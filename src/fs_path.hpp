@@ -86,4 +86,4 @@ namespace fs
       return (base_ + suffix_);
     }
   }
-};
+}

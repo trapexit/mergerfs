@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_eprand.hpp"
+
 #include "errno.hpp"
 #include "policies.hpp"
 #include "policy.hpp"

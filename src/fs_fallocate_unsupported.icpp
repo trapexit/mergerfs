@@ -16,6 +16,8 @@
 
 #include "errno.hpp"
 
+#include <sys/types.h>
+
 
 namespace fs
 {
@@ -25,6 +27,6 @@ namespace fs
             const off_t offset_,
             const off_t len_)
   {
-    return (errno=EOPNOTSUPP,-1);
+    return -EOPNOTSUPP;
   }
 }

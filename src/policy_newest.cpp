@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_newest.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -31,124 +33,121 @@
 
 using std::string;
 
-namespace newest
+static
+int
+_create(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
 {
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    time_t newest;
-    struct stat st;
-    fs::info_t info;
-    Branch *obranch;
+  int rv;
+  int err;
+  time_t newest;
+  struct stat st;
+  fs::info_t info;
+  Branch *obranch;
 
-    obranch = nullptr;
-    error = ENOENT;
-    newest = std::numeric_limits<time_t>::min();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_,&st))
-          error_and_continue(error,ENOENT);
-        if(st.st_mtime < newest)
-          continue;
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
+  obranch = nullptr;
+  err = ENOENT;
+  newest = std::numeric_limits<time_t>::min();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(err,EROFS);
+      if(!fs::exists(branch.path,fusepath_,&st))
+        error_and_continue(err,ENOENT);
+      if(st.st_mtime < newest)
+        continue;
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(err,ENOENT);
+      if(info.readonly)
+        error_and_continue(err,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(err,ENOSPC);
 
-        newest = st.st_mtime;
-        obranch = &branch;
-      }
+      newest = st.st_mtime;
+      obranch = &branch;
+    }
 
-    if(!obranch)
-      return (errno=error,-1);
+  if(!obranch)
+    return -err;
 
-    paths_.emplace_back(obranch);
+  paths_.emplace_back(obranch);
 
-    return 0;
-  }
+  return 0;
+}
 
-  static
-  int
-  action(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    bool readonly;
-    time_t newest;
-    struct stat st;
-    Branch *obranch;
+static
+int
+_action(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int rv;
+  int err;
+  bool readonly;
+  time_t newest;
+  struct stat st;
+  Branch *obranch;
 
-    obranch = nullptr;
-    error = ENOENT;
-    newest = std::numeric_limits<time_t>::min();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_,&st))
-          error_and_continue(error,ENOENT);
-        if(st.st_mtime < newest)
-          continue;
-        rv = fs::statvfs_cache_readonly(branch.path,&readonly);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(readonly)
-          error_and_continue(error,EROFS);
+  obranch = nullptr;
+  err = ENOENT;
+  newest = std::numeric_limits<time_t>::min();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro())
+        error_and_continue(err,EROFS);
+      if(!fs::exists(branch.path,fusepath_,&st))
+        error_and_continue(err,ENOENT);
+      if(st.st_mtime < newest)
+        continue;
+      rv = fs::statvfs_cache_readonly(branch.path,&readonly);
+      if(rv < 0)
+        error_and_continue(err,ENOENT);
+      if(readonly)
+        error_and_continue(err,EROFS);
 
-        newest = st.st_mtime;
-        obranch = &branch;
-      }
+      newest = st.st_mtime;
+      obranch = &branch;
+    }
 
-    if(!obranch)
-      return (errno=error,-1);
+  if(!obranch)
+    return -err;
 
-    paths_.emplace_back(obranch);
+  paths_.emplace_back(obranch);
 
-    return 0;
-  }
+  return 0;
+}
 
-  static
-  int
-  search(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    time_t newest;
-    struct stat st;
-    Branch *obranch;
+static
+int
+_search(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  time_t newest;
+  struct stat st;
+  Branch *obranch;
 
-    obranch = nullptr;
-    newest = std::numeric_limits<time_t>::min();
-    for(auto &branch : *branches_)
-      {
-        if(!fs::exists(branch.path,fusepath_,&st))
-          continue;
-        if(st.st_mtime < newest)
-          continue;
+  obranch = nullptr;
+  newest = std::numeric_limits<time_t>::min();
+  for(auto &branch : *branches_)
+    {
+      if(!fs::exists(branch.path,fusepath_,&st))
+        continue;
+      if(st.st_mtime < newest)
+        continue;
 
-        newest = st.st_mtime;
-        obranch = &branch;
-      }
+      newest = st.st_mtime;
+      obranch = &branch;
+    }
 
-    if(!obranch)
-      return (errno=ENOENT,-1);
+  if(!obranch)
+    return -ENOENT;
 
-    paths_.emplace_back(obranch);
+  paths_.emplace_back(obranch);
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -156,7 +155,7 @@ Policy::Newest::Action::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
-  return ::newest::action(branches_,fusepath_,paths_);
+  return ::_action(branches_,fusepath_,paths_);
 }
 
 int
@@ -164,7 +163,7 @@ Policy::Newest::Create::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
-  return ::newest::create(branches_,fusepath_,paths_);
+  return ::_create(branches_,fusepath_,paths_);
 }
 
 int
@@ -172,5 +171,5 @@ Policy::Newest::Search::operator()(const Branches::Ptr  &branches_,
                                    const char           *fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
-  return ::newest::search(branches_,fusepath_,paths_);
+  return ::_search(branches_,fusepath_,paths_);
 }

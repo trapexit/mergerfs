@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -31,7 +33,11 @@ namespace fs
   link(const std::string &oldpath_,
        const std::string &newpath_)
   {
-    return ::link(oldpath_.c_str(),
-                  newpath_.c_str());
+    int rv;
+
+    rv = ::link(oldpath_.c_str(),
+                newpath_.c_str());
+
+    return ::to_neg_errno(rv);
   }
 }

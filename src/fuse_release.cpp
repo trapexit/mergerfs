@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_release.hpp"
+
 #include "state.hpp"
 
 #include "config.hpp"
@@ -97,13 +99,10 @@ _release(const fuse_context     *fc_,
   return ::_release(fc_,fi,cfg->dropcacheonclose);
 }
 
-namespace FUSE
+int
+FUSE::release(const fuse_file_info_t *ffi_)
 {
-  int
-  release(const fuse_file_info_t *ffi_)
-  {
-    const fuse_context *fc = fuse_get_context();
+  const fuse_context *fc = fuse_get_context();
 
-    return ::_release(fc,ffi_);
-  }
+  return ::_release(fc,ffi_);
 }

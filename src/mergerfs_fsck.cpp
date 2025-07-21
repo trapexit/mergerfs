@@ -122,8 +122,8 @@ _compare_files(const std::string &mergerfs_path_,
   for(auto &pathstat : pathstats_)
     {
       rv = fs::lstat(pathstat.path,&pathstat.st);
-      if(rv == -1)
-        pathstat.st.st_size = -errno;
+      if(rv < 0)
+        pathstat.st.st_size = rv;
     }
 
   if(!::_files_differ(pathstats_,check_size_))
@@ -374,7 +374,7 @@ _fsck(const FS::path &path_,
     {
       paths.clear();
       rv = ::_get_allpaths(de.path(),paths);
-      if(rv == -1)
+      if(rv < 0)
         continue;
 
       ::_compare_files(de.path(),

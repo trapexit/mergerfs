@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_has_space.hpp"
+
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
@@ -23,19 +25,16 @@
 #include <string>
 
 
-namespace fs
+bool
+fs::has_space(const std::string &str_,
+              const int64_t      size_)
 {
-  bool
-  has_space(const std::string &str_,
-            const int64_t      size_)
-  {
-    int rv;
-    struct statvfs st;
+  int rv;
+  struct statvfs st;
 
-    rv = fs::statvfs(str_,&st);
-    if(rv == -1)
-      return false;
+  rv = fs::statvfs(str_,&st);
+  if(rv < 0)
+    return false;
 
-    return (StatVFS::spaceavail(st) > size_);
-  }
+  return (StatVFS::spaceavail(st) > size_);
 }

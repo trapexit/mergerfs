@@ -73,8 +73,8 @@ namespace l
     std::vector<Branch*> branches;
 
     rv = actionFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
+    if(rv < 0)
+      return rv;
 
     l::chmod_loop(branches,fusepath_,mode_,&prv);
     if(prv.errors.empty())
@@ -84,8 +84,8 @@ namespace l
 
     branches.clear();
     rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
+    if(rv < 0)
+      return rv;
 
     return prv.get_error(branches[0]->path);
   }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_eplfs.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -31,126 +33,123 @@
 using std::string;
 using std::vector;
 
-namespace eplfs
+static
+int
+_create(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
 {
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    uint64_t eplfs;
-    Branch *obranch;
-    fs::info_t info;
+  int rv;
+  int error;
+  uint64_t eplfs;
+  Branch *obranch;
+  fs::info_t info;
 
-    obranch = nullptr;
-    error = ENOENT;
-    eplfs = std::numeric_limits<uint64_t>::max();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_))
-          error_and_continue(error,ENOENT);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
-        if(info.spaceavail > eplfs)
-          continue;
+  obranch = nullptr;
+  error = ENOENT;
+  eplfs = std::numeric_limits<uint64_t>::max();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(error,ENOENT);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
+      if(info.spaceavail > eplfs)
+        continue;
 
-        eplfs = info.spaceavail;
-        obranch = &branch;
-      }
+      eplfs = info.spaceavail;
+      obranch = &branch;
+    }
 
-    if(obranch == nullptr)
-      return (errno=error,-1);
+  if(obranch == nullptr)
+    return -error;
 
-    paths_.emplace_back(obranch);
+  paths_.emplace_back(obranch);
 
-    return 0;
-  }
+  return 0;
+}
 
-  static
-  int
-  action(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    uint64_t eplfs;
-    Branch *obranch;
-    fs::info_t info;
+static
+int
+_action(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int rv;
+  int error;
+  uint64_t eplfs;
+  Branch *obranch;
+  fs::info_t info;
 
-    obranch = nullptr;
-    error = ENOENT;
-    eplfs = std::numeric_limits<uint64_t>::max();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_))
-          error_and_continue(error,ENOENT);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail > eplfs)
-          continue;
+  obranch = nullptr;
+  error = ENOENT;
+  eplfs = std::numeric_limits<uint64_t>::max();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro())
+        error_and_continue(error,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(error,ENOENT);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail > eplfs)
+        continue;
 
-        eplfs = info.spaceavail;
-        obranch = &branch;
-      }
+      eplfs = info.spaceavail;
+      obranch = &branch;
+    }
 
-    if(obranch == nullptr)
-      return (errno=error,-1);
+  if(obranch == nullptr)
+    return -error;
 
-    paths_.emplace_back(obranch);
+  paths_.emplace_back(obranch);
 
-    return 0;
-  }
+  return 0;
+}
 
-  static
-  int
-  search(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    uint64_t eplfs;
-    uint64_t spaceavail;
-    Branch *obranch;
+static
+int
+_search(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int rv;
+  uint64_t eplfs;
+  uint64_t spaceavail;
+  Branch *obranch;
 
-    obranch = nullptr;
-    eplfs = std::numeric_limits<uint64_t>::max();
-    for(auto &branch : *branches_)
-      {
-        if(!fs::exists(branch.path,fusepath_))
-          continue;
-        rv = fs::statvfs_cache_spaceavail(branch.path,&spaceavail);
-        if(rv == -1)
-          continue;
-        if(spaceavail > eplfs)
-          continue;
+  obranch = nullptr;
+  eplfs = std::numeric_limits<uint64_t>::max();
+  for(auto &branch : *branches_)
+    {
+      if(!fs::exists(branch.path,fusepath_))
+        continue;
+      rv = fs::statvfs_cache_spaceavail(branch.path,&spaceavail);
+      if(rv < 0)
+        continue;
+      if(spaceavail > eplfs)
+        continue;
 
-        eplfs = spaceavail;
-        obranch = &branch;
-      }
+      eplfs = spaceavail;
+      obranch = &branch;
+    }
 
-    if(obranch == nullptr)
-      return (errno=ENOENT,-1);
+  if(obranch == nullptr)
+    return -ENOENT;
 
-    paths_.emplace_back(obranch);
+  paths_.emplace_back(obranch);
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -158,7 +157,7 @@ Policy::EPLFS::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return ::eplfs::action(branches_,fusepath_,paths_);
+  return ::_action(branches_,fusepath_,paths_);
 }
 
 int
@@ -166,7 +165,7 @@ Policy::EPLFS::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return ::eplfs::create(branches_,fusepath_,paths_);
+  return ::_create(branches_,fusepath_,paths_);
 }
 
 int
@@ -174,5 +173,5 @@ Policy::EPLFS::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return ::eplfs::search(branches_,fusepath_,paths_);
+  return ::_search(branches_,fusepath_,paths_);
 }

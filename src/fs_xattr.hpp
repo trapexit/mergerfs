@@ -25,37 +25,50 @@ namespace fs
 {
   namespace xattr
   {
+    using std::map;
     using std::string;
     using std::vector;
-    using std::map;
 
-
-    int list(const string   &path,
-             vector<char>   *attrs);
-    int list(const string   &path,
-             string         *attrs);
+    int list(const int     fd,
+             vector<char> *attrs);
+    int list(const int       fd,
+             vector<string> *attrvec);
+    int list(const int  fd,
+             string    *attrstr);
+    int list(const string &path,
+             vector<char> *attrs);
+    int list(const string &path,
+             string       *attrs);
     int list(const string   &path,
              vector<string> *attrs);
 
+    int get(const int     fd,
+            const string &attr_,
+            vector<char> *val_);
+    int get(const int     fd,
+            const string &attr,
+            string       *val);
+    int get(const int           fd,
+            map<string,string> *attrs);
     int get(const string &path,
             const string &attr,
             vector<char> *value);
     int get(const string &path,
             const string &attr,
             string       *value);
-
     int get(const string       &path,
             map<string,string> *attrs);
 
-    int set(const string &path,
-            const string &key,
-            const string &value,
-            const int     flags);
     int set(const int     fd,
             const string &key,
             const string &value,
             const int     flags);
-
+    int set(const int                 fd,
+            const map<string,string> &attrs);
+    int set(const string &path,
+            const string &key,
+            const string &value,
+            const int     flags);
     int set(const string             &path,
             const map<string,string> &attrs);
 

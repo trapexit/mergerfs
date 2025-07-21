@@ -14,9 +14,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_erofs.hpp"
+
 #include "errno.hpp"
 #include "policy.hpp"
-#include "policy_erofs.hpp"
 
 #include <string>
 
@@ -28,7 +29,7 @@ Policy::ERoFS::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return (errno=EROFS,-1);
+  return -EROFS;
 }
 
 int
@@ -36,7 +37,7 @@ Policy::ERoFS::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return (errno=EROFS,-1);
+  return -EROFS;
 }
 
 int
@@ -44,5 +45,5 @@ Policy::ERoFS::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return (errno=EROFS,-1);
+  return -EROFS;
 }

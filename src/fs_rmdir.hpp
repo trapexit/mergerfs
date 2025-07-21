@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -30,7 +32,11 @@ namespace fs
   int
   rmdir(const char *path_)
   {
-    return ::rmdir(path_);
+    int rv;
+
+    rv = ::rmdir(path_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

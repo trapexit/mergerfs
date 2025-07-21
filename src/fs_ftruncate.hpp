@@ -18,7 +18,8 @@
 
 #pragma once
 
-#include <sys/types.h>
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -30,6 +31,10 @@ namespace fs
   ftruncate(const int   fd_,
             const off_t size_)
   {
-    return ::ftruncate(fd_,size_);
+    int rv;
+
+    rv = ::ftruncate(fd_,size_);
+
+    return ::to_neg_errno(rv);
   }
 }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_fchown.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fchown.hpp"
@@ -24,49 +26,41 @@
 #include <unistd.h>
 
 
-namespace l
+static
+int
+_fchown(const int   fd_,
+        const uid_t uid_,
+        const gid_t gid_)
 {
-  static
-  int
-  fchown(const int   fd_,
-         const uid_t uid_,
-         const gid_t gid_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::fchown(fd_,uid_,gid_);
-    if(rv == -1)
-      return -errno;
+  rv = fs::fchown(fd_,uid_,gid_);
 
-    return rv;
-  }
+  return rv;
 }
 
-namespace FUSE
+int
+FUSE::fchown(const uint64_t fh_,
+             const uid_t    uid_,
+             const gid_t    gid_)
 {
-  int
-  fchown(const uint64_t fh_,
-         const uid_t    uid_,
-         const gid_t    gid_)
-  {
-    uint64_t fh;
-    const fuse_context *fc = fuse_get_context();
+  uint64_t fh;
+  const fuse_context *fc = fuse_get_context();
 
-    fh = fh_;
-    if(fh == 0)
-      {
-        state.open_files.cvisit(fc->nodeid,
-                                [&](auto &val_)
-                                {
-                                  fh = reinterpret_cast<uint64_t>(val_.second.fi);
-                                });
-      }
+  fh = fh_;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](auto &val_)
+                              {
+                                fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                              });
+    }
 
-    if(fh == 0)
-      return -ENOENT;
+  if(fh == 0)
+    return -ENOENT;
 
-    FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+  FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
 
-    return l::fchown(fi->fd,uid_,gid_);
-  }
+  return ::_fchown(fi->fd,uid_,gid_);
 }

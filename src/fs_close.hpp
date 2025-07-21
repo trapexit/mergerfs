@@ -18,16 +18,24 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
 namespace fs
 {
-  static
-  inline
-  int
-  close(const int fd_)
-  {
-    return ::close(fd_);
-  }
+  static inline int close(const int fd);
+}
+
+static
+inline
+int
+fs::close(const int fd_)
+{
+  int rv;
+
+  rv = ::close(fd_);
+
+  return ::to_neg_errno(rv);
 }

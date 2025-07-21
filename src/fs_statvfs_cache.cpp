@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_statvfs_cache.hpp"
+
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
@@ -42,104 +44,98 @@ static uint64_t        g_timeout    = 0;
 static statvfs_cache   g_cache;
 static pthread_mutex_t g_cache_lock = PTHREAD_MUTEX_INITIALIZER;
 
-namespace l
+static
+uint64_t
+_get_time(void)
 {
-  static
-  uint64_t
-  get_time(void)
-  {
-    uint64_t rv;
+  uint64_t rv;
 
-    rv = ::time(NULL);
+  rv = ::time(NULL);
 
-    return rv;
-  }
+  return rv;
 }
 
-namespace fs
+uint64_t
+fs::statvfs_cache_timeout(void)
 {
-  uint64_t
-  statvfs_cache_timeout(void)
-  {
-    return g_timeout;
-  }
+  return g_timeout;
+}
 
-  void
-  statvfs_cache_timeout(const uint64_t timeout_)
-  {
-    g_timeout = timeout_;
-  }
+void
+fs::statvfs_cache_timeout(const uint64_t timeout_)
+{
+  g_timeout = timeout_;
+}
 
-  int
-  statvfs_cache(const char     *path_,
-                struct statvfs *st_)
-  {
-    int rv;
-    Element *e;
-    uint64_t now;
+int
+fs::statvfs_cache(const char     *path_,
+                  struct statvfs *st_)
+{
+  int rv;
+  Element *e;
+  uint64_t now;
 
-    if(g_timeout == 0)
-      return fs::statvfs(path_,st_);
+  if(g_timeout == 0)
+    return fs::statvfs(path_,st_);
 
-    rv = 0;
-    now = l::get_time();
+  rv = 0;
+  now = ::_get_time();
 
-    mutex_lock(&g_cache_lock);
+  mutex_lock(&g_cache_lock);
 
-    e = &g_cache[path_];
+  e = &g_cache[path_];
 
-    if((now - e->time) > g_timeout)
-      {
-        e->time = now;
-        rv = fs::statvfs(path_,&e->st);
-      }
+  if((now - e->time) > g_timeout)
+    {
+      e->time = now;
+      rv = fs::statvfs(path_,&e->st);
+    }
 
-    *st_ = e->st;
+  *st_ = e->st;
 
-    mutex_unlock(&g_cache_lock);
+  mutex_unlock(&g_cache_lock);
 
-    return rv;
-  }
+  return rv;
+}
 
-  int
-  statvfs_cache_readonly(const std::string &path_,
-                         bool              *readonly_)
-  {
-    int rv;
-    struct statvfs st;
+int
+fs::statvfs_cache_readonly(const std::string &path_,
+                           bool              *readonly_)
+{
+  int rv;
+  struct statvfs st;
 
-    rv = fs::statvfs_cache(path_.c_str(),&st);
-    if(rv == 0)
-      *readonly_ = StatVFS::readonly(st);
+  rv = fs::statvfs_cache(path_.c_str(),&st);
+  if(rv == 0)
+    *readonly_ = StatVFS::readonly(st);
 
-    return rv;
-  }
+  return rv;
+}
 
-  int
-  statvfs_cache_spaceavail(const std::string &path_,
-                           uint64_t          *spaceavail_)
-  {
-    int rv;
-    struct statvfs st;
+int
+fs::statvfs_cache_spaceavail(const std::string &path_,
+                             uint64_t          *spaceavail_)
+{
+  int rv;
+  struct statvfs st;
 
-    rv = fs::statvfs_cache(path_.c_str(),&st);
-    if(rv == 0)
-      *spaceavail_ = StatVFS::spaceavail(st);
+  rv = fs::statvfs_cache(path_.c_str(),&st);
+  if(rv == 0)
+    *spaceavail_ = StatVFS::spaceavail(st);
 
-    return rv;
-  }
+  return rv;
+}
 
-  int
-  statvfs_cache_spaceused(const std::string &path_,
-                          uint64_t          *spaceused_)
-  {
-    int rv;
-    struct statvfs st;
+int
+fs::statvfs_cache_spaceused(const std::string &path_,
+                            uint64_t          *spaceused_)
+{
+  int rv;
+  struct statvfs st;
 
-    rv = fs::statvfs_cache(path_.c_str(),&st);
-    if(rv == 0)
-      *spaceused_ = StatVFS::spaceused(st);
+  rv = fs::statvfs_cache(path_.c_str(),&st);
+  if(rv == 0)
+    *spaceused_ = StatVFS::spaceused(st);
 
-    return rv;
-  }
+  return rv;
 }
