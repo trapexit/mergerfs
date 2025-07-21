@@ -100,7 +100,7 @@ namespace fs
 
     // it may not support it... it's fine...
     rv = fs::attr::copy(frompath,topath);
-    if(return_metadata_errors_ && (rv == -1) && !l::ignorable_error(errno))
+    if(return_metadata_errors_ && (rv < 0) && !l::ignorable_error(-rv))
       return -1;
 
     // it may not support it... it's fine...

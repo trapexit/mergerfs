@@ -21,19 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <array>
 #include <vector>
-
-#define MAXGIDS 32
-#define MAXRECS 256
-
-// GIDCache is a global, per thread cache of uid to gid + supplemental
-// groups mapping for use when threads change credentials. This is
-// needed due to the high cost of querying such information. The cache
-// instance should always be thread local and live the lifetime of the
-// app. The constructor will register the instance so they can each be
-// told to invalidate the cache on demand. A second instance on the
-// same thread will cause an assert to be triggered.
 
 struct GIDRecord
 {

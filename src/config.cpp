@@ -23,6 +23,7 @@
 #include "str.hpp"
 #include "to_string.hpp"
 #include "version.hpp"
+#include "nonstd/string.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -39,14 +40,12 @@
 
 #define IFERT(S) if(S == s_) return true
 
-const std::string CONTROLFILE = "/.mergerfs";
 constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
   "rtorrent|"
   "qbittorrent-nox";
 
 
 Config Config::_singleton;
-
 
 namespace l
 {
@@ -277,6 +276,45 @@ Config::keys_xattr(std::string &s_) const
     }
 }
 
+ssize_t
+Config::keys_listxattr_size() const
+{
+  ssize_t rv;
+
+  rv = 0;
+  for(const auto &[key,val] : _map)
+    {
+      rv += sizeof("user.mergerfs.");
+      rv += key.size();
+    }
+
+  return rv;
+}
+
+ssize_t
+Config::keys_listxattr(char   *list_,
+                       size_t  size_) const
+{
+  char    *list = list_;
+  ssize_t  size = size_;
+
+  if(size_ == 0)
+    return keys_listxattr_size();
+
+  for(const auto &[key,val] : _map)
+    {
+      auto rv = fmt::format_to_n(list,size,
+                                 "user.mergerfs.{}\0",
+                                 key);
+      if(rv.out >= (list + size))
+        return -ERANGE;
+      list += rv.size;
+      size -= rv.size;
+    }
+
+  return (list - list_);
+}
+
 int
 Config::get(const std::string &key_,
             std::string       *val_) const
@@ -388,6 +426,50 @@ void
 Config::finish_initializing()
 {
   _initialized = true;
+}
+
+bool
+Config::is_rootdir(const char *fusepath_)
+{
+  return str::eq(fusepath_,"/");
+}
+
+bool
+Config::is_ctrl_file(const char *fusepath_)
+{
+  return str::eq(fusepath_,"/.mergerfs");
+}
+
+bool
+Config::is_mergerfs_xattr(const char *attrname_)
+{
+  return str::startswith(attrname_,"user.mergerfs.");
+}
+
+bool
+Config::is_cmd_xattr(const std::string_view &attrname_)
+{
+  return nonstd::string::starts_with(attrname_,"user.mergerfs.cmd.");
+}
+
+std::string
+Config::prune_ctrl_xattr(const std::string &s_)
+{
+  const size_t offset = (sizeof("user.mergerfs.") - 1);
+
+  if(offset < s_.size())
+    return s_.substr(offset);
+  return {};
+}
+
+std::string_view
+Config::prune_cmd_xattr(const std::string_view &s_)
+{
+  constexpr size_t offset = (sizeof("user.mergerfs.cmd.") - 1);
+
+  if(offset < s_.size())
+    return s_.substr(offset);
+  return {};
 }
 
 std::ostream&

@@ -56,6 +56,12 @@ namespace str
           std::string       *key,
           std::string       *value);
 
+  void
+  splitkv(const std::string_view &str,
+          const char              delimiter,
+          std::string            &key,
+          std::string_view       &val);
+
   std::string
   join(const std::vector<std::string> &vec,
        const size_t                    substridx,
@@ -92,9 +98,17 @@ namespace str
              const std::string &prefix_);
 
   bool
+  startswith(const char *str,
+             const char *prefix);
+
+  bool
   endswith(const std::string &str_,
            const std::string &suffix_);
 
   std::string
   trim(const std::string &str);
+
+  bool
+  eq(const char *s0,
+     const char *s1);
 }

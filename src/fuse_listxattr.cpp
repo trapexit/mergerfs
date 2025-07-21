@@ -14,98 +14,136 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "category.hpp"
+#include "fuse_listxattr.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_llistxattr.hpp"
-#include "fs_path.hpp"
 #include "ugid.hpp"
 #include "xattr.hpp"
 
 #include "fuse.h"
 
+#include <optional>
 #include <string>
 
-#include <string.h>
+#include <cstring>
 
-using std::string;
-
-
-namespace l
+static
+ssize_t
+_listxattr_size(const std::vector<Branch*> &branches_,
+                const char                 *fusepath_)
 {
-  static
-  int
-  listxattr_controlfile(Config::Read &cfg_,
-                        char         *list_,
-                        const size_t  size_)
-  {
-    string xattrs;
+  ssize_t rv;
+  ssize_t size;
+  std::string fullpath;
 
-    cfg_->keys_xattr(xattrs);
-    if(size_ == 0)
-      return xattrs.size();
+  size = 0;
+  for(const auto branch : branches_)
+    {
+      fullpath = fs::path::make(branch->path,fusepath_);
 
-    if(size_ < xattrs.size())
-      return -ERANGE;
+      rv = fs::llistxattr(fullpath,NULL,0);
+      if(rv < 0)
+        continue;
 
-    memcpy(list_,xattrs.c_str(),xattrs.size());
+      size += rv;
+    }
 
-    return xattrs.size();
-  }
-
-  static
-  int
-  listxattr(const Policy::Search &searchFunc_,
-            const Branches       &ibranches_,
-            const char           *fusepath_,
-            char                 *list_,
-            const size_t          size_)
-  {
-    int rv;
-    std::string fullpath;
-    std::vector<Branch*> obranches;
-
-    rv = searchFunc_(ibranches_,fusepath_,obranches);
-    if(rv == -1)
-      return -errno;
-
-    fullpath = fs::path::make(obranches[0]->path,fusepath_);
-
-    rv = fs::llistxattr(fullpath,list_,size_);
-
-    return ((rv == -1) ? -errno : rv);
-  }
+  return rv;
 }
 
-namespace FUSE
+static
+ssize_t
+_listxattr(const std::vector<Branch*> &branches_,
+           const char                 *fusepath_,
+           char                       *list_,
+           size_t                      size_)
 {
-  int
-  listxattr(const char *fusepath_,
-            char       *list_,
-            size_t      size_)
-  {
-    Config::Read cfg;
+  ssize_t rv;
+  ssize_t size;
+  std::string fullpath;
+  std::optional<ssize_t> err;
 
-    if(fusepath_ == CONTROLFILE)
-      return l::listxattr_controlfile(cfg,list_,size_);
+  if(size_ == 0)
+    return ::_listxattr_size(branches_,fusepath_);
 
-    switch(cfg->xattr)
-      {
-      case XAttr::ENUM::PASSTHROUGH:
-        break;
-      case XAttr::ENUM::NOATTR:
-        return 0;
-      case XAttr::ENUM::NOSYS:
-        return -ENOSYS;
-      }
+  size = 0;
+  err  = -ENOENT;
+  for(const auto branch : branches_)
+    {
+      fullpath = fs::path::make(branch->path,fusepath_);
 
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+      rv = fs::llistxattr(fullpath,list_,size_);
+      if(rv == -ERANGE)
+        return -ERANGE;
+      if(rv < 0)
+        {
+          if(!err.has_value())
+            err = rv;
+          continue;
+        }
 
-    return l::listxattr(cfg->func.listxattr.policy,
-                        cfg->branches,
-                        fusepath_,
-                        list_,
-                        size_);
-  }
+      err = 0;
+      list_ += rv;
+      size_ -= rv;
+      size  += rv;
+    }
+
+  if(err < 0)
+    return err.value();
+
+  return size;
+}
+
+static
+int
+_listxattr(const Policy::Search &searchFunc_,
+           const Branches       &ibranches_,
+           const char           *fusepath_,
+           char                 *list_,
+           const size_t          size_)
+{
+  int rv;
+  std::string fullpath;
+  std::vector<Branch*> obranches;
+
+  rv = searchFunc_(ibranches_,fusepath_,obranches);
+  if(rv == -1)
+    return -errno;
+
+  if(size_ == 0)
+    return ::_listxattr_size(obranches,fusepath_);
+
+  return ::_listxattr(obranches,fusepath_,list_,size_);
+}
+
+int
+FUSE::listxattr(const char *fusepath_,
+                char       *list_,
+                size_t      size_)
+{
+  Config::Read cfg;
+
+  if(Config::is_ctrl_file(fusepath_))
+    return cfg->keys_listxattr(list_,size_);
+
+  switch(cfg->xattr)
+    {
+    case XAttr::ENUM::PASSTHROUGH:
+      break;
+    case XAttr::ENUM::NOATTR:
+      return 0;
+    case XAttr::ENUM::NOSYS:
+      return -ENOSYS;
+    }
+
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_listxattr(cfg->func.listxattr.policy,
+                      cfg->branches,
+                      fusepath_,
+                      list_,
+                      size_);
 }

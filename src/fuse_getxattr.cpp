@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_getxattr.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_findallfiles.hpp"
@@ -61,36 +63,32 @@ namespace l
 
   static
   int
-  getxattr_controlfile(Config::Read &cfg_,
-                       const char   *attrname_,
-                       char         *buf_,
-                       const size_t  count_)
+  getxattr_ctrl_file(Config::Read &cfg_,
+                     const char   *attrname_,
+                     char         *buf_,
+                     const size_t  count_)
   {
     int rv;
-    size_t len;
     std::string key;
     std::string val;
-    StrVec attr;
 
-    if(!str::startswith(attrname_,"user.mergerfs."))
+    if(!Config::is_mergerfs_xattr(attrname_))
       return -ENOATTR;
 
-    key = &attrname_[14];
+    key = Config::prune_ctrl_xattr(attrname_);
     rv = cfg_->get(key,&val);
     if(rv < 0)
       return rv;
 
-    len = val.size();
-
     if(count_ == 0)
-      return len;
+      return val.size();
 
-    if(count_ < len)
+    if(count_ < val.size())
       return -ERANGE;
 
-    memcpy(buf_,val.c_str(),len);
+    memcpy(buf_,val.c_str(),val.size());
 
-    return (int)len;
+    return (int)val.size();
   }
 
   static
@@ -142,17 +140,17 @@ namespace l
                          char              *buf_,
                          const size_t       count_)
   {
-    StrVec attr;
+    std::string key;
 
-    str::split(attrname_,'.',&attr);
+    key = Config::prune_ctrl_xattr(attrname_);
 
-    if(attr[2] == "basepath")
+    if(key == "basepath")
       return l::getxattr_from_string(buf_,count_,basepath_);
-    else if(attr[2] ==  "relpath")
+    if(key == "relpath")
       return l::getxattr_from_string(buf_,count_,fusepath_);
-    else if(attr[2] == "fullpath")
+    if(key == "fullpath")
       return l::getxattr_from_string(buf_,count_,fullpath_);
-    else if(attr[2] == "allpaths")
+    if(key == "allpaths")
       return l::getxattr_user_mergerfs_allpaths(branches_,fusepath_,buf_,count_);
 
     return -ENOATTR;
@@ -177,7 +175,7 @@ namespace l
 
     fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-    if(str::startswith(attrname_,"user.mergerfs."))
+    if(Config::is_mergerfs_xattr(attrname_))
       return l::getxattr_user_mergerfs(branches[0]->path,
                                        fusepath_,
                                        fullpath,
@@ -190,37 +188,35 @@ namespace l
   }
 }
 
-namespace FUSE
+
+int
+FUSE::getxattr(const char *fusepath_,
+               const char *attrname_,
+               char       *attrvalue_,
+               size_t      attrvalue_size_)
 {
-  int
-  getxattr(const char *fusepath_,
-           const char *attrname_,
-           char       *buf_,
-           size_t      count_)
-  {
-    Config::Read cfg;
+  Config::Read cfg;
 
-    if(fusepath_ == CONTROLFILE)
-      return l::getxattr_controlfile(cfg,
-                                     attrname_,
-                                     buf_,
-                                     count_);
+  if(Config::is_ctrl_file(fusepath_))
+    return l::getxattr_ctrl_file(cfg,
+                                 attrname_,
+                                 attrvalue_,
+                                 attrvalue_size_);
 
-    if((cfg->security_capability == false) &&
-       l::is_attrname_security_capability(attrname_))
-      return -ENOATTR;
+  if((cfg->security_capability == false) &&
+     l::is_attrname_security_capability(attrname_))
+    return -ENOATTR;
 
-    if(cfg->xattr.to_int())
-      return -cfg->xattr.to_int();
+  if(cfg->xattr.to_int())
+    return -cfg->xattr.to_int();
 
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::getxattr(cfg->func.getxattr.policy,
-                       cfg->branches,
-                       fusepath_,
-                       attrname_,
-                       buf_,
-                       count_);
-  }
+  return l::getxattr(cfg->func.getxattr.policy,
+                     cfg->branches,
+                     fusepath_,
+                     attrname_,
+                     attrvalue_,
+                     attrvalue_size_);
 }

@@ -26,4 +26,4 @@ issue: `umount -l <mergerfs_mountpoint>`. Or you can let mergerfs do
 it by setting the option `lazy-umount-mountpoint=true`.
 
 If the intent is to change settings at runtime then the [runtime
-interface](../runtime_interfaces.md) should be used.
+interface](../runtime_interface.md) should be used.

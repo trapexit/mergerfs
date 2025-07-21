@@ -14,9 +14,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "str.hpp"
+
+#include <cstring>
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <fnmatch.h>
@@ -101,6 +105,28 @@ namespace str
       {
         result_->push_back(str_.substr(0,off));
         result_->push_back(str_.substr(off+1));
+      }
+  }
+
+  void
+  splitkv(const std::string_view &str_,
+          const char              delimiter_,
+          std::string            &key_,
+          std::string_view       &val_)
+  {
+    size_t pos;
+
+    pos = str_.find(delimiter_);
+    if(pos != std::string_view::npos)
+      {
+        key_ = str_.substr(0,pos);
+        val_ = str_.substr(pos + 1,
+                           str_.size() - pos + 1);
+      }
+    else
+      {
+        key_ = str_;
+        val_ = std::string_view{};
       }
   }
 
@@ -271,4 +297,27 @@ namespace str
 
     return rv;
   }
+}
+
+bool
+str::eq(const char *s0_,
+        const char *s1_)
+{
+  return (strcmp(s0_,s1_) == 0);
+}
+
+bool
+str::startswith(const char *s_,
+                const char *p_)
+{
+  while(*p_)
+    {
+      if(*p_ != *s_)
+        return false;
+
+      p_++;
+      s_++;
+    }
+
+  return true;
 }

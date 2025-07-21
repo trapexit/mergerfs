@@ -54,7 +54,7 @@ fs::copyfile(const int          src_fd_,
     return -1;
 
   rv = fs::attr::copy(src_fd_,dst_fd_,FS_ATTR_CLEAR_IMMUTABLE);
-  if((rv == -1) && !::_ignorable_error(errno))
+  if((rv < 0) && !::_ignorable_error(-rv))
     return -1;
 
   rv = fs::fchown_check_on_error(dst_fd_,src_st_);

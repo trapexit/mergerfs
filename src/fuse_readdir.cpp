@@ -18,8 +18,16 @@
 
 #include "fuse_readdir.hpp"
 
-#include "config.hpp"
 #include "fuse_readdir_factory.hpp"
+
+#include "dirinfo.hpp"
+#include "fuse_dirents.h"
+
+#include "config.hpp"
+
+#include <cstring>
+
+#include <dirent.h>
 
 /*
   The _initialized stuff is not pretty but easiest way to deal with
@@ -90,15 +98,40 @@ FUSE::ReadDir::from_string(std::string const &str_)
   return 0;
 }
 
+static
+int
+_handle_ENOENT(const fuse_file_info_t *ffi_,
+               fuse_dirents_t         *buf_)
+{
+  dirent de;
+  DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+
+  if(di->fusepath != "/")
+    return -ENOENT;
+
+  de = {0};
+
+  de.d_ino = 0;
+  de.d_off = 0;
+  de.d_type = DT_REG;
+  strcpy(de.d_name,"error: no valid mergerfs branch found, check config");
+  de.d_reclen = sizeof(de);
+
+  fuse_dirents_add(buf_,&de,::strlen(de.d_name));
+
+  return 0;
+}
+
 /*
   Yeah... if not initialized it will crash... ¯\_(ツ)_/¯
   This will be resolved once initialization of internal objects and
-  handling of input is better seperated.
+  handling of input is better separated.
 */
 int
-FUSE::ReadDir::operator()(fuse_file_info_t const *ffi_,
+FUSE::ReadDir::operator()(const fuse_file_info_t *ffi_,
                           fuse_dirents_t         *buf_)
 {
+  int rv;
   std::shared_ptr<FUSE::ReadDirBase> readdir;
 
   {
@@ -106,5 +139,9 @@ FUSE::ReadDir::operator()(fuse_file_info_t const *ffi_,
     readdir = _readdir;
   }
 
-  return (*readdir)(ffi_,buf_);
+  rv = (*readdir)(ffi_,buf_);
+  if(rv == -ENOENT)
+    return ::_handle_ENOENT(ffi_,buf_);
+
+  return rv;
 }

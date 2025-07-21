@@ -36,8 +36,8 @@ _get_fs_ioc_flags(const int  fd,
   int rv;
 
   rv = fs::ioctl(fd,FS_IOC_GETFLAGS,(void*)&flags);
-  if((rv == -1) && (errno == EINVAL))
-    errno = ENOTSUP;
+  if(rv == -EINVAL)
+    rv = ENOTSUP;
 
   return rv;
 }
@@ -53,15 +53,13 @@ _get_fs_ioc_flags(const string &file,
 
   fd = fs::open(file,openflags);
   if(fd == -1)
-    return -1;
+    return -errno;
 
   rv = ::_get_fs_ioc_flags(fd,flags);
-  if(rv == -1)
+  if(rv < 0)
     {
-      int error = errno;
       fs::close(fd);
-      errno = error;
-      return -1;
+      return rv;
     }
 
   return fs::close(fd);
@@ -75,8 +73,8 @@ _set_fs_ioc_flags(const int fd,
   int rv;
 
   rv = fs::ioctl(fd,FS_IOC_SETFLAGS,(void*)&flags);
-  if((rv == -1) && (errno == EINVAL))
-    errno = ENOTSUP;
+  if(rv == -EINVAL)
+    rv = ENOTSUP;
 
   return rv;
 }
@@ -92,15 +90,13 @@ _set_fs_ioc_flags(const string &file,
 
   fd = fs::open(file,openflags);
   if(fd == -1)
-    return -1;
+    return -errno;
 
   rv = ::_set_fs_ioc_flags(fd,flags);
-  if(rv == -1)
+  if(rv < 0)
     {
-      int error = errno;
       fs::close(fd);
-      errno = error;
-      return -1;
+      return rv;
     }
 
   return fs::close(fd);
@@ -115,8 +111,8 @@ fs::attr::copy(const int  fdin,
   int flags;
 
   rv = ::_get_fs_ioc_flags(fdin,flags);
-  if(rv == -1)
-    return -1;
+  if(rv < 0)
+    return rv;
 
   if(flags_ & FS_ATTR_CLEAR_IMMUTABLE)
     flags = (flags & ~FS_IMMUTABLE_FL);
@@ -132,8 +128,8 @@ fs::attr::copy(const string &from,
   int flags;
 
   rv = ::_get_fs_ioc_flags(from,flags);
-  if(rv == -1)
-    return -1;
+  if(rv < 0)
+    return rv;
 
   return ::_set_fs_ioc_flags(to,flags);
 }

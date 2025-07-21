@@ -95,7 +95,7 @@ nav:
   - config/export-support.md
   - config/kernel-permissions-check.md
 - error_handling_and_logging.md
-- runtime_interfaces.md
+- runtime_interface.md
 - remote_filesystems.md
 - tips_notes.md
 - known_issues_bugs.md

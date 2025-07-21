@@ -6,6 +6,7 @@
 
 #include "CLI11.hpp"
 #include "fmt/core.h"
+#include "fmt/ranges.h"
 #include "scope_guard.hpp"
 #include "subprocess.hpp"
 
@@ -27,6 +28,29 @@ _write_str(const std::string &output_,
   ::fwrite(str_.c_str(),1,str_.size(),f);
 }
 
+template<typename ARGS>
+static
+void
+_run(const ARGS        &args_,
+     const std::string &output_)
+{
+  std::string hdr;
+
+  hdr = fmt::format("=== {}\n",fmt::join(args_," "));
+  try
+    {
+      _write_str(output_,hdr);
+      subprocess::call(args_,
+                       subprocess::output{output_.c_str()});
+    }
+  catch(...)
+    {
+      ::_write_str(output_,"error: command failed to run\n");
+    }
+
+  _write_str(output_,"\n\n");
+}
+
 static
 void
 _lsblk(const std::string &output_)
@@ -38,8 +62,7 @@ _lsblk(const std::string &output_)
       "-o","NAME,FSTYPE,FSSIZE,SIZE,MOUNTPOINTS,RM,RO,ROTA"
     };
 
-  subprocess::call(args,
-                   subprocess::output{output_.c_str()});
+  ::_run(args,output_);
 }
 
 static
@@ -52,8 +75,7 @@ _mounts(const std::string &output_)
       "/proc/mounts"
     };
 
-  subprocess::call(args,
-                   subprocess::output{output_.c_str()});
+  ::_run(args,output_);
 }
 
 static
@@ -72,8 +94,7 @@ _mount_point_stats(const std::string &output_)
       for(const auto &path : allpaths)
         {
           auto args = {"stat",path.c_str()};
-          subprocess::call(args,
-                           subprocess::output{output_.c_str()});
+          ::_run(args,output_);
         }
     }
 }
@@ -88,14 +109,7 @@ _mergerfs_version(const std::string &output_)
       "--version"
     };
 
-  try
-    {
-      subprocess::call(args,
-                       subprocess::output{output_.c_str()});
-    }
-  catch(...)
-    {
-    }
+  ::_run(args,output_);
 }
 
 static
@@ -108,14 +122,7 @@ _uname(const std::string &output_)
       "-a"
     };
 
-  try
-    {
-      subprocess::call(args,
-                       subprocess::output{output_.c_str()});
-    }
-  catch(...)
-    {
-    }
+  ::_run(args,output_);
 }
 
 static
@@ -128,14 +135,7 @@ _lsb_release(const std::string &output_)
       "-a"
     };
 
-  try
-    {
-      subprocess::call(args,
-                       subprocess::output{output_.c_str()});
-    }
-  catch(...)
-    {
-    }
+  ::_run(args,output_);
 }
 
 static
@@ -148,14 +148,7 @@ _df(const std::string &output_)
       "-h"
     };
 
-  try
-    {
-      subprocess::call(args,
-                       subprocess::output{output_.c_str()});
-    }
-  catch(...)
-    {
-    }
+  ::_run(args,output_);
 }
 
 static
@@ -168,14 +161,7 @@ _fstab(const std::string &output_)
       "/etc/fstab"
     };
 
-  try
-    {
-      subprocess::call(args,
-                       subprocess::output{output_.c_str()});
-    }
-  catch(...)
-    {
-    }
+  ::_run(args,output_);
 }
 
 
@@ -202,21 +188,13 @@ mergerfs::collect_info::main(int    argc_,
   fmt::print("* Please have mergerfs mounted before running this tool.\n");
 
   fs::unlink(output_filepath);
-  ::_write_str(output_filepath,"::mergerfs --version::\n");
   ::_mergerfs_version(output_filepath);
-  ::_write_str(output_filepath,"\n::uname -a::\n");
   ::_uname(output_filepath);
-  ::_write_str(output_filepath,"\n::lsb_release -a::\n");
   ::_lsb_release(output_filepath);
-  ::_write_str(output_filepath,"\n::df -h::\n");
   ::_df(output_filepath);
-  ::_write_str(output_filepath,"\n::lsblk::\n");
   ::_lsblk(output_filepath);
-  ::_write_str(output_filepath,"\n::cat /proc/mounts::\n");
   ::_mounts(output_filepath);
-  ::_write_str(output_filepath,"\n::mount point stats::\n");
   ::_mount_point_stats(output_filepath);
-  ::_write_str(output_filepath,"\n::cat /etc/fstab::\n");
   ::_fstab(output_filepath);
 
   fmt::print("* Upload the following file to your"
