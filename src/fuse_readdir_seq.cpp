@@ -18,6 +18,7 @@
 
 #include "fuse_readdir_seq.hpp"
 
+#include "error.hpp"
 #include "branches.hpp"
 #include "config.hpp"
 #include "dirinfo.hpp"
@@ -39,101 +40,71 @@
 #include <string>
 
 
-namespace l
+static
+uint64_t
+_dirent_exact_namelen(const struct dirent *d_)
 {
-  struct Error
-  {
-  private:
-    int _err;
-
-  public:
-    Error()
-      : _err(ENOENT)
-    {
-
-    }
-
-    operator int()
-    {
-      return _err;
-    }
-
-    Error&
-    operator=(int v_)
-    {
-      if(_err != 0)
-        _err = v_;
-
-      return *this;
-    }
-  };
-
-  static
-  uint64_t
-  dirent_exact_namelen(const struct dirent *d_)
-  {
 #ifdef _D_EXACT_NAMLEN
-    return _D_EXACT_NAMLEN(d_);
+  return _D_EXACT_NAMLEN(d_);
 #elif defined _DIRENT_HAVE_D_NAMLEN
-    return d_->d_namlen;
+  return d_->d_namlen;
 #else
-    return strlen(d_->d_name);
+  return strlen(d_->d_name);
 #endif
-  }
+}
 
-  static
-  int
-  readdir(const Branches::Ptr &branches_,
-          const std::string   &rel_dirpath_,
-          fuse_dirents_t      *buf_)
-  {
-    Error error;
-    HashSet names;
-    std::string rel_filepath;
-    std::string abs_dirpath;
+static
+int
+_readdir(const Branches::Ptr &branches_,
+         const std::string   &rel_dirpath_,
+         fuse_dirents_t      *buf_)
+{
+  Err err;
+  HashSet names;
+  std::string rel_filepath;
+  std::string abs_dirpath;
 
-    fuse_dirents_reset(buf_);
+  fuse_dirents_reset(buf_);
 
-    for(const auto &branch : *branches_)
-      {
-        int rv;
-        DIR *dh;
+  for(const auto &branch : *branches_)
+    {
+      int rv;
+      DIR *dh;
 
-        abs_dirpath = fs::path::make(branch.path,rel_dirpath_);
+      abs_dirpath = fs::path::make(branch.path,rel_dirpath_);
 
-        errno = 0;
-        dh = fs::opendir(abs_dirpath);
-        error = errno;
-        if(!dh)
-          continue;
+      errno = 0;
+      dh = fs::opendir(abs_dirpath);
+      err = -errno;
+      if(!dh)
+        continue;
 
-        DEFER{ fs::closedir(dh); };
+      DEFER{ fs::closedir(dh); };
 
-        rv = 0;
-        for(dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
-          {
-            std::uint64_t namelen;
+      rv = 0;
+      for(dirent *de = fs::readdir(dh); de; de = fs::readdir(dh))
+        {
+          std::uint64_t namelen;
 
-            namelen = l::dirent_exact_namelen(de);
+          namelen = ::_dirent_exact_namelen(de);
 
-            rv = names.put(de->d_name,namelen);
-            if(rv == 0)
-              continue;
+          rv = names.put(de->d_name,namelen);
+          if(rv == 0)
+            continue;
 
-            rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
-            de->d_ino = fs::inode::calc(branch.path,
-                                        rel_filepath,
-                                        DTTOIF(de->d_type),
-                                        de->d_ino);
+          rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
+          de->d_ino = fs::inode::calc(branch.path,
+                                      rel_filepath,
+                                      DTTOIF(de->d_type),
+                                      de->d_ino);
 
-            rv = fuse_dirents_add(buf_,de,namelen);
-            if(rv)
-              return -ENOMEM;
-          }
-      }
+          rv = fuse_dirents_add(buf_,de,namelen);
+          if(rv)
+            return -ENOMEM;
+        }
+    }
 
-    return -error;
-  }
+  return err;
 }
 
 int
@@ -145,7 +116,7 @@ FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return l::readdir(cfg->branches,
+  return ::_readdir(cfg->branches,
                     di->fusepath,
                     buf_);
 }

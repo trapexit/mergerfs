@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 #include "xattr.hpp"
 
 #include <string>
@@ -37,12 +37,16 @@ namespace fs
             const size_t  size_)
   {
 #ifdef USE_XATTR
-    return ::fgetxattr(fd_,
-                       attrname_,
-                       value_,
-                       size_);
+    int rv;
+
+    rv = ::fgetxattr(fd_,
+                     attrname_,
+                     value_,
+                     size_);
+
+    return ::to_neg_errno(rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 

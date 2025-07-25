@@ -38,19 +38,21 @@ _writen(const int   fd_,
   do
     {
       rv = fs::write(fd_,buf_,nleft);
-      if((rv == -1) && (errno == EINTR))
+      if(rv == -EINTR)
         continue;
-      if((rv == -1) && (errno == EAGAIN))
+      if(rv == -EAGAIN)
         continue;
-      if(rv == -1)
-        return -1;
+      if(rv == 0)
+        break;
+      if(rv < 0)
+        return rv;
 
       nleft -= rv;
       buf_  += rv;
     }
   while(nleft > 0);
 
-  return size_;
+  return (size_ - nleft);
 }
 
 static
@@ -74,16 +76,16 @@ _copydata_readwrite(const int src_fd_,
       nr = fs::read(src_fd_,&buf[0],bufsize);
       if(nr == 0)
         return totalwritten;
-      if((nr == -1) && (errno == EINTR))
+      if(nr == -EINTR)
         continue;
-      if((nr == -1) && (errno == EAGAIN))
+      if(nr == -EAGAIN)
         continue;
-      if(nr == -1)
-        return -1;
+      if(nr < 0)
+        return nr;
 
       nw = ::_writen(dst_fd_,&buf[0],nr);
-      if(nw == -1)
-        return -1;
+      if(nw < 0)
+        return nw;
 
       totalwritten += nw;
     }
@@ -92,15 +94,12 @@ _copydata_readwrite(const int src_fd_,
 }
 
 
-namespace fs
+s64
+fs::copydata_readwrite(const int src_fd_,
+                       const int dst_fd_,
+                       const u64 count_)
 {
-  s64
-  copydata_readwrite(const int src_fd_,
-                     const int dst_fd_,
-                     const u64 count_)
-  {
-    return ::_copydata_readwrite(src_fd_,
-                                 dst_fd_,
-                                 count_);
-  }
+  return ::_copydata_readwrite(src_fd_,
+                               dst_fd_,
+                               count_);
 }

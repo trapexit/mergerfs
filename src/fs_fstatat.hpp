@@ -18,10 +18,9 @@
 
 #pragma once
 
-#include <sys/types.h>
+#include "to_neg_errno.hpp"
+
 #include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 
 namespace fs
@@ -41,7 +40,7 @@ namespace fs
                    statbuf_,
                    flags_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 
   static

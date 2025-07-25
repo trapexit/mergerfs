@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_ff.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -26,37 +28,34 @@
 #include <string>
 
 
-namespace ff
+static
+int
+_create(const Branches::Ptr  &ibranches_,
+        std::vector<Branch*> &obranches_)
 {
-  static
-  int
-  create(const Branches::Ptr  &ibranches_,
-         std::vector<Branch*> &obranches_)
-  {
-    int rv;
-    int error;
-    fs::info_t info;
+  int rv;
+  int error;
+  fs::info_t info;
 
-    error = ENOENT;
-    for(auto &branch : *ibranches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
+  error = ENOENT;
+  for(auto &branch : *ibranches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
 
-        obranches_.emplace_back(&branch);
+      obranches_.emplace_back(&branch);
 
-        return 0;
-      }
+      return 0;
+    }
 
-    return (errno=error,-1);
-  }
+  return -error;
 }
 
 int
@@ -72,7 +71,7 @@ Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
                                const char           *fusepath_,
                                std::vector<Branch*> &paths_) const
 {
-  return ::ff::create(branches_,paths_);
+  return ::_create(branches_,paths_);
 }
 
 int
@@ -90,5 +89,5 @@ Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
       return 0;
     }
 
-  return (errno=ENOENT,-1);
+  return -ENOENT;
 }

@@ -16,7 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
+#include "fs_fcntl.hpp"
 
 
 namespace fs
@@ -24,6 +24,6 @@ namespace fs
   int
   getfl(const int fd_)
   {
-    return ::fcntl(fd_,F_GETFL,0);
+    return fs::fcntl(fd_,F_GETFL,0);
   }
 }

@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_msppfrd.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -39,113 +41,110 @@ struct BranchInfo
 
 typedef std::vector<BranchInfo> BranchInfoVec;
 
-namespace msppfrd
+static
+int
+_create_1(const Branches::Ptr &branches_,
+          const std::string   &fusepath_,
+          BranchInfoVec       *branchinfo_,
+          uint64_t            *sum_)
 {
-  static
-  int
-  create_1(const Branches::Ptr &branches_,
-           const std::string   &fusepath_,
-           BranchInfoVec       *branchinfo_,
-           uint64_t            *sum_)
-  {
-    int rv;
-    int error;
-    fs::info_t info;
+  int rv;
+  int error;
+  fs::info_t info;
 
-    *sum_ = 0;
-    error = ENOENT;
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_))
-          error_and_continue(error,ENOENT);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
+  *sum_ = 0;
+  error = ENOENT;
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(error,ENOENT);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
 
-        *sum_ += info.spaceavail;
+      *sum_ += info.spaceavail;
 
-        branchinfo_->push_back({info.spaceavail,&branch});
-      }
+      branchinfo_->push_back({info.spaceavail,&branch});
+    }
 
-    return error;
-  }
+  return -error;
+}
 
-  static
-  int
-  get_branchinfo(const Branches::Ptr &branches_,
-                 const char          *fusepath_,
-                 BranchInfoVec       *branchinfo_,
-                 uint64_t            *sum_)
-  {
-    int error;
-    std::string fusepath;
+static
+int
+_get_branchinfo(const Branches::Ptr &branches_,
+                const char          *fusepath_,
+                BranchInfoVec       *branchinfo_,
+                uint64_t            *sum_)
+{
+  int rv;
+  std::string fusepath;
 
-    fusepath = fusepath_;
-    for(;;)
-      {
-        error = msppfrd::create_1(branches_,fusepath,branchinfo_,sum_);
-        if(branchinfo_->size())
-          break;
-        if(fusepath == "/")
-          break;
-        fusepath = fs::path::dirname(fusepath);
-      }
+  fusepath = fusepath_;
+  for(;;)
+    {
+      rv = ::_create_1(branches_,fusepath,branchinfo_,sum_);
+      if(branchinfo_->size())
+        break;
+      if(fusepath == "/")
+        break;
+      fusepath = fs::path::dirname(fusepath);
+    }
 
-    return error;
-  }
+  return rv;
+}
 
-  static
-  Branch*
-  get_branch(const BranchInfoVec &branchinfo_,
-             const uint64_t       sum_)
-  {
-    uint64_t idx;
-    uint64_t threshold;
+static
+Branch*
+_get_branch(const BranchInfoVec &branchinfo_,
+            const uint64_t       sum_)
+{
+  uint64_t idx;
+  uint64_t threshold;
 
-    if(sum_ == 0)
-      return nullptr;
-
-    idx = 0;
-    threshold = RND::rand64(sum_);
-    for(size_t i = 0; i < branchinfo_.size(); i++)
-      {
-        idx += branchinfo_[i].spaceavail;
-
-        if(idx < threshold)
-          continue;
-
-        return branchinfo_[i].branch;
-      }
-
+  if(sum_ == 0)
     return nullptr;
-  }
 
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int error;
-    uint64_t sum;
-    Branch *branch;
-    BranchInfoVec branchinfo;
+  idx = 0;
+  threshold = RND::rand64(sum_);
+  for(const auto &branchinfo : branchinfo_)
+    {
+      idx += branchinfo.spaceavail;
 
-    error  = msppfrd::get_branchinfo(branches_,fusepath_,&branchinfo,&sum);
-    branch = msppfrd::get_branch(branchinfo,sum);
-    if(!branch)
-      return (errno=error,-1);
+      if(idx < threshold)
+        continue;
 
-    paths_.emplace_back(branch);
+      return branchinfo.branch;
+    }
 
-    return 0;
-  }
+  return nullptr;
+}
+
+static
+int
+_create(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int rv;
+  uint64_t sum;
+  Branch *branch;
+  BranchInfoVec branchinfo;
+
+  rv     = ::_get_branchinfo(branches_,fusepath_,&branchinfo,&sum);
+  branch = ::_get_branch(branchinfo,sum);
+  if(!branch)
+    return rv;
+
+  paths_.emplace_back(branch);
+
+  return 0;
 }
 
 int
@@ -161,7 +160,7 @@ Policy::MSPPFRD::Create::operator()(const Branches::Ptr  &branches_,
                                     const char           *fusepath_,
                                     std::vector<Branch*> &paths_) const
 {
-  return ::msppfrd::create(branches_,fusepath_,paths_);
+  return ::_create(branches_,fusepath_,paths_);
 }
 
 int

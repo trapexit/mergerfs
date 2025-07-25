@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_info.hpp"
+
 #include "fs_info_t.hpp"
 #include "fs_path.hpp"
 #include "fs_stat.hpp"
@@ -29,23 +31,20 @@
 using std::string;
 
 
-namespace fs
+int
+fs::info(const string &path_,
+         fs::info_t   *info_)
 {
-  int
-  info(const string &path_,
-       fs::info_t   *info_)
-  {
-    int rv;
-    struct statvfs st;
+  int rv;
+  struct statvfs st;
 
-    rv = fs::statvfs_cache(path_.c_str(),&st);
-    if(rv == 0)
-      {
-        info_->readonly   = StatVFS::readonly(st);
-        info_->spaceavail = StatVFS::spaceavail(st);
-        info_->spaceused  = StatVFS::spaceused(st);
-      }
+  rv = fs::statvfs_cache(path_.c_str(),&st);
+  if(rv == 0)
+    {
+      info_->readonly   = StatVFS::readonly(st);
+      info_->spaceavail = StatVFS::spaceavail(st);
+      info_->spaceused  = StatVFS::spaceused(st);
+    }
 
-    return rv;
-  }
+  return rv;
 }

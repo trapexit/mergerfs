@@ -19,7 +19,8 @@
 
 #pragma once
 
-#include <errno.h>
+#include "to_neg_errno.hpp"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -37,6 +38,6 @@ namespace fs
 
     rv = ::fstat(fd_,st_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 }

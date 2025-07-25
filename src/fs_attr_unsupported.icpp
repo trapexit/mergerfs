@@ -14,27 +14,21 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_attr.hpp"
+
 #include "errno.hpp"
 
-#include <string>
 
-
-namespace fs
+int
+fs::attr::copy(const int fdin,
+               const int fdout)
 {
-  namespace attr
-  {
-    int
-    copy(const int fdin,
-         const int fdout)
-    {
-      return (errno=ENOTSUP,-1);
-    }
+  return -ENOTSUP;
+}
 
-    int
-    copy(const std::string &from,
-         const std::string &to)
-    {
-      return (errno=ENOTSUP,-1);
-    }
-  }
+int
+fs::attr::copy(const std::string &from,
+               const std::string &to)
+{
+  return -ENOTSUP;
 }

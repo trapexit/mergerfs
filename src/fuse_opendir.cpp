@@ -34,8 +34,8 @@ namespace FUSE
 
     if(cfg->cache_readdir)
       {
-        ffi_->keep_cache    = 1;
-        ffi_->cache_readdir = 1;
+        ffi_->keep_cache    = true;
+        ffi_->cache_readdir = true;
       }
 
     return 0;

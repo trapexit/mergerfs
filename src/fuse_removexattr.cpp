@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_removexattr.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_lremovexattr.hpp"
@@ -30,90 +32,84 @@ using std::string;
 using std::vector;
 
 
-namespace l
+static
+void
+_removexattr_loop_core(const string &basepath_,
+                       const char   *fusepath_,
+                       const char   *attrname_,
+                       PolicyRV     *prv_)
 {
-  static
-  void
-  removexattr_loop_core(const string &basepath_,
-                        const char   *fusepath_,
-                        const char   *attrname_,
-                        PolicyRV     *prv_)
-  {
-    string fullpath;
+  string fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = fs::path::make(basepath_,fusepath_);
 
-    errno = 0;
-    fs::lremovexattr(fullpath,attrname_);
+  errno = 0;
+  fs::lremovexattr(fullpath,attrname_);
 
-    prv_->insert(errno,basepath_);
-  }
-
-  static
-  void
-  removexattr_loop(const std::vector<Branch*> &branches_,
-                   const char                 *fusepath_,
-                   const char                 *attrname_,
-                   PolicyRV                   *prv_)
-  {
-    for(auto &branch : branches_)
-      {
-        l::removexattr_loop_core(branch->path,fusepath_,attrname_,prv_);
-      }
-  }
-
-  static
-  int
-  removexattr(const Policy::Action &actionFunc_,
-              const Policy::Search &searchFunc_,
-              const Branches       &ibranches_,
-              const char           *fusepath_,
-              const char           *attrname_)
-  {
-    int rv;
-    PolicyRV prv;
-    std::vector<Branch*> obranches;
-
-    rv = actionFunc_(ibranches_,fusepath_,obranches);
-    if(rv == -1)
-      return -errno;
-
-    l::removexattr_loop(obranches,fusepath_,attrname_,&prv);
-    if(prv.errors.empty())
-      return 0;
-    if(prv.successes.empty())
-      return prv.errors[0].rv;
-
-    obranches.clear();
-    rv = searchFunc_(ibranches_,fusepath_,obranches);
-    if(rv == -1)
-      return -errno;
-
-    return prv.get_error(obranches[0]->path);
-  }
+  prv_->insert(errno,basepath_);
 }
 
-namespace FUSE
+static
+void
+_removexattr_loop(const std::vector<Branch*> &branches_,
+                  const char                 *fusepath_,
+                  const char                 *attrname_,
+                  PolicyRV                   *prv_)
 {
-  int
-  removexattr(const char *fusepath_,
-              const char *attrname_)
-  {
-    Config::Read cfg;
+  for(auto &branch : branches_)
+    {
+      ::_removexattr_loop_core(branch->path,fusepath_,attrname_,prv_);
+    }
+}
 
-    if(Config::is_ctrl_file(fusepath_))
-      return -ENOATTR;
+static
+int
+_removexattr(const Policy::Action &actionFunc_,
+             const Policy::Search &searchFunc_,
+             const Branches       &ibranches_,
+             const char           *fusepath_,
+             const char           *attrname_)
+{
+  int rv;
+  PolicyRV prv;
+  std::vector<Branch*> obranches;
 
-    if(cfg->xattr.to_int())
-      return -cfg->xattr.to_int();
+  rv = actionFunc_(ibranches_,fusepath_,obranches);
+  if(rv < 0)
+    return rv;
 
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  ::_removexattr_loop(obranches,fusepath_,attrname_,&prv);
+  if(prv.errors.empty())
+    return 0;
+  if(prv.successes.empty())
+    return prv.errors[0].rv;
 
-    return l::removexattr(cfg->func.removexattr.policy,
-                          cfg->func.getxattr.policy,
-                          cfg->branches,
-                          fusepath_,
-                          attrname_);
-  }
+  obranches.clear();
+  rv = searchFunc_(ibranches_,fusepath_,obranches);
+  if(rv < 0)
+    return rv;
+
+  return prv.get_error(obranches[0]->path);
+}
+
+int
+FUSE::removexattr(const char *fusepath_,
+                  const char *attrname_)
+{
+  Config::Read cfg;
+
+  if(Config::is_ctrl_file(fusepath_))
+    return -ENOATTR;
+
+  if(cfg->xattr.to_int())
+    return -cfg->xattr.to_int();
+
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_removexattr(cfg->func.removexattr.policy,
+                        cfg->func.getxattr.policy,
+                        cfg->branches,
+                        fusepath_,
+                        attrname_);
 }

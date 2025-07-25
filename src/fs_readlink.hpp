@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <unistd.h>
@@ -27,11 +29,15 @@ namespace fs
 {
   static
   inline
-  int
+  ssize_t
   readlink(const std::string &path_,
            char              *buf_,
            const size_t       bufsiz_)
   {
-    return ::readlink(path_.c_str(),buf_,bufsiz_);
+    ssize_t rv;
+
+    rv = ::readlink(path_.c_str(),buf_,bufsiz_);
+
+    return ::to_neg_errno(rv);
   }
 }

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -30,17 +32,10 @@ namespace fs
        void         *buf_,
        const size_t  count_)
   {
-    return ::read(fd_,buf_,count_);
-  }
+    int rv;
 
-  static
-  inline
-  ssize_t
-  pread(const int     fd_,
-        void         *buf_,
-        const size_t  count_,
-        const off_t   offset_)
-  {
-    return ::pread(fd_,buf_,count_,offset_);
+    rv = ::read(fd_,buf_,count_);
+
+    return ::to_neg_errno(rv);
   }
 }

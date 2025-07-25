@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "fs_close.hpp"
 #include "fs_mktemp.hpp"
 #include "fs_statvfs.hpp"
 #include "fs_unlink.hpp"
@@ -25,6 +26,8 @@
 #include "ugid.hpp"
 
 #include <string>
+
+#include <fcntl.h>
 
 
 namespace fs

@@ -18,10 +18,11 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 
 namespace fs
@@ -29,10 +30,24 @@ namespace fs
   static
   inline
   int
+  mknod(const char   *path_,
+        const mode_t  mode_,
+        const dev_t   dev_)
+  {
+    int rv;
+
+    rv = ::mknod(path_,mode_,dev_);
+
+    return ::to_neg_errno(rv);
+  }
+
+  static
+  inline
+  int
   mknod(const std::string &path_,
         const mode_t       mode_,
         const dev_t        dev_)
   {
-    return ::mknod(path_.c_str(),mode_,dev_);
+    return fs::mknod(path_.c_str(),mode_,dev_);
   }
 }

@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "to_neg_errno.hpp"
+
 #include <fcntl.h>
 #include <sys/time.h>
 
@@ -27,6 +29,10 @@ namespace fs
             const char           *pathname_,
             const struct timeval  times_[2])
   {
-    return ::futimesat(dirfd_,pathname_,times_);
+    int rv;
+
+    rv = ::futimesat(dirfd_,pathname_,times_);
+
+    return ::to_neg_errno(rv);
   }
 }

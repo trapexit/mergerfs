@@ -27,9 +27,16 @@ namespace fs
             const off_t offset_,
             const off_t len_)
   {
-    if(mode_)
-      return (errno=EOPNOTSUPP,-1);
+    int rv;
 
-    return ::posix_fallocate(fd_,offset_,len_);
+    if(mode_)
+      return -EOPNOTSUPP;
+
+    rv = ::posix_fallocate(fd_,offset_,len_);
+
+    // Returns zero on success.
+    // Error number on failure.
+    // Return -errno.
+    return -rv;
   }
 }

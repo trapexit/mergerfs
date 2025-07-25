@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_flush.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_close.hpp"
@@ -22,31 +24,23 @@
 #include "fuse.h"
 
 
-namespace l
+static
+int
+_flush(const int fd_)
 {
-  static
-  int
-  flush(const int fd_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::dup(fd_);
-    if(rv == -1)
-      errno = EIO;
-    else
-      rv = fs::close(rv);
+  rv = fs::dup(fd_);
+  if(rv < 0)
+    return -EIO;
 
-    return ((rv == -1) ? -errno : 0);
-  }
+  return fs::close(rv);
 }
 
-namespace FUSE
+int
+FUSE::flush(const fuse_file_info_t *ffi_)
 {
-  int
-  flush(const fuse_file_info_t *ffi_)
-  {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-    return l::flush(fi->fd);
-  }
+  return ::_flush(fi->fd);
 }

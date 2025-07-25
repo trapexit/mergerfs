@@ -14,31 +14,27 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_releasedir.hpp"
+
 #include "config.hpp"
 #include "dirinfo.hpp"
 
 #include "fuse.h"
 
 
-namespace l
+static
+int
+_releasedir(DirInfo *di_)
 {
-  static
-  int
-  releasedir(DirInfo *di_)
-  {
-    delete di_;
+  delete di_;
 
-    return 0;
-  }
+  return 0;
 }
 
-namespace FUSE
+int
+FUSE::releasedir(const fuse_file_info_t *ffi_)
 {
-  int
-  releasedir(const fuse_file_info_t *ffi_)
-  {
-    DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
 
-    return l::releasedir(di);
-  }
+  return ::_releasedir(di);
 }

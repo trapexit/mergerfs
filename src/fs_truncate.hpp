@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <sys/types.h>
@@ -32,7 +34,11 @@ namespace fs
   truncate(const char  *path_,
            const off_t  length_)
   {
-    return ::truncate(path_,length_);
+    int rv;
+
+    rv = ::truncate(path_,length_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -30,6 +32,10 @@ namespace fs
         const void   *buf_,
         const size_t  count_)
   {
-    return ::write(fd_,buf_,count_);
+    int rv;
+
+    rv = ::write(fd_,buf_,count_);
+
+    return ::to_neg_errno(rv);
   }
 }

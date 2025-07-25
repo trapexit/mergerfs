@@ -14,7 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
+#include "to_neg_errno.hpp"
+
+#include <sys/types.h>
 
 
 namespace fs
@@ -25,6 +27,10 @@ namespace fs
             const off_t offset_,
             const off_t len_)
   {
-    return ::fallocate(fd_,mode_,offset_,len_);
+    int rv;
+
+    rv = ::fallocate(fd_,mode_,offset_,len_);
+
+    return ::to_neg_errno(rv);
   }
 }

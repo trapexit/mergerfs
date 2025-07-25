@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_lfs.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -28,47 +30,44 @@
 #include <string>
 
 
-namespace lfs
+static
+int
+_create(const Branches::Ptr  &branches_,
+        std::vector<Branch*> &paths_)
 {
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    uint64_t lfs;
-    fs::info_t info;
-    Branch *obranch;
+  int rv;
+  int error;
+  uint64_t lfs;
+  fs::info_t info;
+  Branch *obranch;
 
-    obranch = nullptr;
-    error = ENOENT;
-    lfs = std::numeric_limits<uint64_t>::max();
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
-        if(info.spaceavail > lfs)
-          continue;
+  obranch = nullptr;
+  error = ENOENT;
+  lfs = std::numeric_limits<uint64_t>::max();
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
+      if(info.spaceavail > lfs)
+        continue;
 
-        lfs = info.spaceavail;
-        obranch = &branch;
-      }
+      lfs = info.spaceavail;
+      obranch = &branch;
+    }
 
-    if(!obranch)
-      return (errno=error,-1);
+  if(!obranch)
+    return -error;
 
-    paths_.push_back(obranch);
+  paths_.push_back(obranch);
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -84,7 +83,7 @@ Policy::LFS::Create::operator()(const Branches::Ptr  &branches_,
                                 const char           *fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
-  return ::lfs::create(branches_,paths_);
+  return ::_create(branches_,paths_);
 }
 
 int

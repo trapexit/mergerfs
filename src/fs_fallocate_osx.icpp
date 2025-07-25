@@ -14,48 +14,44 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
+#include "fs_fcntl.hpp"
+#include "fs_ftruncate.hpp"
 
-#include <fcntl.h>
 #include <unistd.h>
 
 
-namespace l
+static
+int
+_fallocate_core(const int   fd_,
+                const off_t offset_,
+                const off_t len_)
 {
-  static
-  int
-  fallocate_core(const int   fd_,
-                 const off_t offset_,
-                 const off_t len_)
-  {
-    int rv;
-    fstore_t store = {F_ALLOCATECONTIG,F_PEOFPOSMODE,offset,len,0};
+  int rv;
+  fstore_t store = {F_ALLOCATECONTIG,F_PEOFPOSMODE,offset,len,0};
 
-    rv = ::fcntl(fd_,F_PREALLOCATE,&store);
-    if(rv == -1)
-      {
-        store.fst_flags = F_ALLOCATEALL;
-        rv = ::fcntl(fd_,F_PREALLOCATE,&store);
-      }
+  rv = fs::fcntl(fd_,F_PREALLOCATE,&store);
+  if(rv < 0)
+    {
+      store.fst_flags = F_ALLOCATEALL;
+      rv = fs::fcntl(fd_,F_PREALLOCATE,&store);
+    }
 
-    if(rv == -1)
-      return rv;
+  if(rv < 0)
+    return rv;
 
-    return ::ftruncate(fd_,(offset_+len_));
-  }
+  rv = fs::ftruncate(fd_,(offset_+len_));
+
+  return rv;
 }
 
-namespace fs
+int
+fs::fallocate(const int   fd_,
+              const int   mode_,
+              const off_t offset_,
+              const off_t len_)
 {
-  int
-  fallocate(const int   fd_,
-            const int   mode_,
-            const off_t offset_,
-            const off_t len_)
-  {
-    if(mode_)
-      return (errno=EOPNOTSUPP,-1);
+  if(mode_)
+    return -EOPNOTSUPP;
 
-    return l::fallocate_core(fd_,offset_,len_);
-  }
+  return ::_fallocate_core(fd_,offset_,len_);
 }

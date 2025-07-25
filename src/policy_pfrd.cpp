@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_pfrd.hpp"
+
 #include "errno.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
@@ -36,86 +38,83 @@ struct BranchInfo
 
 typedef std::vector<BranchInfo> BranchInfoVec;
 
-namespace pfrd
+static
+int
+_get_branchinfo(const Branches::Ptr &branches_,
+                BranchInfoVec       *branchinfo_,
+                uint64_t            *sum_)
 {
-  static
-  int
-  get_branchinfo(const Branches::Ptr &branches_,
-                 BranchInfoVec       *branchinfo_,
-                 uint64_t            *sum_)
-  {
-    int rv;
-    int error;
-    fs::info_t info;
+  int rv;
+  int err;
+  fs::info_t info;
 
-    *sum_ = 0;
-    error = ENOENT;
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
+  *sum_ = 0;
+  err   = ENOENT;
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(err,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(err,ENOENT);
+      if(info.readonly)
+        error_and_continue(err,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(err,ENOSPC);
 
-        *sum_ += info.spaceavail;
+      *sum_ += info.spaceavail;
 
-        branchinfo_->push_back({info.spaceavail,&branch});
-      }
+      branchinfo_->push_back({info.spaceavail,&branch});
+    }
 
-    return error;
-  }
+  return -err;
+}
 
-  static
-  Branch*
-  get_branch(const BranchInfoVec &branchinfo_,
-             const uint64_t       sum_)
-  {
-    uint64_t idx;
-    uint64_t threshold;
+static
+Branch*
+_get_branch(const BranchInfoVec &branchinfo_,
+            const uint64_t       sum_)
+{
+  uint64_t idx;
+  uint64_t threshold;
 
-    if(sum_ == 0)
-      return nullptr;
-
-    idx = 0;
-    threshold = RND::rand64(sum_);
-    for(auto &bi : branchinfo_)
-      {
-        idx += bi.spaceavail;
-
-        if(idx < threshold)
-          continue;
-
-        return bi.branch;
-      }
-
+  if(sum_ == 0)
     return nullptr;
-  }
 
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int error;
-    uint64_t sum;
-    Branch *branch;
-    BranchInfoVec branchinfo;
+  idx = 0;
+  threshold = RND::rand64(sum_);
+  for(const auto &bi : branchinfo_)
+    {
+      idx += bi.spaceavail;
 
-    error  = pfrd::get_branchinfo(branches_,&branchinfo,&sum);
-    branch = pfrd::get_branch(branchinfo,sum);
-    if(!branch)
-      return (errno=error,-1);
+      if(idx < threshold)
+        continue;
 
-    paths_.emplace_back(branch);
+      return bi.branch;
+    }
 
-    return 0;
-  }
+  return nullptr;
+}
+
+static
+int
+_create(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int err;
+  uint64_t sum;
+  Branch *branch;
+  BranchInfoVec branchinfo;
+
+  err    = ::_get_branchinfo(branches_,&branchinfo,&sum);
+  branch = ::_get_branch(branchinfo,sum);
+  if(!branch)
+    return err;
+
+  paths_.emplace_back(branch);
+
+  return 0;
 }
 
 int
@@ -131,7 +130,7 @@ Policy::PFRD::Create::operator()(const Branches::Ptr  &branches_,
                                  const char           *fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
-  return ::pfrd::create(branches_,fusepath_,paths_);
+  return ::_create(branches_,fusepath_,paths_);
 }
 
 int

@@ -18,17 +18,25 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <dirent.h>
 #include <sys/types.h>
 
 
 namespace fs
 {
-  static
-  inline
-  int
-  closedir(DIR *dirp_)
-  {
-    return ::closedir(dirp_);
-  }
+  static inline int closedir(DIR *dirp);
+}
+
+static
+inline
+int
+fs::closedir(DIR *dirp_)
+{
+  int rv;
+
+  rv = ::closedir(dirp_);
+
+  return ::to_neg_errno(rv);
 }

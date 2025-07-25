@@ -22,7 +22,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 
 #include <unistd.h>
 
@@ -35,9 +35,13 @@ namespace fs
   fdatasync(const int fd_)
   {
 #if _POSIX_SYNCHRONIZED_IO > 0
-    return ::fdatasync(fd_);
+    int rv;
+
+    rv = ::fdatasync(fd_);
+
+    return ::to_neg_errno(rv);
 #else
-    return (errno=ENOSYS,-1);
+    return -ENOSYS;
 #endif
   }
 }

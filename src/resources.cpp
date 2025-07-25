@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -43,7 +45,7 @@ namespace resources
 
     rv = ::getrlimit(resource,&rlim);
     if(rv == -1)
-      return -1;
+      return -errno;
 
     rv = 0;
     rlim.rlim_cur = rlim.rlim_max;
@@ -72,8 +74,11 @@ namespace resources
   int
   setpriority(const int prio)
   {
+    int rv;
     const int SELF = 0;
 
-    return ::setpriority(PRIO_PROCESS,SELF,prio);
+    rv = ::setpriority(PRIO_PROCESS,SELF,prio);
+
+    return ((rv == -1) ? -errno : rv);
   }
 }

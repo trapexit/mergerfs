@@ -16,28 +16,26 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_realpathize.hpp"
+
 #include "fs_realpath.hpp"
 
 #include <string>
 #include <vector>
 
 
-namespace fs
+void
+fs::realpathize(std::vector<std::string> *strs_)
 {
-  void
-  realpathize(std::vector<std::string> *strs_)
-  {
-    char *rv;
+  char *rv;
+  char resolved_path[PATH_MAX];
 
-    for(size_t i = 0; i < strs_->size(); i++)
-      {
-        rv = fs::realpath((*strs_)[i]);
-        if(rv == NULL)
-          continue;
+  for(size_t i = 0; i < strs_->size(); i++)
+    {
+      rv = fs::realpath((*strs_)[i],resolved_path);
+      if(rv == NULL)
+        continue;
 
-        (*strs_)[i] = rv;
-
-        ::free(rv);
-      }
-  }
+      (*strs_)[i] = rv;
+    }
 }

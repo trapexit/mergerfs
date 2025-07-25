@@ -26,40 +26,34 @@
 using std::string;
 
 
-namespace fs
+string
+fs::path::dirname(const char *path_)
 {
-  namespace path
-  {
-    string
-    dirname(const char *path_)
-    {
-      string path(path_);
+  string path(path_);
 
-      return fs::path::dirname(path);
-    }
+  return fs::path::dirname(path);
+}
 
-    string
-    dirname(const string &path_)
-    {
-      std::size_t i;
+string
+fs::path::dirname(const string &path_)
+{
+  std::size_t i;
 
-      i = path_.size() - 1;
-      while((i > 0) && (path_[i] == '/'))
-        i--;
+  i = path_.size() - 1;
+  while((i > 0) && (path_[i] == '/'))
+    i--;
 
-      while((i > 0) && (path_[i] != '/'))
-        i--;
+  while((i > 0) && (path_[i] != '/'))
+    i--;
 
-      while((i > 0) && (path_[i] == '/'))
-        i--;
+  while((i > 0) && (path_[i] == '/'))
+    i--;
 
-      return path_.substr(0,i+1);
-    }
+  return path_.substr(0,i+1);
+}
 
-    string
-    basename(const string &path_)
-    {
-      return path_.substr(path_.find_last_of('/')+1);
-    }
-  }
+string
+fs::path::basename(const string &path_)
+{
+  return path_.substr(path_.find_last_of('/')+1);
 }

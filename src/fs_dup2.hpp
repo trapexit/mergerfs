@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -33,6 +35,6 @@ namespace fs
 
     rv = ::dup2(oldfd_,newfd_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 }

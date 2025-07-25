@@ -40,13 +40,13 @@ struct PolicyRV
   std::vector<RV> errors;
 
   void
-  insert(const int          err_,
+  insert(const int          rv_,
          const std::string &basepath_)
   {
-    if(err_ == 0)
-      successes.push_back({err_,basepath_});
+    if(rv_ >= 0)
+      successes.push_back({rv_,basepath_});
     else
-      errors.push_back({-err_,basepath_});
+      errors.push_back({rv_,basepath_});
   }
 
   int
@@ -64,6 +64,6 @@ struct PolicyRV
           return e.rv;
       }
 
-    return 0;
+    return -ENOENT;
   }
 };

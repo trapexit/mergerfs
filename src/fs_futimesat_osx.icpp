@@ -16,6 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_fstat.hpp"
+#include "fs_fcntl.hpp"
+#include "fs_utimes.hpp"
+
 #include <err.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -38,24 +42,24 @@ namespace l
     int rv;
     struct stat st;
 
-    rv = ::fstat(dirfd_,&st);
-    if(rv == -1)
-      return -1;
+    rv = fs::fstat(dirfd_,&st);
+    if(rv < 0)
+      return rv;
 
     if(!S_ISDIR(st.st_mode))
-      return (errno=ENOTDIR,-1);
+      return -ENOTDIR;
 
-    rv = ::fcntl(dirfd_,F_GETPATH,fullpath);
-    if(rv == -1)
-      return -1;
+    rv = fs::fcntl(dirfd_,F_GETPATH,fullpath);
+    if(rv < 0)
+      return rv;
 
     rv = ::strlcat(fullpath_,"/",MAXPATHLEN);
     if(rv > MAXPATHLEN)
-      return (errno=ENAMETOOLONG,-1);
+      return -ENAMETOOLONG;
 
     rv = ::strlcat(fullpath_,path_,MAXPATHLEN);
     if(rv > MAXPATHLEN)
-      return (errno=ENAMETOOLONG,-1);
+      return -ENAMETOOLONG;
 
     return 0;
   }
@@ -74,15 +78,15 @@ namespace fs
     if((dirfd_ == AT_FDCWD) ||
        ((pathname_ != NULL) &&
         (pathname_[0] == '/')))
-      return ::utimes(pathname_,times_);
+      return fs::utimes(pathname_,times_);
 
     if(dirfd_ < 0)
-      return (errno=EBADF,-1);
+      return -EBADF;
 
     rv = l::getpath(dirfd_,pathname_,fullpath);
-    if(rv == -1)
-      return -1;
+    if(rv < 0)
+      return rv;
 
-    return ::utimes(fullpath,times_);
+    return fs::utimes(fullpath,times_);
   }
 }

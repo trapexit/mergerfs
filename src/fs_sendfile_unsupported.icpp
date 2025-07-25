@@ -14,18 +14,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_sendfile.hpp"
+
 #include "errno.hpp"
 
 #include <sys/types.h>
 
 
-namespace fs
+ssize_t
+fs::sendfile(const int    fdin,
+             const int    fdout,
+             const size_t count)
 {
-  ssize_t
-  sendfile(const int    fdin,
-           const int    fdout,
-           const size_t count)
-  {
-    return (errno=EINVAL,-1);
-  }
+  return -EINVAL;
 }

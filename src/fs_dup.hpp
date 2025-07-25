@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 
@@ -28,6 +30,10 @@ namespace fs
   int
   dup(const int fd_)
   {
-    return ::dup(fd_);
+    int rv;
+
+    rv = ::dup(fd_);
+
+    return ::to_neg_errno(rv);
   }
 }

@@ -16,15 +16,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
+#include "fs_setfl.hpp"
+
+#include "fs_fcntl.hpp"
 
 
-namespace fs
+int
+fs::setfl(const int    fd_,
+          const mode_t mode_)
 {
-  int
-  setfl(const int    fd_,
-        const mode_t mode_)
-  {
-    return ::fcntl(fd_,F_SETFL,mode_);
-  }
+  return fs::fcntl(fd_,F_SETFL,mode_);
 }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_read.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_pread.hpp"
@@ -24,59 +26,53 @@
 #include <string.h>
 
 
-namespace l
+static
+int
+_read_direct_io(const int     fd_,
+                char         *buf_,
+                const size_t  size_,
+                const off_t   offset_)
 {
-  static
-  int
-  read_direct_io(const int     fd_,
-                 char         *buf_,
-                 const size_t  size_,
-                 const off_t   offset_)
-  {
-    int rv;
+  int rv;
 
-    rv = fs::pread(fd_,buf_,size_,offset_);
+  rv = fs::pread(fd_,buf_,size_,offset_);
 
-    return rv;
-  }
-
-  static
-  int
-  read_cached(const int     fd_,
-              char         *buf_,
-              const size_t  size_,
-              const off_t   offset_)
-  {
-    int rv;
-
-    rv = fs::pread(fd_,buf_,size_,offset_);
-
-    return rv;
-  }
+  return rv;
 }
 
-namespace FUSE
+static
+int
+_read_cached(const int     fd_,
+             char         *buf_,
+             const size_t  size_,
+             const off_t   offset_)
 {
-  int
-  read(const fuse_file_info_t *ffi_,
-       char                   *buf_,
-       size_t                  size_,
-       off_t                   offset_)
-  {
-    FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  int rv;
 
-    if(fi->direct_io)
-      return l::read_direct_io(fi->fd,buf_,size_,offset_);
+  rv = fs::pread(fd_,buf_,size_,offset_);
 
-    return l::read_cached(fi->fd,buf_,size_,offset_);
-  }
+  return rv;
+}
 
-  int
-  read_null(const fuse_file_info_t *ffi_,
-            char                   *buf_,
-            size_t                  size_,
-            off_t                   offset_)
-  {
-    return size_;
-  }
+int
+FUSE::read(const fuse_file_info_t *ffi_,
+           char                   *buf_,
+           size_t                  size_,
+           off_t                   offset_)
+{
+  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+  if(fi->direct_io)
+    return ::_read_direct_io(fi->fd,buf_,size_,offset_);
+
+  return ::_read_cached(fi->fd,buf_,size_,offset_);
+}
+
+int
+FUSE::read_null(const fuse_file_info_t *ffi_,
+                char                   *buf_,
+                size_t                  size_,
+                off_t                   offset_)
+{
+  return size_;
 }

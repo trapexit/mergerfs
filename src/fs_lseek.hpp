@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -31,6 +33,10 @@ namespace fs
         const off_t offset_,
         const int   whence_)
   {
-    return ::lseek(fd_,offset_,whence_);
+    off_t rv;
+
+    rv = ::lseek(fd_,offset_,whence_);
+
+    return ::to_neg_errno(rv);
   }
 }

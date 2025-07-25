@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_epall.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -29,93 +31,90 @@
 using std::string;
 
 
-namespace epall
+static
+int
+_create(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
 {
-  static
-  int
-  create(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    fs::info_t info;
+  int rv;
+  int error;
+  fs::info_t info;
 
-    error = ENOENT;
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_))
-          error_and_continue(error,ENOENT);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
+  error = ENOENT;
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(error,ENOENT);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
 
-        paths_.emplace_back(&branch);
-      }
+      paths_.emplace_back(&branch);
+    }
 
-    if(paths_.empty())
-      return (errno=error,-1);
+  if(paths_.empty())
+    return -error;
 
-    return 0;
-  }
+  return 0;
+}
 
-  static
-  int
-  action(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    int rv;
-    int error;
-    bool readonly;
+static
+int
+_action(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  int rv;
+  int error;
+  bool readonly;
 
-    error = ENOENT;
-    for(auto &branch : *branches_)
-      {
-        if(branch.ro())
-          error_and_continue(error,EROFS);
-        if(!fs::exists(branch.path,fusepath_))
-          error_and_continue(error,ENOENT);
-        rv = fs::statvfs_cache_readonly(branch.path,&readonly);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(readonly)
-          error_and_continue(error,EROFS);
+  error = ENOENT;
+  for(auto &branch : *branches_)
+    {
+      if(branch.ro())
+        error_and_continue(error,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(error,ENOENT);
+      rv = fs::statvfs_cache_readonly(branch.path,&readonly);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(readonly)
+        error_and_continue(error,EROFS);
 
-        paths_.emplace_back(&branch);
-      }
+      paths_.emplace_back(&branch);
+    }
 
-    if(paths_.empty())
-      return (errno=error,-1);
+  if(paths_.empty())
+    return -error;
 
-    return 0;
-  }
+  return 0;
+}
 
-  static
-  int
-  search(const Branches::Ptr  &branches_,
-         const char           *fusepath_,
-         std::vector<Branch*> &paths_)
-  {
-    for(auto &branch : *branches_)
-      {
-        if(!fs::exists(branch.path,fusepath_))
-          continue;
+static
+int
+_search(const Branches::Ptr  &branches_,
+        const char           *fusepath_,
+        std::vector<Branch*> &paths_)
+{
+  for(auto &branch : *branches_)
+    {
+      if(!fs::exists(branch.path,fusepath_))
+        continue;
 
-        paths_.push_back(&branch);
-      }
+      paths_.push_back(&branch);
+    }
 
-    if(paths_.empty())
-      return (errno=ENOENT,-1);
+  if(paths_.empty())
+    return -ENOENT;
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -123,7 +122,7 @@ Policy::EPAll::Action::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return ::epall::action(branches_,fusepath_,paths_);
+  return ::_action(branches_,fusepath_,paths_);
 }
 
 int
@@ -131,7 +130,7 @@ Policy::EPAll::Create::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return ::epall::create(branches_,fusepath_,paths_);
+  return ::_create(branches_,fusepath_,paths_);
 }
 
 int
@@ -139,5 +138,5 @@ Policy::EPAll::Search::operator()(const Branches::Ptr  &branches_,
                                   const char           *fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
-  return ::epall::search(branches_,fusepath_,paths_);
+  return ::_search(branches_,fusepath_,paths_);
 }

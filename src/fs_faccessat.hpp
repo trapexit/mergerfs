@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <fcntl.h>
@@ -34,7 +36,11 @@ namespace fs
             const int   mode_,
             const int   flags_)
   {
-    return ::faccessat(dirfd_,path_,mode_,flags_);
+    int rv;
+
+    rv = ::faccessat(dirfd_,path_,mode_,flags_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

@@ -16,29 +16,25 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_acl.hpp"
+
 #include "fs_lgetxattr.hpp"
 #include "fs_path.hpp"
 
 #include <string>
 
-const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
+constexpr const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
 
 
-namespace fs
+bool
+fs::acl::dir_has_defaults(const std::string &fullpath_)
 {
-  namespace acl
-  {
-    bool
-    dir_has_defaults(const std::string &fullpath_)
-    {
-      int rv;
-      std::string dirpath;
+  int rv;
+  std::string dirpath;
 
-      dirpath = fs::path::dirname(fullpath_);
+  dirpath = fs::path::dirname(fullpath_);
 
-      rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
+  rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
 
-      return (rv != -1);
-    }
-  }
+  return (rv >= 0);
 }

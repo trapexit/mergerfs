@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_truncate.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_path.hpp"
@@ -31,83 +33,77 @@
 using std::string;
 
 
-namespace l
+static
+void
+_truncate_loop_core(const string &basepath_,
+                    const char   *fusepath_,
+                    const off_t   size_,
+                    PolicyRV     *prv_)
 {
-  static
-  void
-  truncate_loop_core(const string &basepath_,
-                     const char   *fusepath_,
-                     const off_t   size_,
-                     PolicyRV     *prv_)
-  {
-    string fullpath;
+  int rv;
+  string fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = fs::path::make(basepath_,fusepath_);
 
-    errno = 0;
-    fs::truncate(fullpath,size_);
+  rv = fs::truncate(fullpath,size_);
 
-    prv_->insert(errno,basepath_);
-  }
-
-  static
-  void
-  truncate_loop(const std::vector<Branch*> &branches_,
-                const char                 *fusepath_,
-                const off_t                 size_,
-                PolicyRV                   *prv_)
-  {
-    for(auto &branch : branches_)
-      {
-        l::truncate_loop_core(branch->path,fusepath_,size_,prv_);
-      }
-  }
-
-  static
-  int
-  truncate(const Policy::Action &actionFunc_,
-           const Policy::Search &searchFunc_,
-           const Branches       &branches_,
-           const char           *fusepath_,
-           const off_t           size_)
-  {
-    int rv;
-    PolicyRV prv;
-    std::vector<Branch*> branches;
-
-    rv = actionFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    l::truncate_loop(branches,fusepath_,size_,&prv);
-    if(prv.errors.empty())
-      return 0;
-    if(prv.successes.empty())
-      return prv.errors[0].rv;
-
-    branches.clear();
-    rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv == -1)
-      return -errno;
-
-    return prv.get_error(branches[0]->path);
-  }
+  prv_->insert(rv,basepath_);
 }
 
-namespace FUSE
+static
+void
+_truncate_loop(const std::vector<Branch*> &branches_,
+               const char                 *fusepath_,
+               const off_t                 size_,
+               PolicyRV                   *prv_)
 {
-  int
-  truncate(const char *fusepath_,
-           off_t       size_)
-  {
-    Config::Read cfg;
-    const fuse_context *fc = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  for(auto &branch : branches_)
+    {
+      ::_truncate_loop_core(branch->path,fusepath_,size_,prv_);
+    }
+}
 
-    return l::truncate(cfg->func.truncate.policy,
-                       cfg->func.getattr.policy,
-                       cfg->branches,
-                       fusepath_,
-                       size_);
-  }
+static
+int
+_truncate(const Policy::Action &actionFunc_,
+          const Policy::Search &searchFunc_,
+          const Branches       &branches_,
+          const char           *fusepath_,
+          const off_t           size_)
+{
+  int rv;
+  PolicyRV prv;
+  std::vector<Branch*> branches;
+
+  rv = actionFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  ::_truncate_loop(branches,fusepath_,size_,&prv);
+  if(prv.errors.empty())
+    return 0;
+  if(prv.successes.empty())
+    return prv.errors[0].rv;
+
+  branches.clear();
+  rv = searchFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  return prv.get_error(branches[0]->path);
+}
+
+int
+FUSE::truncate(const char *fusepath_,
+               off_t       size_)
+{
+  Config::Read cfg;
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_truncate(cfg->func.truncate.policy,
+                     cfg->func.getattr.policy,
+                     cfg->branches,
+                     fusepath_,
+                     size_);
 }

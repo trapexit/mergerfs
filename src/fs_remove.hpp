@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <stdio.h>
@@ -30,7 +32,11 @@ namespace fs
   int
   remove(const char *pathname_)
   {
-    return ::remove(pathname_);
+    int rv;
+
+    rv = ::remove(pathname_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

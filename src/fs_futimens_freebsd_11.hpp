@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <sys/stat.h>
 
 
@@ -29,6 +31,10 @@ namespace fs
   futimens(const int             fd_,
            const struct timespec ts_[2])
   {
-    return ::futimens(fd_,ts_);
+    int rv;
+
+    rv = ::futimens(fd_,ts_);
+
+    return ::to_neg_errno(rv);
   }
 }

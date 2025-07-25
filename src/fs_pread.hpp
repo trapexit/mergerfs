@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <unistd.h>
 
 namespace fs
@@ -33,6 +35,6 @@ namespace fs
 
     rv = ::pread(fd_,buf_,count_,offset_);
 
-    return ((rv == -1) ? -errno : rv);
+    return ::to_neg_errno(rv);
   }
 }

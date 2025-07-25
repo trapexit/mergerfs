@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <sys/file.h>
 
 
@@ -29,6 +31,10 @@ namespace fs
   flock(const int fd_,
         const int operation_)
   {
-    return ::flock(fd_,operation_);
+    int rv;
+
+    rv = ::flock(fd_,operation_);
+
+    return ::to_neg_errno(rv);
   }
 }

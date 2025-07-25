@@ -10,12 +10,12 @@ fs::mounts(fs::MountVec &mounts_)
 {
   FILE *f;
 
-  f = setmntent("/proc/mounts","r");
+  f = ::setmntent("/proc/mounts","r");
   if(f == NULL)
     return;
 
   struct mntent *entry;
-  while((entry = getmntent(f)) != NULL)
+  while((entry = ::getmntent(f)) != NULL)
     {
       fs::Mount m;
 
@@ -27,7 +27,7 @@ fs::mounts(fs::MountVec &mounts_)
       mounts_.emplace_back(std::move(m));
     }
 
-  endmntent(f);
+  ::endmntent(f);
 }
 #else
 void

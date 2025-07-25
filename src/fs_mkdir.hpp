@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include "fs_path.hpp"
 
 #include <string>
@@ -34,7 +36,11 @@ namespace fs
   mkdir(const char   *path_,
         const mode_t  mode_)
   {
-    return ::mkdir(path_,mode_);
+    int rv;
+
+    rv = ::mkdir(path_,mode_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

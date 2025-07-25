@@ -109,8 +109,8 @@ _listxattr(const Policy::Search &searchFunc_,
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   if(size_ == 0)
     return ::_listxattr_size(obranches,fusepath_);

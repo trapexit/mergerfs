@@ -18,18 +18,11 @@
 
 #pragma once
 
-#include "errno.hpp"
-#include "fs_close.hpp"
-#include "fs_open.hpp"
+#include "to_neg_errno.hpp"
 
-#include <cstdint>
 #include <string>
 
 #include <sys/statvfs.h>
-
-#ifndef O_PATH
-# define O_PATH 0
-#endif
 
 
 namespace fs
@@ -40,7 +33,11 @@ namespace fs
   statvfs(const char     *path_,
           struct statvfs *st_)
   {
-    return ::statvfs(path_,st_);
+    int rv;
+
+    rv = ::statvfs(path_,st_);
+
+    return ::to_neg_errno(rv);
   }
 
   static
@@ -50,34 +47,5 @@ namespace fs
           struct statvfs    *st_)
   {
     return fs::statvfs(path_.c_str(),st_);
-  }
-
-  static
-  inline
-  int
-  fstatvfs(const int       fd_,
-           struct statvfs *st_)
-  {
-    return ::fstatvfs(fd_,st_);
-  }
-
-  static
-  inline
-  int
-  lstatvfs(const std::string &path_,
-           struct statvfs    *st_)
-  {
-    int fd;
-    int rv;
-
-    fd = fs::open(path_,O_RDONLY|O_NOFOLLOW|O_PATH);
-    if(fd == -1)
-      return -1;
-
-    rv = fs::fstatvfs(fd,st_);
-
-    fs::close(fd);
-
-    return rv;
   }
 }

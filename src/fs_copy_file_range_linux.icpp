@@ -16,11 +16,13 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_copy_file_range.hpp"
+
 #ifndef _GNU_SOURCE
 # define _GNU_SOURCE
 #endif
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 
 #include <cstdint>
 
@@ -31,66 +33,60 @@
 #include <unistd.h>
 
 
-namespace l
-{
-  static
-  int64_t
-  copy_file_range_(int                 src_fd_,
-                   int64_t            *src_off_,
-                   int                 tgt_fd_,
-                   int64_t            *tgt_off_,
-                   const uint64_t      len_,
-                   const unsigned int  flags_)
-  {
-#ifdef SYS_copy_file_range
-    int64_t rv;
-    loff_t  src_off;
-    loff_t  tgt_off;
-    loff_t *src_off_ptr;
-    loff_t *tgt_off_ptr;
-
-    src_off     = ((src_off_ == NULL) ?    0 : *src_off_);
-    tgt_off     = ((tgt_off_ == NULL) ?    0 : *tgt_off_);
-    src_off_ptr = ((src_off_ == NULL) ? NULL : &src_off);
-    tgt_off_ptr = ((tgt_off_ == NULL) ? NULL : &tgt_off);
-    rv = ::syscall(SYS_copy_file_range,
-                   src_fd_,
-                   src_off_ptr,
-                   tgt_fd_,
-                   tgt_off_ptr,
-                   len_,
-                   flags_);
-
-    if(rv != -1)
-      {
-        if(src_off_ != NULL)
-          *src_off_ = src_off;
-        if(tgt_off_ != NULL)
-          *tgt_off_ = tgt_off;
-      }
-
-    return rv;
-#else
-    return (errno=EOPNOTSUPP,-1);
-#endif
-  }
-}
-
-namespace fs
-{
-  int64_t
-  copy_file_range(const int           src_fd_,
+static
+int64_t
+_copy_file_range_(int                 src_fd_,
                   int64_t            *src_off_,
-                  const int           tgt_fd_,
+                  int                 tgt_fd_,
                   int64_t            *tgt_off_,
                   const uint64_t      len_,
                   const unsigned int  flags_)
-  {
-    return l::copy_file_range_(src_fd_,
-                               src_off_,
-                               tgt_fd_,
-                               tgt_off_,
-                               len_,
-                               flags_);
-  }
+{
+#ifdef SYS_copy_file_range
+  int64_t rv;
+  loff_t  src_off;
+  loff_t  tgt_off;
+  loff_t *src_off_ptr;
+  loff_t *tgt_off_ptr;
+
+  src_off     = ((src_off_ == NULL) ?    0 : *src_off_);
+  tgt_off     = ((tgt_off_ == NULL) ?    0 : *tgt_off_);
+  src_off_ptr = ((src_off_ == NULL) ? NULL : &src_off);
+  tgt_off_ptr = ((tgt_off_ == NULL) ? NULL : &tgt_off);
+  rv = ::syscall(SYS_copy_file_range,
+                 src_fd_,
+                 src_off_ptr,
+                 tgt_fd_,
+                 tgt_off_ptr,
+                 len_,
+                 flags_);
+
+  if(rv != -1)
+    {
+      if(src_off_ != NULL)
+        *src_off_ = src_off;
+      if(tgt_off_ != NULL)
+        *tgt_off_ = tgt_off;
+    }
+
+  return ::to_neg_errno(rv);
+#else
+  return -EOPNOTSUPP;
+#endif
+}
+
+int64_t
+fs::copy_file_range(const int           src_fd_,
+                    int64_t            *src_off_,
+                    const int           tgt_fd_,
+                    int64_t            *tgt_off_,
+                    const uint64_t      len_,
+                    const unsigned int  flags_)
+{
+  return ::_copy_file_range_(src_fd_,
+                             src_off_,
+                             tgt_fd_,
+                             tgt_off_,
+                             len_,
+                             flags_);
 }

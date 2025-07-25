@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_findallfiles.hpp"
+
 #include "fs_exists.hpp"
 #include "fs_path.hpp"
 
@@ -23,23 +25,20 @@
 #include <vector>
 
 
-namespace fs
+void
+fs::findallfiles(const std::vector<std::string> &basepaths_,
+                 const char                     *fusepath_,
+                 std::vector<std::string>       *paths_)
 {
-  void
-  findallfiles(const std::vector<std::string> &basepaths_,
-               const char                     *fusepath_,
-               std::vector<std::string>       *paths_)
-  {
-    std::string fullpath;
+  std::string fullpath;
 
-    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
-      {
-        fullpath = fs::path::make(basepaths_[i],fusepath_);
+  for(const auto &basepath : basepaths_)
+    {
+      fullpath = fs::path::make(basepath,fusepath_);
 
-        if(!fs::exists(fullpath))
-          continue;
+      if(!fs::exists(fullpath))
+        continue;
 
-        paths_->push_back(fullpath);
-      }
-  }
+      paths_->push_back(fullpath);
+    }
 }

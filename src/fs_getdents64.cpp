@@ -16,7 +16,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 
 #if defined __linux__
 #include <unistd.h>
@@ -27,14 +27,18 @@
 namespace fs
 {
   int
-  getdents_64(unsigned int  fd_,
-              void         *dirp_,
-              unsigned int  count_)
+  getdents64(unsigned int  fd_,
+             void         *dirp_,
+             unsigned int  count_)
   {
 #if defined SYS_getdents64
-    return ::syscall(SYS_getdents64,fd_,dirp_,count_);
+    int rv;
+
+    rv = ::syscall(SYS_getdents64,fd_,dirp_,count_);
+
+    return ::to_neg_errno(rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 }

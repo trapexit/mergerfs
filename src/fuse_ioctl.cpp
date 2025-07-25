@@ -138,14 +138,14 @@ _ioctl_dir_base(const Policy::Search &searchFunc_,
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv == -1)
-    return -errno;
+  if(rv < 0)
+    return rv;
 
   fullpath = fs::path::make(branches[0]->path,fusepath_);
 
   fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
-  if(fd == -1)
-    return -errno;
+  if(fd < 0)
+    return fd;
 
   rv = ::_ioctl(fd,cmd_,data_,out_bufsz_);
 
@@ -180,7 +180,6 @@ _is_btrfs_ioctl_cmd(const unsigned long cmd_)
 {
   return (_IOC_TYPE(cmd_) == BTRFS_IOCTL_MAGIC);
 }
-
 
 int
 FUSE::ioctl(const fuse_file_info_t *ffi_,

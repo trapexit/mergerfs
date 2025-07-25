@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "policy_all.hpp"
+
 #include "errno.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
@@ -27,38 +29,35 @@
 
 using std::string;
 
-namespace all
+static
+int
+_create(const Branches::Ptr  &ibranches_,
+        std::vector<Branch*> &obranches_)
 {
-  static
-  int
-  create(const Branches::Ptr  &ibranches_,
-         std::vector<Branch*> &obranches_)
-  {
-    int rv;
-    int error;
-    fs::info_t info;
+  int rv;
+  int error;
+  fs::info_t info;
 
-    error = ENOENT;
-    for(auto &branch : *ibranches_)
-      {
-        if(branch.ro_or_nc())
-          error_and_continue(error,EROFS);
-        rv = fs::info(branch.path,&info);
-        if(rv == -1)
-          error_and_continue(error,ENOENT);
-        if(info.readonly)
-          error_and_continue(error,EROFS);
-        if(info.spaceavail < branch.minfreespace())
-          error_and_continue(error,ENOSPC);
+  error = ENOENT;
+  for(auto &branch : *ibranches_)
+    {
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
 
-        obranches_.push_back(&branch);
-      }
+      obranches_.push_back(&branch);
+    }
 
-    if(obranches_.empty())
-      return (errno=error,-1);
+  if(obranches_.empty())
+    return -error;
 
-    return 0;
-  }
+  return 0;
 }
 
 int
@@ -74,7 +73,7 @@ Policy::All::Create::operator()(const Branches::Ptr  &ibranches_,
                                 const char           *fusepath_,
                                 std::vector<Branch*> &obranches_) const
 {
-  return ::all::create(ibranches_,obranches_);
+  return ::_create(ibranches_,obranches_);
 }
 
 int

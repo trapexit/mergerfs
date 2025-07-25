@@ -35,12 +35,16 @@ _open_proc_self_fd()
 int
 procfs::init()
 {
-  if(g_PROCFS_DIR_FD != -1)
+  int rv;
+
+  if(g_PROCFS_DIR_FD >= 0)
     return 0;
 
-  g_PROCFS_DIR_FD = fs::open(PROCFS_PATH,O_PATH|O_DIRECTORY);
-  if(g_PROCFS_DIR_FD == -1)
-    return -errno;
+  rv = fs::open(PROCFS_PATH,O_PATH|O_DIRECTORY);
+  if(rv < 0)
+    return rv;
+
+  g_PROCFS_DIR_FD = rv;
 
 #if defined(__linux__)
   ::_open_proc_self_fd();
@@ -65,7 +69,7 @@ procfs::get_name(const int tid_)
     return {};
 
   rv = fs::read(fd,commpath.data(),commpath.size());
-  if(rv == -1)
+  if(rv < 0)
     return {};
 
   // Overwrite the newline with NUL

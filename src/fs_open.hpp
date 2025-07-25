@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "to_neg_errno.hpp"
+
 #include <string>
 
 #include <fcntl.h>
@@ -33,7 +35,11 @@ namespace fs
   open(const char *path_,
        const int   flags_)
   {
-    return ::open(path_,flags_);
+    int rv;
+
+    rv = ::open(path_,flags_);
+
+    return ::to_neg_errno(rv);
   }
 
   static
@@ -43,7 +49,11 @@ namespace fs
        const int     flags_,
        const mode_t  mode_)
   {
-    return ::open(path_,flags_,mode_);
+    int rv;
+
+    rv = ::open(path_,flags_,mode_);
+
+    return ::to_neg_errno(rv);
   }
 
   static

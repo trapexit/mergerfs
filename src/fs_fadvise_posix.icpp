@@ -26,6 +26,13 @@ namespace fs
           const off_t len_,
           const int   advice_)
   {
-    return ::posix_fadvise(fd_,offset_,len_,advice_);
+    int rv;
+
+    rv = ::posix_fadvise(fd_,offset_,len_,advice_);
+
+    // On success, zero is returned.
+    // On error, an error number is returned.
+    // Return negative error number like other calls.
+    return -rv;
   }
 }

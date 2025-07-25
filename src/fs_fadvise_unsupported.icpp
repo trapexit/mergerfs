@@ -14,7 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "errno.hpp"
+#include <cerrno>
 
 
 namespace fs
@@ -26,6 +26,6 @@ namespace fs
           const off_t len_,
           const int   advice_)
   {
-    return (errno=EOPNOTSUPP,-1);
+    return -EOPNOTSUPP;
   }
 }

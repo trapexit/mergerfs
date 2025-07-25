@@ -22,6 +22,8 @@
 
 #include <sys/statvfs.h>
 
+#include <string>
+
 
 namespace fs
 {

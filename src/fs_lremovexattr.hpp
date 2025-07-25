@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "errno.hpp"
+#include "to_neg_errno.hpp"
 #include "xattr.hpp"
 
 #include <sys/types.h>
@@ -33,9 +33,13 @@ namespace fs
                const char        *attrname_)
   {
 #ifdef USE_XATTR
-    return ::lremovexattr(path_.c_str(),attrname_);
+    int rv;
+
+    rv = ::lremovexattr(path_.c_str(),attrname_);
+
+    return ::to_neg_errno(rv);
 #else
-    return (errno=ENOTSUP,-1);
+    return -ENOTSUP;
 #endif
   }
 }
