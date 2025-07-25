@@ -26,10 +26,10 @@ namespace fs
   static
   inline
   ssize_t
-  preadn(int const     fd_,
+  preadn(const int     fd_,
          void         *buf_,
-         size_t const  count_,
-         off_t const   offset_,
+         const size_t  count_,
+         const off_t   offset_,
          int          *err_)
   {
     ssize_t rv;
@@ -41,12 +41,20 @@ namespace fs
     while(count > 0)
       {
         rv = fs::pread(fd_,buf,count,offset);
-        if(rv == 0)
-          return (count_ - count);
-        if(rv < 0)
+        switch(rv)
           {
-            *err_ = rv;
+          case -EINTR:
+          case -EAGAIN:
+            continue;
+          case 0:
             return (count_ - count);
+          default:
+            if(rv < 0)
+              {
+                *err_ = rv;
+                return (count_ - count);
+              }
+            break;
           }
 
         buf    += rv;

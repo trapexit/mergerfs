@@ -353,6 +353,8 @@ _pick_app_and_run(int    argc_,
   return l::main(argc_,argv_);
 }
 
+#include "fs_copyfile.hpp"
+
 int
 main(int    argc_,
      char **argv_)

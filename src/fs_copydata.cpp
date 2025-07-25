@@ -35,7 +35,7 @@ fs::copydata(const int    src_fd_,
 
   rv = fs::ficlone(src_fd_,dst_fd_);
   if(rv >= 0)
-    return rv;
+    return count_;
 
   fs::fadvise_willneed(src_fd_,0,count_);
   fs::fadvise_sequential(src_fd_,0,count_);

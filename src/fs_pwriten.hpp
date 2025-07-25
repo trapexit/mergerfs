@@ -41,12 +41,20 @@ namespace fs
     while(count > 0)
       {
         rv = fs::pwrite(fd_,buf,count,offset);
-        if(rv == 0)
-          return (count_ - count);
-        if(rv < 0)
+        switch(rv)
           {
-            *err_ = rv;
+          case -EINTR:
+          case -EAGAIN:
+            continue;
+          case 0:
             return (count_ - count);
+          default:
+            if(rv < 0)
+              {
+                *err_ = rv;
+                return (count_ - count);
+              }
+            break;
           }
 
         buf    += rv;
