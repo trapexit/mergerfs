@@ -229,7 +229,7 @@ _copy_files(const std::string &src_,
       if(src_ == dst.path)
         continue;
 
-      rv = fs::copyfile(src_,dst.path,FS_COPYFILE_NONE);
+      rv = fs::copyfile(src_,dst.path,{.cleanup_failure=false});
       if(rv < 0)
         fmt::print(stderr,
                    "ERROR: failed copying to {} - {}",

@@ -41,7 +41,7 @@
 
 static
 bool
-_ignorable_error(const int err_)
+_ignorable_error(const s64 err_)
 {
   switch(err_)
     {
@@ -56,12 +56,12 @@ _ignorable_error(const int err_)
   return false;
 }
 
-int
+s64
 fs::copyfile(const int          src_fd_,
              const struct stat &src_st_,
              const int          dst_fd_)
 {
-  int rv;
+  s64 rv;
 
   rv = fs::copydata(src_fd_,dst_fd_,src_st_.st_size);
   if(rv < 0)
@@ -90,21 +90,17 @@ fs::copyfile(const int          src_fd_,
   return 0;
 }
 
-
-
-
 // Limitations:
 // * Doesn't handle immutable files well. Will ignore the flag on attr
 // copy.
 // * Does not handle non-regular files.
 
-int
-fs::copyfile(const std::filesystem::path &src_,
-             const std::filesystem::path &dst_,
-             const u32                    flags_)
+s64
+fs::copyfile(const int                    src_fd_,
+             const std::filesystem::path &dst_filepath_,
+             const fs::CopyFileFlags     &flags_)
 {
-  int rv;
-  int src_fd;
+  s64 rv;
   int dst_fd;
   struct stat src_st = {0};
   std::string dst_tmppath;
@@ -118,14 +114,19 @@ fs::copyfile(const std::filesystem::path &src_,
   sigaction(SIGIO,&new_act,&old_act);
   DEFER { sigaction(SIGIO,&old_act,NULL); };
 
-  src_fd = fs::open(src_,O_RDONLY|O_NOFOLLOW);
-  if(src_fd < 0)
-    return src_fd;
-  DEFER { fs::close(src_fd); };
-
   while(true)
     {
-      std::tie(dst_fd,dst_tmppath) = fs::mktemp(dst_,O_RDWR);
+      // For comparison after the copy to see if the file was
+      // modified. This could be made more thorough by adding some
+      // hashing but probably overkill. Also used to provide size and
+      // other details for data copying.
+      rv = fs::fstat(src_fd_,&src_st);
+      if(rv < 0)
+        return rv;
+      if(!S_ISREG(src_st.st_mode))
+        return -EINVAL;
+
+      std::tie(dst_fd,dst_tmppath) = fs::mktemp(dst_filepath_,O_RDWR);
       if(dst_fd < 0)
         return dst_fd;
       DEFER { fs::close(dst_fd); };
@@ -135,37 +136,44 @@ fs::copyfile(const std::filesystem::path &src_,
       // copy happens. Opening read-only is fine but open for write or
       // truncate will block for others till this finishes or the
       // kernel wide timeout (/proc/sys/fs/lease-break-time).
-      fs::fcntl_setlease_rdlck(src_fd);
-      DEFER { fs::fcntl_setlease_unlck(src_fd); };
+      fs::fcntl_setlease_rdlck(src_fd_);
+      DEFER { fs::fcntl_setlease_unlck(src_fd_); };
 
-      // For comparison after the copy to see if the file was
-      // modified. This could be made more thorough by adding some
-      // hashing but probably overkill. Also used to provide size and
-      // other details for data copying.
-      rv = fs::fstat(src_fd,&src_st);
-      if(rv < 0)
-        return rv;
-
-      rv = fs::copyfile(src_fd,src_st,dst_fd);
+      rv = fs::copyfile(src_fd_,src_st,dst_fd);
       if(rv < 0)
         {
-          if(flags_ & FS_COPYFILE_CLEANUP_FAILURE)
+          if(flags_.cleanup_failure)
             fs::unlink(dst_tmppath);
           return rv;
         }
 
-      rv = fs::file_changed(src_fd,src_st);
+      rv = fs::file_changed(src_fd_,src_st);
       if(rv == FS_FILE_CHANGED)
         {
           fs::unlink(dst_tmppath);
           continue;
         }
 
-      rv = fs::rename(dst_tmppath,dst_);
-      if((rv < 0) && (flags_ & FS_COPYFILE_CLEANUP_FAILURE))
+      rv = fs::rename(dst_tmppath,dst_filepath_);
+      if((rv < 0) && (flags_.cleanup_failure))
         fs::unlink(dst_tmppath);
       break;
     }
 
   return rv;
+}
+
+s64
+fs::copyfile(const std::filesystem::path &src_filepath_,
+             const std::filesystem::path &dst_filepath_,
+             const fs::CopyFileFlags     &flags_)
+{
+  int src_fd;
+
+  src_fd = fs::open(src_filepath_,O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_NOATIME);
+  if(src_fd < 0)
+    return src_fd;
+  DEFER { fs::close(src_fd); };
+
+  return fs::copyfile(src_fd,dst_filepath_,flags_);
 }

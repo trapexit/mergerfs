@@ -25,32 +25,40 @@ namespace fs
 {
   static
   inline
-  ssize_t
-  preadn(int const     fd_,
-         void         *buf_,
-         size_t const  count_,
-         off_t const   offset_,
-         int          *err_)
+  s64
+  preadn(const int  fd_,
+         void      *buf_,
+         const u64  count_,
+         const s64  offset_,
+         int       *err_)
   {
-    ssize_t rv;
-    ssize_t count = count_;
-    off_t   offset = offset_;
-    char const *buf = (char const *)buf_;
+    s64 rv;
+    s64 nleft = count_;
+    s64 offset = offset_;
+    const char *buf = (const char*)buf_;
 
     *err_ = 0;
-    while(count > 0)
+    while(nleft > 0)
       {
-        rv = fs::pread(fd_,buf,count,offset);
-        if(rv == 0)
-          return (count_ - count);
-        if(rv < 0)
+        rv = fs::pread(fd_,buf,nleft,offset);
+        switch(rv)
           {
-            *err_ = rv;
-            return (count_ - count);
+          case -EINTR:
+          case -EAGAIN:
+            continue;
+          case 0:
+            return (count_ - nleft);
+          default:
+            if(rv < 0)
+              {
+                *err_ = rv;
+                return (count_ - nleft);
+              }
+            break;
           }
 
         buf    += rv;
-        count  -= rv;
+        nleft  -= rv;
         offset += rv;
       }
 

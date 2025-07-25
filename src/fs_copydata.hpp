@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include <stddef.h>
+#include "int_types.h"
 
 
 namespace fs
 {
-  int
-  copydata(const int    src_fd,
-           const int    dst_fd,
-           const size_t count);
+  s64
+  copydata(const int src_fd,
+           const int dst_fd,
+           const u64 count);
 }
