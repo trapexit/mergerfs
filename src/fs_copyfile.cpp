@@ -118,7 +118,7 @@ fs::copyfile(const std::filesystem::path &src_,
   sigaction(SIGIO,&new_act,&old_act);
   DEFER { sigaction(SIGIO,&old_act,NULL); };
 
-  src_fd = fs::open(src_,O_RDONLY|O_NOFOLLOW|O_NONBLOCK);
+  src_fd = fs::open(src_,O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_NOATIME);
   if(src_fd < 0)
     return src_fd;
   DEFER { fs::close(src_fd); };
