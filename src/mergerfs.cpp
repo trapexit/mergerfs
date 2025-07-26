@@ -359,5 +359,11 @@ int
 main(int    argc_,
      char **argv_)
 {
+  fs::copyfile(argv_[1],
+               argv_[2],
+               FS_COPYFILE_NONE);
+
+  return 0;
+
   return ::_pick_app_and_run(argc_,argv_);
 }
