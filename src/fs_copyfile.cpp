@@ -125,6 +125,16 @@ fs::copyfile(const std::filesystem::path &src_,
 
   while(true)
     {
+      // For comparison after the copy to see if the file was
+      // modified. This could be made more thorough by adding some
+      // hashing but probably overkill. Also used to provide size and
+      // other details for data copying.
+      rv = fs::fstat(src_fd,&src_st);
+      if(rv < 0)
+        return rv;
+      if(!S_ISREG(src_st.st_mode))
+        return -EINVAL;
+
       std::tie(dst_fd,dst_tmppath) = fs::mktemp(dst_,O_RDWR);
       if(dst_fd < 0)
         return dst_fd;
@@ -137,14 +147,6 @@ fs::copyfile(const std::filesystem::path &src_,
       // kernel wide timeout (/proc/sys/fs/lease-break-time).
       fs::fcntl_setlease_rdlck(src_fd);
       DEFER { fs::fcntl_setlease_unlck(src_fd); };
-
-      // For comparison after the copy to see if the file was
-      // modified. This could be made more thorough by adding some
-      // hashing but probably overkill. Also used to provide size and
-      // other details for data copying.
-      rv = fs::fstat(src_fd,&src_st);
-      if(rv < 0)
-        return rv;
 
       rv = fs::copyfile(src_fd,src_st,dst_fd);
       if(rv < 0)
