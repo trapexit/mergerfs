@@ -359,9 +359,10 @@ int
 main(int    argc_,
      char **argv_)
 {
-  fs::copyfile(argv_[1],
-               argv_[2],
-               FS_COPYFILE_NONE);
+  int rv = fs::copyfile(argv_[1],
+                        argv_[2],
+                        FS_COPYFILE_NONE);
+  fmt::println("{} {}\n",rv,strerror(-rv));
 
   return 0;
 
