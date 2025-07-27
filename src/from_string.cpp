@@ -67,6 +67,53 @@ namespace str
 
   int
   from(const std::string &value_,
+       int64_t           *int64_)
+  {
+    char *endptr;
+    int64_t tmp;
+
+    tmp = ::strtoll(value_.c_str(),&endptr,10);
+    switch(*endptr)
+      {
+      case 'b':
+      case 'B':
+        tmp *= 1ULL;
+        break;
+
+      case 'k':
+      case 'K':
+        tmp *= 1024ULL;
+        break;
+
+      case 'm':
+      case 'M':
+        tmp *= (1024ULL * 1024ULL);
+        break;
+
+      case 'g':
+      case 'G':
+        tmp *= (1024ULL * 1024ULL * 1024ULL);
+        break;
+
+      case 't':
+      case 'T':
+        tmp *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+        break;
+
+      case '\0':
+        break;
+
+      default:
+        return -EINVAL;
+      }
+
+    *int64_ = tmp;
+
+    return 0;
+  }
+
+  int
+  from(const std::string &value_,
        uint64_t          *uint64_)
   {
     char *endptr;

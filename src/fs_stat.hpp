@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "follow_symlinks_enum.hpp"
 #include "to_neg_errno.hpp"
 
 #include <string>
@@ -49,5 +50,22 @@ namespace fs
        struct stat       *st_)
   {
     return fs::stat(path_.c_str(),st_);
+  }
+
+  int
+  stat(const char         *path,
+       struct stat        *st,
+       FollowSymlinksEnum  follow);
+
+  static
+  inline
+  int
+  stat(const std::string  &path_,
+       struct stat        *st_,
+       FollowSymlinksEnum  follow_)
+  {
+    return fs::stat(path_.c_str(),
+                    st_,
+                    follow_);
   }
 }

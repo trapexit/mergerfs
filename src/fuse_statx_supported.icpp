@@ -36,41 +36,6 @@
 #include <string>
 
 
-static
-void
-_set_stat_if_leads_to_dir(const std::string &path_,
-                          struct fuse_statx *st_)
-{
-  int rv;
-  struct fuse_statx st;
-
-  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,&st);
-  if(rv < 0)
-    return;
-
-  if(S_ISDIR(st.mode))
-    *st_ = st;
-
-  return;
-}
-
-static
-void
-_set_stat_if_leads_to_reg(const std::string &path_,
-                          struct fuse_statx *st_)
-{
-  int rv;
-  struct fuse_statx st;
-
-  rv = fs::statx(AT_FDCWD,path_,AT_SYMLINK_FOLLOW,STATX_TYPE,&st);
-  if(rv < 0)
-    return;
-
-  if(S_ISREG(st.mode))
-    *st_ = st;
-
-  return;
-}
 
 static
 int
@@ -134,28 +99,7 @@ _statx(const Policy::Search &searchFunc_,
 
   fullpath = fs::path::make(branches[0]->path,fusepath_);
 
-  switch(followsymlinks_)
-    {
-    case FollowSymlinks::ENUM::NEVER:
-      rv = fs::statx(AT_FDCWD,fullpath,flags_|AT_SYMLINK_NOFOLLOW,mask_,st_);
-      break;
-    case FollowSymlinks::ENUM::DIRECTORY:
-      rv = fs::statx(AT_FDCWD,fullpath,flags_|AT_SYMLINK_NOFOLLOW,mask_,st_);
-      if((rv >= 0) && S_ISLNK(st_->mode))
-        ::_set_stat_if_leads_to_dir(fullpath,st_);
-      break;
-    case FollowSymlinks::ENUM::REGULAR:
-      rv = fs::statx(AT_FDCWD,fullpath,flags_|AT_SYMLINK_NOFOLLOW,mask_,st_);
-      if((rv >= 0) && S_ISLNK(st_->mode))
-        ::_set_stat_if_leads_to_reg(fullpath,st_);
-      break;
-    case FollowSymlinks::ENUM::ALL:
-      rv = fs::statx(AT_FDCWD,fullpath,flags_|AT_SYMLINK_FOLLOW,mask_,st_);
-      if(rv < 0)
-        rv = fs::statx(AT_FDCWD,fullpath,flags_|AT_SYMLINK_NOFOLLOW,mask_,st_);
-      break;
-    }
-
+  rv = fs::statx(fullpath,flags_,mask_,st_,followsymlinks_);
   if(rv < 0)
     return rv;
 
@@ -210,7 +154,11 @@ FUSE::statx(const char        *fusepath_,
   if(Config::is_ctrl_file(fusepath_))
     return ::_statx_controlfile(st_);
 
-  return ::_statx(fusepath_,flags_|AT_STATX_DONT_SYNC,mask_,st_,timeout_);
+  return ::_statx(fusepath_,
+                  flags_|AT_STATX_DONT_SYNC,
+                  mask_,
+                  st_,
+                  timeout_);
 }
 
 int
@@ -222,5 +170,9 @@ FUSE::statx_fh(const uint64_t     fh_,
 {
   FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
 
-  return ::_statx(fi->fusepath.c_str(),flags_,mask_,st_,timeout_);
+  return ::_statx(fi->fusepath.c_str(),
+                  flags_|AT_STATX_DONT_SYNC,
+                  mask_,
+                  st_,
+                  timeout_);
 }

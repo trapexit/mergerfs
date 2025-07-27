@@ -1567,6 +1567,9 @@ fuse_lib_lookup(fuse_req_t             req,
   nodeid = hdr_->nodeid;
   f      = req_fuse_prepare(req);
 
+  fmt::print("lookup: {}\n",
+             nodeid);
+
   if(name[0] == '.')
     {
       if(name[1] == '\0')
@@ -1685,6 +1688,9 @@ fuse_lib_getattr(fuse_req_t             req,
   arg = (fuse_getattr_in*)fuse_hdr_arg(hdr_);
   f   = req_fuse_prepare(req);
 
+  fmt::print("getattr: {}\n",
+             hdr_->nodeid);
+
   fh = 0;
   if(arg->getattr_flags & FUSE_GETATTR_FH)
     fh = arg->fh;
@@ -1788,6 +1794,9 @@ fuse_lib_statx(fuse_req_t             req_,
 {
   struct fuse *f = req_fuse_prepare(req_);
   fuse_statx_in *inarg;
+
+  fmt::print("statx: {}\n",
+             hdr_->nodeid);
 
   inarg = (fuse_statx_in*)fuse_hdr_arg(hdr_);
 

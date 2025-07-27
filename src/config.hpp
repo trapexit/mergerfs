@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "func_getattr.hpp"
+
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
@@ -56,6 +58,7 @@
 
 typedef ToFromWrapper<bool>                  ConfigBOOL;
 typedef ToFromWrapper<uint64_t>              ConfigUINT64;
+typedef ToFromWrapper<int64_t>               ConfigS64;
 typedef ToFromWrapper<int>                   ConfigINT;
 typedef ToFromWrapper<std::string>           ConfigSTR;
 typedef ToFromWrapper<std::filesystem::path> ConfigPath;
@@ -161,7 +164,7 @@ public:
   StatFS         statfs;
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
-  ConfigUINT64   symlinkify_timeout;
+  ConfigS64      symlinkify_timeout;
   ConfigINT      fuse_read_thread_count;
   ConfigINT      fuse_process_thread_count;
   ConfigINT      fuse_process_thread_queue_depth;
@@ -169,6 +172,8 @@ public:
   ConfigSTR      version;
   ConfigBOOL     writeback_cache;
   XAttr          xattr;
+
+  Func2::GetAttr getattr{"combine"};
 
 private:
   bool _initialized;

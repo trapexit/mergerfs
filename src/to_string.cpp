@@ -47,6 +47,12 @@ namespace str
   }
 
   std::string
+  to(const int64_t int64_)
+  {
+    return fmt::format("{}",int64_);
+  }
+
+  std::string
   to(const std::string &s_)
   {
     return s_;
