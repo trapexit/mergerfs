@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "int_types.h"
 #include "to_neg_errno.hpp"
 
 #include <unistd.h>
@@ -25,13 +26,13 @@
 namespace fs
 {
   static
-  int
-  pread(const int     fd_,
-        void         *buf_,
-        const size_t  count_,
-        const off_t   offset_)
+  s64
+  pread(const int  fd_,
+        void      *buf_,
+        const u64  count_,
+        const s64  offset_)
   {
-    int rv;
+    s64 rv;
 
     rv = ::pread(fd_,buf_,count_,offset_);
 

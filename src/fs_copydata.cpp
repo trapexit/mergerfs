@@ -25,17 +25,16 @@
 
 #include <stddef.h>
 
-
-int
-fs::copydata(const int    src_fd_,
-             const int    dst_fd_,
-             const size_t count_)
+s64
+fs::copydata(const int src_fd_,
+             const int dst_fd_,
+             const u64 count_)
 {
-  int rv;
+  s64 rv;
 
   rv = fs::ficlone(src_fd_,dst_fd_);
   if(rv >= 0)
-    return rv;
+    return count_;
 
   fs::fadvise_willneed(src_fd_,0,count_);
   fs::fadvise_sequential(src_fd_,0,count_);

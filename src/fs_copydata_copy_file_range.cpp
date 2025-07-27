@@ -27,7 +27,7 @@ static
 s64
 _copydata_copy_file_range(const int src_fd_,
                           const int dst_fd_,
-                          const u64 size_)
+                          const u64 count_)
 {
   s64 rv;
   u64 nleft;
@@ -36,24 +36,27 @@ _copydata_copy_file_range(const int src_fd_,
 
   src_off = 0;
   dst_off = 0;
-  nleft   = size_;
-  do
+  nleft   = count_;
+  while(nleft > 0)
     {
       rv = fs::copy_file_range(src_fd_,&src_off,dst_fd_,&dst_off,nleft,0);
-      if(rv == -EINTR)
-        continue;
-      if(rv == -EAGAIN)
-        continue;
-      if(rv == 0)
-        break;
-      if(rv < 0)
-        return rv;
+      switch(rv)
+        {
+        case -EINTR:
+        case -EAGAIN:
+          continue;
+        case 0:
+          break;
+        default:
+          if(rv < 0)
+            return rv;
+          break;
+        }
 
       nleft -= rv;
     }
-  while(nleft > 0);
 
-  return (size_ - nleft);
+  return (count_ - nleft);
 }
 
 s64
