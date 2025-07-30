@@ -13,14 +13,13 @@
 #include "mutex.hpp"
 #include "lfmp.h"
 
-#include "config.h"
 #include "debug.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
-#include "fuse_opt.h"
-#include "fuse_misc.h"
-#include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
+#include "fuse_opt.h"
+#include "fuse_pollhandle.h"
+#include "stat_utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>

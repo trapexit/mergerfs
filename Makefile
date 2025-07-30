@@ -12,25 +12,29 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-GIT 	  = git
-TAR 	  = tar
-MKDIR     = mkdir
-TOUCH 	  = touch
-CP        = cp
-RM 	  = rm
-LN        = ln
-FIND 	  = find
-INSTALL   = install
-MKTEMP    = mktemp
-STRIP    ?= strip
-SED       = sed
-GIT2DEBCL = ./buildtools/git2debcl
-PKGCONFIG = pkg-config
+CP        := cp
+FAKEROOT  := fakeroot
+FIND 	  := find
+GIT 	  := git
+GIT2DEBCL := buildtools/git2debcl
+INSTALL   := install
+LN        := ln
+MKDIR     := mkdir
+MKTEMP    := mktemp
+MV        := mv
+RM 	  := rm
+SED       := sed
+STRIP     := strip
+TAR 	  := tar
+TOUCH 	  := touch
 
-GIT_REPO = 0
+BUILDDIR := build
+
+ifneq ($(GIT_REPO),0)
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
 ifeq  ($(shell test -e .git; echo $$?),0)
 GIT_REPO = 1
+endif
 endif
 endif
 
@@ -40,7 +44,7 @@ UGID_USE_RWLOCK = 0
 ifeq ($(NDEBUG),1)
 OPT_FLAGS := -O2 -DNDEBUG
 else
-OPT_FLAGS := -O0 -DDEBUG -g
+OPT_FLAGS := -O0 -g -fno-omit-frame-pointer -DDEBUG
 endif
 
 ifeq ($(STATIC),1)
@@ -55,66 +59,73 @@ else
 LTO_FLAGS :=
 endif
 
-SRC	    = $(wildcard src/*.cpp)
-OBJS        = $(SRC:src/%.cpp=build/.src/%.o)
-DEPS        = $(SRC:src/%.cpp=build/.src/%.d)
+SRC	    := $(wildcard src/*.cpp)
+OBJS        := $(SRC:src/%.cpp=build/.src/%.o)
+DEPS        := $(SRC:src/%.cpp=build/.src/%.d)
 
-TESTS       = $(wildcard tests/*.cpp)
-TESTS_OBJS  = $(filter-out build/.src/mergerfs.o,$(OBJS))
+TESTS       := $(wildcard tests/*.cpp)
+TESTS_OBJS  := $(filter-out build/.src/mergerfs.o,$(OBJS))
 TESTS_OBJS += $(TESTS:tests/%.cpp=build/.tests/%.o)
-TESTS_DEPS  = $(TESTS:tests/%.cpp=build/.tests/%.d)
+TESTS_DEPS  := $(TESTS:tests/%.cpp=build/.tests/%.d)
 TESTS_DEPS += $(DEPS)
 
-MANPAGE     = mergerfs.1
-CFLAGS      ?= ${OPT_FLAGS}
-CFLAGS      := ${CFLAGS} \
-               -Wall \
-               -Wno-unused-result
-CXXFLAGS    ?= ${OPT_FLAGS}
+MANPAGE     := mergerfs.1
+CPPFLAGS    += \
+		-D_FILE_OFFSET_BITS=64
+CFLAGS      := \
+		$(OPT_FLAGS) \
+		-Wall \
+		-Wno-unused-result \
+		-pipe \
+		-MMD \
+		-MP
 CXXFLAGS    := \
-              ${CXXFLAGS} \
-              -std=c++17 \
-              $(STATIC_FLAGS) \
-              $(LTO_FLAGS) \
-	      -Isrc \
-              -Wall \
-              -Wno-unused-result \
-              -MMD
-FUSE_FLAGS = \
-              -Ilibfuse/include \
-              -D_FILE_OFFSET_BITS=64
-MFS_FLAGS  = \
+	        -std=c++17 \
+		$(OPT_FLAGS) \
+                $(STATIC_FLAGS) \
+                $(LTO_FLAGS) \
+                -Wall \
+                -Wno-unused-result \
+		-pipe \
+                -MMD \
+		-MP
+INCLUDE_FLAGS := \
+		-Isrc \
+		-Ilibfuse/include
+MFS_FLAGS  := \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
-TESTS_FLAGS = \
+TESTS_FLAGS := \
               -Isrc \
               -DTESTS
 
-LDFLAGS := \
-    ${LDFLAGS} \
-    -pthread \
-    -lrt \
-    -lstdc++fs
+LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
+LDFLAGS += \
+	-pthread \
+	-lrt \
+	-lstdc++fs
+LDLIBS := $(LIBFUSE)
 
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
-DESTDIR       =
-PREFIX        = /usr/local
-EXEC_PREFIX   = $(PREFIX)
-DATAROOTDIR   = $(PREFIX)/share
-DATADIR       = $(DATAROOTDIR)
-BINDIR        = $(EXEC_PREFIX)/bin
-SBINDIR       = $(EXEC_PREFIX)/sbin
-LIBDIR        = $(EXEC_PREFIX)/lib
-MANDIR        = $(DATAROOTDIR)/man
-MAN1DIR       = $(MANDIR)/man1
+DESTDIR       :=
+PREFIX        := /usr/local
+EXEC_PREFIX   := $(PREFIX)
+DATAROOTDIR   := $(PREFIX)/share
+DATADIR       := $(DATAROOTDIR)
+BINDIR        := $(EXEC_PREFIX)/bin
+SBINDIR       := $(EXEC_PREFIX)/sbin
+LIBDIR        := $(EXEC_PREFIX)/lib
+MANDIR        := $(DATAROOTDIR)/man
+MAN1DIR       := $(MANDIR)/man1
 
-INSTALLBINDIR  = $(DESTDIR)$(BINDIR)
-INSTALLSBINDIR = $(DESTDIR)$(SBINDIR)
-INSTALLLIBDIR  = $(DESTDIR)$(LIBDIR)/mergerfs
-INSTALLMAN1DIR = $(DESTDIR)$(MAN1DIR)
+INSTALLBINDIR  := $(DESTDIR)$(BINDIR)
+INSTALLSBINDIR := $(DESTDIR)$(SBINDIR)
+INSTALLLIBDIR  := $(DESTDIR)$(LIBDIR)/mergerfs
+INSTALLMAN1DIR := $(DESTDIR)$(MAN1DIR)
+
 
 .PHONY: all
-all: mergerfs
+all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info
 
 .PHONY: help
 help:
@@ -123,23 +134,25 @@ help:
 	@echo "make STATIC=1         - build static binary"
 	@echo "make LTO=1            - build with link time optimization"
 
-objects: version build/stamp
-	$(MAKE) $(OBJS)
 
-tests-objects:
-	$(MAKE) $(TESTS_OBJS)
+$(BUILDDIR)/mergerfs: $(LIBFUSE) src/version.hpp $(OBJS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
-build/mergerfs: libfuse objects
-	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
+$(BUILDDIR)/fsck.mergerfs:
+	$(LN) -sf "mergerfs" $@
 
-build/tests: build/mergerfs tests-objects
-	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ libfuse/build/libfuse.a $(LDFLAGS)
+$(BUILDDIR)/mergerfs.collect-info:
+	$(LN) -sf "mergerfs" $@
 
-mergerfs: build/mergerfs
-	ln -fs "mergerfs" "build/fsck.mergerfs"
-	ln -fs "mergerfs" "build/mergerfs.collect-info"
+$(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
-tests: build/tests
+.PHONY: libfuse
+$(LIBFUSE):
+libfuse:
+	$(MAKE) NDEBUG=$(NDEBUG) -C libfuse
+
+tests: $(BUILDDIR)/tests
 
 changelog:
 ifeq ($(GIT_REPO),1)
@@ -149,27 +162,29 @@ else
 endif
 
 .PHONY: version
-version:
+version: src/version.hpp
+
+src/version.hpp:
 	./buildtools/update-version
 
-build/stamp:
-	$(MKDIR) -p build/.src build/.tests
+$(BUILDDIR)/stamp:
+	$(MKDIR) -p $(BUILDDIR)/.src $(BUILDDIR)/.tests
 	$(TOUCH) $@
 
-build/.src/%.o: src/%.cpp
-	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
+$(BUILDDIR)/.src/%.o: src/%.cpp $(BUILDDIR)/stamp
+	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
-build/.tests/%.o: tests/%.cpp
-	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(FUSE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
+$(BUILDDIR)/.tests/%.o: tests/%.cpp
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
-build/preload.so: build/stamp tools/preload.c
-	$(CC) -shared -fPIC $(CFLAGS) $(CPPFLAGS) -o $@ tools/preload.c
+$(BUILDDIR)/preload.so: $(BUILDDIR)/stamp tools/preload.c
+	$(CC) -shared -fPIC $(CFLAGS) -o $@ tools/preload.c
 
-preload: build/preload.so
+preload: $(BUILDDIR)/preload.so
 
 .PHONY: clean
 clean: rpm-clean
-	$(RM) -rf build
+	$(RM) -rf $(BUILDDIR)
 	$(FIND) . -name "*~" -delete
 	$(MAKE) -C libfuse clean
 
@@ -181,24 +196,29 @@ endif
 .PHONY: install
 install: install-base install-mount-tools install-preload install-man
 
-install-base: build/mergerfs
+.PHONY: install-base
+install-base: all
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(INSTALL) -v -m 0755 "build/mergerfs" "$(INSTALLBINDIR)/mergerfs"
-	ln -s "mergerfs" "${INSTALLBINDIR}/fsck.mergerfs"
-	ln -s "mergerfs" "${INSTALLBINDIR}/mergerfs.collect-info"
+	$(INSTALL) -v -m 0755 "$(BUILDDIR)/mergerfs" "$(INSTALLBINDIR)/mergerfs"
+	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/fsck.mergerfs"
+	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mergerfs.collect-info"
 
+.PHONY: install-mount-tools
 install-mount-tools: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
 	$(MAKE) -C libfuse install
 
+.PHONY: install-man
 install-man: man/$(MANPAGE)
 	$(MKDIR) -p "$(INSTALLMAN1DIR)"
 	$(INSTALL) -v -m 0644 "man/$(MANPAGE)" "$(INSTALLMAN1DIR)/$(MANPAGE)"
 
+.PHONY: install-preload
 install-preload: preload
 	$(MKDIR) -p "$(INSTALLLIBDIR)"
-	$(INSTALL) -v -m 444 "build/preload.so" "$(INSTALLLIBDIR)/preload.so"
+	$(INSTALL) -v -m 444 "$(BUILDDIR)/preload.so" "$(INSTALLLIBDIR)/preload.so"
 
+.PHONY: install-strip
 install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/mergerfs"
 
@@ -225,29 +245,34 @@ tarball: changelog version
 	$(TAR) --exclude=.git -cz -C $(TMPDIR) -f $(FILENAME).tar.gz $(FILENAME)
 	$(RM) -rf $(TMPDIR)
 
+.PHONY: debian-changelog
 debian-changelog:
 ifeq ($(GIT_REPO),1)
 	$(GIT2DEBCL) --name mergerfs > debian/changelog
 else
-	cp ChangeLog debian/changelog
+	$(CP) -v ChangeLog debian/changelog
 endif
 
+.PHONY: signed-deb
 signed-deb:
 	$(MAKE) distclean
 	$(MAKE) debian-changelog
-	fakeroot dpkg-buildpackage -nc
+	$(FAKEROOT) dpkg-buildpackage -nc
 
+.PHONY: deb
 deb:
 	$(MAKE) distclean
 	$(MAKE) debian-changelog
-	fakeroot dpkg-buildpackage -nc -uc -us
-	mkdir -p ./build/pkgs/
-	mv -v ../mergerfs*deb ./build/pkgs/
+	$(MAKE) version
+	$(FAKEROOT) dpkg-buildpackage -nc -uc -us
+	$(MKDIR) -p ./$(BUILDDIR)/pkgs/
+	$(MV) -v ../mergerfs*deb ./$(BUILDDIR)/pkgs/
 
 .PHONY: rpm-clean
 rpm-clean:
 	$(RM) -rf rpmbuild
 
+.PHONY: rpm
 rpm: tarball
 	$(eval VERSION := $(shell cat VERSION))
 	$(eval VERSION := $(subst -,_,$(VERSION)))
@@ -262,37 +287,41 @@ rpm: tarball
 install-build-pkgs:
 	./buildtools/install-build-pkgs
 
-.PHONY: libfuse
-libfuse:
-	$(MAKE) NDEBUG=$(NDEBUG) -C libfuse
-
-.PHONY: release release-amd64
+.PHONY: release
 release:
 	./buildtools/build-release \
 		--target=all \
 		--cleanup \
 		--branch=$(shell git branch --show-current)
+
+.PHONY: release-sample
 release-sample:
 	./buildtools/build-release \
 		--target=debian.12.amd64 \
-		--cleanup \
 		--branch=$(shell git branch --show-current)
+
+.PHONY: release-amd64
 release-amd64:
 	./buildtools/build-release \
 		--target=amd64 \
 		--cleanup \
 		--branch=$(shell git branch --show-current)
+
+.PHONY: release-arm64
 release-arm64:
 	./buildtools/build-release \
 		--target=arm64 \
 		--cleanup \
 		--branch=$(shell git branch --show-current)
+
+.PHONY: release-static
 release-static:
 	./buildtools/build-release \
 		--target=static \
 		--cleanup \
 		--branch=$(shell git branch --show-current)
 
+.PHONY: tags
 tags:
 	rm -fv TAGS
 	find . -name "*.c" -print | etags --append -

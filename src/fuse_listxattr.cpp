@@ -34,13 +34,14 @@ ssize_t
 _listxattr_size(const std::vector<Branch*> &branches_,
                 const char                 *fusepath_)
 {
-  ssize_t rv;
   ssize_t size;
   std::string fullpath;
 
   size = 0;
   for(const auto branch : branches_)
     {
+      ssize_t rv;
+
       fullpath = fs::path::make(branch->path,fusepath_);
 
       rv = fs::llistxattr(fullpath,NULL,0);
@@ -50,7 +51,7 @@ _listxattr_size(const std::vector<Branch*> &branches_,
       size += rv;
     }
 
-  return rv;
+  return size;
 }
 
 static

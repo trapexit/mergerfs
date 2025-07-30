@@ -13,7 +13,6 @@
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
-#include "fuse_misc.h"
 
 #include "fuse_config.hpp"
 #include "fuse_msgbuf.hpp"

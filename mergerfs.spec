@@ -13,9 +13,9 @@ BuildRequires:	gcc-c++
 # rpmbuild driven by the Makefile uses git to generate a version number
 BuildRequires:	git
 
-Requires:	fuse
-
 %global debug_package %{nil}
+%undefine _debuginfo_subpackages
+%global _enable_debug_packages 0
 
 %prep
 %setup -q
@@ -26,7 +26,7 @@ management of files across numerous commodity storage devices. It is
 similar to mhddfs, unionfs, and aufs.
 
 %build
-make %{?_smp_mflags}
+make %{?_smp_mflags} CFLAGS="%{optflags}" CXXFLAGS="%{optflags}" LDFLAGS="%{__global_ldflags}"
 
 %install
 make install PREFIX=%{_prefix} DESTDIR=%{buildroot}

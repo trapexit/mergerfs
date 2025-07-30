@@ -1,6 +1,6 @@
 #include "pin_threads.hpp"
 
-#include <syslog.h>
+#include "syslog.hpp"
 
 void
 PinThreads::R1L(const CPU::ThreadIdVec threads_)
@@ -211,7 +211,6 @@ PinThreads::pin(const CPU::ThreadIdVec read_threads_,
   if(type_ == "R1PPSP")
     return PinThreads::R1PPSP(read_threads_,process_threads_);
 
-  syslog(LOG_WARNING,
-         "Invalid pin-threads type, ignoring: %s",
-         type_.c_str());
+  SysLog::warning("Invalid pin-threads type, ignoring: {}",
+                  type_);
 }

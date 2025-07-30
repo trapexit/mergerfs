@@ -69,7 +69,7 @@ _rmdir_loop(const std::vector<Branch*> &branches_,
 {
   Err err;
 
-  for(auto &branch : branches_)
+  for(const auto &branch : branches_)
     {
       err = ::_rmdir_core(branch->path,fusepath_,followsymlinks_);
     }

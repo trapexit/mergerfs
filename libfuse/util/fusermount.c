@@ -8,7 +8,6 @@
 /* This program does the mounting and unmounting of FUSE filesystems */
 
 #define _GNU_SOURCE /* for clone */
-#include <config.h>
 
 #include "mount_util.h"
 #include <stdio.h>
@@ -30,7 +29,7 @@
 #include <sys/utsname.h>
 #include <sched.h>
 
-#define FUSE_COMMFD_ENV		"_FUSE_COMMFD"
+#define FUSE_COMMFD_ENV	"_FUSE_COMMFD"
 
 #define FUSE_DEV_OLD "/proc/fs/fuse/dev"
 #define FUSE_DEV_NEW "/dev/fuse"

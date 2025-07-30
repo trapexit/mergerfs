@@ -7,7 +7,6 @@
 */
 
 #include "fuse_i.h"
-#include "fuse_misc.h"
 #include "fuse_kernel.h"
 
 #include <assert.h>
