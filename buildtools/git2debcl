@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/bin/sh
 
 # Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
@@ -14,99 +14,189 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import sys
-import subprocess
-import argparse
+# Default values
+NAME=""
+VERSION="::guess::"
+DISTRO="::guess::"
+CODENAME="::guess::"
+URGENCY="medium"
 
-def call(args):
-    return subprocess.Popen(args,stdout=subprocess.PIPE).communicate()[0].decode()
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: $0 --name NAME [OPTIONS]
 
-def git_tags():
-    args = ["git", "tag", '-l']
-    tags = call(args)
-    tags = [[int(X) for X in tag.split(".")] for tag in tags.split()]
-    tags.sort()
-    tags.reverse()
-    tags = [".".join([str(X) for X in tag]) for tag in tags]
-    return tags
+Generated debian/changelog from git log
 
-def git_log(fromtag,totag):
-    args = ['git','log','--no-merges','--oneline',fromtag+'...'+totag]
-    return call(args).strip().split('\n')
+Options:
+    --name NAME        Name of package (required)
+    --version VERSION  Place in git history to include upto (default: ::guess::)
+    --distro DISTRO    Distribution name (default: ::guess::)
+    --codename NAME    Distribution codename (default: ::guess::)
+    --urgency URGENCY  Urgency (default: medium)
+    -h, --help         Show this help message
+EOF
+    exit 1
+}
 
-def git_author_and_time(tag):
-    args = ['git','log','-1','--format=-- %an <%ae>  %cD',tag]
-    return call(args).strip()
+# Parse command line arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --name)
+            NAME="$2"
+            shift 2
+            ;;
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
+        --distro)
+            DISTRO="$2"
+            shift 2
+            ;;
+        --codename)
+            CODENAME="$2"
+            shift 2
+            ;;
+        --urgency)
+            URGENCY="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage
+            ;;
+    esac
+done
 
-def git_version():
-    args = ['git','describe','--always','--tags','--dirty']
-    return call(args).strip()
+# Check required arguments
+if [ -z "$NAME" ]; then
+    echo "Error: --name is required" >&2
+    usage
+fi
 
-def guess_distro():
-    try:
-        args = ['lsb_release','-i','-s']
-        return call(args).strip().lower()
-    except:
-        return 'unknown'
+# Function to get git tags sorted in reverse order
+git_tags() {
+    git tag -l | sort -rV
+}
 
+# Function to get git log between two tags
+git_log() {
+    local fromtag="$1"
+    local totag="$2"
+    git log --no-merges --oneline "${fromtag}...${totag}" 2>/dev/null
+}
 
-def guess_codename():
-    try:
-        args = ['lsb_release','-c','-s']
-        return call(args).strip().lower()
-    except:
-        return 'unknown'
+# Function to get author and time for a tag
+git_author_and_time() {
+    local tag="$1"
+    git log -1 --format="-- %an <%ae>  %cD" "$tag"
+}
 
+# Function to get git version
+git_version() {
+    git describe --always --tags --dirty 2>/dev/null || echo "unknown"
+}
 
-def main():
-    parser = argparse.ArgumentParser(description='Generated debian/changelog from git log')
-    parser.add_argument('--name',type=str,help='Name of package',required=True)
-    parser.add_argument('--version',type=str,help='Place in git history to include upto',default='::guess::')
-    parser.add_argument('--distro',type=str,help='Distribution name',default='::guess::')
-    parser.add_argument('--codename',type=str,help='Distribution codename',default='::guess::')
-    parser.add_argument('--urgency',type=str,help='Urgency',default='medium')
+# Function to guess distribution
+guess_distro() {
+    if command -v lsb_release >/dev/null 2>&1; then
+        lsb_release -i -s 2>/dev/null | tr '[:upper:]' '[:lower:]'
+    else
+        echo "unknown"
+    fi
+}
 
-    args = parser.parse_args()
+# Function to guess codename
+guess_codename() {
+    if command -v lsb_release >/dev/null 2>&1; then
+        lsb_release -c -s 2>/dev/null | tr '[:upper:]' '[:lower:]'
+    else
+        echo "unknown"
+    fi
+}
 
-    if args.distro == '::guess::':
-        args.distro = guess_distro()
+# Handle guessing of values
+if [ "$DISTRO" = "::guess::" ]; then
+    DISTRO=$(guess_distro)
+fi
 
-    if args.codename == '::guess::':
-        args.codename = guess_codename()
+if [ "$CODENAME" = "::guess::" ]; then
+    CODENAME=$(guess_codename)
+fi
 
-    versuffix = "~"+args.distro+"-"+args.codename
+if [ "$VERSION" = "::guess::" ]; then
+    VERSION=$(git_version)
+fi
 
-    if args.version == '::guess::':
-        args.version = git_version()
+# Version suffix
+VERSUFFIX="~${DISTRO}-${CODENAME}"
 
-    tags = git_tags()
-    if args.version in tags:
-        idx = tags.index(args.version)
-        tags = tags[idx:]
-        tags = list(zip(tags,tags))
-    else:
-        tags = list(zip(tags,tags))
-        tags.insert(0,(args.version,'HEAD'))
+# Get all tags
+TAGS=$(git_tags)
 
-    for i in range(0,len(tags)):
-        tags[i] = (tags[i][0] + versuffix,tags[i][1])
+# Create temporary file for tag pairs
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
 
-    tag = tags[0]
-    for prev in tags[1:]:
-        lines = git_log(tag[1],prev[1])
-        if lines == ['']:
-            tag = prev
+# Check if version is in tags
+if echo "$TAGS" | grep -q "^${VERSION}$"; then
+    # If version is a tag, start from that tag
+    echo "$TAGS" | awk -v ver="$VERSION" 'BEGIN{found=0} {if($0==ver)found=1; if(found)print}' > "$TMPFILE"
+else
+    # If version is not a tag, use HEAD as starting point
+    echo "$VERSION HEAD" > "$TMPFILE"
+    echo "$TAGS" >> "$TMPFILE"
+fi
+
+# Process tags and generate changelog
+PREV_TAG=""
+PREV_REF=""
+FIRST=1
+
+while IFS= read -r line; do
+    if [ -z "$line" ]; then
+        continue
+    fi
+
+    # Handle the special case of VERSION HEAD
+    if [ "$line" = "$VERSION HEAD" ]; then
+        TAG="$VERSION"
+        REF="HEAD"
+    else
+        TAG="$line"
+        REF="$line"
+    fi
+
+    if [ -n "$PREV_TAG" ]; then
+        # Get log entries between current and previous tag
+        LOG_ENTRIES=$(git_log "$REF" "$PREV_REF")
+
+        # Skip if no changes
+        if [ -z "$LOG_ENTRIES" ] || [ "$LOG_ENTRIES" = "" ]; then
+            PREV_TAG="$TAG"
+            PREV_REF="$REF"
             continue
+        fi
 
-        print('{0} ({1}) {2}; urgency={3}\n'.format(args.name,tag[0],args.codename,args.urgency))
+        # Print package header
+        printf "%s (%s%s) %s; urgency=%s\n\n" "$NAME" "$PREV_TAG" "$VERSUFFIX" "$CODENAME" "$URGENCY"
 
-        for line in lines:
-            print("  * " + line)
+        # Print each log entry
+        echo "$LOG_ENTRIES" | while IFS= read -r entry; do
+            if [ -n "$entry" ]; then
+                printf "  * %s\n" "$entry"
+            fi
+        done
 
-        authorandtime = git_author_and_time(tag[1])
-        print(' {0}\n'.format(authorandtime))
+        # Print author and time
+        AUTHOR_TIME=$(git_author_and_time "$PREV_REF")
+        printf "\n %s\n\n" "$AUTHOR_TIME"
+    fi
 
-        tag = prev
-
-if __name__ == "__main__":
-    main()
+    PREV_TAG="$TAG"
+    PREV_REF="$REF"
+done < "$TMPFILE"

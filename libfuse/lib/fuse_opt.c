@@ -7,7 +7,6 @@
 */
 
 #include "fuse_opt.h"
-#include "fuse_misc.h"
 
 #include <stdio.h>
 #include <stdlib.h>

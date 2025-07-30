@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 debian:10 as build
+FROM --platform=linux/riscv64 quay.io/rockylinux/rockylinux:10 as build
 COPY install-build-pkgs build-mergerfs /tmp/
 RUN /tmp/install-build-pkgs
 ARG BUILD_TIMESTAMP=0

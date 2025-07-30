@@ -82,18 +82,20 @@ def main():
         containerfiles.append(f'{basepath}/{args.target}')
     elif args.target == 'all':
         for root,dirnames,filenames in os.walk(basepath):
+            filenames.sort()
             for filename in filenames:
                 if should_skip(filename):
-                    continue                
+                    continue
                 containerfile = f'buildtools/containerfiles/{filename}'
                 containerfiles.append(containerfile)
     else:
         for root,dirnames,filenames in os.walk(basepath):
+            filenames.sort()
             for filename in filenames:
                 if args.target not in filename:
                     continue
                 if should_skip(filename):
-                    continue                
+                    continue
                 containerfile = f'buildtools/containerfiles/{filename}'
                 containerfiles.append(containerfile)
 

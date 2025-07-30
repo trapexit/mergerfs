@@ -14,12 +14,16 @@
 
 # build artifacts
 mergerfs
-obj/
+build/
 src/version.hpp
+VERSION
 
 # Debian files
 debian/files
 debian/changelog
+debian/debhelper-build-stamp
+debian/mergerfs.debhelper.log
+debian/mergerfs.substvars
 
 # RPM files
 rpmbuild/

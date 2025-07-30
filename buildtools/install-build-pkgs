@@ -13,37 +13,28 @@ if [ -e /usr/bin/apt-get ]; then
             debhelper \
             lsb-release \
             fakeroot
-    apt-get -qy --force-yes --no-install-suggests --no-install-recommends install python
-    apt-get -qy --force-yes --no-install-suggests --no-install-recommends install python3
 elif [ -e /usr/bin/dnf ]; then
     dnf -y update
     dnf -y install \
-        git rpm-build gcc-c++ make which python3
+        git rpm-build gcc-c++ make which libatomic
+    dnf -y install lsb_release || true
 elif [ -e /usr/bin/yum ]; then
     yum -y update
     yum -y install \
-        git rpm-build gcc-c++ make which \
-        python python-argparse
+        git rpm-build gcc-c++ make which
+    yum -y install lsb_release || true
     yum -y install centos-release-scl
     yum -y install devtoolset-9-gcc\*
 elif [ -e /usr/bin/zypper ]; then
     zypper update -y
     zypper install -y \
-        git rpm-build gcc-c++ make which \
-        python
+           git rpm-build gcc-c++ make which \
+           lsb_release
 elif [ -e /sbin/apk ]; then
     apk add \
         abuild git gcc g++ make \
-        linux-headers
+        linux-headers lsb-release
 elif [ -e /usr/sbin/pkg ]; then
     pkg install \
         git gmake gcc
-fi
-
-if [ ! -e /usr/bin/python ]; then
-    if [ -e /usr/bin/python3 ]; then
-        ln -s /usr/bin/python3 /usr/bin/python
-    elif [ -e /usr/bin/python2 ]; then
-        ln -s /usr/bin/python2 /usr/bin/python
-    fi
 fi

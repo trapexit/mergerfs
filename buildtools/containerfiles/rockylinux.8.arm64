@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 rockylinux:8 as build
+FROM --platform=linux/arm64 quay.io/rockylinux/rockylinux:8 as build
 COPY install-build-pkgs build-mergerfs /tmp/
 RUN /tmp/install-build-pkgs
 ARG BUILD_TIMESTAMP=0

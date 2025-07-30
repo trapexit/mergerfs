@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ -e /usr/bin/apt-get ]; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get -qy update
+    apt-get -qy --force-yes --no-install-suggests --no-install-recommends install \
+            qemu-user-static \
+            podman
+elif [ -e /usr/bin/dnf ]; then
+    dnf -y update
+    dnf -y install \
+        qemu-user-static \
+        podman
+elif [ -e /sbin/apk ]; then
+    apk add \
+        python3 \
+        qemu-user-static \
+        podman
+fi
