@@ -138,6 +138,7 @@ _compare_files(const std::string &mergerfs_path_,
       fmt::println("  {}: {}",i,path);
       if(st.st_size < 0)
         fmt::println("    - err: {}",strerror(-st.st_size));
+
       time_t mtime = st.st_mtime;
       std::tm *mtime_tm = std::localtime(&mtime);
       fmt::println("    -"
