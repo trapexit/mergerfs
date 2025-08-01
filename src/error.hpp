@@ -30,4 +30,12 @@ public:
 
     return *this;
   }
+
+  bool
+  operator==(int v_)
+  {
+    if(_err.has_value())
+      return (_err.value() == v_);
+    return false;
+  }
 };
