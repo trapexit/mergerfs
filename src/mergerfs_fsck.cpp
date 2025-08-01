@@ -152,7 +152,7 @@ _compare_files(const std::string &mergerfs_path_,
                    st.st_mode,
                    ::_file_type(st.st_mode),
                    st.st_size,
-                   mtime_tm);
+                   *mtime_tm);
     }
 
   if(!fix_func_)
