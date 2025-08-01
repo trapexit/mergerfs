@@ -16,7 +16,7 @@ if [ -e /usr/bin/apt-get ]; then
 elif [ -e /usr/bin/dnf ]; then
     dnf -y update
     dnf -y install \
-        git rpm-build gcc-c++ make which
+        git rpm-build gcc-c++ make which libatomic
     dnf -y install lsb_release || true
 elif [ -e /usr/bin/yum ]; then
     yum -y update

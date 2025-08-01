@@ -104,6 +104,7 @@ override TESTS_FLAGS := \
               -DTESTS
 
 LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
+LDFLAGS := 
 LDLIBS := \
 	-lrt \
 	-latomic \
