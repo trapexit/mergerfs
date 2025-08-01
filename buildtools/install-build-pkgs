@@ -16,13 +16,13 @@ if [ -e /usr/bin/apt-get ]; then
 elif [ -e /usr/bin/dnf ]; then
     dnf -y update
     dnf -y install \
-        git rpm-build gcc-c++ make which \
-        lsb_release
+        git rpm-build gcc-c++ make which
+    dnf -y install lsb_release || true
 elif [ -e /usr/bin/yum ]; then
     yum -y update
     yum -y install \
-        git rpm-build gcc-c++ make which \
-        lsb_release
+        git rpm-build gcc-c++ make which
+    yum -y install lsb_release || true
     yum -y install centos-release-scl
     yum -y install devtoolset-9-gcc\*
 elif [ -e /usr/bin/zypper ]; then
