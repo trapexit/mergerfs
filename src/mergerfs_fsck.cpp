@@ -138,6 +138,7 @@ _compare_files(const std::string &mergerfs_path_,
       fmt::println("  {}: {}",i,path);
       if(st.st_size < 0)
         fmt::println("    - err: {}",strerror(-st.st_size));
+      time_t mtime = st.st_mtime;
       fmt::println("    -"
                    " uid: {};"
                    " gid: {};"
@@ -150,7 +151,7 @@ _compare_files(const std::string &mergerfs_path_,
                    st.st_mode,
                    ::_file_type(st.st_mode),
                    st.st_size,
-                   *fmt::localtime(&st.st_mtime));
+                   *fmt::localtime(&mtime));
     }
 
   if(!fix_func_)
