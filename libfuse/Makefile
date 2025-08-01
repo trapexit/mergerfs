@@ -1,5 +1,10 @@
-MKDIR := mkdir
-TOUCH := touch
+CHMOD   := chmod
+CHOWN   := chown
+INSTALL := install
+MKDIR	:= mkdir
+RM      := rm
+STRIP	:= strip
+TOUCH	:= touch
 
 OS := $(shell uname -s)
 ifeq ($(OS),Linux)
@@ -70,17 +75,19 @@ DEPS_CXX = $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/%.d)
 CFLAGS := \
 	$(OPT_FLAGS) \
 	$(LTO_FLAGS) \
-	-std=gnu99 \
 	-Wall \
-	-pipe \
+	-pipe
+override CFLAGS += \
+	-std=gnu99 \
 	-MMD \
 	-MP
 CXXFLAGS := \
 	$(OPT_FLAGS) \
 	$(LTO_FLAGS) \
-	-std=c++17 \
 	-Wall \
-	-pipe \
+	-pipe
+override CXXFLAGS += \
+	-std=c++17 \
 	-MMD \
 	-MP
 FUSERMOUNT_DIR := $(BINDIR)
@@ -90,8 +97,9 @@ FUSE_FLAGS := \
 	-D_REENTRANT \
 	-D_FILE_OFFSET_BITS=64 \
 	-DFUSERMOUNT_DIR=\"$(FUSERMOUNT_DIR)\"
-LDFLAGS := \
+LDFLAGS += \
 	-lrt \
+	-latomic \
 	-pthread
 
 all: $(BUILDDIR)/libfuse.a $(UTILS)
@@ -103,6 +111,7 @@ $(BUILDDIR)/stamp:
 $(BUILDDIR)/libfuse.a: $(OBJS_C) $(OBJS_CXX)
 	$(AR) rcs $(BUILDDIR)/libfuse.a $(OBJS_C) $(OBJS_CXX)
 
+.PHONY: utils
 utils: mergerfs-fusermount mount.mergerfs
 
 $(BUILDDIR)/mergerfs-fusermount: util/fusermount.c lib/mount_util.c
@@ -123,21 +132,21 @@ $(BUILDDIR)/%.o: lib/%.cpp | $(BUILDDIR)/stamp
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILDDIR)
+	$(RM) -rf $(BUILDDIR)
 
 .PHONY: distclean
 distclean: clean
 
 .PHONY: strip
 strip:
-	strip --strip-all $(BUILDDIR)/mount.mergerfs
-	strip --strip-all $(BUILDDIR)/mergerfs-fusermount
+	$(STRIP) --strip-all $(BUILDDIR)/mount.mergerfs
+	$(STRIP) --strip-all $(BUILDDIR)/mergerfs-fusermount
 
 install-utils: mergerfs-fusermount mount.mergerfs strip
-	install -D $(BUILDDIR)/mergerfs-fusermount "$(INSTALLBINDIR)/mergerfs-fusermount"
-	install -D $(BUILDDIR)/mount.mergerfs "$(INSTALLSBINDIR)/mount.mergerfs"
-	chown root:root "$(INSTALLBINDIR)/mergerfs-fusermount"
-	chmod u+s "$(INSTALLBINDIR)/mergerfs-fusermount"
+	$(INSTALL) -D $(BUILDDIR)/mergerfs-fusermount "$(INSTALLBINDIR)/mergerfs-fusermount"
+	$(INSTALL) -D $(BUILDDIR)/mount.mergerfs "$(INSTALLSBINDIR)/mount.mergerfs"
+	$(CHOWN) root:root "$(INSTALLBINDIR)/mergerfs-fusermount"
+	$(CHMOD) u+s "$(INSTALLBINDIR)/mergerfs-fusermount"
 
 install: $(INSTALLUTILS)
 

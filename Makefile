@@ -69,40 +69,43 @@ TESTS_OBJS += $(TESTS:tests/%.cpp=build/.tests/%.o)
 TESTS_DEPS  := $(TESTS:tests/%.cpp=build/.tests/%.d)
 TESTS_DEPS += $(DEPS)
 
-MANPAGE     := mergerfs.1
-CPPFLAGS    += \
+MANPAGE := mergerfs.1
+override CPPFLAGS += \
 		-D_FILE_OFFSET_BITS=64
-CFLAGS      := \
+CFLAGS := \
 		$(OPT_FLAGS) \
 		-Wall \
 		-Wno-unused-result \
-		-pipe \
+		-pipe
+override CFLAGS += \
 		-MMD \
 		-MP
-CXXFLAGS    := \
-	        -std=c++17 \
+CXXFLAGS := \
 		$(OPT_FLAGS) \
                 $(STATIC_FLAGS) \
                 $(LTO_FLAGS) \
                 -Wall \
                 -Wno-unused-result \
-		-pipe \
-                -MMD \
+		-pipe
+override CXXFLAGS += \
+		-std=c++17 \
+		-MMD \
 		-MP
-INCLUDE_FLAGS := \
+override INC_FLAGS := \
 		-Isrc \
 		-Ilibfuse/include
-MFS_FLAGS  := \
+override MFS_FLAGS  := \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
-TESTS_FLAGS := \
+override TESTS_FLAGS := \
               -Isrc \
               -DTESTS
 
 LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
 LDFLAGS += \
-	-pthread \
 	-lrt \
+	-latomic \
+	-pthread \
 	-lstdc++fs
 LDLIBS := $(LIBFUSE)
 
@@ -136,7 +139,7 @@ help:
 
 
 $(BUILDDIR)/mergerfs: $(LIBFUSE) src/version.hpp $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
 $(BUILDDIR)/fsck.mergerfs:
 	$(LN) -sf "mergerfs" $@
@@ -145,7 +148,7 @@ $(BUILDDIR)/mergerfs.collect-info:
 	$(LN) -sf "mergerfs" $@
 
 $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
-	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
 .PHONY: libfuse
 $(LIBFUSE):
@@ -172,10 +175,10 @@ $(BUILDDIR)/stamp:
 	$(TOUCH) $@
 
 $(BUILDDIR)/.src/%.o: src/%.cpp $(BUILDDIR)/stamp
-	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR)/.tests/%.o: tests/%.cpp
-	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INCLUDE_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR)/preload.so: $(BUILDDIR)/stamp tools/preload.c
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ tools/preload.c
