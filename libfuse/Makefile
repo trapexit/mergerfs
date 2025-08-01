@@ -97,7 +97,7 @@ FUSE_FLAGS := \
 	-D_REENTRANT \
 	-D_FILE_OFFSET_BITS=64 \
 	-DFUSERMOUNT_DIR=\"$(FUSERMOUNT_DIR)\"
-LDFLAGS += \
+LDLIBS := \
 	-lrt \
 	-latomic \
 	-pthread

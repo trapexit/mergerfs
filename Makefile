@@ -104,12 +104,13 @@ override TESTS_FLAGS := \
               -DTESTS
 
 LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
-LDFLAGS += \
+LDLIBS := \
 	-lrt \
 	-latomic \
 	-pthread \
 	-lstdc++fs
-LDLIBS := $(LIBFUSE)
+override LDLIBS += \
+	$(LIBFUSE)
 
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
 DESTDIR       :=
