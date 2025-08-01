@@ -150,7 +150,7 @@ _compare_files(const std::string &mergerfs_path_,
                    st.st_mode,
                    ::_file_type(st.st_mode),
                    st.st_size,
-                   *std::localtime(&st.st_mtime));
+                   *fmt::localtime(&st.st_mtime));
     }
 
   if(!fix_func_)

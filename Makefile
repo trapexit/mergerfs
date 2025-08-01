@@ -75,7 +75,6 @@ override CPPFLAGS += \
 CFLAGS := \
 		$(OPT_FLAGS) \
 		-Wall \
-		-Werror \
 		-Wno-unused-result \
 		-pipe
 override CFLAGS += \
@@ -86,7 +85,6 @@ CXXFLAGS := \
                 $(STATIC_FLAGS) \
                 $(LTO_FLAGS) \
                 -Wall \
-		-Werror \
                 -Wno-unused-result \
 		-pipe
 override CXXFLAGS += \
