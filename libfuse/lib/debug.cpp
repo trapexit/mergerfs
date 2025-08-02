@@ -590,7 +590,7 @@ debug_fuse_read_in(const void *arg_)
           "fuse_read_in:"
           " fh=0x%" PRIx64 ";"
           " offset={};"
-          " size=%u;"
+          " size={};"
           " read_flags=%X;"
           " lock_owner=0x%" PRIx64 ";"
           " flags=0x%X ("
@@ -615,7 +615,7 @@ debug_fuse_write_in(const void *arg_)
           "fuse_write_in:"
           " fh=0x%" PRIx64 ";"
           " offset={};"
-          " size=%u;"
+          " size={};"
           " lock_owner=0x%" PRIx64 ";"
           " flags=0x%X ("
           ,
@@ -710,7 +710,7 @@ debug_fuse_setxattr_in(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_setxattr_in:"
-          " size=%u;"
+          " size={};"
           " flags=0x%X;"
           " name=%s;"
           " value=%s;"
@@ -733,7 +733,7 @@ debug_fuse_getxattr_in(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_getxattr_in:"
-          " size=%u;"
+          " size={};"
           " name=%s;"
           "\n"
           ,
@@ -749,7 +749,7 @@ debug_fuse_listxattr(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_listxattr:"
-          " size=%u;"
+          " size={};"
           "\n"
           ,
           arg->size);
@@ -797,9 +797,9 @@ debug_fuse_init_in(const struct fuse_init_in *arg_)
   flags = (((uint64_t)arg_->flags) | ((uint64_t)arg_->flags2) << 32);
   fprintf(g_OUTPUT,
           "FUSE_INIT_IN: "
-          " major=%u;"
-          " minor=%u;"
-          " max_readahead=%u;"
+          " major={};"
+          " minor={};"
+          " max_readahead={};"
           " flags=0x%016lx (",
           arg_->major,
           arg_->minor,
@@ -895,9 +895,9 @@ debug_fuse_init_out(const uint64_t              unique_,
   flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
   fprintf(g_OUTPUT,
           "FUSE_INIT_OUT:"
-          " major=%u;"
-          " minor=%u;"
-          " max_readahead=%u;"
+          " major={};"
+          " minor={};"
+          " max_readahead={};"
           " flags=0x%016lx ("
           ,
           /* unique_, */
@@ -922,12 +922,12 @@ debug_fuse_init_out(const uint64_t              unique_,
     }
 
   fprintf(g_OUTPUT,
-          "); max_background=%u;"
-          " congestion_threshold=%u;"
-          " max_write=%u;"
-          " time_gran=%u;"
-          " max_pages=%u;"
-          " map_alignment=%u;"
+          "); max_background={};"
+          " congestion_threshold={};"
+          " max_write={};"
+          " time_gran={};"
+          " max_pages={};"
+          " map_alignment={};"
           "\n",
           arg->max_background,
           arg->congestion_threshold,
@@ -947,17 +947,17 @@ debug_fuse_attr(const struct fuse_attr *attr_)
           " size=%" PRIu64 ";"
           " blocks=%" PRIu64 ";"
           " atime=%" PRIu64 ";"
-          " atimensec=%u;"
+          " atimensec={};"
           " mtime=%" PRIu64 ";"
-          " mtimensec=%u;"
+          " mtimensec={};"
           " ctime=%" PRIu64 ";"
-          " ctimesec=%u;"
+          " ctimesec={};"
           " mode={:o};"
-          " nlink=%u;"
-          " uid=%u;"
-          " gid=%u;"
-          " rdev=%u;"
-          " blksize=%u;"
+          " nlink={};"
+          " uid={};"
+          " gid={};"
+          " rdev={};"
+          " blksize={};"
           ,
           attr_->ino,
           attr_->size,
@@ -985,9 +985,9 @@ debug_fuse_entry(const struct fuse_entry_out *entry_)
           " nodeid=0x%016" PRIx64 ";"
           " generation=0x%016" PRIx64 ";"
           " entry_valid=%" PRIu64 ";"
-          " entry_valid_nsec=%u;"
+          " entry_valid_nsec={};"
           " attr_valid=%" PRIu64 ";"
-          " attr_valid_nsec=%u;"
+          " attr_valid_nsec={};"
           " ",
           entry_->nodeid,
           entry_->generation,
@@ -1027,22 +1027,22 @@ debug_fuse_attr_out(const uint64_t              unique_,
           " len=%" PRIu64 "; || "
           "fuse_attr_out:"
           " attr_valid={};"
-          " attr_valid_nsec=%u;"
+          " attr_valid_nsec={};"
           " ino={};"
           " size={};"
           " blocks={};"
           " atime={};"
-          " atimensec=%u;"
+          " atimensec={};"
           " mtime={};"
-          " mtimensec=%u;"
+          " mtimensec={};"
           " ctime={};"
-          " ctimensec=%u;"
+          " ctimensec={};"
           " mode={:o};"
-          " nlink=%u;"
-          " uid=%u;"
-          " gid=%u;"
-          " rdev=%u;"
-          " blksize=%u;"
+          " nlink={};"
+          " uid={};"
+          " gid={};"
+          " rdev={};"
+          " blksize={};"
           "\n",
           unique_,
           sizeof(struct fuse_out_header) + argsize_,
@@ -1149,11 +1149,11 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
 
   fprintf(stderr,
           "unique=0x%016" PRIx64 ";"
-          " opcode=%s (%u);"
+          " opcode=%s ({});"
           " nodeid={};"
-          " uid=%u;"
-          " gid=%u;"
-          " pid=%u; || ",
+          " uid={};"
+          " gid={};"
+          " pid={}; || ",
           hdr_->unique,
           opcode_name((fuse_opcode)hdr_->opcode),
           hdr_->opcode,
@@ -1316,7 +1316,7 @@ debug_fuse_write_out(const uint64_t               unique_,
           " error=0 (Success);"
           " len=%" PRIu64 "; || "
           " fuse_write_out:"
-          " size=%u"
+          " size={}"
           "\n"
           ,
           unique_,
@@ -1339,9 +1339,9 @@ debug_fuse_statfs_out(const uint64_t                unique_,
           " bavail=%" PRIu64 ";"
           " files=%" PRIu64 ";"
           " ffree=%" PRIu64 ";"
-          " bsize=%u;"
-          " namelen=%u;"
-          " frsize=%u;"
+          " bsize={};"
+          " namelen={};"
+          " frsize={};"
           "\n"
           ,
           unique_,
@@ -1366,7 +1366,7 @@ debug_fuse_getxattr_out(const uint64_t            unique_,
           " error=0 (Success);"
           " len=%" PRIu64 "; || "
           " fuse_getxattr_out:"
-          " size=%u;"
+          " size={};"
           "\n"
           ,
           unique_,
@@ -1387,8 +1387,8 @@ debug_fuse_lk_out(const uint64_t            unique_,
           " fuse_file_lock:"
           " start=%" PRIu64 ";"
           " end=%" PRIu64 ";"
-          " type=%u;"
-          " pid=%u;"
+          " type={};"
+          " pid={};"
           "\n"
           ,
           unique_,
