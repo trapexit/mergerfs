@@ -73,8 +73,7 @@ get_underlying_filepath(int     fd_,
 {
   int rv;
 
-  strcpy(filepath_,"fullpath");
-  rv = ioctl(fd_,IOCTL_FILE_INFO,filepath_);
+  rv = fgetxattr(fd_,"user.mergerfs.fullpath",filepath_,filepath_size_);
   if(rv == -1)
     return -1;
 
