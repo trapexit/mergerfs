@@ -323,8 +323,8 @@ fopen(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return f;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return f;
 
