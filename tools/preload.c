@@ -196,6 +196,7 @@ open64(const char *pathname_,
   return rv;
 }
 
+#ifndef _FILE_OFFSET_BITS
 int
 openat(int         dirfd_,
        const char *pathname_,
@@ -244,6 +245,7 @@ openat(int         dirfd_,
 
   return rv;
 }
+#endif
 
 int
 openat64(int         dirfd_,
