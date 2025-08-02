@@ -382,6 +382,7 @@ fopen64(const char *pathname_,
   return f2;
 }
 
+#ifndef _FILE_OFFSET_BITS
 int
 creat(const char *pathname_,
       mode_t      mode_)
@@ -408,6 +409,7 @@ creat(const char *pathname_,
 
   return rv;
 }
+#endif
 
 int
 creat64(const char *pathname_,
