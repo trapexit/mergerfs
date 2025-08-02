@@ -332,9 +332,9 @@ debug_fuse_open_out(const struct fuse_open_out *arg_)
       if(str == NULL)
         continue;
 
-      fprintf(stderr,"%s,",str);
+      fmt::print(stderr,"{},",str);
     }
-  fprintf(stderr,");\n");
+  fmt::print(stderr,");\n");
 }
 
 static
