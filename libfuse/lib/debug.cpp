@@ -315,12 +315,12 @@ fuse_fopen_flag_to_str(const uint32_t offset_)
 void
 debug_fuse_open_out(const struct fuse_open_out *arg_)
 {
-  fprintf(stderr,
-          "fuse_open_out:"
-          " fh=0x%" PRIx64 ";"
-          " open_flags=0x%X (",
-          arg_->fh,
-          arg_->open_flags);
+  fmt::print(stderr,
+             "fuse_open_out:"
+             " fh={:#08x};"
+             " open_flags=0x%X (",
+             arg_->fh,
+             arg_->open_flags);
   for(size_t i = 0; i < (sizeof(arg_->open_flags) * 8); i++)
     {
       const char *str;
