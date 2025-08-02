@@ -133,7 +133,7 @@ open(const char *pathname_,
     return fd;
 
   char real_pathname[4096];
-  rv = get_underlying_filepath(fd,real_pathname);
+  rv = get_underlying_filepath(fd,real_pathname,siizeof(real_pathname));
   if(rv == -1)
     return fd;
 
