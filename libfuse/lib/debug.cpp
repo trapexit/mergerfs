@@ -588,11 +588,11 @@ debug_fuse_read_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_read_in:"
-             " fh=0x%" PRIx64 ";"
+             " fh=0x{:#08x};"
              " offset={};"
              " size={};"
              " read_flags=%X;"
-             " lock_owner=0x%" PRIx64 ";"
+             " lock_owner=0x{:#08x};"
              " flags=0x%X ("
              ,
              arg->fh,
@@ -613,10 +613,10 @@ debug_fuse_write_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_write_in:"
-             " fh=0x%" PRIx64 ";"
+             " fh=0x{:#08x};"
              " offset={};"
              " size={};"
-             " lock_owner=0x%" PRIx64 ";"
+             " lock_owner=0x{:#08x};"
              " flags=0x%X ("
              ,
              arg->fh,
@@ -652,8 +652,8 @@ debug_fuse_flush_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_flush_in:"
-             " fh=0x%" PRIx64 ";"
-             " lock_owner=0x%" PRIx64 ";"
+             " fh=0x{:#08x};"
+             " lock_owner=0x{:#08x};"
              "\n"
              ,
              arg->fh,
@@ -668,9 +668,9 @@ debug_fuse_release_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_release_in:"
-             " fh=0x%" PRIx64 ";"
+             " fh=0x{:#08x};"
              " release_flags=0x%X;"
-             " lock_owner=0x%" PRIx64 ";"
+             " lock_owner=0x{:#08x};"
              " flags=0x%X ("
              ,
              arg->fh,
@@ -689,7 +689,7 @@ debug_fuse_fsync_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_fsync_in:"
-             " fh=0x%" PRIx64 ";"
+             " fh=0x{:#08x};"
              " fsync_flags=0x%X;"
              "\n"
              ,
@@ -777,7 +777,7 @@ debug_fuse_fallocate_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_fallocate_in:"
-             " fh=0x%" PRIx64 ";"
+             " fh=0x{:#08x};"
              " offset={};"
              " length={};"
              " mode={:o};"
