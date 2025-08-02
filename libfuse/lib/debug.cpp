@@ -409,12 +409,12 @@ debug_fuse_access_in(const void *arg_)
 {
   const struct fuse_access_in *arg = (const fuse_access_in*)arg_;
 
-  fprintf(g_OUTPUT,
-          "fuse_access_in:"
-          " mask=0x%08X;"
-          "\n"
-          ,
-          arg->mask);
+  fmt::print(g_OUTPUT,
+             "fuse_access_in:"
+             " mask=0x{:#08x};"
+             "\n"
+             ,
+             arg->mask);
 }
 
 static
