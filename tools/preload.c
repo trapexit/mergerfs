@@ -67,8 +67,9 @@ static creat64_func_t  _libc_creat64  = NULL;
 
 static
 int
-get_underlying_filepath(int   fd_,
-                        char *filepath_)
+get_underlying_filepath(int     fd_,
+                        char   *filepath_,
+                        size_t  filepath_size_)
 {
   int rv;
 
