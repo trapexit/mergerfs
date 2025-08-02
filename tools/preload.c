@@ -132,7 +132,7 @@ open(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return fd;
 
-  char real_pathname[4096];
+  char real_pathname[PATH_MAX];
   rv = get_underlying_filepath(fd,real_pathname,siizeof(real_pathname));
   if(rv == -1)
     return fd;
