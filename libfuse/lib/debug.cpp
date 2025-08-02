@@ -357,9 +357,9 @@ debug_fuse_getattr_in(const void *arg_)
 {
   const struct fuse_getattr_in *arg = (const fuse_getattr_in*)arg_;
 
-  fprintf(g_OUTPUT,
-          "fuse_getattr_in:"
-          " getattr_flags=0x%08X;"
+  fmt::print(g_OUTPUT,
+             "fuse_getattr_in:"
+             " getattr_flags=0x{:#08x};"
           " fh=0x%" PRIx64 ";\n",
           arg->getattr_flags,
           arg->fh);
