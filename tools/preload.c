@@ -98,6 +98,7 @@ strip_exec(const char *orig_mode_,
   new_mode_[j] = '\0';
 }
 
+#ifndef _FILE_OFFSET_BITS
 int
 open(const char *pathname_,
      int         flags_,
@@ -145,6 +146,7 @@ open(const char *pathname_,
 
   return rv;
 }
+#endif
 
 int
 open64(const char *pathname_,
