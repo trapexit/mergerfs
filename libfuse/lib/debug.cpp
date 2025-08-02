@@ -275,7 +275,7 @@ static
 void
 debug_open_flags(const uint32_t flags_)
 {
-  fprintf(stderr,"%s, ",open_accmode_to_str(flags_));
+  fmt::print("{}, ",open_accmode_to_str(flags_));
   for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
