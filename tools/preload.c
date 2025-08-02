@@ -296,6 +296,7 @@ openat64(int         dirfd_,
   return rv;
 }
 
+#ifndef _FILE_OFFSET_BITS
 FILE*
 fopen(const char *pathname_,
       const char *mode_)
@@ -337,6 +338,7 @@ fopen(const char *pathname_,
 
   return f2;
 }
+#endif
 
 FILE*
 fopen64(const char *pathname_,
