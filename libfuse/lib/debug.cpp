@@ -343,12 +343,12 @@ debug_fuse_lookup(const void *arg_)
 {
   const char *name = (const char*)arg_;
 
-  fprintf(g_OUTPUT,
-          "fuse_lookup:"
-          " name=%s;"
-          "\n"
-          ,
-          name);
+  fmt::print(g_OUTPUT,
+             "fuse_lookup:"
+             " name={};"
+             "\n"
+             ,
+             name);
 }
 
 static
