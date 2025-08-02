@@ -396,8 +396,8 @@ creat(const char *pathname_,
   if(fd == -1)
     return -1;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
@@ -424,8 +424,8 @@ creat64(const char *pathname_,
   if(fd == -1)
     return -1;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
