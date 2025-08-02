@@ -361,8 +361,8 @@ debug_fuse_getattr_in(const void *arg_)
              "fuse_getattr_in:"
              " getattr_flags=0x{:#08x};"
              " fh=0x{:08x};\n",
-          arg->getattr_flags,
-          arg->fh);
+             arg->getattr_flags,
+             arg->fh);
 }
 
 static
