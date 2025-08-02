@@ -317,8 +317,8 @@ debug_fuse_open_out(const struct fuse_open_out *arg_)
 {
   fmt::print(stderr,
              "fuse_open_out:"
-             " fh={:#08x};"
-             " open_flags={:#04x} (",
+             " fh=0x{:#08x};"
+             " open_flags=0x{:#04x} (",
              arg_->fh,
              arg_->open_flags);
   for(size_t i = 0; i < (sizeof(arg_->open_flags) * 8); i++)
