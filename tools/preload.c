@@ -132,7 +132,7 @@ open(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return fd;
 
-  IOCTL_BUF real_pathname;
+  char real_pathname[4096];
   rv = get_underlying_filepath(fd,real_pathname);
   if(rv == -1)
     return fd;
