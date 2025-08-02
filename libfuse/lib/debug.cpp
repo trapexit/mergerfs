@@ -371,7 +371,7 @@ debug_fuse_setattr_in(const void *arg_)
 {
   const struct fuse_setattr_in *arg = (const fuse_setattr_in*)arg_;
 
-  fprintf(g_OUTPUT,
+  fmt::print(g_OUTPUT,
           "fuse_setattr_in:"
           " valid={};"
           " fh=0x{:#08x};"
