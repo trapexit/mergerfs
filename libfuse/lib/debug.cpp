@@ -423,11 +423,11 @@ debug_fuse_mknod_in(const void *arg_)
 {
   const struct fuse_mknod_in *arg = (const fuse_mknod_in*)arg_;
 
-  fprintf(g_OUTPUT,
+  fmt::print(g_OUTPUT,
           "fuse_mknod_in:"
-          " mode=%o;"
-          " rdev=0x%08X;"
-          " umask=%o;"
+          " mode={:o};"
+          " rdev=0x{#:08x};"
+          " umask={:o};"
           "\n"
           ,
           arg->mode,
@@ -443,8 +443,8 @@ debug_fuse_mkdir_in(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_mkdir_in:"
-          " mode=%o;"
-          " umask=%o;"
+          " mode={:o};"
+          " umask={:o};"
           " name=%s;"
           "\n"
           ,
@@ -515,7 +515,7 @@ debug_fuse_rename_in(const void *arg_)
   fprintf(g_OUTPUT,
           "fuse_rename_in:"
           " oldname=%s;"
-          " newdir=%zu;"
+          " newdir={};"
           " newname=%s;"
           "\n"
           ,
@@ -535,7 +535,7 @@ debug_fuse_link_in(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_link_in:"
-          " oldnodeid=%zu;"
+          " oldnodeid={};"
           " name=%s;"
           "\n"
           ,
@@ -554,8 +554,8 @@ debug_fuse_create_in(const void *arg_)
 
   fprintf(g_OUTPUT,
           "fuse_create_in:"
-          " mode=%o;"
-          " umask=%o;"
+          " mode={:o};"
+          " umask={:o};"
           " name=%s;"
           " flags=0x%X (",
           arg->mode,
@@ -589,7 +589,7 @@ debug_fuse_read_in(const void *arg_)
   fprintf(g_OUTPUT,
           "fuse_read_in:"
           " fh=0x%" PRIx64 ";"
-          " offset=%zu;"
+          " offset={};"
           " size=%u;"
           " read_flags=%X;"
           " lock_owner=0x%" PRIx64 ";"
@@ -614,7 +614,7 @@ debug_fuse_write_in(const void *arg_)
   fprintf(g_OUTPUT,
           "fuse_write_in:"
           " fh=0x%" PRIx64 ";"
-          " offset=%zu;"
+          " offset={};"
           " size=%u;"
           " lock_owner=0x%" PRIx64 ";"
           " flags=0x%X ("
@@ -778,9 +778,9 @@ debug_fuse_fallocate_in(const void *arg_)
   fprintf(g_OUTPUT,
           "fuse_fallocate_in:"
           " fh=0x%" PRIx64 ";"
-          " offset=%zu;"
-          " length=%zu;"
-          " mode=%o;"
+          " offset={};"
+          " length={};"
+          " mode={:o};"
           "\n"
           ,
           arg->fh,
@@ -952,7 +952,7 @@ debug_fuse_attr(const struct fuse_attr *attr_)
           " mtimensec=%u;"
           " ctime=%" PRIu64 ";"
           " ctimesec=%u;"
-          " mode=%o;"
+          " mode={:o};"
           " nlink=%u;"
           " uid=%u;"
           " gid=%u;"
@@ -1026,18 +1026,18 @@ debug_fuse_attr_out(const uint64_t              unique_,
           " error=0 (Success);"
           " len=%" PRIu64 "; || "
           "fuse_attr_out:"
-          " attr_valid=%zu;"
+          " attr_valid={};"
           " attr_valid_nsec=%u;"
-          " ino=%zu;"
-          " size=%zu;"
-          " blocks=%zu;"
-          " atime=%zu;"
+          " ino={};"
+          " size={};"
+          " blocks={};"
+          " atime={};"
           " atimensec=%u;"
-          " mtime=%zu;"
+          " mtime={};"
           " mtimensec=%u;"
-          " ctime=%zu;"
+          " ctime={};"
           " ctimensec=%u;"
-          " mode=%o;"
+          " mode={:o};"
           " nlink=%u;"
           " uid=%u;"
           " gid=%u;"
@@ -1150,7 +1150,7 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
   fprintf(stderr,
           "unique=0x%016" PRIx64 ";"
           " opcode=%s (%u);"
-          " nodeid=%zu;"
+          " nodeid={};"
           " uid=%u;"
           " gid=%u;"
           " pid=%u; || ",
