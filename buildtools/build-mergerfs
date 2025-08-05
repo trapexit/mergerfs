@@ -2,8 +2,15 @@
 
 BRANCH="${1:-master}"
 SRCDIR="/tmp/mergerfs"
+REPO_URL="https://github.com/trapexit/mergerfs"
 
-git clone https://github.com/trapexit/mergerfs "${SRCDIR}" -b "${BRANCH}"
+git \
+    clone \
+    --single-branch \
+    --branch="${BRANCH}" \
+    --depth=1 \
+    "${REPO_URL}" \
+    "${SRCDIR}"
 
 cd "${SRCDIR}"
 

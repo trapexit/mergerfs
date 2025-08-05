@@ -3,7 +3,7 @@ FROM --platform=linux/i386 alpine:latest as build
 COPY install-build-pkgs /tmp/
 RUN /tmp/install-build-pkgs
 ARG BRANCH=master
-RUN git clone https://github.com/trapexit/mergerfs /tmp/mergerfs -b "${BRANCH}"
+RUN git clone --single-branch --depth=1 https://github.com/trapexit/mergerfs /tmp/mergerfs --branch="${BRANCH}"
 WORKDIR /tmp/mergerfs
 RUN make NDEBUG=1 LTO=1 STATIC=1 DESTDIR=/tmp -j$(nproc) install
 RUN mkdir /build

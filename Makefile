@@ -30,7 +30,7 @@ TOUCH 	  ?= touch
 
 BUILDDIR := build
 
-ifneq ($(GIT_REPO),0)
+ifndef GIT_REPO
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
 ifeq  ($(shell test -e .git; echo $$?),0)
 GIT_REPO = 1
@@ -41,32 +41,32 @@ endif
 USE_XATTR ?= 1
 UGID_USE_RWLOCK ?= 0
 
-ifeq ($(NDEBUG),1)
+ifdef NDEBUG
 OPT_FLAGS := -O2 -DNDEBUG
 else
 OPT_FLAGS := -O0 -g -fno-omit-frame-pointer -DDEBUG
 endif
 
-ifeq ($(STATIC),1)
+ifdef STATIC
 STATIC_FLAGS := -static
 else
 STATIC_FLAGS :=
 endif
 
-ifeq ($(LTO),1)
+ifdef LTO
 LTO_FLAGS := -flto
 else
 LTO_FLAGS :=
 endif
 
-SRC	    := $(wildcard src/*.cpp)
-OBJS        := $(SRC:src/%.cpp=build/.src/%.o)
-DEPS        := $(SRC:src/%.cpp=build/.src/%.d)
+SRC  := $(wildcard src/*.cpp)
+OBJS := $(SRC:src/%.cpp=build/.src/%.o)
+DEPS := $(SRC:src/%.cpp=build/.src/%.d)
 
-TESTS       := $(wildcard tests/*.cpp)
-TESTS_OBJS  := $(filter-out build/.src/mergerfs.o,$(OBJS))
+TESTS      := $(wildcard tests/*.cpp)
+TESTS_OBJS := $(filter-out build/.src/mergerfs.o,$(OBJS))
 TESTS_OBJS += $(TESTS:tests/%.cpp=build/.tests/%.o)
-TESTS_DEPS  := $(TESTS:tests/%.cpp=build/.tests/%.d)
+TESTS_DEPS := $(TESTS:tests/%.cpp=build/.tests/%.d)
 TESTS_DEPS += $(DEPS)
 
 MANPAGE := mergerfs.1
@@ -161,7 +161,7 @@ libfuse:
 tests: $(BUILDDIR)/tests
 
 changelog:
-ifeq ($(GIT_REPO),1)
+ifdef GIT_REPO
 	$(GIT2DEBCL) --name mergerfs > ChangeLog
 else
 	@echo "WARNING: need git repo to generate ChangeLog"
@@ -195,7 +195,7 @@ clean: rpm-clean
 	$(MAKE) -C libfuse clean
 
 distclean: clean
-ifeq ($(GIT_REPO),1)
+ifdef GIT_REPO
 	$(GIT) clean -xfd
 endif
 
@@ -253,7 +253,7 @@ tarball: changelog version
 
 .PHONY: debian-changelog
 debian-changelog:
-ifeq ($(GIT_REPO),1)
+ifdef GIT_REPO
 	$(GIT2DEBCL) --name mergerfs > debian/changelog
 else
 	$(CP) -v ChangeLog debian/changelog
@@ -293,53 +293,66 @@ rpm: tarball
 install-build-pkgs:
 	./buildtools/install-build-pkgs
 
+.PHONY: install-build-tools
+install-build-tools:
+	./bulidtools/install-build-tools
+
 .PHONY: release
 release:
 	./buildtools/build-release \
 		--target=all \
-		--cleanup \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
 
 .PHONY: release-sample
 release-sample:
 	./buildtools/build-release \
 		--target=debian.12.amd64 \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
 
 .PHONY: release-amd64
 release-amd64:
 	./buildtools/build-release \
 		--target=amd64 \
-		--cleanup \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
 
 .PHONY: release-arm64
 release-arm64:
 	./buildtools/build-release \
 		--target=arm64 \
-		--cleanup \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
 
 .PHONY: release-riscv64
 release-riscv64:
 	./buildtools/build-release \
 		--target=riscv64 \
-		--cleanup \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
 
 .PHONY: release-armhf
 release-armhf:
 	./buildtools/build-release \
 		--target=armhf \
-		--cleanup \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
 
 .PHONY: release-static
 release-static:
 	./buildtools/build-release \
 		--target=static \
-		--cleanup \
+		$(if $(CLEANUP),--cleanup) \
 		--branch=$(shell git branch --show-current)
+
+.PHONY: release-tarball
+release-tarball:
+	./buildtools/build-release \
+		--target=tarball \
+		$(if $(CLEANUP),--cleanup) \
+		--branch=$(shell git branch --show-current)
+
 
 .PHONY: tags
 tags:
