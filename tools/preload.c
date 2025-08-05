@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2024, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -25,14 +25,16 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <stdarg.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/xattr.h>
 #include <unistd.h>
-#include <fcntl.h>
 
 typedef char IOCTL_BUF[4096];
 #define IOCTL_APP_TYPE  0xDF
@@ -67,13 +69,13 @@ static creat64_func_t  _libc_creat64  = NULL;
 
 static
 int
-get_underlying_filepath(int   fd_,
-                        char *filepath_)
+get_underlying_filepath(int     fd_,
+                        char   *filepath_,
+                        size_t  filepath_size_)
 {
   int rv;
 
-  strcpy(filepath_,"fullpath");
-  rv = ioctl(fd_,IOCTL_FILE_INFO,filepath_);
+  rv = fgetxattr(fd_,"user.mergerfs.fullpath",filepath_,filepath_size_);
   if(rv == -1)
     return -1;
 
@@ -98,6 +100,7 @@ strip_exec(const char *orig_mode_,
   new_mode_[j] = '\0';
 }
 
+#ifndef _FILE_OFFSET_BITS
 int
 open(const char *pathname_,
      int         flags_,
@@ -131,8 +134,8 @@ open(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return fd;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
@@ -145,6 +148,7 @@ open(const char *pathname_,
 
   return rv;
 }
+#endif
 
 int
 open64(const char *pathname_,
@@ -179,8 +183,8 @@ open64(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return fd;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
@@ -194,6 +198,7 @@ open64(const char *pathname_,
   return rv;
 }
 
+#ifndef _FILE_OFFSET_BITS
 int
 openat(int         dirfd_,
        const char *pathname_,
@@ -228,8 +233,8 @@ openat(int         dirfd_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return fd;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
@@ -242,6 +247,7 @@ openat(int         dirfd_,
 
   return rv;
 }
+#endif
 
 int
 openat64(int         dirfd_,
@@ -277,8 +283,8 @@ openat64(int         dirfd_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return fd;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
@@ -292,6 +298,7 @@ openat64(int         dirfd_,
   return rv;
 }
 
+#ifndef _FILE_OFFSET_BITS
 FILE*
 fopen(const char *pathname_,
       const char *mode_)
@@ -318,8 +325,8 @@ fopen(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return f;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return f;
 
@@ -333,6 +340,7 @@ fopen(const char *pathname_,
 
   return f2;
 }
+#endif
 
 FILE*
 fopen64(const char *pathname_,
@@ -360,8 +368,8 @@ fopen64(const char *pathname_,
   if((st.st_mode & S_IFMT) != S_IFREG)
     return f;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return f;
 
@@ -376,6 +384,7 @@ fopen64(const char *pathname_,
   return f2;
 }
 
+#ifndef _FILE_OFFSET_BITS
 int
 creat(const char *pathname_,
       mode_t      mode_)
@@ -389,8 +398,8 @@ creat(const char *pathname_,
   if(fd == -1)
     return -1;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 
@@ -402,6 +411,7 @@ creat(const char *pathname_,
 
   return rv;
 }
+#endif
 
 int
 creat64(const char *pathname_,
@@ -416,8 +426,8 @@ creat64(const char *pathname_,
   if(fd == -1)
     return -1;
 
-  IOCTL_BUF real_pathname;
-  rv = get_underlying_filepath(fd,real_pathname);
+  char real_pathname[PATH_MAX];
+  rv = get_underlying_filepath(fd,real_pathname,sizeof(real_pathname));
   if(rv == -1)
     return fd;
 

@@ -11,18 +11,18 @@
 #define _GNU_SOURCE
 #endif
 
+#include "syslog.hpp"
+
 #include "crc32b.h"
 #include "khash.h"
 #include "kvec.h"
 #include "mutex.hpp"
 #include "node.hpp"
 
-#include "config.h"
 #include "fuse_dirents.h"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
-#include "fuse_misc.h"
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
@@ -51,11 +51,10 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/uio.h>
-#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
-#ifdef HAVE_MALLOC_TRIM
+#ifdef __GLIBC__
 #include <malloc.h>
 #endif
 
@@ -1848,7 +1847,6 @@ fuse_lib_setattr(fuse_req_t             req,
                f->fs->op.truncate(path,arg->size) :
                f->fs->op.ftruncate(fh,arg->size));
 
-#ifdef HAVE_UTIMENSAT
       if(!err && (arg->valid & (FATTR_ATIME | FATTR_MTIME)))
         {
           struct timespec tv[2];
@@ -1872,9 +1870,7 @@ fuse_lib_setattr(fuse_req_t             req,
                  f->fs->op.utimens(path,tv) :
                  f->fs->op.futimens(fh,tv));
         }
-      else
-#endif
-        if(!err && ((arg->valid & (FATTR_ATIME|FATTR_MTIME)) == (FATTR_ATIME|FATTR_MTIME)))
+      else if(!err && ((arg->valid & (FATTR_ATIME|FATTR_MTIME)) == (FATTR_ATIME|FATTR_MTIME)))
           {
             struct timespec tv[2];
             tv[0].tv_sec  = arg->atime;
@@ -3971,7 +3967,7 @@ static
 void
 fuse_malloc_trim(void)
 {
-#ifdef HAVE_MALLOC_TRIM
+#ifdef __GLIBC__
   malloc_trim(1024 * 1024);
 #endif
 }
@@ -4003,9 +3999,8 @@ fuse_invalidate_all_nodes()
     }
   mutex_unlock(&f->lock);
 
-  syslog(LOG_INFO,
-         "invalidating %ld file entries",
-         names.size());
+  SysLog::info("invalidating {} file entries",
+               names.size());
   for(auto &name : names)
     {
       fuse_lowlevel_notify_inval_entry(f->se->ch,
@@ -4018,7 +4013,7 @@ fuse_invalidate_all_nodes()
 void
 fuse_gc()
 {
-  syslog(LOG_INFO,"running thorough garbage collection");
+  SysLog::info("running thorough garbage collection");
   node_gc();
   msgbuf_gc();
   fuse_malloc_trim();
@@ -4027,7 +4022,7 @@ fuse_gc()
 void
 fuse_gc1()
 {
-  syslog(LOG_INFO,"running basic garbage collection");
+  SysLog::info("running basic garbage collection");
   node_gc1();
   msgbuf_gc_10percent();
   fuse_malloc_trim();

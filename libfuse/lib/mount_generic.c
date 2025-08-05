@@ -6,9 +6,7 @@
   See the file COPYING.LIB.
 */
 
-#include "config.h"
 #include "fuse_i.h"
-#include "fuse_misc.h"
 #include "fuse_opt.h"
 #include "mount_util.h"
 
@@ -40,10 +38,6 @@
 
 #define FUSERMOUNT_PROG		"fusermount"
 #define FUSE_COMMFD_ENV		"_FUSE_COMMFD"
-
-#ifndef HAVE_FORK
-#define fork() vfork()
-#endif
 
 #ifndef MS_DIRSYNC
 #define MS_DIRSYNC 128
