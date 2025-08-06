@@ -20,8 +20,21 @@ def build(containerfile,
             f'--build-arg=BRANCH={branch}',
             f'--build-arg=BUILD_TIMESTAMP={timestamp}',
             'buildtools/']
+    # TODO: Capture output and write to log
     print(args)
-    subprocess.run(args)
+    rv = subprocess.run(args)
+    report_filepath = os.path.join(pkgdirpath,"build-report.txt")
+    with open(report_filepath,"a+") as f:
+        build = os.path.basename(containerfile)
+        f.write(build + ": ")
+        f.write(f"branch={branch}; ")
+        f.write(f"timestamp={timestamp}; ")
+        f.write("rv=")
+        if rv.returncode == 0:
+            f.write("success;")
+        else:
+            f.write("fail;")
+        f.write("\n")
 
 
 def setup():
