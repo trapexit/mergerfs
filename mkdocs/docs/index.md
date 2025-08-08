@@ -68,8 +68,8 @@ A         +      B        =       C
 |   +-- file1    |   |            |   +-- file1
 |                |   +-- file2    |   +-- file2
 +-- /dir2        |   +-- file3    |   +-- file3
-|   |            +-- /dir3        |
-|   +-- file4    |   |            +-- /dir2
+|   |            |   |            |
++-- /dir2        |   |            +-- /dir2
 |                |   +-- file5    |   |
 +-- file6        +-- file7        |   +-- file4
 +-- file7                         |
