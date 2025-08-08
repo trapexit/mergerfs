@@ -23,13 +23,14 @@
 #include "fs_umount2.hpp"
 #include "fs_wait_for_mount.hpp"
 #include "gidcache.hpp"
+#include "maintenance_thread.hpp"
+#include "oom.hpp"
 #include "option_parser.hpp"
 #include "procfs.hpp"
 #include "resources.hpp"
 #include "strvec.hpp"
 #include "syslog.hpp"
 #include "version.hpp"
-#include "maintenance_thread.hpp"
 
 #include "fuse_access.hpp"
 #include "fuse_bmap.hpp"
@@ -162,6 +163,27 @@ namespace l
     resources::maxout_rlimit_nofile();
     resources::maxout_rlimit_fsize();
     resources::setpriority(scheduling_priority_);
+  }
+
+  static
+  void
+  set_oom_score_adj()
+  {
+    int rv;
+    int orig;
+    int score;
+
+    if(!oom::has_oom_score_adj())
+      return;
+
+    score = -990;
+
+    orig = oom::get_oom_score_adj();
+    rv   = oom::set_oom_score_adj(score);
+
+    SysLog::info("set oom_score_adj to {}, originally {}",
+                 score,
+                 orig);
   }
 
   static
@@ -318,6 +340,7 @@ namespace l
     });
     l::setup_resources(cfg->scheduling_priority);
     l::setup_signal_handlers();
+    l::set_oom_score_adj();
     l::get_fuse_operations(ops,cfg->nullrw);
 
     if(cfg->lazy_umount_mountpoint)

@@ -1,0 +1,68 @@
+/*
+  ISC License
+
+  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include "oom.hpp"
+
+#include "fs_exists.hpp"
+
+#include "fmt/core.h"
+
+#include <fstream>
+#include <tuple>
+
+
+constexpr char SELF_OOM_SCORE_ADJ[] = "/proc/self/oom_score_adj";
+
+bool
+oom::has_oom_score_adj()
+{
+  return fs::exists(SELF_OOM_SCORE_ADJ);
+}
+
+int
+oom::get_oom_score_adj()
+{
+  int score;
+  std::ifstream ifs;
+
+  ifs.open(SELF_OOM_SCORE_ADJ);
+  if(!ifs)
+    return 0;
+
+  ifs >> score;
+
+  ifs.close();
+
+  return score;
+}
+
+int
+oom::set_oom_score_adj(const int score_)
+{
+  std::ofstream ofs;
+
+  ofs.open(SELF_OOM_SCORE_ADJ);
+  if(!ofs)
+    return -errno;
+
+  ofs << fmt::format("{}",score_);
+
+  ofs.close();
+
+  return 0;
+}
