@@ -12,4 +12,5 @@
 * Sets oom_score_adj to -990 to limit OOM Killer risk
 * Increases available file descriptor and file size limit for itself
 * Lowers scheduling priority to -10 (by default)
-* readahead values of mergerfs itself and managed filesystems can be modified
+* readahead values of mergerfs itself and managed filesystems can be
+  modified
