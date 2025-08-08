@@ -5,7 +5,7 @@
 [union filesystem](https://en.wikipedia.org/wiki/Union_mount) geared
 towards simplifying storage and management of files across numerous
 commodity storage devices. It is similar to **mhddfs**, **unionfs**,
-**aufs**, and **DrivePool** .
+**aufs**, and **DrivePool**.
 
 
 ## Features
