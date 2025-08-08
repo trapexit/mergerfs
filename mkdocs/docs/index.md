@@ -69,15 +69,16 @@ A         +      B        =       C
 |                |   +-- file3    |   +-- file2
 +-- /dir2        |                |   +-- file3
 |   |            +-- /dir3        |
-|   +-- file4        |            +-- /dir2
-|                     +-- file5   |   |
-+-- file6                         |   +-- file4
-                                  |
+|   +-- file4    |   |            +-- /dir2
+|                |   +-- file5    |   |
++-- file6        +-- file7        |   +-- file4
++-- file7                         |
                                   +-- /dir3
                                   |   |
                                   |   +-- file5
                                   |
                                   +-- file6
+                                  +-- file7
 ```
 
 ## Getting Started
