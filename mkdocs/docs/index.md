@@ -72,13 +72,13 @@ A         +      B        =       C
 +-- /dir2        |                +-- /dir2
 |   |            |                |   |
 |   *-- file4    |                |   +-- file4
-+-- file7                         |
-                                  +-- /dir3
-                                  |   |
-                                  |   +-- file5
-                                  |
-                                  +-- file6
-                                  +-- file7
+|                |                |
+|                +-- /dir3        +-- /dir3
+|                |   |            |   |
+|                |   +-- file5    |   +-- file5
+|                |                |
++-- file6        |                +-- file6
++-- file7        +-- file7        +-- file7
 ```
 
 ## Getting Started
