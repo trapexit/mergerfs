@@ -10,7 +10,7 @@ and **aufs**.
 ## Features
 
 * Logically combine numerous filesystems/paths into a single
-  mount point (JBOF: Just a Bunch of Filesystems)
+  mount point (JBOFS: Just a Bunch of File Systems)
 * Combine paths of the same or different filesystems
 * Ability to add or remove filesystems/paths without impacting the
   rest of the data
