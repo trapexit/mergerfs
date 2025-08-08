@@ -7,6 +7,7 @@ towards simplifying storage and management of files across numerous
 commodity storage devices. It is similar to **mhddfs**, **unionfs**,
 and **aufs**.
 
+
 ## Features
 
 * Logically combine numerous filesystems/paths into a single
