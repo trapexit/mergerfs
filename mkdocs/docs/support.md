@@ -22,7 +22,8 @@ directly.](mailto:support@spawn.link)**
 * [Information about the broader problem along with any attempted
   solutions.](https://xyproblem.info)
 * Solution already ruled out and why.
-* The details from the output of the `mergerfs.collect-info` tool.
+* The details from the output of the
+  [mergerfs.collect-info](tooling.md#mergerfscollect-info) tool.
 * Alternatively:
     * Version of mergerfs: `mergerfs --version`
     * mergerfs settings / arguments: from fstab, systemd unit, command

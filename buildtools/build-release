@@ -23,6 +23,8 @@ def build(containerfile,
     # TODO: Capture output and write to log
     print(args)
     rv = subprocess.run(args)
+
+    os.makedirs(pkgdirpath,exist_ok=True)
     report_filepath = os.path.join(pkgdirpath,"build-report.txt")
     with open(report_filepath,"a+") as f:
         build = os.path.basename(containerfile)
