@@ -1,4 +1,4 @@
-# Resource Usage
+# Resource Usage and Setup
 
 * configurable number of threads
     * reading from kernel
