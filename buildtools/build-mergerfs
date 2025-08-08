@@ -8,7 +8,6 @@ git \
     clone \
     --single-branch \
     --branch="${BRANCH}" \
-    --depth=1 \
     "${REPO_URL}" \
     "${SRCDIR}"
 
