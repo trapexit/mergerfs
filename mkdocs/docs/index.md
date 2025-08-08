@@ -65,9 +65,9 @@ A         +      B        =       C
 |                |                |
 +-- /dir1        +-- /dir1        +-- /dir1
 |   |            |   |            |   |
-|   +-- file1    |   +-- file2    |   +-- file1
-|                |   +-- file3    |   +-- file2
-+-- /dir2        |                |   +-- file3
+|   +-- file1    |   |            |   +-- file1
+|                |   +-- file2    |   +-- file2
++-- /dir2        |   +-- file3    |   +-- file3
 |   |            +-- /dir3        |
 |   +-- file4    |   |            +-- /dir2
 |                |   +-- file5    |   |
