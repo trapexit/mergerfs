@@ -29,6 +29,7 @@ TAR 	  ?= tar
 TOUCH 	  ?= touch
 
 BUILDDIR := build
+GITREF    = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
 
 ifndef GIT_REPO
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
@@ -302,56 +303,56 @@ release:
 	./buildtools/build-release \
 		--target=all \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-sample
 release-sample:
 	./buildtools/build-release \
 		--target=debian.12.amd64 \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-amd64
 release-amd64:
 	./buildtools/build-release \
 		--target=amd64 \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-arm64
 release-arm64:
 	./buildtools/build-release \
 		--target=arm64 \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-riscv64
 release-riscv64:
 	./buildtools/build-release \
 		--target=riscv64 \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-armhf
 release-armhf:
 	./buildtools/build-release \
 		--target=armhf \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-static
 release-static:
 	./buildtools/build-release \
 		--target=static \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 .PHONY: release-tarball
 release-tarball:
 	./buildtools/build-release \
 		--target=tarball \
 		$(if $(CLEANUP),--cleanup) \
-		--branch=$(shell git branch --show-current)
+		--branch=$(GITREF)
 
 
 .PHONY: tags
