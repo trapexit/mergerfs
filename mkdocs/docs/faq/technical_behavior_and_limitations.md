@@ -172,20 +172,26 @@ removed to simplify the codebase.
 
 mergerfs is a multithreaded application in order to handle requests
 from the kernel concurrently. Each FUSE message has a header with
-certain details about the request include the process ID (pid) of the
-requesting application, the process' effective user id (uid), and
+certain details about the request including the process ID (pid) of
+the requesting application, the process' effective user id (uid), and
 group id (gid). To ensure proper POSIX filesystem behavior and
 security mergerfs must change its identity to match that of the
-requester when performing the core filesystem function on the
-underlying filesystem. On most Unix/POSIX based system a process and
-all its threads are under the same uid and gid. However, on Linux each
-thread may have its own credentials. This allows mergerfs to be
-multithreaded and for each thread to change to the credentials
-(seteuid,setegid) as required by the incoming message it is
-handling. However, on FreeBSD this is not possible at the moment
-(though there has been
-[discussions](https://wiki.freebsd.org/Per-Thread%20Credentials) and
+requester when performing the certain functions on the underlying
+filesystem. As required by standards most Unix/POSIX based systems a
+process and all its threads are under the same uid and gid. However,
+on Linux each thread **may** have its own credentials. This allows
+mergerfs to be multithreaded and for each thread to change to the
+credentials as required by the incoming message it is
+handling. However, currently on FreeBSD this is not possible (though
+there has been
+[discussions](https://wiki.freebsd.org/Per-Thread%20Credentials)) and
 as such must change the credentials of the whole application when
 actioning messages. mergerfs does optimize this behavior by only
 changing credentials and locking the thread to do so if the process is
-currently not the same as what is necessary by the incoming request.
+currently not the same as what is necessary by the incoming
+request. As a result of this design FreeBSD may experience more
+contention and therefore lower performance than Linux.
+
+Additionally, mergerfs [utilizes a cache for supplemental
+groups](../known_issues_bugs.md#supplemental-user-groups) due the the
+high cost of querying that information.

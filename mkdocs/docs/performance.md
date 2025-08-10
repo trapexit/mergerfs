@@ -43,7 +43,7 @@ before changing them to understand how functionality will change.
 * disable `async_read`
 * use [symlinkify](config/symlinkify.md) if your data is largely
   static and read-only
-* use [tiered cache](usage_patterns.md) devices
+* use [tiered cache](extended_usage_patterns.md) devices
 * use LVM and LVM cache to place a SSD in front of your HDDs
 
 

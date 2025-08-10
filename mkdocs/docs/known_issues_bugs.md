@@ -2,6 +2,23 @@
 
 ## mergerfs
 
+### FreeBSD version
+
+* FreeBSD doesn't have per thread credentials meaning threads must
+  block to change credentials as required by numerous filesystem
+  functions. This impacts performance.
+* FreeBSD's FUSE implementation is lacking many features of Linux.
+    * passthrough
+    * statx
+    * lazy umount
+    * oom_score_adj
+    * fuse_msg_size
+    * kernel symlink caching
+    * kernel readdir caching
+    * writeback caching
+    * ...
+
+
 ### Supplemental user groups
 
 #### Supplemental group caching
@@ -83,28 +100,30 @@ more details.
 
 ### SQLite3, Plex, Jellyfin do not work with mergerfs
 
- It does. If you're trying to put the software's config / metadata /
-database on mergerfs you can't set
-[cache.files=off](config/cache.md) (unless you use Linux v6.6 or
-above) because they are using **sqlite3** with **mmap** enabled.
+It does. If you're trying to put the software's config / metadata /
+database on mergerfs you can't set [cache.files=off](config/cache.md)
+(unless you use Linux v6.6 or above and
+[direct-io-allow-mmap](config/options.md) is enabled) because they are
+using **sqlite3** with **mmap** enabled and have failed to properly
+handle the situation where **mmap** may not be available.
 
 That said it is recommended that config and runtime files be stored on
 SSDs on a regular filesystem for performance reasons. See [What should
-mergerfs NOT be used for?](faq/recommendations_and_warnings.md).
+mergerfs NOT be used
+for?](faq/recommendations_and_warnings.md#what-should-mergerfs-not-be-used-for).
 
 Other software that leverages **sqlite3** which require **mmap**
-includes Radarr, Sonarr, and Lidarr. That said many programs use
+includes Radarr, Sonarr, and Lidarr. However, many programs use
 **sqlite3** and do not require **mmap**.
 
 It is recommended that you reach out to the developers of the software
-you are having troubles with and asking them to add a fallback to
-regular file IO when **mmap** is unavailable. It is not only more
-compatible and resilient but also can be more performant in certain
-situations.
+you are having troubles with and ask them to add a fallback to regular
+file IO when **mmap** is unavailable. It is not only more compatible
+but also can be more performant in certain situations.
 
-If the issue is that quick scanning doesn't seem to pick up media then
-be sure to set `func.getattr=newest`. That said a full scan will pick
-up all media and it will put less load on the host to use time based
+If the issue is that quick scans do not seem to pick up media then be
+sure to set `func.getattr=newest`. That said a full scan will pick up
+all media and it will put less load on the host to use time based
 library scans or to configure downloading software to trigger a scan
 when files are added to the pool. See [Does inotify and fanotify
 work?](faq/compatibility_and_integration.md#does-inotify-and-fanotify-work)
@@ -169,7 +188,7 @@ the [mergerfs-tools](https://github.com/trapexit/mergerfs-tools) tool
 ## FUSE and Linux kernel
 
 There have been a number of kernel issues / bugs over the years which
-mergerfs has run into. Here is a list of them for reference and
+mergerfs users have run into. Here is a list of them for reference and
 posterity.
 
 
@@ -225,14 +244,17 @@ lookup which should work across any kernel version.
 
 ### Truncated files
 
-This was a bug with `mmap` and `FUSE` on 32bit platforms. Should be fixed in all LTS releases.
+This was a bug with `mmap` and `FUSE` on 32bit platforms. Should be
+fixed in all LTS releases.
 
 * [https://marc.info/?l=linux-fsdevel&m=155550785230874&w=2](https://marc.info/?l=linux-fsdevel&m=155550785230874&w=2)
 
 
 ### Crashing on OpenVZ
 
-There was a bug in the OpenVZ kernel with regard to how it handles `ioctl` calls. It was making invalid requests which would lead to crashes due to mergerfs not expecting them.
+There was a bug in the OpenVZ kernel with regard to how it handles
+`ioctl` calls. It was making invalid requests which would lead to
+crashes due to mergerfs not expecting them.
 
 * [https://bugs.openvz.org/browse/OVZ-7145](https://bugs.openvz.org/browse/OVZ-7145)
 * [https://www.mail-archive.com/devel@openvz.org/msg37096.html](https://www.mail-archive.com/devel@openvz.org/msg37096.html)

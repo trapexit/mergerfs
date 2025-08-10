@@ -163,7 +163,7 @@ AnyRAID](https://hexos.com/blog/introducing-zfs-anyraid-sponsored-by-eshtek)
 is a feature being developed for ZFS which is intended to provide more
 flexibility in ZFS pools. Allowing a mix of capacity disks to have
 greater capacity than traditional RAID and would allow for partial
-upgrades while keeping live redundency.
+upgrades while keeping live redundancy.
 
 This ZFS feature, as of mid-2025, is extremely early in its development
 and there are no timelines or estimates for when it may be released.
@@ -226,3 +226,71 @@ mergerfs has the feature [symlinkify](config/symlinkify.md) which
 provides a similar behavior but is more flexible in that it is not
 read-only. That said there can still be some software that won't like
 that kind of setup.
+
+
+## rclone union
+
+rclone's [union](https://rclone.org/union) backend allows you to
+create a union of multiple rclone backends and was inspired by
+[mergerfs](https://rclone.org/union/#behavior-policies). Given rclone
+knows more about the underlying backend than mergerfs could it can be
+more efficient than creating a similar union with `rclone mount` and
+mergerfs.
+
+However, it is not uncommon to see users setup rclone mounts and
+combine them with local or other remote filesystems using mergerfs
+given the differing feature sets and focuses of the two projects.
+
+
+## distributed filesystems
+
+* AFS
+* Ceph/CephFS
+* GlusterFS
+* LizardFS
+* MooseFS
+* etc.
+
+Distributed remote filesystems come in many forms. Some offering POSIX
+filesystem compliance and some not. Some providing remote block
+devices or object stores on which a POSIX or POSIX-like filesystem is
+built on top of. Some which are effectively distributed union
+filesystems with duplication.
+
+These filesystems almost always require a significant amount of
+compute to run well and are typically deployed on their own
+hardware. Often in an "orchestrators" + "workers" configuration across
+numerous nodes. This limits their usefulness for casual and homelab
+users. There could also be issues with network congestion and general
+performance if using a single network and that network is slower than
+the storage devices.
+
+While possible to use a distributed filesystem to combine storage
+devices (and typically to provide redundancy) it will require a more
+complicated setup and more compute resources than mergerfs (while also
+offering a different set of capabilities.)
+
+
+## 9P
+
+[9P, the Plan 9 Filesystem
+Protocol,](https://en.wikipedia.org/wiki/9P_(protocol)) is a protocol
+developed for the Plan 9 operation system to help expand on the Unix
+idea that everything should be a file. The protocol made its way to
+other systems and is still widely used. As such 9P is not directly
+comparable to mergerfs but more so to FUSE which mergerfs uses. FUSE
+is also a filesystem protocol (though designed for kernel <->
+userspace communication rather than over a network). FUSE, even more
+than the
+[9P2000.L](https://github.com/chaos/diod/blob/master/protocol.md)
+variant of 9P, is focused primarily on supporting Linux filesystem
+features.
+
+mergerfs leverages FUSE but could have in theory leveraged 9P with a
+reduction in features.
+
+While 9P has [extensive
+usage](https://docs.kernel.org/filesystems/9p.html) in certain
+situations its use in modern userland Linux systems is limited. FUSE
+has largely replaced use cases that may have been implemented with 9P
+servers in the past.

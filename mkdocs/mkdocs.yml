@@ -95,6 +95,7 @@ nav:
   - config/export-support.md
   - config/kernel-permissions-check.md
 - error_handling_and_logging.md
+- resource_usage.md
 - runtime_interface.md
 - remote_filesystems.md
 - tips_notes.md
@@ -103,7 +104,7 @@ nav:
 - benchmarking.md
 - performance.md
 - tooling.md
-- usage_patterns.md
+- extended_usage_patterns.md
 - FAQ:
   - faq/why_isnt_it_working.md
   - faq/reliability_and_scalability.md

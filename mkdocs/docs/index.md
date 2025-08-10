@@ -4,23 +4,27 @@
 [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) based
 [union filesystem](https://en.wikipedia.org/wiki/Union_mount) geared
 towards simplifying storage and management of files across numerous
-commodity storage devices. It is similar to **mhddfs**, **unionfs**,
-and **aufs**.
+commodity storage devices. It is similar to [**mhddfs**, **unionfs**,
+**aufs**, **DrivePool**, etc.](project_comparisons.md).
+
 
 ## Features
 
 * Logically combine numerous filesystems/paths into a single
-  mount point
+  mount point (JBOFS: Just a Bunch of FileSystems)
 * Combine paths of the same or different filesystems
 * Ability to add or remove filesystems/paths without impacting the
   rest of the data
 * Unaffected by individual filesystem failure
 * Configurable file selection and creation placement
+* File IO [passthrough](config/passthrough.md) for near native IO
+  performance (where supported)
 * Works with filesystems of any size
-* Works with filesystems of almost any type
+* Works with filesystems of [almost any
+  type](faq/compatibility_and_integration.md#what-filesystems-can-be-used-as-branches)
 * Ignore read-only filesystems when creating files
-* Hard link copy-on-write / CoW
-* Runtime configurable
+* Hard link [copy-on-write / CoW](config/link_cow.md)
+* [Runtime configurable](runtime_interface.md)
 * Support for extended attributes (xattrs)
 * Support for file attributes (chattr)
 * Support for POSIX ACLs
@@ -30,7 +34,7 @@ and **aufs**.
 
 * Read/write overlay on top of read-only filesystem like OverlayFS
 * File whiteout
-* RAID like parity calculation
+* RAID like parity calculation (see [SnapRAID](https://www.snapraid.it))
 * Redundancy
 * Splitting of files across branches
 
@@ -64,20 +68,22 @@ A         +      B        =       C
 |                |                |
 +-- /dir1        +-- /dir1        +-- /dir1
 |   |            |   |            |   |
-|   +-- file1    |   +-- file2    |   +-- file1
-|                |   +-- file3    |   +-- file2
-+-- /dir2        |                |   +-- file3
-|   |            +-- /dir3        |
-|   +-- file4        |            +-- /dir2
-|                     +-- file5   |   |
-+-- file6                         |   +-- file4
-                                  |
-                                  +-- /dir3
-                                  |   |
-                                  |   +-- file5
-                                  |
-                                  +-- file6
+|   +-- file1    |   |            |   +-- file1
+|                |   +-- file2    |   +-- file2
+|                |   +-- file3    |   +-- file3
+|                |                |
++-- /dir2        |                +-- /dir2
+|   |            |                |   |
+|   *-- file4    |                |   +-- file4
+|                |                |
+|                +-- /dir3        +-- /dir3
+|                |   |            |   |
+|                |   +-- file5    |   +-- file5
+|                |                |
++-- file6        |                +-- file6
++-- file7        +-- file7        +-- file7
 ```
+
 
 ## Getting Started
 

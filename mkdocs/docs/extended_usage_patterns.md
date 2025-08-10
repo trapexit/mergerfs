@@ -1,4 +1,4 @@
-# Usage Patterns
+# Extended Usage Patterns
 
 ## tiered cache
 

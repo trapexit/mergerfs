@@ -2,16 +2,20 @@
 
 ## What should mergerfs NOT be used for?
 
-- databases: Even if the database stored data in separate files
+* databases: Even if the database stored data in separate files
   (mergerfs wouldn't offer much otherwise) the higher latency of the
   indirection will really harm performance. If it is a lightly used
   sqlite3 database then it should be fine.
-- VM images: For the same reasons as databases. VM images are accessed
+* VM images: For the same reasons as databases. VM images are accessed
   very aggressively and mergerfs will introduce a lot of extra latency.
-- As replacement for RAID: mergerfs is just for pooling branches. If
+* As replacement for RAID: mergerfs is just for pooling branches. If
   you need that kind of device performance aggregation or high
   availability you should stick with RAID. However, it is fine to put
   a filesystem which is on a RAID setup in mergerfs.
+  
+**However, if using [passthrough](../config/passthrough.md) the above
+situations are less likely to be a concern. Best to do testing for
+your specific use case.**
 
 
 ## It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?
