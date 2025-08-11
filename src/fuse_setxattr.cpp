@@ -97,7 +97,7 @@ _setxattr_ctrl_file(const char *attrname_,
   if((flags_ & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  rv = cfg->set(key,attrval_);
+  rv = cfg->set(key,std::string{attrval_,attrvalsize_});
   if(rv < 0)
     return rv;
 
