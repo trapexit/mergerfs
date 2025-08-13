@@ -95,6 +95,7 @@ cache.files=off
 category.create=pfrd
 func.getattr=newest
 dropcacheonclose=false
+# comments and empty lines are supported
 ```
 
 #### /etc/mergerfs/branches/media/
