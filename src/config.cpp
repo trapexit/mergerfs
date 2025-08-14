@@ -381,7 +381,7 @@ Config::from_stream(std::istream &istrm_,
   while(std::getline(istrm_,line,'\n'))
     {
       line = str::trim(line);
-      if(!line.empty() && (line[0] == '#'))
+      if(line.empty() || (line[0] == '#'))
         continue;
 
       str::splitkv(line,'=',&key,&val);
