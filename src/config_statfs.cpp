@@ -38,7 +38,7 @@ StatFS::to_string() const
 
 template<>
 int
-StatFS::from_string(const std::string &s_)
+StatFS::from_string(const std::string_view s_)
 {
   if(s_ == "base")
     _data = StatFS::ENUM::BASE;

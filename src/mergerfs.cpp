@@ -181,6 +181,7 @@ namespace l
     orig = oom::get_oom_score_adj();
     rv   = oom::set_oom_score_adj(score);
 
+    (void)rv;
     SysLog::info("set oom_score_adj to {}, originally {}",
                  score,
                  orig);

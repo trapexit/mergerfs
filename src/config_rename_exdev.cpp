@@ -39,7 +39,7 @@ RenameEXDEV::to_string(void) const
 
 template<>
 int
-RenameEXDEV::from_string(const std::string &s_)
+RenameEXDEV::from_string(const std::string_view s_)
 {
   if(s_ == "passthrough")
     _data = RenameEXDEV::ENUM::PASSTHROUGH;

@@ -35,7 +35,7 @@ public:
   }
 
   int
-  from_string(const std::string &) final
+  from_string(const std::string_view) final
   {
     return -EROFS;
   }

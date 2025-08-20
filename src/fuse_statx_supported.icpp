@@ -210,7 +210,11 @@ FUSE::statx(const char        *fusepath_,
   if(Config::is_ctrl_file(fusepath_))
     return ::_statx_controlfile(st_);
 
-  return ::_statx(fusepath_,flags_|AT_STATX_DONT_SYNC,mask_,st_,timeout_);
+  return ::_statx(fusepath_,
+                  flags_|AT_STATX_DONT_SYNC,
+                  mask_,
+                  st_,
+                  timeout_);
 }
 
 int
@@ -222,5 +226,9 @@ FUSE::statx_fh(const uint64_t     fh_,
 {
   FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
 
-  return ::_statx(fi->fusepath.c_str(),flags_,mask_,st_,timeout_);
+  return ::_statx(fi->fusepath.c_str(),
+                  flags_|AT_STATX_DONT_SYNC,
+                  mask_,
+                  st_,
+                  timeout_);
 }

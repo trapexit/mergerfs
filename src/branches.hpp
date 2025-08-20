@@ -46,7 +46,7 @@ public:
     Impl(const u64 &default_minfreespace);
 
   public:
-    int from_string(const std::string &str) final;
+    int from_string(const std::string_view str) final;
     std::string to_string(void) const final;
 
   public:
@@ -73,12 +73,19 @@ public:
   {}
 
 public:
-  int from_string(const std::string &str) final;
+  int from_string(const std::string_view str) final;
   std::string to_string(void) const final;
 
 public:
   operator Ptr()   const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
   Ptr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
+
+public:
+  Impl::iterator begin() { return _impl->begin(); }
+  Impl::iterator end() { return _impl->end(); }
+  Impl::const_iterator begin() const { return _impl->begin(); }
+  Impl::const_iterator end() const { return _impl->end(); }
+
 
 public:
   void find_and_set_mode_ro();
@@ -90,7 +97,7 @@ public:
   SrcMounts(Branches &b);
 
 public:
-  int from_string(const std::string &str) final;
+  int from_string(const std::string_view str) final;
   std::string to_string(void) const final;
 
 private:

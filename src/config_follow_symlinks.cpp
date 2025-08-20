@@ -41,7 +41,7 @@ FollowSymlinks::to_string(void) const
 
 template<>
 int
-FollowSymlinks::from_string(const std::string &s_)
+FollowSymlinks::from_string(const std::string_view s_)
 {
   if(s_ == "never")
     _data = FollowSymlinks::ENUM::NEVER;

@@ -4,11 +4,18 @@
 
 #include "fileinfo.hpp"
 
+#include <functional>
+#include <map>
+#include <string>
+
 
 constexpr int INVALID_BACKING_ID = -1;
 
 class State
 {
+public:
+  State();
+
 public:
   struct OpenFile
   {
@@ -24,9 +31,26 @@ public:
     FileInfo *fi;
   };
 
+public:
+  struct GetSet
+  {
+    std::function<std::string()> get;
+    std::function<int(const std::string_view)> set;
+  };
+
+  void set_getset(const std::string   &name,
+                  const State::GetSet &gs);
+
+  int get(const std::string &key,
+          std::string       &val);
+  int set(const std::string      &key,
+          const std::string_view  val);
 
 public:
   using OpenFileMap = boost::concurrent_flat_map<u64,OpenFile>;
+
+private:
+  std::map<std::string,GetSet> _getset;
 
 public:
   OpenFileMap open_files;

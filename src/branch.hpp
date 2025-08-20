@@ -57,7 +57,7 @@ public:
   bool ro_or_nc(void) const;
 
 public:
-  int from_string(const std::string &str) final;
+  int from_string(const std::string_view str) final;
   std::string to_string(void) const final;
 
 public:

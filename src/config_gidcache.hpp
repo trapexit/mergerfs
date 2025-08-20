@@ -10,7 +10,7 @@ public:
 
 public:
   std::string to_string(void) const final;
-  int from_string(const std::string &) final;
+  int from_string(const std::string_view) final;
 };
 
 class GIDCacheRemoveTimeout : public ToFromString
@@ -21,5 +21,5 @@ public:
 
 public:
   std::string to_string(void) const final;
-  int from_string(const std::string &) final;
+  int from_string(const std::string_view) final;
 };

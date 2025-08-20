@@ -19,9 +19,7 @@
 #pragma once
 
 #include "fuse_kernel.h"
-
-#include <sys/stat.h>
-#include <time.h>
+#include "int_types.h"
 
 #include <string>
 
@@ -32,13 +30,13 @@ namespace symlinkify
   inline
   bool
   can_be_symlink(const struct stat &st_,
-                 const time_t       timeout_)
+                 const s64          timeout_)
   {
     if(S_ISDIR(st_.st_mode) ||
        (st_.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
       return false;
 
-    const time_t now = ::time(NULL);
+    const s64 now = ::time(NULL);
 
     return (((now - st_.st_mtime) > timeout_) &&
             ((now - st_.st_ctime) > timeout_));
@@ -48,13 +46,13 @@ namespace symlinkify
   inline
   bool
   can_be_symlink(const struct fuse_statx &st_,
-                 const time_t             timeout_)
+                 const s64                timeout_)
   {
     if(S_ISDIR(st_.mode) ||
        (st_.mode & (S_IWUSR|S_IWGRP|S_IWOTH)))
       return false;
 
-    const time_t now = ::time(NULL);
+    const s64 now = ::time(NULL);
 
     return (((now - st_.mtime.tv_sec) > timeout_) &&
             ((now - st_.ctime.tv_sec) > timeout_));
@@ -80,5 +78,35 @@ namespace symlinkify
     st_->mode = (((st_->mode & ~S_IFMT) | S_IFLNK) | 0777);
     st_->size = target_.size();
     st_->blocks = 0;
+  }
+
+  static
+  inline
+  void
+  convert_if_can_be_symlink(const std::string &target_,
+                            struct stat       *st_,
+                            const s64          timeout_)
+  {
+    if(timeout_ < 0)
+      return;
+    if(!symlinkify::can_be_symlink(*st_,timeout_))
+      return;
+
+    symlinkify::convert(target_,st_);
+  }
+
+  static
+  inline
+  void
+  convert_if_can_be_symlink(const std::string &target_,
+                            fuse_statx        *st_,
+                            const s64          timeout_)
+  {
+    if(timeout_ < 0)
+      return;
+    if(!symlinkify::can_be_symlink(*st_,timeout_))
+      return;
+
+    symlinkify::convert(target_,st_);
   }
 }

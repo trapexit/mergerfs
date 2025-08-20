@@ -44,7 +44,7 @@ ConfigPageSize::to_string(void) const
 }
 
 int
-ConfigPageSize::from_string(const std::string &s_)
+ConfigPageSize::from_string(const std::string_view s_)
 {
   uint64_t v;
   uint64_t pagesize;

@@ -41,7 +41,7 @@ LinkEXDEV::to_string(void) const
 
 template<>
 int
-LinkEXDEV::from_string(const std::string &s_)
+LinkEXDEV::from_string(const std::string_view s_)
 {
   if(s_ == "passthrough")
     _data = LinkEXDEV::ENUM::PASSTHROUGH;

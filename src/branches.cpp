@@ -74,9 +74,9 @@ namespace l
 {
   static
   void
-  split(const std::string &s_,
-        std::string       *instr_,
-        std::string       *values_)
+  split(const std::string_view  s_,
+        std::string            *instr_,
+        std::string            *values_)
   {
     u64 offset;
 
@@ -222,8 +222,8 @@ namespace l
 
   static
   int
-  set(const std::string &str_,
-      Branches::Impl    *branches_)
+  set(const std::string_view  str_,
+      Branches::Impl         *branches_)
   {
     int rv;
     StrVec paths;
@@ -244,8 +244,8 @@ namespace l
 
   static
   int
-  add_begin(const std::string &str_,
-            Branches::Impl    *branches_)
+  add_begin(const std::string_view  str_,
+            Branches::Impl         *branches_)
   {
     int rv;
     std::vector<std::string> paths;
@@ -268,8 +268,8 @@ namespace l
 
   static
   int
-  add_end(const std::string &str_,
-          Branches::Impl    *branches_)
+  add_end(const std::string_view  str_,
+          Branches::Impl         *branches_)
   {
     int rv;
     StrVec paths;
@@ -310,8 +310,8 @@ namespace l
 
   static
   int
-  erase_fnmatch(const std::string &str_,
-                Branches::Impl    *branches_)
+  erase_fnmatch(const std::string_view  str_,
+                Branches::Impl         *branches_)
   {
     StrVec patterns;
 
@@ -336,7 +336,7 @@ namespace l
 }
 
 int
-Branches::Impl::from_string(const std::string &s_)
+Branches::Impl::from_string(const std::string_view s_)
 {
   std::string instr;
   std::string values;
@@ -403,7 +403,7 @@ Branches::Impl::to_paths() const
 }
 
 int
-Branches::from_string(const std::string &str_)
+Branches::from_string(const std::string_view str_)
 {
   int rv;
   Branches::Ptr impl;
@@ -462,7 +462,7 @@ SrcMounts::SrcMounts(Branches &b_)
 }
 
 int
-SrcMounts::from_string(const std::string &s_)
+SrcMounts::from_string(const std::string_view s_)
 {
   //  return _branches.from_string(s_);
   return 0;

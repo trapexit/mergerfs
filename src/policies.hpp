@@ -43,8 +43,8 @@ struct Policies
 {
   struct Action
   {
-    static Policy::ActionImpl *find(const std::string &name);
-    
+    static Policy::ActionImpl *find(const std::string_view name);
+
     static Policy::All::Action     all;
     static Policy::EPAll::Action   epall;
     static Policy::EPFF::Action    epff;
@@ -69,8 +69,8 @@ struct Policies
 
   struct Create
   {
-    static Policy::CreateImpl *find(const std::string &name);
-    
+    static Policy::CreateImpl *find(const std::string_view name);
+
     static Policy::All::Create     all;
     static Policy::EPAll::Create   epall;
     static Policy::EPFF::Create    epff;
@@ -95,7 +95,7 @@ struct Policies
 
   struct Search
   {
-    static Policy::SearchImpl *find(const std::string &name);
+    static Policy::SearchImpl *find(const std::string_view name);
 
     static Policy::All::Search     all;
     static Policy::EPAll::Search   epall;

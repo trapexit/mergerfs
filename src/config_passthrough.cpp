@@ -41,7 +41,7 @@ Passthrough::to_string() const
 
 template<>
 int
-Passthrough::from_string(const std::string &s_)
+Passthrough::from_string(const std::string_view s_)
 {
   if(s_ == "off")
     _data = Passthrough::ENUM::OFF;
