@@ -91,13 +91,6 @@ on [page caching](config/cache.md).
 
 ## 3rd Party Software
 
-### NFS clients returning ESTALE / Stale file handle
-
-NFS generally does not like out of band changes. Take a look at the
-section on NFS in the [remote-filesystems](remote_filesystems.md) for
-more details.
-
-
 ### SQLite3, Plex, Jellyfin do not work with mergerfs
 
 It does. If you're trying to put the software's config / metadata /
@@ -130,12 +123,37 @@ work?](faq/compatibility_and_integration.md#does-inotify-and-fanotify-work)
 for more details.
 
 
+### backup software
+
+Some software, like borgbackup and others, leverage inodes as one of a
+number of metrics to notice changes in files. Depending on how [inode
+generation is configured](config/inodecalc.md) it is possible that the
+same file may have different inodes one mount to another and as such
+interfere with the expected stability of the value. In such cases you
+may need to disable the use of the inode in the software if possible
+or change the [inodecalc](config/inodecalc.md) setting if possible.
+
+Generally speaking, in modern setups where there are many non-fully
+complient POSIX filesystem in use, reliance on inode to have a
+specific meaning is not always reasonable. FUSE, for instance, has no
+requirement that inode values need to be unique or that two files that
+happen to be the same underlying file have the same inode.
+
+
+### NFS clients returning ESTALE / Stale file handle
+
+NFS generally does not like out of band changes. Take a look at the
+section on NFS in the [remote-filesystems](remote_filesystems.md) for
+more details.
+
+
 ### my 32bit software has problems
 
 Some software have problems with 64bit inode values. The symptoms can
 include EOVERFLOW errors when trying to list files. You can address
 this by setting `inodecalc` to one of the 32bit based algos as
 described in the relevant section.
+
 
 ### Moving files and directories fails with Samba
 

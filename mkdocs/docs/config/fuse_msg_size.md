@@ -3,6 +3,11 @@
 * `fuse_msg_size=UINT|SIZE`
 * Defaults to `1M`
 * Performance improvements often peak at about `4M`
+* If the value is a `SIZE` in the form of `xB`, `xK`, `xM`, `xG`, or
+  `xT` then it will choose the closest multiple of the system page
+  size
+* If the value is just an integer without a size multipler suffix then
+  it is treated as a page count
 
 FUSE applications communicate with the kernel over a special character
 device: `/dev/fuse`. A large portion of the overhead associated with
@@ -41,9 +46,6 @@ to peak around 4MiB.
 On kernels before v4.20 the option has no effect. On kernels between
 v4.20 and v6.13 the max value is 256. On kernels >= v6.13 the maximum
 value is 65535.
-
-Since page size can differ between systems mergerfs can take a value in
-bytes and will convert it to the proper number of pages (rounded up).
 
 NOTE: If you intend to enable `cache.files` you should also set
 [readahead](readahead.md) to match `fuse_msg_size`.

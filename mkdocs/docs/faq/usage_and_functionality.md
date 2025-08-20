@@ -1,5 +1,14 @@
 # Usage and Functionality
 
+## What happens when file paths overlap?
+
+It depends on the situation and the configuration of mergerfs. The
+user chooses the algorithm (policy) on how to behave when a particular
+filesystem function is requested. Which file to select or act on.
+
+See how [policies](../config/functions_categories_policies.md) work.
+
+
 ## Can mergerfs be used with filesystems which already have data?
 
 Yes. mergerfs is really just a proxy and does **NOT** interfere with

@@ -141,6 +141,21 @@ For semi-static data mergerfs + [SnapRAID](http://www.snapraid.it)
 provides a similar, but not real-time, solution.
 
 
+## NonRAID
+
+* [https://github.com/qvr/nonraid](https://github.com/qvr/nonraid)
+
+[NonRAID](https://github.com/qvr/nonraid#how-it-works) is a fork of
+UnRAID's storage array kernel driver. Effectively it is like RAID5 at
+the block device layer without treating the collection of devices as a
+single device. Each device gets a virtual block device associated with
+it which can be formatted with the filesystem of the user's choice and
+will be individually accessible. Similar to SnapRAID but real-time.
+
+Given each device has its own filesystem like a traditional setup it can
+be used with mergerfs for those looking for a unified view.
+
+
 ## ZFS
 
 * [https://en.wikipedia.org/wiki/ZFS](https://en.wikipedia.org/wiki/ZFS)
@@ -275,7 +290,7 @@ offering a different set of capabilities.)
 
 [9P, the Plan 9 Filesystem
 Protocol,](https://en.wikipedia.org/wiki/9P_(protocol)) is a protocol
-developed for the Plan 9 operation system to help expand on the Unix
+developed for the Plan 9 operating system to help expand on the Unix
 idea that everything should be a file. The protocol made its way to
 other systems and is still widely used. As such 9P is not directly
 comparable to mergerfs but more so to FUSE which mergerfs uses. FUSE
