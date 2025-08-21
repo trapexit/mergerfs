@@ -23,6 +23,19 @@ directory in the mergerfs pool that includes all the paths you need if
 you want links and rename to work.
 
 
+## Do reflink, FICLONE, or FICLONERANGE work?
+
+Unfortunately not. FUSE, the technology mergerfs is based on, does not
+support the `clone_file_range` feature needed for it to work. mergerfs
+won't even know such a request is made. The kernel will simply return
+an error back to the application making the request.
+
+Should FUSE gain the ability mergerfs will be updated to support it.
+
+That said: mergerfs itself will attempt to use `FICLONE` when copying
+data between files in the limited cases where it copies/moves files.
+
+
 ## How does mergerfs handle moving and copying of files?
 
 This is a _very_ common mistaken assumption regarding how filesystems
@@ -73,15 +86,8 @@ final destination. That temporary file name will typically be random
 and have no indication of the type of file being written. At best
 something could be done on rename.
 
-
-## Does FICLONE or FICLONERANGE work?
-
-Unfortunately not. FUSE, the technology mergerfs is based on, does not
-support the `clone_file_range` feature needed for it to work. mergerfs
-won't even know such a request is made. The kernel will simply return
-an error back to the application making the request.
-
-Should FUSE gain the ability mergerfs will be updated to support it.
+Additional reading: [Intro to Filesystems:
+Workflows](../intro_to_filesystems.md#workflows)
 
 
 ## Why does the total available space in mergerfs not equal outside?

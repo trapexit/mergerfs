@@ -87,6 +87,10 @@ CXXFLAGS ?= \
 	$(STATIC_FLAGS) \
 	$(LTO_FLAGS) \
 	-Wall \
+	-Wpessimizing-move \
+	-Werror=pessimizing-move \
+	-Wredundant-move \
+	-Werror=redundant-move \
 	-Wno-unused-result \
 	-pipe
 override CXXFLAGS += \
