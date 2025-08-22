@@ -10,28 +10,28 @@
       
       
       
-        <link rel="canonical" href="https://trapexit.github.io/mergerfs/preview/faq/reliability_and_scalability/">
+        <link rel="canonical" href="https://trapexit.github.io/mergerfs/preview/runtime_interface/">
       
       
-        <link rel="prev" href="../why_isnt_it_working/">
+        <link rel="prev" href="../resource_usage/">
       
       
-        <link rel="next" href="../usage_and_functionality/">
+        <link rel="next" href="../remote_filesystems/">
       
       
-      <link rel="icon" href="../../logo.png">
+      <link rel="icon" href="../logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
-        <title>Reliability and Scalability - mergerfs</title>
+        <title>Runtime Interface - mergerfs</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,7 +50,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reliability-and-scalability" class="md-skip">
+        <a href="#runtime-interface" class="md-skip">
           Skip to content
         </a>
       
@@ -96,9 +96,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mergerfs" class="md-header__button md-logo" aria-label="mergerfs" data-md-component="logo">
+    <a href=".." title="mergerfs" class="md-header__button md-logo" aria-label="mergerfs" data-md-component="logo">
       
-  <img src="../../logo.png" alt="logo">
+  <img src="../logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Reliability and Scalability
+              Runtime Interface
             
           </span>
         </div>
@@ -248,9 +248,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mergerfs" class="md-nav__button md-logo" aria-label="mergerfs" data-md-component="logo">
+    <a href=".." title="mergerfs" class="md-nav__button md-logo" aria-label="mergerfs" data-md-component="logo">
       
-  <img src="../../logo.png" alt="logo">
+  <img src="../logo.png" alt="logo">
 
     </a>
     mergerfs
@@ -277,7 +277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -299,7 +299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -359,7 +359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/installation/" class="md-nav__link">
+      <a href="../setup/installation/" class="md-nav__link">
         
   
   
@@ -382,7 +382,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/upgrade/" class="md-nav__link">
+      <a href="../setup/upgrade/" class="md-nav__link">
         
   
   
@@ -405,7 +405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/build/" class="md-nav__link">
+      <a href="../setup/build/" class="md-nav__link">
         
   
   
@@ -435,7 +435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../terminology/" class="md-nav__link">
+      <a href="../terminology/" class="md-nav__link">
         
   
   
@@ -457,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../intro_to_filesystems/" class="md-nav__link">
+      <a href="../intro_to_filesystems/" class="md-nav__link">
         
   
   
@@ -517,7 +517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/options/" class="md-nav__link">
+      <a href="../config/options/" class="md-nav__link">
         
   
   
@@ -540,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/deprecated_options/" class="md-nav__link">
+      <a href="../config/deprecated_options/" class="md-nav__link">
         
   
   
@@ -563,7 +563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/branches/" class="md-nav__link">
+      <a href="../config/branches/" class="md-nav__link">
         
   
   
@@ -586,7 +586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/branches-mount-timeout/" class="md-nav__link">
+      <a href="../config/branches-mount-timeout/" class="md-nav__link">
         
   
   
@@ -609,7 +609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/functions_categories_policies/" class="md-nav__link">
+      <a href="../config/functions_categories_policies/" class="md-nav__link">
         
   
   
@@ -632,7 +632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/minfreespace/" class="md-nav__link">
+      <a href="../config/minfreespace/" class="md-nav__link">
         
   
   
@@ -655,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/func_readdir/" class="md-nav__link">
+      <a href="../config/func_readdir/" class="md-nav__link">
         
   
   
@@ -678,7 +678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/rename_and_link/" class="md-nav__link">
+      <a href="../config/rename_and_link/" class="md-nav__link">
         
   
   
@@ -701,7 +701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/moveonenospc/" class="md-nav__link">
+      <a href="../config/moveonenospc/" class="md-nav__link">
         
   
   
@@ -724,7 +724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/cache/" class="md-nav__link">
+      <a href="../config/cache/" class="md-nav__link">
         
   
   
@@ -747,7 +747,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/passthrough/" class="md-nav__link">
+      <a href="../config/passthrough/" class="md-nav__link">
         
   
   
@@ -770,7 +770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/readahead/" class="md-nav__link">
+      <a href="../config/readahead/" class="md-nav__link">
         
   
   
@@ -793,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/inodecalc/" class="md-nav__link">
+      <a href="../config/inodecalc/" class="md-nav__link">
         
   
   
@@ -816,7 +816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/threads/" class="md-nav__link">
+      <a href="../config/threads/" class="md-nav__link">
         
   
   
@@ -839,7 +839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/pin-threads/" class="md-nav__link">
+      <a href="../config/pin-threads/" class="md-nav__link">
         
   
   
@@ -862,7 +862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/link_cow/" class="md-nav__link">
+      <a href="../config/link_cow/" class="md-nav__link">
         
   
   
@@ -885,7 +885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/fuse_msg_size/" class="md-nav__link">
+      <a href="../config/fuse_msg_size/" class="md-nav__link">
         
   
   
@@ -908,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/follow-symlinks/" class="md-nav__link">
+      <a href="../config/follow-symlinks/" class="md-nav__link">
         
   
   
@@ -931,7 +931,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/link-exdev/" class="md-nav__link">
+      <a href="../config/link-exdev/" class="md-nav__link">
         
   
   
@@ -954,7 +954,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/rename-exdev/" class="md-nav__link">
+      <a href="../config/rename-exdev/" class="md-nav__link">
         
   
   
@@ -977,7 +977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/symlinkify/" class="md-nav__link">
+      <a href="../config/symlinkify/" class="md-nav__link">
         
   
   
@@ -1000,7 +1000,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/nullrw/" class="md-nav__link">
+      <a href="../config/nullrw/" class="md-nav__link">
         
   
   
@@ -1023,7 +1023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/xattr/" class="md-nav__link">
+      <a href="../config/xattr/" class="md-nav__link">
         
   
   
@@ -1046,7 +1046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/nfsopenhack/" class="md-nav__link">
+      <a href="../config/nfsopenhack/" class="md-nav__link">
         
   
   
@@ -1069,7 +1069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/statfs/" class="md-nav__link">
+      <a href="../config/statfs/" class="md-nav__link">
         
   
   
@@ -1092,7 +1092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/flush-on-close/" class="md-nav__link">
+      <a href="../config/flush-on-close/" class="md-nav__link">
         
   
   
@@ -1115,7 +1115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/export-support/" class="md-nav__link">
+      <a href="../config/export-support/" class="md-nav__link">
         
   
   
@@ -1138,7 +1138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/kernel-permissions-check/" class="md-nav__link">
+      <a href="../config/kernel-permissions-check/" class="md-nav__link">
         
   
   
@@ -1168,7 +1168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../error_handling_and_logging/" class="md-nav__link">
+      <a href="../error_handling_and_logging/" class="md-nav__link">
         
   
   
@@ -1190,7 +1190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../resource_usage/" class="md-nav__link">
+      <a href="../resource_usage/" class="md-nav__link">
         
   
   
@@ -1207,267 +1207,6 @@
     
       
       
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../runtime_interface/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Runtime Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../remote_filesystems/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Remote Filesystems
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tips_notes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Tips and Notes
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../known_issues_bugs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Known Issues and Bugs
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../project_comparisons/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Project Comparisons
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../benchmarking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Benchmarking
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../performance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Tweaking Performance
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tooling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Tooling
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../extended_usage_patterns/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Extended Usage Patterns
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_18" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    FAQ
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_18">
-            <span class="md-nav__icon md-icon"></span>
-            FAQ
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../why_isnt_it_working/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    "Why isn't it working?"
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
   
   
     
@@ -1487,7 +1226,7 @@
   
   
   <span class="md-ellipsis">
-    Reliability and Scalability
+    Runtime Interface
     
   </span>
   
@@ -1500,7 +1239,7 @@
   
   
   <span class="md-ellipsis">
-    Reliability and Scalability
+    Runtime Interface
     
   </span>
   
@@ -1523,29 +1262,113 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#is-mergerfs-production-ready" class="md-nav__link">
+  <a href="#mergerfs-pseudo-file" class="md-nav__link">
     <span class="md-ellipsis">
-      Is mergerfs "production ready?"
+      .mergerfs pseudo file
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=".mergerfs pseudo file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Line Tooling
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#how-well-does-mergerfs-scale" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
     <span class="md-ellipsis">
-      How well does mergerfs scale?
+      Config
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keys
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#are-there-any-limits" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#values" class="md-nav__link">
     <span class="md-ellipsis">
-      Are there any limits?
+      Values
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usermergerfsbranches" class="md-nav__link">
+    <span class="md-ellipsis">
+      user.mergerfs.branches
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-directory-xattrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      file / directory xattrs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1553,6 +1376,242 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote_filesystems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Remote Filesystems
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tips_notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tips and Notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../known_issues_bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Known Issues and Bugs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project_comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Comparisons
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Benchmarking
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tweaking Performance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tooling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tooling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extended_usage_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Extended Usage Patterns
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            FAQ
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/why_isnt_it_working/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    "Why isn't it working?"
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1565,7 +1624,30 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage_and_functionality/" class="md-nav__link">
+      <a href="../faq/reliability_and_scalability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reliability and Scalability
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/usage_and_functionality/" class="md-nav__link">
         
   
   
@@ -1588,7 +1670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration_and_policies/" class="md-nav__link">
+      <a href="../faq/configuration_and_policies/" class="md-nav__link">
         
   
   
@@ -1611,7 +1693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../compatibility_and_integration/" class="md-nav__link">
+      <a href="../faq/compatibility_and_integration/" class="md-nav__link">
         
   
   
@@ -1634,7 +1716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../recommendations_and_warnings/" class="md-nav__link">
+      <a href="../faq/recommendations_and_warnings/" class="md-nav__link">
         
   
   
@@ -1657,7 +1739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../technical_behavior_and_limitations/" class="md-nav__link">
+      <a href="../faq/technical_behavior_and_limitations/" class="md-nav__link">
         
   
   
@@ -1680,7 +1762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../have_you_considered/" class="md-nav__link">
+      <a href="../faq/have_you_considered/" class="md-nav__link">
         
   
   
@@ -1703,7 +1785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../limit_drive_spinup/" class="md-nav__link">
+      <a href="../faq/limit_drive_spinup/" class="md-nav__link">
         
   
   
@@ -1733,7 +1815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../related_projects/" class="md-nav__link">
+      <a href="../related_projects/" class="md-nav__link">
         
   
   
@@ -1755,7 +1837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../media_and_publicity/" class="md-nav__link">
+      <a href="../media_and_publicity/" class="md-nav__link">
         
   
   
@@ -1777,7 +1859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../support/" class="md-nav__link">
+      <a href="../support/" class="md-nav__link">
         
   
   
@@ -1799,7 +1881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../sponsorship_and_donations/" class="md-nav__link">
+      <a href="../sponsorship_and_donations/" class="md-nav__link">
         
   
   
@@ -1841,29 +1923,113 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#is-mergerfs-production-ready" class="md-nav__link">
+  <a href="#mergerfs-pseudo-file" class="md-nav__link">
     <span class="md-ellipsis">
-      Is mergerfs "production ready?"
+      .mergerfs pseudo file
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=".mergerfs pseudo file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Line Tooling
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#how-well-does-mergerfs-scale" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
     <span class="md-ellipsis">
-      How well does mergerfs scale?
+      Config
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keys
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#are-there-any-limits" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#values" class="md-nav__link">
     <span class="md-ellipsis">
-      Are there any limits?
+      Values
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usermergerfsbranches" class="md-nav__link">
+    <span class="md-ellipsis">
+      user.mergerfs.branches
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-directory-xattrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      file / directory xattrs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1883,7 +2049,7 @@
 
 
   
-    <a href="https://github.com/trapexit/mergerfs/edit/master/mkdocs/docs/faq/reliability_and_scalability.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/trapexit/mergerfs/edit/master/mkdocs/docs/runtime_interface.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1892,41 +2058,214 @@
     
       
     
-    <a href="https://github.com/trapexit/mergerfs/raw/master/mkdocs/docs/faq/reliability_and_scalability.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/trapexit/mergerfs/raw/master/mkdocs/docs/runtime_interface.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="reliability-and-scalability">Reliability and Scalability</h1>
-<h2 id="is-mergerfs-production-ready">Is mergerfs "production ready?"</h2>
-<p>Yes.</p>
-<p>mergerfs has been around for over a decade and used by many users on
-their systems. Typically running 24/7 with constant load.</p>
-<p>At least a few companies are believed to use mergerfs in production
-environments. A number of <a href="../../related_projects/">NAS focused operating
-systems</a> includes mergerfs as a solution for
-pooling filesystems.</p>
-<p>Most serious issues (crashes or data corruption) have been due to
-<a href="../../known_issues_bugs/#fuse-and-linux-kernel">kernel bugs</a>. All of
-which are fixed in stable releases.</p>
-<h2 id="how-well-does-mergerfs-scale">How well does mergerfs scale?</h2>
-<p>Users have reported running mergerfs on everything from OpenWRT
-routers and Raspberry Pi SBCs to multi-socket Xeon enterprise servers.</p>
-<p>Users have pooled everything from USB thumb drives to enterprise NVME
-SSDs to remote filesystems and rclone mounts.</p>
-<p>The cost of many calls can be <code>O(n)</code> meaning adding more branches to
-the pool will increase the cost of certain functions, such as reading
-directories or finding files to open, but there are a number of caches
-and strategies in place to limit overhead where possible.</p>
-<h2 id="are-there-any-limits">Are there any limits?</h2>
-<p>There is no maximum capacity beyond what is imposed by the operating
-system itself. Any limit is practical rather than technical. As
-explained in the question about scale mergerfs is mostly limited by
-the tolerated cost of aggregating branches and the cost associated
-with interacting with them. If you pool slow network filesystem then
-that will naturally impact performance more than low latency SSDs.</p>
+<h1 id="runtime-interface">Runtime Interface</h1>
+<p><code>mergerfs</code> has runtime interfaces allowing users to query certain
+filesystem information, get and set config, and trigger certain
+activities while it is running.</p>
+<p>The interface is provided via the POSIX extended attributes filesystem
+API which is a namespaced <code>key=value</code> pair store associated with a
+file. Since <code>mergerfs</code> primarily uses <code>key=value</code> pairs for config it
+fits well and is a known and reasonably well supported API.</p>
+<p>There are two targets for <code>xattr</code> calls. One is a pseudo file used for
+getting and setting config and issuing certain commands. The other are
+files found on the filesystem for querying certain <code>mergerfs</code> specific
+information about them.</p>
+<h2 id="mergerfs-pseudo-file">.mergerfs pseudo file</h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>&lt;mountpoint&gt;/.mergerfs
+</span></code></pre></div>
+<p><code>mergerfs</code> provides this pseudo file for the runtime modification of
+certain options and issuing commands. The file will not show up in
+<code>readdir</code> but can be <code>stat</code>'ed and viewed/manipulated via
+<a href="http://linux.die.net/man/2/listxattr">listxattr</a>,
+<a href="https://linux.die.net/man/2/getxattr">getxattr</a>, and
+<a href="https://linux.die.net/man/2/setxattr">setxattr</a> calls.</p>
+<p>Any changes made at runtime are <strong>NOT</strong> persisted. If you wish for
+values to persist they must be included as options wherever you
+configure the mounting of mergerfs (/etc/fstab, systemd, etc.).</p>
+<h3 id="command-line-tooling">Command Line Tooling</h3>
+<p>Extended attributes is prevelant enough that there are common tools
+available for interacting with them.</p>
+<p>In Debian / Ubuntu distributions you can get the tools
+<a href="https://linux.die.net/man/1/getfattr">getfattr</a> and
+<a href="https://linux.die.net/man/1/setfattr">setfattr</a> from
+<a href="https://linux.die.net/man/5/attr">attr</a> package.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$ sudo apt-get install attr
+</span></code></pre></div>
+<h3 id="config">Config</h3>
+<h4 id="keys">Keys</h4>
+<p>Use <code>getfattr -d /mountpoint/.mergerfs</code> to see all supported
+configuration keys. It is effectively the same as the
+<a href="../config/options/">options</a> prefixed with <code>user.mergerfs.</code>. Some are
+informational or only can be set at startup and therefore read-only.</p>
+<p>Example: option <code>cache.files</code> would be <code>user.mergerfs.cache.files</code>.</p>
+<h4 id="values">Values</h4>
+<p>Same as the <a href="../config/options/">command line options</a>.</p>
+<h4 id="getting">Getting</h4>
+<p><code>getfattr -n user.mergerfs.branches /mountpoint/.mergerfs</code></p>
+<p><code>ENOATTR</code> will be returned if the key doesn't exist as normal with
+<a href="https://linux.die.net/man/2/getxattr">getxattr</a>.</p>
+<h4 id="setting">Setting</h4>
+<p><code>setfattr -n user.mergerfs.branches -v VALUE /mountpoint/.mergerfs</code></p>
+<p><a href="https://linux.die.net/man/2/setxattr">setxattr</a> will return <code>EROFS</code>
+(Read-only filesystem) on read-only keys. <code>ENOATTR</code> will be returned
+if the key does not exist. If the value attempting to be set is not
+valid <code>EINVAL</code> will be returned.</p>
+<h4 id="usermergerfsbranches">user.mergerfs.branches</h4>
+<p><code>branches</code> has the ability to understand some simple instructions to
+make manipulation of the list easier. The <code>[list]</code> is simply what is
+described in the <a href="../config/branches/">branches</a> docs.</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[list]</td>
+<td>set</td>
+</tr>
+<tr>
+<td>+&lt;[list]</td>
+<td>prepend to existing list</td>
+</tr>
+<tr>
+<td>+&gt;[list]</td>
+<td>append to existing list</td>
+</tr>
+<tr>
+<td>-[list]</td>
+<td>remove all values provided</td>
+</tr>
+<tr>
+<td>-&lt;</td>
+<td>remove first in list</td>
+</tr>
+<tr>
+<td>-&gt;</td>
+<td>remove last in list</td>
+</tr>
+</tbody>
+</table>
+<p><strong>NOTE:</strong> if the value of <code>branches</code> is set to something invalid /
+non-existant <code>mergerfs</code> will return a bogus entry when the mount point
+directory is <code>stat</code>'ed and create a fake file entry when listing the
+directory telling the user "error: no valid mergerfs branch found,
+check config". This is done to ensure the user understands the
+situation and continue to be able to access the xattr interface.</p>
+<h4 id="example">Example</h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>[trapexit:/mnt/mergerfs] $ getfattr -d .mergerfs
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>user.mergerfs.branches=&quot;/mnt/a=RW:/mnt/b=RW&quot;
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>user.mergerfs.minfreespace=&quot;4294967295&quot;
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>user.mergerfs.moveonenospc=&quot;false&quot;
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>...
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>user.mergerfs.category.search=&quot;mfs&quot;
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.category.create -v pfrd .mergerfs
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>user.mergerfs.category.search=&quot;prfd&quot;
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.branches -v &quot;&#39;+&lt;/mnt/c=RO .mergerfs
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.branches .mergerfs
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>user.mergerfs.branches=&quot;/mnt/c=RO:/mnt/a=RW:/mnt/b=RW&quot;
+</span></code></pre></div>
+<h3 id="commands">Commands</h3>
+<p>There are a number of commands / behaviors which can be triggerd by
+writing (<a href="https://linux.die.net/man/1/setfattr">setfattr</a>,
+<a href="https://linux.die.net/man/2/setxattr">setxattr</a>) particular xattr
+keys of <code>/mountpoint/.mergerfs</code>. These keys do not show up in key
+listings.</p>
+<p>Commands can take an argument however currently no command uses or
+allows a value.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>user.mergerfs.cmd.gc</td>
+<td>(empty)</td>
+<td>Trigger a thorough garbage collection of certain pools of resources. The xattr value is not used.</td>
+</tr>
+<tr>
+<td>user.mergerfs.cmd.gc1</td>
+<td>(empty)</td>
+<td>Trigger a simple garbage collection of certain pools of resources. This is also done on a timer.</td>
+</tr>
+<tr>
+<td>user.mergerfs.cmd.invalidate-all-nodes</td>
+<td>(empty)</td>
+<td>Attempts to invalidate FUSE file nodes. Primarily used for debugging.</td>
+</tr>
+<tr>
+<td>user.mergerfs.cmd.invalidate-gid-cache</td>
+<td>(empty)</td>
+<td>Invalidates all entries in gid cache. Primarily used for debugging but can also be useful in cases where gid supplemental groups change.</td>
+</tr>
+<tr>
+<td>user.mergerfs.cmd.clear-gid-cache</td>
+<td>(empty)</td>
+<td>Clears all entries in the gid cache. Primarily used for debugging but can also be useful in cases where gid supplemental groups change.</td>
+</tr>
+</tbody>
+</table>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.cmd.gc /mnt/mergerfs/.mergerfs
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>[trapexit:/mnt/mergerfs] $ journalctl -t mergerfs | tail -n1
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Jul 20 15:36:18 hostname mergerfs[1931348]: running basic garbage collection
+</span></code></pre></div>
+<h3 id="file-directory-xattrs">file / directory xattrs</h3>
+<p>There is certain information <code>mergerfs</code> knows or calculates about a
+file that can be useful in building tooling or debugging.</p>
+<p>The keys below can be queried (<code>getfattr -n key</code>,
+<a href="http://linux.die.net/man/2/getxattr">getxattr</a>) to get the described
+information. These keys will not show up in any listing (<code>getfattr
+-d</code>, <a href="https://linux.die.net/man/2/listxattr">listxattr</a>). Attempting
+to set them will result in an error.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Return Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>user.mergerfs.basepath</td>
+<td>The base mount point for the file given the current <code>getattr</code> policy.</td>
+</tr>
+<tr>
+<td>user.mergerfs.relpath</td>
+<td>The relative path of the file from the perspective of the mount point.</td>
+</tr>
+<tr>
+<td>user.mergerfs.fullpath</td>
+<td>The full path of the original file given the <code>getattr</code> policy.</td>
+</tr>
+<tr>
+<td>user.mergerfs.allpaths</td>
+<td>A NULL ('\0') separated list of full paths to all files found.</td>
+</tr>
+</tbody>
+</table>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.fullpath test
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>user.mergerfs.fullpath=&quot;/mnt/a/test&quot;
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>[trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.allpaths .
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>user.mergerfs.allpaths=&quot;/mnt/a\000/mnt/b\000/mnt/c&quot;
+</span></code></pre></div>
 
 
 
@@ -1962,7 +2301,7 @@ that will naturally impact performance more than low latency SSDs.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../why_isnt_it_working/" class="md-footer__link md-footer__link--prev" aria-label="Previous: &#34;Why isn&#39;t it working?&#34;">
+          <a href="../resource_usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Resource Usage and Management">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1972,20 +2311,20 @@ that will naturally impact performance more than low latency SSDs.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                "Why isn't it working?"
+                Resource Usage and Management
               </div>
             </div>
           </a>
         
         
           
-          <a href="../usage_and_functionality/" class="md-footer__link md-footer__link--next" aria-label="Next: Usage and Functionality">
+          <a href="../remote_filesystems/" class="md-footer__link md-footer__link--next" aria-label="Next: Remote Filesystems">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Usage and Functionality
+                Remote Filesystems
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2021,10 +2360,10 @@ that will naturally impact performance more than low latency SSDs.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.select", "navigation.footer", "navigation.instant", "navigation.instant.prefetch", "navigation.path", "navigation.top", "navigation.tracking", "optimize", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.select", "navigation.footer", "navigation.instant", "navigation.instant.prefetch", "navigation.path", "navigation.top", "navigation.tracking", "optimize", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>
