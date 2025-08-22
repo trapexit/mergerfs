@@ -44,56 +44,36 @@ FUSE::readdir(const fuse_file_info_t *ffi_,
   return cfg->readdir(ffi_,buf_);
 }
 
-FUSE::ReadDir::ReadDir(std::string const s_)
-  : _initialized(false)
+FUSE::ReadDir::ReadDir(const std::string_view s_)
+  : _str(new std::string())
 {
   from_string(s_);
-  if(_initialized)
-    assert(_readdir);
 }
 
 std::string
 FUSE::ReadDir::to_string() const
 {
-  std::lock_guard<std::mutex> lg(_mutex);
+  std::shared_ptr<std::string> str;
 
-  return _type;
-}
+  str = std::atomic_load(&_str);
 
-void
-FUSE::ReadDir::initialize()
-{
-  _initialized = true;
-  from_string(_type);
+  return (*str);
 }
 
 int
-FUSE::ReadDir::from_string(std::string const &str_)
+FUSE::ReadDir::from_string(const std::string_view str_)
 {
-  if(_initialized)
-    {
-      std::shared_ptr<FUSE::ReadDirBase> tmp;
+  std::shared_ptr<std::string> tmp_str;
+  std::shared_ptr<FUSE::ReadDirBase> tmp_readdir;
 
-      tmp = FUSE::ReadDirFactory::make(str_);
-      if(!tmp)
-        return -EINVAL;
+  tmp_readdir = FUSE::ReadDirFactory::make(str_);
+  if(!tmp_readdir)
+    return -EINVAL;
 
-      {
-        std::lock_guard<std::mutex> lg(_mutex);
+  tmp_str = std::make_shared<std::string>(str_);
 
-        _type    = str_;
-        std::swap(_readdir,tmp);
-      }
-    }
-  else
-    {
-      std::lock_guard<std::mutex> lg(_mutex);
-
-      if(!FUSE::ReadDirFactory::valid(str_))
-        return -EINVAL;
-
-      _type = str_;
-    }
+  std::atomic_store(&_str,tmp_str);
+  std::atomic_store(&_impl,tmp_readdir);
 
   return 0;
 }
@@ -113,7 +93,7 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
 
   de.d_ino = 0;
   de.d_off = 0;
-  de.d_type = DT_REG;
+  de.d_type = DT_UNKNOWN;
   strcpy(de.d_name,"error: no valid mergerfs branch found, check config");
   de.d_reclen = sizeof(de);
 
@@ -134,10 +114,7 @@ FUSE::ReadDir::operator()(const fuse_file_info_t *ffi_,
   int rv;
   std::shared_ptr<FUSE::ReadDirBase> readdir;
 
-  {
-    std::lock_guard<std::mutex> lg(_mutex);
-    readdir = _readdir;
-  }
+  readdir = std::atomic_load(&_impl);
 
   rv = (*readdir)(ffi_,buf_);
   if(rv == -ENOENT)

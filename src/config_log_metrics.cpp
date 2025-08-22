@@ -38,7 +38,7 @@ LogMetrics::to_string(void) const
 }
 
 int
-LogMetrics::from_string(const std::string &s_)
+LogMetrics::from_string(const std::string_view s_)
 {
   int rv;
   bool val;

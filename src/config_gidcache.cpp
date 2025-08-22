@@ -23,7 +23,7 @@ GIDCacheExpireTimeout::to_string(void) const
 }
 
 int
-GIDCacheExpireTimeout::from_string(const std::string &s_)
+GIDCacheExpireTimeout::from_string(const std::string_view s_)
 {
   int rv;
 
@@ -53,7 +53,7 @@ GIDCacheRemoveTimeout::to_string(void) const
 }
 
 int
-GIDCacheRemoveTimeout::from_string(const std::string &s_)
+GIDCacheRemoveTimeout::from_string(const std::string_view s_)
 {
   int rv;
 

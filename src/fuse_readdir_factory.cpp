@@ -22,31 +22,46 @@
 #include "fuse_readdir_cosr.hpp"
 #include "fuse_readdir_seq.hpp"
 
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <set>
+#include <regex>
 
-
+// Regex:
+// ^([a-z]{1,15}) -> required type
+// (?::(\d+))?    -> optional colon + concurrency
+// (?::(\d+))?    -> optional colon + max_queue_depth
+// $              -> end of string
 static
 void
-_read_cfg(std::string const  str_,
-          std::string       &type_,
-          unsigned          &concurrency_,
-          unsigned          &max_queue_depth_)
+_read_cfg(const std::string_view  str_,
+          std::string            &type_,
+          int                    &concurrency_,
+          int                    &max_queue_depth_)
 {
-  char type[16];
+  std::string type;
   int concurrency;
   int max_queue_depth;
+  bool matched;
+  std::cmatch match;
+  std::regex re(R"(^([a-z]{1,15})(?::(\d+))?(?::(\d+))?$)");
 
-  concurrency = 0;
+  concurrency     = 0;
   max_queue_depth = 0;
-  std::sscanf(str_.c_str(),
-              "%15[a-z]:%d:%d",
-              type,
-              &concurrency,
-              &max_queue_depth);
+  matched = std::regex_match(str_.begin(),
+                             str_.end(),
+                             match,
+                             re);
+  if(matched)
+    {
+      type = match[1];
+      if(match[2].matched)
+        concurrency = std::stoi(match[2]);
+      if(match[3].matched)
+        max_queue_depth = std::stoi(match[3]);
+    }
 
   if(concurrency == 0)
     {
@@ -73,36 +88,12 @@ _read_cfg(std::string const  str_,
 }
 
 
-bool
-FUSE::ReadDirFactory::valid(const std::string str_)
-{
-  unsigned concurrency;
-  unsigned max_queue_depth;
-  std::string type;
-  static const std::set<std::string> types =
-    {
-      "seq", "cosr", "cor"
-    };
-
-  ::_read_cfg(str_,type,concurrency,max_queue_depth);
-
-  if(types.find(type) == types.end())
-    return false;
-  if(concurrency <= 0)
-    return false;
-
-  return true;
-}
-
 std::shared_ptr<FUSE::ReadDirBase>
-FUSE::ReadDirFactory::make(std::string const str_)
+FUSE::ReadDirFactory::make(const std::string_view str_)
 {
-  unsigned concurrency;
-  unsigned max_queue_depth;
+  int concurrency;
+  int max_queue_depth;
   std::string type;
-
-  if(!valid(str_))
-    return {};
 
   ::_read_cfg(str_,type,concurrency,max_queue_depth);
 

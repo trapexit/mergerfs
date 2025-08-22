@@ -24,7 +24,7 @@
 #include <time.h>
 
 #include <cstdint>
-#include <string>
+
 
 #define KB (1024ULL)
 #define MB (KB * 1024ULL)
@@ -33,85 +33,6 @@
 
 
 namespace num
-{
-  int
-  to_uint64_t(const std::string &str,
-              uint64_t          &value)
-  {
-    char *endptr;
-    uint64_t tmp;
-
-    tmp = strtoll(str.c_str(),&endptr,10);
-    switch(*endptr)
-      {
-      case 'k':
-      case 'K':
-        tmp *= 1024;
-        break;
-
-      case 'm':
-      case 'M':
-        tmp *= (1024 * 1024);
-        break;
-
-      case 'g':
-      case 'G':
-        tmp *= (1024 * 1024 * 1024);
-        break;
-
-      case 't':
-      case 'T':
-        tmp *= (1024ULL * 1024 * 1024 * 1024);
-        break;
-
-      case '\0':
-        break;
-
-      default:
-        return -1;
-      }
-
-    value = tmp;
-
-    return 0;
-  }
-
-  int
-  to_double(const std::string &str_,
-            double            *d_)
-  {
-    double tmp;
-    char *endptr;
-
-    tmp = strtod(str_.c_str(),&endptr);
-    if(*endptr != '\0')
-      return -1;
-
-    *d_ = tmp;
-
-    return 0;
-  }
-
-  int
-  to_time_t(const std::string &str,
-            time_t            &value)
-  {
-    time_t tmp;
-    char *endptr;
-
-    tmp = strtoll(str.c_str(),&endptr,10);
-    if(*endptr != '\0')
-      return -1;
-    if(tmp < 0)
-      return -1;
-
-    value = tmp;
-
-    return 0;
-  }
-}
-
- namespace num
 {
   std::string
   humanize(const uint64_t bytes_)

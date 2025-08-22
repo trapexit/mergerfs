@@ -23,44 +23,29 @@
 namespace str
 {
   void
-  split(const char               *str,
-        const char                delimiter,
-        std::vector<std::string> *result);
-  void
-  split(const std::string        &str,
+  split(const std::string_view    str,
         const char                delimiter,
         std::vector<std::string> *result);
 
   void
-  split(const char            *str,
-        const char             delimiter,
-        std::set<std::string> *result);
-  void
-  split(const std::string     &str,
-        const char             delimiter,
-        std::set<std::string> *result);
+  split(const std::string_view  str,
+        const char              delimiter,
+        std::set<std::string>  *result);
 
   void
-  split_on_null(const char               *str,
-                const size_t              len,
+  split_on_null(const std::string_view    str,
                 std::vector<std::string> *result);
 
   void
-  rsplit1(const std::string        &str,
+  rsplit1(const std::string_view    &str,
           const char                delimiter,
           std::vector<std::string> *result);
 
   void
-  splitkv(const std::string &str,
-          const char         delimiter,
-          std::string       *key,
-          std::string       *value);
-
-  void
-  splitkv(const std::string_view &str,
+  splitkv(const std::string_view  str,
           const char              delimiter,
-          std::string            &key,
-          std::string_view       &val);
+          std::string            *key,
+          std::string            *value);
 
   std::string
   join(const std::vector<std::string> &vec,

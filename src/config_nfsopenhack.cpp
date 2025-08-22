@@ -23,7 +23,7 @@
 
 template<>
 int
-NFSOpenHack::from_string(const std::string &s_)
+NFSOpenHack::from_string(const std::string_view s_)
 {
   if(s_ == "off")
     _data = NFSOpenHack::ENUM::OFF;

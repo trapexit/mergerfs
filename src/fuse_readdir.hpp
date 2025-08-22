@@ -25,37 +25,30 @@
 
 #include <assert.h>
 
-// The initialization behavior is not pretty but for the moment
-// needed due to the daemonizing function of the libfuse library when
-// not using foreground mode. The threads need to be created after the
-// fork, not before.
+
 namespace FUSE
 {
   int readdir(fuse_file_info_t const *ffi,
               fuse_dirents_t         *buf);
+}
 
+namespace FUSE
+{
   class ReadDir : public ToFromString
   {
   public:
-    ReadDir(std::string const s_);
+    ReadDir(const std::string_view s_);
 
   public:
     std::string to_string() const;
-    int from_string(const std::string &);
+    int from_string(const std::string_view);
 
   public:
     int operator()(fuse_file_info_t const *ffi,
                    fuse_dirents_t         *buf);
 
-  public:
-    void initialize();
-
   private:
-    mutable std::mutex _mutex;
-
-  private:
-    bool _initialized;
-    std::string _type;
-    std::shared_ptr<FUSE::ReadDirBase> _readdir;
+    std::shared_ptr<std::string>       _str;
+    std::shared_ptr<FUSE::ReadDirBase> _impl;
   };
 }

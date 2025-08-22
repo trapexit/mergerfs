@@ -40,7 +40,7 @@ StatFSIgnore::to_string() const
 
 template<>
 int
-StatFSIgnore::from_string(const std::string &s_)
+StatFSIgnore::from_string(const std::string_view s_)
 {
   if(s_ == "none")
     _data = StatFSIgnore::ENUM::NONE;

@@ -21,119 +21,175 @@
 #include "ef.hpp"
 #include "errno.hpp"
 
+#include <charconv>
+
 #include <stdlib.h>
 
 
-namespace str
+int
+str::from(const std::string_view  value_,
+          bool                   *bool_)
 {
-  int
-  from(const std::string &value_,
-       bool              *bool_)
-  {
-    if((value_ == "true") ||
-       (value_ == "1")    ||
-       (value_ == "on")   ||
-       (value_ == "yes"))
-      *bool_ = true;
-    ef((value_ == "false") ||
-       (value_ == "0")     ||
-       (value_ == "off")   ||
-       (value_ == "no"))
-      *bool_ = false;
-    else
-      return -EINVAL;
-
-    return 0;
-  }
-
-  int
-  from(const std::string &value_,
-       int               *int_)
-  {
-    int tmp;
-    char *endptr;
-
-    errno = 0;
-    tmp = ::strtol(value_.c_str(),&endptr,10);
-    if(errno != 0)
-      return -EINVAL;
-    if(endptr == value_.c_str())
-      return -EINVAL;
-
-    *int_ = tmp;
-
-    return 0;
-  }
-
-  int
-  from(const std::string &value_,
-       uint64_t          *uint64_)
-  {
-    char *endptr;
-    uint64_t tmp;
-
-    tmp = ::strtoll(value_.c_str(),&endptr,10);
-    switch(*endptr)
-      {
-      case 'b':
-      case 'B':
-        tmp *= 1ULL;
-        break;
-
-      case 'k':
-      case 'K':
-        tmp *= 1024ULL;
-        break;
-
-      case 'm':
-      case 'M':
-        tmp *= (1024ULL * 1024ULL);
-        break;
-
-      case 'g':
-      case 'G':
-        tmp *= (1024ULL * 1024ULL * 1024ULL);
-        break;
-
-      case 't':
-      case 'T':
-        tmp *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
-        break;
-
-      case '\0':
-        break;
-
-      default:
-        return -EINVAL;
-      }
-
-    *uint64_ = tmp;
-
-    return 0;
-  }
-
-  int
-  from(const std::string &value_,
-       std::string       *str_)
-  {
-    *str_ = value_;
-
-    return 0;
-  }
-
-  int
-  from(const std::string &value_,
-       const std::string *key_)
-  {
+  if((value_ == "true") ||
+     (value_ == "1")    ||
+     (value_ == "on")   ||
+     (value_ == "yes"))
+    *bool_ = true;
+  ef((value_ == "false") ||
+     (value_ == "0")     ||
+     (value_ == "off")   ||
+     (value_ == "no"))
+    *bool_ = false;
+  else
     return -EINVAL;
-  }
 
-  int
-  from(const std::string &value_,
-       fs::Path          *path_)
-  {
-    *path_ = value_;
+  return 0;
+}
 
+int
+str::from(const std::string_view  val_,
+          int                    *rv_)
+{
+  int tmp;
+  const int base = 10;
+
+  auto [ptr,ec] = std::from_chars(val_.begin(),
+                                  val_.end(),
+                                  tmp,
+                                  base);
+  if(ec != std::errc{})
+    return -EINVAL;
+
+  *rv_ = tmp;
+
+  return 0;
+}
+
+int
+str::from(const std::string_view  val_,
+          int64_t                *rv_)
+{
+  int64_t tmp;
+  const int base = 10;
+
+  auto [ptr,ec] = std::from_chars(val_.begin(),
+                                  val_.end(),
+                                  tmp,
+                                  base);
+
+  if(ec != std::errc{})
+    return -EINVAL;
+  *rv_ = tmp;
+  if(ptr == val_.end())
     return 0;
-  }
+
+  switch(*ptr)
+    {
+    case 'b':
+    case 'B':
+      *rv_ *= 1ULL;
+      break;
+
+    case 'k':
+    case 'K':
+      *rv_ *= 1024ULL;
+      break;
+
+    case 'm':
+    case 'M':
+      *rv_ *= (1024ULL * 1024ULL);
+      break;
+
+    case 'g':
+    case 'G':
+      *rv_ *= (1024ULL * 1024ULL * 1024ULL);
+      break;
+
+    case 't':
+    case 'T':
+      *rv_ *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+      break;
+
+    default:
+      return -EINVAL;
+    }
+
+  return 0;
+}
+
+int
+str::from(const std::string_view  val_,
+          uint64_t               *rv_)
+{
+  uint64_t tmp;
+  const int base = 10;
+
+  auto [ptr,ec] = std::from_chars(val_.begin(),
+                                  val_.end(),
+                                  tmp,
+                                  base);
+
+  if(ec != std::errc{})
+    return -EINVAL;
+  *rv_ = tmp;
+  if(ptr == val_.end())
+    return 0;
+
+  switch(*ptr)
+    {
+    case 'b':
+    case 'B':
+      *rv_ *= 1ULL;
+      break;
+
+    case 'k':
+    case 'K':
+      *rv_ *= 1024ULL;
+      break;
+
+    case 'm':
+    case 'M':
+      *rv_ *= (1024ULL * 1024ULL);
+      break;
+
+    case 'g':
+    case 'G':
+      *rv_ *= (1024ULL * 1024ULL * 1024ULL);
+      break;
+
+    case 't':
+    case 'T':
+      *rv_ *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+      break;
+
+    default:
+      return -EINVAL;
+    }
+
+  return 0;
+}
+
+int
+str::from(const std::string_view  value_,
+          std::string            *str_)
+{
+  *str_ = value_;
+
+  return 0;
+}
+
+int
+str::from(const std::string_view  value_,
+          const std::string      *key_)
+{
+  return -EINVAL;
+}
+
+int
+str::from(const std::string_view  value_,
+          std::filesystem::path  *path_)
+{
+  *path_ = value_;
+
+  return 0;
 }

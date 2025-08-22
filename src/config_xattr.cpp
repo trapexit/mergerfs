@@ -40,7 +40,7 @@ XAttr::to_string() const
 
 template<>
 int
-XAttr::from_string(const std::string &s_)
+XAttr::from_string(const std::string_view s_)
 {
   if(s_ == "passthrough")
     _data = XAttr::ENUM::PASSTHROUGH;

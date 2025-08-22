@@ -45,7 +45,7 @@
   FUNC(rand)
 
 Policy::ActionImpl*
-Policies::Action::find(const std::string &name_)
+Policies::Action::find(const std::string_view name_)
 {
   IFERT(IFERTA);
 
@@ -53,7 +53,7 @@ Policies::Action::find(const std::string &name_)
 }
 
 Policy::CreateImpl*
-Policies::Create::find(const std::string &name_)
+Policies::Create::find(const std::string_view name_)
 {
   IFERT(IFERTC);
 
@@ -61,7 +61,7 @@ Policies::Create::find(const std::string &name_)
 }
 
 Policy::SearchImpl*
-Policies::Search::find(const std::string &name_)
+Policies::Search::find(const std::string_view name_)
 {
   IFERT(IFERTS);
 

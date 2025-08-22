@@ -38,7 +38,7 @@ Branch::Branch(const u64 &default_minfreespace_)
 }
 
 int
-Branch::from_string(const std::string &str_)
+Branch::from_string(const std::string_view str_)
 {
   return -EINVAL;
 }

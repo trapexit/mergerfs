@@ -19,10 +19,11 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 class ToFromString
 {
 public:
   virtual std::string to_string() const = 0;
-  virtual int from_string(const std::string &) = 0;
+  virtual int from_string(const std::string_view) = 0;
 };

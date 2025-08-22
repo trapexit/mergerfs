@@ -23,7 +23,7 @@
 
 
 int
-MoveOnENOSPC::from_string(const std::string &s_)
+MoveOnENOSPC::from_string(const std::string_view s_)
 {
   int rv;
   std::string s;

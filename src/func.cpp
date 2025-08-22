@@ -20,7 +20,7 @@
 
 
 int
-Func::Base::Action::from_string(const std::string &policyname_)
+Func::Base::Action::from_string(const std::string_view policyname_)
 {
   policy = Policies::Action::find(policyname_);
   if(!policy)
@@ -36,7 +36,7 @@ Func::Base::Action::to_string(void) const
 }
 
 int
-Func::Base::Create::from_string(const std::string &policyname_)
+Func::Base::Create::from_string(const std::string_view policyname_)
 {
   policy = Policies::Create::find(policyname_);
   if(!policy)
@@ -52,7 +52,7 @@ Func::Base::Create::to_string(void) const
 }
 
 int
-Func::Base::Search::from_string(const std::string &policyname_)
+Func::Base::Search::from_string(const std::string_view policyname_)
 {
   policy = Policies::Search::find(policyname_);
   if(!policy)

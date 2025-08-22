@@ -39,7 +39,7 @@ FlushOnClose::to_string() const
 
 template<>
 int
-FlushOnClose::from_string(const std::string &s_)
+FlushOnClose::from_string(const std::string_view s_)
 {
   if(s_ == "never")
     _data = FlushOnClose::ENUM::NEVER;

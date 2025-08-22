@@ -32,7 +32,7 @@ InodeCalc::to_string(void) const
 }
 
 int
-InodeCalc::from_string(const std::string &s_)
+InodeCalc::from_string(const std::string_view s_)
 {
   return fs::inode::set_algo(s_);
 }

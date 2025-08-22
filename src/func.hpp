@@ -37,7 +37,7 @@ namespace Func
       {}
 
     public:
-      int from_string(const std::string &s) final;
+      int from_string(const std::string_view s) final;
       std::string to_string() const final;
 
     public:
@@ -52,7 +52,7 @@ namespace Func
       {}
 
     public:
-      int from_string(const std::string &s) final;
+      int from_string(const std::string_view s) final;
       std::string to_string() const final;
 
     public:
@@ -67,7 +67,7 @@ namespace Func
       {}
 
     public:
-      int from_string(const std::string &s) final;
+      int from_string(const std::string_view s) final;
       std::string to_string() const final;
 
     public:

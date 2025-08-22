@@ -31,7 +31,7 @@ namespace fs
 {
   namespace inode
   {
-    int set_algo(const std::string &s);
+    int set_algo(const std::string_view s);
     std::string get_algo(void);
 
     uint64_t calc(const std::string_view basepath,

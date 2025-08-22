@@ -18,6 +18,8 @@
 
 #include "fuse.h"
 
+#include <string_view>
+
 
 namespace FUSE
 {

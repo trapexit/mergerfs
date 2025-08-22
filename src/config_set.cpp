@@ -33,7 +33,7 @@ ConfigSet::to_string(void) const
 }
 
 int
-ConfigSet::from_string(const std::string &str_)
+ConfigSet::from_string(const std::string_view str_)
 {
   this->clear();
 

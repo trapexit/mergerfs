@@ -23,38 +23,39 @@
 #include <cstdint>
 #include <string>
 
-#include <inttypes.h>
-#include <stdio.h>
 
-namespace str
+std::string
+str::to(const bool bool_)
 {
-  std::string
-  to(const bool bool_)
-  {
-    return (bool_ ? "true" : "false");
-  }
+  return (bool_ ? "true" : "false");
+}
 
-  std::string
-  to(const int int_)
-  {
-    return fmt::format("{}",int_);
-  }
+std::string
+str::to(const int int_)
+{
+  return fmt::format("{}",int_);
+}
 
-  std::string
-  to(const uint64_t uint64_)
-  {
-    return fmt::format("{}",uint64_);
-  }
+std::string
+str::to(const uint64_t uint64_)
+{
+  return fmt::format("{}",uint64_);
+}
 
-  std::string
-  to(const std::string &s_)
-  {
-    return s_;
-  }
+std::string
+str::to(const int64_t int64_)
+{
+  return fmt::format("{}",int64_);
+}
 
-  std::string
-  to(const fs::Path &path_)
-  {
-    return path_.string();
-  }
+std::string
+str::to(const std::string &s_)
+{
+  return s_;
+}
+
+std::string
+str::to(const std::filesystem::path &path_)
+{
+  return path_.string();
 }

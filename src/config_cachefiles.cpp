@@ -45,7 +45,7 @@ CacheFiles::to_string() const
 
 template<>
 int
-CacheFiles::from_string(const std::string &s_)
+CacheFiles::from_string(const std::string_view s_)
 {
   if(s_ == "libfuse")
     _data = CacheFiles::ENUM::LIBFUSE;

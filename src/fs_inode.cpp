@@ -147,7 +147,7 @@ _hybrid_hash32(const std::string_view branch_path_,
 }
 
 int
-fs::inode::set_algo(const std::string &algo_)
+fs::inode::set_algo(const std::string_view algo_)
 {
   if(algo_ == "passthrough")
     g_func = ::_passthrough;

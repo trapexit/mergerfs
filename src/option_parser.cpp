@@ -204,7 +204,7 @@ _parse_and_process_kv_arg(Config::Write     &cfg_,
 
 static
 int
-process_opt(Config::Write     &cfg_,
+_process_opt(Config::Write     &cfg_,
             Config::ErrVec    *errs_,
             const std::string &arg_)
 {
@@ -220,7 +220,7 @@ process_opt(Config::Write     &cfg_,
 
 static
 int
-process_branches(Config::Write  &cfg_,
+_process_branches(Config::Write  &cfg_,
                  Config::ErrVec *errs_,
                  const char     *arg_)
 {
@@ -237,7 +237,7 @@ process_branches(Config::Write  &cfg_,
 
 static
 int
-process_mount(Config::Write  &cfg_,
+_process_mount(Config::Write  &cfg_,
               Config::ErrVec *errs_,
               const char     *arg_)
 {
@@ -290,10 +290,10 @@ _usage(void)
 
 static
 int
-option_processor(void       *data_,
-                 const char *arg_,
-                 int         key_,
-                 fuse_args  *outargs_)
+_option_processor(void       *data_,
+                  const char *arg_,
+                  int         key_,
+                  fuse_args  *outargs_)
 {
   Config::Write cfg;
   Config::ErrVec *errs = (Config::ErrVec*)data_;
@@ -301,13 +301,13 @@ option_processor(void       *data_,
   switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      return process_opt(cfg,errs,arg_);
+      return ::_process_opt(cfg,errs,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
       if(cfg->branches->empty())
-        return process_branches(cfg,errs,arg_);
+        return ::_process_branches(cfg,errs,arg_);
       else
-        return process_mount(cfg,errs,arg_);
+        return ::_process_mount(cfg,errs,arg_);
 
     case MERGERFS_OPT_HELP:
       ::_usage();
@@ -367,6 +367,41 @@ _check_for_mount_loop(Config::Write  &cfg_,
     }
 }
 
+static
+void
+_print_warnings(Config::Write &cfg_)
+{
+  if(cfg_->passthrough != Passthrough::ENUM::OFF)
+    {
+      if(cfg_->cache_files == CacheFiles::ENUM::OFF)
+        {
+          SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
+                          " Setting 'cache.files=auto-full'");
+          cfg_->cache_files = CacheFiles::ENUM::AUTO_FULL;
+        }
+
+      if(cfg_->writeback_cache == true)
+        {
+          SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
+                          " Setting 'cache.writeback=false'");
+          cfg_->writeback_cache = false;
+        }
+
+      if(cfg_->moveonenospc.enabled == true)
+        {
+          SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
+        }
+    }
+}
+
+static
+void
+_cleanup_options(Config::Write &cfg_)
+{
+  if(!cfg_->symlinkify)
+    cfg_->symlinkify_timeout = -1;
+}
+
 namespace options
 {
   void
@@ -387,7 +422,7 @@ namespace options
     fuse_opt_parse(args_,
                    errs_,
                    opts,
-                   ::option_processor);
+                   ::_option_processor);
 
     if(cfg->branches->empty())
       errs_->push_back({0,"branches not set"});
@@ -400,6 +435,8 @@ namespace options
     ::_set_fsname(cfg,args_);
     ::_set_subtype(args_);
     ::_set_fuse_threads(cfg);
+    ::_print_warnings(cfg);
+    ::_cleanup_options(cfg);
 
     cfg->finish_initializing();
   }

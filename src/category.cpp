@@ -23,7 +23,7 @@
 #include <string>
 
 int
-Category::Base::from_string(const std::string &s_)
+Category::Base::from_string(const std::string_view s_)
 {
   int rv;
 

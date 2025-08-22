@@ -14,6 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "resources.hpp"
+
+#include "fs_opendir.hpp"
+#include "fs_closedir.hpp"
+#include "fs_readdir.hpp"
 #include "errno.hpp"
 
 #include <unistd.h>
@@ -22,63 +27,89 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-namespace resources
+
+int
+resources::reset_umask(void)
 {
-  int
-  reset_umask(void)
-  {
-    umask(0);
+  umask(0);
+  return 0;
+}
+
+int
+resources::maxout_rlimit(const int resource)
+{
+  int rv;
+  struct rlimit rlim;
+
+  rlim.rlim_cur = RLIM_INFINITY;
+  rlim.rlim_max = RLIM_INFINITY;
+  rv = ::setrlimit(resource,&rlim);
+  if(rv == 0)
     return 0;
-  }
 
-  int
-  maxout_rlimit(const int resource)
-  {
-    int rv;
-    struct rlimit rlim;
+  rv = ::getrlimit(resource,&rlim);
+  if(rv == -1)
+    return -errno;
 
-    rlim.rlim_cur = RLIM_INFINITY;
-    rlim.rlim_max = RLIM_INFINITY;
-    rv = ::setrlimit(resource,&rlim);
-    if(rv == 0)
-      return 0;
+  rv = 0;
+  rlim.rlim_cur = rlim.rlim_max;
+  while(rv == 0)
+    {
+      rv = ::setrlimit(resource,&rlim);
+      rlim.rlim_max *= 2;
+      rlim.rlim_cur  = rlim.rlim_max;
+    }
 
-    rv = ::getrlimit(resource,&rlim);
-    if(rv == -1)
-      return -errno;
+  return rv;
+}
 
-    rv = 0;
-    rlim.rlim_cur = rlim.rlim_max;
-    while(rv == 0)
-      {
-        rv = ::setrlimit(resource,&rlim);
-        rlim.rlim_max *= 2;
-        rlim.rlim_cur  = rlim.rlim_max;
-      }
+int
+resources::maxout_rlimit_nofile(void)
+{
+  return maxout_rlimit(RLIMIT_NOFILE);
+}
 
-    return rv;
-  }
+int
+resources::maxout_rlimit_fsize(void)
+{
+  return maxout_rlimit(RLIMIT_FSIZE);
+}
 
-  int
-  maxout_rlimit_nofile(void)
-  {
-    return maxout_rlimit(RLIMIT_NOFILE);
-  }
+int
+resources::setpriority(const int prio_)
+{
+  DIR *dir;
+  struct dirent *e;
 
-  int
-  maxout_rlimit_fsize(void)
-  {
-    return maxout_rlimit(RLIMIT_FSIZE);
-  }
+  ::setpriority(PRIO_PROCESS,0,prio_);
 
-  int
-  setpriority(const int prio)
-  {
-    int rv;
-    const int SELF = 0;
+  dir = fs::opendir("/proc/self/task");
+  if(dir == NULL)
+    return -errno;
 
-    rv = ::setpriority(PRIO_PROCESS,SELF,prio);
+  while(true)
+    {
+      pid_t tid;
 
-    return ((rv == -1) ? -errno : rv);
-  }
+      e = fs::readdir(dir);
+      if(e == NULL)
+        break;
+      if(e->d_name[0] == '.')
+        continue;
+
+      try
+        {
+          tid = std::stoi(e->d_name);
+        }
+      catch(...)
+        {
+          continue;
+        }
+
+      ::setpriority(PRIO_PROCESS,tid,prio_);
+    }
+
+  fs::closedir(dir);
+
+  return 0;
 }
