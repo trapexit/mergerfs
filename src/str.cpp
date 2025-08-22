@@ -16,6 +16,7 @@
 
 #include "str.hpp"
 
+#include <cassert>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -39,13 +40,19 @@ str::split(const string_view  str_,
 {
   size_t pos;
   size_t start;
+  size_t length;
+
+  assert(result_ != nullptr);
+  if(str_.empty())
+    return;
 
   start = 0;
   pos   = str_.find(delimiter_,start);
   while(pos != std::string_view::npos)
     {
-      result_->push_back(std::string{str_.substr(start,pos)});
-      start = (pos + 1);
+      length = (pos - start);
+      result_->push_back(std::string{str_.substr(start,length)});
+      start = pos + 1;
       pos = str_.find(delimiter_,start);
     }
 
@@ -59,13 +66,19 @@ str::split(const string_view  str_,
 {
   size_t pos;
   size_t start;
+  size_t length;
+
+  assert(result_ != nullptr);
+  if(str_.empty())
+    return;
 
   start = 0;
   pos   = str_.find(delimiter_,start);
   while(pos != std::string_view::npos)
     {
-      result_->insert(std::string{str_.substr(start,pos)});
-      start = (pos + 1);
+      length = (pos - start);
+      result_->insert(std::string{str_.substr(start,length)});
+      start = pos + 1;
       pos = str_.find(delimiter_,start);
     }
 
@@ -76,15 +89,29 @@ void
 str::split_on_null(const std::string_view    str_,
                    std::vector<std::string> *result_)
 {
-  const char *start;
-  const char *end;
+  return str::split(str_,'\0',result_);
+}
 
-  start = str_.begin();
-  end   = str_.end();
-  while(start < end)
+void
+str::lsplit1(const string_view &str_,
+             const char         delimiter_,
+             vector<string>    *result_)
+{
+  std::size_t off;
+
+  assert(result_ != nullptr);
+  if(str_.empty())
+    return;
+
+  off = str_.find(delimiter_);
+  if(off == std::string::npos)
     {
-      result_->emplace_back(start);
-      start += (result_->back().size() + 1);
+      result_->push_back(std::string{str_});
+    }
+  else
+    {
+      result_->push_back(std::string{str_.substr(0,off)});
+      result_->push_back(std::string{str_.substr(off+1)});
     }
 }
 
@@ -95,7 +122,11 @@ str::rsplit1(const string_view &str_,
 {
   std::size_t off;
 
-  off = str_.rfind('=');
+  assert(result_ != nullptr);
+  if(str_.empty())
+    return;
+
+  off = str_.rfind(delimiter_);
   if(off == std::string::npos)
     {
       result_->push_back(std::string{str_});
