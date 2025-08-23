@@ -37,6 +37,11 @@ namespace str
                 std::vector<std::string> *result);
 
   void
+  lsplit1(const std::string_view    &str,
+          const char                delimiter,
+          std::vector<std::string> *result);
+
+  void
   rsplit1(const std::string_view    &str,
           const char                delimiter,
           std::vector<std::string> *result);

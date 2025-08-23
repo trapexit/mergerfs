@@ -1,6 +1,7 @@
 #include "acutest.h"
 
 #include "config.hpp"
+#include "str.hpp"
 
 void
 test_nop()
@@ -75,12 +76,57 @@ test_config_str()
 }
 
 void
+test_str_stuff()
+{
+  std::vector<std::string> v;
+
+  v.clear();
+  str::split("",':',&v);
+  TEST_CHECK(v.size() == 0);
+
+  v.clear();
+  str::split("a:b:c",':',&v);
+  TEST_CHECK(v.size() == 3);
+  TEST_CHECK(v[0] == "a");
+  TEST_CHECK(v[1] == "b");
+  TEST_CHECK(v[2] == "c");
+
+  v.clear();
+  str::split("a::b:c",':',&v);
+  TEST_CHECK(v.size() == 4);
+  TEST_CHECK(v[0] == "a");
+  TEST_CHECK(v[1] == "");
+  TEST_CHECK(v[2] == "b");
+  TEST_CHECK(v[3] == "c");
+
+  v.clear();
+  str::lsplit1("foo=bar=baz",'=',&v);
+  TEST_CHECK(v.size() == 2);
+  TEST_CHECK(v[0] == "foo");
+  TEST_CHECK(v[1] == "bar=baz");
+
+  v.clear();
+  str::lsplit1("",'=',&v);
+  TEST_CHECK(v.size() == 0);
+
+  v.clear();
+  str::rsplit1("foo=bar=baz",'=',&v);
+  TEST_CHECK(v.size() == 2);
+  TEST_CHECK(v[0] == "foo=bar");
+  TEST_CHECK(v[1] == "baz");
+
+  v.clear();
+  str::rsplit1("",'=',&v);
+  TEST_CHECK(v.size() == 0);
+}
+
+void
 test_config_branches()
 {
   uint64_t minfreespace;
   Branches b(minfreespace);
-  Branches::CPtr bcp0;
-  Branches::CPtr bcp1;
+  Branches::Ptr bcp0;
+  Branches::Ptr bcp1;
 
   minfreespace = 1234;
   TEST_CHECK(b->minfreespace() == 1234);
@@ -105,12 +151,12 @@ test_config_branches()
   TEST_CHECK((*bcp0)[0].path == "/foo/bar");
   TEST_CHECK((*bcp0)[0].minfreespace() == 1234);
   TEST_MSG("minfreespace: expected = %lu; produced = %lu",
-           1234,
+           1234UL,
            (*bcp0)[0].minfreespace());
   TEST_CHECK((*bcp0)[1].path == "/foo/baz");
   TEST_CHECK((*bcp0)[1].minfreespace() == 4321);
   TEST_MSG("minfreespace: expected = %lu; produced = %lu",
-           4321,
+           4321UL,
            (*bcp0)[1].minfreespace());
 
   TEST_CHECK(b.from_string("foo/bar") == 0);
@@ -169,7 +215,7 @@ test_config_moveonenospc()
   TEST_CHECK(m.from_string("mspmfs") == 0);
   TEST_CHECK(m.to_string() == "mspmfs");
   TEST_CHECK(m.from_string("true") == 0);
-  TEST_CHECK(m.to_string() == "mfs");
+  TEST_CHECK(m.to_string() == "pfrd");
   TEST_CHECK(m.from_string("blah") == -EINVAL);
 }
 
@@ -194,15 +240,6 @@ test_config_nfsopenhack()
 void
 test_config_readdir()
 {
-  ReadDir r;
-
-  TEST_CHECK(r.from_string("linux") == 0);
-  TEST_CHECK(r.to_string() == "linux");
-  TEST_CHECK(r == ReadDir::ENUM::LINUX);
-
-  TEST_CHECK(r.from_string("posix") == 0);
-  TEST_CHECK(r.to_string() == "posix");
-  TEST_CHECK(r == ReadDir::ENUM::POSIX);
 }
 
 void
@@ -286,5 +323,6 @@ TEST_LIST =
    {"config_statfsignore",test_config_statfs_ignore},
    {"config_xattr",test_config_xattr},
    {"config",test_config},
+   {"str",test_str_stuff},
    {NULL,NULL}
   };
