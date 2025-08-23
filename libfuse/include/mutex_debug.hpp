@@ -103,7 +103,8 @@ _mutex_lock(pthread_mutex_t *mutex_,
         case ETIMEDOUT:
           cnt++;
           fmt::println(stderr,
-                       "NOTICE: pthread_mutex_timedlock expired - count={}; ({}:{}:{})",
+                       "NOTICE: pthread_mutex_timedlock expired - addr={}; count={}; ({}:{}:{})",
+                       (void*)mutex_,
                        cnt,
                        file_,
                        func_,
