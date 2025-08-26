@@ -1,9 +1,0 @@
-FROM --platform=linux/arm64 ubuntu:24.04 as build
-COPY install-build-pkgs build-mergerfs /tmp/
-RUN /tmp/install-build-pkgs
-ARG BUILD_TIMESTAMP=0
-ARG BRANCH=master
-RUN /tmp/build-mergerfs $BRANCH
-
-FROM scratch
-COPY --from=build /build/ /

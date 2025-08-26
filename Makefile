@@ -1,4 +1,4 @@
-#  Copyright (c) 2024, Antonio SJ Musumeci <trapexit@spawn.link>
+#  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
 #
 #  Permission to use, copy, modify, and/or distribute this software for any
 #  purpose with or without fee is hereby granted, provided that the above
@@ -11,6 +11,10 @@
 #  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+ifeq ($(shell id -u),0)
+FAKEROOT ?=
+endif
 
 CP        ?= cp
 FAKEROOT  ?= fakeroot
@@ -29,7 +33,7 @@ TAR 	  ?= tar
 TOUCH 	  ?= touch
 
 BUILDDIR := build
-GITREF    = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
+GITHUB_REPO ?= "https://github.com/trapexit/mergerfs"
 
 ifndef GIT_REPO
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
@@ -61,13 +65,13 @@ LTO_FLAGS :=
 endif
 
 SRC  := $(wildcard src/*.cpp)
-OBJS := $(SRC:src/%.cpp=build/.src/%.o)
-DEPS := $(SRC:src/%.cpp=build/.src/%.d)
+OBJS := $(SRC:src/%.cpp=build/.objs/%.cpp.o)
+DEPS := $(SRC:src/%.cpp=build/.objs/%.cpp.d)
 
 TESTS      := $(wildcard tests/*.cpp)
-TESTS_OBJS := $(filter-out build/.src/mergerfs.o,$(OBJS))
-TESTS_OBJS += $(TESTS:tests/%.cpp=build/.tests/%.o)
-TESTS_DEPS := $(TESTS:tests/%.cpp=build/.tests/%.d)
+TESTS_OBJS := $(filter-out build/.objs/mergerfs.o,$(OBJS))
+TESTS_OBJS += $(TESTS:tests/%.cpp=build/.test_objs/%.cpp.o)
+TESTS_DEPS := $(TESTS:tests/%.cpp=build/.test_objs/%.cpp.d)
 TESTS_DEPS += $(DEPS)
 
 MANPAGE := mergerfs.1
@@ -140,10 +144,13 @@ all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs
 
 .PHONY: help
 help:
-	@echo "usage: make\n"
-	@echo "make USE_XATTR=0      - build program without xattrs functionality"
-	@echo "make STATIC=1         - build static binary"
-	@echo "make LTO=1            - build with link time optimization"
+	@echo "usage: make ARG\n"
+	@echo "USE_XATTR=0     - build program without xattrs functionality"
+	@echo "STATIC=1        - build static binary"
+	@echo "LTO=1           - build with link time optimization"
+	@echo "CLEANUP=1       - cleanup images between release build process"
+	@echo "PKGDIR=/dir/    - location for release build pkgs"
+	@echo "GITREF=gitref   - gitref to use for release builds"
 
 
 $(BUILDDIR)/mergerfs: $(LIBFUSE) src/version.hpp $(OBJS)
@@ -165,6 +172,7 @@ libfuse:
 
 tests: $(BUILDDIR)/tests
 
+.PHONY:
 changelog:
 ifdef GIT_REPO
 	$(GIT2DEBCL) --name mergerfs > ChangeLog
@@ -179,13 +187,14 @@ src/version.hpp:
 	./buildtools/update-version
 
 $(BUILDDIR)/stamp:
-	$(MKDIR) -p $(BUILDDIR)/.src $(BUILDDIR)/.tests
+	$(MKDIR) -p $(BUILDDIR)/.objs
+	$(MKDIR) -p $(BUILDDIR)/.test_objs
 	$(TOUCH) $@
 
-$(BUILDDIR)/.src/%.o: src/%.cpp $(BUILDDIR)/stamp
+$(BUILDDIR)/.objs/%.cpp.o: src/%.cpp $(BUILDDIR)/stamp
 	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILDDIR)/.tests/%.o: tests/%.cpp
+$(BUILDDIR)/.test_objs/%.cpp.o: tests/%.cpp
 	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR)/preload.so: $(BUILDDIR)/stamp tools/preload.c
@@ -199,6 +208,7 @@ clean: rpm-clean
 	$(FIND) . -name "*~" -delete
 	$(MAKE) -C libfuse clean
 
+.PHONY: distclean
 distclean: clean
 ifdef GIT_REPO
 	$(GIT) clean -xfd
@@ -302,62 +312,35 @@ install-build-pkgs:
 install-build-tools:
 	./bulidtools/install-build-tools
 
+define build_release
+	$(eval GITREF ?= $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD))
+	./buildtools/build-release \
+		--target=$(1) \
+		$(if $(CLEANUP),--cleanup) \
+		$(if $(PKGDIR),--pkgdirpath=$(PKGDIR)) \
+		--git-repo=$(if $(REMOTE_REPO),$(GITHUB_REPO),".") \
+		--branch=$(GITREF)
+endef
+
 .PHONY: release
+.PHONY: release-amd64 release-arm64 release-armhf release-riscv64
+.PHONY: release-sample release-static release-tarball
 release:
-	./buildtools/build-release \
-		--target=all \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-sample
+	$(call build_release,"all")
 release-sample:
-	./buildtools/build-release \
-		--target=debian.12.amd64 \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-amd64
+	$(call build_release,"debian:13.amd64")
 release-amd64:
-	./buildtools/build-release \
-		--target=amd64 \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-arm64
+	$(call build_release,"amd64")
 release-arm64:
-	./buildtools/build-release \
-		--target=arm64 \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-riscv64
-release-riscv64:
-	./buildtools/build-release \
-		--target=riscv64 \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-armhf
+	$(call build_release,"arm64")
 release-armhf:
-	./buildtools/build-release \
-		--target=armhf \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-static
+	$(call build_release,"armhf")
+release-riscv64:
+	$(call build_release,"risc64")
 release-static:
-	./buildtools/build-release \
-		--target=static \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
-.PHONY: release-tarball
+	$(call build_release,"static")
 release-tarball:
-	./buildtools/build-release \
-		--target=tarball \
-		$(if $(CLEANUP),--cleanup) \
-		--branch=$(GITREF)
-
+	$(call build_release,"tarball")
 
 .PHONY: tags
 tags:

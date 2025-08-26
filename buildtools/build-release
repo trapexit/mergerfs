@@ -7,19 +7,26 @@ import argparse
 import time
 
 
-def build(containerfile,
-          pkgdirpath,
-          branch):
+def build(git_repo,
+          branch,
+          containerfile,
+          pkgdirpath):
     timestamp = time.time_ns()
     args = ['podman',
             'build',
             '--pull=always',
-            '--force-rm',
-            '-o',pkgdirpath,
-            '-f',containerfile,
-            f'--build-arg=BRANCH={branch}',
-            f'--build-arg=BUILD_TIMESTAMP={timestamp}',
-            'buildtools/']
+            '--force-rm']
+    if os.path.exists(git_repo):
+        git_repo = os.path.realpath(git_repo)
+        args += ['-v',f'{git_repo}:/tmp/mergerfs.git:ro']
+        args += ['--build-arg=GIT_REPO=/tmp/mergerfs.git']
+    else:
+        args += [f'--build-arg=GIT_REPO={git_repo}']
+    args += ['-o',pkgdirpath,
+             '-f',containerfile,
+             f'--build-arg=BRANCH={branch}',
+             f'--build-arg=BUILD_TIMESTAMP={timestamp}',
+             'buildtools/']
     # TODO: Capture output and write to log
     print(args)
     rv = subprocess.run(args)
@@ -62,7 +69,7 @@ def podman_cleanup():
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument('--target',
-                   default='debian.12.amd64')
+                   default='debian:13.amd64')
     p.add_argument('--pkgdirpath',
                    default='build/pkgs/')
     p.add_argument('--branch',
@@ -73,6 +80,9 @@ def parse_args():
     p.add_argument('--cleanup',
                    required=False,
                    action='store_true')
+    p.add_argument('--git-repo',
+                   required=True,
+                   type=str)
 
     return p.parse_args()
 
@@ -117,9 +127,10 @@ def main():
     for containerfile in containerfiles:
         if args.cleanup:
             podman_cleanup()
-        build(containerfile,
-              args.pkgdirpath,
-              args.branch)
+        build(git_repo=args.git_repo,
+              branch=args.branch,
+              containerfile=containerfile,
+              pkgdirpath=args.pkgdirpath)
 
     sys.exit(0)
 

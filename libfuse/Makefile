@@ -1,3 +1,17 @@
+#  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
+#
+#  Permission to use, copy, modify, and/or distribute this software for any
+#  purpose with or without fee is hereby granted, provided that the above
+#  copyright notice and this permission notice appear in all copies.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+#  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+#  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+#  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+#  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+#  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 AR      ?= ar
 CHMOD   ?= chmod
 CHOWN   ?= chown
@@ -48,29 +62,18 @@ BUILDDIR := build
 SRC_C = \
 	lib/buffer.c \
 	lib/crc32b.c \
-	lib/debug.c \
 	lib/fuse_dirents.c \
-	lib/fuse_lowlevel.c \
 	lib/fuse_opt.c \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \
 	lib/helper.c \
 	lib/mount.c
-SRC_CXX = \
-	lib/fuse.cpp \
-	lib/cpu.cpp \
-	lib/fuse_config.cpp \
-	lib/fuse_loop.cpp \
-	lib/fuse_msgbuf.cpp \
-	lib/pin_threads.cpp \
-	lib/format.cpp \
-	lib/node.cpp \
-	lib/maintenance_thread.cpp
+SRC_CXX = $(wildcard lib/*.cpp)
 
-OBJS_C   = $(SRC_C:lib/%.c=$(BUILDDIR)/%.o)
-OBJS_CXX = $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/%.o)
-DEPS_C   = $(SRC_C:lib/%.c=$(BUILDDIR)/%.d)
-DEPS_CXX = $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/%.d)
+OBJS := $(SRC_C:lib/%.c=$(BUILDDIR)/.objs/%.c.o)
+OBJS += $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/.objs/%.cpp.o)
+DEPS := $(SRC_C:lib/%.c=$(BUILDDIR)/.objs/%.c.d)
+DEPS += $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/.objs/%.cpp.d)
 
 CPPFLAGS ?=
 CFLAGS ?= \
@@ -107,11 +110,11 @@ LDLIBS := \
 all: $(BUILDDIR)/libfuse.a $(UTILS)
 
 $(BUILDDIR)/stamp:
-	$(MKDIR) -p $(BUILDDIR)
+	$(MKDIR) -p $(BUILDDIR)/.objs/
 	$(TOUCH) $@
 
-$(BUILDDIR)/libfuse.a: $(OBJS_C) $(OBJS_CXX)
-	$(AR) rcs $(BUILDDIR)/libfuse.a $(OBJS_C) $(OBJS_CXX)
+$(BUILDDIR)/libfuse.a: $(OBJS)
+	$(AR) rcs $(BUILDDIR)/libfuse.a $(OBJS)
 
 .PHONY: utils
 utils: mergerfs-fusermount mount.mergerfs
@@ -126,10 +129,10 @@ $(BUILDDIR)/mount.mergerfs: $(BUILDDIR)/libfuse.a util/mount.mergerfs.c
 
 mount.mergerfs: $(BUILDDIR)/mount.mergerfs
 
-$(BUILDDIR)/%.o: lib/%.c | $(BUILDDIR)/stamp
+$(BUILDDIR)/.objs/%.c.o: lib/%.c | $(BUILDDIR)/stamp
 	$(CC) $(CFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
-$(BUILDDIR)/%.o: lib/%.cpp | $(BUILDDIR)/stamp
+$(BUILDDIR)/.objs/%.cpp.o: lib/%.cpp | $(BUILDDIR)/stamp
 	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
 .PHONY: clean
@@ -154,4 +157,4 @@ install: $(INSTALLUTILS)
 
 .PHONY: objects strip utils install install-utils
 
--include $(DEPS_C) $(DEPS_CXX)
+-include $(DEPS)
