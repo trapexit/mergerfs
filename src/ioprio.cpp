@@ -9,7 +9,7 @@
 #warning "ioprio not supported on this platform"
 #endif
 
-thread_local int ioprio::SetFrom::prio = 0;
+thread_local int ioprio::SetFrom::thread_prio = 0;
 
 int
 ioprio::get(const int which_,
@@ -32,4 +32,9 @@ ioprio::set(const int which_,
   rv = syscall(SYS_ioprio_set,which_,who_,ioprio_);
 
   return ((rv == -1) ? -errno : rv);
+}
+
+ioprio::SetFrom::SetFrom(const pid_t pid_)
+{
+
 }
