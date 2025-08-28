@@ -19,6 +19,7 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_pread.hpp"
+#include "ioprio.hpp"
 
 #include "fuse.h"
 
