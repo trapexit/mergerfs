@@ -189,6 +189,8 @@ FUSE::write(const fuse_file_info_t *ffi_,
             size_t                  count_,
             off_t                   offset_)
 {
+  ioprio::SetFrom iop(fuse_get_context()->pid);
+
   return ::_write(ffi_,buf_,count_,offset_);
 }
 
