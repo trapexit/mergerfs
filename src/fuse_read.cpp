@@ -60,7 +60,10 @@ FUSE::read(const fuse_file_info_t *ffi_,
            size_t                  size_,
            off_t                   offset_)
 {
+  ioprio::SetFrom iop(fuse_get_context()->pid);
   FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+
 
   if(fi->direct_io)
     return ::_read_direct_io(fi->fd,buf_,size_,offset_);
