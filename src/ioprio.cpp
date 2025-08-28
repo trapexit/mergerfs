@@ -9,7 +9,7 @@
 #warning "ioprio not supported on this platform"
 #endif
 
-thread_local int ioprio::SetFrom::prio = 1;
+thread_local int ioprio::SetFrom::prio = 0;
 
 int
 ioprio::get(const int which_,
