@@ -10,6 +10,7 @@ namespace ioprio
 
   struct SetFrom
   {
+    static thread_local prio;
     SetFrom(const pid_t pid);
   };
 };
