@@ -36,5 +36,13 @@ ioprio::set(const int which_,
 
 ioprio::SetFrom::SetFrom(const pid_t pid_)
 {
+  int client_prio;
 
+  client_prio = ioprio::get(IOPRIO_WHO_PROCESS,pid_);
+  if(client_prio < 0)
+    return;
+  if(client_prio == thread_prio)
+    return;
+
+  ioprio::set(IOPRIO_WHO_PROCESS,0,client_prio);
 }
