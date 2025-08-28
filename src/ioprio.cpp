@@ -12,7 +12,7 @@ int
 ioprio::get(const int which_,
             const int who_)
 {
-  return 0;
+  return syscall(SYS_ioprio_get,which_,who_);
 }
 
 int
