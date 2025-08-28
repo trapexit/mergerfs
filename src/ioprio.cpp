@@ -4,6 +4,7 @@
 # include <linux/ioprio.h>
 # include <sys/syscall.h>
 # include <unistd.h>
+# include <errno.h>
 #else
 #warning "ioprio not supported on this platform"
 #endif
