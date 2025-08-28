@@ -162,6 +162,8 @@ config file.
 * **scheduling-priority=INT**: Set mergerfs' scheduling
   priority. Valid values range from -20 to 19. See `setpriority` man
   page for more details. (default: -10)
+* **[proxy-ioprio](proxy-ioprio.md)=BOOL**: Use ioprio value from
+  calling threads when reading and writing. (default: false)
 * **fsname=STR**: Sets the name of the filesystem as seen in
   **mount**, **df**, etc. Defaults to a list of the source paths
   concatenated together with the longest common prefix removed.

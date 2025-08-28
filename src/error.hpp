@@ -24,7 +24,7 @@ public:
   operator=(int v_)
   {
     if(!_err.has_value())
-      _err = v_;
+      _err = ((v_ >= 0) ? 0 : v_);
     else if(v_ >= 0)
       _err = 0;
 

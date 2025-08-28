@@ -19,6 +19,7 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_pread.hpp"
+#include "ioprio.hpp"
 
 #include "fuse.h"
 
@@ -60,6 +61,7 @@ FUSE::read(const fuse_file_info_t *ffi_,
            size_t                  size_,
            off_t                   offset_)
 {
+  ioprio::SetFrom iop(fuse_get_context()->pid);
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
   if(fi->direct_io)
