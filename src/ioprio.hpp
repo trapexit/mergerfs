@@ -7,6 +7,6 @@ namespace ioprio
 
   struct Set
   {
-
+    SetFrom(const pid_t pid);
   };
 };
