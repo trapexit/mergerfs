@@ -24,6 +24,7 @@
 #include "fs_movefile_and_open.hpp"
 #include "fs_pwrite.hpp"
 #include "fs_pwriten.hpp"
+#include "ioprio.hpp"
 
 #include "fuse.h"
 
