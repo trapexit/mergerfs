@@ -20,5 +20,5 @@ ioprio::set(const int which_,
             const int who_,
             const int ioprio_)
 {
-  return 0;
+  return syscall(SYS_ioprio_set,which_,who_,ioprio_);
 }
