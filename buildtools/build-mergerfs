@@ -1,44 +1,47 @@
 #!/bin/sh
+set -e
 
-BRANCH="${1:-master}"
-SRCDIR="/tmp/mergerfs"
-REPO_URL="https://github.com/trapexit/mergerfs"
+if [ $# -ne 2 ]; then
+    echo "usage: $0 <branch> <git_repo>"
+    echo "argv: $@"
+    echo "argc: $#"
+    exit 1
+fi
 
+GIT_REPO="${1}"
+BRANCH="${2}"
+BUILDDIR="/tmp/build"
+
+echo "Clone source from ${GIT_REPO} to ${BUILDDIR}"
 git \
     clone \
     --single-branch \
     --branch="${BRANCH}" \
-    "${REPO_URL}" \
-    "${SRCDIR}"
+    "${GIT_REPO}" \
+    "${BUILDDIR}"
 
-cd "${SRCDIR}"
+cd "${BUILDDIR}"
 
 git log HEAD^1..
 
-mkdir /build
+mkdir "/build"
 if [ -e /usr/bin/apt-get ]; then
     make deb
-    if [ $? -ne 0 ]; then
-        . /etc/lsb-release
-        cp -v /etc/lsb-release "/build/${DISTRIB_ID}.${DISTRIB_CODENAME}.${DISTRIB_RELEASE}.$(arch).FAILED"
-    fi
     find /tmp/ \
          -type f \
          -name "*.deb" \
          -not -name "*dbgsym*" \
          -exec cp -v {} /build/ \;
+    exit 0
 elif [ -e /usr/bin/dnf ]; then
     make rpm
-    if [ $? -ne 0 ]; then
-        . /etc/lsb-release
-        cp -v /etc/lsb-release "/build/${DISTRIB_ID}.${DISTRIB_CODENAME}.${DISTRIB_RELEASE}.$(arch).FAILED"
-    fi
     find /tmp/ \
          -type f \
          -name "*.rpm" \
          -not -name "*sym*" \
          -not -name "*src.rpm" \
          -exec cp -v {} /build/ \;
+    exit 0
 elif [ -e /usr/bin/yum ]; then
     . /opt/rh/devtoolset-9/enable
     make rpm
@@ -48,8 +51,13 @@ elif [ -e /usr/bin/yum ]; then
          -not -name "*sym*" \
          -not -name "*src.rpm" \
          -exec cp -v {} /build/ \;
+    exit 0
 elif [ -e /sbin/apk ]; then
     echo "NOT YET SUPPORTED"
 elif [ -e /usr/sbin/pkg ]; then
     echo "NOT YET SUPPORTED"
+else
+    echo "NOT YET SUPPORTED"
 fi
+
+exit 1

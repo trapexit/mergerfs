@@ -1,0 +1,10 @@
+FROM --platform=arm64 debian:13 as build
+COPY install-build-pkgs build-mergerfs /tmp/
+RUN /tmp/install-build-pkgs
+ARG BUILD_TIMESTAMP=0
+ARG GIT_REPO
+ARG BRANCH
+RUN /tmp/build-mergerfs $GIT_REPO $BRANCH
+
+FROM scratch
+COPY --from=build /build/ /
