@@ -14,11 +14,11 @@ bottlenecked by their network, internet connection, or limited size of
 the cache. However, there are a few situations where a tiered cache
 setup could help.
 
-1.  Fast network, slow filesystems, many readers: You've a 10+Gbps
+1.  Fast network, slow filesystems, many readers: You've a 10Gbps+
     network with many readers and your regular filesystems can't keep
     up.
 2.  Fast network, slow filesystems, small'ish bursty writes: You have
-    a 10+Gbps network and wish to transfer amounts of data less than
+    a 10Gbps+ network and wish to transfer amounts of data less than
     your cache filesystem but wish to do so quickly and the time
     between bursts is long enough to migrate data.
 
@@ -27,8 +27,8 @@ level that can aggregate performance or using higher performance
 storage would probably be the better solution. If you're going to use
 mergerfs there are other tactics that may help: spreading the data
 across filesystems (see the mergerfs.dup tool) and setting
-`func.open=rand`, using `symlinkify`, or using dm-cache or a similar
-technology to add tiered cache to the underlying device itself.
+`func.open=rand` or using dm-cache or a similar technology to add
+tiered cache to the underlying device itself.
 
 With #2 one could use a block cache solution as available via LVM and
 dm-cache but there is another solution which requires only mergerfs, a
@@ -52,11 +52,18 @@ script to move files around, and a cron job to run said script.
 * Set your programs to use the **cache** pool.
 * Configure the **base** pool with the `create` policy you would like
   to lay out files as you like.
-* Save one of the below scripts or create your own. The script's
+* Use monstermuffin's
+  [mergerfs-cache-mover](https://github.com/monstermuffin/mergerfs-cache-mover),
+  one of the scripts below, or create your own. The script's
   responsibility is to move files from the **cache** branches (not
   pool) to the **base** pool.
 * Use `cron` (as root) to schedule the command at whatever frequency
   is appropriate for your workflow.
+
+**NOTE:** Due to the additional overhead it is not recommended to nest
+or otherwise create hierarchies of mergerfs pools. It will work but
+the latency increases will further harm performance. Even when using
+passthrough IO or other features.
 
 
 ### time based expiring

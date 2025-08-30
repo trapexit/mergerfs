@@ -3,10 +3,10 @@
 * default: `off`
 * arguments:
     * `off`: Passthrough is never enabled.
-    * `ro`: Only enable passthrough when file opened for reading only.
-    * `wo`: Only enable passthrough when file opened for writing only.
-    * `rw`: Enable passthrough when file opened for reading, writing,
-      or both.
+    * `ro`: Only enable IO passthrough when file opened for reading only.
+    * `wo`: Only enable IO passthrough when file opened for writing only.
+    * `rw`: Enable IO passthrough when file opened for reading, writing,
+    or both.
 
 In [Linux 6.9](https://kernelnewbies.org/Linux_6.9#Faster_FUSE_I.2FO)
 a IO passthrough feature was added to FUSE. Typically `mergerfs` has
@@ -57,7 +57,7 @@ file opened. However, at the moment there is no use case for picking
 and choosing which to enable outside `cache.files=per-process` (which
 is largely unnecessary on Linux v6.6 and above. See
 [direct-io-allow-mmap](options.md)) If such a use case arises please
-reach out to the author to discuss.
+[reach out to the author](../support.md) to discuss.
 
 Unlike [preload.so](../tooling.md#preloadso), `passthrough` will work for
 any software interacting with `mergerfs`. However, `passthrough`
@@ -67,10 +67,18 @@ requires Linux v6.9 or above to work.
 `root` as currently only `root` is allowed to leverage the kernel
 feature.
 
-**NOTE:** If a file has been opened and passthrough enabled, while that
-file is open, if another open request is made `mergerfs` must also
-enable `passthrough` for the second open request. This is a limitation
-of how the passthrough feature works.
+**NOTE:** If a file has been opened and `passthrough` enabled, while
+that file is open, if another open request is made `mergerfs` must
+also enable `passthrough` for the second open request. This is a
+limitation of how the passthrough feature works. Though there is no
+known usecase where this is useful.
+
+**NOTE:** In order to add `passthrough` feature to `mergerfs` it was
+necessary to remove the "feature" where mergerfs could open the same
+file on different branches. Such as using `func.open=rand` and having
+multiple files at the same relative path across different
+branches. This "feature" was very very rarely used and it was
+impossible to support `passthrough` without changing the behavior.
 
 
 ## Alternatives

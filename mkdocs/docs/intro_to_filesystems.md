@@ -51,6 +51,8 @@ those needing that knowledge.
 * [file descriptor](https://en.wikipedia.org/wiki/File_descriptor): A
   handle used by software, provided by the operating system, to
   reference open files.
+* [mmap](https://en.wikipedia.org/wiki/Mmap): A way to abstract access
+  to a file by making it appear as a region of memory.
 
 
 ## Files
