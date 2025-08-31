@@ -140,7 +140,7 @@ INSTALLMAN1DIR ?= $(DESTDIR)$(MAN1DIR)
 
 
 .PHONY: all
-all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info
+all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info $(BUILDDIR)/mfm
 
 .PHONY: help
 help:
@@ -160,6 +160,9 @@ $(BUILDDIR)/fsck.mergerfs:
 	$(LN) -sf "mergerfs" $@
 
 $(BUILDDIR)/mergerfs.collect-info:
+	$(LN) -sf "mergerfs" $@
+
+$(BUILDDIR)/mfm:
 	$(LN) -sf "mergerfs" $@
 
 $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
@@ -223,6 +226,7 @@ install-base: all
 	$(INSTALL) -v -m 0755 "$(BUILDDIR)/mergerfs" "$(INSTALLBINDIR)/mergerfs"
 	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/fsck.mergerfs"
 	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mergerfs.collect-info"
+	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mfm"
 
 .PHONY: install-mount-tools
 install-mount-tools: install-base
