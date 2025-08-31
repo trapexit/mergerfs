@@ -17,6 +17,7 @@
 #include "mergerfs.hpp"
 #include "mergerfs_fsck.hpp"
 #include "mergerfs_collect_info.hpp"
+#include "mfm.hpp"
 
 #include "fs_path.hpp"
 #include "fs_readahead.hpp"
