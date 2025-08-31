@@ -373,6 +373,8 @@ _pick_app_and_run(int    argc_,
     return mergerfs::fsck::main(argc_,argv_);
   if(appname == "mergerfs.collect-info")
     return mergerfs::collect_info::main(argc_,argv_);
+  if(appname == "mfm")
+    return mfm::main(argc_,argv_);
 
   return l::main(argc_,argv_);
 }
