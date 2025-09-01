@@ -74,7 +74,8 @@ mfm::main(int    argc_,
   auto a = std::filesystem::path("/a/b");
   auto b = std::filesystem::path("a/b");
   fmt::println("{}\n{}",
-
+               a.parent_path().string(),
+               b.parent_path().string());
 
   return 0;
 
