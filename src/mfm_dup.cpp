@@ -29,8 +29,13 @@ mfm::dup(const Opts::Dup &opts_)
       for(const fs::directory_entry &de :
             fs::recursive_directory_iterator(opts_.path,dir_opts))
         {
-          if(str::startswith(
+          if(!str::startswith(de.path().string(),".dup_"))
+            continue;
 
+          fmt::println("{} {}",
+                       opts_.path.string(),
+                       de.path().string());
+          continue;
 
           auto filepath = de.path() / ".dup_2";
           if(!fs::exists(filepath,ec))
