@@ -42,9 +42,9 @@ mfm::dup(const Opts::Dup &opts_)
               for(const auto &de :
                     fs::directory_iterator(de.path().parent_path()))
                 {
-
+                  auto relpath = fs::relative(de.path(),path);
                   fmt::println("{} {}",
-                               fs::relative(de.path(),path).string(),
+                               relpath.string(),
                                de.path().filename().string());
                 }
             }
