@@ -76,8 +76,9 @@ mfm::main(int    argc_,
   auto a = std::filesystem::path("/a/b");
   auto b = std::filesystem::path("a/b");
   a = a.parent_path().parent_path();
-  fmt::println("{}",
-               a.empty() || a == a.root_path());
+  fmt::println("{}\n{}",
+               a == a.root_path(),
+               b == b.root_path());
 
 
 
