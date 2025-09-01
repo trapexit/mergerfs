@@ -50,6 +50,4 @@ mfm::dup(const Opts::Dup &opts_)
           throw std::runtime_error("invalid file type");
         }
     }
-
-  return 0;
 }
