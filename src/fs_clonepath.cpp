@@ -74,9 +74,7 @@ fs::clonepath(const string &srcpath_,
     return 0;
 
   dirname = stdfs::path{relpath_}.parent_path();
-
-  dirname = fs::path::dirname(relpath_);
-  if(dirname != "/")
+  if(dirname != dirname.root_path())
     {
       rv = fs::clonepath(srcpath_,dstpath_,dirname,return_metadata_errors_);
       if(rv < 0)
