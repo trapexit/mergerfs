@@ -73,21 +73,6 @@ mfm::main(int    argc_,
 
   ::_setup_argparser(app,opts);
 
-  auto a = std::filesystem::path("/a/b");
-  auto b = std::filesystem::path("a/b");
-  a = a.parent_path().parent_path();
-  b = b.parent_path().parent_path();
-  fmt::println("{}\n{}",
-               a == a.root_path(),
-               b == b.root_path());
-
-
-
-
-
-
-  return 0;
-
   try
     {
       app.parse(argc_,argv_);
