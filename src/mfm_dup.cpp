@@ -43,6 +43,7 @@ mfm::dup(const Opts::Dup &opts_)
                     fs::directory_iterator(de.path().parent_path()))
                 {
                   auto relpath = fs::relative(de.path(),srcpath);
+
                   for(const auto &dstpath : srcpaths)
                     {
                       if(dstpath == srcpath)
