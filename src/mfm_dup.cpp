@@ -9,7 +9,7 @@
 
 
 
-namespace fs = std::filesystem;
+namespace stdfs = std::filesystem;
 
 namespace mfm
 {
