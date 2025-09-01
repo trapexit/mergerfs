@@ -56,8 +56,8 @@ mfm::dup(const Opts::Dup &opts_)
                       dst_base_path = dstpath / relpath.parent_path();
 
                       fmt::println("copy {} to {} : {}",
-                                   srcpath.string(),
-                                   dstpath.string(),
+                                   src_basepath.string(),
+                                   dst_basepath.string(),
                                    relpath.string());
                     }
                 }
