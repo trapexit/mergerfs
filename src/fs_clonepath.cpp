@@ -27,6 +27,8 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
+#include "fmt/core.h"
+
 #include <string>
 
 using std::string;
