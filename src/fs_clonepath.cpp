@@ -30,6 +30,7 @@
 #include "fmt/core.h"
 
 #include <string>
+#include <filesystem>
 
 using std::string;
 
