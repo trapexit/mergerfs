@@ -44,6 +44,10 @@ mfm::dup(const Opts::Dup &opts_)
                 {
                   auto relpath = stdfs::relative(de.path(),srcpath);
 
+                  fs::clonepath(srcpath,
+                                dstpath,
+                                relpath.parent_path().string());
+
                   for(const auto &dstpath : srcpaths)
                     {
                       if(dstpath == srcpath)
