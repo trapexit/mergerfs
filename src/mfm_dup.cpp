@@ -1,8 +1,12 @@
 #include "mfm_options.hpp"
 
-#include <filesystem>
+#include "str.hpp"
 
 #include "fmt/core.h"
+
+#include <filesystem>
+
+
 
 namespace fs = std::filesystem;
 
@@ -25,10 +29,9 @@ mfm::dup(const Opts::Dup &opts_)
       for(const fs::directory_entry &de :
             fs::recursive_directory_iterator(opts_.path,dir_opts))
         {
-          if(!de.is_directory())
-            continue;
+          if(str::startswith(
 
-          std::error_code ec;
+
           auto filepath = de.path() / ".dup_2";
           if(!fs::exists(filepath,ec))
             continue;
