@@ -1,6 +1,7 @@
 #include "mfm_options.hpp"
 
 #include "str.hpp"
+#include "fs_clonepath.hpp"
 
 #include "fmt/core.h"
 
@@ -59,6 +60,7 @@ mfm::dup(const Opts::Dup &opts_)
                                    srcbasepath.string(),
                                    dstbasepath.string(),
                                    relpath.filename().string());
+
                     }
                 }
             }
