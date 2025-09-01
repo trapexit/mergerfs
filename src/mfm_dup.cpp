@@ -49,7 +49,7 @@ mfm::dup(const Opts::Dup &opts_)
 
                   for(const auto &dstpath : srcpaths)
                     {
-                      if(dstpath == path)
+                      if(dstpath == srcpath)
                         continue;
 
                     }
