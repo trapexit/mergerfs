@@ -34,7 +34,7 @@ mfm::dup(const Opts::Dup &opts_)
                            fs::directory_options::skip_permission_denied);
 
           for(const fs::directory_entry &de :
-                fs::recursive_directory_iterator(path,dir_opts))
+                fs::recursive_directory_iterator(srcpath,dir_opts))
             {
               if(!str::startswith(de.path().filename().string(),".dup_"))
                 continue;
@@ -42,7 +42,7 @@ mfm::dup(const Opts::Dup &opts_)
               for(const auto &de :
                     fs::directory_iterator(de.path().parent_path()))
                 {
-                  auto relpath = fs::relative(de.path(),path);
+                  auto relpath = fs::relative(de.path(),srcpath);
                   fmt::println("{} {}",
                                relpath.string(),
                                de.path().filename().string());
