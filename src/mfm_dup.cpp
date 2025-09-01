@@ -24,7 +24,7 @@ mfm::dup(const Opts::Dup &opts_)
 
   for(const auto &path : paths)
     {
-      if(fs::is_regular_file(opts_.path))
+      if(fs::is_regular_file(path))
         {
         }
       else if(fs::is_directory(opts_.path))
