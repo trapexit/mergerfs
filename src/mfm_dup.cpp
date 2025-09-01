@@ -49,10 +49,11 @@ mfm::dup(const Opts::Dup &opts_)
                       if(dstpath == srcpath)
                         continue;
 
-                      fmt::println("copy {} to {} : {}",
+                      fmt::println("copy {} to {} : {} : {}",
                                    srcpath.string(),
                                    dstpath.string(),
-                                   relpath.parent_path().string());
+                                   relpath.parent_path().string(),
+                                   relpath.filename().string());
 
                       fs::clonepath(srcpath,
                                     dstpath,
