@@ -23,7 +23,7 @@ mfm::dup(const Opts::Dup &opts_)
   // TODO: expand if mergerfs mount
   srcpaths = opts_.paths;
 
-  for(const auto &path : paths)
+  for(const auto &path : srcpaths)
     {
       if(fs::is_regular_file(path))
         {
