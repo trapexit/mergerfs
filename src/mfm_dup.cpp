@@ -36,17 +36,6 @@ mfm::dup(const Opts::Dup &opts_)
                        opts_.path.string(),
                        de.path().string());
           continue;
-
-          auto filepath = de.path() / ".dup_2";
-          if(!fs::exists(filepath,ec))
-            continue;
-
-          fmt::println("{}:",filepath.string());
-          for(const fs::directory_entry &de :
-                fs::directory_iterator(de.path()))
-            {
-              fmt::println("{}",de.path().string());
-            }
         }
     }
   else
