@@ -44,7 +44,7 @@ mfm::dup(const Opts::Dup &opts_)
                 {
 
                   fmt::println("{} {}",
-                               fs::relative(de.path(),path),
+                               fs::relative(de.path(),path).string(),
                                de.path().filename().string());
                 }
             }
