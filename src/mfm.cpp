@@ -13,7 +13,7 @@ _setup_argparser_dup(CLI::App       &app_,
 
   subcmd = app_.add_subcommand("dup",
                                "duplicate files");
-  subcmd->add_option("path",opts_.path)
+  subcmd->add_option("path",opts_.paths)
     ->description("")
     ->type_name("PATH")
     ->check(CLI::ExistingPath)
