@@ -12,7 +12,7 @@ namespace mfm
   {
     struct Dup
     {
-      std::filesystem::path dirpath;
+      std::filesystem::path path;
     } dup;
 
     struct Watch
