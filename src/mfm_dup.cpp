@@ -48,7 +48,7 @@ mfm::dup(const Opts::Dup &opts_)
       else
         {
           //throw std::runtime_error("invalid file type");
-          fmt::println("invalid file type: {}",path);
+          fmt::println("invalid file type: {}",path.string());
         }
     }
 }
