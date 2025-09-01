@@ -32,7 +32,7 @@ mfm::dup(const Opts::Dup &opts_)
           fmt::println("{} {}",
                        opts_.path.string(),
                        de.path().string());
-          if(!str::startswith(de.path().string(),".dup_"))
+          if(!str::startswith(de.path().filename().string(),".dup_"))
             continue;
 
           continue;
