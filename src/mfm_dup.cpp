@@ -18,6 +18,10 @@ namespace mfm
 void
 mfm::dup(const Opts::Dup &opts_)
 {
+  std::vector<std::filesystem::path> paths;
+
+
+
   if(fs::is_regular_file(opts_.path))
     {
     }
