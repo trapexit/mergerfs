@@ -9,7 +9,11 @@ void
 _setup_argparser_dup(CLI::App       &app_,
                      mfm::Opts::Dup &opts_)
 {
+  CLI::App *subcmd;
 
+  subcmd = app_.add_subcommand("dup",
+                               "duplicate files");
+  subcmd->add_option("dirpath",opts_.dirpath);
 }
 
 static
