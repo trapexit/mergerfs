@@ -42,7 +42,10 @@ mfm::dup(const Opts::Dup &opts_)
               for(const auto &de :
                     fs::directory_iterator(de.path().parent_path()))
                 {
-                  fmt::println("{}",de.path().filename().string());
+
+                  fmt::println("{} {}",
+                               de.path().relative_path(path),
+                               de.path().filename().string());
                 }
             }
         }
