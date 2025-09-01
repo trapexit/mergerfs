@@ -49,11 +49,11 @@ mfm::dup(const Opts::Dup &opts_)
                       if(dstpath == srcpath)
                         continue;
 
-                      fs::path src_basepath;
-                      fs::path dst_basepath;
+                      fs::path srcbasepath;
+                      fs::path dstbasepath;
 
-                      src_basepath = srcpath / relpath.parent_path();
-                      dst_basepath = dstpath / relpath.parent_path();
+                      srcbasepath = srcpath / relpath.parent_path();
+                      dstbasepath = dstpath / relpath.parent_path();
 
                       fmt::println("copy {} to {} : {}",
                                    src_basepath.string(),
