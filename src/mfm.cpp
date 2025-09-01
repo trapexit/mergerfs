@@ -18,6 +18,8 @@ _setup_argparser_dup(CLI::App       &app_,
     ->type_name("PATH")
     ->check(CLI::ExistingPath)
     ->required();
+
+  subcmd->callback(std::bind(SubCmd::dup,std::cref(opts_)));
 }
 
 static
