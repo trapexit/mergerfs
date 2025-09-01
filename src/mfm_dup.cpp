@@ -8,7 +8,6 @@
 #include <filesystem>
 
 
-
 namespace stdfs = std::filesystem;
 
 namespace mfm
@@ -26,32 +25,32 @@ mfm::dup(const Opts::Dup &opts_)
 
   for(const auto &srcpath : srcpaths)
     {
-      if(fs::is_regular_file(srcpath))
+      if(stdfs::is_regular_file(srcpath))
         {
         }
-      else if(fs::is_directory(srcpath))
+      else if(stdfs::is_directory(srcpath))
         {
-          auto dir_opts = (fs::directory_options::follow_directory_symlink |
-                           fs::directory_options::skip_permission_denied);
+          auto dir_opts = (stdfs::directory_options::follow_directory_symlink |
+                           stdfs::directory_options::skip_permission_denied);
 
-          for(const fs::directory_entry &de :
-                fs::recursive_directory_iterator(srcpath,dir_opts))
+          for(const stdfs::directory_entry &de :
+                stdfs::recursive_directory_iterator(srcpath,dir_opts))
             {
               if(!str::startswith(de.path().filename().string(),".dup_"))
                 continue;
 
               for(const auto &de :
-                    fs::directory_iterator(de.path().parent_path()))
+                    stdfs::directory_iterator(de.path().parent_path()))
                 {
-                  auto relpath = fs::relative(de.path(),srcpath);
+                  auto relpath = stdfs::relative(de.path(),srcpath);
 
                   for(const auto &dstpath : srcpaths)
                     {
                       if(dstpath == srcpath)
                         continue;
 
-                      fs::path srcbasepath;
-                      fs::path dstbasepath;
+                      stdfs::path srcbasepath;
+                      stdfs::path dstbasepath;
 
                       srcbasepath = srcpath / relpath.parent_path();
                       dstbasepath = dstpath / relpath.parent_path();
