@@ -60,7 +60,7 @@ mfm::dup(const Opts::Dup &opts_)
                                    srcbasepath.string(),
                                    dstbasepath.string(),
                                    relpath.filename().string());
-                      fs::clonepath(
+                      fs::clonepath(srcbasepath,dstbasepath);
                     }
                 }
             }
