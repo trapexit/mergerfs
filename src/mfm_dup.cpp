@@ -2,6 +2,7 @@
 
 #include "str.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_copyfile.hpp"
 
 #include "fmt/core.h"
 
