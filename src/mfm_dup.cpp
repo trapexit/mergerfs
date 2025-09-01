@@ -32,11 +32,11 @@ mfm::dup(const Opts::Dup &opts_)
           if(!str::startswith(de.path().filename().string(),".dup_"))
             continue;
 
-          fmt::println("{} {}",
-                       opts_.path.string(),
-                       de.path().string());
-
-          continue;
+          for(const auto &de :
+                fs::directory_iterator(de.path().parent_path()))
+            {
+              fmt::println("{}",de.path().filename());
+            }
         }
     }
   else
