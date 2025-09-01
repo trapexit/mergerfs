@@ -23,12 +23,12 @@ mfm::dup(const Opts::Dup &opts_)
   // TODO: expand if mergerfs mount
   srcpaths = opts_.paths;
 
-  for(const auto &path : srcpaths)
+  for(const auto &srcpath : srcpaths)
     {
-      if(fs::is_regular_file(path))
+      if(fs::is_regular_file(srcpath))
         {
         }
-      else if(fs::is_directory(path))
+      else if(fs::is_directory(srcpath))
         {
           auto dir_opts = (fs::directory_options::follow_directory_symlink |
                            fs::directory_options::skip_permission_denied);
