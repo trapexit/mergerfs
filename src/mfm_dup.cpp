@@ -57,9 +57,6 @@ mfm::dup(const Opts::Dup &opts_)
                                    srcpath.string(),
                                    dstpath.string(),
                                    relpath.parent_path().string());
-                      // fs::clonepath(srcpath,
-                      //               dstpath,
-                      //               relpath.parent_path().string());
                     }
                 }
             }
