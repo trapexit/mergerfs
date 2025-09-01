@@ -47,7 +47,7 @@ mfm::dup(const Opts::Dup &opts_)
                                relpath.string(),
                                de.path().filename().string());
 
-                  for(const auto &dstpath : paths)
+                  for(const auto &dstpath : srcpaths)
                     {
                       if(dstpath == path)
                         continue;
