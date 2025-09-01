@@ -29,11 +29,12 @@ mfm::dup(const Opts::Dup &opts_)
       for(const fs::directory_entry &de :
             fs::recursive_directory_iterator(opts_.path,dir_opts))
         {
+          if(!str::startswith(de.path().filename().string(),".dup_"))
+            continue;
+
           fmt::println("{} {}",
                        opts_.path.string(),
                        de.path().string());
-          if(!str::startswith(de.path().filename().string(),".dup_"))
-            continue;
 
           continue;
         }
