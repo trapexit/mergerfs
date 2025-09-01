@@ -21,7 +21,7 @@ mfm::dup(const Opts::Dup &opts_)
   std::vector<std::filesystem::path> srcpaths;
 
   // TODO: expand if mergerfs mount
-  paths = opts_.paths;
+  srcpaths = opts_.paths;
 
   for(const auto &path : paths)
     {
