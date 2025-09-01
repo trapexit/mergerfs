@@ -35,7 +35,7 @@ mfm::dup(const Opts::Dup &opts_)
           for(const auto &de :
                 fs::directory_iterator(de.path().parent_path()))
             {
-              fmt::println("{}",de.path().filename());
+              fmt::println("{}",de.path().filename().string());
             }
         }
     }
