@@ -59,6 +59,8 @@ _setup_argparser(CLI::App  &app_,
   _setup_argparser_watch(app_,opts_.watch);
 }
 
+#include "fmt/core.h"
+
 int
 mfm::main(int    argc_,
           char **argv_)
