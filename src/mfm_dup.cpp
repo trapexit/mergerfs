@@ -58,7 +58,7 @@ mfm::dup(const Opts::Dup &opts_)
                       fmt::println("copy {} to {} : {}",
                                    src_basepath.string(),
                                    dst_basepath.string(),
-                                   relpath.string());
+                                   relpath.filename().string());
                     }
                 }
             }
