@@ -52,7 +52,7 @@ mfm::dup(const Opts::Dup &opts_)
                       fmt::println("copy {} to {} : {}",
                                    srcpath.string(),
                                    dstpath.string(),
-                                   relpath.filename().string());
+                                   relpath.parent_path().string());
                       fs::clonepath(srcpath,
                                     dstpath,
                                     relpath.parent_path().string());
