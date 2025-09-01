@@ -27,7 +27,7 @@ mfm::dup(const Opts::Dup &opts_)
       if(fs::is_regular_file(path))
         {
         }
-      else if(fs::is_directory(opts_.path))
+      else if(fs::is_directory(path))
         {
           auto dir_opts = (fs::directory_options::follow_directory_symlink |
                            fs::directory_options::skip_permission_denied);
