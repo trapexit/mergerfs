@@ -27,6 +27,7 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
+#include <filesystem>
 #include <string>
 
 using std::string;
