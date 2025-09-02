@@ -11,7 +11,8 @@ works for mergerfs itself. Not the underlying filesystems.
 * `cache.files=full`: Enables page caching. Files are cached across
   opens.
 * `cache.files=auto-full`: Enables page caching. Files are cached
-  across opens if mtime and size are unchanged since previous open.
+  across opens if mtime and size are unchanged since previous
+  open. Cache is dropped if mtime or size change on open.
 * `cache.files=per-process`: Enable page caching (equivalent to
   `cache.files=partial`) only for processes whose 'comm' name matches
   one of the values defined in cache.files.process-names. If the name
@@ -39,6 +40,11 @@ The good thing is that in Linux v6.6[^2] and above FUSE can now
 transparently enable page caching when mmap is requested. This means
 it should be safe to set `cache.files=off`. However, on Linux v6.5 and
 below you will need to configure `cache.files` as you need.
+
+If [passthrough](passthrough.md) is enabled so must be page
+caching. mergerfs will set `cache.files=auto-full` if `passthrough` is
+enabled. And when using `passthrough` the there is no double page
+caching since it is in fact passing through the IO.
 
 
 [^1]: This is not unique to mergerfs and affects all FUSE
