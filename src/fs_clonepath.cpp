@@ -67,7 +67,7 @@ fs::clonepath(const string &srcpath_,
   string      dstpath;
   string      srcpath;
   string      dirname;
-  stdfs::path relapth;
+  stdfs::path relpath;
 
   if((relpath_ == NULL) || (relpath_[0] == '\0'))
     return 0;
