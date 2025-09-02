@@ -62,6 +62,7 @@ mfm::dup(const Opts::Dup &opts_)
                       fs::copyfile(srcpath / relpath,
                                    dstpath / relpath,
                                    {.cleanup_failure=false});
+                      return;
                     }
                 }
             }
