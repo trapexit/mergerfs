@@ -43,7 +43,7 @@ mfm::dup(const Opts::Dup &opts_)
               for(const auto &de :
                     stdfs::directory_iterator(de.path().parent_path()))
                 {
-                  auto relpath = stdfs::relative(de.path(),srcpath);
+                  auto relpath = "/" / stdfs::relative(de.path(),srcpath);
 
                   for(const auto &dstpath : srcpaths)
                     {
