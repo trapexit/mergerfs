@@ -41,7 +41,7 @@ mfm::dup(const Opts::Dup &opts_)
                 continue;
 
               for(const auto &de :
-                    stdfs::directory_iterator(de.path().parent_path()))
+                    stdfs::recursive_directory_iterator(de.path().parent_path()))
                 {
                   if(!de.is_regular_file())
                     continue;
