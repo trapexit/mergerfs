@@ -59,6 +59,9 @@ mfm::dup(const Opts::Dup &opts_)
                                    relpath.parent_path().string(),
                                    relpath.filename().string());
 
+                      auto srcfullpath = srcpath / relpath.relative_path();
+                      auto dstfullpath = srcpath / relpath.relative_path();
+
                       fs::clonepath(srcpath,
                                     dstpath,
                                     relpath.parent_path());
