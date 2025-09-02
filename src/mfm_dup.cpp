@@ -55,6 +55,9 @@ mfm::dup(const Opts::Dup &opts_)
                                    dstpath.string(),
                                    relpath.parent_path().string(),
                                    relpath.filename().string());
+                      fmt::println("{} : {}",
+                                   stdfs::path{"/a/b"}.relative_path(),
+                                   stdfs::path{"a/b"}.relative_path());
 
                       fs::clonepath(srcpath,
                                     dstpath,
