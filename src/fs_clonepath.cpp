@@ -27,13 +27,10 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
-#include "fmt/core.h"
-
 #include <string>
-#include <filesystem>
 
 using std::string;
-namespace stdfs = std::filesystem;
+
 
 static
 bool
@@ -68,13 +65,13 @@ fs::clonepath(const string &srcpath_,
   struct stat st;
   string      dstpath;
   string      srcpath;
-  stdfs::path dirname;
+  string      dirname;
 
   if((relpath_ == NULL) || (relpath_[0] == '\0'))
     return 0;
 
-  dirname = stdfs::path{relpath_}.parent_path();
-  if(dirname != dirname.root_path())
+  dirname = fs::path::dirname(relpath_);
+  if(dirname != "/")
     {
       rv = fs::clonepath(srcpath_,dstpath_,dirname,return_metadata_errors_);
       if(rv < 0)
