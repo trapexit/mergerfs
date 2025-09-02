@@ -73,7 +73,7 @@ fs::clonepath(const string &srcpath_,
     return 0;
 
   relpath = relpath_;
-  if(relpath[0] != '/')
+  if(relpath_[0] != '/')
     relpath = '/' + relpath;
 
   dirname = relpath.parent_path();
