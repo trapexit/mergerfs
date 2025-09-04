@@ -33,3 +33,7 @@ ubuntu:24.04 amd64
 ubuntu:24.04 arm64
 ubuntu:24.04 armhf
 ubuntu:24.04 riscv64
+ubuntu:25.04 amd64
+ubuntu:25.04 arm64
+ubuntu:25.04 armhf
+ubuntu:25.04 riscv64
