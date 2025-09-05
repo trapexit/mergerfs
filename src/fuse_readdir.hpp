@@ -32,6 +32,11 @@ namespace FUSE
               fuse_dirents_t         *buf);
 }
 
+// The 'initialize' feature is ugly but required currently as when
+// using mount.mergerfs the process will fork so if readdir needs to
+// spawn threads it needs to do so after the fork. Longer term need to
+// do argument/config file validation in main() and actual resource
+// initialization in fuse_init().
 namespace FUSE
 {
   class ReadDir : public ToFromString
@@ -47,7 +52,11 @@ namespace FUSE
     int operator()(fuse_file_info_t const *ffi,
                    fuse_dirents_t         *buf);
 
+  public:
+    void initialize();
+
   private:
+    bool _initialized = false;
     std::shared_ptr<std::string>       _str;
     std::shared_ptr<FUSE::ReadDirBase> _impl;
   };

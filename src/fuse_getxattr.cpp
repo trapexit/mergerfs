@@ -47,7 +47,7 @@ _is_attrname_security_capability(const char *attrname_)
 
 static
 int
-_getxattr_ctrl_file(Config::Read &cfg_,
+_getxattr_ctrl_file(Config       &cfg_,
                     const char   *attrname_,
                     char         *buf_,
                     const size_t  count_)
@@ -60,7 +60,7 @@ _getxattr_ctrl_file(Config::Read &cfg_,
     return -ENOATTR;
 
   key = Config::prune_ctrl_xattr(attrname_);
-  rv = cfg_->get(key,&val);
+  rv = cfg_.get(key,&val);
   if(rv < 0)
     return rv;
 
@@ -177,26 +177,24 @@ FUSE::getxattr(const char *fusepath_,
                char       *attrvalue_,
                size_t      attrvalue_size_)
 {
-  Config::Read cfg;
-
   if(Config::is_ctrl_file(fusepath_))
     return ::_getxattr_ctrl_file(cfg,
                                  attrname_,
                                  attrvalue_,
                                  attrvalue_size_);
 
-  if((cfg->security_capability == false) &&
+  if((cfg.security_capability == false) &&
      ::_is_attrname_security_capability(attrname_))
     return -ENOATTR;
 
-  if(cfg->xattr.to_int())
-    return -cfg->xattr.to_int();
+  if(cfg.xattr.to_int())
+    return -cfg.xattr.to_int();
 
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_getxattr(cfg->func.getxattr.policy,
-                     cfg->branches,
+  return ::_getxattr(cfg.func.getxattr.policy,
+                     cfg.branches,
                      fusepath_,
                      attrname_,
                      attrvalue_,

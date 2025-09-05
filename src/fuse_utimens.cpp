@@ -96,13 +96,12 @@ int
 FUSE::utimens(const char     *fusepath_,
               const timespec  ts_[2])
 {
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_utimens(cfg->func.utimens.policy,
-                    cfg->func.getattr.policy,
-                    cfg->branches,
+  return ::_utimens(cfg.func.utimens.policy,
+                    cfg.func.getattr.policy,
+                    cfg.branches,
                     fusepath_,
                     ts_);
 }

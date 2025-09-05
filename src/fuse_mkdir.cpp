@@ -129,22 +129,21 @@ FUSE::mkdir(const char *fusepath_,
             mode_t      mode_)
 {
   int rv;
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  rv = ::_mkdir(cfg->func.getattr.policy,
-                cfg->func.mkdir.policy,
-                cfg->branches,
+  rv = ::_mkdir(cfg.func.getattr.policy,
+                cfg.func.mkdir.policy,
+                cfg.branches,
                 fusepath_,
                 mode_,
                 fc->umask);
   if(rv == -EROFS)
     {
-      Config::Write()->branches.find_and_set_mode_ro();
-      rv = ::_mkdir(cfg->func.getattr.policy,
-                    cfg->func.mkdir.policy,
-                    cfg->branches,
+      cfg.branches.find_and_set_mode_ro();
+      rv = ::_mkdir(cfg.func.getattr.policy,
+                    cfg.func.mkdir.policy,
+                    cfg.branches,
                     fusepath_,
                     mode_,
                     fc->umask);

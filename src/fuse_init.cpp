@@ -79,19 +79,19 @@ static const char MAX_PAGES_LIMIT_FILEPATH[] = "/proc/sys/fs/fuse/max_pages_limi
 static
 void
 _want_if_capable_max_pages(fuse_conn_info *conn_,
-                           Config::Write  &cfg_)
+                           Config         &cfg_)
 {
   std::fstream f;
   uint64_t max_pages_limit;
 
   if(fs::exists(MAX_PAGES_LIMIT_FILEPATH))
     {
-      if(cfg_->fuse_msg_size > MAX_FUSE_MSG_SIZE)
+      if(cfg_.fuse_msg_size > MAX_FUSE_MSG_SIZE)
         SysLog::info("fuse_msg_size > {}: setting it to {}",
                      MAX_FUSE_MSG_SIZE,
                      MAX_FUSE_MSG_SIZE);
-      cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
-                                     (uint64_t)MAX_FUSE_MSG_SIZE);
+      cfg_.fuse_msg_size = std::min((uint64_t)cfg_.fuse_msg_size,
+                                    (uint64_t)MAX_FUSE_MSG_SIZE);
 
       f.open(MAX_PAGES_LIMIT_FILEPATH,f.in|f.out);
       if(f.is_open())
@@ -100,44 +100,44 @@ _want_if_capable_max_pages(fuse_conn_info *conn_,
           SysLog::info("{} currently set to {}",
                        MAX_PAGES_LIMIT_FILEPATH,
                        max_pages_limit);
-          if(cfg_->fuse_msg_size > max_pages_limit)
+          if(cfg_.fuse_msg_size > max_pages_limit)
             {
               f.seekp(0);
-              f << (uint64_t)cfg_->fuse_msg_size;
+              f << (uint64_t)cfg_.fuse_msg_size;
               f.flush();
               SysLog::info("{} changed to {}",
                            MAX_PAGES_LIMIT_FILEPATH,
-                           (uint64_t)cfg_->fuse_msg_size);
+                           (uint64_t)cfg_.fuse_msg_size);
             }
           f.close();
         }
       else
         {
-          if(cfg_->fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
+          if(cfg_.fuse_msg_size != FUSE_DEFAULT_MAX_MAX_PAGES)
             SysLog::info("unable to open {}",MAX_PAGES_LIMIT_FILEPATH);
         }
     }
   else
     {
-      if(cfg_->fuse_msg_size > FUSE_DEFAULT_MAX_MAX_PAGES)
+      if(cfg_.fuse_msg_size > FUSE_DEFAULT_MAX_MAX_PAGES)
         SysLog::info("fuse_msg_size request {} > {}: setting it to {}",
-                     (uint64_t)cfg_->fuse_msg_size,
+                     (uint64_t)cfg_.fuse_msg_size,
                      FUSE_DEFAULT_MAX_MAX_PAGES,
                      FUSE_DEFAULT_MAX_MAX_PAGES);
-      cfg_->fuse_msg_size = std::min((uint64_t)cfg_->fuse_msg_size,
-                                     (uint64_t)FUSE_DEFAULT_MAX_MAX_PAGES);
+      cfg_.fuse_msg_size = std::min((uint64_t)cfg_.fuse_msg_size,
+                                    (uint64_t)FUSE_DEFAULT_MAX_MAX_PAGES);
     }
 
   if(::_capable(conn_,FUSE_CAP_MAX_PAGES))
     {
       ::_want(conn_,FUSE_CAP_MAX_PAGES);
-      conn_->max_pages = cfg_->fuse_msg_size;
+      conn_->max_pages = cfg_.fuse_msg_size;
       SysLog::info("requesting max pages size of {}",
-                   (uint64_t)cfg_->fuse_msg_size);
+                   (uint64_t)cfg_.fuse_msg_size);
     }
   else
     {
-      cfg_->fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
+      cfg_.fuse_msg_size = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
     }
 }
 
@@ -159,17 +159,16 @@ static
 void
 _set_readahead_on_mount_and_branches()
 {
-  Config::Read cfg;
   Branches::Ptr branches;
 
-  if((uint64_t)cfg->readahead == 0)
+  if((uint64_t)cfg.readahead == 0)
     return;
 
-  ::_readahead(cfg->mountpoint,cfg->readahead);
+  ::_readahead(cfg.mountpoint,cfg.readahead);
 
-  branches = cfg->branches;
+  branches = cfg.branches;
   for(auto const &branch : *branches)
-    ::_readahead(branch.path,cfg->readahead);
+    ::_readahead(branch.path,cfg.readahead);
 }
 
 // Spawn a thread to do this because before init returns calls to
@@ -187,27 +186,26 @@ _spawn_thread_to_set_readahead()
 void *
 FUSE::init(fuse_conn_info *conn_)
 {
-  Config::Write cfg;
-
   procfs::init();
   ugid::init();
+  cfg.readdir.initialize();
 
   ::_want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
-  ::_want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&cfg->async_read);
+  ::_want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&cfg.async_read);
   ::_want_if_capable(conn_,FUSE_CAP_ATOMIC_O_TRUNC);
   ::_want_if_capable(conn_,FUSE_CAP_BIG_WRITES);
-  ::_want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&cfg->cache_symlinks);
-  ::_want_if_capable(conn_,FUSE_CAP_DIRECT_IO_ALLOW_MMAP,&cfg->direct_io_allow_mmap);
+  ::_want_if_capable(conn_,FUSE_CAP_CACHE_SYMLINKS,&cfg.cache_symlinks);
+  ::_want_if_capable(conn_,FUSE_CAP_DIRECT_IO_ALLOW_MMAP,&cfg.direct_io_allow_mmap);
   ::_want_if_capable(conn_,FUSE_CAP_DONT_MASK);
-  ::_want_if_capable(conn_,FUSE_CAP_EXPORT_SUPPORT,&cfg->export_support);
-  ::_want_if_capable(conn_,FUSE_CAP_HANDLE_KILLPRIV,&cfg->handle_killpriv);
-  ::_want_if_capable(conn_,FUSE_CAP_HANDLE_KILLPRIV_V2,&cfg->handle_killpriv_v2);
+  ::_want_if_capable(conn_,FUSE_CAP_EXPORT_SUPPORT,&cfg.export_support);
+  ::_want_if_capable(conn_,FUSE_CAP_HANDLE_KILLPRIV,&cfg.handle_killpriv);
+  ::_want_if_capable(conn_,FUSE_CAP_HANDLE_KILLPRIV_V2,&cfg.handle_killpriv_v2);
   ::_want_if_capable(conn_,FUSE_CAP_IOCTL_DIR);
   ::_want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
   ::_want_if_capable(conn_,FUSE_CAP_PASSTHROUGH);
-  ::_want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&cfg->posix_acl);
-  ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg->readdirplus);
-  ::_want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg->writeback_cache);
+  ::_want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&cfg.posix_acl);
+  ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg.readdirplus);
+  ::_want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg.writeback_cache);
   //    ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS_AUTO);
   ::_want_if_capable_max_pages(conn_,cfg);
   conn_->want &= ~FUSE_CAP_POSIX_LOCKS;
@@ -215,21 +213,21 @@ FUSE::init(fuse_conn_info *conn_)
 
   ::_spawn_thread_to_set_readahead();
 
-  if(!(conn_->capable & FUSE_CAP_PASSTHROUGH) && (cfg->passthrough != Passthrough::ENUM::OFF))
+  if(!(conn_->capable & FUSE_CAP_PASSTHROUGH) && (cfg.passthrough != Passthrough::ENUM::OFF))
     {
       SysLog::warning("passthrough enabled but not supported by kernel. disabling.");
-      cfg->passthrough = Passthrough::ENUM::OFF;
+      cfg.passthrough = Passthrough::ENUM::OFF;
     }
 
-  if((cfg->passthrough != Passthrough::ENUM::OFF) &&
-     (cfg->cache_files == CacheFiles::ENUM::OFF))
+  if((cfg.passthrough != Passthrough::ENUM::OFF) &&
+     (cfg.cache_files == CacheFiles::ENUM::OFF))
     {
       SysLog::warning("passthrough enabled and cache.files disabled:"
                       " passthrough will not function");
     }
 
-  if((cfg->passthrough != Passthrough::ENUM::OFF) &&
-     (cfg->writeback_cache == true))
+  if((cfg.passthrough != Passthrough::ENUM::OFF) &&
+     (cfg.writeback_cache == true))
     {
       SysLog::warning("passthrough and cache.writeback are incompatible.");
     }

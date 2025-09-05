@@ -177,24 +177,23 @@ _getattr(const char      *fusepath_,
          fuse_timeouts_t *timeout_)
 {
   int rv;
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  rv = ::_getattr(cfg->func.getattr.policy,
-                  cfg->branches,
+  rv = ::_getattr(cfg.func.getattr.policy,
+                  cfg.branches,
                   fusepath_,
                   st_,
-                  cfg->symlinkify,
-                  cfg->symlinkify_timeout,
-                  cfg->follow_symlinks);
+                  cfg.symlinkify,
+                  cfg.symlinkify_timeout,
+                  cfg.follow_symlinks);
   if((rv < 0) && Config::is_rootdir(fusepath_))
     return ::_getattr_fake_root(st_);
 
   timeout_->entry = ((rv >= 0) ?
-                     cfg->cache_entry :
-                     cfg->cache_negative_entry);
-  timeout_->attr  = cfg->cache_attr;
+                     cfg.cache_entry :
+                     cfg.cache_negative_entry);
+  timeout_->attr  = cfg.cache_attr;
 
   return rv;
 }

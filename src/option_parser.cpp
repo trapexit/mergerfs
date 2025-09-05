@@ -82,30 +82,30 @@ _set_kv_option(const std::string &key_,
 
 static
 void
-_set_fuse_threads(Config::Write &cfg_)
+_set_fuse_threads(Config &cfg_)
 {
-  fuse_config_set_read_thread_count(cfg_->fuse_read_thread_count);
-  fuse_config_set_process_thread_count(cfg_->fuse_process_thread_count);
-  fuse_config_set_process_thread_queue_depth(cfg_->fuse_process_thread_queue_depth);
-  fuse_config_set_pin_threads(cfg_->fuse_pin_threads);
+  fuse_config_set_read_thread_count(cfg_.fuse_read_thread_count);
+  fuse_config_set_process_thread_count(cfg_.fuse_process_thread_count);
+  fuse_config_set_process_thread_queue_depth(cfg_.fuse_process_thread_queue_depth);
+  fuse_config_set_pin_threads(cfg_.fuse_pin_threads);
 }
 
 static
 void
-_set_fsname(Config::Write &cfg_,
-            fuse_args     *args_)
+_set_fsname(Config    &cfg_,
+            fuse_args *args_)
 {
-  if(cfg_->fsname->empty())
+  if(cfg_.fsname->empty())
     {
       vector<string> paths;
 
-      cfg_->branches->to_paths(paths);
+      cfg_.branches->to_paths(paths);
 
       if(paths.size() > 0)
-        cfg_->fsname = str::remove_common_prefix_and_join(paths,':');
+        cfg_.fsname = str::remove_common_prefix_and_join(paths,':');
     }
 
-  ::_set_kv_option("fsname",cfg_->fsname,args_);
+  ::_set_kv_option("fsname",cfg_.fsname,args_);
 }
 
 static
@@ -117,10 +117,10 @@ _set_subtype(fuse_args *args_)
 
 static
 void
-_set_default_options(fuse_args     *args_,
-                     Config::Write &cfg_)
+_set_default_options(fuse_args *args_,
+                     Config    &cfg_)
 {
-  if(cfg_->kernel_permissions_check)
+  if(cfg_.kernel_permissions_check)
     ::_set_option("default_permissions",args_);
 
   if(geteuid() == 0)
@@ -161,7 +161,7 @@ _should_ignore(const std::string &key_)
 
 static
 int
-_parse_and_process_kv_arg(Config::Write     &cfg_,
+_parse_and_process_kv_arg(Config            &cfg_,
                           Config::ErrVec    *errs_,
                           const std::string &key_,
                           const std::string &val_)
@@ -172,7 +172,7 @@ _parse_and_process_kv_arg(Config::Write     &cfg_,
 
   rv = 0;
   if(key == "config")
-    return ((cfg_->from_file(val_,errs_) < 0) ? 1 : 0);
+    return ((cfg_.from_file(val_,errs_) < 0) ? 1 : 0);
   ef(key == "attr_timeout")
     key = "cache.attr";
   ef(key == "entry_timeout")
@@ -192,10 +192,10 @@ _parse_and_process_kv_arg(Config::Write     &cfg_,
   ef(::_should_ignore(key_))
     return 0;
 
-  if(cfg_->has_key(key) == false)
+  if(cfg_.has_key(key) == false)
     return 1;
 
-  rv = cfg_->set_raw(key,val);
+  rv = cfg_.set_raw(key,val);
   if(rv)
     errs_->push_back({rv,key+'='+val});
 
@@ -204,7 +204,7 @@ _parse_and_process_kv_arg(Config::Write     &cfg_,
 
 static
 int
-_process_opt(Config::Write     &cfg_,
+_process_opt(Config           &cfg_,
             Config::ErrVec    *errs_,
             const std::string &arg_)
 {
@@ -220,7 +220,7 @@ _process_opt(Config::Write     &cfg_,
 
 static
 int
-_process_branches(Config::Write  &cfg_,
+_process_branches(Config        &cfg_,
                  Config::ErrVec *errs_,
                  const char     *arg_)
 {
@@ -228,7 +228,7 @@ _process_branches(Config::Write  &cfg_,
   string arg;
 
   arg = arg_;
-  rv = cfg_->set_raw("branches",arg);
+  rv = cfg_.set_raw("branches",arg);
   if(rv)
     errs_->push_back({rv,"branches="+arg});
 
@@ -237,7 +237,7 @@ _process_branches(Config::Write  &cfg_,
 
 static
 int
-_process_mount(Config::Write  &cfg_,
+_process_mount(Config        &cfg_,
               Config::ErrVec *errs_,
               const char     *arg_)
 {
@@ -245,7 +245,7 @@ _process_mount(Config::Write  &cfg_,
   string arg;
 
   arg = arg_;
-  rv = cfg_->set_raw("mount",arg);
+  rv = cfg_.set_raw("mount",arg);
   if(rv)
     errs_->push_back({rv,"mount="+arg});
 
@@ -254,26 +254,26 @@ _process_mount(Config::Write  &cfg_,
 
 static
 void
-_postprocess_passthrough(Config::Write &cfg_)
+_postprocess_passthrough(Config &cfg_)
 {
-  if(cfg_->passthrough == Passthrough::ENUM::OFF)
+  if(cfg_.passthrough == Passthrough::ENUM::OFF)
     return;
 
-  if(cfg_->cache_files == CacheFiles::ENUM::OFF)
+  if(cfg_.cache_files == CacheFiles::ENUM::OFF)
     {
       SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
                       " Setting 'cache.files=full'");
-      cfg_->cache_files = CacheFiles::ENUM::FULL;
+      cfg_.cache_files = CacheFiles::ENUM::FULL;
     }
 
-  if(cfg_->writeback_cache == true)
+  if(cfg_.writeback_cache == true)
     {
       SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
                       " Setting 'cache.writeback=false'");
-      cfg_->writeback_cache = false;
+      cfg_.writeback_cache = false;
     }
 
-  if(cfg_->moveonenospc.enabled == true)
+  if(cfg_.moveonenospc.enabled == true)
     {
       SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
     }
@@ -295,7 +295,6 @@ _option_processor(void       *data_,
                   int         key_,
                   fuse_args  *outargs_)
 {
-  Config::Write cfg;
   Config::ErrVec *errs = (Config::ErrVec*)data_;
 
   switch(key_)
@@ -304,7 +303,7 @@ _option_processor(void       *data_,
       return ::_process_opt(cfg,errs,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
-      if(cfg->branches->empty())
+      if(cfg.branches->empty())
         return ::_process_branches(cfg,errs,arg_);
       else
         return ::_process_mount(cfg,errs,arg_);
@@ -345,15 +344,15 @@ _option_processor(void       *data_,
 
 static
 void
-_check_for_mount_loop(Config::Write  &cfg_,
+_check_for_mount_loop(Config         &cfg_,
                       Config::ErrVec *errs_)
 {
   fs::Path mount;
   fs::PathVector branches;
   std::error_code ec;
 
-  mount    = *cfg_->mountpoint;
-  branches = cfg_->branches->to_paths();
+  mount    = *cfg_.mountpoint;
+  branches = cfg_.branches->to_paths();
   for(const auto &branch : branches)
     {
       if(std::filesystem::equivalent(branch,mount,ec))
@@ -369,25 +368,25 @@ _check_for_mount_loop(Config::Write  &cfg_,
 
 static
 void
-_print_warnings(Config::Write &cfg_)
+_print_warnings(Config &cfg_)
 {
-  if(cfg_->passthrough != Passthrough::ENUM::OFF)
+  if(cfg_.passthrough != Passthrough::ENUM::OFF)
     {
-      if(cfg_->cache_files == CacheFiles::ENUM::OFF)
+      if(cfg_.cache_files == CacheFiles::ENUM::OFF)
         {
           SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
                           " Setting 'cache.files=auto-full'");
-          cfg_->cache_files = CacheFiles::ENUM::AUTO_FULL;
+          cfg_.cache_files = CacheFiles::ENUM::AUTO_FULL;
         }
 
-      if(cfg_->writeback_cache == true)
+      if(cfg_.writeback_cache == true)
         {
           SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
                           " Setting 'cache.writeback=false'");
-          cfg_->writeback_cache = false;
+          cfg_.writeback_cache = false;
         }
 
-      if(cfg_->moveonenospc.enabled == true)
+      if(cfg_.moveonenospc.enabled == true)
         {
           SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
         }
@@ -396,10 +395,10 @@ _print_warnings(Config::Write &cfg_)
 
 static
 void
-_cleanup_options(Config::Write &cfg_)
+_cleanup_options(Config &cfg_)
 {
-  if(!cfg_->symlinkify)
-    cfg_->symlinkify_timeout = -1;
+  if(!cfg_.symlinkify)
+    cfg_.symlinkify_timeout = -1;
 }
 
 namespace options
@@ -408,7 +407,6 @@ namespace options
   parse(fuse_args      *args_,
         Config::ErrVec *errs_)
   {
-    Config::Write cfg;
     const struct fuse_opt opts[] =
       {
         FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
@@ -424,9 +422,9 @@ namespace options
                    opts,
                    ::_option_processor);
 
-    if(cfg->branches->empty())
+    if(cfg.branches->empty())
       errs_->push_back({0,"branches not set"});
-    if(cfg->mountpoint->empty())
+    if(cfg.mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
 
     ::_postprocess_passthrough(cfg);
@@ -438,6 +436,6 @@ namespace options
     ::_print_warnings(cfg);
     ::_cleanup_options(cfg);
 
-    cfg->finish_initializing();
+    cfg.finish_initializing();
   }
 }

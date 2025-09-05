@@ -138,16 +138,16 @@ _calculate_flush(FlushOnClose const flushonclose_,
 
 static
 void
-_config_to_ffi_flags(Config::Read     &cfg_,
+_config_to_ffi_flags(Config           &cfg_,
                      const int         tid_,
                      fuse_file_info_t *ffi_)
 {
-  switch(cfg_->cache_files)
+  switch(cfg.cache_files)
     {
     case CacheFiles::ENUM::LIBFUSE:
-      ffi_->direct_io  = cfg_->direct_io;
-      ffi_->keep_cache = cfg_->kernel_cache;
-      ffi_->auto_cache = cfg_->auto_cache;
+      ffi_->direct_io  = cfg.direct_io;
+      ffi_->keep_cache = cfg.kernel_cache;
+      ffi_->auto_cache = cfg.auto_cache;
       break;
     case CacheFiles::ENUM::OFF:
       ffi_->direct_io  = 1;
@@ -173,7 +173,7 @@ _config_to_ffi_flags(Config::Read     &cfg_,
       std::string proc_name;
 
       proc_name = procfs::get_name(tid_);
-      if(cfg_->cache_files_process_names.count(proc_name) == 0)
+      if(cfg.cache_files_process_names.count(proc_name) == 0)
         {
           ffi_->direct_io  = 1;
           ffi_->keep_cache = 0;
@@ -188,7 +188,7 @@ _config_to_ffi_flags(Config::Read     &cfg_,
       break;
     }
 
-  if(cfg_->parallel_direct_writes == true)
+  if(cfg.parallel_direct_writes == true)
     ffi_->parallel_direct_writes = ffi_->direct_io;
 }
 
@@ -286,23 +286,22 @@ _open_for_insert_lambda(const fuse_context *fc_,
 {
   int rv;
   FileInfo *fi;
-  Config::Read cfg;
   const ugid::Set ugid(fc_->uid,fc_->gid);
 
   ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
 
-  if(cfg->writeback_cache)
+  if(cfg.writeback_cache)
     ::_tweak_flags_writeback_cache(&ffi_->flags);
 
-  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
                                       ffi_->flags);
 
-  rv = ::_open(cfg->func.open.policy,
-               cfg->branches,
+  rv = ::_open(cfg.func.open.policy,
+               cfg.branches,
                fusepath_,
                ffi_,
-               cfg->link_cow,
-               cfg->nfsopenhack);
+               cfg.link_cow,
+               cfg.nfsopenhack);
 
   if(rv < 0)
     return rv;
@@ -312,7 +311,7 @@ _open_for_insert_lambda(const fuse_context *fc_,
   of_->ref_count = 1;
   of_->fi        = fi;
 
-  switch(_(cfg->passthrough,ffi_->flags))
+  switch(_(cfg.passthrough,ffi_->flags))
     {
     case _(Passthrough::ENUM::RO,O_RDONLY):
     case _(Passthrough::ENUM::WO,O_WRONLY):
@@ -343,15 +342,14 @@ _open_for_update_lambda(const fuse_context *fc_,
                         State::OpenFile    *of_)
 {
   int rv;
-  Config::Read cfg;
   const ugid::Set ugid(fc_->uid,fc_->gid);
 
   ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
 
-  if(cfg->writeback_cache)
+  if(cfg.writeback_cache)
     ::_tweak_flags_writeback_cache(&ffi_->flags);
 
-  ffi_->noflush = !::_calculate_flush(cfg->flushonclose,
+  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
                                       ffi_->flags);
 
   rv = ::_open_fd(of_->fi->fd,

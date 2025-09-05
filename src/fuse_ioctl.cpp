@@ -161,13 +161,12 @@ _ioctl_dir(const fuse_file_info_t *ffi_,
            void                   *data_,
            uint32_t               *out_bufsz_)
 {
-  Config::Read        cfg;
   DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_ioctl_dir_base(cfg->func.open.policy,
-                           cfg->branches,
+  return ::_ioctl_dir_base(cfg.func.open.policy,
+                           cfg.branches,
                            di->fusepath.c_str(),
                            cmd_,
                            data_,

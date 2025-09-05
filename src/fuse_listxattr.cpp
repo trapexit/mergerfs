@@ -127,12 +127,10 @@ FUSE::listxattr(const char *fusepath_,
                 char       *list_,
                 size_t      size_)
 {
-  Config::Read cfg;
-
   if(Config::is_ctrl_file(fusepath_))
-    return cfg->keys_listxattr(list_,size_);
+    return cfg.keys_listxattr(list_,size_);
 
-  switch(cfg->xattr)
+  switch(cfg.xattr)
     {
     case XAttr::ENUM::PASSTHROUGH:
       break;
@@ -145,8 +143,8 @@ FUSE::listxattr(const char *fusepath_,
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_listxattr(cfg->func.listxattr.policy,
-                      cfg->branches,
+  return ::_listxattr(cfg.func.listxattr.policy,
+                      cfg.branches,
                       fusepath_,
                       list_,
                       size_);

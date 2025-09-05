@@ -111,12 +111,11 @@ int
 FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
                              fuse_dirents_t         *buf_)
 {
-  Config::Read        cfg;
   DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_readdir(cfg->branches,
+  return ::_readdir(cfg.branches,
                     di->fusepath,
                     buf_);
 }

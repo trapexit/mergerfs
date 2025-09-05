@@ -29,23 +29,16 @@
 
 #include <dirent.h>
 
-/*
-  The _initialized stuff is not pretty but easiest way to deal with
-  the fact that mergerfs is doing arg parsing and setting up of things
-  (including thread pools) before the daemonizing
- */
 
 int
 FUSE::readdir(const fuse_file_info_t *ffi_,
               fuse_dirents_t         *buf_)
 {
-  Config::Write cfg;
-
-  return cfg->readdir(ffi_,buf_);
+  return cfg.readdir(ffi_,buf_);
 }
 
 FUSE::ReadDir::ReadDir(const std::string_view s_)
-  : _str(new std::string())
+  : _str()
 {
   from_string(s_);
 }
@@ -71,8 +64,11 @@ FUSE::ReadDir::from_string(const std::string_view str_)
     return -EINVAL;
 
   tmp_str = std::make_shared<std::string>(str_);
-
   std::atomic_store(&_str,tmp_str);
+
+  if(_initialized == false)
+    return 0;
+
   std::atomic_store(&_impl,tmp_readdir);
 
   return 0;
@@ -102,11 +98,6 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
   return 0;
 }
 
-/*
-  Yeah... if not initialized it will crash... ¯\_(ツ)_/¯
-  This will be resolved once initialization of internal objects and
-  handling of input is better separated.
-*/
 int
 FUSE::ReadDir::operator()(const fuse_file_info_t *ffi_,
                           fuse_dirents_t         *buf_)
@@ -115,10 +106,22 @@ FUSE::ReadDir::operator()(const fuse_file_info_t *ffi_,
   std::shared_ptr<FUSE::ReadDirBase> readdir;
 
   readdir = std::atomic_load(&_impl);
+  assert(readdir);
 
   rv = (*readdir)(ffi_,buf_);
   if(rv == -ENOENT)
     return ::_handle_ENOENT(ffi_,buf_);
 
   return rv;
+}
+
+void
+FUSE::ReadDir::initialize()
+{
+  std::shared_ptr<std::string> str;
+
+  str = std::atomic_load(&_str);
+  _initialized = true;
+
+  from_string(*str);
 }
