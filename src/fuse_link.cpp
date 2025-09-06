@@ -166,28 +166,28 @@ _link_preserve_path(const Policy::Action &actionFunc_,
 
 static
 int
-_link(Config::Read    &cfg_,
-      const char      *oldpath_,
-      const char      *newpath_,
-      struct stat     *st_)
+_link(Config      &cfg_,
+      const char  *oldpath_,
+      const char  *newpath_,
+      struct stat *st_)
 {
-  if(cfg_->func.create.policy.path_preserving() && !cfg_->ignorepponrename)
-    return ::_link_preserve_path(cfg_->func.link.policy,
-                                 cfg_->branches,
+  if(cfg_.func.create.policy.path_preserving() && !cfg_.ignorepponrename)
+    return ::_link_preserve_path(cfg_.func.link.policy,
+                                 cfg_.branches,
                                  oldpath_,
                                  newpath_,
                                  st_);
 
-  return ::_link_create_path(cfg_->func.getattr.policy,
-                             cfg_->func.link.policy,
-                             cfg_->branches,
+  return ::_link_create_path(cfg_.func.getattr.policy,
+                             cfg_.func.link.policy,
+                             cfg_.branches,
                              oldpath_,
                              newpath_);
 }
 
 static
 int
-_link(Config::Read    &cfg_,
+_link(Config          &cfg_,
       const char      *oldpath_,
       const char      *newpath_,
       struct stat     *st_,
@@ -283,13 +283,13 @@ _link_exdev_abs_pool_symlink(const fs::Path   mount_,
 
 static
 int
-_link_exdev(Config::Read    &cfg_,
+_link_exdev(Config          &cfg_,
             const char      *oldpath_,
             const char      *newpath_,
             struct stat     *st_,
             fuse_timeouts_t *timeouts_)
 {
-  switch(cfg_->link_exdev)
+  switch(cfg_.link_exdev)
     {
     case LinkEXDEV::ENUM::PASSTHROUGH:
       return -EXDEV;
@@ -299,14 +299,14 @@ _link_exdev(Config::Read    &cfg_,
                                        st_,
                                        timeouts_);
     case LinkEXDEV::ENUM::ABS_BASE_SYMLINK:
-      return ::_link_exdev_abs_base_symlink(cfg_->func.open.policy,
-                                            cfg_->branches,
+      return ::_link_exdev_abs_base_symlink(cfg_.func.open.policy,
+                                            cfg_.branches,
                                             oldpath_,
                                             newpath_,
                                             st_,
                                             timeouts_);
     case LinkEXDEV::ENUM::ABS_POOL_SYMLINK:
-      return ::_link_exdev_abs_pool_symlink(cfg_->mountpoint,
+      return ::_link_exdev_abs_pool_symlink(cfg_.mountpoint,
                                             oldpath_,
                                             newpath_,
                                             st_,
@@ -323,7 +323,6 @@ FUSE::link(const char      *oldpath_,
            fuse_timeouts_t *timeouts_)
 {
   int rv;
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 

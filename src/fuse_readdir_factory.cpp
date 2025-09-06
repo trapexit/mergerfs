@@ -87,6 +87,19 @@ _read_cfg(const std::string_view  str_,
   max_queue_depth_ = max_queue_depth;
 }
 
+bool
+FUSE::ReadDirFactory::valid(const std::string_view str_)
+{
+  int concurrency;
+  int max_queue_depth;
+  std::string type;
+
+  ::_read_cfg(str_,type,concurrency,max_queue_depth);
+
+  return ((type == "seq") ||
+          (type == "cosr") ||
+          (type == "cor"));
+}
 
 std::shared_ptr<FUSE::ReadDirBase>
 FUSE::ReadDirFactory::make(const std::string_view str_)

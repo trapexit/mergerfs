@@ -96,13 +96,12 @@ int
 _chmod(const char   *fusepath_,
        const mode_t  mode_)
 {
-  Config::Read cfg;
   const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return l::chmod(cfg->func.chmod.policy,
-                  cfg->func.getattr.policy,
-                  cfg->branches,
+  return l::chmod(cfg.func.chmod.policy,
+                  cfg.func.getattr.policy,
+                  cfg.branches,
                   fusepath_,
                   mode_);
 }

@@ -29,6 +29,7 @@ namespace FUSE
   class ReadDirFactory
   {
   public:
+    static bool valid(const std::string_view str);
     static std::shared_ptr<ReadDirBase> make(const std::string_view str);
   };
 }

@@ -148,13 +148,12 @@ int
 FUSE::statfs(const char     *fusepath_,
              struct statvfs *st_)
 {
-  Config::Read        cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_statfs(cfg->branches,
+  return ::_statfs(cfg.branches,
                    fusepath_,
-                   cfg->statfs,
-                   cfg->statfs_ignore,
+                   cfg.statfs,
+                   cfg.statfs_ignore,
                    st_);
 }

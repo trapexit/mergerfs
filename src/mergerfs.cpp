@@ -189,31 +189,31 @@ namespace l
 
   static
   bool
-  wait_for_mount(const Config::Read &cfg_)
+  wait_for_mount(const Config &cfg_)
   {
     int failures;
     fs::PathVector paths;
     std::chrono::milliseconds timeout;
 
-    paths = cfg_->branches->to_paths();
+    paths = cfg_.branches->to_paths();
 
     SysLog::info("Waiting {} seconds for {} branches to mount",
-                 (uint64_t)cfg_->branches_mount_timeout,
+                 (uint64_t)cfg_.branches_mount_timeout,
                  paths.size());
 
-    timeout = std::chrono::milliseconds(cfg_->branches_mount_timeout * 1000);
-    failures = fs::wait_for_mount(cfg_->mountpoint,
+    timeout = std::chrono::milliseconds(cfg_.branches_mount_timeout * 1000);
+    failures = fs::wait_for_mount(cfg_.mountpoint,
                                   paths,
                                   timeout);
     if(failures)
       {
-        if(cfg_->branches_mount_timeout_fail)
+        if(cfg_.branches_mount_timeout_fail)
           {
             SysLog::error("{} of {} branches were not mounted"
                          " within the timeout of {}s. Exiting",
                           failures,
                           paths.size(),
-                          (uint64_t)cfg_->branches_mount_timeout);
+                          (uint64_t)cfg_.branches_mount_timeout);
             return true;
           }
 
@@ -301,7 +301,6 @@ namespace l
        char **argv_)
   {
     int rv;
-    Config::Read    cfg;
     Config::ErrVec  errs;
     fuse_args       args;
     fuse_operations ops;
@@ -321,7 +320,7 @@ namespace l
         return 1;
       }
 
-    if(cfg->branches_mount_timeout > 0)
+    if(cfg.branches_mount_timeout > 0)
       {
         bool failure;
 
@@ -339,13 +338,13 @@ namespace l
       if((count_ % 60) == 0)
         GIDCache::clear_unused();
     });
-    l::setup_resources(cfg->scheduling_priority);
+    l::setup_resources(cfg.scheduling_priority);
     l::setup_signal_handlers();
     l::set_oom_score_adj();
-    l::get_fuse_operations(ops,cfg->nullrw);
+    l::get_fuse_operations(ops,cfg.nullrw);
 
-    if(cfg->lazy_umount_mountpoint)
-      l::lazy_umount(cfg->mountpoint);
+    if(cfg.lazy_umount_mountpoint)
+      l::lazy_umount(cfg.mountpoint);
 
     rv = fuse_main(args.argc,
                    args.argv,

@@ -96,20 +96,18 @@ int
 FUSE::removexattr(const char *fusepath_,
                   const char *attrname_)
 {
-  Config::Read cfg;
-
   if(Config::is_ctrl_file(fusepath_))
     return -ENOATTR;
 
-  if(cfg->xattr.to_int())
-    return -cfg->xattr.to_int();
+  if(cfg.xattr.to_int())
+    return -cfg.xattr.to_int();
 
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_removexattr(cfg->func.removexattr.policy,
-                        cfg->func.getxattr.policy,
-                        cfg->branches,
+  return ::_removexattr(cfg.func.removexattr.policy,
+                        cfg.func.getxattr.policy,
+                        cfg.branches,
                         fusepath_,
                         attrname_);
 }

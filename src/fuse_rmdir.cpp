@@ -97,12 +97,11 @@ _rmdir(const Policy::Action &actionFunc_,
 int
 FUSE::rmdir(const char *fusepath_)
 {
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_rmdir(cfg->func.rmdir.policy,
-                  cfg->branches,
-                  cfg->follow_symlinks,
+  return ::_rmdir(cfg.func.rmdir.policy,
+                  cfg.branches,
+                  cfg.follow_symlinks,
                   fusepath_);
 }

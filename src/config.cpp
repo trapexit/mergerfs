@@ -44,8 +44,7 @@ constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
   "rtorrent|"
   "qbittorrent-nox";
 
-
-Config Config::_singleton;
+Config cfg;
 
 namespace l
 {

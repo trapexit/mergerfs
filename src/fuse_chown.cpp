@@ -100,13 +100,12 @@ namespace FUSE
         uid_t       uid_,
         gid_t       gid_)
   {
-    Config::Read        cfg;
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::chown(cfg->func.chown.policy,
-                    cfg->func.getattr.policy,
-                    cfg->branches,
+    return l::chown(cfg.func.chown.policy,
+                    cfg.func.getattr.policy,
+                    cfg.branches,
                     fusepath_,
                     uid_,
                     gid_);

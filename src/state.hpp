@@ -36,6 +36,7 @@ public:
   {
     std::function<std::string()> get;
     std::function<int(const std::string_view)> set;
+    std::function<int(const std::string_view)> valid;
   };
 
   void set_getset(const std::string   &name,
@@ -45,6 +46,8 @@ public:
           std::string       &val);
   int set(const std::string      &key,
           const std::string_view  val);
+  int valid(const std::string      &key,
+            const std::string_view  val);
 
 public:
   using OpenFileMap = boost::concurrent_flat_map<u64,OpenFile>;

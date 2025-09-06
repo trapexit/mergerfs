@@ -210,12 +210,11 @@ int
 FUSE::ReadDirCOSR::operator()(fuse_file_info_t const *ffi_,
                               fuse_dirents_t         *buf_)
 {
-  Config::Read        cfg;
   DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
 
   return l::readdir(_tp,
-                    cfg->branches,
+                    cfg.branches,
                     di->fusepath,
                     buf_,
                     fc->uid,

@@ -80,7 +80,6 @@ _setxattr_ctrl_file(const char *attrname_,
 {
   int rv;
   std::string key;
-  Config::Write cfg;
 
   if(!Config::is_mergerfs_xattr(attrname_))
     return -ENOATTR;
@@ -91,17 +90,17 @@ _setxattr_ctrl_file(const char *attrname_,
 
   key = Config::prune_ctrl_xattr(attrname_);
 
-  if(cfg->has_key(key) == false)
+  if(cfg.has_key(key) == false)
     return -ENOATTR;
 
   if((flags_ & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  rv = cfg->set(key,std::string{attrval_,attrvalsize_});
+  rv = cfg.set(key,std::string{attrval_,attrvalsize_});
   if(rv < 0)
     return rv;
 
-  fs::statvfs_cache_timeout(cfg->cache_statfs);
+  fs::statvfs_cache_timeout(cfg.cache_statfs);
 
   return rv;
 }
@@ -188,21 +187,19 @@ _setxattr(const char *fusepath_,
           size_t      attrvalsize_,
           int         flags_)
 {
-  Config::Read cfg;
-
-  if((cfg->security_capability == false) &&
+  if((cfg.security_capability == false) &&
      ::_is_attrname_security_capability(attrname_))
     return -ENOATTR;
 
-  if(cfg->xattr.to_int())
-    return -cfg->xattr.to_int();
+  if(cfg.xattr.to_int())
+    return -cfg.xattr.to_int();
 
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_setxattr(cfg->func.setxattr.policy,
-                     cfg->func.getxattr.policy,
-                     cfg->branches,
+  return ::_setxattr(cfg.func.setxattr.policy,
+                     cfg.func.getxattr.policy,
+                     cfg.branches,
                      fusepath_,
                      attrname_,
                      attrval_,

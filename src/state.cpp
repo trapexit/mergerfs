@@ -64,3 +64,16 @@ State::set(const std::string      &key_,
 
   return i->second.set(val_);
 }
+
+int
+State::valid(const std::string      &key_,
+             const std::string_view  val_)
+{
+  std::map<std::string,State::GetSet>::iterator i;
+
+  i = _getset.find(key_);
+  if((i == _getset.end()) || (!i->second.valid))
+    return -ENOATTR;
+
+  return i->second.valid(val_);
+}

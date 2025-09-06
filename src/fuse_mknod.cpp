@@ -137,23 +137,22 @@ FUSE::mknod(const char *fusepath_,
             dev_t       rdev_)
 {
   int rv;
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  rv = ::_mknod(cfg->func.getattr.policy,
-                cfg->func.mknod.policy,
-                cfg->branches,
+  rv = ::_mknod(cfg.func.getattr.policy,
+                cfg.func.mknod.policy,
+                cfg.branches,
                 fusepath_,
                 mode_,
                 fc->umask,
                 rdev_);
   if(rv == -EROFS)
     {
-      Config::Write()->branches.find_and_set_mode_ro();
-      rv = ::_mknod(cfg->func.getattr.policy,
-                    cfg->func.mknod.policy,
-                    cfg->branches,
+      cfg.branches.find_and_set_mode_ro();
+      rv = ::_mknod(cfg.func.getattr.policy,
+                    cfg.func.mknod.policy,
+                    cfg.branches,
                     fusepath_,
                     mode_,
                     fc->umask,

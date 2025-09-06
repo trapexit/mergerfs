@@ -121,15 +121,14 @@ FUSE::readlink(const char *fusepath_,
                char       *buf_,
                size_t      size_)
 {
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_readlink(cfg->func.readlink.policy,
-                     cfg->branches,
+  return ::_readlink(cfg.func.readlink.policy,
+                     cfg.branches,
                      fusepath_,
                      buf_,
                      size_,
-                     cfg->symlinkify,
-                     cfg->symlinkify_timeout);
+                     cfg.symlinkify,
+                     cfg.symlinkify_timeout);
 }

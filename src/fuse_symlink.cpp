@@ -128,22 +128,21 @@ FUSE::symlink(const char      *target_,
               fuse_timeouts_t *timeouts_)
 {
   int rv;
-  Config::Read cfg;
   const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  rv = ::_symlink(cfg->func.getattr.policy,
-                  cfg->func.symlink.policy,
-                  cfg->branches,
+  rv = ::_symlink(cfg.func.getattr.policy,
+                  cfg.func.symlink.policy,
+                  cfg.branches,
                   target_,
                   linkpath_,
                   st_);
   if(rv == -EROFS)
     {
-      Config::Write()->branches.find_and_set_mode_ro();
-      rv = ::_symlink(cfg->func.getattr.policy,
-                      cfg->func.symlink.policy,
-                      cfg->branches,
+      cfg.branches.find_and_set_mode_ro();
+      rv = ::_symlink(cfg.func.getattr.policy,
+                      cfg.func.symlink.policy,
+                      cfg.branches,
                       target_,
                       linkpath_,
                       st_);
@@ -151,13 +150,13 @@ FUSE::symlink(const char      *target_,
 
   if(timeouts_ != NULL)
     {
-      switch(cfg->follow_symlinks)
+      switch(cfg.follow_symlinks)
         {
         case FollowSymlinks::ENUM::NEVER:
           timeouts_->entry = ((rv >= 0) ?
-                              cfg->cache_entry :
-                              cfg->cache_negative_entry);
-          timeouts_->attr  = cfg->cache_attr;
+                              cfg.cache_entry :
+                              cfg.cache_negative_entry);
+          timeouts_->attr  = cfg.cache_attr;
           break;
         default:
           timeouts_->entry = 0;

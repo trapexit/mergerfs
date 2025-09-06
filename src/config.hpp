@@ -76,32 +76,6 @@ public:
   typedef std::vector<Err> ErrVec;
 
 public:
-  class Read
-  {
-  public:
-    Read();
-
-  public:
-    inline const Config* operator->() const;
-
-  private:
-    const Config &_cfg;
-  };
-
-public:
-  class Write
-  {
-  public:
-    Write();
-
-  public:
-    Config* operator->();
-
-  private:
-    Config &_cfg;
-  };
-
-public:
   Config();
 
 public:
@@ -209,9 +183,6 @@ public:
 private:
   Str2TFStrMap _map;
 
-private:
-  static Config _singleton;
-
 public:
   friend class Read;
   friend class Write;
@@ -219,31 +190,4 @@ public:
 
 std::ostream& operator<<(std::ostream &s,const Config::ErrVec &ev);
 
-inline
-Config::Read::Read()
-  : _cfg(Config::_singleton)
-{
-
-}
-
-inline
-const
-Config*
-Config::Read::operator->() const
-{
-  return &_cfg;
-}
-
-inline
-Config::Write::Write()
-  : _cfg(Config::_singleton)
-{
-
-}
-
-inline
-Config*
-Config::Write::operator->()
-{
-  return &_cfg;
-}
+extern Config cfg;

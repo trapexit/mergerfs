@@ -59,12 +59,11 @@ namespace FUSE
   access(const char *fusepath_,
          int         mask_)
   {
-    Config::Read cfg;
     const fuse_context *fc  = fuse_get_context();
     const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::access(cfg->func.access.policy,
-                     cfg->branches,
+    return l::access(cfg.func.access.policy,
+                     cfg.branches,
                      fusepath_,
                      mask_);
   }

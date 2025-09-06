@@ -14,30 +14,27 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_opendir.hpp"
+
 #include "config.hpp"
 #include "dirinfo.hpp"
 
 #include "fuse.h"
 
 
-namespace FUSE
+int
+FUSE::opendir(const char       *fusepath_,
+              fuse_file_info_t *ffi_)
 {
-  int
-  opendir(const char       *fusepath_,
-          fuse_file_info_t *ffi_)
-  {
-    Config::Read cfg;
+  ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
 
-    ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
+  ffi_->noflush = true;
 
-    ffi_->noflush = true;
+  if(cfg.cache_readdir)
+    {
+      ffi_->keep_cache    = true;
+      ffi_->cache_readdir = true;
+    }
 
-    if(cfg->cache_readdir)
-      {
-        ffi_->keep_cache    = true;
-        ffi_->cache_readdir = true;
-      }
-
-    return 0;
-  }
+  return 0;
 }

@@ -97,13 +97,12 @@ int
 FUSE::truncate(const char *fusepath_,
                off_t       size_)
 {
-  Config::Read cfg;
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return ::_truncate(cfg->func.truncate.policy,
-                     cfg->func.getattr.policy,
-                     cfg->branches,
+  return ::_truncate(cfg.func.truncate.policy,
+                     cfg.func.getattr.policy,
+                     cfg.branches,
                      fusepath_,
                      size_);
 }
