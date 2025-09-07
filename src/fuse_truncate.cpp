@@ -25,25 +25,21 @@
 
 #include "fuse.h"
 
-#include <string>
-
 #include <sys/types.h>
 #include <unistd.h>
-
-using std::string;
 
 
 static
 void
-_truncate_loop_core(const string &basepath_,
-                    const char   *fusepath_,
-                    const off_t   size_,
-                    PolicyRV     *prv_)
+_truncate_loop_core(const fs::path &basepath_,
+                    const fs::path &fusepath_,
+                    const off_t     size_,
+                    PolicyRV       *prv_)
 {
   int rv;
-  string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
   rv = fs::truncate(fullpath,size_);
 
@@ -53,7 +49,7 @@ _truncate_loop_core(const string &basepath_,
 static
 void
 _truncate_loop(const std::vector<Branch*> &branches_,
-               const char                 *fusepath_,
+               const fs::path             &fusepath_,
                const off_t                 size_,
                PolicyRV                   *prv_)
 {
@@ -68,7 +64,7 @@ int
 _truncate(const Policy::Action &actionFunc_,
           const Policy::Search &searchFunc_,
           const Branches       &branches_,
-          const char           *fusepath_,
+          const fs::path       &fusepath_,
           const off_t           size_)
 {
   int rv;
@@ -97,12 +93,13 @@ int
 FUSE::truncate(const char *fusepath_,
                off_t       size_)
 {
+  const fs::path      fusepath{fusepath_};
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   return ::_truncate(cfg.func.truncate.policy,
                      cfg.func.getattr.policy,
                      cfg.branches,
-                     fusepath_,
+                     fusepath,
                      size_);
 }

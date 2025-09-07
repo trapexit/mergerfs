@@ -22,7 +22,6 @@
 
 #include <cstdint>
 #include <string>
-#include <string_view>
 
 #include <sys/stat.h>
 
@@ -31,19 +30,19 @@ namespace fs
 {
   namespace inode
   {
-    int set_algo(const std::string_view s);
+    int set_algo(const std::string &s);
     std::string get_algo(void);
 
-    uint64_t calc(const std::string_view basepath,
-                  const std::string_view fusepath,
+    uint64_t calc(const std::string &basepath,
+                  const std::string &fusepath,
                   const mode_t           mode,
                   const ino_t            ino);
 
-    void calc(const std::string_view  basepath,
-              const std::string_view  fusepath,
+    void calc(const std::string &basepath,
+              const std::string &fusepath,
               struct stat            *st);
-    void calc(const std::string_view  basepath,
-              const std::string_view  fusepath,
-              struct fuse_statx      *st);
+    void calc(const std::string &basepath,
+              const std::string &fusepath,
+              struct fuse_statx *st);
   }
 }

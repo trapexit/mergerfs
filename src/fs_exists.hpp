@@ -21,16 +21,14 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 
-#include <string>
-
 
 namespace fs
 {
   static
   inline
   bool
-  exists(const std::string &path_,
-         struct stat       *st_)
+  exists(const fs::path &path_,
+         struct stat    *st_)
   {
     int rv;
 
@@ -42,7 +40,7 @@ namespace fs
   static
   inline
   bool
-  exists(const std::string &path_)
+  exists(const fs::path &path_)
   {
     struct stat st;
 
@@ -52,26 +50,13 @@ namespace fs
   static
   inline
   bool
-  exists(const std::string &basepath_,
-         const std::string &relpath_)
+  exists(const fs::path &basepath_,
+         const char     *relpath_,
+         struct stat    *st_)
   {
-    std::string fullpath;
+    fs::path fullpath;
 
-    fullpath = fs::path::make(basepath_,relpath_);
-
-    return fs::exists(fullpath);
-  }
-
-  static
-  inline
-  bool
-  exists(const std::string &basepath_,
-         const char        *relpath_,
-         struct stat       *st_)
-  {
-    std::string fullpath;
-
-    fullpath = fs::path::make(basepath_,relpath_);
+    fullpath = basepath_ / relpath_;
 
     return fs::exists(fullpath,st_);
   }
@@ -79,8 +64,33 @@ namespace fs
   static
   inline
   bool
-  exists(const std::string &basepath_,
-         const char        *relpath_)
+  exists(const fs::path &basepath_,
+         const fs::path &relpath_,
+         struct stat    *st_)
+  {
+    fs::path fullpath;
+
+    fullpath = basepath_ / relpath_;
+
+    return fs::exists(fullpath,st_);
+  }
+
+  static
+  inline
+  bool
+  exists(const fs::path &basepath_,
+         const char     *relpath_)
+  {
+    struct stat st;
+
+    return fs::exists(basepath_,relpath_,&st);
+  }
+
+  static
+  inline
+  bool
+  exists(const fs::path &basepath_,
+         const fs::path &relpath_)
   {
     struct stat st;
 

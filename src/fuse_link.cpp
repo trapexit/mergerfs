@@ -28,7 +28,6 @@
 
 #include "fuse.h"
 
-#include <filesystem>
 #include <optional>
 #include <string>
 #include <vector>
@@ -38,20 +37,20 @@ static
 int
 _link_create_path_loop(const std::vector<Branch*> &oldbranches_,
                        const Branch               *newbranch_,
-                       const char                 *oldfusepath_,
-                       const char                 *newfusepath_,
-                       const std::string          &newfusedirpath_)
+                       const fs::path             &oldfusepath_,
+                       const fs::path             &newfusepath_,
+                       const fs::path             &newfusedirpath_)
 {
   int rv;
   int err;
-  std::string oldfullpath;
-  std::string newfullpath;
+  fs::path oldfullpath;
+  fs::path newfullpath;
 
   err = -ENOENT;
   for(const auto &oldbranch : oldbranches_)
     {
-      oldfullpath = fs::path::make(oldbranch->path,oldfusepath_);
-      newfullpath = fs::path::make(oldbranch->path,newfusepath_);
+      oldfullpath = oldbranch->path / oldfusepath_;
+      newfullpath = oldbranch->path / newfusepath_;
 
       rv = fs::link(oldfullpath,newfullpath);
       if(rv == -ENOENT)
@@ -73,11 +72,11 @@ int
 _link_create_path(const Policy::Search &searchFunc_,
                   const Policy::Action &actionFunc_,
                   const Branches       &ibranches_,
-                  const char           *oldfusepath_,
-                  const char           *newfusepath_)
+                  const fs::path       &oldfusepath_,
+                  const fs::path       &newfusepath_)
 {
   int rv;
-  std::string newfusedirpath;
+  fs::path newfusedirpath;
   std::vector<Branch*> oldbranches;
   std::vector<Branch*> newbranches;
 
@@ -85,7 +84,7 @@ _link_create_path(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  newfusedirpath = fs::path::dirname(newfusepath_);
+  newfusedirpath = newfusepath_.parent_path();
 
   rv = searchFunc_(ibranches_,newfusedirpath,newbranches);
   if(rv < 0)
@@ -98,17 +97,17 @@ _link_create_path(const Policy::Search &searchFunc_,
 
 static
 int
-_link_preserve_path_core(const std::string &oldbasepath_,
-                         const char        *oldfusepath_,
-                         const char        *newfusepath_,
-                         struct stat       *st_)
+_link_preserve_path_core(const fs::path &oldbasepath_,
+                         const fs::path &oldfusepath_,
+                         const fs::path &newfusepath_,
+                         struct stat    *st_)
 {
   int rv;
-  std::string oldfullpath;
-  std::string newfullpath;
+  fs::path oldfullpath;
+  fs::path newfullpath;
 
-  oldfullpath = fs::path::make(oldbasepath_,oldfusepath_);
-  newfullpath = fs::path::make(oldbasepath_,newfusepath_);
+  oldfullpath = oldbasepath_ / oldfusepath_;
+  newfullpath = oldbasepath_ / newfusepath_;
 
   rv = fs::link(oldfullpath,newfullpath);
   if(rv == -ENOENT)
@@ -122,8 +121,8 @@ _link_preserve_path_core(const std::string &oldbasepath_,
 static
 int
 _link_preserve_path_loop(const std::vector<Branch*> &oldbranches_,
-                         const char                 *oldfusepath_,
-                         const char                 *newfusepath_,
+                         const fs::path             &oldfusepath_,
+                         const fs::path             &newfusepath_,
                          struct stat                *st_)
 {
   int rv;
@@ -147,8 +146,8 @@ static
 int
 _link_preserve_path(const Policy::Action &actionFunc_,
                     const Branches       &branches_,
-                    const char           *oldfusepath_,
-                    const char           *newfusepath_,
+                    const fs::path       &oldfusepath_,
+                    const fs::path       &newfusepath_,
                     struct stat          *st_)
 {
   int rv;
@@ -166,10 +165,10 @@ _link_preserve_path(const Policy::Action &actionFunc_,
 
 static
 int
-_link(Config      &cfg_,
-      const char  *oldpath_,
-      const char  *newpath_,
-      struct stat *st_)
+_link(Config         &cfg_,
+      const fs::path &oldpath_,
+      const fs::path &newpath_,
+      struct stat    *st_)
 {
   if(cfg_.func.create.policy.path_preserving() && !cfg_.ignorepponrename)
     return ::_link_preserve_path(cfg_.func.link.policy,
@@ -188,8 +187,8 @@ _link(Config      &cfg_,
 static
 int
 _link(Config          &cfg_,
-      const char      *oldpath_,
-      const char      *newpath_,
+      const fs::path  &oldpath_,
+      const fs::path  &newpath_,
       struct stat     *st_,
       fuse_timeouts_t *timeouts_)
 {
@@ -204,18 +203,18 @@ _link(Config          &cfg_,
 
 static
 int
-_link_exdev_rel_symlink(const char      *oldpath_,
-                        const char      *newpath_,
+_link_exdev_rel_symlink(const fs::path  &oldpath_,
+                        const fs::path  &newpath_,
                         struct stat     *st_,
                         fuse_timeouts_t *timeouts_)
 {
   int rv;
-  fs::Path target(oldpath_);
-  fs::Path linkpath(newpath_);
+  fs::path target(oldpath_);
+  fs::path linkpath(newpath_);
 
   target = target.lexically_relative(linkpath.parent_path());
 
-  rv = FUSE::symlink(target.c_str(),linkpath.c_str());
+  rv = FUSE::symlink(target.c_str(),linkpath);
   if(rv == 0)
     rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
@@ -230,20 +229,20 @@ static
 int
 _link_exdev_abs_base_symlink(const Policy::Search &openPolicy_,
                              const Branches::Ptr  &ibranches_,
-                             const char           *oldpath_,
-                             const char           *newpath_,
+                             const fs::path       &oldpath_,
+                             const fs::path       &newpath_,
                              struct stat          *st_,
                              fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  std::string target;
+  fs::path target;
   std::vector<Branch*> obranches;
 
   rv = openPolicy_(ibranches_,oldpath_,obranches);
   if(rv < 0)
     return rv;
 
-  target = fs::path::make(obranches[0]->path,oldpath_);
+  target = obranches[0]->path / oldpath_;
 
   rv = FUSE::symlink(target.c_str(),newpath_);
   if(rv == 0)
@@ -258,17 +257,17 @@ _link_exdev_abs_base_symlink(const Policy::Search &openPolicy_,
 
 static
 int
-_link_exdev_abs_pool_symlink(const fs::Path   mount_,
-                             const char      *oldpath_,
-                             const char      *newpath_,
+_link_exdev_abs_pool_symlink(const fs::path  &mount_,
+                             const fs::path  &oldpath_,
+                             const fs::path  &newpath_,
                              struct stat     *st_,
                              fuse_timeouts_t *timeouts_)
 {
   int rv;
   StrVec basepaths;
-  std::string target;
+  fs::path target;
 
-  target = fs::path::make(mount_,oldpath_);
+  target = mount_ / oldpath_;
 
   rv = FUSE::symlink(target.c_str(),newpath_);
   if(rv == 0)
@@ -284,8 +283,8 @@ _link_exdev_abs_pool_symlink(const fs::Path   mount_,
 static
 int
 _link_exdev(Config          &cfg_,
-            const char      *oldpath_,
-            const char      *newpath_,
+            const fs::path  &oldpath_,
+            const fs::path  &newpath_,
             struct stat     *st_,
             fuse_timeouts_t *timeouts_)
 {
@@ -323,12 +322,14 @@ FUSE::link(const char      *oldpath_,
            fuse_timeouts_t *timeouts_)
 {
   int rv;
+  const fs::path      oldpath{oldpath_};
+  const fs::path      newpath{newpath_};
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  rv = ::_link(cfg,oldpath_,newpath_,st_,timeouts_);
+  rv = ::_link(cfg,oldpath,newpath,st_,timeouts_);
   if(rv == -EXDEV)
-    rv = ::_link_exdev(cfg,oldpath_,newpath_,st_,timeouts_);
+    rv = ::_link_exdev(cfg,oldpath,newpath,st_,timeouts_);
 
   return rv;
 }

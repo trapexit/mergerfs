@@ -25,24 +25,20 @@
 
 #include "fuse.h"
 
-#include <string>
-
 #include <fcntl.h>
-
-using std::string;
 
 
 static
 void
-_utimens_loop_core(const string   &basepath_,
-                   const char     *fusepath_,
+_utimens_loop_core(const fs::path &basepath_,
+                   const fs::path &fusepath_,
                    const timespec  ts_[2],
                    PolicyRV       *prv_)
 {
   int rv;
-  string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
   rv = fs::lutimens(fullpath,ts_);
 
@@ -52,7 +48,7 @@ _utimens_loop_core(const string   &basepath_,
 static
 void
 _utimens_loop(const std::vector<Branch*> &branches_,
-              const char                 *fusepath_,
+              const fs::path             &fusepath_,
               const timespec              ts_[2],
               PolicyRV                   *prv_)
 {
@@ -67,7 +63,7 @@ int
 _utimens(const Policy::Action &utimensPolicy_,
          const Policy::Search &getattrPolicy_,
          const Branches       &branches_,
-         const char           *fusepath_,
+         const fs::path       &fusepath_,
          const timespec        ts_[2])
 {
   int rv;
@@ -96,12 +92,13 @@ int
 FUSE::utimens(const char     *fusepath_,
               const timespec  ts_[2])
 {
+  const fs::path      fusepath{fusepath_};
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   return ::_utimens(cfg.func.utimens.policy,
                     cfg.func.getattr.policy,
                     cfg.branches,
-                    fusepath_,
+                    fusepath,
                     ts_);
 }

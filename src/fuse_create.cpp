@@ -14,9 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "state.hpp"
+#include "fuse_create.hpp"
 
+#include "state.hpp"
 #include "config.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_acl.hpp"
@@ -25,13 +27,13 @@
 #include "fs_path.hpp"
 #include "fuse_passthrough.hpp"
 #include "procfs.hpp"
+#include "syslog.hpp"
 #include "ugid.hpp"
 
 #include "fuse.h"
 
 #include <string>
 #include <vector>
-
 
 /*
   The kernel expects being able to issue read requests when running
@@ -135,10 +137,10 @@ _config_to_ffi_flags(Config           &cfg_,
 
 static
 int
-_create_core(const std::string &fullpath_,
-             mode_t             mode_,
-             const mode_t       umask_,
-             const int          flags_)
+_create_core(const fs::path &fullpath_,
+             mode_t          mode_,
+             const mode_t    umask_,
+             const int       flags_)
 {
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
@@ -149,24 +151,24 @@ _create_core(const std::string &fullpath_,
 static
 int
 _create_core(const Branch     *branch_,
-             const char       *fusepath_,
+             const fs::path   &fusepath_,
              fuse_file_info_t *ffi_,
              const mode_t      mode_,
              const mode_t      umask_)
 {
   int rv;
   FileInfo *fi;
-  std::string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(branch_->path,fusepath_);
+  fullpath = branch_->path / fusepath_;
 
   rv = ::_create_core(fullpath,mode_,umask_,ffi_->flags);
   if(rv < 0)
     return rv;
 
-  fi = new FileInfo(rv,branch_,fusepath_,ffi_->direct_io);
+  fi = new FileInfo(rv,*branch_,fusepath_,ffi_->direct_io);
 
-  ffi_->fh = reinterpret_cast<uint64_t>(fi);
+  ffi_->fh = fi->to_fh();
 
   return 0;
 }
@@ -176,18 +178,18 @@ int
 _create(const Policy::Search &searchFunc_,
         const Policy::Create &createFunc_,
         const Branches       &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         fuse_file_info_t     *ffi_,
         const mode_t          mode_,
         const mode_t          umask_)
 {
   int rv;
-  std::string fullpath;
-  std::string fusedirpath;
+  fs::path fullpath;
+  fs::path fusedirpath;
   std::vector<Branch*> createpaths;
   std::vector<Branch*> existingpaths;
 
-  fusedirpath = fs::path::dirname(fusepath_);
+  fusedirpath = fusepath_.parent_path();
 
   rv = searchFunc_(branches_,fusedirpath,existingpaths);
   if(rv < 0)
@@ -222,7 +224,7 @@ _(const PassthroughEnum e_,
 static
 int
 _create_for_insert_lambda(const fuse_context *fc_,
-                          const char         *fusepath_,
+                          const fs::path     &fusepath_,
                           const mode_t        mode_,
                           fuse_file_info_t   *ffi_,
                           State::OpenFile    *of_)
@@ -259,7 +261,7 @@ _create_for_insert_lambda(const fuse_context *fc_,
   if(rv < 0)
     return rv;
 
-  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  fi = FileInfo::from_fh(ffi_->fh);
 
   of_->ref_count = 1;
   of_->fi        = fi;
@@ -289,10 +291,9 @@ _create_for_insert_lambda(const fuse_context *fc_,
 
 static
 inline
-constexpr
 auto
 _create_insert_lambda(const fuse_context *fc_,
-                      const char         *fusepath_,
+                      const fs::path     &fusepath_,
                       const mode_t        mode_,
                       fuse_file_info_t   *ffi_,
                       int                *_rv_)
@@ -311,14 +312,14 @@ _create_insert_lambda(const fuse_context *fc_,
 // This function should never be called?
 static
 inline
-constexpr
 auto
 _create_update_lambda()
 {
   return
-    [=](auto &val_)
+    [](const auto &val_)
     {
-      fmt::println(stderr,"THIS SHOULD NOT HAPPEN");
+      fmt::println(stderr,"CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
+      SysLog::crit("CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
       abort();
     };
 }
@@ -326,7 +327,7 @@ _create_update_lambda()
 static
 int
 _create(const fuse_context *fc_,
-        const char         *fusepath_,
+        const fs::path     &fusepath_,
         mode_t              mode_,
         fuse_file_info_t   *ffi_)
 {
@@ -343,7 +344,7 @@ _create(const fuse_context *fc_,
   // ref_count is default (0).
   if(rv < 0)
     of.erase_if(fc_->nodeid,
-                [](auto &val_)
+                [](const auto &val_)
                 {
                   return (val_.second.ref_count <= 0);
                 });
@@ -351,15 +352,13 @@ _create(const fuse_context *fc_,
   return rv;
 }
 
-namespace FUSE
+int
+FUSE::create(const char       *fusepath_,
+             mode_t            mode_,
+             fuse_file_info_t *ffi_)
 {
-  int
-  create(const char       *fusepath_,
-         mode_t            mode_,
-         fuse_file_info_t *ffi_)
-  {
-    const fuse_context *fc = fuse_get_context();
+  const fs::path      fusepath{fusepath_};
+  const fuse_context *fc = fuse_get_context();
 
-    return ::_create(fc,fusepath_,mode_,ffi_);
-  }
+  return ::_create(fc,fusepath,mode_,ffi_);
 }

@@ -26,7 +26,7 @@ using std::string;
 
 int
 Policy::ERoFS::Action::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+                                  const fs::path       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return -EROFS;
@@ -34,7 +34,7 @@ Policy::ERoFS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::ERoFS::Create::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+                                  const fs::path       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return -EROFS;
@@ -42,7 +42,7 @@ Policy::ERoFS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::ERoFS::Search::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+                                  const fs::path       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return -EROFS;

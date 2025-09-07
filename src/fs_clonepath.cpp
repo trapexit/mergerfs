@@ -27,10 +27,6 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
-#include <string>
-
-using std::string;
-
 
 static
 bool
@@ -56,36 +52,36 @@ _ignorable_error(const int err_)
   possible. Optionally ignore errors on metadata copies.
 */
 int
-fs::clonepath(const string &srcpath_,
-              const string &dstpath_,
-              const char   *relpath_,
-              const bool    return_metadata_errors_)
+fs::clonepath(const fs::path &srcpath_,
+              const fs::path &dstpath_,
+              const fs::path &relpath_,
+              const bool      return_metadata_errors_)
 {
   int         rv;
   struct stat st;
-  string      dstpath;
-  string      srcpath;
-  string      dirname;
+  fs::path dstpath;
+  fs::path srcpath;
+  fs::path dirname;
 
-  if((relpath_ == NULL) || (relpath_[0] == '\0'))
+  if(relpath_.empty())
     return 0;
 
-  dirname = fs::path::dirname(relpath_);
-  if(dirname != "/")
+  dirname = relpath_.parent_path();
+  if(!dirname.empty())
     {
       rv = fs::clonepath(srcpath_,dstpath_,dirname,return_metadata_errors_);
       if(rv < 0)
         return rv;
     }
 
-  srcpath = fs::path::make(srcpath_,relpath_);
+  srcpath = srcpath_ / relpath_;
   rv = fs::lstat(srcpath,&st);
   if(rv < 0)
     return rv;
   else if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
-  dstpath = fs::path::make(dstpath_,relpath_);
+  dstpath = dstpath_ / relpath_;
   rv = fs::mkdir(dstpath,st.st_mode);
   if(rv < 0)
     return ((rv == -EEXIST) ? 0 : rv);
@@ -112,24 +108,12 @@ fs::clonepath(const string &srcpath_,
 }
 
 int
-fs::clonepath(const string &srcpath_,
-              const string &dstpath_,
-              const string &relpath_,
-              const bool    return_metadata_errors_)
+fs::clonepath_as_root(const fs::path &srcpath_,
+                      const fs::path &dstpath_,
+                      const fs::path &relpath_,
+                      const bool      return_metadata_errors_)
 {
-  return fs::clonepath(srcpath_,
-                       dstpath_,
-                       relpath_.c_str(),
-                       return_metadata_errors_);
-}
-
-int
-fs::clonepath_as_root(const string &srcpath_,
-                      const string &dstpath_,
-                      const char   *relpath_,
-                      const bool    return_metadata_errors_)
-{
-  if((relpath_ == NULL) || (relpath_[0] == '\0'))
+  if(relpath_.empty())
     return 0;
   if(srcpath_ == dstpath_)
     return 0;
@@ -140,16 +124,4 @@ fs::clonepath_as_root(const string &srcpath_,
                        dstpath_,
                        relpath_,
                        return_metadata_errors_);
-}
-
-int
-fs::clonepath_as_root(const string &srcpath_,
-                      const string &dstpath_,
-                      const string &relpath_,
-                      const bool    return_metadata_errors_)
-{
-  return fs::clonepath_as_root(srcpath_,
-                               dstpath_,
-                               relpath_.c_str(),
-                               return_metadata_errors_);
 }

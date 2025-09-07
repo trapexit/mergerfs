@@ -25,23 +25,19 @@
 
 #include "fuse.h"
 
-#include <string>
 #include <vector>
-
-using std::string;
-using std::vector;
 
 
 static
 void
-_removexattr_loop_core(const string &basepath_,
-                       const char   *fusepath_,
-                       const char   *attrname_,
-                       PolicyRV     *prv_)
+_removexattr_loop_core(const fs::path &basepath_,
+                       const fs::path &fusepath_,
+                       const char     *attrname_,
+                       PolicyRV       *prv_)
 {
-  string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
   errno = 0;
   fs::lremovexattr(fullpath,attrname_);
@@ -52,7 +48,7 @@ _removexattr_loop_core(const string &basepath_,
 static
 void
 _removexattr_loop(const std::vector<Branch*> &branches_,
-                  const char                 *fusepath_,
+                  const fs::path             &fusepath_,
                   const char                 *attrname_,
                   PolicyRV                   *prv_)
 {
@@ -67,7 +63,7 @@ int
 _removexattr(const Policy::Action &actionFunc_,
              const Policy::Search &searchFunc_,
              const Branches       &ibranches_,
-             const char           *fusepath_,
+             const fs::path       &fusepath_,
              const char           *attrname_)
 {
   int rv;
@@ -96,7 +92,9 @@ int
 FUSE::removexattr(const char *fusepath_,
                   const char *attrname_)
 {
-  if(Config::is_ctrl_file(fusepath_))
+  const fs::path fusepath{fusepath_};
+
+  if(Config::is_ctrl_file(fusepath))
     return -ENOATTR;
 
   if(cfg.xattr.to_int())
@@ -108,6 +106,6 @@ FUSE::removexattr(const char *fusepath_,
   return ::_removexattr(cfg.func.removexattr.policy,
                         cfg.func.getxattr.policy,
                         cfg.branches,
-                        fusepath_,
+                        fusepath,
                         attrname_);
 }

@@ -62,23 +62,23 @@ static
 int
 _movefile_and_open(const Policy::Create &createFunc_,
                    const Branches::Ptr  &branches_,
-                   const std::string    &branchpath_,
-                   const std::string    &fusepath_,
+                   const fs::path       &branchpath_,
+                   const fs::path       &fusepath_,
                    int                   origfd_)
 {
   int rv;
   int dstfd_flags;
   int origfd_flags;
   s64 src_size;
-  std::string fusedir;
-  std::string src_branch;
-  std::string src_filepath;
-  std::string dst_filepath;
+  fs::path fusedir;
+  fs::path src_branch;
+  fs::path src_filepath;
+  fs::path dst_filepath;
   std::vector<Branch*> dst_branch;
 
   src_branch = branchpath_;
 
-  rv = createFunc_(branches_,fusepath_.c_str(),dst_branch);
+  rv = createFunc_(branches_,fusepath_,dst_branch);
   if(rv < 0)
     return rv;
 
@@ -93,14 +93,14 @@ _movefile_and_open(const Policy::Create &createFunc_,
   if(fs::has_space(dst_branch[0]->path,src_size) == false)
     return -ENOSPC;
 
-  fusedir = fs::path::dirname(fusepath_);
+  fusedir = fusepath_.parent_path();
 
   rv = fs::clonepath(src_branch,dst_branch[0]->path,fusedir);
   if(rv < 0)
     return -ENOSPC;
 
-  src_filepath = fs::path::make(src_branch,fusepath_);
-  dst_filepath = fs::path::make(dst_branch[0]->path,fusepath_);
+  src_filepath = src_branch / fusepath_;
+  dst_filepath = dst_branch[0]->path / fusepath_;
 
   rv = fs::copyfile(src_filepath,dst_filepath,{.cleanup_failure = true});
   if(rv < 0)
@@ -119,8 +119,8 @@ _movefile_and_open(const Policy::Create &createFunc_,
 int
 fs::movefile_and_open(const Policy::Create &policy_,
                       const Branches::Ptr  &branches_,
-                      const std::string    &branchpath_,
-                      const std::string    &fusepath_,
+                      const fs::path       &branchpath_,
+                      const fs::path       &fusepath_,
                       const int             origfd_)
 {
   return ::_movefile_and_open(policy_,
@@ -133,8 +133,8 @@ fs::movefile_and_open(const Policy::Create &policy_,
 int
 fs::movefile_and_open_as_root(const Policy::Create &policy_,
                               const Branches::Ptr  &branches_,
-                              const std::string    &branchpath_,
-                              const std::string    &fusepath_,
+                              const fs::path       &branchpath_,
+                              const fs::path       &fusepath_,
                               const int             origfd_)
 {
   const ugid::Set ugid(0,0);

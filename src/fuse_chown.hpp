@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <unistd.h>
+
 
 namespace FUSE
 {

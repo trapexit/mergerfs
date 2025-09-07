@@ -16,74 +16,10 @@
 
 #pragma once
 
-
-#include <string>
-#include <vector>
 #include <filesystem>
 
 
 namespace fs
 {
-  typedef std::filesystem::path Path;
-
-  namespace path
-  {
-    std::string dirname(const char *path);
-    std::string dirname(const std::string &path);
-
-    std::string basename(const std::string &path);
-
-    static
-    inline
-    void
-    append(std::string &base_,
-           const char  *suffix_)
-    {
-      base_ += suffix_;
-    }
-
-    static
-    inline
-    void
-    append(std::string       &base_,
-           const std::string &suffix_)
-    {
-      base_ += suffix_;
-    }
-
-    static
-    inline
-    std::string
-    make(const char *base_,
-         const char *suffix_)
-    {
-      char back;
-      std::string path(base_);
-
-      back = *path.rbegin();
-      if((back != '/') && (suffix_[0] != '/'))
-        path.push_back('/');
-      path += suffix_;
-
-      return path;
-    }
-
-    static
-    inline
-    std::string
-    make(const std::string &base_,
-         const char        *suffix_)
-    {
-      return (base_ + suffix_);
-    }
-
-    static
-    inline
-    std::string
-    make(const std::string &base_,
-         const std::string &suffix_)
-    {
-      return (base_ + suffix_);
-    }
-  }
+  using path = std::filesystem::path;
 }

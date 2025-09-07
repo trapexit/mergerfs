@@ -34,7 +34,7 @@ using std::string;
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -77,7 +77,7 @@ _create(const Branches::Ptr  &branches_,
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -118,7 +118,7 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -151,24 +151,24 @@ _search(const Branches::Ptr  &branches_,
 }
 
 int
-Policy::EPLUS::Action::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+Policy::EPLUS::Action::operator()(const Branches::Ptr &branches_,
+                                  const fs::path      &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPLUS::Create::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+Policy::EPLUS::Create::operator()(const Branches::Ptr &branches_,
+                                  const fs::path      &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
 }
 
 int
-Policy::EPLUS::Search::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+Policy::EPLUS::Search::operator()(const Branches::Ptr &branches_,
+                                  const fs::path      &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

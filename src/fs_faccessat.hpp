@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "fs_path.hpp"
 #include "to_neg_errno.hpp"
 
 #include <string>
@@ -38,7 +39,10 @@ namespace fs
   {
     int rv;
 
-    rv = ::faccessat(dirfd_,path_,mode_,flags_);
+    rv = ::faccessat(dirfd_,
+                     path_,
+                     mode_,
+                     flags_);
 
     return ::to_neg_errno(rv);
   }
@@ -51,6 +55,23 @@ namespace fs
             const int          mode_,
             const int          flags_)
   {
-    return fs::faccessat(dirfd_,path_.c_str(),mode_,flags_);
+    return fs::faccessat(dirfd_,
+                         path_.c_str(),
+                         mode_,
+                         flags_);
+  }
+
+  static
+  inline
+  int
+  faccessat(const int       dirfd_,
+            const fs::path &path_,
+            const int       mode_,
+            const int       flags_)
+  {
+    return fs::faccessat(dirfd_,
+                         path_.c_str(),
+                         mode_,
+                         flags_);
   }
 }

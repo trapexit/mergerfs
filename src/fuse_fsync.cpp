@@ -46,7 +46,7 @@ int
 FUSE::fsync(const uint64_t fh_,
             int            isdatasync_)
 {
-  FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
+  FileInfo *fi = FileInfo::from_fh(fh_);
 
   return ::_fsync(fi->fd,isdatasync_);
 }

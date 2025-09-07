@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "fs_pathvector.hpp"
+#include "fs_path.hpp"
 
 #include <chrono>
 #include <vector>
@@ -26,7 +26,7 @@
 namespace fs
 {
   int
-  wait_for_mount(const fs::Path                  &srcpath,
-                 const fs::PathVector            &tgtpaths,
+  wait_for_mount(const fs::path                  &srcpath,
+                 const std::vector<fs::path>     &tgtpaths,
                  const std::chrono::milliseconds &timeout);
 }

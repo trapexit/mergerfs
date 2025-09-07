@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "strvec.hpp"
+#include "fs_path.hpp"
 
 #include <string>
 #include <vector>
@@ -27,7 +27,7 @@
 namespace fs
 {
   void
-  findallfiles(const StrVec &basepaths,
-               const char   *fusepath,
-               StrVec       *paths);
+  findallfiles(const std::vector<std::string> &basepaths,
+               const fs::path                 &fusepath,
+               std::vector<std::string>       *paths);
 }

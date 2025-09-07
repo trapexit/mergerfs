@@ -16,18 +16,17 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_lock.hpp"
+
 #include "errno.hpp"
 
 #include "fuse.h"
 
 
-namespace FUSE
+int
+FUSE::lock(const fuse_file_info_t *ffi,
+           int                     cmd,
+           struct flock           *flock)
 {
-  int
-  lock(const fuse_file_info_t *ffi,
-       int                     cmd,
-       struct flock           *flock)
-  {
-    return -ENOSYS;
-  }
+  return -ENOSYS;
 }

@@ -33,7 +33,7 @@ namespace Policy
 
     public:
       int operator()(const Branches::Ptr&,
-                     const char*,
+                     const std::filesystem::path&,
                      std::vector<Branch*>&) const final;
     };
 
@@ -46,7 +46,7 @@ namespace Policy
 
     public:
       int operator()(const Branches::Ptr&,
-                     const char*,
+                     const std::filesystem::path&,
                      std::vector<Branch*>&) const final;
       bool path_preserving(void) const final { return true; }
     };
@@ -60,7 +60,7 @@ namespace Policy
 
     public:
       int operator()(const Branches::Ptr&,
-                     const char*,
+                     const std::filesystem::path&,
                      std::vector<Branch*>&) const final;
     };
   }

@@ -9,7 +9,7 @@ namespace fs
 {
   struct Mount
   {
-    fs::Path dir;
+    fs::path    dir;
     std::string fsname;
     std::string type;
     std::string opts;

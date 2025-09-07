@@ -38,7 +38,7 @@ int
 FUSE::fsyncdir(const fuse_file_info_t *ffi_,
                int                     isdatasync_)
 {
-  DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
   return ::_fsyncdir(di,isdatasync_);
 }

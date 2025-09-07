@@ -112,7 +112,7 @@ _ioctl_file(const fuse_file_info_t *ffi_,
             void                   *data_,
             uint32_t               *out_bufsz_)
 {
-  FileInfo           *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  FileInfo           *fi = FileInfo::from_fh(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
@@ -127,21 +127,21 @@ static
 int
 _ioctl_dir_base(const Policy::Search &searchFunc_,
                 const Branches       &branches_,
-                const char           *fusepath_,
+                const fs::path       &fusepath_,
                 const uint32_t        cmd_,
                 void                 *data_,
                 uint32_t             *out_bufsz_)
 {
   int fd;
   int rv;
-  std::string fullpath;
+  fs::path fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
 
-  fullpath = fs::path::make(branches[0]->path,fusepath_);
+  fullpath = branches[0]->path / fusepath_;
 
   fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
   if(fd < 0)
@@ -161,7 +161,7 @@ _ioctl_dir(const fuse_file_info_t *ffi_,
            void                   *data_,
            uint32_t               *out_bufsz_)
 {
-  DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo            *di = DirInfo::from_fh(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 

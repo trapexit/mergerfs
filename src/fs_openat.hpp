@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include "fs_path.hpp"
 #include "to_neg_errno.hpp"
 
-#include <filesystem>
 #include <string>
 
 #include <fcntl.h>
@@ -61,10 +61,10 @@ namespace fs
   static
   inline
   int
-  openat(const int                    dirfd_,
-         const std::filesystem::path &pathname_,
-         const int                    flags_,
-         const mode_t                 mode_ = 0)
+  openat(const int       dirfd_,
+         const fs::path &pathname_,
+         const int       flags_,
+         const mode_t    mode_ = 0)
   {
     return fs::openat(dirfd_,
                       pathname_.c_str(),

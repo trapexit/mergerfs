@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <string>
 #include <tuple>
 
@@ -37,45 +38,40 @@
 static char const CHARS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static size_t const CHARS_SIZE = (sizeof(CHARS) - 1);
 
-
 static
-std::string
-_generate_tmp_path(const std::string &dirpath_,
-                   const std::string &filename_)
+fs::path
+_generate_tmp_path(const fs::path    &dirpath_,
+                   const std::string &src_filename_)
 {
   long name_max;
   size_t substr_len;
-  fs::Path path;
-  std::string filename;
+  std::string tmp_filename;
 
   name_max = ::pathconf(dirpath_.c_str(),_PC_NAME_MAX);
   if(name_max == -1)
     name_max = NAME_MAX;
 
-  substr_len = std::min(filename_.size(),
+  substr_len = std::min(src_filename_.size(),
                         (size_t)(name_max - PAD_LEN - 2ULL));
 
-  filename = '.';
-  filename += filename_.substr(0,substr_len);
-  filename += '_';
+  tmp_filename = '.';
+  tmp_filename += src_filename_.substr(0,substr_len);
+  tmp_filename += '_';
   for(size_t i = 0; i < PAD_LEN; i++)
-    filename += CHARS[RND::rand64(CHARS_SIZE)];
+    tmp_filename += CHARS[RND::rand64(CHARS_SIZE)];
 
-  path = dirpath_;
-  path /= filename;
-
-  return path.string();
+  return dirpath_ / tmp_filename;
 }
 
-std::tuple<int,std::string>
-fs::mktemp_in_dir(const std::string &dirpath_,
-                  const std::string &filename_,
-                  const int         flags_)
+std::tuple<int,fs::path>
+fs::mktemp_in_dir(const fs::path &dirpath_,
+                  const fs::path &filename_,
+                  const int       flags_)
 {
   int fd;
   int count;
   int flags;
-  std::string tmp_filepath;
+  fs::path tmp_filepath;
 
   count = MAX_ATTEMPTS;
   flags = (flags_ | O_EXCL | O_CREAT);
@@ -87,21 +83,19 @@ fs::mktemp_in_dir(const std::string &dirpath_,
       if(fd == -EEXIST)
         continue;
       if(fd < 0)
-        return std::make_tuple(fd,std::string());
+        return std::make_tuple(fd,fs::path());
 
       return std::make_tuple(fd,tmp_filepath);
     }
 
-  return std::make_tuple(-EEXIST,std::string());
+  return std::make_tuple(-EEXIST,fs::path());
 }
 
-std::tuple<int,std::string>
-fs::mktemp(const std::string &filepath_,
-           const int          flags_)
+std::tuple<int,fs::path>
+fs::mktemp(const fs::path &filepath_,
+           const int       flags_)
 {
-  fs::Path filepath{filepath_};
-
-  return fs::mktemp_in_dir(filepath.parent_path(),
-                           filepath.filename(),
+  return fs::mktemp_in_dir(filepath_.parent_path(),
+                           filepath_.filename(),
                            flags_);
 }

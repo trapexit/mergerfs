@@ -45,175 +45,173 @@ FUSE::ReadDirCOSR::~ReadDirCOSR()
 
 }
 
-namespace l
+struct DirRV
 {
-  struct DirRV
+  const std::string *branch_path;
+  DIR *dir;
+  int  err;
+};
+
+struct Error
+{
+private:
+  int _err;
+
+public:
+  Error()
+    : _err(ENOENT)
   {
-    const std::string *branch_path;
-    DIR *dir;
-    int  err;
-  };
 
-  struct Error
+  }
+
+  operator int()
   {
-  private:
-    int _err;
+    return _err;
+  }
 
-  public:
-    Error()
-      : _err(ENOENT)
-    {
-
-    }
-
-    operator int()
-    {
-      return _err;
-    }
-
-    Error&
-    operator=(int const v_)
-    {
-      if(_err != 0)
-        _err = v_;
-
-      return *this;
-    }
-  };
-
-  static
-  uint64_t
-  dirent_exact_namelen(const struct dirent *d_)
+  Error&
+  operator=(int const v_)
   {
+    if(_err != 0)
+      _err = v_;
+
+    return *this;
+  }
+};
+
+static
+uint64_t
+_dirent_exact_namelen(const struct dirent *d_)
+{
 #ifdef _D_EXACT_NAMLEN
-    return _D_EXACT_NAMLEN(d_);
+  return _D_EXACT_NAMLEN(d_);
 #elif defined _DIRENT_HAVE_D_NAMLEN
-    return d_->d_namlen;
+  return d_->d_namlen;
 #else
-    return strlen(d_->d_name);
+  return strlen(d_->d_name);
 #endif
-  }
+}
 
-  static
-  inline
-  std::vector<std::future<DirRV>>
-  opendir(ThreadPool          &tp_,
-          const Branches::Ptr &branches_,
-          const std::string   &rel_dirpath_,
-          uid_t const          uid_,
-          gid_t const          gid_)
-  {
-    std::vector<std::future<DirRV>> futures;
+static
+inline
+std::vector<std::future<DirRV>>
+_opendir(ThreadPool          &tp_,
+         const Branches::Ptr &branches_,
+         const fs::path      &rel_dirpath_,
+         uid_t const          uid_,
+         gid_t const          gid_)
+{
+  std::vector<std::future<DirRV>> futures;
 
-    futures.reserve(branches_->size());
+  futures.reserve(branches_->size());
 
-    for(const auto &branch : *branches_)
-      {
-        auto func =
-          [&branch,&rel_dirpath_,uid_,gid_]()
-          {
-            DIR *dir;
-            std::string abs_dirpath;
-            const ugid::Set ugid(uid_,gid_);
+  for(const auto &branch : *branches_)
+    {
+      auto func =
+        [&branch,&rel_dirpath_,uid_,gid_]()
+        {
+          DIR *dir;
+          fs::path abs_dirpath;
+          const ugid::Set ugid(uid_,gid_);
 
-            abs_dirpath = fs::path::make(branch.path,rel_dirpath_);
+          abs_dirpath = branch.path / rel_dirpath_;
 
-            errno  = 0;
-            dir = fs::opendir(abs_dirpath);
+          errno  = 0;
+          dir = fs::opendir(abs_dirpath);
 
-            return DirRV{&branch.path,dir,errno};
-          };
+          return DirRV{&branch.path,dir,errno};
+        };
 
-        auto rv = tp_.enqueue_task(std::move(func));
+      auto rv = tp_.enqueue_task(std::move(func));
 
-        futures.emplace_back(std::move(rv));
-      }
+      futures.emplace_back(std::move(rv));
+    }
 
-    return futures;
-  }
+  return futures;
+}
 
-  static
-  inline
-  int
-  readdir(std::vector<std::future<DirRV>> &dh_futures_,
-          const std::string               &rel_dirpath_,
-          fuse_dirents_t                  *buf_)
-  {
-    Error error;
-    HashSet names;
-    std::string rel_filepath;
+static
+inline
+int
+_readdir(std::vector<std::future<DirRV>> &dh_futures_,
+         const fs::path                  &rel_dirpath_,
+         fuse_dirents_t                  *buf_)
+{
+  Error error;
+  HashSet names;
+  fs::path rel_filepath;
 
-    for(auto &dh_future : dh_futures_)
-      {
-        int rv;
-        DirRV dirrv;
+  rel_filepath = rel_dirpath_ / "dummy";
+  for(auto &dh_future : dh_futures_)
+    {
+      int rv;
+      DirRV dirrv;
 
-        dirrv = dh_future.get();
+      dirrv = dh_future.get();
 
-        error = dirrv.err;
-        if(dirrv.dir == NULL)
-          continue;
+      error = dirrv.err;
+      if(dirrv.dir == NULL)
+        continue;
 
-        DEFER { fs::closedir(dirrv.dir); };
+      DEFER { fs::closedir(dirrv.dir); };
 
-        rv = 0;
-        for(dirent *de = fs::readdir(dirrv.dir); de && !rv; de = fs::readdir(dirrv.dir))
-          {
-            std::uint64_t namelen;
+      rv = 0;
+      for(dirent *de = fs::readdir(dirrv.dir); de && !rv; de = fs::readdir(dirrv.dir))
+        {
+          std::uint64_t namelen;
 
-            namelen = l::dirent_exact_namelen(de);
+          namelen = ::_dirent_exact_namelen(de);
 
-            rv = names.put(de->d_name,namelen);
-            if(rv == 0)
-              continue;
+          rv = names.put(de->d_name,namelen);
+          if(rv == 0)
+            continue;
 
-            rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
-            de->d_ino    = fs::inode::calc(*dirrv.branch_path,
-                                           rel_filepath,
-                                           DTTOIF(de->d_type),
-                                           de->d_ino);
+          rel_filepath.replace_filename(de->d_name);
+          de->d_ino = fs::inode::calc(*dirrv.branch_path,
+                                      rel_filepath,
+                                      DTTOIF(de->d_type),
+                                      de->d_ino);
 
-            rv = fuse_dirents_add(buf_,de,namelen);
-            if(rv == 0)
-              continue;
+          rv = fuse_dirents_add(buf_,de,namelen);
+          if(rv == 0)
+            continue;
 
-            error = ENOMEM;
-          }
-      }
+          error = ENOMEM;
+        }
+    }
 
-    return -error;
-  }
+  return -error;
+}
 
-  static
-  inline
-  int
-  readdir(ThreadPool          &tp_,
-          const Branches::Ptr &branches_,
-          const std::string   &rel_dirpath_,
-          fuse_dirents_t      *buf_,
-          uid_t const          uid_,
-          gid_t const          gid_)
-  {
-    int rv;
-    std::vector<std::future<DirRV>> futures;
+static
+inline
+int
+_readdir(ThreadPool          &tp_,
+         const Branches::Ptr &branches_,
+         const fs::path      &rel_dirpath_,
+         fuse_dirents_t      *buf_,
+         uid_t const          uid_,
+         gid_t const          gid_)
+{
+  int rv;
+  std::vector<std::future<DirRV>> futures;
 
-    fuse_dirents_reset(buf_);
+  fuse_dirents_reset(buf_);
 
-    futures = l::opendir(tp_,branches_,rel_dirpath_,uid_,gid_);
-    rv      = l::readdir(futures,rel_dirpath_,buf_);
+  futures = ::_opendir(tp_,branches_,rel_dirpath_,uid_,gid_);
+  rv      = ::_readdir(futures,rel_dirpath_,buf_);
 
-    return rv;
-  }
+  return rv;
 }
 
 int
 FUSE::ReadDirCOSR::operator()(fuse_file_info_t const *ffi_,
                               fuse_dirents_t         *buf_)
 {
-  DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo            *di = DirInfo::from_fh(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
 
-  return l::readdir(_tp,
+  return ::_readdir(_tp,
                     cfg.branches,
                     di->fusepath,
                     buf_,

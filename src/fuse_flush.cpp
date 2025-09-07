@@ -40,7 +40,7 @@ _flush(const int fd_)
 int
 FUSE::flush(const fuse_file_info_t *ffi_)
 {
-  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
   return ::_flush(fi->fd);
 }

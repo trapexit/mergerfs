@@ -187,7 +187,7 @@ str::from(const std::string_view  value_,
 
 int
 str::from(const std::string_view  value_,
-          std::filesystem::path  *path_)
+          fs::path               *path_)
 {
   *path_ = value_;
 

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "branches.hpp"
+#include "fs_path.hpp"
 #include "policy.hpp"
 
 #include <string>
@@ -27,14 +28,14 @@ namespace fs
   int
   movefile_and_open(const Policy::Create &policy,
                     const Branches::Ptr  &branches_,
-                    const std::string    &branchpath,
-                    const std::string    &fusepath,
-                    const int                   origfd);
+                    const fs::path       &branchpath,
+                    const fs::path       &fusepath,
+                    const int             origfd);
 
   int
   movefile_and_open_as_root(const Policy::Create &policy,
                             const Branches::Ptr  &branches_,
-                            const std::string    &branchpath,
-                            const std::string    &fusepath,
+                            const fs::path       &branchpath,
+                            const fs::path       &fusepath,
                             int                   origfd);
 }

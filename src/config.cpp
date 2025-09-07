@@ -18,12 +18,13 @@
 #include "ef.hpp"
 #include "errno.hpp"
 #include "from_string.hpp"
+#include "fs_path.hpp"
+#include "nonstd/string.hpp"
 #include "num.hpp"
 #include "rwlock.hpp"
 #include "str.hpp"
 #include "to_string.hpp"
 #include "version.hpp"
-#include "nonstd/string.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -428,15 +429,15 @@ Config::finish_initializing()
 }
 
 bool
-Config::is_rootdir(const char *fusepath_)
+Config::is_rootdir(const fs::path &fusepath_)
 {
-  return str::eq(fusepath_,"/");
+  return fusepath_.empty();
 }
 
 bool
-Config::is_ctrl_file(const char *fusepath_)
+Config::is_ctrl_file(const fs::path &fusepath_)
 {
-  return str::eq(fusepath_,"/.mergerfs");
+  return (fusepath_ == ".mergerfs");
 }
 
 bool

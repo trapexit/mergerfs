@@ -1,8 +1,7 @@
 #pragma once
 
 #include "int_types.h"
-
-#include <filesystem>
+#include "fs_path.hpp"
 
 #include <sys/stat.h>
 
@@ -22,12 +21,12 @@ namespace fs
            const int          dst_fd);
 
   s64
-  copyfile(const int                    src_fd,
-           const std::filesystem::path &dst_filepath,
-           const CopyFileFlags         &flags);
+  copyfile(const int            src_fd,
+           const fs::path      &dst_filepath,
+           const CopyFileFlags &flags);
 
   s64
-  copyfile(const std::filesystem::path &src_filepath,
-           const std::filesystem::path &dst_filepath,
-           const CopyFileFlags         &flags);
+  copyfile(const fs::path      &src_filepath,
+           const fs::path      &dst_filepath,
+           const CopyFileFlags &flags);
 }
