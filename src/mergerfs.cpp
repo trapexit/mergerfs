@@ -380,5 +380,7 @@ int
 main(int    argc_,
      char **argv_)
 {
+  state.root_fd = open("/",O_PATH);
+
   return ::_pick_app_and_run(argc_,argv_);
 }
