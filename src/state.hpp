@@ -57,7 +57,7 @@ private:
 
 public:
   OpenFileMap open_files;
-  int root_fd;
+  int root_fd = -1;
 };
 
 extern State state;
