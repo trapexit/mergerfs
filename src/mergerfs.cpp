@@ -376,6 +376,8 @@ _pick_app_and_run(int    argc_,
   return l::main(argc_,argv_);
 }
 
+#include "state.hpp"
+
 int
 main(int    argc_,
      char **argv_)
