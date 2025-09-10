@@ -381,6 +381,9 @@ main(int    argc_,
      char **argv_)
 {
   state.root_fd = open("/",O_PATH);
+  fmt::println("root fd = {}",state.root_fd);
+
+  return 0;
 
   return ::_pick_app_and_run(argc_,argv_);
 }
