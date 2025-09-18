@@ -133,6 +133,7 @@ struct fuse_file_info_t
 #define FUSE_CAP_PASSTHROUGH          (1ULL << 25)
 #define FUSE_CAP_HANDLE_KILLPRIV      (1ULL << 26)
 #define FUSE_CAP_HANDLE_KILLPRIV_V2   (1ULL << 27)
+#define FUSE_CAP_ALLOW_IDMAP          (1ULL << 28)
 
 /**
  * Ioctl flags

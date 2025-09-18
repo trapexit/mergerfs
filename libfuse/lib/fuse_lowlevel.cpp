@@ -1203,6 +1203,8 @@ do_init(fuse_req_t             req,
         f->conn.capable |= FUSE_CAP_HANDLE_KILLPRIV;
       if(inargflags & FUSE_HANDLE_KILLPRIV_V2)
         f->conn.capable |= FUSE_CAP_HANDLE_KILLPRIV_V2;
+      if(inargflags & FUSE_ALLOW_IDMAP)
+        f->conn.capable |= FUSE_CAP_ALLOW_IDMAP;
     }
   else
     {
@@ -1280,6 +1282,9 @@ do_init(fuse_req_t             req,
     outargflags |= FUSE_HANDLE_KILLPRIV;
   if(f->conn.want & FUSE_CAP_HANDLE_KILLPRIV_V2)
     outargflags |= FUSE_HANDLE_KILLPRIV_V2;
+  if(f->conn.want & FUSE_CAP_ALLOW_IDMAP)
+    outargflags |= FUSE_ALLOW_IDMAP;
+
   if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
