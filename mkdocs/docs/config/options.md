@@ -86,6 +86,9 @@ config file.
 * **[export-support](export-support.md)=BOOL**: Sets a low-level FUSE
   feature intended to indicate the filesystem can support being
   exported via NFS. (default: true)
+* **[kernel-permissions-check](kernel-permissions-check.md)=BOOL**:
+  Controls the FUSE `default_permissions` option. Primarily for
+  debugging. (default: true)
 * **security_capability=BOOL**: If false return ENOATTR when xattr
   security.capability is queried. (default: true)
 * **[xattr](xattr.md)=passthrough|noattr|nosys**: Runtime control of

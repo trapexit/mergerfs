@@ -362,7 +362,7 @@ int
 _pick_app_and_run(int    argc_,
                   char **argv_)
 {
-  std::filesystem::path appname;
+  fs::path appname;
 
   appname = argv_[0];
   appname = appname.filename();

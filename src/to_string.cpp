@@ -55,7 +55,7 @@ str::to(const std::string &s_)
 }
 
 std::string
-str::to(const std::filesystem::path &path_)
+str::to(const fs::path &path_)
 {
   return path_.string();
 }

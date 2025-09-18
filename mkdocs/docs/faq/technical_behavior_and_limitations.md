@@ -201,3 +201,15 @@ contention and therefore lower performance than Linux.
 Additionally, mergerfs [utilizes a cache for supplemental
 groups](../known_issues_bugs.md#supplemental-user-groups) due the the
 high cost of querying that information.
+
+
+## Does mergerfs support idmap?
+
+Yes. At least in so far as it's been enabled now the FUSE itself
+allows a filesystem to indicate it is allowed.
+
+Requires that
+[kernel-permissions-check](../config/kernel-permissions-check.md) be
+enabled (the default.)
+
+If there are any usage issues contact the [author](../support.md).

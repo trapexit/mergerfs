@@ -16,4 +16,4 @@ help. Like [export-support](export-support.md) this is mostly for
 debugging.
 
 This option is a kernel mount option so unable to be changed at
-runtime.
+runtime. It controls the `default_permissions` FUSE kernel option.
