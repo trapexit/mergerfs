@@ -14,11 +14,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-namespace FUSE
-{
-  void
-  destroy(void)
-  {
+#include "fuse_destroy.hpp"
 
-  }
+void
+FUSE::destroy(void)
+{
+
 }

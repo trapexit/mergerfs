@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <string>
+#include "fs_path.hpp"
 
 
 namespace fs
@@ -26,6 +26,6 @@ namespace fs
   namespace acl
   {
     bool
-    dir_has_defaults(const std::string &fullpath);
+    dir_has_defaults(const fs::path &fullpath);
   }
 }

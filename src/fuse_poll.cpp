@@ -16,22 +16,21 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_poll.hpp"
+
 #include "errno.hpp"
 
 #include "fuse.h"
 
 
-namespace FUSE
+int
+FUSE::poll(const fuse_file_info_t *ffi_,
+           fuse_pollhandle_t      *ph_,
+           unsigned               *reventsp_)
 {
-  int
-  poll(const fuse_file_info_t *ffi_,
-       fuse_pollhandle_t      *ph_,
-       unsigned               *reventsp_)
-  {
-    (void)ffi_;
-    (void)ph_;
-    (void)reventsp_;
+  (void)ffi_;
+  (void)ph_;
+  (void)reventsp_;
 
-    return -ENOSYS;
-  }
+  return -ENOSYS;
 }

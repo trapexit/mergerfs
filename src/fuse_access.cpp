@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_access.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_eaccess.hpp"
@@ -23,48 +25,40 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
-
-namespace l
+static
+int
+_access(const Policy::Search &searchFunc_,
+        const Branches       &branches_,
+        const fs::path       &fusepath_,
+        const int             mask_)
 {
-  static
-  int
-  access(const Policy::Search &searchFunc_,
-         const Branches       &branches_,
-         const char           *fusepath_,
-         const int             mask_)
-  {
-    int rv;
-    string fullpath;
-    StrVec basepaths;
-    std::vector<Branch*> branches;
+  int rv;
+  StrVec basepaths;
+  fs::path fullpath;
+  std::vector<Branch*> branches;
 
-    rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv < 0)
-      return rv;
-
-    fullpath = fs::path::make(branches[0]->path,fusepath_);
-
-    rv = fs::eaccess(fullpath,mask_);
-
+  rv = searchFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
     return rv;
-  }
+
+  fullpath = branches[0]->path / fusepath_;
+
+  rv = fs::eaccess(fullpath,mask_);
+
+  return rv;
 }
 
-namespace FUSE
+int
+FUSE::access(const char *fusepath_,
+             int         mask_)
 {
-  int
-  access(const char *fusepath_,
-         int         mask_)
-  {
-    const fuse_context *fc  = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path      fusepath{fusepath_};
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
 
-    return l::access(cfg.func.access.policy,
-                     cfg.branches,
-                     fusepath_,
-                     mask_);
-  }
+  return ::_access(cfg.func.access.policy,
+                   cfg.branches,
+                   fusepath,
+                   mask_);
 }

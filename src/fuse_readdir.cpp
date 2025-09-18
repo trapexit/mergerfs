@@ -80,7 +80,7 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
                fuse_dirents_t         *buf_)
 {
   dirent de;
-  DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
   if(di->fusepath != "/")
     return -ENOENT;

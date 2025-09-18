@@ -19,6 +19,7 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_flock.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -39,7 +40,23 @@ int
 FUSE::flock(const fuse_file_info_t *ffi_,
             int                     op_)
 {
-  FileInfo* fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  uint64_t fh;
+  const fuse_context *fc = fuse_get_context();
+
+  fh = ffi_->fh;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](const auto &val_)
+                              {
+                                fh = val_.second.fi->to_fh();
+                              });
+    }
+
+  if(fh == 0)
+    return -ENOENT;
+
+  FileInfo* fi = FileInfo::from_fh(fh);
 
   return ::_flock(fi->fd,op_);
 }

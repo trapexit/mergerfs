@@ -18,8 +18,9 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <cstdint>
-#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -32,5 +33,5 @@ namespace str
   int from(const std::string_view, int64_t *);
   int from(const std::string_view, std::string *);
   int from(const std::string_view, const std::string *);
-  int from(const std::string_view, std::filesystem::path *);
+  int from(const std::string_view, fs::path *);
 }

@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_copy_file_range.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_copy_file_range.hpp"
@@ -23,48 +25,42 @@
 #include <stdio.h>
 
 
-namespace l
+static
+ssize_t
+_copy_file_range(const int fd_in_,
+                 off_t     offset_in_,
+                 const int fd_out_,
+                 off_t     offset_out_,
+                 size_t    size_,
+                 int       flags_)
 {
-  static
-  ssize_t
-  copy_file_range(const int fd_in_,
-                  off_t     offset_in_,
-                  const int fd_out_,
-                  off_t     offset_out_,
-                  size_t    size_,
-                  int       flags_)
-  {
-    ssize_t rv;
+  ssize_t rv;
 
-    rv = fs::copy_file_range(fd_in_,
-                             &offset_in_,
-                             fd_out_,
-                             &offset_out_,
-                             size_,
-                             flags_);
+  rv = fs::copy_file_range(fd_in_,
+                           &offset_in_,
+                           fd_out_,
+                           &offset_out_,
+                           size_,
+                           flags_);
 
-    return rv;
-  }
+  return rv;
 }
 
-namespace FUSE
+ssize_t
+FUSE::copy_file_range(const fuse_file_info_t *ffi_in_,
+                      off_t                   offset_in_,
+                      const fuse_file_info_t *ffi_out_,
+                      off_t                   offset_out_,
+                      size_t                  size_,
+                      int                     flags_)
 {
-  ssize_t
-  copy_file_range(const fuse_file_info_t *ffi_in_,
-                  off_t                   offset_in_,
-                  const fuse_file_info_t *ffi_out_,
-                  off_t                   offset_out_,
-                  size_t                  size_,
-                  int                     flags_)
-  {
-    FileInfo *fi_in  = reinterpret_cast<FileInfo*>(ffi_in_->fh);
-    FileInfo *fi_out = reinterpret_cast<FileInfo*>(ffi_out_->fh);
+  FileInfo *fi_in  = FileInfo::from_fh(ffi_in_->fh);
+  FileInfo *fi_out = FileInfo::from_fh(ffi_out_->fh);
 
-    return l::copy_file_range(fi_in->fd,
-                              offset_in_,
-                              fi_out->fd,
-                              offset_out_,
-                              size_,
-                              flags_);
-  }
+  return ::_copy_file_range(fi_in->fd,
+                            offset_in_,
+                            fi_out->fd,
+                            offset_out_,
+                            size_,
+                            flags_);
 }

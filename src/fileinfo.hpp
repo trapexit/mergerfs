@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "fh.hpp"
 #include "branch.hpp"
+#include "fh.hpp"
+#include "fs_path.hpp"
 
-#include <string>
 #include <mutex>
 
 #include "int_types.h"
@@ -28,24 +28,27 @@
 class FileInfo : public FH
 {
 public:
-  FileInfo(const int     fd_,
-           const Branch &branch_,
-           const char   *fusepath_,
-           const bool    direct_io_)
+  static FileInfo *from_fh(const uint64_t fh);
+
+public:
+  FileInfo(const int       fd_,
+           const Branch   *branch_,
+           const fs::path &fusepath_,
+           const bool      direct_io_)
     : FH(fusepath_),
       fd(fd_),
-      branch(branch_),
+      branch(*branch_),
       direct_io(direct_io_)
   {
   }
 
-  FileInfo(const int     fd_,
-           const Branch *branch_,
-           const char   *fusepath_,
-           const bool    direct_io_)
+  FileInfo(const int       fd_,
+           const Branch   &branch_,
+           const fs::path &fusepath_,
+           const bool      direct_io_)
     : FH(fusepath_),
       fd(fd_),
-      branch(*branch_),
+      branch(branch_),
       direct_io(direct_io_)
   {
   }
@@ -59,8 +62,25 @@ public:
   }
 
 public:
+  uint64_t to_fh() const;
+
+public:
   int fd;
   Branch branch;
   u32 direct_io:1;
   std::mutex mutex;
 };
+
+inline
+uint64_t
+FileInfo::to_fh() const
+{
+  return reinterpret_cast<uint64_t>(this);
+}
+
+inline
+FileInfo*
+FileInfo::from_fh(const uintptr_t fh_)
+{
+  return reinterpret_cast<FileInfo*>(fh_);
+}

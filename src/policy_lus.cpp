@@ -75,7 +75,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::LUS::Action::operator()(const Branches::Ptr  &branches_,
-                                const char           *fusepath_,
+                                const fs::path       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplus(branches_,fusepath_,paths_);
@@ -83,7 +83,7 @@ Policy::LUS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LUS::Create::operator()(const Branches::Ptr  &branches_,
-                                const char           *fusepath_,
+                                const fs::path       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,paths_);
@@ -91,7 +91,7 @@ Policy::LUS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LUS::Search::operator()(const Branches::Ptr  &branches_,
-                                const char           *fusepath_,
+                                const fs::path       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplus(branches_,fusepath_,paths_);

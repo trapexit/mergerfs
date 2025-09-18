@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 
+
 static
 bool
 _rdonly(const int flags_)
@@ -49,8 +50,8 @@ _rdonly(const int flags_)
 
 static
 int
-_lchmod_and_open_if_not_writable_and_empty(const std::string &fullpath_,
-                                           const int          flags_)
+_lchmod_and_open_if_not_writable_and_empty(const fs::path &fullpath_,
+                                           const int       flags_)
 {
   int rv;
   struct stat st;
@@ -77,7 +78,7 @@ _lchmod_and_open_if_not_writable_and_empty(const std::string &fullpath_,
 
 static
 int
-_nfsopenhack(const std::string &fullpath_,
+_nfsopenhack(const fs::path    &fullpath_,
              const int          flags_,
              const NFSOpenHack  nfsopenhack_)
 {
@@ -89,7 +90,7 @@ _nfsopenhack(const std::string &fullpath_,
     case NFSOpenHack::ENUM::GIT:
       if(::_rdonly(flags_))
         return -EACCES;
-      if(fullpath_.find("/.git/") == std::string::npos)
+      if(fullpath_.string().find("/.git/") == std::string::npos)
         return -EACCES;
       return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
     case NFSOpenHack::ENUM::ALL:
@@ -194,9 +195,9 @@ _config_to_ffi_flags(Config           &cfg_,
 
 static
 int
-_open_path(const std::string &filepath_,
+_open_path(const fs::path    &filepath_,
            const Branch      *branch_,
-           const char        *fusepath_,
+           const fs::path    &fusepath_,
            fuse_file_info_t  *ffi_,
            const NFSOpenHack  nfsopenhack_)
 {
@@ -211,7 +212,7 @@ _open_path(const std::string &filepath_,
 
   fi = new FileInfo(fd,branch_,fusepath_,ffi_->direct_io);
 
-  ffi_->fh = reinterpret_cast<uint64_t>(fi);
+  ffi_->fh = fi->to_fh();
 
   return 0;
 }
@@ -220,7 +221,7 @@ static
 int
 _open_fd(const int         fd_,
          const Branch     *branch_,
-         const char       *fusepath_,
+         const fs::path   &fusepath_,
          fuse_file_info_t *ffi_)
 {
   int fd;
@@ -232,7 +233,7 @@ _open_fd(const int         fd_,
 
   fi = new FileInfo(fd,branch_,fusepath_,ffi_->direct_io);
 
-  ffi_->fh = reinterpret_cast<uint64_t>(fi);
+  ffi_->fh = fi->to_fh();
 
   return 0;
 }
@@ -241,23 +242,23 @@ static
 int
 _open(const Policy::Search &searchFunc_,
       const Branches       &ibranches_,
-      const char           *fusepath_,
+      const fs::path       &fusepath_,
       fuse_file_info_t     *ffi_,
       const bool            link_cow_,
       const NFSOpenHack     nfsopenhack_)
 {
   int rv;
-  std::string filepath;
+  fs::path filepath;
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
   if(rv < 0)
     return rv;
 
-  filepath = fs::path::make(obranches[0]->path,fusepath_);
+  filepath = obranches[0]->path / fusepath_;
 
-  if(link_cow_ && fs::cow::is_eligible(filepath.c_str(),ffi_->flags))
-    fs::cow::break_link(filepath.c_str());
+  if(link_cow_ && fs::cow::is_eligible(filepath,ffi_->flags))
+    fs::cow::break_link(filepath);
 
   rv = ::_open_path(filepath,
                     obranches[0],
@@ -280,7 +281,7 @@ _(const PassthroughEnum e_,
 static
 int
 _open_for_insert_lambda(const fuse_context *fc_,
-                        const char         *fusepath_,
+                        const fs::path     &fusepath_,
                         fuse_file_info_t   *ffi_,
                         State::OpenFile    *of_)
 {
@@ -306,7 +307,7 @@ _open_for_insert_lambda(const fuse_context *fc_,
   if(rv < 0)
     return rv;
 
-  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  fi = FileInfo::from_fh(ffi_->fh);
 
   of_->ref_count = 1;
   of_->fi        = fi;
@@ -337,7 +338,7 @@ _open_for_insert_lambda(const fuse_context *fc_,
 static
 int
 _open_for_update_lambda(const fuse_context *fc_,
-                        const char         *fusepath_,
+                        const fs::path     &fusepath_,
                         fuse_file_info_t   *ffi_,
                         State::OpenFile    *of_)
 {
@@ -373,10 +374,9 @@ _open_for_update_lambda(const fuse_context *fc_,
 
 static
 inline
-constexpr
 auto
 _open_insert_lambda(const fuse_context *fc_,
-                    const char         *fusepath_,
+                    const fs::path     &fusepath_,
                     fuse_file_info_t   *ffi_,
                     int                *rv_)
 {
@@ -392,10 +392,9 @@ _open_insert_lambda(const fuse_context *fc_,
 
 static
 inline
-constexpr
 auto
 _open_update_lambda(const fuse_context *fc_,
-                    const char         *fusepath_,
+                    const fs::path     &fusepath_,
                     fuse_file_info_t   *ffi_,
                     int                *rv_)
 {
@@ -424,7 +423,7 @@ _open_update_lambda(const fuse_context *fc_,
 static
 int
 _open(const fuse_context *fc_,
-      const char         *fusepath_,
+      const fs::path     &fusepath_,
       fuse_file_info_t   *ffi_)
 {
   int rv;
@@ -449,14 +448,12 @@ _open(const fuse_context *fc_,
 }
 
 
-namespace FUSE
+int
+FUSE::open(const char       *fusepath_,
+           fuse_file_info_t *ffi_)
 {
-  int
-  open(const char       *fusepath_,
-       fuse_file_info_t *ffi_)
-  {
-    const fuse_context *fc = fuse_get_context();
+  const fs::path fusepath{fusepath_};
+  const fuse_context *fc = fuse_get_context();
 
-    return ::_open(fc,fusepath_,ffi_);
-  }
+  return ::_open(fc,fusepath,ffi_);
 }

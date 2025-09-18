@@ -34,7 +34,7 @@ _releasedir(DirInfo *di_)
 int
 FUSE::releasedir(const fuse_file_info_t *ffi_)
 {
-  DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
   return ::_releasedir(di);
 }

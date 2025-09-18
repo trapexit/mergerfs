@@ -35,6 +35,8 @@
 
 #include "int_types.h"
 
+#include <filesystem>
+
 #define MAX_ENTRIES_PER_LOOP 64
 
 
@@ -63,153 +65,152 @@ _dirent_exact_namelen(const struct dirent *d_)
 #endif
 }
 
-namespace l
+struct Error
 {
-  struct Error
+private:
+  int _err;
+
+public:
+  Error()
+    : _err(ENOENT)
   {
-  private:
-    int _err;
-
-  public:
-    Error()
-      : _err(ENOENT)
-    {
-    }
-
-    operator int()
-    {
-      return _err;
-    }
-
-    Error&
-    operator=(int v_)
-    {
-      if(_err != 0)
-        _err = v_;
-
-      return *this;
-    }
-  };
-
-  static
-  inline
-  int
-  readdir(const std::string &branch_path_,
-          const std::string &rel_dirpath_,
-          HashSet           &names_,
-          fuse_dirents_t    *buf_,
-          std::mutex        &mutex_)
-  {
-    int rv;
-    DIR *dir;
-    std::string rel_filepath;
-    std::string abs_dirpath;
-
-    abs_dirpath = fs::path::make(branch_path_,rel_dirpath_);
-
-    errno = 0;
-    dir = fs::opendir(abs_dirpath);
-    if(dir == NULL)
-      return errno;
-
-    DEFER{ fs::closedir(dir); };
-
-    // The default buffer size in glibc is 32KB. 64 is based on a
-    // guess of an average size of 512B per entry. This is to limit
-    // contention on the lock when needing to request more data from
-    // the kernel. This could be handled better by using getdents but
-    // due to the differences between Linux and FreeBSD a more
-    // complicated abstraction needs to be created to handle them to
-    // make it easier to use across the codebase.
-    // * https://man7.org/linux/man-pages/man2/getdents.2.html
-    // * https://man.freebsd.org/cgi/man.cgi?query=getdents
-    while(true)
-      {
-        std::lock_guard<std::mutex> lk(mutex_);
-        for(int i = 0; i < MAX_ENTRIES_PER_LOOP; i++)
-          {
-            dirent *de;
-            u64 namelen;
-
-            de = fs::readdir(dir);
-            if(de == NULL)
-              return 0;
-
-            namelen = ::_dirent_exact_namelen(de);
-
-            rv = names_.put(de->d_name,namelen);
-            if(rv == 0)
-              continue;
-
-            rel_filepath = fs::path::make(rel_dirpath_,de->d_name);
-            de->d_ino = fs::inode::calc(branch_path_,
-                                        rel_filepath,
-                                        DTTOIF(de->d_type),
-                                        de->d_ino);
-
-            rv = fuse_dirents_add(buf_,de,namelen);
-            if(rv >= 0)
-              continue;
-
-            return ENOMEM;
-          }
-      }
-
-    return 0;
   }
 
-  static
-  inline
-  int
-  concurrent_readdir(ThreadPool          &tp_,
-                     const Branches::Ptr &branches_,
-                     const std::string   &rel_dirpath_,
-                     fuse_dirents_t      *buf_,
-                     const uid_t          uid_,
-                     const gid_t          gid_)
+  operator int()
   {
-    HashSet names;
-    std::mutex mutex;
-    std::vector<std::future<int>> futures;
-
-    fuse_dirents_reset(buf_);
-    futures.reserve(branches_->size());
-
-    for(const auto &branch : *branches_)
-      {
-        auto func =
-          [&,buf_,uid_,gid_]()
-          {
-            const ugid::Set ugid(uid_,gid_);
-
-            return l::readdir(branch.path,
-                              rel_dirpath_,
-                              names,
-                              buf_,
-                              mutex);
-          };
-
-        auto rv = tp_.enqueue_task(std::move(func));
-
-        futures.emplace_back(std::move(rv));
-      }
-
-    Error error;
-    for(auto &future : futures)
-      error = future.get();
-
-    return -error;
+    return _err;
   }
+
+  Error&
+  operator=(int v_)
+  {
+    if(_err != 0)
+      _err = v_;
+
+    return *this;
+  }
+};
+
+static
+inline
+int
+_readdir(const fs::path &branch_path_,
+         const fs::path &rel_dirpath_,
+         HashSet        &names_,
+         fuse_dirents_t *buf_,
+         std::mutex     &mutex_)
+{
+  int rv;
+  DIR *dir;
+  fs::path rel_filepath;
+  fs::path abs_dirpath;
+
+  abs_dirpath = branch_path_ / rel_dirpath_;
+
+  errno = 0;
+  dir = fs::opendir(abs_dirpath);
+  if(dir == NULL)
+    return errno;
+
+  DEFER{ fs::closedir(dir); };
+
+  // The default buffer size in glibc is 32KB. 64 is based on a
+  // guess of an average size of 512B per entry. This is to limit
+  // contention on the lock when needing to request more data from
+  // the kernel. This could be handled better by using getdents but
+  // due to the differences between Linux and FreeBSD a more
+  // complicated abstraction needs to be created to handle them to
+  // make it easier to use across the codebase.
+  // * https://man7.org/linux/man-pages/man2/getdents.2.html
+  // * https://man.freebsd.org/cgi/man.cgi?query=getdents
+  rel_filepath = rel_dirpath_ / "dummy";
+  while(true)
+    {
+      std::lock_guard<std::mutex> lk(mutex_);
+      for(int i = 0; i < MAX_ENTRIES_PER_LOOP; i++)
+        {
+          dirent *de;
+          u64 namelen;
+
+          de = fs::readdir(dir);
+          if(de == NULL)
+            return 0;
+
+          namelen = ::_dirent_exact_namelen(de);
+
+          rv = names_.put(de->d_name,namelen);
+          if(rv == 0)
+            continue;
+
+          rel_filepath.replace_filename(de->d_name);
+
+          de->d_ino = fs::inode::calc(branch_path_,
+                                      rel_filepath,
+                                      DTTOIF(de->d_type),
+                                      de->d_ino);
+
+          rv = fuse_dirents_add(buf_,de,namelen);
+          if(rv >= 0)
+            continue;
+
+          return ENOMEM;
+        }
+    }
+
+  return 0;
+}
+
+static
+inline
+int
+_concurrent_readdir(ThreadPool          &tp_,
+                    const Branches::Ptr &branches_,
+                    const fs::path      &rel_dirpath_,
+                    fuse_dirents_t      *buf_,
+                    const uid_t          uid_,
+                    const gid_t          gid_)
+{
+  HashSet names;
+  std::mutex mutex;
+  std::vector<std::future<int>> futures;
+
+  fuse_dirents_reset(buf_);
+  futures.reserve(branches_->size());
+
+  for(const auto &branch : *branches_)
+    {
+      auto func =
+        [&,buf_,uid_,gid_]()
+        {
+          const ugid::Set ugid(uid_,gid_);
+
+          return ::_readdir(branch.path,
+                            rel_dirpath_,
+                            names,
+                            buf_,
+                            mutex);
+        };
+
+      auto rv = tp_.enqueue_task(std::move(func));
+
+      futures.emplace_back(std::move(rv));
+    }
+
+  Error error;
+  for(auto &future : futures)
+    error = future.get();
+
+  return -error;
 }
 
 int
 FUSE::ReadDirCOR::operator()(const fuse_file_info_t *ffi_,
                              fuse_dirents_t         *buf_)
 {
-  DirInfo            *di = reinterpret_cast<DirInfo*>(ffi_->fh);
+  DirInfo            *di = DirInfo::from_fh(ffi_->fh);
   const fuse_context *fc = fuse_get_context();
 
-  return l::concurrent_readdir(_tp,
+  return ::_concurrent_readdir(_tp,
                                cfg.branches,
                                di->fusepath,
                                buf_,

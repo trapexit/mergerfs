@@ -16,6 +16,8 @@
 
 #include "fuse_fallocate.hpp"
 
+#include "state.hpp"
+
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_fallocate.hpp"
@@ -43,7 +45,23 @@ FUSE::fallocate(const uint64_t fh_,
                 off_t          offset_,
                 off_t          len_)
 {
-  FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
+  uint64_t fh;
+  const fuse_context *fc = fuse_get_context();
+
+  fh = fh_;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](auto &val_)
+                              {
+                                fh = val_.second.fi->to_fh();
+                              });
+    }
+
+  if(fh == 0)
+    return -ENOENT;
+
+  FileInfo *fi = FileInfo::from_fh(fh);
 
   return ::_fallocate(fi->fd,
                       mode_,

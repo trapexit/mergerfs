@@ -33,9 +33,9 @@
 
 static
 int
-_mkdir_core(const std::string &fullpath_,
-            mode_t             mode_,
-            const mode_t       umask_)
+_mkdir_core(const fs::path &fullpath_,
+            mode_t          mode_,
+            const mode_t    umask_)
 {
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
@@ -45,15 +45,15 @@ _mkdir_core(const std::string &fullpath_,
 
 static
 int
-_mkdir_loop_core(const std::string &createpath_,
-                 const char        *fusepath_,
-                 const mode_t       mode_,
-                 const mode_t       umask_)
+_mkdir_loop_core(const fs::path &createpath_,
+                 const fs::path &fusepath_,
+                 const mode_t    mode_,
+                 const mode_t    umask_)
 {
   int rv;
-  std::string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(createpath_,fusepath_);
+  fullpath = createpath_ / fusepath_;
 
   rv = ::_mkdir_core(fullpath,mode_,umask_);
 
@@ -64,8 +64,8 @@ static
 int
 _mkdir_loop(const Branch               *existingbranch_,
             const std::vector<Branch*> &createbranches_,
-            const char                 *fusepath_,
-            const std::string          &fusedirpath_,
+            const fs::path             &fusepath_,
+            const fs::path             &fusedirpath_,
             const mode_t                mode_,
             const mode_t                umask_)
 {
@@ -97,16 +97,16 @@ int
 _mkdir(const Policy::Search &getattrPolicy_,
        const Policy::Create &mkdirPolicy_,
        const Branches       &branches_,
-       const char           *fusepath_,
+       const fs::path       &fusepath_,
        const mode_t          mode_,
        const mode_t          umask_)
 {
   int rv;
-  std::string fusedirpath;
+  fs::path fusedirpath;
   std::vector<Branch*> createbranches;
   std::vector<Branch*> existingbranches;
 
-  fusedirpath = fs::path::dirname(fusepath_);
+  fusedirpath = fusepath_.parent_path();
 
   rv = getattrPolicy_(branches_,fusedirpath,existingbranches);
   if(rv < 0)
@@ -129,13 +129,14 @@ FUSE::mkdir(const char *fusepath_,
             mode_t      mode_)
 {
   int rv;
+  const fs::path      fusepath{fusepath_};
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   rv = ::_mkdir(cfg.func.getattr.policy,
                 cfg.func.mkdir.policy,
                 cfg.branches,
-                fusepath_,
+                fusepath,
                 mode_,
                 fc->umask);
   if(rv == -EROFS)
@@ -144,7 +145,7 @@ FUSE::mkdir(const char *fusepath_,
       rv = ::_mkdir(cfg.func.getattr.policy,
                     cfg.func.mkdir.policy,
                     cfg.branches,
-                    fusepath_,
+                    fusepath,
                     mode_,
                     fc->umask);
     }

@@ -37,6 +37,7 @@
 #include "config_xattr.hpp"
 #include "enum.hpp"
 #include "errno.hpp"
+#include "fs_path.hpp"
 #include "funcs.hpp"
 #include "fuse_readdir.hpp"
 #include "policy.hpp"
@@ -46,7 +47,6 @@
 #include "fuse.h"
 
 #include <cstdint>
-#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -59,7 +59,7 @@ typedef ToFromWrapper<uint64_t>              ConfigUINT64;
 typedef ToFromWrapper<int64_t>               ConfigS64;
 typedef ToFromWrapper<int>                   ConfigINT;
 typedef ToFromWrapper<std::string>           ConfigSTR;
-typedef ToFromWrapper<std::filesystem::path> ConfigPath;
+typedef ToFromWrapper<fs::path> ConfigPath;
 typedef std::map<std::string,ToFromString*>  Str2TFStrMap;
 
 extern const std::string CONTROLFILE;
@@ -173,8 +173,8 @@ public:
   int from_file(const std::string &filepath, ErrVec *errs);
 
 public:
-  static bool is_rootdir(const char *fusepath);
-  static bool is_ctrl_file(const char *fusepath);
+  static bool is_rootdir(const fs::path &fusepath);
+  static bool is_ctrl_file(const fs::path &fusepath);
   static bool is_mergerfs_xattr(const char *attrname);
   static bool is_cmd_xattr(const std::string_view &attrname);
   static std::string prune_ctrl_xattr(const std::string &s);

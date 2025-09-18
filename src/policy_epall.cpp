@@ -34,7 +34,7 @@ using std::string;
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -68,7 +68,7 @@ _create(const Branches::Ptr  &branches_,
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -100,7 +100,7 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   for(auto &branch : *branches_)
@@ -119,7 +119,7 @@ _search(const Branches::Ptr  &branches_,
 
 int
 Policy::EPAll::Action::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+                                  const fs::path       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
@@ -127,7 +127,7 @@ Policy::EPAll::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPAll::Create::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+                                  const fs::path       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -135,7 +135,7 @@ Policy::EPAll::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPAll::Search::operator()(const Branches::Ptr  &branches_,
-                                  const char           *fusepath_,
+                                  const fs::path       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

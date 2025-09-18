@@ -60,7 +60,7 @@ FUSE::fgetattr(const uint64_t   fh_,
       state.open_files.cvisit(fc->nodeid,
                               [&](const auto &val_)
                               {
-                                fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                                fh = val_.second.fi->to_fh();
                               });
     }
 
@@ -70,7 +70,7 @@ FUSE::fgetattr(const uint64_t   fh_,
       return -ENOENT;
     }
 
-  FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+  FileInfo *fi = FileInfo::from_fh(fh);
 
   rv = ::_fgetattr(fi,st_);
 

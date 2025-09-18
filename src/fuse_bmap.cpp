@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_bmap.hpp"
+
 #include "errno.hpp"
 
 #include <cstdint>
@@ -23,17 +25,14 @@
 #include <stddef.h>
 
 
-namespace FUSE
+int
+FUSE::bmap(const char *fusepath_,
+           size_t      blocksize_,
+           uint64_t   *idx_)
 {
-  int
-  bmap(const char *fusepath_,
-       size_t      blocksize_,
-       uint64_t   *idx_)
-  {
-    (void)fusepath_;
-    (void)blocksize_;
-    (void)idx_;
+  (void)fusepath_;
+  (void)blocksize_;
+  (void)idx_;
 
-    return -ENOSYS;
-  }
+  return -ENOSYS;
 }

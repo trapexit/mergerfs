@@ -16,23 +16,18 @@
 
 #pragma once
 
-#include <string>
+#include "fs_path.hpp"
 
 
 class FH
 {
 public:
-  FH(const std::string fusepath_)
-    : fusepath(std::move(fusepath_))
-  {
-
-  }
-
-  FH(const char *fusepath_)
+  FH(const fs::path &fusepath_)
     : fusepath(fusepath_)
   {
+
   }
 
 public:
-  std::string fusepath;
+  fs::path fusepath;
 };

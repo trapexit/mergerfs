@@ -30,22 +30,17 @@
 #include <thread>
 #include <set>
 
-
-namespace fs
-{
-  typedef std::set<fs::Path> PathSet;
-}
-
 constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(333);
+
 
 static
 bool
-_branch_is_mounted(const struct stat &src_st_,
-                   const fs::Path    &branch_path_)
+_branch_is_mounted(const struct stat           &src_st_,
+                   const fs::path &branch_path_)
 {
   int rv;
   struct stat st;
-  fs::Path filepath;
+  fs::path filepath;
 
   rv = fs::lgetxattr(branch_path_,"user.mergerfs.branch",NULL,0);
   if(rv >= 0)
@@ -74,13 +69,13 @@ _branch_is_mounted(const struct stat &src_st_,
 
 static
 void
-_check_mounted(const struct stat &src_st_,
-               const fs::PathSet &tgt_paths_,
-               fs::PathVector    *successes_,
-               fs::PathVector    *failures_)
+_check_mounted(const struct stat        &src_st_,
+               const std::set<fs::path> &tgt_paths_,
+               std::vector<fs::path>    *successes_,
+               std::vector<fs::path>    *failures_)
 {
-  fs::PathVector &successes = *successes_;
-  fs::PathVector &failures  = *failures_;
+  std::vector<fs::path> &successes = *successes_;
+  std::vector<fs::path> &failures  = *failures_;
 
   for(auto const &tgt_path : tgt_paths_)
     {
@@ -97,13 +92,13 @@ _check_mounted(const struct stat &src_st_,
 static
 int
 _wait_for_mount(const struct stat               &src_st_,
-                const fs::PathVector            &tgt_paths_,
+                const std::vector<fs::path>     &tgt_paths_,
                 const std::chrono::milliseconds &timeout_)
 {
   bool first_loop;
-  fs::PathVector successes;
-  fs::PathVector failures;
-  fs::PathSet    tgt_paths;
+  std::vector<fs::path> successes;
+  std::vector<fs::path> failures;
+  std::set<fs::path>    tgt_paths;
   std::chrono::time_point<std::chrono::steady_clock> now;
   std::chrono::time_point<std::chrono::steady_clock> deadline;
 
@@ -146,8 +141,8 @@ _wait_for_mount(const struct stat               &src_st_,
 }
 
 int
-fs::wait_for_mount(const fs::Path                  &src_path_,
-                   const fs::PathVector            &tgt_paths_,
+fs::wait_for_mount(const fs::path                  &src_path_,
+                   const std::vector<fs::path>     &tgt_paths_,
                    const std::chrono::milliseconds &timeout_)
 {
   int rv;

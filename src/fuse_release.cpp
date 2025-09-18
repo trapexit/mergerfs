@@ -93,7 +93,7 @@ int
 _release(const fuse_context     *fc_,
          const fuse_file_info_t *ffi_)
 {
-  FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
   return ::_release(fc_,fi,cfg.dropcacheonclose);
 }

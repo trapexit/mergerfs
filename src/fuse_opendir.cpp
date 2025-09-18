@@ -26,7 +26,11 @@ int
 FUSE::opendir(const char       *fusepath_,
               fuse_file_info_t *ffi_)
 {
-  ffi_->fh = reinterpret_cast<uint64_t>(new DirInfo(fusepath_));
+  DirInfo *di;
+
+  di = new DirInfo(fusepath_);
+
+  ffi_->fh = di->to_fh();
 
   ffi_->noflush = true;
 

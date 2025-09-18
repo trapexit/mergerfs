@@ -18,18 +18,20 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <string>
 #include <tuple>
 
 namespace fs
 {
 
-  std::tuple<int,std::string>
-  mktemp_in_dir(const std::string &dirpath,
-                const std::string &filename,
-                int const         flags);
+  std::tuple<int,fs::path>
+  mktemp_in_dir(const fs::path &dirpath,
+                const fs::path &filename,
+                int const       flags);
 
-  std::tuple<int,std::string>
-  mktemp(const std::string &filepath,
-         const int          flags);
+  std::tuple<int,fs::path>
+  mktemp(const fs::path &filepath,
+         const int       flags);
 }

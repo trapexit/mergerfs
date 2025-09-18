@@ -27,6 +27,7 @@
 #include "policy_msplfs.hpp"
 #include "strvec.hpp"
 
+#include <filesystem>
 #include <limits>
 #include <string>
 
@@ -34,7 +35,7 @@
 static
 Branch*
 _create_1(const Branches::Ptr &branches_,
-          const std::string   &fusepath_,
+          const fs::path      &fusepath_,
           int                 *err_)
 {
   int rv;
@@ -70,12 +71,12 @@ _create_1(const Branches::Ptr &branches_,
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int error;
   Branch *branch;
-  std::string fusepath;
+  fs::path fusepath;
 
   error = ENOENT;
   fusepath = fusepath_;
@@ -86,7 +87,7 @@ _create(const Branches::Ptr  &branches_,
         break;
       if(fusepath == "/")
         break;
-      fusepath = fs::path::dirname(fusepath);
+      fusepath = fusepath.parent_path();
     }
 
   if(!branch)
@@ -99,7 +100,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLFS::Action::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplfs(branches_,fusepath_,paths_);
@@ -107,7 +108,7 @@ Policy::MSPLFS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLFS::Create::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -115,7 +116,7 @@ Policy::MSPLFS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLFS::Search::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplfs(branches_,fusepath_,paths_);

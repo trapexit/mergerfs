@@ -53,8 +53,8 @@ fs::cow::is_eligible(const int          flags_,
 }
 
 bool
-fs::cow::is_eligible(const char *fullpath_,
-                     const int   flags_)
+fs::cow::is_eligible(const fs::path &fullpath_,
+                     const int       flags_)
 {
   int rv;
   struct stat st;
@@ -70,7 +70,7 @@ fs::cow::is_eligible(const char *fullpath_,
 }
 
 int
-fs::cow::break_link(const char *src_filepath_)
+fs::cow::break_link(const fs::path &src_filepath_)
 {
   return fs::copyfile(src_filepath_,
                       src_filepath_,

@@ -24,18 +24,19 @@
 
 #include "fuse.h"
 
+#include <filesystem>
 #include <optional>
 #include <string>
-
 #include <cstring>
+
 
 static
 ssize_t
 _listxattr_size(const std::vector<Branch*> &branches_,
-                const char                 *fusepath_)
+                const fs::path             &fusepath_)
 {
   ssize_t size;
-  std::string fullpath;
+  fs::path fullpath;
 
   if(branches_.empty())
     return -ENOENT;
@@ -45,7 +46,7 @@ _listxattr_size(const std::vector<Branch*> &branches_,
     {
       ssize_t rv;
 
-      fullpath = fs::path::make(branch->path,fusepath_);
+      fullpath = branch->path / fusepath_;
 
       rv = fs::llistxattr(fullpath,NULL,0);
       if(rv < 0)
@@ -60,13 +61,13 @@ _listxattr_size(const std::vector<Branch*> &branches_,
 static
 ssize_t
 _listxattr(const std::vector<Branch*> &branches_,
-           const char                 *fusepath_,
+           const fs::path             &fusepath_,
            char                       *list_,
            size_t                      size_)
 {
   ssize_t rv;
   ssize_t size;
-  std::string fullpath;
+  fs::path fullpath;
   std::optional<ssize_t> err;
 
   if(size_ == 0)
@@ -76,7 +77,7 @@ _listxattr(const std::vector<Branch*> &branches_,
   err  = -ENOENT;
   for(const auto branch : branches_)
     {
-      fullpath = fs::path::make(branch->path,fusepath_);
+      fullpath = branch->path / fusepath_;
 
       rv = fs::llistxattr(fullpath,list_,size_);
       if(rv == -ERANGE)
@@ -104,12 +105,11 @@ static
 int
 _listxattr(const Policy::Search &searchFunc_,
            const Branches       &ibranches_,
-           const char           *fusepath_,
+           const fs::path       &fusepath_,
            char                 *list_,
            const size_t          size_)
 {
   int rv;
-  std::string fullpath;
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
@@ -127,7 +127,9 @@ FUSE::listxattr(const char *fusepath_,
                 char       *list_,
                 size_t      size_)
 {
-  if(Config::is_ctrl_file(fusepath_))
+  const fs::path fusepath{fusepath_};
+
+  if(Config::is_ctrl_file(fusepath))
     return cfg.keys_listxattr(list_,size_);
 
   switch(cfg.xattr)
@@ -145,7 +147,7 @@ FUSE::listxattr(const char *fusepath_,
 
   return ::_listxattr(cfg.func.listxattr.policy,
                       cfg.branches,
-                      fusepath_,
+                      fusepath,
                       list_,
                       size_);
 }

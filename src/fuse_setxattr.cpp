@@ -31,10 +31,9 @@
 
 #include "fuse.h"
 
+#include <cstring>
 #include <string>
 #include <vector>
-
-#include <cstring>
 
 static const char SECURITY_CAPABILITY[] = "security.capability";
 
@@ -107,17 +106,17 @@ _setxattr_ctrl_file(const char *attrname_,
 
 static
 void
-_setxattr_loop_core(const std::string &basepath_,
-                    const char        *fusepath_,
-                    const char        *attrname_,
-                    const char        *attrval_,
-                    const size_t       attrvalsize_,
-                    const int          flags_,
-                    PolicyRV          *prv_)
+_setxattr_loop_core(const fs::path &basepath_,
+                    const fs::path &fusepath_,
+                    const char     *attrname_,
+                    const char     *attrval_,
+                    const size_t    attrvalsize_,
+                    const int       flags_,
+                    PolicyRV       *prv_)
 {
-  std::string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
   errno = 0;
   fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
@@ -128,7 +127,7 @@ _setxattr_loop_core(const std::string &basepath_,
 static
 void
 _setxattr_loop(const std::vector<Branch*> &branches_,
-               const char                 *fusepath_,
+               const fs::path             &fusepath_,
                const char                 *attrname_,
                const char                 *attrval_,
                const size_t                attrvalsize_,
@@ -151,7 +150,7 @@ int
 _setxattr(const Policy::Action &setxattrPolicy_,
           const Policy::Search &getxattrPolicy_,
           const Branches       &branches_,
-          const char           *fusepath_,
+          const fs::path       &fusepath_,
           const char           *attrname_,
           const char           *attrval_,
           const size_t          attrvalsize_,
@@ -181,11 +180,11 @@ _setxattr(const Policy::Action &setxattrPolicy_,
 
 static
 int
-_setxattr(const char *fusepath_,
-          const char *attrname_,
-          const char *attrval_,
-          size_t      attrvalsize_,
-          int         flags_)
+_setxattr(const fs::path &fusepath_,
+          const char     *attrname_,
+          const char     *attrval_,
+          size_t          attrvalsize_,
+          int             flags_)
 {
   if((cfg.security_capability == false) &&
      ::_is_attrname_security_capability(attrname_))
@@ -215,11 +214,13 @@ FUSE::setxattr(const char *fusepath_,
                size_t      attrvalsize_,
                int         flags_)
 {
-  if(Config::is_ctrl_file(fusepath_))
+  const fs::path fusepath{fusepath_};
+
+  if(Config::is_ctrl_file(fusepath))
     return ::_setxattr_ctrl_file(attrname_,
                                  attrval_,
                                  attrvalsize_,
                                  flags_);
 
-  return ::_setxattr(fusepath_,attrname_,attrval_,attrvalsize_,flags_);
+  return ::_setxattr(fusepath,attrname_,attrval_,attrvalsize_,flags_);
 }

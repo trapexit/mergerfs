@@ -25,6 +25,7 @@
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
 #include "fs_statx.hpp"
+#include "state.hpp"
 #include "str.hpp"
 #include "symlinkify.hpp"
 #include "ugid.hpp"
@@ -38,7 +39,7 @@
 
 static
 void
-_set_stat_if_leads_to_dir(const std::string &path_,
+_set_stat_if_leads_to_dir(const fs::path    &path_,
                           struct fuse_statx *st_)
 {
   int rv;
@@ -56,7 +57,7 @@ _set_stat_if_leads_to_dir(const std::string &path_,
 
 static
 void
-_set_stat_if_leads_to_reg(const std::string &path_,
+_set_stat_if_leads_to_reg(const fs::path    &path_,
                           struct fuse_statx *st_)
 {
   int rv;
@@ -116,7 +117,7 @@ static
 int
 _statx(const Policy::Search &searchFunc_,
        const Branches       &branches_,
-       const char           *fusepath_,
+       const fs::path       &fusepath_,
        const uint32_t        flags_,
        const uint32_t        mask_,
        struct fuse_statx    *st_,
@@ -125,14 +126,14 @@ _statx(const Policy::Search &searchFunc_,
        FollowSymlinks        followsymlinks_)
 {
   int rv;
-  std::string fullpath;
+  fs::path fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
 
-  fullpath = fs::path::make(branches[0]->path,fusepath_);
+  fullpath = branches[0]->path / fusepath_;
 
   switch(followsymlinks_)
     {
@@ -162,14 +163,16 @@ _statx(const Policy::Search &searchFunc_,
   if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
     symlinkify::convert(fullpath,st_);
 
-  fs::inode::calc(branches[0]->path,fusepath_,st_);
+  fs::inode::calc(branches[0]->path,
+                  fusepath_,
+                  st_);
 
   return 0;
 }
 
 static
 int
-_statx(const char        *fusepath_,
+_statx(const fs::path    &fusepath_,
        const uint32_t     flags_,
        const uint32_t     mask_,
        struct fuse_statx *st_,
@@ -206,10 +209,12 @@ FUSE::statx(const char        *fusepath_,
             struct fuse_statx *st_,
             fuse_timeouts_t   *timeout_)
 {
-  if(Config::is_ctrl_file(fusepath_))
+  const fs::path fusepath{fusepath_};
+
+  if(Config::is_ctrl_file(fusepath))
     return ::_statx_controlfile(st_);
 
-  return ::_statx(fusepath_,
+  return ::_statx(fusepath,
                   flags_|AT_STATX_DONT_SYNC,
                   mask_,
                   st_,
@@ -223,9 +228,25 @@ FUSE::statx_fh(const uint64_t     fh_,
                struct fuse_statx *st_,
                fuse_timeouts_t   *timeout_)
 {
-  FileInfo *fi = reinterpret_cast<FileInfo*>(fh_);
+  uint64_t fh;
+  const fuse_context *fc = fuse_get_context();
 
-  return ::_statx(fi->fusepath.c_str(),
+  fh = fh_;
+  if(fh == 0)
+    {
+      state.open_files.cvisit(fc->nodeid,
+                              [&](auto &val_)
+                              {
+                                fh = val_.second.fi->to_fh();
+                              });
+    }
+
+  if(fh == 0)
+    return -ENOENT;
+
+  FileInfo *fi = FileInfo::from_fh(fh);
+
+  return ::_statx(fi->fusepath,
                   flags_|AT_STATX_DONT_SYNC,
                   mask_,
                   st_,

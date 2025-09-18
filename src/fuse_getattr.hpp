@@ -18,6 +18,8 @@
 
 #include "fuse.h"
 
+#include "fs_path.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -29,4 +31,10 @@ namespace FUSE
   getattr(const char      *fusepath,
           struct stat     *buf,
           fuse_timeouts_t *timeout);
+
+  int
+  getattr(const fs::path  &fusepath,
+          struct stat     *buf,
+          fuse_timeouts_t *timeout);
+
 }

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -30,8 +32,8 @@ namespace fs
     bool is_eligible(const struct stat &st);
     bool is_eligible(const int flags, const struct stat &st);
 
-    bool is_eligible(const char *fullpath, const int flags);
+    bool is_eligible(const fs::path &fullpath, const int flags);
 
-    int  break_link(const char *fullpath);
+    int  break_link(const fs::path &fullpath);
   }
 }

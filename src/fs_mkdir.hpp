@@ -38,7 +38,8 @@ namespace fs
   {
     int rv;
 
-    rv = ::mkdir(path_,mode_);
+    rv = ::mkdir(path_,
+                 mode_);
 
     return ::to_neg_errno(rv);
   }
@@ -49,15 +50,17 @@ namespace fs
   mkdir(const std::string &path_,
         const mode_t       mode_)
   {
-    return fs::mkdir(path_.c_str(),mode_);
+    return fs::mkdir(path_.c_str(),
+                     mode_);
   }
 
   static
   inline
   int
-  mkdir(const fs::Path &path_,
+  mkdir(const fs::path &path_,
         const mode_t    mode_)
   {
-    return fs::mkdir(path_.c_str(),mode_);
+    return fs::mkdir(path_.c_str(),
+                     mode_);
   }
 }

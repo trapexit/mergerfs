@@ -20,7 +20,10 @@
 
 #include "fs_fchmodat.hpp"
 
+#include "fs_path.hpp"
 #include "to_neg_errno.hpp"
+
+#include <string>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -38,7 +41,10 @@ namespace fs
   {
     int rv;
 
-    rv = ::fchmodat(dirfd_,pathname_,mode_,flags_);
+    rv = ::fchmodat(dirfd_,
+                    pathname_,
+                    mode_,
+                    flags_);
 
     return ::to_neg_errno(rv);
   }
@@ -51,6 +57,23 @@ namespace fs
            const mode_t       mode_,
            const int          flags_)
   {
-    return fs::fchmodat(dirfd_,pathname_.c_str(),mode_,flags_);
+    return fs::fchmodat(dirfd_,
+                        pathname_.c_str(),
+                        mode_,
+                        flags_);
+  }
+
+  static
+  inline
+  int
+  fchmodat(const int       dirfd_,
+           const fs::path &pathname_,
+           const mode_t    mode_,
+           const int       flags_)
+  {
+    return fs::fchmodat(dirfd_,
+                        pathname_.c_str(),
+                        mode_,
+                        flags_);
   }
 }

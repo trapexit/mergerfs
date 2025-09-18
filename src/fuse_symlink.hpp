@@ -18,6 +18,10 @@
 
 #include "fuse.h"
 
+#include "fs_path.hpp"
+
+#include <string>
+
 #include <sys/stat.h>
 
 namespace FUSE
@@ -27,4 +31,11 @@ namespace FUSE
           const char      *linkpath,
           struct stat     *st       = NULL,
           fuse_timeouts_t *timeouts = NULL);
+
+  int
+  symlink(const char      *target,
+          const fs::path  &linkpath,
+          struct stat     *st       = NULL,
+          fuse_timeouts_t *timeouts = NULL);
+
 }

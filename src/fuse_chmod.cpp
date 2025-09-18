@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_chmod.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_lchmod.hpp"
@@ -23,96 +25,90 @@
 
 #include "fuse.h"
 
+#include <cstring>
 #include <string>
 
-#include <string.h>
 
-
-namespace l
+static
+void
+_chmod_loop_core(const std::string &basepath_,
+                 const fs::path    &fusepath_,
+                 const mode_t       mode_,
+                 PolicyRV          *prv_)
 {
-  static
-  void
-  chmod_loop_core(const std::string &basepath_,
-                  const char        *fusepath_,
-                  const mode_t       mode_,
-                  PolicyRV          *prv_)
-  {
-    std::string fullpath;
+  fs::path fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
-    errno = 0;
-    fs::lchmod(fullpath,mode_);
+  errno = 0;
+  fs::lchmod(fullpath,mode_);
 
-    prv_->insert(errno,basepath_);
-  }
+  prv_->insert(errno,basepath_);
+}
 
-  static
-  void
-  chmod_loop(const std::vector<Branch*> &branches_,
-             const char                 *fusepath_,
-             const mode_t                mode_,
-             PolicyRV                   *prv_)
-  {
-    for(auto &branch : branches_)
-      {
-        l::chmod_loop_core(branch->path,fusepath_,mode_,prv_);
-      }
-  }
-
-  static
-  int
-  chmod(const Policy::Action &actionFunc_,
-        const Policy::Search &searchFunc_,
-        const Branches       &branches_,
-        const char           *fusepath_,
-        const mode_t          mode_)
-  {
-    int rv;
-    PolicyRV prv;
-    std::vector<Branch*> branches;
-
-    rv = actionFunc_(branches_,fusepath_,branches);
-    if(rv < 0)
-      return rv;
-
-    l::chmod_loop(branches,fusepath_,mode_,&prv);
-    if(prv.errors.empty())
-      return 0;
-    if(prv.successes.empty())
-      return prv.errors[0].rv;
-
-    branches.clear();
-    rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv < 0)
-      return rv;
-
-    return prv.get_error(branches[0]->path);
-  }
+static
+void
+_chmod_loop(const std::vector<Branch*> &branches_,
+            const fs::path             &fusepath_,
+            const mode_t                mode_,
+            PolicyRV                   *prv_)
+{
+  for(auto &branch : branches_)
+    {
+      ::_chmod_loop_core(branch->path,fusepath_,mode_,prv_);
+    }
 }
 
 static
 int
-_chmod(const char   *fusepath_,
-       const mode_t  mode_)
+_chmod(const Policy::Action &actionFunc_,
+       const Policy::Search &searchFunc_,
+       const Branches       &branches_,
+       const fs::path       &fusepath_,
+       const mode_t          mode_)
+{
+  int rv;
+  PolicyRV prv;
+  std::vector<Branch*> branches;
+
+  rv = actionFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  ::_chmod_loop(branches,fusepath_,mode_,&prv);
+  if(prv.errors.empty())
+    return 0;
+  if(prv.successes.empty())
+    return prv.errors[0].rv;
+
+  branches.clear();
+  rv = searchFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  return prv.get_error(branches[0]->path);
+}
+
+static
+int
+_chmod(const fs::path &fusepath_,
+       const mode_t    mode_)
 {
   const fuse_context *fc  = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
-  return l::chmod(cfg.func.chmod.policy,
+  return ::_chmod(cfg.func.chmod.policy,
                   cfg.func.getattr.policy,
                   cfg.branches,
                   fusepath_,
                   mode_);
 }
 
-
-namespace FUSE
+int
+FUSE::chmod(const char *fusepath_,
+            mode_t      mode_)
 {
-  int
-  chmod(const char *fusepath_,
-        mode_t      mode_)
-  {
-    return ::_chmod(fusepath_,mode_);
-  }
+  const fs::path fusepath{fusepath_};
+
+  return ::_chmod(fusepath,mode_);
 }

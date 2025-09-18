@@ -26,16 +26,14 @@
 
 #include "fuse.h"
 
-#include <string.h>
-
-using std::string;
+#include <cstring>
 
 
 static
 int
-_readlink_core_standard(const string &fullpath_,
-                        char         *buf_,
-                        const size_t  size_)
+_readlink_core_standard(const fs::path &fullpath_,
+                        char           *buf_,
+                        const size_t    size_)
 
 {
   int rv;
@@ -51,10 +49,10 @@ _readlink_core_standard(const string &fullpath_,
 
 static
 int
-_readlink_core_symlinkify(const string &fullpath_,
-                          char         *buf_,
-                          const size_t  size_,
-                          const time_t  symlinkify_timeout_)
+_readlink_core_symlinkify(const fs::path &fullpath_,
+                          char           *buf_,
+                          const size_t    size_,
+                          const time_t    symlinkify_timeout_)
 {
   int rv;
   struct stat st;
@@ -73,16 +71,16 @@ _readlink_core_symlinkify(const string &fullpath_,
 
 static
 int
-_readlink_core(const string &basepath_,
-               const char   *fusepath_,
-               char         *buf_,
-               const size_t  size_,
-               const bool    symlinkify_,
-               const time_t  symlinkify_timeout_)
+_readlink_core(const fs::path &basepath_,
+               const fs::path &fusepath_,
+               char           *buf_,
+               const size_t    size_,
+               const bool      symlinkify_,
+               const time_t    symlinkify_timeout_)
 {
-  string fullpath;
+  fs::path fullpath;
 
-  fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
   if(symlinkify_)
     return ::_readlink_core_symlinkify(fullpath,buf_,size_,symlinkify_timeout_);
@@ -94,7 +92,7 @@ static
 int
 _readlink(const Policy::Search &searchFunc_,
           const Branches       &ibranches_,
-          const char           *fusepath_,
+          const fs::path       &fusepath_,
           char                 *buf_,
           const size_t          size_,
           const bool            symlinkify_,
@@ -121,12 +119,13 @@ FUSE::readlink(const char *fusepath_,
                char       *buf_,
                size_t      size_)
 {
+  const fs::path      fusepath{fusepath_};
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   return ::_readlink(cfg.func.readlink.policy,
                      cfg.branches,
-                     fusepath_,
+                     fusepath,
                      buf_,
                      size_,
                      cfg.symlinkify,

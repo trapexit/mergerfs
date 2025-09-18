@@ -29,32 +29,30 @@
 
 #include "fuse.h"
 
-#include <string>
-
 #include <sys/types.h>
 #include <unistd.h>
-
-using std::string;
 
 
 static
 int
-_symlink_loop_core(const std::string &newbranch_,
-                   const char        *target_,
-                   const char        *linkpath_,
-                   struct stat       *st_)
+_symlink_loop_core(const fs::path &newbranch_,
+                   const char     *target_,
+                   const fs::path &linkpath_,
+                   struct stat    *st_)
 {
   int rv;
-  string fullnewpath;
+  fs::path fullnewpath;
 
-  fullnewpath = fs::path::make(newbranch_,linkpath_);
+  fullnewpath = newbranch_ / linkpath_;
 
   rv = fs::symlink(target_,fullnewpath);
   if((rv >= 0) && (st_ != NULL) && (st_->st_ino == 0))
     {
       fs::lstat(fullnewpath,st_);
       if(st_->st_ino != 0)
-        fs::inode::calc(newbranch_,linkpath_,st_);
+        fs::inode::calc(newbranch_,
+                        linkpath_,
+                        st_);
     }
 
   return rv;
@@ -62,11 +60,11 @@ _symlink_loop_core(const std::string &newbranch_,
 
 static
 int
-_symlink_loop(const std::string          &existingbranch_,
+_symlink_loop(const fs::path             &existingbranch_,
               const std::vector<Branch*> &newbranches_,
               const char                 *target_,
-              const char                 *linkpath_,
-              const std::string          &newdirpath_,
+              const fs::path             &linkpath_,
+              const fs::path             &newdirpath_,
               struct stat                *st_)
 {
   int rv;
@@ -95,15 +93,15 @@ _symlink(const Policy::Search &searchFunc_,
          const Policy::Create &createFunc_,
          const Branches       &branches_,
          const char           *target_,
-         const char           *linkpath_,
+         const fs::path       &linkpath_,
          struct stat          *st_)
 {
   int rv;
-  string newdirpath;
+  fs::path newdirpath;
   std::vector<Branch*> newbranches;
   std::vector<Branch*> existingbranches;
 
-  newdirpath = fs::path::dirname(linkpath_);
+  newdirpath = linkpath_.parent_path();
 
   rv = searchFunc_(branches_,newdirpath,existingbranches);
   if(rv < 0)
@@ -127,8 +125,22 @@ FUSE::symlink(const char      *target_,
               struct stat     *st_,
               fuse_timeouts_t *timeouts_)
 {
+  const fs::path linkpath{linkpath_};
+
+  return FUSE::symlink(target_,
+                       linkpath,
+                       st_,
+                       timeouts_);
+}
+
+int
+FUSE::symlink(const char      *target_,
+              const fs::path  &linkpath_,
+              struct stat     *st_,
+              fuse_timeouts_t *timeouts_)
+{
   int rv;
-  const fuse_context *fc  = fuse_get_context();
+  const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   rv = ::_symlink(cfg.func.getattr.policy,

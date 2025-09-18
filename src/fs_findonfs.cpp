@@ -30,14 +30,14 @@
 static
 int
 _findonfs(const Branches::Ptr &branches_,
-          const std::string   &fusepath_,
+          const fs::path      &fusepath_,
           const int            fd_,
           std::string         *basepath_)
 {
   int rv;
   dev_t dev;
   struct stat st;
-  std::string fullpath;
+  fs::path fullpath;
 
   rv = fs::fstat(fd_,&st);
   if(rv < 0)
@@ -46,7 +46,7 @@ _findonfs(const Branches::Ptr &branches_,
   dev = st.st_dev;
   for(const auto &branch : *branches_)
     {
-      fullpath = fs::path::make(branch.path,fusepath_);
+      fullpath = branch.path / fusepath_;
 
       rv = fs::lstat(fullpath,&st);
       if(rv < 0)

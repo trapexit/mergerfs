@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "fs_path.hpp"
 #include "to_neg_errno.hpp"
 
 #include <sys/stat.h>
@@ -46,9 +47,36 @@ namespace fs
   static
   inline
   int
+  fstatat(const int       dirfd_,
+          const fs::path &pathname_,
+          struct stat    *statbuf_,
+          const int       flags_)
+  {
+    return fs::fstatat(dirfd_,
+                       pathname_.c_str(),
+                       statbuf_,
+                       flags_);
+  }
+
+  static
+  inline
+  int
   fstatat_nofollow(const int    dirfd_,
                    const char  *pathname_,
                    struct stat *statbuf_)
+  {
+    return fs::fstatat(dirfd_,
+                       pathname_,
+                       statbuf_,
+                       AT_SYMLINK_NOFOLLOW);
+  }
+
+  static
+  inline
+  int
+  fstatat_nofollow(const int       dirfd_,
+                   const fs::path &pathname_,
+                   struct stat    *statbuf_)
   {
     return fs::fstatat(dirfd_,
                        pathname_,

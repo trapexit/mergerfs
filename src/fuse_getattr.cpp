@@ -33,13 +33,11 @@
 
 #include <string>
 
-using std::string;
-
 
 static
 void
-_set_stat_if_leads_to_dir(const std::string &path_,
-                          struct stat       *st_)
+_set_stat_if_leads_to_dir(const fs::path &path_,
+                          struct stat    *st_)
 {
   int rv;
   struct stat st;
@@ -56,8 +54,8 @@ _set_stat_if_leads_to_dir(const std::string &path_,
 
 static
 void
-_set_stat_if_leads_to_reg(const std::string &path_,
-                          struct stat       *st_)
+_set_stat_if_leads_to_reg(const fs::path &path_,
+                          struct stat    *st_)
 {
   int rv;
   struct stat st;
@@ -122,21 +120,21 @@ static
 int
 _getattr(const Policy::Search &searchFunc_,
          const Branches       &branches_,
-         const char           *fusepath_,
+         const fs::path       &fusepath_,
          struct stat          *st_,
          const bool            symlinkify_,
          const time_t          symlinkify_timeout_,
          FollowSymlinks        followsymlinks_)
 {
   int rv;
-  string fullpath;
+  fs::path fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
 
-  fullpath = fs::path::make(branches[0]->path,fusepath_);
+  fullpath = branches[0]->path / fusepath_;
 
   switch(followsymlinks_)
     {
@@ -166,13 +164,15 @@ _getattr(const Policy::Search &searchFunc_,
   if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
     symlinkify::convert(fullpath,st_);
 
-  fs::inode::calc(branches[0]->path,fusepath_,st_);
+  fs::inode::calc(branches[0]->path,
+                  fusepath_,
+                  st_);
 
   return 0;
 }
 
 int
-_getattr(const char      *fusepath_,
+_getattr(const fs::path  &fusepath_,
          struct stat     *st_,
          fuse_timeouts_t *timeout_)
 {
@@ -200,6 +200,16 @@ _getattr(const char      *fusepath_,
 
 int
 FUSE::getattr(const char      *fusepath_,
+              struct stat     *st_,
+              fuse_timeouts_t *timeout_)
+{
+  const fs::path fusepath{fusepath_};
+
+  return FUSE::getattr(fusepath,st_,timeout_);
+}
+
+int
+FUSE::getattr(const fs::path  &fusepath_,
               struct stat     *st_,
               fuse_timeouts_t *timeout_)
 {

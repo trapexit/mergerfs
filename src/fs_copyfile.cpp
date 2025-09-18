@@ -29,6 +29,7 @@
 #include "fs_futimens.hpp"
 #include "fs_mktemp.hpp"
 #include "fs_open.hpp"
+#include "fs_path.hpp"
 #include "fs_rename.hpp"
 #include "fs_unlink.hpp"
 #include "fs_xattr.hpp"
@@ -96,9 +97,9 @@ fs::copyfile(const int          src_fd_,
 // * Does not handle non-regular files.
 
 s64
-fs::copyfile(const int                    src_fd_,
-             const std::filesystem::path &dst_filepath_,
-             const fs::CopyFileFlags     &flags_)
+fs::copyfile(const int                src_fd_,
+             const fs::path          &dst_filepath_,
+             const fs::CopyFileFlags &flags_)
 {
   s64 rv;
   int dst_fd;
@@ -164,9 +165,9 @@ fs::copyfile(const int                    src_fd_,
 }
 
 s64
-fs::copyfile(const std::filesystem::path &src_filepath_,
-             const std::filesystem::path &dst_filepath_,
-             const fs::CopyFileFlags     &flags_)
+fs::copyfile(const fs::path          &src_filepath_,
+             const fs::path          &dst_filepath_,
+             const fs::CopyFileFlags &flags_)
 {
   int src_fd;
 

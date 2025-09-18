@@ -391,10 +391,10 @@ Branches::Impl::to_paths(StrVec &paths_) const
     }
 }
 
-fs::PathVector
+std::vector<fs::path>
 Branches::Impl::to_paths() const
 {
-  fs::PathVector vp;
+  std::vector<fs::path> vp;
 
   for(const auto &branch : *this)
     vp.emplace_back(branch.path);

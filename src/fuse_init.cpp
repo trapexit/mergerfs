@@ -143,8 +143,8 @@ _want_if_capable_max_pages(fuse_conn_info *conn_,
 
 static
 void
-_readahead(const fs::Path path_,
-           const int      readahead_)
+_readahead(const fs::path &path_,
+           const int       readahead_)
 {
   int rv;
 

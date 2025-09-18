@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fuse_chown.hpp"
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_lchown.hpp"
@@ -27,87 +29,83 @@
 #include <vector>
 
 
-namespace l
+static
+void
+_chown_loop_core(const fs::path &basepath_,
+                 const fs::path &fusepath_,
+                 const uid_t     uid_,
+                 const gid_t     gid_,
+                 PolicyRV       *prv_)
 {
-  static
-  void
-  chown_loop_core(const std::string &basepath_,
-                  const char        *fusepath_,
-                  const uid_t        uid_,
-                  const gid_t        gid_,
-                  PolicyRV          *prv_)
-  {
-    std::string fullpath;
+  fs::path fullpath;
 
-    fullpath = fs::path::make(basepath_,fusepath_);
+  fullpath = basepath_ / fusepath_;
 
-    errno = 0;
-    fs::lchown(fullpath,uid_,gid_);
+  errno = 0;
+  fs::lchown(fullpath,uid_,gid_);
 
-    prv_->insert(errno,basepath_);
-  }
-
-  static
-  void
-  chown_loop(const std::vector<Branch*> &branches_,
-             const char                 *fusepath_,
-             const uid_t                 uid_,
-             const gid_t                 gid_,
-             PolicyRV                   *prv_)
-  {
-    for(auto &branch : branches_)
-      {
-        l::chown_loop_core(branch->path,fusepath_,uid_,gid_,prv_);
-      }
-  }
-
-  static
-  int
-  chown(const Policy::Action &actionFunc_,
-        const Policy::Search &searchFunc_,
-        const Branches       &branches_,
-        const char           *fusepath_,
-        const uid_t           uid_,
-        const gid_t           gid_)
-  {
-    int rv;
-    PolicyRV prv;
-    std::vector<Branch*> branches;
-
-    rv = actionFunc_(branches_,fusepath_,branches);
-    if(rv < 0)
-      return rv;
-
-    l::chown_loop(branches,fusepath_,uid_,gid_,&prv);
-    if(prv.errors.empty())
-      return 0;
-    if(prv.successes.empty())
-      return prv.errors[0].rv;
-
-    branches.clear();
-    rv = searchFunc_(branches_,fusepath_,branches);
-    if(rv < 0)
-      return rv;
-
-    return prv.get_error(branches[0]->path);
-  }
+  prv_->insert(errno,basepath_);
 }
 
-namespace FUSE
+static
+void
+_chown_loop(const std::vector<Branch*> &branches_,
+            const fs::path             &fusepath_,
+            const uid_t                 uid_,
+            const gid_t                 gid_,
+            PolicyRV                   *prv_)
 {
-  int
-  chown(const char *fusepath_,
-        uid_t       uid_,
-        gid_t       gid_)
-  {
-    const fuse_context *fc  = fuse_get_context();
-    const ugid::Set     ugid(fc->uid,fc->gid);
+  for(const auto &branch : branches_)
+    {
+      ::_chown_loop_core(branch->path,fusepath_,uid_,gid_,prv_);
+    }
+}
 
-    return l::chown(cfg.func.chown.policy,
-                    cfg.func.getattr.policy,
-                    cfg.branches,
-                    fusepath_,
-                    uid_,
-                    gid_);
-  }
+static
+int
+_chown(const Policy::Action &actionFunc_,
+       const Policy::Search &searchFunc_,
+       const Branches       &branches_,
+       const fs::path       &fusepath_,
+       const uid_t           uid_,
+       const gid_t           gid_)
+{
+  int rv;
+  PolicyRV prv;
+  std::vector<Branch*> branches;
+
+  rv = actionFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  ::_chown_loop(branches,fusepath_,uid_,gid_,&prv);
+
+  if(prv.errors.empty())
+    return 0;
+  if(prv.successes.empty())
+    return prv.errors[0].rv;
+
+  branches.clear();
+  rv = searchFunc_(branches_,fusepath_,branches);
+  if(rv < 0)
+    return rv;
+
+  return prv.get_error(branches[0]->path);
+}
+
+int
+FUSE::chown(const char *fusepath_,
+            uid_t       uid_,
+            gid_t       gid_)
+{
+  const fs::path      fusepath{fusepath_};
+  const fuse_context *fc = fuse_get_context();
+  const ugid::Set     ugid(fc->uid,fc->gid);
+
+  return ::_chown(cfg.func.chown.policy,
+                  cfg.func.getattr.policy,
+                  cfg.branches,
+                  fusepath,
+                  uid_,
+                  gid_);
 }

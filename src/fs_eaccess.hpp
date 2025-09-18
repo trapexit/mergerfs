@@ -40,4 +40,13 @@ namespace fs
   {
     return fs::eaccess(path_.c_str(),mode_);
   }
+
+  static
+  inline
+  int
+  eaccess(const fs::path &path_,
+          const int       mode_)
+  {
+    return fs::eaccess(path_.c_str(),mode_);
+  }
 }

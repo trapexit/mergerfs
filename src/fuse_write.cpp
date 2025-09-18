@@ -162,7 +162,7 @@ _write(const fuse_file_info_t *ffi_,
 {
   FileInfo *fi;
 
-  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+  fi = FileInfo::from_fh(ffi_->fh);
 
   // Concurrent writes can only happen if:
   // 1) writeback-cache is enabled and using page caching

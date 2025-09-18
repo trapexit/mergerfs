@@ -87,9 +87,8 @@
 
 #include <csignal>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
-
-#include <string.h>
 
 
 namespace l
@@ -192,7 +191,7 @@ namespace l
   wait_for_mount(const Config &cfg_)
   {
     int failures;
-    fs::PathVector paths;
+    std::vector<fs::path> paths;
     std::chrono::milliseconds timeout;
 
     paths = cfg_.branches->to_paths();
@@ -232,7 +231,7 @@ namespace l
 
   static
   void
-  lazy_umount(const fs::Path target_)
+  lazy_umount(const fs::path &target_)
   {
     int rv;
 

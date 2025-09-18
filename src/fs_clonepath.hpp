@@ -16,26 +16,18 @@
 
 #pragma once
 
-#include <string>
+#include "fs_path.hpp"
 
 
 namespace fs
 {
-  int clonepath(const std::string &srcpath,
-                const std::string &dstpath,
-                const char        *relpath,
-                const bool         return_metadata_errors = false);
-  int clonepath(const std::string &srcpath,
-                const std::string &dstpath,
-                const std::string &relpath,
-                const bool         return_metadata_errors = false);
+  int clonepath(const fs::path &srcpath,
+                const fs::path &dstpath,
+                const fs::path &relpath,
+                const bool      return_metadata_errors = false);
 
-  int clonepath_as_root(const std::string &srcpath,
-                        const std::string &dstpath,
-                        const char        *relpath,
-                        const bool         return_metadata_errors = false);
-  int clonepath_as_root(const std::string &srcpath,
-                        const std::string &dstpath,
-                        const std::string &relpath,
-                        const bool         return_metadata_errors = false);
+  int clonepath_as_root(const fs::path &srcpath,
+                        const fs::path &dstpath,
+                        const fs::path &relpath,
+                        const bool      return_metadata_errors = false);
 }

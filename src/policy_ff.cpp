@@ -60,7 +60,7 @@ _create(const Branches::Ptr  &ibranches_,
 
 int
 Policy::FF::Action::operator()(const Branches::Ptr  &branches_,
-                               const char           *fusepath_,
+                               const fs::path       &fusepath_,
                                std::vector<Branch*> &paths_) const
 {
   return Policies::Action::epff(branches_,fusepath_,paths_);
@@ -68,7 +68,7 @@ Policy::FF::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
-                               const char           *fusepath_,
+                               const fs::path       &fusepath_,
                                std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,paths_);
@@ -76,7 +76,7 @@ Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
-                               const char           *fusepath_,
+                               const fs::path       &fusepath_,
                                std::vector<Branch*> &output_) const
 {
   for(auto &branch : *branches_)

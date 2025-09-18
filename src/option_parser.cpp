@@ -21,6 +21,7 @@
 #include "errno.hpp"
 #include "fmt/core.h"
 #include "fs_glob.hpp"
+#include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "hw_cpu.hpp"
 #include "num.hpp"
@@ -33,7 +34,6 @@
 #include "fuse_config.hpp"
 
 #include <array>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -46,9 +46,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-using std::string;
-using std::vector;
 
 enum
   {
@@ -97,7 +94,7 @@ _set_fsname(Config    &cfg_,
 {
   if(cfg_.fsname->empty())
     {
-      vector<string> paths;
+      std::vector<std::string> paths;
 
       cfg_.branches->to_paths(paths);
 
@@ -225,7 +222,7 @@ _process_branches(Config        &cfg_,
                  const char     *arg_)
 {
   int rv;
-  string arg;
+  std::string arg;
 
   arg = arg_;
   rv = cfg_.set_raw("branches",arg);
@@ -242,7 +239,7 @@ _process_mount(Config        &cfg_,
               const char     *arg_)
 {
   int rv;
-  string arg;
+  std::string arg;
 
   arg = arg_;
   rv = cfg_.set_raw("mount",arg);
@@ -347,8 +344,8 @@ void
 _check_for_mount_loop(Config         &cfg_,
                       Config::ErrVec *errs_)
 {
-  fs::Path mount;
-  fs::PathVector branches;
+  fs::path mount;
+  std::vector<fs::path> branches;
   std::error_code ec;
 
   mount    = *cfg_.mountpoint;

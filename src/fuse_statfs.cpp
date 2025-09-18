@@ -26,15 +26,11 @@
 
 #include "fuse.h"
 
+#include <filesystem>
 #include <algorithm>
 #include <limits>
 #include <map>
-#include <string>
 #include <vector>
-
-using std::string;
-using std::map;
-using std::vector;
 
 
 static
@@ -80,28 +76,29 @@ _should_ignore(const StatFSIgnore  ignore_,
 static
 int
 _statfs(const Branches::Ptr &branches_,
-        const char          *fusepath_,
+        const fs::path      &fusepath_,
         const StatFS         mode_,
         const StatFSIgnore   ignore_,
         struct statvfs      *fsstat_)
 {
   int rv;
-  string fullpath;
   struct stat st;
   struct statvfs stvfs;
   unsigned long min_bsize;
   unsigned long min_frsize;
   unsigned long min_namemax;
-  map<dev_t,struct statvfs> fsstats;
+  std::map<dev_t,struct statvfs> fsstats;
+  fs::path fullpath;
 
   min_bsize   = std::numeric_limits<unsigned long>::max();
   min_frsize  = std::numeric_limits<unsigned long>::max();
   min_namemax = std::numeric_limits<unsigned long>::max();
   for(const auto &branch : *branches_)
     {
-      fullpath = ((mode_ == StatFS::ENUM::FULL) ?
-                  fs::path::make(branch.path,fusepath_) :
-                  branch.path);
+      if(mode_ == StatFS::ENUM::FULL)
+        fullpath = branch.path / fusepath_;
+      else
+        fullpath = branch.path;
 
       rv = fs::lstat(fullpath,&st);
       if(rv < 0)
@@ -127,8 +124,8 @@ _statfs(const Branches::Ptr &branches_,
       fsstats.insert(std::make_pair(st.st_dev,stvfs));
     }
 
-  map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
-  map<dev_t,struct statvfs>::iterator enditer = fsstats.end();
+  std::map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
+  std::map<dev_t,struct statvfs>::iterator enditer = fsstats.end();
   if(iter != enditer)
     {
       *fsstat_ = iter->second;
@@ -148,11 +145,12 @@ int
 FUSE::statfs(const char     *fusepath_,
              struct statvfs *st_)
 {
+  const fs::path      fusepath{fusepath_};
   const fuse_context *fc = fuse_get_context();
   const ugid::Set     ugid(fc->uid,fc->gid);
 
   return ::_statfs(cfg.branches,
-                   fusepath_,
+                   fusepath,
                    cfg.statfs,
                    cfg.statfs_ignore,
                    st_);

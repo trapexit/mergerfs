@@ -25,8 +25,9 @@
 
 int
 Policy::EPRand::Action::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
+
 {
   int rv;
 
@@ -39,7 +40,7 @@ Policy::EPRand::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPRand::Create::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   int rv;
@@ -53,7 +54,7 @@ Policy::EPRand::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPRand::Search::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   int rv;

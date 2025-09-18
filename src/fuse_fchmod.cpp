@@ -49,14 +49,14 @@ FUSE::fchmod(const uint64_t fh_,
       state.open_files.cvisit(fc->nodeid,
                               [&](auto &val_)
                               {
-                                fh = reinterpret_cast<uint64_t>(val_.second.fi);
+                                fh = val_.second.fi->to_fh();
                               });
     }
 
   if(fh == 0)
     return -ENOENT;
 
-  FileInfo *fi = reinterpret_cast<FileInfo*>(fh);
+  FileInfo *fi = FileInfo::from_fh(fh);
 
   return ::_fchmod(fi->fd,mode_);
 }

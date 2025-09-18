@@ -20,12 +20,11 @@
 
 #include "fs_close.hpp"
 #include "fs_mktemp.hpp"
+#include "fs_path.hpp"
 #include "fs_statvfs.hpp"
 #include "fs_unlink.hpp"
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
-
-#include <string>
 
 #include <fcntl.h>
 
@@ -35,7 +34,7 @@ namespace fs
   static
   inline
   bool
-  is_mounted_rofs(const std::string path_)
+  is_mounted_rofs(const fs::path &path_)
   {
     int rv;
     struct statvfs st;
@@ -48,7 +47,7 @@ namespace fs
   static
   inline
   bool
-  is_rofs(std::string path_)
+  is_rofs(const fs::path &path_)
   {
     ugid::SetRootGuard const ugid;
 
@@ -68,7 +67,7 @@ namespace fs
   static
   inline
   bool
-  is_rofs_but_not_mounted_ro(const std::string path_)
+  is_rofs_but_not_mounted_ro(const fs::path &path_)
   {
     if(fs::is_mounted_rofs(path_))
       return false;

@@ -42,7 +42,7 @@ typedef std::vector<BranchInfo> BranchInfoVec;
 static
 int
 _get_branchinfo_create(const Branches::Ptr &branches_,
-                       const char          *fusepath_,
+                       const fs::path      &fusepath_,
                        BranchInfoVec       *branchinfo_,
                        uint64_t            *sum_)
 {
@@ -77,7 +77,7 @@ _get_branchinfo_create(const Branches::Ptr &branches_,
 static
 int
 _get_branchinfo_action(const Branches::Ptr &branches_,
-                       const char          *fusepath_,
+                       const fs::path      &fusepath_,
                        BranchInfoVec       *branchinfo_,
                        uint64_t            *sum_)
 {
@@ -110,7 +110,7 @@ _get_branchinfo_action(const Branches::Ptr &branches_,
 static
 int
 _get_branchinfo_search(const Branches::Ptr &branches_,
-                       const char          *fusepath_,
+                       const fs::path      &fusepath_,
                        BranchInfoVec       *branchinfo_,
                        uint64_t            *sum_)
 {
@@ -163,7 +163,7 @@ _get_branch(const BranchInfoVec &branchinfo_,
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int err;
@@ -184,7 +184,7 @@ _create(const Branches::Ptr  &branches_,
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int err;
@@ -205,7 +205,7 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr  &branches_,
-        const char           *fusepath_,
+        const fs::path       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int err;
@@ -225,7 +225,7 @@ _search(const Branches::Ptr  &branches_,
 
 int
 Policy::EPPFRD::Action::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
@@ -233,7 +233,7 @@ Policy::EPPFRD::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPPFRD::Create::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -241,7 +241,7 @@ Policy::EPPFRD::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPPFRD::Search::operator()(const Branches::Ptr  &branches_,
-                                   const char           *fusepath_,
+                                   const fs::path       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

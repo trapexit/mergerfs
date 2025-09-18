@@ -21,6 +21,7 @@
 #include "to_neg_errno.hpp"
 #include "xattr.hpp"
 
+#include <filesystem>
 #include <string>
 
 #include <sys/types.h>

@@ -18,14 +18,32 @@
 
 #include "fh.hpp"
 
-#include <string>
-
 
 class DirInfo : public FH
 {
 public:
-  DirInfo(const char *fusepath_)
+  static DirInfo *from_fh(const uint64_t fh);
+
+public:
+  uint64_t to_fh() const;
+
+public:
+  DirInfo(const fs::path &fusepath_)
     : FH(fusepath_)
   {
   }
 };
+
+inline
+uint64_t
+DirInfo::to_fh() const
+{
+  return reinterpret_cast<uint64_t>(this);
+}
+
+inline
+DirInfo*
+DirInfo::from_fh(const uint64_t fh_)
+{
+  return reinterpret_cast<DirInfo*>(fh_);
+}
