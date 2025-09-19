@@ -133,7 +133,9 @@ ExecStart=/usr/bin/mergerfs \
   -o dropcacheonclose=false \
   /mnt/hdd0:/mnt/hdd1 \
   /media
-ExecStop=/bin/fusermount -uz /media
+ExecStop=/usr/bin/umount /media
+# Or if you need fusermount
+# ExecStop=/usr/bin/mergerfs-fusermount -u /media
 Restart=on-failure
 
 [Install]
@@ -197,7 +199,9 @@ ExecStart=/usr/bin/mergerfs \
   -o dropcacheonclose=false \
   /mnt/hdd0:/mnt/hdd1 \
   /media
-ExecStop=/bin/fusermount -uz /media
+ExecStop=/usr/bin/umount /media
+# Or if you need fusermount
+# ExecStop=/usr/bin/mergerfs-fusermount -u /media
 Restart=on-failure
 
 [Install]

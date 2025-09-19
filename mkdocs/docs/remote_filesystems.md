@@ -49,6 +49,23 @@ NFS export settings:
   running mergerfs as a non-root user, there is no guarantee that
   mergerfs will be able to do what it needs to manage the underlying
   filesystem.
+* `softerr` or `soft`: A perhaps questionable choice but if NFS
+  freezes up because the backend dies or the network goes down the
+  default `hard` mount would cause mergerfs to block the same as any
+  other software. By setting `softerr` or `soft` the NFS client will
+  timeout eventually and return an error.
+* `softreval`: NFS client will serve up cached data after `retrans`
+  attempts to revalidate the data. Helps with intermitent network
+  issues.
+* `timeo=150`: Timeout till retrying request. 
+* `retrans=3`: Number of retrying a request.
+* `rsize=131072`: Read size.
+* `wsize=131072`: Write size.
+
+`no_root_squash` is necessary but the others are just suggestions and
+you may want to alter based on your use case. The risk of using `hard`
+and other more strict behavior options is that should NFS completely
+lock up it will impact mergerfs negatively.
 
 
 ### NFS exporting mergerfs

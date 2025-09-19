@@ -5,7 +5,9 @@ The POSIX filesystem API is made up of a number of functions. `creat`,
 the core functions are grouped into 3 categories: `action`, `create`,
 and `search`. These functions and categories can be assigned a policy
 which dictates which branch is chosen when performing that
-function.
+function. IE. When an application requests that a file or directory is
+created how should mergerfs decide which branch to choose to attempt
+the create? That is the policy.
 
 Some functions, listed in the category `N/A` below, can not be
 assigned the normal policies because they are directly related to a
@@ -44,9 +46,9 @@ branch base path provided is used. Not the full path to the file or
 directory in question. Meaning that mounts within the branch will not
 be considered in the space calculations.
 
-NOTE: While any policy can be assigned to a function or category, some
-may not be very useful in practice. For instance: `rand` (random) may
-be useful for file creation but could lead to very odd behavior if
+**NOTE:** While any policy can be assigned to a function or category,
+some may not be very useful in practice. For instance: `rand` (random)
+may be useful for file creation but could lead to very odd behavior if
 used for `chmod` if there were more than one copy of the file. Unless
 users find this flexibility useful it will likely be removed in the
 future.
@@ -69,7 +71,7 @@ whether or not a branch is mounted read-only, and the branch mode
   [minfreespace](minfreespace.md).
 
 Policies may have their own additional filtering such as those that
-require existing paths to be present.
+require relative paths to be present.
 
 If all branches are filtered an error will be returned. Typically
 `EROFS` (read-only filesystem) or `ENOSPC` (no space left on
