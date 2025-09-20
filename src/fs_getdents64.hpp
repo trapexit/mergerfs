@@ -23,7 +23,7 @@
 
 namespace fs
 {
-  ssize_tn
+  ssize_t
   getdents64(const int     fd,
              void         *dirp,
              const size_t  count);
