@@ -30,6 +30,7 @@
 #include "fs_opendir.hpp"
 #include "fs_path.hpp"
 #include "fs_readdir.hpp"
+#include "fs_getdents64.hpp"
 #include "fs_stat.hpp"
 #include "hashset.hpp"
 #include "scope_guard.hpp"
