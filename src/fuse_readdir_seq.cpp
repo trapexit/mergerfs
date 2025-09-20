@@ -86,9 +86,6 @@ _readdir(const Branches::Ptr &branches_,
       DEFER{ fs::closedir(dh); };
 
       rv = 0;
-
-
-
       for(dirent *de = fs::readdir(dh); de; de = fs::readdir(dh))
         {
           std::uint64_t namelen;
