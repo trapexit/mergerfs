@@ -114,8 +114,53 @@ _readdir_getdents(const Branches::Ptr &branches_,
                   const fs::path      &rel_dirpath_,
                   fuse_dirents_t      *buf_)
 {
+  Err err;
+  HashSet names;
+  fs::path rel_filepath;
+  fs::path abs_dirpath;
 
+  fuse_dirents_reset(buf_);
 
+  rel_filepath = rel_dirpath_ / "dummy";
+  for(const auto &branch : *branches_)
+    {
+      int rv;
+      DIR *dh;
+
+      abs_dirpath = branch.path / rel_dirpath_;
+
+      errno = 0;
+      dh = fs::opendir(abs_dirpath);
+      err = -errno;
+      if(!dh)
+        continue;
+
+      DEFER{ fs::closedir(dh); };
+
+      rv = 0;
+      for(dirent *de = fs::readdir(dh); de; de = fs::readdir(dh))
+        {
+          std::uint64_t namelen;
+
+          namelen = ::_dirent_exact_namelen(de);
+
+          rv = names.put(de->d_name,namelen);
+          if(rv == 0)
+            continue;
+
+          rel_filepath.replace_filename(de->d_name);
+          de->d_ino = fs::inode::calc(branch.path,
+                                      rel_filepath,
+                                      DTTOIF(de->d_type),
+                                      de->d_ino);
+
+          rv = fuse_dirents_add(buf_,de,namelen);
+          if(rv)
+            return -ENOMEM;
+        }
+    }
+
+  return err;
 }
 
 int
