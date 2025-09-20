@@ -21,7 +21,7 @@
 
 namespace fs
 {
-  int
+  ssize_t
   getdents64(unsigned int  fd,
              void         *dirp,
              unsigned int  count);
