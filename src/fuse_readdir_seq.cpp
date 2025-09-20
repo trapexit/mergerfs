@@ -165,7 +165,7 @@ _readdir_getdents(const Branches::Ptr &branches_,
                                           d,
                                           strlen(d->name));
 
-              pos += d->d_reclen;
+              pos += d->reclen;
             }
         }
     }
