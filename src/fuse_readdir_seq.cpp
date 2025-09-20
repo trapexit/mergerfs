@@ -40,8 +40,6 @@
 #include "fuse.h"
 #include "fuse_dirents.h"
 
-#include <string>
-
 
 static
 uint64_t
