@@ -26,6 +26,7 @@
 #include "fs_closedir.hpp"
 #include "fs_dirfd.hpp"
 #include "fs_inode.hpp"
+#include "fs_open.hpp"
 #include "fs_opendir.hpp"
 #include "fs_path.hpp"
 #include "fs_readdir.hpp"
@@ -125,11 +126,13 @@ _readdir_getdents(const Branches::Ptr &branches_,
   for(const auto &branch : *branches_)
     {
       int rv;
-      DIR *dh;
+      int dir_fd;
 
       abs_dirpath = branch.path / rel_dirpath_;
 
-      errno = 0;
+      dir_fd = fs::open(abs_dirpath,O_PATH);
+
+
       dh = fs::opendir(abs_dirpath);
       err = -errno;
       if(!dh)
