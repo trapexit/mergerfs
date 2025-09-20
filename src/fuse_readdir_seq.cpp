@@ -124,7 +124,7 @@ _readdir_getdents(const Branches::Ptr &branches_,
   HashSet names;
   fs::path rel_filepath;
   fs::path abs_dirpath;
-  void *buf;
+  char *buf;
   size_t bufsize = 1024*256;
 
   fuse_dirents_reset(buf_);
