@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2020, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -18,11 +18,13 @@
 
 #pragma once
 
+#include <sys/types.h>
+
 
 namespace fs
 {
-  int
-  getdents64(unsigned int  fd,
+  ssize_t
+  getdents64(const int     fd,
              void         *dirp,
-             unsigned int  count);
+             const size_t  count);
 }

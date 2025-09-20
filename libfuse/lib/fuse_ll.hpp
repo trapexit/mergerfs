@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fuse_msgbuf.h"
+#include "fuse_msgbuf_t.h"
 
 int fuse_receive_buf(struct fuse_session *se,
                      fuse_msgbuf_t       *msgbuf);

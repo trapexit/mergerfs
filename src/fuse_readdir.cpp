@@ -21,7 +21,7 @@
 #include "fuse_readdir_factory.hpp"
 
 #include "dirinfo.hpp"
-#include "fuse_dirents.h"
+#include "fuse_dirents.hpp"
 
 #include "config.hpp"
 
@@ -82,7 +82,7 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
   dirent de;
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
-  if(di->fusepath != "/")
+  if(!di->fusepath.empty())
     return -ENOENT;
 
   de = {0};

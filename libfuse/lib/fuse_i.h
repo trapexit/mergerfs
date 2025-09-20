@@ -10,7 +10,7 @@
 
 #include "fuse.h"
 #include "fuse_lowlevel.h"
-#include "fuse_msgbuf.h"
+#include "fuse_msgbuf_t.h"
 
 #include "extern_c.h"
 

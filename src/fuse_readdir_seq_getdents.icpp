@@ -1,0 +1,81 @@
+#pragma message "using getdents"
+
+#include "dirinfo.hpp"
+#include "error.hpp"
+#include "fs_close.hpp"
+#include "fs_getdents64.hpp"
+#include "fs_inode.hpp"
+#include "fs_open.hpp"
+#include "hashset.hpp"
+#include "scope_guard.hpp"
+
+#include "fuse_dirents.hpp"
+#include "fuse_msgbuf.hpp"
+
+
+static
+int
+_readdir(const Branches::Ptr &branches_,
+         const fs::path      &rel_dirpath_,
+         fuse_dirents_t      *dirents_)
+{
+  Err err;
+  HashSet names;
+  fs::path rel_filepath;
+  fs::path abs_dirpath;
+  fuse_msgbuf_t *buf;
+
+  fuse_dirents_reset(dirents_);
+
+  buf = msgbuf_alloc();
+  DEFER { msgbuf_free(buf); };
+
+  rel_filepath = rel_dirpath_ / "dummy";
+  for(const auto &branch : *branches_)
+    {
+      int fd;
+
+      abs_dirpath = branch.path / rel_dirpath_;
+
+      fd = fs::open_dir_ro(abs_dirpath);
+      err = fd;
+      if(fd < 0)
+        continue;
+      DEFER{ fs::close(fd); };
+
+      while(true)
+        {
+          ssize_t nread;
+
+          nread = fs::getdents64(fd,buf->mem,buf->size);
+          if(nread <= 0)
+            break;
+
+          for(ssize_t pos = 0; pos < nread;)
+            {
+              int rv;
+              int namelen;
+              fs::dirent64 *d = reinterpret_cast<fs::dirent64*>(&buf->mem[pos]);
+
+              pos += d->d_reclen;
+
+              namelen = d->d_namelen();
+
+              rv = names.put(d->d_name,namelen);
+              if(rv == 0)
+                continue;
+
+              rel_filepath.replace_filename(d->d_name);
+
+              d->d_ino = fs::inode::calc(branch.path,
+                                         rel_filepath,
+                                         DTTOIF(d->d_type),
+                                         d->d_ino);
+
+              fuse_dirents_add(dirents_,d,namelen);
+            }
+        }
+    }
+
+  return err;
+}

@@ -13,9 +13,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#ifdef STATX_TYPE
-#define MERGERFS_STATX_SUPPORTED
-#endif
+#include "supported_statx.hpp"
 
 namespace fs
 {
@@ -28,7 +26,7 @@ namespace fs
         const unsigned int  mask_,
         struct fuse_statx  *st_)
   {
-#ifdef MERGERFS_STATX_SUPPORTED
+#ifdef MERGERFS_SUPPORTED_STATX
     int rv;
 
     rv = ::statx(dirfd_,
@@ -52,6 +50,10 @@ namespace fs
         const unsigned int  mask_,
         struct fuse_statx  *st_)
   {
-    return fs::statx(dirfd_,pathname_.c_str(),flags_,mask_,st_);
+    return fs::statx(dirfd_,
+                     pathname_.c_str(),
+                     flags_,
+                     mask_,
+                     st_);
   }
 }

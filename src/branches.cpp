@@ -449,7 +449,7 @@ Branches::find_and_set_mode_ro()
         continue;
 
       SysLog::warning("branch `{}` found to be readonly - setting its mode=RO",
-                      branch.path);
+                      branch.path.string());
 
       branch.mode = Branch::Mode::RO;
     }
