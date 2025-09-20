@@ -152,6 +152,17 @@ _readdir_getdents(const Branches::Ptr &branches_,
           ssize_t nread;
 
           nread = fs::getdents64(dir_fd,buf,bufsize);
+          if(nread == 0)
+            break;
+          if(nread < 0)
+            continue;
+
+          for(size_t pos = 0; pos < nread;)
+            {
+              dirent64 *d = &buf[pos];
+
+
+            }
         }
     }
 
