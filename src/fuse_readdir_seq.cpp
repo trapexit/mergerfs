@@ -163,7 +163,7 @@ _readdir_getdents(const Branches::Ptr &branches_,
 
               rv = fuse_dirents_add_linux(buf_,
                                           d,
-                                          strlen(d->d_name));
+                                          strlen(d->name));
 
               pos += d->d_reclen;
             }
