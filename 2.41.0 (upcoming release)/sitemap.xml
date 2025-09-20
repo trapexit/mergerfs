@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/benchmarking/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/error_handling_and_logging/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/extended_usage_patterns/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/intro_to_filesystems/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/known_issues_bugs/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/media_and_publicity/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/performance/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/project_comparisons/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/quickstart/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/related_projects/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/remote_filesystems/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/resource_usage/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/runtime_interface/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/sponsorship_and_donations/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/support/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/terminology/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/tips_notes/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/tooling/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/branches-mount-timeout/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/branches/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/cache/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/deprecated_options/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/export-support/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/flush-on-close/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/follow-symlinks/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/func_readdir/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/functions_categories_policies/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/fuse_msg_size/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/inodecalc/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/kernel-permissions-check/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/link-exdev/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/link_cow/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/minfreespace/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/moveonenospc/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/nfsopenhack/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/nullrw/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/options/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/passthrough/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/pin-threads/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/readahead/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/rename-exdev/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/rename_and_link/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/statfs/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/symlinkify/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/threads/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/config/xattr/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/compatibility_and_integration/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/configuration_and_policies/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/have_you_considered/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/limit_drive_spinup/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/recommendations_and_warnings/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/reliability_and_scalability/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/technical_behavior_and_limitations/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/usage_and_functionality/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/faq/why_isnt_it_working/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/setup/build/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/setup/installation/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://trapexit.github.io/mergerfs/2.41.0 (upcoming release)/setup/upgrade/</loc>
+         <lastmod>2025-09-20</lastmod>
+    </url>
+</urlset>
