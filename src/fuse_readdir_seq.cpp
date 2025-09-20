@@ -173,9 +173,9 @@ _readdir_getdents(const Branches::Ptr &branches_,
                                        DTTOIF(d->type),
                                        d->ino);
 
-              rv = fuse_dirents_add_linux(buf_,
-                                          d,
-                                          strlen(d->name));
+              rv = fuse_dirents_add_linux(buf_,d,namelen);
+              if(rv)
+                return -ENOMEM;
 
               pos += d->reclen;
             }
