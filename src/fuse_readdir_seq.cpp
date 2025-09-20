@@ -159,7 +159,10 @@ _readdir_getdents(const Branches::Ptr &branches_,
 
           for(ssize_t pos = 0; pos < nread;)
             {
+              uint64_t namelen;
               linux_dirent64_t *d = reinterpret_cast<linux_dirent64_t*>(&buf[pos]);
+
+              namelen = strlen(d->name);
 
               rv = fuse_dirents_add_linux(buf_,
                                           d,
