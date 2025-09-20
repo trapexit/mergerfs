@@ -131,14 +131,10 @@ _readdir_getdents(const Branches::Ptr &branches_,
       abs_dirpath = branch.path / rel_dirpath_;
 
       dir_fd = fs::open(abs_dirpath,O_PATH);
-
-
-      dh = fs::opendir(abs_dirpath);
-      err = -errno;
-      if(!dh)
+      if(dir_fd < 0)
         continue;
 
-      DEFER{ fs::closedir(dh); };
+      DEFER{ fs::close(dir_fd); };
 
       rv = 0;
       for(dirent *de = fs::readdir(dh); de; de = fs::readdir(dh))
