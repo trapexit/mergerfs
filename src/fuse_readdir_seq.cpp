@@ -157,6 +157,8 @@ _readdir_getdents(const Branches::Ptr &branches_,
               uint64_t namelen;
               linux_dirent64_t *d = reinterpret_cast<linux_dirent64_t*>(&buf[pos]);
 
+              pos += d->reclen;
+
               namelen = strlen(d->name);
               rv = names.put(d->name,namelen);
               if(rv == 0)
@@ -171,8 +173,6 @@ _readdir_getdents(const Branches::Ptr &branches_,
               rv = fuse_dirents_add_linux(buf_,d,namelen);
               if(rv)
                 return -ENOMEM;
-
-              pos += d->reclen;
             }
         }
     }
