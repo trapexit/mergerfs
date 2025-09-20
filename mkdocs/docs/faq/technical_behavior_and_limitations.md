@@ -1,26 +1,71 @@
 # Technical Behavior and Limitations
 
-## Do hardlinks work?
+## Do hard links work?
 
-Yes. There is no option to enable or disable links (or renames.) They
-are fundamentally supported in compatible situations. That said the
-inode of a file is not necessarily indicative of two file names
-linking to the same underlying data. See also the option `inodecalc`
-for how inode values are calculated.
+Yes. [links](https://en.wikipedia.org/wiki/Hard_link) (otherwise known
+as hard links) are fundamentally supported by mergerfs. There is no
+option to enable or disable links. All comments elswhere claiming they
+do not work are related to the setup of the user's system.
 
-What mergerfs does not do is fake hard links across branches. Read the
-section [rename & link](../config/rename_and_link.md) for how it
-works.
+See the [Intro to Filesystems](../intro_to_filesystems.md) page for more
+details on what a `link` is.
 
-Remember that hardlinks will **NOT** work across devices. That
-includes between the original filesystem and a mergerfs pool, between
-two separate pools of the same underlying filesystems, or bind mounts
-of paths within the mergerfs pool. The latter is common when using
-Docker or Podman. Multiple volumes (bind mounts) to the same
-underlying filesystem are considered different devices. There is no
-way to link or rename between them. You should mount in the highest
-directory in the mergerfs pool that includes all the paths you need if
-you want links and rename to work.
+A limitation of a `link` is that it **must** reference a file/inode
+within the same filesystem or device. When a request is made to the
+operating system to `link` (or `rename`) a file to a target location
+the OS will first check if the source and target are the same
+filesystem / device. If not it will return the error `EXDEV` meaning
+that the request is not able to be made due to the result being "cross
+device".
+
+What catches many users off guard is that this "cross device" check is
+not very deep or involved. Even the same filesystem bind mounted to
+another location will typically be considered a different device. So
+when mergerfs is creating a union of other filesystems there is no way
+to link or rename from one of the underlying branches into
+mergerfs. They are different filesystems even if logically they seem
+related or the same. And similarly it is impossible for mergerfs to
+truly make a link between two branches which are not in fact the same
+mounted filesystem.
+
+This is relevant to mergerfs users because bind mounts are very common
+when using container runtimes such as Docker, Podman, or
+Kubernetes. When you add a volume or mount to your container that is
+in fact a bind mount of that path. Meaning if you were to add
+`/mnt/mergerfs/downloads` and `/mnt/mergerfs/movies` as separate
+mounts into your container any request to link between the two
+locations within the container will fail with the `EXDEV` error even
+though it will work perfectly fine on the host. If you wish for `link`
+and `rename` to work you **MUST** mount into the container a point in
+the directory structure above what you wish to use. In this case
+`/mnt/mergerfs`.
+
+Another situation where people will hit unexpected `EXDEV` errors is
+when they use a policy which makes file creation decisions based on
+existing paths. If the source of a `link` or `rename` is on branch A
+but the target directory is on branch B, given the whole point of the
+policy is to strictly enforce behavior based on what branches already
+exist, it must return `EXDEV`. Doing otherwise would fundamentally
+break the purpose of the policy. Read [rename &
+link](../config/rename_and_link.md) for more details on how mergerfs
+handles those two functions.
+
+When in doubt it is trivial to test `link`:
+
+```shell
+$ cd /mnt/mergerfs/
+$ touch foo
+$ ln -v foo bar
+'bar' => 'foo'
+$ stat foo bar | grep Inode
+Device: 0,173   Inode: 123456  Links: 2
+Device: 0,173   Inode: 123456  Links: 2
+```
+
+For the more technical: within mergerfs the inode of a file is not
+necessarily indicative of two file names linking to the same
+underlying data. For more details as to why that is see the docs on
+[inodecalc](../config/inodecalc.md).
 
 
 ## Do reflink, FICLONE, or FICLONERANGE work?
@@ -213,3 +258,27 @@ Requires that
 enabled (the default.)
 
 If there are any usage issues contact the [author](../support.md).
+
+
+## What happens if a branch filesystem blocks?
+
+POSIX filesystem calls unfortunately are entirely synchronous. If the
+underlying filesystem mergerfs is interacting with freezes up or
+blocks then the thread issuing the request will block same as any
+other piece of software. If enough threads block then mergerfs will
+block. There are no timeouts or ways to truly work around this
+situation. If mergerfs spawned new threads it is very likely they too
+would end up blocked.
+
+
+## What information does mergerfs have when making decisions?
+
+Every incoming request contains:
+
+* The `tid` or `pid` of the calling thread/process
+* The `uid` and `gid` of the calling thread/process
+* The `umask` of the calling thread/process
+* The arguments of the filesystem call in question
+
+Naturally the mergerfs config as well as anything queriable from the
+operating system or filesystems are also available.

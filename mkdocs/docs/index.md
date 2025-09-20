@@ -23,6 +23,7 @@ commodity storage devices. It is similar to [**mhddfs**, **unionfs**,
 * Works with filesystems of [almost any
   type](faq/compatibility_and_integration.md#what-filesystems-can-be-used-as-branches)
 * Ignore read-only filesystems when creating files
+* [Hard links](faq/technical_behavior_and_limitations.md#do-hard-links-work)
 * Hard link [copy-on-write / CoW](config/link_cow.md)
 * [Runtime configurable](runtime_interface.md)
 * Support for extended attributes (xattrs)
