@@ -23,6 +23,7 @@
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "errno.hpp"
+#include "fs_close.hpp"
 #include "fs_closedir.hpp"
 #include "fs_dirfd.hpp"
 #include "fs_inode.hpp"
