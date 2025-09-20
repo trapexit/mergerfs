@@ -128,7 +128,8 @@ _readdir_getdents(const Branches::Ptr &branches_,
   size_t bufsize = 1024*256;
 
   fuse_dirents_reset(buf_);
-  buf = malloc(
+  buf = malloc(bufsize);
+  DEFER { free(buf); }
 
   rel_filepath = rel_dirpath_ / "dummy";
   for(const auto &branch : *branches_)
