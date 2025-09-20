@@ -151,7 +151,7 @@ _readdir_getdents(const Branches::Ptr &branches_,
         {
           ssize_t nread;
 
-          nread = fs::getdents64(dir_fd,buf,
+          nread = fs::getdents64(dir_fd,buf,bufsize);
         }
     }
 
