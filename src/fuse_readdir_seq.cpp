@@ -108,6 +108,16 @@ _readdir(const Branches::Ptr &branches_,
   return err;
 }
 
+static
+int
+_readdir_getdents(const Branches::Ptr &branches_,
+                  const fs::path      &rel_dirpath_,
+                  fuse_dirents_t      *buf_)
+{
+
+
+}
+
 int
 FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
                              fuse_dirents_t         *buf_)
