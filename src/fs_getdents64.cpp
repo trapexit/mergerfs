@@ -32,7 +32,7 @@ namespace fs
              const size_t  count_)
   {
 #if defined SYS_getdents64
-    int rv;
+    ssize_t rv;
 
     rv = ::syscall(SYS_getdents64,fd_,dirp_,count_);
 
