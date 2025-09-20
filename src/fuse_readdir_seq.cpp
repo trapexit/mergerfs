@@ -129,7 +129,7 @@ _readdir_getdents(const Branches::Ptr &branches_,
 
   fuse_dirents_reset(buf_);
   buf = malloc(bufsize);
-  DEFER { free(buf); }
+  DEFER { free(buf); };
 
   rel_filepath = rel_dirpath_ / "dummy";
   for(const auto &branch : *branches_)
