@@ -26,10 +26,10 @@
 
 namespace fs
 {
-  int
-  getdents64(unsigned int  fd_,
+  ssize_t
+  getdents64(const int     fd_,
              void         *dirp_,
-             unsigned int  count_)
+             const size_t  count_)
   {
 #if defined SYS_getdents64
     int rv;
