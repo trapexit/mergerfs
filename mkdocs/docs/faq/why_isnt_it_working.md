@@ -134,7 +134,7 @@ the use of mergerfs from [container platforms such as
 Docker.](compatibility_and_integration.md)
 
 
-## Why are file moves, renames, links/hardlinks failing?
+## Why are file moves, renames, links/hard links failing?
 
 mergerfs fully supports rename and link functions to the degree that
 is possible in a union filesystem. Problems related to rename and link
@@ -225,7 +225,7 @@ the software's author and request proper handling of `EXDEV` errors.
 ### Additional Reading
 
 * [rename and link](../config/rename_and_link.md)
-* [Do hardlinks work?](technical_behavior_and_limitations.md#do-hardlinks-work)
+* [Do hard links work?](technical_behavior_and_limitations.md#do-hard-links-work)
 * [How does mergerfs handle moving and copying of files?](technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
 * [Moving files and directories fails with Samba](../known_issues_bugs.md#moving-files-and-directories-fails-with-samba)
 

@@ -55,6 +55,6 @@ returned but it will still be possible.
 
 ## Additional Reading
 
-* [Do hardlinks work?](../faq/technical_behavior_and_limitations.md#do-hardlinks-work)
+* [Do hardlinks work?](../faq/technical_behavior_and_limitations.md#do-hard-links-work)
 * [How does mergerfs handle moving and copying of files?](../faq/technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
-* [Why are file moves and renames failing?](../faq/why_isnt_it_working.md#why-are-file-moves-renames-linkshardlinks-failing)
+* [Why are file moves and renames failing?](../faq/why_isnt_it_working.md#why-are-file-moves-renames-linkshard-links-failing)
