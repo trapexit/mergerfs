@@ -160,7 +160,7 @@ _readdir_getdents(const Branches::Ptr &branches_,
               pos += d->reclen;
 
               namelen = d->reclen - offsetof(linux_dirent64_t,name);
-              namelen = strlen(d->name);
+              assert(namelen == strlen(d->name));
               rv = names.put(d->name,namelen);
               if(rv == 0)
                 continue;
