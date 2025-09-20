@@ -163,6 +163,15 @@ _readdir_getdents(const Branches::Ptr &branches_,
               linux_dirent64_t *d = reinterpret_cast<linux_dirent64_t*>(&buf[pos]);
 
               namelen = strlen(d->name);
+              rv = names.put(d->name,namelen);
+              if(rv == 0)
+                continue;
+
+              rel_filepath.replace_filename(d->name);
+              d->ino = fs::inode::calc(branch.path,
+                                       rel_filepath,
+                                       DTTOIF(d->type),
+                                       d->ino);
 
               rv = fuse_dirents_add_linux(buf_,
                                           d,
