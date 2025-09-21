@@ -30,7 +30,7 @@ as appropriate and the original error returned.
 
 If `moveonenospc` is disabled the underlying error will be returned.
 
-NOTE: This feature has NO affect on policies. It ONLY applies to the
+NOTE: This feature has NO effect on policies. It ONLY applies to the
 literal write function. If the create function returns `ENOSPC` or the
 [policy returns `ENOSPC`](functions_categories_policies.md#filtering)
 that error will be returned back to the application making the
