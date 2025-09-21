@@ -20,7 +20,7 @@ request = requests.get(url)
 print(f"INFO: Page returned HTTP {request.status_code}")
 request.raise_for_status()
 
-# Wait for the page to load body
+# Wait for the page to load <body> element
 WebDriverWait(driver, 10).until(
     EC.presence_of_element_located((By.TAG_NAME, "body"))
 )
