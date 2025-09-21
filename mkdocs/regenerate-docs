@@ -1,0 +1,25 @@
+#!/bin/sh
+set -x
+
+current_branch="$(git branch --show-current)"
+
+mike delete --all --push --allow-empty --ignore-remote-status
+
+git checkout "master"
+mike deploy --push "preview" "master"
+
+for tag in $(git tag -l | sort --version-sort --reverse)
+do
+    if git ls-tree -r --name-only "${tag}" | grep -q 'mkdocs.yml'; then
+        git checkout "${tag}"
+        mike deploy --push "${tag}"
+    fi
+done
+
+latest="$(git tag -l | sort --version-sort --reverse | head -n 1)"
+git checkout "${latest}"
+mike alias --push "${latest}" "latest"
+
+mike set-default --push "preview"
+
+git checkout "${current_branch}"
