@@ -44,6 +44,16 @@ sudo dpkg -i mergerfs_<ver>.debian-<rel>_<arch>.deb
 
 #### Ubuntu
 
+Given non-LTS releases are rarely used for servers and only have [9
+months of support](https://ubuntu.com/about/release-cycle) we do not
+build packages for them by default. It is recommended that you first
+try the `deb` file for the LTS release most closely related to your
+non-LTS release. If that does not work you can use the [static
+build](#static-linux-binaries) or [file a
+ticket](https://github.com/trapexit/mergerfs/issues) requesting a
+package built.
+
+
 ```
 wget https://github.com/trapexit/mergerfs/releases/download/<version>/mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
 sudo dpkg -i mergerfs_<ver>.ubuntu-<rel>_<arch>.deb
