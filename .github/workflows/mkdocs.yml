@@ -1,0 +1,65 @@
+name: "mkdocs"
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Configure Git Credentials
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        working-directory: ./mkdocs
+        run: |
+          pip install --no-cache-dir mkdocs mkdocs-material pymdown-extensions mike
+
+      - name: Deploy docs
+        working-directory: ./mkdocs
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            mike deploy "$REF_NAME" "latest" --allow-empty --ignore-remote-status --update-aliases
+            mike set-default "latest"
+            #git checkout gh-pages
+            #git push -f origin gh-pages
+          elif [ "$REF_TYPE" = "branch" ] && [ "$REF_NAME" = "master" ]; then
+            mike deploy "master" --ignore-remote-status --allow-empty
+            #git checkout gh-pages
+            #git push -f origin gh-pages
+          fi
+  check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: pip install selenium requests
+      - name: Run mkdocs_check.py
+        run: python .github/scripts/mkdocs_check.py

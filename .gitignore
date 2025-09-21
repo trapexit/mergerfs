@@ -1,0 +1,33 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# build artifacts
+mergerfs
+build/
+src/version.hpp
+VERSION
+
+# Debian files
+debian/files
+debian/changelog
+debian/debhelper-build-stamp
+debian/mergerfs.debhelper.log
+debian/mergerfs.substvars
+
+# RPM files
+rpmbuild/
+
+# mkdocs files
+mkdocs/venv
+__pycache__/

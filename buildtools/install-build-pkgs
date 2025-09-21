@@ -1,0 +1,37 @@
+#!/bin/sh
+
+if [ -e /usr/bin/apt-get ]; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get -qy update
+    apt-get -qy --force-yes --no-install-suggests --no-install-recommends \
+	    install \
+            ca-certificates \
+            build-essential \
+            dpkg-dev \
+            git \
+            g++ \
+            debhelper \
+            lsb-release \
+            fakeroot
+elif [ -e /usr/bin/dnf ]; then
+    dnf -y update
+    dnf -y install \
+        git rpm-build gcc-c++ make which libatomic
+elif [ -e /usr/bin/yum ]; then
+    yum -y update
+    yum -y install \
+        git rpm-build gcc-c++ make which
+    yum -y install centos-release-scl
+    yum -y install devtoolset-9-gcc\*
+elif [ -e /usr/bin/zypper ]; then
+    zypper update -y
+    zypper install -y \
+           git rpm-build gcc-c++ make which
+elif [ -e /sbin/apk ]; then
+    apk add \
+        abuild git gcc g++ make \
+        linux-headers
+elif [ -e /usr/sbin/pkg ]; then
+    pkg install \
+        git gmake gcc
+fi

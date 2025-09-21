@@ -1,0 +1,10 @@
+ARG BUILD_TIMESTAMP=0
+FROM --platform=linux/amd64 ubuntu:latest as build
+RUN apt-get update && apt-get install -y makeself
+RUN mkdir -p /tmp/mergerfs/
+RUN --mount=type=bind,src=pkgs,dst=/pkgs ls -lhd /pkgs
+RUN --mount=type=bind,src=pkgs,dst=/pkgs cp -v /pkg/*static*.gz /tmp/mergerfs/
+RUN makeself /tmp/mergerfs/ /build/mergerfs-installer.run "mergerfs" echo "foo"
+
+FROM scratch
+COPY --from=build /build/ /

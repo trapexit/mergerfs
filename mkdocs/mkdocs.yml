@@ -1,0 +1,121 @@
+site_name: mergerfs
+site_description: mergerfs - a featureful union filesystem
+site_url: https://trapexit.github.io/mergerfs/
+repo_name: mergerfs
+repo_url: https://github.com/trapexit/mergerfs
+edit_uri: edit/master/mkdocs/docs/
+docs_dir: docs
+plugins:
+  - search
+  - mike
+extra:
+  version:
+    provider: mike
+theme:
+  name: material
+  logo: logo.png
+  favicon: logo.png
+  features:
+  - content.action.edit
+  - content.action.view
+  - content.code.copy
+  - content.code.select
+  - navigation.footer
+  - navigation.instant
+  - navigation.instant.prefetch
+  - navigation.path
+  - navigation.top
+  - navigation.tracking
+  - optimize
+  - search.share
+  - search.suggest
+  - toc.follow
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+markdown_extensions:
+  - footnotes
+  - pymdownx.highlight:
+      auto_title: false
+      linenums_style: pymdownx-inline
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+nav:
+- Home: index.md
+- QuickStart: quickstart.md
+- Installation:
+  - setup/installation.md
+  - setup/upgrade.md
+  - setup/build.md
+- terminology.md
+- intro_to_filesystems.md
+- Config:
+  - config/options.md
+  - config/deprecated_options.md
+  - config/branches.md
+  - config/branches-mount-timeout.md
+  - config/functions_categories_policies.md
+  - config/minfreespace.md
+  - config/func_readdir.md
+  - config/rename_and_link.md
+  - config/moveonenospc.md
+  - config/cache.md
+  - config/passthrough.md
+  - config/readahead.md
+  - config/inodecalc.md
+  - config/threads.md
+  - config/pin-threads.md
+  - config/link_cow.md
+  - config/fuse_msg_size.md
+  - config/follow-symlinks.md
+  - config/link-exdev.md
+  - config/rename-exdev.md
+  - config/symlinkify.md
+  - config/nullrw.md
+  - config/xattr.md
+  - config/nfsopenhack.md
+  - config/statfs.md
+  - config/flush-on-close.md
+  - config/export-support.md
+  - config/kernel-permissions-check.md
+- error_handling_and_logging.md
+- resource_usage.md
+- runtime_interface.md
+- remote_filesystems.md
+- tips_notes.md
+- known_issues_bugs.md
+- project_comparisons.md
+- benchmarking.md
+- performance.md
+- tooling.md
+- extended_usage_patterns.md
+- FAQ:
+  - faq/why_isnt_it_working.md
+  - faq/reliability_and_scalability.md
+  - faq/usage_and_functionality.md
+  - faq/configuration_and_policies.md
+  - faq/compatibility_and_integration.md
+  - faq/recommendations_and_warnings.md
+  - faq/technical_behavior_and_limitations.md
+  - faq/have_you_considered.md
+  - faq/limit_drive_spinup.md
+- related_projects.md
+- media_and_publicity.md
+- support.md
+- sponsorship_and_donations.md

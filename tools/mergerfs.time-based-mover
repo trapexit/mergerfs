@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+if [ $# != 3 ]; then
+    echo "usage: $0 <cache-fs> <base-pool> <days-old>"
+    exit 1
+fi
+
+CACHEFS="${1}"
+BASEPOOL="${2}"
+DAYS_OLD=${3}
+
+find "${CACHEFS}" -type f -atime +${DAYS_OLD} -printf '%P\n' | \
+    rsync \
+        --files-from=- \
+        --archive \
+        --acls \
+        --xattrs \
+        --atimes \
+        --hard-links \
+        --one-file-system \
+        --quiet \
+        --preallocate \
+        --remove-source-files \
+        --log-file=/tmp/mergerfs-cache-rsync.log \
+        "${CACHEFS}/" \
+        "${BASEPOOL}/"

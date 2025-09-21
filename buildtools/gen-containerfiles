@@ -1,0 +1,27 @@
+#!/bin/sh
+
+input_file="${1}"
+
+while IFS= read -r line || [ -n "$line" ]; do
+    # Skip empty lines
+    if [ -z "$line" ]; then
+        continue
+    fi
+    
+    image=$(echo "$line" | cut -d' ' -f1)
+    platform=$(echo "$line" | cut -d' ' -f2-)
+
+    echo "${image} ${platform}"
+    cat <<EOF > "containerfiles/${image##*/}.${platform}"
+FROM --platform=${platform} ${image} as build
+COPY install-build-pkgs build-mergerfs /tmp/
+RUN /tmp/install-build-pkgs
+ARG BUILD_TIMESTAMP=0
+ARG GIT_REPO
+ARG BRANCH
+RUN /tmp/build-mergerfs \$GIT_REPO \$BRANCH
+
+FROM scratch
+COPY --from=build /build/ /
+EOF
+done < "$input_file"

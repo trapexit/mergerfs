@@ -1,0 +1,17 @@
+Source: mergerfs
+Section: utils
+Priority: optional
+Maintainer: Antonio SJ Musumeci <trapexit@spawn.link>
+Build-Depends: debhelper-compat (= 10)
+Standards-Version: 3.9.4
+Homepage: http://github.com/trapexit/mergerfs
+
+Package: mergerfs
+Architecture: any
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ fuse [linux-any] | fuse4bsd [kfreebsd-any]
+Description: another FUSE union filesystem
+ mergerfs is a union filesystem geared towards simplifying storage and
+ management of files across numerous commodity storage devices. It is
+ similar to mhddfs, unionfs, and aufs.

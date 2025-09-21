@@ -1,0 +1,13 @@
+ARG BUILD_TIMESTAMP=0
+FROM alpine:latest as tarball
+COPY install-build-pkgs /tmp/
+RUN /tmp/install-build-pkgs
+ARG BRANCH=master
+RUN git clone --single-branch --depth=1 https://github.com/trapexit/mergerfs /tmp/mergerfs --branch="${BRANCH}"
+RUN cd /tmp/mergerfs && make version tarball
+RUN mkdir /build
+RUN cp -v /tmp/mergerfs/*.tar.gz /build/
+
+
+FROM scratch
+COPY --from=tarball /build/ /

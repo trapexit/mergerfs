@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess
+
+
+if len(sys.argv) != 2:
+    print('usage: run-test <mergerfs-path>\n',file=sys.stderr)
+    sys.exit(1)
+
+test_path = os.path.realpath(sys.argv[0])
+test_path = os.path.dirname(test_path)
+
+for entry in os.scandir(test_path):
+    if not entry.name.startswith('TEST_'):
+        continue
+
+    try:
+        print(entry.name + ': ',end='')
+        fullpath = os.path.join(test_path,entry.name)
+        args = [fullpath,sys.argv[1]]
+        rv = subprocess.Popen(args,stdout=subprocess.PIPE)
+        rv.wait(timeout=10000)
+        if rv.returncode:
+            output = rv.stdout.read().decode()
+            print('FAIL - {}'.format(output))
+        else:
+            print('PASS')
+    except Exception as e:
+        print('FAIL - {}'.format(e))

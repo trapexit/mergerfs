@@ -1,0 +1,20 @@
+#!/bin/sh
+
+VERSION=$(git describe --always --tags --dirty)
+if [ $? -ne 0 ]; then
+    VERSION=$(cat VERSION)
+fi
+
+if [ "${VERSION}" = "" ]; then
+    VERSION="unknown"
+fi
+
+echo "version = ${VERSION}"
+echo -n "${VERSION}" > VERSION
+grep -sq \"${VERSION}\" src/version.hpp
+RV=$?
+if [ $RV -ne 0 ]; then
+    echo "Writing 'src/version.hpp'"
+    echo "#pragma once" > src/version.hpp
+    echo "static const char MERGERFS_VERSION[] = \"${VERSION}\";" >> src/version.hpp
+fi

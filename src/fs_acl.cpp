@@ -1,0 +1,40 @@
+/*
+  ISC License
+
+  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include "fs_acl.hpp"
+
+#include "fs_lgetxattr.hpp"
+#include "fs_path.hpp"
+
+#include <filesystem>
+
+constexpr const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
+
+
+bool
+fs::acl::dir_has_defaults(const fs::path &fullpath_)
+{
+  int rv;
+  fs::path dirpath;
+
+  dirpath = fullpath_.parent_path();
+
+  rv = fs::lgetxattr(dirpath,POSIX_ACL_DEFAULT_XATTR,NULL,0);
+
+  return (rv >= 0);
+}

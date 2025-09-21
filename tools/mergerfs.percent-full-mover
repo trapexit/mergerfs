@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+if [ $# != 3 ]; then
+    echo "usage: $0 <cache-fs> <base-pool> <percentage>"
+    exit 1
+fi
+
+CACHEFS="${1}"
+BASEPOOL="${2}"
+PERCENTAGE="${3}"
+
+set -o errexit
+while [ $(df "${CACHEFS}" | tail -n1 | awk '{print $5}' | cut -d'%' -f1) -gt ${PERCENTAGE} ]
+do
+    # Find the file with the oldest access time
+    FILE=$(find "${CACHEFS}" -type f -printf '%A@ %P\n' | \
+               sort | \
+               head -n 1 | \
+               cut -d' ' -f2-)
+    # If no file found, exit
+    test -n "${FILE}" || exit 0
+    # Move file
+    rsync \
+        --archive \
+        --acls \
+        --xattrs \
+        --atimes \
+        --hard-links \
+        --one-file-system \
+        --quiet \
+        --preallocate \
+        --remove-source-files \
+        --relative \
+        --log-file=/tmp/mergerfs-cache-rsync.log \
+        "${CACHEFS}/./${FILE}" \
+        "${BASEPOOL}/"
+done

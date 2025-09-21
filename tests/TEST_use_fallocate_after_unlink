@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
+
+os.posix_fallocate(fd,0,1024)
+
+os.unlink(filepath)
+
+os.posix_fallocate(fd,0,1024)
+
+os.close(fd)

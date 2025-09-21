@@ -1,0 +1,202 @@
+#!/bin/sh
+
+# Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
+
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+# Default values
+NAME=""
+VERSION="::guess::"
+DISTRO="::guess::"
+CODENAME="::guess::"
+URGENCY="medium"
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: $0 --name NAME [OPTIONS]
+
+Generated debian/changelog from git log
+
+Options:
+    --name NAME        Name of package (required)
+    --version VERSION  Place in git history to include upto (default: ::guess::)
+    --distro DISTRO    Distribution name (default: ::guess::)
+    --codename NAME    Distribution codename (default: ::guess::)
+    --urgency URGENCY  Urgency (default: medium)
+    -h, --help         Show this help message
+EOF
+    exit 1
+}
+
+# Parse command line arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --name)
+            NAME="$2"
+            shift 2
+            ;;
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
+        --distro)
+            DISTRO="$2"
+            shift 2
+            ;;
+        --codename)
+            CODENAME="$2"
+            shift 2
+            ;;
+        --urgency)
+            URGENCY="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage
+            ;;
+    esac
+done
+
+# Check required arguments
+if [ -z "$NAME" ]; then
+    echo "Error: --name is required" >&2
+    usage
+fi
+
+# Function to get git tags sorted in reverse order
+git_tags() {
+    git tag -l | sort -rV
+}
+
+# Function to get git log between two tags
+git_log() {
+    local fromtag="$1"
+    local totag="$2"
+    git log --no-merges --oneline "${fromtag}...${totag}" 2>/dev/null
+}
+
+# Function to get author and time for a tag
+git_author_and_time() {
+    local tag="$1"
+    git log -1 --format="-- %an <%ae>  %cD" "$tag"
+}
+
+# Function to get git version
+git_version() {
+    git describe --always --tags --dirty 2>/dev/null || echo "unknown"
+}
+
+# Function to guess distribution
+guess_distro() {
+    if command -v lsb_release >/dev/null 2>&1; then
+        lsb_release -i -s 2>/dev/null | tr '[:upper:]' '[:lower:]'
+    else
+        echo "unknown"
+    fi
+}
+
+# Function to guess codename
+guess_codename() {
+    if command -v lsb_release >/dev/null 2>&1; then
+        lsb_release -c -s 2>/dev/null | tr '[:upper:]' '[:lower:]'
+    else
+        echo "unknown"
+    fi
+}
+
+# Handle guessing of values
+if [ "$DISTRO" = "::guess::" ]; then
+    DISTRO=$(guess_distro)
+fi
+
+if [ "$CODENAME" = "::guess::" ]; then
+    CODENAME=$(guess_codename)
+fi
+
+if [ "$VERSION" = "::guess::" ]; then
+    VERSION=$(git_version)
+fi
+
+# Version suffix
+VERSUFFIX="~${DISTRO}-${CODENAME}"
+
+# Get all tags
+TAGS=$(git_tags)
+
+# Create temporary file for tag pairs
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+
+# Check if version is in tags
+if echo "$TAGS" | grep -q "^${VERSION}$"; then
+    # If version is a tag, start from that tag
+    echo "$TAGS" | awk -v ver="$VERSION" 'BEGIN{found=0} {if($0==ver)found=1; if(found)print}' > "$TMPFILE"
+else
+    # If version is not a tag, use HEAD as starting point
+    echo "$VERSION HEAD" > "$TMPFILE"
+    echo "$TAGS" >> "$TMPFILE"
+fi
+
+# Process tags and generate changelog
+PREV_TAG=""
+PREV_REF=""
+FIRST=1
+
+while IFS= read -r line; do
+    if [ -z "$line" ]; then
+        continue
+    fi
+
+    # Handle the special case of VERSION HEAD
+    if [ "$line" = "$VERSION HEAD" ]; then
+        TAG="$VERSION"
+        REF="HEAD"
+    else
+        TAG="$line"
+        REF="$line"
+    fi
+
+    if [ -n "$PREV_TAG" ]; then
+        # Get log entries between current and previous tag
+        LOG_ENTRIES=$(git_log "$REF" "$PREV_REF")
+
+        # Skip if no changes
+        if [ -z "$LOG_ENTRIES" ] || [ "$LOG_ENTRIES" = "" ]; then
+            PREV_TAG="$TAG"
+            PREV_REF="$REF"
+            continue
+        fi
+
+        # Print package header
+        printf "%s (%s%s) %s; urgency=%s\n\n" "$NAME" "$PREV_TAG" "$VERSUFFIX" "$CODENAME" "$URGENCY"
+
+        # Print each log entry
+        echo "$LOG_ENTRIES" | while IFS= read -r entry; do
+            if [ -n "$entry" ]; then
+                printf "  * %s\n" "$entry"
+            fi
+        done
+
+        # Print author and time
+        AUTHOR_TIME=$(git_author_and_time "$PREV_REF")
+        printf "\n %s\n\n" "$AUTHOR_TIME"
+    fi
+
+    PREV_TAG="$TAG"
+    PREV_REF="$REF"
+done < "$TMPFILE"

@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+
+import subprocess
+import sys
+import os
+import argparse
+import time
+
+
+def build(git_repo,
+          branch,
+          containerfile,
+          pkgdirpath):
+    timestamp = time.time_ns()
+    args = ['podman',
+            'build',
+            '--pull=always',
+            '--force-rm']
+    if os.path.exists(git_repo):
+        git_repo = os.path.realpath(git_repo)
+        args += ['-v',f'{git_repo}:/tmp/mergerfs.git:ro']
+        args += ['--build-arg=GIT_REPO=/tmp/mergerfs.git']
+    else:
+        args += [f'--build-arg=GIT_REPO={git_repo}']
+    args += ['-o',pkgdirpath,
+             '-f',containerfile,
+             f'--build-arg=BRANCH={branch}',
+             f'--build-arg=BUILD_TIMESTAMP={timestamp}',
+             'buildtools/']
+    # TODO: Capture output and write to log
+    print(args)
+    rv = subprocess.run(args)
+
+    os.makedirs(pkgdirpath,exist_ok=True)
+    report_filepath = os.path.join(pkgdirpath,"build-report.txt")
+    with open(report_filepath,"a+") as f:
+        build = os.path.basename(containerfile)
+        f.write(build + ": ")
+        f.write(f"branch={branch}; ")
+        f.write(f"timestamp={timestamp}; ")
+        f.write("rv=")
+        if rv.returncode == 0:
+            f.write("success;")
+        else:
+            f.write("fail;")
+        f.write("\n")
+
+
+def setup():
+    args = ['sudo',
+            'apt-get',
+            'install',
+            '-fy',
+            'qemu-user-static',
+            'qemu-user-binfmt']
+    print(args)
+    subprocess.run(args)
+
+
+def podman_cleanup():
+    args = ['podman',
+            'system',
+            'prune',
+            '-af']
+    print(args)
+    subprocess.run(args)
+
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument('--target',
+                   default='debian:13.amd64')
+    p.add_argument('--pkgdirpath',
+                   default='build/pkgs/')
+    p.add_argument('--branch',
+                   default='master')
+    p.add_argument('--setup',
+                   required=False,
+                   action='store_true')
+    p.add_argument('--cleanup',
+                   required=False,
+                   action='store_true')
+    p.add_argument('--git-repo',
+                   required=True,
+                   type=str)
+
+    return p.parse_args()
+
+
+def should_skip(filename):
+    if filename.endswith('~'):
+        return True
+    return False
+
+
+def main():
+    args = parse_args()
+    print(args)
+
+    if args.setup:
+        setup()
+        sys.exit(0)
+
+    containerfiles = []
+    basepath = 'buildtools/containerfiles'
+    if os.path.exists(f'{basepath}/{args.target}'):
+        containerfiles.append(f'{basepath}/{args.target}')
+    elif args.target == 'all':
+        for root,dirnames,filenames in os.walk(basepath):
+            filenames.sort()
+            for filename in filenames:
+                if should_skip(filename):
+                    continue
+                containerfile = f'buildtools/containerfiles/{filename}'
+                containerfiles.append(containerfile)
+    else:
+        for root,dirnames,filenames in os.walk(basepath):
+            filenames.sort()
+            for filename in filenames:
+                if args.target not in filename:
+                    continue
+                if should_skip(filename):
+                    continue
+                containerfile = f'buildtools/containerfiles/{filename}'
+                containerfiles.append(containerfile)
+
+    for containerfile in containerfiles:
+        if args.cleanup:
+            podman_cleanup()
+        build(git_repo=args.git_repo,
+              branch=args.branch,
+              containerfile=containerfile,
+              pkgdirpath=args.pkgdirpath)
+
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

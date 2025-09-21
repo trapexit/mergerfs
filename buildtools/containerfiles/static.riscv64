@@ -1,0 +1,13 @@
+ARG BUILD_TIMESTAMP=0
+FROM --platform=linux/riscv64 alpine:latest as build
+COPY install-build-pkgs /tmp/
+RUN /tmp/install-build-pkgs
+ARG BRANCH=master
+RUN git clone --single-branch --depth=1 https://github.com/trapexit/mergerfs /tmp/mergerfs --branch="${BRANCH}"
+WORKDIR /tmp/mergerfs
+RUN make NDEBUG=1 LTO=1 STATIC=1 DESTDIR=/tmp -j$(nproc) install
+RUN mkdir /build
+RUN tar cvfz /build/mergerfs-static-linux_riscv64.tar.gz --directory=/tmp usr sbin
+
+FROM scratch
+COPY --from=build /build/ /

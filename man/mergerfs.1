@@ -1,0 +1,120 @@
+.TH MERGERFS 1 "May 2025" "mergerfs" "User Commands"
+.SH NAME
+mergerfs \- a featureful union filesystem
+.SH SYNOPSIS
+.B mergerfs
+[options] <branches> <mountpoint>
+.SH DESCRIPTION
+.B mergerfs
+is a FUSE-based union filesystem geared towards simplifying storage and management of files across numerous commodity storage devices. It is similar to
+.BR mhddfs ,
+.BR unionfs ,
+and
+.BR aufs .
+.SH QUICKSTART
+.UR https://trapexit.github.io/mergerfs/quickstart
+.LI https://trapexit.github.io/mergerfs/quickstart
+.UE
+.SH DOCUMENTATION
+.UR https://trapexit.github.io/mergerfs
+.LI https://trapexit.github.io/mergerfs
+.UE
+.SH SUPPORT
+.UR https://trapexit.github.io/mergerfs/support
+.LI https://trapexit.github.io/mergerfs/support
+.UE
+.SH FEATURES
+.IP \[bu] 2
+Logically combine numerous filesystems/paths into a single mount point
+.IP \[bu]
+Combine paths of the same or different filesystems
+.IP \[bu]
+Ability to add or remove filesystems/paths without impacting the rest of the data
+.IP \[bu]
+Unaffected by individual filesystem failure
+.IP \[bu]
+Configurable file selection and creation placement
+.IP \[bu]
+Works with filesystems of any size
+.IP \[bu]
+Works with filesystems of almost any type
+.IP \[bu]
+Ignore read-only filesystems when creating files
+.IP \[bu]
+Hard link copy-on-write / CoW
+.IP \[bu]
+Runtime configurable
+.IP \[bu]
+Support for extended attributes (xattrs)
+.IP \[bu]
+Support for file attributes (chattr)
+.IP \[bu]
+Support for POSIX ACLs
+.SH NON-FEATURES
+.IP \[bu] 2
+Read/write overlay on top of read-only filesystem like OverlayFS
+.IP \[bu]
+File whiteout
+.IP \[bu]
+RAID-like parity calculation
+.IP \[bu]
+Redundancy
+.IP \[bu]
+Splitting of files across branches
+.SH HOW IT WORKS
+.B mergerfs
+logically merges multiple filesystem paths together. It acts as a proxy to the underlying filesystem paths, combining the behaviors of some functions and being a selector for others.
+
+When the contents of a directory are requested,
+.B mergerfs
+combines the list of files from each directory, deduplicating entries, and returns that list.
+
+When a file or directory is created, a policy is first run to determine which branch will be selected for the creation.
+
+For functions which change attributes or remove the file, the behavior may be applied to all instances found.
+
+Read more about policies here:
+.UR https://trapexit.github.io/mergerfs/config/functions_categories_and_policies
+.LI https://trapexit.github.io/mergerfs/config/functions_categories_and_policies
+.UE
+.SH VISUALIZATION
+.nf
+A         +      B        =       C
+/disk1           /disk2           /merged
+|                |                |
++-- /dir1        +-- /dir1        +-- /dir1
+|   |            |   |            |   |
+|   +-- file1    |   +-- file2    |   +-- file1
+|                |   +-- file3    |   +-- file2
++-- /dir2        |                |   +-- file3
+|   |            +-- /dir3        |
+|   +-- file4        |            +-- /dir2
+|                     +-- file5   |   |
++-- file6                         |   +-- file4
+                                  |
+                                  +-- /dir3
+                                  |   |
+                                  |   +-- file5
+                                  |
+                                  +-- file6
+.fi
+.SH SPONSORSHIP AND DONATIONS
+Development and support of a project like
+.B mergerfs
+require a significant amount of time and effort. The software is released under the very liberal ISC license and is therefore free to use for personal or commercial uses.
+
+If you are a non-commercial user and find
+.B mergerfs
+and its support valuable and would like to support the project financially, it would be very much appreciated.
+
+If you are using
+.B mergerfs
+commercially, please consider sponsoring the project to ensure it continues to be maintained and receive updates. If custom features are needed, feel free to contact the maintainer directly.
+
+.UR https://github.com/trapexit/support
+.LI https://github.com/trapexit/support
+.UE
+.SH LICENSE
+ISC License
+.SH AUTHOR
+Antonio SJ Musumeci (aka trapexit)
