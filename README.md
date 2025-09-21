@@ -25,6 +25,7 @@ etc.](https://trapexit.github.io/mergerfs/latest/project_comparisons/)
 * Works with filesystems of [almost any
   type](https://trapexit.github.io/mergerfs/latest/faq/compatibility_and_integration/#what-filesystems-can-be-used-as-branches)
 * Ignore read-only filesystems when creating files
+* [Hard links](https://trapexit.github.io/mergerfs/preview/faq/technical_behavior_and_limitations/#do-hard-links-work)
 * Hard link [copy-on-write /
   CoW](https://trapexit.github.io/mergerfs/latest/config/link_cow/)
 * [Runtime configurable](https://trapexit.github.io/mergerfs/latest/runtime_interface/)
@@ -59,8 +60,10 @@ which branch will be selected for the creation.
 For functions which change attributes or remove the file the behavior
 may be applied to all instances found.
 
-Read more about [policies
-here](https://trapexit.github.io/mergerfs/latest/config/functions_categories_policies/).
+The way in which mergerfs behaves is controlled by the
+[config/options/settings](https://trapexit.github.io/mergerfs/latest/config/options). More
+specifically by
+[policies](https://trapexit.github.io/mergerfs/latest/config/functions_categories_policies/).
 
 
 ### Visualization

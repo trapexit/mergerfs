@@ -57,8 +57,9 @@ which branch will be selected for the creation.
 For functions which change attributes or remove the file the behavior
 may be applied to all instances found.
 
-Read more about [policies
-here](config/functions_categories_policies.md).
+The way in which mergerfs behaves is controlled by the
+[config/options/settings](config/options.md). More specifically by
+[policies](config/functions_categories_policies.md).
 
 
 ### Visualization
@@ -89,3 +90,16 @@ A         +      B        =       C
 ## Getting Started
 
 Head to the [quick start guide](quickstart.md).
+
+
+## About This Documentation
+
+* Like the software the documentation changes over time. Ensure that
+  you are reading the documentation related to the version of the
+  software you are using.
+* The documentation is explicit, literal, and reasonably thorough. If
+  a suspected feature is not mentioned it does not exist. Do not read
+  into the wording. What is described is how it functions. If you feel
+  like something is not explained sufficiently or missing please [ask
+  in one of the supported forums](support.md#contact-issue-submission)
+  and the docs will be updated.

@@ -1,13 +1,12 @@
 # fuse_msg_size
 
-* `fuse_msg_size=UINT|SIZE`
-* Defaults to `1M`
-* Performance improvements often peak at about `4M`
+* type: `UINT|SIZE`
+* default: `1M`
+* example: `fuse_msg_size=1M`
 * If the value is a `SIZE` in the form of `xB`, `xK`, `xM`, `xG`, or
-  `xT` then it will choose the closest multiple of the system page
-  size
-* If the value is just an integer without a size multipler suffix then
-  it is treated as a page count
+`xT` then it will choose the closest multiple of the system page
+size. If the value is just an integer without a size multipler suffix
+then it is treated as a page count
 
 FUSE applications communicate with the kernel over a special character
 device: `/dev/fuse`. A large portion of the overhead associated with

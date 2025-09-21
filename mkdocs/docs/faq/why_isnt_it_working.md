@@ -36,15 +36,15 @@ and [FAQ](configuration_and_policies.md) for policy recommendations.
 
 ## Why do I get an "out of space" / "no space left on device" / ENOSPC error even though there appears to be lots of space available?
 
-One or multiple of the below are likely causing branches
+One or multiple of the below are likely causing branches to be
+[filtered out](../config/functions_categories_policies.md#filtering).
 
 * [minfreespace](../config/minfreespace.md) could be filtering out
   branches
-* if using an `ep*`
-  [policy](../config/functions_categories_policies.md) there may not
-  be an available branch
-* due to [branch modes](../config/branches.md#branch-mode) being set
-  to to `NC` or `RO` branches will be excluded from consideration
+* using an `ep*` [policy](../config/functions_categories_policies.md)
+  and there may not be an available branch
+* [branch modes](../config/branches.md#branch-mode) set to `NC` or
+  `RO` branches will be excluded from consideration
 * if using `ext4` ensure you are not running into reserve limits (use
   `tune2fs -m 0` to remove the reserve)
 * it is possible that the filesystem selected by the policy has run
@@ -56,7 +56,7 @@ within the pool (behavior modified by [statfs](../config/statfs.md)
 and [statfs_ignore](../config/statfs.md#statfs_ignore)). It does not
 represent a contiguous space. In the same way that read-only
 filesystems, those with quotas, or reserved space report the full
-theoretical space available. Not the practical usable space.
+theoretical space available but not the practical usable space.
 
 
 ## Why isn't the create policy working?
