@@ -64,7 +64,8 @@
 * 2024-02-22 - [Setup and Install MergerFS and SnapRAID (Part 2)](https://noted.lol/mergerfs-and-snapraid-setup-part-2/)
 * 2024-11-15 - [Meu servidor NAS - Parte 18: Recuperando um HD, recuperando o MergerFS e os próximos passos do NAS!](https://www.youtube.com/watch?v=5fy98kPzE3s)
 * 2025-04-23 - [How to build the Perfect Media Server | Part 1 - The Tech Stack | mergerfs, SnapRAID, and docker.](https://www.youtube.com/watch?v=Yt67zz9p0FU)
-* 2025-06-12 - [DIY Unraid-like functionality ](https://www.youtube.com/watch?v=fR0XhaWvR1E)
+* 2025-06-12 - [DIY Unraid-like functionality](https://www.youtube.com/watch?v=fR0XhaWvR1E)
+* 2025-09-22 - [استفاده از Snapraid و MergerFS | جایگزین RAID5](https://www.youtube.com/watch?v=GA6OvaUBKXs)
 
 
 ## Podcasts
