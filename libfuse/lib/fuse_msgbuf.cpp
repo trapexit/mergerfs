@@ -69,7 +69,7 @@ msgbuf_write_align(fuse_msgbuf_t *msgbuf_)
 static
 __attribute__((constructor))
 void
-msgbuf_constructor()
+_msgbuf_constructor()
 {
   g_PAGESIZE = sysconf(_SC_PAGESIZE);
   // FUSE_MAX_MAX_PAGES for payload + 1 for message header
@@ -79,7 +79,7 @@ msgbuf_constructor()
 static
 __attribute__((destructor))
 void
-msgbuf_destroy()
+_msgbuf_destructor()
 {
 
 }
@@ -148,7 +148,6 @@ static
 void
 msgbuf_destroy(fuse_msgbuf_t *msgbuf_)
 {
-  //  free(msgbuf_->mem);
   free(msgbuf_);
 }
 

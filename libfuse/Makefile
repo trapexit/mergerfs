@@ -62,7 +62,6 @@ BUILDDIR := build
 SRC_C = \
 	lib/buffer.c \
 	lib/crc32b.c \
-	lib/fuse_dirents.c \
 	lib/fuse_opt.c \
 	lib/fuse_session.c \
 	lib/fuse_signals.c \

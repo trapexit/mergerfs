@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "fuse_msgbuf.h"
+#include "fuse_msgbuf_t.h"
 #include "extern_c.h"
 
 EXTERN_C_BEGIN

@@ -1,0 +1,125 @@
+#pragma message "using getdents"
+
+#include "fs_inode.hpp"
+#include "fs_getdents64.hpp"
+#include "hashset.hpp"
+#include "branches.hpp"
+#include "error.hpp"
+#include "fs_close.hpp"
+#include "fs_open.hpp"
+#include "fs_path.hpp"
+#include "ugid.hpp"
+#include "scope_guard.hpp"
+
+#include "fuse_msgbuf.hpp"
+#include "fuse_dirents.hpp"
+
+#include <dirent.h>
+
+
+struct DirRV
+{
+  const fs::path *branch_path;
+  int fd;
+};
+
+static
+inline
+std::vector<std::future<DirRV>>
+_opendir(ThreadPool          &tp_,
+         const Branches::Ptr &branches_,
+         const fs::path      &rel_dirpath_,
+         uid_t const          uid_,
+         gid_t const          gid_)
+{
+  std::vector<std::future<DirRV>> futures;
+
+  futures.reserve(branches_->size());
+
+  for(const auto &branch : *branches_)
+    {
+      auto func =
+        [&branch,&rel_dirpath_,uid_,gid_]()
+        {
+          int fd;
+          fs::path abs_dirpath;
+          const ugid::Set ugid(uid_,gid_);
+
+          abs_dirpath = branch.path / rel_dirpath_;
+
+          fd = fs::open_dir_ro(abs_dirpath);
+
+          return DirRV{&branch.path,fd};
+        };
+
+      auto rv = tp_.enqueue_task(std::move(func));
+
+      futures.emplace_back(std::move(rv));
+    }
+
+  return futures;
+}
+
+static
+inline
+int
+_readdir(std::vector<std::future<DirRV>> &dh_futures_,
+         const fs::path                  &rel_dirpath_,
+         fuse_dirents_t                  *dirents_)
+{
+  Err err;
+  HashSet names;
+  fs::path rel_filepath;
+  fuse_msgbuf_t *buf;
+
+  buf = msgbuf_alloc();
+  DEFER { msgbuf_free(buf); };
+
+  rel_filepath = rel_dirpath_ / "dummy";
+  for(auto &dh_future : dh_futures_)
+    {
+      DirRV dirrv;
+
+      dirrv = dh_future.get();
+
+      err = dirrv.fd;
+      if(dirrv.fd < 0)
+        continue;
+      DEFER { fs::close(dirrv.fd); };
+
+      while(true)
+        {
+          ssize_t nread;
+
+          nread = fs::getdents64(dirrv.fd,buf->mem,buf->size);
+          if(nread <= 0)
+            break;
+
+          for(ssize_t pos = 0; pos < nread;)
+            {
+              int rv;
+              int namelen;
+              fs::dirent64 *d = reinterpret_cast<fs::dirent64*>(&buf->mem[pos]);
+
+              pos += d->d_reclen;
+
+              namelen = d->d_namelen();
+
+              rv = names.put(d->d_name,namelen);
+              if(rv == 0)
+                continue;
+
+              rel_filepath.replace_filename(d->d_name);
+
+              d->d_ino = fs::inode::calc(*dirrv.branch_path,
+                                         rel_filepath,
+                                         DTTOIF(d->d_type),
+                                         d->d_ino);
+
+              fuse_dirents_add(dirents_,d,namelen);
+            }
+        }
+    }
+
+  return err;
+}

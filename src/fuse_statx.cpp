@@ -1,6 +1,6 @@
 #include "fs_statx.hpp"
 
-#ifdef MERGERFS_STATX_SUPPORTED
+#ifdef MERGERFS_SUPPORTED_STATX
 #pragma message "statx supported"
 # include "fuse_statx_supported.icpp"
 #else

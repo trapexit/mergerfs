@@ -1,0 +1,81 @@
+#pragma message "using readdir"
+
+#include "fs_opendir.hpp"
+#include "fs_closedir.hpp"
+#include "fs_readdir.hpp"
+#include "error.hpp"
+#include "hashset.hpp"
+#include "scope_guard.hpp"
+#include "fs_inode.hpp"
+#include "dirinfo.hpp"
+
+#include "fuse_dirents.hpp"
+
+#include <cstring>
+
+static
+uint64_t
+_dirent_exact_namelen(const struct dirent *d_)
+{
+#ifdef _D_EXACT_NAMLEN
+  return _D_EXACT_NAMLEN(d_);
+#elif defined _DIRENT_HAVE_D_NAMLEN
+  return d_->d_namlen;
+#else
+  return strlen(d_->d_name);
+#endif
+}
+
+static
+int
+_readdir(const Branches::Ptr &branches_,
+         const fs::path      &rel_dirpath_,
+         fuse_dirents_t      *dirents_)
+{
+  Err err;
+  HashSet names;
+  fs::path rel_filepath;
+  fs::path abs_dirpath;
+
+  fuse_dirents_reset(buf_);
+
+  rel_filepath = rel_dirpath_ / "dummy";
+  for(const auto &branch : *branches_)
+    {
+      DIR *dh;
+
+      abs_dirpath = branch.path / rel_dirpath_;
+
+      errno = 0;
+      dh = fs::opendir(abs_dirpath);
+      err = -errno;
+      if(!dh)
+        continue;
+      DEFER{ fs::closedir(dh); };
+
+      for(dirent *de = fs::readdir(dh);
+          de;
+          de = fs::readdir(dh))
+        {
+          int rv;
+          int namelen;
+
+          namelen = ::_dirent_exact_namelen(de);
+
+          rv = names.put(de->d_name,namelen);
+          if(rv == 0)
+            continue;
+
+          rel_filepath.replace_filename(de->d_name);
+
+          de->d_ino = fs::inode::calc(branch.path,
+                                      rel_filepath,
+                                      DTTOIF(de->d_type),
+                                      de->d_ino);
+
+          fuse_dirents_add(buf_,de,namelen);
+        }
+    }
+
+  return err;
+}

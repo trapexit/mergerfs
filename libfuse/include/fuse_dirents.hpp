@@ -1,4 +1,6 @@
 /*
+  ISC License
+
   Copyright (c) 2019, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,29 +16,33 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define _DEFAULT_SOURCE
+#pragma once
 
-#include "fuse_readdir_seq.hpp"
+#include "kvec.h"
+#include "fuse_dirent.h"
+#include "fuse_entry.h"
+#include "fs_dirent64.hpp"
 
-#include "config.hpp"
-#include "supported_getdents64.hpp"
-#include "ugid.hpp"
+#include <dirent.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#ifdef MERGERFS_SUPPORTED_GETDENTS64
-#include "fuse_readdir_seq_getdents.icpp"
-#else
-#include "fuse_readdir_seq_readdir.icpp"
-#endif
-
-int
-FUSE::ReadDirSeq::operator()(fuse_file_info_t const *ffi_,
-                             fuse_dirents_t         *dirents_)
+struct fuse_dirents_t
 {
-  DirInfo            *di = DirInfo::from_fh(ffi_->fh);
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  kvec_t(char)     data;
+  kvec_t(uint32_t) offs;
+};
 
-  return ::_readdir(cfg.branches,
-                    di->fusepath,
-                    dirents_);
-}
+int  fuse_dirents_init(fuse_dirents_t *d);
+void fuse_dirents_free(fuse_dirents_t *d);
+void fuse_dirents_reset(fuse_dirents_t *d);
+
+int  fuse_dirents_add(fuse_dirents_t *d,
+                      const dirent   *de,
+                      const uint64_t  namelen);
+int  fuse_dirents_add(fuse_dirents_t     *d,
+                      const fs::dirent64 *de,
+                      const uint64_t      namelen);

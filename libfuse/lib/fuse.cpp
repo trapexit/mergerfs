@@ -19,7 +19,7 @@
 #include "mutex.hpp"
 #include "node.hpp"
 
-#include "fuse_dirents.h"
+#include "fuse_dirents.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"

@@ -26,7 +26,7 @@ public:
     if(!_err.has_value())
       _err = v_;
     else if(v_ >= 0)
-      _err = v_;
+      _err = 0;
 
     return *this;
   }
