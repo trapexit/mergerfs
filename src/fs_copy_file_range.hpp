@@ -26,11 +26,11 @@
 
 namespace fs
 {
-  int64_t
-  copy_file_range(const int           fd_in,
-                  int64_t            *off_in,
-                  const int           fd_out,
-                  int64_t            *off_out,
-                  const uint64_t      len,
+  ssize_t
+  copy_file_range(const int           src_fd_,
+                  off_t              *src_off_,
+                  const int           dst_fd_,
+                  off_t              *dst_off_,
+                  const size_t        len,
                   const unsigned int  flags);
 }

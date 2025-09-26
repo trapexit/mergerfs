@@ -77,7 +77,7 @@ public:
 
   template<typename FuncType>
   [[nodiscard]]
-  std::future<typename std::result_of<FuncType()>::type>
+  std::future<std::invoke_result_t<FuncType>>
   enqueue_task(FuncType&& func_);
 
 public:
@@ -340,10 +340,10 @@ ThreadPool::enqueue_work(FuncType &&func_)
 template<typename FuncType>
 [[nodiscard]]
 inline
-std::future<typename std::result_of<FuncType()>::type>
+std::future<std::invoke_result_t<FuncType>>
 ThreadPool::enqueue_task(FuncType&& func_)
 {
-  using TaskReturnType = typename std::result_of<FuncType()>::type;
+  using TaskReturnType = std::invoke_result_t<FuncType>;
   using Promise        = std::promise<TaskReturnType>;
 
   Promise promise;

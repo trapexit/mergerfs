@@ -36,6 +36,6 @@ namespace FUSE
                   off_t                   offset_in,
                   const fuse_file_info_t *ffi_out,
                   off_t                   offset_out,
-                  size_t                  size,
-                  int                     flags);
+                  const size_t            size,
+                  const unsigned int      flags);
 }

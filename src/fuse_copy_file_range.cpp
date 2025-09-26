@@ -27,19 +27,19 @@
 
 static
 ssize_t
-_copy_file_range(const int fd_in_,
-                 off_t     offset_in_,
-                 const int fd_out_,
-                 off_t     offset_out_,
+_copy_file_range(const int src_fd_,
+                 off_t     src_off_,
+                 const int dst_fd_,
+                 off_t     dst_off_,
                  size_t    size_,
                  int       flags_)
 {
   ssize_t rv;
 
-  rv = fs::copy_file_range(fd_in_,
-                           &offset_in_,
-                           fd_out_,
-                           &offset_out_,
+  rv = fs::copy_file_range(src_fd_,
+                           &src_off_,
+                           dst_fd_,
+                           &dst_off_,
                            size_,
                            flags_);
 
@@ -47,20 +47,20 @@ _copy_file_range(const int fd_in_,
 }
 
 ssize_t
-FUSE::copy_file_range(const fuse_file_info_t *ffi_in_,
-                      off_t                   offset_in_,
-                      const fuse_file_info_t *ffi_out_,
-                      off_t                   offset_out_,
-                      size_t                  size_,
-                      int                     flags_)
+FUSE::copy_file_range(const fuse_file_info_t *src_ffi_,
+                      off_t                   src_off_,
+                      const fuse_file_info_t *dst_ffi_,
+                      off_t                   dst_off_,
+                      const size_t            size_,
+                      const unsigned int      flags_)
 {
-  FileInfo *fi_in  = FileInfo::from_fh(ffi_in_->fh);
-  FileInfo *fi_out = FileInfo::from_fh(ffi_out_->fh);
+  FileInfo *src_fi  = FileInfo::from_fh(src_ffi_->fh);
+  FileInfo *dst_fi = FileInfo::from_fh(dst_ffi_->fh);
 
-  return ::_copy_file_range(fi_in->fd,
-                            offset_in_,
-                            fi_out->fd,
-                            offset_out_,
+  return ::_copy_file_range(src_fi->fd,
+                            src_off_,
+                            dst_fi->fd,
+                            dst_off_,
                             size_,
                             flags_);
 }
