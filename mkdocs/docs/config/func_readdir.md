@@ -29,3 +29,15 @@ of the `readdir` call. In v6.16 that was changed to be able to grow to
 the [fuse_msg_size](fuse_msg_size.md) which allows a lot more data to
 be sent per request and therefore much better performance in certain
 situations.
+
+
+## Technical Details
+
+* On Linux
+  [getdents](https://man7.org/linux/man-pages/man2/getdents.2.html) is
+  used instead of
+  [readdir](https://man7.org/linux/man-pages/man2/readdir.2.html) in
+  order to leverage larger buffers for better performance on larger
+  directory reads as well as have more control in concurrent policies.
+* [readdir](https://man7.org/linux/man-pages/man2/readdir.2.html) is
+  used on FreeBSD.

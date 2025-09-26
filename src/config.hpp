@@ -30,6 +30,7 @@
 #include "config_pagesize.hpp"
 #include "config_passthrough.hpp"
 #include "config_pid.hpp"
+#include "config_proxy_ioprio.hpp"
 #include "config_rename_exdev.hpp"
 #include "config_set.hpp"
 #include "config_statfs.hpp"
@@ -126,6 +127,7 @@ public:
   ConfigBOOL     parallel_direct_writes;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
+  ProxyIOPrio    proxy_ioprio;
   ConfigUINT64   readahead;
   FUSE::ReadDir  readdir;
   ConfigBOOL     readdirplus;

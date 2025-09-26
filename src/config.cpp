@@ -119,6 +119,7 @@ Config::Config()
     nullrw(false),
     parallel_direct_writes(true),
     posix_acl(false),
+    proxy_ioprio(false),
     readahead(0),
     readdir("seq"),
     readdirplus(false),
@@ -207,6 +208,7 @@ Config::Config()
   _map["parallel-direct-writes"] = &parallel_direct_writes;
   _map["pin-threads"]            = &fuse_pin_threads;
   _map["posix_acl"]              = &posix_acl;
+  _map["proxy-ioprio"]           = &proxy_ioprio;
   _map["readahead"]              = &readahead;
   _map["readdirplus"]            = &readdirplus;
   _map["rename-exdev"]           = &rename_exdev;

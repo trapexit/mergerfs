@@ -81,6 +81,7 @@ nav:
   - config/inodecalc.md
   - config/threads.md
   - config/pin-threads.md
+  - config/proxy-ioprio.md
   - config/link_cow.md
   - config/fuse_msg_size.md
   - config/follow-symlinks.md
