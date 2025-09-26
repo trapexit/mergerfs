@@ -52,20 +52,20 @@ _readdir(const fs::path &branch_path_,
           int namelen;
           fs::dirent64 *d = reinterpret_cast<fs::dirent64*>(&buf->mem[pos]);
 
-          pos += d->d_reclen;
+          pos += d->reclen;
 
-          namelen = d->d_namelen();
+          namelen = d->namelen();
 
-          rv = names_.put(d->d_name,namelen);
+          rv = names_.put(d->name,namelen);
           if(rv == 0)
             continue;
 
-          rel_filepath.replace_filename(d->d_name);
+          rel_filepath.replace_filename(d->name);
 
-          d->d_ino = fs::inode::calc(branch_path_,
-                                     rel_filepath,
-                                     DTTOIF(d->d_type),
-                                     d->d_ino);
+          d->ino = fs::inode::calc(branch_path_,
+                                   rel_filepath,
+                                   DTTOIF(d->type),
+                                   d->ino);
 
           fuse_dirents_add(dirents_,d,namelen);
         }

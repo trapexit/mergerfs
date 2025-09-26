@@ -122,10 +122,10 @@ fuse_dirents_add(fuse_dirents_t     *d_,
 
   d->off     = kv_size(d_->offs);
   kv_push(uint32_t,d_->offs,kv_size(d_->data));
-  d->ino     = de_->d_ino;
+  d->ino     = de_->ino;
   d->namelen = namelen_;
-  d->type    = de_->d_type;
-  memcpy(d->name,de_->d_name,namelen_);
+  d->type    = de_->type;
+  memcpy(d->name,de_->name,namelen_);
 
   return 0;
 }

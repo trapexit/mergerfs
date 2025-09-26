@@ -18,6 +18,8 @@
 
 #include "to_neg_errno.hpp"
 
+#include <sys/types.h>
+
 #if defined __linux__
 #include <unistd.h>
 #include <sys/syscall.h>

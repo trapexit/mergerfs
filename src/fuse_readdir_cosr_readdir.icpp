@@ -73,9 +73,9 @@ _opendir(ThreadPool          &tp_,
 static
 inline
 int
-_readdir(const std::vector<std::future<DirRV>> &dh_futures_,
-         const fs::path                        &rel_dirpath_,
-         fuse_dirents_t                        *dirents_)
+_readdir(std::vector<std::future<DirRV>> &dh_futures_,
+         const fs::path                  &rel_dirpath_,
+         fuse_dirents_t                  *dirents_)
 {
   Err err;
   HashSet names;

@@ -164,6 +164,11 @@ fs::copyfile(const int                src_fd_,
   return rv;
 }
 
+// For FreeBSD
+#ifndef O_NOATIME
+#define O_NOATIME 0
+#endif
+
 s64
 fs::copyfile(const fs::path          &src_filepath_,
              const fs::path          &dst_filepath_,

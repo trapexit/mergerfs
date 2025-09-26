@@ -8,16 +8,16 @@ namespace fs
   struct dirent64
   {
   public:
-    uint64_t d_ino;
-    int64_t  d_off;
-    uint16_t d_reclen;
-    uint8_t  d_type;
-    char     d_name[];
+    uint64_t ino;
+    int64_t  off;
+    uint16_t reclen;
+    uint8_t  type;
+    char     name[];
 
   public:
-    int d_namelen() const
+    int namelen() const
     {
-      return (d_reclen - offsetof(dirent64,d_name));
+      return (reclen - offsetof(dirent64,name));
     }
   };
 }

@@ -36,12 +36,3 @@ fs::copy_file_range(const int           fd_in_,
 {
   return -EOPNOTSUPP;
 }
-
-ssize_t
-fs::copy_file_range(const int           fd_in_,
-                    const int           fd_out_,
-                    const size_t        len_,
-                    const unsigned int  flags_)
-{
-  return -EOPNOTSUPP;
-}
