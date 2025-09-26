@@ -115,9 +115,7 @@ LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
 LDFLAGS ?=
 LDLIBS := \
 	-lrt \
-	-latomic \
-	-pthread \
-	-lstdc++fs
+	-pthread
 override LDLIBS += \
 	$(LIBFUSE)
 
