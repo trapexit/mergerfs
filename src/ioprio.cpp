@@ -1,13 +1,17 @@
 #include "ioprio.hpp"
 
 #ifdef __linux__
-# include <linux/ioprio.h>
 # include <sys/syscall.h>
 # include <unistd.h>
 # include <errno.h>
 #else
 #warning "ioprio not supported on this platform"
 #endif
+
+enum
+  {
+    IOPRIO_WHO_PROCESS = 1
+  };
 
 thread_local int ioprio::SetFrom::thread_prio = -1;
 bool _enabled = false;
