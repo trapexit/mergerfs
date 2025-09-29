@@ -34,30 +34,30 @@
 
 
 static
-int64_t
-_copy_file_range_(int                 src_fd_,
-                  int64_t            *src_off_,
-                  int                 tgt_fd_,
-                  int64_t            *tgt_off_,
-                  const uint64_t      len_,
+ssize_t
+_copy_file_range_(const int           src_fd_,
+                  off_t              *src_off_,
+                  const int           dst_fd_,
+                  off_t              *dst_off_,
+                  const size_t        len_,
                   const unsigned int  flags_)
 {
 #ifdef SYS_copy_file_range
   int64_t rv;
   loff_t  src_off;
-  loff_t  tgt_off;
+  loff_t  dst_off;
   loff_t *src_off_ptr;
-  loff_t *tgt_off_ptr;
+  loff_t *dst_off_ptr;
 
   src_off     = ((src_off_ == NULL) ?    0 : *src_off_);
-  tgt_off     = ((tgt_off_ == NULL) ?    0 : *tgt_off_);
+  dst_off     = ((dst_off_ == NULL) ?    0 : *dst_off_);
   src_off_ptr = ((src_off_ == NULL) ? NULL : &src_off);
-  tgt_off_ptr = ((tgt_off_ == NULL) ? NULL : &tgt_off);
+  dst_off_ptr = ((dst_off_ == NULL) ? NULL : &dst_off);
   rv = ::syscall(SYS_copy_file_range,
                  src_fd_,
                  src_off_ptr,
-                 tgt_fd_,
-                 tgt_off_ptr,
+                 dst_fd_,
+                 dst_off_ptr,
                  len_,
                  flags_);
 
@@ -65,8 +65,8 @@ _copy_file_range_(int                 src_fd_,
     {
       if(src_off_ != NULL)
         *src_off_ = src_off;
-      if(tgt_off_ != NULL)
-        *tgt_off_ = tgt_off;
+      if(dst_off_ != NULL)
+        *dst_off_ = dst_off;
     }
 
   return ::to_neg_errno(rv);
@@ -75,18 +75,18 @@ _copy_file_range_(int                 src_fd_,
 #endif
 }
 
-int64_t
+ssize_t
 fs::copy_file_range(const int           src_fd_,
-                    int64_t            *src_off_,
-                    const int           tgt_fd_,
-                    int64_t            *tgt_off_,
-                    const uint64_t      len_,
+                    off_t              *src_off_,
+                    const int           dst_fd_,
+                    off_t              *dst_off_,
+                    const size_t        len_,
                     const unsigned int  flags_)
 {
   return ::_copy_file_range_(src_fd_,
                              src_off_,
-                             tgt_fd_,
-                             tgt_off_,
+                             dst_fd_,
+                             dst_off_,
                              len_,
                              flags_);
 }

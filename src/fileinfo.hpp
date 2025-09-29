@@ -28,7 +28,7 @@
 class FileInfo : public FH
 {
 public:
-  static FileInfo *from_fh(const uintptr_t fh);
+  static FileInfo *from_fh(const u64 fh);
 
 public:
   FileInfo(const int       fd_,
@@ -62,7 +62,7 @@ public:
   }
 
 public:
-  uint64_t to_fh() const;
+  u64 to_fh() const;
 
 public:
   int fd;
@@ -72,15 +72,15 @@ public:
 };
 
 inline
-uintptr_t
+u64
 FileInfo::to_fh() const
 {
-  return reinterpret_cast<uintptr_t>(this);
+  return reinterpret_cast<u64>(this);
 }
 
 inline
 FileInfo*
-FileInfo::from_fh(const uintptr_t fh_)
+FileInfo::from_fh(const u64 fh_)
 {
   return reinterpret_cast<FileInfo*>(fh_);
 }

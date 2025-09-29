@@ -100,7 +100,7 @@ class ROToFromWrapper : public ToFromString
 {
 public:
   int
-  from_string(const std::string &s_) final
+  from_string(const std::string_view s_) final
   {
     return -EINVAL;
   }

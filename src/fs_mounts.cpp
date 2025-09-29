@@ -2,9 +2,9 @@
 
 #include <cstdio>
 
+#ifdef __linux__
 #include <mntent.h>
 
-#ifdef __linux__
 void
 fs::mounts(fs::MountVec &mounts_)
 {
@@ -29,9 +29,12 @@ fs::mounts(fs::MountVec &mounts_)
 
   ::endmntent(f);
 }
+
 #else
+
 void
 fs::mounts(fs::MountVec &mounts_)
 {
 }
+
 #endif

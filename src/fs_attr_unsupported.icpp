@@ -20,15 +20,16 @@
 
 
 int
-fs::attr::copy(const int fdin,
-               const int fdout)
+fs::attr::copy(const int fdin_,
+               const int fdout_,
+               const u32 flags_)
 {
   return -ENOTSUP;
 }
 
 int
-fs::attr::copy(const std::string &from,
-               const std::string &to)
+fs::attr::copy(const std::string &from_,
+               const std::string &to_)
 {
   return -ENOTSUP;
 }

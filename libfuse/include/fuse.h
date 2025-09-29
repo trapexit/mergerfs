@@ -526,12 +526,12 @@ struct fuse_operations
    * destination. Effectively doing an inefficient copy of the
    * data.
    */
-  ssize_t (*copy_file_range)(const fuse_file_info_t *fi_in,
-                             off_t                   offset_in,
-                             const fuse_file_info_t *fi_out,
-                             off_t                   offset_out,
-                             size_t                  size,
-                             int                     flags);
+  ssize_t (*copy_file_range)(const fuse_file_info_t *src_fi,
+                             off_t                   src_off,
+                             const fuse_file_info_t *dst_fi,
+                             off_t                   dst_off,
+                             const size_t            size,
+                             const unsigned int      flags);
 
   ssize_t (*setupmapping)(uint64_t *fh_,
                           uint64_t  foffset_,

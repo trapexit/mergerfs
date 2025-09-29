@@ -28,18 +28,9 @@
 
 ssize_t
 fs::copy_file_range(const int           fd_in_,
-                    int64_t            *off_in_,
+                    off_t              *off_in_,
                     const int           fd_out_,
-                    int64_t            *off_out_,
-                    const size_t        len_,
-                    const unsigned int  flags_)
-{
-  return -EOPNOTSUPP;
-}
-
-ssize_t
-fs::copy_file_range(const int           fd_in_,
-                    const int           fd_out_,
+                    off_t              *off_out_,
                     const size_t        len_,
                     const unsigned int  flags_)
 {

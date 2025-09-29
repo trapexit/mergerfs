@@ -37,7 +37,7 @@ _readdir(const Branches::Ptr &branches_,
   fs::path rel_filepath;
   fs::path abs_dirpath;
 
-  fuse_dirents_reset(buf_);
+  fuse_dirents_reset(dirents_);
 
   rel_filepath = rel_dirpath_ / "dummy";
   for(const auto &branch : *branches_)
@@ -73,7 +73,7 @@ _readdir(const Branches::Ptr &branches_,
                                       DTTOIF(de->d_type),
                                       de->d_ino);
 
-          fuse_dirents_add(buf_,de,namelen);
+          fuse_dirents_add(dirents_,de,namelen);
         }
     }
 

@@ -16,6 +16,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "fs_copy_file_range.hpp"
+
 #ifdef __linux__
 #pragma message "using fs_copy_file_range_linux.icpp"
 #include "fs_copy_file_range_linux.icpp"
