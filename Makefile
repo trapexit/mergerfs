@@ -118,6 +118,12 @@ LDLIBS := \
 	-pthread
 override LDLIBS += \
 	$(LIBFUSE)
+ifeq ($(CXX),g++)
+    GCC_VERSION := $(shell $(CXX) -dumpversion | cut -f1 -d.)
+    ifeq ($(shell test $(GCC_VERSION) -lt 9; echo $$?),0)
+        override LDLIBS += -lstdc++fs
+    endif
+endif
 
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
 DESTDIR       ?=

@@ -27,37 +27,29 @@ git log HEAD^1..
 mkdir "/build"
 if [ -e /usr/bin/apt-get ]; then
     make deb
-    find /tmp/ \
-         -type f \
-         -name "*.deb" \
-         -not -name "*dbgsym*" \
-         -exec cp -v {} /build/ \;
-    exit 0
 elif [ -e /usr/bin/dnf ]; then
     make rpm
-    find /tmp/ \
-         -type f \
-         -name "*.rpm" \
-         -not -name "*sym*" \
-         -not -name "*src.rpm" \
-         -exec cp -v {} /build/ \;
-    exit 0
 elif [ -e /usr/bin/yum ]; then
     . /opt/rh/devtoolset-9/enable
     make rpm
-    find /tmp/ \
-         -type f \
-         -name "*.rpm" \
-         -not -name "*sym*" \
-         -not -name "*src.rpm" \
-         -exec cp -v {} /build/ \;
-    exit 0
 elif [ -e /sbin/apk ]; then
     echo "NOT YET SUPPORTED"
+    exit 1
 elif [ -e /usr/sbin/pkg ]; then
     echo "NOT YET SUPPORTED"
+    exit 1
 else
     echo "NOT YET SUPPORTED"
+    exit 1
 fi
 
-exit 1
+echo "Copy packages to host..."
+find "${BUILDDIR}" \
+     -type f \
+     \( -name "*.deb" -or -name "*.rpm" \) \
+     -not -name "*dbgsym*" \
+     -not -name "*sym*" \
+     -not -name "*src.rpm" \
+     -exec cp -v {} /build/ \;
+
+exit 0
