@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 namespace fs
 {
@@ -15,9 +16,10 @@ namespace fs
     char     name[];
 
   public:
-    int namelen() const
+    size_t
+    namelen() const
     {
-      return (reclen - offsetof(dirent64,name));
+      return ::strlen(name);
     }
   };
 }
