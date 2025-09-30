@@ -35,7 +35,7 @@ $ su -
 
 ## Generic Linux
 
-Have git, g++ or clang, make, python installed.
+Have git, g++ or clang, make installed.
 
 
 ```
@@ -46,7 +46,7 @@ $ sudo make install
 
 ## FreeBSD
 
-Have git, g++ or clang, gmake, python installed.
+Have git, g++ or clang, gmake installed.
 
 ```
 $ cd mergerfs
