@@ -52,7 +52,7 @@ Have git, g++ or clang, gmake, python installed.
 $ cd mergerfs
 $ buildtools/install-build-pkgs
 $ gmake
-$ gmake install # as root
+$ sudo gmake install # as root
 ```
 
 
