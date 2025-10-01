@@ -4165,14 +4165,14 @@ fuse_new_common(struct fuse_chan             *ch,
   return NULL;
 }
 
-struct fuse*
-fuse_new(struct fuse_chan             *ch,
-         struct fuse_args             *args,
-         const struct fuse_operations *op,
-         size_t                        op_size)
-{
-  return fuse_new_common(ch,args,op,op_size);
-}
+// struct fuse*
+// fuse_new(struct fuse_chan             *ch,
+//          struct fuse_args             *args,
+//          const struct fuse_operations *op,
+//          size_t                        op_size)
+// {
+//   return fuse_new_common(ch,args,op,op_size);
+// }
 
 void
 fuse_destroy(struct fuse *f)
