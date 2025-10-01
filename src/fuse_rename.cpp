@@ -92,8 +92,7 @@ _rename_create_path(const Policy::Search &searchPolicy_,
 
   for(auto &branch : *branches_)
     {
-      newfullpath  = branch.path;
-      newfullpath += newfusepath_;
+      newfullpath = branch.path / newfusepath_;
 
       if(!::_contains(oldbranches,branch.path))
         {
@@ -101,8 +100,7 @@ _rename_create_path(const Policy::Search &searchPolicy_,
           continue;
         }
 
-      oldfullpath  = branch.path;
-      oldfullpath += oldfusepath_;
+      oldfullpath = branch.path / oldfusepath_;
 
       rv = fs::rename(oldfullpath,newfullpath);
       if(rv < 0)
@@ -146,8 +144,7 @@ _rename_preserve_path(const Policy::Action &actionPolicy_,
   success = false;
   for(auto &branch : *branches_)
     {
-      newfullpath  = branch.path;
-      newfullpath += newfusepath_;
+      newfullpath = branch.path / newfusepath_;
 
       if(!::_contains(oldbranches,branch.path))
         {
@@ -155,8 +152,7 @@ _rename_preserve_path(const Policy::Action &actionPolicy_,
           continue;
         }
 
-      oldfullpath  = branch.path;
-      oldfullpath += oldfusepath_;
+      oldfullpath = branch.path / oldfusepath_;
 
       rv = fs::rename(oldfullpath,newfullpath);
       if(rv < 0)
@@ -189,10 +185,10 @@ _rename_exdev_rename_back(const std::vector<Branch*> &branches_,
     {
       oldpath  = branch->path;
       oldpath /= ".mergerfs_rename_exdev";
-      oldpath += oldfusepath_;
+      oldpath /= oldfusepath_;
 
       newpath  = branch->path;
-      newpath += oldfusepath_;
+      newpath /= oldfusepath_;
 
       fs::rename(oldpath,newpath);
     }
@@ -207,7 +203,7 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
 {
   int rv;
   fs::path clonesrc;
-  fs::path clonetgt;
+  fs::path clonedst;
 
   rv = actionPolicy_(ibranches_,oldfusepath_,obranches_);
   if(rv < 0)
@@ -217,23 +213,23 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
   for(auto &branch : obranches_)
     {
       clonesrc  = branch->path;
-      clonetgt  = branch->path;
-      clonetgt /= ".mergerfs_rename_exdev";
+      clonedst  = branch->path;
+      clonedst /= ".mergerfs_rename_exdev";
 
-      rv = fs::clonepath(clonesrc,clonetgt,oldfusepath_.parent_path());
+      rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
       if(rv == -ENOENT)
         {
-          fs::mkdir(clonetgt,01777);
-          rv = fs::clonepath(clonesrc,clonetgt,oldfusepath_.parent_path());
+          fs::mkdir(clonedst,01777);
+          rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
         }
 
       if(rv < 0)
         goto error;
 
-      clonesrc += oldfusepath_;
-      clonetgt += oldfusepath_;
+      clonesrc /= oldfusepath_;
+      clonedst /= oldfusepath_;
 
-      rv = fs::rename(clonesrc,clonetgt);
+      rv = fs::rename(clonesrc,clonedst);
       if(rv < 0)
         goto error;
     }
@@ -264,7 +260,7 @@ _rename_exdev_rel_symlink(const Policy::Action &actionPolicy_,
 
   linkpath  = newfusepath_;
   target    = "/.mergerfs_rename_exdev";
-  target   += oldfusepath_;
+  target   /= oldfusepath_;
   target    = target.lexically_relative(linkpath.parent_path());
 
   rv = FUSE::symlink(target.c_str(),linkpath);
@@ -294,7 +290,7 @@ _rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
   linkpath  = newfusepath_;
   target    = mount_;
   target   /= ".mergerfs_rename_exdev";
-  target   += oldfusepath_;
+  target   /= oldfusepath_;
 
   rv = FUSE::symlink(target.c_str(),linkpath);
   if(rv < 0)
