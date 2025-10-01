@@ -1117,7 +1117,7 @@ do_init(fuse_req_t             req,
         struct fuse_in_header *hdr_)
 {
   struct fuse_init_out outarg = {0};
-  struct fuse_init_in *arg = (struct fuse_init_in *) &hdr_[1];
+  struct fuse_init_in *arg = (struct fuse_init_in*)&hdr_[1];
   struct fuse_ll *f = req->f;
   size_t bufsize = fuse_chan_bufsize(req->ch);
   uint64_t inargflags;
@@ -1288,7 +1288,7 @@ do_init(fuse_req_t             req,
   if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
-      outarg.max_stack_depth = 2;
+      outarg.max_stack_depth = (f->passthrough_max_stack_depth + 1);
     }
 
   if(inargflags & FUSE_INIT_EXT)
@@ -1800,6 +1800,7 @@ enum {
 
 static const struct fuse_opt fuse_ll_opts[] =
   {
+    { "passthrough-max-stack-depth=%u", offsetof(struct fuse_ll, passthrough_max_stack_depth), 0 },
     { "debug", offsetof(struct fuse_ll, debug), 1 },
     { "-d", offsetof(struct fuse_ll, debug), 1 },
     { "max_readahead=%u", offsetof(struct fuse_ll, conn.max_readahead), 0 },

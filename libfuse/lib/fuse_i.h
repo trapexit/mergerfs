@@ -69,6 +69,7 @@ struct fuse_ll
   int broken_splice_nonblock;
   uint64_t notify_ctr;
   struct fuse_notify_req notify_list;
+  int passthrough_max_stack_depth;
 };
 
 struct fuse_cmd
