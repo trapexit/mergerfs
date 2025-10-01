@@ -201,7 +201,7 @@ _parse_and_process_kv_arg(Config            &cfg_,
 
 static
 int
-_process_opt(Config           &cfg_,
+_process_opt(Config            &cfg_,
              Config::ErrVec    *errs_,
              const std::string &arg_)
 {
