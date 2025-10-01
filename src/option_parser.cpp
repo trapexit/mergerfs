@@ -202,8 +202,8 @@ _parse_and_process_kv_arg(Config            &cfg_,
 static
 int
 _process_opt(Config           &cfg_,
-            Config::ErrVec    *errs_,
-            const std::string &arg_)
+             Config::ErrVec    *errs_,
+             const std::string &arg_)
 {
   std::string key;
   std::string val;
@@ -218,8 +218,8 @@ _process_opt(Config           &cfg_,
 static
 int
 _process_branches(Config        &cfg_,
-                 Config::ErrVec *errs_,
-                 const char     *arg_)
+                  Config::ErrVec *errs_,
+                  const char     *arg_)
 {
   int rv;
   std::string arg;
@@ -235,8 +235,8 @@ _process_branches(Config        &cfg_,
 static
 int
 _process_mount(Config        &cfg_,
-              Config::ErrVec *errs_,
-              const char     *arg_)
+               Config::ErrVec *errs_,
+               const char     *arg_)
 {
   int rv;
   std::string arg;
