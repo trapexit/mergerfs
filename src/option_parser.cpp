@@ -419,7 +419,7 @@ namespace options
         FUSE_OPT_KEY("--version",MERGERFS_OPT_VERSION),
         {NULL,-1U,0}
       };
-    OptParseState state;
+    OptParseState state{.errs=errs_};
 
     fuse_opt_parse(args_,
                    &state,
