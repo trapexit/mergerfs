@@ -394,6 +394,7 @@ main(int    argc_,
     ->delimiter(',');
 
   app.add_option("-f,--foreground",foreground)
+    ->description("")
     ->default_val(false);
 
   try
