@@ -418,6 +418,9 @@ main(int    argc_,
       return app.exit(e_);
     }
 
+  mountpoint = branches.back();
+  branches.pop_back();
+
   fmt::println("foreground: {}\n"
                "debug: {}\n"
                "mountpoint: {}\n"
