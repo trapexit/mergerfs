@@ -53,7 +53,7 @@ enum
     MERGERFS_OPT_VERSION
   };
 
-struct OptsState
+struct OptParseState
 {
   std::vector<
 };
