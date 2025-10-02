@@ -406,10 +406,12 @@ main(int    argc_,
   app.add_option("branches",branches)
     ->delimiter(':')
     ->expected(-1)
+    ->required()
     ;
 
-  app.add_flag("mountpoint",mountpoint)
-    ->expected(1);
+  app.add_option("mountpoint",mountpoint)
+    ->expected(1)
+    ->required();
 
   try
     {
