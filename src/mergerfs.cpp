@@ -411,6 +411,7 @@ main(int    argc_,
 
   app.add_option("mountpoint")
     ->default_val("foo")
+    ->default_str("foo")
     ->required()
     ;
 
