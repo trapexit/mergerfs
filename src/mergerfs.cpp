@@ -417,7 +417,11 @@ main(int    argc_,
       return app.exit(e_);
     }
 
-  fmt::println("foreground: {}",
+  fmt::println("foreground: {}\n"
+               "debug: {}\n"
+               "branches: {}\n"
+               "mountpoint: {}\n"
+               ,
                foreground,
                debug,
                branches,
