@@ -403,17 +403,16 @@ main(int    argc_,
     ->description("")
     ;
 
-  app.add_option("mountpoint",mountpoint)
-    ->required()
-    ->take_last()
-    ;
-
   app.add_option("branches",branches)
     //    ->delimiter(':')
     ->expected(-1)
     ->required()
     ;
 
+  app.add_option("mountpoint",mountpoint)
+    ->required()
+    ->take_last()
+    ;
 
   try
     {
