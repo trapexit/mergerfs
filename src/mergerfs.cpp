@@ -386,7 +386,7 @@ main(int    argc_,
   bool foreground;
   bool debug;
   std::vector<std::string> opts;
-  std::string branches;
+  std::vector<std::string> branches;
   std::string mountpoint;
 
   app.description("mergerfs: A featureful union filesystem");
