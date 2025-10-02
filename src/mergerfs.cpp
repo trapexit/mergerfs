@@ -426,6 +426,9 @@ main(int    argc_,
                mountpoint
                );
 
+  for(auto &branch : branches)
+    fmt::println("{}",branch);
+
   for(auto &opt : opts)
     fmt::print("{}\n",opt);
 
