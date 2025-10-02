@@ -381,8 +381,15 @@ int
 main(int    argc_,
      char **argv_)
 {
+  CLI::App app;
+
   std::set<std::string> keys;
   std::map<std::string,std::string> keyvalues;
+  std::vector<std::string> opts;
+
+  app.add_option("-o",opts);
+
+  return 0;
 
   return ::_pick_app_and_run(argc_,argv_);
 }
