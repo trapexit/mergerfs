@@ -412,6 +412,7 @@ main(int    argc_,
   app.add_option("mountpoint",mountpoint)
     ->expected(1)
     ->required()
+    ->take_last()
     ;
 
   try
