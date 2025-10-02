@@ -405,7 +405,7 @@ main(int    argc_,
 
   app.add_option("branches",branches)
     ->delimiter(':')
-    ->expected(-1)
+    ->expected(1,-1)
     ;
 
   app.add_option("mountpoint",mountpoint)
