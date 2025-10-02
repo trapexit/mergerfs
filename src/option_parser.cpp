@@ -421,7 +421,6 @@ namespace options
       };
     OptParseState state;
 
-
     fuse_opt_parse(args_,
                    &state,
                    opts,
