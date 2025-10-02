@@ -386,11 +386,14 @@ main(int    argc_,
   bool foreground;
   bool debug;
   std::vector<std::string> opts;
+  std::string branches;
+  std::string mountpoint;
 
   app.description("mergerfs: A featureful union filesystem");
   app.name("USAGE: mergerfs");
   app.add_option("-o",opts)
     ->description("")
+
     ->delimiter(',')
     ;
 
