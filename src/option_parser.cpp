@@ -298,7 +298,7 @@ _option_processor(void       *data_,
                   int         key_,
                   fuse_args  *outargs_)
 {
-  Config::ErrVec *errs = (Config::ErrVec*)data_;
+  OptParseState &state = *(OptParseState*)data_;
 
   switch(key_)
     {
