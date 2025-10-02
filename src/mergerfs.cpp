@@ -393,7 +393,6 @@ main(int    argc_,
   app.name("USAGE: mergerfs");
   app.add_option("-o",opts)
     ->description("")
-
     ->delimiter(',')
     ;
 
