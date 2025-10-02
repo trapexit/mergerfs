@@ -392,7 +392,14 @@ main(int    argc_,
   app.add_option("-o",opts)
     ->delimiter(',');
 
-  app.parse(argc_,argv_);
+  try
+    {
+      app.parse(argc_,argv_);
+    }
+  catch(const CLI::ParseError &e_)
+    {
+      return app.exit(e_);
+    }
 
   for(auto &opt : opts)
     fmt::print("{}\n",opt);
