@@ -414,6 +414,7 @@ main(int    argc_,
     ->required()
     ->take_last()
     ;
+  app->positionals_at_end();
 
   try
     {
