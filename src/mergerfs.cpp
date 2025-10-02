@@ -387,6 +387,7 @@ main(int    argc_,
   std::map<std::string,std::string> keyvalues;
   std::vector<std::string> opts;
 
+  app.description("mergerfs: A featureful union filesystem");
   app.add_option("-o",opts)
     ->delimiter(',');
 
