@@ -410,7 +410,6 @@ main(int    argc_,
     ;
 
   app.add_option("mountpoint")
-    ->required()
     ;
 
   try
