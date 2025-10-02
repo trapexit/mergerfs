@@ -396,7 +396,6 @@ main(int    argc_,
 
   app.add_option("-f,--foreground",foreground)
     ->description("")
-    ->envname("MERGERFS_FOREGROUND")
     ->default_val(false);
 
   try
