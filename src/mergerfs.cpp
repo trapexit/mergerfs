@@ -419,12 +419,10 @@ main(int    argc_,
 
   fmt::println("foreground: {}\n"
                "debug: {}\n"
-               "branches: {}\n"
                "mountpoint: {}\n"
                ,
                foreground,
                debug,
-               branches,
                mountpoint
                );
 
