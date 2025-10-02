@@ -18,6 +18,8 @@
 #include "mergerfs_fsck.hpp"
 #include "mergerfs_collect_info.hpp"
 
+#include "CLI11.hpp"
+
 #include "fs_path.hpp"
 #include "fs_readahead.hpp"
 #include "fs_umount2.hpp"
