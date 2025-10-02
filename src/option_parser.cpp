@@ -307,11 +307,7 @@ _option_processor(void       *data_,
 
     case FUSE_OPT_KEY_NONOPT:
       state.branches.push_back(arg_);
-      return 1;
-      if(cfg.branches->empty())
-        return ::_process_branches(cfg,state.errs,arg_);
-      else
-        return ::_process_mount(cfg,state.errs,arg_);
+      return 0;
 
     case MERGERFS_OPT_HELP:
       ::_usage();
