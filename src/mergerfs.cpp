@@ -384,6 +384,7 @@ main(int    argc_,
   CLI::App app;
 
   bool foreground;
+  bool debug;
   std::vector<std::string> opts;
 
   app.description("mergerfs: A featureful union filesystem");
