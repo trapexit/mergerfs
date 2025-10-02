@@ -393,12 +393,12 @@ main(int    argc_,
     ->description("")
     ->delimiter(',');
 
-  app.add_option("-f,--foreground",foreground)
+  app.add_flag("-f,--foreground",foreground)
     ->description("")
     ->default_val(false)
     ->default_str("false");
 
-  app.add_option("-d,--debug",debug)
+  app.add_flag("-d,--debug",debug)
     ->description("")
     ->default_val(false)
     ->default_str("false");
