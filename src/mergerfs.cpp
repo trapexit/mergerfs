@@ -391,6 +391,7 @@ main(int    argc_,
   app.description("mergerfs: A featureful union filesystem");
   app.name("USAGE: mergerfs");
   app.add_option("-o",opts)
+    ->description("")
     ->delimiter(',');
 
   app.add_option("-f,--foreground",foreground)
