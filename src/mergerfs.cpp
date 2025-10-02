@@ -391,7 +391,8 @@ main(int    argc_,
   app.name("USAGE: mergerfs");
   app.add_option("-o",opts)
     ->description("")
-    ->delimiter(',');
+    ->delimiter(',')
+    ;
 
   app.add_flag("-f,--foreground",foreground)
     ->description("")
