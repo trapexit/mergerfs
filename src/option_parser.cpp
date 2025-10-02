@@ -57,7 +57,7 @@ struct OptParseState
 {
   std::vector<std::string> opts;
   std::vector<std::string> branches;
-  Config::ErrVec errs;
+  Config::ErrVec *errs;
 };
 
 static
