@@ -53,6 +53,13 @@ enum
     MERGERFS_OPT_VERSION
   };
 
+struct OptsState
+{
+  std::vector<
+};
+
+
+
 
 static
 void
