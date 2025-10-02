@@ -383,6 +383,7 @@ main(int    argc_,
 {
   CLI::App app;
 
+  bool foreground;
   std::set<std::string> keys;
   std::map<std::string,std::string> keyvalues;
   std::vector<std::string> opts;
