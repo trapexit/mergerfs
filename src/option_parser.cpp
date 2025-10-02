@@ -59,9 +59,6 @@ struct OptParseState
   std::vector<std::string> branches;
 };
 
-
-
-
 static
 void
 _set_option(const std::string &option_,
