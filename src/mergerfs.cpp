@@ -395,14 +395,10 @@ main(int    argc_,
 
   app.add_flag("-f,--foreground",foreground)
     ->description("")
-    ->default_val(false)
-    ->default_str("false");
-
+    ;
   app.add_flag("-d,--debug",debug)
     ->description("")
-    ->default_val(false)
-    ->default_str("false");
-
+    ;
   try
     {
       app.parse(argc_,argv_);
