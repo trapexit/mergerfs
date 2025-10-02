@@ -408,6 +408,7 @@ main(int    argc_,
       return app.exit(e_);
     }
 
+  fmt::println("foreground: {}",foreground);
   for(auto &opt : opts)
     fmt::print("{}\n",opt);
 
