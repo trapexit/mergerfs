@@ -408,7 +408,7 @@ main(int    argc_,
     ->expected(-1)
     ;
 
-  app.add_option("mountpoint",mountpoint)
+  app.add_flag("mountpoint",mountpoint)
     ->expected(1);
 
   try
