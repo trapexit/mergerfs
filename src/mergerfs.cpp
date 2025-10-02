@@ -395,6 +395,7 @@ main(int    argc_,
 
   app.add_option("-f,--foreground",foreground)
     ->description("")
+    ->default_val(false)
     ->default_str("false")
     ;
   app.add_option("-d,--debug",debug)
