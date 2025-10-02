@@ -409,6 +409,10 @@ main(int    argc_,
     ->required()
     ;
 
+  app.add_option("mountpoint")
+    ->required()
+    ;
+
   try
     {
       app.parse(argc_,argv_);
