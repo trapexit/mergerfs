@@ -303,7 +303,7 @@ _option_processor(void       *data_,
   switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      return ::_process_opt(cfg,errs,arg_);
+      return ::_process_opt(cfg,state.errs,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
       if(cfg.branches->empty())
