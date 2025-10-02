@@ -400,6 +400,7 @@ main(int    argc_,
   app.add_flag("-d,--debug",debug)
     ->description("")
     ;
+
   try
     {
       app.parse(argc_,argv_);
