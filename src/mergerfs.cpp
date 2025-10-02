@@ -406,13 +406,9 @@ main(int    argc_,
   app.add_option("branches",branches)
     ->delimiter(':')
     ->expected(2,-1)
-    ->required()
     ;
 
   app.add_option("mountpoint")
-    ->default_val("foo")
-    ->default_str("foo")
-    ->required()
     ;
 
   try
