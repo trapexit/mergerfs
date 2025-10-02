@@ -388,6 +388,7 @@ main(int    argc_,
   std::vector<std::string> opts;
 
   app.description("mergerfs: A featureful union filesystem");
+  app.name("USAGE: mergerfs");
   app.add_option("-o",opts)
     ->delimiter(',');
 
