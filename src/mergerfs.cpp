@@ -381,5 +381,8 @@ int
 main(int    argc_,
      char **argv_)
 {
+  std::set<std::string> keys;
+  std::map<std::string,std::string> keyvalues;
+
   return ::_pick_app_and_run(argc_,argv_);
 }
