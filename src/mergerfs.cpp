@@ -400,8 +400,6 @@ main(int    argc_,
     ->description("")
     ->default_val(false);
 
-
-
   try
     {
       app.parse(argc_,argv_);
