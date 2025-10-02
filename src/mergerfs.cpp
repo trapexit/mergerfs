@@ -417,7 +417,13 @@ main(int    argc_,
       return app.exit(e_);
     }
 
-  fmt::println("foreground: {}",foreground);
+  fmt::println("foreground: {}",
+               foreground,
+               debug,
+               branches,
+               mountpoint
+               );
+
   for(auto &opt : opts)
     fmt::print("{}\n",opt);
 
