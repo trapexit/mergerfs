@@ -387,7 +387,10 @@ main(int    argc_,
   std::map<std::string,std::string> keyvalues;
   std::vector<std::string> opts;
 
-  app.add_option("-o",opts);
+  app.add_option("-o",opts)
+    ->delimiter(',');
+
+  app.parse(argc_,argv_);
 
   return 0;
 
