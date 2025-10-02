@@ -404,7 +404,8 @@ main(int    argc_,
     ->description("")
     ;
 
-  app.add_option("branches",branches);
+  app.add_option("branches",branches)
+    ->delimiter(':');
 
   app.add_option("mountpoint",mountpoint);
 
