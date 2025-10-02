@@ -442,7 +442,5 @@ main(int    argc_,
   for(auto &opt : opts)
     fmt::print("{}\n",opt);
 
-  return 0;
-
   return ::_pick_app_and_run(argc_,argv_);
 }
