@@ -393,6 +393,9 @@ main(int    argc_,
   app.add_option("-o",opts)
     ->delimiter(',');
 
+  app.add_option("-f,--foreground",foreground)
+    ->default_val(false);
+
   try
     {
       app.parse(argc_,argv_);
