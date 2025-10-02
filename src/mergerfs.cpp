@@ -396,6 +396,11 @@ main(int    argc_,
   app.add_option("-f,--foreground",foreground)
     ->description("")
     ->default_val(false);
+  app.add_option("-d,--debug",debug)
+    ->description("")
+    ->default_val(false);
+
+
 
   try
     {
