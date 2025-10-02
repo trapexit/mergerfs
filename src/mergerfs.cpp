@@ -392,6 +392,9 @@ main(int    argc_,
 
   app.parse(argc_,argv_);
 
+  for(auto &opt : opts)
+    fmt::print("{}\n",opt);
+
   return 0;
 
   return ::_pick_app_and_run(argc_,argv_);
