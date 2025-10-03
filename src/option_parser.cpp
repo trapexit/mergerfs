@@ -450,7 +450,7 @@ namespace options
     ::_print_warnings();
     ::_cleanup_options();
 
-    _set_option(std::format("passthrough-max-stack-depth={}",
+    _set_option(fmt::format("passthrough-max-stack-depth={}",
                             cfg.passthrough_max_stack_depth),
                 args_);
 
