@@ -124,7 +124,7 @@ public:
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
   Passthrough    passthrough = Passthrough::ENUM::OFF;
-  ConfigUINT     passthrough_max_stack_depth = 1;
+  ConfigINT      passthrough_max_stack_depth = 1;
   ConfigBOOL     parallel_direct_writes;
   ConfigGetPid   pid;
   ConfigBOOL     posix_acl;
