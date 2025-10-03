@@ -251,7 +251,7 @@ _process_mount(Config::ErrVec *errs_,
 
 static
 void
-_postprocess_passthrough(Config &cfg)
+_postprocess_passthrough()
 {
   if(cfg.passthrough == Passthrough::ENUM::OFF)
     return;
