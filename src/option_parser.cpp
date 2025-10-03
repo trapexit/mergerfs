@@ -339,8 +339,7 @@ _option_processor(void       *data_,
 
 static
 void
-_check_for_mount_loop(Config         &cfg,
-                      Config::ErrVec *errs_)
+_check_for_mount_loop(Config::ErrVec *errs_)
 {
   fs::path mount;
   std::vector<fs::path> branches;
