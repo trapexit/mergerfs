@@ -434,6 +434,11 @@ namespace options
     state.mountpoint = state.branches.back();
     state.branches.pop_back();
 
+    _process_branches(cfg,
+                      errs_,
+                      str::join(state.branches,':').c_str());
+
+
     if(cfg.branches->empty())
       errs_->push_back({0,"branches not set"});
     if(cfg.mountpoint->empty())
