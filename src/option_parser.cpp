@@ -396,7 +396,7 @@ _print_warnings(Config &cfg)
 
 static
 void
-_cleanup_options(Config &cfg)
+_cleanup_options()
 {
   if(!cfg.symlinkify)
     cfg.symlinkify_timeout = -1;
