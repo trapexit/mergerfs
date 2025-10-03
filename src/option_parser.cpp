@@ -424,6 +424,12 @@ namespace options
                    opts,
                    ::_option_processor);
 
+    if(state.branches.size() < 2)
+      errs_->push_back({0,"mountpoint not set"});
+    if(state.branches.size() < 1)
+      errs_->push_back({0,"branches not set"});
+
+
 
     state.mountpoint = state.branches.back();
     state.branches.pop_back();
@@ -436,7 +442,7 @@ namespace options
     if(cfg.branches->empty())
       errs_->push_back({0,"branches not set"});
     if(cfg.mountpoint->empty())
-      errs_->push_back({0,"mountpoint not set"});
+
 
     ::_postprocess_passthrough(cfg);
     ::_check_for_mount_loop(cfg,errs_);
