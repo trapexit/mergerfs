@@ -448,7 +448,7 @@ namespace options
     if(!errs_->empty())
       return;
 
-    fuse_opt_add_arg(cfg.mountpoint.c_str());
+    fuse_opt_add_arg(cfg.mountpoint.string().c_str());
 
     ::_postprocess_passthrough(cfg);
     ::_set_default_options(args_,cfg);
