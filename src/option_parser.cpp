@@ -424,6 +424,10 @@ namespace options
                    opts,
                    ::_option_processor);
 
+
+    state.mountpoint = state.branches.back();
+    state.branches.pop_back();
+
     for(auto &branch : state.branches)
       fmt::print("{}\n",branch);
 
