@@ -204,8 +204,7 @@ _parse_and_process_kv_arg(Config::ErrVec    *errs_,
 
 static
 int
-_process_opt(Config            &cfg,
-             Config::ErrVec    *errs_,
+_process_opt(Config::ErrVec    *errs_,
              const std::string &arg_)
 {
   std::string key;
