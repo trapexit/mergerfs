@@ -444,9 +444,12 @@ namespace options
       errs_->push_back({0,"branches not set"});
     if(cfg.mountpoint->empty())
       errs_->push_back({0,"mountpoint not set"});
+    ::_check_for_mount_loop(cfg,errs_);
+    if(!errs_->empty())
+      return;
+
 
     ::_postprocess_passthrough(cfg);
-    ::_check_for_mount_loop(cfg,errs_);
     ::_set_default_options(args_,cfg);
     ::_set_fsname(cfg,args_);
     ::_set_subtype(args_);
