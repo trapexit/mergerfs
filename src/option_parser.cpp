@@ -442,8 +442,8 @@ namespace options
     fuse_opt_add_arg(args_,
                      cfg.mountpoint.to_string().c_str());
 
-    ::_postprocess_passthrough(cfg);
-    ::_set_default_options(args_,cfg);
+    ::_postprocess_passthrough();
+    ::_set_default_options(args_);
     ::_set_fsname(cfg,args_);
     ::_set_subtype(args_);
     ::_set_fuse_threads(cfg);
