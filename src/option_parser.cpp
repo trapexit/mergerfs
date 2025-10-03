@@ -424,8 +424,7 @@ namespace options
     if(!errs_->empty())
       return;
 
-    _process_mount(cfg,
-                   errs_,
+    _process_mount(errs_,
                    state.branches.back().c_str());
 
     state.branches.pop_back();
