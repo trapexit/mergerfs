@@ -214,7 +214,7 @@ _process_opt(Config::ErrVec    *errs_,
   key = str::trim(key);
   val = str::trim(val);
 
-  return ::_parse_and_process_kv_arg(cfg,errs_,key,val);
+  return ::_parse_and_process_kv_arg(errs_,key,val);
 }
 
 static
