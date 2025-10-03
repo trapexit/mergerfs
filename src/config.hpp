@@ -56,6 +56,7 @@
 #include <sys/stat.h>
 
 typedef ToFromWrapper<bool>                  ConfigBOOL;
+typedef ToFromWrapper<uint32_t>              ConfigUINT32;
 typedef ToFromWrapper<uint64_t>              ConfigUINT64;
 typedef ToFromWrapper<int64_t>               ConfigS64;
 typedef ToFromWrapper<int>                   ConfigINT;
