@@ -37,6 +37,12 @@ str::to(const int int_)
 }
 
 std::string
+str::to(const uint32_t i_)
+{
+  return fmt::format("{}",i_);
+}
+
+std::string
 str::to(const uint64_t uint64_)
 {
   return fmt::format("{}",uint64_);
