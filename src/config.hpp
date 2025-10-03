@@ -59,7 +59,6 @@ typedef ToFromWrapper<bool>                  ConfigBOOL;
 typedef ToFromWrapper<uint64_t>              ConfigUINT64;
 typedef ToFromWrapper<int64_t>               ConfigS64;
 typedef ToFromWrapper<int>                   ConfigINT;
-typedef ToFromWrapper<unsigned int>          ConfigUINT;
 typedef ToFromWrapper<std::string>           ConfigSTR;
 typedef ToFromWrapper<fs::path> ConfigPath;
 typedef std::map<std::string,ToFromString*>  Str2TFStrMap;
