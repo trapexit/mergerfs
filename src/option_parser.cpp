@@ -428,7 +428,7 @@ namespace options
       errs_->push_back({0,"mountpoint not set"});
     if(state.branches.size() < 1)
       errs_->push_back({0,"branches not set"});
-
+    if(!errs_->empty())
 
 
     state.mountpoint = state.branches.back();
