@@ -162,8 +162,7 @@ _should_ignore(const std::string &key_)
 
 static
 int
-_parse_and_process_kv_arg(Config            &cfg,
-                          Config::ErrVec    *errs_,
+_parse_and_process_kv_arg(Config::ErrVec    *errs_,
                           const std::string &key_,
                           const std::string &val_)
 {
