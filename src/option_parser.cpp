@@ -119,8 +119,7 @@ _set_subtype(fuse_args *args_)
 
 static
 void
-_set_default_options(fuse_args *args_,
-                     Config    &cfg)
+_set_default_options(fuse_args *args_)
 {
   if(cfg.kernel_permissions_check)
     ::_set_option("default_permissions",args_);
