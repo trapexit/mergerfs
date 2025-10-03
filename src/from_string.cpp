@@ -105,11 +105,6 @@ str::from(const std::string_view  val_,
       *rv_ *= (1024ULL * 1024ULL * 1024ULL);
       break;
 
-    case 't':
-    case 'T':
-      *rv_ *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
-      break;
-
     default:
       return -EINVAL;
     }
