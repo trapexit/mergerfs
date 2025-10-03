@@ -87,28 +87,28 @@ static
 void
 _set_fuse_threads()
 {
-  fuse_config_set_read_thread_count(cfg_.fuse_read_thread_count);
-  fuse_config_set_process_thread_count(cfg_.fuse_process_thread_count);
-  fuse_config_set_process_thread_queue_depth(cfg_.fuse_process_thread_queue_depth);
-  fuse_config_set_pin_threads(cfg_.fuse_pin_threads);
+  fuse_config_set_read_thread_count(cfg.fuse_read_thread_count);
+  fuse_config_set_process_thread_count(cfg.fuse_process_thread_count);
+  fuse_config_set_process_thread_queue_depth(cfg.fuse_process_thread_queue_depth);
+  fuse_config_set_pin_threads(cfg.fuse_pin_threads);
 }
 
 static
 void
-_set_fsname(Config    &cfg_,
+_set_fsname(Config    &cfg,
             fuse_args *args_)
 {
-  if(cfg_.fsname->empty())
+  if(cfg.fsname->empty())
     {
       std::vector<std::string> paths;
 
-      cfg_.branches->to_paths(paths);
+      cfg.branches->to_paths(paths);
 
       if(paths.size() > 0)
-        cfg_.fsname = str::remove_common_prefix_and_join(paths,':');
+        cfg.fsname = str::remove_common_prefix_and_join(paths,':');
     }
 
-  ::_set_kv_option("fsname",cfg_.fsname,args_);
+  ::_set_kv_option("fsname",cfg.fsname,args_);
 }
 
 static
@@ -121,9 +121,9 @@ _set_subtype(fuse_args *args_)
 static
 void
 _set_default_options(fuse_args *args_,
-                     Config    &cfg_)
+                     Config    &cfg)
 {
-  if(cfg_.kernel_permissions_check)
+  if(cfg.kernel_permissions_check)
     ::_set_option("default_permissions",args_);
 
   if(geteuid() == 0)
@@ -164,7 +164,7 @@ _should_ignore(const std::string &key_)
 
 static
 int
-_parse_and_process_kv_arg(Config            &cfg_,
+_parse_and_process_kv_arg(Config            &cfg,
                           Config::ErrVec    *errs_,
                           const std::string &key_,
                           const std::string &val_)
@@ -175,7 +175,7 @@ _parse_and_process_kv_arg(Config            &cfg_,
 
   rv = 0;
   if(key == "config")
-    return ((cfg_.from_file(val_,errs_) < 0) ? 1 : 0);
+    return ((cfg.from_file(val_,errs_) < 0) ? 1 : 0);
   ef(key == "attr_timeout")
     key = "cache.attr";
   ef(key == "entry_timeout")
@@ -195,10 +195,10 @@ _parse_and_process_kv_arg(Config            &cfg_,
   ef(::_should_ignore(key_))
     return 0;
 
-  if(cfg_.has_key(key) == false)
+  if(cfg.has_key(key) == false)
     return 1;
 
-  rv = cfg_.set_raw(key,val);
+  rv = cfg.set_raw(key,val);
   if(rv)
     errs_->push_back({rv,key+'='+val});
 
@@ -207,7 +207,7 @@ _parse_and_process_kv_arg(Config            &cfg_,
 
 static
 int
-_process_opt(Config            &cfg_,
+_process_opt(Config            &cfg,
              Config::ErrVec    *errs_,
              const std::string &arg_)
 {
@@ -218,12 +218,12 @@ _process_opt(Config            &cfg_,
   key = str::trim(key);
   val = str::trim(val);
 
-  return ::_parse_and_process_kv_arg(cfg_,errs_,key,val);
+  return ::_parse_and_process_kv_arg(cfg,errs_,key,val);
 }
 
 static
 int
-_process_branches(Config        &cfg_,
+_process_branches(Config        &cfg,
                   Config::ErrVec *errs_,
                   const char     *arg_)
 {
@@ -231,7 +231,7 @@ _process_branches(Config        &cfg_,
   std::string arg;
 
   arg = arg_;
-  rv = cfg_.set_raw("branches",arg);
+  rv = cfg.set_raw("branches",arg);
   if(rv)
     errs_->push_back({rv,"branches="+arg});
 
@@ -240,7 +240,7 @@ _process_branches(Config        &cfg_,
 
 static
 int
-_process_mount(Config        &cfg_,
+_process_mount(Config        &cfg,
                Config::ErrVec *errs_,
                const char     *arg_)
 {
@@ -248,7 +248,7 @@ _process_mount(Config        &cfg_,
   std::string arg;
 
   arg = arg_;
-  rv = cfg_.set_raw("mount",arg);
+  rv = cfg.set_raw("mount",arg);
   if(rv)
     errs_->push_back({rv,"mount="+arg});
 
@@ -257,26 +257,26 @@ _process_mount(Config        &cfg_,
 
 static
 void
-_postprocess_passthrough(Config &cfg_)
+_postprocess_passthrough(Config &cfg)
 {
-  if(cfg_.passthrough == Passthrough::ENUM::OFF)
+  if(cfg.passthrough == Passthrough::ENUM::OFF)
     return;
 
-  if(cfg_.cache_files == CacheFiles::ENUM::OFF)
+  if(cfg.cache_files == CacheFiles::ENUM::OFF)
     {
       SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
                       " Setting 'cache.files=full'");
-      cfg_.cache_files = CacheFiles::ENUM::FULL;
+      cfg.cache_files = CacheFiles::ENUM::FULL;
     }
 
-  if(cfg_.writeback_cache == true)
+  if(cfg.writeback_cache == true)
     {
       SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
                       " Setting 'cache.writeback=false'");
-      cfg_.writeback_cache = false;
+      cfg.writeback_cache = false;
     }
 
-  if(cfg_.moveonenospc.enabled == true)
+  if(cfg.moveonenospc.enabled == true)
     {
       SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
     }
@@ -345,15 +345,15 @@ _option_processor(void       *data_,
 
 static
 void
-_check_for_mount_loop(Config         &cfg_,
+_check_for_mount_loop(Config         &cfg,
                       Config::ErrVec *errs_)
 {
   fs::path mount;
   std::vector<fs::path> branches;
   std::error_code ec;
 
-  mount    = *cfg_.mountpoint;
-  branches = cfg_.branches->to_paths();
+  mount    = *cfg.mountpoint;
+  branches = cfg.branches->to_paths();
   for(const auto &branch : branches)
     {
       if(std::filesystem::equivalent(branch,mount,ec))
@@ -369,25 +369,25 @@ _check_for_mount_loop(Config         &cfg_,
 
 static
 void
-_print_warnings(Config &cfg_)
+_print_warnings(Config &cfg)
 {
-  if(cfg_.passthrough != Passthrough::ENUM::OFF)
+  if(cfg.passthrough != Passthrough::ENUM::OFF)
     {
-      if(cfg_.cache_files == CacheFiles::ENUM::OFF)
+      if(cfg.cache_files == CacheFiles::ENUM::OFF)
         {
           SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
                           " Setting 'cache.files=auto-full'");
-          cfg_.cache_files = CacheFiles::ENUM::AUTO_FULL;
+          cfg.cache_files = CacheFiles::ENUM::AUTO_FULL;
         }
 
-      if(cfg_.writeback_cache == true)
+      if(cfg.writeback_cache == true)
         {
           SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
                           " Setting 'cache.writeback=false'");
-          cfg_.writeback_cache = false;
+          cfg.writeback_cache = false;
         }
 
-      if(cfg_.moveonenospc.enabled == true)
+      if(cfg.moveonenospc.enabled == true)
         {
           SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
         }
@@ -396,10 +396,10 @@ _print_warnings(Config &cfg_)
 
 static
 void
-_cleanup_options(Config &cfg_)
+_cleanup_options(Config &cfg)
 {
-  if(!cfg_.symlinkify)
-    cfg_.symlinkify_timeout = -1;
+  if(!cfg.symlinkify)
+    cfg.symlinkify_timeout = -1;
 }
 
 namespace options
