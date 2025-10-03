@@ -428,8 +428,7 @@ namespace options
                    state.branches.back().c_str());
 
     state.branches.pop_back();
-    _process_branches(cfg,
-                      errs_,
+    _process_branches(errs_,
                       str::join(state.branches,':').c_str());
 
     if(cfg.branches->empty())
