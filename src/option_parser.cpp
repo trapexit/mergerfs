@@ -95,8 +95,7 @@ _set_fuse_threads()
 
 static
 void
-_set_fsname(Config    &cfg,
-            fuse_args *args_)
+_set_fsname(fuse_args *args_)
 {
   if(cfg.fsname->empty())
     {
