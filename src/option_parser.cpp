@@ -235,8 +235,7 @@ _process_branches(Config::ErrVec *errs_,
 
 static
 int
-_process_mount(Config        &cfg,
-               Config::ErrVec *errs_,
+_process_mount(Config::ErrVec *errs_,
                const char     *arg_)
 {
   int rv;
