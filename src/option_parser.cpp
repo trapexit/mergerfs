@@ -85,7 +85,7 @@ _set_kv_option(const std::string &key_,
 
 static
 void
-_set_fuse_threads(Config &cfg_)
+_set_fuse_threads()
 {
   fuse_config_set_read_thread_count(cfg_.fuse_read_thread_count);
   fuse_config_set_process_thread_count(cfg_.fuse_process_thread_count);
