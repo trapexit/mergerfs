@@ -204,6 +204,7 @@ Config::Config()
   _map["nfsopenhack"]            = &nfsopenhack;
   _map["nullrw"]                 = &nullrw;
   _map["passthrough"]            = &passthrough;
+  _map["passthrough-max-stack-depth"] = &passthrough_max_stack_depth;
   _map["pid"]                    = &pid;
   _map["parallel-direct-writes"] = &parallel_direct_writes;
   _map["pin-threads"]            = &fuse_pin_threads;
