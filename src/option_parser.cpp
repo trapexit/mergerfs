@@ -362,7 +362,7 @@ _check_for_mount_loop(Config::ErrVec *errs_)
 
 static
 void
-_print_warnings(Config &cfg)
+_print_warnings()
 {
   if(cfg.passthrough != Passthrough::ENUM::OFF)
     {
