@@ -67,6 +67,58 @@ str::from(const std::string_view  val_,
 
 int
 str::from(const std::string_view  val_,
+          uint32_t               *rv_)
+{
+  uint64_t tmp;
+  const int base = 10;
+
+  auto [ptr,ec] = std::from_chars(val_.begin(),
+                                  val_.end(),
+                                  tmp,
+                                  base);
+
+  if(ec != std::errc{})
+    return -EINVAL;
+  *rv_ = tmp;
+  if(ptr == val_.end())
+    return 0;
+
+  switch(*ptr)
+    {
+    case 'b':
+    case 'B':
+      *rv_ *= 1ULL;
+      break;
+
+    case 'k':
+    case 'K':
+      *rv_ *= 1024ULL;
+      break;
+
+    case 'm':
+    case 'M':
+      *rv_ *= (1024ULL * 1024ULL);
+      break;
+
+    case 'g':
+    case 'G':
+      *rv_ *= (1024ULL * 1024ULL * 1024ULL);
+      break;
+
+    case 't':
+    case 'T':
+      *rv_ *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+      break;
+
+    default:
+      return -EINVAL;
+    }
+
+  return 0;
+}
+
+int
+str::from(const std::string_view  val_,
           int64_t                *rv_)
 {
   int64_t tmp;
