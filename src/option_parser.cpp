@@ -444,11 +444,11 @@ namespace options
 
     ::_postprocess_passthrough();
     ::_set_default_options(args_);
-    ::_set_fsname(cfg,args_);
+    ::_set_fsname(args_);
     ::_set_subtype(args_);
-    ::_set_fuse_threads(cfg);
-    ::_print_warnings(cfg);
-    ::_cleanup_options(cfg);
+    ::_set_fuse_threads();
+    ::_print_warnings();
+    ::_cleanup_options();
 
     cfg.finish_initializing();
   }
