@@ -29,6 +29,7 @@ namespace str
 {
   int from(const std::string_view, bool *);
   int from(const std::string_view, int *);
+  int from(const std::string_view, uint32_t *);
   int from(const std::string_view, uint64_t *);
   int from(const std::string_view, int64_t *);
   int from(const std::string_view, std::string *);
