@@ -431,7 +431,6 @@ namespace options
     if(!errs_->empty())
       return;
 
-    state.mountpoint = state.branches.back();
     state.branches.pop_back();
 
     _process_branches(cfg,
