@@ -440,7 +440,6 @@ namespace options
                       errs_,
                       str::join(state.branches,':').c_str());
 
-
     if(cfg.branches->empty())
       errs_->push_back({0,"branches not set"});
     if(cfg.mountpoint->empty())
