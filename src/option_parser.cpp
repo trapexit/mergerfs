@@ -451,7 +451,7 @@ namespace options
     ::_cleanup_options();
 
     _set_option(fmt::format("passthrough-max-stack-depth={}",
-                            cfg.passthrough_max_stack_depth),
+                            cfg.passthrough_max_stack_depth.to_string()),
                 args_);
 
     cfg.finish_initializing();
