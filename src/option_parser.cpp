@@ -297,7 +297,7 @@ _option_processor(void       *data_,
   switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      return ::_process_opt(cfg,state.errs,arg_);
+      return ::_process_opt(state.errs,arg_);
 
     case FUSE_OPT_KEY_NONOPT:
       state.branches.push_back(arg_);
