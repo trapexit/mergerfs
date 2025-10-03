@@ -219,8 +219,7 @@ _process_opt(Config::ErrVec    *errs_,
 
 static
 int
-_process_branches(Config        &cfg,
-                  Config::ErrVec *errs_,
+_process_branches(Config::ErrVec *errs_,
                   const char     *arg_)
 {
   int rv;
