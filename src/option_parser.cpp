@@ -437,7 +437,7 @@ namespace options
     if(cfg.branches->empty())
       errs_->push_back({0,"branches not set"});
     if(cfg.mountpoint->empty())
-
+      errs_->push_back({0,"mountpoint not set"});
 
     ::_postprocess_passthrough(cfg);
     ::_check_for_mount_loop(cfg,errs_);
