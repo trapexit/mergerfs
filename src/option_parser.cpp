@@ -450,8 +450,7 @@ namespace options
     ::_print_warnings();
     ::_cleanup_options();
 
-    fuse_opt_add_arg(args_,
-                     "passthrough-max-stack-depth=1");
+    _set_option("passthrough-max-stack-depth=1",args_);
 
     cfg.finish_initializing();
   }
