@@ -434,8 +434,8 @@ namespace options
     _process_mount(cfg,
                    errs_,
                    state.branches.back().c_str());
-    state.branches.pop_back();
 
+    state.branches.pop_back();
     _process_branches(cfg,
                       errs_,
                       str::join(state.branches,':').c_str());
