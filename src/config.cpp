@@ -65,6 +65,7 @@ namespace l
     IFERT("kernel-permissions-check");
     IFERT("mount");
     IFERT("nullrw");
+    IFERT("passthrough-max-stack-depth");
     IFERT("pid");
     IFERT("pin-threads");
     IFERT("process-thread-count");
