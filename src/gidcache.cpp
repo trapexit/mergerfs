@@ -53,6 +53,9 @@ inline
 int
 _setgroups(const std::vector<gid_t> gids_)
 {
+  if(gids_.empty())
+    return 0;
+
 #if defined __linux__ and UGID_USE_RWLOCK == 0
 # if defined SYS_setgroups32
   return ::syscall(SYS_setgroups32,gids_.size(),gids_.data());
@@ -93,7 +96,7 @@ _getgroups(const uid_t         uid_,
 
  error:
   gids_.clear();
-  gids_.push_back(gid_);
+  //gids_.push_back(gid_);
 }
 
 

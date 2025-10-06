@@ -53,6 +53,7 @@ namespace l
   bool
   readonly(const std::string &s_)
   {
+    IFERT("allow-idmap");
     IFERT("async_read");
     IFERT("branches-mount-timeout");
     IFERT("branches-mount-timeout-fail");
@@ -81,7 +82,8 @@ namespace l
 }
 
 Config::Config()
-  : async_read(true),
+  : allow_idmap(false),
+    async_read(true),
     auto_cache(false),
     minfreespace(MINFREESPACE_DEFAULT),
     branches(minfreespace),
@@ -140,6 +142,7 @@ Config::Config()
     xattr(XAttr::ENUM::PASSTHROUGH),
     _initialized(false)
 {
+  _map["allow-idmap"]            = &allow_idmap;
   _map["async_read"]             = &async_read;
   _map["auto_cache"]             = &auto_cache;
   _map["branches"]               = &branches;

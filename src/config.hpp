@@ -83,6 +83,7 @@ public:
   Config& operator=(const Config&);
 
 public:
+  ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   ConfigBOOL     auto_cache;
   ConfigUINT64   minfreespace;

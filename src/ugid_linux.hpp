@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <assert.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -62,6 +63,9 @@ namespace ugid
     Set(const uid_t newuid_,
         const gid_t newgid_)
     {
+      assert((int)newuid_ != -1);
+      assert((int)newgid_ != -1);
+
       if(!initialized)
         {
           currentuid  = GETEUID();
@@ -81,7 +85,7 @@ namespace ugid
       if(newgid_)
         {
           SETREGID(-1,newgid_);
-          initgroups(newuid_,newgid_);
+          ugid::initgroups(newuid_,newgid_);
         }
 
       if(newuid_)
