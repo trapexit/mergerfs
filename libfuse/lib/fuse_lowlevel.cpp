@@ -1931,6 +1931,15 @@ fuse_send_enomem(struct fuse_ll   *f_,
 }
 
 static
+void
+fuse_send_einval(struct fuse_ll   *f_,
+                 struct fuse_chan *ch_,
+                 const uint64_t    unique_id_)
+{
+  fuse_send_errno(f_,ch_,EINVAL,unique_id_);
+}
+
+static
 int
 fuse_ll_buf_receive_read(struct fuse_session *se_,
                          fuse_msgbuf_t       *msgbuf_)
@@ -1960,6 +1969,9 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   struct fuse_in_header *in;
 
   in = (struct fuse_in_header*)msgbuf_->mem;
+
+  if((in->uid == FUSE_INVALID_UIDGID) || (in->gid == FUSE_INVALID_UIDGID))
+    return fuse_send_einval(se_->f,se_->ch,in->unique);
 
   req = fuse_ll_alloc_req(se_->f);
   if(req == NULL)
