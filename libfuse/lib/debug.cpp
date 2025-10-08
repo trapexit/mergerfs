@@ -861,11 +861,25 @@ fuse_syslog_fuse_init_out(const struct fuse_init_out *arg_)
   output = fmt::format("fuse_init_out:"
                        " major={};"
                        " minor={};"
+                       " max_readahead={};"
+                       " max_background={};"
+                       " congestion_threshold={};"
+                       " max_write={};"
+                       " time_gran={};"
                        " max_pages={};"
+                       " map_alignment={};"
+                       " max_stack_depth={};"
                        " flags=(",
                        arg_->major,
                        arg_->minor,
-                       arg_->max_pages);
+                       arg_->max_readahead,
+                       arg_->max_background,
+                       arg_->congestion_threshold,
+                       arg_->max_write,
+                       arg_->time_gran,
+                       arg_->max_pages,
+                       arg_->map_alignment,
+                       arg_->max_stack_depth);
 
   for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
     {

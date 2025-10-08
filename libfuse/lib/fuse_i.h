@@ -54,6 +54,7 @@ struct fuse_notify_req
 
 struct fuse_ll
 {
+  unsigned passthrough_max_stack_depth;
   int debug;
   int no_remote_posix_lock;
   int no_remote_flock;

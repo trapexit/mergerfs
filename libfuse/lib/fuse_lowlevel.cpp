@@ -1288,7 +1288,7 @@ do_init(fuse_req_t             req,
   if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
-      outarg.max_stack_depth = 2;
+      outarg.max_stack_depth = f->passthrough_max_stack_depth;
     }
 
   if(inargflags & FUSE_INIT_EXT)
@@ -1810,6 +1810,7 @@ static const struct fuse_opt fuse_ll_opts[] =
     { "no_remote_lock", offsetof(struct fuse_ll, no_remote_flock), 1},
     { "no_remote_flock", offsetof(struct fuse_ll, no_remote_flock), 1},
     { "no_remote_posix_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
+    { "passthrough-max-stack-depth=%u", offsetof(struct fuse_ll, passthrough_max_stack_depth), 0},
     FUSE_OPT_KEY("max_read=", FUSE_OPT_KEY_DISCARD),
     FUSE_OPT_KEY("-h", KEY_HELP),
     FUSE_OPT_KEY("--help", KEY_HELP),
@@ -2072,6 +2073,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
 
   f->conn.max_write = UINT_MAX;
   f->conn.max_readahead = UINT_MAX;
+  f->passthrough_max_stack_depth = 2;
   list_init_nreq(&f->notify_list);
   f->notify_ctr = 1;
   mutex_init(&f->lock);
