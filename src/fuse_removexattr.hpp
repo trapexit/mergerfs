@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 
 namespace FUSE
 {
   int
-  removexattr(const char *fusepath,
-              const char *attrname);
+  removexattr(const fuse_req_ctx_t *ctx,
+              const char           *fusepath,
+              const char           *attrname);
 }

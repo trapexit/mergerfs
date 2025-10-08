@@ -281,11 +281,10 @@ void fuse_unmount(const char *mountpoint, struct fuse_chan *ch)
   fuse_unmount_common(mountpoint, ch);
 }
 
-struct fuse *
+struct fuse*
 fuse_setup_common(int argc,
                   char *argv[],
                   const struct fuse_operations *op,
-                  size_t op_size,
                   char **mountpoint,
                   int *fd)
 {
@@ -305,7 +304,7 @@ fuse_setup_common(int argc,
     goto err_free;
   }
 
-  fuse = fuse_new_common(ch, &args, op, op_size);
+  fuse = fuse_new(ch, &args, op);
   fuse_opt_free_args(&args);
   if (fuse == NULL)
     goto err_unmount;
@@ -325,75 +324,59 @@ fuse_setup_common(int argc,
 
  err_unmount:
   fuse_unmount_common(*mountpoint, ch);
-  if (fuse)
-    fuse_destroy(fuse);
  err_free:
   free(*mountpoint);
   return NULL;
 }
 
-struct fuse *fuse_setup(int argc, char *argv[],
-			const struct fuse_operations *op, size_t op_size,
+struct fuse *fuse_setup(int argc,
+                        char *argv[],
+			const struct fuse_operations *op,
 			char **mountpoint)
 {
-  return fuse_setup_common(argc, argv, op, op_size, mountpoint,
+  return fuse_setup_common(argc,
+                           argv,
+                           op,
+                           mountpoint,
                            NULL);
 }
 
-static void fuse_teardown_common(struct fuse *fuse, char *mountpoint)
+static void fuse_teardown_common(char *mountpoint)
 {
-  struct fuse_session *se = fuse_get_session(fuse);
+  struct fuse_session *se = fuse_get_session();
   struct fuse_chan *ch = se->ch;
   fuse_remove_signal_handlers(se);
   fuse_unmount_common(mountpoint, ch);
-  fuse_destroy(fuse);
   free(mountpoint);
 }
 
-void fuse_teardown(struct fuse *fuse, char *mountpoint)
+void fuse_teardown(char *mountpoint)
 {
-  fuse_teardown_common(fuse, mountpoint);
+  fuse_teardown_common(mountpoint);
 }
 
-static int fuse_main_common(int argc, char *argv[],
-			    const struct fuse_operations *op, size_t op_size)
+int
+fuse_main(int argc,
+          char *argv[],
+          const struct fuse_operations *op)
 {
   struct fuse *fuse;
   char *mountpoint;
   int res;
 
-  fuse = fuse_setup_common(argc, argv, op, op_size,
+  fuse = fuse_setup_common(argc,
+                           argv,
+                           op,
                            &mountpoint,
                            NULL);
-  if (fuse == NULL)
+  if(fuse == NULL)
     return 1;
 
   res = fuse_loop_mt(fuse);
 
-  fuse_teardown_common(fuse, mountpoint);
-  if (res == -1)
+  fuse_teardown_common(mountpoint);
+  if(res == -1)
     return 1;
 
   return 0;
-}
-
-int fuse_main_real(int argc,
-                   char *argv[],
-                   const struct fuse_operations *op,
-		   size_t op_size)
-{
-  return fuse_main_common(argc, argv, op, op_size);
-}
-
-#undef fuse_main
-int fuse_main(void);
-int fuse_main(void)
-{
-  fprintf(stderr, "fuse_main(): This function does not exist\n");
-  return -1;
-}
-
-int fuse_version(void)
-{
-  return FUSE_VERSION;
 }

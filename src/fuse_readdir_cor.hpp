@@ -33,7 +33,8 @@ namespace FUSE
                unsigned max_queue_depth);
     ~ReadDirCOR();
 
-    int operator()(const fuse_file_info_t *ffi,
+    int operator()(const fuse_req_ctx_t   *ctx,
+                   const fuse_file_info_t *ffi,
                    fuse_dirents_t         *buf);
 
   private:

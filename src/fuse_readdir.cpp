@@ -31,10 +31,11 @@
 
 
 int
-FUSE::readdir(const fuse_file_info_t *ffi_,
+FUSE::readdir(const fuse_req_ctx_t   *ctx_,
+              const fuse_file_info_t *ffi_,
               fuse_dirents_t         *buf_)
 {
-  return cfg.readdir(ffi_,buf_);
+  return cfg.readdir(ctx_,ffi_,buf_);
 }
 
 FUSE::ReadDir::ReadDir(const std::string_view s_)
@@ -99,7 +100,8 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
 }
 
 int
-FUSE::ReadDir::operator()(const fuse_file_info_t *ffi_,
+FUSE::ReadDir::operator()(const fuse_req_ctx_t   *ctx_,
+                          const fuse_file_info_t *ffi_,
                           fuse_dirents_t         *buf_)
 {
   int rv;
@@ -108,7 +110,7 @@ FUSE::ReadDir::operator()(const fuse_file_info_t *ffi_,
   readdir = std::atomic_load(&_impl);
   assert(readdir);
 
-  rv = (*readdir)(ffi_,buf_);
+  rv = (*readdir)(ctx_,ffi_,buf_);
   if(rv == -ENOENT)
     return ::_handle_ENOENT(ffi_,buf_);
 

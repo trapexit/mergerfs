@@ -43,8 +43,9 @@ _fsync(const int fd_,
 }
 
 int
-FUSE::fsync(const uint64_t fh_,
-            int            isdatasync_)
+FUSE::fsync(const fuse_req_ctx_t *ctx_,
+            const uint64_t        fh_,
+            int                   isdatasync_)
 {
   FileInfo *fi = FileInfo::from_fh(fh_);
 

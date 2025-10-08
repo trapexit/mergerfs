@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <sys/statvfs.h>
 
 
 namespace FUSE
 {
   int
-  statfs(const char     *fusepath,
-         struct statvfs *fsstat);
+  statfs(const fuse_req_ctx_t *ctx,
+         const char           *fusepath,
+         struct statvfs       *fsstat);
 }

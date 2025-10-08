@@ -280,16 +280,16 @@ _(const PassthroughEnum e_,
 
 static
 int
-_open_for_insert_lambda(const fuse_context *fc_,
-                        const fs::path     &fusepath_,
-                        fuse_file_info_t   *ffi_,
-                        State::OpenFile    *of_)
+_open_for_insert_lambda(const fuse_req_ctx_t *ctx_,
+                        const fs::path       &fusepath_,
+                        fuse_file_info_t     *ffi_,
+                        State::OpenFile      *of_)
 {
   int rv;
   FileInfo *fi;
-  const ugid::Set ugid(fc_->uid,fc_->gid);
+  const ugid::Set ugid(ctx_);
 
-  ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
 
   if(cfg.writeback_cache)
     ::_tweak_flags_writeback_cache(&ffi_->flags);
@@ -324,7 +324,7 @@ _open_for_insert_lambda(const fuse_context *fc_,
       return 0;
     }
 
-  of_->backing_id = FUSE::passthrough_open(fc_,fi->fd);
+  of_->backing_id = FUSE::passthrough_open(fi->fd);
   if(of_->backing_id <= 0)
     return 0;
 
@@ -337,15 +337,15 @@ _open_for_insert_lambda(const fuse_context *fc_,
 
 static
 int
-_open_for_update_lambda(const fuse_context *fc_,
-                        const fs::path     &fusepath_,
-                        fuse_file_info_t   *ffi_,
-                        State::OpenFile    *of_)
+_open_for_update_lambda(const fuse_req_ctx_t *ctx_,
+                        const fs::path       &fusepath_,
+                        fuse_file_info_t     *ffi_,
+                        State::OpenFile      *of_)
 {
   int rv;
-  const ugid::Set ugid(fc_->uid,fc_->gid);
+  const ugid::Set ugid(ctx_);
 
-  ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
 
   if(cfg.writeback_cache)
     ::_tweak_flags_writeback_cache(&ffi_->flags);
@@ -375,15 +375,15 @@ _open_for_update_lambda(const fuse_context *fc_,
 static
 inline
 auto
-_open_insert_lambda(const fuse_context *fc_,
-                    const fs::path     &fusepath_,
-                    fuse_file_info_t   *ffi_,
-                    int                *rv_)
+_open_insert_lambda(const fuse_req_ctx_t *ctx_,
+                    const fs::path       &fusepath_,
+                    fuse_file_info_t     *ffi_,
+                    int                  *rv_)
 {
   return
     [=](auto &val_)
     {
-      *rv_ = ::_open_for_insert_lambda(fc_,
+      *rv_ = ::_open_for_insert_lambda(ctx_,
                                        fusepath_,
                                        ffi_,
                                        &val_.second);
@@ -393,10 +393,10 @@ _open_insert_lambda(const fuse_context *fc_,
 static
 inline
 auto
-_open_update_lambda(const fuse_context *fc_,
-                    const fs::path     &fusepath_,
-                    fuse_file_info_t   *ffi_,
-                    int                *rv_)
+_open_update_lambda(const fuse_req_ctx_t *ctx_,
+                    const fs::path       &fusepath_,
+                    fuse_file_info_t     *ffi_,
+                    int                  *rv_)
 {
   return
     [=](auto &val_)
@@ -406,14 +406,14 @@ _open_update_lambda(const fuse_context *fc_,
       // to abort an insert.
       if(val_.second.ref_count <= 0)
         {
-          *rv_ = ::_open_for_insert_lambda(fc_,
+          *rv_ = ::_open_for_insert_lambda(ctx_,
                                            fusepath_,
                                            ffi_,
                                            &val_.second);
           return;
         }
 
-      *rv_ = ::_open_for_update_lambda(fc_,
+      *rv_ = ::_open_for_update_lambda(ctx_,
                                        fusepath_,
                                        ffi_,
                                        &val_.second);
@@ -422,23 +422,23 @@ _open_update_lambda(const fuse_context *fc_,
 
 static
 int
-_open(const fuse_context *fc_,
-      const fs::path     &fusepath_,
-      fuse_file_info_t   *ffi_)
+_open(const fuse_req_ctx_t *ctx_,
+      const fs::path       &fusepath_,
+      fuse_file_info_t     *ffi_)
 {
   int rv;
   auto &of = state.open_files;
 
   rv = -EINVAL;
-  of.try_emplace_and_visit(fc_->nodeid,
-                           ::_open_insert_lambda(fc_,fusepath_,ffi_,&rv),
-                           ::_open_update_lambda(fc_,fusepath_,ffi_,&rv));
+  of.try_emplace_and_visit(ctx_->nodeid,
+                           ::_open_insert_lambda(ctx_,fusepath_,ffi_,&rv),
+                           ::_open_update_lambda(ctx_,fusepath_,ffi_,&rv));
 
   // Can't abort an emplace_and_visit and can't assume another thread
   // hasn't created an entry since this failure so erase only if
   // ref_count is default (0).
   if(rv < 0)
-    of.erase_if(fc_->nodeid,
+    of.erase_if(ctx_->nodeid,
                 [](auto &val_)
                 {
                   return (val_.second.ref_count <= 0);
@@ -449,11 +449,11 @@ _open(const fuse_context *fc_,
 
 
 int
-FUSE::open(const char       *fusepath_,
-           fuse_file_info_t *ffi_)
+FUSE::open(const fuse_req_ctx_t *ctx_,
+           const char           *fusepath_,
+           fuse_file_info_t     *ffi_)
 {
   const fs::path fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
 
-  return ::_open(fc,fusepath,ffi_);
+  return ::_open(ctx_,fusepath,ffi_);
 }

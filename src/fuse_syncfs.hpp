@@ -23,5 +23,5 @@
 
 namespace FUSE
 {
-  int syncfs();
+  int syncfs(const fuse_req_ctx_t *ctx);
 }

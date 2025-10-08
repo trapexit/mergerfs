@@ -94,13 +94,13 @@ _chown(const Policy::Action &actionFunc_,
 }
 
 int
-FUSE::chown(const char *fusepath_,
-            uid_t       uid_,
-            gid_t       gid_)
+FUSE::chown(const fuse_req_ctx_t *ctx_,
+            const char           *fusepath_,
+            uid_t                 uid_,
+            gid_t                 gid_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   return ::_chown(cfg.func.chown.policy,
                   cfg.func.getattr.policy,

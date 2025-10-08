@@ -16,13 +16,16 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <unistd.h>
 
 
 namespace FUSE
 {
   int
-  readlink(const char *fusepath,
-           char       *buf,
-           size_t      size);
+  readlink(const fuse_req_ctx_t *ctx,
+           const char           *fusepath,
+           char                 *buf,
+           size_t                size);
 }

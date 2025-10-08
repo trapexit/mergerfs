@@ -86,16 +86,16 @@ _concurrent_readdir(ThreadPool          &tp_,
 }
 
 int
-FUSE::ReadDirCOR::operator()(const fuse_file_info_t *ffi_,
+FUSE::ReadDirCOR::operator()(const fuse_req_ctx_t   *ctx_,
+                             const fuse_file_info_t *ffi_,
                              fuse_dirents_t         *dirents_)
 {
-  DirInfo            *di = DirInfo::from_fh(ffi_->fh);
-  const fuse_context *fc = fuse_get_context();
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
   return ::_concurrent_readdir(_tp,
                                cfg.branches,
                                di->fusepath,
                                dirents_,
-                               fc->uid,
-                               fc->gid);
+                               ctx_->uid,
+                               ctx_->gid);
 }

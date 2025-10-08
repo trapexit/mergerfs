@@ -70,6 +70,12 @@ namespace ugid
       ugid_set(newuid_,newgid_);
     }
 
+    Set(const fuse_req_ctx_t *ctx_)
+      : Set(ctx_->uid,ctx_->gid)
+    {
+
+    }
+
     ~Set()
     {
       pthread_rwlock_unlock(&rwlock);

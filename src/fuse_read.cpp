@@ -56,12 +56,13 @@ _read_cached(const int     fd_,
 }
 
 int
-FUSE::read(const fuse_file_info_t *ffi_,
+FUSE::read(const fuse_req_ctx_t   *ctx_,
+           const fuse_file_info_t *ffi_,
            char                   *buf_,
            size_t                  size_,
            off_t                   offset_)
 {
-  ioprio::SetFrom iop(fuse_get_context()->pid);
+  ioprio::SetFrom iop(ctx_->pid);
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
   if(fi->direct_io)
@@ -71,7 +72,8 @@ FUSE::read(const fuse_file_info_t *ffi_,
 }
 
 int
-FUSE::read_null(const fuse_file_info_t *ffi_,
+FUSE::read_null(const fuse_req_ctx_t   *ctx_,
+                const fuse_file_info_t *ffi_,
                 char                   *buf_,
                 size_t                  size_,
                 off_t                   offset_)

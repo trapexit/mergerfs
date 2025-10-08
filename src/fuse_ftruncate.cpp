@@ -37,16 +37,16 @@ _ftruncate(const int   fd_,
 }
 
 int
-FUSE::ftruncate(const uint64_t fh_,
-                off_t          size_)
+FUSE::ftruncate(const fuse_req_ctx_t *ctx_,
+                const uint64_t        fh_,
+                off_t                 size_)
 {
   uint64_t fh;
-  const fuse_context *fc = fuse_get_context();
 
   fh = fh_;
   if(fh == 0)
     {
-      state.open_files.cvisit(fc->nodeid,
+      state.open_files.cvisit(ctx_->nodeid,
                               [&](auto &val_)
                               {
                                 fh = val_.second.fi->to_fh();

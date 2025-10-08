@@ -40,17 +40,17 @@ _fchown(const int   fd_,
 }
 
 int
-FUSE::fchown(const uint64_t fh_,
-             const uid_t    uid_,
-             const gid_t    gid_)
+FUSE::fchown(const fuse_req_ctx_t *ctx_,
+             const uint64_t        fh_,
+             const uid_t           uid_,
+             const gid_t           gid_)
 {
   uint64_t fh;
-  const fuse_context *fc = fuse_get_context();
 
   fh = fh_;
   if(fh == 0)
     {
-      state.open_files.cvisit(fc->nodeid,
+      state.open_files.cvisit(ctx_->nodeid,
                               [&](auto &val_)
                               {
                                 fh = val_.second.fi->to_fh();

@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <sys/stat.h>
 
 
 namespace FUSE
 {
   int
-  chmod(const char *fusepath,
-        mode_t      mode);
+  chmod(const fuse_req_ctx_t *ctx,
+        const char           *fusepath,
+        mode_t                mode);
 }

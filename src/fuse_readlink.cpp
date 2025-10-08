@@ -115,13 +115,13 @@ _readlink(const Policy::Search &searchFunc_,
 }
 
 int
-FUSE::readlink(const char *fusepath_,
-               char       *buf_,
-               size_t      size_)
+FUSE::readlink(const fuse_req_ctx_t *ctx_,
+               const char           *fusepath_,
+               char                 *buf_,
+               size_t                size_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_);
 
   return ::_readlink(cfg.func.readlink.policy,
                      cfg.branches,

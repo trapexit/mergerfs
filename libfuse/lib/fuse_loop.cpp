@@ -335,7 +335,7 @@ fuse_loop_mt(struct fuse *f_)
   MaintenanceThread::setup();
   fuse_populate_maintenance_thread(f_);
 
-  res = fuse_session_loop_mt(fuse_get_session(f_),
+  res = fuse_session_loop_mt(fuse_get_session(),
                              fuse_config_get_read_thread_count(),
                              fuse_config_get_process_thread_count(),
                              fuse_config_get_process_thread_queue_depth(),

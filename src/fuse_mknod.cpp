@@ -132,21 +132,21 @@ _mknod(const Policy::Search &searchFunc_,
 }
 
 int
-FUSE::mknod(const char *fusepath_,
-            mode_t      mode_,
-            dev_t       rdev_)
+FUSE::mknod(const fuse_req_ctx_t *ctx_,
+            const char           *fusepath_,
+            mode_t                mode_,
+            dev_t                 rdev_)
 {
   int rv;
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_);
 
   rv = ::_mknod(cfg.func.getattr.policy,
                 cfg.func.mknod.policy,
                 cfg.branches,
                 fusepath,
                 mode_,
-                fc->umask,
+                ctx_->umask,
                 rdev_);
   if(rv == -EROFS)
     {
@@ -156,7 +156,7 @@ FUSE::mknod(const char *fusepath_,
                     cfg.branches,
                     fusepath,
                     mode_,
-                    fc->umask,
+                    ctx_->umask,
                     rdev_);
     }
 

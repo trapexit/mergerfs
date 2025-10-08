@@ -183,18 +183,20 @@ _write(const fuse_file_info_t *ffi_,
 }
 
 int
-FUSE::write(const fuse_file_info_t *ffi_,
+FUSE::write(const fuse_req_ctx_t   *ctx_,
+            const fuse_file_info_t *ffi_,
             const char             *buf_,
             size_t                  count_,
             off_t                   offset_)
 {
-  ioprio::SetFrom iop(fuse_get_context()->pid);
+  ioprio::SetFrom iop(ctx_->pid);
 
   return ::_write(ffi_,buf_,count_,offset_);
 }
 
 int
-FUSE::write_null(const fuse_file_info_t *ffi_,
+FUSE::write_null(const fuse_req_ctx_t   *ctx_,
+                 const fuse_file_info_t *ffi_,
                  const char             *buf_,
                  size_t                  count_,
                  off_t                   offset_)

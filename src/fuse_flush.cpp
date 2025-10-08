@@ -38,7 +38,8 @@ _flush(const int fd_)
 }
 
 int
-FUSE::flush(const fuse_file_info_t *ffi_)
+FUSE::flush(const fuse_req_ctx_t   *ctx_,
+            const fuse_file_info_t *ffi_)
 {
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 

@@ -29,9 +29,8 @@
 static
 constexpr
 auto
-_erase_if_lambda(const fuse_context *fc_,
-                 FileInfo           *fi_,
-                 bool               *existed_in_map_)
+_erase_if_lambda(FileInfo *fi_,
+                 bool     *existed_in_map_)
 {
   return
     [=](auto &val_)
@@ -49,7 +48,7 @@ _erase_if_lambda(const fuse_context *fc_,
         return false;
 
       if(val_.second.backing_id > 0)
-        FUSE::passthrough_close(fc_,val_.second.backing_id);
+        FUSE::passthrough_close(val_.second.backing_id);
       fs::close(val_.second.fi->fd);
       delete val_.second.fi;
 
@@ -59,9 +58,9 @@ _erase_if_lambda(const fuse_context *fc_,
 
 static
 int
-_release(const fuse_context *fc_,
-         FileInfo           *fi_,
-         const bool          dropcacheonclose_)
+_release(const fuse_req_ctx_t *ctx_,
+         FileInfo             *fi_,
+         const bool            dropcacheonclose_)
 {
   bool existed_in_map;
 
@@ -77,8 +76,8 @@ _release(const fuse_context *fc_,
   // existed. Just how many it erased and in this case I only want to
   // erase if there are no more open files.
   existed_in_map = false;
-  state.open_files.erase_if(fc_->nodeid,
-                            ::_erase_if_lambda(fc_,fi_,&existed_in_map));
+  state.open_files.erase_if(ctx_->nodeid,
+                            ::_erase_if_lambda(fi_,&existed_in_map));
   if(existed_in_map)
     return 0;
 
@@ -90,18 +89,17 @@ _release(const fuse_context *fc_,
 
 static
 int
-_release(const fuse_context     *fc_,
+_release(const fuse_req_ctx_t   *ctx_,
          const fuse_file_info_t *ffi_)
 {
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
-  return ::_release(fc_,fi,cfg.dropcacheonclose);
+  return ::_release(ctx_,fi,cfg.dropcacheonclose);
 }
 
 int
-FUSE::release(const fuse_file_info_t *ffi_)
+FUSE::release(const fuse_req_ctx_t   *ctx_,
+              const fuse_file_info_t *ffi_)
 {
-  const fuse_context *fc = fuse_get_context();
-
-  return ::_release(fc,ffi_);
+  return ::_release(ctx_,ffi_);
 }

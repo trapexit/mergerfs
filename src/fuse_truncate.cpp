@@ -90,12 +90,12 @@ _truncate(const Policy::Action &actionFunc_,
 }
 
 int
-FUSE::truncate(const char *fusepath_,
-               off_t       size_)
+FUSE::truncate(const fuse_req_ctx_t *ctx_,
+               const char           *fusepath_,
+               off_t                 size_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_);
 
   return ::_truncate(cfg.func.truncate.policy,
                      cfg.func.getattr.policy,

@@ -18,13 +18,16 @@
 
 #include <cstddef>
 
+#include "fuse_req_ctx.h"
+
 
 namespace FUSE
 {
   int
-  setxattr(const char *fusepath,
-           const char *attrname,
-           const char *attrval,
-           size_t      attrvalize,
-           int         flags);
+  setxattr(const fuse_req_ctx_t *ctx,
+           const char           *fusepath,
+           const char           *attrname,
+           const char           *attrval,
+           size_t                attrvalize,
+           int                   flags);
 }

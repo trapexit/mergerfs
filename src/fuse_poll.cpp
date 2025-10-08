@@ -24,10 +24,12 @@
 
 
 int
-FUSE::poll(const fuse_file_info_t *ffi_,
+FUSE::poll(const fuse_req_ctx_t   *ctx_,
+           const fuse_file_info_t *ffi_,
            fuse_pollhandle_t      *ph_,
            unsigned               *reventsp_)
 {
+  (void)ctx_;
   (void)ffi_;
   (void)ph_;
   (void)reventsp_;

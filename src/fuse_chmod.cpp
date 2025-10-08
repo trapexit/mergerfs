@@ -94,8 +94,6 @@ int
 _chmod(const fs::path &fusepath_,
        const mode_t    mode_)
 {
-  const fuse_context *fc  = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
 
   return ::_chmod(cfg.func.chmod.policy,
                   cfg.func.getattr.policy,
@@ -105,10 +103,12 @@ _chmod(const fs::path &fusepath_,
 }
 
 int
-FUSE::chmod(const char *fusepath_,
-            mode_t      mode_)
+FUSE::chmod(const fuse_req_ctx_t *ctx_,
+            const char           *fusepath_,
+            mode_t                mode_)
 {
   const fs::path fusepath{fusepath_};
+  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   return ::_chmod(fusepath,mode_);
 }

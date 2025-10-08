@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 
 namespace FUSE
 {
   int
-  unlink(const char *fusepath);
+  unlink(const fuse_req_ctx_t *ctx,
+         const char           *fusepath);
 }

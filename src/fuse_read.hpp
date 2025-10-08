@@ -24,13 +24,15 @@
 namespace FUSE
 {
   int
-  read(const fuse_file_info_t *ffi,
+  read(const fuse_req_ctx_t   *ctx,
+       const fuse_file_info_t *ffi,
        char                   *buf,
        size_t                  size,
        off_t                   offset);
 
   int
-  read_null(const fuse_file_info_t *ffi,
+  read_null(const fuse_req_ctx_t   *ctx,
+            const fuse_file_info_t *ffi,
             char                   *buf,
             size_t                  size,
             off_t                   offset);

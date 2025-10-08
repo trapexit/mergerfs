@@ -22,7 +22,8 @@
 
 
 int
-FUSE::readdir_plus(const fuse_file_info_t *ffi_,
+FUSE::readdir_plus(const fuse_req_ctx_t   *ctx_,
+                   const fuse_file_info_t *ffi_,
                    fuse_dirents_t         *buf_)
 {
   return -ENOTSUP;

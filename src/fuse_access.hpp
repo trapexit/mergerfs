@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
 
 namespace FUSE
 {
   int
-  access(const char *fusepath,
-         int         mask);
+  access(const fuse_req_ctx_t *ctx,
+         const char           *fusepath,
+         int                   mask);
 }

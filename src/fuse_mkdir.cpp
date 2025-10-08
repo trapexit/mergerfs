@@ -125,20 +125,20 @@ _mkdir(const Policy::Search &getattrPolicy_,
 }
 
 int
-FUSE::mkdir(const char *fusepath_,
-            mode_t      mode_)
+FUSE::mkdir(const fuse_req_ctx_t *ctx_,
+            const char           *fusepath_,
+            mode_t                mode_)
 {
   int rv;
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_);
 
   rv = ::_mkdir(cfg.func.getattr.policy,
                 cfg.func.mkdir.policy,
                 cfg.branches,
                 fusepath,
                 mode_,
-                fc->umask);
+                ctx_->umask);
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
@@ -147,7 +147,7 @@ FUSE::mkdir(const char *fusepath_,
                     cfg.branches,
                     fusepath,
                     mode_,
-                    fc->umask);
+                    ctx_->umask);
     }
 
   return rv;

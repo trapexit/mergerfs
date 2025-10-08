@@ -27,15 +27,16 @@
 namespace FUSE
 {
   int
-  symlink(const char      *target,
-          const char      *linkpath,
-          struct stat     *st       = NULL,
-          fuse_timeouts_t *timeouts = NULL);
+  symlink(const fuse_req_ctx_t *ctx,
+          const char           *target,
+          const char           *linkpath,
+          struct stat          *st       = NULL,
+          fuse_timeouts_t      *timeouts = NULL);
 
   int
-  symlink(const char      *target,
-          const fs::path  &linkpath,
-          struct stat     *st       = NULL,
-          fuse_timeouts_t *timeouts = NULL);
-
+  symlink(const fuse_req_ctx_t *ctx,
+          const char           *target,
+          const fs::path       &linkpath,
+          struct stat          *st       = NULL,
+          fuse_timeouts_t      *timeouts = NULL);
 }

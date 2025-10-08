@@ -1,17 +1,9 @@
-/*
-  FUSE: Filesystem in Userspace
-  Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
-
-  This program can be distributed under the terms of the GNU LGPLv2.
-  See the file COPYING.LIB.
-*/
-
-#ifndef _FUSE_LOWLEVEL_H_
-#define _FUSE_LOWLEVEL_H_
+#pragma once
 
 #include "extern_c.h"
 #include "fuse_common.h"
 #include "fuse_kernel.h"
+#include "fuse_req.h"
 
 #include <fcntl.h>
 #include <stdint.h>
@@ -29,9 +21,6 @@ EXTERN_C_BEGIN
 
 /** The node ID of the root inode */
 #define FUSE_ROOT_ID 1
-
-/** Request pointer type */
-typedef struct fuse_req *fuse_req_t;
 
 /**
  * Session
@@ -88,18 +77,6 @@ struct fuse_entry_param
   fuse_timeouts_t timeout;
 };
 
-/** Additional context associated with requests */
-struct fuse_ctx
-{
-  uint64_t unique;
-  uint64_t nodeid;
-  uint32_t opcode;
-  uid_t    uid;
-  gid_t    gid;
-  pid_t    pid;
-  mode_t   umask;
-};
-
 /* ----------------------------------------------------------- *
  * Request methods and replies				       *
  * ----------------------------------------------------------- */
@@ -127,55 +104,55 @@ struct fuse_ctx
  */
 struct fuse_lowlevel_ops
 {
-  void (*access)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*bmap)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*copy_file_range)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*create)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*access)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*bmap)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*copy_file_range)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*create)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*destroy)(void *userdata);
-  void (*fallocate)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*flock)(fuse_req_t req, uint64_t ino, fuse_file_info_t *fi, int op);
-  void (*flush)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*forget)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*forget_multi)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*fsync)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*fsyncdir)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*getattr)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*getlk)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*getxattr)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*fallocate)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*flock)(fuse_req_t *req, uint64_t ino, fuse_file_info_t *fi, int op);
+  void (*flush)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*forget)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*forget_multi)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*fsync)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*fsyncdir)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*getattr)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*getlk)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*getxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*init)(void *userdata, struct fuse_conn_info *conn);
-  void (*ioctl)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*link)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*listxattr)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*lookup)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*lseek)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*mkdir)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*mknod)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*open)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*opendir)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*poll)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*read)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*readdir)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*readdir_plus)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*readlink)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*release)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*releasedir)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*removemapping)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*removexattr)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*rename)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*rename2)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*retrieve_reply)(fuse_req_t req, void *cookie, uint64_t ino, off_t offset);
-  void (*rmdir)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*setattr)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*setlk)(fuse_req_t req, uint64_t ino, fuse_file_info_t *fi, struct flock *lock, int sleep);
-  void (*setupmapping)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*setxattr)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*statfs)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*statx)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*symlink)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*syncfs)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*tmpfile)(fuse_req_t req, const struct fuse_in_header *hdr);
-  void (*unlink)(fuse_req_t req, struct fuse_in_header *hdr);
-  void (*write)(fuse_req_t req, struct fuse_in_header *hdr);
+  void (*ioctl)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*link)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*listxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*lookup)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*lseek)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*mkdir)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*mknod)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*open)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*opendir)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*poll)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*read)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*readdir)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*readdir_plus)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*readlink)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*release)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*releasedir)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*removemapping)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*removexattr)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*rename)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*rename2)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*retrieve_reply)(fuse_req_t *req, void *cookie, uint64_t ino, off_t offset);
+  void (*rmdir)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*setattr)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*setlk)(fuse_req_t *req, uint64_t ino, fuse_file_info_t *fi, struct flock *lock, int sleep);
+  void (*setupmapping)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*setxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*statfs)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*statx)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*symlink)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*syncfs)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*tmpfile)(fuse_req_t *req, const struct fuse_in_header *hdr);
+  void (*unlink)(fuse_req_t *req, struct fuse_in_header *hdr);
+  void (*write)(fuse_req_t *req, struct fuse_in_header *hdr);
 };
 
 /**
@@ -191,7 +168,7 @@ struct fuse_lowlevel_ops
  * @param err the positive error value, or zero for success
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_err(fuse_req_t req, int err);
+int fuse_reply_err(fuse_req_t *req, int err);
 
 /**
  * Don't send reply
@@ -201,7 +178,7 @@ int fuse_reply_err(fuse_req_t req, int err);
  *
  * @param req request handle
  */
-void fuse_reply_none(fuse_req_t req);
+void fuse_reply_none(fuse_req_t *req);
 
 /**
  * Reply with a directory entry
@@ -216,7 +193,7 @@ void fuse_reply_none(fuse_req_t req);
  * @param e the entry parameters
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_entry(fuse_req_t req, const struct fuse_entry_param *e);
+int fuse_reply_entry(fuse_req_t *req, const struct fuse_entry_param *e);
 
 /**
  * Reply with a directory entry and open parameters
@@ -235,7 +212,8 @@ int fuse_reply_entry(fuse_req_t req, const struct fuse_entry_param *e);
  * @param fi file information
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_create(fuse_req_t req, const struct fuse_entry_param *e,
+int fuse_reply_create(fuse_req_t *req,
+                      const struct fuse_entry_param *e,
                       const fuse_file_info_t *fi);
 
 /**
@@ -249,12 +227,12 @@ int fuse_reply_create(fuse_req_t req, const struct fuse_entry_param *e,
  * @param attr_timeout	validity timeout (in seconds) for the attributes
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_attr(fuse_req_t         req,
+int fuse_reply_attr(fuse_req_t        *req,
                     const struct stat *attr,
                     const uint64_t     timeout);
 
 
-int fuse_reply_statx(fuse_req_t         req,
+int fuse_reply_statx(fuse_req_t        *req,
                      int                flags,
                      struct fuse_statx *st,
                      const uint64_t     timeout);
@@ -269,7 +247,7 @@ int fuse_reply_statx(fuse_req_t         req,
  * @param link symbolic link contents
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_readlink(fuse_req_t req, const char *link);
+int fuse_reply_readlink(fuse_req_t *req, const char *link);
 
 /**
  * Reply with open parameters
@@ -284,7 +262,7 @@ int fuse_reply_readlink(fuse_req_t req, const char *link);
  * @param fi file information
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_open(fuse_req_t req,
+int fuse_reply_open(fuse_req_t *req,
                     const fuse_file_info_t *fi);
 
 /**
@@ -297,7 +275,7 @@ int fuse_reply_open(fuse_req_t req,
  * @param count the number of bytes written
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_write(fuse_req_t req, size_t count);
+int fuse_reply_write(fuse_req_t *req, size_t count);
 
 /**
  * Reply with data
@@ -310,9 +288,9 @@ int fuse_reply_write(fuse_req_t req, size_t count);
  * @param size the size of data in bytes
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_buf(fuse_req_t req, const char *buf, size_t size);
+int fuse_reply_buf(fuse_req_t *req, const char *buf, size_t size);
 
-int fuse_reply_data(fuse_req_t  req,
+int fuse_reply_data(fuse_req_t *req,
                     char       *buf,
                     size_t      bufsize);
 
@@ -327,7 +305,7 @@ int fuse_reply_data(fuse_req_t  req,
  * @param count the size of vector
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_iov(fuse_req_t req, const struct iovec *iov, int count);
+int fuse_reply_iov(fuse_req_t *req, const struct iovec *iov, int count);
 
 /**
  * Reply with filesystem statistics
@@ -339,7 +317,7 @@ int fuse_reply_iov(fuse_req_t req, const struct iovec *iov, int count);
  * @param stbuf filesystem statistics
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_statfs(fuse_req_t req, const struct statvfs *stbuf);
+int fuse_reply_statfs(fuse_req_t *req, const struct statvfs *stbuf);
 
 /**
  * Reply with needed buffer size
@@ -351,7 +329,7 @@ int fuse_reply_statfs(fuse_req_t req, const struct statvfs *stbuf);
  * @param count the buffer size needed in bytes
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_xattr(fuse_req_t req, size_t count);
+int fuse_reply_xattr(fuse_req_t *req, size_t count);
 
 /**
  * Reply with file lock information
@@ -363,7 +341,7 @@ int fuse_reply_xattr(fuse_req_t req, size_t count);
  * @param lock the lock information
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_lock(fuse_req_t req, const struct flock *lock);
+int fuse_reply_lock(fuse_req_t *req, const struct flock *lock);
 
 /**
  * Reply with block index
@@ -375,7 +353,7 @@ int fuse_reply_lock(fuse_req_t req, const struct flock *lock);
  * @param idx block index within device
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_bmap(fuse_req_t req, uint64_t idx);
+int fuse_reply_bmap(fuse_req_t *req, uint64_t idx);
 
 /**
  * Reply to ask for data fetch and output buffer preparation.  ioctl
@@ -392,7 +370,7 @@ int fuse_reply_bmap(fuse_req_t req, uint64_t idx);
  * @param out_count number of entries in out_iov
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_ioctl_retry(fuse_req_t req,
+int fuse_reply_ioctl_retry(fuse_req_t *req,
                            const struct iovec *in_iov, size_t in_count,
                            const struct iovec *out_iov, size_t out_count);
 
@@ -407,7 +385,7 @@ int fuse_reply_ioctl_retry(fuse_req_t req,
  * @param buf buffer containing output data
  * @param size length of output data
  */
-int fuse_reply_ioctl(fuse_req_t req, int result, const void *buf, uint32_t size);
+int fuse_reply_ioctl(fuse_req_t *req, int result, const void *buf, uint32_t size);
 
 /**
  * Reply to finish ioctl with iov buffer
@@ -420,7 +398,7 @@ int fuse_reply_ioctl(fuse_req_t req, int result, const void *buf, uint32_t size)
  * @param iov the vector containing the data
  * @param count the size of vector
  */
-int fuse_reply_ioctl_iov(fuse_req_t req, int result, const struct iovec *iov,
+int fuse_reply_ioctl_iov(fuse_req_t *req, int result, const struct iovec *iov,
                          int count);
 
 /**
@@ -429,7 +407,7 @@ int fuse_reply_ioctl_iov(fuse_req_t req, int result, const struct iovec *iov,
  * @param req request handle
  * @param revents poll result event mask
  */
-int fuse_reply_poll(fuse_req_t req, unsigned revents);
+int fuse_reply_poll(fuse_req_t *req, unsigned revents);
 
 /* ----------------------------------------------------------- *
  * Notification						       *
@@ -552,25 +530,6 @@ int fuse_lowlevel_notify_retrieve(struct fuse_chan *ch, uint64_t ino,
  * ----------------------------------------------------------- */
 
 /**
- * Get the userdata from the request
- *
- * @param req request handle
- * @return the user data passed to fuse_lowlevel_new()
- */
-void *fuse_req_userdata(fuse_req_t req);
-
-/**
- * Get the context from the request
- *
- * The pointer returned by this function will only be valid for the
- * request's lifetime
- *
- * @param req request handle
- * @return the context structure
- */
-const struct fuse_ctx *fuse_req_ctx(fuse_req_t req);
-
-/**
  * Get the current supplementary group IDs for the specified request
  *
  * Similar to the getgroups(2) system call, except the return value is
@@ -589,7 +548,7 @@ const struct fuse_ctx *fuse_req_ctx(fuse_req_t req);
  * @param list array of group IDs to be filled in
  * @return the total number of supplementary group IDs or -errno on failure
  */
-int fuse_req_getgroups(fuse_req_t req, int size, gid_t list[]);
+int fuse_req_getgroups(fuse_req_t *req, int size, gid_t list[]);
 
 /* ----------------------------------------------------------- *
  * Filesystem setup					       *
@@ -679,5 +638,3 @@ struct fuse_session *fuse_chan_session(struct fuse_chan *ch);
 void fuse_chan_destroy(struct fuse_chan *ch);
 
 EXTERN_C_END
-
-#endif /* _FUSE_LOWLEVEL_H_ */

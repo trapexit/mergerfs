@@ -25,6 +25,7 @@
 namespace FUSE
 {
   int
-  ftruncate(const uint64_t fh,
-            off_t          size);
+  ftruncate(const fuse_req_ctx_t *ctx,
+            const uint64_t        fh,
+            off_t                 size);
 }

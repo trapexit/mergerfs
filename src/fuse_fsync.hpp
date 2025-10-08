@@ -22,7 +22,8 @@
 namespace FUSE
 {
   int
-  fsync(const uint64_t fh,
-        int            isdatasync);
+  fsync(const fuse_req_ctx_t *ctx,
+        const uint64_t        fh,
+        int                   isdatasync);
 
 }

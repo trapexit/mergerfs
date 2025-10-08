@@ -16,14 +16,17 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <cstddef>
 
 
 namespace FUSE
 {
   int
-  getxattr(const char *fusepath,
-           const char *attrname,
-           char       *attrvalue,
-           size_t      attrvalue_size);
+  getxattr(const fuse_req_ctx_t *ctx,
+           const char           *fusepath,
+           const char           *attrname,
+           char                 *attrvalue,
+           size_t                attrvalue_size);
 }

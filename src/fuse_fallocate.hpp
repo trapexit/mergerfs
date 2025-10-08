@@ -22,8 +22,9 @@
 namespace FUSE
 {
   int
-  fallocate(const uint64_t fh,
-            int            mode,
-            off_t          offset,
-            off_t          len);
+  fallocate(const fuse_req_ctx_t *ctx,
+            const uint64_t        fh,
+            int                   mode,
+            off_t                 offset,
+            off_t                 len);
 }

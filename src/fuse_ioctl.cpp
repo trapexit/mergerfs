@@ -107,14 +107,14 @@ _ioctl(const int       fd_,
 
 static
 int
-_ioctl_file(const fuse_file_info_t *ffi_,
+_ioctl_file(const fuse_req_ctx_t   *ctx_,
+            const fuse_file_info_t *ffi_,
             const uint32_t          cmd_,
             void                   *data_,
             uint32_t               *out_bufsz_)
 {
-  FileInfo           *fi = FileInfo::from_fh(ffi_->fh);
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  FileInfo        *fi = FileInfo::from_fh(ffi_->fh);
+  const ugid::Set  ugid(ctx_);
 
   return ::_ioctl(fi->fd,cmd_,data_,out_bufsz_);
 }
@@ -156,14 +156,14 @@ _ioctl_dir_base(const Policy::Search &searchFunc_,
 
 static
 int
-_ioctl_dir(const fuse_file_info_t *ffi_,
+_ioctl_dir(const fuse_req_ctx_t   *ctx_,
+           const fuse_file_info_t *ffi_,
            const uint32_t          cmd_,
            void                   *data_,
            uint32_t               *out_bufsz_)
 {
-  DirInfo            *di = DirInfo::from_fh(ffi_->fh);
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  DirInfo         *di = DirInfo::from_fh(ffi_->fh);
+  const ugid::Set  ugid(ctx_);
 
   return ::_ioctl_dir_base(cfg.func.open.policy,
                            cfg.branches,
@@ -181,7 +181,8 @@ _is_btrfs_ioctl_cmd(const unsigned long cmd_)
 }
 
 int
-FUSE::ioctl(const fuse_file_info_t *ffi_,
+FUSE::ioctl(const fuse_req_ctx_t   *ctx_,
+            const fuse_file_info_t *ffi_,
             unsigned long           cmd_,
             void                   *arg_,
             unsigned int            flags_,
@@ -192,7 +193,7 @@ FUSE::ioctl(const fuse_file_info_t *ffi_,
     return -ENOTTY;
 
   if(flags_ & FUSE_IOCTL_DIR)
-    return ::_ioctl_dir(ffi_,cmd_,data_,out_bufsz_);
+    return ::_ioctl_dir(ctx_,ffi_,cmd_,data_,out_bufsz_);
 
-  return ::_ioctl_file(ffi_,cmd_,data_,out_bufsz_);
+  return ::_ioctl_file(ctx_,ffi_,cmd_,data_,out_bufsz_);
 }

@@ -32,20 +32,11 @@ struct fuse_session
   struct fuse_chan *ch;
 };
 
-struct fuse_req
-{
-  struct fuse_ll *f;
-  uint64_t unique;
-  struct fuse_ctx ctx;
-  struct fuse_chan *ch;
-  unsigned int ioctl_64bit : 1;
-};
-
 struct fuse_notify_req
 {
   uint64_t unique;
   void (*reply)(struct fuse_notify_req *,
-                fuse_req_t,
+                fuse_req_t*,
                 uint64_t,
                 const void *);
   struct fuse_notify_req *next;
@@ -81,9 +72,9 @@ struct fuse_cmd
 
 EXTERN_C_BEGIN
 
-struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
-			     const struct fuse_operations *op,
-			     size_t op_size);
+struct fuse *fuse_new_common(struct fuse_chan *ch,
+                             struct fuse_args *args,
+			     const struct fuse_operations *op);
 
 struct fuse_chan *fuse_kern_chan_new(int fd);
 
@@ -101,10 +92,10 @@ int fuse_send_reply_iov_nofree(fuse_req_t req, int error, struct iovec *iov,
 void fuse_free_req(fuse_req_t req);
 
 
-struct fuse *fuse_setup_common(int argc, char *argv[],
+struct fuse *fuse_setup_common(int argc,
+                               char *argv[],
 			       const struct fuse_operations *op,
-			       size_t op_size,
-			       char **mountpoint,
+                               char **mountpoint,
 			       int *fd);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);

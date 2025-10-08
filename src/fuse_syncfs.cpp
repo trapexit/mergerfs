@@ -22,7 +22,7 @@
 
 
 int
-FUSE::syncfs()
+FUSE::syncfs(const fuse_req_ctx_t *ctx_)
 {
   return -ENOSYS;
 }
