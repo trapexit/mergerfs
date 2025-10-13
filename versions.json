@@ -9,7 +9,9 @@
   {
     "version": "2.41.0-rc2",
     "title": "2.41.0-rc2",
-    "aliases": []
+    "aliases": [
+      "latest"
+    ]
   },
   {
     "version": "2.41.0-rc1",
