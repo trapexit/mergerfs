@@ -31,7 +31,6 @@
 #include "version.hpp"
 
 #include "fuse.h"
-#include "fuse_config.hpp"
 
 #include <array>
 #include <fstream>
@@ -49,10 +48,16 @@
 
 enum
   {
+    MERGERFS_OPT_DEBUG,
     MERGERFS_OPT_HELP,
     MERGERFS_OPT_VERSION
   };
 
+enum
+  {
+    OPT_DISCARD = 0,
+    OPT_KEEP    = 1
+  };
 
 static
 void
@@ -79,30 +84,19 @@ _set_kv_option(const std::string &key_,
 
 static
 void
-_set_fuse_threads(Config &cfg_)
+_set_fsname(fuse_args *args_)
 {
-  fuse_config_set_read_thread_count(cfg_.fuse_read_thread_count);
-  fuse_config_set_process_thread_count(cfg_.fuse_process_thread_count);
-  fuse_config_set_process_thread_queue_depth(cfg_.fuse_process_thread_queue_depth);
-  fuse_config_set_pin_threads(cfg_.fuse_pin_threads);
-}
-
-static
-void
-_set_fsname(Config    &cfg_,
-            fuse_args *args_)
-{
-  if(cfg_.fsname->empty())
+  if(cfg.fsname->empty())
     {
       std::vector<std::string> paths;
 
-      cfg_.branches->to_paths(paths);
+      cfg.branches->to_paths(paths);
 
       if(paths.size() > 0)
-        cfg_.fsname = str::remove_common_prefix_and_join(paths,':');
+        cfg.fsname = str::remove_common_prefix_and_join(paths,':');
     }
 
-  ::_set_kv_option("fsname",cfg_.fsname,args_);
+  ::_set_kv_option("fsname",cfg.fsname,args_);
 }
 
 static
@@ -114,10 +108,9 @@ _set_subtype(fuse_args *args_)
 
 static
 void
-_set_default_options(fuse_args *args_,
-                     Config    &cfg_)
+_set_default_options(fuse_args *args_)
 {
-  if(cfg_.kernel_permissions_check)
+  if(cfg.kernel_permissions_check)
     ::_set_option("default_permissions",args_);
 
   if(geteuid() == 0)
@@ -127,83 +120,27 @@ _set_default_options(fuse_args *args_,
 }
 
 static
-bool
-_should_ignore(const std::string &key_)
-{
-  constexpr const std::array<std::string_view,13> ignored_keys =
-    {
-      "atomic_o_trunc",
-      "big_writes",
-      "cache.open",
-      "defaults",
-      "hard_remove",
-      "no_splice_move",
-      "no_splice_read",
-      "no_splice_write",
-      "nonempty",
-      "splice_move",
-      "splice_read",
-      "splice_write",
-      "use_ino",
-    };
-
-  for(const auto &key : ignored_keys)
-    {
-      if(key == key_)
-        return true;
-    }
-
-  return false;
-}
-
-static
 int
-_parse_and_process_kv_arg(Config            &cfg_,
-                          Config::ErrVec    *errs_,
-                          const std::string &key_,
+_parse_and_process_kv_arg(const std::string &key_,
                           const std::string &val_)
 {
   int rv;
   std::string key(key_);
   std::string val(val_);
 
-  rv = 0;
-  if(key == "config")
-    return ((cfg_.from_file(val_,errs_) < 0) ? 1 : 0);
-  ef(key == "attr_timeout")
-    key = "cache.attr";
-  ef(key == "entry_timeout")
-    key = "cache.entry";
-  ef(key == "negative_entry")
-    key = "cache.negative_entry";
-  ef(key == "direct_io" && val.empty())
-    val = "true";
-  ef(key == "kernel_cache" && val.empty())
-    val = "true";
-  ef(key == "auto_cache" && val.empty())
-    val = "true";
-  ef(key == "async_read" && val.empty())
-    val = "true";
-  ef(key == "sync_read" && val.empty())
-    {key = "async_read", val = "false";}
-  ef(::_should_ignore(key_))
-    return 0;
-
-  if(cfg_.has_key(key) == false)
+  if(cfg.has_key(key) == false)
     return 1;
 
-  rv = cfg_.set_raw(key,val);
-  if(rv)
-    errs_->push_back({rv,key+'='+val});
+  rv = cfg.set(key,val);
+  if(rv < 0)
+    cfg.errs.push_back({-rv,key+'='+val});
 
-  return 0;
+  return OPT_DISCARD;
 }
 
 static
 int
-_process_opt(Config           &cfg_,
-            Config::ErrVec    *errs_,
-            const std::string &arg_)
+_process_opt(const std::string &arg_)
 {
   std::string key;
   std::string val;
@@ -212,68 +149,7 @@ _process_opt(Config           &cfg_,
   key = str::trim(key);
   val = str::trim(val);
 
-  return ::_parse_and_process_kv_arg(cfg_,errs_,key,val);
-}
-
-static
-int
-_process_branches(Config        &cfg_,
-                 Config::ErrVec *errs_,
-                 const char     *arg_)
-{
-  int rv;
-  std::string arg;
-
-  arg = arg_;
-  rv = cfg_.set_raw("branches",arg);
-  if(rv)
-    errs_->push_back({rv,"branches="+arg});
-
-  return 0;
-}
-
-static
-int
-_process_mount(Config        &cfg_,
-              Config::ErrVec *errs_,
-              const char     *arg_)
-{
-  int rv;
-  std::string arg;
-
-  arg = arg_;
-  rv = cfg_.set_raw("mount",arg);
-  if(rv)
-    errs_->push_back({rv,"mount="+arg});
-
-  return 1;
-}
-
-static
-void
-_postprocess_passthrough(Config &cfg_)
-{
-  if(cfg_.passthrough == Passthrough::ENUM::OFF)
-    return;
-
-  if(cfg_.cache_files == CacheFiles::ENUM::OFF)
-    {
-      SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
-                      " Setting 'cache.files=full'");
-      cfg_.cache_files = CacheFiles::ENUM::FULL;
-    }
-
-  if(cfg_.writeback_cache == true)
-    {
-      SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
-                      " Setting 'cache.writeback=false'");
-      cfg_.writeback_cache = false;
-    }
-
-  if(cfg_.moveonenospc.enabled == true)
-    {
-      SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
-    }
+  return ::_parse_and_process_kv_arg(key,val);
 }
 
 static
@@ -286,50 +162,74 @@ _usage(void)
 }
 
 static
+void
+_version(void)
+{
+  fmt::print("mergerfs v{}\n\n"
+             "https://github.com/trapexit/mergerfs\n"
+             "https://trapexit.github.io/mergerfs\n"
+             "https://github.com/trapexit/support\n"
+             "\n"
+             "ISC License (ISC)\n"
+             "\n"
+             "Copyright 2025, Antonio SJ Musumeci <trapexit@spawn.link>\n"
+             "\n"
+             "Permission to use, copy, modify, and/or distribute this software for\n"
+             "any purpose with or without fee is hereby granted, provided that the\n"
+             "above copyright notice and this permission notice appear in all\n"
+             "copies.\n"
+             "\n"
+             "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL\n"
+             "WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED\n"
+             "WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE\n"
+             "AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL\n"
+             "DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR\n"
+             "PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER\n"
+             "TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR\n"
+             "PERFORMANCE OF THIS SOFTWARE.\n\n"
+             ,
+             (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown"));
+}
+
+static
 int
 _option_processor(void       *data_,
                   const char *arg_,
                   int         key_,
                   fuse_args  *outargs_)
 {
-  Config::ErrVec *errs = (Config::ErrVec*)data_;
+  std::string &prev_nonopt =
+    *reinterpret_cast<std::string*>(data_);
 
   switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      return ::_process_opt(cfg,errs,arg_);
+      return ::_process_opt(arg_);
 
     case FUSE_OPT_KEY_NONOPT:
-      if(cfg.branches->empty())
-        return ::_process_branches(cfg,errs,arg_);
-      else
-        return ::_process_mount(cfg,errs,arg_);
+      {
+        if(prev_nonopt.empty())
+          {
+            prev_nonopt = arg_;
+          }
+        else
+          {
+            cfg.branches.from_string("+>" + prev_nonopt);
+            prev_nonopt = arg_;
+          }
+      }
+      return OPT_DISCARD;
+
+    case MERGERFS_OPT_DEBUG:
+      fuse_cfg.debug = true;
+      return OPT_DISCARD;
 
     case MERGERFS_OPT_HELP:
       ::_usage();
       exit(0);
 
     case MERGERFS_OPT_VERSION:
-      fmt::print("mergerfs v{}\n\n"
-                 "https://github.com/trapexit/mergerfs\n"
-                 "https://trapexit.github.io/mergerfs\n"
-                 "https://github.com/trapexit/support\n\n"
-                 "ISC License (ISC)\n\n"
-                 "Copyright 2025, Antonio SJ Musumeci <trapexit@spawn.link>\n\n"
-                 "Permission to use, copy, modify, and/or distribute this software for\n"
-                 "any purpose with or without fee is hereby granted, provided that the\n"
-                 "above copyright notice and this permission notice appear in all\n"
-                 "copies.\n\n"
-                 "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL\n"
-                 "WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED\n"
-                 "WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE\n"
-                 "AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL\n"
-                 "DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR\n"
-                 "PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER\n"
-                 "TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR\n"
-                 "PERFORMANCE OF THIS SOFTWARE.\n\n"
-                 ,
-                 (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown"));
+      ::_version();
       exit(0);
 
     default:
@@ -341,15 +241,14 @@ _option_processor(void       *data_,
 
 static
 void
-_check_for_mount_loop(Config         &cfg_,
-                      Config::ErrVec *errs_)
+_check_for_mount_loop()
 {
   fs::path mount;
   std::vector<fs::path> branches;
   std::error_code ec;
 
-  mount    = *cfg_.mountpoint;
-  branches = cfg_.branches->to_paths();
+  mount    = cfg.mountpoint;
+  branches = cfg.branches->to_paths();
   for(const auto &branch : branches)
     {
       if(std::filesystem::equivalent(branch,mount,ec))
@@ -358,54 +257,66 @@ _check_for_mount_loop(Config         &cfg_,
 
           errstr = fmt::format("branches can not include the mountpoint: {}",
                                branch.string());
-          errs_->push_back({0,errstr});
+          cfg.errs.push_back({0,errstr});
         }
     }
 }
 
 static
 void
-_print_warnings(Config &cfg_)
+_postprocess_and_print_warnings()
 {
-  if(cfg_.passthrough != Passthrough::ENUM::OFF)
+  if(fuse_cfg.uid != FUSE_CFG_INVALID_ID)
+    SysLog::warning("overwriting 'uid' is untested and unsupported,"
+                    " use at your own risk");
+  if(fuse_cfg.gid != FUSE_CFG_INVALID_ID)
+    SysLog::warning("overwriting 'gid' is untested and unsupported,"
+                    " use at your own risk");
+  if(fuse_cfg.umask != FUSE_CFG_INVALID_UMASK)
+    SysLog::warning("overwriting 'umask' is untested and unsupported,"
+                    " use at your own risk");
+
+  if(cfg.passthrough_io != PassthroughIO::ENUM::OFF)
     {
-      if(cfg_.cache_files == CacheFiles::ENUM::OFF)
+      if(cfg.cache_files == CacheFiles::ENUM::OFF)
         {
           SysLog::warning("'cache.files' can not be 'off' when using 'passthrough'."
                           " Setting 'cache.files=auto-full'");
-          cfg_.cache_files = CacheFiles::ENUM::AUTO_FULL;
+          cfg.cache_files = CacheFiles::ENUM::AUTO_FULL;
         }
 
-      if(cfg_.writeback_cache == true)
+      if(cfg.cache_writeback == true)
         {
           SysLog::warning("'cache.writeback' can not be enabled when using 'passthrough'."
                           " Setting 'cache.writeback=false'");
-          cfg_.writeback_cache = false;
+          cfg.cache_writeback = false;
         }
 
-      if(cfg_.moveonenospc.enabled == true)
+      if(cfg.moveonenospc.enabled == true)
         {
-          SysLog::warning("`moveonenospc` will not function when `passthrough` is enabled");
+          SysLog::warning("'moveonenospc' will not function when 'passthrough' is enabled");
         }
     }
 }
 
 static
 void
-_cleanup_options(Config &cfg_)
+_cleanup_options()
 {
-  if(!cfg_.symlinkify)
-    cfg_.symlinkify_timeout = -1;
+  if(!cfg.symlinkify)
+    cfg.symlinkify_timeout = -1;
 }
 
 namespace options
 {
   void
-  parse(fuse_args      *args_,
-        Config::ErrVec *errs_)
+  parse(fuse_args *args_)
+
   {
+    std::string prev_nonopt;
     const struct fuse_opt opts[] =
       {
+        FUSE_OPT_KEY("-d",MERGERFS_OPT_DEBUG),
         FUSE_OPT_KEY("-h",MERGERFS_OPT_HELP),
         FUSE_OPT_KEY("--help",MERGERFS_OPT_HELP),
         FUSE_OPT_KEY("-v",MERGERFS_OPT_VERSION),
@@ -415,23 +326,34 @@ namespace options
       };
 
     fuse_opt_parse(args_,
-                   errs_,
+                   &prev_nonopt,
                    opts,
                    ::_option_processor);
 
-    if(cfg.branches->empty())
-      errs_->push_back({0,"branches not set"});
-    if(cfg.mountpoint->empty())
-      errs_->push_back({0,"mountpoint not set"});
+    if(!prev_nonopt.empty())
+      {
+        if(cfg.mountpoint.empty())
+          cfg.mountpoint = prev_nonopt;
+        else
+          cfg.branches.from_string("+>" + prev_nonopt);
+      }
 
-    ::_postprocess_passthrough(cfg);
-    ::_check_for_mount_loop(cfg,errs_);
-    ::_set_default_options(args_,cfg);
-    ::_set_fsname(cfg,args_);
+    if(cfg.branches->empty())
+      cfg.errs.push_back({EINVAL,"branches not set"});
+    if(cfg.mountpoint.empty())
+      cfg.errs.push_back({EINVAL,"mountpoint not set"});
+
+    if(!cfg.errs.empty())
+      return;
+
+    fuse_opt_add_arg(args_,cfg.mountpoint.c_str());
+
+    ::_postprocess_and_print_warnings();
+    ::_check_for_mount_loop();
+    ::_set_default_options(args_);
+    ::_set_fsname(args_);
     ::_set_subtype(args_);
-    ::_set_fuse_threads(cfg);
-    ::_print_warnings(cfg);
-    ::_cleanup_options(cfg);
+    ::_cleanup_options();
 
     cfg.finish_initializing();
   }

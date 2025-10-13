@@ -19,6 +19,7 @@
 #include "mutex.hpp"
 #include "node.hpp"
 
+#include "fuse_cfg.hpp"
 #include "fuse_req.h"
 #include "fuse_dirents.hpp"
 #include "fuse_i.h"
@@ -70,16 +71,6 @@ static int g_LOG_METRICS = 0;
 
 struct fuse_config
 {
-  unsigned int uid;
-  unsigned int gid;
-  unsigned int umask;
-  int remember;
-  int debug;
-  int nogc;
-  int set_mode;
-  int set_uid;
-  int set_gid;
-  int help;
 };
 
 struct lock_queue_element
@@ -620,7 +611,7 @@ inline
 int
 remember_nodes()
 {
-  return (f.conf.remember > 0);
+  return (fuse_cfg.remember_nodes > 0);
 }
 
 static
@@ -703,7 +694,7 @@ find_node(uint64_t    parent,
         goto out_err;
 
       node->nodeid = generate_nodeid(&f.nodeid_gen);
-      if(f.conf.remember)
+      if(fuse_cfg.remember_nodes)
         inc_nlookup(node);
 
       if(hash_name(node,parent,name) == -1)
@@ -1264,12 +1255,12 @@ void
 set_stat(uint64_t     nodeid,
          struct stat *stbuf)
 {
-  if(f.conf.set_mode)
-    stbuf->st_mode = (stbuf->st_mode & S_IFMT) | (0777 & ~f.conf.umask);
-  if(f.conf.set_uid)
-    stbuf->st_uid = f.conf.uid;
-  if(f.conf.set_gid)
-    stbuf->st_gid = f.conf.gid;
+  if(fuse_cfg.valid_uid())
+    stbuf->st_uid = fuse_cfg.uid;
+  if(fuse_cfg.valid_gid())
+    stbuf->st_gid = fuse_cfg.gid;
+  if(fuse_cfg.valid_umask())
+    stbuf->st_mode = (stbuf->st_mode & S_IFMT) | (0777 & ~fuse_cfg.umask);
 }
 
 static
@@ -3449,7 +3440,7 @@ fuse_prune_some_remembered_nodes(int *offset_)
 
       checked++;
       age = (now - fn->time);
-      if(f.conf.remember > age)
+      if(fuse_cfg.remember_nodes > age)
         break;
 
       assert(fn->node->nlookup == 1);
@@ -3597,37 +3588,8 @@ enum
 
 static const struct fuse_opt fuse_lib_opts[] =
   {
-    FUSE_OPT_KEY("-h",		      KEY_HELP),
-    FUSE_OPT_KEY("--help",	      KEY_HELP),
-    FUSE_OPT_KEY("debug",	      FUSE_OPT_KEY_KEEP),
-    FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
-    FUSE_LIB_OPT("debug",	      debug,1),
-    FUSE_LIB_OPT("-d",		      debug,1),
-    FUSE_LIB_OPT("nogc",               nogc,1),
-    FUSE_LIB_OPT("umask=",	      set_mode,1),
-    FUSE_LIB_OPT("umask=%o",	      umask,0),
-    FUSE_LIB_OPT("uid=",	              set_uid,1),
-    FUSE_LIB_OPT("uid=%d",	      uid,0),
-    FUSE_LIB_OPT("gid=",	              set_gid,1),
-    FUSE_LIB_OPT("gid=%d",	      gid,0),
-    FUSE_LIB_OPT("noforget",           remember,-1),
-    FUSE_LIB_OPT("remember=%u",        remember,0),
     FUSE_OPT_END
   };
-
-static void fuse_lib_help(void)
-{
-  fprintf(stderr,
-          "    -o umask=M             set file permissions (octal)\n"
-          "    -o uid=N               set file owner\n"
-          "    -o gid=N               set file group\n"
-          "    -o noforget            never forget cached inodes\n"
-          "    -o remember=T          remember cached inodes for T seconds (0s)\n"
-          "    -o threads=NUM         number of worker threads. 0 = autodetect.\n"
-          "                           Negative values autodetect then divide by\n"
-          "                           absolute value. default = 0\n"
-          "\n");
-}
 
 static
 int
@@ -3636,22 +3598,7 @@ fuse_lib_opt_proc(void             *data,
                   int               key,
                   struct fuse_args *outargs)
 {
-  (void)arg; (void)outargs;
-
-  if(key == KEY_HELP)
-    {
-      struct fuse_config *conf = (struct fuse_config *)data;
-      fuse_lib_help();
-      conf->help = 1;
-    }
-
   return 1;
-}
-
-int
-fuse_is_lib_option(const char *opt)
-{
-  return fuse_lowlevel_is_lib_option(opt) || fuse_opt_match(fuse_lib_opts,opt);
 }
 
 static
@@ -3872,7 +3819,7 @@ fuse_new(struct fuse_chan             *ch,
   if(fuse_opt_parse(args,&f.conf,fuse_lib_opts,fuse_lib_opt_proc) == -1)
     goto out_free_fs;
 
-  g_LOG_METRICS = f.conf.debug;
+  g_LOG_METRICS = fuse_cfg.debug;
 
   f.se = fuse_lowlevel_new_common(args,&llop,sizeof(llop),&f);
   if(f.se == NULL)

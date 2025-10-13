@@ -2,6 +2,9 @@
 
 ## What should mergerfs NOT be used for?
 
+* Situations where you need large amounts of contiguous space beyond
+  that available on any singular device. Such as putting 10GiB file on
+  2 6GiB filesystems.
 * databases: Even if the database stored data in separate files
   (mergerfs wouldn't offer much otherwise) the higher latency of the
   indirection will really harm performance. If it is a lightly used
@@ -13,9 +16,9 @@
   should stick with RAID. However, it is fine to put a filesystem
   which is on a RAID setup in mergerfs.
   
-**However, if using [passthrough](../config/passthrough.md) the above
-situations are less likely to be a concern. Best to do testing for
-your specific use case.**
+**However, if using [passthrough](../config/passthrough.md) the
+performance related issues above are less likely to be a concern. Best
+to do testing for your specific use case.**
 
 
 ## It's mentioned that there are some security issues with mhddfs. What are they? How does mergerfs address them?

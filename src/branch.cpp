@@ -64,6 +64,7 @@ Branch::to_string(void) const
       break;
     }
 
+
   if(std::holds_alternative<u64>(_minfreespace))
     {
       rv += ',';

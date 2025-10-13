@@ -1,4 +1,4 @@
-# passthrough
+# passthrough.io
 
 * default: `off`
 * arguments:
@@ -14,7 +14,7 @@ to act as an active proxy for all read and write requests. This
 results in, at times, significant overhead compared to direct
 interaction with the underlying filesystems. Not because `mergerfs` is
 doing anything particularly slow but because the additional
-communication and data transfers required. With the `passthrough`
+communication and data transfers required. With the `passthrough.io`
 feature `mergerfs` is able to instruct the kernel to perform reads and
 writes directly on the underlying file. Bypassing `mergerfs` entirely
 (specifically and only for reads and writes) and thereby providing
@@ -37,48 +37,47 @@ features related to read/write are affected.
   requests being sent to `mergerfs` there is little reason to have
   larger message sizes since the only other message larger than 1
   page, directory reading, currently has a small fixed buffer size.
-* parallel-direct-writes: Not only is `direct-io` and `passthrough`
+* parallel-direct-writes: Not only is `direct-io` and `passthrough.io`
   mutually exclusive but since `mergerfs` no longer receives write
   requests in passthrough mode then there is no parallel writes
   possible.
 * [cache.writeback](cache.md): FUSE's writeback caching is
-  incompatible with `passthrough`. If `cache.writeback=true` when
-  enabling `passthrough` it will be reset to `false`.
-* [cache.files](cache.md): Must be enabled for `passthrough` to
+  incompatible with `passthrough.io`. If `cache.writeback=true` when
+  enabling `passthrough.io` it will be reset to `false`.
+* [cache.files](cache.md): Must be enabled for `passthrough.io` to
   work. When `cache.files=off` FUSE's `direct-io` mode is enabled
-  which overrides `passthrough.` Meaning `cache.files` should be set
-  to `partial`, `full` or `auto-full` to use `passthrough`. If
-  `cache.files` is set to `off` when using `passthrough` it will
+  which overrides `passthrough.io`. Meaning `cache.files` should be
+  set to `partial`, `full` or `auto-full` to use `passthrough.io`. If
+  `cache.files` is set to `off` when using `passthrough.io` it will
   reset it to `auto-full`.
 
 Technically `mergerfs` has the ability to choose options like
-`passthrough`, `direct-io`, and page caching independently for every
-file opened. However, at the moment there is no use case for picking
-and choosing which to enable outside `cache.files=per-process` (which
-is largely unnecessary on Linux v6.6 and above. See
+`passthrough.io`, `direct-io`, and page caching independently for
+every file opened. However, at the moment there is no use case for
+picking and choosing which to enable outside `cache.files=per-process`
+(which is largely unnecessary on Linux v6.6 and above. See
 [direct-io-allow-mmap](options.md)) If such a use case arises please
 [reach out to the author](../support.md) to discuss.
 
-Unlike [preload.so](../tooling.md#preloadso), `passthrough` will work for
-any software interacting with `mergerfs`. However, `passthrough`
-requires Linux v6.9 or above to work.
+Unlike [preload.so](../tooling.md#preloadso), `passthrough.io` will
+work for any software interacting with `mergerfs`. However,
+`passthrough.io` requires Linux v6.9 or above to work.
 
 **NOTE:** This feature will **ONLY** work if `mergerfs` is running as
 `root` as currently only `root` is allowed to leverage the kernel
 feature.
 
-**NOTE:** If a file has been opened and `passthrough` enabled, while
-that file is open, if another open request is made `mergerfs` must
-also enable `passthrough` for the second open request. This is a
-limitation of how the passthrough feature works. Though there is no
-known usecase where this is useful.
+**NOTE:** If a file has been opened and `passthrough.io` enabled,
+while that file is open, if another open request is made `mergerfs`
+must also enable `passthrough.io` for the second open request. This is
+a limitation of how the passthrough feature works.
 
-**NOTE:** In order to add `passthrough` feature to `mergerfs` it was
-necessary to remove the "feature" where mergerfs could open the same
-file on different branches. Such as using `func.open=rand` and having
-multiple files at the same relative path across different
+**NOTE:** In order to add `passthrough.io` feature to `mergerfs` it
+was necessary to remove the "feature" where mergerfs could open the
+same file on different branches. Such as using `func.open=rand` and
+having multiple files at the same relative path across different
 branches. This "feature" was very very rarely used and it was
-impossible to support `passthrough` without changing the behavior.
+impossible to support `passthrough.io` without changing that behavior.
 
 
 ## Alternatives

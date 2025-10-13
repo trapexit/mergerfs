@@ -41,74 +41,43 @@ struct fuse_opt fuse_helper_opts[] =
     FUSE_HELPER_OPT("-f",	foreground),
     FUSE_HELPER_OPT("fsname=",	nodefault_subtype),
     FUSE_HELPER_OPT("subtype=",	nodefault_subtype),
-    FUSE_OPT_KEY("-h",		KEY_HELP),
-    FUSE_OPT_KEY("--help",	KEY_HELP),
-    FUSE_OPT_KEY("-ho",		KEY_HELP_NOHEADER),
-    FUSE_OPT_KEY("-V",		KEY_VERSION),
-    FUSE_OPT_KEY("--version",	KEY_VERSION),
-    FUSE_OPT_KEY("-d",		FUSE_OPT_KEY_KEEP),
-    FUSE_OPT_KEY("debug",	FUSE_OPT_KEY_KEEP),
     FUSE_OPT_KEY("fsname=",	FUSE_OPT_KEY_KEEP),
     FUSE_OPT_KEY("subtype=",	FUSE_OPT_KEY_KEEP),
     FUSE_OPT_END
   };
 
-static void usage(const char *progname)
-{
-  fprintf(stderr,
-          "usage: %s mountpoint [options]\n\n", progname);
-  fprintf(stderr,
-          "general options:\n"
-          "    -o opt,[opt...]        mount options\n"
-          "    -h   --help            print help\n"
-          "    -V   --version         print version\n"
-          "\n");
-}
-
-static void helper_help(void)
-{
-  fprintf(stderr,
-          "FUSE options:\n"
-          "    -d   -o debug          enable debug output (implies -f)\n"
-          "    -f                     foreground operation\n"
-          "\n"
-          );
-}
-
-static int fuse_helper_opt_proc(void *data, const char *arg, int key,
-				struct fuse_args *outargs)
+static
+int
+fuse_helper_opt_proc(void             *data,
+                     const char       *arg,
+                     int               key,
+                     struct fuse_args *outargs)
 {
   struct helper_opts *hopts = data;
 
-  switch (key) {
-  case KEY_HELP:
-    usage(outargs->argv[0]);
-    /* fall through */
+  switch (key)
+    {
+    case FUSE_OPT_KEY_NONOPT:
+      if(!hopts->mountpoint)
+        {
+          char mountpoint[PATH_MAX];
+          if(realpath(arg, mountpoint) == NULL)
+            {
+              fprintf(stderr,
+                      "fuse: bad mount point `%s': %s\n",
+                      arg, strerror(errno));
+              return -1;
+            }
+          return fuse_opt_add_opt(&hopts->mountpoint, mountpoint);
+        }
+      else
+        {
+          fprintf(stderr, "fuse: invalid argument `%s'\n", arg);
+          return -1;
+        }
 
-  case KEY_HELP_NOHEADER:
-    helper_help();
-    return fuse_opt_add_arg(outargs, "-h");
-
-  case KEY_VERSION:
-    return 1;
-
-  case FUSE_OPT_KEY_NONOPT:
-    if (!hopts->mountpoint) {
-      char mountpoint[PATH_MAX];
-      if (realpath(arg, mountpoint) == NULL) {
-        fprintf(stderr,
-                "fuse: bad mount point `%s': %s\n",
-                arg, strerror(errno));
-        return -1;
-      }
-      return fuse_opt_add_opt(&hopts->mountpoint, mountpoint);
-    } else {
-      fprintf(stderr, "fuse: invalid argument `%s'\n", arg);
-      return -1;
-    }
-
-  default:
-    return 1;
+    default:
+      return 1;
   }
 }
 

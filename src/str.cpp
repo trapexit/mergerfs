@@ -16,6 +16,7 @@
 
 #include "str.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <set>
@@ -330,4 +331,19 @@ str::startswith(const char *s_,
     }
 
   return true;
+}
+
+std::string
+str::replace(const std::string &s_,
+             const char         src_,
+             const char         dst_)
+{
+  std::string s(s_);
+
+  std::replace(s.begin(),
+               s.end(),
+               src_,
+               dst_);
+
+  return s;
 }

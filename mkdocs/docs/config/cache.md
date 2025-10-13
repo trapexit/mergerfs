@@ -41,10 +41,10 @@ transparently enable page caching when mmap is requested. This means
 it should be safe to set `cache.files=off`. However, on Linux v6.5 and
 below you will need to configure `cache.files` as you need.
 
-If [passthrough](passthrough.md) is enabled so must be page
-caching. mergerfs will set `cache.files=auto-full` if `passthrough` is
-enabled. And when using `passthrough` the there is no double page
-caching since it is in fact passing through the IO.
+If [passthrough.io](passthrough.md) is enabled so must page
+caching. mergerfs will set `cache.files=auto-full` if `passthrough.io`
+is enabled. And when using `passthrough.io` the there is no double
+page caching since it is in fact passing through the IO.
 
 
 [^1]: This is not unique to mergerfs and affects all FUSE

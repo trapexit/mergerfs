@@ -111,7 +111,7 @@ _nfsopenhack(const fs::path    &fullpath_,
 */
 static
 void
-_tweak_flags_writeback_cache(int *flags_)
+_tweak_flags_cache_writeback(int *flags_)
 {
   if((*flags_ & O_ACCMODE) == O_WRONLY)
     *flags_ = ((*flags_ & ~O_ACCMODE) | O_RDWR);
@@ -145,11 +145,6 @@ _config_to_ffi_flags(Config           &cfg_,
 {
   switch(cfg.cache_files)
     {
-    case CacheFiles::ENUM::LIBFUSE:
-      ffi_->direct_io  = cfg.direct_io;
-      ffi_->keep_cache = cfg.kernel_cache;
-      ffi_->auto_cache = cfg.auto_cache;
-      break;
     case CacheFiles::ENUM::OFF:
       ffi_->direct_io  = 1;
       ffi_->keep_cache = 0;
@@ -272,8 +267,8 @@ _open(const Policy::Search &searchFunc_,
 constexpr
 const
 uint64_t
-_(const PassthroughEnum e_,
-  const uint64_t        m_)
+_(const PassthroughIOEnum e_,
+  const uint64_t          m_)
 {
   return ((((uint64_t)e_) << 32) | (m_ & O_ACCMODE));
 }
@@ -291,8 +286,8 @@ _open_for_insert_lambda(const fuse_req_ctx_t *ctx_,
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
 
-  if(cfg.writeback_cache)
-    ::_tweak_flags_writeback_cache(&ffi_->flags);
+  if(cfg.cache_writeback)
+    ::_tweak_flags_cache_writeback(&ffi_->flags);
 
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
                                       ffi_->flags);
@@ -312,13 +307,13 @@ _open_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   of_->ref_count = 1;
   of_->fi        = fi;
 
-  switch(_(cfg.passthrough,ffi_->flags))
+  switch(_(cfg.passthrough_io,ffi_->flags))
     {
-    case _(Passthrough::ENUM::RO,O_RDONLY):
-    case _(Passthrough::ENUM::WO,O_WRONLY):
-    case _(Passthrough::ENUM::RW,O_RDONLY):
-    case _(Passthrough::ENUM::RW,O_WRONLY):
-    case _(Passthrough::ENUM::RW,O_RDWR):
+    case _(PassthroughIO::ENUM::RO,O_RDONLY):
+    case _(PassthroughIO::ENUM::WO,O_WRONLY):
+    case _(PassthroughIO::ENUM::RW,O_RDONLY):
+    case _(PassthroughIO::ENUM::RW,O_WRONLY):
+    case _(PassthroughIO::ENUM::RW,O_RDWR):
       break;
     default:
       return 0;
@@ -347,8 +342,8 @@ _open_for_update_lambda(const fuse_req_ctx_t *ctx_,
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
 
-  if(cfg.writeback_cache)
-    ::_tweak_flags_writeback_cache(&ffi_->flags);
+  if(cfg.cache_writeback)
+    ::_tweak_flags_cache_writeback(&ffi_->flags);
 
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
                                       ffi_->flags);

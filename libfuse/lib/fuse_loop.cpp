@@ -14,7 +14,7 @@
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
 
-#include "fuse_config.hpp"
+#include "fuse_cfg.hpp"
 #include "fuse_msgbuf.hpp"
 #include "fuse_ll.hpp"
 
@@ -336,10 +336,10 @@ fuse_loop_mt(struct fuse *f_)
   fuse_populate_maintenance_thread(f_);
 
   res = fuse_session_loop_mt(fuse_get_session(),
-                             fuse_config_get_read_thread_count(),
-                             fuse_config_get_process_thread_count(),
-                             fuse_config_get_process_thread_queue_depth(),
-                             fuse_config_get_pin_threads());
+                             fuse_cfg.read_thread_count,
+                             fuse_cfg.process_thread_count,
+                             fuse_cfg.process_thread_queue_depth,
+                             fuse_cfg.pin_threads);
 
   MaintenanceThread::stop();
 

@@ -139,13 +139,8 @@ struct fuse_conn_info
 {
   unsigned proto_major;
   unsigned proto_minor;
-  unsigned max_write;
-  unsigned max_readahead;
   uint64_t capable;
   uint64_t want;
-  unsigned max_background;
-  unsigned congestion_threshold;
-  uint16_t max_pages;
 };
 
 struct fuse_session;

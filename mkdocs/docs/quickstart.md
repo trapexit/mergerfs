@@ -65,6 +65,15 @@ branches](config/branches.md#branch-setup).
 ### Command Line
 
 ```
+# Two positional options: `:` colon separated branches and mountpoint
+mergerfs -o opt[,opt...] /branch0:/branch1 /mountpoint
+# or list of positional options where the last is the mountpoint
+mergerfs -o opt[,opt...] /branch0 /branch1 /mountpoint
+# or set mountpoint via -o mountpoint
+mergerfs -o mountpoint=/mountpoint /branch0 /branch1
+```
+
+```
 mergerfs -o cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false /mnt/hdd0:/mnt/hdd1 /media
 ```
 
@@ -129,7 +138,8 @@ ExecStart=/usr/bin/mergerfs \
   -o category.create=pfrd \
   -o func.getattr=newest \
   -o dropcacheonclose=false \
-  /mnt/hdd0:/mnt/hdd1 \
+  /mnt/hdd0 \
+  /mnt/hdd1 \
   /media
 ExecStop=/usr/bin/umount /media
 # Or if you need fusermount
@@ -195,7 +205,8 @@ ExecStart=/usr/bin/mergerfs \
   -o category.create=pfrd \
   -o func.getattr=newest \
   -o dropcacheonclose=false \
-  /mnt/hdd0:/mnt/hdd1 \
+  /mnt/hdd0 \
+  /mnt/hdd1 \
   /media
 ExecStop=/usr/bin/umount /media
 # Or if you need fusermount

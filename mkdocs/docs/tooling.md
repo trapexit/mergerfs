@@ -50,8 +50,8 @@ OPTIONS:
 
 EXPERIMENTAL
 
-For some time there has been work to enable
-[passthrough](config/passthrough.md) IO in FUSE. Passthrough IO would
+For some time there has been work to enable IO
+[passthrough](config/passthrough.md) in FUSE. IO Passthrough would
 allow for near native performance with regards to reads and writes (at
 the expense of certain mergerfs features.) In Linux v6.9 that feature
 made its way into the kernel however in a somewhat limited form which

@@ -26,8 +26,6 @@ CacheFiles::to_string() const
 {
   switch(_data)
     {
-    case CacheFiles::ENUM::LIBFUSE:
-      return "libfuse";
     case CacheFiles::ENUM::OFF:
       return "off";
     case CacheFiles::ENUM::PARTIAL:
@@ -47,9 +45,7 @@ template<>
 int
 CacheFiles::from_string(const std::string_view s_)
 {
-  if(s_ == "libfuse")
-    _data = CacheFiles::ENUM::LIBFUSE;
-  ef(s_ == "off")
+  if(s_ == "off")
     _data = CacheFiles::ENUM::OFF;
   ef(s_ == "partial")
     _data = CacheFiles::ENUM::PARTIAL;

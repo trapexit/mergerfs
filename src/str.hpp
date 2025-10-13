@@ -101,4 +101,9 @@ namespace str
   bool
   eq(const char *s0,
      const char *s1);
+
+  std::string
+  replace(const std::string &s,
+          const char         src,
+          const char         dst);
 }

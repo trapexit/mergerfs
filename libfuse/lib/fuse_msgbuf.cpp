@@ -16,6 +16,7 @@
 */
 
 #include "fuse_msgbuf.hpp"
+
 #include "fuse.h"
 #include "fuse_kernel.h"
 
@@ -42,22 +43,34 @@ msgbuf_get_bufsize()
   return g_BUFSIZE;
 }
 
+u32
+msgbuf_get_pagesize()
+{
+  return g_PAGESIZE;
+}
+
+// +1 page so that it is used for the "header" of the allocation as
+// well as to allow for offseting for write requests to be page
+// aligned. +1 again for fuse header as the max_pages value is for the
+// body.
 void
 msgbuf_set_bufsize(const uint32_t size_in_pages_)
 {
-  g_BUFSIZE = ((size_in_pages_ + 1) * g_PAGESIZE);
+  g_BUFSIZE = ((size_in_pages_ + 2) * g_PAGESIZE);
 }
 
+static
 void
-msgbuf_page_align(fuse_msgbuf_t *msgbuf_)
+_msgbuf_page_align(fuse_msgbuf_t *msgbuf_)
 {
   msgbuf_->mem   = (char*)msgbuf_;
   msgbuf_->mem  += g_PAGESIZE;
   msgbuf_->size  = (g_BUFSIZE - g_PAGESIZE);
 }
 
+static
 void
-msgbuf_write_align(fuse_msgbuf_t *msgbuf_)
+_msgbuf_write_align(fuse_msgbuf_t *msgbuf_)
 {
   msgbuf_->mem   = (char*)msgbuf_;
   msgbuf_->mem  += g_PAGESIZE;
@@ -72,8 +85,8 @@ void
 _msgbuf_constructor()
 {
   g_PAGESIZE = sysconf(_SC_PAGESIZE);
-  // FUSE_MAX_MAX_PAGES for payload + 1 for message header
-  msgbuf_set_bufsize(FUSE_DEFAULT_MAX_MAX_PAGES + 1);
+
+  msgbuf_set_bufsize(FUSE_DEFAULT_MAX_MAX_PAGES);
 }
 
 static
@@ -86,7 +99,7 @@ _msgbuf_destructor()
 
 static
 void*
-page_aligned_malloc(const uint64_t size_)
+_page_aligned_malloc(const uint64_t size_)
 {
   int rv;
   void *buf = NULL;
@@ -111,7 +124,7 @@ _msgbuf_alloc(msgbuf_setup_func_t setup_func_)
     {
       g_MUTEX.unlock();
 
-      msgbuf = (fuse_msgbuf_t*)page_aligned_malloc(g_BUFSIZE);
+      msgbuf = (fuse_msgbuf_t*)_page_aligned_malloc(g_BUFSIZE);
       if(msgbuf == NULL)
         return NULL;
 
@@ -135,13 +148,13 @@ _msgbuf_alloc(msgbuf_setup_func_t setup_func_)
 fuse_msgbuf_t*
 msgbuf_alloc()
 {
-  return _msgbuf_alloc(msgbuf_write_align);
+  return _msgbuf_alloc(_msgbuf_write_align);
 }
 
 fuse_msgbuf_t*
 msgbuf_alloc_page_aligned()
 {
-  return _msgbuf_alloc(msgbuf_page_align);
+  return _msgbuf_alloc(_msgbuf_page_align);
 }
 
 static

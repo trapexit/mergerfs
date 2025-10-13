@@ -18,11 +18,10 @@
 
 #pragma once
 
+#include "int_types.h"
 #include "fuse_msgbuf_t.h"
-#include "extern_c.h"
 
-EXTERN_C_BEGIN
-
+u32      msgbuf_get_pagesize();
 void     msgbuf_set_bufsize(const uint32_t size);
 uint64_t msgbuf_get_bufsize();
 
@@ -35,8 +34,3 @@ void           msgbuf_gc_10percent();
 
 uint64_t       msgbuf_alloc_count();
 uint64_t       msgbuf_avail_count();
-
-void           msgbuf_page_align(fuse_msgbuf_t *msgbuf);
-void           msgbuf_write_align(fuse_msgbuf_t *msgbuf);
-
-EXTERN_C_END

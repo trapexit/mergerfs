@@ -14,6 +14,7 @@
 #include "lfmp.h"
 
 #include "debug.hpp"
+#include "fuse_cfg.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
 #include "fuse_msgbuf.hpp"
@@ -43,7 +44,7 @@
 #define OFFSET_MAX 0x7fffffffffffffffLL
 
 #define container_of(ptr, type, member) ({                      \
-      const decltype( ((type*)0)->member ) *__mptr = (ptr);       \
+      const decltype( ((type*)0)->member ) *__mptr = (ptr);     \
       (type *)( (char*)__mptr - offsetof(type,member) );})
 
 static size_t pagesize;
@@ -1117,11 +1118,17 @@ do_init(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   struct fuse_init_out outarg = {0};
-  struct fuse_init_in *arg = (struct fuse_init_in *) &hdr_[1];
+  struct fuse_init_in *arg = (struct fuse_init_in *)&hdr_[1];
   struct fuse_ll *f = req->f;
-  size_t bufsize = fuse_chan_bufsize(req->ch);
+  size_t bufsize;
   uint64_t inargflags;
   uint64_t outargflags;
+  u32 max_write;
+  u32 max_readahead;
+
+  max_write = UINT_MAX;
+  max_readahead = UINT_MAX;
+  bufsize = fuse_chan_bufsize(req->ch);
 
   inargflags = 0;
   outargflags = 0;
@@ -1158,8 +1165,8 @@ do_init(fuse_req_t            *req,
       if(inargflags & FUSE_INIT_EXT)
         inargflags |= (((uint64_t)arg->flags2) << 32);
 
-      if(arg->max_readahead < f->conn.max_readahead)
-        f->conn.max_readahead = arg->max_readahead;
+      if(arg->max_readahead < max_readahead)
+        max_readahead = arg->max_readahead;
 
       if(inargflags & FUSE_ASYNC_READ)
         f->conn.capable |= FUSE_CAP_ASYNC_READ;
@@ -1209,15 +1216,15 @@ do_init(fuse_req_t            *req,
   else
     {
       f->conn.want &= ~FUSE_CAP_ASYNC_READ;
-      f->conn.max_readahead = 0;
+      max_readahead = 0;
     }
 
   if(req->f->conn.proto_minor >= 18)
     f->conn.capable |= FUSE_CAP_IOCTL_DIR;
 
-  if(f->op.getlk && f->op.setlk && !f->no_remote_posix_lock)
+  if(f->op.getlk && f->op.setlk)
     f->conn.want |= FUSE_CAP_POSIX_LOCKS;
-  if(f->op.flock && !f->no_remote_flock)
+  if(f->op.flock)
     f->conn.want |= FUSE_CAP_FLOCK_LOCKS;
 
   if(bufsize < FUSE_MIN_READ_BUFFER)
@@ -1228,8 +1235,8 @@ do_init(fuse_req_t            *req,
     }
 
   bufsize -= pagesize;
-  if(bufsize < f->conn.max_write)
-    f->conn.max_write = bufsize;
+  if(bufsize < max_write)
+    max_write = bufsize;
 
   f->got_init = 1;
   if(f->op.init)
@@ -1238,10 +1245,11 @@ do_init(fuse_req_t            *req,
   outargflags = outarg.flags;
   if((inargflags & FUSE_MAX_PAGES) && (f->conn.want & FUSE_CAP_MAX_PAGES))
     {
-      outargflags     |= FUSE_MAX_PAGES;
-      outarg.max_pages  = f->conn.max_pages;
+      outargflags      |= FUSE_MAX_PAGES;
+      outarg.max_pages  = fuse_cfg.max_pages;
 
-      msgbuf_set_bufsize(outarg.max_pages + 1);
+      msgbuf_set_bufsize(outarg.max_pages);
+      max_write = (msgbuf_get_pagesize() * outarg.max_pages);
     }
 
   if(f->conn.want & FUSE_CAP_ASYNC_READ)
@@ -1288,7 +1296,7 @@ do_init(fuse_req_t            *req,
   if(f->conn.want & FUSE_CAP_PASSTHROUGH)
     {
       outargflags |= FUSE_PASSTHROUGH;
-      outarg.max_stack_depth = f->passthrough_max_stack_depth;
+      outarg.max_stack_depth = fuse_cfg.passthrough_max_stack_depth;
     }
 
   if(inargflags & FUSE_INIT_EXT)
@@ -1299,21 +1307,19 @@ do_init(fuse_req_t            *req,
 
   outarg.flags = outargflags;
 
-  outarg.max_readahead = f->conn.max_readahead;
-  outarg.max_write = f->conn.max_write;
+  outarg.max_readahead = max_readahead;
+  outarg.max_write = max_write;
   if(f->conn.proto_minor >= 13)
     {
-      if(f->conn.max_background >= (1 << 16))
-        f->conn.max_background = (1 << 16) - 1;
-      if(f->conn.congestion_threshold > f->conn.max_background)
-        f->conn.congestion_threshold = f->conn.max_background;
-      if(!f->conn.congestion_threshold)
-        {
-          f->conn.congestion_threshold = f->conn.max_background * 3 / 4;
-        }
+      if(fuse_cfg.max_background >= (1 << 16))
+        fuse_cfg.max_background = ((1 << 16) - 1);
+      if(fuse_cfg.congestion_threshold > fuse_cfg.max_background)
+        fuse_cfg.congestion_threshold = fuse_cfg.max_background;
+      if(!fuse_cfg.congestion_threshold)
+        fuse_cfg.congestion_threshold = (fuse_cfg.max_background * 3 / 4);
 
-      outarg.max_background = f->conn.max_background;
-      outarg.congestion_threshold = f->conn.congestion_threshold;
+      outarg.max_background = fuse_cfg.max_background;
+      outarg.congestion_threshold = fuse_cfg.congestion_threshold;
     }
 
   if(f->conn.proto_minor >= 23)
@@ -1780,86 +1786,6 @@ fuse_ll_funcs[FUSE_OPCODE_LEN] =
 
 #define FUSE_MAXOPS (sizeof(fuse_ll_funcs) / sizeof(fuse_ll_funcs[0]))
 
-enum {
-  KEY_HELP,
-  KEY_VERSION,
-};
-
-static const struct fuse_opt fuse_ll_opts[] =
-  {
-    { "debug", offsetof(struct fuse_ll, debug), 1 },
-    { "-d", offsetof(struct fuse_ll, debug), 1 },
-    { "max_readahead=%u", offsetof(struct fuse_ll, conn.max_readahead), 0 },
-    { "max_background=%u", offsetof(struct fuse_ll, conn.max_background), 0 },
-    { "congestion_threshold=%u",
-      offsetof(struct fuse_ll, conn.congestion_threshold), 0 },
-    { "no_remote_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
-    { "no_remote_lock", offsetof(struct fuse_ll, no_remote_flock), 1},
-    { "no_remote_flock", offsetof(struct fuse_ll, no_remote_flock), 1},
-    { "no_remote_posix_lock", offsetof(struct fuse_ll, no_remote_posix_lock), 1},
-    { "passthrough-max-stack-depth=%u", offsetof(struct fuse_ll, passthrough_max_stack_depth), 0},
-    FUSE_OPT_KEY("max_read=", FUSE_OPT_KEY_DISCARD),
-    FUSE_OPT_KEY("-h", KEY_HELP),
-    FUSE_OPT_KEY("--help", KEY_HELP),
-    FUSE_OPT_KEY("-V", KEY_VERSION),
-    FUSE_OPT_KEY("--version", KEY_VERSION),
-    FUSE_OPT_END
-  };
-
-static
-void
-fuse_ll_version(void)
-{
-  fprintf(stderr, "using FUSE kernel interface version %i.%i\n",
-          FUSE_KERNEL_VERSION, FUSE_KERNEL_MINOR_VERSION);
-}
-
-static
-void
-fuse_ll_help(void)
-{
-  fprintf(stderr,
-          "    -o max_readahead=N     set maximum readahead\n"
-          "    -o max_background=N    set number of maximum background requests\n"
-          "    -o congestion_threshold=N  set kernel's congestion threshold\n"
-          "    -o no_remote_lock      disable remote file locking\n"
-          "    -o no_remote_flock     disable remote file locking (BSD)\n"
-          "    -o no_remote_posix_lock disable remove file locking (POSIX)\n"
-          );
-}
-
-static
-int
-fuse_ll_opt_proc(void             *data,
-                 const char       *arg,
-                 int               key,
-                 struct fuse_args *outargs)
-{
-  (void) data; (void) outargs;
-
-  switch (key)
-    {
-    case KEY_HELP:
-      fuse_ll_help();
-      break;
-
-    case KEY_VERSION:
-      fuse_ll_version();
-      break;
-
-    default:
-      fprintf(stderr, "fuse: unknown option `%s'\n", arg);
-    }
-
-  return -1;
-}
-
-int
-fuse_lowlevel_is_lib_option(const char *opt)
-{
-  return fuse_opt_match(fuse_ll_opts, opt);
-}
-
 static
 void
 fuse_ll_destroy(void *data)
@@ -2032,6 +1958,23 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   return;
 }
 
+static const struct fuse_opt fuse_ll_opts[] =
+  {
+    FUSE_OPT_END
+  };
+
+static
+int
+fuse_ll_opt_proc(void             *data_,
+                 const char       *arg_,
+                 int               key_,
+                 struct fuse_args *outargs_)
+{
+  fmt::print(stderr, "* ERROR: unknown option '{}'\n", arg_);
+
+  return -1;
+}
+
 /*
  * always call fuse_lowlevel_new_common() internally, to work around a
  * misfeature in the FreeBSD runtime linker, which links the old
@@ -2060,9 +2003,6 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
       goto out;
     }
 
-  f->conn.max_write = UINT_MAX;
-  f->conn.max_readahead = UINT_MAX;
-  f->passthrough_max_stack_depth = 2;
   list_init_nreq(&f->notify_list);
   f->notify_ctr = 1;
   mutex_init(&f->lock);
@@ -2075,7 +2015,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
       goto out_free;
     }
 
-  if(fuse_opt_parse(args, f, fuse_ll_opts, fuse_ll_opt_proc) == -1)
+  if(fuse_opt_parse(args,NULL,fuse_ll_opts,fuse_ll_opt_proc) == -1)
     goto out_key_destroy;
 
   memcpy(&f->op, op, op_size);

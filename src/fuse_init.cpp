@@ -131,7 +131,7 @@ _want_if_capable_max_pages(fuse_conn_info *conn_,
   if(::_capable(conn_,FUSE_CAP_MAX_PAGES))
     {
       ::_want(conn_,FUSE_CAP_MAX_PAGES);
-      conn_->max_pages = cfg_.fuse_msg_size;
+      fuse_cfg.max_pages = cfg_.fuse_msg_size;
       SysLog::info("requesting max pages size of {}",
                    (uint64_t)cfg_.fuse_msg_size);
     }
@@ -204,8 +204,8 @@ FUSE::init(fuse_conn_info *conn_)
   ::_want_if_capable(conn_,FUSE_CAP_PARALLEL_DIROPS);
   ::_want_if_capable(conn_,FUSE_CAP_PASSTHROUGH);
   ::_want_if_capable(conn_,FUSE_CAP_POSIX_ACL,&cfg.posix_acl);
-  ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg.readdirplus);
-  ::_want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg.writeback_cache);
+  //  ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS,&cfg.readdirplus);
+  ::_want_if_capable(conn_,FUSE_CAP_WRITEBACK_CACHE,&cfg.cache_writeback);
   ::_want_if_capable(conn_,FUSE_CAP_ALLOW_IDMAP,&cfg.allow_idmap);
   //    ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS_AUTO);
   ::_want_if_capable_max_pages(conn_,cfg);
@@ -214,21 +214,22 @@ FUSE::init(fuse_conn_info *conn_)
 
   ::_spawn_thread_to_set_readahead();
 
-  if(!(conn_->capable & FUSE_CAP_PASSTHROUGH) && (cfg.passthrough != Passthrough::ENUM::OFF))
+  if(!(conn_->capable & FUSE_CAP_PASSTHROUGH) &&
+     (cfg.passthrough_io != PassthroughIO::ENUM::OFF))
     {
       SysLog::warning("passthrough enabled but not supported by kernel. disabling.");
-      cfg.passthrough = Passthrough::ENUM::OFF;
+      cfg.passthrough_io = PassthroughIO::ENUM::OFF;
     }
 
-  if((cfg.passthrough != Passthrough::ENUM::OFF) &&
-     (cfg.cache_files == CacheFiles::ENUM::OFF))
+  if((cfg.passthrough_io != PassthroughIO::ENUM::OFF) &&
+     (cfg.cache_files    == CacheFiles::ENUM::OFF))
     {
       SysLog::warning("passthrough enabled and cache.files disabled:"
                       " passthrough will not function");
     }
 
-  if((cfg.passthrough != Passthrough::ENUM::OFF) &&
-     (cfg.writeback_cache == true))
+  if((cfg.passthrough_io  != PassthroughIO::ENUM::OFF) &&
+     (cfg.cache_writeback == true))
     {
       SysLog::warning("passthrough and cache.writeback are incompatible.");
     }

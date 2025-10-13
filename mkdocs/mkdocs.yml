@@ -108,9 +108,9 @@ nav:
 - extended_usage_patterns.md
 - FAQ:
   - faq/why_isnt_it_working.md
-  - faq/reliability_and_scalability.md
-  - faq/usage_and_functionality.md
   - faq/configuration_and_policies.md
+  - faq/usage_and_functionality.md
+  - faq/reliability_and_scalability.md
   - faq/compatibility_and_integration.md
   - faq/recommendations_and_warnings.md
   - faq/technical_behavior_and_limitations.md

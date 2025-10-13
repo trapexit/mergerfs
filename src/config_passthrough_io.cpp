@@ -1,5 +1,3 @@
-#pragma once
-
 /*
   ISC License
 
@@ -18,15 +16,43 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "enum.hpp"
+#include "config_passthrough_io.hpp"
+#include "ef.hpp"
+#include "errno.hpp"
 
+template<>
+std::string
+PassthroughIO::to_string() const
+{
+  switch(_data)
+    {
+    case PassthroughIO::ENUM::OFF:
+      return "off";
+    case PassthroughIO::ENUM::RO:
+      return "ro";
+    case PassthroughIO::ENUM::WO:
+      return "wo";
+    case PassthroughIO::ENUM::RW:
+      return "rw";
+    }
 
-enum class PassthroughEnum
-  {
-    OFF = 0,
-    RO,
-    WO,
-    RW
-  };
+  return "invalid";
+}
 
-typedef Enum<PassthroughEnum> Passthrough;
+template<>
+int
+PassthroughIO::from_string(const std::string_view s_)
+{
+  if(s_ == "off")
+    _data = PassthroughIO::ENUM::OFF;
+  ef(s_ == "ro")
+    _data = PassthroughIO::ENUM::RO;
+  ef(s_ == "wo")
+    _data = PassthroughIO::ENUM::WO;
+  ef(s_ == "rw")
+    _data = PassthroughIO::ENUM::RW;
+  else
+    return -EINVAL;
+
+  return 0;
+}

@@ -19,6 +19,7 @@
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
+#include "config_dummy.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
 #include "config_gidcache.hpp"
@@ -27,8 +28,9 @@
 #include "config_log_metrics.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
+#include "config_noforget.hpp"
 #include "config_pagesize.hpp"
-#include "config_passthrough.hpp"
+#include "config_passthrough_io.hpp"
 #include "config_pid.hpp"
 #include "config_proxy_ioprio.hpp"
 #include "config_rename_exdev.hpp"
@@ -40,10 +42,13 @@
 #include "errno.hpp"
 #include "fs_path.hpp"
 #include "funcs.hpp"
+#include "fuse_cfg.hpp"
 #include "fuse_readdir.hpp"
 #include "policy.hpp"
 #include "rwlock.hpp"
+#include "tofrom_ref.hpp"
 #include "tofrom_wrapper.hpp"
+#include "syslog.hpp"
 
 #include "fuse.h"
 
@@ -55,13 +60,14 @@
 
 #include <sys/stat.h>
 
-typedef ToFromWrapper<bool>                  ConfigBOOL;
-typedef ToFromWrapper<uint64_t>              ConfigUINT64;
-typedef ToFromWrapper<int64_t>               ConfigS64;
-typedef ToFromWrapper<int>                   ConfigINT;
-typedef ToFromWrapper<std::string>           ConfigSTR;
-typedef ToFromWrapper<fs::path> ConfigPath;
-typedef std::map<std::string,ToFromString*>  Str2TFStrMap;
+typedef ToFromWrapper<bool>                 ConfigBOOL;
+typedef ToFromWrapper<uint64_t>             ConfigUINT64;
+typedef ToFromWrapper<int64_t>              ConfigS64;
+typedef ToFromWrapper<int>                  ConfigINT;
+typedef ToFromWrapper<std::string>          ConfigSTR;
+typedef ToFromWrapper<fs::path>             ConfigPath;
+typedef std::map<std::string,ToFromString*> Str2TFStrMap;
+typedef ROToFromWrapper<std::string>        ConfigROSTR;
 
 extern const std::string CONTROLFILE;
 
@@ -72,9 +78,29 @@ public:
   {
     int err;
     std::string str;
+
+    std::string to_string() const;
   };
 
   typedef std::vector<Err> ErrVec;
+
+public:
+  ErrVec errs;
+
+public:
+  class CfgConfigFile : public ToFromString
+  {
+  private:
+    fs::path  _cfg_file;
+    int       _depth = 0;
+
+  public:
+    CfgConfigFile();
+
+  public:
+    int from_string(const std::string_view s_) final;
+    std::string to_string(void) const final;
+  };
 
 public:
   Config();
@@ -85,8 +111,6 @@ public:
 public:
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
-  ConfigBOOL     auto_cache;
-  ConfigUINT64   minfreespace;
   Branches       branches;
   ConfigUINT64   branches_mount_timeout;
   ConfigBOOL     branches_mount_timeout_fail;
@@ -98,8 +122,11 @@ public:
   ConfigBOOL     cache_readdir;
   ConfigUINT64   cache_statfs;
   ConfigBOOL     cache_symlinks;
+  ConfigBOOL     cache_writeback;
   Categories     category;
-  ConfigBOOL     direct_io;
+  CfgConfigFile  config_file;
+  TFSRef<int>    congestion_threshold;
+  TFSRef<bool>   debug;
   ConfigBOOL     direct_io_allow_mmap;
   ConfigBOOL     dropcacheonclose;
   ConfigBOOL     export_support;
@@ -108,30 +135,40 @@ public:
   ConfigSTR      fsname;
   Funcs          func;
   ConfigPageSize fuse_msg_size;
+  TFSRef<s64>    gid;
   GIDCacheExpireTimeout gid_cache_expire_timeout;
   GIDCacheRemoveTimeout gid_cache_remove_timeout;
-  ConfigBOOL     handle_killpriv = true;
-  ConfigBOOL     handle_killpriv_v2 = true;
+  ConfigBOOL     handle_killpriv;
+  ConfigBOOL     handle_killpriv_v2;
   ConfigBOOL     ignorepponrename;
   InodeCalc      inodecalc;
-  ConfigBOOL     kernel_cache;
-  ConfigBOOL     kernel_permissions_check = true;
+  ConfigBOOL     kernel_permissions_check;
   ConfigBOOL     lazy_umount_mountpoint;
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
   LogMetrics     log_metrics;
-  ConfigPath     mountpoint;
+  TFSRef<int>    max_background;
+  ConfigUINT64   minfreespace;
+  fs::path       mountpoint;
+  TFSRef<fs::path> _mount;
+  TFSRef<fs::path> _mountpoint;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
+  CfgNoforget    noforget;
   ConfigBOOL     nullrw;
-  Passthrough    passthrough = Passthrough::ENUM::OFF;
   ConfigBOOL     parallel_direct_writes;
+  PassthroughIO  passthrough_io;
+  TFSRef<int>    passthrough_max_stack_depth;
   ConfigGetPid   pid;
+  TFSRef<std::string> pin_threads;
   ConfigBOOL     posix_acl;
+  TFSRef<int>    process_thread_count;
+  TFSRef<int>    process_thread_queue_depth;
   ProxyIOPrio    proxy_ioprio;
+  TFSRef<int>    read_thread_count;
   ConfigUINT64   readahead;
   FUSE::ReadDir  readdir;
-  ConfigBOOL     readdirplus;
+  TFSRef<s64>    remember_nodes;
   RenameEXDEV    rename_exdev;
   ConfigINT      scheduling_priority;
   ConfigBOOL     security_capability;
@@ -140,13 +177,14 @@ public:
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
   ConfigS64      symlinkify_timeout;
-  ConfigINT      fuse_read_thread_count;
-  ConfigINT      fuse_process_thread_count;
-  ConfigINT      fuse_process_thread_queue_depth;
-  ConfigSTR      fuse_pin_threads;
-  ConfigSTR      version;
-  ConfigBOOL     writeback_cache;
+  TFSRef<int>    threads;
+  TFSRef<s64>    uid;
+  TFSRef<s64>    umask;
+  ConfigROSTR    version;
   XAttr          xattr;
+
+private:
+  CfgDummy _dummy;
 
 private:
   bool _initialized;
@@ -167,13 +205,12 @@ public:
 
 public:
   int get(const std::string &key, std::string *val) const;
-  int set_raw(const std::string &key, const std::string &val);
   int set(const std::string &key, const std::string &val);
   int set(const std::string &kv);
 
 public:
-  int from_stream(std::istream &istrm, ErrVec *errs);
-  int from_file(const std::string &filepath, ErrVec *errs);
+  int from_stream(std::istream &istrm);
+  int from_file(const std::string &filepath);
 
 public:
   static bool is_rootdir(const fs::path &fusepath);
@@ -185,10 +222,6 @@ public:
 
 private:
   Str2TFStrMap _map;
-
-public:
-  friend class Read;
-  friend class Write;
 };
 
 std::ostream& operator<<(std::ostream &s,const Config::ErrVec &ev);
