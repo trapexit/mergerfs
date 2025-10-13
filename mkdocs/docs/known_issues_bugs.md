@@ -91,36 +91,41 @@ on [page caching](config/cache.md).
 
 ## 3rd Party Software
 
-### SQLite3, Plex, Jellyfin do not work with mergerfs
+### Software using mmap
 
-It does. If you're trying to put the software's config / metadata /
-database on mergerfs you can't set [cache.files=off](config/cache.md)
-(unless you use Linux v6.6 or above and
-[direct-io-allow-mmap](config/options.md) is enabled) because they are
-using **sqlite3** with **mmap** enabled and have failed to properly
-handle the situation where **mmap** may not be available.
+* software using sqlite3 w/ mmap
+    * Plex (for config)
+    * Jellyfin (for config)
+    * Emby (for config)
+    * Radarr
+    * Sonarr
+    * Lidarr
+* other
+    * rtorrent
+    * qbittorrent (with 'Disk IO type = Memory mapped files')
+
+[mmap](https://en.wikipedia.org/wiki/Mmap) is a filesystem and
+operating system feature allowing files to be interacted with as if it
+was normal memory. Support for `mmap` is **required** by a number of
+projects. FUSE (and therefore mergerfs), in order to support `mmap`,
+requires [page caching](config/cache.md) to be
+enabled. IE `cache.files` must not be set to `off` (if using Linux before
+v6.6 or mergerfs before v2.41.0.)
+
+In newer versions of mergerfs and Linux `off` will work as it can now
+auto enable page caching (and therefore `mmap`) as needed.
 
 That said it is recommended that config and runtime files be stored on
 SSDs on a regular filesystem for performance reasons. See [What should
 mergerfs NOT be used
 for?](faq/recommendations_and_warnings.md#what-should-mergerfs-not-be-used-for).
 
-Other software that leverages **sqlite3** which require **mmap**
-includes Radarr, Sonarr, and Lidarr. However, many programs use
-**sqlite3** and do not require **mmap**.
-
-It is recommended that you reach out to the developers of the software
-you are having troubles with and ask them to add a fallback to regular
-file IO when **mmap** is unavailable. It is not only more compatible
-but also can be more performant in certain situations.
-
-If the issue is that quick scans do not seem to pick up media then be
-sure to set `func.getattr=newest`. That said a full scan will pick up
-all media and it will put less load on the host to use time based
-library scans or to configure downloading software to trigger a scan
-when files are added to the pool. See [Does inotify and fanotify
-work?](faq/compatibility_and_integration.md#does-inotify-and-fanotify-work)
-for more details.
+Technically **sqlite3** does not require `mmap`, and in fact the
+default is not to use it, but many programs enable the feature and
+provide no error handling when not supported. Ideally the software
+would catch the error and use traditional IO instead. Not only is it
+more compatible but could also be more performant in certain
+situations.
 
 
 ### backup software

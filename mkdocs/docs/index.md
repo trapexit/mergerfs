@@ -5,7 +5,10 @@
 [union filesystem](https://en.wikipedia.org/wiki/Union_mount) geared
 towards simplifying storage and management of files across numerous
 commodity storage devices. It is similar to [**mhddfs**, **unionfs**,
-**aufs**, **DrivePool**, etc.](project_comparisons.md)
+**aufs**, **DrivePool**, etc.](project_comparisons.md) Allowing for
+the aggregation of storage without the more rigid requirements and
+failure conditions of [RAID and other
+technologies](project_comparisons.md).
 
 
 ## Features
@@ -35,7 +38,8 @@ commodity storage devices. It is similar to [**mhddfs**, **unionfs**,
 
 * Read/write overlay on top of read-only filesystem like OverlayFS
 * File whiteout
-* RAID like parity calculation (see [SnapRAID](https://www.snapraid.it))
+* RAID like redundancy (see [SnapRAID](https://www.snapraid.it) and
+  [NonRAID](https://github.com/qvr/nonraid))
 * Redundancy
 * Splitting of files across branches
 
