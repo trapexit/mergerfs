@@ -20,16 +20,14 @@
 
 #include "errno.hpp"
 
-#include <cstdint>
-
-#include <stddef.h>
-
 
 int
-FUSE::bmap(const char *fusepath_,
-           size_t      blocksize_,
-           uint64_t   *idx_)
+FUSE::bmap(const fuse_req_ctx_t *ctx_,
+           const char           *fusepath_,
+           size_t                blocksize_,
+           uint64_t             *idx_)
 {
+  (void)ctx_;
   (void)fusepath_;
   (void)blocksize_;
   (void)idx_;

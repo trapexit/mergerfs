@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 
 namespace FUSE
 {
   int
-  rmdir(const char *fusepath);
+  rmdir(const fuse_req_ctx_t *ctx,
+        const char           *fusepath);
 }

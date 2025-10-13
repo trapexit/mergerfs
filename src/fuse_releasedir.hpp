@@ -22,5 +22,6 @@
 namespace FUSE
 {
   int
-  releasedir(const fuse_file_info_t *ffi);
+  releasedir(const fuse_req_ctx_t   *ctx,
+             const fuse_file_info_t *ffi);
 }

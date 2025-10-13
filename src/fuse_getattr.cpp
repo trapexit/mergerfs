@@ -177,8 +177,6 @@ _getattr(const fs::path  &fusepath_,
          fuse_timeouts_t *timeout_)
 {
   int rv;
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
 
   rv = ::_getattr(cfg.func.getattr.policy,
                   cfg.branches,
@@ -199,13 +197,25 @@ _getattr(const fs::path  &fusepath_,
 }
 
 int
-FUSE::getattr(const char      *fusepath_,
-              struct stat     *st_,
-              fuse_timeouts_t *timeout_)
+FUSE::getattr(const fuse_req_ctx_t *ctx_,
+              const char           *fusepath_,
+              struct stat          *st_,
+              fuse_timeouts_t      *timeout_)
 {
   const fs::path fusepath{fusepath_};
 
-  return FUSE::getattr(fusepath,st_,timeout_);
+  return FUSE::getattr(ctx_,fusepath,st_,timeout_);
+}
+
+int
+FUSE::getattr(const fuse_req_ctx_t *ctx_,
+              const fs::path       &fusepath_,
+              struct stat          *st_,
+              fuse_timeouts_t      *timeout_)
+{
+  const ugid::Set ugid(ctx_);
+
+  return FUSE::getattr(fusepath_,st_,timeout_);
 }
 
 int

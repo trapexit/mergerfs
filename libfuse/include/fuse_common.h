@@ -1,19 +1,4 @@
-/*
-  FUSE: Filesystem in Userspace
-  Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
-
-  This program can be distributed under the terms of the GNU LGPLv2.
-  See the file COPYING.LIB.
-*/
-
-/** @file */
-
-#if !defined(_FUSE_H_) && !defined(_FUSE_LOWLEVEL_H_)
-#error "Never include <fuse_common.h> directly; use <fuse.h> or <fuse_lowlevel.h> instead."
-#endif
-
-#ifndef _FUSE_COMMON_H_
-#define _FUSE_COMMON_H_
+#pragma once
 
 #include "extern_c.h"
 #include "fuse_opt.h"
@@ -21,15 +6,6 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-
-/** Major version of FUSE library interface */
-#define FUSE_MAJOR_VERSION 2
-
-/** Minor version of FUSE library interface */
-#define FUSE_MINOR_VERSION 9
-
-#define FUSE_MAKE_VERSION(maj, min)  ((maj) * 10 + (min))
-#define FUSE_VERSION FUSE_MAKE_VERSION(FUSE_MAJOR_VERSION, FUSE_MINOR_VERSION)
 
 /* This interface uses 64 bit off_t */
 #if _FILE_OFFSET_BITS != 64
@@ -449,5 +425,3 @@ int fuse_set_signal_handlers(struct fuse_session *se);
 void fuse_remove_signal_handlers(struct fuse_session *se);
 
 EXTERN_C_END
-
-#endif /* _FUSE_COMMON_H_ */

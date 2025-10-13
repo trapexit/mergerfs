@@ -23,5 +23,5 @@
 
 namespace FUSE
 {
-  int removemapping();
+  int removemapping(const fuse_req_ctx_t *ctx);
 }

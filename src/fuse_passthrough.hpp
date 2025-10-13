@@ -4,27 +4,28 @@
 
 #include "fuse.h"
 
+// Becoming root is required due to current security policies within
+// the kernel. This may be able to be changed in the future.
+
 namespace FUSE
 {
   static
   inline
   int
-  passthrough_open(const fuse_context *fc_,
-                   const int           fd_)
+  passthrough_open(const int fd_)
   {
     const ugid::SetRootGuard _;
 
-    return fuse_passthrough_open(fc_,fd_);
+    return fuse_passthrough_open(fd_);
   }
 
   static
   inline
   int
-  passthrough_close(const fuse_context *fc_,
-                    const int           backing_id_)
+  passthrough_close(const int backing_id_)
   {
     const ugid::SetRootGuard _;
 
-    return fuse_passthrough_close(fc_,backing_id_);
+    return fuse_passthrough_close(backing_id_);
   }
 }

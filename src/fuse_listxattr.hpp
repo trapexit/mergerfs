@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <cstddef>
 
 namespace FUSE
 {
   int
-  listxattr(const char *fusepath,
-            char       *buf,
-            size_t      count);
+  listxattr(const fuse_req_ctx_t *ctx,
+            const char           *fusepath,
+            char                 *buf,
+            size_t                count);
 }

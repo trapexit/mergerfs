@@ -23,7 +23,8 @@
 
 namespace FUSE
 {
-  ssize_t setupmapping(uint64_t *fh_,
+  ssize_t setupmapping(const fuse_req_ctx_t *ctx,
+                       uint64_t *fh_,
                        uint64_t  foffset_,
                        uint64_t  len_,
                        uint64_t  flags_,

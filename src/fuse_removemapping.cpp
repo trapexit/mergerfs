@@ -22,7 +22,7 @@
 
 
 int
-FUSE::removemapping()
+FUSE::removemapping(const fuse_req_ctx_t *ctx)
 {
   return -ENOSYS;
 }

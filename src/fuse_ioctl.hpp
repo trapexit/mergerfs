@@ -24,7 +24,8 @@
 namespace FUSE
 {
   int
-  ioctl(const fuse_file_info_t *ffi,
+  ioctl(const fuse_req_ctx_t   *ctx,
+        const fuse_file_info_t *ffi,
         unsigned long           cmd,
         void                   *arg,
         unsigned int            flags,

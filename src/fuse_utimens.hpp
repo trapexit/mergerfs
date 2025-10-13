@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <sys/stat.h>
 
 
 namespace FUSE
 {
   int
-  utimens(const char     *fusepath,
-          const timespec  ts[2]);
+  utimens(const fuse_req_ctx_t *ctx,
+          const char           *fusepath,
+          const timespec        ts[2]);
 }

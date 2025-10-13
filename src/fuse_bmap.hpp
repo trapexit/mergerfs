@@ -18,12 +18,17 @@
 
 #pragma once
 
-#include "fuse.h"
+#include "fuse_req_ctx.h"
+
+#include <cstddef>
+#include <cstdint>
+
 
 namespace FUSE
 {
   int
-  bmap(const char *fusepath,
-       size_t      blocksize,
-       uint64_t   *idx);
+  bmap(const fuse_req_ctx_t *ctx,
+       const char           *fusepath,
+       size_t                blocksize,
+       uint64_t             *idx);
 }

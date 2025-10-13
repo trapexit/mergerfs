@@ -37,16 +37,16 @@ _flock(const int fd_,
 }
 
 int
-FUSE::flock(const fuse_file_info_t *ffi_,
+FUSE::flock(const fuse_req_ctx_t   *ctx_,
+            const fuse_file_info_t *ffi_,
             int                     op_)
 {
   uint64_t fh;
-  const fuse_context *fc = fuse_get_context();
 
   fh = ffi_->fh;
   if(fh == 0)
     {
-      state.open_files.cvisit(fc->nodeid,
+      state.open_files.cvisit(ctx_->nodeid,
                               [&](const auto &val_)
                               {
                                 fh = val_.second.fi->to_fh();

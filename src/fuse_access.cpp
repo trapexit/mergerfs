@@ -50,12 +50,12 @@ _access(const Policy::Search &searchFunc_,
 }
 
 int
-FUSE::access(const char *fusepath_,
-             int         mask_)
+FUSE::access(const fuse_req_ctx_t *ctx_,
+             const char           *fusepath_,
+             int                   mask_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   return ::_access(cfg.func.access.policy,
                    cfg.branches,

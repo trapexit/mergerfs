@@ -25,14 +25,16 @@
 
 namespace FUSE
 {
-  int statx(const char        *fusepath,
-            const uint32_t     flags,
-            const uint32_t     mask,
-            struct fuse_statx *st,
-            fuse_timeouts_t   *timeout);
-  int statx_fh(const uint64_t     fh,
-               const uint32_t     flags,
-               const uint32_t     mask,
-               struct fuse_statx *st,
-               fuse_timeouts_t   *timeout);
+  int statx(const fuse_req_ctx_t *ctx,
+            const char           *fusepath,
+            const uint32_t        flags,
+            const uint32_t        mask,
+            struct fuse_statx    *st,
+            fuse_timeouts_t      *timeout);
+  int statx_fh(const fuse_req_ctx_t *ctx,
+               const uint64_t        fh,
+               const uint32_t        flags,
+               const uint32_t        mask,
+               struct fuse_statx    *st,
+               fuse_timeouts_t      *timeout);
 }

@@ -89,8 +89,9 @@ _removexattr(const Policy::Action &actionFunc_,
 }
 
 int
-FUSE::removexattr(const char *fusepath_,
-                  const char *attrname_)
+FUSE::removexattr(const fuse_req_ctx_t *ctx_,
+                  const char           *fusepath_,
+                  const char           *attrname_)
 {
   const fs::path fusepath{fusepath_};
 
@@ -100,8 +101,7 @@ FUSE::removexattr(const char *fusepath_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const ugid::Set ugid(ctx_);
 
   return ::_removexattr(cfg.func.removexattr.policy,
                         cfg.func.getxattr.policy,

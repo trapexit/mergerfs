@@ -32,7 +32,8 @@
 namespace FUSE
 {
   ssize_t
-  copy_file_range(const fuse_file_info_t *ffi_in,
+  copy_file_range(const fuse_req_ctx_t   *ctx_,
+                  const fuse_file_info_t *ffi_in,
                   off_t                   offset_in,
                   const fuse_file_info_t *ffi_out,
                   off_t                   offset_out,

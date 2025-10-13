@@ -22,13 +22,15 @@
 namespace FUSE
 {
   int
-  write(const fuse_file_info_t *ffi,
+  write(const fuse_req_ctx_t   *ctx,
+        const fuse_file_info_t *ffi,
         const char             *buf,
         size_t                  count,
         off_t                   offset);
 
   int
-  write_null(const fuse_file_info_t *ffi,
+  write_null(const fuse_req_ctx_t   *ctx,
+             const fuse_file_info_t *ffi,
              const char             *buf,
              size_t                  count,
              off_t                   offset);

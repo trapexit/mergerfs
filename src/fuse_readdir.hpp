@@ -28,7 +28,8 @@
 
 namespace FUSE
 {
-  int readdir(fuse_file_info_t const *ffi,
+  int readdir(const fuse_req_ctx_t   *ctx,
+              fuse_file_info_t const *ffi,
               fuse_dirents_t         *buf);
 }
 
@@ -49,7 +50,8 @@ namespace FUSE
     int from_string(const std::string_view);
 
   public:
-    int operator()(fuse_file_info_t const *ffi,
+    int operator()(const fuse_req_ctx_t   *ctx,
+                   fuse_file_info_t const *ffi,
                    fuse_dirents_t         *buf);
 
   public:

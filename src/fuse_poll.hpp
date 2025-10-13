@@ -24,7 +24,8 @@
 namespace FUSE
 {
   int
-  poll(const fuse_file_info_t *ffi,
+  poll(const fuse_req_ctx_t   *ctx,
+       const fuse_file_info_t *ffi,
        fuse_pollhandle_t      *ph,
        unsigned               *reventsp);
 }

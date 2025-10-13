@@ -180,11 +180,12 @@ _setxattr(const Policy::Action &setxattrPolicy_,
 
 static
 int
-_setxattr(const fs::path &fusepath_,
-          const char     *attrname_,
-          const char     *attrval_,
-          size_t          attrvalsize_,
-          int             flags_)
+_setxattr(const fuse_req_ctx_t *ctx_,
+          const fs::path       &fusepath_,
+          const char           *attrname_,
+          const char           *attrval_,
+          size_t                attrvalsize_,
+          int                   flags_)
 {
   if((cfg.security_capability == false) &&
      ::_is_attrname_security_capability(attrname_))
@@ -193,8 +194,7 @@ _setxattr(const fs::path &fusepath_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const ugid::Set ugid(ctx_);
 
   return ::_setxattr(cfg.func.setxattr.policy,
                      cfg.func.getxattr.policy,
@@ -208,11 +208,12 @@ _setxattr(const fs::path &fusepath_,
 
 
 int
-FUSE::setxattr(const char *fusepath_,
-               const char *attrname_,
-               const char *attrval_,
-               size_t      attrvalsize_,
-               int         flags_)
+FUSE::setxattr(const fuse_req_ctx_t *ctx_,
+               const char           *fusepath_,
+               const char           *attrname_,
+               const char           *attrval_,
+               size_t                attrvalsize_,
+               int                   flags_)
 {
   const fs::path fusepath{fusepath_};
 
@@ -222,5 +223,10 @@ FUSE::setxattr(const char *fusepath_,
                                  attrvalsize_,
                                  flags_);
 
-  return ::_setxattr(fusepath,attrname_,attrval_,attrvalsize_,flags_);
+  return ::_setxattr(ctx_,
+                     fusepath,
+                     attrname_,
+                     attrval_,
+                     attrvalsize_,
+                     flags_);
 }

@@ -47,14 +47,15 @@ _copy_file_range(const int src_fd_,
 }
 
 ssize_t
-FUSE::copy_file_range(const fuse_file_info_t *src_ffi_,
+FUSE::copy_file_range(const fuse_req_ctx_t   *ctx_,
+                      const fuse_file_info_t *src_ffi_,
                       off_t                   src_off_,
                       const fuse_file_info_t *dst_ffi_,
                       off_t                   dst_off_,
                       const size_t            size_,
                       const unsigned int      flags_)
 {
-  FileInfo *src_fi  = FileInfo::from_fh(src_ffi_->fh);
+  FileInfo *src_fi = FileInfo::from_fh(src_ffi_->fh);
   FileInfo *dst_fi = FileInfo::from_fh(dst_ffi_->fh);
 
   return ::_copy_file_range(src_fi->fd,

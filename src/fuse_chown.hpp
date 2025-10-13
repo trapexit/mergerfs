@@ -16,13 +16,16 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <unistd.h>
 
 
 namespace FUSE
 {
   int
-  chown(const char *fusepath,
-        uid_t       uid,
-        gid_t       gid);
+  chown(const fuse_req_ctx_t *ctx,
+        const char           *fusepath,
+        uid_t                 uid,
+        gid_t                 gid);
 }

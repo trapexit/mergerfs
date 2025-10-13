@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 
 namespace FUSE
 {
   int
-  rename(const char *from,
-         const char *to);
+  rename(const fuse_req_ctx_t *ctx,
+         const char           *from,
+         const char           *to);
 }

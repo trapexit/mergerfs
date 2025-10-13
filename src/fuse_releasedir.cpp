@@ -32,7 +32,8 @@ _releasedir(DirInfo *di_)
 }
 
 int
-FUSE::releasedir(const fuse_file_info_t *ffi_)
+FUSE::releasedir(const fuse_req_ctx_t   *ctx_,
+                 const fuse_file_info_t *ffi_)
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 

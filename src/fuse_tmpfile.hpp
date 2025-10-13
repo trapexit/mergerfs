@@ -26,7 +26,8 @@
 namespace FUSE
 {
   int
-  tmpfile(const char       *fusepath,
-          mode_t            mode,
-          fuse_file_info_t *ffi);
+  tmpfile(const fuse_req_ctx_t *ctx,
+          const char           *fusepath,
+          mode_t                mode,
+          fuse_file_info_t     *ffi);
 }

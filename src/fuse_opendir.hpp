@@ -22,6 +22,7 @@
 namespace FUSE
 {
   int
-  opendir(const char       *fusepath,
-          fuse_file_info_t *ffi);
+  opendir(const fuse_req_ctx_t *ctx,
+          const char           *fusepath,
+          fuse_file_info_t     *ffi);
 }

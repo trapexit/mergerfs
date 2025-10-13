@@ -22,8 +22,9 @@
 namespace FUSE
 {
   int
-  link(const char      *oldpath,
-       const char      *newpath,
-       struct stat     *st,
-       fuse_timeouts_t *timeouts);
+  link(const fuse_req_ctx_t *ctx,
+       const char           *oldpath,
+       const char           *newpath,
+       struct stat          *st,
+       fuse_timeouts_t      *timeouts);
 }

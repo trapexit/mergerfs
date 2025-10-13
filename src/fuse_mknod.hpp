@@ -17,13 +17,16 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <sys/stat.h>
 
 
 namespace FUSE
 {
   int
-  mknod(const char *fusepath,
-        mode_t      mode,
-        dev_t       rdev);
+  mknod(const fuse_req_ctx_t *ctx,
+        const char           *fusepath,
+        mode_t                mode,
+        dev_t                 rdev);
 }

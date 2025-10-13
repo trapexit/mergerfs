@@ -30,7 +30,8 @@ namespace FUSE
     virtual ~ReadDirBase() {};
 
   public:
-    virtual int operator()(const fuse_file_info_t *ffi,
+    virtual int operator()(const fuse_req_ctx_t   *ctx,
+                           const fuse_file_info_t *ffi,
                            fuse_dirents_t         *buf) = 0;
   };
 }

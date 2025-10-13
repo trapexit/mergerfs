@@ -25,11 +25,12 @@
 
 
 ssize_t
-FUSE::setupmapping(uint64_t *fh_,
-                   uint64_t  foffset_,
-                   uint64_t  len_,
-                   uint64_t  flags_,
-                   uint64_t  moffset_)
+FUSE::setupmapping(const fuse_req_ctx_t *ctx_,
+                   uint64_t             *fh_,
+                   uint64_t              foffset_,
+                   uint64_t              len_,
+                   uint64_t              flags_,
+                   uint64_t              moffset_)
 {
   return -ENOSYS;
 }

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -93,6 +95,11 @@ namespace ugid
 
       currentuid = newuid_;
       currentgid = newgid_;
+    }
+
+    Set(const fuse_req_ctx_t *ctx_)
+      : Set(ctx_->uid,ctx_->gid)
+    {
     }
   };
 

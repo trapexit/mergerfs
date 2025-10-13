@@ -46,18 +46,18 @@ _fgetattr(const FileInfo  *fi_,
 
 
 int
-FUSE::fgetattr(const uint64_t   fh_,
-               struct stat     *st_,
-               fuse_timeouts_t *timeout_)
+FUSE::fgetattr(const fuse_req_ctx_t *ctx_,
+               const uint64_t        fh_,
+               struct stat          *st_,
+               fuse_timeouts_t      *timeout_)
 {
   int rv;
   uint64_t fh;
-  const fuse_context *fc = fuse_get_context();
 
   fh = fh_;
   if(fh == 0)
     {
-      state.open_files.cvisit(fc->nodeid,
+      state.open_files.cvisit(ctx_->nodeid,
                               [&](const auto &val_)
                               {
                                 fh = val_.second.fi->to_fh();

@@ -39,16 +39,16 @@ _futimens(const int             fd_,
 }
 
 int
-FUSE::futimens(const uint64_t        fh_,
-               const struct timespec ts_[2])
+FUSE::futimens(const fuse_req_ctx_t  *ctx_,
+               const uint64_t         fh_,
+               const struct timespec  ts_[2])
 {
   uint64_t fh;
-  const fuse_context *fc = fuse_get_context();
 
   fh = fh_;
   if(fh == 0)
     {
-      state.open_files.cvisit(fc->nodeid,
+      state.open_files.cvisit(ctx_->nodeid,
                               [&](const auto &val_)
                               {
                                 fh = val_.second.fi->to_fh();

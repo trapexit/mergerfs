@@ -223,17 +223,17 @@ _(const PassthroughEnum e_,
 
 static
 int
-_create_for_insert_lambda(const fuse_context *fc_,
-                          const fs::path     &fusepath_,
-                          const mode_t        mode_,
-                          fuse_file_info_t   *ffi_,
-                          State::OpenFile    *of_)
+_create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
+                          const fs::path       &fusepath_,
+                          const mode_t          mode_,
+                          fuse_file_info_t     *ffi_,
+                          State::OpenFile      *of_)
 {
   int rv;
   FileInfo *fi;
-  const ugid::Set ugid(fc_->uid,fc_->gid);
+  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
-  ::_config_to_ffi_flags(cfg,fc_->pid,ffi_);
+  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.writeback_cache)
     ::_tweak_flags_writeback_cache(&ffi_->flags);
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
@@ -245,7 +245,7 @@ _create_for_insert_lambda(const fuse_context *fc_,
                  fusepath_,
                  ffi_,
                  mode_,
-                 fc_->umask);
+                 ctx_->umask);
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
@@ -255,7 +255,7 @@ _create_for_insert_lambda(const fuse_context *fc_,
                      fusepath_,
                      ffi_,
                      mode_,
-                     fc_->umask);
+                     ctx_->umask);
     }
 
   if(rv < 0)
@@ -278,7 +278,7 @@ _create_for_insert_lambda(const fuse_context *fc_,
       return 0;
     }
 
-  of_->backing_id = FUSE::passthrough_open(fc_,fi->fd);
+  of_->backing_id = FUSE::passthrough_open(fi->fd);
   if(of_->backing_id < 0)
     return 0;
 
@@ -292,16 +292,16 @@ _create_for_insert_lambda(const fuse_context *fc_,
 static
 inline
 auto
-_create_insert_lambda(const fuse_context *fc_,
-                      const fs::path     &fusepath_,
-                      const mode_t        mode_,
-                      fuse_file_info_t   *ffi_,
-                      int                *_rv_)
+_create_insert_lambda(const fuse_req_ctx_t *ctx_,
+                      const fs::path       &fusepath_,
+                      const mode_t          mode_,
+                      fuse_file_info_t     *ffi_,
+                      int                  *_rv_)
 {
   return
     [=](auto &val_)
     {
-      *_rv_ = ::_create_for_insert_lambda(fc_,
+      *_rv_ = ::_create_for_insert_lambda(ctx_,
                                           fusepath_,
                                           mode_,
                                           ffi_,
@@ -326,24 +326,24 @@ _create_update_lambda()
 
 static
 int
-_create(const fuse_context *fc_,
-        const fs::path     &fusepath_,
-        mode_t              mode_,
-        fuse_file_info_t   *ffi_)
+_create(const fuse_req_ctx_t *ctx_,
+        const fs::path       &fusepath_,
+        mode_t                mode_,
+        fuse_file_info_t     *ffi_)
 {
   int rv;
   auto &of = state.open_files;
 
   rv = -EINVAL;
-  of.try_emplace_and_visit(fc_->nodeid,
-                           ::_create_insert_lambda(fc_,fusepath_,mode_,ffi_,&rv),
+  of.try_emplace_and_visit(ctx_->nodeid,
+                           ::_create_insert_lambda(ctx_,fusepath_,mode_,ffi_,&rv),
                            ::_create_update_lambda());
 
   // Can't abort an emplace_and_visit and can't assume another thread
   // hasn't created an entry since this failure so erase only if
   // ref_count is default (0).
   if(rv < 0)
-    of.erase_if(fc_->nodeid,
+    of.erase_if(ctx_->nodeid,
                 [](const auto &val_)
                 {
                   return (val_.second.ref_count <= 0);
@@ -353,12 +353,12 @@ _create(const fuse_context *fc_,
 }
 
 int
-FUSE::create(const char       *fusepath_,
-             mode_t            mode_,
-             fuse_file_info_t *ffi_)
+FUSE::create(const fuse_req_ctx_t *ctx_,
+             const char           *fusepath_,
+             mode_t                mode_,
+             fuse_file_info_t     *ffi_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
+  const fs::path fusepath{fusepath_};
 
-  return ::_create(fc,fusepath,mode_,ffi_);
+  return ::_create(ctx_,fusepath,mode_,ffi_);
 }

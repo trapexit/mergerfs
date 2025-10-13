@@ -18,12 +18,15 @@
 
 #include "fuse.h"
 
+#include "fuse_req_ctx.h"
+
 #include <sys/stat.h>
 
 
 namespace FUSE
 {
   int
-  fchmod(const uint64_t fh,
-         const mode_t   mode);
+  fchmod(const fuse_req_ctx_t *ctx,
+         const uint64_t        fh,
+         const mode_t          mode);
 }

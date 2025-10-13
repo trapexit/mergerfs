@@ -244,7 +244,8 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
 
 static
 int
-_rename_exdev_rel_symlink(const Policy::Action &actionPolicy_,
+_rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
+                          const Policy::Action &actionPolicy_,
                           const Branches::Ptr  &branches_,
                           const fs::path       &oldfusepath_,
                           const fs::path       &newfusepath_)
@@ -263,7 +264,7 @@ _rename_exdev_rel_symlink(const Policy::Action &actionPolicy_,
   target   /= oldfusepath_;
   target    = target.lexically_relative(linkpath.parent_path());
 
-  rv = FUSE::symlink(target.c_str(),linkpath);
+  rv = FUSE::symlink(ctx_,target.c_str(),linkpath);
   if(rv < 0)
     ::_rename_exdev_rename_back(branches,oldfusepath_);
 
@@ -272,7 +273,8 @@ _rename_exdev_rel_symlink(const Policy::Action &actionPolicy_,
 
 static
 int
-_rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
+_rename_exdev_abs_symlink(const fuse_req_ctx_t *ctx_,
+                          const Policy::Action &actionPolicy_,
                           const Branches::Ptr  &branches_,
                           const fs::path       &mount_,
                           const fs::path       &oldfusepath_,
@@ -292,7 +294,7 @@ _rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
   target   /= ".mergerfs_rename_exdev";
   target   /= oldfusepath_;
 
-  rv = FUSE::symlink(target.c_str(),linkpath);
+  rv = FUSE::symlink(ctx_,target.c_str(),linkpath);
   if(rv < 0)
     ::_rename_exdev_rename_back(branches,oldfusepath_);
 
@@ -301,23 +303,25 @@ _rename_exdev_abs_symlink(const Policy::Action &actionPolicy_,
 
 static
 int
-_rename_exdev(Config         &cfg_,
-              const fs::path &oldfusepath_,
-              const fs::path &newfusepath_)
+_rename_exdev(const fuse_req_ctx_t *ctx_,
+              const fs::path       &oldfusepath_,
+              const fs::path       &newfusepath_)
 {
-  switch(cfg_.rename_exdev)
+  switch(cfg.rename_exdev)
     {
     case RenameEXDEV::ENUM::PASSTHROUGH:
       return -EXDEV;
     case RenameEXDEV::ENUM::REL_SYMLINK:
-      return ::_rename_exdev_rel_symlink(cfg_.func.rename.policy,
-                                         cfg_.branches,
+      return ::_rename_exdev_rel_symlink(ctx_,
+                                         cfg.func.rename.policy,
+                                         cfg.branches,
                                          oldfusepath_,
                                          newfusepath_);
     case RenameEXDEV::ENUM::ABS_SYMLINK:
-      return ::_rename_exdev_abs_symlink(cfg_.func.rename.policy,
-                                         cfg_.branches,
-                                         cfg_.mountpoint,
+      return ::_rename_exdev_abs_symlink(ctx_,
+                                         cfg.func.rename.policy,
+                                         cfg.branches,
+                                         cfg.mountpoint,
                                          oldfusepath_,
                                          newfusepath_);
     }
@@ -327,36 +331,35 @@ _rename_exdev(Config         &cfg_,
 
 static
 int
-_rename(Config         &cfg_,
-        const fs::path &oldpath_,
+_rename(const fs::path &oldpath_,
         const fs::path &newpath_)
 {
-  if(cfg_.func.create.policy.path_preserving() && !cfg_.ignorepponrename)
-    return ::_rename_preserve_path(cfg_.func.rename.policy,
-                                   cfg_.branches,
+  if(cfg.func.create.policy.path_preserving() && !cfg.ignorepponrename)
+    return ::_rename_preserve_path(cfg.func.rename.policy,
+                                   cfg.branches,
                                    oldpath_,
                                    newpath_);
 
-  return ::_rename_create_path(cfg_.func.getattr.policy,
-                               cfg_.func.rename.policy,
-                               cfg_.branches,
+  return ::_rename_create_path(cfg.func.getattr.policy,
+                               cfg.func.rename.policy,
+                               cfg.branches,
                                oldpath_,
                                newpath_);
 }
 
 int
-FUSE::rename(const char *oldfusepath_,
-             const char *newfusepath_)
+FUSE::rename(const fuse_req_ctx_t *ctx_,
+             const char           *oldfusepath_,
+             const char           *newfusepath_)
 {
   int rv;
   const fs::path oldfusepath{oldfusepath_};
   const fs::path newfusepath{newfusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const ugid::Set ugid(ctx_);
 
-  rv = ::_rename(cfg,oldfusepath,newfusepath);
+  rv = ::_rename(oldfusepath,newfusepath);
   if(rv == -EXDEV)
-    return ::_rename_exdev(cfg,oldfusepath,newfusepath);
+    return ::_rename_exdev(ctx_,oldfusepath,newfusepath);
 
   return rv;
 }

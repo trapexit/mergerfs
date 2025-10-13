@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <sys/types.h>
 
 
 namespace FUSE
 {
   int
-  truncate(const char *fusepath,
-           off_t       size);
+  truncate(const fuse_req_ctx_t *ctx,
+           const char           *fusepath,
+           off_t                 size);
 }

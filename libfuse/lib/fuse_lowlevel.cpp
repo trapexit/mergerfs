@@ -55,7 +55,7 @@ void
 fuse_ll_constructor(void)
 {
   pagesize = sysconf(_SC_PAGESIZE);
-  lfmp_init(&g_FMP_fuse_req,sizeof(struct fuse_req),1);
+  lfmp_init(&g_FMP_fuse_req,sizeof(struct fuse_req_t),1);
 }
 
 static
@@ -104,18 +104,18 @@ iov_length(const struct iovec *iov,
 
 static
 void
-destroy_req(fuse_req_t req)
+destroy_req(fuse_req_t *req)
 {
   lfmp_free(&g_FMP_fuse_req,req);
 }
 
 static
-struct fuse_req*
+fuse_req_t*
 fuse_ll_alloc_req(struct fuse_ll *f)
 {
-  struct fuse_req *req;
+  fuse_req_t *req;
 
-  req = (struct fuse_req*)lfmp_calloc(&g_FMP_fuse_req);
+  req = (fuse_req_t*)lfmp_calloc(&g_FMP_fuse_req);
   if(req == NULL)
     {
       fprintf(stderr, "fuse: failed to allocate request\n");
@@ -151,7 +151,7 @@ fuse_send_msg(struct fuse_ll   *f,
 #define MAX_ERRNO 4095
 
 int
-fuse_send_reply_iov_nofree(fuse_req_t    req,
+fuse_send_reply_iov_nofree(fuse_req_t   *req,
                            int           error,
                            struct iovec *iov,
                            int           count)
@@ -167,7 +167,7 @@ fuse_send_reply_iov_nofree(fuse_req_t    req,
       error = -ERANGE;
     }
 
-  out.unique = req->unique;
+  out.unique = req->ctx.unique;
   out.error  = error;
 
   iov[0].iov_base = &out;
@@ -178,7 +178,7 @@ fuse_send_reply_iov_nofree(fuse_req_t    req,
 
 static
 int
-send_reply_iov(fuse_req_t    req,
+send_reply_iov(fuse_req_t   *req,
                int           error,
                struct iovec *iov,
                int           count)
@@ -193,7 +193,7 @@ send_reply_iov(fuse_req_t    req,
 
 static
 int
-send_reply(fuse_req_t  req,
+send_reply(fuse_req_t *req,
            int         error,
            const void *arg,
            size_t      argsize)
@@ -227,7 +227,7 @@ convert_statfs(const struct statvfs *stbuf,
 
 static
 int
-send_reply_ok(fuse_req_t  req,
+send_reply_ok(fuse_req_t *req,
               const void *arg,
               size_t      argsize)
 {
@@ -235,14 +235,14 @@ send_reply_ok(fuse_req_t  req,
 }
 
 int
-fuse_reply_err(fuse_req_t req_,
-               int        err_)
+fuse_reply_err(fuse_req_t *req_,
+               int         err_)
 {
   return send_reply(req_,err_,NULL,0);
 }
 
 void
-fuse_reply_none(fuse_req_t req)
+fuse_reply_none(fuse_req_t *req)
 {
   destroy_req(req);
 }
@@ -287,7 +287,7 @@ fill_open(struct fuse_open_out   *arg_,
 }
 
 int
-fuse_reply_entry(fuse_req_t                     req,
+fuse_reply_entry(fuse_req_t                    *req,
                  const struct fuse_entry_param *e)
 {
   struct fuse_entry_out arg = {0};
@@ -316,7 +316,7 @@ struct fuse_create_out
 };
 
 int
-fuse_reply_create(fuse_req_t                     req,
+fuse_reply_create(fuse_req_t                    *req,
                   const struct fuse_entry_param *e,
                   const fuse_file_info_t        *f)
 {
@@ -333,7 +333,7 @@ fuse_reply_create(fuse_req_t                     req,
 }
 
 int
-fuse_reply_attr(fuse_req_t         req,
+fuse_reply_attr(fuse_req_t        *req,
                 const struct stat *attr,
                 const uint64_t     timeout)
 {
@@ -349,7 +349,7 @@ fuse_reply_attr(fuse_req_t         req,
 }
 
 int
-fuse_reply_statx(fuse_req_t         req_,
+fuse_reply_statx(fuse_req_t        *req_,
                  int                flags_,
                  struct fuse_statx *st_,
                  uint64_t           timeout_)
@@ -365,14 +365,14 @@ fuse_reply_statx(fuse_req_t         req_,
 }
 
 int
-fuse_reply_readlink(fuse_req_t  req,
+fuse_reply_readlink(fuse_req_t *req,
                     const char *linkname)
 {
   return send_reply_ok(req, linkname, strlen(linkname));
 }
 
 int
-fuse_reply_open(fuse_req_t              req,
+fuse_reply_open(fuse_req_t             *req,
                 const fuse_file_info_t *f)
 {
   struct fuse_open_out arg = {0};
@@ -383,8 +383,8 @@ fuse_reply_open(fuse_req_t              req,
 }
 
 int
-fuse_reply_write(fuse_req_t req,
-                 size_t     count)
+fuse_reply_write(fuse_req_t *req,
+                 size_t      count)
 {
   struct fuse_write_out arg = {0};
 
@@ -394,7 +394,7 @@ fuse_reply_write(fuse_req_t req,
 }
 
 int
-fuse_reply_buf(fuse_req_t  req,
+fuse_reply_buf(fuse_req_t *req,
                const char *buf,
                size_t      size)
 {
@@ -482,7 +482,7 @@ fuse_send_data_iov(struct fuse_ll     *f,
 }
 
 int
-fuse_reply_data(fuse_req_t    req,
+fuse_reply_data(fuse_req_t   *req,
                 char         *buf_,
                 const size_t  bufsize_)
 {
@@ -495,7 +495,7 @@ fuse_reply_data(fuse_req_t    req,
   iov[1].iov_base = buf_;
   iov[1].iov_len  = bufsize_;
 
-  out.unique = req->unique;
+  out.unique = req->ctx.unique;
   out.error = 0;
 
   res = fuse_send_msg(req->f,req->ch,iov,2);
@@ -511,7 +511,7 @@ fuse_reply_data(fuse_req_t    req,
 }
 
 int
-fuse_reply_statfs(fuse_req_t            req,
+fuse_reply_statfs(fuse_req_t           *req,
                   const struct statvfs *stbuf)
 {
   struct fuse_statfs_out arg = {0};
@@ -524,8 +524,8 @@ fuse_reply_statfs(fuse_req_t            req,
 }
 
 int
-fuse_reply_xattr(fuse_req_t req,
-                 size_t     count)
+fuse_reply_xattr(fuse_req_t *req,
+                 size_t      count)
 {
   struct fuse_getxattr_out arg = {0};
 
@@ -535,7 +535,7 @@ fuse_reply_xattr(fuse_req_t req,
 }
 
 int
-fuse_reply_lock(fuse_req_t          req,
+fuse_reply_lock(fuse_req_t         *req,
                 const struct flock *lock)
 {
   struct fuse_lk_out arg = {0};
@@ -555,8 +555,8 @@ fuse_reply_lock(fuse_req_t          req,
 }
 
 int
-fuse_reply_bmap(fuse_req_t req,
-                uint64_t   idx)
+fuse_reply_bmap(fuse_req_t *req,
+                uint64_t    idx)
 {
   struct fuse_bmap_out arg = {0};
 
@@ -587,7 +587,7 @@ fuse_ioctl_iovec_copy(const struct iovec *iov,
 }
 
 int
-fuse_reply_ioctl_retry(fuse_req_t          req,
+fuse_reply_ioctl_retry(fuse_req_t         *req,
                        const struct iovec *in_iov,
                        size_t              in_count,
                        const struct iovec *out_iov,
@@ -667,7 +667,7 @@ fuse_reply_ioctl_retry(fuse_req_t          req,
 }
 
 int
-fuse_reply_ioctl(fuse_req_t  req,
+fuse_reply_ioctl(fuse_req_t *req,
                  int         result,
                  const void *buf,
                  uint32_t    size)
@@ -697,7 +697,7 @@ fuse_reply_ioctl(fuse_req_t  req,
 }
 
 int
-fuse_reply_ioctl_iov(fuse_req_t          req,
+fuse_reply_ioctl_iov(fuse_req_t         *req,
                      int                 result,
                      const struct iovec *iov,
                      int                 count)
@@ -723,8 +723,8 @@ fuse_reply_ioctl_iov(fuse_req_t          req,
 }
 
 int
-fuse_reply_poll(fuse_req_t req,
-                unsigned   revents)
+fuse_reply_poll(fuse_req_t *req,
+                unsigned    revents)
 {
   struct fuse_poll_out arg = {0};
 
@@ -735,7 +735,7 @@ fuse_reply_poll(fuse_req_t req,
 
 static
 void
-do_lookup(fuse_req_t             req,
+do_lookup(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.lookup(req,hdr_);
@@ -743,7 +743,7 @@ do_lookup(fuse_req_t             req,
 
 static
 void
-do_forget(fuse_req_t             req,
+do_forget(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.forget(req,hdr_);
@@ -751,7 +751,7 @@ do_forget(fuse_req_t             req,
 
 static
 void
-do_batch_forget(fuse_req_t             req,
+do_batch_forget(fuse_req_t            *req,
                 struct fuse_in_header *hdr_)
 {
   req->f->op.forget_multi(req,hdr_);
@@ -759,7 +759,7 @@ do_batch_forget(fuse_req_t             req,
 
 static
 void
-do_getattr(fuse_req_t             req,
+do_getattr(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   req->f->op.getattr(req, hdr_);
@@ -767,7 +767,7 @@ do_getattr(fuse_req_t             req,
 
 static
 void
-do_setattr(fuse_req_t             req_,
+do_setattr(fuse_req_t            *req_,
            struct fuse_in_header *hdr_)
 {
   req_->f->op.setattr(req_,hdr_);
@@ -775,7 +775,7 @@ do_setattr(fuse_req_t             req_,
 
 static
 void
-do_access(fuse_req_t             req,
+do_access(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.access(req,hdr_);
@@ -783,7 +783,7 @@ do_access(fuse_req_t             req,
 
 static
 void
-do_readlink(fuse_req_t             req,
+do_readlink(fuse_req_t            *req,
             struct fuse_in_header *hdr_)
 {
   req->f->op.readlink(req,hdr_);
@@ -791,7 +791,7 @@ do_readlink(fuse_req_t             req,
 
 static
 void
-do_mknod(fuse_req_t             req,
+do_mknod(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.mknod(req,hdr_);
@@ -799,7 +799,7 @@ do_mknod(fuse_req_t             req,
 
 static
 void
-do_mkdir(fuse_req_t             req,
+do_mkdir(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.mkdir(req,hdr_);
@@ -807,7 +807,7 @@ do_mkdir(fuse_req_t             req,
 
 static
 void
-do_unlink(fuse_req_t             req,
+do_unlink(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.unlink(req,hdr_);
@@ -815,7 +815,7 @@ do_unlink(fuse_req_t             req,
 
 static
 void
-do_rmdir(fuse_req_t             req,
+do_rmdir(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.rmdir(req,hdr_);
@@ -823,7 +823,7 @@ do_rmdir(fuse_req_t             req,
 
 static
 void
-do_symlink(fuse_req_t             req,
+do_symlink(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   req->f->op.symlink(req,hdr_);
@@ -831,7 +831,7 @@ do_symlink(fuse_req_t             req,
 
 static
 void
-do_rename(fuse_req_t             req,
+do_rename(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.rename(req,hdr_);
@@ -839,7 +839,7 @@ do_rename(fuse_req_t             req,
 
 static
 void
-do_link(fuse_req_t             req,
+do_link(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   req->f->op.link(req,hdr_);
@@ -847,7 +847,7 @@ do_link(fuse_req_t             req,
 
 static
 void
-do_create(fuse_req_t             req,
+do_create(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.create(req,hdr_);
@@ -855,7 +855,7 @@ do_create(fuse_req_t             req,
 
 static
 void
-do_open(fuse_req_t             req,
+do_open(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   req->f->op.open(req,hdr_);
@@ -863,7 +863,7 @@ do_open(fuse_req_t             req,
 
 static
 void
-do_read(fuse_req_t             req,
+do_read(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   req->f->op.read(req,hdr_);
@@ -871,7 +871,7 @@ do_read(fuse_req_t             req,
 
 static
 void
-do_write(fuse_req_t             req,
+do_write(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.write(req,hdr_);
@@ -879,7 +879,7 @@ do_write(fuse_req_t             req,
 
 static
 void
-do_flush(fuse_req_t             req,
+do_flush(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.flush(req,hdr_);
@@ -887,7 +887,7 @@ do_flush(fuse_req_t             req,
 
 static
 void
-do_release(fuse_req_t             req,
+do_release(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   req->f->op.release(req,hdr_);
@@ -895,7 +895,7 @@ do_release(fuse_req_t             req,
 
 static
 void
-do_fsync(fuse_req_t             req,
+do_fsync(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.fsync(req,hdr_);
@@ -903,7 +903,7 @@ do_fsync(fuse_req_t             req,
 
 static
 void
-do_opendir(fuse_req_t             req,
+do_opendir(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   req->f->op.opendir(req,hdr_);
@@ -911,7 +911,7 @@ do_opendir(fuse_req_t             req,
 
 static
 void
-do_readdir(fuse_req_t             req,
+do_readdir(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   req->f->op.readdir(req,hdr_);
@@ -919,7 +919,7 @@ do_readdir(fuse_req_t             req,
 
 static
 void
-do_readdirplus(fuse_req_t             req_,
+do_readdirplus(fuse_req_t            *req_,
                struct fuse_in_header *hdr_)
 {
   req_->f->op.readdir_plus(req_,hdr_);
@@ -927,7 +927,7 @@ do_readdirplus(fuse_req_t             req_,
 
 static
 void
-do_releasedir(fuse_req_t             req,
+do_releasedir(fuse_req_t            *req,
               struct fuse_in_header *hdr_)
 {
   req->f->op.releasedir(req,hdr_);
@@ -935,7 +935,7 @@ do_releasedir(fuse_req_t             req,
 
 static
 void
-do_fsyncdir(fuse_req_t             req,
+do_fsyncdir(fuse_req_t            *req,
             struct fuse_in_header *hdr_)
 {
   req->f->op.fsyncdir(req,hdr_);
@@ -943,7 +943,7 @@ do_fsyncdir(fuse_req_t             req,
 
 static
 void
-do_statfs(fuse_req_t             req,
+do_statfs(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   req->f->op.statfs(req,hdr_);
@@ -951,7 +951,7 @@ do_statfs(fuse_req_t             req,
 
 static
 void
-do_setxattr(fuse_req_t             req,
+do_setxattr(fuse_req_t            *req,
             struct fuse_in_header *hdr_)
 {
   req->f->op.setxattr(req,hdr_);
@@ -959,7 +959,7 @@ do_setxattr(fuse_req_t             req,
 
 static
 void
-do_getxattr(fuse_req_t             req,
+do_getxattr(fuse_req_t            *req,
             struct fuse_in_header *hdr_)
 {
   req->f->op.getxattr(req,hdr_);
@@ -967,7 +967,7 @@ do_getxattr(fuse_req_t             req,
 
 static
 void
-do_listxattr(fuse_req_t             req,
+do_listxattr(fuse_req_t            *req,
              struct fuse_in_header *hdr_)
 {
   req->f->op.listxattr(req,hdr_);
@@ -975,7 +975,7 @@ do_listxattr(fuse_req_t             req,
 
 static
 void
-do_removexattr(fuse_req_t             req,
+do_removexattr(fuse_req_t            *req,
                struct fuse_in_header *hdr_)
 {
   req->f->op.removexattr(req,hdr_);
@@ -999,7 +999,7 @@ convert_fuse_file_lock(struct fuse_file_lock *fl,
 
 static
 void
-do_getlk(fuse_req_t             req,
+do_getlk(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.getlk(req,hdr_);
@@ -1007,7 +1007,7 @@ do_getlk(fuse_req_t             req,
 
 static
 void
-do_setlk_common(fuse_req_t  req,
+do_setlk_common(fuse_req_t *req,
                 uint64_t    nodeid,
                 const void *inarg,
                 int         sleep)
@@ -1051,7 +1051,7 @@ do_setlk_common(fuse_req_t  req,
 
 static
 void
-do_setlk(fuse_req_t             req,
+do_setlk(fuse_req_t            *req,
          struct fuse_in_header *hdr_)
 {
   do_setlk_common(req, hdr_->nodeid, &hdr_[1], 0);
@@ -1059,7 +1059,7 @@ do_setlk(fuse_req_t             req,
 
 static
 void
-do_setlkw(fuse_req_t             req,
+do_setlkw(fuse_req_t            *req,
           struct fuse_in_header *hdr_)
 {
   do_setlk_common(req, hdr_->nodeid, &hdr_[1], 1);
@@ -1067,7 +1067,7 @@ do_setlkw(fuse_req_t             req,
 
 static
 void
-do_interrupt(fuse_req_t  req,
+do_interrupt(fuse_req_t *req,
              struct fuse_in_header *hdr_)
 {
   destroy_req(req);
@@ -1075,7 +1075,7 @@ do_interrupt(fuse_req_t  req,
 
 static
 void
-do_bmap(fuse_req_t             req,
+do_bmap(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   req->f->op.bmap(req,hdr_);
@@ -1083,7 +1083,7 @@ do_bmap(fuse_req_t             req,
 
 static
 void
-do_ioctl(fuse_req_t  req,
+do_ioctl(fuse_req_t *req,
          struct fuse_in_header *hdr_)
 {
   req->f->op.ioctl(req, hdr_);
@@ -1097,7 +1097,7 @@ fuse_pollhandle_destroy(fuse_pollhandle_t *ph)
 
 static
 void
-do_poll(fuse_req_t             req,
+do_poll(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   req->f->op.poll(req,hdr_);
@@ -1105,7 +1105,7 @@ do_poll(fuse_req_t             req,
 
 static
 void
-do_fallocate(fuse_req_t             req,
+do_fallocate(fuse_req_t            *req,
              struct fuse_in_header *hdr_)
 {
   req->f->op.fallocate(req,hdr_);
@@ -1113,7 +1113,7 @@ do_fallocate(fuse_req_t             req,
 
 static
 void
-do_init(fuse_req_t             req,
+do_init(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
   struct fuse_init_out outarg = {0};
@@ -1334,7 +1334,7 @@ do_init(fuse_req_t             req,
 
 static
 void
-do_destroy(fuse_req_t             req,
+do_destroy(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   struct fuse_ll *f = req->f;
@@ -1377,7 +1377,7 @@ list_init_nreq(struct fuse_notify_req *nreq)
 
 static
 void
-do_notify_reply(fuse_req_t             req,
+do_notify_reply(fuse_req_t            *req,
                 struct fuse_in_header *hdr_)
 {
   struct fuse_ll *f = req->f;
@@ -1388,7 +1388,7 @@ do_notify_reply(fuse_req_t             req,
   head = &f->notify_list;
   for(nreq = head->next; nreq != head; nreq = nreq->next)
     {
-      if(nreq->unique == req->unique)
+      if(nreq->unique == req->ctx.unique)
         {
           list_del_nreq(nreq);
           break;
@@ -1402,7 +1402,7 @@ do_notify_reply(fuse_req_t             req,
 
 static
 void
-do_copy_file_range(fuse_req_t             req_,
+do_copy_file_range(fuse_req_t            *req_,
                    struct fuse_in_header *hdr_)
 {
   req_->f->op.copy_file_range(req_,hdr_);
@@ -1410,15 +1410,15 @@ do_copy_file_range(fuse_req_t             req_,
 
 static
 void
-do_setupmapping(fuse_req_t                req_,
-                   struct fuse_in_header *hdr_)
+do_setupmapping(fuse_req_t            *req_,
+                struct fuse_in_header *hdr_)
 {
   req_->f->op.setupmapping(req_,hdr_);
 }
 
 static
 void
-do_removemapping(fuse_req_t             req_,
+do_removemapping(fuse_req_t            *req_,
                  struct fuse_in_header *hdr_)
 {
   req_->f->op.removemapping(req_,hdr_);
@@ -1426,7 +1426,7 @@ do_removemapping(fuse_req_t             req_,
 
 static
 void
-do_syncfs(fuse_req_t             req_,
+do_syncfs(fuse_req_t            *req_,
           struct fuse_in_header *hdr_)
 {
   req_->f->op.syncfs(req_,hdr_);
@@ -1434,7 +1434,7 @@ do_syncfs(fuse_req_t             req_,
 
 static
 void
-do_tmpfile(fuse_req_t             req_,
+do_tmpfile(fuse_req_t            *req_,
            struct fuse_in_header *hdr_)
 {
   req_->f->op.tmpfile(req_,hdr_);
@@ -1442,7 +1442,7 @@ do_tmpfile(fuse_req_t             req_,
 
 static
 void
-do_statx(fuse_req_t             req_,
+do_statx(fuse_req_t            *req_,
          struct fuse_in_header *hdr_)
 {
   req_->f->op.statx(req_,hdr_);
@@ -1450,7 +1450,7 @@ do_statx(fuse_req_t             req_,
 
 static
 void
-do_rename2(fuse_req_t             req_,
+do_rename2(fuse_req_t            *req_,
            struct fuse_in_header *hdr_)
 {
   req_->f->op.rename2(req_,hdr_);
@@ -1458,7 +1458,7 @@ do_rename2(fuse_req_t             req_,
 
 static
 void
-do_lseek(fuse_req_t             req_,
+do_lseek(fuse_req_t            *req_,
          struct fuse_in_header *hdr_)
 {
   req_->f->op.lseek(req_,hdr_);
@@ -1650,7 +1650,7 @@ struct fuse_retrieve_req
 static
 void
 fuse_ll_retrieve_reply(struct fuse_notify_req *nreq,
-                       fuse_req_t              req,
+                       fuse_req_t             *req,
                        uint64_t                ino,
                        const void             *inarg)
 {
@@ -1716,22 +1716,9 @@ fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
   return err;
 }
 
-void *
-fuse_req_userdata(fuse_req_t req)
-{
-  return req->f->userdata;
-}
-
-const
-struct fuse_ctx *
-fuse_req_ctx(fuse_req_t req)
-{
-  return &req->ctx;
-}
-
 #define FUSE_OPCODE_LEN (FUSE_STATX + 1)
 
-typedef void (*fuse_ll_func)(fuse_req_t, struct fuse_in_header *);
+typedef void (*fuse_ll_func)(fuse_req_t*, struct fuse_in_header *);
 const
 fuse_ll_func
 fuse_ll_funcs[FUSE_OPCODE_LEN] =
@@ -1966,7 +1953,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
                          const fuse_msgbuf_t *msgbuf_)
 {
   int err;
-  struct fuse_req *req;
+  struct fuse_req_t *req;
   struct fuse_in_header *in;
 
   in = (struct fuse_in_header*)msgbuf_->mem;
@@ -1978,13 +1965,14 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   if(req == NULL)
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
 
-  req->unique     = in->unique;
+  req->ctx.len    = in->len;
   req->ctx.opcode = in->opcode;
   req->ctx.unique = in->unique;
   req->ctx.nodeid = in->nodeid;
   req->ctx.uid    = in->uid;
   req->ctx.gid    = in->gid;
   req->ctx.pid    = in->pid;
+  req->ctx.umask  = 0;
   req->ch         = se_->ch;
 
   err = ENOSYS;
@@ -2008,7 +1996,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
                               const fuse_msgbuf_t *msgbuf_)
 {
   int err;
-  struct fuse_req *req;
+  fuse_req_t *req;
   struct fuse_in_header *in;
 
   in = (struct fuse_in_header*)msgbuf_->mem;
@@ -2017,13 +2005,14 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   if(req == NULL)
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
 
-  req->unique     = in->unique;
+  req->ctx.len    = in->len;
   req->ctx.opcode = in->opcode;
   req->ctx.unique = in->unique;
   req->ctx.nodeid = in->nodeid;
   req->ctx.uid    = in->uid;
   req->ctx.gid    = in->gid;
   req->ctx.pid    = in->pid;
+  req->ctx.umask  = 0;
   req->ch         = se_->ch;
 
   err = EIO;

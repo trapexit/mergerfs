@@ -65,11 +65,11 @@ _unlink(const Policy::Action &unlinkPolicy_,
 }
 
 int
-FUSE::unlink(const char *fusepath_)
+FUSE::unlink(const fuse_req_ctx_t *ctx_,
+             const char           *fusepath_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_);
 
   return ::_unlink(cfg.func.unlink.policy,
                    cfg.branches,

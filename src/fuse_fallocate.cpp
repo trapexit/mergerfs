@@ -40,18 +40,18 @@ _fallocate(const int   fd_,
 }
 
 int
-FUSE::fallocate(const uint64_t fh_,
-                int            mode_,
-                off_t          offset_,
-                off_t          len_)
+FUSE::fallocate(const fuse_req_ctx_t *ctx_,
+                const uint64_t        fh_,
+                int                   mode_,
+                off_t                 offset_,
+                off_t                 len_)
 {
   uint64_t fh;
-  const fuse_context *fc = fuse_get_context();
 
   fh = fh_;
   if(fh == 0)
     {
-      state.open_files.cvisit(fc->nodeid,
+      state.open_files.cvisit(ctx_->nodeid,
                               [&](auto &val_)
                               {
                                 fh = val_.second.fi->to_fh();

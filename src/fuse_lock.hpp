@@ -23,7 +23,8 @@
 namespace FUSE
 {
   int
-  lock(const fuse_file_info_t *ffi,
+  lock(const fuse_req_ctx_t   *ctx,
+       const fuse_file_info_t *ffi,
        int                     cmd,
        struct flock           *flock);
 }

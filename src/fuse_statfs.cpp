@@ -142,12 +142,12 @@ _statfs(const Branches::Ptr &branches_,
 }
 
 int
-FUSE::statfs(const char     *fusepath_,
-             struct statvfs *st_)
+FUSE::statfs(const fuse_req_ctx_t *ctx_,
+             const char           *fusepath_,
+             struct statvfs       *st_)
 {
-  const fs::path      fusepath{fusepath_};
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const fs::path  fusepath{fusepath_};
+  const ugid::Set ugid(ctx_);
 
   return ::_statfs(cfg.branches,
                    fusepath,

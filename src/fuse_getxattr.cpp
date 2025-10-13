@@ -172,10 +172,11 @@ _getxattr(const Policy::Search &searchFunc_,
 }
 
 int
-FUSE::getxattr(const char *fusepath_,
-               const char *attrname_,
-               char       *attrvalue_,
-               size_t      attrvalue_size_)
+FUSE::getxattr(const fuse_req_ctx_t *ctx_,
+               const char           *fusepath_,
+               const char           *attrname_,
+               char                 *attrvalue_,
+               size_t                attrvalue_size_)
 {
   const fs::path fusepath{fusepath_};
 
@@ -192,8 +193,7 @@ FUSE::getxattr(const char *fusepath_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  const fuse_context *fc = fuse_get_context();
-  const ugid::Set     ugid(fc->uid,fc->gid);
+  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   return ::_getxattr(cfg.func.getxattr.policy,
                      cfg.branches,
