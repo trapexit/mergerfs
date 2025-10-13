@@ -1,5 +1,8 @@
 # Project Comparisons
 
+There are no solutions, only trade-offs.
+
+
 ## mhddfs
 
 * [https://romanrm.net/mhddfs](https://romanrm.net/mhddfs)

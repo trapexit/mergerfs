@@ -230,13 +230,29 @@ the software's author and request proper handling of `EXDEV` errors.
 * [Moving files and directories fails with Samba](../known_issues_bugs.md#moving-files-and-directories-fails-with-samba)
 
 
-## Why is rtorrent failing with ENODEV (No such device)?
+## Why is software needing mmap failing?
 
-Be sure to set
-[cache.files=partial|full|auto-full|per-process](../config/cache.md)
-or use Linux kernel v6.6 or above. rtorrent and some other
-applications use [mmap](http://linux.die.net/man/2/mmap) to read and
-write to files and offer no fallback to traditional methods.
+See [Known Issues and Bugs#3rd Party
+Software](../known_issues_bugs.md#3rd-party-software) and
+[QuickStart](../quickstart.md).
+
+
+## Why don't quick scans fail to pick up new media?
+
+Media consumption software like Plex, Jellyfin, Emby, Airsonic,
+Navidrome, etc. will use timestamps of directories to see if it should
+be scanned. Be sure to set `func.getattr=newest` to catch that.
+
+A full scan would still pick up all media and for those concerned
+about device activity it is recommened to disable quick scans and
+leave periodic full scans so the activity is managed. Or to configure
+your software which manages downloads (such as *Arr family of
+software) to trigger specific scans when files are added to the pool.
+
+Additional reading:
+
+* [Does inotify and fanotify
+work?](compatibility_and_integration.md#does-inotify-and-fanotify-work)
 
 
 ## Why don't I see mergerfs options in mount command or /proc/mounts?

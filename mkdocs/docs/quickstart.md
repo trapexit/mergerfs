@@ -25,24 +25,22 @@ cases.
 * func.getattr=newest
 * dropcacheonclose=false
 
-In previous versions of Linux it was unable to support `mmap` if [page
-caching](config/cache.md) was disabled (ie:
-`cache.files=off`). However, it now will enable page caching if needed
-for a particular file if `mmap` is requested.
+See [Known Issues and Bugs#Software Using
+mmap](known_issues_bugs.md#software-using-mmap) for more details why
+the Linux and mergerfs version matter and its relation to `mmap`.
 
-[mmap](https://en.wikipedia.org/wiki/Mmap) is needed by certain
-software to read and write to a file. However, many software could
-work without it and fail to have proper error handling for when it is
-unavailable. Many programs that use **sqlite3** will require `mmap`
-despite [sqlite3 working perfectly
-fine](known_issues_bugs.md#sqlite3-plex-jellyfin-do-not-work-with-mergerfs)
-without it (and in some cases can be more performant with regular file
-IO.)
+**NOTE:** This "auto mmap" feature is only supported in mergerfs
+v2.41.0 and above. For older versions see below or the docs from that
+release.
 
 
 ### You use Linux v6.5 or below
 
-#### You need `mmap` (used by rtorrent and many sqlite3 base software)
+#### You need `mmap`
+
+To keep the details in a single location: see [Known Issues and
+Bugs#Software Using mmap](known_issues_bugs.md#software-using-mmap)
+for more details.
 
 * cache.files=auto-full
 * category.create=pfrd

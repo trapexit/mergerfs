@@ -19,9 +19,10 @@
   compliant filesystems. mergerfs doesn't generally make exceptions
   for FAT, NTFS, or other non-POSIX filesystem.
 * Unless using Linux v6.6 or above do **not** use `cache.files=off` if
-  you expect applications (such as rtorrent) to use
+  you expect applications to use
   [mmap](http://linux.die.net/man/2/mmap). Enabling `dropcacheonclose`
-  is recommended when `cache.files=auto-full`.
+  is recommended when `cache.files=auto-full`. See
+  [quickstart](quickstart.md).
 * [Kodi](http://kodi.tv), [Plex](http://plex.tv),
   [Subsonic](http://subsonic.org), etc. can use directory
   [mtime](http://linux.die.net/man/2/stat) to more efficiently
