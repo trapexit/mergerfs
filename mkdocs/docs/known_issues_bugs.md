@@ -23,13 +23,18 @@
 
 #### Supplemental group caching
 
-Due to the overhead of
-[getgroups/setgroups](http://linux.die.net/man/2/setgroups) mergerfs
-utilizes a cache. As necessary the supplemental group information will
-be queried and cached. That cached list of groups will be used to set
-the supplement groups as necessary. Due to the high cost of querying
-the group list the default expiry for said data is 1 hour and after 12
-hours of no usage will be removed from the cache all together.
+Due to the high cost of querying supplemental groups it is necessary
+for mergerfs to cache the list. As a result if supplemental groups are
+changed while mergerfs is running the cache may become stale. This
+generally isn't a problem as these groups tend not to be changed
+often. However, the cache has a default expiry of 1 hour and after 12
+hours of no usage the cache entry will be removed altogether.
+
+See [gidcache.expire-timeout and
+gid-cache.remove-timeout](config/options.md) and the [runtime
+interface](runtime_interface.md#commands) for forcing expiry and clearing of
+the cache.
+
 
 #### Host vs Container identity
 
@@ -126,6 +131,13 @@ provide no error handling when not supported. Ideally the software
 would catch the error and use traditional IO instead. Not only is it
 more compatible but could also be more performant in certain
 situations.
+
+
+### rsync
+
+This isn't specific to mergerfs but when using `--sparse, -S` option
+with rsync the block size used to read and write data changes from
+256KiB to 1KiB. This significantly impacts performance.
 
 
 ### backup software
