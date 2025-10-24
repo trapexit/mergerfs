@@ -26,4 +26,6 @@ class ToFromString
 public:
   virtual std::string to_string() const = 0;
   virtual int from_string(const std::string_view) = 0;
+  bool display = true;
+  bool ro = false;
 };

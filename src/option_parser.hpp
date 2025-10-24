@@ -16,14 +16,11 @@
 
 #pragma once
 
-#include "config.hpp"
-
 #include "fuse.h"
 
 
 namespace options
 {
   void
-  parse(fuse_args      *args,
-        Config::ErrVec *errs);
+  parse(fuse_args *args);
 }

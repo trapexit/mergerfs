@@ -191,36 +191,37 @@ static int fuse_mount_opt_proc(void *data, const char *arg, int key,
 {
   struct mount_opts *mo = data;
 
-  switch (key) {
-  case KEY_RO:
-    arg = "ro";
-    /* fall through */
-  case KEY_KERN_FLAG:
-    set_mount_flag(arg, &mo->flags);
-    return 0;
+  switch (key)
+    {
+    case KEY_RO:
+      arg = "ro";
+      /* fall through */
+    case KEY_KERN_FLAG:
+      set_mount_flag(arg, &mo->flags);
+      return 0;
 
-  case KEY_KERN_OPT:
-    return fuse_opt_add_opt(&mo->kernel_opts, arg);
+    case KEY_KERN_OPT:
+      return fuse_opt_add_opt(&mo->kernel_opts, arg);
 
-  case KEY_FUSERMOUNT_OPT:
-    return fuse_opt_add_opt_escaped(&mo->fusermount_opts, arg);
+    case KEY_FUSERMOUNT_OPT:
+      return fuse_opt_add_opt_escaped(&mo->fusermount_opts, arg);
 
-  case KEY_SUBTYPE_OPT:
-    return fuse_opt_add_opt(&mo->subtype_opt, arg);
+    case KEY_SUBTYPE_OPT:
+      return fuse_opt_add_opt(&mo->subtype_opt, arg);
 
-  case KEY_MTAB_OPT:
-    return fuse_opt_add_opt(&mo->mtab_opts, arg);
+    case KEY_MTAB_OPT:
+      return fuse_opt_add_opt(&mo->mtab_opts, arg);
 
-  case KEY_HELP:
-    mount_help();
-    mo->ishelp = 1;
-    break;
+    case KEY_HELP:
+      mount_help();
+      mo->ishelp = 1;
+      break;
 
-  case KEY_VERSION:
-    mount_version();
-    mo->ishelp = 1;
-    break;
-  }
+    case KEY_VERSION:
+      mount_version();
+      mo->ishelp = 1;
+      break;
+    }
   return 1;
 }
 
@@ -542,8 +543,8 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
   memset(&mo, 0, sizeof(mo));
   mo.flags = MS_NOSUID | MS_NODEV;
 
-  if (args &&
-      fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
+  if(args &&
+     fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
     return -1;
 
   res = 0;

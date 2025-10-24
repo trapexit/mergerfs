@@ -23,7 +23,6 @@
 
 enum class CacheFilesEnum
   {
-    LIBFUSE,
     OFF,
     PARTIAL,
     FULL,

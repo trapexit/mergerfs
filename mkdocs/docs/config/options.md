@@ -30,9 +30,11 @@ config file.
 ## mount options
 
 * **config**: Path to a config file. Same arguments as below in
-  key=val / ini style format.
+  `key` or `key=val` style format. `#` used for comments.
 * **[branches](branches.md)**: Colon delimited list of branches. Used
-  primarily in config file.
+  primarily in a config file.
+* **mountpoint=DIRPATH**: The path to the mountpoint. Used primarily
+  in a config file.
 * **[branches-mount-timeout](branches-mount-timeout.md)=UINT**: Number
   of seconds to wait at startup for branches to be a mount other than
   the mountpoint's filesystem. (default: 0)
@@ -95,7 +97,7 @@ config file.
   xattrs. Default is to passthrough xattr requests. 'noattr' will
   short circuit as if nothing exists. 'nosys' will respond with ENOSYS
   as if xattrs are not supported or disabled. (default: passthrough)
-* **[link_cow](link_cow.md)=BOOL**: When enabled if a regular file is
+* **[link-cow](link_cow.md)=BOOL**: When enabled if a regular file is
   opened which has a link count > 1 it will copy the file to a
   temporary file and rename over the original. Breaking the link and
   providing a basic copy-on-write function similar to
@@ -130,11 +132,11 @@ config file.
 * **[fuse_msg_size](fuse_msg_size.md)=PAGESIZE**: Set the max number of
   pages per FUSE message. Only available on Linux >= 4.20 and ignored
   otherwise. (min: 1; max: 65535; default: "1M")
-* **[threads](threads.md)=INT**: Number of threads to use. When used
-  alone (`process-thread-count=-1`) it sets the number of threads
-  reading and processing FUSE messages. When used together it sets the
-  number of threads reading from FUSE. When set to zero it will
-  attempt to discover and use the number of logical cores. If the
+* **[read-thread-count](threads.md)=INT**: Number of threads to
+  use. When used alone (`process-thread-count=-1`) it sets the number
+  of threads reading and processing FUSE messages. When used together
+  it sets the number of threads reading from FUSE. When set to zero it
+  will attempt to discover and use the number of logical cores. If the
   thread count is set negative it will look up the number of cores
   then divide by the absolute value. ie. threads=-2 on an 8 core
   machine will result in 8 / 2 = 4 threads. There will always be at
@@ -142,7 +144,6 @@ config file.
   `process-thread-count` then it will try to pick reasonable values
   based on CPU thread count. NOTE: higher number of threads increases
   parallelism but usually decreases throughput. (default: 0)
-* **[read-thread-count](threads.md)=INT**: Alias for `threads`.
 * **[process-thread-count](threads.md)=INT**: Enables separate thread
   pool to asynchronously process FUSE requests. In this mode
   `read-thread-count` refers to the number of threads reading FUSE
@@ -153,7 +154,7 @@ config file.
   time. Meaning the total memory usage of the queues is queue depth
   multiplied by the number of process threads plus read thread
   count. 0 sets the depth to the same as the process thread
-  count. (default: 0)
+  count. (default: 2)
 * **[pin-threads](pin-threads.md)=STR**: Selects a strategy to pin
   threads to CPUs (default: unset)
 * **[flush-on-close](flush-on-close.md)=never|always|opened-for-write**:
@@ -170,9 +171,9 @@ config file.
 * **[func.FUNC](functions_categories_policies.md)=POLICY**: Sets the
   specific FUSE function's policy. See below for the list of value
   types. Example: **func.getattr=newest**
-* **[func.readdir](func_readdir.md)=seq|cosr|cor|cosr:INT|cor:INT**: Sets `readdir`
-  policy. INT value sets the number of threads to use for
-  concurrency. (default: seq)
+* **[func.readdir](func_readdir.md)=seq|cosr|cor|cosr:INT|cor:INT**:
+  Sets `readdir` policy. INT value sets the number of threads to use
+  for concurrency. (default: seq)
 * **[category.action](functions_categories_policies.md)=POLICY**: Sets
   policy of all FUSE functions in the action category. (default:
   epall)
@@ -206,15 +207,23 @@ config file.
   with `cache.files=per-process` (if the process is not in
   `process-names`) or `cache.files=off`. (Is a kernel feature added in
   v6.2) (default: true)
-* **[passthrough](passthrough.md)**: Enable [FUSE IO
+* **[passthrough.io](passthrough.md)=ENUM**: Enable [FUSE IO
   passthrough](https://kernelnewbies.org/Linux_6.9#Faster_FUSE_I.2FO)
   if available. (default: off)
-* **gid-cache-expire-timeout**: Number of seconds till supplemental
-  group data is refreshed in the [GID
+* **passthrough.max-stack-depth=INT**: Set to `1` another filesystem
+  can be stacked on mergerfs. Set to `2` to have mergerfs stacked over
+  another filesystem. (default: 1)
+* **gid-cache.expire-timeout=INT**: Number of seconds till
+  supplemental group data is refreshed in the [GID
   cache](../known_issues_bugs.md#supplemental-user-groups). (default:
   3600)
-* **gid-cache-remove-timeout**: Number of seconds to wait till cached
-  data is removed due to lack of usage. (default: 43200)
+* **gid-cache.remove-timeout=INT**: Number of seconds to wait till
+  cached data is removed due to lack of usage. (default: 43200)
+* **remember-nodes=INT**: The number of seconds to keep the internal
+  representation of a file once the OS tells mergerfs it is no longer
+  needed. Really only needed for [exporting mergerfs via
+  NFS](../remote_filesystems.md) (default: 0)
+* **noforget**: Effectively sets `remember-nodes` to infinity.
 
 **NOTE:** Options are evaluated in the order listed so if the options
 are **func.rmdir=rand,category.action=ff** the **action** category

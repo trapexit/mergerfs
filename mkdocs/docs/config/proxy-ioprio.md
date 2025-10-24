@@ -33,11 +33,11 @@ proxying may be added in a future release.
 ## Conflicts With Other Options
 
 If using [IO passthrough](passthrough.md) there is no reason to set
-this value to `true`. However, since `passthrough` leads to mergerfs
-IO calls being bypassed entirely will have no impact on performance or
-behavior regardless.
+this value to `true`. However, since `passthrough.io` leads to
+mergerfs IO calls being bypassed entirely will have no impact on
+performance or behavior regardless.
 
-When using `passthrough` the IO priority of the client app would be
+When using `passthrough.io` the IO priority of the client app would be
 used directly given the IO is passed through.
 
 

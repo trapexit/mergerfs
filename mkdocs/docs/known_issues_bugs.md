@@ -8,7 +8,7 @@
   block to change credentials as required by numerous filesystem
   functions. This impacts performance.
 * FreeBSD's FUSE implementation is lacking many features of Linux.
-    * passthrough
+    * IO passthrough
     * statx
     * lazy umount
     * oom_score_adj

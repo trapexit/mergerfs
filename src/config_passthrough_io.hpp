@@ -1,7 +1,9 @@
+#pragma once
+
 /*
   ISC License
 
-  Copyright (c) 2023, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,16 +18,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "enum.hpp"
 
-#include <string>
 
-int         fuse_config_get_read_thread_count();
-int         fuse_config_get_process_thread_count();
-int         fuse_config_get_process_thread_queue_depth();
-std::string fuse_config_get_pin_threads();
+enum class PassthroughIOEnum
+  {
+    OFF = 0,
+    RO,
+    WO,
+    RW
+  };
 
-void        fuse_config_set_read_thread_count(int const);
-void        fuse_config_set_process_thread_count(int const);
-void        fuse_config_set_process_thread_queue_depth(int const);
-void        fuse_config_set_pin_threads(std::string const);
+typedef Enum<PassthroughIOEnum> PassthroughIO;
