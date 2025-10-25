@@ -68,6 +68,11 @@ passthrough IO or other features.
 
 ### time based expiring
 
+**NOTE:** this script is an **example**, not particularly efficient, and
+really not intended for production deployments. Until such time that
+mergerfs provides tooling for this usecase consider using
+[mergerfs-cache-mover](https://github.com/monstermuffin/mergerfs-cache-mover).
+
 Move files from cache filesystem to base pool which have an access
 time older than the supplied number of days. Replace `-atime` with
 `-amin` in the script if you want minutes rather than days.
@@ -98,6 +103,12 @@ respectively.
 
 
 ### percentage full expiring
+
+**NOTE:** this script is an **example**, not particularly efficient, and
+really not intended for production deployments. Until such time that
+mergerfs provides tooling for this usecase consider using
+[mergerfs-cache-mover](https://github.com/monstermuffin/mergerfs-cache-mover).
+
 
 While the cache filesystem's percentage full is above the provided
 value move the oldest file from the cache filesystem to the base pool.
