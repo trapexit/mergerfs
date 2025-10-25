@@ -12,7 +12,7 @@
 
 #include "fuse_i.h"
 #include "fuse_kernel.h"
-#include "fuse_lowlevel.h"
+#include "fuse_lowlevel.hpp"
 
 #include "fuse_cfg.hpp"
 #include "fuse_msgbuf.hpp"

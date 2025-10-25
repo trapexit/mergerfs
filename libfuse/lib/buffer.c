@@ -9,7 +9,7 @@
 #define _GNU_SOURCE
 
 #include "fuse_i.h"
-#include "fuse_lowlevel.h"
+#include "fuse_lowlevel.hpp"
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>

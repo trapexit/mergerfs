@@ -8,7 +8,7 @@
 
 #include "fuse_i.h"
 #include "fuse_opt.h"
-#include "fuse_lowlevel.h"
+#include "fuse_lowlevel.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +53,7 @@ fuse_helper_opt_proc(void             *data,
                      int               key,
                      struct fuse_args *outargs)
 {
-  struct helper_opts *hopts = data;
+  struct helper_opts *hopts = (helper_opts*)data;
 
   switch (key)
     {
@@ -282,7 +282,7 @@ fuse_setup_common(int argc,
   if (res == -1)
     goto err_unmount;
 
-  res = fuse_set_signal_handlers(fuse_get_session(fuse));
+  res = fuse_set_signal_handlers(fuse_get_session());
   if (res == -1)
     goto err_unmount;
 

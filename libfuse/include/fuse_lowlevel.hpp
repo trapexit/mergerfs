@@ -3,7 +3,7 @@
 #include "extern_c.h"
 #include "fuse_common.h"
 #include "fuse_kernel.h"
-#include "fuse_req.h"
+#include "fuse_req.hpp"
 
 #include <fcntl.h>
 #include <stdint.h>

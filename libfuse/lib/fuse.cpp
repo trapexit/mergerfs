@@ -20,11 +20,11 @@
 #include "node.hpp"
 
 #include "fuse_cfg.hpp"
-#include "fuse_req.h"
+#include "fuse_req.hpp"
 #include "fuse_dirents.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
-#include "fuse_lowlevel.h"
+#include "fuse_lowlevel.hpp"
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
@@ -3638,15 +3638,6 @@ metrics_log_nodes_info(FILE *file_)
 
   sizeof_node = sizeof(node_t);
 
-  lfmp_t *lfmp;
-  lfmp = node_lfmp();
-  lfmp_lock(lfmp);
-  node_slab_count = fmp_slab_count(&lfmp->fmp);
-  node_usage_ratio = fmp_slab_usage_ratio(&lfmp->fmp);
-  node_avail_objs = fmp_avail_objs(&lfmp->fmp);
-  node_total_alloc_mem = fmp_total_allocated_memory(&lfmp->fmp);
-  lfmp_unlock(lfmp);
-
   snprintf(buf,sizeof(buf),
            "time: %s\n"
            "sizeof(node): %" PRIu64 "\n"
@@ -3763,7 +3754,6 @@ void
 fuse_gc()
 {
   SysLog::info("running thorough garbage collection");
-  node_gc();
   msgbuf_gc();
   fuse_malloc_trim();
 }
@@ -3772,7 +3762,6 @@ void
 fuse_gc1()
 {
   SysLog::info("running basic garbage collection");
-  node_gc1();
   msgbuf_gc_10percent();
   fuse_malloc_trim();
 }

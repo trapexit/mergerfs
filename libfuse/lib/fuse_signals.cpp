@@ -6,7 +6,7 @@
   See the file COPYING.LIB
 */
 
-#include "fuse_lowlevel.h"
+#include "fuse_lowlevel.hpp"
 
 #include <stdio.h>
 #include <string.h>

@@ -38,10 +38,10 @@ fuse_session_new(void *data,
   }
 
   memset(se, 0, sizeof(*se));
-  se->f           = data;
-  se->receive_buf = receive_buf;
-  se->process_buf = process_buf;
-  se->destroy     = destroy;
+  se->f           = (fuse_ll*)data;
+  se->receive_buf = (int(*)(fuse_session*,fuse_msgbuf_t*))receive_buf;
+  se->process_buf = (void(*)(fuse_session*,const fuse_msgbuf_t*))process_buf;
+  se->destroy     = (void(*)(void*))destroy;
 
   return se;
 }

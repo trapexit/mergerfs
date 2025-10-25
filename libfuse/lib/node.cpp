@@ -1,60 +1,35 @@
 #include "node.hpp"
 
-#include "lfmp.h"
+#include <cstddef>
+#include <cstdlib>
 
-static lfmp_t g_NODE_FMP;
-
-static
-__attribute__((constructor))
-void
-node_constructor()
+struct stack_t
 {
-  lfmp_init(&g_NODE_FMP,sizeof(node_t),256);
-}
+  stack_t *next;
+};
 
-static
-__attribute__((destructor))
-void
-node_destructor()
-{
-  lfmp_destroy(&g_NODE_FMP);
-}
+thread_local static stack_t *g_stack = NULL;
 
 node_t*
 node_alloc()
 {
-  return (node_t*)lfmp_calloc(&g_NODE_FMP);
+  if(g_stack == NULL)
+    return (node_t*)calloc(1,sizeof(node_t));
+
+  node_t *node;
+
+  node = (node_t*)g_stack;
+  g_stack = g_stack->next;
+
+  return node;
 }
 
 void
 node_free(node_t *node_)
 {
-  lfmp_free(&g_NODE_FMP,node_);
-}
+  stack_t *stack;
 
-int
-node_gc1()
-{
-  return lfmp_gc(&g_NODE_FMP);
-}
-
-void
-node_gc()
-{
-  int rv;
-  int fails;
-
-  fails = 0;
-  do
-    {
-      rv = node_gc1();
-      if(rv == 0)
-        fails++;
-    } while(rv || (fails < 3));
-}
-
-lfmp_t*
-node_lfmp()
-{
-  return &g_NODE_FMP;
+  stack = (stack_t*)node_;
+  stack->next = g_stack;
+  g_stack = stack;
 }

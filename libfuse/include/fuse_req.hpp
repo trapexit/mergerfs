@@ -13,3 +13,6 @@ struct fuse_req_t
   struct fuse_chan *ch;
   unsigned int ioctl_64bit : 1;
 };
+
+fuse_req_t* fuse_req_alloc();
+void fuse_req_free(fuse_req_t *);

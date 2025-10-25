@@ -188,7 +188,7 @@ set_mount_flag(const char *s,
 static int fuse_mount_opt_proc(void *data, const char *arg, int key,
 			       struct fuse_args *outargs)
 {
-  struct mount_opts *mo = data;
+  struct mount_opts *mo = (mount_opts*)data;
 
   switch (key)
     {
@@ -426,11 +426,11 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
   if (res == -1)
     goto out_close;
 
-  source = malloc((mo->fsname ? strlen(mo->fsname) : 0) +
-                  (mo->subtype ? strlen(mo->subtype) : 0) +
-                  strlen(devname) + 32);
+  source = (char*)malloc((mo->fsname ? strlen(mo->fsname) : 0) +
+                         (mo->subtype ? strlen(mo->subtype) : 0) +
+                         strlen(devname) + 32);
 
-  type = malloc((mo->subtype ? strlen(mo->subtype) : 0) + 32);
+  type = (char*)malloc((mo->subtype ? strlen(mo->subtype) : 0) + 32);
   if (!type || !source) {
     fprintf(stderr, "fuse: failed to allocate memory\n");
     goto out_close;

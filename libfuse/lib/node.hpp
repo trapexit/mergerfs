@@ -1,10 +1,9 @@
 #pragma once
 
 #include "lock.h"
-#include "lfmp.h"
 
-typedef struct node_s node_t;
-struct node_s
+typedef struct node_t node_t;
+struct node_t
 {
   node_t *name_next;
   node_t *id_next;
@@ -26,6 +25,3 @@ struct node_s
 
 node_t *node_alloc();
 void    node_free(node_t*);
-int     node_gc1();
-void    node_gc();
-lfmp_t *node_lfmp();

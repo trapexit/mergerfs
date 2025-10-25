@@ -62,11 +62,7 @@ BUILDDIR := build
 SRC_C = \
 	lib/buffer.c \
 	lib/crc32b.c \
-	lib/fuse_opt.c \
-	lib/fuse_session.c \
-	lib/fuse_signals.c \
-	lib/helper.c \
-	lib/mount.c
+	lib/fuse_opt.c
 SRC_CXX = $(wildcard lib/*.cpp)
 
 OBJS := $(SRC_C:lib/%.c=$(BUILDDIR)/.objs/%.c.o)
