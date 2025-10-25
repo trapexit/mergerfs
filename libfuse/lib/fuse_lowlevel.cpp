@@ -21,6 +21,7 @@
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "stat_utils.h"
+#include "fmt/core.h"
 
 #include <stdio.h>
 #include <stdlib.h>
