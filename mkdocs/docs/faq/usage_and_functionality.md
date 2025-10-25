@@ -105,7 +105,7 @@ normal conditions.
 
 Keep in mind that if out-of-band changes are made while also
 leveraging any caching of the filesystem layout such as with
-`cache.entry`, `cache.negative_entry`, `cache.attr`, `cache.symlinks`,
+`cache.entry`, `cache.negative-entry`, `cache.attr`, `cache.symlinks`,
 or `cache.readdir` you may experience temporary inconsistency till the
 cache expires. mergerfs is not actively watching all branches for
 changes and the kernel will have no way to know anything changed so as
