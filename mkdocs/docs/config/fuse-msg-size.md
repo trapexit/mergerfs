@@ -1,8 +1,8 @@
-# fuse_msg_size
+# fuse-msg-size
 
 * type: `UINT|SIZE`
 * default: `1M`
-* example: `fuse_msg_size=1M`
+* example: `fuse-msg-size=1M`
 * If the value is a `SIZE` in the form of `xB`, `xK`, `xM`, `xG`, or
 `xT` then it will choose the closest multiple of the system page
 size. If the value is just an integer without a size multipler suffix
@@ -28,10 +28,10 @@ v6.13](https://web.git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/co
 and above the max value supported by the kernel can range from 1
 (4KiB) to 65535 (~256MiB) (assuming a page size of 4KiB.) The default
 used by Linux >= 4.20, and hard coded value used before 4.20, is 32
-(128KiB). In mergerfs it is referred to as `fuse_msg_size` to make it
+(128KiB). In mergerfs it is referred to as `fuse-msg-size` to make it
 clear what it impacts and provide some abstraction.
 
-If the `fuse_msg_size` value provided is more than the system wide
+If the `fuse-msg-size` value provided is more than the system wide
 maximum mergerfs will attempt to increase the system wide value to keep
 the user from needing to set the value using `sysctl`,
 `/etc/sysctl.conf`, or `/proc/sys/fs/fuse/max_pages_limit`.
@@ -47,4 +47,4 @@ v4.20 and v6.13 the max value is 256. On kernels >= v6.13 the maximum
 value is 65535.
 
 NOTE: If you intend to enable `cache.files` you should also set
-[readahead](readahead.md) to match `fuse_msg_size`.
+[readahead](readahead.md) to match `fuse-msg-size`.
