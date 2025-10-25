@@ -6,7 +6,7 @@ value unit is in kibibytes.
 * `readahead=1024`
 
 While the max size of messages sent between the kernel and mergerfs is
-configurable via the [fuse_msg_size](fuse_msg_size.md) option that
+configurable via the [fuse-msg-size](fuse-msg-size.md) option that
 doesn't mean that is the size used by the kernel for read and
 writes.
 

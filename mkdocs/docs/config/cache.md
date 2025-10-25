@@ -73,9 +73,9 @@ little risk in setting the value much higher. Especially if there are
 no out-of-band changes.
 
 
-## cache.negative_entry
+## cache.negative-entry
 
-* `cache.negative_entry=UINT`: Sets the number of seconds to cache
+* `cache.negative-entry=UINT`: Sets the number of seconds to cache
   negative entry queries. Defaults to `1`.
   
 This is a cache for negative entry query responses. Such as when a

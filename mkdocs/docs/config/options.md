@@ -70,7 +70,7 @@ config file.
   writable and its mtime or ctime is older than **symlinkify_timeout**
   files will be reported as symlinks to the original files. Please
   read more below before using. (default: false)
-* **[symlinkify_timeout](symlinkify.md)=UINT**: Time to wait, in
+* **[symlinkify-timeout](symlinkify.md)=UINT**: Time to wait, in
   seconds, to activate the **symlinkify** behavior. (default: 3600)
 * **nullrw=BOOL**: Turns reads and writes into no-ops. The request
   will succeed but do nothing. Useful for benchmarking
@@ -91,13 +91,13 @@ config file.
 * **[kernel-permissions-check](kernel-permissions-check.md)=BOOL**:
   Controls the FUSE `default_permissions` option. Primarily for
   debugging. (default: true)
-* **security_capability=BOOL**: If false return ENOATTR when xattr
+* **security-capability=BOOL**: If false return ENOATTR when xattr
   security.capability is queried. (default: true)
 * **[xattr](xattr.md)=passthrough|noattr|nosys**: Runtime control of
   xattrs. Default is to passthrough xattr requests. 'noattr' will
   short circuit as if nothing exists. 'nosys' will respond with ENOSYS
   as if xattrs are not supported or disabled. (default: passthrough)
-* **[link-cow](link_cow.md)=BOOL**: When enabled if a regular file is
+* **[link-cow](link-cow.md)=BOOL**: When enabled if a regular file is
   opened which has a link count > 1 it will copy the file to a
   temporary file and rename over the original. Breaking the link and
   providing a basic copy-on-write function similar to
@@ -106,7 +106,7 @@ config file.
   means it will always use all branches in statfs calculations. 'full'
   is in effect path preserving and only includes branches where the
   path exists. (default: base)
-* **statfs_ignore=none|ro|nc**: 'ro' will cause statfs calculations to
+* **statfs-ignore=none|ro|nc**: 'ro' will cause statfs calculations to
   ignore available space for branches mounted or tagged as 'read-only'
   or 'no create'. 'nc' will ignore available space for branches tagged
   as 'no create'. (default: none)
@@ -123,13 +123,13 @@ config file.
   directory and symlink to it.
 * **[readahead](readahead.md)=UINT**: Set readahead (in kilobytes) for
   mergerfs and branches if greater than 0. (default: 0)
-* **posix_acl=BOOL**: Enable POSIX ACL support (if supported by kernel
+* **posix-acl=BOOL**: Enable POSIX ACL support (if supported by kernel
   and underlying filesystem). (default: false)
-* **async_read=BOOL**: Perform reads asynchronously. If disabled or
+* **async-read=BOOL**: Perform reads asynchronously. If disabled or
   unavailable the kernel will ensure there is at most one pending read
   request per file handle and will attempt to order requests by
   offset. (default: true)
-* **[fuse_msg_size](fuse_msg_size.md)=PAGESIZE**: Set the max number of
+* **[fuse-msg-size](fuse-msg-size.md)=PAGESIZE**: Set the max number of
   pages per FUSE message. Only available on Linux >= 4.20 and ignored
   otherwise. (min: 1; max: 65535; default: "1M")
 * **[read-thread-count](threads.md)=INT**: Number of threads to
@@ -188,7 +188,7 @@ config file.
   timeout in seconds. (default: 1)
 * **[cache.entry](cache.md#cacheentry)=UINT**: File name lookup cache
   timeout in seconds. (default: 1)
-* **[cache.negative_entry](cache.md#cachenegative_entry)=UINT**:
+* **[cache.negative-entry](cache.md#cachenegative-entry)=UINT**:
   Negative file name lookup cache timeout in seconds. (default: 0)
 * **[cache.files](cache.md#cachefiles)=off|partial|full|auto-full|per-process**:
   File page caching mode (default: off)

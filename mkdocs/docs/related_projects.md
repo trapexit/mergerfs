@@ -24,6 +24,10 @@
 * [snapraid](https://www.snapraid.it/): a backup program designed for
   disk arrays, storing parity information for data recovery in the
   event of up to six disk failures.
+* [nonraid](https://github.com/qvr/nonraid): NonRAID is a fork of the
+  unRAID system's open-source md_unraid kernel driver enabling
+  UnRAID-style storage arrays with parity protection outside of the
+  commercial UnRAID system.
 * [rclone](https://rclone.org/): a command-line program to manage
   files on cloud storage. It is a feature-rich alternative to cloud
   vendors' web storage interfaces. rclone's
