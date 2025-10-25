@@ -240,7 +240,7 @@ Config::Config()
   _map["func.truncate"]               = &func.truncate;
   _map["func.unlink"]                 = &func.unlink;
   _map["func.utimens"]                = &func.utimens;
-  _map["fuse_msg_size"]               = &fuse_msg_size;
+  _map["fuse-msg-size"]               = &fuse_msg_size;
   _map["gid"]                         = &gid;
   _map["gid-cache.expire-timeout"]    = &gid_cache_expire_timeout;
   _map["gid-cache.remove-timeout"]    = &gid_cache_remove_timeout;
@@ -272,7 +272,7 @@ Config::Config()
   _map["passthrough.max-stack-depth"] = &passthrough_max_stack_depth;
   _map["pid"]                         = &pid;
   _map["pin-threads"]                 = &pin_threads;
-  _map["posix_acl"]                   = &posix_acl;
+  _map["posix-acl"]                   = &posix_acl;
   _map["process-thread-count"]        = &process_thread_count;
   _map["process-thread-queue-depth"]  = &process_thread_queue_depth;
   _map["proxy-ioprio"]                = &proxy_ioprio;

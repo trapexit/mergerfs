@@ -24,23 +24,22 @@ before changing them to understand how functionality will change.
 
 * test theoretical performance using `nullrw` or using a ram disk as a
   branch
-* enable [passthrough](config/passthrough.md) (likely to have the
+* enable [passthrough.io](config/passthrough.md) (likely to have the
   biggest impact)
 * change read or process [thread pools](config/threads.md)
 * toggle [func.readdir](config/func_readdir.md)
 * increase [readahead](config/readahead.md): `readahead=1024`
-* disable `security_capability` and/or [xattr](config/xattr.md)
+* disable `security-capability` and/or [xattr](config/xattr.md)
 * increase cache timeouts [cache.attr](config/cache.md#cacheattr),
   [cache.entry](config/cache.md#cacheentry),
-  [cache.negative_entry](config/cache.md#cachenegative-entry)
+  [cache.negative-entry](config/cache.md#cachenegative-entry)
 * toggle [page caching](config/cache.md#cachefiles)
 * enable `parallel-direct-writes`
-* enable [cache.writeback](config/cache.md#cachewriteback)
 * enable [cache.statfs](config/cache.md#cachestatfs)
 * enable [cache.symlinks](config/cache.md#cachesymlinks)
 * enable [cache.readdir](config/cache.md#cachereaddir)
-* disable `posix_acl`
-* disable `async_read`
+* disable `posix-acl`
+* disable `async-read`
 * use [symlinkify](config/symlinkify.md) if your data is largely
   static and read-only
 * use [tiered cache](extended_usage_patterns.md) devices
