@@ -172,8 +172,8 @@ the FUSE writeback cache small writes *may* be aggregated by the
 kernel and then sent to mergerfs as one larger request. This can
 greatly improve the throughput for apps which write to files
 inefficiently. The amount the kernel can aggregate is limited by the
-size of a FUSE message. Read the fuse_msg_size section for more
-details.
+size of a FUSE message. Read the [fuse-msg-size](fuse-msg-size.md)
+section for more details.
 
 There is a side effect as a result of enabling writeback
 caching. Underlying files won't ever be opened with O_APPEND or

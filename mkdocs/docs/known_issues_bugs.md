@@ -12,7 +12,7 @@
     * statx
     * lazy umount
     * oom_score_adj
-    * fuse_msg_size
+    * fuse-msg-size
     * kernel symlink caching
     * kernel readdir caching
     * writeback caching
