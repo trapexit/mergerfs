@@ -52,7 +52,6 @@ struct fuse_ll
   pthread_mutex_t lock;
   int got_init;
   int got_destroy;
-  pthread_key_t pipe_key;
   int broken_splice_nonblock;
   uint64_t notify_ctr;
   struct fuse_notify_req notify_list;
