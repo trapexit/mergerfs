@@ -32,7 +32,7 @@ before changing them to understand how functionality will change.
 * disable `security_capability` and/or [xattr](config/xattr.md)
 * increase cache timeouts [cache.attr](config/cache.md#cacheattr),
   [cache.entry](config/cache.md#cacheentry),
-  [cache.negative_entry](config/cache.md#cachenegative_entry)
+  [cache.negative_entry](config/cache.md#cachenegative-entry)
 * toggle [page caching](config/cache.md#cachefiles)
 * enable `parallel-direct-writes`
 * enable [cache.writeback](config/cache.md#cachewriteback)

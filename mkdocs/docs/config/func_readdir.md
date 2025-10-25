@@ -26,7 +26,7 @@ Until Linux v6.16, despite being able to change the size of FUSE
 messages, `readdir` requests were limited to 1 page (4KiB) in size per
 message. This limitation limited throughput and therefore performance
 of the `readdir` call. In v6.16 that was changed to be able to grow to
-the [fuse_msg_size](fuse_msg_size.md) which allows a lot more data to
+the [fuse-msg-size](fuse-msg-size.md) which allows a lot more data to
 be sent per request and therefore much better performance in certain
 situations.
 

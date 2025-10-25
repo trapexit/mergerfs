@@ -9,7 +9,7 @@
         * readdir concurrency
 * memory
     * 1MB+ pre reader thread + inflight processing for messages
-      depending on [fuse_msg_size](config/fuse_msg_size.md)
+      depending on [fuse-msg-size](config/fuse-msg-size.md)
     * buffers allocated temporarily for reading directories
     * [gidcache](faq/technical_behavior_and_limitations.md#how-does-mergerfs-handle-credentials)
     * FUSE nodes

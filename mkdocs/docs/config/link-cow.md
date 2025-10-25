@@ -1,6 +1,6 @@
-# link_cow
+# link-cow
 
-* `link_cow=true|false`
+* `link-cow=true|false`
 * Defaults to `false`
 
 This feature offers similar functionality to what

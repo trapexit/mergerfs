@@ -31,7 +31,7 @@ features related to read/write are affected.
 * [readahead](readahead.md): Still affects the `readahead` values of
   underlying filesystems and `mergerfs` itself but no longer relevant
   to `mergerfs` in that it is not servicing IO requests.
-* [fuse_msg_size](fuse_msg_size.md): The primary reason to increase
+* [fuse-msg-size](fuse-msg-size.md): The primary reason to increase
   the FUSE message size is to allow transferring more data per request
   which helps improve read and write performance. Without read/write
   requests being sent to `mergerfs` there is little reason to have
@@ -103,7 +103,7 @@ Summary: passthrough is ~95% native speed. 200% faster than
 
 * straight to tmpfs: 1.7 GB/s
 * nullrw=true: 2.1 GB/s 
-* cache.files=off; passthrough=off: 800 MB/s
-* cache.files=auto-full; passthrough=rw: 1.6 GB/s
+* cache.files=off; passthrough.io=off: 800 MB/s
+* cache.files=auto-full; passthrough.io=rw: 1.6 GB/s
 * cache.files=auto-full; cache.writeback=false: 518 MB/s
 * cache.files=auto-full; cache.writeback=true: 518 MB/s
