@@ -61,7 +61,6 @@
 #include "fuse_mknod.hpp"
 #include "fuse_open.hpp"
 #include "fuse_opendir.hpp"
-#include "fuse_poll.hpp"
 #include "fuse_read.hpp"
 #include "fuse_readdir.hpp"
 #include "fuse_readdir_plus.hpp"
@@ -126,7 +125,6 @@ _get_fuse_operations(struct fuse_operations &ops_,
   ops_.mknod           = FUSE::mknod;
   ops_.open            = FUSE::open;
   ops_.opendir         = FUSE::opendir;
-  ops_.poll            = FUSE::poll;;
   ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
   ops_.readdir         = FUSE::readdir;
   ops_.readdir_plus    = FUSE::readdir_plus;

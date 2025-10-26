@@ -26,7 +26,6 @@
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.hpp"
 #include "fuse_opt.h"
-#include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
 
 #include "maintenance_thread.hpp"
@@ -40,7 +39,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <poll.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -68,10 +66,6 @@
 #define PARAM(inarg) ((void*)(((char*)(inarg)) + sizeof(*(inarg))))
 
 static int g_LOG_METRICS = 0;
-
-struct fuse_config
-{
-};
 
 struct lock_queue_element
 {
@@ -125,7 +119,6 @@ struct fuse
   nodeid_gen_t nodeid_gen;
   unsigned int hidectr;
   pthread_mutex_t lock;
-  struct fuse_config conf;
   fuse_operations ops;
   struct lock_queue_element *lockq;
 
@@ -1366,8 +1359,8 @@ reply_entry(fuse_req_t                    *req_,
 
 static
 void
-fuse_lib_init(void                  *data,
-              struct fuse_conn_info *conn)
+fuse_lib_init(void             *data,
+              fuse_conn_info_t *conn)
 {
   f.ops.init(conn);
 }
@@ -1790,7 +1783,7 @@ fuse_lib_mknod(fuse_req_t            *req_,
   arg  = (fuse_mknod_in*)fuse_hdr_arg(hdr_);
   name = (const char*)PARAM(arg);
 
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
   else
     name = (char*)arg + FUSE_COMPAT_MKNOD_IN_SIZE;
@@ -1846,7 +1839,7 @@ fuse_lib_mkdir(fuse_req_t            *req_,
 
   arg  = (fuse_mkdir_in*)fuse_hdr_arg(hdr_);
   name = (const char*)PARAM(arg);
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
 
   err = get_path_name(hdr_->nodeid,name,&fusepath);
@@ -2083,7 +2076,7 @@ fuse_lib_create(fuse_req_t            *req_,
 
   ffi.flags = arg->flags;
 
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
   else
     name = ((char*)arg + sizeof(struct fuse_open_in));
@@ -2237,7 +2230,7 @@ fuse_lib_read(fuse_req_t            *req_,
 
   arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
-  if(req_->f->conn.proto_minor >= 9)
+  if(req_->conn.proto_minor >= 9)
     {
       ffi.flags      = arg->flags;
       ffi.lock_owner = arg->lock_owner;
@@ -2272,7 +2265,7 @@ fuse_lib_write(fuse_req_t            *req_,
   arg     = (fuse_write_in*)fuse_hdr_arg(hdr_);
   ffi.fh  = arg->fh;
   ffi.writepage = !!(arg->write_flags & 1);
-  if(req_->f->conn.proto_minor < 9)
+  if(req_->conn.proto_minor < 9)
     {
       data = ((char*)arg) + FUSE_COMPAT_WRITE_IN_SIZE;
     }
@@ -2592,8 +2585,8 @@ fuse_lib_setxattr(fuse_req_t            *req_,
   struct fuse_setxattr_in *arg;
 
   arg = (fuse_setxattr_in*)fuse_hdr_arg(hdr_);
-  if((req_->f->conn.capable & FUSE_SETXATTR_EXT) &&
-     (req_->f->conn.want & FUSE_SETXATTR_EXT))
+  if((req_->conn.capable & FUSE_SETXATTR_EXT) &&
+     (req_->conn.want & FUSE_SETXATTR_EXT))
     name = (const char*)PARAM(arg);
   else
     name = (((char*)arg) + FUSE_COMPAT_SETXATTR_IN_SIZE);
@@ -2834,7 +2827,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
 
   ffi.flags = arg->flags;
 
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
   else
     name = (char*)arg + sizeof(struct fuse_open_in);
@@ -3078,7 +3071,7 @@ fuse_lib_release(fuse_req_t            *req_,
   arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
   ffi.fh    = arg->fh;
   ffi.flags = arg->flags;
-  if(req_->f->conn.proto_minor >= 8)
+  if(req_->conn.proto_minor >= 8)
     {
       ffi.flush      = !!(arg->release_flags & FUSE_RELEASE_FLUSH);
       ffi.lock_owner = arg->lock_owner;
@@ -3116,7 +3109,7 @@ fuse_lib_flush(fuse_req_t             *req_,
 
   ffi.fh = arg->fh;
   ffi.flush = 1;
-  if(req_->f->conn.proto_minor >= 7)
+  if(req_->conn.proto_minor >= 7)
     ffi.lock_owner = arg->lock_owner;
 
   err = fuse_flush_common(req_,hdr_->nodeid,&ffi);
@@ -3276,14 +3269,15 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
   const struct fuse_ioctl_in *arg;
 
   arg = (fuse_ioctl_in*)fuse_hdr_arg(hdr_);
-  if((arg->flags & FUSE_IOCTL_DIR) && !(req_->f->conn.want & FUSE_CAP_IOCTL_DIR))
+  if((arg->flags & FUSE_IOCTL_DIR) &&
+     !(req_->conn.want & FUSE_CAP_IOCTL_DIR))
     {
       fuse_reply_err(req_,ENOTTY);
       return;
     }
 
   if((sizeof(void*) == 4)              &&
-     (req_->f->conn.proto_minor >= 16) &&
+     (req_->conn.proto_minor >= 16) &&
      !(arg->flags & FUSE_IOCTL_32BIT))
     {
       req_->ioctl_64bit = 1;
@@ -3337,38 +3331,7 @@ void
 fuse_lib_poll(fuse_req_t                  *req_,
               const struct fuse_in_header *hdr_)
 {
-  int err;
-  unsigned revents = 0;
-  fuse_file_info_t ffi = {0};
-  fuse_pollhandle_t *ph = NULL;
-  const struct fuse_poll_in *arg;
-
-  arg = (fuse_poll_in*)fuse_hdr_arg(hdr_);
-  ffi.fh = arg->fh;
-
-  if(arg->flags & FUSE_POLL_SCHEDULE_NOTIFY)
-    {
-      ph = (fuse_pollhandle_t*)malloc(sizeof(fuse_pollhandle_t));
-      if(ph == NULL)
-        {
-          fuse_reply_err(req_,ENOMEM);
-          return;
-        }
-
-      ph->kh = arg->kh;
-      ph->ch = req_->ch;
-      ph->f  = req_->f;
-    }
-
-  err = f.ops.poll(&req_->ctx,
-                   &ffi,
-                   ph,
-                   &revents);
-
-  if(!err)
-    fuse_reply_poll(req_,revents);
-  else
-    fuse_reply_err(req_,err);
+  fuse_reply_err(req_,-ENOSYS);
 }
 
 static
@@ -3556,12 +3519,6 @@ static struct fuse_lowlevel_ops fuse_path_ops =
   };
 
 int
-fuse_notify_poll(fuse_pollhandle_t *ph)
-{
-  return fuse_lowlevel_notify_poll(ph);
-}
-
-int
 fuse_exited()
 {
   return fuse_session_exited(f.se);
@@ -3583,8 +3540,6 @@ enum
   {
     KEY_HELP,
   };
-
-#define FUSE_LIB_OPT(t,p,v) { t,offsetof(struct fuse_config,p),v }
 
 static const struct fuse_opt fuse_lib_opts[] =
   {
@@ -3805,7 +3760,7 @@ fuse_new(struct fuse_chan             *ch,
       llop.setlk = NULL;
     }
 
-  if(fuse_opt_parse(args,&f.conf,fuse_lib_opts,fuse_lib_opt_proc) == -1)
+  if(fuse_opt_parse(args,NULL,fuse_lib_opts,fuse_lib_opt_proc) == -1)
     goto out_free_fs;
 
   g_LOG_METRICS = fuse_cfg.debug;

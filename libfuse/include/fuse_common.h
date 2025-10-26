@@ -128,25 +128,8 @@ struct fuse_file_info_t
 
 #define FUSE_IOCTL_MAX_IOV	256
 
-/**
- * Connection information, passed to the ->init() method
- *
- * Some of the elements are read-write, these can be changed to
- * indicate the value requested by the filesystem.  The requested
- * value must usually be smaller than the indicated value.
- */
-struct fuse_conn_info
-{
-  unsigned proto_major;
-  unsigned proto_minor;
-  uint64_t capable;
-  uint64_t want;
-};
-
 struct fuse_session;
 struct fuse_chan;
-struct fuse_pollhandle_t;
-typedef struct fuse_pollhandle_t fuse_pollhandle_t;
 
 /**
  * Create a FUSE mountpoint
@@ -206,13 +189,6 @@ int fuse_daemonize(int foreground);
  * @return the version
  */
 int fuse_version(void);
-
-/**
- * Destroy poll handle
- *
- * @param ph the poll handle
- */
-void fuse_pollhandle_destroy(fuse_pollhandle_t *ph);
 
 /* ----------------------------------------------------------- *
  * Data buffer						       *

@@ -27,7 +27,6 @@ struct fuse_session
 
   void (*destroy)(void *data);
 
-  struct fuse_ll *f;
   volatile int exited;
   struct fuse_chan *ch;
 };
@@ -41,27 +40,6 @@ struct fuse_notify_req
                 const void *);
   struct fuse_notify_req *next;
   struct fuse_notify_req *prev;
-};
-
-struct fuse_ll
-{
-  struct fuse_lowlevel_ops op;
-  void *userdata;
-  uid_t owner;
-  struct fuse_conn_info conn;
-  pthread_mutex_t lock;
-  int got_init;
-  int got_destroy;
-  int broken_splice_nonblock;
-  uint64_t notify_ctr;
-  struct fuse_notify_req notify_list;
-};
-
-struct fuse_cmd
-{
-  char *buf;
-  size_t buflen;
-  struct fuse_chan *ch;
 };
 
 EXTERN_C_BEGIN

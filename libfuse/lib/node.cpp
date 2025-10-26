@@ -9,6 +9,7 @@ struct stack_t
 };
 
 thread_local static stack_t *g_stack = NULL;
+thread_local bool gc = false;
 
 node_t*
 node_alloc()

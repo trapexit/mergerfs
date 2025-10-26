@@ -119,7 +119,7 @@ struct fuse_lowlevel_ops
   void (*getattr)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*getlk)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*getxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
-  void (*init)(void *userdata, struct fuse_conn_info *conn);
+  void (*init)(void *userdata, fuse_conn_info_t *conn);
   void (*ioctl)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*link)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*listxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
@@ -401,26 +401,9 @@ int fuse_reply_ioctl(fuse_req_t *req, int result, const void *buf, uint32_t size
 int fuse_reply_ioctl_iov(fuse_req_t *req, int result, const struct iovec *iov,
                          int count);
 
-/**
- * Reply with poll result event mask
- *
- * @param req request handle
- * @param revents poll result event mask
- */
-int fuse_reply_poll(fuse_req_t *req, unsigned revents);
-
 /* ----------------------------------------------------------- *
  * Notification						       *
  * ----------------------------------------------------------- */
-
-/**
- * Notify IO readiness event
- *
- * For more information, please read comment for poll operation.
- *
- * @param ph poll handle to notify IO readiness event for
- */
-int fuse_lowlevel_notify_poll(fuse_pollhandle_t *ph);
 
 /**
  * Notify to invalidate cache for an inode
@@ -574,8 +557,7 @@ struct fuse_session *fuse_lowlevel_new(struct fuse_args *args,
  * Session interface					       *
  * ----------------------------------------------------------- */
 
-struct fuse_session *fuse_session_new(void *data,
-                                      void *receive_buf,
+struct fuse_session *fuse_session_new(void *receive_buf,
                                       void *process_buf,
                                       void *destroy);
 void fuse_session_add_chan(struct fuse_session *se, struct fuse_chan *ch);

@@ -13,6 +13,7 @@
 #include "fuse_common.h"
 #include "fuse_kernel.h"
 #include "fuse_req_ctx.h"
+#include "fuse_conn_info.hpp"
 
 #include <fcntl.h>
 #include <time.h>
@@ -150,7 +151,7 @@ struct fuse_operations
   int (*fsyncdir)(const fuse_req_ctx_t *,
                   const fuse_file_info_t *,
                   int);
-  void *(*init)(struct fuse_conn_info *conn);
+  void *(*init)(struct fuse_conn_info_t *conn);
   void (*destroy)(void);
   int (*access)(const fuse_req_ctx_t *,
                 const char *,
@@ -187,10 +188,6 @@ struct fuse_operations
                unsigned int            flags,
                void                   *data,
                uint32_t               *out_bufsz);
-  int (*poll)(const fuse_req_ctx_t *,
-              const fuse_file_info_t *ffi,
-              fuse_pollhandle_t      *ph,
-              unsigned               *reventsp);
   int (*write)(const fuse_req_ctx_t *,
                const fuse_file_info_t *ffi,
                const char             *data,
@@ -386,8 +383,6 @@ int fuse_clean_cache(struct fuse *fuse);
  * exception of fuse_fs_open, fuse_fs_release, fuse_fs_opendir,
  * fuse_fs_releasedir and fuse_fs_statfs, which return 0.
  */
-
-int fuse_notify_poll(fuse_pollhandle_t *ph);
 
 /* ----------------------------------------------------------- *
  * Advanced API for event handling, don't worry about this...  *

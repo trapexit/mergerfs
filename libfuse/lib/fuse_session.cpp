@@ -26,19 +26,17 @@ struct fuse_chan
 };
 
 struct fuse_session *
-fuse_session_new(void *data,
-                 void *receive_buf,
+fuse_session_new(void *receive_buf,
                  void *process_buf,
                  void *destroy)
 {
-  struct fuse_session *se = (struct fuse_session *) malloc(sizeof(*se));
-  if (se == NULL) {
-    fprintf(stderr, "fuse: failed to allocate session\n");
-    return NULL;
-  }
+  struct fuse_session *se = (struct fuse_session *)calloc(1,sizeof(*se));
+  if(se == NULL)
+    {
+      fprintf(stderr, "fuse: failed to allocate session\n");
+      return NULL;
+    }
 
-  memset(se, 0, sizeof(*se));
-  se->f           = (fuse_ll*)data;
   se->receive_buf = (int(*)(fuse_session*,fuse_msgbuf_t*))receive_buf;
   se->process_buf = (void(*)(fuse_session*,const fuse_msgbuf_t*))process_buf;
   se->destroy     = (void(*)(void*))destroy;
@@ -67,7 +65,7 @@ void fuse_session_remove_chan(struct fuse_chan *ch)
 void
 fuse_session_destroy(struct fuse_session *se)
 {
-  se->destroy(se->f);
+  se->destroy(NULL);
   if(se->ch != NULL)
     fuse_chan_destroy(se->ch);
   free(se);
@@ -88,12 +86,6 @@ void
 fuse_session_exit(struct fuse_session *se_)
 {
   se_->exited = 1;
-}
-
-void*
-fuse_session_data(struct fuse_session *se)
-{
-  return se->f;
 }
 
 struct fuse_chan *

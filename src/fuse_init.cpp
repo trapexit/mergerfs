@@ -35,24 +35,24 @@
 
 static
 void
-_want(fuse_conn_info *conn_,
-      const int       flag_)
+_want(fuse_conn_info_t *conn_,
+      const int         flag_)
 {
   conn_->want |= flag_;
 }
 
 static
 bool
-_capable(fuse_conn_info *conn_,
-         const int       flag_)
+_capable(fuse_conn_info_t *conn_,
+         const int         flag_)
 {
   return !!(conn_->capable & flag_);
 }
 
 static
 void
-_want_if_capable(fuse_conn_info *conn_,
-                 const int       flag_)
+_want_if_capable(fuse_conn_info_t *conn_,
+                 const int         flag_)
 {
   if(::_capable(conn_,flag_))
     ::_want(conn_,flag_);
@@ -60,9 +60,9 @@ _want_if_capable(fuse_conn_info *conn_,
 
 static
 void
-_want_if_capable(fuse_conn_info *conn_,
-                 const int       flag_,
-                 ConfigBOOL     *want_)
+_want_if_capable(fuse_conn_info_t *conn_,
+                 const int         flag_,
+                 ConfigBOOL       *want_)
 {
   if(*want_ && ::_capable(conn_,flag_))
     {
@@ -78,8 +78,8 @@ static const char MAX_PAGES_LIMIT_FILEPATH[] = "/proc/sys/fs/fuse/max_pages_limi
 
 static
 void
-_want_if_capable_max_pages(fuse_conn_info *conn_,
-                           Config         &cfg_)
+_want_if_capable_max_pages(fuse_conn_info_t *conn_,
+                           Config           &cfg_)
 {
   std::fstream f;
   uint64_t max_pages_limit;
@@ -184,7 +184,7 @@ _spawn_thread_to_set_readahead()
 }
 
 void *
-FUSE::init(fuse_conn_info *conn_)
+FUSE::init(fuse_conn_info_t *conn_)
 {
   procfs::init();
   ugid::init();
