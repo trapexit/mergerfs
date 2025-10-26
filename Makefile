@@ -69,7 +69,7 @@ OBJS := $(SRC:src/%.cpp=build/.objs/%.cpp.o)
 DEPS := $(SRC:src/%.cpp=build/.objs/%.cpp.d)
 
 TESTS      := $(wildcard tests/*.cpp)
-TESTS_OBJS := $(filter-out build/.objs/mergerfs.o,$(OBJS))
+TESTS_OBJS := $(filter-out build/.objs/mergerfs.cpp.o,$(OBJS))
 TESTS_OBJS += $(TESTS:tests/%.cpp=build/.test_objs/%.cpp.o)
 TESTS_DEPS := $(TESTS:tests/%.cpp=build/.test_objs/%.cpp.d)
 TESTS_DEPS += $(DEPS)

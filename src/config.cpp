@@ -211,6 +211,7 @@ Config::Config()
   _map["category.create"]             = &category.create;
   _map["category.search"]             = &category.search;
   _map["config"]                      = &config_file;
+  _map["defaults"]                    = &_dummy;
   _map["debug"]                       = &debug;
   _map["direct-io-allow-mmap"]        = &direct_io_allow_mmap;
   _map["direct-io"]                   = &_dummy;
