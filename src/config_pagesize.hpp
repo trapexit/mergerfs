@@ -44,7 +44,7 @@ public:
     return *this;
   }
 
-  operator const uint64_t() const
+  operator uint64_t() const
   {
     return _v;
   }

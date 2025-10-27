@@ -148,7 +148,7 @@ public:
   LinkEXDEV      link_exdev;
   LogMetrics     log_metrics;
   TFSRef<int>    max_background;
-  ConfigUINT64   minfreespace;
+  TFSRef<u64>    minfreespace;
   fs::path       mountpoint;
   TFSRef<fs::path> _mount;
   TFSRef<fs::path> _mountpoint;

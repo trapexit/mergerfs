@@ -208,7 +208,6 @@ _create(const Policy::Search &searchFunc_,
 }
 
 constexpr
-const
 uint64_t
 _(const PassthroughIOEnum e_,
   const uint64_t          m_)

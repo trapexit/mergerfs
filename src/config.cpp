@@ -81,7 +81,7 @@ Config::Config()
   :
   allow_idmap(false),
   async_read(true),
-  branches(minfreespace),
+  branches(),
   branches_mount_timeout(0),
   branches_mount_timeout_fail(false),
   cache_attr(1),
@@ -118,7 +118,7 @@ Config::Config()
   link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
   log_metrics(false),
   max_background(fuse_cfg.max_background,0),
-  minfreespace(MINFREESPACE_DEFAULT),
+  minfreespace(branches.minfreespace,MINFREESPACE_DEFAULT),
   mountpoint(),
   _mount(mountpoint),
   _mountpoint(mountpoint),

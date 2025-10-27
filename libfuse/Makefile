@@ -33,7 +33,22 @@ endif
 ifeq ($(NDEBUG),1)
 OPT_FLAGS := -O2 -DNDEBUG
 else
-OPT_FLAGS := -O0 -g -DDEBUG -fno-omit-frame-pointer
+ifdef SANITIZE
+ifeq ($(SANITIZE),1)
+  override SANITIZE := -fsanitize=address,undefined,leak
+else
+  override SANITIZE := -fsanitize=$(SANITIZE)
+endif
+endif
+OPT_FLAGS := -O0 \
+	     -g \
+	     -fno-omit-frame-pointer \
+	     $(SANITIZE) \
+	     -fstack-protector-strong \
+             -Wextra \
+	     -Werror \
+	     -Wno-unused-parameter \
+             -DDEBUG
 endif
 
 ifeq ($(LTO),1)
@@ -60,7 +75,6 @@ INSTALLMAN1DIR ?= $(DESTDIR)$(MAN1DIR)
 BUILDDIR := build
 
 SRC_C = \
-	lib/buffer.c \
 	lib/crc32b.c \
 	lib/fuse_opt.c \
 	lib/fuse_session.c \
