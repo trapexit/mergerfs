@@ -169,8 +169,6 @@ test_config_cachefiles()
 {
   CacheFiles cf;
 
-  TEST_CHECK(cf.from_string("libfuse") == 0);
-  TEST_CHECK(cf.to_string() == "libfuse");
   TEST_CHECK(cf.from_string("off") == 0);
   TEST_CHECK(cf.to_string() == "off");
   TEST_CHECK(cf.from_string("partial") == 0);
@@ -303,7 +301,7 @@ test_config()
 {
   Config cfg;
 
-  TEST_CHECK(cfg.set_raw("async_read","true") == 0);
+  TEST_CHECK(cfg.set("async-read","true") == 0);
 }
 
 TEST_LIST =

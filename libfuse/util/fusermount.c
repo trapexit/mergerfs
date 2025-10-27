@@ -579,49 +579,66 @@ static int begins_with(const char *s, const char *beg)
 		return 0;
 }
 
-struct mount_flags {
-	const char *opt;
-	unsigned long flag;
-	int on;
-	int safe;
-};
-
-static struct mount_flags mount_flags[] = {
-	{"rw",	    MS_RDONLY,	    0, 1},
-	{"ro",	    MS_RDONLY,	    1, 1},
-	{"suid",    MS_NOSUID,	    0, 0},
-	{"nosuid",  MS_NOSUID,	    1, 1},
-	{"dev",	    MS_NODEV,	    0, 0},
-	{"nodev",   MS_NODEV,	    1, 1},
-	{"exec",    MS_NOEXEC,	    0, 1},
-	{"noexec",  MS_NOEXEC,	    1, 1},
-	{"async",   MS_SYNCHRONOUS, 0, 1},
-	{"sync",    MS_SYNCHRONOUS, 1, 1},
-	{"atime",   MS_NOATIME,	    0, 1},
-	{"noatime", MS_NOATIME,	    1, 1},
-	{"dirsync", MS_DIRSYNC,	    1, 1},
-	{NULL,	    0,		    0, 0}
-};
-
-static int find_mount_flag(const char *s, unsigned len, int *on, int *flag)
+struct mount_flags
 {
-	int i;
+  const char *opt;
+  unsigned long flag;
+  int on;
+  int safe;
+};
 
-	for (i = 0; mount_flags[i].opt != NULL; i++) {
-		const char *opt = mount_flags[i].opt;
-		if (strlen(opt) == len && strncmp(opt, s, len) == 0) {
-			*on = mount_flags[i].on;
-			*flag = mount_flags[i].flag;
-			if (!mount_flags[i].safe && getuid() != 0) {
-				*flag = 0;
-				fprintf(stderr,
-					"%s: unsafe option %s ignored\n",
-					progname, opt);
-			}
-			return 1;
-		}
-	}
-	return 0;
+static
+struct mount_flags
+mount_flags[] =
+  {
+    {"rw",	      MS_RDONLY,      0, 1},
+    {"ro",	      MS_RDONLY,      1, 1},
+    {"suid",          MS_NOSUID,      0, 0},
+    {"nosuid",        MS_NOSUID,      1, 1},
+    {"dev",	      MS_NODEV,	      0, 0},
+    {"nodev",         MS_NODEV,       1, 1},
+    {"exec",          MS_NOEXEC,      0, 1},
+    {"noexec",        MS_NOEXEC,      1, 1},
+    {"async",         MS_SYNCHRONOUS, 0, 1},
+    {"sync",          MS_SYNCHRONOUS, 1, 1},
+    {"atime",         MS_NOATIME,     0, 1},
+    {"noatime",       MS_NOATIME,     1, 1},
+    {"dirsync",       MS_DIRSYNC,     1, 1},
+    {"relatime",      MS_RELATIME,    1, 1},
+    {"norelatime",    MS_RELATIME,    0, 1},
+    {"lazytime",      MS_LAZYTIME,    1, 1},
+    {"nolazytime",    MS_LAZYTIME,    0, 1},
+    {"diratime",      MS_NODIRATIME,  0, 1},
+    {"nodiratime",    MS_NODIRATIME,  1, 1},
+    {"strictatime",   MS_STRICTATIME, 1, 1},
+    {"nostrictatime", MS_STRICTATIME, 0, 1},
+    {NULL,	    0,		    0, 0}
+  };
+
+static
+int
+find_mount_flag(const char *s, unsigned len, int *on, int *flag)
+{
+  int i;
+
+  for (i = 0; mount_flags[i].opt != NULL; i++)
+    {
+      const char *opt = mount_flags[i].opt;
+      if(strlen(opt) == len && strncmp(opt, s, len) == 0)
+        {
+          *on = mount_flags[i].on;
+          *flag = mount_flags[i].flag;
+          if(!mount_flags[i].safe && getuid() != 0)
+            {
+              *flag = 0;
+              fprintf(stderr,
+                      "%s: unsafe option %s ignored\n",
+                      progname, opt);
+            }
+          return 1;
+        }
+    }
+  return 0;
 }
 
 static int add_option(char **optsp, const char *opt, unsigned expand)

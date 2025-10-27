@@ -49,14 +49,11 @@ enum {
   KEY_FUSERMOUNT_OPT,
   KEY_SUBTYPE_OPT,
   KEY_MTAB_OPT,
-  KEY_RO,
-  KEY_HELP,
-  KEY_VERSION,
+  KEY_RO
 };
 
 struct mount_opts {
   int allow_other;
-  int ishelp;
   int flags;
   int auto_unmount;
   int blkdev;
@@ -70,59 +67,54 @@ struct mount_opts {
 
 #define FUSE_MOUNT_OPT(t, p) { t, offsetof(struct mount_opts, p), 1 }
 
-static const struct fuse_opt fuse_mount_opts[] = {
-  FUSE_MOUNT_OPT("allow_other",         allow_other),
-  FUSE_MOUNT_OPT("blkdev",		blkdev),
-  FUSE_MOUNT_OPT("auto_unmount",	auto_unmount),
-  FUSE_MOUNT_OPT("fsname=%s",		fsname),
-  FUSE_MOUNT_OPT("subtype=%s",		subtype),
-  FUSE_OPT_KEY("allow_other",           KEY_KERN_OPT),
-  FUSE_OPT_KEY("auto_unmount",		KEY_FUSERMOUNT_OPT),
-  FUSE_OPT_KEY("blkdev",		KEY_FUSERMOUNT_OPT),
-  FUSE_OPT_KEY("fsname=",		KEY_FUSERMOUNT_OPT),
-  FUSE_OPT_KEY("subtype=",		KEY_SUBTYPE_OPT),
-  FUSE_OPT_KEY("large_read",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("blksize=",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("default_permissions",	KEY_KERN_OPT),
-  FUSE_OPT_KEY("context=",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("fscontext=",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("defcontext=",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("rootcontext=",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("max_read=",		KEY_KERN_OPT),
-  FUSE_OPT_KEY("max_read=",		FUSE_OPT_KEY_KEEP),
-  FUSE_OPT_KEY("user=",			KEY_MTAB_OPT),
-  FUSE_OPT_KEY("-r",			KEY_RO),
-  FUSE_OPT_KEY("ro",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("rw",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("suid",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("nosuid",		KEY_KERN_FLAG),
-  FUSE_OPT_KEY("dev",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("nodev",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("exec",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("noexec",		KEY_KERN_FLAG),
-  FUSE_OPT_KEY("async",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("sync",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("dirsync",		KEY_KERN_FLAG),
-  FUSE_OPT_KEY("atime",			KEY_KERN_FLAG),
-  FUSE_OPT_KEY("noatime",		KEY_KERN_FLAG),
-  FUSE_OPT_KEY("-h",			KEY_HELP),
-  FUSE_OPT_KEY("--help",		KEY_HELP),
-  FUSE_OPT_KEY("-V",			KEY_VERSION),
-  FUSE_OPT_KEY("--version",		KEY_VERSION),
-  FUSE_OPT_END
-};
-
-static void mount_help(void)
-{
-  fprintf(stderr,
-          "    -o auto_unmount        auto unmount on process termination\n"
-          "    -o default_permissions enable permission checking by kernel\n"
-          "    -o fsname=NAME         set filesystem name\n"
-          "    -o subtype=NAME        set filesystem type\n"
-          "    -o large_read          issue large read requests (2.4 only)\n"
-          "    -o max_read=N          set maximum size of read requests\n"
-          "\n");
-}
+static
+const
+struct fuse_opt fuse_mount_opts[] =
+  {
+    FUSE_MOUNT_OPT("allow_other",       allow_other),
+    FUSE_MOUNT_OPT("blkdev",		blkdev),
+    FUSE_MOUNT_OPT("auto_unmount",	auto_unmount),
+    FUSE_MOUNT_OPT("fsname=%s",		fsname),
+    FUSE_MOUNT_OPT("subtype=%s",	subtype),
+    FUSE_OPT_KEY("allow_other",         KEY_KERN_OPT),
+    FUSE_OPT_KEY("auto_unmount",	KEY_FUSERMOUNT_OPT),
+    FUSE_OPT_KEY("blkdev",		KEY_FUSERMOUNT_OPT),
+    FUSE_OPT_KEY("fsname=",		KEY_FUSERMOUNT_OPT),
+    FUSE_OPT_KEY("subtype=",		KEY_SUBTYPE_OPT),
+    FUSE_OPT_KEY("large_read",		KEY_KERN_OPT),
+    FUSE_OPT_KEY("blksize=",		KEY_KERN_OPT),
+    FUSE_OPT_KEY("default_permissions",	KEY_KERN_OPT),
+    FUSE_OPT_KEY("context=",		KEY_KERN_OPT),
+    FUSE_OPT_KEY("fscontext=",		KEY_KERN_OPT),
+    FUSE_OPT_KEY("defcontext=",		KEY_KERN_OPT),
+    FUSE_OPT_KEY("rootcontext=",	KEY_KERN_OPT),
+    FUSE_OPT_KEY("max_read=",		KEY_KERN_OPT),
+    FUSE_OPT_KEY("max_read=",		FUSE_OPT_KEY_KEEP),
+    FUSE_OPT_KEY("user=",		KEY_MTAB_OPT),
+    FUSE_OPT_KEY("-r",			KEY_RO),
+    FUSE_OPT_KEY("ro",			KEY_KERN_FLAG),
+    FUSE_OPT_KEY("rw",			KEY_KERN_FLAG),
+    FUSE_OPT_KEY("suid",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("nosuid",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("dev",			KEY_KERN_FLAG),
+    FUSE_OPT_KEY("nodev",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("exec",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("noexec",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("async",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("sync",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("dirsync",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("atime",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("noatime",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("relatime",            KEY_KERN_FLAG),
+    FUSE_OPT_KEY("norelatime",          KEY_KERN_FLAG),
+    FUSE_OPT_KEY("lazytime",            KEY_KERN_FLAG),
+    FUSE_OPT_KEY("nolazytime",          KEY_KERN_FLAG),
+    FUSE_OPT_KEY("diratime",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("nodiratime",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("strictatime",		KEY_KERN_FLAG),
+    FUSE_OPT_KEY("nostrictatime",	KEY_KERN_FLAG),
+    FUSE_OPT_END
+  };
 
 static void exec_fusermount(const char *argv[])
 {
@@ -132,56 +124,63 @@ static void exec_fusermount(const char *argv[])
   execvp(FUSERMOUNT_PROG, (char **) argv);
 }
 
-static void mount_version(void)
-{
-  int pid = fork();
-  if (!pid) {
-    const char *argv[] = { FUSERMOUNT_PROG, "--version", NULL };
-    exec_fusermount(argv);
-    _exit(1);
-  } else if (pid != -1)
-    waitpid(pid, NULL, 0);
-}
-
 struct mount_flags {
   const char *opt;
   unsigned long flag;
   int on;
 };
 
-static const struct mount_flags mount_flags[] = {
-  {"rw",	    MS_RDONLY,	    0},
-  {"ro",	    MS_RDONLY,	    1},
-  {"suid",    MS_NOSUID,	    0},
-  {"nosuid",  MS_NOSUID,	    1},
-  {"dev",	    MS_NODEV,	    0},
-  {"nodev",   MS_NODEV,	    1},
-  {"exec",    MS_NOEXEC,	    0},
-  {"noexec",  MS_NOEXEC,	    1},
-  {"async",   MS_SYNCHRONOUS, 0},
-  {"sync",    MS_SYNCHRONOUS, 1},
-  {"atime",   MS_NOATIME,	    0},
-  {"noatime", MS_NOATIME,	    1},
+static
+const
+struct mount_flags
+mount_flags[] =
+  {
+    {"rw",           MS_RDONLY,      0},
+    {"ro",           MS_RDONLY,      1},
+    {"suid",         MS_NOSUID,      0},
+    {"nosuid",       MS_NOSUID,      1},
+    {"dev",          MS_NODEV,	     0},
+    {"nodev",        MS_NODEV,	     1},
+    {"exec",         MS_NOEXEC,      0},
+    {"noexec",       MS_NOEXEC,      1},
+    {"async",        MS_SYNCHRONOUS, 0},
+    {"sync",         MS_SYNCHRONOUS, 1},
+    {"atime",        MS_NOATIME,     0},
+    {"noatime",      MS_NOATIME,     1},
+    {"relatime",     MS_RELATIME,    1},
+    {"norelatime",   MS_RELATIME,    0},
+    {"lazytime",     MS_LAZYTIME,    1},
+    {"nolazytime",   MS_LAZYTIME,    0},
+    {"diratime",     MS_NODIRATIME,  0},
+    {"nodiratime",   MS_NODIRATIME,  1},
+    {"strictatime",  MS_STRICTATIME, 1},
+    {"nostrictatime",MS_STRICTATIME, 0},
 #ifndef __NetBSD__
-  {"dirsync", MS_DIRSYNC,	    1},
+    {"dirsync", MS_DIRSYNC,        1},
 #endif
-  {NULL,	    0,		    0}
-};
+    {NULL,      0,	      0}
+  };
 
-static void set_mount_flag(const char *s, int *flags)
+static
+void
+set_mount_flag(const char *s,
+               int        *flags)
 {
   int i;
 
-  for (i = 0; mount_flags[i].opt != NULL; i++) {
-    const char *opt = mount_flags[i].opt;
-    if (strcmp(opt, s) == 0) {
-      if (mount_flags[i].on)
-        *flags |= mount_flags[i].flag;
-      else
-        *flags &= ~mount_flags[i].flag;
-      return;
+  for (i = 0; mount_flags[i].opt != NULL; i++)
+    {
+      const char *opt = mount_flags[i].opt;
+      if(strcmp(opt, s) == 0)
+        {
+          if(mount_flags[i].on)
+            *flags |= mount_flags[i].flag;
+          else
+            *flags &= ~mount_flags[i].flag;
+          return;
+        }
     }
-  }
+
   fprintf(stderr, "fuse: internal error, can't find mount flag\n");
   abort();
 }
@@ -211,16 +210,6 @@ static int fuse_mount_opt_proc(void *data, const char *arg, int key,
 
     case KEY_MTAB_OPT:
       return fuse_opt_add_opt(&mo->mtab_opts, arg);
-
-    case KEY_HELP:
-      mount_help();
-      mo->ishelp = 1;
-      break;
-
-    case KEY_VERSION:
-      mount_version();
-      mo->ishelp = 1;
-      break;
     }
   return 1;
 }
@@ -546,10 +535,6 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
   if(args &&
      fuse_opt_parse(args, &mo, fuse_mount_opts, fuse_mount_opt_proc) == -1)
     return -1;
-
-  res = 0;
-  if (mo.ishelp)
-    goto out;
 
   res = -1;
   if (get_mnt_flag_opts(&mnt_opts, mo.flags) == -1)
