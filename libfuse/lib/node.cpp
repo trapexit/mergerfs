@@ -14,6 +14,8 @@ thread_local static stack_t *g_stack       = NULL;
 thread_local bool            g_should_gc   = false;
 thread_local bool            g_initialized = false;
 
+static std::mutex g_mutex;
+static std::map<stack_t*,bool*> g_all_stacks;
 
 node_t*
 node_alloc()
