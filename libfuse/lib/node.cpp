@@ -1,6 +1,7 @@
 #include "node.hpp"
 
 #include <mutex>
+#include <map>
 
 #include <cstddef>
 #include <cstdlib>
