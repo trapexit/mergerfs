@@ -13,13 +13,6 @@ struct stack_t
 
 struct StackInfo
 {
-  StackInfo(stack_t *stack_,
-            bool    *should_gc_)
-    : stack(stack_),
-      should_gc(should_gc_)
-  {
-  }
-
   stack_t *stack;
   bool    *should_gc;
 };
