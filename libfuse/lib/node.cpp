@@ -28,7 +28,7 @@ static std::vector<StackInfo> g_all_stacks;
 node_t*
 node_alloc()
 {
-  if(__unlikely(g_initialized == false))
+  if(g_initialized == false)
     {
       std::lock_guard<std::mutex> guard(g_mutex);
       g_all_stacks.push_back({g_stack,&g_should_gc});
