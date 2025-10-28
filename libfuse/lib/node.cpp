@@ -1,5 +1,7 @@
 #include "node.hpp"
 
+#include <mutex>
+
 #include <cstddef>
 #include <cstdlib>
 
