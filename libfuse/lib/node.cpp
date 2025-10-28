@@ -11,7 +11,7 @@ struct stack_t
   stack_t *next;
 };
 
-struct StackPair
+struct StackInfo
 {
   stack_t &stack;
   bool    &should_gc;
