@@ -24,6 +24,7 @@ thread_local bool            g_initialized = false;
 static std::mutex g_mutex;
 static std::vector<StackInfo> g_all_stacks;
 
+
 node_t*
 node_alloc()
 {
