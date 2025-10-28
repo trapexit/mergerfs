@@ -31,6 +31,7 @@ node_alloc()
     {
       std::lock_guard<std::mutex> guard(g_mutex);
       g_all_stacks.push_back({g_stack,&g_should_gc});
+      g_initialized = true;
     }
 
   if(g_stack == NULL)
