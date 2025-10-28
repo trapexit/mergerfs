@@ -78,3 +78,15 @@ node_free(node_t *node_)
   stack->next = g_stack;
   g_stack = stack;
 }
+
+
+void
+node_gc()
+{
+  std::lock_guard<std::mutex> _(g_mutex);
+
+  for(auto &info : g_all_stacks)
+    {
+      *info.should_gc = true;
+    }
+}
