@@ -25,3 +25,4 @@ struct node_t
 
 node_t *node_alloc();
 void    node_free(node_t*);
+void    node_gc();
