@@ -27,6 +27,11 @@ static std::vector<StackInfo> g_all_stacks;
 node_t*
 node_alloc()
 {
+  if(g_initialized == false)
+    {
+      std::lock_guard<std::mutex> guard(g_mutex);
+    }
+
   if(g_stack == NULL)
     return (node_t*)calloc(1,sizeof(node_t));
 
