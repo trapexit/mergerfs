@@ -22,7 +22,7 @@ thread_local bool            g_should_gc   = false;
 thread_local bool            g_initialized = false;
 
 static std::mutex g_mutex;
-static std::<stack_t*,bool*> g_all_stacks;
+static std::vector<StackInfo> g_all_stacks;
 
 node_t*
 node_alloc()
