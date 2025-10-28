@@ -6,6 +6,10 @@
 #include <cstddef>
 #include <cstdlib>
 
+#include "fmt/core.h"
+#include <unistd.h>
+
+
 struct stack_t
 {
   stack_t *next;
