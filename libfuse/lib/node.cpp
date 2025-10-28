@@ -47,6 +47,9 @@ node_alloc()
           i++;
           s = s->next;
         }
+      fmt::print("{} {}",
+                 gettid(),
+                 i);
 
       g_should_gc = false;
     }
