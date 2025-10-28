@@ -1,7 +1,7 @@
 #include "node.hpp"
 
 #include <mutex>
-#include <map>
+#include <unordered_map>
 
 #include <cstddef>
 #include <cstdlib>
