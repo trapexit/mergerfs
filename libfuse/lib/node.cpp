@@ -35,6 +35,22 @@ node_alloc()
       g_initialized = true;
     }
 
+  if(g_should_gc)
+    {
+      int i;
+      stack_t *s;
+
+      i = 0;
+      s = g_stack;
+      while(s)
+        {
+          i++;
+          s = s->next;
+        }
+
+      g_should_gc = false;
+    }
+
   if(g_stack == NULL)
     return (node_t*)calloc(1,sizeof(node_t));
 
