@@ -10,9 +10,10 @@ struct stack_t
   stack_t *next;
 };
 
-thread_local static stack_t *g_stack = NULL;
-thread_local bool g_should_gc = false;
-thread_local bool g_initialized = false;
+thread_local static stack_t *g_stack       = NULL;
+thread_local bool            g_should_gc   = false;
+thread_local bool            g_initialized = false;
+
 
 node_t*
 node_alloc()
