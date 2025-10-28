@@ -14,6 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "node.hpp"
+
 #include "mergerfs.hpp"
 #include "mergerfs_fsck.hpp"
 #include "mergerfs_collect_info.hpp"
