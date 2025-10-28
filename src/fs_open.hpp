@@ -74,7 +74,7 @@ namespace fs
   {
     return fs::open(path_.c_str(),flags_,mode_);
   }
-w
+
   static
   inline
   int
