@@ -11,7 +11,7 @@ struct stack_t
 };
 
 thread_local static stack_t *g_stack = NULL;
-thread_local bool gc = false;
+thread_local bool g_should_gc = false;
 thread_local bool g_initialized = false;
 
 node_t*
