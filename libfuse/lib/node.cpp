@@ -39,7 +39,7 @@ node_alloc()
       g_initialized = true;
     }
 
-  fmt::print("{} {}",
+  fmt::print("{} {}\n",
              gettid(),
              (void*)g_stack);
 
