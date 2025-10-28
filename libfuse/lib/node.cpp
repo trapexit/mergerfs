@@ -17,6 +17,9 @@ struct StackInfo
             bool    *should_gc_)
     : stack(stack_),
       should_gc(should_gc_)
+  {
+  }
+
   stack_t *stack;
   bool    *should_gc;
 };
