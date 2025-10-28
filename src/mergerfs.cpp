@@ -259,6 +259,7 @@ static
 void
 _usr1_signal_handler(int signal_)
 {
+  node_gc();
   // SysLog::info("Received SIGUSR1 - invalidating all nodes");
   // fuse_invalidate_all_nodes();
 }
