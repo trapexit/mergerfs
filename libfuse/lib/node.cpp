@@ -13,8 +13,8 @@ struct stack_t
 
 struct StackInfo
 {
-  stack_t &stack;
-  bool    &should_gc;
+  stack_t *stack;
+  bool    *should_gc;
 };
 
 thread_local static stack_t *g_stack       = NULL;
