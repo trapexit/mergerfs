@@ -39,10 +39,6 @@ node_alloc()
       g_initialized = true;
     }
 
-  fmt::print("{} {}\n",
-             gettid(),
-             (void*)g_stack);
-
   if(g_should_gc)
     {
       int i;
