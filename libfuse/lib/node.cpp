@@ -55,7 +55,7 @@ node_alloc()
           i++;
           s = s->next;
         }
-      fmt::print("{} {}",
+      fmt::print("{} {}\n",
                  gettid(),
                  i);
 
