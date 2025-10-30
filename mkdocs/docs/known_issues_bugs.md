@@ -99,9 +99,9 @@ on [page caching](config/cache.md).
 ### Software using mmap
 
 * software using sqlite3 w/ mmap
-    * Plex (for config)
-    * Jellyfin (for config)
-    * Emby (for config)
+    * Plex (for config, not media)
+    * Jellyfin (for config, not media)
+    * Emby (for config, not media)
     * Radarr
     * Sonarr
     * Lidarr
@@ -113,17 +113,21 @@ on [page caching](config/cache.md).
 operating system feature allowing files to be interacted with as if it
 was normal memory. Support for `mmap` is **required** by a number of
 projects. FUSE (and therefore mergerfs), in order to support `mmap`,
-requires [page caching](config/cache.md) to be
-enabled. IE `cache.files` must not be set to `off` (if using Linux before
-v6.6 or mergerfs before v2.41.0.)
+requires [page caching](config/cache.md) to be enabled. IE
+`cache.files` must not be set to `off` (if using Linux before v6.6 or
+mergerfs before v2.41.0.) In newer versions of mergerfs and Linux
+`off` will work as it can now auto enable page caching (and therefore
+`mmap`) as needed.
 
-In newer versions of mergerfs and Linux `off` will work as it can now
-auto enable page caching (and therefore `mmap`) as needed.
+When `mmap` is needed but not available you may see `ENODEV` or `No
+such device` errors though it will depend on the particular software.
 
 That said it is recommended that config and runtime files be stored on
 SSDs on a regular filesystem for performance reasons. See [What should
 mergerfs NOT be used
-for?](faq/recommendations_and_warnings.md#what-should-mergerfs-not-be-used-for).
+for?](faq/recommendations_and_warnings.md#what-should-mergerfs-not-be-used-for). Though
+with [passthrough.io](config/passthrough.md) enabled that is less
+of a concern.
 
 Technically **sqlite3** does not require `mmap`, and in fact the
 default is not to use it, but many programs enable the feature and
