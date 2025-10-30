@@ -63,13 +63,16 @@ public:
 public:
   using Ptr = Branches::Impl::Ptr;
 
+public:
+  u64 minfreespace;
+
 private:
   mutable std::mutex _mutex;
   Ptr                _impl;
 
 public:
-  Branches(const u64 &default_minfreespace_)
-    : _impl(std::make_shared<Impl>(default_minfreespace_))
+  Branches()
+    : _impl(std::make_shared<Impl>(minfreespace))
   {}
 
 public:

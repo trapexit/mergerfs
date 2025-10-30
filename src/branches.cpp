@@ -154,6 +154,7 @@ namespace l
             rv = l::parse_minfreespace(v[1],minfreespace_);
             if(rv < 0)
               return rv;
+            [[fallthrough]];
           case 1:
             rv = l::parse_mode(v[0],mode_);
             if(rv < 0)

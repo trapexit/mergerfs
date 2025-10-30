@@ -152,7 +152,7 @@ struct fuse_dh
   fuse_dirents_t  d;
 };
 
-static struct fuse f = {0};
+static struct fuse f = {};
 
 /*
   Why was the nodeid:generation logic simplified?
@@ -1020,7 +1020,7 @@ get_path_common(uint64_t     nodeid,
   err = try_get_path(nodeid,name,path,wnode,true);
   if(err == -EAGAIN)
     {
-      struct lock_queue_element qe = {0};
+      struct lock_queue_element qe = {};
 
       qe.nodeid1 = nodeid;
       qe.name1   = name;
@@ -1079,7 +1079,7 @@ get_path2(uint64_t     nodeid1,
                       path1,path2,wnode1,wnode2);
   if(err == -EAGAIN)
     {
-      struct lock_queue_element qe = {0};
+      struct lock_queue_element qe = {};
 
       qe.nodeid1 = nodeid1;
       qe.name1   = name1;
@@ -1157,7 +1157,7 @@ forget_node(const uint64_t nodeid,
    */
   while(node->nlookup == nlookup && node->treelock)
     {
-      struct lock_queue_element qe = {0};
+      struct lock_queue_element qe = {};
 
       qe.nodeid1 = nodeid;
 
@@ -1389,7 +1389,7 @@ fuse_lib_lookup(fuse_req_t            *req_,
   char *fusepath;
   const char *name;
   node_t *dot = NULL;
-  struct fuse_entry_param e = {0};
+  struct fuse_entry_param e = {};
 
   name   = (const char*)fuse_hdr_arg(hdr_);
   nodeid = hdr_->nodeid;
@@ -1622,7 +1622,7 @@ fuse_lib_setattr(fuse_req_t            *req_,
                  struct fuse_in_header *hdr_)
 {
   uint64_t fh;
-  struct stat stbuf = {0};
+  struct stat stbuf = {};
   char *fusepath;
   int err;
   fuse_timeouts_t timeout;
@@ -1927,7 +1927,7 @@ fuse_lib_symlink(fuse_req_t            *req_,
   char *fusepath;
   const char *name;
   const char *linkname;
-  struct fuse_entry_param e = {0};
+  struct fuse_entry_param e = {};
 
   name     = (const char*)fuse_hdr_arg(hdr_);
   linkname = (name + strlen(name) + 1);
@@ -2017,7 +2017,7 @@ fuse_lib_link(fuse_req_t            *req_,
   char *newpath;
   const char *newname;
   struct fuse_link_in *arg;
-  struct fuse_entry_param e = {0};
+  struct fuse_entry_param e = {};
 
   arg     = (fuse_link_in*)fuse_hdr_arg(hdr_);
   newname = (const char*)PARAM(arg);
@@ -2074,7 +2074,7 @@ fuse_lib_create(fuse_req_t            *req_,
   char *fusepath;
   const char *name;
   uint64_t new_nodeid;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
 
@@ -2188,7 +2188,7 @@ fuse_lib_open(fuse_req_t            *req_,
 {
   int err;
   char *fusepath;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_open_in *arg;
 
   arg     = (fuse_open_in*)fuse_hdr_arg(hdr_);
@@ -2231,7 +2231,7 @@ fuse_lib_read(fuse_req_t            *req_,
               struct fuse_in_header *hdr_)
 {
   int res;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_read_in *arg;
   fuse_msgbuf_t *msgbuf;
 
@@ -2266,7 +2266,7 @@ fuse_lib_write(fuse_req_t            *req_,
 {
   int res;
   char *data;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_write_in *arg;
 
   arg     = (fuse_write_in*)fuse_hdr_arg(hdr_);
@@ -2335,8 +2335,8 @@ fuse_lib_opendir(fuse_req_t            *req_,
   int err;
   char *fusepath;
   struct fuse_dh *dh;
-  fuse_file_info_t llffi = {0};
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t llffi = {};
+  fuse_file_info_t ffi = {};
   struct fuse_open_in *arg;
 
   arg = (fuse_open_in*)fuse_hdr_arg(hdr_);
@@ -2422,8 +2422,8 @@ fuse_lib_readdir(fuse_req_t            *req_,
   size_t size;
   fuse_dirents_t *d;
   struct fuse_dh *dh;
-  fuse_file_info_t ffi = {0};
-  fuse_file_info_t llffi = {0};
+  fuse_file_info_t ffi = {};
+  fuse_file_info_t llffi = {};
   struct fuse_read_in *arg;
 
   arg      = (fuse_read_in*)fuse_hdr_arg(hdr_);
@@ -2466,8 +2466,8 @@ fuse_lib_readdir_plus(fuse_req_t            *req_,
   size_t size;
   fuse_dirents_t *d;
   struct fuse_dh *dh;
-  fuse_file_info_t ffi = {0};
-  fuse_file_info_t llffi = {0};
+  fuse_file_info_t ffi = {};
+  fuse_file_info_t llffi = {};
   struct fuse_read_in *arg;
 
   arg      = (fuse_read_in*)fuse_hdr_arg(hdr_);
@@ -2508,7 +2508,7 @@ fuse_lib_releasedir(fuse_req_t            *req_,
 {
   struct fuse_dh *dh;
   fuse_file_info_t ffi;
-  fuse_file_info_t llffi = {0};
+  fuse_file_info_t llffi = {};
   struct fuse_release_in *arg;
 
   arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
@@ -2537,7 +2537,7 @@ fuse_lib_fsyncdir(fuse_req_t            *req_,
   int err;
   int is_datasync;
   fuse_file_info_t ffi;
-  fuse_file_info_t llffi = {0};
+  fuse_file_info_t llffi = {};
   struct fuse_fsync_in *arg;
 
   arg         = (fuse_fsync_in*)fuse_hdr_arg(hdr_);
@@ -2560,7 +2560,7 @@ fuse_lib_statfs(fuse_req_t            *req_,
 {
   int err = 0;
   char *fusepath;
-  struct statvfs buf = {0};
+  struct statvfs buf = {};
 
   fusepath = NULL;
   if(hdr_->nodeid)
@@ -2767,8 +2767,8 @@ fuse_lib_copy_file_range(fuse_req_t                  *req_,
                          const struct fuse_in_header *hdr_)
 {
   ssize_t rv;
-  fuse_file_info_t ffi_in = {0};
-  fuse_file_info_t ffi_out = {0};
+  fuse_file_info_t ffi_in = {};
+  fuse_file_info_t ffi_out = {};
   const struct fuse_copy_file_range_in *arg;
 
   arg = (fuse_copy_file_range_in*)fuse_hdr_arg(hdr_);
@@ -2825,7 +2825,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   int err;
   char *fusepath;
   const char *name;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
 
@@ -3072,7 +3072,7 @@ fuse_lib_release(fuse_req_t            *req_,
                  struct fuse_in_header *hdr_)
 {
   int err = 0;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_release_in *arg;
 
   arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
@@ -3109,7 +3109,7 @@ fuse_lib_flush(fuse_req_t             *req_,
                struct fuse_in_header *hdr_)
 {
   int err;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   struct fuse_flush_in *arg;
 
   arg = (fuse_flush_in*)fuse_hdr_arg(hdr_);
@@ -3167,7 +3167,7 @@ fuse_lib_getlk(fuse_req_t                  *req_,
   lock_t lk;
   struct flock flk;
   lock_t *conflict;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   const struct fuse_lk_in *arg;
 
   arg            = (fuse_lk_in*)fuse_hdr_arg(hdr_);
@@ -3270,7 +3270,7 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
   int err;
   char *out_buf = NULL;
   fuse_file_info_t ffi;
-  fuse_file_info_t llffi = {0};
+  fuse_file_info_t llffi = {};
   const void *in_buf;
   uint32_t out_size;
   const struct fuse_ioctl_in *arg;
@@ -3339,7 +3339,7 @@ fuse_lib_poll(fuse_req_t                  *req_,
 {
   int err;
   unsigned revents = 0;
-  fuse_file_info_t ffi = {0};
+  fuse_file_info_t ffi = {};
   fuse_pollhandle_t *ph = NULL;
   const struct fuse_poll_in *arg;
 
@@ -3428,7 +3428,7 @@ fuse_prune_some_remembered_nodes(int *offset_)
   pruned = 0;
   checked = 0;
   now = current_time();
-  while(*offset_ < kv_size(f.remembered_nodes))
+  while(*offset_ < (int)kv_size(f.remembered_nodes))
     {
       time_t age;
       remembered_node_t *fn = &kv_A(f.remembered_nodes,*offset_);
@@ -3913,7 +3913,7 @@ fuse_passthrough_open(const int fd_)
 {
   int rv;
   int dev_fuse_fd;
-  struct fuse_backing_map bm = {0};
+  struct fuse_backing_map bm = {};
 
   dev_fuse_fd = fuse_chan_fd(f.se->ch);
   bm.fd       = fd_;

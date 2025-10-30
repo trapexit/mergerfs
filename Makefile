@@ -34,6 +34,7 @@ TOUCH 	  ?= touch
 
 BUILDDIR := build
 GITHUB_REPO ?= "https://github.com/trapexit/mergerfs"
+RELEASE_SAMPLE ?= "debian:13.amd64"
 
 ifndef GIT_REPO
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
@@ -49,7 +50,22 @@ UGID_USE_RWLOCK ?= 0
 ifdef NDEBUG
 OPT_FLAGS := -O2 -DNDEBUG
 else
-OPT_FLAGS := -O0 -g -fno-omit-frame-pointer -DDEBUG
+ifdef SANITIZE
+ifeq ($(SANITIZE),1)
+  override SANITIZE := -fsanitize=address,undefined,leak
+else
+  override SANITIZE := -fsanitize=$(SANITIZE)
+endif
+endif
+OPT_FLAGS := -O0 \
+	     -g \
+	     -fno-omit-frame-pointer \
+	     $(SANITIZE) \
+	     -fstack-protector-strong \
+             -Wextra \
+	     -Werror \
+	     -Wno-unused-parameter \
+             -DDEBUG
 endif
 
 ifdef STATIC
@@ -332,7 +348,7 @@ endef
 release:
 	$(call build_release,"all")
 release-sample:
-	$(call build_release,"debian:13.amd64")
+	$(call build_release,$(RELEASE_SAMPLE))
 release-amd64:
 	$(call build_release,"amd64")
 release-arm64:

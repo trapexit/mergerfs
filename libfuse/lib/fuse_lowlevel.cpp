@@ -292,7 +292,7 @@ int
 fuse_reply_entry(fuse_req_t                    *req,
                  const struct fuse_entry_param *e)
 {
-  struct fuse_entry_out arg = {0};
+  struct fuse_entry_out arg = {};
   size_t size = req->f->conn.proto_minor < 9 ?
     FUSE_COMPAT_ENTRY_OUT_SIZE : sizeof(arg);
 
@@ -322,7 +322,7 @@ fuse_reply_create(fuse_req_t                    *req,
                   const struct fuse_entry_param *e,
                   const fuse_file_info_t        *f)
 {
-  struct fuse_create_out buf = {0};
+  struct fuse_create_out buf = {};
   size_t entrysize = req->f->conn.proto_minor < 9 ?
     FUSE_COMPAT_ENTRY_OUT_SIZE : sizeof(struct fuse_entry_out);
   struct fuse_entry_out *earg = (struct fuse_entry_out*)&buf.e;
@@ -339,7 +339,7 @@ fuse_reply_attr(fuse_req_t        *req,
                 const struct stat *attr,
                 const uint64_t     timeout)
 {
-  struct fuse_attr_out arg = {0};
+  struct fuse_attr_out arg = {};
   size_t size = req->f->conn.proto_minor < 9 ?
     FUSE_COMPAT_ATTR_OUT_SIZE : sizeof(arg);
 
@@ -377,7 +377,7 @@ int
 fuse_reply_open(fuse_req_t             *req,
                 const fuse_file_info_t *f)
 {
-  struct fuse_open_out arg = {0};
+  struct fuse_open_out arg = {};
 
   fill_open(&arg, f);
 
@@ -388,7 +388,7 @@ int
 fuse_reply_write(fuse_req_t *req,
                  size_t      count)
 {
-  struct fuse_write_out arg = {0};
+  struct fuse_write_out arg = {};
 
   arg.size = count;
 
@@ -401,55 +401,6 @@ fuse_reply_buf(fuse_req_t *req,
                size_t      size)
 {
   return send_reply_ok(req, buf, size);
-}
-
-static
-int
-fuse_send_data_iov_fallback(struct fuse_ll     *f,
-                            struct fuse_chan   *ch,
-                            struct iovec       *iov,
-                            int                 iov_count,
-                            struct fuse_bufvec *buf,
-                            size_t              len)
-{
-  int res;
-  struct fuse_bufvec mem_buf = FUSE_BUFVEC_INIT(len);
-
-  /* Optimize common case */
-  if(buf->count == 1 && buf->idx == 0 && buf->off == 0 &&
-      !(buf->buf[0].flags & FUSE_BUF_IS_FD))
-    {
-      /* FIXME: also avoid memory copy if there are multiple buffers
-         but none of them contain an fd */
-
-      iov[iov_count].iov_base = buf->buf[0].mem;
-      iov[iov_count].iov_len = len;
-      iov_count++;
-
-      return fuse_send_msg(f, ch, iov, iov_count);
-    }
-
-  fuse_msgbuf_t *msgbuf;
-  msgbuf = msgbuf_alloc();
-  if(msgbuf == NULL)
-    return -ENOMEM;
-
-  mem_buf.buf[0].mem = msgbuf->mem;
-  res = fuse_buf_copy(&mem_buf, buf, (fuse_buf_copy_flags)0);
-  if(res < 0)
-    {
-      msgbuf_free(msgbuf);
-      return -res;
-    }
-  len = res;
-
-  iov[iov_count].iov_base = msgbuf->mem;
-  iov[iov_count].iov_len = len;
-  iov_count++;
-  res = fuse_send_msg(f, ch, iov, iov_count);
-  msgbuf_free(msgbuf);
-
-  return res;
 }
 
 struct fuse_ll_pipe
@@ -466,21 +417,6 @@ fuse_ll_pipe_free(struct fuse_ll_pipe *llp)
   close(llp->pipe[0]);
   close(llp->pipe[1]);
   free(llp);
-}
-
-static
-int
-fuse_send_data_iov(struct fuse_ll     *f,
-                   struct fuse_chan   *ch,
-                   struct iovec       *iov,
-                   int                 iov_count,
-                   struct fuse_bufvec *buf,
-                   unsigned int        flags)
-{
-  size_t len = fuse_buf_size(buf);
-  (void) flags;
-
-  return fuse_send_data_iov_fallback(f, ch, iov, iov_count, buf, len);
 }
 
 int
@@ -516,7 +452,7 @@ int
 fuse_reply_statfs(fuse_req_t           *req,
                   const struct statvfs *stbuf)
 {
-  struct fuse_statfs_out arg = {0};
+  struct fuse_statfs_out arg = {};
   size_t size = req->f->conn.proto_minor < 4 ?
     FUSE_COMPAT_STATFS_SIZE : sizeof(arg);
 
@@ -529,7 +465,7 @@ int
 fuse_reply_xattr(fuse_req_t *req,
                  size_t      count)
 {
-  struct fuse_getxattr_out arg = {0};
+  struct fuse_getxattr_out arg = {};
 
   arg.size = count;
 
@@ -540,7 +476,7 @@ int
 fuse_reply_lock(fuse_req_t         *req,
                 const struct flock *lock)
 {
-  struct fuse_lk_out arg = {0};
+  struct fuse_lk_out arg = {};
 
   arg.lk.type = lock->l_type;
   if(lock->l_type != F_UNLCK)
@@ -560,7 +496,7 @@ int
 fuse_reply_bmap(fuse_req_t *req,
                 uint64_t    idx)
 {
-  struct fuse_bmap_out arg = {0};
+  struct fuse_bmap_out arg = {};
 
   arg.block = idx;
 
@@ -595,7 +531,7 @@ fuse_reply_ioctl_retry(fuse_req_t         *req,
                        const struct iovec *out_iov,
                        size_t              out_count)
 {
-  struct fuse_ioctl_out arg = {0};
+  struct fuse_ioctl_out arg = {};
   struct fuse_ioctl_iovec *in_fiov = NULL;
   struct fuse_ioctl_iovec *out_fiov = NULL;
   struct iovec iov[4];
@@ -705,7 +641,7 @@ fuse_reply_ioctl_iov(fuse_req_t         *req,
                      int                 count)
 {
   struct iovec *padded_iov;
-  struct fuse_ioctl_out arg = {0};
+  struct fuse_ioctl_out arg = {};
   int res;
 
   padded_iov = (iovec*)malloc((count + 2) * sizeof(struct iovec));
@@ -728,7 +664,7 @@ int
 fuse_reply_poll(fuse_req_t *req,
                 unsigned    revents)
 {
-  struct fuse_poll_out arg = {0};
+  struct fuse_poll_out arg = {};
 
   arg.revents = revents;
 
@@ -1015,7 +951,7 @@ do_setlk_common(fuse_req_t *req,
                 int         sleep)
 {
   struct flock flock;
-  fuse_file_info_t fi = {0};
+  fuse_file_info_t fi = {};
   struct fuse_lk_in *arg = (struct fuse_lk_in*)inarg;
 
   fi.fh = arg->fh;
@@ -1118,7 +1054,7 @@ void
 do_init(fuse_req_t            *req,
         struct fuse_in_header *hdr_)
 {
-  struct fuse_init_out outarg = {0};
+  struct fuse_init_out outarg = {};
   struct fuse_init_in *arg = (struct fuse_init_in *)&hdr_[1];
   struct fuse_ll *f = req->f;
   size_t bufsize;
@@ -1604,50 +1540,6 @@ fuse_lowlevel_notify_delete(struct fuse_chan *ch,
   return send_notify_iov(f, ch, FUSE_NOTIFY_DELETE, iov, 3);
 }
 
-int
-fuse_lowlevel_notify_store(struct fuse_chan         *ch,
-                           uint64_t                  ino,
-                           off_t                     offset,
-                           struct fuse_bufvec       *bufv,
-                           enum fuse_buf_copy_flags  flags)
-{
-  struct fuse_out_header out;
-  struct fuse_notify_store_out outarg;
-  struct fuse_ll *f;
-  struct iovec iov[3];
-  size_t size = fuse_buf_size(bufv);
-  int res;
-
-  if(!ch)
-    return -EINVAL;
-
-  f = (struct fuse_ll*)fuse_session_data(fuse_chan_session(ch));
-  if(!f)
-    return -ENODEV;
-
-  if(f->conn.proto_minor < 15)
-    return -ENOSYS;
-
-  out.unique = 0;
-  out.error = FUSE_NOTIFY_STORE;
-
-  outarg.nodeid = ino;
-  outarg.offset = offset;
-  outarg.size = size;
-  outarg.padding = 0;
-
-  iov[0].iov_base = &out;
-  iov[0].iov_len = sizeof(out);
-  iov[1].iov_base = &outarg;
-  iov[1].iov_len = sizeof(outarg);
-
-  res = fuse_send_data_iov(f, ch, iov, 2, bufv, flags);
-  if(res > 0)
-    res = -res;
-
-  return res;
-}
-
 struct fuse_retrieve_req
 {
   struct fuse_notify_req nreq;
@@ -1825,8 +1717,8 @@ fuse_send_errno(struct fuse_ll   *f_,
                 const int         errno_,
                 const uint64_t    unique_id_)
 {
-  struct fuse_out_header out = {0};
-  struct iovec           iov = {0};
+  struct fuse_out_header out = {};
+  struct iovec           iov = {};
 
   out.unique   = unique_id_;
   out.error    = -errno_;

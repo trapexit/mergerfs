@@ -146,7 +146,7 @@ fs::wait_for_mount(const fs::path                  &src_path_,
                    const std::chrono::milliseconds &timeout_)
 {
   int rv;
-  struct stat src_st = {0};
+  struct stat src_st = {};
 
   rv = fs::stat(src_path_,&src_st);
   if(rv < 0)

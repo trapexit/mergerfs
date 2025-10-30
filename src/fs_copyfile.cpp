@@ -103,7 +103,7 @@ fs::copyfile(const int                src_fd_,
 {
   s64 rv;
   int dst_fd;
-  struct stat src_st = {0};
+  struct stat src_st = {};
   std::string dst_tmppath;
   struct sigaction old_act;
   struct sigaction new_act;

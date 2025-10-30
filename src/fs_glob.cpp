@@ -38,7 +38,7 @@ fs::glob(const string   &pattern_,
          vector<string> *strs_)
 {
   int flags;
-  glob_t gbuf = {0};
+  glob_t gbuf = {};
 
   flags = (GLOB_BRACE|GLOB_ONLYDIR);
   ::glob(pattern_.c_str(),flags,NULL,&gbuf);

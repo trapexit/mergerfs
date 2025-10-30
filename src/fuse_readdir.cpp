@@ -86,7 +86,7 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
   if(!di->fusepath.empty())
     return -ENOENT;
 
-  de = {0};
+  de = {};
 
   de.d_ino = 0;
   de.d_off = 0;
