@@ -12,6 +12,8 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+$(info mergerfs MAKEFLAGS: $(MAKEFLAGS))
+
 ifeq ($(shell id -u),0)
 FAKEROOT ?=
 endif
@@ -188,7 +190,7 @@ $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
 .PHONY: libfuse
 $(LIBFUSE):
 libfuse:
-	$(MAKE) NDEBUG=$(NDEBUG) -C libfuse
+	$(MAKE) -C libfuse
 
 tests: $(BUILDDIR)/tests
 
