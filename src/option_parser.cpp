@@ -121,35 +121,17 @@ _set_default_options(fuse_args *args_)
 
 static
 int
-_parse_and_process_kv_arg(const std::string &key_,
-                          const std::string &val_)
-{
-  int rv;
-  std::string key(key_);
-  std::string val(val_);
-
-  if(cfg.has_key(key) == false)
-    return 1;
-
-  rv = cfg.set(key,val);
-  if(rv < 0)
-    cfg.errs.push_back({-rv,key+'='+val});
-
-  return OPT_DISCARD;
-}
-
-static
-int
 _process_opt(const std::string &arg_)
 {
-  std::string key;
-  std::string val;
+  int rv;
 
-  str::splitkv(arg_,'=',&key,&val);
-  key = str::trim(key);
-  val = str::trim(val);
+  rv = cfg.set(arg_);
+  if(rv == -ENOATTR)
+    return OPT_KEEP;
+  if(rv < 0)
+    cfg.errs.push_back({-rv,arg_});
 
-  return ::_parse_and_process_kv_arg(key,val);
+  return OPT_DISCARD;
 }
 
 static

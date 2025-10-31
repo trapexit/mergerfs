@@ -324,7 +324,7 @@ _main(int    argc_,
           std::string s = err.to_string();
 
           SysLog::error("error: {}",s);
-          fmt::println(stderr,"* ERROR: {}",s);
+          fmt::println(stderr,"mergerfs: ERROR - {}",s);
         }
 
       return 1;
