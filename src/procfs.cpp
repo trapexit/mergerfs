@@ -20,17 +20,6 @@
 static int g_PROCFS_DIR_FD = -1;
 namespace procfs { int PROC_SELF_FD_FD = -1; }
 static constexpr const char PROCFS_PATH[] = "/proc";
-static constexpr const char PROC_SELF_FD[] = "/proc/self/fd";
-
-// This is critical to the function of the app. abort if failed to
-// open.
-static
-void
-_open_proc_self_fd()
-{
-  procfs::PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,O_PATH|O_DIRECTORY);
-  assert(procfs::PROC_SELF_FD_FD >= 0);
-}
 
 int
 procfs::init()
@@ -47,7 +36,12 @@ procfs::init()
   g_PROCFS_DIR_FD = rv;
 
 #if defined(__linux__)
-  ::_open_proc_self_fd();
+// This is critical to the function of the app. abort if failed to
+// open.
+  static constexpr const char PROC_SELF_FD[] = "/proc/self/fd";
+
+  procfs::PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,O_PATH|O_DIRECTORY);
+  assert(procfs::PROC_SELF_FD_FD >= 0);
 #endif
 
   return 0;

@@ -53,6 +53,9 @@ public:
   Branch(const u64 &default_minfreespace);
 
 public:
+  Branch& operator=(const Branch&) = default;
+
+public:
   bool ro(void) const;
   bool nc(void) const;
   bool ro_or_nc(void) const;

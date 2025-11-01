@@ -30,7 +30,7 @@
 #  include <sys/xattr.h>
 # else
 #  undef USE_XATTR
-#  warning "USE_XATTR unset: xattrs disabled"
+#  pragma message "USE_XATTR unset: xattrs disabled"
 # endif
 #endif
 

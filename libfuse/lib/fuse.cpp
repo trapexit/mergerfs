@@ -178,48 +178,6 @@ fuse_hdr_arg(const struct fuse_in_header *hdr_)
 }
 
 static
-void
-list_add(struct list_head *new_,
-         struct list_head *prev_,
-         struct list_head *next_)
-{
-  next_->prev = new_;
-  new_->next  = next_;
-  new_->prev  = prev_;
-  prev_->next = new_;
-}
-
-static
-inline
-void
-list_add_head(struct list_head *new_,
-              struct list_head *head_)
-{
-  list_add(new_,head_,head_->next);
-}
-
-static
-inline
-void
-list_add_tail(struct list_head *new_,
-              struct list_head *head_)
-{
-  list_add(new_,head_->prev,head_);
-}
-
-static
-inline
-void
-list_del(struct list_head *entry)
-{
-  struct list_head *prev = entry->prev;
-  struct list_head *next = entry->next;
-
-  next->prev = prev;
-  prev->next = next;
-}
-
-static
 size_t
 id_hash(uint64_t ino)
 {
