@@ -184,13 +184,16 @@ void fuse_kern_unmount(const char *mountpoint, int fd)
 }
 
 /* Check if kernel is doing init in background */
-static int init_backgrounded(void)
+static
+int
+init_backgrounded(void)
 {
-  unsigned ibg, len;
+  unsigned ibg;
+  size_t len;
 
   len = sizeof(ibg);
 
-  if (sysctlbyname("vfs.fuse.init_backgrounded", &ibg, &len, NULL, 0))
+  if(sysctlbyname("vfs.fuse.init_backgrounded", &ibg, &len, NULL, 0))
     return 0;
 
   return ibg;
@@ -298,10 +301,12 @@ static int fuse_mount_core(const char *mountpoint, const char *opts)
   return fd;
 }
 
-int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
+int
+fuse_kern_mount(const char       *mountpoint,
+                struct fuse_args *args)
 {
-  struct mount_opts mo;
   int res = -1;
+  struct mount_opts mo;
 
   memset(&mo, 0, sizeof(mo));
   /* mount util should not try to spawn the daemon */
@@ -317,7 +322,6 @@ int fuse_kern_mount(const char *mountpoint, struct fuse_args *args)
     return 0;
 
   res = fuse_mount_core(mountpoint, mo.kernel_opts);
- out:
   free(mo.kernel_opts);
   return res;
 }

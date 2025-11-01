@@ -6,7 +6,7 @@
 # include <sys/syscall.h>
 # include <unistd.h>
 #else
-#warning "ioprio not supported on this platform"
+#pragma message "ioprio not supported on this platform"
 #endif
 
 enum
