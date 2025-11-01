@@ -173,6 +173,7 @@ Config::Config()
     nullrw.ro =
     pid.ro =
     pin_threads.ro =
+    posix_acl.ro =
     process_thread_count.ro =
     process_thread_queue_depth.ro =
     read_thread_count.ro =
@@ -180,9 +181,9 @@ Config::Config()
     srcmounts.ro =
     version.ro =
     true;
-  congestion_threshold.ro =
+  congestion_threshold.display =
     gid.display =
-    max_background.ro =
+    max_background.display =
     threads.display =
     _mount.display =
     uid.display =
@@ -389,6 +390,7 @@ Config::get(const std::string &key_,
 
   key = str::replace(key_,'_','-');
 
+
   i = _map.find(key);
   if(i == _map.end())
     return -ENOATTR;
@@ -434,8 +436,6 @@ Config::from_stream(std::istream &istrm_)
 {
   int rv;
   std::string line;
-  std::string key;
-  std::string val;
   Config::ErrVec new_errs;
 
   while(std::getline(istrm_,line,'\n'))
@@ -444,13 +444,9 @@ Config::from_stream(std::istream &istrm_)
       if(line.empty() || (line[0] == '#'))
         continue;
 
-      str::splitkv(line,'=',&key,&val);
-      key = str::trim(key);
-      val = str::trim(val);
-
-      rv = set(key,val);
+      rv = set(line);
       if(rv < 0)
-        new_errs.push_back({-rv,key+'='+val});
+        new_errs.push_back({-rv,line});
     }
 
   rv = (new_errs.empty() ? 0 : -EINVAL);

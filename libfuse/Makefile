@@ -12,6 +12,8 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+$(info libfuse MAKEFLAGS: $(MAKEFLAGS))
+
 AR      ?= ar
 CHMOD   ?= chmod
 CHOWN   ?= chown
@@ -88,10 +90,17 @@ OBJS += $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/.objs/%.cpp.o)
 DEPS := $(SRC_C:lib/%.c=$(BUILDDIR)/.objs/%.c.d)
 DEPS += $(SRC_CXX:lib/%.cpp=$(BUILDDIR)/.objs/%.cpp.d)
 
+ifdef STATIC
+STATIC_FLAGS := -static
+else
+STATIC_FLAGS :=
+endif
+
 CPPFLAGS ?=
 CFLAGS ?= \
 	$(OPT_FLAGS) \
 	$(LTO_FLAGS) \
+	$(STATIC_FLAGS) \
 	-Wall \
 	-pipe
 override CFLAGS += \
@@ -101,6 +110,7 @@ override CFLAGS += \
 CXXFLAGS ?= \
 	$(OPT_FLAGS) \
 	$(LTO_FLAGS) \
+	$(STATIC_FLAGS) \
 	-Wall \
 	-pipe
 override CXXFLAGS += \
@@ -138,6 +148,7 @@ $(BUILDDIR)/mergerfs-fusermount: util/fusermount.c lib/mount_util.c
 mergerfs-fusermount: $(BUILDDIR)/mergerfs-fusermount
 
 $(BUILDDIR)/mount.mergerfs: $(BUILDDIR)/libfuse.a util/mount.mergerfs.c
+	echo STATIC=$(STATIC) $(STATIC_FLAGS)
 	$(CC) $(CFLAGS) $(FUSE_FLAGS) -o $(BUILDDIR)/mount.mergerfs util/mount.mergerfs.c $(BUILDDIR)/libfuse.a $(LDFLAGS)
 
 mount.mergerfs: $(BUILDDIR)/mount.mergerfs

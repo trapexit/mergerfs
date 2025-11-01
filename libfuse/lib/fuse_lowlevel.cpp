@@ -1863,7 +1863,7 @@ fuse_ll_opt_proc(void             *data_,
                  int               key_,
                  struct fuse_args *outargs_)
 {
-  fmt::print(stderr, "* ERROR: unknown option '{}'\n", arg_);
+  fmt::print(stderr, "fuse: ERROR - unknown option - '{}'\n", arg_);
 
   return -1;
 }
