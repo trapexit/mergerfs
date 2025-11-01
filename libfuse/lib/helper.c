@@ -282,7 +282,7 @@ fuse_setup_common(int argc,
   if (res == -1)
     goto err_unmount;
 
-  res = fuse_set_signal_handlers(fuse_get_session(fuse));
+  res = fuse_set_signal_handlers(fuse_get_session());
   if (res == -1)
     goto err_unmount;
 
