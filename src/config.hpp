@@ -125,8 +125,6 @@ public:
   ConfigBOOL     cache_writeback;
   Categories     category;
   CfgConfigFile  config_file;
-  TFSRef<int>    congestion_threshold;
-  TFSRef<bool>   debug;
   ConfigBOOL     direct_io_allow_mmap;
   ConfigBOOL     dropcacheonclose;
   ConfigBOOL     export_support;
@@ -135,7 +133,6 @@ public:
   ConfigSTR      fsname;
   Funcs          func;
   ConfigPageSize fuse_msg_size;
-  TFSRef<s64>    gid;
   GIDCacheExpireTimeout gid_cache_expire_timeout;
   GIDCacheRemoveTimeout gid_cache_remove_timeout;
   ConfigBOOL     handle_killpriv;
@@ -147,14 +144,10 @@ public:
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
   LogMetrics     log_metrics;
-  TFSRef<int>    max_background;
   TFSRef<u64>    minfreespace;
   fs::path       mountpoint;
-  TFSRef<fs::path> _mount;
-  TFSRef<fs::path> _mountpoint;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
-  CfgNoforget    noforget;
   ConfigBOOL     nullrw;
   ConfigBOOL     parallel_direct_writes;
   PassthroughIO  passthrough_io;
@@ -168,7 +161,6 @@ public:
   TFSRef<int>    read_thread_count;
   ConfigUINT64   readahead;
   FUSE::ReadDir  readdir;
-  TFSRef<s64>    remember_nodes;
   RenameEXDEV    rename_exdev;
   ConfigINT      scheduling_priority;
   ConfigBOOL     security_capability;
@@ -177,14 +169,24 @@ public:
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
   ConfigS64      symlinkify_timeout;
-  TFSRef<int>    threads;
-  TFSRef<s64>    uid;
-  TFSRef<s64>    umask;
-  ConfigROSTR    version;
   XAttr          xattr;
 
 private:
-  CfgDummy _dummy;
+  TFSRef<int>      _congestion_threshold;
+  TFSRef<bool>     _debug;
+  CfgDummy         _dummy;
+  TFSRef<s64>      _gid;
+  TFSRef<int>      _max_background;
+  TFSRef<fs::path> _mount;
+  TFSRef<fs::path> _mountpoint;
+  CfgNoforget      _never_forget_nodes;
+  CfgNoforget      _noforget;
+  TFSRef<s64>      _remember;
+  TFSRef<s64>      _remember_nodes;
+  TFSRef<int>      _threads;
+  TFSRef<s64>      _uid;
+  TFSRef<s64>      _umask;
+  ConfigROSTR      _version;
 
 private:
   bool _initialized;

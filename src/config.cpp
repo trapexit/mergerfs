@@ -95,8 +95,6 @@ Config::Config()
   cache_writeback(false),
   category(func),
   config_file(),
-  congestion_threshold(fuse_cfg.congestion_threshold,0),
-  debug(fuse_cfg.debug,false),
   direct_io_allow_mmap(true),
   dropcacheonclose(false),
   export_support(true),
@@ -105,7 +103,6 @@ Config::Config()
   fsname(),
   func(),
   fuse_msg_size("1M"),
-  gid(fuse_cfg.gid,FUSE_CFG_INVALID_ID),
   gid_cache_expire_timeout(60 * 60),
   gid_cache_remove_timeout(60 * 60 * 12),
   handle_killpriv(true),
@@ -117,14 +114,10 @@ Config::Config()
   link_cow(false),
   link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
   log_metrics(false),
-  max_background(fuse_cfg.max_background,0),
   minfreespace(branches.minfreespace,MINFREESPACE_DEFAULT),
   mountpoint(),
-  _mount(mountpoint),
-  _mountpoint(mountpoint),
   moveonenospc(true),
   nfsopenhack(NFSOpenHack::ENUM::OFF),
-  noforget(),
   nullrw(false),
   parallel_direct_writes(true),
   passthrough_io(PassthroughIO::ENUM::OFF),
@@ -137,7 +130,6 @@ Config::Config()
   read_thread_count(fuse_cfg.read_thread_count,0),
   readahead(0),
   readdir("seq"),
-  remember_nodes(fuse_cfg.remember_nodes,0),
   rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
   scheduling_priority(-10),
   security_capability(true),
@@ -146,11 +138,23 @@ Config::Config()
   statfs_ignore(StatFSIgnore::ENUM::NONE),
   symlinkify(false),
   symlinkify_timeout(3600),
-  threads(fuse_cfg.read_thread_count),
-  uid(fuse_cfg.uid,FUSE_CFG_INVALID_ID),
-  umask(fuse_cfg.umask,FUSE_CFG_INVALID_UMASK),
-  version(MERGERFS_VERSION),
   xattr(XAttr::ENUM::PASSTHROUGH),
+
+  _congestion_threshold(fuse_cfg.congestion_threshold,0),
+  _debug(fuse_cfg.debug,false),
+  _gid(fuse_cfg.gid,FUSE_CFG_INVALID_ID),
+  _max_background(fuse_cfg.max_background,0),
+  _mount(mountpoint),
+  _mountpoint(mountpoint),
+  _never_forget_nodes(),
+  _noforget(),
+  _remember(fuse_cfg.remember_nodes),
+  _remember_nodes(fuse_cfg.remember_nodes,0),
+  _threads(fuse_cfg.read_thread_count),
+  _uid(fuse_cfg.uid,FUSE_CFG_INVALID_ID),
+  _umask(fuse_cfg.umask,FUSE_CFG_INVALID_UMASK),
+  _version(MERGERFS_VERSION),
+
   _initialized(false)
 {
   allow_idmap.ro =
@@ -159,7 +163,7 @@ Config::Config()
     branches_mount_timeout_fail.ro =
     cache_symlinks.ro =
     cache_writeback.ro =
-    congestion_threshold.ro =
+    _congestion_threshold.ro =
     direct_io_allow_mmap.ro =
     export_support.ro =
     fsname.ro =
@@ -167,7 +171,7 @@ Config::Config()
     handle_killpriv.ro =
     handle_killpriv_v2.ro =
     kernel_permissions_check.ro =
-    max_background.ro =
+    _max_background.ro =
     _mount.ro =
     _mountpoint.ro =
     nullrw.ro =
@@ -179,15 +183,17 @@ Config::Config()
     read_thread_count.ro =
     scheduling_priority.ro =
     srcmounts.ro =
-    version.ro =
+    _version.ro =
     true;
-  congestion_threshold.display =
-    gid.display =
-    max_background.display =
-    threads.display =
+  _congestion_threshold.display =
+    _gid.display =
+    _max_background.display =
     _mount.display =
-    uid.display =
-    umask.display =
+    _noforget.display =
+    _remember.display =
+    _uid.display =
+    _umask.display =
+    _threads.display =
     false;
 
   _map["allow-idmap"]                 = &allow_idmap;
@@ -212,10 +218,10 @@ Config::Config()
   _map["category.create"]             = &category.create;
   _map["category.search"]             = &category.search;
   _map["config"]                      = &config_file;
+  _map["debug"]                       = &_debug;
   _map["defaults"]                    = &_dummy;
-  _map["debug"]                       = &debug;
-  _map["direct-io-allow-mmap"]        = &direct_io_allow_mmap;
   _map["direct-io"]                   = &_dummy;
+  _map["direct-io-allow-mmap"]        = &direct_io_allow_mmap;
   _map["dropcacheonclose"]            = &dropcacheonclose;
   _map["export-support"]              = &export_support;
   _map["flush-on-close"]              = &flushonclose;
@@ -243,7 +249,7 @@ Config::Config()
   _map["func.unlink"]                 = &func.unlink;
   _map["func.utimens"]                = &func.utimens;
   _map["fuse-msg-size"]               = &fuse_msg_size;
-  _map["gid"]                         = &gid;
+  _map["gid"]                         = &_gid;
   _map["gid-cache.expire-timeout"]    = &gid_cache_expire_timeout;
   _map["gid-cache.remove-timeout"]    = &gid_cache_remove_timeout;
   _map["handle-killpriv"]             = &handle_killpriv;
@@ -251,22 +257,23 @@ Config::Config()
   _map["hard-remove"]                 = &_dummy;
   _map["ignorepponrename"]            = &ignorepponrename;
   _map["inodecalc"]                   = &inodecalc;
-  _map["kernel-permissions-check"]    = &kernel_permissions_check;
   _map["kernel-cache"]                = &_dummy;
+  _map["kernel-permissions-check"]    = &kernel_permissions_check;
   _map["lazy-umount-mountpoint"]      = &lazy_umount_mountpoint;
-  _map["link-exdev"]                  = &link_exdev;
   _map["link-cow"]                    = &link_cow;
+  _map["link-exdev"]                  = &link_exdev;
   _map["log.metrics"]                 = &log_metrics;
   _map["minfreespace"]                = &minfreespace;
   _map["mount"]                       = &_mount;
   _map["mountpoint"]                  = &_mountpoint;
   _map["moveonenospc"]                = &moveonenospc;
   _map["negative-entry"]              = &_dummy;
+  _map["never-forget-nodes"]          = &_never_forget_nodes;
   _map["nfsopenhack"]                 = &nfsopenhack;
   _map["no-splice-move"]              = &_dummy;
   _map["no-splice-read"]              = &_dummy;
   _map["no-splice-write"]             = &_dummy;
-  _map["noforget"]                    = &noforget;
+  _map["noforget"]                    = &_noforget;
   _map["nonempty"]                    = &_dummy;
   _map["nullrw"]                      = &nullrw;
   _map["parallel-direct-writes"]      = &parallel_direct_writes;
@@ -280,7 +287,8 @@ Config::Config()
   _map["proxy-ioprio"]                = &proxy_ioprio;
   _map["read-thread-count"]           = &read_thread_count;
   _map["readahead"]                   = &readahead;
-  _map["remember-nodes"]              = &remember_nodes;
+  _map["remember"]                    = &_remember;
+  _map["remember-nodes"]              = &_remember_nodes;
   _map["rename-exdev"]                = &rename_exdev;
   _map["scheduling-priority"]         = &scheduling_priority;
   _map["security-capability"]         = &security_capability;
@@ -292,11 +300,11 @@ Config::Config()
   _map["statfs-ignore"]               = &statfs_ignore;
   _map["symlinkify"]                  = &symlinkify;
   _map["symlinkify-timeout"]          = &symlinkify_timeout;
-  _map["threads"]                     = &threads;
-  _map["uid"]                         = &uid;
-  _map["umask"]                       = &umask;
+  _map["threads"]                     = &_threads;
+  _map["uid"]                         = &_uid;
+  _map["umask"]                       = &_umask;
   _map["use-ino"]                     = &_dummy;
-  _map["version"]                     = &version;
+  _map["version"]                     = &_version;
   _map["xattr"]                       = &xattr;
 }
 

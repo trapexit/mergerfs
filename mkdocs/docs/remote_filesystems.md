@@ -76,7 +76,7 @@ but if you run into problems it may be worth trying Samba/SMB.
 
 **mergerfs settings:**
 
-* `noforget` or `remember-nodes=SECONDS`
+* `never-forget-nodes=true` or `remember-nodes=SECONDS`
 * `inodecalc=path-hash`
 * `lazy-umount-mountpoint=false`
 
