@@ -1,0 +1,15 @@
+#!/bin/sh
+
+GIT_BRANCH="${1:-master}"
+
+podman \
+    build \
+    --squash \
+    --no-cache \
+    --force-rm \
+    --build-arg="GIT_REPO=file:///mnt" \
+    --build-arg="BRANCH=${GIT_BRANCH}" \
+    -v "${PWD}":/mnt:ro \
+    -f "buildtools/containerimage/Containerfile" \
+    --tag "mergerfs:${GIT_BRANCH}" \
+    buildtools/

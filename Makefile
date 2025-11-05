@@ -336,6 +336,7 @@ install-build-tools:
 
 define build_release
 	$(eval GITREF ?= $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD))
+	@echo "GITREF=$(GITREF)"
 	./buildtools/build-release \
 		--target=$(1) \
 		$(if $(CLEANUP),--cleanup) \
@@ -363,6 +364,11 @@ release-static:
 	$(call build_release,"static")
 release-tarball:
 	$(call build_release,"tarball")
+
+container:
+	$(eval GITREF ?= $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD))
+	@echo "GITREF=$(GITREF)"
+	./buildtools/build-containerimage "$(GITREF)"
 
 .PHONY: tags
 tags:
