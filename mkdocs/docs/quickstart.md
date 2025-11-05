@@ -138,8 +138,7 @@ ExecStart=/usr/bin/mergerfs \
   -o category.create=pfrd \
   -o func.getattr=newest \
   -o dropcacheonclose=false \
-  /mnt/hdd0 \
-  /mnt/hdd1 \
+  /mnt/hdd0:/mnt/hdd1 \
   /media
 ExecStop=/usr/bin/umount /media
 # Or if you need fusermount
@@ -205,8 +204,7 @@ ExecStart=/usr/bin/mergerfs \
   -o category.create=pfrd \
   -o func.getattr=newest \
   -o dropcacheonclose=false \
-  /mnt/hdd0 \
-  /mnt/hdd1 \
+  /mnt/hdd0:/mnt/hdd1 \
   /media
 ExecStop=/usr/bin/umount /media
 # Or if you need fusermount
