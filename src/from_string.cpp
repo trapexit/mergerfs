@@ -31,11 +31,13 @@ str::from(const std::string_view  value_,
           bool                   *bool_)
 {
   if((value_ == "true") ||
+     (value_ == "t")    ||
      (value_ == "1")    ||
      (value_ == "on")   ||
      (value_ == "yes"))
     *bool_ = true;
   ef((value_ == "false") ||
+     (value_ == "f")     ||
      (value_ == "0")     ||
      (value_ == "off")   ||
      (value_ == "no"))
