@@ -1,0 +1,19 @@
+FROM --platform=linux/amd64 alpine:latest as build
+
+ARG GIT_REPO
+ARG BRANCH
+
+RUN <<EOF
+    apk add git gcc g++ make linux-headers
+    git clone --single-branch --branch="${BRANCH}" "${GIT_REPO}" /tmp/mergerfs
+    cd /tmp/mergerfs
+    make NDEBUG=1 LTO=1 STATIC=1 DESTDIR=/tmp/install -j$(nproc) install
+    tar cvfz /tmp/mergerfs.tgz --directory=/tmp/install usr sbin
+EOF
+
+FROM --platform=linux/amd64 alpine:latest
+RUN --mount=from=build,source=/tmp/mergerfs.tgz,target=/tmp/mergerfs.tgz <<EOF
+    tar xvf /tmp/mergerfs.tgz -C /
+EOF
+ENTRYPOINT ["/usr/local/bin/mergerfs"]
+CMD ["--help"]
