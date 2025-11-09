@@ -20,5 +20,10 @@
     "version": "2.41.0-rc2",
     "title": "2.41.0-rc2",
     "aliases": []
+  },
+  {
+    "version": "2.41.0-rc1",
+    "title": "2.41.0-rc1",
+    "aliases": []
   }
 ]
