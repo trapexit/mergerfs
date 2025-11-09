@@ -106,6 +106,7 @@ nix-env -iA nixos.mergerfs
 
 [Check your distro.](../related_projects.md#distributions-including-mergerfs)
 
+
 ## Static Linux Binaries
 
 If your distro does not package mergerfs there are static binaries
@@ -117,3 +118,34 @@ Get the tarball from the [releases page](https://github.com/trapexit/mergerfs/re
 wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-static-linux_<arch>.tar.gz
 sudo tar xvf mergerfs-static-linux_<arch>.tar.gz -C /
 ```
+
+## Podman, Docker, OCI Containers
+
+https://github.com/trapexit/mergerfs/pkgs/container/mergerfs
+
+```
+podman pull ghcr.io/trapexit/mergerfs:TAG
+# or
+docker pull ghcr.io/trapexit/mergerfs:TAG
+```
+
+### rootful container runtimes
+
+```
+docker run --device=/dev/fuse --cap-add=SYS_ADMIN -v /mnt/to-merge:/mnt/to-merge:rshared -v /mnt/mergerfs:/mnt/mergerfs:z,shared ghcr.io/trapexit/mergerfs:TAG -f '/mnt/to-merge/*' '/mnt/mergerfs'
+```
+
+* `--device=/dev/fuse`: Pass in host FUSE device.
+* `--cap-add=SYS_ADMIN`: Give proper permissions to mount.
+* `-v /mnt/mergerfs:/mnt/mergerfs:z,shared`: `z` and `shared` will
+  allow the mount to be shared between the container and host and
+  therefore other containers.
+* `-v /mnt/to-merge:/mnt/to-merge:rshared`: The mounts from the host
+  to merge within the container.
+
+
+### rootless container runtimes
+
+Not possible? `:shared` is not rejected but won't work the same with
+rootless. Podman doesn't allow the creation of pods with shared mount
+namespace in rootless mode.

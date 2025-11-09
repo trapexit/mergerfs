@@ -1,4 +1,4 @@
-# Sponsorship and Donations
+# Sponsorship, Donations, Support Contracts
 
 [https://github.com/trapexit/support](https://github.com/trapexit/support)
 
@@ -12,6 +12,6 @@ and would like to support the project financially it would be very
 much appreciated.
 
 If you are using mergerfs commercially please consider sponsoring the
-project to ensure it continues to be maintained and receive
-updates. If custom features are needed feel free to [contact me
-directly](mailto:support@spawn.link).
+project or purchasing a support contract to ensure it continues to be
+maintained and receive updates. [Reach out for more
+details](mailto:support@spawn.link?subject=mergerfs+support+contract+inquiry).
