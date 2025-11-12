@@ -164,7 +164,6 @@ public:
   RenameEXDEV    rename_exdev;
   ConfigINT      scheduling_priority;
   ConfigBOOL     security_capability;
-  SrcMounts      srcmounts;
   StatFS         statfs;
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
@@ -183,6 +182,7 @@ private:
   CfgNoforget      _noforget;
   TFSRef<s64>      _remember;
   TFSRef<s64>      _remember_nodes;
+  SrcMounts        _srcmounts;
   TFSRef<int>      _threads;
   TFSRef<s64>      _uid;
   TFSRef<s64>      _umask;
