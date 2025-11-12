@@ -282,3 +282,8 @@ Every incoming request contains:
 
 Naturally the mergerfs config as well as anything queriable from the
 operating system or filesystems are also available.
+
+
+## Why does running `mount -a` result in new instances of mergerfs?
+
+See [lazy-umount-mountpoint](../config/lazy-umount-mountpoint.md)

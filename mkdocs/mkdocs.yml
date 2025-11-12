@@ -95,6 +95,7 @@ nav:
   - config/flush-on-close.md
   - config/export-support.md
   - config/kernel-permissions-check.md
+  - config/lazy-umount-mountpoint.md
 - error_handling_and_logging.md
 - resource_usage.md
 - runtime_interface.md

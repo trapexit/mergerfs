@@ -6,7 +6,7 @@ current_branch="$(git branch --show-current)"
 mike delete --all --push --allow-empty --ignore-remote-status
 
 git checkout "master"
-mike deploy --push "preview" "master"
+mike deploy --push "latest" "master"
 
 for tag in $(git tag -l | sort --version-sort --reverse)
 do
@@ -16,10 +16,11 @@ do
     fi
 done
 
-latest="$(git tag -l | sort --version-sort --reverse | head -n 1)"
-git checkout "${latest}"
-mike alias --push "${latest}" "latest"
+#latest="$(git tag -l | sort --version-sort --reverse | head -n 1)"
+#git checkout "${latest}"
+#mike alias --push "${latest}" "latest"
+#mike alias --push "latest" "latest"
 
-mike set-default --push "preview"
+mike set-default --push "latest"
 
 git checkout "${current_branch}"
