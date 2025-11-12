@@ -121,7 +121,7 @@ sudo tar xvf mergerfs-static-linux_<arch>.tar.gz -C /
 
 ## Podman, Docker, OCI Containers
 
-https://github.com/trapexit/mergerfs/pkgs/container/mergerfs
+[https://github.com/trapexit/mergerfs/pkgs/container/mergerfs](https://github.com/trapexit/mergerfs/pkgs/container/mergerfs)
 
 ```
 podman pull ghcr.io/trapexit/mergerfs:TAG
