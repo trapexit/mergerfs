@@ -133,7 +133,6 @@ Config::Config()
   rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
   scheduling_priority(-10),
   security_capability(true),
-  srcmounts(branches),
   statfs(StatFS::ENUM::BASE),
   statfs_ignore(StatFSIgnore::ENUM::NONE),
   symlinkify(false),
@@ -150,6 +149,7 @@ Config::Config()
   _noforget(),
   _remember(fuse_cfg.remember_nodes),
   _remember_nodes(fuse_cfg.remember_nodes,0),
+  _srcmounts(branches),
   _threads(fuse_cfg.read_thread_count),
   _uid(fuse_cfg.uid,FUSE_CFG_INVALID_ID),
   _umask(fuse_cfg.umask,FUSE_CFG_INVALID_UMASK),
@@ -182,7 +182,7 @@ Config::Config()
     process_thread_queue_depth.ro =
     read_thread_count.ro =
     scheduling_priority.ro =
-    srcmounts.ro =
+    _srcmounts.ro =
     _version.ro =
     true;
   _congestion_threshold.display =
@@ -191,9 +191,10 @@ Config::Config()
     _mount.display =
     _noforget.display =
     _remember.display =
+    _srcmounts.display =
+    _threads.display =
     _uid.display =
     _umask.display =
-    _threads.display =
     false;
 
   _map["allow-idmap"]                 = &allow_idmap;
@@ -295,7 +296,7 @@ Config::Config()
   _map["splice-move"]                 = &_dummy;
   _map["splice-read"]                 = &_dummy;
   _map["splice-write"]                = &_dummy;
-  _map["srcmounts"]                   = &srcmounts;
+  _map["srcmounts"]                   = &_srcmounts;
   _map["statfs"]                      = &statfs;
   _map["statfs-ignore"]               = &statfs_ignore;
   _map["symlinkify"]                  = &symlinkify;
@@ -380,7 +381,7 @@ Config::keys_listxattr(char   *list_,
       auto rv = fmt::format_to_n(list,size,
                                  "user.mergerfs.{}\0",
                                  key);
-      if(rv.out >= (list + size))
+      if(rv.out > (list + size))
         return -ERANGE;
       list += rv.size;
       size -= rv.size;
