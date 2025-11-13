@@ -557,6 +557,9 @@ Config::Err::to_string() const
     case ELOOP:
       s = "too many levels of config";
       break;
+    case ENOENT:
+      s = "no value set";
+      break;
     default:
       s = strerror(err);
       break;

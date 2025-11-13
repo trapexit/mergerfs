@@ -81,9 +81,8 @@ namespace l
     u64 offset;
 
     offset = s_.find_first_not_of("+<>-=");
-    if (offset == std::string::npos) {
+    if(offset == std::string::npos)
       return;
-    }
 
     if(offset > 1)
       offset = 2;

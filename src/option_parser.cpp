@@ -196,7 +196,10 @@ _option_processor(void       *data_,
           }
         else
           {
-            cfg.branches.from_string("+>" + prev_nonopt);
+            int rv;
+            rv = cfg.branches.from_string("+>" + prev_nonopt);
+            if(rv < 0)
+              cfg.errs.push_back({-rv,prev_nonopt});
             prev_nonopt = arg_;
           }
       }
@@ -315,15 +318,22 @@ namespace options
     if(!prev_nonopt.empty())
       {
         if(cfg.mountpoint.empty())
-          cfg.mountpoint = prev_nonopt;
+          {
+            cfg.mountpoint = prev_nonopt;
+          }
         else
-          cfg.branches.from_string("+>" + prev_nonopt);
+          {
+            int rv;
+            rv = cfg.branches.from_string("+>" + prev_nonopt);
+            if(rv < 0)
+              cfg.errs.push_back({-rv,prev_nonopt});
+          }
       }
 
     if(cfg.branches->empty())
-      cfg.errs.push_back({EINVAL,"branches not set"});
+      cfg.errs.push_back({ENOENT,"branches not set"});
     if(cfg.mountpoint.empty())
-      cfg.errs.push_back({EINVAL,"mountpoint not set"});
+      cfg.errs.push_back({ENOENT,"mountpoint not set"});
 
     if(!cfg.errs.empty())
       return;
