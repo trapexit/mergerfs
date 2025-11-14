@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "follow_symlinks_enum.hpp"
 #include "to_neg_errno.hpp"
 
 #include <string>
