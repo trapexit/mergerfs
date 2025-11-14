@@ -20,11 +20,4 @@
 
 #include "enum.hpp"
 
-enum class FollowSymlinksEnum
-  {
-    NEVER,
-    DIRECTORY,
-    REGULAR,
-    ALL
-  };
 typedef Enum<FollowSymlinksEnum> FollowSymlinks;
