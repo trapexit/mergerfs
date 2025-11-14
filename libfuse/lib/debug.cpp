@@ -275,7 +275,9 @@ static
 void
 debug_open_flags(const uint32_t flags_)
 {
-  fmt::print("{}, ",open_accmode_to_str(flags_));
+  fmt::print(g_OUTPUT,
+             "{}, ",
+             open_accmode_to_str(flags_));
   for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
@@ -287,7 +289,7 @@ debug_open_flags(const uint32_t flags_)
       if(str == NULL)
         continue;
 
-      fmt::print("{}, ",str);
+      fmt::print(g_OUTPUT,"{}, ",str);
     }
 }
 
@@ -315,7 +317,7 @@ fuse_fopen_flag_to_str(const uint32_t offset_)
 void
 debug_fuse_open_out(const struct fuse_open_out *arg_)
 {
-  fmt::print(stderr,
+  fmt::print(g_OUTPUT,
              "fuse_open_out:"
              " fh=0x{:#08x};"
              " open_flags=0x{:#04x} (",
@@ -332,9 +334,9 @@ debug_fuse_open_out(const struct fuse_open_out *arg_)
       if(str == NULL)
         continue;
 
-      fmt::print(stderr,"{},",str);
+      fmt::print(g_OUTPUT,"{},",str);
     }
-  fmt::print(stderr,");\n");
+  fmt::print(g_OUTPUT,");\n");
 }
 
 static
@@ -445,7 +447,7 @@ debug_fuse_mkdir_in(const void *arg_)
              "fuse_mkdir_in:"
              " mode={:o};"
              " umask={:o};"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              arg->mode,
@@ -461,7 +463,7 @@ debug_fuse_unlink(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_unlink:"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              name);
@@ -475,7 +477,7 @@ debug_fuse_rmdir(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_mkdir:"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              name);
@@ -493,8 +495,8 @@ debug_fuse_symlink(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_mkdir:"
-             " linkname=%s;"
-             " name=%s;"
+             " linkname={};"
+             " name={};"
              "\n"
              ,
              linkname,
@@ -514,9 +516,9 @@ debug_fuse_rename_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_rename_in:"
-             " oldname=%s;"
+             " oldname={};"
              " newdir={};"
-             " newname=%s;"
+             " newname={};"
              "\n"
              ,
              oldname,
@@ -536,7 +538,7 @@ debug_fuse_link_in(const void *arg_)
   fmt::print(g_OUTPUT,
              "fuse_link_in:"
              " oldnodeid={};"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              arg->oldnodeid,
@@ -556,7 +558,7 @@ debug_fuse_create_in(const void *arg_)
              "fuse_create_in:"
              " mode={:o};"
              " umask={:o};"
-             " name=%s;"
+             " name={};"
              " flags=0x%X (",
              arg->mode,
              arg->umask,
@@ -574,7 +576,7 @@ debug_fuse_open_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_open_in:"
-             " flags=0x%08X (",
+             " flags=0x{:08X} (",
              arg->flags);
   debug_open_flags(arg->flags);
   fmt::print(g_OUTPUT,");\n");
@@ -639,7 +641,7 @@ debug_fuse_write_in(const void *arg_)
       if(str == NULL)
         continue;
 
-      fmt::print(g_OUTPUT,"%s,",str);
+      fmt::print(g_OUTPUT,"{},",str);
     }
   fmt::print(g_OUTPUT,");\n");
 }
@@ -712,8 +714,8 @@ debug_fuse_setxattr_in(const void *arg_)
              "fuse_setxattr_in:"
              " size={};"
              " flags=0x%X;"
-             " name=%s;"
-             " value=%s;"
+             " name={};"
+             " value={};"
              "\n"
              ,
              arg->size,
@@ -734,7 +736,7 @@ debug_fuse_getxattr_in(const void *arg_)
   fmt::print(g_OUTPUT,
              "fuse_getxattr_in:"
              " size={};"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              arg->size,
@@ -763,7 +765,7 @@ debug_fuse_removexattr(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_removexattr:"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              name);
@@ -816,7 +818,7 @@ debug_fuse_init_in(const struct fuse_init_in *arg_)
       if(str == NULL)
         continue;
 
-      fmt::print(g_OUTPUT,"%s, ",str);
+      fmt::print(g_OUTPUT,"{}, ",str);
     }
   fmt::print(g_OUTPUT,")\n");
 }
@@ -932,7 +934,7 @@ debug_fuse_init_out(const uint64_t              unique_,
       if(str == NULL)
         continue;
 
-      fmt::print(g_OUTPUT,"%s, ",str);
+      fmt::print(g_OUTPUT,"{}, ",str);
     }
 
   fmt::print(g_OUTPUT,
@@ -1100,13 +1102,14 @@ opcode_name(enum fuse_opcode op_)
 {
   static const char *names[] =
     {
-      "INVALID",
+      "INVALID0",
       "LOOKUP",
       "FORGET",
       "GETATTR",
       "SETATTR",
       "READLINK",
       "SYMLINK",
+      "INVALID1",
       "MKNOD",
       "MKDIR",
       "UNLINK",
@@ -1118,6 +1121,7 @@ opcode_name(enum fuse_opcode op_)
       "WRITE",
       "STATFS",
       "RELEASE",
+      "INVALID3",
       "FSYNC",
       "SETXATTR",
       "GETXATTR",
@@ -1147,7 +1151,10 @@ opcode_name(enum fuse_opcode op_)
       "LSEEK",
       "COPY_FILE_RANGE",
       "SETUPMAPPING",
-      "REMOVEMAPPING"
+      "REMOVEMAPPING",
+      "SYNCFS",
+      "TMPFILE",
+      "STATX"
     };
 
   if(op_ >= (sizeof(names) / sizeof(names[0])))
@@ -1161,9 +1168,9 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
 {
   const void *arg = &hdr_[1];
 
-  fmt::print(stderr,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=%s ({});"
+  fmt::print(g_OUTPUT,
+             "unique=0x{:016x};"
+             " opcode={} ({});"
              " nodeid={};"
              " uid={};"
              " gid={};"
@@ -1265,8 +1272,14 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
     case FUSE_INTERRUPT:
       debug_fuse_interrupt_in(arg);
       break;
+    case FUSE_SYNCFS:
+      break;
+    case FUSE_TMPFILE:
+      break;
+    case FUSE_STATX:
+      break;
     default:
-      fmt::print(g_OUTPUT,"FIXME\n");
+      fmt::print(g_OUTPUT,"FIXME: {}\n",hdr_->opcode);
       break;
     }
 }
@@ -1275,10 +1288,10 @@ void
 debug_fuse_out_header(const struct fuse_out_header *hdr_)
 {
   fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
+             "unique=0x{:016x};"
              " opcode=RESPONSE;"
-             " error=%d (%s);"
-             " len={};"
+             " error={} ({});"
+             " len={};\n"
              ,
              hdr_->unique,
              hdr_->error,
@@ -1312,7 +1325,7 @@ debug_fuse_readlink(const uint64_t  unique_,
              " opcode=RESPONSE;"
              " error=0 (Success);"
              " len={}; || "
-             "readlink: linkname=%s"
+             "readlink: linkname={}"
              "\n"
              ,
              unique_,

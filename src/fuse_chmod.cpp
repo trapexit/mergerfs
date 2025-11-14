@@ -17,97 +17,16 @@
 #include "fuse_chmod.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
-#include "fs_lchmod.hpp"
-#include "fs_path.hpp"
-#include "policy_rv.hpp"
-#include "ugid.hpp"
 
-#include "fuse.h"
-
-#include <cstring>
-#include <string>
-
-
-static
-void
-_chmod_loop_core(const std::string &basepath_,
-                 const fs::path    &fusepath_,
-                 const mode_t       mode_,
-                 PolicyRV          *prv_)
-{
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  errno = 0;
-  fs::lchmod(fullpath,mode_);
-
-  prv_->insert(errno,basepath_);
-}
-
-static
-void
-_chmod_loop(const std::vector<Branch*> &branches_,
-            const fs::path             &fusepath_,
-            const mode_t                mode_,
-            PolicyRV                   *prv_)
-{
-  for(auto &branch : branches_)
-    {
-      ::_chmod_loop_core(branch->path,fusepath_,mode_,prv_);
-    }
-}
-
-static
-int
-_chmod(const Policy::Action &actionFunc_,
-       const Policy::Search &searchFunc_,
-       const Branches       &branches_,
-       const fs::path       &fusepath_,
-       const mode_t          mode_)
-{
-  int rv;
-  PolicyRV prv;
-  std::vector<Branch*> branches;
-
-  rv = actionFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-
-  ::_chmod_loop(branches,fusepath_,mode_,&prv);
-  if(prv.errors.empty())
-    return 0;
-  if(prv.successes.empty())
-    return prv.errors[0].rv;
-
-  branches.clear();
-  rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-
-  return prv.get_error(branches[0]->path);
-}
-
-static
-int
-_chmod(const fs::path &fusepath_,
-       const mode_t    mode_)
-{
-
-  return ::_chmod(cfg.func.chmod.policy,
-                  cfg.func.getattr.policy,
-                  cfg.branches,
-                  fusepath_,
-                  mode_);
-}
 
 int
 FUSE::chmod(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_,
-            mode_t                mode_)
+            const mode_t          mode_)
 {
   const fs::path fusepath{fusepath_};
 
-  return ::_chmod(fusepath,mode_);
+  return cfg.chmod(cfg.branches,
+                   fusepath,
+                   mode_);
 }

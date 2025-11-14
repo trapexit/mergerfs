@@ -17,77 +17,7 @@
 #include "fuse_truncate.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
-#include "fs_path.hpp"
-#include "fs_truncate.hpp"
-#include "policy_rv.hpp"
-#include "ugid.hpp"
 
-#include "fuse.h"
-
-#include <sys/types.h>
-#include <unistd.h>
-
-
-static
-void
-_truncate_loop_core(const fs::path &basepath_,
-                    const fs::path &fusepath_,
-                    const off_t     size_,
-                    PolicyRV       *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::truncate(fullpath,size_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
-_truncate_loop(const std::vector<Branch*> &branches_,
-               const fs::path             &fusepath_,
-               const off_t                 size_,
-               PolicyRV                   *prv_)
-{
-  for(auto &branch : branches_)
-    {
-      ::_truncate_loop_core(branch->path,fusepath_,size_,prv_);
-    }
-}
-
-static
-int
-_truncate(const Policy::Action &actionFunc_,
-          const Policy::Search &searchFunc_,
-          const Branches       &branches_,
-          const fs::path       &fusepath_,
-          const off_t           size_)
-{
-  int rv;
-  PolicyRV prv;
-  std::vector<Branch*> branches;
-
-  rv = actionFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-
-  ::_truncate_loop(branches,fusepath_,size_,&prv);
-  if(prv.errors.empty())
-    return 0;
-  if(prv.successes.empty())
-    return prv.errors[0].rv;
-
-  branches.clear();
-  rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-
-  return prv.get_error(branches[0]->path);
-}
 
 int
 FUSE::truncate(const fuse_req_ctx_t *ctx_,
@@ -96,9 +26,5 @@ FUSE::truncate(const fuse_req_ctx_t *ctx_,
 {
   const fs::path fusepath{fusepath_};
 
-  return ::_truncate(cfg.func.truncate.policy,
-                     cfg.func.getattr.policy,
-                     cfg.branches,
-                     fusepath,
-                     size_);
+  return cfg.truncate(cfg.branches,fusepath,size_);
 }

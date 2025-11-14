@@ -42,16 +42,8 @@ namespace Category
   public:
     Action(Funcs &funcs_)
     {
-      funcs.push_back(&funcs_.chmod);
-      funcs.push_back(&funcs_.chown);
       funcs.push_back(&funcs_.link);
-      funcs.push_back(&funcs_.removexattr);
       funcs.push_back(&funcs_.rename);
-      funcs.push_back(&funcs_.rmdir);
-      funcs.push_back(&funcs_.setxattr);
-      funcs.push_back(&funcs_.truncate);
-      funcs.push_back(&funcs_.unlink);
-      funcs.push_back(&funcs_.utimens);
     }
   };
 
@@ -78,12 +70,9 @@ namespace Category
   public:
     Search(Funcs &funcs_)
     {
-      funcs.push_back(&funcs_.access);
       funcs.push_back(&funcs_.getattr);
-      funcs.push_back(&funcs_.getxattr);
       funcs.push_back(&funcs_.listxattr);
       funcs.push_back(&funcs_.open);
-      funcs.push_back(&funcs_.readlink);
     }
   };
 }

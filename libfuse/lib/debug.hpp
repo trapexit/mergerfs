@@ -51,6 +51,7 @@ void debug_fuse_lk_out(const uint64_t            unique,
 void debug_fuse_bmap_out(const uint64_t              unique,
                          const struct fuse_bmap_out *arg);
 void debug_fuse_in_header(const struct fuse_in_header *hdr);
+void debug_fuse_out_header(const struct fuse_out_header *hdr);
 
 std::string fuse_debug_init_flag_name(const uint64_t);
 

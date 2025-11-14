@@ -19,8 +19,7 @@
 #pragma once
 
 #include "to_neg_errno.hpp"
-
-#include <string>
+#include "to_cstr.hpp"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -29,25 +28,17 @@
 
 namespace fs
 {
+  template<typename PathType>
   static
   inline
   int
-  lstat(const char  *path_,
-        struct stat *st_)
+  lstat(const PathType &path_,
+        struct stat    *st_)
   {
     int rv;
 
-    rv = ::lstat(path_,st_);
+    rv = ::lstat(to_cstr(path_),st_);
 
     return ::to_neg_errno(rv);
-  }
-
-  static
-  inline
-  int
-  lstat(const std::string &path_,
-        struct stat       *st_)
-  {
-    return fs::lstat(path_.c_str(),st_);
   }
 }

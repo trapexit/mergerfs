@@ -19,12 +19,6 @@
 #pragma once
 
 #include "enum.hpp"
+#include "follow_symlinks_enum.hpp"
 
-enum class FollowSymlinksEnum
-  {
-    NEVER,
-    DIRECTORY,
-    REGULAR,
-    ALL
-  };
 typedef Enum<FollowSymlinksEnum> FollowSymlinks;

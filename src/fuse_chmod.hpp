@@ -26,5 +26,5 @@ namespace FUSE
   int
   chmod(const fuse_req_ctx_t *ctx,
         const char           *fusepath,
-        mode_t                mode);
+        const mode_t          mode);
 }
