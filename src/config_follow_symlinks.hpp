@@ -19,5 +19,6 @@
 #pragma once
 
 #include "enum.hpp"
+#include "follow_symlinks_enum.hpp"
 
 typedef Enum<FollowSymlinksEnum> FollowSymlinks;
