@@ -16,12 +16,28 @@
 
 #pragma once
 
+#include "func_access.hpp"
+#include "func_chmod.hpp"
+#include "func_chown.hpp"
+#include "func_getattr.hpp"
+#include "func_getxattr.hpp"
+#include "func_listxattr.hpp"
+#include "func_readlink.hpp"
+#include "func_removexattr.hpp"
+#include "func_rmdir.hpp"
+#include "func_setxattr.hpp"
+#include "func_statx.hpp"
+#include "func_truncate.hpp"
+#include "func_unlink.hpp"
+#include "func_utimens.hpp"
+
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
 #include "config_dummy.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
+#include "config_getattr_statx.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
 #include "config_log_metrics.hpp"
@@ -108,6 +124,21 @@ public:
   Config& operator=(const Config&);
 
 public:
+  Func2::Access      access{"all"};
+  Func2::Chmod       chmod{"all"};
+  Func2::Chown       chown{"all"};
+  Func2::GetAttr     getattr{"cdfo"};
+  Func2::Getxattr    getxattr{"ff"};
+  Func2::Listxattr   listxattr{"ff"};
+  Func2::Readlink    readlink{"ff"};
+  Func2::Removexattr removexattr{"all"};
+  Func2::Rmdir       rmdir{"all"};
+  Func2::Setxattr    setxattr{"all"};
+  Func2::Statx       statx{"cdfo"};
+  Func2::Truncate    truncate{"all"};
+  Func2::Unlink      unlink{"all"};
+  Func2::Utimens     utimens{"all"};
+
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   Branches       branches;
@@ -171,6 +202,7 @@ private:
   TFSRef<int>      _congestion_threshold;
   TFSRef<bool>     _debug;
   CfgDummy         _dummy;
+  ConfigGetAttrStatx _getattr_statx;
   TFSRef<s64>      _gid;
   TFSRef<int>      _max_background;
   TFSRef<fs::path> _mount;

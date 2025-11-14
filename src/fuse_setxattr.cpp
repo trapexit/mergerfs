@@ -99,107 +99,6 @@ _setxattr_ctrl_file(const char *attrname_,
   return rv;
 }
 
-static
-void
-_setxattr_loop_core(const fs::path &basepath_,
-                    const fs::path &fusepath_,
-                    const char     *attrname_,
-                    const char     *attrval_,
-                    const size_t    attrvalsize_,
-                    const int       flags_,
-                    PolicyRV       *prv_)
-{
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  errno = 0;
-  fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
-
-  prv_->insert(errno,basepath_);
-}
-
-static
-void
-_setxattr_loop(const std::vector<Branch*> &branches_,
-               const fs::path             &fusepath_,
-               const char                 *attrname_,
-               const char                 *attrval_,
-               const size_t                attrvalsize_,
-               const int                   flags_,
-               PolicyRV                   *prv_)
-{
-  for(auto &branch : branches_)
-    {
-      ::_setxattr_loop_core(branch->path,
-                            fusepath_,
-                            attrname_,
-                            attrval_,attrvalsize_,
-                            flags_,
-                            prv_);
-    }
-}
-
-static
-int
-_setxattr(const Policy::Action &setxattrPolicy_,
-          const Policy::Search &getxattrPolicy_,
-          const Branches       &branches_,
-          const fs::path       &fusepath_,
-          const char           *attrname_,
-          const char           *attrval_,
-          const size_t          attrvalsize_,
-          const int             flags_)
-{
-  int rv;
-  PolicyRV prv;
-  std::vector<Branch*> branches;
-
-  rv = setxattrPolicy_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-
-  ::_setxattr_loop(branches,fusepath_,attrname_,attrval_,attrvalsize_,flags_,&prv);
-  if(prv.errors.empty())
-    return 0;
-  if(prv.successes.empty())
-    return prv.errors[0].rv;
-
-  branches.clear();
-  rv = getxattrPolicy_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-
-  return prv.get_error(branches[0]->path);
-}
-
-static
-int
-_setxattr(const fuse_req_ctx_t *ctx_,
-          const fs::path       &fusepath_,
-          const char           *attrname_,
-          const char           *attrval_,
-          size_t                attrvalsize_,
-          int                   flags_)
-{
-  if((cfg.security_capability == false) &&
-     ::_is_attrname_security_capability(attrname_))
-    return -ENOATTR;
-
-  if(cfg.xattr.to_int())
-    return -cfg.xattr.to_int();
-
-  return ::_setxattr(cfg.func.setxattr.policy,
-                     cfg.func.getxattr.policy,
-                     cfg.branches,
-                     fusepath_,
-                     attrname_,
-                     attrval_,
-                     attrvalsize_,
-                     flags_);
-}
-
-
 int
 FUSE::setxattr(const fuse_req_ctx_t *ctx_,
                const char           *fusepath_,
@@ -216,10 +115,17 @@ FUSE::setxattr(const fuse_req_ctx_t *ctx_,
                                  attrvalsize_,
                                  flags_);
 
-  return ::_setxattr(ctx_,
-                     fusepath,
-                     attrname_,
-                     attrval_,
-                     attrvalsize_,
-                     flags_);
+  if((cfg.security_capability == false) &&
+     ::_is_attrname_security_capability(attrname_))
+    return -ENOATTR;
+
+  if(cfg.xattr.to_int())
+    return -cfg.xattr.to_int();
+
+  return cfg.setxattr(cfg.branches,
+                      fusepath,
+                      attrname_,
+                      attrval_,
+                      attrvalsize_,
+                      flags_);
 }

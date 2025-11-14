@@ -18,7 +18,10 @@
 
 #pragma once
 
+#include "follow_symlinks_enum.hpp"
 #include "to_neg_errno.hpp"
+#include "to_cstr.hpp"
+#include "fs_lstat.hpp"
 
 #include <string>
 
@@ -29,25 +32,71 @@
 
 namespace fs
 {
+  template<typename PathType>
   static
   inline
   int
-  stat(const char  *path_,
-       struct stat *st_)
+  stat(const PathType &path_,
+       struct stat    *st_)
   {
     int rv;
 
-    rv = ::stat(path_,st_);
+    rv = ::stat(to_cstr(path_),st_);
 
     return ::to_neg_errno(rv);
   }
 
+  template<typename PathType>
   static
   inline
   int
-  stat(const std::string &path_,
-       struct stat       *st_)
+  stat(const PathType     &path_,
+       struct stat        *st_,
+       FollowSymlinksEnum  follow_)
   {
-    return fs::stat(path_.c_str(),st_);
+    int rv;
+
+    switch(follow_)
+      {
+      default:
+      case FollowSymlinksEnum::NEVER:
+        rv = fs::lstat(path_,st_);
+        return rv;
+      case FollowSymlinksEnum::DIRECTORY:
+        rv = fs::lstat(path_,st_);
+        if((rv >= 0) && S_ISLNK(st_->st_mode))
+          {
+            struct stat st;
+
+            rv = fs::stat(path_,&st);
+            if(rv < 0)
+              return rv;
+
+            if(S_ISDIR(st.st_mode))
+              *st_ = st;
+          }
+        return rv;
+      case FollowSymlinksEnum::REGULAR:
+        rv = fs::lstat(path_,st_);
+        if((rv >= 0) && S_ISLNK(st_->st_mode))
+          {
+            struct stat st;
+
+            rv = fs::stat(path_,&st);
+            if(rv < 0)
+              return rv;
+
+            if(S_ISREG(st.st_mode))
+              *st_ = st;
+          }
+        return rv;
+      case FollowSymlinksEnum::ALL:
+        rv = fs::stat(path_,st_);
+        if(rv < 0)
+          rv = fs::lstat(path_,st_);
+        return rv;
+      }
+
+    return -ENOENT;
   }
 }

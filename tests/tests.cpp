@@ -2,6 +2,8 @@
 
 #include "config.hpp"
 #include "str.hpp"
+#include "error.hpp"
+
 
 void
 test_nop()
@@ -123,12 +125,11 @@ test_str_stuff()
 void
 test_config_branches()
 {
-  uint64_t minfreespace;
-  Branches b(minfreespace);
+  Branches b;
   Branches::Ptr bcp0;
   Branches::Ptr bcp1;
 
-  minfreespace = 1234;
+  b.minfreespace = 1234;
   TEST_CHECK(b->minfreespace() == 1234);
   TEST_CHECK(b.to_string() == "");
 
@@ -304,6 +305,20 @@ test_config()
   TEST_CHECK(cfg.set("async-read","true") == 0);
 }
 
+void
+test_err()
+{
+  Err err;
+
+  TEST_CHECK((err = -ENOENT) == -ENOENT);
+  TEST_CHECK((err = -EROFS) == -EROFS);
+  TEST_CHECK((err = -ENOENT) == -EROFS);
+  TEST_CHECK((err = -ENAMETOOLONG) == -ENAMETOOLONG);
+  TEST_CHECK((err = -EIO) == -ENAMETOOLONG);
+  TEST_CHECK((err = 0) == 0);
+  TEST_CHECK((err = -EIO) == 0);
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -322,5 +337,6 @@ TEST_LIST =
    {"config_xattr",test_config_xattr},
    {"config",test_config},
    {"str",test_str_stuff},
+   {"err",test_err},
    {NULL,NULL}
   };

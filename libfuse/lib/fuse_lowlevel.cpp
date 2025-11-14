@@ -1797,6 +1797,8 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   if(fuse_ll_funcs[in->opcode] == NULL)
     goto reply_err;
 
+  //  debug_fuse_in_header(in);
+
   fuse_ll_funcs[in->opcode](req, in);
 
   return;
