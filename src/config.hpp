@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "func_getattr.hpp"
+#include "func_statx.hpp"
+
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
@@ -108,6 +111,9 @@ public:
   Config& operator=(const Config&);
 
 public:
+  Func2::GetAttr getattr{"combine"};
+  Func2::Statx   statx{"combine"};
+
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   Branches       branches;
