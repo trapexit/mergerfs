@@ -50,4 +50,21 @@ namespace fs
   {
     return fs::stat(path_.c_str(),st_);
   }
+
+  int
+  stat(const char         *path,
+       struct stat        *st,
+       FollowSymlinksEnum  follow);
+
+  static
+  inline
+  int
+  stat(const std::string  &path_,
+       struct stat        *st_,
+       FollowSymlinksEnum  follow_)
+  {
+    return fs::stat(path_.c_str(),
+                    st_,
+                    follow_);
+  }
 }
