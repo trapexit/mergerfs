@@ -231,7 +231,7 @@ Config::Config()
   _map["func.chmod"]                  = &func.chmod;
   _map["func.chown"]                  = &func.chown;
   _map["func.create"]                 = &func.create;
-  _map["func.getattr"]                = &func.getattr;
+  _map["func.getattr"]                = &getattr;
   _map["func.getxattr"]               = &func.getxattr;
   _map["func.link"]                   = &func.link;
   _map["func.listxattr"]              = &func.listxattr;
@@ -244,6 +244,7 @@ Config::Config()
   _map["func.rename"]                 = &func.rename;
   _map["func.rmdir"]                  = &func.rmdir;
   _map["func.setxattr"]               = &func.setxattr;
+  _map["func.statx"]                  = &statx;
   _map["func.symlink"]                = &func.symlink;
   _map["func.truncate"]               = &func.truncate;
   _map["func.unlink"]                 = &func.unlink;
