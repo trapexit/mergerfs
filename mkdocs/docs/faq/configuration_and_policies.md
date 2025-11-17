@@ -29,6 +29,17 @@ If it isn't clear to you then you should use `pfrd` as described in
 the [quickstart guide](../quickstart.md).
 
 
+## Why are there no policies based on file size?
+
+Because it is not possible to know the final size of a file at creation
+time.
+
+See [How does mergerfs handle moving and copying of
+files?](technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
+and [Intro to Filesystems - Creating a
+file](../intro_to_filesystems.md#creating-a-file).
+
+
 ## Why is pfrd the default create policy?
 
 Originally the default was `epmfs` however it was found to cause
