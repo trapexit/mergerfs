@@ -27,13 +27,6 @@ public:
   {
   }
 
-  TFSRef(T       &data_,
-         const T  val_)
-    : _data(data_)
-  {
-    _data = val_;
-  }
-
 private:
   T &_data;
 };
