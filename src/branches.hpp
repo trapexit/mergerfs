@@ -30,6 +30,9 @@
 #include <vector>
 #include <memory>
 
+#define MINFREESPACE_DEFAULT (4294967295ULL)
+
+
 class Branches final : public ToFromString
 {
 public:
@@ -64,7 +67,7 @@ public:
   using Ptr = Branches::Impl::Ptr;
 
 public:
-  u64 minfreespace;
+  u64 minfreespace = MINFREESPACE_DEFAULT;
 
 private:
   mutable std::mutex _mutex;
@@ -73,7 +76,8 @@ private:
 public:
   Branches()
     : _impl(std::make_shared<Impl>(minfreespace))
-  {}
+  {
+  }
 
 public:
   int from_string(const std::string_view str) final;

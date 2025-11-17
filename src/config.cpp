@@ -37,7 +37,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define MINFREESPACE_DEFAULT (4294967295ULL)
 
 constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
   "rtorrent|"
@@ -114,20 +113,20 @@ Config::Config()
   link_cow(false),
   link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
   log_metrics(false),
-  minfreespace(branches.minfreespace,MINFREESPACE_DEFAULT),
+  minfreespace(branches.minfreespace),
   mountpoint(),
   moveonenospc(true),
   nfsopenhack(NFSOpenHack::ENUM::OFF),
   nullrw(false),
   parallel_direct_writes(true),
   passthrough_io(PassthroughIO::ENUM::OFF),
-  passthrough_max_stack_depth(fuse_cfg.passthrough_max_stack_depth,1),
-  pin_threads(fuse_cfg.pin_threads,"false"),
+  passthrough_max_stack_depth(fuse_cfg.passthrough_max_stack_depth),
+  pin_threads(fuse_cfg.pin_threads),
   posix_acl(false),
-  process_thread_count(fuse_cfg.process_thread_count,-1),
-  process_thread_queue_depth(fuse_cfg.process_thread_queue_depth,2),
+  process_thread_count(fuse_cfg.process_thread_count),
+  process_thread_queue_depth(fuse_cfg.process_thread_queue_depth),
   proxy_ioprio(false),
-  read_thread_count(fuse_cfg.read_thread_count,0),
+  read_thread_count(fuse_cfg.read_thread_count),
   readahead(0),
   readdir("seq"),
   rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
@@ -139,20 +138,20 @@ Config::Config()
   symlinkify_timeout(3600),
   xattr(XAttr::ENUM::PASSTHROUGH),
 
-  _congestion_threshold(fuse_cfg.congestion_threshold,0),
-  _debug(fuse_cfg.debug,false),
-  _gid(fuse_cfg.gid,FUSE_CFG_INVALID_ID),
-  _max_background(fuse_cfg.max_background,0),
+  _congestion_threshold(fuse_cfg.congestion_threshold),
+  _debug(fuse_cfg.debug),
+  _gid(fuse_cfg.gid),
+  _max_background(fuse_cfg.max_background),
   _mount(mountpoint),
   _mountpoint(mountpoint),
   _never_forget_nodes(),
   _noforget(),
   _remember(fuse_cfg.remember_nodes),
-  _remember_nodes(fuse_cfg.remember_nodes,0),
+  _remember_nodes(fuse_cfg.remember_nodes),
   _srcmounts(branches),
   _threads(fuse_cfg.read_thread_count),
-  _uid(fuse_cfg.uid,FUSE_CFG_INVALID_ID),
-  _umask(fuse_cfg.umask,FUSE_CFG_INVALID_UMASK),
+  _uid(fuse_cfg.uid),
+  _umask(fuse_cfg.umask),
   _version(MERGERFS_VERSION),
 
   _initialized(false)
