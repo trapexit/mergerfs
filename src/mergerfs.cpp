@@ -314,7 +314,7 @@ _main(int    argc_,
   args.allocated = false;
 
   SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
-  SysLog::info("Go to https://trapexit.github.io/mergerfs/support for support");
+  SysLog::info("Go to https://trapexit.github.io/mergerfs/latest/support for support");
 
   options::parse(&args);
   if(!cfg.errs.empty())
