@@ -294,6 +294,10 @@ ifdef GIT_REPO
 	$(GIT2DEBCL) --name mergerfs > debian/changelog
 else
 	$(CP) -v ChangeLog debian/changelog
+	$(eval DISTRO := $(shell lsb_release -i -s | tr '[:upper:]' '[:lower:]'))
+	$(eval CODENAME := $(shell lsb_release -c -s | tr '[:upper:]' '[:lower:]'))
+	sed -i 's/~unknown-unknown/~$(DISTRO)-$(CODENAME)/g' debian/changelog
+	sed -i 's/ unknown; / $(CODENAME); /g' debian/changelog
 endif
 
 .PHONY: signed-deb
