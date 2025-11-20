@@ -97,10 +97,12 @@ _getattr(const fs::path  &fusepath_,
       fmt::println("getattr: {}\n"
                    " uid: {}\n"
                    " gid: {}\n"
+                   " err: {}\n"
                    ,
                    fusepath_.string(),
                    getuid(),
-                   getgid()
+                   getgid(),
+                   strerror(-rv)
                    );
 
     }
