@@ -94,7 +94,13 @@ _getattr(const fs::path  &fusepath_,
                    cfg.symlinkify_timeout);
   if(rv == -EACCES)
     {
-      fmt::println("getattr:");
+      fmt::println("getattr: {}\n"
+                   " uid: {}\n"
+                   " gid: {}\n"
+                   ,
+                   fusepath_.string(),
+
+                   );
 
     }
 
