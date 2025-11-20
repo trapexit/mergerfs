@@ -150,6 +150,9 @@ fuse_send_msg(struct fuse_ll   *f,
   if(rv == -1)
     return -errno;
 
+  if(out->error)
+    abort();
+
   return 0;
 }
 
