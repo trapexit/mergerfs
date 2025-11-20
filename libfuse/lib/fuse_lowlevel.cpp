@@ -1794,6 +1794,8 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   req->ctx.umask  = 0;
   req->ch         = se_->ch;
 
+  debug_fuse_in_header(in);
+
   err = ENOSYS;
   if(in->opcode >= FUSE_MAXOPS)
     goto reply_err;
