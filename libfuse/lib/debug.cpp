@@ -1100,14 +1100,14 @@ opcode_name(enum fuse_opcode op_)
 {
   static const char *names[] =
     {
-      "INVALID",
+      "INVALID0",
       "LOOKUP",
       "FORGET",
       "GETATTR",
       "SETATTR",
       "READLINK",
       "SYMLINK",
-      "INVALID",
+      "INVALID1",
       "MKNOD",
       "MKDIR",
       "UNLINK",
@@ -1119,6 +1119,7 @@ opcode_name(enum fuse_opcode op_)
       "WRITE",
       "STATFS",
       "RELEASE",
+      "INVALID3",
       "FSYNC",
       "SETXATTR",
       "GETXATTR",
