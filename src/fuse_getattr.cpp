@@ -92,7 +92,7 @@ _getattr(const fs::path  &fusepath_,
                    st_,
                    cfg.follow_symlinks,
                    cfg.symlinkify_timeout);
-  if(rv == -EACCES)
+  if(rv < 0 && rv != -ENOENT)
     {
       fmt::println("getattr: {}\n"
                    " uid: {}\n"
