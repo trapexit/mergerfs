@@ -461,7 +461,7 @@ debug_fuse_unlink(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_unlink:"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              name);
