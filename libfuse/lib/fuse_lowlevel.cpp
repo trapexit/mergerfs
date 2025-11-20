@@ -150,7 +150,7 @@ fuse_send_msg(struct fuse_ll   *f,
   if(rv == -1)
     return -errno;
 
-  if(out->error == -EACCESS)
+  if(out->error == -EACCES)
     abort();
 
   return 0;
