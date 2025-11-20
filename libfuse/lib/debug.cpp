@@ -445,7 +445,7 @@ debug_fuse_mkdir_in(const void *arg_)
              "fuse_mkdir_in:"
              " mode={:o};"
              " umask={:o};"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              arg->mode,
@@ -493,8 +493,8 @@ debug_fuse_symlink(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_mkdir:"
-             " linkname=%s;"
-             " name=%s;"
+             " linkname={};"
+             " name={};"
              "\n"
              ,
              linkname,
@@ -514,9 +514,9 @@ debug_fuse_rename_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_rename_in:"
-             " oldname=%s;"
+             " oldname={};"
              " newdir={};"
-             " newname=%s;"
+             " newname={};"
              "\n"
              ,
              oldname,
@@ -536,7 +536,7 @@ debug_fuse_link_in(const void *arg_)
   fmt::print(g_OUTPUT,
              "fuse_link_in:"
              " oldnodeid={};"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              arg->oldnodeid,
@@ -556,7 +556,7 @@ debug_fuse_create_in(const void *arg_)
              "fuse_create_in:"
              " mode={:o};"
              " umask={:o};"
-             " name=%s;"
+             " name={};"
              " flags=0x%X (",
              arg->mode,
              arg->umask,
@@ -639,7 +639,7 @@ debug_fuse_write_in(const void *arg_)
       if(str == NULL)
         continue;
 
-      fmt::print(g_OUTPUT,"%s,",str);
+      fmt::print(g_OUTPUT,"{},",str);
     }
   fmt::print(g_OUTPUT,");\n");
 }
@@ -712,8 +712,8 @@ debug_fuse_setxattr_in(const void *arg_)
              "fuse_setxattr_in:"
              " size={};"
              " flags=0x%X;"
-             " name=%s;"
-             " value=%s;"
+             " name={};"
+             " value={};"
              "\n"
              ,
              arg->size,
@@ -734,7 +734,7 @@ debug_fuse_getxattr_in(const void *arg_)
   fmt::print(g_OUTPUT,
              "fuse_getxattr_in:"
              " size={};"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              arg->size,
@@ -763,7 +763,7 @@ debug_fuse_removexattr(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_removexattr:"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              name);
@@ -816,7 +816,7 @@ debug_fuse_init_in(const struct fuse_init_in *arg_)
       if(str == NULL)
         continue;
 
-      fmt::print(g_OUTPUT,"%s, ",str);
+      fmt::print(g_OUTPUT,"{}, ",str);
     }
   fmt::print(g_OUTPUT,")\n");
 }
@@ -932,7 +932,7 @@ debug_fuse_init_out(const uint64_t              unique_,
       if(str == NULL)
         continue;
 
-      fmt::print(g_OUTPUT,"%s, ",str);
+      fmt::print(g_OUTPUT,"{}, ",str);
     }
 
   fmt::print(g_OUTPUT,
@@ -1314,7 +1314,7 @@ debug_fuse_readlink(const uint64_t  unique_,
              " opcode=RESPONSE;"
              " error=0 (Success);"
              " len={}; || "
-             "readlink: linkname=%s"
+             "readlink: linkname={}"
              "\n"
              ,
              unique_,
