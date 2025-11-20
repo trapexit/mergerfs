@@ -1107,6 +1107,7 @@ opcode_name(enum fuse_opcode op_)
       "SETATTR",
       "READLINK",
       "SYMLINK",
+      "INVALID",
       "MKNOD",
       "MKDIR",
       "UNLINK",
