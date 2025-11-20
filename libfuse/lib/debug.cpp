@@ -475,7 +475,7 @@ debug_fuse_rmdir(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_mkdir:"
-             " name=%s;"
+             " name={};"
              "\n"
              ,
              name);
