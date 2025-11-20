@@ -92,6 +92,12 @@ _getattr(const fs::path  &fusepath_,
                    st_,
                    cfg.follow_symlinks,
                    cfg.symlinkify_timeout);
+  if(rv == -EACCES)
+    {
+      fmt::println("getattr:");
+
+    }
+
   if((rv < 0) && Config::is_rootdir(fusepath_))
     return ::_getattr_fake_root(st_);
 
