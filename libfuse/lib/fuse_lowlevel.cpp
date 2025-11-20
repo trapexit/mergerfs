@@ -143,6 +143,9 @@ fuse_send_msg(struct fuse_ll   *f,
 
   out->len = iov_length(iov, count);
 
+  if(fuse_cfg.debug)
+    debug_fuse_out_header(out);
+
   rv = writev(fuse_chan_fd(ch),iov,count);
   if(rv == -1)
     return -errno;
