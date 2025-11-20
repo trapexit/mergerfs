@@ -1280,7 +1280,7 @@ debug_fuse_out_header(const struct fuse_out_header *hdr_)
              "unique=0x{:016x};"
              " opcode=RESPONSE;"
              " error={} ({});"
-             " len={};"
+             " len={};\n"
              ,
              hdr_->unique,
              hdr_->error,
