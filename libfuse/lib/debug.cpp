@@ -1164,7 +1164,7 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
   const void *arg = &hdr_[1];
 
   fmt::print(stderr,
-             "unique=0x{:016x}"
+             "unique=0x{:016x};"
              " opcode={} ({});"
              " nodeid={};"
              " uid={};"
