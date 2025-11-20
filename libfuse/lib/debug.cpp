@@ -1098,11 +1098,6 @@ const
 char*
 opcode_name(enum fuse_opcode op_)
 {
-  static const char *names2[] =
-    {
-      [FUSE_LOOKUP] = "LOOKUP";
-    };
-
   static const char *names[] =
     {
       "INVALID",
