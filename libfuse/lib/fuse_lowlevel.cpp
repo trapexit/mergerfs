@@ -154,7 +154,7 @@ fuse_send_msg(struct fuse_ll   *f,
     {
     case 0:
     case -ENODATA:
-    case -ESTALE;
+    case -ESTALE:
       break;
     default:
       abort();
