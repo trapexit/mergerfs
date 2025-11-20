@@ -100,8 +100,8 @@ _getattr(const fs::path  &fusepath_,
                    " err: {}\n"
                    ,
                    fusepath_.string(),
-                   getuid(),
-                   getgid(),
+                   geteuid(),
+                   getegid(),
                    strerror(-rv)
                    );
 
