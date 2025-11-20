@@ -1277,7 +1277,7 @@ void
 debug_fuse_out_header(const struct fuse_out_header *hdr_)
 {
   fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
+             "unique=0x{:016x};"
              " opcode=RESPONSE;"
              " error=%d (%s);"
              " len={};"
