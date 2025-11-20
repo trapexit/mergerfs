@@ -99,7 +99,8 @@ _getattr(const fs::path  &fusepath_,
                    " gid: {}\n"
                    ,
                    fusepath_.string(),
-
+                   getuid(),
+                   getgid()
                    );
 
     }
