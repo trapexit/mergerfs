@@ -1163,7 +1163,7 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
 
   fmt::print(stderr,
              "unique=0x{:016x}";"
-             " opcode=%s ({});"
+             " opcode={} ({});"
              " nodeid={};"
              " uid={};"
              " gid={};"
