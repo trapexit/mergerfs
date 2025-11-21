@@ -17,7 +17,7 @@ public:
 
   operator int()
   {
-    return (_err.has_value() ? _err.value() : -ENOENT);
+    return (_err.has_value() ? _err.value() : -ENXIO);
   }
 
   Err&
