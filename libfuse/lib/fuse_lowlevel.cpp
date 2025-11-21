@@ -158,7 +158,7 @@ fuse_send_msg(struct fuse_ll   *f,
     case -25:
       break;
     default:
-      abort();
+      //abort();
     }
 
   return 0;
