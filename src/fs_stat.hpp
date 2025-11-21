@@ -97,7 +97,7 @@ namespace fs
         return rv;
       }
 
-    DIE("Should never reach this: follow_={}",follow_);
+    DIE("Should never reach this: follow_={}",sc<int>(follow_));
     return -EINVAL;
   }
 }
