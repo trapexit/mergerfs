@@ -94,6 +94,8 @@ _getattr(const fs::path  &fusepath_,
                    cfg.symlinkify_timeout);
   if(rv < 0)
     {
+      if(rv != -ENOENT)
+        __buildin_trap();
       fmt::println("getattr: {}\n"
                    " uid: {}\n"
                    " gid: {}\n"
