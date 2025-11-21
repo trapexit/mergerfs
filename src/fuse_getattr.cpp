@@ -136,7 +136,7 @@ FUSE::getattr(const fuse_req_ctx_t *ctx_,
               fuse_timeouts_t      *timeout_)
 {
   //  const ugid::Set ugid(ctx_);
-  const ugid::SetRootGudard _;
+  const ugid::SetRootGuard _;
 
   return FUSE::getattr(fusepath_,st_,timeout_);
 }
