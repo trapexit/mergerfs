@@ -33,7 +33,10 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
       fullpath = branch.path / fusepath_;
       rv = fs::stat(fullpath,&tmp_st,follow_symlinks_);
       if(rv < 0)
-        continue;
+        {
+          err = rv;
+          continue;
+        }
 
       if(!first_branch)
         {
