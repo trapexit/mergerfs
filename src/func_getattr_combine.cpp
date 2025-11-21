@@ -52,7 +52,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
     }
 
   if(!first_branch)
-    return -ENOENT;
+    return err;
 
   if(symlinkify_timeout_ >= 0)
     {
