@@ -5,7 +5,7 @@
 
 #define DIE(...)                                                        \
   do {                                                                  \
-    fmt::print(stderr, fmt::emphasis::bold | fg(fmt::color::red),       \
+    fmt::print(stderr,                                                  \
                "{}:{} in {}: ", __FILE__, __LINE__, __func__);          \
     fmt::print(stderr, __VA_ARGS__);                                    \
     fmt::print(stderr, "\n");                                           \
