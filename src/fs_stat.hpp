@@ -98,6 +98,6 @@ namespace fs
       }
 
     die("Should never reach this");
-    return -ENOENT;
+    return -EINVAL;
   }
 }
