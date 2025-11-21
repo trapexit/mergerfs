@@ -1,5 +1,6 @@
 #include "func_getattr_combine.hpp"
 
+#include "error.hpp"
 #include "fs_inode.hpp"
 #include "fs_stat.hpp"
 #include "symlinkify.hpp"
