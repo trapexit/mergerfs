@@ -21,6 +21,7 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
                                   const s64 symlinkify_timeout_)
 {
   int rv;
+  Err err;
   fs::path fullpath;
   const Branch *first_branch;
 
