@@ -438,6 +438,10 @@ _open(const fuse_req_ctx_t *ctx_,
                   return (val_.second.ref_count <= 0);
                 });
 
+  if((rv < 0) && (rv != -ENOENT))
+    __builtin_trap();
+
+
   return rv;
 }
 
