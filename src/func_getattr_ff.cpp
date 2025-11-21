@@ -21,6 +21,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
 {
   int rv;
   fs::path fullpath;
+  Err err;
 
   for(const auto &branch : branches_)
     {
