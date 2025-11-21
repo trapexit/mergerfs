@@ -99,7 +99,7 @@ namespace fs
       }
 
     auto s = fmt::format("Should never reach this: follow_={}",sc<int>(follow_));
-    DIE(s);
+    DIE("{}",s);
     return -EINVAL;
   }
 }
