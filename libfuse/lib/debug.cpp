@@ -273,10 +273,11 @@ fuse_debug_init_flag_name(const uint64_t flag_)
 
 static
 void
-debug_open_flags(FILE *,
-                 const uint32_t flags_)
+debug_open_flags(const uint32_t flags_)
 {
-  fmt::print("{}, ",open_accmode_to_str(flags_));
+  fmt::print(g_OUTPUT,
+             "{}, ",
+             open_accmode_to_str(flags_));
   for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
