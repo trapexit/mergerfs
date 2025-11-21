@@ -441,7 +441,6 @@ _open(const fuse_req_ctx_t *ctx_,
   if((rv < 0) && (rv != -ENOENT))
     __builtin_trap();
 
-
   return rv;
 }
 
