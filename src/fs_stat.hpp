@@ -98,9 +98,7 @@ namespace fs
         return rv;
       }
 
-    int i = sc<int>(follow_);
-    // auto s = fmt::format("Should never reach this: follow_={}",sc<int>(follow_));
-    // DIE("{}",s);
+    DIE("Should never reach this: follow_={}",sc<int>(follow_));
     return -EINVAL;
   }
 }
