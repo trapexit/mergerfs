@@ -95,7 +95,7 @@ _getattr(const fs::path  &fusepath_,
   if(rv < 0)
     {
       if(rv != -ENOENT)
-        __buildin_trap();
+        __builtin_trap();
       fmt::println("getattr: {}\n"
                    " uid: {}\n"
                    " gid: {}\n"
