@@ -289,7 +289,7 @@ debug_open_flags(const uint32_t flags_)
       if(str == NULL)
         continue;
 
-      fmt::print("{}, ",str);
+      fmt::print(g_OUTPUT,"{}, ",str);
     }
 }
 
