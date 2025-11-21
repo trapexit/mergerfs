@@ -98,7 +98,7 @@ namespace fs
         return rv;
       }
 
-    die("Should never reach this");
+    DIE("Should never reach this");
     return -EINVAL;
   }
 }
