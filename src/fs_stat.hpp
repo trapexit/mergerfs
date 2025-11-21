@@ -97,6 +97,7 @@ namespace fs
         return rv;
       }
 
+    die("Should never reach this");
     return -ENOENT;
   }
 }
