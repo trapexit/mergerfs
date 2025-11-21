@@ -28,7 +28,10 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
       fullpath = branch.path / fusepath_;
       rv = fs::stat(fullpath,st_,follow_symlinks_);
       if(rv < 0)
-        continue;
+        {
+          err = rv;
+          continue;
+        }
 
       symlinkify::convert_if_can_be_symlink(fullpath,
                                             st_,
