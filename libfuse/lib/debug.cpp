@@ -317,7 +317,7 @@ fuse_fopen_flag_to_str(const uint32_t offset_)
 void
 debug_fuse_open_out(const struct fuse_open_out *arg_)
 {
-  fmt::print(stderr,
+  fmt::print(g_OUTPUT,
              "fuse_open_out:"
              " fh=0x{:#08x};"
              " open_flags=0x{:#04x} (",
