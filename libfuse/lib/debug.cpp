@@ -574,7 +574,7 @@ debug_fuse_open_in(const void *arg_)
 
   fmt::print(g_OUTPUT,
              "fuse_open_in:"
-             " flags=0x%08X (",
+             " flags=0x{:08X} (",
              arg->flags);
   debug_open_flags(arg->flags);
   fmt::print(g_OUTPUT,");\n");
