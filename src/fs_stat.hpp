@@ -59,7 +59,6 @@ namespace fs
 
     switch(follow_)
       {
-      default:
       case FollowSymlinksEnum::NEVER:
         rv = fs::lstat(path_,st_);
         return rv;
@@ -98,7 +97,7 @@ namespace fs
         return rv;
       }
 
-    DIE("Should never reach this");
+    DIE("Should never reach this: ");
     return -EINVAL;
   }
 }
