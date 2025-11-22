@@ -66,6 +66,7 @@ OPT_FLAGS := -O0 \
 	     -fstack-protector-strong \
              -Wextra \
 	     -Werror \
+	     --warn-no-reorder \
 	     -Wno-unused-parameter \
              -DDEBUG
 endif
