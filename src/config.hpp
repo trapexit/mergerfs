@@ -109,6 +109,9 @@ public:
   Config& operator=(const Config&);
 
 public:
+  Func2::GetAttr getattr{"combine"};
+  Func2::Statx   statx{"combine"};
+
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   Branches       branches;
