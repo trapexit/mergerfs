@@ -65,8 +65,6 @@ OPT_FLAGS := -O0 \
 	     $(SANITIZE) \
 	     -fstack-protector-strong \
              -Wextra \
-	     -Werror \
-	     --warn-no-reorder \
 	     -Wno-unused-parameter \
              -DDEBUG
 endif
