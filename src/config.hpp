@@ -129,6 +129,7 @@ public:
   ConfigUINT64   cache_statfs;
   ConfigBOOL     cache_symlinks;
   ConfigBOOL     cache_writeback;
+  Funcs          func;
   Categories     category;
   CfgConfigFile  config_file;
   ConfigBOOL     direct_io_allow_mmap;
@@ -137,7 +138,6 @@ public:
   FlushOnClose   flushonclose;
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;
-  Funcs          func;
   ConfigPageSize fuse_msg_size;
   GIDCacheExpireTimeout gid_cache_expire_timeout;
   GIDCacheRemoveTimeout gid_cache_remove_timeout;
