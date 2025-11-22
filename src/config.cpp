@@ -99,7 +99,6 @@ Config::Config()
   flushonclose(FlushOnClose::ENUM::OPENED_FOR_WRITE),
   follow_symlinks(FollowSymlinks::ENUM::NEVER),
   fsname(),
-  func(),
   category(func),
   fuse_msg_size("1M"),
   gid_cache_expire_timeout(60 * 60),
