@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include "func_getattr.hpp"
-#include "func_statx.hpp"
-
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
@@ -112,9 +109,6 @@ public:
   Config& operator=(const Config&);
 
 public:
-  Func2::GetAttr getattr{"combine"};
-  Func2::Statx   statx{"combine"};
-
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   Branches       branches;
@@ -129,7 +123,6 @@ public:
   ConfigUINT64   cache_statfs;
   ConfigBOOL     cache_symlinks;
   ConfigBOOL     cache_writeback;
-  Funcs          func;
   Categories     category;
   CfgConfigFile  config_file;
   ConfigBOOL     direct_io_allow_mmap;
@@ -138,6 +131,7 @@ public:
   FlushOnClose   flushonclose;
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;
+  Funcs          func;
   ConfigPageSize fuse_msg_size;
   GIDCacheExpireTimeout gid_cache_expire_timeout;
   GIDCacheRemoveTimeout gid_cache_remove_timeout;
