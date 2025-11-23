@@ -96,6 +96,9 @@ should_break(const fs::path &fusepath_)
     return false;
   if(f == "preHook")
     return false;
+  if(f == "addInputsHook")
+    return false;
+
 
   return true;
 }
