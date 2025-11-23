@@ -23,6 +23,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
   fs::path fullpath;
   Err err;
 
+  err = -ENXIO;
   for(const auto &branch : branches_)
     {
       fullpath = branch.path / fusepath_;
