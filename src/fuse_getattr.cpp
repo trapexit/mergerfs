@@ -96,7 +96,6 @@ _getattr(const fs::path  &fusepath_,
                    cfg.symlinkify_timeout);
   if(rv < 0)
     {
-      raise(SIGTRAP);
       fmt::println("getattr: {}\n"
                    " uid: {}\n"
                    " gid: {}\n"
@@ -107,7 +106,7 @@ _getattr(const fs::path  &fusepath_,
                    getegid(),
                    strerror(-rv)
                    );
-
+      raise(SIGTRAP);
     }
 
   if((rv < 0) && Config::is_rootdir(fusepath_))
