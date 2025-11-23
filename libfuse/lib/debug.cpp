@@ -1278,6 +1278,8 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
 void
 debug_fuse_out_header(const struct fuse_out_header *hdr_)
 {
+  if(hdr_->error == -ENOENT)
+    __builtin_trap();
   fmt::print(g_OUTPUT,
              "unique=0x{:016x};"
              " opcode=RESPONSE;"
