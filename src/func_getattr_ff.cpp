@@ -30,6 +30,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
       rv = fs::stat(fullpath,st_,follow_symlinks_);
       if(rv < 0)
         {
+          __builtin_trap();
           err = rv;
           continue;
         }
