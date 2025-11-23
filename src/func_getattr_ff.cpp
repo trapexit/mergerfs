@@ -42,7 +42,5 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
       return rv;
     }
 
-
-
   return err;
 }
