@@ -82,6 +82,18 @@ _getattr_controlfile(struct stat *st_)
   return 0;
 }
 
+static
+bool
+should_break(const fs::path &fusepath_)
+{
+  fs::path f = fusepath_.filename();
+
+  if(f == "_callImplicitHook 0 envHostHostHook")
+    return false;
+  if(f == "envHostHostHook")
+    return false;
+}
+
 int
 _getattr(const fs::path  &fusepath_,
          struct stat     *st_,
