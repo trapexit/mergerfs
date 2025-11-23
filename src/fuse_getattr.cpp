@@ -121,7 +121,8 @@ _getattr(const fs::path  &fusepath_,
                    strerror(-rv)
                    );
 
-      raise(SIGTRAP);
+      if(should_break(fusepath_))
+        raise(SIGTRAP);
     }
 
   if((rv < 0) && Config::is_rootdir(fusepath_))
