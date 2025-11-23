@@ -110,6 +110,8 @@ should_break(const fs::path &fusepath_)
     return false;
   if(f == "_callImplicitHook 0 envBuildHostHook")
     return false;
+  if(str::endswith(f,"Hook"))
+    return false;
 
   return true;
 }
