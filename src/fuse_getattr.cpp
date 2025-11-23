@@ -106,8 +106,7 @@ _getattr(const fs::path  &fusepath_,
                    getegid(),
                    strerror(-rv)
                    );
-      if(fusepath_.filename() == "envBuildHostHook")
-        break;
+
       raise(SIGTRAP);
     }
 
