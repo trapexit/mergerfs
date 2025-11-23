@@ -37,7 +37,7 @@ _create(const Branches::Ptr  &ibranches_,
   int error;
   fs::info_t info;
 
-  error = ENOENT;
+  error = ENXIO;
   for(auto &branch : *ibranches_)
     {
       if(branch.ro_or_nc())
