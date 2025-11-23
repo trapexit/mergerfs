@@ -89,5 +89,5 @@ Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
       return 0;
     }
 
-  return -ENOENT;
+  return -ENXIO;
 }
