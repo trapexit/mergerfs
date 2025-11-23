@@ -92,6 +92,8 @@ should_break(const fs::path &fusepath_)
     return false;
   if(f == "envHostHostHook")
     return false;
+
+  return true;
 }
 
 int
