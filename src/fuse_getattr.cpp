@@ -88,28 +88,6 @@ should_break(const fs::path &fusepath_)
 {
   fs::path f = fusepath_.filename();
 
-  if(f == "_callImplicitHook 0 envHostHostHook")
-    return false;
-  if(f == "envHostHostHook")
-    return false;
-  if(f == "_callImplicitHook 0 preHook")
-    return false;
-  if(f == "preHook")
-    return false;
-  if(f == "addInputsHook")
-    return false;
-  if(f == "_callImplicitHook 0 envBuildBuildHook")
-    return false;
-  if(f == "envBuildBuildHook")
-    return false;
-  if(f == "_callImplicitHook 0 envBuildTargetHook")
-    return false;
-  if(f == "envBuildTargetHook")
-    return false;
-  if(f == "envBuildHostHook")
-    return false;
-  if(f == "_callImplicitHook 0 envBuildHostHook")
-    return false;
   if(str::endswith(f,"Hook"))
     return false;
 
