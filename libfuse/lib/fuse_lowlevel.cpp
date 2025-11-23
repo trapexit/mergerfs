@@ -150,16 +150,16 @@ fuse_send_msg(struct fuse_ll   *f,
   if(rv == -1)
     return -errno;
 
-  // switch(out->error)
-  //   {
-  //   case 0:
-  //   case -ENODATA:
-  //   case -ESTALE:
-  //   case -25:
-  //     break;
-  //   default:
-  //     abort();
-  //   }
+  switch(out->error)
+    {
+    case 0:
+    case -ENODATA:
+    case -ESTALE:
+    case -25:
+      break;
+    default:
+      abort();
+    }
 
   return 0;
 }
