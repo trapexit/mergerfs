@@ -94,6 +94,8 @@ should_break(const fs::path &fusepath_)
     return false;
   if(f == "_callImplicitHook 0 preHook")
     return false;
+  if(f == "preHook")
+    return false;
 
   return true;
 }
