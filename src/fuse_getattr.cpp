@@ -31,6 +31,8 @@
 
 #include "fuse.h"
 
+#include <signal.h>
+
 #include <string>
 
 
