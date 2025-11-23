@@ -44,5 +44,7 @@ Func2::GetAttrFF::operator()(const Branches  &branches_,
       return rv;
     }
 
+  __builtin_trap();
+
   return err;
 }
