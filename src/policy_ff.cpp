@@ -89,5 +89,7 @@ Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
       return 0;
     }
 
+  raise(SIGTRAP);
+
   return -ENXIO;
 }
