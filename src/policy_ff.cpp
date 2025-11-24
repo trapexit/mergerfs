@@ -74,6 +74,8 @@ Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
   return ::_create(branches_,paths_);
 }
 
+#include <signal.h>
+
 int
 Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
                                const fs::path       &fusepath_,
