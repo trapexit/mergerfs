@@ -18,7 +18,8 @@
 
 #include "fuse_req_ctx.h"
 
-#include <assert.h>
+#include "fuse_kernel.h"
+
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -65,8 +66,20 @@ namespace ugid
     Set(const uid_t newuid_,
         const gid_t newgid_)
     {
-      assert((int)newuid_ != -1);
-      assert((int)newgid_ != -1);
+      uid_t newuid;
+      gid_t newgid;
+
+      // This should only occur when using ALLOW_IDMAP. When idmap is
+      // allowed the kernel sends FUSE_INVALID_UIDGID (-1) for any
+      // request that is not an inode creation operation.  This should
+      // be safe generally (default_permissions is required when using
+      // ALLOW_IDMAP therefore the kernel will manage permissions) and
+      // in fact better for certain situations such as when chroot is
+      // used and the user doesn't have access to the new root point
+      // or beyond. However, could be a problem on non-POSIX
+      // filesystems.
+      newuid = ((newuid_ == FUSE_INVALID_UIDGID) ? 0 : newuid_);
+      newgid = ((newgid_ == FUSE_INVALID_UIDGID) ? 0 : newgid_);
 
       if(!initialized)
         {
@@ -75,7 +88,7 @@ namespace ugid
           initialized = true;
         }
 
-      if((newuid_ == currentuid) && (newgid_ == currentgid))
+      if((newuid == currentuid) && (newgid == currentgid))
         return;
 
       if(currentuid != 0)
@@ -84,17 +97,17 @@ namespace ugid
           SETREGID(-1,0);
         }
 
-      if(newgid_)
+      if(newgid)
         {
-          SETREGID(-1,newgid_);
-          ugid::initgroups(newuid_,newgid_);
+          SETREGID(-1,newgid);
+          ugid::initgroups(newuid,newgid);
         }
 
-      if(newuid_)
-        SETREUID(-1,newuid_);
+      if(newuid)
+        SETREUID(-1,newuid);
 
-      currentuid = newuid_;
-      currentgid = newgid_;
+      currentuid = newuid;
+      currentgid = newgid;
     }
 
     Set(const fuse_req_ctx_t *ctx_)

@@ -225,7 +225,7 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   FileInfo *fi;
-  const ugid::Set ugid(ctx_->uid,ctx_->gid);
+  const ugid::Set ugid(ctx_);
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
@@ -312,8 +312,9 @@ _create_update_lambda()
   return
     [](const auto &val_)
     {
-      fmt::println(stderr,"CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
-      SysLog::crit("CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
+      const char *msg = "CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN";
+      fmt::println(stderr,msg);
+      SysLog::crit(msg);
       abort();
     };
 }
