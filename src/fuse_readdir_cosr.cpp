@@ -45,16 +45,14 @@ int
 _readdir(ThreadPool          &tp_,
          const Branches::Ptr &branches_,
          const fs::path      &rel_dirpath_,
-         fuse_dirents_t      *dirents_,
-         uid_t const          uid_,
-         gid_t const          gid_)
+         fuse_dirents_t      *dirents_)
 {
   int rv;
   std::vector<std::future<DirRV>> futures;
 
   fuse_dirents_reset(dirents_);
 
-  futures = ::_opendir(tp_,branches_,rel_dirpath_,uid_,gid_);
+  futures = ::_opendir(tp_,branches_,rel_dirpath_);
   rv      = ::_readdir(futures,rel_dirpath_,dirents_);
 
   return rv;
@@ -70,7 +68,5 @@ FUSE::ReadDirCOSR::operator()(const fuse_req_ctx_t   *ctx_,
   return ::_readdir(_tp,
                     cfg.branches,
                     di->fusepath,
-                    dirents_,
-                    ctx_->uid,
-                    ctx_->gid);
+                    dirents_);
 }

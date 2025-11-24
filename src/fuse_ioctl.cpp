@@ -29,7 +29,6 @@
 #include "fs_ioctl.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
-#include "gidcache.hpp"
 #include "mergerfs_ioctl.hpp"
 #include "str.hpp"
 #include "ugid.hpp"
@@ -113,8 +112,7 @@ _ioctl_file(const fuse_req_ctx_t   *ctx_,
             void                   *data_,
             uint32_t               *out_bufsz_)
 {
-  FileInfo        *fi = FileInfo::from_fh(ffi_->fh);
-  const ugid::Set  ugid(ctx_);
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
   return ::_ioctl(fi->fd,cmd_,data_,out_bufsz_);
 }
@@ -162,8 +160,7 @@ _ioctl_dir(const fuse_req_ctx_t   *ctx_,
            void                   *data_,
            uint32_t               *out_bufsz_)
 {
-  DirInfo         *di = DirInfo::from_fh(ffi_->fh);
-  const ugid::Set  ugid(ctx_);
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
   return ::_ioctl_dir_base(cfg.func.open.policy,
                            cfg.branches,

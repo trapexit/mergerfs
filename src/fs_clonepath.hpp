@@ -25,9 +25,4 @@ namespace fs
                 const fs::path &dstpath,
                 const fs::path &relpath,
                 const bool      return_metadata_errors = false);
-
-  int clonepath_as_root(const fs::path &srcpath,
-                        const fs::path &dstpath,
-                        const fs::path &relpath,
-                        const bool      return_metadata_errors = false);
 }

@@ -19,11 +19,15 @@
 #include "state.hpp"
 #include "config.hpp"
 
+#include "fs_readlink.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_acl.hpp"
+#include "fs_close.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
+#include "fs_open_as.hpp"
+#include "fs_openat.hpp"
 #include "fs_path.hpp"
 #include "fuse_passthrough.hpp"
 #include "procfs.hpp"
@@ -132,7 +136,8 @@ _config_to_ffi_flags(Config           &cfg_,
 
 static
 int
-_create_core(const fs::path &fullpath_,
+_create_core(const ugid_t    ugid_,
+             const fs::path &fullpath_,
              mode_t          mode_,
              const mode_t    umask_,
              const int       flags_)
@@ -140,12 +145,13 @@ _create_core(const fs::path &fullpath_,
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
-  return fs::open(fullpath_,flags_,mode_);
+  return fs::open_as(ugid_,fullpath_,flags_,mode_);
 }
 
 static
 int
-_create_core(const Branch     *branch_,
+_create_core(const ugid_t      ugid_,
+             const Branch     *branch_,
              const fs::path   &fusepath_,
              fuse_file_info_t *ffi_,
              const mode_t      mode_,
@@ -157,7 +163,7 @@ _create_core(const Branch     *branch_,
 
   fullpath = branch_->path / fusepath_;
 
-  rv = ::_create_core(fullpath,mode_,umask_,ffi_->flags);
+  rv = ::_create_core(ugid_,fullpath,mode_,umask_,ffi_->flags);
   if(rv < 0)
     return rv;
 
@@ -170,7 +176,8 @@ _create_core(const Branch     *branch_,
 
 static
 int
-_create(const Policy::Search &searchFunc_,
+_create(const ugid_t          ugid_,
+        const Policy::Search &searchFunc_,
         const Policy::Create &createFunc_,
         const Branches       &branches_,
         const fs::path       &fusepath_,
@@ -194,13 +201,14 @@ _create(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  rv = fs::clonepath_as_root(existingpaths[0]->path,
-                             createpaths[0]->path,
-                             fusedirpath);
+  rv = fs::clonepath(existingpaths[0]->path,
+                     createpaths[0]->path,
+                     fusedirpath);
   if(rv < 0)
     return rv;
 
-  return ::_create_core(createpaths[0],
+  return ::_create_core(ugid_,
+                        createpaths[0],
                         fusepath_,
                         ffi_,
                         mode_,
@@ -225,7 +233,6 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   FileInfo *fi;
-  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
@@ -233,7 +240,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
                                       ffi_->flags);
 
-  rv = ::_create(cfg.func.getattr.policy,
+  rv = ::_create(ctx_,
+                 cfg.func.getattr.policy,
                  cfg.func.create.policy,
                  cfg.branches,
                  fusepath_,
@@ -243,7 +251,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_create(cfg.func.getattr.policy,
+      rv = ::_create(ctx_,
+                     cfg.func.getattr.policy,
                      cfg.func.create.policy,
                      cfg.branches,
                      fusepath_,

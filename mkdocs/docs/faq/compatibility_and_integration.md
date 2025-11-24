@@ -5,16 +5,10 @@
 [Primarily Linux.](../setup/installation.md) FreeBSD is casually
 supported but not well tested.
 
-With FreeBSD certain Linux functions and FUSE features are not
-supported. In many cases the absense will not be noticed however
-performance may be impacted due to a core mergerfs design decision
-relying on a Linux feature.
-
-Linux allows individual threads to change credentials whereas [FreeBSD
-does not](https://wiki.freebsd.org/Per-Thread%20Credentials). As a
-result mergerfs must use a lock to ensure critical sections which need
-to change credentials are safeguarded. This will limit throughput on
-systems where requests to mergerfs come from multiple user identities.
+With FreeBSD certain Linux functions and FUSE features [are not
+supported.](../known_issues_bugs.md#freebsd-version) In many cases the
+absence will not be noticed however more advanced features will not be
+available.
 
 
 ### Why not support MacOS?
@@ -36,7 +30,7 @@ level API.
 
 Windows, while used for NAS systems more often than MacOS, is still
 relatively uncommon when compared to Linux. [Drive
-Pool](../project_comparisons.md#stablebits-drivepool) is a reasonable
+Pool](../project_comparisons.md#stablebits-drivepool) is a good
 alternative.
 
 
@@ -44,20 +38,30 @@ alternative.
 
 ext4, btrfs, xfs, f2fs, zfs, nfs, etc.
 
-On the surface any filesystem should work but there could be issues
-with non-POSIX compliant filesystems such as vfat, ntfs, cifs, exfat,
+Most any filesystem should work but there could be issues with
+non-POSIX compliant filesystems such as vfat, ntfs, cifs, exfat,
 etc. When directories need to be created or files moved by mergerfs if
 the filesystem returns errors due to not supporting certain POSIX
 filesystem features it could result in the core functions failing.
 
 Since mergerfs is not generally used with non-POSIX filesystems this
 has not been a problem for users and there are some checks for known
-edgecases but it is possible some are not accounted for. If use with a
+edge cases but it is possible some are not accounted for. If use with a
 filesystem results in issues please [file a
 ticket](https://github.com/trapexit/mergerfs/issues) with the details.
 
 
 ## Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
+
+[https://www.snapraid.it](https://www.snapraid.it)
+
+Yes. They are completely unrelated pieces of software that just happen
+to work well together.
+
+
+## Can I use mergerfs without nonraid? nonraid without mergerfs?
+
+[https://github.com/qvr/nonraid](https://github.com/qvr/nonraid)
 
 Yes. They are completely unrelated pieces of software that just happen
 to work well together.
@@ -80,16 +84,8 @@ pool.
 
 ## Can mergerfs run via Docker, Podman, Kubernetes, etc.
 
-Yes. With Docker you'll need to include `--cap-add=SYS_ADMIN
---device=/dev/fuse --security-opt=apparmor:unconfined` or similar with
-other container runtimes. You should also be running it as root or
-given sufficient caps to allow mergerfs to change user and group
-identity as well as have root like filesystem permissions. This
-ability is critical to how mergerfs works.
-
-Also, as mentioned by [hotio](https://hotio.dev/containers/mergerfs),
-with Docker you should probably be mounting with `bind-propagation`
-set to `slave`.
+Yes. [See installation
+page.](../setup/installation.md##podman-docker-oci-containers)
 
 
 ## How does mergerfs interact with user namespaces?

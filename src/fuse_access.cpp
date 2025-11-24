@@ -54,8 +54,7 @@ FUSE::access(const fuse_req_ctx_t *ctx_,
              const char           *fusepath_,
              int                   mask_)
 {
-  const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_->uid,ctx_->gid);
+  const fs::path fusepath{fusepath_};
 
   return ::_access(cfg.func.access.policy,
                    cfg.branches,

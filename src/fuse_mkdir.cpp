@@ -21,7 +21,7 @@
 #include "error.hpp"
 #include "fs_acl.hpp"
 #include "fs_clonepath.hpp"
-#include "fs_mkdir.hpp"
+#include "fs_mkdir_as.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "ugid.hpp"
@@ -33,19 +33,21 @@
 
 static
 int
-_mkdir_core(const fs::path &fullpath_,
+_mkdir_core(const ugid_t    ugid_,
+            const fs::path &fullpath_,
             mode_t          mode_,
             const mode_t    umask_)
 {
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
-  return fs::mkdir(fullpath_,mode_);
+  return fs::mkdir_as(ugid_,fullpath_,mode_);
 }
 
 static
 int
-_mkdir_loop_core(const fs::path &createpath_,
+_mkdir_loop_core(const ugid_t    ugid_,
+                 const fs::path &createpath_,
                  const fs::path &fusepath_,
                  const mode_t    mode_,
                  const mode_t    umask_)
@@ -55,14 +57,15 @@ _mkdir_loop_core(const fs::path &createpath_,
 
   fullpath = createpath_ / fusepath_;
 
-  rv = ::_mkdir_core(fullpath,mode_,umask_);
+  rv = ::_mkdir_core(ugid_,fullpath,mode_,umask_);
 
   return rv;
 }
 
 static
 int
-_mkdir_loop(const Branch               *existingbranch_,
+_mkdir_loop(const ugid_t                ugid_,
+            const Branch               *existingbranch_,
             const std::vector<Branch*> &createbranches_,
             const fs::path             &fusepath_,
             const fs::path             &fusedirpath_,
@@ -74,16 +77,17 @@ _mkdir_loop(const Branch               *existingbranch_,
 
   for(const auto &createbranch : createbranches_)
     {
-      rv = fs::clonepath_as_root(existingbranch_->path,
-                                 createbranch->path,
-                                 fusedirpath_);
+      rv = fs::clonepath(existingbranch_->path,
+                         createbranch->path,
+                         fusedirpath_);
       if(rv < 0)
         {
           err = rv;
           continue;
         }
 
-      err = ::_mkdir_loop_core(createbranch->path,
+      err = ::_mkdir_loop_core(ugid_,
+                               createbranch->path,
                                fusepath_,
                                mode_,
                                umask_);
@@ -94,7 +98,8 @@ _mkdir_loop(const Branch               *existingbranch_,
 
 static
 int
-_mkdir(const Policy::Search &getattrPolicy_,
+_mkdir(const ugid_t          ugid_,
+       const Policy::Search &getattrPolicy_,
        const Policy::Create &mkdirPolicy_,
        const Branches       &branches_,
        const fs::path       &fusepath_,
@@ -116,7 +121,8 @@ _mkdir(const Policy::Search &getattrPolicy_,
   if(rv < 0)
     return rv;
 
-  return ::_mkdir_loop(existingbranches[0],
+  return ::_mkdir_loop(ugid_,
+                       existingbranches[0],
                        createbranches,
                        fusepath_,
                        fusedirpath,
@@ -130,10 +136,10 @@ FUSE::mkdir(const fuse_req_ctx_t *ctx_,
             mode_t                mode_)
 {
   int rv;
-  const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
+  const fs::path fusepath{fusepath_};
 
-  rv = ::_mkdir(cfg.func.getattr.policy,
+  rv = ::_mkdir(ctx_,
+                cfg.func.getattr.policy,
                 cfg.func.mkdir.policy,
                 cfg.branches,
                 fusepath,
@@ -142,7 +148,8 @@ FUSE::mkdir(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_mkdir(cfg.func.getattr.policy,
+      rv = ::_mkdir(ctx_,
+                    cfg.func.getattr.policy,
                     cfg.func.mkdir.policy,
                     cfg.branches,
                     fusepath,

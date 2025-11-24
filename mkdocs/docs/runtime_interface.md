@@ -143,8 +143,6 @@ allows a value.
 | user.mergerfs.cmd.gc | (empty) |Trigger a thorough garbage collection of certain pools of resources. The xattr value is not used. |
 | user.mergerfs.cmd.gc1 | (empty) | Trigger a simple garbage collection of certain pools of resources. This is also done on a timer. |
 | user.mergerfs.cmd.invalidate-all-nodes | (empty) | Attempts to invalidate FUSE file nodes. Primarily used for debugging. |
-| user.mergerfs.cmd.invalidate-gid-cache | (empty) | Invalidates all entries in gid cache. Primarily used for debugging but can also be useful in cases where gid supplemental groups change. |
-| user.mergerfs.cmd.clear-gid-cache | (empty) | Clears all entries in the gid cache. Primarily used for debugging but can also be useful in cases where gid supplemental groups change. |
 
 ```
 [trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.cmd.gc /mnt/mergerfs/.mergerfs

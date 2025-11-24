@@ -28,9 +28,7 @@ inline
 std::vector<std::future<DirRV>>
 _opendir(ThreadPool          &tp_,
          const Branches::Ptr &branches_,
-         const fs::path      &rel_dirpath_,
-         uid_t const          uid_,
-         gid_t const          gid_)
+         const fs::path      &rel_dirpath_)
 {
   std::vector<std::future<DirRV>> futures;
 
@@ -39,11 +37,10 @@ _opendir(ThreadPool          &tp_,
   for(const auto &branch : *branches_)
     {
       auto func =
-        [&branch,&rel_dirpath_,uid_,gid_]()
+        [&branch,&rel_dirpath_]()
         {
           int fd;
           fs::path abs_dirpath;
-          const ugid::Set ugid(uid_,gid_);
 
           abs_dirpath = branch.path / rel_dirpath_;
 

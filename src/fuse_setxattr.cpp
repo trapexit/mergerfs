@@ -22,7 +22,6 @@
 #include "fs_lsetxattr.hpp"
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
-#include "gidcache.hpp"
 #include "num.hpp"
 #include "policy_rv.hpp"
 #include "str.hpp"
@@ -55,10 +54,6 @@ _setxattr_cmd_xattr(const std::string_view &attrname_,
     return (fuse_gc1(),0);
   if(cmd == "invalidate-all-nodes")
     return (fuse_invalidate_all_nodes(),0);
-  if(cmd == "invalidate-gid-cache")
-    return (GIDCache::invalidate_all(),0);
-  if(cmd == "clear-gid-cache")
-    return (GIDCache::clear_all(),0);
 
   return -ENOATTR;
 }
@@ -193,8 +188,6 @@ _setxattr(const fuse_req_ctx_t *ctx_,
 
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
-
-  const ugid::Set ugid(ctx_);
 
   return ::_setxattr(cfg.func.setxattr.policy,
                      cfg.func.getxattr.policy,

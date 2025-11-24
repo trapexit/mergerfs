@@ -108,7 +108,6 @@ FUSE::chmod(const fuse_req_ctx_t *ctx_,
             mode_t                mode_)
 {
   const fs::path fusepath{fusepath_};
-  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   return ::_chmod(fusepath,mode_);
 }

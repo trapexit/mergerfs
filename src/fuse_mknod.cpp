@@ -20,7 +20,7 @@
 #include "errno.hpp"
 #include "error.hpp"
 #include "fs_acl.hpp"
-#include "fs_mknod.hpp"
+#include "fs_mknod_as.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_path.hpp"
 #include "ugid.hpp"
@@ -34,7 +34,8 @@
 static
 inline
 int
-_mknod_core(const fs::path &fullpath_,
+_mknod_core(const ugid_t    ugid_,
+            const fs::path &fullpath_,
             mode_t          mode_,
             const mode_t    umask_,
             const dev_t     dev_)
@@ -42,12 +43,13 @@ _mknod_core(const fs::path &fullpath_,
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
-  return fs::mknod(fullpath_,mode_,dev_);
+  return fs::mknod_as(ugid_,fullpath_,mode_,dev_);
 }
 
 static
 int
-_mknod_loop_core(const fs::path &createbranch_,
+_mknod_loop_core(const ugid_t    ugid_,
+                 const fs::path &createbranch_,
                  const fs::path &fusepath_,
                  const mode_t    mode_,
                  const mode_t    umask_,
@@ -58,14 +60,15 @@ _mknod_loop_core(const fs::path &createbranch_,
 
   fullpath = createbranch_ / fusepath_;
 
-  rv = ::_mknod_core(fullpath,mode_,umask_,dev_);
+  rv = ::_mknod_core(ugid_,fullpath,mode_,umask_,dev_);
 
   return rv;
 }
 
 static
 int
-_mknod_loop(const fs::path             &existingbranch_,
+_mknod_loop(const ugid_t                ugid_,
+            const fs::path             &existingbranch_,
             const std::vector<Branch*> &createbranches_,
             const fs::path             &fusepath_,
             const fs::path             &fusedirpath_,
@@ -78,16 +81,17 @@ _mknod_loop(const fs::path             &existingbranch_,
 
   for(const auto &createbranch : createbranches_)
     {
-      rv = fs::clonepath_as_root(existingbranch_,
-                                 createbranch->path,
-                                 fusedirpath_);
+      rv = fs::clonepath(existingbranch_,
+                         createbranch->path,
+                         fusedirpath_);
       if(rv < 0)
         {
           err = rv;
           continue;
         }
 
-      err = ::_mknod_loop_core(createbranch->path,
+      err = ::_mknod_loop_core(ugid_,
+                               createbranch->path,
                                fusepath_,
                                mode_,
                                umask_,
@@ -99,7 +103,8 @@ _mknod_loop(const fs::path             &existingbranch_,
 
 static
 int
-_mknod(const Policy::Search &searchFunc_,
+_mknod(const ugid_t          ugid_,
+       const Policy::Search &searchFunc_,
        const Policy::Create &createFunc_,
        const Branches       &branches_,
        const fs::path       &fusepath_,
@@ -122,7 +127,8 @@ _mknod(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  return ::_mknod_loop(existingbranches[0]->path,
+  return ::_mknod_loop(ugid_,
+                       existingbranches[0]->path,
                        createbranches,
                        fusepath_,
                        fusedirpath,
@@ -138,10 +144,10 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
             dev_t                 rdev_)
 {
   int rv;
-  const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
+  const fs::path fusepath{fusepath_};
 
-  rv = ::_mknod(cfg.func.getattr.policy,
+  rv = ::_mknod(ctx_,
+                cfg.func.getattr.policy,
                 cfg.func.mknod.policy,
                 cfg.branches,
                 fusepath,
@@ -151,7 +157,8 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_mknod(cfg.func.getattr.policy,
+      rv = ::_mknod(ctx_,
+                    cfg.func.getattr.policy,
                     cfg.func.mknod.policy,
                     cfg.branches,
                     fusepath,

@@ -113,7 +113,6 @@ nav:
   - faq/usage_and_functionality.md
   - faq/reliability_and_scalability.md
   - faq/compatibility_and_integration.md
-  - faq/recommendations_and_warnings.md
   - faq/technical_behavior_and_limitations.md
   - faq/have_you_considered.md
   - faq/limit_drive_spinup.md

@@ -55,7 +55,9 @@ _link_create_path_loop(const std::vector<Branch*> &oldbranches_,
       rv = fs::link(oldfullpath,newfullpath);
       if(rv == -ENOENT)
         {
-          rv = fs::clonepath_as_root(newbranch_->path,oldbranch->path,newfusedirpath_);
+          rv = fs::clonepath(newbranch_->path,
+                             oldbranch->path,
+                             newfusedirpath_);
           if(rv == 0)
             rv = fs::link(oldfullpath,newfullpath);
         }
@@ -328,9 +330,8 @@ FUSE::link(const fuse_req_ctx_t *ctx_,
            fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  const fs::path  oldpath{oldpath_};
-  const fs::path  newpath{newpath_};
-  const ugid::Set ugid(ctx_);
+  const fs::path oldpath{oldpath_};
+  const fs::path newpath{newpath_};
 
   rv = ::_link(ctx_,oldpath,newpath,st_,timeouts_);
   if(rv == -EXDEV)
