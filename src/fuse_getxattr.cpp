@@ -180,7 +180,7 @@ FUSE::getxattr(const fuse_req_ctx_t *ctx_,
 {
   const fs::path fusepath{fusepath_};
 
-  fmt::println("ugid: {}:{}",
+  fmt::println("getxattr ugid: {}:{}",
                ctx_->uid,
                ctx_->gid);
 
