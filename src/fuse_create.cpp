@@ -16,18 +16,14 @@
 
 #include "fuse_create.hpp"
 
-#include <signal.h>
-
 #include "state.hpp"
 #include "config.hpp"
 
-#include "fs_readlink.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_acl.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
-#include "fs_openat.hpp"
 #include "fs_path.hpp"
 #include "fuse_passthrough.hpp"
 #include "procfs.hpp"
@@ -136,9 +132,7 @@ _config_to_ffi_flags(Config           &cfg_,
 
 static
 int
-_create_core(const int       root_fd_,
-             const pid_t     pid_,
-             const fs::path &fullpath_,
+_create_core(const fs::path &fullpath_,
              mode_t          mode_,
              const mode_t    umask_,
              const int       flags_)
@@ -151,8 +145,7 @@ _create_core(const int       root_fd_,
 
 static
 int
-_create_core(const int         root_fd_,
-             const Branch     *branch_,
+_create_core(const Branch     *branch_,
              const fs::path   &fusepath_,
              fuse_file_info_t *ffi_,
              const mode_t      mode_,
@@ -164,11 +157,7 @@ _create_core(const int         root_fd_,
 
   fullpath = branch_->path / fusepath_;
 
-  rv = ::_create_core(root_fd_,
-                      fullpath,
-                      mode_,
-                      umask_,
-                      ffi_->flags);
+  rv = ::_create_core(fullpath,mode_,umask_,ffi_->flags);
   if(rv < 0)
     return rv;
 
@@ -211,8 +200,7 @@ _create(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  return ::_create_core(root_fd_,
-                        createpaths[0],
+  return ::_create_core(createpaths[0],
                         fusepath_,
                         ffi_,
                         mode_,
@@ -236,24 +224,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
                           State::OpenFile      *of_)
 {
   int rv;
-  int root_fd;
-  fs::path rootpath;
   FileInfo *fi;
-  const ugid::Set ugid(ctx_);
-
-  fmt::println("create ugid: {}:{}",
-               ctx_->uid,
-               ctx_->gid);
-
-  rootpath = fmt::format("/proc/{}/root",ctx_->pid);
-  {
-    const ugid::SetRootGuard rg;
-    root_fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
-  }
-
-  fmt::println("create ugid: {}:{}",
-               ctx_->uid,
-               ctx_->gid);
+  const ugid::Set ugid(ctx_->uid,ctx_->gid);
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
@@ -279,9 +251,6 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
                      mode_,
                      ctx_->umask);
     }
-
-  if(rv < 0)
-    raise(SIGTRAP);
 
   if(rv < 0)
     return rv;
@@ -343,9 +312,8 @@ _create_update_lambda()
   return
     [](const auto &val_)
     {
-      const char *msg = "CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN";
-      fmt::println(stderr,msg);
-      SysLog::crit(msg);
+      fmt::println(stderr,"CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
+      SysLog::crit("CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
       abort();
     };
 }
