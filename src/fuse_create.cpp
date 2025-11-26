@@ -253,6 +253,9 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
     }
 
   if(rv < 0)
+    raise(SIGTRAP);
+
+  if(rv < 0)
     return rv;
 
   fi = FileInfo::from_fh(ffi_->fh);
