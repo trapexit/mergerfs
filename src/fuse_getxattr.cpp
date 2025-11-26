@@ -180,6 +180,10 @@ FUSE::getxattr(const fuse_req_ctx_t *ctx_,
 {
   const fs::path fusepath{fusepath_};
 
+  fmt::println("ugid: {}:{}",
+               ctx_->uid,
+               ctx_->gid);
+
   if(Config::is_ctrl_file(fusepath))
     return ::_getxattr_ctrl_file(cfg,
                                  attrname_,
