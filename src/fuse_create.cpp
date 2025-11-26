@@ -157,7 +157,9 @@ _create_core(const int       root_fd_,
 
 static
 int
-_create_core(const Branch     *branch_,
+_create_core(const int         root_fd_,
+             const pid_t       pid_,
+             const Branch     *branch_,
              const fs::path   &fusepath_,
              fuse_file_info_t *ffi_,
              const mode_t      mode_,
