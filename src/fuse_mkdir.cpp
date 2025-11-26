@@ -150,5 +150,8 @@ FUSE::mkdir(const fuse_req_ctx_t *ctx_,
                     ctx_->umask);
     }
 
+  if(rv < 0)
+    raise(SIGTRAP);
+
   return rv;
 }
