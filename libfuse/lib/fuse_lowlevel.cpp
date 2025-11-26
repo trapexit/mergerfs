@@ -6,6 +6,8 @@
   See the file COPYING.LIB
 */
 
+#include <signal.h>
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
