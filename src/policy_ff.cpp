@@ -79,6 +79,8 @@ Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
                                const fs::path       &fusepath_,
                                std::vector<Branch*> &output_) const
 {
+  const ugid::SetRootGuard _;
+
   for(auto &branch : *branches_)
     {
       if(!fs::exists(branch.path,fusepath_))
