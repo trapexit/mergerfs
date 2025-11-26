@@ -171,7 +171,6 @@ _create_core(const int         root_fd_,
   fullpath = branch_->path / fusepath_;
 
   rv = ::_create_core(root_fd_,
-                      pid_,
                       fullpath,mode_,umask_,ffi_->flags);
   if(rv < 0)
     return rv;
