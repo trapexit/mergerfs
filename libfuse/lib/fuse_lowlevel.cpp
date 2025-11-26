@@ -142,6 +142,7 @@ fuse_send_msg(struct fuse_ll   *f,
   struct fuse_out_header *out = (fuse_out_header*)iov[0].iov_base;
 
   if(out->error)
+    raise(SIGTRAP);
 
 
   out->len = iov_length(iov, count);
