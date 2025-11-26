@@ -268,7 +268,7 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
       fmt::println("pid: {}\n"
                    "root: {}",
                    ctx_->pid,
-                   rootpath);
+                   buf);
     }
 
   if(rv < 0)
