@@ -141,6 +141,9 @@ fuse_send_msg(struct fuse_ll   *f,
   int rv;
   struct fuse_out_header *out = (fuse_out_header*)iov[0].iov_base;
 
+  if(out->error)
+
+
   out->len = iov_length(iov, count);
 
   rv = writev(fuse_chan_fd(ch),iov,count);
