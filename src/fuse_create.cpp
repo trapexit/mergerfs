@@ -16,6 +16,8 @@
 
 #include "fuse_create.hpp"
 
+#include <signal.h>
+
 #include "state.hpp"
 #include "config.hpp"
 
