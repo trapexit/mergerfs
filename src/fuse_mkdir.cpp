@@ -16,6 +16,8 @@
 
 #include "fuse_mkdir.hpp"
 
+#include <signal.h>
+
 #include "config.hpp"
 #include "errno.hpp"
 #include "error.hpp"
