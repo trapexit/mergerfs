@@ -256,6 +256,10 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
     root_fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
   }
 
+  fmt::println("create ugid: {}:{}",
+               ctx_->uid,
+               ctx_->gid);
+
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
     ::_tweak_flags_cache_writeback(&ffi_->flags);
