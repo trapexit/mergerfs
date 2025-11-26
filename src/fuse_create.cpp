@@ -144,7 +144,10 @@ _create_core(const int       root_fd_,
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
-
+  std::string proc_pid_root;
+  char buf[4096];
+  proc_pid_root = fmt::format("/proc/{}/root",pid_);
+  fs::readlink(
 
   return fs::open(fullpath_,flags_,mode_);
 }
