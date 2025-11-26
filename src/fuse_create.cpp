@@ -21,6 +21,7 @@
 #include "state.hpp"
 #include "config.hpp"
 
+#include "fs_readlink.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_acl.hpp"
