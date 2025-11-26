@@ -134,13 +134,16 @@ _config_to_ffi_flags(Config           &cfg_,
 
 static
 int
-_create_core(const fs::path &fullpath_,
+_create_core(const int       root_fd_,
+             const fs::path &fullpath_,
              mode_t          mode_,
              const mode_t    umask_,
              const int       flags_)
 {
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
+
+
 
   return fs::open(fullpath_,flags_,mode_);
 }
