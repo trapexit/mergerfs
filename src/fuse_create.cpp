@@ -241,12 +241,16 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
                           State::OpenFile      *of_)
 {
   int rv;
+  int root_fd;
+  fs::path rootpath;
   FileInfo *fi;
   const ugid::Set ugid(ctx_);
 
   fmt::println("create ugid: {}:{}",
                ctx_->uid,
                ctx_->gid);
+
+
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
