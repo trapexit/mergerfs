@@ -79,7 +79,7 @@ Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
                                const fs::path       &fusepath_,
                                std::vector<Branch*> &output_) const
 {
-  const ugid::SetRootGuard _;
+  const ugid::SetRootGuard $;
 
   for(auto &branch : *branches_)
     {
