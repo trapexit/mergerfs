@@ -6,13 +6,13 @@ current_branch="$(git branch --show-current)"
 mike delete --all --push --allow-empty --ignore-remote-status
 
 git checkout "master"
-mike deploy --push "latest" "master"
+mike deploy --push "latest" "master" --ignore-remote-status
 
 for tag in $(git tag -l | sort --version-sort --reverse)
 do
     if git ls-tree -r --name-only "${tag}" | grep -q 'mkdocs.yml'; then
         git checkout "${tag}"
-        mike deploy --push "${tag}"
+        mike deploy --push "${tag}" --ignore-remote-status
     fi
 done
 
@@ -21,6 +21,6 @@ done
 #mike alias --push "${latest}" "latest"
 #mike alias --push "latest" "latest"
 
-mike set-default --push "latest"
+mike set-default --push "latest" --ignore-remote-status
 
 git checkout "${current_branch}"
