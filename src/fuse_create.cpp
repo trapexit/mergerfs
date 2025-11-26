@@ -211,7 +211,8 @@ _create(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  return ::_create_core(createpaths[0],
+  return ::_create_core(root_fd_,
+                        createpaths[0],
                         fusepath_,
                         ffi_,
                         mode_,
