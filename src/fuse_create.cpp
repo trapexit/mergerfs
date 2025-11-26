@@ -136,6 +136,7 @@ _config_to_ffi_flags(Config           &cfg_,
 static
 int
 _create_core(const int       root_fd_,
+             const pid_t     pid_,
              const fs::path &fullpath_,
              mode_t          mode_,
              const mode_t    umask_,
