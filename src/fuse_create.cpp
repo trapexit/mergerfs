@@ -251,7 +251,7 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
                ctx_->gid);
 
   rootpath = fmt::format("/proc/{}/root",ctx_->pid);
-
+  root_fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
