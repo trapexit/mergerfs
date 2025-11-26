@@ -122,6 +122,11 @@ mergerfs before v2.41.0.) In newer versions of mergerfs and Linux
 When `mmap` is needed but not available you may see `ENODEV` or `No
 such device` errors though it will depend on the particular software.
 
+Details on enabling `mmap` can be found at:
+
+* [QuickStart](quickstart.md#configuration)
+* [Config > cache.files](config/cache.md#cachefiles)
+
 That said it is recommended that config and runtime files be stored on
 SSDs on a regular filesystem for performance reasons. See [What should
 mergerfs NOT be used
@@ -135,6 +140,25 @@ provide no error handling when not supported. Ideally the software
 would catch the error and use traditional IO instead. Not only is it
 more compatible but could also be more performant in certain
 situations.
+
+
+### qbittorrent
+
+Same `mmap` concerns as mentioned above but called out specifically
+due to regularity of queries.
+
+The default "Disk IO type" setting is "Memory mapped files" which
+means it requires `mmap` support.
+
+If qbittorrent errors when using mergerfs ensure that either "Disk IO
+type" is set to "POSIX-compliant" or "Simple pread/pwrite"; or setup
+mergerfs to support `mmap`.
+
+References:
+
+* [Software using mmap](#software-using-mmap)
+* [QuickStart](quickstart.md#configuration)
+* [Config > cache.files](config/cache.md#cachefiles)
 
 
 ### rsync
