@@ -256,14 +256,17 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   if(rv < 0)
     {
       char buf[4096];
+      char buf2[4096];
       fs::path rootpath;
 
       buf[0] = 0;
+      buf2[0] = 0;
       {
         const ugid::SetRootGuard rg;
         rootpath = fmt::format("/proc/{}/root",ctx_->pid);
         fs::readlink(rootpath,buf,sizeof(buf));
         int fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
+
         fmt::println("fusepath: {}\n"
                      "fd: {}\n"
                      "pid: {}\n"
