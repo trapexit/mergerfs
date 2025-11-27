@@ -265,6 +265,7 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
         fs::readlink(rootpath,buf,sizeof(buf));
       }
 
+      int fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
       fmt::println("fusepath: {}\n"
                    "pid: {}\n"
                    "root: {}",
