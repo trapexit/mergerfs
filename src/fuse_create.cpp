@@ -281,7 +281,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
                      ctx_->pid,
                      buf,
                      geteuid(),
-                     getegid());
+                     getegid(),
+                     buf2);
       }
     }
 
