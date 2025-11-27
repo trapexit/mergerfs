@@ -158,6 +158,9 @@ _create_core(const fs::path &fullpath_,
                   flags_,
                   mode_);
 
+  fs::close(base_fd);
+
+  return fd;
 
   return fs::open(fullpath_,flags_,mode_);
 }
