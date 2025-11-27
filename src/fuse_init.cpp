@@ -234,5 +234,7 @@ FUSE::init(fuse_conn_info *conn_)
       SysLog::warning("passthrough and cache.writeback are incompatible.");
     }
 
+  cap_setup();
+
   return NULL;
 }
