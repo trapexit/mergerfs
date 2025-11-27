@@ -23,6 +23,7 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_acl.hpp"
+#include "fs_close.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
 #include "fs_openat.hpp"
