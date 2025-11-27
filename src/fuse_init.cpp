@@ -16,6 +16,8 @@
 
 #include "fuse_init.hpp"
 
+#include "caps.hpp"
+
 #include "config.hpp"
 #include "fs_readahead.hpp"
 #include "procfs.hpp"
