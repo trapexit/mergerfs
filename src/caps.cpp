@@ -45,6 +45,16 @@ caps_setup()
   data[word].effective |= (1 << bit);
   data[word].inheritable |= (1 << bit);
 
+  cap_bit = CAP_DAC_OVERRIDE;
+  word = cap_bit / 32;  // Which 32-bit word (0 or 1)
+  bit = cap_bit % 32;   // Which bit in that word
+
+  // Set CAP_DAC_READ_SEARCH in permitted, effective, and inheritable
+  data[word].permitted |= (1 << bit);
+  data[word].effective |= (1 << bit);
+  data[word].inheritable |= (1 << bit);
+
+
   // Apply the capability set
   if(capset(&header, data) < 0)
     {
