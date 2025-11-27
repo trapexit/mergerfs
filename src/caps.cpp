@@ -53,47 +53,9 @@ capset(int cap_bit_)
 int
 caps_setup()
 {
-  struct __user_cap_header_struct header;
-  struct __user_cap_data_struct data[2];
+  capset(CAP_DAC_OVERRIDE);
+  capset(CAP_DAC_READ_SEARCH);
 
-  header.version = _LINUX_CAPABILITY_VERSION_3;
-  header.pid = 0;
-
-  // Get current capabilities
-  if(capget(&header, data) < 0)
-    {
-      perror("capget");
-      return -1;
-    }
-
-  // Calculate bit position for CAP_DAC_READ_SEARCH
-  int cap_bit = CAP_DAC_READ_SEARCH;
-  int word = cap_bit / 32;  // Which 32-bit word (0 or 1)
-  int bit = cap_bit % 32;   // Which bit in that word
-
-  // Set CAP_DAC_READ_SEARCH in permitted, effective, and inheritable
-  data[word].permitted |= (1 << bit);
-  data[word].effective |= (1 << bit);
-  data[word].inheritable |= (1 << bit);
-
-  cap_bit = CAP_DAC_OVERRIDE;
-  word = cap_bit / 32;  // Which 32-bit word (0 or 1)
-  bit = cap_bit % 32;   // Which bit in that word
-
-  // Set CAP_DAC_READ_SEARCH in permitted, effective, and inheritable
-  data[word].permitted |= (1 << bit);
-  data[word].effective |= (1 << bit);
-  data[word].inheritable |= (1 << bit);
-
-  // Apply the capability set
-  if(capset(&header, data) < 0)
-    {
-      perror("capset");
-      return -1;
-    }
-
-  // Enable ambient capabilities (survives UID changes)
-  // PR_CAP_AMBIENT = 47, PR_CAP_AMBIENT_RAISE = 2
   if(prctl(PR_CAP_AMBIENT,
            PR_CAP_AMBIENT_RAISE,
            CAP_DAC_READ_SEARCH,
