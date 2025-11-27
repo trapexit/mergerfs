@@ -63,8 +63,7 @@ caps_setup()
   capset(CAP_SETGID);
 
   rv = prctl(PR_SET_SECUREBITS,
-             SECBIT_KEEP_CAPS | SECBIT_NO_SETUID_FIXUP,
-             0,0,0);
+             SECBIT_KEEP_CAPS | SECBIT_NO_SETUID_FIXUP);
   if(rv == -1)
     return -errno;
 
