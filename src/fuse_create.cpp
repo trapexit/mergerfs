@@ -268,7 +268,9 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
                      "fd: {}\n"
                      "pid: {}\n"
                      "root: {}"
-                     "uid:gid: {}:{}",
+                     "uid:gid: {}:{}"
+                     "root path: {}"
+                     ,
                      fusepath_.string(),
                      fd,
                      ctx_->pid,
