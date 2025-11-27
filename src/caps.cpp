@@ -57,7 +57,7 @@ caps_setup()
   capset(CAP_DAC_READ_SEARCH);
 
   // Keep capabilities across setuid
-  if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0)
+  if(prctl(PR_SET_KEEPCAPS, 1L, 0, 0, 0) < 0)
     {
       perror("prctl PR_SET_KEEPCAPS");
       return -1;
