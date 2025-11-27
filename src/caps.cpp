@@ -55,6 +55,7 @@ caps_setup()
 {
   capset(CAP_DAC_OVERRIDE);
   capset(CAP_DAC_READ_SEARCH);
+  capset(CAP_FOWNER);
 
   int rv = prctl(PR_SET_SECUREBITS,
              SECBIT_KEEP_CAPS | SECBIT_NO_SETUID_FIXUP,
