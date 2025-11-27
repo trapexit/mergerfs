@@ -57,6 +57,7 @@ caps_setup()
   capset(CAP_DAC_READ_SEARCH);
   capset(CAP_FOWNER);
   capset(CAP_CHOWN);
+  capset(CAP_SETUID);
   capset(CAP_SETGID);
 
   int rv = prctl(PR_SET_SECUREBITS,
