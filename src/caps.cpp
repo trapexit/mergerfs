@@ -19,6 +19,24 @@ static int capget(cap_user_header_t header, cap_user_data_t data) {
     return syscall(SYS_capget, header, data);
 }
 
+static
+int
+capset(int cap_bit_)
+{
+  int rv;
+  struct __user_cap_header_struct header;
+  struct __user_cap_data_struct data[2];
+
+  header.version = _LINUX_CAPABILITY_VERSION_3;
+  header.pid = 0;
+
+  rv = capget(&header,data);
+  if(rv < 0)
+    return rv;
+}
+
+
+
 int
 caps_setup()
 {
