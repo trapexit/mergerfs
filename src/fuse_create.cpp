@@ -268,6 +268,9 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
         int fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
 
         struct file_handle *fh;
+        fh = malloc(sizeof(struct file_handle) + 512);
+        f->handle_bytes = 512;
+
 
         fmt::println("fusepath: {}\n"
                      "fd: {}\n"
