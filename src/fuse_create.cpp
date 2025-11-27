@@ -269,7 +269,7 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
 
         struct file_handle *fh;
         fh = malloc(sizeof(struct file_handle) + 512);
-        f->handle_bytes = 512;
+        fh->handle_bytes = 512;
 
 
         fmt::println("fusepath: {}\n"
