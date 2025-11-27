@@ -50,8 +50,6 @@ capset(int cap_bit_)
   return 0;
 }
 
-
-
 int
 caps_setup()
 {
