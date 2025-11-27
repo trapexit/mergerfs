@@ -267,13 +267,6 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
         fs::readlink(rootpath,buf,sizeof(buf));
         int fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
 
-        struct file_handle *fh;
-        fh = (file_handle*)malloc(sizeof(struct file_handle) + 512);
-        fh->handle_bytes = 512;
-        int mount_id;
-        name_to_handle_at(fd,"",fh,&mount_id,AT_EMPTY_PATH);
-        open_by_handle_at(AT_FDCWD,fh,O_PATH,buf2,sizeof(buf2));
-
         fmt::println("fusepath: {}\n"
                      "fd: {}\n"
                      "pid: {}\n"
