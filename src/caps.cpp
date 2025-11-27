@@ -54,7 +54,6 @@ caps_setup()
   data[word].effective |= (1 << bit);
   data[word].inheritable |= (1 << bit);
 
-
   // Apply the capability set
   if(capset(&header, data) < 0)
     {
