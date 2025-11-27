@@ -263,17 +263,16 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
         const ugid::SetRootGuard rg;
         rootpath = fmt::format("/proc/{}/root",ctx_->pid);
         fs::readlink(rootpath,buf,sizeof(buf));
+        int fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
+        fmt::println("fusepath: {}\n"
+                     "fd: {}\n"
+                     "pid: {}\n"
+                     "root: {}",
+                     fusepath_.string(),
+                     fd,
+                     ctx_->pid,
+                     buf);
       }
-
-      int fd = fs::open(rootpath,O_PATH|O_DIRECTORY);
-      fmt::println("fusepath: {}\n"
-                   "fd: {}\n"
-                   "pid: {}\n"
-                   "root: {}",
-                   fusepath_.string(),
-                   fd,
-                   ctx_->pid,
-                   buf);
     }
 
   if(rv < 0)
