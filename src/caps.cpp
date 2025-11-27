@@ -56,14 +56,11 @@ caps_setup()
   capset(CAP_DAC_OVERRIDE);
   capset(CAP_DAC_READ_SEARCH);
 
-  // Keep capabilities across setuid
-  if(prctl(PR_SET_KEEPCAPS, 1L, 0, 0, 0) < 0)
-    {
-      perror("prctl PR_SET_KEEPCAPS");
-      return -1;
-    }
-
-  printf("PR_SET_KEEPCAPS enabled\n");
+  rv = prctl(PR_SET_SECUREBITS,
+             SECBIT_KEEP_CAPS | SECBIT_NO_SETUID_FIXUP,
+             0,0,0);
+  if(rv == -1)
+    return -errno;
 
   return 0;
 }
