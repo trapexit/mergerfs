@@ -34,6 +34,15 @@ capset(int cap_bit_)
   if(rv < 0)
     return rv;
 
+  int word = cap_bit_ / 32;     // Which 32-bit word (0 or 1)
+  int bit  = cap_bit_ % 32;     // Which bit in that word
+
+  // Set CAP_DAC_READ_SEARCH in permitted, effective, and inheritable
+  data[word].permitted |= (1 << bit);
+  data[word].effective |= (1 << bit);
+  data[word].inheritable |= (1 << bit);
+
+
   return 0;
 }
 
