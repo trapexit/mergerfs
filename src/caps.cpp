@@ -33,6 +33,8 @@ capset(int cap_bit_)
   rv = capget(&header,data);
   if(rv < 0)
     return rv;
+
+  return 0;
 }
 
 
