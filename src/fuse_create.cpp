@@ -143,10 +143,9 @@ _create_core(const fs::path &fullpath_,
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
+  int base_fd;
   {
     ugid::SetRootGuard rg;
-
-    int base_fd;
 
     base_fd = fs::open(fullpath_.parent_path(),
                        O_PATH|O_DIRECTORY);
