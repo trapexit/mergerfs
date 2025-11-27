@@ -43,7 +43,7 @@ capset(int cap_bit_)
   data[word].effective |= (1 << bit);
   data[word].inheritable |= (1 << bit);
 
-  rv = capset(&header,data);
+  int rv = capset(&header,data);
   if(rv < 0)
     return rv;
 
