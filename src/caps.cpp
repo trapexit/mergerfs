@@ -56,34 +56,6 @@ caps_setup()
   capset(CAP_DAC_OVERRIDE);
   capset(CAP_DAC_READ_SEARCH);
 
-  if(prctl(PR_CAP_AMBIENT,
-           PR_CAP_AMBIENT_RAISE,
-           CAP_DAC_READ_SEARCH,
-           0,
-           0) < 0)
-    {
-      perror("prctl PR_CAP_AMBIENT_RAISE");
-      printf("Warning: Ambient capabilities not supported (kernel < 4.3?)\n");
-    }
-  else
-    {
-      printf("Ambient capabilities set successfully\n");
-    }
-
-  if(prctl(PR_CAP_AMBIENT,
-           PR_CAP_AMBIENT_RAISE,
-           CAP_DAC_OVERRIDE,
-           0,
-           0) < 0)
-    {
-      perror("prctl PR_CAP_AMBIENT_RAISE");
-      printf("Warning: Ambient capabilities not supported (kernel < 4.3?)\n");
-    }
-  else
-    {
-      printf("Ambient capabilities set successfully\n");
-    }
-
   // Keep capabilities across setuid
   if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0)
     {
