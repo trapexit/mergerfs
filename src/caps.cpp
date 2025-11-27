@@ -53,6 +53,8 @@ capset(int cap_bit_)
 int
 caps_setup()
 {
+  int rv;
+
   capset(CAP_DAC_OVERRIDE);
   capset(CAP_DAC_READ_SEARCH);
   capset(CAP_FOWNER);
