@@ -150,6 +150,13 @@ _create_core(const fs::path &fullpath_,
                        O_PATH|O_DIRECTORY);
   }
 
+  int fd;
+
+  fd = fs::openat(base_fd,
+                  fullpath_.filename(),
+                  flags_,
+                  mode_);
+
   return fs::open(fullpath_,flags_,mode_);
 }
 
