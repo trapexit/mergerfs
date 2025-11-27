@@ -267,11 +267,14 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
         fmt::println("fusepath: {}\n"
                      "fd: {}\n"
                      "pid: {}\n"
-                     "root: {}",
+                     "root: {}"
+                     "uid:gid: {}:{},
                      fusepath_.string(),
                      fd,
                      ctx_->pid,
-                     buf);
+                     buf,
+                     geteuid(),
+                     getegid());
       }
     }
 
