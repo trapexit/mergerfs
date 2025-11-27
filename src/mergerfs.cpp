@@ -341,6 +341,8 @@ _main(int    argc_,
 
   ::_warn_if_not_root();
 
+  caps_setup();
+
   MaintenanceThread::push_job([](int count_)
   {
     if((count_ % 60) == 0)
