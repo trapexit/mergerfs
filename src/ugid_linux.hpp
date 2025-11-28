@@ -118,20 +118,9 @@ namespace ugid
 
   struct SetRootGuard
   {
-    SetRootGuard() :
-      prevuid(currentuid),
-      prevgid(currentgid)
+    SetRootGuard()
     {
-      Set(0,0);
     }
-
-    ~SetRootGuard()
-    {
-      Set(prevuid,prevgid);
-    }
-
-    const uid_t prevuid;
-    const gid_t prevgid;
   };
 }
 
