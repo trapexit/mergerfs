@@ -124,6 +124,8 @@ namespace ugid
     {
     }
   };
+
+  struct
 }
 
 #undef SETREUID
