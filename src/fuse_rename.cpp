@@ -355,7 +355,7 @@ FUSE::rename(const fuse_req_ctx_t *ctx_,
   int rv;
   const fs::path oldfusepath{oldfusepath_};
   const fs::path newfusepath{newfusepath_};
-  const ugid::Set ugid(ctx_);
+  const ugid::SetRootGuard ugid_root_guard;
 
   rv = ::_rename(oldfusepath,newfusepath);
   if(rv == -EXDEV)
