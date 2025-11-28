@@ -13,7 +13,11 @@
 #include <linux/securebits.h>
 
 
-static int capset(cap_user_header_t header, const cap_user_data_t data) {
+static
+int
+capset(cap_user_header_t     header,
+       const cap_user_data_t data)
+{
     return syscall(SYS_capset, header, data);
 }
 
