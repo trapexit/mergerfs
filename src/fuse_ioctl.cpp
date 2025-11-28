@@ -162,8 +162,8 @@ _ioctl_dir(const fuse_req_ctx_t   *ctx_,
            void                   *data_,
            uint32_t               *out_bufsz_)
 {
-  DirInfo         *di = DirInfo::from_fh(ffi_->fh);
-  const ugid::Set  ugid(ctx_);
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
+  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_ioctl_dir_base(cfg.func.open.policy,
                            cfg.branches,
