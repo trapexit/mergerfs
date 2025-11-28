@@ -35,8 +35,6 @@ int
 _create(const Branches::Ptr  &ibranches_,
         std::vector<Branch*> &obranches_)
 {
-  const ugid::SetRootGuard $_;
-
   int rv;
   int error;
   fs::info_t info;
