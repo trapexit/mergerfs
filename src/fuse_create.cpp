@@ -144,27 +144,6 @@ _create_core(const fs::path &fullpath_,
     mode_ &= ~umask_;
 
   return fs::open(fullpath_,flags_,mode_);
-
-  int base_fd;
-  {
-    ugid::SetRootGuard rg;
-
-    base_fd = fs::open(fullpath_.parent_path(),
-                       O_PATH|O_DIRECTORY);
-  }
-
-  int fd;
-
-  fd = fs::openat(base_fd,
-                  fullpath_.filename(),
-                  flags_,
-                  mode_);
-
-  fs::close(base_fd);
-
-  return fd;
-
-  return fs::open(fullpath_,flags_,mode_);
 }
 
 static
