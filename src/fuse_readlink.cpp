@@ -120,7 +120,7 @@ FUSE::readlink(const fuse_req_ctx_t *ctx_,
                char                 *buf_,
                size_t                size_)
 {
-  const fs::path  fusepath{fusepath_};
+  const fs::path fusepath{fusepath_};
   const ugid::SetRootGuard ugid_root_guard;
 
   return ::_readlink(cfg.func.readlink.policy,
