@@ -94,8 +94,8 @@ FUSE::truncate(const fuse_req_ctx_t *ctx_,
                const char           *fusepath_,
                off_t                 size_)
 {
-  const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
+  const fs::path fusepath{fusepath_};
+  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_truncate(cfg.func.truncate.policy,
                      cfg.func.getattr.policy,
