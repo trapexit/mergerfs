@@ -328,9 +328,9 @@ FUSE::link(const fuse_req_ctx_t *ctx_,
            fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  const fs::path  oldpath{oldpath_};
-  const fs::path  newpath{newpath_};
-  const ugid::Set ugid(ctx_);
+  const fs::path oldpath{oldpath_};
+  const fs::path newpath{newpath_};
+  const ugid::SetRootGuard ugid_root_guard;
 
   rv = ::_link(ctx_,oldpath,newpath,st_,timeouts_);
   if(rv == -EXDEV)
