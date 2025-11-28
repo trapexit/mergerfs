@@ -68,7 +68,5 @@ FUSE::ReadDirCOSR::operator()(const fuse_req_ctx_t   *ctx_,
   return ::_readdir(_tp,
                     cfg.branches,
                     di->fusepath,
-                    dirents_,
-                    ctx_->uid,
-                    ctx_->gid);
+                    dirents_);
 }
