@@ -113,8 +113,8 @@ _ioctl_file(const fuse_req_ctx_t   *ctx_,
             void                   *data_,
             uint32_t               *out_bufsz_)
 {
-  FileInfo        *fi = FileInfo::from_fh(ffi_->fh);
-  const ugid::Set  ugid(ctx_);
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_ioctl(fi->fd,cmd_,data_,out_bufsz_);
 }
