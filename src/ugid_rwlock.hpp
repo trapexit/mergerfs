@@ -96,8 +96,8 @@ namespace ugid
 
     ~SetRootGuard()
     {
-      pthread_rwlock_unlock(&rwlock);
       ugid_set(prevuid,prevgid);
+      pthread_rwlock_unlock(&rwlock);
     }
 
     const uid_t prevuid;
