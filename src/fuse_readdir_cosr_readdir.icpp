@@ -46,7 +46,7 @@ _opendir(ThreadPool          &tp_,
   for(const auto &branch : *branches_)
     {
       auto func =
-        [&branch,&rel_dirpath_,uid_,gid_]()
+        [&branch,&rel_dirpath_]()
         {
           DIR *dir;
           fs::path abs_dirpath;
