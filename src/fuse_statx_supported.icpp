@@ -247,7 +247,7 @@ FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
 
   FileInfo *fi = FileInfo::from_fh(fh);
 
-  const ugid::Set ugid(ctx_);
+  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_statx(fi->fusepath,
                   flags_|AT_STATX_DONT_SYNC,
