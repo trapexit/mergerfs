@@ -15,10 +15,10 @@
 
 static
 int
-capset(cap_user_header_t     header,
-       const cap_user_data_t data)
+capset(cap_user_header_t     header_,
+       const cap_user_data_t data_)
 {
-  return ::syscall(SYS_capset, header, data);
+  return ::syscall(SYS_capset,header_,data_);
 }
 
 static
