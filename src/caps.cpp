@@ -47,8 +47,8 @@ capset(int cap_bit_)
   int word = cap_bit_ / 32;
   int bit  = cap_bit_ % 32;
 
-  data[word].permitted |= (1 << bit);
-  data[word].effective |= (1 << bit);
+  data[word].permitted   |= (1 << bit);
+  data[word].effective   |= (1 << bit);
   data[word].inheritable |= (1 << bit);
 
   rv = capset(&header,data);
