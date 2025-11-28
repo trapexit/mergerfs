@@ -100,7 +100,7 @@ FUSE::chown(const fuse_req_ctx_t *ctx_,
             gid_t                 gid_)
 {
   const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
+  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_chown(cfg.func.chown.policy,
                   cfg.func.getattr.policy,
