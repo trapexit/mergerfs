@@ -143,7 +143,7 @@ FUSE::listxattr(const fuse_req_ctx_t *ctx_,
       return -ENOSYS;
     }
 
-  const ugid::Set ugid(ctx_);
+  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_listxattr(cfg.func.listxattr.policy,
                       cfg.branches,
