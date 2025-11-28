@@ -50,7 +50,7 @@ _opendir(ThreadPool          &tp_,
         {
           DIR *dir;
           fs::path abs_dirpath;
-          const ugid::Set ugid(uid_,gid_);
+          const ugid::SetRootGuard ugid_root_guard;
 
           abs_dirpath = branch.path / rel_dirpath_;
 
