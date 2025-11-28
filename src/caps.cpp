@@ -21,7 +21,11 @@ capset(cap_user_header_t     header,
   return ::syscall(SYS_capset, header, data);
 }
 
-static int capget(cap_user_header_t header, cap_user_data_t data) {
+static
+int
+capget(cap_user_header_t header,
+       cap_user_data_t   data)
+{
     return syscall(SYS_capget, header, data);
 }
 
