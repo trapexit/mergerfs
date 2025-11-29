@@ -140,16 +140,18 @@ _clonedir(const int srcfd_,
     return srcdirfd;
   DEFER { fs::close(srcdirfd); };
 
+  dstdirfd = fs::openat(dstfd_,dirname_,O_DIRECTORY);
+  if(dstdirfd < 0)
+    return dstdirfd;
+  DEFER { fs::close(dstdirfd); };
+
   rv = fs::fstat(srcdirfd,&st);
   if(rv < 0)
     return rv;
   if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
-  dstdirfd = fs::openat(dstfd_,dirname_,O_DIRECTORY);
-  if(dstdirfd < 0)
-    return dstdirfd;
-  DEFER { fs::close(dstdirfd); };
+
 
   fs::attr::copy(srcdirfd,dstdirfd,FS_ATTR_CLEAR_IMMUTABLE);
 
