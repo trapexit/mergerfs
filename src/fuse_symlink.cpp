@@ -39,7 +39,7 @@ _symlink_loop_core(const ugid_t    ugid_,
                    const fs::path &newbranch_,
                    const char     *target_,
                    const fs::path &linkpath_,
-                   struct stat    *st_)
+                   struct stat    *$st_)
 {
   int rv;
   fs::path fullnewpath;
