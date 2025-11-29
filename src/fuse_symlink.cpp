@@ -35,7 +35,8 @@
 
 static
 int
-_symlink_loop_core(const fs::path &newbranch_,
+_symlink_loop_core(const ugid_t    ugid_,
+                   const fs::path &newbranch_,
                    const char     *target_,
                    const fs::path &linkpath_,
                    struct stat    *st_)
