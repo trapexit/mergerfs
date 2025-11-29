@@ -113,9 +113,12 @@ _clonedir(const int srcfd_,
           const int dstfd_,
           const std::string &dirname_)
 {
+  int rv;
+
   if(dirname_.empty())
     return 0;
 
+  rv = fs::fstatat(srcfd_,dirname_,&st,0);
 }
 
 
