@@ -84,9 +84,9 @@ namespace ugid
     }
   };
 
-  struct SetRootGuard
+  struct SetElevatedGuard
   {
-    SetRootGuard() :
+    SetElevatedGuard() :
       prevuid(currentuid),
       prevgid(currentgid)
     {
@@ -94,7 +94,7 @@ namespace ugid
       ugid_set(0,0);
     }
 
-    ~SetRootGuard()
+    ~SetElevatedGuard()
     {
       pthread_rwlock_unlock(&rwlock);
       ugid_set(prevuid,prevgid);
