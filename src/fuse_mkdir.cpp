@@ -88,7 +88,8 @@ _mkdir_loop(const ugid_t                ugid_,
           continue;
         }
 
-      err = ::_mkdir_loop_core(createbranch->path,
+      err = ::_mkdir_loop_core(ugid_,
+                               createbranch->path,
                                fusepath_,
                                mode_,
                                umask_);
