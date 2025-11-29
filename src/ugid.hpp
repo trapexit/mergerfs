@@ -45,7 +45,6 @@ namespace ugid
 {
   void init();
   void initgroups(const uid_t uid, const gid_t gid);
-  bool is_elevated();
 }
 
 #if defined __linux__ and UGID_USE_RWLOCK == 0
