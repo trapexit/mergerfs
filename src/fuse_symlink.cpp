@@ -79,7 +79,8 @@ _symlink_loop(const ugid_t                ugid_,
       if(rv < 0)
         err = rv;
       else
-        err = ::_symlink_loop_core(newbranch->path,
+        err = ::_symlink_loop_core(ugid_,
+                                   newbranch->path,
                                    target_,
                                    linkpath_,
                                    st_);
