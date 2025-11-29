@@ -24,8 +24,6 @@ namespace FUSE
   int
   passthrough_close(const int backing_id_)
   {
-    const ugid::Set _(0,0);
-
     return fuse_passthrough_close(backing_id_);
   }
 }
