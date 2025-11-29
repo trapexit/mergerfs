@@ -116,6 +116,11 @@ namespace ugid
     }
   };
 
+  struct SetGuard
+  {
+
+  };
+
   struct SetElevated
   {
     SetElevated()
