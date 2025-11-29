@@ -132,6 +132,13 @@ _clonedir(const int srcfd_,
   if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
+  dstdirfd = fs::openat(dstfd_,dirname_,O_DIRECTORY);
+  if(dstdirfd < 0)
+    return dstdirfd;
+  DEFER { fs::close(dstdirfd); }
+
+
+
   return 0;
 }
 
