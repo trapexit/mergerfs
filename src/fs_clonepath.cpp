@@ -27,6 +27,8 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
+#include "fs_fstatat.hpp"
+
 
 static
 bool
