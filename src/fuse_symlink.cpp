@@ -122,22 +122,6 @@ _symlink(const Policy::Search &searchFunc_,
 int
 FUSE::symlink(const fuse_req_ctx_t *ctx_,
               const char           *target_,
-              const char           *linkpath_,
-              struct stat          *st_,
-              fuse_timeouts_t      *timeouts_)
-{
-  const fs::path linkpath{linkpath_};
-
-  return FUSE::symlink(ctx_,
-                       target_,
-                       linkpath,
-                       st_,
-                       timeouts_);
-}
-
-int
-FUSE::symlink(const fuse_req_ctx_t *ctx_,
-              const char           *target_,
               const fs::path       &linkpath_,
               struct stat          *st_,
               fuse_timeouts_t      *timeouts_)
@@ -179,4 +163,20 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
     }
 
   return rv;
+}
+
+int
+FUSE::symlink(const fuse_req_ctx_t *ctx_,
+              const char           *target_,
+              const char           *linkpath_,
+              struct stat          *st_,
+              fuse_timeouts_t      *timeouts_)
+{
+  const fs::path linkpath{linkpath_};
+
+  return FUSE::symlink(ctx_,
+                       target_,
+                       linkpath,
+                       st_,
+                       timeouts_);
 }
