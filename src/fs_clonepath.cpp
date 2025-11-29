@@ -32,6 +32,8 @@
 #include "fs_mkdirat.hpp"
 #include "fs_openat.hpp"
 #include "fs_fchown.hpp"
+#include "fs_fchmod.hpp"
+#include "fs_futimens.hpp"
 
 #include "scope_guard.hpp"
 
