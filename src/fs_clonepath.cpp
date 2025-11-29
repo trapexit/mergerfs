@@ -119,10 +119,10 @@ fs::clonepath(const fs::path &srcpath_,
 
 static
 int
-_clonedir(const int srcfd_,
-          const int dstfd_,
+_clonedir(const int          srcfd_,
+          const int          dstfd_,
           const std::string &dirname_,
-          bool return_metadata_errors_)
+          const bool         return_metadata_errors_)
 {
   int rv;
   int srcdirfd;
