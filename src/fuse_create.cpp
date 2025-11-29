@@ -240,7 +240,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
                                       ffi_->flags);
 
-  rv = ::_create(cfg.func.getattr.policy,
+  rv = ::_create(ctx_,
+                 cfg.func.getattr.policy,
                  cfg.func.create.policy,
                  cfg.branches,
                  fusepath_,
