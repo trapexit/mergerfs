@@ -121,17 +121,17 @@ _clonedir(const int srcfd_,
   if(dirname_.empty())
     return 0;
 
+  rv = fs::mkdirat(dstfd_,0);
+  if(rv < 0)
+    return ((rv == -EEXIST) ? 0 : rv);
+
   rv = fs::fstatat(srcfd_,dirname_,&st,0);
   if(rv < 0)
     return rv;
   if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
-  rv = fs::mkdirat(dstfd_,0);
-  if(rv < 0)
-    return ((rv == -EEXIST) ? 0 : rv);
-
-
+  rv =
 
   return 0;
 }
