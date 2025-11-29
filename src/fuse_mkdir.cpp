@@ -66,7 +66,8 @@ _mkdir_loop_core(const ugid_t    ugid_,
 
 static
 int
-_mkdir_loop(const Branch               *existingbranch_,
+_mkdir_loop(const ugid_t                ugid_,
+            const Branch               *existingbranch_,
             const std::vector<Branch*> &createbranches_,
             const fs::path             &fusepath_,
             const fs::path             &fusedirpath_,
