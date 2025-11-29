@@ -140,7 +140,7 @@ _clonedir(const int srcfd_,
   dstdirfd = fs::openat(dstfd_,dirname_,O_DIRECTORY);
   if(dstdirfd < 0)
     return dstdirfd;
-  DEFER { fs::close(dstdirfd); }
+  DEFER { fs::close(dstdirfd); };
 
 
 
