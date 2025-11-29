@@ -114,6 +114,11 @@ namespace ugid
       : Set(ctx_->uid,ctx_->gid)
     {
     }
+
+    Set(const ugid_t ugid_)
+      : Set(ugid_.uid,ugid_.gid)
+    {
+    }
   };
 }
 
