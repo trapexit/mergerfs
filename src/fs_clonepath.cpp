@@ -149,6 +149,11 @@ _clonedir(const int srcfd_,
   if(rv < 0)
     return rv;
 
+  rv = fs::fchmod_check_on_error(dstdirfd,st);
+  if(rv < 0)
+    return rv;
+
+
   return 0;
 }
 
