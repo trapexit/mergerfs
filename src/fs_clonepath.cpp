@@ -116,6 +116,7 @@ _clonedir(const int srcfd_,
           const std::string &dirname_)
 {
   int rv;
+  struct stat st;
 
   if(dirname_.empty())
     return 0;
