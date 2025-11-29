@@ -153,6 +153,9 @@ _clonedir(const int srcfd_,
   if(rv < 0)
     return rv;
 
+  rv = fs::futimens(dstdirfd,st);
+  if(rv < 0)
+    return rv;
 
   return 0;
 }
