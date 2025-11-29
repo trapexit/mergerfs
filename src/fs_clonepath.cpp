@@ -145,8 +145,6 @@ _clonedir(const int srcfd_,
     return dstdirfd;
   DEFER { fs::close(dstdirfd); };
 
-  rv = fs::fchown
-
   return 0;
 }
 
