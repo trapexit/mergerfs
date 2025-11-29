@@ -251,7 +251,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_create(cfg.func.getattr.policy,
+      rv = ::_create(ctx_,
+                     cfg.func.getattr.policy,
                      cfg.func.create.policy,
                      cfg.branches,
                      fusepath_,
