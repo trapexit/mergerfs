@@ -89,7 +89,8 @@ _symlink_loop(const fs::path             &existingbranch_,
 
 static
 int
-_symlink(const Policy::Search &searchFunc_,
+_symlink(const ugid_t          ugid_,
+         const Policy::Search &searchFunc_,
          const Policy::Create &createFunc_,
          const Branches       &branches_,
          const char           *target_,
