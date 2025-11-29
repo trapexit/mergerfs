@@ -43,7 +43,7 @@ _mkdir_core(const ugid_t    ugid_,
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
-  return fs::mkdir_as(fullpath_,mode_);
+  return fs::mkdir_as(ugid_,fullpath_,mode_);
 }
 
 static
