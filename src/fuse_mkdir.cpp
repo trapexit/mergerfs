@@ -133,7 +133,6 @@ FUSE::mkdir(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
 
   rv = ::_mkdir(cfg.func.getattr.policy,
                 cfg.func.mkdir.policy,
