@@ -29,6 +29,7 @@
 
 #include "fs_fstatat.hpp"
 #include "fs_mkdirat.hpp"
+#include "fs_openat.hpp"
 
 #include "scope_guard.hpp"
 
