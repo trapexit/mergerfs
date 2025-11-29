@@ -140,7 +140,7 @@ _clonedir(const int srcfd_,
     return srcdirfd;
   DEFER { fs::close(srcdirfd); };
 
-  rv = fs::fstatat(srcfd_,dirname_,&st,0);
+  rv = fs::fstat(srcdirfd,&st);
   if(rv < 0)
     return rv;
   if(!S_ISDIR(st.st_mode))
