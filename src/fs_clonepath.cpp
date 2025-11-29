@@ -28,6 +28,7 @@
 #include "ugid.hpp"
 
 #include "fs_fstatat.hpp"
+#include "fs_mkdirat.hpp"
 
 
 static
