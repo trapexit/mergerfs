@@ -120,6 +120,7 @@ _clonedir(const int srcfd_,
           const std::string &dirname_)
 {
   int rv;
+  int dstdirfd;
   struct stat st;
 
   if(dirname_.empty())
