@@ -138,8 +138,7 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
             dev_t                 rdev_)
 {
   int rv;
-  const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
+  const fs::path fusepath{fusepath_};
 
   rv = ::_mknod(cfg.func.getattr.policy,
                 cfg.func.mknod.policy,
