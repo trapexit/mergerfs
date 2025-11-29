@@ -125,11 +125,11 @@ _symlink(const ugid_t          ugid_,
 }
 
 int
-FUSE::symlink(const ugid_t     ugid_,
-              const char      *target_,
-              const fs::path  &linkpath_,
-              struct stat     *st_,
-              fuse_timeouts_t *timeouts_)
+FUSE::symlink(const fuse_req_ctx_t *ctx_,
+              const char           *target_,
+              const fs::path       &linkpath_,
+              struct stat          *st_,
+              fuse_timeouts_t      *timeouts_)
 {
   int rv;
 
