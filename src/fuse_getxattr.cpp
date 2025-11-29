@@ -193,8 +193,6 @@ FUSE::getxattr(const fuse_req_ctx_t *ctx_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  const ugid::SetRootGuard ugid_root_guard;
-
   return ::_getxattr(cfg.func.getxattr.policy,
                      cfg.branches,
                      fusepath,
