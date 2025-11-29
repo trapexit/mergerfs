@@ -126,7 +126,7 @@ _clonepath2(const fs::path &srcpath_,
   dirname = relpath_.parent_path();
   if(!dirname.empty())
     {
-      rv = fs::clonepath(srcpath_,dstpath_,dirname,return_metadata_errors_);
+      rv = ::_clonepath2(srcpath_,dstpath_,dirname,return_metadata_errors_);
       if(rv < 0)
         return rv;
     }
