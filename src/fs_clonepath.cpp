@@ -146,6 +146,8 @@ _clonedir(const int srcfd_,
   DEFER { fs::close(dstdirfd); };
 
   rv = fs::fchown_check_on_error(dstdirfd,st);
+  if(rv < 0)
+    return rv;
 
   return 0;
 }
