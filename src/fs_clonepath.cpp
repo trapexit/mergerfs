@@ -136,6 +136,8 @@ _clonedir(const int srcfd_,
     return ((rv == -EEXIST) ? 0 : rv);
 
   srcdirfd = fs::openat(srcfd_,dirname_,O_DIRECTORY);
+  if(srcdirfd < 0)
+    return srcdirfd;
 
   rv = fs::fstatat(srcfd_,dirname_,&st,0);
   if(rv < 0)
