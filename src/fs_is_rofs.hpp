@@ -49,7 +49,7 @@ namespace fs
   bool
   is_rofs(const fs::path &path_)
   {
-    const ugid::SetRootGuard ugid_root_guard;
+    const ugid::SetElevatedGuard ugid_root_guard;
 
     int fd;
     std::string tmp_filepath;
