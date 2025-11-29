@@ -21,6 +21,12 @@
 
 #include <vector>
 
+struct ugid_t
+{
+  uid_t uid;
+  gid_t gid;
+};
+
 namespace ugid
 {
   void init();
