@@ -112,7 +112,8 @@ _symlink(const ugid_t          ugid_,
   if(rv < 0)
     return rv;
 
-  return ::_symlink_loop(existingbranches[0]->path,
+  return ::_symlink_loop(ugid_,
+                         existingbranches[0]->path,
                          newbranches,
                          target_,
                          linkpath_,
