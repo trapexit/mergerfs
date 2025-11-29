@@ -281,7 +281,6 @@ _open_for_insert_lambda(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   FileInfo *fi;
-  const ugid::SetRootGuard ugid_root_guard;
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
 
