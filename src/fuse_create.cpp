@@ -150,7 +150,8 @@ _create_core(const ugid_t    ugid_,
 
 static
 int
-_create_core(const Branch     *branch_,
+_create_core(const ugid_t      ugid_,
+             const Branch     *branch_,
              const fs::path   &fusepath_,
              fuse_file_info_t *ffi_,
              const mode_t      mode_,
@@ -162,7 +163,7 @@ _create_core(const Branch     *branch_,
 
   fullpath = branch_->path / fusepath_;
 
-  rv = ::_create_core(fullpath,mode_,umask_,ffi_->flags);
+  rv = ::_create_core(ugid_,fullpath,mode_,umask_,ffi_->flags);
   if(rv < 0)
     return rv;
 
