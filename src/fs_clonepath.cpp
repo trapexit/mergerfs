@@ -30,6 +30,8 @@
 #include "fs_fstatat.hpp"
 #include "fs_mkdirat.hpp"
 
+#include "scope_guard.hpp"
+
 
 static
 bool
