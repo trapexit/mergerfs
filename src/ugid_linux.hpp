@@ -115,14 +115,6 @@ namespace ugid
     {
     }
   };
-
-  struct SetElevatedGuard
-  {
-  };
-
-  struct SetElevated
-  {
-  };
 }
 
 #undef SETREUID
