@@ -151,8 +151,6 @@ _clonedir(const int srcfd_,
   if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
-
-
   fs::attr::copy(srcdirfd,dstdirfd,FS_ATTR_CLEAR_IMMUTABLE);
 
   rv = fs::fchown_check_on_error(dstdirfd,st);
