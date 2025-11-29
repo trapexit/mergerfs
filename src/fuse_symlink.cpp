@@ -143,7 +143,6 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
               fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  const ugid::Set ugid(ctx_);
 
   rv = ::_symlink(cfg.func.getattr.policy,
                   cfg.func.symlink.policy,
