@@ -106,22 +106,3 @@ fs::clonepath(const fs::path &srcpath_,
 
   return 0;
 }
-
-int
-fs::clonepath_as_root(const fs::path &srcpath_,
-                      const fs::path &dstpath_,
-                      const fs::path &relpath_,
-                      const bool      return_metadata_errors_)
-{
-  if(relpath_.empty())
-    return 0;
-  if(srcpath_ == dstpath_)
-    return 0;
-
-  const ugid::SetRootGuard ugid_guard;
-
-  return fs::clonepath(srcpath_,
-                       dstpath_,
-                       relpath_,
-                       return_metadata_errors_);
-}
