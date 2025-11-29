@@ -147,7 +147,6 @@ FUSE::statfs(const fuse_req_ctx_t *ctx_,
              struct statvfs       *st_)
 {
   const fs::path  fusepath{fusepath_};
-  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_statfs(cfg.branches,
                    fusepath,
