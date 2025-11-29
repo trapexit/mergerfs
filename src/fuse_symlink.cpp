@@ -143,7 +143,7 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_symlink(ugid_,
+      rv = ::_symlink(ctx_,
                       cfg.func.getattr.policy,
                       cfg.func.symlink.policy,
                       cfg.branches,
