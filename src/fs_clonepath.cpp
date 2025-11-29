@@ -106,3 +106,60 @@ fs::clonepath(const fs::path &srcpath_,
 
   return 0;
 }
+
+static
+int
+_clonepath2(const fs::path &srcpath_,
+            const fs::path &dstpath_,
+            const fs::path &relpath_,
+            const bool      return_metadata_errors_)
+{
+  int         rv;
+  struct stat st;
+  fs::path dstpath;
+  fs::path srcpath;
+  fs::path dirname;
+
+  if(relpath_.empty())
+    return 0;
+
+  dirname = relpath_.parent_path();
+  if(!dirname.empty())
+    {
+      rv = fs::clonepath(srcpath_,dstpath_,dirname,return_metadata_errors_);
+      if(rv < 0)
+        return rv;
+    }
+
+  srcpath = srcpath_ / relpath_;
+  rv = fs::lstat(srcpath,&st);
+  if(rv < 0)
+    return rv;
+  else if(!S_ISDIR(st.st_mode))
+    return -ENOTDIR;
+
+  dstpath = dstpath_ / relpath_;
+  rv = fs::mkdir(dstpath,st.st_mode);
+  if(rv < 0)
+    return ((rv == -EEXIST) ? 0 : rv);
+
+  // it may not support it... it's fine...
+  rv = fs::attr::copy(srcpath,dstpath);
+  if(return_metadata_errors_ && (rv < 0) && !::_ignorable_error(-rv))
+    return rv;
+
+  // it may not support it... it's fine...
+  rv = fs::xattr::copy(srcpath,dstpath);
+  if(return_metadata_errors_ && (rv < 0) && !::_ignorable_error(-rv))
+    return rv;
+
+  rv = fs::lchown_check_on_error(dstpath,st);
+  if(return_metadata_errors_ && (rv < 0))
+    return rv;
+
+  rv = fs::lutimens(dstpath,st);
+  if(return_metadata_errors_ && (rv < 0))
+    return rv;
+
+  return 0;
+}
