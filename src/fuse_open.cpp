@@ -336,7 +336,6 @@ _open_for_update_lambda(const fuse_req_ctx_t *ctx_,
                         State::OpenFile      *of_)
 {
   int rv;
-  const ugid::SetRootGuard ugid_root_guard;
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
 
