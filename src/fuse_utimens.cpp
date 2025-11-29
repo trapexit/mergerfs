@@ -93,8 +93,7 @@ FUSE::utimens(const fuse_req_ctx_t *ctx_,
               const char           *fusepath_,
               const timespec        ts_[2])
 {
-  const fs::path  fusepath{fusepath_};
-  const ugid::SetRootGuard ugid_root_guard;
+  const fs::path fusepath{fusepath_};
 
   return ::_utimens(cfg.func.utimens.policy,
                     cfg.func.getattr.policy,
