@@ -121,7 +121,8 @@ static
 int
 _clonedir(const int srcfd_,
           const int dstfd_,
-          const std::string &dirname_)
+          const std::string &dirname_,
+          bool return_metadata_errors_)
 {
   int rv;
   int srcdirfd;
