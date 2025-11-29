@@ -21,7 +21,7 @@
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_link.hpp"
-#include "fs_mkdir_as_root.hpp"
+#include "fs_mkdir_as.hpp"
 #include "fs_path.hpp"
 #include "fs_remove.hpp"
 #include "fs_rename.hpp"
