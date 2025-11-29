@@ -69,7 +69,6 @@ FUSE::unlink(const fuse_req_ctx_t *ctx_,
              const char           *fusepath_)
 {
   const fs::path  fusepath{fusepath_};
-  const ugid::SetRootGuard ugid_root_guard;
 
   return ::_unlink(cfg.func.unlink.policy,
                    cfg.branches,
