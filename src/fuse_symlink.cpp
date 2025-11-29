@@ -46,7 +46,7 @@ _symlink_loop_core(const ugid_t    ugid_,
 
   fullnewpath = newbranch_ / linkpath_;
 
-  rv = fs::symlink(target_,fullnewpath);
+  rv = fs::symlink_as(ugid_,target_,fullnewpath);
   if((rv >= 0) && (st_ != NULL) && (st_->st_ino == 0))
     {
       fs::lstat(fullnewpath,st_);
