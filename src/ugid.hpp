@@ -23,6 +23,13 @@
 
 struct ugid_t
 {
+  ugid_t(const uid_t uid_,
+         const gid_t gid_)
+    : uid(uid_),
+      gid(gid_)
+  {
+  }
+
   uid_t uid;
   gid_t gid;
 };
