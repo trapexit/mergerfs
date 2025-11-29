@@ -194,8 +194,6 @@ _setxattr(const fuse_req_ctx_t *ctx_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  const ugid::SetRootGuard ugid_root_guard;
-
   return ::_setxattr(cfg.func.setxattr.policy,
                      cfg.func.getxattr.policy,
                      cfg.branches,
