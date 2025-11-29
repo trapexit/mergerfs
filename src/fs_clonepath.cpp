@@ -124,6 +124,7 @@ _clonedir(const int srcfd_,
           const std::string &dirname_)
 {
   int rv;
+  int srcdirfd;
   int dstdirfd;
   struct stat st;
 
