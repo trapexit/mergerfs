@@ -100,7 +100,8 @@ _mkdir_loop(const ugid_t                ugid_,
 
 static
 int
-_mkdir(const Policy::Search &getattrPolicy_,
+_mkdir(const ugid_t          ugid_,
+       const Policy::Search &getattrPolicy_,
        const Policy::Create &mkdirPolicy_,
        const Branches       &branches_,
        const fs::path       &fusepath_,
