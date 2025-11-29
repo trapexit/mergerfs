@@ -34,7 +34,6 @@ FUSE::ReadDirSeq::operator()(const fuse_req_ctx_t   *ctx_,
                              fuse_dirents_t         *dirents_)
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
-  const ugid::SetRootGuard  ugid_root_guard;
 
   return ::_readdir(cfg.branches,
                     di->fusepath,
