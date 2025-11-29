@@ -116,23 +116,12 @@ namespace ugid
     }
   };
 
-  struct SetGuard
+  struct SetElevatedGuard
   {
-    SetGuard()
-    : prevuid(currentuid),
-      prevgid(currentgid)
-    {
-
-    }
-
-
   };
 
   struct SetElevated
   {
-    SetElevated()
-    {
-    }
   };
 }
 
