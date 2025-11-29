@@ -23,7 +23,7 @@
 #include "error.hpp"
 #include "fs_acl.hpp"
 #include "fs_clonepath.hpp"
-#include "fs_mkdir.hpp"
+#include "fs_mkdir_as.hpp"
 #include "fs_path.hpp"
 #include "policy.hpp"
 #include "ugid.hpp"
