@@ -39,7 +39,7 @@ _symlink_loop_core(const ugid_t    ugid_,
                    const fs::path &newbranch_,
                    const char     *target_,
                    const fs::path &linkpath_,
-                   struct stat    *$st_)
+                   struct stat    *st_)
 {
   int rv;
   fs::path fullnewpath;
@@ -47,9 +47,9 @@ _symlink_loop_core(const ugid_t    ugid_,
   fullnewpath = newbranch_ / linkpath_;
 
   rv = fs::symlink_as(ugid_,target_,fullnewpath);
-  if((rv >= 0) && ($st_ != NULL) && ($st_->st_ino == 0))
+  if((rv >= 0) && (st_ != NULL) && (st_->st_ino == 0))
     {
-      fs::lstat(fullnewpath,$st_);
+      fs::lstat(fullnewpath,st_);
       if(st_->st_ino != 0)
         fs::inode::calc(newbranch_,
                         linkpath_,
