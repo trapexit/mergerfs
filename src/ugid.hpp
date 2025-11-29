@@ -30,6 +30,11 @@ struct ugid_t
   {
   }
 
+  ugid_t(const fuse_req_ctx_t *ctx_)
+    : ugid_t(ctx_->uid,ctx_->gid)
+  {
+  }
+
   uid_t uid;
   gid_t gid;
 };
