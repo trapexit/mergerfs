@@ -131,8 +131,6 @@ _clonedir(const int srcfd_,
   if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
-  rv = fs::fchownat(dstfd_,dirname_,st.st_uid,st.st_gid,0);
-
   return 0;
 }
 
