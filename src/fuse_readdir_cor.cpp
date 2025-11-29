@@ -64,8 +64,6 @@ _concurrent_readdir(ThreadPool          &tp_,
       auto func =
         [&,dirents_,uid_,gid_]()
         {
-          const ugid::SetRootGuard ugid_root_guard;
-
           return ::_readdir(branch.path,
                             rel_dirpath_,
                             names,
