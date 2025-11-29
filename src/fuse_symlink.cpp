@@ -60,7 +60,8 @@ _symlink_loop_core(const fs::path &newbranch_,
 
 static
 int
-_symlink_loop(const fs::path             &existingbranch_,
+_symlink_loop(const ugid_t                ugid_,
+              const fs::path             &existingbranch_,
               const std::vector<Branch*> &newbranches_,
               const char                 *target_,
               const fs::path             &linkpath_,
