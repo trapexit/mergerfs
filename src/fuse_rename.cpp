@@ -105,9 +105,9 @@ _rename_create_path(const Policy::Search &searchPolicy_,
       rv = fs::rename(oldfullpath,newfullpath);
       if(rv < 0)
         {
-          rv = fs::clonepath_as_root(newbranches[0]->path,
-                                     branch.path,
-                                     newfusepath_.parent_path());
+          rv = fs::clonepath(newbranches[0]->path,
+                             branch.path,
+                             newfusepath_.parent_path());
           if(rv >= 0)
             rv = fs::rename(oldfullpath,newfullpath);
         }
