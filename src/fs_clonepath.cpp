@@ -117,6 +117,8 @@ fs::clonepath(const fs::path &srcpath_,
   return 0;
 }
 
+
+// WORK IN PROGRESS
 static
 int
 _clonepath2(const int       srcfd_,
