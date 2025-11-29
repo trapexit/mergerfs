@@ -176,7 +176,8 @@ _create_core(const ugid_t      ugid_,
 
 static
 int
-_create(const Policy::Search &searchFunc_,
+_create(const ugid_t          ugid_,
+        const Policy::Search &searchFunc_,
         const Policy::Create &createFunc_,
         const Branches       &branches_,
         const fs::path       &fusepath_,
@@ -206,7 +207,8 @@ _create(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  return ::_create_core(createpaths[0],
+  return ::_create_core(ugid_,
+                        createpaths[0],
                         fusepath_,
                         ffi_,
                         mode_,
