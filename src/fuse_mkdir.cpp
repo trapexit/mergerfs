@@ -48,7 +48,8 @@ _mkdir_core(const ugid_t    ugid_,
 
 static
 int
-_mkdir_loop_core(const fs::path &createpath_,
+_mkdir_loop_core(const ugid_t    ugid_,
+                 const fs::path &createpath_,
                  const fs::path &fusepath_,
                  const mode_t    mode_,
                  const mode_t    umask_)
@@ -58,7 +59,7 @@ _mkdir_loop_core(const fs::path &createpath_,
 
   fullpath = createpath_ / fusepath_;
 
-  rv = ::_mkdir_core(fullpath,mode_,umask_);
+  rv = ::_mkdir_core(ugid_,fullpath,mode_,umask_);
 
   return rv;
 }
