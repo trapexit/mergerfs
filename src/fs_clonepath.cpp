@@ -109,6 +109,18 @@ fs::clonepath(const fs::path &srcpath_,
 
 static
 int
+_clonedir(const int srcfd_,
+          const int dstfd_,
+          const std::string &dirname_)
+{
+  if(dirname_.empty())
+    return 0;
+
+}
+
+
+static
+int
 _clonepath2(const fs::path &srcpath_,
             const fs::path &dstpath_,
             const fs::path &relpath_,
