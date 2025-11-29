@@ -145,6 +145,8 @@ _clonedir(const int srcfd_,
     return dstdirfd;
   DEFER { fs::close(dstdirfd); };
 
+  fs::attr::copy(srcdirfd,dstdirfd,FS_ATTR_CLEAR_IMMUTABLE);
+
   rv = fs::fchown_check_on_error(dstdirfd,st);
   if(rv < 0)
     return rv;
