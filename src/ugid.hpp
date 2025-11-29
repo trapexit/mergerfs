@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+
 #include <sys/types.h>
 #include <unistd.h>
 
