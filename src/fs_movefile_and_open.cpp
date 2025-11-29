@@ -137,8 +137,6 @@ fs::movefile_and_open_as_root(const Policy::Create &policy_,
                               const fs::path       &fusepath_,
                               const int             origfd_)
 {
-  const ugid::SetElevatedGuard ugid;
-
   return fs::movefile_and_open(policy_,
                                branches_,
                                branchpath_,
