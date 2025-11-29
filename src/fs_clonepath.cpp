@@ -31,6 +31,7 @@
 #include "fs_fstatat.hpp"
 #include "fs_mkdirat.hpp"
 #include "fs_openat.hpp"
+#include "fs_fchown.hpp"
 
 #include "scope_guard.hpp"
 
@@ -142,7 +143,7 @@ _clonedir(const int srcfd_,
     return dstdirfd;
   DEFER { fs::close(dstdirfd); };
 
-
+  rv = fs::fchown
 
   return 0;
 }
