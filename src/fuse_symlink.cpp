@@ -72,9 +72,9 @@ _symlink_loop(const fs::path             &existingbranch_,
 
   for(auto &newbranch :newbranches_)
     {
-      rv = fs::clonepath_as_root(existingbranch_,
-                                 newbranch->path,
-                                 newdirpath_);
+      rv = fs::clonepath(existingbranch_,
+                         newbranch->path,
+                         newdirpath_);
       if(rv < 0)
         err = rv;
       else
