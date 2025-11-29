@@ -28,8 +28,6 @@ namespace fs
   mkdir_as_root(const T      &path_,
                 const mode_t  mode_)
   {
-    const ugid::SetRootGuard guard;
-
     return fs::mkdir(path_,mode_);
   }
 }
