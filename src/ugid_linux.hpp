@@ -118,6 +118,13 @@ namespace ugid
 
   struct SetGuard
   {
+    SetGuard()
+    : prevuid(currentuid),
+      prevgid(currentgid)
+    {
+
+    }
+
 
   };
 
