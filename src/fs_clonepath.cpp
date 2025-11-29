@@ -151,8 +151,13 @@ _clonedir(const int srcfd_,
   if(!S_ISDIR(st.st_mode))
     return -ENOTDIR;
 
-  fs::attr::copy(srcdirfd,dstdirfd,FS_ATTR_CLEAR_IMMUTABLE);
-  fs::xattr::copy(srcdirfd,dstdirfd);
+  rv = fs::attr::copy(srcdirfd,dstdirfd,FS_ATTR_CLEAR_IMMUTABLE);
+  if(return_metadata_errors_ && (rv < 0) && !::_ignorable_error(-rv))
+    return rv;
+
+  rv = fs::xattr::copy(srcdirfd,dstdirfd);
+  if(return_metadata_errors_ && (rv < 0) && !::_ignorable_error(-rv))
+    return rv;
 
   rv = fs::fchown_check_on_error(dstdirfd,st);
   if(rv < 0)
