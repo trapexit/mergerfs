@@ -150,7 +150,8 @@ FUSE::mkdir(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_mkdir(cfg.func.getattr.policy,
+      rv = ::_mkdir(ctx_,
+                    cfg.func.getattr.policy,
                     cfg.func.mkdir.policy,
                     cfg.branches,
                     fusepath,
