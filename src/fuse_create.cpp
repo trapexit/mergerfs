@@ -197,9 +197,9 @@ _create(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  rv = fs::clonepath_as_root(existingpaths[0]->path,
-                             createpaths[0]->path,
-                             fusedirpath);
+  rv = fs::clonepath(existingpaths[0]->path,
+                     createpaths[0]->path,
+                     fusedirpath);
   if(rv < 0)
     return rv;
 
