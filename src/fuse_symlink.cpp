@@ -128,7 +128,8 @@ FUSE::symlink(const ugid_t     ugid_,
 {
   int rv;
 
-  rv = ::_symlink(cfg.func.getattr.policy,
+  rv = ::_symlink(ugid_,
+                  cfg.func.getattr.policy,
                   cfg.func.symlink.policy,
                   cfg.branches,
                   target_,
@@ -137,7 +138,8 @@ FUSE::symlink(const ugid_t     ugid_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_symlink(cfg.func.getattr.policy,
+      rv = ::_symlink(ugid_,
+                      cfg.func.getattr.policy,
                       cfg.func.symlink.policy,
                       cfg.branches,
                       target_,
