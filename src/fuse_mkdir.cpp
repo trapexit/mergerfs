@@ -123,7 +123,8 @@ _mkdir(const ugid_t          ugid_,
   if(rv < 0)
     return rv;
 
-  return ::_mkdir_loop(existingbranches[0],
+  return ::_mkdir_loop(ugid_,
+                       existingbranches[0],
                        createbranches,
                        fusepath_,
                        fusedirpath,
