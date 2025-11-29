@@ -45,7 +45,7 @@ _get_fs_ioc_flags(const int  fd,
 static
 int
 _get_fs_ioc_flags(const string &file,
-                 int          &flags)
+                  int          &flags)
 {
   int fd;
   int rv;
