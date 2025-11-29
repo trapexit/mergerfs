@@ -55,7 +55,9 @@ _link_create_path_loop(const std::vector<Branch*> &oldbranches_,
       rv = fs::link(oldfullpath,newfullpath);
       if(rv == -ENOENT)
         {
-          rv = fs::clonepath(newbranch_->path,oldbranch->path,newfusedirpath_);
+          rv = fs::clonepath(newbranch_->path,
+                             oldbranch->path,
+                             newfusedirpath_);
           if(rv == 0)
             rv = fs::link(oldfullpath,newfullpath);
         }
