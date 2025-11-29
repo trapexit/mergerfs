@@ -209,7 +209,6 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
   if(rv < 0)
     return rv;
 
-  ugid::SetRootGuard ugidGuard;
   for(auto &branch : obranches_)
     {
       clonesrc  = branch->path;
