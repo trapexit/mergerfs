@@ -129,7 +129,9 @@ _clonedir(const int srcfd_,
 
   rv = fs::mkdirat(dstfd_,0);
   if(rv < 0)
-    return ((rv == -EXIST) ? 0 : rv);
+    return ((rv == -EEXIST) ? 0 : rv);
+
+
 
   return 0;
 }
