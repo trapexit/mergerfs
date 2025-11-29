@@ -228,7 +228,6 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   FileInfo *fi;
-  const ugid::Set ugid(ctx_);
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
