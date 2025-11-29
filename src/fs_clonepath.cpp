@@ -120,9 +120,9 @@ fs::clonepath(const fs::path &srcpath_,
 static
 int
 _clonepath2(const int     srcfd_,
-          const int       dstfd_,
-          const fs::path &dirname_,
-          const bool      return_metadata_errors_)
+            const int       dstfd_,
+            const fs::path &dirname_,
+            const bool      return_metadata_errors_)
 {
   int rv;
   int srcdirfd;
