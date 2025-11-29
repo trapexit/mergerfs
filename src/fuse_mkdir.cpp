@@ -76,9 +76,9 @@ _mkdir_loop(const Branch               *existingbranch_,
 
   for(const auto &createbranch : createbranches_)
     {
-      rv = fs::clonepath_as_root(existingbranch_->path,
-                                 createbranch->path,
-                                 fusedirpath_);
+      rv = fs::clonepath(existingbranch_->path,
+                         createbranch->path,
+                         fusedirpath_);
       if(rv < 0)
         {
           err = rv;
