@@ -28,7 +28,7 @@
 #include "ugid.hpp"
 
 #include "fs_close.hpp"
-#include "fs_fstatat.hpp"
+#include "fs_fstat.hpp"
 #include "fs_mkdirat.hpp"
 #include "fs_openat.hpp"
 #include "fs_fchown.hpp"
