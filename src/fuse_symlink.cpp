@@ -23,7 +23,7 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fs_inode.hpp"
-#include "fs_symlink.hpp"
+#include "fs_symlink_as.hpp"
 #include "fuse_getattr.hpp"
 #include "ugid.hpp"
 
