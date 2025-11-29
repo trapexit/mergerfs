@@ -35,7 +35,8 @@
 
 static
 int
-_mkdir_core(const fs::path &fullpath_,
+_mkdir_core(const ugid_t    ugid_,
+            const fs::path &fullpath_,
             mode_t          mode_,
             const mode_t    umask_)
 {
