@@ -31,7 +31,7 @@ using std::string;
 static
 int
 _get_fs_ioc_flags(const int  fd,
-                 int       &flags)
+                 int        &flags)
 {
   int rv;
 
