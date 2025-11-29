@@ -213,8 +213,6 @@ FUSE::statx(const fuse_req_ctx_t *ctx_,
   if(Config::is_ctrl_file(fusepath))
     return ::_statx_controlfile(st_);
 
-  const ugid::SetRootGuard ugid_root_guard;
-
   return ::_statx(fusepath,
                   flags_|AT_STATX_DONT_SYNC,
                   mask_,
