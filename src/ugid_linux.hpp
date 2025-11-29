@@ -116,11 +116,9 @@ namespace ugid
     }
   };
 
-  // Does nothing because capabilities are set so any uid can act as
-  // root would.
-  struct SetRootGuard
+  struct SetElevated
   {
-    SetRootGuard()
+    SetElevated()
     {
     }
   };
