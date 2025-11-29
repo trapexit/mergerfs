@@ -218,7 +218,7 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
       rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
       if(rv == -ENOENT)
         {
-          fs::mkdir(clonedst,01777);
+          fs::mkdir_as({0,0},clonedst,01777);
           rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
         }
 
