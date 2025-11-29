@@ -78,9 +78,9 @@ _mknod_loop(const fs::path             &existingbranch_,
 
   for(const auto &createbranch : createbranches_)
     {
-      rv = fs::clonepath_as_root(existingbranch_,
-                                 createbranch->path,
-                                 fusedirpath_);
+      rv = fs::clonepath(existingbranch_,
+                         createbranch->path,
+                         fusedirpath_);
       if(rv < 0)
         {
           err = rv;
