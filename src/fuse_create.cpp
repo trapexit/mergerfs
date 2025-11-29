@@ -26,6 +26,7 @@
 #include "fs_close.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_open.hpp"
+#include "fs_open_as.hpp"
 #include "fs_openat.hpp"
 #include "fs_path.hpp"
 #include "fuse_passthrough.hpp"
