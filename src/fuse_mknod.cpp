@@ -34,7 +34,8 @@
 static
 inline
 int
-_mknod_core(const fs::path &fullpath_,
+_mknod_core(const ugid_t    ugid_,
+            const fs::path &fullpath_,
             mode_t          mode_,
             const mode_t    umask_,
             const dev_t     dev_)
@@ -42,7 +43,7 @@ _mknod_core(const fs::path &fullpath_,
   if(!fs::acl::dir_has_defaults(fullpath_))
     mode_ &= ~umask_;
 
-  return fs::mknod(fullpath_,mode_,dev_);
+  return fs::mknod_as(ugid_,fullpath_,mode_,dev_);
 }
 
 static
