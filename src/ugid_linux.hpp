@@ -82,17 +82,8 @@ namespace ugid
       if((newuid == currentuid) && (newgid == currentgid))
         return;
 
-      if(currentuid != 0)
-        {
-          SETREUID(-1,0);
-          SETREGID(-1,0);
-        }
-
-      if(newgid)
-        SETREGID(-1,newgid);
-
-      if(newuid)
-        SETREUID(-1,newuid);
+      SETREGID(-1,newgid);
+      SETREUID(-1,newuid);
 
       currentuid = newuid;
       currentgid = newgid;
