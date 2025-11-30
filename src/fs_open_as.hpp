@@ -3,6 +3,7 @@
 #include "ugid.hpp"
 #include "fs_open.hpp"
 
+#if defined __linux__
 namespace fs
 {
   static
@@ -18,3 +19,8 @@ namespace fs
     return fs::open(path_,flags_,mode_);
   }
 }
+#elif defined __FreeBSD__
+
+#else
+#error "Not Supported!"
+#endif
