@@ -19,7 +19,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 namespace ugid
 {
   thread_local uid_t currentuid  = 0;
