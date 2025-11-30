@@ -88,7 +88,8 @@ _mknod_loop(const ugid_t                ugid_,
           continue;
         }
 
-      err = ::_mknod_loop_core(createbranch->path,
+      err = ::_mknod_loop_core(ugid_,
+                               createbranch->path,
                                fusepath_,
                                mode_,
                                umask_,
