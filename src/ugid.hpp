@@ -18,6 +18,20 @@
 
 #include "fuse_req_ctx.h"
 
+#include "fuse_kernel.h"
+
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <grp.h>
+#include <pwd.h>
+
+#include <map>
+#include <vector>
+#include "fuse_req_ctx.h"
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -47,10 +61,77 @@ namespace ugid
   void initgroups(const uid_t uid, const gid_t gid);
 }
 
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#pragma message "using ugid_linux.hpp"
-#include "ugid_linux.hpp"
+#if defined SYS_setreuid32
+#define SETREUID(R,E) (::syscall(SYS_setreuid32,(R),(E)))
 #else
-#pragma message "using ugid_rwlock.hpp"
-#include "ugid_rwlock.hpp"
+#define SETREUID(R,E) (::syscall(SYS_setreuid,(R),(E)))
 #endif
+
+#if defined SYS_setregid32
+#define SETREGID(R,E) (::syscall(SYS_setregid32,(R),(E)))
+#else
+#define SETREGID(R,E) (::syscall(SYS_setregid,(R),(E)))
+#endif
+
+#if defined SYS_geteuid32
+#define GETEUID() (::syscall(SYS_geteuid32))
+#else
+#define GETEUID() (::syscall(SYS_geteuid))
+#endif
+
+#if defined SYS_getegid32
+#define GETEGID() (::syscall(SYS_getegid32))
+#else
+#define GETEGID() (::syscall(SYS_getegid))
+#endif
+
+namespace ugid
+{
+  extern thread_local uid_t currentuid;
+  extern thread_local gid_t currentgid;
+  extern thread_local bool  initialized;
+
+  struct Set
+  {
+    Set(const uid_t newuid_,
+        const gid_t newgid_)
+    {
+      uid_t newuid;
+      gid_t newgid;
+
+      newuid = ((newuid_ == FUSE_INVALID_UIDGID) ? 0 : newuid_);
+      newgid = ((newgid_ == FUSE_INVALID_UIDGID) ? 0 : newgid_);
+
+      if(!initialized)
+        {
+          currentuid  = GETEUID();
+          currentgid  = GETEGID();
+          initialized = true;
+        }
+
+      if((newuid == currentuid) && (newgid == currentgid))
+        return;
+
+      SETREGID(-1,newgid);
+      SETREUID(-1,newuid);
+
+      currentuid = newuid;
+      currentgid = newgid;
+    }
+
+    Set(const fuse_req_ctx_t *ctx_)
+      : Set(ctx_->uid,ctx_->gid)
+    {
+    }
+
+    Set(const ugid_t ugid_)
+      : Set(ugid_.uid,ugid_.gid)
+    {
+    }
+  };
+}
+
+#undef SETREUID
+#undef SETREGID
+#undef GETEUID
+#undef GETEGID
