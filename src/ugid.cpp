@@ -13,21 +13,3 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-
-#include "gidcache.hpp"
-
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#include "ugid_linux.icpp"
-#else
-#include "ugid_rwlock.icpp"
-#endif
-
-namespace ugid
-{
-  void
-  initgroups(const uid_t uid_,
-             const gid_t gid_)
-  {
-    GIDCache::initgroups(uid_,gid_);
-  }
-}
