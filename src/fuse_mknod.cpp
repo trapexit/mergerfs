@@ -65,7 +65,8 @@ _mknod_loop_core(const fs::path &createbranch_,
 
 static
 int
-_mknod_loop(const fs::path             &existingbranch_,
+_mknod_loop(const ugid_t                ugid_,
+            const fs::path             &existingbranch_,
             const std::vector<Branch*> &createbranches_,
             const fs::path             &fusepath_,
             const fs::path             &fusedirpath_,
