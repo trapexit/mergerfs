@@ -47,7 +47,8 @@ _mknod_core(const fs::path &fullpath_,
 
 static
 int
-_mknod_loop_core(const fs::path &createbranch_,
+_mknod_loop_core(const ugid_t    ugid_,
+                 const fs::path &createbranch_,
                  const fs::path &fusepath_,
                  const mode_t    mode_,
                  const mode_t    umask_,
