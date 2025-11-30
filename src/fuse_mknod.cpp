@@ -123,7 +123,8 @@ _mknod(const ugid_t          ugid_,
   if(rv < 0)
     return rv;
 
-  return ::_mknod_loop(existingbranches[0]->path,
+  return ::_mknod_loop(ugid_,
+                       existingbranches[0]->path,
                        createbranches,
                        fusepath_,
                        fusedirpath,
