@@ -72,7 +72,7 @@ namespace ugid
       newuid = ((newuid_ == FUSE_INVALID_UIDGID) ? 0 : newuid_);
       newgid = ((newgid_ == FUSE_INVALID_UIDGID) ? 0 : newgid_);
 
-      if(!initialized)
+      if(!__unlikely(initialized))
         {
           currentuid  = GETEUID();
           currentgid  = GETEGID();
