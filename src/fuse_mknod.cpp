@@ -99,7 +99,8 @@ _mknod_loop(const fs::path             &existingbranch_,
 
 static
 int
-_mknod(const Policy::Search &searchFunc_,
+_mknod(const ugid_t          ugid_,
+       const Policy::Search &searchFunc_,
        const Policy::Create &createFunc_,
        const Branches       &branches_,
        const fs::path       &fusepath_,
