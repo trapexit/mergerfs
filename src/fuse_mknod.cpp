@@ -140,7 +140,8 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
   int rv;
   const fs::path fusepath{fusepath_};
 
-  rv = ::_mknod(cfg.func.getattr.policy,
+  rv = ::_mknod(ctx_,
+                cfg.func.getattr.policy,
                 cfg.func.mknod.policy,
                 cfg.branches,
                 fusepath,
@@ -150,7 +151,8 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_mknod(cfg.func.getattr.policy,
+      rv = ::_mknod(ctx_,
+                    cfg.func.getattr.policy,
                     cfg.func.mknod.policy,
                     cfg.branches,
                     fusepath,
