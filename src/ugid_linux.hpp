@@ -98,10 +98,7 @@ namespace ugid
         }
 
       if(newgid)
-        {
-          SETREGID(-1,newgid);
-          //          ugid::initgroups(newuid,newgid);
-        }
+        SETREGID(-1,newgid);
 
       if(newuid)
         SETREUID(-1,newuid);
