@@ -69,15 +69,6 @@ namespace ugid
       uid_t newuid;
       gid_t newgid;
 
-      // This should only occur when using ALLOW_IDMAP. When idmap is
-      // allowed the kernel sends FUSE_INVALID_UIDGID (-1) for any
-      // request that is not an inode creation operation.  This should
-      // be safe generally (default_permissions is required when using
-      // ALLOW_IDMAP therefore the kernel will manage permissions) and
-      // in fact better for certain situations such as when chroot is
-      // used and the user doesn't have access to the new root point
-      // or beyond. However, could be a problem on non-POSIX
-      // filesystems.
       newuid = ((newuid_ == FUSE_INVALID_UIDGID) ? 0 : newuid_);
       newgid = ((newgid_ == FUSE_INVALID_UIDGID) ? 0 : newgid_);
 
