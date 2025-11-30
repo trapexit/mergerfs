@@ -55,11 +55,6 @@ struct ugid_t
   gid_t gid;
 };
 
-namespace ugid
-{
-  void init();
-  void initgroups(const uid_t uid, const gid_t gid);
-}
 
 #if defined SYS_setreuid32
 #define SETREUID(R,E) (::syscall(SYS_setreuid32,(R),(E)))
