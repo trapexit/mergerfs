@@ -100,7 +100,7 @@ namespace ugid
       if(newgid)
         {
           SETREGID(-1,newgid);
-          ugid::initgroups(newuid,newgid);
+          //          ugid::initgroups(newuid,newgid);
         }
 
       if(newuid)
