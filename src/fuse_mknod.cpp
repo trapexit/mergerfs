@@ -60,7 +60,7 @@ _mknod_loop_core(const ugid_t    ugid_,
 
   fullpath = createbranch_ / fusepath_;
 
-  rv = ::_mknod_core(fullpath,mode_,umask_,dev_);
+  rv = ::_mknod_core(ugid_,fullpath,mode_,umask_,dev_);
 
   return rv;
 }
