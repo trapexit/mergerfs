@@ -28,11 +28,10 @@ _write_str(const std::string &output_,
   ::fwrite(str_.c_str(),1,str_.size(),f);
 }
 
-template<typename ARGS>
 static
 void
-_run(const ARGS        &args_,
-     const std::string &output_)
+_run(const std::initializer_list<const char*> &args_,
+     const std::string                        &output_)
 {
   std::string hdr;
 
@@ -69,13 +68,7 @@ static
 void
 _mounts(const std::string &output_)
 {
-  auto args =
-    {
-      "cat",
-      "/proc/mounts"
-    };
-
-  ::_run(args,output_);
+  ::_run({"cat","/proc/mounts"},output_);
 }
 
 static
@@ -93,8 +86,7 @@ _mount_point_stats(const std::string &output_)
       mergerfs::api::allpaths(mount.dir.string(),allpaths);
       for(const auto &path : allpaths)
         {
-          auto args = {"stat",path.c_str()};
-          ::_run(args,output_);
+          ::_run({"stat",path.c_str()},output_);
         }
     }
 }
@@ -103,65 +95,74 @@ static
 void
 _mergerfs_version(const std::string &output_)
 {
-  auto args =
-    {
-      "mergerfs",
-      "--version"
-    };
+  ::_run({"mergerfs","--version"},output_);
+}
 
-  ::_run(args,output_);
+static
+void
+_mergerfs_settings(const std::string &output_)
+{
+  fs::MountVec mounts;
+
+  fs::mounts(mounts);
+
+  for(const auto &mount : mounts)
+    {
+      int rv;
+      std::map<std::string,std::string> kvs;
+
+      rv = mergerfs::api::get_kvs(mount.dir.string(),&kvs);
+      if(rv < 0)
+        continue;
+
+      std::string output_str;
+
+      output_str = fmt::format("=== {}/.mergerfs\n",mount.dir.string());
+      for(const auto &[k,v] : kvs)
+        output_str += fmt::format("{}={}\n",k,v);
+      output_str += "\n\n";
+
+      _write_str(output_,output_str);
+    }
 }
 
 static
 void
 _uname(const std::string &output_)
 {
-  auto args =
-    {
-      "uname",
-      "-a"
-    };
-
-  ::_run(args,output_);
+  ::_run({"uname","-a"},output_);
 }
 
 static
 void
 _lsb_release(const std::string &output_)
 {
-  auto args =
-    {
-      "lsb_release",
-      "-a"
-    };
-
-  ::_run(args,output_);
+  ::_run({"lsb_release","-a"},output_);
 }
 
 static
 void
 _df(const std::string &output_)
 {
-  auto args =
-    {
-      "df",
-      "-h"
-    };
-
-  ::_run(args,output_);
+  ::_run({"df","-h"},output_);
 }
 
 static
 void
 _fstab(const std::string &output_)
 {
-  auto args =
-    {
-      "cat",
-      "/etc/fstab"
-    };
+  ::_run({"cat","/etc/fstab"},output_);
+}
 
-  ::_run(args,output_);
+static
+void
+_software_versions(const std::string &output_)
+{
+  ::_run({"docker","--version"},output_);
+  ::_run({"docker","compose","--version"},output_);
+  ::_run({"podman","--version"},output_);
+  ::_run({"podman","compose","--version"},output_);
+  ::_run({"smbd","--version"},output_);
 }
 
 
@@ -195,7 +196,9 @@ mergerfs::collect_info::main(int    argc_,
   ::_lsblk(output_filepath);
   ::_mounts(output_filepath);
   ::_mount_point_stats(output_filepath);
+  ::_mergerfs_settings(output_filepath);
   ::_fstab(output_filepath);
+  ::_software_versions(output_filepath);
 
   fmt::print("* Upload the following file to your"
              " GitHub ticket or put on https://pastebin.com"
