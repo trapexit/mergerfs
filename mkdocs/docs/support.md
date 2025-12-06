@@ -38,8 +38,8 @@ directly.](mailto:support@spawn.link)**
     * Are the client apps using mergerfs running in a container?
 * A `strace` of the app having problems:
     * `strace -fvTtt -s 256 -o /tmp/app.strace.txt <cmd>`
-* A `strace` of mergerfs while the program is trying to do whatever it
-  is failing to do:
+* A `strace` of mergerfs **while** the program is trying to do
+  whatever it is failing to do:
     * `strace -fvTtt -s 256 -p <mergerfsPID> -o /tmp/mergerfs.strace.txt`
 * **Precise** directions on replicating the issue. Do not leave
   **anything** out.

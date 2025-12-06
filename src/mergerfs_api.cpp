@@ -1,5 +1,7 @@
 #include "mergerfs_api.hpp"
 
+#include "fs_xattr.hpp"
+#include "fs_exists.hpp"
 #include "fs_lgetxattr.hpp"
 #include "str.hpp"
 
@@ -31,6 +33,27 @@ _lgetxattr(const std::string &input_path_,
   value_.append(buf.data(),(size_t)rv);
 
   return rv;
+}
+
+bool
+mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
+{
+  fs::path dot_mergerfs_filepath;
+
+  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+
+  return fs::exists(dot_mergerfs_filepath);
+}
+
+int
+mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
+                       std::map<std::string,std::string> *kvs_)
+{
+  fs::path dot_mergerfs_filepath;
+
+  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+
+  return fs::xattr::get(dot_mergerfs_filepath,kvs_);
 }
 
 int
