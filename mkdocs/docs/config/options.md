@@ -213,17 +213,14 @@ config file.
 * **passthrough.max-stack-depth=INT**: Set to `1` another filesystem
   can be stacked on mergerfs. Set to `2` to have mergerfs stacked over
   another filesystem. (default: 1)
-* **gid-cache.expire-timeout=INT**: Number of seconds till
-  supplemental group data is refreshed in the [GID
-  cache](../known_issues_bugs.md#supplemental-user-groups). (default:
-  3600)
-* **gid-cache.remove-timeout=INT**: Number of seconds to wait till
-  cached data is removed due to lack of usage. (default: 43200)
 * **remember-nodes=INT**: The number of seconds to keep the internal
   representation of a file once the OS tells mergerfs it is no longer
   needed. Really only needed for [exporting mergerfs via
   NFS](../remote_filesystems.md) (default: 0)
 * **noforget**: Effectively sets `remember-nodes` to infinity.
+* **allow-idmap=BOOL**: Enables idmap (identity mapping). (default:
+  true)
+
 
 **NOTE:** Options are evaluated in the order listed so if the options
 are **func.rmdir=rand,category.action=ff** the **action** category

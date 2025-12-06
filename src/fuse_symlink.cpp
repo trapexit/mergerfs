@@ -23,7 +23,7 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fs_inode.hpp"
-#include "fs_symlink.hpp"
+#include "fs_symlink_as.hpp"
 #include "fuse_getattr.hpp"
 #include "ugid.hpp"
 
@@ -35,7 +35,8 @@
 
 static
 int
-_symlink_loop_core(const fs::path &newbranch_,
+_symlink_loop_core(const ugid_t    ugid_,
+                   const fs::path &newbranch_,
                    const char     *target_,
                    const fs::path &linkpath_,
                    struct stat    *st_)
@@ -45,7 +46,7 @@ _symlink_loop_core(const fs::path &newbranch_,
 
   fullnewpath = newbranch_ / linkpath_;
 
-  rv = fs::symlink(target_,fullnewpath);
+  rv = fs::symlink_as(ugid_,target_,fullnewpath);
   if((rv >= 0) && (st_ != NULL) && (st_->st_ino == 0))
     {
       fs::lstat(fullnewpath,st_);
@@ -60,7 +61,8 @@ _symlink_loop_core(const fs::path &newbranch_,
 
 static
 int
-_symlink_loop(const fs::path             &existingbranch_,
+_symlink_loop(const ugid_t                ugid_,
+              const fs::path             &existingbranch_,
               const std::vector<Branch*> &newbranches_,
               const char                 *target_,
               const fs::path             &linkpath_,
@@ -72,13 +74,14 @@ _symlink_loop(const fs::path             &existingbranch_,
 
   for(auto &newbranch :newbranches_)
     {
-      rv = fs::clonepath_as_root(existingbranch_,
-                                 newbranch->path,
-                                 newdirpath_);
+      rv = fs::clonepath(existingbranch_,
+                         newbranch->path,
+                         newdirpath_);
       if(rv < 0)
         err = rv;
       else
-        err = ::_symlink_loop_core(newbranch->path,
+        err = ::_symlink_loop_core(ugid_,
+                                   newbranch->path,
                                    target_,
                                    linkpath_,
                                    st_);
@@ -89,7 +92,8 @@ _symlink_loop(const fs::path             &existingbranch_,
 
 static
 int
-_symlink(const Policy::Search &searchFunc_,
+_symlink(const ugid_t          ugid_,
+         const Policy::Search &searchFunc_,
          const Policy::Create &createFunc_,
          const Branches       &branches_,
          const char           *target_,
@@ -111,7 +115,8 @@ _symlink(const Policy::Search &searchFunc_,
   if(rv < 0)
     return rv;
 
-  return ::_symlink_loop(existingbranches[0]->path,
+  return ::_symlink_loop(ugid_,
+                         existingbranches[0]->path,
                          newbranches,
                          target_,
                          linkpath_,
@@ -122,30 +127,14 @@ _symlink(const Policy::Search &searchFunc_,
 int
 FUSE::symlink(const fuse_req_ctx_t *ctx_,
               const char           *target_,
-              const char           *linkpath_,
-              struct stat          *st_,
-              fuse_timeouts_t      *timeouts_)
-{
-  const fs::path linkpath{linkpath_};
-
-  return FUSE::symlink(ctx_,
-                       target_,
-                       linkpath,
-                       st_,
-                       timeouts_);
-}
-
-int
-FUSE::symlink(const fuse_req_ctx_t *ctx_,
-              const char           *target_,
               const fs::path       &linkpath_,
               struct stat          *st_,
               fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  const ugid::Set ugid(ctx_);
 
-  rv = ::_symlink(cfg.func.getattr.policy,
+  rv = ::_symlink(ctx_,
+                  cfg.func.getattr.policy,
                   cfg.func.symlink.policy,
                   cfg.branches,
                   target_,
@@ -154,7 +143,8 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_symlink(cfg.func.getattr.policy,
+      rv = ::_symlink(ctx_,
+                      cfg.func.getattr.policy,
                       cfg.func.symlink.policy,
                       cfg.branches,
                       target_,
@@ -180,4 +170,20 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
     }
 
   return rv;
+}
+
+int
+FUSE::symlink(const fuse_req_ctx_t *ctx_,
+              const char           *target_,
+              const char           *linkpath_,
+              struct stat          *st_,
+              fuse_timeouts_t      *timeouts_)
+{
+  const fs::path linkpath{linkpath_};
+
+  return FUSE::symlink(ctx_,
+                       target_,
+                       linkpath,
+                       st_,
+                       timeouts_);
 }

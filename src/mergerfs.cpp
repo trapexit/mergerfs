@@ -18,12 +18,12 @@
 #include "mergerfs_fsck.hpp"
 #include "mergerfs_collect_info.hpp"
 
+#include "caps.hpp"
 #include "config.hpp"
 #include "fs_path.hpp"
 #include "fs_readahead.hpp"
 #include "fs_umount2.hpp"
 #include "fs_wait_for_mount.hpp"
-#include "gidcache.hpp"
 #include "maintenance_thread.hpp"
 #include "oom.hpp"
 #include "option_parser.hpp"
@@ -269,7 +269,6 @@ _usr2_signal_handler(int signal_)
 {
   // SysLog::info("Received SIGUSR2 - triggering thorough gc");
   // fuse_gc();
-  // GIDCache::clear_all();
 }
 
 static
@@ -340,12 +339,6 @@ _main(int    argc_,
     }
 
   ::_warn_if_not_root();
-
-  MaintenanceThread::push_job([](int count_)
-  {
-    if((count_ % 60) == 0)
-      GIDCache::clear_unused();
-  });
   ::_setup_resources(cfg.scheduling_priority);
   ::_setup_signal_handlers();
   ::_set_oom_score_adj();
@@ -353,6 +346,8 @@ _main(int    argc_,
 
   if(cfg.lazy_umount_mountpoint)
     ::_lazy_umount(cfg.mountpoint);
+
+  caps::setup();
 
   rv = fuse_main(args.argc,
                  args.argv,

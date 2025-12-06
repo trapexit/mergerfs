@@ -4,10 +4,17 @@
 
 ### FreeBSD version
 
-* FreeBSD doesn't have per thread credentials meaning threads must
-  block to change credentials as required by numerous filesystem
-  functions. This impacts performance.
-* FreeBSD's FUSE implementation is lacking many features of Linux.
+* [https://wiki.freebsd.org/FUSEFS](https://wiki.freebsd.org/FUSEFS)
+* FreeBSD does not have per thread credentials nor Linux capabilities
+  like abilities meaning it runs as root and has to create files as
+  root then chown them rather than changing credentials and creating
+  the file as the uid:gid.
+* FreeBSD does not have `getdents` like APIs for reading
+  directories. As a result it uses traditional `readdir`.
+* FreeBSD's FUSE implementation is lacking many features of the Linux
+  version.
+    * runtime interface
+    * ioctl support
     * IO passthrough
     * statx
     * lazy umount
@@ -16,24 +23,8 @@
     * kernel symlink caching
     * kernel readdir caching
     * writeback caching
+    * idmap
     * ...
-
-
-### Supplemental user groups
-
-#### Supplemental group caching
-
-Due to the high cost of querying supplemental groups it is necessary
-for mergerfs to cache the list. As a result if supplemental groups are
-changed while mergerfs is running the cache may become stale. This
-generally isn't a problem as these groups tend not to be changed
-often. However, the cache has a default expiry of 1 hour and after 12
-hours of no usage the cache entry will be removed altogether.
-
-See [gidcache.expire-timeout and
-gid-cache.remove-timeout](config/options.md) and the [runtime
-interface](runtime_interface.md#commands) for forcing expiry and clearing of
-the cache.
 
 
 #### Host vs Container identity
@@ -130,7 +121,7 @@ Details on enabling `mmap` can be found at:
 That said it is recommended that config and runtime files be stored on
 SSDs on a regular filesystem for performance reasons. See [What should
 mergerfs NOT be used
-for?](faq/recommendations_and_warnings.md#what-should-mergerfs-not-be-used-for). Though
+for?](faq/usage_and_functionality.md#what-should-mergerfs-not-be-used-for). Though
 with [passthrough.io](config/passthrough.md) enabled that is less
 of a concern.
 

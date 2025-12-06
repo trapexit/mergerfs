@@ -16,21 +16,112 @@
 
 #pragma once
 
+#include "fuse_req_ctx.h"
+#include "predictability.h"
+
+#include "fuse_kernel.h"
+
+#include <assert.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <vector>
+
+struct ugid_t
+{
+  ugid_t(const uid_t uid_,
+         const gid_t gid_)
+    : uid(uid_),
+      gid(gid_)
+  {
+  }
+
+  ugid_t(const fuse_req_ctx_t *ctx_)
+    : ugid_t(ctx_->uid,ctx_->gid)
+  {
+  }
+
+  uid_t uid;
+  gid_t gid;
+};
+
+#if defined SYS_setreuid32
+#define SETREUID(R,E) (::syscall(SYS_setreuid32,(R),(E)))
+#else
+#define SETREUID(R,E) (::syscall(SYS_setreuid,(R),(E)))
+#endif
+
+#if defined SYS_setregid32
+#define SETREGID(R,E) (::syscall(SYS_setregid32,(R),(E)))
+#else
+#define SETREGID(R,E) (::syscall(SYS_setregid,(R),(E)))
+#endif
+
+#if defined SYS_geteuid32
+#define GETEUID() (::syscall(SYS_geteuid32))
+#else
+#define GETEUID() (::syscall(SYS_geteuid))
+#endif
+
+#if defined SYS_getegid32
+#define GETEGID() (::syscall(SYS_getegid32))
+#else
+#define GETEGID() (::syscall(SYS_getegid))
+#endif
 
 namespace ugid
 {
-  void init();
-  void initgroups(const uid_t uid, const gid_t gid);
+  extern thread_local uid_t currentuid;
+  extern thread_local gid_t currentgid;
+  extern thread_local bool  initialized;
+
+  static
+  inline
+  void
+  set(const uid_t newuid_,
+      const gid_t newgid_)
+  {
+    assert(newuid_ != FUSE_INVALID_UIDGID);
+    assert(newgid_ != FUSE_INVALID_UIDGID);
+
+    if(unlikely(!initialized))
+      {
+        currentuid  = GETEUID();
+        currentgid  = GETEGID();
+        initialized = true;
+      }
+
+    if((newuid_ == currentuid) && (newgid_ == currentgid))
+      return;
+
+    SETREGID(-1,newgid_);
+    SETREUID(-1,newuid_);
+
+    currentuid = newuid_;
+    currentgid = newgid_;
+  }
+
+  struct SetGuard
+  {
+    SetGuard(const ugid_t ugid_)
+      : prev(currentuid,currentgid)
+    {
+      assert(currentuid == 0);
+      assert(currentgid == 0);
+      ugid::set(ugid_.uid,ugid_.gid);
+    }
+
+    ~SetGuard()
+    {
+      ugid::set(prev.uid,prev.gid);
+    }
+
+    const ugid_t prev;
+  };
 }
 
-#if defined __linux__ and UGID_USE_RWLOCK == 0
-#pragma message "using ugid_linux.hpp"
-#include "ugid_linux.hpp"
-#else
-#pragma message "using ugid_rwlock.hpp"
-#include "ugid_rwlock.hpp"
-#endif
+#undef SETREUID
+#undef SETREGID
+#undef GETEUID
+#undef GETEGID

@@ -101,8 +101,6 @@ FUSE::removexattr(const fuse_req_ctx_t *ctx_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  const ugid::Set ugid(ctx_);
-
   return ::_removexattr(cfg.func.removexattr.policy,
                         cfg.func.getxattr.policy,
                         cfg.branches,

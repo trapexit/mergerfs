@@ -14,8 +14,6 @@ namespace FUSE
   int
   passthrough_open(const int fd_)
   {
-    const ugid::SetRootGuard _;
-
     return fuse_passthrough_open(fd_);
   }
 
@@ -24,8 +22,6 @@ namespace FUSE
   int
   passthrough_close(const int backing_id_)
   {
-    const ugid::SetRootGuard _;
-
     return fuse_passthrough_close(backing_id_);
   }
 }

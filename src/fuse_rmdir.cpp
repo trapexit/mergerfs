@@ -96,7 +96,6 @@ FUSE::rmdir(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_)
 {
   const fs::path  fusepath{fusepath_};
-  const ugid::Set ugid(ctx_);
 
   return ::_rmdir(cfg.func.rmdir.policy,
                   cfg.branches,

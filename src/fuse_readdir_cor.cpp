@@ -48,9 +48,7 @@ int
 _concurrent_readdir(ThreadPool          &tp_,
                     const Branches::Ptr &branches_,
                     const fs::path      &rel_dirpath_,
-                    fuse_dirents_t      *dirents_,
-                    const uid_t          uid_,
-                    const gid_t          gid_)
+                    fuse_dirents_t      *dirents_)
 {
   HashSet names;
   std::mutex mutex;
@@ -62,10 +60,8 @@ _concurrent_readdir(ThreadPool          &tp_,
   for(const auto &branch : *branches_)
     {
       auto func =
-        [&,dirents_,uid_,gid_]()
+        [&,dirents_]()
         {
-          const ugid::Set ugid(uid_,gid_);
-
           return ::_readdir(branch.path,
                             rel_dirpath_,
                             names,
@@ -95,7 +91,5 @@ FUSE::ReadDirCOR::operator()(const fuse_req_ctx_t   *ctx_,
   return ::_concurrent_readdir(_tp,
                                cfg.branches,
                                di->fusepath,
-                               dirents_,
-                               ctx_->uid,
-                               ctx_->gid);
+                               dirents_);
 }

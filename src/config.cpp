@@ -78,7 +78,7 @@ Config::CfgConfigFile::to_string() const
 
 Config::Config()
   :
-  allow_idmap(false),
+  allow_idmap(true),
   async_read(true),
   branches(),
   branches_mount_timeout(0),
@@ -102,8 +102,6 @@ Config::Config()
   fsname(),
   func(),
   fuse_msg_size("1M"),
-  gid_cache_expire_timeout(60 * 60),
-  gid_cache_remove_timeout(60 * 60 * 12),
   handle_killpriv(true),
   handle_killpriv_v2(true),
   ignorepponrename(false),
@@ -250,8 +248,8 @@ Config::Config()
   _map["func.utimens"]                = &func.utimens;
   _map["fuse-msg-size"]               = &fuse_msg_size;
   _map["gid"]                         = &_gid;
-  _map["gid-cache.expire-timeout"]    = &gid_cache_expire_timeout;
-  _map["gid-cache.remove-timeout"]    = &gid_cache_remove_timeout;
+  _map["gid-cache.expire-timeout"]    = &_dummy;
+  _map["gid-cache.remove-timeout"]    = &_dummy;
   _map["handle-killpriv"]             = &handle_killpriv;
   _map["handle-killpriv-v2"]          = &handle_killpriv_v2;
   _map["hard-remove"]                 = &_dummy;

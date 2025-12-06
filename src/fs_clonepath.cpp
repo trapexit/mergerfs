@@ -27,6 +27,16 @@
 #include "fs_xattr.hpp"
 #include "ugid.hpp"
 
+#include "fs_close.hpp"
+#include "fs_fstat.hpp"
+#include "fs_mkdirat.hpp"
+#include "fs_openat.hpp"
+#include "fs_fchown.hpp"
+#include "fs_fchmod.hpp"
+#include "fs_futimens.hpp"
+
+#include "scope_guard.hpp"
+
 
 static
 bool
@@ -107,21 +117,62 @@ fs::clonepath(const fs::path &srcpath_,
   return 0;
 }
 
+
+// WORK IN PROGRESS
+static
 int
-fs::clonepath_as_root(const fs::path &srcpath_,
-                      const fs::path &dstpath_,
-                      const fs::path &relpath_,
-                      const bool      return_metadata_errors_)
+_clonepath2(const int       srcfd_,
+            const int       dstfd_,
+            const fs::path &dirname_,
+            const bool      return_metadata_errors_)
 {
-  if(relpath_.empty())
-    return 0;
-  if(srcpath_ == dstpath_)
+  int rv;
+  int srcdirfd;
+  int dstdirfd;
+  struct stat st;
+
+  if(dirname_.empty())
     return 0;
 
-  const ugid::SetRootGuard ugid_guard;
+  rv = fs::mkdirat(dstfd_,dirname_,0);
+  if(rv < 0)
+    return ((rv == -EEXIST) ? 0 : rv);
 
-  return fs::clonepath(srcpath_,
-                       dstpath_,
-                       relpath_,
-                       return_metadata_errors_);
+  srcdirfd = fs::openat(srcfd_,dirname_,O_DIRECTORY);
+  if(srcdirfd < 0)
+    return srcdirfd;
+  DEFER { fs::close(srcdirfd); };
+
+  dstdirfd = fs::openat(dstfd_,dirname_,O_DIRECTORY);
+  if(dstdirfd < 0)
+    return dstdirfd;
+  DEFER { fs::close(dstdirfd); };
+
+  rv = fs::attr::copy(srcdirfd,dstdirfd,FS_ATTR_CLEAR_IMMUTABLE);
+  if(return_metadata_errors_ && (rv < 0) && !::_ignorable_error(-rv))
+    return rv;
+
+  rv = fs::xattr::copy(srcdirfd,dstdirfd);
+  if(return_metadata_errors_ && (rv < 0) && !::_ignorable_error(-rv))
+    return rv;
+
+  rv = fs::fstat(srcdirfd,&st);
+  if(rv < 0)
+    return rv;
+  if(!S_ISDIR(st.st_mode))
+    return -ENOTDIR;
+
+  rv = fs::fchown_check_on_error(dstdirfd,st);
+  if(rv < 0)
+    return rv;
+
+  rv = fs::fchmod_check_on_error(dstdirfd,st);
+  if(rv < 0)
+    return rv;
+
+  rv = fs::futimens(dstdirfd,st);
+  if(rv < 0)
+    return rv;
+
+  return 0;
 }

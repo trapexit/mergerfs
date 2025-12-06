@@ -21,7 +21,7 @@
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_link.hpp"
-#include "fs_mkdir_as_root.hpp"
+#include "fs_mkdir_as.hpp"
 #include "fs_path.hpp"
 #include "fs_remove.hpp"
 #include "fs_rename.hpp"
@@ -105,9 +105,9 @@ _rename_create_path(const Policy::Search &searchPolicy_,
       rv = fs::rename(oldfullpath,newfullpath);
       if(rv < 0)
         {
-          rv = fs::clonepath_as_root(newbranches[0]->path,
-                                     branch.path,
-                                     newfusepath_.parent_path());
+          rv = fs::clonepath(newbranches[0]->path,
+                             branch.path,
+                             newfusepath_.parent_path());
           if(rv >= 0)
             rv = fs::rename(oldfullpath,newfullpath);
         }
@@ -209,7 +209,6 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
   if(rv < 0)
     return rv;
 
-  ugid::SetRootGuard ugidGuard;
   for(auto &branch : obranches_)
     {
       clonesrc  = branch->path;
@@ -219,7 +218,7 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
       rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
       if(rv == -ENOENT)
         {
-          fs::mkdir(clonedst,01777);
+          fs::mkdir_as({0,0},clonedst,01777);
           rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
         }
 
@@ -355,7 +354,6 @@ FUSE::rename(const fuse_req_ctx_t *ctx_,
   int rv;
   const fs::path oldfusepath{oldfusepath_};
   const fs::path newfusepath{newfusepath_};
-  const ugid::Set ugid(ctx_);
 
   rv = ::_rename(oldfusepath,newfusepath);
   if(rv == -EXDEV)

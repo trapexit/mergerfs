@@ -146,7 +146,7 @@ You can remove the reserve by running: `tune2fs -m 0 <device>`
 
 ## I notice massive slowdowns of writes when enabling cache.files.
 
-When file caching is enabled in any form (`cache.files!=off`) it will
+When file caching is enabled in any form (`cache.files!=off`) it may
 issue `getxattr` requests for `security.capability` prior to _every
 single write_. This will usually result in performance degradation,
 especially when using a network filesystem (such as NFS or SMB.)
@@ -178,20 +178,21 @@ disadvantages to each one.
 
 A FUSE based solution has all the downsides of FUSE:
 
-- Higher IO latency due to the trips in and out of kernel space
-- Higher general overhead due to trips in and out of kernel space
-- Double caching when using page caching
-- Misc limitations due to FUSE's design
+* Higher IO latency due to the trips in and out of kernel space
+  (though now minimized with passthrough IO)
+* Higher general overhead due to trips in and out of kernel space
+* Double caching when using page caching
+* Misc limitations due to FUSE's design
 
 But FUSE also has a lot of upsides:
 
-- Easier to offer a cross platform solution
-- Easier forward and backward compatibility
-- Easier updates for users
-- Easier and faster release cadence
-- Allows more flexibility in design and features
-- Overall easier to write, secure, and maintain
-- Much lower barrier to entry (getting code into the kernel takes a
+* Easier to offer a cross platform solution
+* Easier forward and backward compatibility
+* Easier updates for users
+* Easier and faster release cadence
+* Allows more flexibility in design and features
+* Overall easier to write, secure, and maintain
+* Much lower barrier to entry (getting code into the kernel takes a
   lot of time and effort initially)
 
 
@@ -220,44 +221,55 @@ removed to simplify the codebase.
 
 ## How does mergerfs handle credentials?
 
-
 mergerfs is a multithreaded application in order to handle requests
 from the kernel concurrently. Each FUSE message has a header with
 certain details about the request including the process ID (pid) of
 the requesting application, the process' effective user id (uid), and
-group id (gid). To ensure proper POSIX filesystem behavior and
-security mergerfs must change its identity to match that of the
-requester when performing the certain functions on the underlying
-filesystem. As required by standards most Unix/POSIX based systems a
-process and all its threads are under the same uid and gid. However,
-on Linux each thread **may** have its own credentials. This allows
-mergerfs to be multithreaded and for each thread to change to the
-credentials as required by the incoming message it is
-handling. However, currently on FreeBSD this is not possible (though
-there has been
-[discussions](https://wiki.freebsd.org/Per-Thread%20Credentials)) and
-as such must change the credentials of the whole application when
-actioning messages. mergerfs does optimize this behavior by only
-changing credentials and locking the thread to do so if the process is
-currently not the same as what is necessary by the incoming
-request. As a result of this design FreeBSD may experience more
-contention and therefore lower performance than Linux.
+group id (gid).
 
-Additionally, mergerfs [utilizes a cache for supplemental
-groups](../known_issues_bugs.md#supplemental-user-groups) due the the
-high cost of querying that information.
+FUSE and the kernel have two ways of managing permissions. A kernel
+side `default_permissions` option and leaving it to the FUSE
+server. When default permissions is enabled the kernel will do the
+entitlement checks and only allow requests through which should be
+allowed according to normal POSIX permissions. When not enabled it is
+the responsibility of the FUSE server, in this case mergerfs, to do
+whatever is necessary to manage entitlements.
+
+Prior to mergerfs v2.42.0 it would enable `default_permissions` but
+also leveraged the uid and gid available in each FUSE request. The
+thread actioning the request would change its credentials to match
+those of the requesting application to ensure permissions were
+properly handled as well as dealing with some quirks of non-POSIX
+compatible filesystems. However, this strategy had two major
+issues. First, it was not compatible with the new `allow-idmap`
+feature of FUSE which allows a filesystem to advertise it can be used
+with id mapping which is often used with containers. Secondly, it
+caused permission issues when the kernel would say something was
+allowed but due to the way mergerfs was changing creds would
+fail. This mostly came in the form of `chroot`ed setups like used in
+containers. Neither of these tended to impact casual users but did
+break some niche or power user use cases. Since the casual user won't
+notice the subtle changes and it would enable new use cases it was
+decided that the credential handling would change.
+
+As of v2.42.0 mergerfs now runs as root more generally. Either
+changing credentials when creating files (Linux) or chown'ing them
+after creation (FreeBSD).
+
+As a result of this change it is now necessary for the FUSE
+`default_permissions` feature be used for proper entitlements
+management. mergerfs does allow it to be disabled but it should only
+be done so for debugging purposes.
 
 
 ## Does mergerfs support idmap?
 
-Yes. At least in so far as it's been enabled now the FUSE itself
-allows a filesystem to indicate it is allowed.
+Yes, by setting [allow-idmap=true](../config/options.md) (which is the
+default.)
 
 Requires that
 [kernel-permissions-check](../config/kernel-permissions-check.md) be
 enabled (the default.)
-
-If there are any usage issues contact the [author](../support.md).
 
 
 ## What happens if a branch filesystem blocks?
