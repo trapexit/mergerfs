@@ -40,8 +40,10 @@ Func2::GetAttrCombine::operator()(const Branches &branches_,
           continue;
         }
 
-      st_->st_uid  = std::max(st_->st_uid,tmp_st.st_uid);
-      st_->st_gid  = std::max(st_->st_gid,tmp_st.st_gid);
+      if(st_->st_uid == 0)
+        st_->st_uid = tmp_st.st_uid;
+      if(st_->st_gid == 0)
+        st_->st_gid = tmp_st.st_gid;
       st_->st_atim = TimeSpec::newest(st_->st_atim,tmp_st.st_atim);
       st_->st_ctim = TimeSpec::newest(st_->st_ctim,tmp_st.st_ctim);
       st_->st_mtim = TimeSpec::newest(st_->st_mtim,tmp_st.st_mtim);
