@@ -31,7 +31,8 @@
 
 using std::string;
 
-static int
+static
+int
 _action(const Branches::Ptr &branches_,
         const fs::path &fusepath_,
         std::vector<Branch *> &paths_)
@@ -93,7 +94,8 @@ _action(const Branches::Ptr &branches_,
   return 0;
 }
 
-static int
+static
+int
 _search(const Branches::Ptr &branches_,
         const fs::path &fusepath_,
         std::vector<Branch *> &paths_)
@@ -151,7 +153,8 @@ _search(const Branches::Ptr &branches_,
   return 0;
 }
 
-static int
+static
+int
 _create(const Branches::Ptr &branches_,
         std::vector<Branch *> &paths_)
 {
@@ -212,23 +215,26 @@ _create(const Branches::Ptr &branches_,
   return 0;
 }
 
-int Policy::LUP::Action::operator()(const Branches::Ptr &branches_,
-                                    const fs::path &fusepath_,
-                                    std::vector<Branch *> &paths_) const
+int
+Policy::LUP::Action::operator()(const Branches::Ptr &branches_,
+                                const fs::path &fusepath_,
+                                std::vector<Branch *> &paths_) const
 {
   return ::_action(branches_, fusepath_, paths_);
 }
 
-int Policy::LUP::Create::operator()(const Branches::Ptr &branches_,
-                                    const fs::path &fusepath_,
-                                    std::vector<Branch *> &paths_) const
+int
+Policy::LUP::Create::operator()(const Branches::Ptr &branches_,
+                                const fs::path &fusepath_,
+                                std::vector<Branch *> &paths_) const
 {
   return ::_create(branches_, paths_);
 }
 
-int Policy::LUP::Search::operator()(const Branches::Ptr &branches_,
-                                    const fs::path &fusepath_,
-                                    std::vector<Branch *> &paths_) const
+int
+Policy::LUP::Search::operator()(const Branches::Ptr &branches_,
+                                const fs::path &fusepath_,
+                                std::vector<Branch *> &paths_) const
 {
   return ::_search(branches_, fusepath_, paths_);
 }
