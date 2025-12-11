@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2025, François-Xavier Payet <fx@payet.io>
+  Copyright (c) 2025, Antonio SJ Musumeci <trapexit@spawn.link> and contributors
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -22,49 +22,46 @@
 
 namespace Policy
 {
-    namespace LUP
+  namespace LUP
+  {
+    class Action final : public Policy::ActionImpl
     {
-        class Action final : public Policy::ActionImpl
-        {
-        public:
-            Action()
-                : Policy::ActionImpl("lup")
-            {
-            }
+    public:
+      Action()
+          : Policy::ActionImpl("lup")
+      {}
 
-        public:
-            int operator()(const Branches::Ptr &,
-                           const fs::path &,
-                           std::vector<Branch *> &) const final;
-        };
+    public:
+      int operator()(const Branches::Ptr &,
+                     const fs::path &,
+                     std::vector<Branch *> &) const final;
+    };
 
-        class Create final : public Policy::CreateImpl
-        {
-        public:
-            Create()
-                : Policy::CreateImpl("lup")
-            {
-            }
+    class Create final : public Policy::CreateImpl
+    {
+    public:
+      Create()
+          : Policy::CreateImpl("lup")
+      {}
 
-        public:
-            int operator()(const Branches::Ptr &,
-                           const fs::path &,
-                           std::vector<Branch *> &) const final;
-            bool path_preserving() const final { return false; }
-        };
+    public:
+      int operator()(const Branches::Ptr &,
+                     const fs::path &,
+                     std::vector<Branch *> &) const final;
+      bool path_preserving() const final { return false; }
+    };
 
-        class Search final : public Policy::SearchImpl
-        {
-        public:
-            Search()
-                : Policy::SearchImpl("lup")
-            {
-            }
+    class Search final : public Policy::SearchImpl
+    {
+    public:
+      Search()
+          : Policy::SearchImpl("lup")
+      {}
 
-        public:
-            int operator()(const Branches::Ptr &,
-                           const fs::path &,
-                           std::vector<Branch *> &) const final;
-        };
-    }
+    public:
+      int operator()(const Branches::Ptr &,
+                     const fs::path &,
+                     std::vector<Branch *> &) const final;
+    };
+  }
 }
