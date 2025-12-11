@@ -19,6 +19,7 @@
 #include "errno.hpp"
 #include "fs_info.hpp"
 #include "fs_path.hpp"
+#include "policies.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
