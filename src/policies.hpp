@@ -23,7 +23,6 @@
 #include "policy_epff.hpp"
 #include "policy_eplfs.hpp"
 #include "policy_eplus.hpp"
-#include "policy_eplup.hpp"
 #include "policy_epmfs.hpp"
 #include "policy_eppfrd.hpp"
 #include "policy_eprand.hpp"
@@ -51,7 +50,6 @@ struct Policies
     static Policy::EPAll::Action   epall;
     static Policy::EPFF::Action    epff;
     static Policy::EPLFS::Action   eplfs;
-    static Policy::EPLUP::Action   eplup;
     static Policy::EPLUS::Action   eplus;
     static Policy::EPMFS::Action   epmfs;
     static Policy::EPPFRD::Action  eppfrd;
@@ -79,7 +77,6 @@ struct Policies
     static Policy::EPAll::Create   epall;
     static Policy::EPFF::Create    epff;
     static Policy::EPLFS::Create   eplfs;
-    static Policy::EPLUP::Create   eplup;
     static Policy::EPLUS::Create   eplus;
     static Policy::EPMFS::Create   epmfs;
     static Policy::EPPFRD::Create  eppfrd;
@@ -107,7 +104,6 @@ struct Policies
     static Policy::EPAll::Search   epall;
     static Policy::EPFF::Search    epff;
     static Policy::EPLFS::Search   eplfs;
-    static Policy::EPLUP::Search   eplup;
     static Policy::EPLUS::Search   eplus;
     static Policy::EPMFS::Search   epmfs;
     static Policy::EPPFRD::Search  eppfrd;
