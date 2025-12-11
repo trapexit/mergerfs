@@ -28,6 +28,7 @@
   FUNC(epff)                                    \
   FUNC(eplfs)                                   \
   FUNC(eplus)                                   \
+  FUNC(eplup)                                   \
   FUNC(epmfs)                                   \
   FUNC(eppfrd)                                  \
   FUNC(eprand)                                  \
@@ -35,6 +36,7 @@
   FUNC(ff)                                      \
   FUNC(lfs)                                     \
   FUNC(lus)                                     \
+  FUNC(lup)                                     \
   FUNC(mfs)                                     \
   FUNC(msplfs)                                  \
   FUNC(msplus)                                  \
@@ -73,6 +75,7 @@ Policy::EPAll::Action   Policies::Action::epall;
 Policy::EPFF::Action    Policies::Action::epff;
 Policy::EPLFS::Action   Policies::Action::eplfs;
 Policy::EPLUS::Action   Policies::Action::eplus;
+Policy::EPLUP::Action   Policies::Action::eplup;
 Policy::EPMFS::Action   Policies::Action::epmfs;
 Policy::EPPFRD::Action  Policies::Action::eppfrd;
 Policy::EPRand::Action  Policies::Action::eprand;
@@ -80,6 +83,7 @@ Policy::ERoFS::Action   Policies::Action::erofs;
 Policy::FF::Action      Policies::Action::ff;
 Policy::LFS::Action     Policies::Action::lfs;
 Policy::LUS::Action     Policies::Action::lus;
+Policy::LUP::Action     Policies::Action::lup;
 Policy::MFS::Action     Policies::Action::mfs;
 Policy::MSPLFS::Action  Policies::Action::msplfs;
 Policy::MSPLUS::Action  Policies::Action::msplus;
@@ -94,6 +98,7 @@ Policy::EPAll::Create   Policies::Create::epall;
 Policy::EPFF::Create    Policies::Create::epff;
 Policy::EPLFS::Create   Policies::Create::eplfs;
 Policy::EPLUS::Create   Policies::Create::eplus;
+Policy::EPLUP::Create   Policies::Create::eplup;
 Policy::EPMFS::Create   Policies::Create::epmfs;
 Policy::EPPFRD::Create  Policies::Create::eppfrd;
 Policy::EPRand::Create  Policies::Create::eprand;
@@ -101,6 +106,7 @@ Policy::ERoFS::Create   Policies::Create::erofs;
 Policy::FF::Create      Policies::Create::ff;
 Policy::LFS::Create     Policies::Create::lfs;
 Policy::LUS::Create     Policies::Create::lus;
+Policy::LUP::Create     Policies::Create::lup;
 Policy::MFS::Create     Policies::Create::mfs;
 Policy::MSPLFS::Create  Policies::Create::msplfs;
 Policy::MSPLUS::Create  Policies::Create::msplus;
@@ -115,6 +121,7 @@ Policy::EPAll::Search   Policies::Search::epall;
 Policy::EPFF::Search    Policies::Search::epff;
 Policy::EPLFS::Search   Policies::Search::eplfs;
 Policy::EPLUS::Search   Policies::Search::eplus;
+Policy::EPLUP::Search   Policies::Search::eplup;
 Policy::EPMFS::Search   Policies::Search::epmfs;
 Policy::EPPFRD::Search  Policies::Search::eppfrd;
 Policy::EPRand::Search  Policies::Search::eprand;
@@ -122,6 +129,7 @@ Policy::ERoFS::Search   Policies::Search::erofs;
 Policy::FF::Search      Policies::Search::ff;
 Policy::LFS::Search     Policies::Search::lfs;
 Policy::LUS::Search     Policies::Search::lus;
+Policy::LUP::Search     Policies::Search::lup;
 Policy::MFS::Search     Policies::Search::mfs;
 Policy::MSPLFS::Search  Policies::Search::msplfs;
 Policy::MSPLUS::Search  Policies::Search::msplus;

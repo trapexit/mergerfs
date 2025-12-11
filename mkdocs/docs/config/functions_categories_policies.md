@@ -90,7 +90,7 @@ suddenly become read-only when it encounters an error.
 Policies, as described below, are of two basic classifications. `path
 preserving` and `non-path preserving`.
 
-All policies which start with `ep` (`epff`, `eplfs`, `eplus`, `epmfs`,
+All policies which start with `ep` (`epff`, `eplfs`, `eplus`, `eplup`, `epmfs`,
 `eprand`) are `path preserving`. `ep` stands for `existing path`.
 
 A path preserving policy will only consider branches where the relative
@@ -116,6 +116,8 @@ but it makes things a bit more uniform.
 | mfs (most free space)                                           | Pick the branch with the most available free space.                                                                                                                             |
 | ff (first found)                                                | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found.                                                                 |
 | lfs (least free space)                                          | Pick the branch with the least available free space.                                                                                                                            |
+| lup (least used percent)                                        | Pick the branch with the least used 
+percentage of space                                                                                                                         |
 | lus (least used space)                                          | Pick the branch with the least used space.                                                                                                                                      |
 | all                                                             | Search: For **mkdir**, **mknod**, and **symlink** it will apply to all branches. **create** works like **ff**.                                                                  |
 | msppfrd (most shared path, percentage free random distribution) | Like **eppfrd** but if it fails to find a branch it will try again with the parent directory. Continues this pattern till finding one.                                          |
@@ -127,6 +129,8 @@ but it makes things a bit more uniform.
 | eprand (existing path, random)                                  | Calls **epall** and then randomizes. Returns 1.                                                                                                                                 |
 | epff (existing path, first found)                               | Given the order of the branches, as defined at mount time or configured at runtime, act on the first one found where the relative path exists.                                  |
 | eplfs (existing path, least free space)                         | Of all the branches on which the relative path exists choose the branch with the least free space.                                                                              |
+| eplup (existing path, least used percent)                       | Of all the branches on which the relative path exists choose the branch with the least used
+percentage of space                                                                 |
 | eplus (existing path, least used space)                         | Of all the branches on which the relative path exists choose the branch with the least used space.                                                                              |
 | epall (existing path, all)                                      | For **mkdir**, **mknod**, and **symlink** it will apply to all found. **create** works like **epff** (but more expensive because it doesn't stop after finding a valid branch). |
 | newest                                                          | Pick the file / directory with the largest mtime.                                                                                                                               |
