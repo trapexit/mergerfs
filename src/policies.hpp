@@ -23,6 +23,7 @@
 #include "policy_epff.hpp"
 #include "policy_eplfs.hpp"
 #include "policy_eplus.hpp"
+#include "policy_eplup.hpp"
 #include "policy_epmfs.hpp"
 #include "policy_eppfrd.hpp"
 #include "policy_eprand.hpp"
@@ -30,6 +31,7 @@
 #include "policy_ff.hpp"
 #include "policy_lfs.hpp"
 #include "policy_lus.hpp"
+#include "policy_lup.hpp"
 #include "policy_mfs.hpp"
 #include "policy_msplfs.hpp"
 #include "policy_msplus.hpp"
@@ -49,6 +51,7 @@ struct Policies
     static Policy::EPAll::Action   epall;
     static Policy::EPFF::Action    epff;
     static Policy::EPLFS::Action   eplfs;
+    static Policy::EPLUP::Action   eplup;
     static Policy::EPLUS::Action   eplus;
     static Policy::EPMFS::Action   epmfs;
     static Policy::EPPFRD::Action  eppfrd;
@@ -56,6 +59,7 @@ struct Policies
     static Policy::ERoFS::Action   erofs;
     static Policy::FF::Action      ff;
     static Policy::LFS::Action     lfs;
+    static Policy::LUP::Action     lup;
     static Policy::LUS::Action     lus;
     static Policy::MFS::Action     mfs;
     static Policy::MSPLFS::Action  msplfs;
@@ -75,6 +79,7 @@ struct Policies
     static Policy::EPAll::Create   epall;
     static Policy::EPFF::Create    epff;
     static Policy::EPLFS::Create   eplfs;
+    static Policy::EPLUP::Create   eplup;
     static Policy::EPLUS::Create   eplus;
     static Policy::EPMFS::Create   epmfs;
     static Policy::EPPFRD::Create  eppfrd;
@@ -82,6 +87,7 @@ struct Policies
     static Policy::ERoFS::Create   erofs;
     static Policy::FF::Create      ff;
     static Policy::LFS::Create     lfs;
+    static Policy::LUP::Create     lup;
     static Policy::LUS::Create     lus;
     static Policy::MFS::Create     mfs;
     static Policy::MSPLFS::Create  msplfs;
@@ -101,6 +107,7 @@ struct Policies
     static Policy::EPAll::Search   epall;
     static Policy::EPFF::Search    epff;
     static Policy::EPLFS::Search   eplfs;
+    static Policy::EPLUP::Search   eplup;
     static Policy::EPLUS::Search   eplus;
     static Policy::EPMFS::Search   epmfs;
     static Policy::EPPFRD::Search  eppfrd;
@@ -108,6 +115,7 @@ struct Policies
     static Policy::ERoFS::Search   erofs;
     static Policy::FF::Search      ff;
     static Policy::LFS::Search     lfs;
+    static Policy::LUP::Search     lup;
     static Policy::LUS::Search     lus;
     static Policy::MFS::Search     mfs;
     static Policy::MSPLFS::Search  msplfs;
