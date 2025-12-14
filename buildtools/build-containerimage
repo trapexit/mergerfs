@@ -2,6 +2,7 @@
 
 GIT_BRANCH="${1:-master}"
 
+set -x
 podman \
     build \
     --squash \
@@ -11,5 +12,5 @@ podman \
     --build-arg="BRANCH=${GIT_BRANCH}" \
     -v "${PWD}":/mnt:ro \
     -f "buildtools/containerimage/Containerfile" \
-    --tag "mergerfs:${GIT_BRANCH}" \
+    --tag "ghcr.io/trapexit/mergerfs:${GIT_BRANCH}" \
     buildtools/
