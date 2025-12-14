@@ -35,6 +35,7 @@
   FUNC(ff)                                      \
   FUNC(lfs)                                     \
   FUNC(lus)                                     \
+  FUNC(lup)                                     \
   FUNC(mfs)                                     \
   FUNC(msplfs)                                  \
   FUNC(msplus)                                  \
@@ -80,6 +81,7 @@ Policy::ERoFS::Action   Policies::Action::erofs;
 Policy::FF::Action      Policies::Action::ff;
 Policy::LFS::Action     Policies::Action::lfs;
 Policy::LUS::Action     Policies::Action::lus;
+Policy::LUP::Action     Policies::Action::lup;
 Policy::MFS::Action     Policies::Action::mfs;
 Policy::MSPLFS::Action  Policies::Action::msplfs;
 Policy::MSPLUS::Action  Policies::Action::msplus;
@@ -101,6 +103,7 @@ Policy::ERoFS::Create   Policies::Create::erofs;
 Policy::FF::Create      Policies::Create::ff;
 Policy::LFS::Create     Policies::Create::lfs;
 Policy::LUS::Create     Policies::Create::lus;
+Policy::LUP::Create     Policies::Create::lup;
 Policy::MFS::Create     Policies::Create::mfs;
 Policy::MSPLFS::Create  Policies::Create::msplfs;
 Policy::MSPLUS::Create  Policies::Create::msplus;
@@ -122,6 +125,7 @@ Policy::ERoFS::Search   Policies::Search::erofs;
 Policy::FF::Search      Policies::Search::ff;
 Policy::LFS::Search     Policies::Search::lfs;
 Policy::LUS::Search     Policies::Search::lus;
+Policy::LUP::Search     Policies::Search::lup;
 Policy::MFS::Search     Policies::Search::mfs;
 Policy::MSPLFS::Search  Policies::Search::msplfs;
 Policy::MSPLUS::Search  Policies::Search::msplus;
