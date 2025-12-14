@@ -16,6 +16,7 @@
 
 #include "fs_movefile_and_open.hpp"
 
+#include "base_types.h"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_close.hpp"
@@ -30,7 +31,6 @@
 #include "fs_rename.hpp"
 #include "fs_stat.hpp"
 #include "fs_unlink.hpp"
-#include "int_types.h"
 #include "policy.hpp"
 #include "ugid.hpp"
 

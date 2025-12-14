@@ -1,19 +1,20 @@
 #include "mergerfs_fsck.hpp"
 
+#include "fs_close.hpp"
+#include "fs_copyfile.hpp"
 #include "fs_lchmod.hpp"
 #include "fs_lchown.hpp"
-#include "fs_close.hpp"
 #include "fs_lgetxattr.hpp"
 #include "fs_lstat.hpp"
 #include "fs_open.hpp"
-#include "int_types.h"
-#include "str.hpp"
-#include "fs_copyfile.hpp"
 #include "mergerfs_api.hpp"
+#include "str.hpp"
 
 #include "fmt/core.h"
 #include "fmt/chrono.h"
 #include "CLI11.hpp"
+
+#include "base_types.h"
 
 #include <filesystem>
 

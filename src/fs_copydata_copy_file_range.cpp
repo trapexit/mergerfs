@@ -20,7 +20,7 @@
 #include "fs_copy_file_range.hpp"
 #include "fs_fstat.hpp"
 
-#include "int_types.h"
+#include "base_types.h"
 
 
 static

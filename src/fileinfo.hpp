@@ -20,9 +20,9 @@
 #include "fh.hpp"
 #include "fs_path.hpp"
 
-#include <mutex>
+#include "base_types.h"
 
-#include "int_types.h"
+#include <mutex>
 
 
 class FileInfo : public FH

@@ -19,7 +19,8 @@
 #pragma once
 
 #include "fuse_kernel.h"
-#include "int_types.h"
+
+#include "base_types.h"
 
 #include <string>
 

@@ -26,6 +26,8 @@
 #include "policy_error.hpp"
 #include "rwlock.hpp"
 
+#include "base_types.h"
+
 #include <limits>
 #include <string>
 
@@ -33,60 +35,61 @@ using std::string;
 
 static
 int
-_action(const Branches::Ptr &branches_,
-        const fs::path &fusepath_,
-        std::vector<Branch *> &paths_)
+_action(const Branches::Ptr  &branches_,
+        const fs::path       &fusepath_,
+        std::vector<Branch*> &paths_)
 {
   int rv;
   int error;
   fs::info_t info;
   Branch *obranch;
+  u64 best_used;
+  u64 best_total;
 
+  best_used = 0;
+  best_total = 1;
   obranch = nullptr;
   error = ENOENT;
 
-  uint64_t best_used = 0;
-  uint64_t best_total = 1;
-
-  for (auto &branch : *branches_)
-  {
-    if (branch.ro())
-      error_and_continue(error, EROFS);
-    if (!fs::exists(branch.path, fusepath_))
-      error_and_continue(error, ENOENT);
-    rv = fs::info(branch.path, &info);
-    if (rv < 0)
-      error_and_continue(error, ENOENT);
-    if (info.readonly)
-      error_and_continue(error, EROFS);
-
-    uint64_t used = info.spaceused;
-    uint64_t total = info.spaceused + info.spaceavail;
-    if (total == 0)
+  for(auto &branch : *branches_)
     {
-      used = 0;
-      total = 1;
-    }
+      if(branch.ro())
+        error_and_continue(error,EROFS);
+      if(!fs::exists(branch.path,fusepath_))
+        error_and_continue(error,ENOENT);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
 
-    if (obranch == nullptr)
-    {
+      u64 used  = info.spaceused;
+      u64 total = info.spaceused + info.spaceavail;
+      if(total == 0)
+        {
+          used = 0;
+          total = 1;
+        }
+
+      if(obranch == nullptr)
+        {
+          best_used = used;
+          best_total = total;
+          obranch = &branch;
+          continue;
+        }
+
+      f80 lhs = (f80)used * (f80)best_total;
+      f80 rhs = (f80)best_used * (f80)total;
+      if(lhs >= rhs)
+        continue;
+
       best_used = used;
       best_total = total;
       obranch = &branch;
-      continue;
     }
 
-    unsigned __int128 lhs = (unsigned __int128)used * (unsigned __int128)best_total;
-    unsigned __int128 rhs = (unsigned __int128)best_used * (unsigned __int128)total;
-    if (lhs >= rhs)
-      continue;
-
-    best_used = used;
-    best_total = total;
-    obranch = &branch;
-  }
-
-  if (obranch == nullptr)
+  if(obranch == nullptr)
     return -error;
 
   paths_.push_back(obranch);
@@ -101,51 +104,53 @@ _search(const Branches::Ptr &branches_,
         std::vector<Branch *> &paths_)
 {
   int rv;
-  uint64_t used;
-  uint64_t avail;
-  uint64_t best_used = 0;
-  uint64_t best_total = 1;
+  u64 used;
+  u64 avail;
+  u64 best_used;
+  u64 best_total;
   Branch *obranch;
 
+  best_used = 0;
+  best_total = 1;
   obranch = nullptr;
 
-  for (auto &branch : *branches_)
-  {
-    if (!fs::exists(branch.path, fusepath_))
-      continue;
-    rv = fs::statvfs_cache_spaceused(branch.path, &used);
-    if (rv < 0)
-      continue;
-    rv = fs::statvfs_cache_spaceavail(branch.path, &avail);
-    if (rv < 0)
-      continue;
-
-    uint64_t total = used + avail;
-    if (total == 0)
+  for(auto &branch : *branches_)
     {
-      used = 0;
-      total = 1;
-    }
+      if(!fs::exists(branch.path,fusepath_))
+        continue;
+      rv = fs::statvfs_cache_spaceused(branch.path,&used);
+      if(rv < 0)
+        continue;
+      rv = fs::statvfs_cache_spaceavail(branch.path,&avail);
+      if(rv < 0)
+        continue;
 
-    if (obranch == nullptr)
-    {
+      u64 total = used + avail;
+      if(total == 0)
+        {
+          used = 0;
+          total = 1;
+        }
+
+      if(obranch == nullptr)
+        {
+          best_used = used;
+          best_total = total;
+          obranch = &branch;
+          continue;
+        }
+
+      f80 lhs = (f80)used * (f80)best_total;
+      f80 rhs = (f80)best_used * (f80)total;
+      if(lhs >= rhs)
+        continue;
+
       best_used = used;
       best_total = total;
       obranch = &branch;
-      continue;
     }
 
-    unsigned __int128 lhs = (unsigned __int128)used * (unsigned __int128)best_total;
-    unsigned __int128 rhs = (unsigned __int128)best_used * (unsigned __int128)total;
-    if (lhs >= rhs)
-      continue;
-
-    best_used = used;
-    best_total = total;
-    obranch = &branch;
-  }
-
-  if (obranch == nullptr)
+  if(obranch == nullptr)
     return -ENOENT;
 
   paths_.push_back(obranch);
@@ -155,59 +160,60 @@ _search(const Branches::Ptr &branches_,
 
 static
 int
-_create(const Branches::Ptr &branches_,
-        std::vector<Branch *> &paths_)
+_create(const Branches::Ptr  &branches_,
+        std::vector<Branch*> &paths_)
 {
   int rv;
   int error;
+  u64 best_used;
+  u64 best_total;
   fs::info_t info;
   Branch *obranch;
 
+  best_used = 0;
+  best_total = 1;
   obranch = nullptr;
   error = ENOENT;
 
-  uint64_t best_used = 0;
-  uint64_t best_total = 1;
-
-  for (auto &branch : *branches_)
-  {
-    if (branch.ro_or_nc())
-      error_and_continue(error, EROFS);
-    rv = fs::info(branch.path, &info);
-    if (rv < 0)
-      error_and_continue(error, ENOENT);
-    if (info.readonly)
-      error_and_continue(error, EROFS);
-    if (info.spaceavail < branch.minfreespace())
-      error_and_continue(error, ENOSPC);
-
-    uint64_t used = info.spaceused;
-    uint64_t total = info.spaceused + info.spaceavail;
-    if (total == 0)
+  for(auto &branch : *branches_)
     {
-      used = 0;
-      total = 1;
-    }
+      if(branch.ro_or_nc())
+        error_and_continue(error,EROFS);
+      rv = fs::info(branch.path,&info);
+      if(rv < 0)
+        error_and_continue(error,ENOENT);
+      if(info.readonly)
+        error_and_continue(error,EROFS);
+      if(info.spaceavail < branch.minfreespace())
+        error_and_continue(error,ENOSPC);
 
-    if (obranch == nullptr)
-    {
+      u64 used  = info.spaceused;
+      u64 total = info.spaceused + info.spaceavail;
+      if(total == 0)
+        {
+          used = 0;
+          total = 1;
+        }
+
+      if(obranch == nullptr)
+        {
+          best_used = used;
+          best_total = total;
+          obranch = &branch;
+          continue;
+        }
+
+      f80 lhs = (f80)used * (f80)best_total;
+      f80 rhs = (f80)best_used * (f80)total;
+      if(lhs >= rhs)
+        continue;
+
       best_used = used;
       best_total = total;
       obranch = &branch;
-      continue;
     }
 
-    unsigned __int128 lhs = (unsigned __int128)used * (unsigned __int128)best_total;
-    unsigned __int128 rhs = (unsigned __int128)best_used * (unsigned __int128)total;
-    if (lhs >= rhs)
-      continue;
-
-    best_used = used;
-    best_total = total;
-    obranch = &branch;
-  }
-
-  if (obranch == nullptr)
+  if(obranch == nullptr)
     return -error;
 
   paths_.push_back(obranch);
@@ -216,25 +222,25 @@ _create(const Branches::Ptr &branches_,
 }
 
 int
-Policy::LUP::Action::operator()(const Branches::Ptr &branches_,
-                                const fs::path &fusepath_,
-                                std::vector<Branch *> &paths_) const
+Policy::LUP::Action::operator()(const Branches::Ptr  &branches_,
+                                const fs::path       &fusepath_,
+                                std::vector<Branch*> &paths_) const
 {
-  return ::_action(branches_, fusepath_, paths_);
+  return ::_action(branches_,fusepath_,paths_);
 }
 
 int
-Policy::LUP::Create::operator()(const Branches::Ptr &branches_,
-                                const fs::path &fusepath_,
-                                std::vector<Branch *> &paths_) const
+Policy::LUP::Create::operator()(const Branches::Ptr  &branches_,
+                                const fs::path       &fusepath_,
+                                std::vector<Branch*> &paths_) const
 {
-  return ::_create(branches_, paths_);
+  return ::_create(branches_,paths_);
 }
 
 int
-Policy::LUP::Search::operator()(const Branches::Ptr &branches_,
-                                const fs::path &fusepath_,
-                                std::vector<Branch *> &paths_) const
+Policy::LUP::Search::operator()(const Branches::Ptr  &branches_,
+                                const fs::path       &fusepath_,
+                                std::vector<Branch*> &paths_) const
 {
-  return ::_search(branches_, fusepath_, paths_);
+  return ::_search(branches_,fusepath_,paths_);
 }

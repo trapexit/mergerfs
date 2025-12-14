@@ -1,6 +1,6 @@
 #pragma once
 
-#include "int_types.h"
+#include "base_types.h"
 
 #include <sys/ioctl.h>
 

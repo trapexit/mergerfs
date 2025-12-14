@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "int_types.h"
+#include "base_types.h"
 
 #define FS_ATTR_NONE (0)
 #define FS_ATTR_CLEAR_IMMUTABLE (1 << 0)
