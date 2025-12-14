@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "int_types.h"
+#include "base_types.h"
 #include "to_neg_errno.hpp"
 
 #include <unistd.h>

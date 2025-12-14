@@ -18,7 +18,7 @@
 
 #include "fh.hpp"
 
-#include "int_types.h"
+#include "base_types.h"
 
 
 class DirInfo : public FH

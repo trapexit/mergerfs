@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "int_types.h"
+#include "base_types.h"
 #include "fuse_msgbuf_t.h"
 
 u32      msgbuf_get_pagesize();

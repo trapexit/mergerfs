@@ -23,7 +23,7 @@
 #include "fs_glob.hpp"
 #include "fs_is_rofs.hpp"
 #include "fs_realpathize.hpp"
-#include "int_types.h"
+#include "base_types.h"
 #include "num.hpp"
 #include "str.hpp"
 #include "syslog.hpp"
