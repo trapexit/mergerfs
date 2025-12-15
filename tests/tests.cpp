@@ -309,7 +309,7 @@ test_rmdir()
 {
   int fd;
 
-  fd = openat(AT_FDCWD,"foo",O_CREAT|O_EXCL,0777);
+  fd = openat(AT_FDCWD,"",O_DIRECTORY,0777);
 
 
   close(fd);
