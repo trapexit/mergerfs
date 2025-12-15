@@ -37,14 +37,6 @@ _readdir(const Branches::Ptr    &branches_,
       const auto &branch = *(branches_)[i];
       const auto  fd     = fds_[i];
 
-      abs_dirpath = branch.path / rel_dirpath_;
-
-      fd = fs::open_dir_ro(abs_dirpath);
-      err = fd;
-      if(fd < 0)
-        continue;
-      DEFER{ fs::close(fd); };
-
       while(true)
         {
           ssize_t nread;
