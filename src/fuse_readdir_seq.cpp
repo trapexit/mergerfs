@@ -29,6 +29,18 @@
 #endif
 
 int
+FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
+                          const char           *fusepath_,
+                          fuse_file_info_t     *ffi_)
+{
+  DirInfo *di = DirInfo::from_fh(ffi_->fh);
+
+  return ::_readdir(cfg.branches,
+                    di->fusepath,
+                    dirents_);
+}
+
+int
 FUSE::ReadDirSeq::readdir(const fuse_req_ctx_t   *ctx_,
                           const fuse_file_info_t *ffi_,
                           fuse_dirents_t         *dirents_)
