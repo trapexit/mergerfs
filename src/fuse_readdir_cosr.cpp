@@ -58,18 +58,18 @@ _readdir(ThreadPool          &tp_,
   return rv;
 }
 
-// int
-// FUSE::ReadDirCOSR::open(const fuse_req_ctx_t   *ctx_,
-//                         fuse_file_info_t const *ffi_,
-//                         fuse_dirents_t         *dirents_)
-// {
-//   DirInfo *di = DirInfo::from_fh(ffi_->fh);
+int
+FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
+                          const char           *fusepath_,
+                          fuse_file_info_t     *ffi_)
+{
+  DirInfo *di;
 
-//   return ::_readdir(_tp,
-//                     cfg.branches,
-//                     di->fusepath,
-//                     dirents_);
-// }
+  di = new DirInfo(fusepath_);
+
+
+  return 0;
+}
 
 int
 FUSE::ReadDirCOSR::readdir(const fuse_req_ctx_t   *ctx_,
