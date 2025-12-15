@@ -322,7 +322,8 @@ test_rmdir()
   TEST_CHECK(rv == 0);
 
   struct stat st;
-  fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
+  rv = fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
+  TEST_CHECK(rv == 0);
 
   close(dir_fd);
   close(root_fd);
