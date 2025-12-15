@@ -318,7 +318,6 @@ test_rmdir()
   file_fd = openat(root_fd,"test-file",O_CREAT|O_EXCL,0555);
   TEST_CHECK(file_fd >= 0);
 
-
   rv = mkdirat(root_fd,"test-dir",0777);
   TEST_CHECK(rv == 0);
   dir_fd = openat(root_fd,"test-dir",O_DIRECTORY);
