@@ -29,8 +29,11 @@ namespace FUSE
     ReadDirSeq() {}
     ~ReadDirSeq() {}
 
-    int operator()(const fuse_req_ctx_t   *ctx,
-                   const fuse_file_info_t *ffi,
-                   fuse_dirents_t         *buf);
+    int opendir(const fuse_req_ctx_t *ctx,
+                const char           *fusepath,
+                fuse_file_info_t     *ffi);
+    int readdir(const fuse_req_ctx_t   *ctx,
+                const fuse_file_info_t *ffi,
+                fuse_dirents_t         *buf);
   };
 }
