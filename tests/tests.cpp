@@ -128,7 +128,7 @@ test_config_branches()
   Branches::Ptr bcp0;
   Branches::Ptr bcp1;
 
-  minfreespace = 1234;
+  b.minfreespace = 1234;
   TEST_CHECK(b->minfreespace() == 1234);
   TEST_CHECK(b.to_string() == "");
 
