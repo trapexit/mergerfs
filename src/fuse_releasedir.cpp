@@ -18,6 +18,7 @@
 
 #include "config.hpp"
 #include "dirinfo.hpp"
+#include "fs_close.hpp"
 
 #include "fuse.h"
 
