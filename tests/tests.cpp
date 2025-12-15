@@ -324,6 +324,7 @@ test_rmdir()
   struct stat st;
   rv = fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
+  TEST_MSG("expected: 0; got: %d",rv);
 
   close(dir_fd);
   close(root_fd);
