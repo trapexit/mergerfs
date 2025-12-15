@@ -111,8 +111,6 @@ FUSE::ReadDir::opendir(const fuse_req_ctx_t *ctx_,
   assert(readdir);
 
   rv = readdir->opendir(ctx_,fusepath_,ffi_);
-  if(rv == -ENOENT)
-    return ::_handle_ENOENT(ffi_,buf_);
 
   return rv;
 }
