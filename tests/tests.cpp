@@ -329,6 +329,11 @@ test_rmdir()
   rv = unlinkat(root_fd,"test-dir",AT_REMOVEDIR);
   TEST_CHECK(rv == 0);
 
+  int file2_fd;
+  file2_fd = openat(root_fd,"test-file",O_CREAT|O_EXCL,0555);
+  TEST_CHECK(file2_fd >= 0);
+
+
   struct stat st;
   rv = fstatat(file_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
