@@ -34,6 +34,9 @@ public:
     : FH(fusepath_)
   {
   }
+
+public:
+  std::vector<int> dirfds;
 };
 
 inline
