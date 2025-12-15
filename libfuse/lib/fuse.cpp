@@ -2508,8 +2508,7 @@ fuse_lib_releasedir(fuse_req_t            *req_,
 
   dh = get_dirhandle(&llffi,&ffi);
 
-  f.ops.releasedir(&req_->ctx,
-                   &ffi);
+  fuse_do_releasedir(&req_->ctx,hdr_->nodeid,&ffi);
 
   /* Done to keep race condition between last readdir reply and the unlock */
   mutex_lock(&dh->lock);
