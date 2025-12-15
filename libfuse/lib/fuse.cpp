@@ -1480,7 +1480,7 @@ fuse_lib_getattr(fuse_req_t            *req_,
 
   if(!err)
     {
-      fprintf(stderr,"getattr: fh=%zu; fusepath=%s;",
+      fprintf(stderr,"getattr: fh=%zu; fusepath=%s;\n",
               fh,fusepath);
       err = ((fusepath != NULL) ?
              f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeout) :
