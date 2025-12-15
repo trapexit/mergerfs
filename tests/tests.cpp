@@ -334,8 +334,6 @@ test_rmdir()
   TEST_CHECK(rv == 0);
   TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
 
-  return;
-
   rv = fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
   TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
