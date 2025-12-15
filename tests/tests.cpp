@@ -308,11 +308,13 @@ void
 test_rmdir()
 {
   int root_fd;
+  int dir_fd;
 
   root_fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
+  dir_fd  = mkdirat(root_fd,"test-dir",0777);
 
 
-
+  close(dir_fd);
   close(root_fd);
 }
 
