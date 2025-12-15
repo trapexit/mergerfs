@@ -1873,6 +1873,7 @@ fuse_lib_rmdir(fuse_req_t            *req_,
                         &fusepath[1]);
       if(!err)
         remove_node(hdr_->nodeid,name);
+
       free_path_wrlock(hdr_->nodeid,wnode,fusepath);
     }
 
