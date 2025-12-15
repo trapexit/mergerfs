@@ -1866,6 +1866,9 @@ fuse_lib_rmdir(fuse_req_t            *req_,
   err = get_path_wrlock(hdr_->nodeid,name,&fusepath,&wnode);
   if(!err)
     {
+      fmt::print("rmdir: {}, {}\n",
+                 node_open(wnode),
+                 wnode->nodeid);
       if(node_open(wnode))
         req_->ctx.nodeid = wnode->nodeid;
 
