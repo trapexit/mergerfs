@@ -47,7 +47,8 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
       ffi_->cache_readdir = true;
     }
 
-  Branches::Impl::Ptr branches = cfg.branches;
+  di->branches = cfg.branches;
+
 
   return 0;
 }
