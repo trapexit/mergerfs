@@ -2086,7 +2086,6 @@ fuse_lib_create(fuse_req_t            *req_,
   err = get_path_name(hdr_->nodeid,name,&fusepath);
   fmt::print("{} = create: nodeid={}; name={}; fusepath={};\n",
              err,hdr_->nodeid,name,fusepath);
-
   if(!err)
     {
       fmt::print("create: nodeid={}; name={}; fusepath={};\n",
