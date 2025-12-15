@@ -123,7 +123,6 @@ test_str_stuff()
 void
 test_config_branches()
 {
-  uint64_t minfreespace;
   Branches b;
   Branches::Ptr bcp0;
   Branches::Ptr bcp1;
