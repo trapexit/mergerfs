@@ -2335,6 +2335,10 @@ fuse_lib_opendir(fuse_req_t            *req_,
 
   if(!err)
     {
+      mutex_lock(&f.lock);
+      get_node(hdr_->nodeid)->open_count++;
+      mutex_unlock(&f.lock);
+
       if(fuse_reply_open(req_,&llffi) == -ENOENT)
         {
           /* The opendir syscall was interrupted,so it
