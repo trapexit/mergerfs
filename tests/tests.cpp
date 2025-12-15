@@ -338,11 +338,6 @@ test_rmdir()
   TEST_CHECK(rv == 0);
   TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
 
-  opendir();
-  readdir();
-  releasedir();
-
-
   close(dir_fd);
   close(root_fd);
 }
