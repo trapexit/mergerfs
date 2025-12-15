@@ -33,8 +33,8 @@ namespace FUSE
     virtual int opendir(const fuse_req_ctx_t *ctx,
                         const char           *fusepath,
                         fuse_file_info_t     *ffi) = 0;
-    virtual int operator()(const fuse_req_ctx_t   *ctx,
-                           const fuse_file_info_t *ffi,
-                           fuse_dirents_t         *buf) = 0;
+    virtual int readdir(const fuse_req_ctx_t   *ctx,
+                        const fuse_file_info_t *ffi,
+                        fuse_dirents_t         *buf) = 0;
   };
 }
