@@ -2036,8 +2036,8 @@ fuse_do_releasedir(fuse_req_ctx_t   *req_ctx_,
                    uint64_t          ino_,
                    fuse_file_info_t *ffi_)
 {
-  f.ops.release(req_ctx_,
-                ffi_);
+  f.ops.releasedir(req_ctx_,
+                   ffi_);
 
   mutex_lock(&f.lock);
   {
