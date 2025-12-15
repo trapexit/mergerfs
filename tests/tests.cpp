@@ -320,6 +320,9 @@ test_rmdir()
 
   rv = unlinkat(root_fd,"test-dir",AT_REMOVEDIR);
 
+  struct stat st;
+  fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
+
   close(dir_fd);
   close(root_fd);
 }
