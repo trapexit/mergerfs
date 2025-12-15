@@ -65,7 +65,7 @@ public:
 
 public:
   using Ptr = Branches::Impl::Ptr;
-  operator Ptr() { return _impl; }
+  operator Ptr() { return std::atomic_load(&_impl); }
 
 public:
   u64 minfreespace = MINFREESPACE_DEFAULT;
