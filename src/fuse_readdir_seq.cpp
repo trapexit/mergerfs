@@ -47,6 +47,8 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
       ffi_->cache_readdir = true;
     }
 
+
+
   return 0;
 }
 
