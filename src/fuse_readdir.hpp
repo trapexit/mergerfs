@@ -50,9 +50,12 @@ namespace FUSE
     int from_string(const std::string_view);
 
   public:
-    int operator()(const fuse_req_ctx_t   *ctx,
-                   fuse_file_info_t const *ffi,
-                   fuse_dirents_t         *buf);
+    int opendir(const fuse_req_ctx_t   *ctx,
+                fuse_file_info_t const *ffi,
+                fuse_dirents_t         *buf);
+    int readdir(const fuse_req_ctx_t   *ctx,
+                fuse_file_info_t const *ffi,
+                fuse_dirents_t         *buf);
 
   public:
     void initialize();
