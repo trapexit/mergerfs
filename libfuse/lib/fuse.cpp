@@ -2086,6 +2086,8 @@ fuse_lib_create(fuse_req_t            *req_,
   err = get_path_name(hdr_->nodeid,name,&fusepath);
   if(!err)
     {
+      fmt::print("create: nodeid={}; name={}; fusepath={};\n",
+                 hdr_->nodeid,name,fusepath);
       err = f.ops.create(&req_->ctx,
                          &fusepath[1],
                          arg->mode,
