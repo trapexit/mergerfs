@@ -320,7 +320,6 @@ test_rmdir()
 
   rv = unlinkat(dir_fd,"test-dir",AT_REMOVEDIR);
 
-
   close(dir_fd);
   close(root_fd);
 }
