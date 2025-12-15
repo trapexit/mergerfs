@@ -2198,6 +2198,7 @@ fuse_lib_open(fuse_req_t            *req_,
       mutex_lock(&f.lock);
       get_node(hdr_->nodeid)->open_count++;
       mutex_unlock(&f.lock);
+
       /* The open syscall was interrupted,so it must be cancelled */
       if(fuse_reply_open(req_,&ffi) == -ENOENT)
         fuse_do_release(&req_->ctx,hdr_->nodeid,&ffi);
