@@ -100,9 +100,9 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
 }
 
 int
-FUSE::ReadDir::operator()(const fuse_req_ctx_t   *ctx_,
-                          const fuse_file_info_t *ffi_,
-                          fuse_dirents_t         *buf_)
+FUSE::ReadDir::readdir(const fuse_req_ctx_t   *ctx_,
+                       const fuse_file_info_t *ffi_,
+                       fuse_dirents_t         *buf_)
 {
   int rv;
   std::shared_ptr<FUSE::ReadDirBase> readdir;
