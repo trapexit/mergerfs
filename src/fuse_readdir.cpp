@@ -110,7 +110,7 @@ FUSE::ReadDir::opendir(const fuse_req_ctx_t *ctx_,
   readdir = std::atomic_load(&_impl);
   assert(readdir);
 
-  rv = readdir->readdir(ctx_,ffi_,buf_);
+  rv = readdir->opendir(ctx_,fusepath_,ffi_);
   if(rv == -ENOENT)
     return ::_handle_ENOENT(ffi_,buf_);
 
