@@ -316,6 +316,7 @@ test_rmdir()
   TEST_CHECK(root_fd >= 0);
 
   file_fd = openat(root_fd,"test-file",O_CREAT|O_EXCL,0555);
+  TEST_CHECK(file_fd >= 0);
 
 
   rv = mkdirat(root_fd,"test-dir",0777);
