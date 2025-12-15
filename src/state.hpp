@@ -40,7 +40,6 @@ public:
     }
 
     int ref_count;
-    int backing_id;
     DirInfo *di;
   };
 
