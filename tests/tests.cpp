@@ -307,7 +307,12 @@ static
 void
 test_rmdir()
 {
+  int fd;
 
+  fd = openat(AT_FDCWD,"foo",O_CREAT|O_EXCL,0777);
+
+
+  close(fd);
 }
 
 TEST_LIST =
