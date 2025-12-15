@@ -309,7 +309,7 @@ test_rmdir()
 {
   int fd;
 
-  fd = openat(AT_FDCWD,"/mnt/mergerfs",O_DIRECTORY,0777);
+  fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
 
 
   close(fd);
