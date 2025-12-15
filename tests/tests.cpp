@@ -307,9 +307,9 @@ static
 void
 test_rmdir()
 {
-  int fd;
+  int root_fd;
 
-  fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
+  root_fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
 
 
   close(fd);
