@@ -329,8 +329,6 @@ test_rmdir()
   rv = unlinkat(root_fd,"test-dir",AT_REMOVEDIR);
   TEST_CHECK(rv == 0);
 
-  return;
-
   struct stat st;
   rv = fstatat(file_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
