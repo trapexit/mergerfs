@@ -100,6 +100,24 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
 }
 
 int
+FUSE::ReadDir::opendir(const fuse_req_ctx_t *ctx_,
+                       const char           *fusepath_,
+                       fuse_file_info_t     *ffi_)
+{
+  int rv;
+  std::shared_ptr<FUSE::ReadDirBase> readdir;
+
+  readdir = std::atomic_load(&_impl);
+  assert(readdir);
+
+  rv = readdir->readdir(ctx_,ffi_,buf_);
+  if(rv == -ENOENT)
+    return ::_handle_ENOENT(ffi_,buf_);
+
+  return rv;
+}
+
+int
 FUSE::ReadDir::readdir(const fuse_req_ctx_t   *ctx_,
                        const fuse_file_info_t *ffi_,
                        fuse_dirents_t         *buf_)
