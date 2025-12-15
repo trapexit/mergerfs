@@ -20,6 +20,8 @@
 
 #include "base_types.h"
 
+#include <vector>
+
 
 class DirInfo : public FH
 {
