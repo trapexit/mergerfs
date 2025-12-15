@@ -35,7 +35,6 @@ public:
   {
     OpenDir()
       : ref_count(0),
-        backing_id(INVALID_BACKING_ID),
         fi(nullptr)
     {
     }
