@@ -3,6 +3,7 @@
 #include "boost/unordered/concurrent_flat_map.hpp"
 
 #include "fileinfo.hpp"
+#include "dirinfo.hpp"
 
 #include <functional>
 #include <map>
