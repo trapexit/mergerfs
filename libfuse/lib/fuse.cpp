@@ -1481,7 +1481,7 @@ fuse_lib_getattr(fuse_req_t            *req_,
   if(!err)
     {
       fmt::println("getattr: fh={}; filepath={};",
-                   fh);
+                   fh,filepath);
       err = ((fusepath != NULL) ?
              f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeout) :
              f.ops.fgetattr(&req_->ctx,fh,&buf,&timeout));
