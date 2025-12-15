@@ -39,6 +39,7 @@ _readdir(const Branches::Ptr    &branches_,
 
       if(fd < 0)
         continue;
+
       // TODO: maybe seek(fd,0)???
       while(true)
         {
