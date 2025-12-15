@@ -309,10 +309,15 @@ test_rmdir()
 {
   int rv;
   int root_fd;
+  int file_fd;
   int dir_fd;
 
   root_fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
   TEST_CHECK(root_fd >= 0);
+
+  file_fd = openat(root_fd,"test-file",O_CREAT|O_EXCL,0555);
+
+
   rv = mkdirat(root_fd,"test-dir",0777);
   TEST_CHECK(rv == 0);
   dir_fd = openat(root_fd,"test-dir",O_DIRECTORY);
@@ -325,6 +330,11 @@ test_rmdir()
   rv = fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
   TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
+
+  opendir();
+  readdir();
+  releasedir();
+
 
   close(dir_fd);
   close(root_fd);
