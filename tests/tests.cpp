@@ -332,7 +332,7 @@ test_rmdir()
   int file2_fd;
   file2_fd = openat(dir_fd,"test-file",O_CREAT|O_EXCL,0555);
   TEST_CHECK(file2_fd >= 0);
-  TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
+  TEST_MSG("expected: 0; got: %d:%d:%s",file2_fd,errno,strerror(errno));
 
   struct stat st;
   rv = fstatat(file_fd,"",&st,AT_EMPTY_PATH);
