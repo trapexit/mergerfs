@@ -333,7 +333,6 @@ test_rmdir()
   file2_fd = openat(dir_fd,"test-file",O_CREAT|O_EXCL,0555);
   TEST_CHECK(file2_fd >= 0);
 
-
   struct stat st;
   rv = fstatat(file_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
