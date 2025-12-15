@@ -311,7 +311,9 @@ test_rmdir()
   int dir_fd;
 
   root_fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
+  TEST_CHECK(root_fd >= 0);
   dir_fd  = mkdirat(root_fd,"test-dir",0777);
+  TEST_CHECK(dir_fd >= 0);
 
 
   close(dir_fd);
