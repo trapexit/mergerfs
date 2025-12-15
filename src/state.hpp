@@ -35,13 +35,13 @@ public:
   {
     OpenDir()
       : ref_count(0),
-        fi(nullptr)
+        di(nullptr)
     {
     }
 
     int ref_count;
     int backing_id;
-    FileInfo *fi;
+    DirInfo *di;
   };
 
 public:
