@@ -61,6 +61,8 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
       di->fds.push_back(fd);
     }
 
+  //TODO: Insert into hashmap
+
   return 0;
 }
 
