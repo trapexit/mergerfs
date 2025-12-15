@@ -31,6 +31,20 @@ public:
     FileInfo *fi;
   };
 
+  struct OpenDir
+  {
+    OpenFile()
+      : ref_count(0),
+        backing_id(INVALID_BACKING_ID),
+        fi(nullptr)
+    {
+    }
+
+    int ref_count;
+    int backing_id;
+    FileInfo *fi;
+  };
+
 public:
   struct GetSet
   {
