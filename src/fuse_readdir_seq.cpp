@@ -71,7 +71,7 @@ FUSE::ReadDirSeq::readdir(const fuse_req_ctx_t   *ctx_,
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
-  return ::_readdir(cfg.branches,
+  return ::_readdir(di->branches,
                     di->fusepath,
                     dirents_);
 }
