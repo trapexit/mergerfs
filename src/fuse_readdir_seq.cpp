@@ -48,7 +48,10 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
     }
 
   di->branches = cfg.branches;
+  for(auto &branch : *di->branches)
+    {
 
+    }
 
   return 0;
 }
