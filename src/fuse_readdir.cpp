@@ -35,7 +35,7 @@ FUSE::readdir(const fuse_req_ctx_t   *ctx_,
               const fuse_file_info_t *ffi_,
               fuse_dirents_t         *buf_)
 {
-  return cfg.readdir.read(ctx_,ffi_,buf_);
+  return cfg.readdir.readdir(ctx_,ffi_,buf_);
 }
 
 FUSE::ReadDir::ReadDir(const std::string_view s_)
