@@ -314,8 +314,9 @@ test_rmdir()
   root_fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
   TEST_CHECK(root_fd >= 0);
   dir_fd  = mkdirat(root_fd,"test-dir",0777);
-  TEST_CHECK(dir_fd >= 0);
+  TEST_CHECK(dir_fd == 0);
   dir_fd = openat(root_fd,"test-dir",O_DIRECTORY);
+  TEST_CHECK(dir_fd >= 0);
 
   rv = unlinkat(dir_fd,"test-dir",AT_REMOVEDIR);
 
