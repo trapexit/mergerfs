@@ -330,7 +330,7 @@ test_rmdir()
   TEST_CHECK(rv == 0);
 
   int file2_fd;
-  file2_fd = openat(root_fd,"test-file",O_CREAT|O_EXCL,0555);
+  file2_fd = openat(dir_fd,"test-file",O_CREAT|O_EXCL,0555);
   TEST_CHECK(file2_fd >= 0);
 
 
