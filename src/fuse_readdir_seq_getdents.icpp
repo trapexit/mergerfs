@@ -37,6 +37,9 @@ _readdir(const Branches::Ptr    &branches_,
       const auto &branch = *(branches_)[i];
       const auto  fd     = fds_[i];
 
+      if(fd < 0)
+        continue;
+
       while(true)
         {
           ssize_t nread;
