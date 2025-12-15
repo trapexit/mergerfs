@@ -2323,6 +2323,8 @@ fuse_lib_opendir(fuse_req_t            *req_,
   err = get_path(hdr_->nodeid,&fusepath);
   if(!err)
     {
+      fmt::print("opendir: {}\n",
+                 req_->ctx.nodeid);
       err = f.ops.opendir(&req_->ctx,
                           &fusepath[1],
                           &ffi);
