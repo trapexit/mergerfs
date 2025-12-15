@@ -15,10 +15,10 @@
 
 static
 int
-_readdir(const Branches::Ptr &branches_,
-
-         const fs::path      &rel_dirpath_,
-         fuse_dirents_t      *dirents_)
+_readdir(const Branches::Ptr    &branches_,
+         const std::vector<int> &fds_,
+         const fs::path         &rel_dirpath_,
+         fuse_dirents_t         *dirents_)
 {
   Err err;
   HashSet names;
