@@ -36,7 +36,7 @@ public:
   }
 
 public:
-  std::vector<int> dirfds;
+  std::vector<int> fds;
 };
 
 inline
