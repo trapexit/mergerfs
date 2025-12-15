@@ -315,8 +315,8 @@ test_rmdir()
   TEST_CHECK(root_fd >= 0);
   rv = mkdirat(root_fd,"test-dir",0777);
   TEST_CHECK(rv == 0);
-  // dir_fd = openat(root_fd,"test-dir",O_DIRECTORY);
-  // TEST_CHECK(dir_fd >= 0);
+  dir_fd = openat(root_fd,"test-dir",O_DIRECTORY);
+  TEST_CHECK(dir_fd >= 0);
 
   rv = unlinkat(root_fd,"test-dir",AT_REMOVEDIR);
   TEST_CHECK(rv == 0);
