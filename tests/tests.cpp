@@ -312,6 +312,7 @@ test_rmdir()
   root_fd = openat(AT_FDCWD,"/mnt/tmp",O_DIRECTORY,0777);
 
 
+
   close(root_fd);
 }
 
