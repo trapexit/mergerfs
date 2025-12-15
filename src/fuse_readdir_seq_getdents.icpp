@@ -23,7 +23,6 @@ _readdir(const Branches::Ptr    &branches_,
   Err err;
   HashSet names;
   fs::path rel_filepath;
-  fs::path abs_dirpath;
   fuse_msgbuf_t *buf;
 
   fuse_dirents_reset(dirents_);
@@ -37,8 +36,6 @@ _readdir(const Branches::Ptr    &branches_,
     {
       const auto &branch = *(branches_)[i];
       const auto  fd     = fds_[i];
-
-      int fd;
 
       abs_dirpath = branch.path / rel_dirpath_;
 
