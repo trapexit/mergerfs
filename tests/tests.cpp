@@ -307,6 +307,7 @@ static
 void
 test_rmdir()
 {
+  int rv;
   int root_fd;
   int dir_fd;
 
@@ -314,6 +315,9 @@ test_rmdir()
   TEST_CHECK(root_fd >= 0);
   dir_fd  = mkdirat(root_fd,"test-dir",0777);
   TEST_CHECK(dir_fd >= 0);
+  dir_fd = openat(root_fd,"test-dir",O_DIRECTORY);
+
+  rv = unlinkat(dir_fd,
 
 
   close(dir_fd);
