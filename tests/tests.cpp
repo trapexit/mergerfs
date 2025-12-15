@@ -330,6 +330,10 @@ test_rmdir()
   TEST_CHECK(rv == 0);
 
   struct stat st;
+  rv = fstatat(file_fd,"",&st,AT_EMPTY_PATH);
+  TEST_CHECK(rv == 0);
+  TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
+
   rv = fstatat(dir_fd,"",&st,AT_EMPTY_PATH);
   TEST_CHECK(rv == 0);
   TEST_MSG("expected: 0; got: %d:%d:%s",rv,errno,strerror(errno));
