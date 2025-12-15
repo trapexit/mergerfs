@@ -27,19 +27,5 @@ FUSE::opendir(const fuse_req_ctx_t *ctx_,
               const char           *fusepath_,
               fuse_file_info_t     *ffi_)
 {
-  DirInfo *di;
-
-  di = new DirInfo(fusepath_);
-
-  ffi_->fh = di->to_fh();
-
-  ffi_->noflush = true;
-
-  if(cfg.cache_readdir)
-    {
-      ffi_->keep_cache    = true;
-      ffi_->cache_readdir = true;
-    }
-
-  return 0;
+  return cfg.readdir.opendir(ctx_,fusepath_,ffi_);
 }
