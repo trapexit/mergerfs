@@ -2363,8 +2363,7 @@ fuse_lib_opendir(fuse_req_t            *req_,
         {
           /* The opendir syscall was interrupted,so it
              must be cancelled */
-          f.ops.releasedir(&req_->ctx,
-                           &ffi);
+          fuse_do_releasedir(&req_->ctx,hdr_->nodeid,&ffi);
           mutex_destroy(&dh->lock);
           free(dh);
         }
