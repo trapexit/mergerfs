@@ -54,6 +54,10 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
       int fd;
 
       dirpath = branch.path / fusepath_;
+
+      fd = fs::open_dir_ro(dirpath);
+
+      di->fds.push_back(fd);
     }
 
   return 0;
