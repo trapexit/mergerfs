@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "branches.hpp"
+
 #include "fh.hpp"
 
 #include "base_types.h"
