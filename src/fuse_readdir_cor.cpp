@@ -86,7 +86,7 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
                           const char           *fusepath_,
                           fuse_file_info_t     *ffi_)
 {
-  return 0;
+  return -ENOENT;
 }
 
 int
