@@ -2032,6 +2032,26 @@ fuse_do_release(fuse_req_ctx_t   *req_ctx_,
 
 static
 void
+fuse_do_releasedir(fuse_req_ctx_t   *req_ctx_,
+                   uint64_t          ino_,
+                   fuse_file_info_t *ffi_)
+{
+  f.ops.release(req_ctx_,
+                ffi_);
+
+  mutex_lock(&f.lock);
+  {
+    node_t *node;
+
+    node = get_node(ino_);
+    assert(node->open_count > 0);
+    node->open_count--;
+  }
+  mutex_unlock(&f.lock);
+}
+
+static
+void
 fuse_lib_create(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
