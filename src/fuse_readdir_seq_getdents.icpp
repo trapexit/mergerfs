@@ -36,6 +36,7 @@ _readdir(const Branches::Ptr    &branches_,
   for(const auto &branch : *branches_)
     {
       const auto &branch = *(branches_)[i];
+      const auto fd = fds_[i];
 
       int fd;
 
