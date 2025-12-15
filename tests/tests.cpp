@@ -303,6 +303,13 @@ test_config()
   TEST_CHECK(cfg.set("async-read","true") == 0);
 }
 
+static
+void
+test_rmdir()
+{
+
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
