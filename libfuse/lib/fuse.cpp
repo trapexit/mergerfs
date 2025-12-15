@@ -1480,7 +1480,6 @@ fuse_lib_getattr(fuse_req_t            *req_,
 
   if(!err)
     {
-
       fmt::print("getattr: fh={}; fusepath={};\n",
                  fh,fusepath ? fusepath : "(null)");
       err = ((fusepath != NULL) ?
