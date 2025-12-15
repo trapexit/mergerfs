@@ -39,6 +39,7 @@ public:
 
 public:
   std::vector<int> fds;
+  Branches::Ptr branches;
 };
 
 inline
