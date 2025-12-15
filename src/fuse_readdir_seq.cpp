@@ -37,7 +37,15 @@ FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
 
   di = new DirInfo(fusepath_);
 
+  ffi_->fh = di->to_fh();
 
+  ffi_->noflush = true;
+
+  if(cfg.cache_readdir)
+    {
+      ffi_->keep_cache    = true;
+      ffi_->cache_readdir = true;
+    }
 
   return 0;
 }
