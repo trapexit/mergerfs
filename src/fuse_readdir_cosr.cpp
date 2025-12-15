@@ -59,9 +59,9 @@ _readdir(ThreadPool          &tp_,
 }
 
 int
-FUSE::OpenDirCOSR::operator()(const fuse_req_ctx_t   *ctx_,
-                              fuse_file_info_t const *ffi_,
-                              fuse_dirents_t         *dirents_)
+FUSE::ReadDirCOSR::open(const fuse_req_ctx_t   *ctx_,
+                        fuse_file_info_t const *ffi_,
+                        fuse_dirents_t         *dirents_)
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
