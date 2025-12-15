@@ -26,6 +26,9 @@ static
 int
 _releasedir(DirInfo *di_)
 {
+  for(const auto fd : di_->fds)
+    fs::close(fd);
+
   delete di_;
 
   return 0;
