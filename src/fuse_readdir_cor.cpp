@@ -82,6 +82,14 @@ _concurrent_readdir(ThreadPool          &tp_,
 }
 
 int
+FUSE::ReadDirSeq::opendir(const fuse_req_ctx_t *ctx_,
+                          const char           *fusepath_,
+                          fuse_file_info_t     *ffi_)
+{
+  return 0;
+}
+
+int
 FUSE::ReadDirCOR::readdir(const fuse_req_ctx_t   *ctx_,
                           const fuse_file_info_t *ffi_,
                           fuse_dirents_t         *dirents_)
