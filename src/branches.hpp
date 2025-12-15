@@ -65,6 +65,7 @@ public:
 
 public:
   using Ptr = Branches::Impl::Ptr;
+  operator Ptr() { return _impl; }
 
 public:
   u64 minfreespace = MINFREESPACE_DEFAULT;
