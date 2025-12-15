@@ -29,9 +29,9 @@
 #endif
 
 int
-FUSE::ReadDirSeq::operator()(const fuse_req_ctx_t   *ctx_,
-                             const fuse_file_info_t *ffi_,
-                             fuse_dirents_t         *dirents_)
+FUSE::ReadDirSeq::readdir(const fuse_req_ctx_t   *ctx_,
+                          const fuse_file_info_t *ffi_,
+                          fuse_dirents_t         *dirents_)
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
