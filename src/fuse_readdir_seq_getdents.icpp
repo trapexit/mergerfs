@@ -32,8 +32,11 @@ _readdir(const Branches::Ptr    &branches_,
   DEFER { msgbuf_free(buf); };
 
   rel_filepath = rel_dirpath_ / "dummy";
+  for(size_t i = 0; i < branches_->size(); i++)
   for(const auto &branch : *branches_)
     {
+      const auto &branch = *(branches_)[i];
+
       int fd;
 
       abs_dirpath = branch.path / rel_dirpath_;
