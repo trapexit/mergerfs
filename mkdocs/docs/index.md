@@ -2,40 +2,43 @@
 
 **mergerfs** is a [union
 filesystem](https://en.wikipedia.org/wiki/Union_mount) that makes
-multiple storage devices or filesystems appear as a single unified
-directory. Built on [FUSE (Filesystem in
-Userspace)](https://en.wikipedia.org/wiki/Filesystem_in_Userspace), it
-is designed to simplify how you manage files across several
-independent filesystems without the complexity, fragility, or cost of
-RAID or similar storage aggregation technologies.
+multiple filesystems and/or directories appear as a single unified
+directory. mergerfs is designed to simplify how you manage files
+across multiple independent filesystems without the complexity,
+fragility, or cost of RAID or similar storage aggregation
+technologies.
 
-Think of mergerfs as a smart pooling layer: you can combine any number
-of [existing
-filesystems](faq/usage_and_functionality.md#can-mergerfs-be-used-with-filesystems-which-already-have-data)
-— whether they are on hard drives, SSDs, network shares, or other
-mounted storage — into what looks like one large filesystem, while
+mergerfs as a smart pooling layer allows you to combine any number of
+[existing
+filesystems](faq/usage_and_functionality.md#can-mergerfs-be-used-with-filesystems-which-already-have-data);
+whether they are on hard drives, SSDs, network shares, or other
+mounted storage; into what looks like one large filesystem, while
 still maintaining direct access to each individual filesystem. Unlike
-RAID, there's no rebuild process if a device fails. You only lose the
-files that were on that specific filesystem. You can also add or
-remove filesystems at any time without restructuring your entire pool.
+RAID, there's no rebuild process if a device fails. You only lose
+those files that were on that specific filesystem. You can also add or
+remove filesystems at any time without restructuring the pool.
 
 mergerfs excels at cost-effective storage expansion, making it ideal
 for media libraries, backups, archival data, and other write-sometimes,
 read-often workloads where you need lots of space but don't want
-the overhead of traditional storage technologies.
+the overhead of traditional storage aggregation technologies.
 
 **Key advantages:**
 
-* Mix and match filesystems of any size, type, or underlying device
+* Mix and match filesystems of any size,
+  [type](faq/compatibility_and_integration.md#what-filesystems-can-be-used-as-branches),
+  or [underlying
+  device](faq/compatibility_and_integration.md#what-types-of-storage-devices-does-mergerfs-work-with)
 * No parity calculations or rebuild times
+* Does not require hard drives to be spinning if not in use
 * Add or remove filesystems on the fly
-* Direct access to files on individual filesystems when needed
-* Flexible policies for controlling where new files are created
+* [Direct access to files](faq/usage_and_functionality.md#can-filesystems-still-be-used-directly-outside-of-mergerfs-while-pooled) on individual filesystems when needed
+* Flexible [policies](config/functions_categories_policies.md) for controlling where new files are created
 
 For users seeking alternatives to mhddfs, unionfs, aufs, or DrivePool,
 mergerfs offers a mature, actively maintained solution with extensive
 configuration options and documentation. See the [project comparisons
-for more comparisons.](project_comparisons.md)
+for more details.](project_comparisons.md)
 
 
 ## Features
@@ -71,13 +74,14 @@ for more comparisons.](project_comparisons.md)
 * File whiteout
 * Splitting of files across branches
 * Active rebalancing of content
+* [Actively attempt to keep hard drives spun down](faq/limit_drive_spinup.md)
 
 
 ## How it works
 
 mergerfs logically merges multiple filesystem paths together. Not
 block devices, not filesystem mounts, just paths. It acts as a proxy
-to the underlying filesystem paths. Combining the behaviors of some
+to the underlying filesystem. Combining the behaviors of some
 functions and being a selector for others.
 
 When the contents of a directory are requested mergerfs combines the
@@ -138,3 +142,6 @@ Head to the [quick start guide](quickstart.md).
 * The search feature of MkDocs is not great. Searching for "literal
   strings" will generally not work. Alernative solutions are being
   investigated.
+* While not intended for end users nor completely accurate some might
+  find the AI generated docs at https://deepwiki.com/trapexit/mergerfs
+  interesting or useful.

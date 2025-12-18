@@ -31,7 +31,7 @@ level API.
 Windows, while used for NAS systems more often than MacOS, is still
 relatively uncommon when compared to Linux. [Drive
 Pool](../project_comparisons.md#stablebits-drivepool) is a good
-alternative.
+alternative. It may also be possible to use mergerfs with WSL.
 
 
 ## What filesystems can be used as branches?
@@ -39,16 +39,24 @@ alternative.
 ext4, btrfs, xfs, f2fs, zfs, nfs, etc.
 
 Most any filesystem should work but there could be issues with
-non-POSIX compliant filesystems such as vfat, ntfs, cifs, exfat,
-etc. When directories need to be created or files moved by mergerfs if
-the filesystem returns errors due to not supporting certain POSIX
-filesystem features it could result in the core functions failing.
+non-POSIX compliant filesystems such as nfs (w/ root squashing), vfat,
+ntfs, cifs, exfat, etc. When directories need to be created or files
+moved by mergerfs if the filesystem returns errors due to not
+supporting certain POSIX filesystem features it could result in the
+core functions failing.
 
 Since mergerfs is not generally used with non-POSIX filesystems this
 has not been a problem for users and there are some checks for known
 edge cases but it is possible some are not accounted for. If use with a
 filesystem results in issues please [file a
 ticket](https://github.com/trapexit/mergerfs/issues) with the details.
+
+
+## What types of storage devices does mergerfs work with?
+
+Since mergerfs works at the filesystem level rather than device level
+there is no compatibility concerns based on the physical storage
+devices involved.
 
 
 ## Can I use mergerfs without SnapRAID? SnapRAID without mergerfs?
@@ -85,7 +93,7 @@ pool.
 ## Can mergerfs run via Docker, Podman, Kubernetes, etc.
 
 Yes. [See installation
-page.](../setup/installation.md##podman-docker-oci-containers)
+page.](../setup/installation.md#podman-docker-oci-containers)
 
 
 ## How does mergerfs interact with user namespaces?

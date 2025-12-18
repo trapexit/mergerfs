@@ -7,11 +7,13 @@ There are no solutions, only trade-offs.
 
 * [https://romanrm.net/mhddfs](https://romanrm.net/mhddfs)
 
+mhddfs is, like mergerfs, a FUSE based filesystem which can pool
+multiple filesystems together.
+
 mhddfs had not been updated in over a decade and has known stability
 and security issues. mergerfs provides a super set of mhddfs' features
-and offers better performance. In fact, as of 2020, the author of
-mhddfs has [moved to using
-mergerfs.](https://romanrm.net/mhddfs#update)
+and offers better performance. As of 2020 the author of mhddfs has
+[moved to using mergerfs.](https://romanrm.net/mhddfs#update)
 
 Below is an example of mhddfs and mergerfs setup to work similarly.
 
@@ -25,14 +27,18 @@ Below is an example of mhddfs and mergerfs setup to work similarly.
 * [https://aufs.sourceforge.net](https://aufs.sourceforge.net)
 * [https://en.wikipedia.org/wiki/Aufs](https://en.wikipedia.org/wiki/Aufs)
 
+aufs, another union filesystem, is a kernel based overlay filesystem
+with basic file creation placement policies.
+
 While aufs still is maintained it failed to be included in the
 mainline kernel and is no longer available in most Linux distros
 making it harder to get installed for the average user.
 
 While aufs can often offer better peak performance due to being
-primarily kernel based, mergerfs provides more configurability and is
-generally easier to use. mergerfs however does not offer the overlay /
-copy-on-write (CoW) features which aufs has.
+primarily kernel based (at least when `passthrough.io` is disabled),
+mergerfs provides more configurability and is generally easier to
+use. mergerfs however does not offer the overlay / copy-on-write (CoW)
+features which aufs has.
 
 
 ## unionfs
@@ -40,7 +46,7 @@ copy-on-write (CoW) features which aufs has.
 * [https://unionfs.filesystems.org](https://unionfs.filesystems.org)
 
 unionfs for Linux is a "stackable unification file system" which
-functions like many other union filesystems. unionfs has not been
+functions like many other union filesystems. unionfs is no longer
 maintained and was last released for Linux v3.14 back in 2014.
 
 Documentation is sparse so a comparison of features is not possible
@@ -101,7 +107,7 @@ aggregate their storage. The failure of any one device will have no
 impact on the other devices. The downside to mergerfs' technique is
 the fact you don't actually have contiguous space as large as if you
 used those other technologies. Meaning you can't create a file greater
-than 1TB on a pool of 2 1TB filesystems.
+than 1TB on a pool of two 1TB filesystems.
 
 
 ## BTRFS Single Data Profile
@@ -118,15 +124,20 @@ some abilities to recover data but this is not guaranteed.
 * [RAID5](https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_5)
 * [RAID6](https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_6)
 
+RAID5, RAID6, and similar technologies aggregate multiple devices at
+the block level and offer 1 or more live parity calculations that can
+allow the pool to continue to run should 1 device fail and rebuild the
+data once the device is replaced.
+
 mergerfs offers no parity or redundancy features so in that regard the
 technologies are not comparable. [SnapRAID](https://www.snapraid.it)
-can be used in combination with mergerfs to provide redundancy. Unlike
-traditional RAID5 or RAID6 SnapRAID works with drives of different
-sizes and can have more than 2 parity drives. However, parity
-calculations are not done in real-time.
+or [nonraid](https://github.com/qvr/nonraid) can be used in
+combination with mergerfs to provide redundancy. Unlike traditional
+RAID5 or RAID6 SnapRAID works with drives of different sizes and can
+have more than 2 parity drives. However, parity calculations are not
+done in real-time. However, nonraid is realtime.
 
-See [https://www.snapraid.it/compare](https://www.snapraid.it/compare)
-for more details and comparisons.
+For more details and comparison of SnapRAID to related technologies see [https://www.snapraid.it/compare](https://www.snapraid.it/compare).
 
 
 ## UnRAID
@@ -141,7 +152,9 @@ calculation can have higher peak performance. Some users also prefer
 an open source solution.
 
 For semi-static data mergerfs + [SnapRAID](http://www.snapraid.it)
-provides a similar, but not real-time, solution.
+provides a similar, but not real-time, solution. NonRAID (see below)
+is a fork of UnRAID's parity calculation solution and can also be used
+with mergerfs.
 
 
 ## NonRAID
@@ -163,6 +176,9 @@ be used with mergerfs for those looking for a unified view.
 
 * [https://en.wikipedia.org/wiki/ZFS](https://en.wikipedia.org/wiki/ZFS)
 
+ZFS is an advanced filesystem with many features including RAID5/6
+like redundency.
+
 mergerfs is very different from ZFS. mergerfs is intended to provide
 flexible pooling of arbitrary filesystems (local or remote), of
 arbitrary sizes, and arbitrary filesystems. Particularly in `write
@@ -172,6 +188,10 @@ can introduce a number of costs and limitations as described
 [here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
 [here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
 [here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
+
+That said given mergerfs' flexibility it is common to see it used in
+combination with ZFS where critical data is written to a RAIDZ pool
+and bulk media stored on traditional filesystems pooled via mergerfs.
 
 
 ## ZFS AnyRAID
@@ -191,9 +211,9 @@ and there are no timelines or estimates for when it may be released.
 
 * [https://stablebit.com](https://stablebit.com)
 
-DrivePool works only on Windows so not as common an alternative as
-other Linux solutions. If you want to use Windows then DrivePool is a
-good option. Functionally the two projects work a bit
+DrivePool is a commercial filesystem pooling technology for
+Windows. If you are looking to use Windows then DrivePool is a good
+option. Functionally the two projects work a bit
 differently. DrivePool always writes to the filesystem with the most
 free space and later rebalances. mergerfs does not currently offer
 rebalance but chooses a branch at file/directory create
@@ -202,14 +222,11 @@ and has file pattern matching to further customize the
 behavior. mergerfs, not having rebalancing does not have these
 features, but similar features are planned for mergerfs v3. DrivePool
 has builtin file duplication which mergerfs does not natively support
-(but can be done via an external script.)
+(but can be done via an external program.)
 
 There are a lot of misc differences between the two projects but most
 features in DrivePool can be replicated with external tools in
 combination with mergerfs.
-
-Additionally, DrivePool is a closed source commercial product vs
-mergerfs a ISC licensed open source project.
 
 
 ## Plan9 binds
@@ -218,10 +235,10 @@ mergerfs a ISC licensed open source project.
 
 Plan9 has the native ability to bind multiple paths/filesystems
 together to create a setup similar to simplified union
-filesystem. Such bind mounts choose files in a "first found" in the
-order they are listed similar to mergerfs' `ff` policy. Similar, when
-creating a file it will be created on the first directory in the
-union.
+filesystem. Such bind mounts choose files in a "first found" manner
+based on the order they are configured similar to mergerfs' `ff`
+policy. Similarly, when creating a file it will be created on the
+first directory in the union.
 
 Plan 9 isn't a widely used OS so this comparison is mostly academic.
 

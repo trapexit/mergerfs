@@ -1,15 +1,17 @@
 # Tweaking Performance
 
-`mergerfs` is effectively a filesystem proxy and therefore its
+**mergerfs** is effectively a filesystem proxy and therefore its
 theoretical max performance is that of the underlying devices
 (ignoring caching performed by the kernel.) However, given it is a
-FUSE based filesystem working from userspace there is an increase in
-overhead relative to kernel based solutions. That said the performance
-can match the theoretical max but it depends greatly on the system's
+FUSE based filesystem working from userspace and it must combine the
+behavior and information from multiple underlying branches there can
+be an increase in overhead relative to other solutions. That said the
+performance of certain functions, such as IO, can match the
+theoretical max but it depends greatly on the system's
 configuration. There are many things which can impact
 performance. Device speeds and latency, network speeds and latency,
-concurrency and parallel limits of the hardware, read/write sizes,
-etc.
+concurrency and parallel limits of the hardware, read/write sizes, the
+number of branches, etc.
 
 While some settings can impact performance they are all **functional**
 in nature. Meaning they change mergerfs' behavior in some way. As a
@@ -27,7 +29,7 @@ before changing them to understand how functionality will change.
 * enable [passthrough.io](config/passthrough.md) (likely to have the
   biggest impact)
 * change read or process [thread pools](config/threads.md)
-* toggle [func.readdir](config/func_readdir.md)
+* change [func.readdir](config/func_readdir.md)
 * increase [readahead](config/readahead.md): `readahead=1024`
 * disable `security-capability` and/or [xattr](config/xattr.md)
 * increase cache timeouts [cache.attr](config/cache.md#cacheattr),
