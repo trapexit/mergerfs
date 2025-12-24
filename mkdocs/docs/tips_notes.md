@@ -6,7 +6,7 @@
   like something is not explained sufficiently please [file a
   ticket.](https://github.com/trapexit/mergerfs/issues)
 * If a `libfuse` argument is not listed it probably shouldn't be used
-  and are unsupported.
+  and is unsupported.
 * Ensure you're using the latest version. Especially before submitting
   bug reports.
 * Run mergerfs as `root`. mergerfs is designed and intended to be run
@@ -15,7 +15,7 @@
   seem to skip branches, you get strange permission errors, etc. be
   sure the underlying filesystems' permissions are all the same. Use
   `mergerfs.fsck` to audit the filesystem for out of sync permissions.
-* If you still have permission issues be sure you are using POSIX ACL
+* If you still have permission issues be sure you are using POSIX
   compliant filesystems. mergerfs doesn't generally make exceptions
   for FAT, NTFS, or other non-POSIX filesystem.
 * Unless using Linux v6.6 or above do **not** use `cache.files=off` if

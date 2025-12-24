@@ -68,6 +68,11 @@ underlying data. For more details as to why that is see the docs on
 [inodecalc](../config/inodecalc.md).
 
 
+## Are there any size limitations to files, directories, etc.?
+
+Whatever the limits are of the underlying filesystems.
+
+
 ## Do reflink, FICLONE, or FICLONERANGE work?
 
 Unfortunately not. FUSE, the technology mergerfs is based on, does not
