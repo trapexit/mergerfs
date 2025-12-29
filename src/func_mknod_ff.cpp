@@ -38,7 +38,6 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       rv = fs::info(branch.path,&info);
       if(rv < 0)
         continue;
-
       if(info.readonly)
         continue;
 
