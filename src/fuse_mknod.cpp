@@ -25,10 +25,6 @@
 #include "fs_path.hpp"
 #include "ugid.hpp"
 
-#include "fuse.h"
-
-#include <string>
-#include <vector>
 
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
