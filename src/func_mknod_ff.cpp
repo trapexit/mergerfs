@@ -52,7 +52,12 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       if(rv != -ENOENT)
         continue;
 
-
+      for(const auto &branch2 : branches_)
+        {
+          rv = fs::clonepath(branch2.path,
+                             branch.path,
+                             fusedirpath);
+        }
     }
 
   return 0;
