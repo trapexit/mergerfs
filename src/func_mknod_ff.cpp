@@ -25,6 +25,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
                            const dev_t     dev_)
 {
   int rv;
+  fs::info_t info;
   fs::path fusedirpath;
 
   fusedirpath = fusepath_.parent_path();
@@ -35,7 +36,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       if(branch.ro_or_nc())
         continue;
 
-      fs::info_t info;
+
       rv = fs::info(branch.path, &info);
       if(rv < 0)
         continue;
