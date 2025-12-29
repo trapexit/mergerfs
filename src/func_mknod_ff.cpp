@@ -49,6 +49,10 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       rv = fs::mknod_as(ugid_,fullpath,mode_,dev_);
       if(rv == 0)
         return 0;
+      if(rv != -ENOENT)
+        continue;
+
+
     }
 
   return 0;
