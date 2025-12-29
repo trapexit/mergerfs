@@ -48,29 +48,4 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 
       rv = fs::mknod_as(ugid_,fullpath,mode_,dev_);
     }
-
-  if(!create_branch)
-    return -ENOSPC;
-
-  // Clone path if needed
-  if(existing_branch != create_branch)
-    {
-      rv = fs::clonepath(existing_branch->path,
-                         create_branch->path,
-                         fusedirpath);
-      if(rv < 0)
-        return rv;
-    }
-
-  // Create the node
-  fs::path fullpath = create_branch->path / fusepath_;
-  if(!fs::acl::dir_has_defaults(fullpath))
-    {
-      mode_t mode = mode_ & ~umask_;
-      return fs::mknod_as(ugid_, fullpath, mode, dev_);
-    }
-  else
-    {
-      return fs::mknod_as(ugid_, fullpath, mode_, dev_);
-    }
 }
