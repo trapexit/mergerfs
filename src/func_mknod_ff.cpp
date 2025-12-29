@@ -48,4 +48,6 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 
       rv = fs::mknod_as(ugid_,fullpath,mode_,dev_);
     }
+
+  return 0;
 }
