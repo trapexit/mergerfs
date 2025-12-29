@@ -19,6 +19,7 @@
 #include "config.hpp"
 #include "ugid.hpp"
 
+
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_,
