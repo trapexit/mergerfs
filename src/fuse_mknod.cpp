@@ -101,42 +101,6 @@ _mknod_loop(const ugid_t                ugid_,
   return err;
 }
 
-static
-int
-_mknod(const ugid_t          ugid_,
-       const Policy::Search &searchFunc_,
-       const Policy::Create &createFunc_,
-       const Branches       &branches_,
-       const fs::path       &fusepath_,
-       const mode_t          mode_,
-       const mode_t          umask_,
-       const dev_t           dev_)
-{
-  int rv;
-  fs::path fusedirpath;
-  std::vector<Branch*> createbranches;
-  std::vector<Branch*> existingbranches;
-
-  fusedirpath = fusepath_.parent_path();
-
-  rv = searchFunc_(branches_,fusedirpath,existingbranches);
-  if(rv < 0)
-    return rv;
-
-  rv = createFunc_(branches_,fusedirpath,createbranches);
-  if(rv < 0)
-    return rv;
-
-  return ::_mknod_loop(ugid_,
-                       existingbranches[0]->path,
-                       createbranches,
-                       fusepath_,
-                       fusedirpath,
-                       mode_,
-                       umask_,
-                       dev_);
-}
-
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_,
