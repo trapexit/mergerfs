@@ -31,7 +31,6 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 
   fusedirpath = fusepath_.parent_path();
 
-  const Branch *create_branch = nullptr;
   for(const auto &branch : branches_)
     {
       if(branch.ro_or_nc())
