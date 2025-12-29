@@ -26,26 +26,9 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 {
   int rv;
   fs::path fusedirpath;
-  mode_t umask;
 
   fusedirpath = fusepath_.parent_path();
-  umask = 0; // TODO: get actual umask
 
-  // Find first branch with the directory
-  const Branch *existing_branch = nullptr;
-  for(const auto &branch : branches_)
-    {
-      if(fs::exists(branch.path / fusedirpath))
-        {
-          existing_branch = &branch;
-          break;
-        }
-    }
-
-  if(!existing_branch)
-    return -ENOENT;
-
-  // Find first branch for creation
   const Branch *create_branch = nullptr;
   for(const auto &branch : branches_)
     {
