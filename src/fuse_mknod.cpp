@@ -17,12 +17,6 @@
 #include "fuse_mknod.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
-#include "error.hpp"
-#include "fs_acl.hpp"
-#include "fs_mknod_as.hpp"
-#include "fs_clonepath.hpp"
-#include "fs_path.hpp"
 #include "ugid.hpp"
 
 
