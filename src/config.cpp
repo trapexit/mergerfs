@@ -235,7 +235,7 @@ Config::Config()
   _map["func.link"]                   = &func.link;
   _map["func.listxattr"]              = &listxattr;
   _map["func.mkdir"]                  = &func.mkdir;
-  _map["func.mknod"]                  = &func.mknod;
+  _map["func.mknod"]                  = &mknod;
   _map["func.open"]                   = &func.open;
   _map["func.readdir"]                = &readdir;
   _map["func.readlink"]               = &readlink;

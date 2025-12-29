@@ -22,6 +22,7 @@
 #include "func_getattr.hpp"
 #include "func_getxattr.hpp"
 #include "func_listxattr.hpp"
+#include "func_mknod.hpp"
 #include "func_readlink.hpp"
 #include "func_removexattr.hpp"
 #include "func_rmdir.hpp"
@@ -130,6 +131,7 @@ public:
   Func2::GetAttr     getattr{"cdfo"};
   Func2::Getxattr    getxattr{"ff"};
   Func2::Listxattr   listxattr{"ff"};
+  Func2::Mknod       mknod{"ff"};
   Func2::Readlink    readlink{"ff"};
   Func2::Removexattr removexattr{"all"};
   Func2::Rmdir       rmdir{"all"};
