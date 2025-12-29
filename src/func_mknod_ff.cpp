@@ -40,12 +40,10 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
         continue;
       if(info.readonly)
         continue;
-
       if(info.spaceavail < branch.minfreespace())
         continue;
 
-      create_branch = &branch;
-      break;
+      rv = fs::mknod_as(ugid_,fullpath,mode_,dev_);
     }
 
   if(!create_branch)
