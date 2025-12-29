@@ -30,41 +30,6 @@
 #include <string>
 #include <vector>
 
-
-static
-inline
-int
-_mknod_core(const ugid_t    ugid_,
-            const fs::path &fullpath_,
-            mode_t          mode_,
-            const mode_t    umask_,
-            const dev_t     dev_)
-{
-  if(!fs::acl::dir_has_defaults(fullpath_))
-    mode_ &= ~umask_;
-
-  return fs::mknod_as(ugid_,fullpath_,mode_,dev_);
-}
-
-static
-int
-_mknod_loop_core(const ugid_t    ugid_,
-                 const fs::path &createbranch_,
-                 const fs::path &fusepath_,
-                 const mode_t    mode_,
-                 const mode_t    umask_,
-                 const dev_t     dev_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = createbranch_ / fusepath_;
-
-  rv = ::_mknod_core(ugid_,fullpath,mode_,umask_,dev_);
-
-  return rv;
-}
-
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_,
