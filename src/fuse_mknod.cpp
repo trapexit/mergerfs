@@ -65,42 +65,6 @@ _mknod_loop_core(const ugid_t    ugid_,
   return rv;
 }
 
-static
-int
-_mknod_loop(const ugid_t                ugid_,
-            const fs::path             &existingbranch_,
-            const std::vector<Branch*> &createbranches_,
-            const fs::path             &fusepath_,
-            const fs::path             &fusedirpath_,
-            const mode_t                mode_,
-            const mode_t                umask_,
-            const dev_t                 dev_)
-{
-  int rv;
-  Err err;
-
-  for(const auto &createbranch : createbranches_)
-    {
-      rv = fs::clonepath(existingbranch_,
-                         createbranch->path,
-                         fusedirpath_);
-      if(rv < 0)
-        {
-          err = rv;
-          continue;
-        }
-
-      err = ::_mknod_loop_core(ugid_,
-                               createbranch->path,
-                               fusepath_,
-                               mode_,
-                               umask_,
-                               dev_);
-    }
-
-  return err;
-}
-
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_,
