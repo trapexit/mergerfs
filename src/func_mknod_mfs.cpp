@@ -18,11 +18,11 @@ Func2::MknodMFS::name() const
 
 int
 Func2::MknodMFS::operator()(const ugid_t  &ugid_,
-                           const Branches &branches_,
-                           const fs::path &fusepath_,
-                           const mode_t    mode_,
-                           const mode_t    umask_,
-                           const dev_t     dev_)
+                            const Branches &branches_,
+                            const fs::path &fusepath_,
+                            const mode_t    mode_,
+                            const dev_t     dev_,
+                            const mode_t    umask_)
 {
   int rv;
   fs::path fusedirpath;
