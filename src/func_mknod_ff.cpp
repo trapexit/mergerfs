@@ -67,5 +67,5 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       return fs::mknod_as(ugid_,path,mode_,dev_);
     }
 
-  return 0;
+  return err;
 }
