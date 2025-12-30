@@ -50,7 +50,6 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
         continue;
 
       fs::path fusedirpath;
-
       fusedirpath = fusepath_.parent_path();
       for(const auto &src_branch : branches_)
         {
