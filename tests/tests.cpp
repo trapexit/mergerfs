@@ -325,7 +325,7 @@ static
 void
 test_mknod_ff()
 {
-
+  Func2::MknodFF mknod;
 }
 
 TEST_LIST =
