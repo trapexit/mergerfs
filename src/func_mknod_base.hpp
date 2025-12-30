@@ -22,7 +22,7 @@ namespace Func2
                            const Branches &branches,
                            const fs::path &fusepath,
                            const mode_t    mode,
-                           const mode_t    umask,
-                           const dev_t     dev) = 0;
+                           const dev_t     dev,
+                           const mode_t    umask) = 0;
   };
 }
