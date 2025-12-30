@@ -43,7 +43,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       if(info.spaceavail < branch.minfreespace())
         continue;
 
-      fullpath = branch.path / fusepath_;
+      dst_fullpath = dst_branch.path / fusepath_;
 
       rv = fs::mknod_as(ugid_,fullpath,mode_,dev_);
       if(rv == 0)
