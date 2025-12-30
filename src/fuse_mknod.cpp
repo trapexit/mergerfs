@@ -36,16 +36,6 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
                  mode_,
                  ctx_->umask,
                  rdev_);
-  if(rv == -EROFS)
-    {
-      cfg.branches.find_and_set_mode_ro();
-      rv = cfg.mknod(ugid,
-                     cfg.branches,
-                     fusepath,
-                     mode_,
-                     ctx_->umask,
-                     rdev_);
-    }
 
   return rv;
 }
