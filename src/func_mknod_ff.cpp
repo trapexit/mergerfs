@@ -53,7 +53,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
         {
           rv = fs::clonepath(src_branch.path,
                              dst_branch.path,
-                             fusedirpath);
+                             fullpath);
           if(rv == 0)
             break;
         }
