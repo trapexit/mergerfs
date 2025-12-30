@@ -329,6 +329,7 @@ test_mknod_ff()
   Branches branches;
 
   branches.from_string("/tmp/a:/tmp/b");
+
 }
 
 TEST_LIST =
