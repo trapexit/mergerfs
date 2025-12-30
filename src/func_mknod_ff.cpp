@@ -43,6 +43,8 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 
       path = dst_branch.path / fusepath_;
 
+      if(!fs::acl::dir_has_defaults(path))
+        mode_ &= ~umask_;
       rv = fs::mknod_as(ugid_,path,mode_,dev_);
       if(rv == 0)
         return rv;
