@@ -331,6 +331,7 @@ test_mknod_ff()
 
   branches.from_string("/tmp/a:/tmp/b");
 
+  umask(0);
   mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
 }
 
