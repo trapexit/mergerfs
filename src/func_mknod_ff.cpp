@@ -21,8 +21,8 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
                            const Branches &branches_,
                            const fs::path &fusepath_,
                            const mode_t    mode_,
-                           const mode_t    umask_,
-                           const dev_t     dev_)
+                           const dev_t     dev_,
+                           const mode_t    umask_)
 {
   int rv;
   Err err;
