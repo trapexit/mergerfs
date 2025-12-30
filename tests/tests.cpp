@@ -319,6 +319,13 @@ test_err()
   TEST_CHECK((err = -EIO) == 0);
 }
 
+static
+void
+test_mknod_ff()
+{
+
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
