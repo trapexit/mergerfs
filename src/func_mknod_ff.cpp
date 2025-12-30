@@ -53,6 +53,9 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       path = fusepath_.parent_path();
       for(const auto &src_branch : branches_)
         {
+          if(src_branch.path == dst_branch.path)
+            continue;
+
           rv = fs::clonepath(src_branch.path,
                              dst_branch.path,
                              path);
