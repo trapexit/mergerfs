@@ -330,6 +330,7 @@ test_mknod_ff()
 
   branches.from_string("/tmp/a:/tmp/b");
 
+  mknod(branches,"fifo",S_IFIFO|0777,0);
 }
 
 TEST_LIST =
