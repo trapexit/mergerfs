@@ -352,7 +352,7 @@ fs::xattr::copy(const string &from_,
   map<string,string> attrs;
 
   rv = fs::xattr::get(from_,&attrs);
-  if(rv < 0)
+  if(rv <= 0)
     return rv;
 
   return fs::xattr::set(to_,attrs);
