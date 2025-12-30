@@ -48,8 +48,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       if(rv != -ENOENT)
         continue;
 
-      fs::path fusedirpath;
-      fusedirpath = fusepath_.parent_path();
+      fullpath = fusepath_.parent_path();
       for(const auto &src_branch : branches_)
         {
           rv = fs::clonepath(src_branch.path,
