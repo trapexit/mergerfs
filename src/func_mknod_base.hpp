@@ -18,7 +18,7 @@ namespace Func2
     virtual std::string_view name() const = 0;
 
   public:
-    virtual int operator()(const ugid_t  &ugid,
+    virtual int operator()(const ugid_t   &ugid,
                            const Branches &branches,
                            const fs::path &fusepath,
                            const mode_t    mode,
