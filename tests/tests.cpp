@@ -326,6 +326,8 @@ void
 test_mknod_ff()
 {
   Func2::MknodFF mknod;
+  Branches branches;
+
 }
 
 TEST_LIST =
