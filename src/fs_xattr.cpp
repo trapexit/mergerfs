@@ -338,7 +338,7 @@ fs::xattr::copy(const int fdin_,
   map<string,string> attrs;
 
   rv = fs::xattr::get(fdin_,&attrs);
-  if(rv < 0)
+  if(rv <= 0)
     return rv;
 
   return fs::xattr::set(fdout_,attrs);
