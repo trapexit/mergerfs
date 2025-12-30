@@ -14,6 +14,6 @@ namespace Func2
                             const Branches&,
                             const fs::path&,
                             const mode_t&,
-                            const mode_t&,
-                            const dev_t&>;
+                            const dev_t&,
+                            const mode_t&>;
 }
