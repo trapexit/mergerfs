@@ -46,6 +46,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       rv = fs::mknod_as(ugid_,path,mode_,dev_);
       if(rv == 0)
         return 0;
+      err = rv;
       if(rv != -ENOENT)
         continue;
 
