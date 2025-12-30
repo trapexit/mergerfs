@@ -4,6 +4,8 @@
 #include "str.hpp"
 #include "error.hpp"
 
+#include "func_mknod_ff.hpp"
+
 
 void
 test_nop()
