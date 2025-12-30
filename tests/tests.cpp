@@ -327,6 +327,7 @@ test_mknod_ff()
 {
   Func2::MknodFF mknod;
   Branches branches;
+  ugid_t ugid{1000,1000};
 
   branches.from_string("/tmp/a:/tmp/b");
 
