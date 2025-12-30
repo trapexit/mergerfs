@@ -328,6 +328,7 @@ test_mknod_ff()
   Func2::MknodFF mknod;
   Branches branches;
 
+  branches.from_string("/tmp/a:/tmp/b");
 }
 
 TEST_LIST =
