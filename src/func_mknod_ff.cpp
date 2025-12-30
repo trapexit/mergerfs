@@ -25,8 +25,8 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
                            const dev_t     dev_)
 {
   int rv;
-  fs::info_t info;
   fs::path path;
+  fs::info_t info;
 
   for(const auto &dst_branch : branches_)
     {
