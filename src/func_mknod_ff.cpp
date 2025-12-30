@@ -59,7 +59,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
         }
 
       path = dst_branch.path / fusepath_;
-      rv = fs::mknod_as(ugid_,path,mode_,dev_);
+      return fs::mknod_as(ugid_,path,mode_,dev_);
     }
 
   return 0;
