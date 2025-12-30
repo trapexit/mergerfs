@@ -33,7 +33,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 
   for(const auto &dst_branch : branches_)
     {
-      if(branch.ro_or_nc())
+      if(dst_branch.ro_or_nc())
         continue;
       rv = fs::info(branch.path,&info);
       if(rv < 0)
