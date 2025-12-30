@@ -334,7 +334,7 @@ test_mknod_ff()
 
   umask(0);
   rv = mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
-  TEST_CHECK
+  TEST_CHECK(rv == 0);
 
 
 }
