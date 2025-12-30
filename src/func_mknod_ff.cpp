@@ -2,7 +2,6 @@
 
 #include "errno.hpp"
 #include "error.hpp"
-#include "fs_acl.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
