@@ -345,5 +345,6 @@ TEST_LIST =
    {"config",test_config},
    {"str",test_str_stuff},
    {"err",test_err},
+   {"mknod_ff",test_mknod_ff},
    {NULL,NULL}
   };
