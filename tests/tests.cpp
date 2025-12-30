@@ -325,6 +325,7 @@ static
 void
 test_mknod_ff()
 {
+  int rv;
   Func2::MknodFF mknod;
   Branches branches;
   ugid_t ugid{1000,1000};
@@ -332,7 +333,10 @@ test_mknod_ff()
   branches.from_string("/tmp/a:/tmp/b");
 
   umask(0);
-  mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
+  rv = mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
+  TEST_CHECK
+
+
 }
 
 TEST_LIST =
