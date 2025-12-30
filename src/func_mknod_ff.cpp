@@ -26,10 +26,8 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 {
   int rv;
   fs::info_t info;
-  fs::path fusedirpath;
-  fs::path fullpath;
 
-  fusedirpath = fusepath_.parent_path();
+  fs::path fullpath;
 
   for(const auto &dst_branch : branches_)
     {
@@ -51,6 +49,8 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
       if(rv != -ENOENT)
         continue;
 
+      fs::path fusedirpath;
+      fusedirpath = fusepath_.parent_path();
       for(const auto &src_branch : branches_)
         {
           rv = fs::clonepath(src_branch.path,
