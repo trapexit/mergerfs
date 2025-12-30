@@ -13,7 +13,7 @@ namespace fs
   int
   mknod_as(const ugid_t  ugid_,
            const T      &path_,
-           const mode_t  mode_,
+           mode_t        mode_,
            const dev_t   dev_,
            const mode_t  umask_)
   {
