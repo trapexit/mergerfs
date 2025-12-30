@@ -43,6 +43,9 @@ namespace fs
   {
     int rv;
 
+    if(not fs::acl::dir_has_defaults(path_))
+      mode_ &= ~umask_;
+
     rv = fs::mknod(path_,mode_,dev_);
 
     fs::lchown(path_,ugid_.uid,ugid_.gid);
