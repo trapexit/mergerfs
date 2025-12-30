@@ -4,7 +4,6 @@
 #include "fs_mknod.hpp"
 #include "ugid.hpp"
 
-
 #if defined __linux__
 namespace fs
 {
