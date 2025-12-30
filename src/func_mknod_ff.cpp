@@ -43,7 +43,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
 
       path = dst_branch.path / fusepath_;
 
-      rv = fs::mknod_as(ugid_,path,mode_,dev_);
+      err = rv = fs::mknod_as(ugid_,path,mode_,dev_);
       if(rv == 0)
         return 0;
       if(rv != -ENOENT)
