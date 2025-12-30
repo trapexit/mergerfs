@@ -37,7 +37,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
         continue;
       if(info.readonly)
         continue;
-      if(info.spaceavail < branch.minfreespace())
+      if(info.spaceavail < dst_branch.minfreespace())
         continue;
 
       path = dst_branch.path / fusepath_;
