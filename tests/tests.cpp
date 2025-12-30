@@ -6,6 +6,8 @@
 
 #include "func_mknod_ff.hpp"
 
+#include "fs_exists.hpp"
+
 
 void
 test_nop()
