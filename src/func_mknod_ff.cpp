@@ -25,6 +25,7 @@ Func2::MknodFF::operator()(const ugid_t  &ugid_,
                            const dev_t     dev_)
 {
   int rv;
+  Err err;
   fs::path path;
   fs::info_t info;
 
