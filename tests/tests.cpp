@@ -337,6 +337,8 @@ test_mknod_ff()
   TEST_CHECK(rv == 0);
   rv = mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
   TEST_CHECK(rv == -EEXIST);
+
+  TEST_CHECK(fs::exists("/tmp/a/c/d/fifo") == true);
 }
 
 TEST_LIST =
