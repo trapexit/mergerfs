@@ -17,6 +17,9 @@ namespace fs
            dev_t         dev_,
            mode_t        umask_)
   {
+    if(not fs::acl::dir_has_defaults(path_))
+      mode_ &= ~umask_;
+
     const ugid::SetGuard _(ugid_);
 
     return fs::mknod(path_,mode_,dev_);
