@@ -222,7 +222,7 @@ _post_kvs(const httplib::Request &req_,
       std::string mount;
 
       mount = req_.get_param_value("mount");
-      j = json::parse(req_.body);
+      j     = json::parse(req_.body);
 
       for(const auto &[key,val] : j.items())
         {
