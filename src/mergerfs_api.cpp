@@ -15,6 +15,13 @@
 typedef std::array<char,64*1024> mfs_api_buf_t;
 
 static
+std::string
+_mergerfs_config_file(const fs::path &mount_)
+{
+  return mount_ / ".mergerfs";
+}
+
+static
 int
 _lgetxattr(const std::string &input_path_,
            const std::string &key_,
@@ -28,12 +35,6 @@ _lgetxattr(const std::string &input_path_,
   return fs::xattr::get(input_path_,key,&val_);
 }
 
-static
-std::string
-_mergerfs_config_file(const fs::path &mount_)
-{
-  return mount_ / ".mergerfs";
-}
 
 bool
 mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
