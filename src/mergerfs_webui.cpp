@@ -21,7 +21,7 @@ _get_root(const httplib::Request &req_,
       return;
     }
 
-  std::string html = R"html(
+  html = R"html(
 <!DOCTYPE html>
 <html>
 <head><title>mergerfs ui</title>
