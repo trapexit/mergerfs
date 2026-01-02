@@ -17,6 +17,7 @@
 #include "mergerfs.hpp"
 #include "mergerfs_fsck.hpp"
 #include "mergerfs_collect_info.hpp"
+#include "mergerfs_webui.hpp"
 
 #include "caps.hpp"
 #include "config.hpp"
