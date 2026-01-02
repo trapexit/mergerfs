@@ -69,7 +69,7 @@ _post_kvs(const httplib::Request &req_,
       std::string key = j["key"];
       std::string value = j["value"];
 
-      for(const auto &[key,val] : j)
+      for(const auto &[key,val] : j.items())
         {
 
         }
