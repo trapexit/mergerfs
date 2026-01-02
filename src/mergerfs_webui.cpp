@@ -71,7 +71,7 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/",::_serve_root);
   http_server.Get("/mounts",::_serve_mounts);
   http_server.Get("/kvs",::_serve_kvs);
-  http_server.Post("/update", [&](const Request& req, Response& res) {
+  http_server.Post("/kvs", [&](const Request& req, Response& res) {
     try {
       auto j = json::parse(req.body);
       std::string key = j["key"];
