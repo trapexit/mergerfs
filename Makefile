@@ -161,7 +161,7 @@ INSTALLMAN1DIR ?= $(DESTDIR)$(MAN1DIR)
 
 
 .PHONY: all
-all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info
+all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info $(BUILDDIR)/mergerfs.webui
 
 .PHONY: help
 help:
@@ -181,6 +181,9 @@ $(BUILDDIR)/fsck.mergerfs:
 	$(LN) -sf "mergerfs" $@
 
 $(BUILDDIR)/mergerfs.collect-info:
+	$(LN) -sf "mergerfs" $@
+
+$(BUILDDIR)/mergerfs.webui:
 	$(LN) -sf "mergerfs" $@
 
 $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
@@ -244,6 +247,7 @@ install-base: all
 	$(INSTALL) -v -m 0755 "$(BUILDDIR)/mergerfs" "$(INSTALLBINDIR)/mergerfs"
 	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/fsck.mergerfs"
 	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mergerfs.collect-info"
+	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mergerfs.webui"
 
 .PHONY: install-mount-tools
 install-mount-tools: install-base
@@ -381,5 +385,11 @@ tags:
 	find . -name "*.cpp" -print | etags --append -
 	find . -name "*.hpp" -print | etags --append -
 
+.PHONY: index.html
+index.html:
+	npm install htmlnano cssnano postcss terser svgo
+	./node_modules/.bin/htmlnano --preset max -o webui/index.min.html webui/index.html
+	zopfli --gzip --i1024 webui/index.min.html
+	xxd -n index_min_html_gz -i webui/index.min.html.gz >| src/index_min_html_gz.h
 
 -include $(DEPS)

@@ -2,7 +2,7 @@
 
 #include "fs_xattr.hpp"
 #include "fs_exists.hpp"
-#include "fs_lgetxattr.hpp"
+#include "fs_xattr.hpp"
 #include "str.hpp"
 
 #include "scope_guard.hpp"
@@ -11,84 +11,119 @@
 #include <cstring>
 
 
-typedef std::array<char,64*1024> mfs_api_buf_t;
-
 static
-int
-_lgetxattr(const std::string &input_path_,
-           const std::string &key_,
-           std::string       &value_)
+std::string
+_mergerfs_config_file(const fs::path &mount_)
 {
-  int rv;
-  std::string key;
-  mfs_api_buf_t buf;
-
-  key = "user.mergerfs." + key_;
-  rv = fs::lgetxattr(input_path_,key,buf.data(),buf.size());
-  if(rv < 0)
-    return rv;
-
-  value_.clear();
-  value_.reserve(rv);
-  value_.append(buf.data(),(size_t)rv);
-
-  return rv;
+  return mount_ / ".mergerfs";
 }
 
 bool
 mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
 {
-  fs::path dot_mergerfs_filepath;
+  fs::path cfgfile;
 
-  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+  cfgfile = ::_mergerfs_config_file(mountpoint_);
 
-  return fs::exists(dot_mergerfs_filepath);
+  return fs::exists(cfgfile);
 }
 
 int
 mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
                        std::map<std::string,std::string> *kvs_)
 {
-  fs::path dot_mergerfs_filepath;
+  int rv;
+  fs::path cfgfile;
+  std::map<std::string,std::string> kvs;
 
-  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+  cfgfile = ::_mergerfs_config_file(mountpoint_);
 
-  return fs::xattr::get(dot_mergerfs_filepath,kvs_);
+  rv = fs::xattr::get(cfgfile,&kvs);
+  if(rv < 0)
+    return rv;
+
+  for(auto &[k,v] : kvs)
+    {
+      std::string key;
+
+      key = str::remove_prefix(k,"user.mergerfs.");
+
+      kvs_->insert({key,v});
+    }
+
+  return 0;
+}
+
+int
+mergerfs::api::get_kv(const fs::path    &mountpoint_,
+                      const std::string &key_,
+                      std::string       *val_)
+{
+  fs::path cfgfile;
+  std::string xattr_key;
+
+  cfgfile = ::_mergerfs_config_file(mountpoint_);
+
+  xattr_key = "user.mergerfs." + key_;
+
+  return fs::xattr::get(cfgfile,xattr_key,val_);
+}
+
+int
+mergerfs::api::set_kv(const fs::path    &mountpoint_,
+                      const std::string &key_,
+                      const std::string &val_)
+{
+  fs::path cfgfile;
+  std::string xattr_key;
+
+  cfgfile   = ::_mergerfs_config_file(mountpoint_);
+  xattr_key = "user.mergerfs." + key_;
+
+  return fs::xattr::set(cfgfile,xattr_key,val_,0);
 }
 
 int
 mergerfs::api::allpaths(const std::string        &input_path_,
-                        std::vector<std::string> &output_paths_)
+                        std::vector<std::string> *output_paths_)
 {
   int rv;
   std::string val;
 
-  rv = ::_lgetxattr(input_path_,"allpaths",val);
+  rv = fs::xattr::get(input_path_,
+                      "user.mergerfs.allpaths",
+                      &val);
   if(rv < 0)
     return rv;
 
-  str::split_on_null(val,&output_paths_);
+  str::split_on_null(val,output_paths_);
 
   return 0;
 }
 
 int
 mergerfs::api::basepath(const std::string &input_path_,
-                        std::string       &basepath_)
+                        std::string       *basepath_)
 {
-  return ::_lgetxattr(input_path_,"basepath",basepath_);
+  return fs::xattr::get(input_path_,
+                        "user.mergerfs.basepath",
+                        basepath_);
 }
 
 int
 mergerfs::api::relpath(const std::string &input_path_,
-                       std::string       &relpath_)
+                       std::string       *relpath_)
 {
-  return ::_lgetxattr(input_path_,"relpath",relpath_);
+  return fs::xattr::get(input_path_,
+                        "user.mergerfs.relpath",
+                        relpath_);
 }
 
 int
 mergerfs::api::fullpath(const std::string &input_path_,
-                        std::string       &fullpath_)
+                        std::string       *fullpath_)
 {
-  return ::_lgetxattr(input_path_,"fullpath",fullpath_);
+  return fs::xattr::get(input_path_,
+                        "user.mergerfs.fullpath",
+                        fullpath_);
 }

@@ -175,7 +175,7 @@ _get_allpaths(const std::string &mergerfs_path_,
   int rv;
   std::vector<std::string> allpaths;
 
-  rv = mergerfs::api::allpaths(mergerfs_path_,allpaths);
+  rv = mergerfs::api::allpaths(mergerfs_path_,&allpaths);
   if(rv < 0)
     return rv;
 

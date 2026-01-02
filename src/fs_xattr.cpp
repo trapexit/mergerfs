@@ -26,6 +26,7 @@
 #include "fs_lremovexattr.hpp"
 #include "fs_lsetxattr.hpp"
 #include "fs_open.hpp"
+#include "fs_path.hpp"
 #include "str.hpp"
 
 #include <map>
@@ -33,8 +34,8 @@
 #include <string>
 #include <vector>
 
+#define TOOBIG_SIZE 65536
 
-using std::istringstream;
 
 int
 fs::xattr::list(const int     fd_,
@@ -42,16 +43,22 @@ fs::xattr::list(const int     fd_,
 {
   ssize_t rv;
 
-  rv = -ERANGE;
-  while(rv == -ERANGE)
+  attrs_->resize(4096);
+
+  while(true)
     {
-      rv = fs::flistxattr(fd_,NULL,0);
-      if(rv <= 0)
+      rv = fs::flistxattr(fd_,attrs_->data(),attrs_->size());
+      if(rv >= 0)
+        {
+          attrs_->resize(rv);
+          return rv;
+        }
+      if(rv != -ERANGE)
         return rv;
+      if(attrs_->size() > TOOBIG_SIZE)
+        return -E2BIG;
 
-      attrs_->resize(rv);
-
-      rv = fs::flistxattr(fd_,&(*attrs_)[0],rv);
+      attrs_->resize(attrs_->size() * 1.2);
     }
 
   return rv;
@@ -63,16 +70,22 @@ fs::xattr::list(const string &path_,
 {
   ssize_t rv;
 
-  rv = -ERANGE;
-  while(rv == -ERANGE)
+  attrs_->resize(4096);
+
+  while(true)
     {
-      rv = fs::llistxattr(path_,NULL,0);
-      if(rv <= 0)
+      rv = fs::llistxattr(path_,attrs_->data(),attrs_->size());
+      if(rv >= 0)
+        {
+          attrs_->resize(rv);
+          return rv;
+        }
+      if(rv != -ERANGE)
         return rv;
+      if(attrs_->size() > TOOBIG_SIZE)
+        return -E2BIG;
 
-      attrs_->resize(rv);
-
-      rv = fs::llistxattr(path_,&(*attrs_)[0],rv);
+      attrs_->resize(attrs_->size() * 1.2);
     }
 
   return rv;
@@ -143,42 +156,55 @@ fs::xattr::list(const string &path_,
 int
 fs::xattr::get(const int     fd_,
                const string &attr_,
-               vector<char> *value_)
+               vector<char> *val_)
 {
   ssize_t rv;
 
   rv = -ERANGE;
-  while(rv == -ERANGE)
+  val_->resize(64);
+
+  while(true)
     {
-      rv = fs::fgetxattr(fd_,attr_,NULL,0);
-      if(rv <= 0)
+      rv = fs::fgetxattr(fd_,attr_,val_->data(),val_->size());
+      if(rv >= 0)
+        {
+          val_->resize(rv);
+          return rv;
+        }
+      if(rv != -ERANGE)
         return rv;
+      if(val_->size() > TOOBIG_SIZE)
+        return -E2BIG;
 
-      value_->resize(rv);
-
-      rv = fs::fgetxattr(fd_,attr_,&(*value_)[0],rv);
+      val_->resize(val_->size() * 1.2);
     }
 
-  return rv;
+  return 0;
 }
 
 int
 fs::xattr::get(const string &path_,
                const string &attr_,
-               vector<char> *value_)
+               vector<char> *val_)
 {
   ssize_t rv;
 
-  rv = -ERANGE;
-  while(rv == -ERANGE)
+  val_->resize(64);
+
+  while(true)
     {
-      rv = fs::lgetxattr(path_,attr_,NULL,0);
-      if(rv <= 0)
+      rv = fs::lgetxattr(path_,attr_,val_->data(),val_->size());
+      if(rv >= 0)
+        {
+          val_->resize(rv);
+          return rv;
+        }
+      if(rv != -ERANGE)
         return rv;
+      if(val_->size() > TOOBIG_SIZE)
+        return -E2BIG;
 
-      value_->resize(rv);
-
-      rv = fs::lgetxattr(path_,attr_,&(*value_)[0],rv);
+      val_->resize(val_->size() * 1.2);
     }
 
   return rv;
@@ -187,14 +213,14 @@ fs::xattr::get(const string &path_,
 int
 fs::xattr::get(const int     fd_,
                const string &attr_,
-               string       *value_)
+               string       *val_)
 {
   int          rv;
   vector<char> tmpvalue;
 
   rv = fs::xattr::get(fd_,attr_,&tmpvalue);
   if(rv > 0)
-    *value_ = string{tmpvalue.begin(),tmpvalue.end()};
+    *val_ = string{tmpvalue.begin(),tmpvalue.end()};
 
   return rv;
 }
@@ -202,14 +228,14 @@ fs::xattr::get(const int     fd_,
 int
 fs::xattr::get(const string &path_,
                const string &attr_,
-               string       *value_)
+               string       *val_)
 {
   int rv;
   vector<char> tmpvalue;
 
   rv = fs::xattr::get(path_,attr_,&tmpvalue);
   if(rv > 0)
-    *value_ = string{tmpvalue.begin(),tmpvalue.end()};
+    *val_ = string{tmpvalue.begin(),tmpvalue.end()};
 
   return rv;
 }
@@ -273,26 +299,26 @@ fs::xattr::get(const string       &path_,
 int
 fs::xattr::set(const int     fd_,
                const string &key_,
-               const string &value_,
+               const string &val_,
                const int     flags_)
 {
   return fs::fsetxattr(fd_,
                        key_,
-                       value_.data(),
-                       value_.size(),
+                       val_.data(),
+                       val_.size(),
                        flags_);
 }
 
 int
-fs::xattr::set(const string &path_,
-               const string &key_,
-               const string &value_,
-               const int     flags_)
+fs::xattr::set(const fs::path &path_,
+               const string   &key_,
+               const string   &val_,
+               const int       flags_)
 {
   return fs::lsetxattr(path_,
                        key_,
-                       value_.data(),
-                       value_.size(),
+                       val_.data(),
+                       val_.size(),
                        flags_);
 }
 

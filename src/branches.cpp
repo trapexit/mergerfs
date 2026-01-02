@@ -237,7 +237,7 @@ namespace l
           return rv;
       }
 
-    *branches_ = std::move(tmp_branches);
+    std::swap(*branches_,tmp_branches);
 
     return 0;
   }
@@ -409,11 +409,7 @@ Branches::from_string(const std::string_view str_)
   Branches::Ptr impl;
   Branches::Ptr new_impl;
 
-  {
-    std::lock_guard<std::mutex> lock_guard(_mutex);
-    impl = _impl;
-  }
-
+  impl = std::atomic_load(&_impl);
   new_impl = std::make_shared<Branches::Impl>(impl->minfreespace());
   *new_impl = *impl;
 
@@ -421,10 +417,7 @@ Branches::from_string(const std::string_view str_)
   if(rv < 0)
     return rv;
 
-  {
-    std::lock_guard<std::mutex> lock_guard(_mutex);
-    _impl = new_impl;
-  }
+  std::atomic_store(&_impl,new_impl);
 
   return 0;
 }
@@ -432,9 +425,7 @@ Branches::from_string(const std::string_view str_)
 std::string
 Branches::to_string(void) const
 {
-  std::lock_guard<std::mutex> lock_guard(_mutex);
-
-  return _impl->to_string();
+  return std::atomic_load(&_impl)->to_string();
 }
 
 void

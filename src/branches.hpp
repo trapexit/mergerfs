@@ -25,7 +25,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 #include <memory>
@@ -70,8 +69,7 @@ public:
   u64 minfreespace = MINFREESPACE_DEFAULT;
 
 private:
-  mutable std::mutex _mutex;
-  Ptr                _impl;
+  Ptr _impl;
 
 public:
   Branches()
@@ -84,8 +82,8 @@ public:
   std::string to_string(void) const final;
 
 public:
-  operator Ptr()   const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
-  Ptr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
+  operator Ptr()   const { return std::atomic_load(&_impl); }
+  Ptr operator->() const { return std::atomic_load(&_impl); }
 
 public:
   Impl::iterator begin() { return _impl->begin(); }

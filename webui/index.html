@@ -1,0 +1,2952 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mergerfs runtime configuration manager</title>
+    <meta name="description" content="Configuration and management tool for mergerfs">
+    <style>
+      :root {
+          --bg-primary: #1a1a1a;
+          --bg-secondary: #2d2d2d;
+          --bg-tertiary: #1e1e1e;
+          --bg-hover: #3d3d3d;
+          --bg-input: #333;
+          --border-color: #444;
+          --text-primary: #e0e0e0;
+          --text-secondary: #aaa;
+          --accent-primary: #1565c0;
+          --accent-hover: #1976d2;
+          --success-color: #2e7d32;
+          --success-hover: #388e3c;
+          --danger-color: #8b0000;
+          --danger-hover: #a00000;
+          --warning-color: #f57c00;
+          --radius: 4px;
+          --transition: all 0.2s ease;
+          --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+
+      * {
+          box-sizing: border-box;
+      }
+
+      body {
+          background-color: var(--bg-primary);
+          color: var(--text-primary);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 0;
+          overflow-y: scroll;
+      }
+
+      .container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 20px;
+      }
+
+      header {
+          background-color: var(--bg-secondary);
+          border-bottom: 1px solid var(--border-color);
+          padding: 20px 0;
+          margin-bottom: 30px;
+      }
+
+      .header-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 20px;
+      }
+
+      h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+      }
+
+      .subtitle {
+          color: var(--text-secondary);
+          font-size: 14px;
+          margin-top: 5px;
+      }
+
+      .header-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+      .header-left {
+          display: flex;
+          flex-direction: column;
+      }
+
+      .header-right {
+          display: flex;
+          align-items: center;
+      }
+
+      .auth-section {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+      }
+
+      .auth-password {
+          min-width: 150px;
+      }
+
+      .auth-status {
+          font-size: 12px;
+          margin-left: 8px;
+      }
+
+      .auth-status.connected {
+          color: var(--success-color);
+      }
+
+      .auth-status.error {
+          color: var(--danger-color);
+      }
+
+      .auth-status.pending {
+          color: var(--warning-color);
+      }
+
+      h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+      }
+
+      .subtitle {
+          color: var(--text-secondary);
+          font-size: 14px;
+          margin-top: 5px;
+      }
+
+
+
+      .tabs {
+          display: flex;
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius) var(--radius) 0 0;
+          overflow: hidden;
+      }
+
+      .tab-button {
+          background: none;
+          border: none;
+          padding: 15px 25px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: var(--transition);
+          position: relative;
+          white-space: nowrap;
+      }
+
+      .tab-button:hover {
+          background-color: var(--bg-hover);
+          color: var(--text-primary);
+      }
+
+      .tab-button.active {
+          color: var(--text-primary);
+          background-color: var(--bg-tertiary);
+      }
+
+      .tab-button.active::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background-color: var(--accent-primary);
+      }
+
+      .tab-button:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: -2px;
+      }
+
+      .tab-content {
+          display: none;
+          background-color: var(--bg-tertiary);
+          border: 1px solid var(--border-color);
+          border-top: none;
+          border-radius: 0 0 var(--radius) var(--radius);
+          padding: 25px;
+          min-height: 500px;
+      }
+
+      .tab-content.active {
+          display: block;
+      }
+
+      .controls-section {
+          margin-bottom: 25px;
+      }
+
+      .controls-row {
+          display: flex;
+          gap: 15px;
+          align-items: flex-end;
+          flex-wrap: wrap;
+      }
+
+      .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+      }
+
+      .form-group label {
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+      }
+
+      select, input[type="text"], input[type="number"], input[type="search"] {
+          background-color: var(--bg-input);
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
+          padding: 10px 12px;
+          border-radius: var(--radius);
+          font-size: 14px;
+          transition: var(--transition);
+          min-width: 200px;
+      }
+
+      select:focus, input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+      }
+
+      .button {
+          background-color: var(--accent-primary);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: var(--radius);
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: var(--transition);
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          white-space: nowrap;
+      }
+
+      .button:hover {
+          background-color: var(--accent-hover);
+      }
+
+      .button:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+      }
+
+      .button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+      }
+
+      .button.success {
+          background-color: var(--success-color);
+      }
+
+      .button.success:hover {
+          background-color: var(--success-hover);
+      }
+
+      .button.danger {
+          background-color: var(--danger-color);
+      }
+
+      .button.danger:hover {
+          background-color: var(--danger-hover);
+      }
+
+      .button.secondary {
+          background-color: var(--bg-input);
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
+      }
+
+      .button.secondary:hover {
+          background-color: var(--bg-hover);
+      }
+
+      .button.auth-success {
+          background-color: var(--success-color) !important;
+      }
+
+      .button.auth-success:hover {
+          background-color: var(--success-hover) !important;
+      }
+
+      .button.auth-error {
+          background-color: var(--danger-color) !important;
+      }
+
+      .button.auth-error:hover {
+          background-color: var(--danger-hover) !important;
+      }
+
+      .action-buttons {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+      }
+
+      .search-container {
+          position: relative;
+          margin-bottom: 20px;
+      }
+
+      .search-input {
+          width: 100%;
+          padding-left: 12px;
+      }
+
+      .table-container {
+          overflow-x: auto;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          background-color: var(--bg-secondary);
+      }
+
+      table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+
+      th, td {
+          padding: 12px;
+          text-align: left;
+          border-bottom: 1px solid var(--border-color);
+      }
+
+      th {
+          background-color: var(--bg-secondary);
+          font-weight: 600;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--text-secondary);
+          position: sticky;
+          top: 0;
+          z-index: 10;
+      }
+
+      tr:hover {
+          background-color: var(--bg-hover);
+      }
+
+      tr:last-child td {
+          border-bottom: none;
+      }
+
+      .branches-container {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+      }
+
+      .branch-entry {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 15px;
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          transition: var(--transition);
+          position: relative;
+          max-width: 100%;
+          overflow: hidden;
+      }
+
+      .branch-path-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+          min-width: 200px;
+          max-width: 100%;
+          overflow: hidden;
+      }
+
+      .branch-path {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+      }
+
+      .branch-entry:hover {
+          background-color: var(--bg-hover);
+          box-shadow: var(--shadow);
+      }
+
+      .branch-entry.dragging {
+          opacity: 0.5;
+          cursor: grabbing;
+      }
+
+      .branch-entry.drag-over {
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+      }
+
+      .branch-path {
+          flex: 1;
+      }
+
+      .branch-mode {
+          width: 100px;
+          flex-shrink: 0;
+          min-width: 70px;
+      }
+
+      .branch-minfreespace {
+          display: flex;
+          gap: 0;
+          flex-shrink: 0;
+          min-width: 140px;
+      }
+
+      .branch-minfreespace input {
+          border-radius: var(--radius) 0 0 var(--radius);
+          width: 80px;
+          text-align: center;
+      }
+
+      .branch-minfreespace select {
+          border-radius: 0 var(--radius) var(--radius) 0;
+          width: 50px;
+          min-width: unset;
+          padding: 10px 8px;
+      }
+
+      .branch-controls {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+          align-items: center;
+      }
+
+      .icon-button {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 8px;
+          border-radius: var(--radius);
+          transition: var(--transition);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .icon-button:hover {
+          background-color: var(--bg-hover);
+          color: var(--text-primary);
+      }
+
+      .icon-button:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+      }
+
+      .icon-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+      }
+
+      .browse-button {
+          min-width: 80px;
+          padding: 8px 12px;
+          font-size: 12px;
+          white-space: nowrap;
+          border: 1px solid var(--accent-primary);
+          background-color: rgba(21, 101, 192, 0.1);
+          color: var(--accent-primary);
+          font-weight: 500;
+      }
+
+      .browse-button:hover {
+          background-color: rgba(21, 101, 192, 0.2);
+          color: var(--accent-hover);
+          border-color: var(--accent-hover);
+      }
+
+      .modal {
+          display: none;
+          position: fixed;
+          z-index: 1000;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0,0,0,0.7);
+          animation: fadeIn 0.2s ease;
+      }
+
+      .modal.show {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+
+      .modal-content {
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          padding: 30px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          animation: slideUp 0.2s ease;
+      }
+
+      @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+      }
+
+      .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+      }
+
+      .modal-title {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+      }
+
+      .modal-close {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          font-size: 24px;
+          cursor: pointer;
+          padding: 0;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: var(--radius);
+          transition: var(--transition);
+      }
+
+      .modal-close:hover {
+          background-color: var(--bg-hover);
+          color: var(--text-primary);
+      }
+
+      .modal-close:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+      }
+
+      .mount-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+      }
+
+      .mount-item {
+          padding: 12px;
+          background-color: var(--bg-tertiary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          cursor: pointer;
+          transition: var(--transition);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+      .mount-item:hover {
+          background-color: var(--bg-hover);
+          border-color: var(--accent-primary);
+      }
+
+      .mount-item.selected {
+          background-color: var(--accent-primary);
+          border-color: var(--accent-primary);
+      }
+
+      .mount-path {
+          font-family: monospace;
+          font-size: 13px;
+      }
+
+      .mount-type {
+          font-size: 11px;
+          color: var(--text-secondary);
+          background-color: var(--bg-input);
+          padding: 2px 6px;
+          border-radius: 3px;
+      }
+
+      .toast {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 20px;
+          border-radius: var(--radius);
+          color: white;
+          font-weight: 500;
+          z-index: 2000;
+          max-width: 400px;
+          box-shadow: var(--shadow);
+          animation: slideInRight 0.3s ease;
+          display: none;
+      }
+
+      .toast.show {
+          display: block;
+      }
+
+      .toast.success {
+          background-color: var(--success-color);
+      }
+
+      .toast.error {
+          background-color: var(--danger-color);
+      }
+
+      .toast.warning {
+          background-color: var(--warning-color);
+      }
+
+      @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+      }
+
+      .loading-spinner {
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          border: 2px solid transparent;
+          border-top: 2px solid currentColor;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+      }
+
+      .help-text {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin-top: 5px;
+      }
+
+      .tooltip {
+          position: relative;
+          display: inline-block;
+      }
+
+      .tooltip .tooltiptext {
+          visibility: hidden;
+          width: 200px;
+          background-color: var(--bg-primary);
+          color: var(--text-primary);
+          text-align: center;
+          border-radius: var(--radius);
+          padding: 8px;
+          position: absolute;
+          z-index: 1;
+          bottom: 125%;
+          left: 50%;
+          margin-left: -100px;
+          opacity: 0;
+          transition: opacity 0.3s;
+          border: 1px solid var(--border-color);
+          font-size: 12px;
+      }
+
+      .tooltip:hover .tooltiptext {
+          visibility: visible;
+          opacity: 1;
+      }
+
+      .branches-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 15px;
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          margin-bottom: 15px;
+          font-weight: 600;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--text-secondary);
+      }
+
+      .header-path { flex: 1; min-width: 250px; }
+      .header-mode { width: 100px; text-align: center; }
+      .header-minfreespace { width: 160px; text-align: center; }
+      .header-actions { width: 120px; text-align: center; }
+
+      .empty-state {
+          text-align: center;
+          padding: 40px;
+          color: var(--text-secondary);
+      }
+
+      .empty-state-icon {
+          font-size: 48px;
+          margin-bottom: 15px;
+          opacity: 0.5;
+      }
+
+      .validation-error {
+          color: var(--danger-color);
+          font-size: 12px;
+          margin-top: 5px;
+      }
+
+      /* Policy-specific styles */
+      .policy-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 15px;
+      }
+
+      .policy-card {
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          padding: 15px;
+      }
+
+      .policy-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          color: var(--accent-primary);
+      }
+
+      .policy-description {
+          font-size: 11px;
+          color: var(--text-secondary);
+          margin-bottom: 10px;
+      }
+
+      .policy-select {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          margin-bottom: 8px;
+          padding: 8px 10px;
+          font-size: 13px;
+      }
+
+      .policy-function-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+      }
+
+      .policy-function-label {
+          font-size: 11px;
+          font-weight: 500;
+          color: var(--text-secondary);
+          min-width: 60px;
+          text-transform: lowercase;
+          font-family: monospace;
+      }
+
+      .policy-divider {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--accent-primary);
+          margin: 12px 0 8px 0;
+          padding-top: 8px;
+          border-top: 1px solid var(--border-color);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+      }
+
+      .command-section {
+          margin-top: 20px;
+      }
+
+      .command-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 15px;
+      }
+
+      .command-card {
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius);
+          padding: 15px;
+          text-align: center;
+      }
+
+      .command-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 8px;
+      }
+
+      .command-description {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin-bottom: 12px;
+      }
+
+      @media (max-width: 1200px) {
+          .branch-path-group {
+              min-width: 180px;
+          }
+
+          .branch-mode {
+              width: 85px;
+          }
+
+          .branch-minfreespace input {
+              width: 60px;
+          }
+
+          .browse-button {
+              min-width: 70px;
+              font-size: 11px;
+          }
+
+          .form-group select {
+              min-width: 150px;
+          }
+      }
+
+      @media (max-width: 1100px) {
+          .branch-path-group {
+              min-width: 180px;
+          }
+
+          .branch-mode {
+              width: 90px;
+          }
+
+          .branch-minfreespace input {
+              width: 65px;
+          }
+
+          .browse-button {
+              min-width: 70px;
+              font-size: 11px;
+          }
+      }
+
+      @media (max-width: 900px) {
+          .branches-container {
+              overflow-x: auto;
+          }
+
+          .branch-entry {
+              min-width: fit-content;
+          }
+
+          .branch-path-group {
+              min-width: 150px;
+          }
+
+          .branch-mode {
+              width: 80px;
+          }
+
+          .branch-minfreespace input {
+              width: 55px;
+              padding: 8px;
+          }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+          .container {
+              padding: 10px;
+          }
+
+          .branch-entry {
+              flex-wrap: nowrap;
+              overflow-x: auto;
+          }
+
+          .branch-path-group {
+              min-width: 200px;
+              flex-shrink: 0;
+          }
+
+          .header-content {
+              flex-direction: column;
+              gap: 15px;
+              align-items: flex-start;
+          }
+
+          .controls-row {
+              flex-direction: column;
+              align-items: stretch;
+          }
+
+          .tabs {
+              flex-direction: column;
+          }
+
+          .tab-button {
+              padding: 12px 15px;
+          }
+
+          .branch-entry {
+              flex-direction: column;
+              align-items: stretch;
+              gap: 10px;
+              padding: 12px;
+          }
+
+          .branch-path-group {
+              flex-direction: column;
+              align-items: stretch;
+              gap: 8px;
+              min-width: unset;
+          }
+
+          .branch-path,
+          .branch-mode,
+          .branch-minfreespace,
+          .branch-controls {
+              width: 100%;
+          }
+
+          .branch-path-group .browse-button {
+              width: 100%;
+          }
+
+          .branch-minfreespace {
+              flex-direction: row;
+              gap: 0;
+          }
+
+          .branch-minfreespace input {
+              flex: 1;
+              min-width: 0;
+          }
+
+          .branch-minfreespace select {
+              flex: 0 0 50px;
+              min-width: unset;
+          }
+
+          .branch-controls {
+              justify-content: flex-end;
+              padding-top: 5px;
+          }
+
+          .branches-header {
+              display: none;
+          }
+
+          .modal-content {
+              padding: 20px;
+              margin: 10px;
+          }
+
+          .toast {
+              right: 10px;
+              left: 10px;
+              max-width: none;
+          }
+
+          .policy-grid {
+              grid-template-columns: 1fr;
+          }
+
+          .policy-function-group {
+              flex-wrap: wrap;
+          }
+
+          .policy-function-label {
+              min-width: 50px;
+          }
+
+          .command-grid {
+              grid-template-columns: 1fr;
+          }
+      }
+
+      @media (max-width: 480px) {
+          .action-buttons {
+              flex-direction: column;
+          }
+
+          .button {
+              width: 100%;
+              justify-content: center;
+          }
+
+          .branch-entry {
+              padding: 10px;
+              gap: 8px;
+          }
+
+          .branch-controls {
+              justify-content: space-between;
+          }
+
+          .icon-button {
+              padding: 6px;
+          }
+
+          select,
+          input[type="text"],
+          input[type="number"],
+          input[type="search"] {
+              min-width: unset;
+          }
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+          :root {
+              --border-color: #ffffff;
+              --text-secondary: #ffffff;
+          }
+      }
+
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+          * {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+          }
+      }
+
+      /* Branch Details Table Styles */
+      .branch-details-table {
+          width: 100%;
+      }
+
+      .branch-details-table th,
+      .branch-details-table td {
+          padding: 12px;
+          text-align: left;
+          border-bottom: 1px solid var(--border-color);
+      }
+
+      .usage-bar-container {
+          width: 100%;
+          max-width: 150px;
+          height: 8px;
+          background-color: var(--bg-input);
+          border-radius: 4px;
+          overflow: hidden;
+          position: relative;
+      }
+
+      .usage-bar {
+          height: 100%;
+          border-radius: 4px;
+          transition: width 0.3s ease;
+      }
+
+      .usage-bar.low {
+          background-color: var(--success-color);
+      }
+
+      .usage-bar.medium {
+          background-color: var(--warning-color);
+      }
+
+      .usage-bar.high {
+          background-color: var(--danger-color);
+      }
+
+      .usage-text {
+          font-size: 12px;
+          font-weight: 500;
+          min-width: 50px;
+          text-align: right;
+      }
+
+      .readonly-badge {
+          display: inline-block;
+          padding: 2px 8px;
+          background-color: var(--warning-color);
+          color: white;
+          font-size: 11px;
+          font-weight: 500;
+          border-radius: 3px;
+          margin-left: 8px;
+      }
+
+      .branch-error {
+          color: var(--danger-color);
+          font-size: 11px;
+      }
+
+      .space-value {
+          font-family: monospace;
+          font-size: 13px;
+      }
+
+      #documentation-panel {
+          padding: 0;
+          overflow: hidden;
+      }
+
+      #documentation-panel iframe {
+          display: block;
+          border-radius: 0 0 var(--radius) var(--radius);
+      }
+
+      .tab-button a {
+          transition: var(--transition);
+      }
+
+      .tab-button a:hover {
+          opacity: 1 !important;
+          color: var(--accent-primary);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <div class="header-left">
+          <h1>mergerfs ui</h1>
+          <div class="subtitle">Configuration and management tool</div>
+        </div>
+        <div class="header-right">
+          <div class="auth-section">
+            <input type="password" id="password-input" placeholder="Password (optional)" class="auth-password">
+            <button class="button" id="auth-btn">Verify</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="tabs" role="tablist">
+        <button class="tab-button active" role="tab" aria-selected="true" aria-controls="branches-panel" id="branches-tab" tabindex="0">
+          Branches
+        </button>
+        <button class="tab-button" role="tab" aria-selected="false" aria-controls="branch-details-panel" id="branch-details-tab" tabindex="-1">
+          Branch Details
+        </button>
+        <button class="tab-button" role="tab" aria-selected="false" aria-controls="policies-panel" id="policies-tab" tabindex="-1">
+          Policies
+        </button>
+        <button class="tab-button" role="tab" aria-selected="false" aria-controls="config-panel" id="config-tab" tabindex="-1">
+          Configuration
+        </button>
+        <button class="tab-button" role="tab" aria-selected="false" aria-controls="commands-panel" id="commands-tab" tabindex="-1">
+          Commands
+        </button>
+        <button class="tab-button" role="tab" aria-selected="false" aria-controls="documentation-panel" id="documentation-tab" tabindex="-1">
+          Documentation
+          <a href="https://trapexit.github.io/mergerfs/latest/" target="_blank" rel="noopener noreferrer" title="Open in new tab" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: 4px; font-size: 14px; font-weight: bold; text-decoration: none; opacity: 0.7; line-height: 1;">↗</a>
+        </button>
+      </div>
+
+      <!-- Branches Tab -->
+      <div class="tab-content active" id="branches-panel" role="tabpanel" aria-labelledby="branches-tab">
+        <div class="controls-section">
+          <div class="controls-row">
+            <div class="form-group">
+              <label for="mount-select-branches">Mount Point</label>
+              <select id="mount-select-branches">
+                <option value="">Loading...</option>
+              </select>
+            </div>
+            <div class="action-buttons">
+              <button class="button" id="add-branch-btn">
+                <span>+</span> Add Branch
+              </button>
+              <button class="button success" id="save-branches-btn">
+                <span>💾</span> Save Configuration
+              </button>
+              <button class="button secondary" id="reset-branches-btn">
+                <span>↺</span> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="branches-header">
+          <div class="header-path">Branch Path</div>
+          <div class="header-mode">Mode</div>
+          <div class="header-minfreespace">Min Free Space</div>
+          <div class="header-actions">Actions</div>
+        </div>
+
+        <div class="branches-container" id="branches-container">
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <p>No branches configured</p>
+            <p class="help-text">Click "Add Branch" to get started</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch Details Tab -->
+      <div class="tab-content" id="branch-details-panel" role="tabpanel" aria-labelledby="branch-details-tab">
+        <div class="controls-section">
+          <div class="controls-row">
+            <div class="form-group">
+              <label for="mount-select-branch-details">Mount Point</label>
+              <select id="mount-select-branch-details">
+                <option value="">Loading...</option>
+              </select>
+            </div>
+            <div class="action-buttons">
+              <button class="button secondary" id="refresh-branch-details-btn">
+                <span>↺</span> Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="branch-details-table" class="branch-details-table">
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Mode</th>
+                <th>minfreespace</th>
+                <th>Total Space</th>
+                <th>Used Space</th>
+                <th>Available Space</th>
+                <th>Usage %</th>
+              </tr>
+            </thead>
+            <tbody id="branch-details-tbody">
+              <tr>
+                <td colspan="7" class="empty-state">Loading branch details...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Policies Tab -->
+      <div class="tab-content" id="policies-panel" role="tabpanel" aria-labelledby="policies-tab">
+        <div class="controls-section">
+          <div class="controls-row">
+            <div class="form-group">
+              <label for="mount-select-policies">Mount Point</label>
+              <select id="mount-select-policies">
+                <option value="">Loading...</option>
+              </select>
+            </div>
+            <div class="action-buttons">
+              <button class="button secondary" id="reset-policies-btn">
+                <span>↺</span> Reset to Defaults
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="policy-grid" id="policy-grid">
+        </div>
+      </div>
+
+      <!-- Configuration Tab -->
+      <div class="tab-content" id="config-panel" role="tabpanel" aria-labelledby="config-tab">
+        <div class="controls-section">
+          <div class="controls-row">
+            <div class="form-group">
+              <label for="mount-select-config">Mount Point</label>
+              <select id="mount-select-config">
+                <option value="">Loading...</option>
+              </select>
+            </div>
+            <div class="action-buttons">
+              <button class="button" id="export-config-btn">
+                <span>📥</span> Export
+              </button>
+              <button class="button" id="import-config-btn">
+                <span>📤</span> Import
+              </button>
+              <button class="button secondary" id="refresh-config-btn">
+                <span>↺</span> Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="search-container">
+          <input type="search" class="search-input" id="config-search" placeholder="Search configuration options...">
+        </div>
+
+        <div style="margin-bottom: 15px; font-size: 12px; color: var(--text-secondary);">
+          For detailed information about configuration options, see the
+          <a href="https://trapexit.github.io/mergerfs/latest/config/options/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-primary); text-decoration: underline;">official documentation</a>.
+        </div>
+
+        <div class="table-container">
+          <table id="config-table">
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>Current Value</th>
+              </tr>
+            </thead>
+            <tbody id="config-tbody">
+              <tr>
+                <td colspan="2" class="empty-state">Loading configuration...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Commands Tab -->
+      <div class="tab-content" id="commands-panel" role="tabpanel" aria-labelledby="commands-tab">
+        <div class="controls-section">
+          <div class="controls-row">
+            <div class="form-group">
+              <label for="mount-select-commands">Mount Point</label>
+              <select id="mount-select-commands">
+                <option value="">Loading...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="command-section">
+          <h3 style="margin-bottom: 15px;">Runtime Commands</h3>
+          <div class="command-grid">
+            <div class="command-card">
+              <div class="command-title">Garbage Collection</div>
+              <div class="command-description">
+                Trigger thorough garbage collection of mergerfs resources
+              </div>
+              <button class="button" id="cmd-gc">Execute</button>
+            </div>
+
+            <div class="command-card">
+              <div class="command-title">Quick GC</div>
+              <div class="command-description">
+                Trigger simple garbage collection (runs periodically)
+              </div>
+              <button class="button" id="cmd-gc1">Execute</button>
+            </div>
+
+            <div class="command-card">
+              <div class="command-title">Invalidate Cache</div>
+              <div class="command-description">
+                Invalidate all FUSE node caches (for debugging)
+              </div>
+              <button class="button warning" id="cmd-invalidate">Execute</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documentation Tab -->
+      <div class="tab-content" id="documentation-panel" role="tabpanel" aria-labelledby="documentation-tab">
+        <iframe id="documentation-iframe" data-src="https://trapexit.github.io/mergerfs/latest/" style="width: 100%; height: calc(100vh - 250px); border: none;" title="Official mergerfs documentation"></iframe>
+      </div>
+    </main>
+
+    <!-- Path Selection Modal -->
+    <div class="modal" id="pathModal" role="dialog" aria-labelledby="pathModalTitle" aria-hidden="true">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title" id="pathModalTitle">Select Mount Path</h2>
+          <button class="modal-close" id="pathModalClose" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="search-container">
+            <input type="search" class="search-input" id="mount-search" placeholder="Search mount points...">
+          </div>
+          <div class="mount-list" id="mount-list">
+            <div class="empty-state">Loading available mount points...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <script>
+      // API interface for mergerfs operations
+      const API = {
+          baseURL: '',
+          authToken: '',
+          passwordRequired: false,
+
+          async request(endpoint, options = {}) {
+              try {
+                  if (this.authToken && options.method && options.method !== 'GET') {
+                      options.headers = options.headers || {};
+                      options.headers['Authorization'] = 'Bearer ' + this.authToken;
+                  }
+
+                  const response = await fetch(`${this.baseURL}${endpoint}`, options);
+                  if (response.status === 401) {
+                      throw new Error('Authentication required');
+                  }
+                  if (!response.ok) {
+                      let errorMsg = `HTTP ${response.status}`;
+                      try {
+                          const errorData = await response.json();
+                          if (errorData.error && errorData.error.msg) {
+                              errorMsg = errorData.error.msg;
+                          }
+                      } catch (e) {
+                      }
+                      throw new Error(errorMsg);
+                  }
+                  return response;
+              } catch (error) {
+                  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                      throw new Error('mergerfs webui server not running. Start it with: mergerfs.webui');
+                  }
+                  throw error;
+              }
+          },
+
+          async getAuth() {
+              const response = await this.request('/auth');
+              const data = await response.json();
+              this.passwordRequired = data.password_required;
+              return data;
+          },
+
+          async verifyPassword(password) {
+              const response = await this.request('/auth/verify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ password: password })
+              });
+              return await response.json();
+          },
+
+          async getMounts() {
+              const response = await this.request('/mounts/mergerfs');
+              return await response.json();
+          },
+
+          async getBranches(mount) {
+              const response = await this.request(`/kvs/branches?mount=${encodeURIComponent(mount)}`);
+              const data = await response.json();
+              return data;
+          },
+
+          async setBranches(mount, branches) {
+              await this.request(`/kvs/branches?mount=${encodeURIComponent(mount)}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(branches)
+              });
+          },
+
+          async getXattr(mount, key) {
+              const response = await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`);
+              const data = await response.json();
+              return data;
+          },
+
+          async setXattr(mount, key, value) {
+              await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(value)
+              });
+          },
+
+          async getConfig(mount) {
+              const response = await this.request(`/kvs?mount=${encodeURIComponent(mount)}`);
+              return await response.json();
+          },
+
+          async setConfig(mount, key, value) {
+              await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(value)
+              });
+          },
+
+          async executeCommand(mount, command) {
+              await this.request(`/kvs/cmd.${encodeURIComponent(command)}?mount=${encodeURIComponent(mount)}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify('')
+              });
+          },
+
+          async getAllMounts() {
+              const response = await this.request('/mounts');
+              return await response.json();
+          },
+
+          async getBranchesInfo(mount) {
+              const response = await this.request(`/branches-info?mount=${encodeURIComponent(mount)}`);
+              return await response.json();
+          }
+      };
+
+      // Global state management
+      const AppState = {
+          mounts: [],
+          currentMount: null,
+          branches: [],
+          config: {},
+          policies: {},
+          pendingPathInput: null,
+          branchCounter: 0,
+          isAuthenticated: false,
+          passwordRequired: false
+      };
+
+      // Utility functions
+      const Utils = {
+          debounce(func, wait) {
+              let timeout;
+              return function executedFunction(...args) {
+                  const later = () => {
+                      clearTimeout(timeout);
+                      func(...args);
+                  };
+                  clearTimeout(timeout);
+                  timeout = setTimeout(later, wait);
+              };
+          },
+
+          formatBytes(bytes, decimals = 2) {
+              if (bytes === 0) return '0 B';
+              const k = 1024;
+              const dm = decimals < 0 ? 0 : decimals;
+              const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+              const i = Math.floor(Math.log(bytes) / Math.log(k));
+              return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+          },
+
+          validatePath(path) {
+              if (!path || typeof path !== 'string') {
+                  return { valid: false, message: 'Path is required' };
+              }
+              if (path.length > 4096) {
+                  return { valid: false, message: 'Path too long' };
+              }
+              if (!path.startsWith('/')) {
+                  return { valid: false, message: 'Path must be absolute' };
+              }
+              return { valid: true };
+          },
+
+          validateMinfreespace(value, unit) {
+              const num = parseFloat(value);
+              if (isNaN(num) || num < 0) {
+                  return { valid: false, message: 'Must be a positive number' };
+              }
+              if (unit === 'B' && num > 9000000000000000) {
+                  return { valid: false, message: 'Value too large' };
+              }
+              return { valid: true };
+          },
+
+          escapeHtml(text) {
+              const div = document.createElement('div');
+              div.textContent = text;
+              return div.innerHTML;
+          }
+      };
+
+      // UI Components
+      const UI = {
+          showLoading(element) {
+              if (element) {
+                  element.innerHTML = '<div class="loading-spinner"></div> Loading...';
+              }
+          },
+
+          hideLoading(element, content) {
+              if (element) {
+                  element.innerHTML = content || '';
+              }
+          },
+
+          showModal(modalId) {
+              const modal = document.getElementById(modalId);
+              if (modal) {
+                  modal.classList.add('show');
+                  modal.setAttribute('aria-hidden', 'false');
+                  const focusableElements = modal.querySelectorAll('button, input, select, textarea');
+                  if (focusableElements.length > 0) {
+                      focusableElements[0].focus();
+                  }
+              }
+          },
+
+          hideModal(modalId) {
+              const modal = document.getElementById(modalId);
+              if (modal) {
+                  modal.classList.remove('show');
+                  modal.setAttribute('aria-hidden', 'true');
+              }
+          },
+
+          createBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+              const entry = document.createElement('div');
+              entry.className = 'branch-entry';
+              entry.draggable = true;
+              entry.id = `branch-entry-${AppState.branchCounter++}`;
+
+              // Path group with input and browse button
+              const pathGroup = document.createElement('div');
+              pathGroup.className = 'branch-path-group';
+
+              const pathInput = document.createElement('input');
+              pathInput.type = 'text';
+              pathInput.className = 'branch-path';
+              pathInput.placeholder = '/path/to/branch';
+              pathInput.value = path;
+              pathInput.setAttribute('aria-label', 'Branch path');
+
+              const browseBtn = document.createElement('button');
+              browseBtn.className = 'icon-button browse-button';
+              browseBtn.innerHTML = 'Browse';
+              browseBtn.title = 'Browse mount points';
+              browseBtn.setAttribute('aria-label', 'Browse mount points');
+              browseBtn.onclick = () => openPathModal(pathInput);
+
+              pathGroup.appendChild(pathInput);
+              pathGroup.appendChild(browseBtn);
+
+              const modeSelect = document.createElement('select');
+              modeSelect.className = 'branch-mode';
+              modeSelect.setAttribute('aria-label', 'Branch mode');
+
+              const modes = [
+                  { value: 'RW', label: 'Read/Write' },
+                  { value: 'RO', label: 'Read-Only' },
+                  { value: 'NC', label: 'No Create' }
+              ];
+
+              modes.forEach(m => {
+                  const option = document.createElement('option');
+                  option.value = m.value;
+                  option.textContent = m.label;
+                  if (m.value === mode) option.selected = true;
+                  modeSelect.appendChild(option);
+              });
+
+              const minfreespaceContainer = document.createElement('div');
+              minfreespaceContainer.className = 'branch-minfreespace';
+
+              const valueInput = document.createElement('input');
+              valueInput.type = 'number';
+              valueInput.className = 'branch-minfreespace-value';
+              valueInput.placeholder = '0';
+              valueInput.min = '0';
+              valueInput.setAttribute('aria-label', 'Minimum free space value');
+
+              const unitSelect = document.createElement('select');
+              unitSelect.className = 'branch-minfreespace-unit';
+              unitSelect.setAttribute('aria-label', 'Minimum free space unit');
+
+              const units = [
+                  { value: 'B', label: 'B' },
+                  { value: 'K', label: 'KB' },
+                  { value: 'M', label: 'MB' },
+                  { value: 'G', label: 'GB' },
+                  { value: 'T', label: 'TB' }
+              ];
+
+              units.forEach(u => {
+                  const option = document.createElement('option');
+                  option.value = u.value;
+                  option.textContent = u.label;
+                  unitSelect.appendChild(option);
+              });
+
+              let value = '';
+              let unit = 'G';
+              if (minfreespace) {
+                  const match = minfreespace.match(/^(\d+)([BKMG])?$/i);
+                  if (match) {
+                      value = match[1];
+                      if (match[2]) unit = match[2].toUpperCase();
+                  } else {
+                      value = minfreespace;
+                  }
+              }
+
+              valueInput.value = value;
+              unitSelect.value = unit;
+
+              minfreespaceContainer.appendChild(valueInput);
+              minfreespaceContainer.appendChild(unitSelect);
+
+              const controls = document.createElement('div');
+              controls.className = 'branch-controls';
+
+              const moveUpBtn = document.createElement('button');
+              moveUpBtn.className = 'icon-button';
+              moveUpBtn.innerHTML = '↑';
+              moveUpBtn.title = 'Move up';
+              moveUpBtn.setAttribute('aria-label', 'Move branch up');
+              moveUpBtn.onclick = () => moveBranchUp(entry);
+
+              const moveDownBtn = document.createElement('button');
+              moveDownBtn.className = 'icon-button';
+              moveDownBtn.innerHTML = '↓';
+              moveDownBtn.title = 'Move down';
+              moveDownBtn.setAttribute('aria-label', 'Move branch down');
+              moveDownBtn.onclick = () => moveBranchDown(entry);
+
+              const removeBtn = document.createElement('button');
+              removeBtn.className = 'icon-button';
+              removeBtn.innerHTML = '🗑';
+              removeBtn.title = 'Remove branch';
+              removeBtn.setAttribute('aria-label', 'Remove branch');
+              removeBtn.onclick = () => entry.remove();
+
+              controls.appendChild(moveUpBtn);
+              controls.appendChild(moveDownBtn);
+              controls.appendChild(removeBtn);
+
+              entry.appendChild(pathGroup);
+              entry.appendChild(modeSelect);
+              entry.appendChild(minfreespaceContainer);
+              entry.appendChild(controls);
+
+              this.addDragDropListeners(entry);
+
+              return entry;
+          },
+
+          addDragDropListeners(entry) {
+              entry.addEventListener('dragstart', handleDragStart);
+              entry.addEventListener('dragend', handleDragEnd);
+              entry.addEventListener('dragover', handleDragOver);
+              entry.addEventListener('dragleave', handleDragLeave);
+              entry.addEventListener('drop', handleDrop);
+          }
+      };
+
+      // Toast notifications
+      function showToast(message, type = 'success', duration = 3000) {
+          const toast = document.getElementById('toast');
+          toast.textContent = message;
+          toast.className = `toast ${type} show`;
+
+          setTimeout(() => {
+              toast.classList.remove('show');
+          }, duration);
+      }
+
+
+
+      // Tab load policy (lazy reload)
+      const TAB_ALWAYS_RELOAD = true;
+      const TAB_LOADED = {
+          'branches-panel': false,
+          'branch-details-panel': false,
+          'policies-panel': false,
+          'config-panel': false,
+          'commands-panel': false,
+          'documentation-panel': false
+      };
+
+      // Documentation lazy-load helper
+      function loadDocumentationLazy() {
+          const iframe = document.getElementById('documentation-iframe');
+          if (!iframe) return;
+          if (iframe.getAttribute('data-loaded') === 'true') return;
+          const src = iframe.getAttribute('data-src');
+          if (src) {
+              iframe.src = src;
+              iframe.setAttribute('data-loaded','true');
+              TAB_LOADED['documentation-panel'] = true;
+          }
+      }
+
+      // Tab management
+      function initTabs() {
+          const tabButtons = document.querySelectorAll('.tab-button');
+          const tabContents = document.querySelectorAll('.tab-content');
+
+          tabButtons.forEach(button => {
+              button.addEventListener('click', async () => {
+                  const targetTab = button.getAttribute('aria-controls');
+
+                  tabButtons.forEach(btn => {
+                      btn.setAttribute('aria-selected', 'false');
+                      btn.classList.remove('active');
+                      btn.setAttribute('tabindex', '-1');
+                  });
+
+                  button.setAttribute('aria-selected', 'true');
+                  button.classList.add('active');
+                  button.setAttribute('tabindex', '0');
+
+                  tabContents.forEach(content => {
+                      content.classList.remove('active');
+                  });
+
+                  document.getElementById(targetTab).classList.add('active');
+                  // Lazy-load behavior per-tab
+                  if (targetTab === 'documentation-panel') {
+                      loadDocumentationLazy();
+                  } else if (TAB_ALWAYS_RELOAD) {
+                      // If reloading on each activation is desired, reset per-tab loaded state
+                      TAB_LOADED[targetTab] = false;
+                      // If we have a cached iframe, clear its src so it can re-load when reopened
+                      try {
+                          const el = document.getElementById(targetTab);
+                          if (el && el.src) {
+                              // For panels that are containers, reset any lazy content; here we only affect docs
+                          }
+                      } catch (e) {
+                          // ignore
+                      }
+                  }
+
+                  localStorage.setItem('mergerfs_activeTab', targetTab);
+
+                  if (AppState.currentMount) {
+                      await loadMountData(AppState.currentMount);
+                  }
+              });
+
+              button.addEventListener('keydown', (e) => {
+                  let targetButton = null;
+
+                  switch(e.key) {
+                  case 'ArrowLeft':
+                  case 'ArrowUp':
+                      targetButton = button.previousElementSibling || tabButtons[tabButtons.length - 1];
+                      break;
+                  case 'ArrowRight':
+                  case 'ArrowDown':
+                      targetButton = button.nextElementSibling || tabButtons[0];
+                      break;
+                  case 'Home':
+                      targetButton = tabButtons[0];
+                      break;
+                  case 'End':
+                      targetButton = tabButtons[tabButtons.length - 1];
+                      break;
+                  }
+
+                  if (targetButton) {
+                      e.preventDefault();
+                      targetButton.focus();
+                  }
+              });
+          });
+
+          const savedTab = localStorage.getItem('mergerfs_activeTab');
+          if (savedTab) {
+              const savedButton = document.querySelector(`[aria-controls="${savedTab}"]`);
+              if (savedButton) {
+                  savedButton.click();
+              }
+          }
+      }
+
+      // Mount management
+      async function loadMounts() {
+          try {
+              AppState.mounts = await API.getMounts();
+              populateMountSelects();
+
+              if (AppState.mounts.length > 0) {
+                  AppState.currentMount = AppState.mounts[0];
+                  await loadMountData(AppState.currentMount);
+              }
+          } catch (error) {
+              console.error('Failed to load mounts:', error);
+              showToast(error.message || 'Failed to load mount points', 'error');
+          }
+      }
+
+      function populateMountSelects() {
+          const selects = ['mount-select-branches', 'mount-select-branch-details', 'mount-select-policies', 'mount-select-config', 'mount-select-commands'];
+
+          selects.forEach(selectId => {
+              const select = document.getElementById(selectId);
+              if (select) {
+                  select.innerHTML = '';
+
+                  if (AppState.mounts.length === 0) {
+                      const option = document.createElement('option');
+                      option.value = '';
+                      option.textContent = 'No mounts available';
+                      select.appendChild(option);
+                      return;
+                  }
+
+                  AppState.mounts.forEach(mount => {
+                      const option = document.createElement('option');
+                      option.value = mount;
+                      option.textContent = mount;
+                      select.appendChild(option);
+                  });
+
+                  if (AppState.currentMount) {
+                      select.value = AppState.currentMount;
+                  }
+
+                  select.addEventListener('change', async () => {
+                      if (select.value) {
+                          AppState.currentMount = select.value;
+                          await loadMountData(select.value);
+                      }
+                  });
+              }
+          });
+      }
+
+      async function loadMountData(mount) {
+          if (!mount) return;
+
+          try {
+              const activeTab = document.querySelector('.tab-button[aria-selected="true"]').getAttribute('aria-controls');
+
+              switch(activeTab) {
+
+              case 'branches-panel':
+                  await loadBranches(mount);
+                  break;
+              case 'branch-details-panel':
+                  await loadBranchDetails(mount);
+                  break;
+              case 'policies-panel':
+                  await loadPolicies(mount);
+                  break;
+              case 'config-panel':
+                  await loadConfig(mount);
+                  break;
+              case 'commands-panel':
+                  // Commands don't need data loading
+                  break;
+              }
+          } catch (error) {
+              console.error('Failed to load mount data:', error);
+              showToast('Failed to load configuration', 'error');
+          }
+      }
+
+      // Branch management
+      async function loadBranches(mount) {
+          const container = document.getElementById('branches-container');
+          UI.showLoading(container);
+
+          try {
+              const branchesStr = await API.getBranches(mount);
+              const container = document.getElementById('branches-container');
+              container.innerHTML = '';
+
+              if (!branchesStr) {
+                  container.innerHTML = UI.createBranchEntry().outerHTML;
+                  return;
+              }
+
+              const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
+
+              if (branches.length === 0) {
+                  container.innerHTML = UI.createBranchEntry().outerHTML;
+                  return;
+              }
+
+              branches.forEach(branchStr => {
+                  let path = branchStr;
+                  let mode = 'RW';
+                  let minfreespace = '';
+
+                  const eqPos = branchStr.indexOf('=');
+                  if (eqPos !== -1) {
+                      path = branchStr.substring(0, eqPos).trim();
+                      const options = branchStr.substring(eqPos + 1).trim();
+                      if (options) {
+                          const parts = options.split(',');
+                          if (parts.length >= 1 && parts[0]) {
+                              mode = parts[0].trim().toUpperCase();
+                          }
+                          if (parts.length >= 2 && parts[1]) {
+                              minfreespace = parts[1].trim();
+                          }
+                      }
+                  }
+
+                  container.appendChild(UI.createBranchEntry(path, mode, minfreespace));
+              });
+          } catch (error) {
+              console.error('Failed to load branches:', error);
+              const container = document.getElementById('branches-container');
+              container.innerHTML = `<div class="empty-state">${error.message || 'Failed to load branches'}</div>`;
+          }
+      }
+
+      // Branch details management
+      async function loadBranchDetails(mount) {
+          const tbody = document.getElementById('branch-details-tbody');
+          UI.showLoading(tbody);
+
+          try {
+              const branches = await API.getBranchesInfo(mount);
+              tbody.innerHTML = '';
+
+              if (!branches || branches.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No branches configured</td></tr>';
+                  return;
+              }
+
+              branches.forEach(branch => {
+                  const row = document.createElement('tr');
+
+                  const totalSpace = branch.total_space || 0;
+                  const usedSpace = branch.used_space || 0;
+                  const availableSpace = branch.available_space || 0;
+                  const usagePercent = totalSpace > 0 ? (usedSpace / totalSpace) * 100 : 0;
+
+                  const usageClass = usagePercent < 70 ? 'low' : (usagePercent < 90 ? 'medium' : 'high');
+
+                  const pathCell = document.createElement('td');
+                  const pathSpan = document.createElement('span');
+                  pathSpan.className = 'space-value';
+                  pathSpan.textContent = Utils.escapeHtml(branch.path);
+                  pathCell.appendChild(pathSpan);
+                  if (branch.readonly) {
+                      const badge = document.createElement('span');
+                      badge.className = 'readonly-badge';
+                      badge.textContent = 'RO';
+                      pathCell.appendChild(badge);
+                  }
+                  if (branch.error) {
+                      const errorDiv = document.createElement('div');
+                      errorDiv.className = 'branch-error';
+                      errorDiv.textContent = Utils.escapeHtml(branch.error);
+                      pathCell.appendChild(errorDiv);
+                  }
+
+                  const modeCell = document.createElement('td');
+                  modeCell.textContent = Utils.escapeHtml(branch.mode || 'RW');
+
+                  const totalCell = document.createElement('td');
+                  totalCell.className = 'space-value';
+                  totalCell.textContent = Utils.formatBytes(totalSpace);
+
+                  const usedCell = document.createElement('td');
+                  usedCell.className = 'space-value';
+                  usedCell.textContent = Utils.formatBytes(usedSpace);
+
+                  const availableCell = document.createElement('td');
+                  availableCell.className = 'space-value';
+                  availableCell.textContent = Utils.formatBytes(availableSpace);
+
+                  const usageCell = document.createElement('td');
+                  usageCell.style.textAlign = 'center';
+
+                  const usageBarContainer = document.createElement('div');
+                  usageBarContainer.className = 'usage-bar-container';
+
+                  const usageBar = document.createElement('div');
+                  usageBar.className = `usage-bar ${usageClass}`;
+                  usageBar.style.width = `${usagePercent}%`;
+
+                  usageBarContainer.appendChild(usageBar);
+                  usageCell.appendChild(usageBarContainer);
+
+                  const usageText = document.createElement('div');
+                  usageText.className = 'usage-text';
+                  usageText.textContent = `${usagePercent.toFixed(1)}%`;
+                  usageCell.appendChild(usageText);
+
+                  const minfreespaceCell = document.createElement('td');
+                  minfreespaceCell.className = 'space-value';
+                  minfreespaceCell.textContent = Utils.escapeHtml(branch.minfreespace || '-');
+
+                  row.appendChild(pathCell);
+                  row.appendChild(modeCell);
+                  row.appendChild(minfreespaceCell);
+                  row.appendChild(totalCell);
+                  row.appendChild(usedCell);
+                  row.appendChild(availableCell);
+                  row.appendChild(usageCell);
+
+                  tbody.appendChild(row);
+              });
+          } catch (error) {
+              console.error('Failed to load branch details:', error);
+              tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${error.message || 'Failed to load branch details'}</td></tr>`;
+          }
+      }
+
+      async function saveBranches() {
+          if (!AppState.currentMount) {
+              showToast('No mount selected', 'error');
+              return;
+          }
+
+          const entries = document.querySelectorAll('.branch-entry');
+          const branches = [];
+
+          for (const entry of entries) {
+              const pathInput = entry.querySelector('.branch-path');
+              const modeSelect = entry.querySelector('.branch-mode');
+              const valueInput = entry.querySelector('.branch-minfreespace-value');
+              const unitSelect = entry.querySelector('.branch-minfreespace-unit');
+
+              if (pathInput && pathInput.value.trim()) {
+                  const pathValidation = Utils.validatePath(pathInput.value.trim());
+                  if (!pathValidation.valid) {
+                      showToast(`Invalid path: ${pathValidation.message}`, 'error');
+                      pathInput.focus();
+                      return;
+                  }
+
+                  if (valueInput.value.trim()) {
+                      const spaceValidation = Utils.validateMinfreespace(valueInput.value.trim(), unitSelect.value);
+                      if (!spaceValidation.valid) {
+                          showToast(`Invalid minfreespace: ${spaceValidation.message}`, 'error');
+                          valueInput.focus();
+                          return;
+                      }
+                  }
+
+                  let branchStr = pathInput.value.trim();
+
+                  if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
+                      branchStr += '=' + modeSelect.value;
+                  } else {
+                      branchStr += '=RW';
+                  }
+
+                  if (valueInput && valueInput.value.trim() && unitSelect) {
+                      const value = valueInput.value.trim();
+                      const unit = unitSelect.value;
+                      branchStr += ',' + value + unit;
+                  }
+
+                  branches.push(branchStr);
+              }
+          }
+
+          if (branches.length === 0) {
+              showToast('At least one branch is required', 'error');
+              return;
+          }
+
+          try {
+              await API.setBranches(AppState.currentMount, branches.join(':'));
+              showToast('Branch configuration saved successfully', 'success');
+              await loadBranches(AppState.currentMount);
+          } catch (error) {
+              console.error('Failed to save branches:', error);
+              showToast('Failed to save branch configuration', 'error');
+          }
+      }
+
+      function addBranchEntry() {
+          const container = document.getElementById('branches-container');
+
+          const emptyState = container.querySelector('.empty-state');
+          if (emptyState) {
+              emptyState.remove();
+          }
+
+          container.appendChild(UI.createBranchEntry());
+      }
+
+      function moveBranchUp(entry) {
+          const prev = entry.previousElementSibling;
+          if (prev && prev.classList.contains('branch-entry')) {
+              entry.parentNode.insertBefore(entry, prev);
+          }
+      }
+
+      function moveBranchDown(entry) {
+          const next = entry.nextElementSibling;
+          if (next && next.classList.contains('branch-entry')) {
+              entry.parentNode.insertBefore(next, entry);
+          }
+      }
+
+      // Drag and drop handlers
+      let draggedEntry = null;
+
+      function handleDragStart(e) {
+          draggedEntry = this;
+          this.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/html', this.innerHTML);
+      }
+
+      function handleDragEnd(e) {
+          this.classList.remove('dragging');
+          document.querySelectorAll('.branch-entry').forEach(entry => {
+              entry.classList.remove('drag-over');
+          });
+          draggedEntry = null;
+      }
+
+      function handleDragOver(e) {
+          if (e.preventDefault) {
+              e.preventDefault();
+          }
+          e.dataTransfer.dropEffect = 'move';
+
+          if (this !== draggedEntry) {
+              this.classList.add('drag-over');
+          }
+          return false;
+      }
+
+      function handleDragLeave(e) {
+          this.classList.remove('drag-over');
+      }
+
+      function handleDrop(e) {
+          if (e.stopPropagation) {
+              e.stopPropagation();
+          }
+
+          this.classList.remove('drag-over');
+
+          if (draggedEntry !== this) {
+              const container = document.getElementById('branches-container');
+              const allEntries = Array.from(container.querySelectorAll('.branch-entry'));
+              const draggedIndex = allEntries.indexOf(draggedEntry);
+              const targetIndex = allEntries.indexOf(this);
+
+              if (draggedIndex < targetIndex) {
+                  container.insertBefore(draggedEntry, this.nextSibling);
+              } else {
+                  container.insertBefore(draggedEntry, this);
+              }
+          }
+
+          return false;
+      }
+
+      // Policy management
+      const policyCategories = {
+          create: {
+              title: 'Create & Read Category',
+              description: 'Controls how new files and directories are created and read',
+              functions: ['mkdir', 'create', 'mknod', 'symlink', 'readdir'],
+              defaults: {
+                  'mkdir': 'pfrd',
+                  'create': 'pfrd',
+                  'mknod': 'pfrd',
+                  'symlink': 'pfrd',
+                  'readdir': 'seq'
+              },
+              options: {
+                  'mkdir': [
+                      { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                      { value: 'mfs', label: 'mfs - Most Free Space' },
+                      { value: 'lfs', label: 'lfs - Least Free Space' },
+                      { value: 'lus', label: 'lus - Least Used Space' },
+                      { value: 'rand', label: 'rand - Random' },
+                      { value: 'ff', label: 'ff - First Found' },
+                      { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                      { value: 'eprand', label: 'eprand - Existing Path Random' }
+                  ],
+                  'create': [
+                      { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                      { value: 'mfs', label: 'mfs - Most Free Space' },
+                      { value: 'lfs', label: 'lfs - Least Free Space' },
+                      { value: 'lus', label: 'lus - Least Used Space' },
+                      { value: 'rand', label: 'rand - Random' },
+                      { value: 'ff', label: 'ff - First Found' },
+                      { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                      { value: 'eprand', label: 'eprand - Existing Path Random' }
+                  ],
+                  'mknod': [
+                      { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                      { value: 'mfs', label: 'mfs - Most Free Space' },
+                      { value: 'lfs', label: 'lfs - Least Free Space' },
+                      { value: 'lus', label: 'lus - Least Used Space' },
+                      { value: 'rand', label: 'rand - Random' },
+                      { value: 'ff', label: 'ff - First Found' },
+                      { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                      { value: 'eprand', label: 'eprand - Existing Path Random' }
+                  ],
+                  'symlink': [
+                      { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                      { value: 'mfs', label: 'mfs - Most Free Space' },
+                      { value: 'lfs', label: 'lfs - Least Free Space' },
+                      { value: 'lus', label: 'lus - Least Used Space' },
+                      { value: 'rand', label: 'rand - Random' },
+                      { value: 'ff', label: 'ff - First Found' },
+                      { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                      { value: 'eprand', label: 'eprand - Existing Path Random' }
+                  ],
+                  'readdir': [
+                      { value: 'seq', label: 'seq - Sequential' },
+                      { value: 'cosr', label: 'cosr - Concurrent Open Sequential Read' },
+                      { value: 'cor', label: 'cor - Concurrent Open and Read' }
+                  ]
+              }
+          },
+          search: {
+              title: 'Search Category',
+              description: 'Controls how files are searched and accessed',
+              functions: ['access', 'getattr', 'getxattr', 'listxattr', 'open', 'readlink'],
+              default: 'ff',
+              options: [
+                  { value: 'ff', label: 'ff - First Found' },
+                  { value: 'newest', label: 'newest - Newest File' },
+                  { value: 'rand', label: 'rand - Random' }
+              ]
+          },
+          action: {
+              title: 'Action Category',
+              description: 'Controls how file attributes are modified',
+              functions: ['chmod', 'chown', 'link', 'removexattr', 'rename', 'rmdir', 'setxattr', 'truncate', 'unlink', 'utimens'],
+              default: 'epall',
+              options: [
+                  { value: 'epall', label: 'epall - Existing Path All' },
+                  { value: 'all', label: 'all - All Branches' },
+                  { value: 'epff', label: 'epff - Existing Path First Found' },
+                  { value: 'ff', label: 'ff - First Found' }
+              ]
+          }
+      };
+
+      async function loadPolicies(mount) {
+          const policyGrid = document.getElementById('policy-grid');
+          policyGrid.innerHTML = '<div class="loading-spinner"></div> Loading policies...';
+
+          try {
+              const allConfig = await API.getConfig(mount);
+              const policyValues = {};
+
+              for (const [category, config] of Object.entries(policyCategories)) {
+                  for (const func of config.functions) {
+                      const key = `func.${func}`;
+                      const defaultVal = config.defaults && config.defaults[func] ? config.defaults[func] : config.default;
+                      policyValues[key] = allConfig[key] || defaultVal;
+                  }
+              }
+
+              AppState.policies = policyValues;
+              renderPolicyCards();
+          } catch (error) {
+              console.error('Failed to load policies:', error);
+              const errorMsg = error.message || 'Unknown error';
+              policyGrid.innerHTML = `<div class="empty-state">Failed to load policies: ${errorMsg}</div>`;
+              showToast(`Failed to load policies: ${errorMsg}`, 'error', 6000);
+          }
+      }
+
+      function renderPolicyCards() {
+          const policyGrid = document.getElementById('policy-grid');
+          policyGrid.innerHTML = '';
+
+          for (const [category, config] of Object.entries(policyCategories)) {
+              const card = document.createElement('div');
+              card.className = 'policy-card';
+
+              const title = document.createElement('div');
+              title.className = 'policy-title';
+              title.textContent = config.title;
+              card.appendChild(title);
+
+              const desc = document.createElement('div');
+              desc.className = 'policy-description';
+              desc.textContent = config.description;
+              card.appendChild(desc);
+
+              for (const func of config.functions) {
+                  if (func === 'readdir') {
+                      const divider = document.createElement('div');
+                      divider.className = 'policy-divider';
+                      divider.textContent = 'Readdir';
+                      card.appendChild(divider);
+                  }
+
+                  const funcGroup = document.createElement('div');
+                  funcGroup.className = 'policy-function-group';
+
+                  const funcLabel = document.createElement('label');
+                  funcLabel.className = 'policy-function-label';
+                  funcLabel.textContent = func;
+                  funcGroup.appendChild(funcLabel);
+
+                  const select = document.createElement('select');
+                  select.className = 'policy-select';
+                  select.id = `policy-func-${func}`;
+                  select.setAttribute('data-func', func);
+
+                  const options = config.options && config.options[func] ? config.options[func] : config.options;
+                  options.forEach(opt => {
+                      const option = document.createElement('option');
+                      option.value = opt.value;
+                      option.textContent = opt.label;
+                      select.appendChild(option);
+                  });
+
+                  const key = `func.${func}`;
+                  const defaultVal = config.defaults && config.defaults[func] ? config.defaults[func] : config.default;
+                  select.value = AppState.policies[key] || defaultVal;
+
+                  select.addEventListener('change', async () => {
+                      if (!AppState.currentMount) {
+                          showToast('No mount selected', 'error');
+                          select.value = AppState.policies[key] || defaultVal;
+                          return;
+                      }
+
+                      try {
+                          await API.setXattr(AppState.currentMount, key, select.value);
+                          AppState.policies[key] = select.value;
+                          showToast(`${func} policy updated to ${select.value}`, 'success', 2000);
+                      } catch (error) {
+                          console.error(`Failed to update ${func} policy:`, error);
+                          const errorMsg = error.message || 'Unknown error';
+                          showToast(`Failed to update ${func}: ${errorMsg}`, 'error', 6000);
+                          select.value = AppState.policies[key] || defaultVal;
+                      }
+                  });
+
+                  funcGroup.appendChild(select);
+                  card.appendChild(funcGroup);
+              }
+
+              policyGrid.appendChild(card);
+          }
+      }
+
+      async function resetPolicies() {
+          if (!AppState.currentMount) {
+              showToast('No mount selected', 'error');
+              return;
+          }
+
+          try {
+              for (const [category, config] of Object.entries(policyCategories)) {
+                  for (const func of config.functions) {
+                      const defaultVal = config.defaults && config.defaults[func] ? config.defaults[func] : config.default;
+                      await API.setXattr(AppState.currentMount, `func.${func}`, defaultVal);
+                  }
+              }
+
+              showToast('Policies reset to defaults', 'success');
+              await loadPolicies(AppState.currentMount);
+          } catch (error) {
+              console.error('Failed to reset policies:', error);
+              const errorMsg = error.message || 'Unknown error';
+              showToast(`Failed to reset policies: ${errorMsg}`, 'error', 6000);
+          }
+      }
+
+      // Configuration management
+      async function loadConfig(mount) {
+          const tbody = document.getElementById('config-tbody');
+          UI.showLoading(tbody);
+
+          try {
+              const config = await API.getConfig(mount);
+              AppState.config = config;
+              renderConfigTable(config);
+          } catch (error) {
+              console.error('Failed to load config:', error);
+              const errorMsg = error.message || 'Unknown error';
+              tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Failed to load configuration: ${errorMsg}</td></tr>`;
+              showToast(`Failed to load configuration: ${errorMsg}`, 'error', 6000);
+          }
+      }
+
+      function renderConfigTable(config) {
+          const tbody = document.getElementById('config-tbody');
+          tbody.innerHTML = '';
+
+          const priorityKeys = ['fsname', 'branches', 'version', 'minfreespace', 'moveonenospc'];
+          const orderedEntries = [];
+
+          const configCopy = { ...config };
+
+          priorityKeys.forEach(key => {
+              if (configCopy.hasOwnProperty(key)) {
+                  orderedEntries.push([key, configCopy[key]]);
+                  delete configCopy[key];
+              }
+          });
+
+          for (const [key, value] of Object.entries(configCopy)) {
+              orderedEntries.push([key, value]);
+          }
+
+          const descriptions = {
+              'fsname': 'Filesystem name',
+              'branches': 'Branch paths and options',
+              'version': 'mergerfs version',
+              'minfreespace': 'Minimum free space for creation',
+              'moveonenospc': 'Move file when no space left',
+              'cache.files': 'File caching mode',
+              'cache.attr': 'Attribute cache timeout',
+              'cache.entry': 'Entry cache timeout',
+              'category.create': 'File creation policy',
+              'category.search': 'File search policy',
+              'category.action': 'File action policy',
+              'inodecalc': 'Inode calculation method',
+              'threads': 'Number of worker threads'
+          };
+
+          orderedEntries.forEach(([key, value]) => {
+              const row = document.createElement('tr');
+
+              const keyCell = document.createElement('td');
+              keyCell.textContent = key;
+              keyCell.style.fontFamily = 'monospace';
+              keyCell.style.fontSize = '13px';
+
+              const valueCell = document.createElement('td');
+              const input = document.createElement('input');
+              input.type = 'text';
+              input.value = value;
+              input.style.width = '100%';
+              input.style.fontFamily = 'monospace';
+              input.style.fontSize = '13px';
+
+              const debouncedSave = Utils.debounce(async () => {
+                  try {
+                      await API.setConfig(AppState.currentMount, key, input.value);
+                      showToast(`Updated ${key}`, 'success', 2000);
+                  } catch (error) {
+                      const errorMsg = error.message || 'Unknown error';
+                      showToast(`Failed to update ${key}: ${errorMsg}`, 'error', 6000);
+                      input.value = value;
+                  }
+              }, 1000);
+
+              input.addEventListener('input', debouncedSave);
+              input.addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter') {
+                      e.preventDefault();
+                      input.blur();
+                  }
+              });
+
+              valueCell.appendChild(input);
+
+              row.appendChild(keyCell);
+              row.appendChild(valueCell);
+              tbody.appendChild(row);
+          });
+
+          if (orderedEntries.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No configuration available</td></tr>';
+          }
+      }
+
+      // Command execution
+      async function executeCommand(command) {
+          if (!AppState.currentMount) {
+              showToast('No mount selected', 'error');
+              return;
+          }
+
+          try {
+              await API.executeCommand(AppState.currentMount, command);
+              showToast(`${command} command executed successfully`, 'success');
+          } catch (error) {
+              console.error(`Failed to execute ${command}:`, error);
+              showToast(`Failed to execute ${command}`, 'error');
+          }
+      }
+
+
+
+      // Modal management
+      function openPathModal(targetInput) {
+          AppState.pendingPathInput = targetInput;
+          UI.showModal('pathModal');
+          loadAvailableMounts();
+      }
+
+      async function loadAvailableMounts() {
+          const mountList = document.getElementById('mount-list');
+          UI.showLoading(mountList);
+
+          try {
+              const mounts = await API.getAllMounts();
+              const currentMount = AppState.currentMount;
+
+              mountList.innerHTML = '';
+
+              const filteredMounts = mounts.filter(m => m.path !== currentMount);
+
+              if (filteredMounts.length === 0) {
+                  mountList.innerHTML = '<div class="empty-state">No other mount points available</div>';
+                  return;
+              }
+
+              filteredMounts.forEach(mount => {
+                  const item = document.createElement('div');
+                  item.className = 'mount-item';
+                  item.innerHTML = `
+            <div>
+              <div class="mount-path">${Utils.escapeHtml(mount.path)}</div>
+            </div>
+            <div class="mount-type">${Utils.escapeHtml(mount.type)}</div>
+            `;
+
+                  item.addEventListener('click', () => {
+                      if (AppState.pendingPathInput) {
+                          AppState.pendingPathInput.value = mount.path;
+                      }
+                      UI.hideModal('pathModal');
+                      AppState.pendingPathInput = null;
+                  });
+
+                  mountList.appendChild(item);
+              });
+          } catch (error) {
+              console.error('Failed to load mounts:', error);
+              mountList.innerHTML = '<div class="empty-state">Failed to load mount points</div>';
+          }
+      }
+
+      // Search functionality
+      function initSearch() {
+          const searchInput = document.getElementById('config-search');
+          if (searchInput) {
+              searchInput.addEventListener('input', Utils.debounce(() => {
+                  const searchTerm = searchInput.value.toLowerCase();
+                  const rows = document.querySelectorAll('#config-tbody tr');
+
+                  rows.forEach(row => {
+                      const text = row.textContent.toLowerCase();
+                      row.style.display = text.includes(searchTerm) ? '' : 'none';
+                  });
+              }, 300));
+          }
+
+          const mountSearchInput = document.getElementById('mount-search');
+          if (mountSearchInput) {
+              mountSearchInput.addEventListener('input', Utils.debounce(() => {
+                  const searchTerm = mountSearchInput.value.toLowerCase();
+                  const items = document.querySelectorAll('.mount-item');
+
+                  items.forEach(item => {
+                      const text = item.textContent.toLowerCase();
+                      item.style.display = text.includes(searchTerm) ? '' : 'none';
+                  });
+              }, 300));
+          }
+      }
+
+      // Initialize application
+      async function initApp() {
+          try {
+              initTabs();
+              initSearch();
+              await loadMounts();
+
+              // Set up event listeners
+              document.getElementById('add-branch-btn').addEventListener('click', addBranchEntry);
+              document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
+              document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
+              document.getElementById('refresh-branch-details-btn').addEventListener('click', () => loadBranchDetails(AppState.currentMount));
+              document.getElementById('reset-policies-btn').addEventListener('click', resetPolicies);
+              document.getElementById('export-config-btn').addEventListener('click', exportConfig);
+              document.getElementById('import-config-btn').addEventListener('click', importConfig);
+              document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
+
+              // Command buttons
+              document.getElementById('cmd-gc').addEventListener('click', () => executeCommand('gc'));
+              document.getElementById('cmd-gc1').addEventListener('click', () => executeCommand('gc1'));
+              document.getElementById('cmd-invalidate').addEventListener('click', () => executeCommand('invalidate-all-nodes'));
+
+              // Modal event listeners
+              document.getElementById('pathModalClose').addEventListener('click', () => UI.hideModal('pathModal'));
+              document.getElementById('pathModal').addEventListener('click', (e) => {
+                  if (e.target.id === 'pathModal') {
+                      UI.hideModal('pathModal');
+                  }
+              });
+
+              // Keyboard shortcuts
+              document.addEventListener('keydown', (e) => {
+                  if (e.ctrlKey || e.metaKey) {
+                      switch(e.key) {
+                      case 'o':
+                          e.preventDefault();
+                          document.getElementById('import-config-btn').click();
+                          break;
+
+                      }
+                  }
+
+                  if (e.key === 'Escape') {
+                      UI.hideModal('pathModal');
+                  }
+              });
+
+              // Auth event listeners
+              document.getElementById('auth-btn').addEventListener('click', handleAuth);
+              document.getElementById('password-input').addEventListener('input', () => {
+                  const authBtn = document.getElementById('auth-btn');
+                  if (AppState.isAuthenticated) {
+                      return;
+                  }
+                  authBtn.textContent = 'Verify';
+                  authBtn.className = 'button';
+                  authBtn.disabled = false;
+              });
+              document.getElementById('password-input').addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter') {
+                      handleAuth();
+                  }
+              });
+
+              // Initialize auth state
+              initAuth();
+
+
+          } catch (error) {
+              console.error('Failed to initialize application:', error);
+              showToast('Failed to initialize application', 'error');
+          }
+      }
+
+      // Authentication functions
+      async function initAuth() {
+          try {
+              const authInfo = await API.getAuth();
+              AppState.passwordRequired = authInfo.password_required;
+              API.passwordRequired = authInfo.password_required;
+
+              updateAuthStatus();
+
+              if (!AppState.passwordRequired) {
+                  AppState.isAuthenticated = true;
+                  updateAuthStatus();
+              }
+          } catch (error) {
+              console.error('Failed to initialize auth:', error);
+              updateAuthStatus('error', 'Connection failed');
+          }
+      }
+
+      async function handleAuth() {
+          const passwordInput = document.getElementById('password-input');
+          const authBtn = document.getElementById('auth-btn');
+          const statusEl = document.getElementById('auth-status');
+
+          const password = passwordInput.value;
+
+          if (!AppState.passwordRequired) {
+              AppState.isAuthenticated = true;
+              updateAuthStatus();
+              return;
+          }
+
+          if (!password) {
+              updateAuthStatus('error', 'Password required');
+              return;
+          }
+
+          authBtn.disabled = true;
+          authBtn.innerHTML = '<span class="loading-spinner"></span>...';
+
+          try {
+              const result = await API.verifyPassword(password);
+
+              if (result.valid) {
+                  AppState.isAuthenticated = true;
+                  API.authToken = password;
+                  updateAuthStatus('success');
+              } else {
+                  AppState.isAuthenticated = false;
+                  API.authToken = '';
+                  updateAuthStatus('error');
+                  showToast('Invalid password', 'error');
+              }
+          } catch (error) {
+              AppState.isAuthenticated = false;
+              API.authToken = '';
+              updateAuthStatus('error');
+              showToast(error.message, 'error');
+          }
+      }
+
+      function updateAuthStatus(status = '') {
+          const passwordInput = document.getElementById('password-input');
+          const authBtn = document.getElementById('auth-btn');
+
+          authBtn.className = 'button';
+
+          if (AppState.passwordRequired) {
+              if (status === 'success') {
+                  passwordInput.disabled = true;
+                  authBtn.textContent = 'Verified';
+                  authBtn.classList.add('auth-success');
+                  authBtn.disabled = true;
+              } else if (status === 'error') {
+                  passwordInput.disabled = false;
+                  passwordInput.value = '';
+                  authBtn.textContent = 'Failed';
+                  authBtn.classList.add('auth-error');
+                  authBtn.disabled = false;
+              } else {
+                  passwordInput.disabled = false;
+                  authBtn.textContent = 'Verify';
+                  authBtn.disabled = false;
+              }
+          } else {
+              passwordInput.disabled = true;
+              passwordInput.placeholder = 'No password required';
+              authBtn.style.display = 'none';
+          }
+      }
+
+      // Export/Import functionality
+      function exportConfig() {
+          if (!AppState.currentMount) {
+              showToast('No mount selected', 'error');
+              return;
+          }
+
+          API.getConfig(AppState.currentMount).then(config => {
+              const exportData = {
+                  mount: AppState.currentMount,
+                  timestamp: new Date().toISOString(),
+                  config: config,
+                  exportedBy: 'mergerfs Runtime Manager'
+              };
+
+              const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `mergerfs-config-${AppState.currentMount.replace(/[\/\\]/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+
+              showToast('Configuration exported successfully', 'success');
+          }).catch(error => {
+              console.error('Failed to export config:', error);
+              const errorMsg = error.message || 'Unknown error';
+              showToast(`Failed to export configuration: ${errorMsg}`, 'error', 6000);
+          });
+      }
+
+      function importConfig() {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json';
+
+          input.addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+
+              try {
+                  const text = await file.text();
+                  const payload = JSON.parse(text);
+
+                  if (!payload.config || !payload.mount) {
+                      throw new Error('Invalid configuration file');
+                  }
+
+                  const mount = payload.mount;
+                  const configMap = payload.config;
+
+                  // Fetch current config to diff against
+                  let currentConfig = {};
+                  try {
+                      currentConfig = await API.getConfig(mount);
+                  } catch (err) {
+                      console.warn('Could not fetch current config; proceeding with updates for all keys', err);
+                  }
+
+                  // Apply only changed keys
+                  for (const [key, value] of Object.entries(configMap)) {
+                      // Ensure value is string for storage; serialize complex types
+                      let valueToSend = (typeof value === 'string') ? value
+                          : (typeof value === 'number' || typeof value === 'boolean') ? String(value)
+                          : JSON.stringify(value);
+
+                      // Compare with currentConfig
+                      const currentVal = currentConfig && currentConfig[key];
+                      const currentStr = (typeof currentVal === 'string') ? currentVal : (currentVal !== undefined && currentVal !== null) ? String(currentVal) : undefined;
+
+                      if (currentStr !== undefined && currentStr === valueToSend) {
+                          // No change; skip
+                          console.log('Skipping unchanged key', key);
+                          continue;
+                      }
+
+                      // Send update for changed value
+                      try {
+                          await API.setConfig(mount, key, valueToSend);
+                      } catch (err) {
+                          console.error('Import kv failed for', key, err);
+                      }
+                  }
+
+                  // Refresh config panel to reflect imported values
+                  try {
+                      await loadConfig(mount);
+                  } catch (err) {
+                      console.error('Failed to refresh config after import:', err);
+                  }
+
+                  showToast('Configuration imported successfully.', 'success');
+              } catch (error) {
+                  console.error('Failed to import config:', error);
+                  const errorMsg = error.message || 'Unknown error';
+                  showToast(`Failed to import configuration: ${errorMsg}`, 'error', 6000);
+              }
+          });
+
+          input.click();
+      }
+
+      // Start the application when DOM is ready
+      if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+          initApp();
+      }
+      </script>
+  </body>
+</html>

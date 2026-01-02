@@ -22,9 +22,12 @@
 int
 Func::Base::Action::from_string(const std::string_view policyname_)
 {
-  policy = Policies::Action::find(policyname_);
-  if(!policy)
+  auto new_policy = Policies::Action::find(policyname_);
+
+  if(!new_policy)
     return -EINVAL;
+
+  policy = new_policy;
 
   return 0;
 }
@@ -38,9 +41,12 @@ Func::Base::Action::to_string(void) const
 int
 Func::Base::Create::from_string(const std::string_view policyname_)
 {
-  policy = Policies::Create::find(policyname_);
-  if(!policy)
+  auto new_policy = Policies::Create::find(policyname_);
+
+  if(!new_policy)
     return -EINVAL;
+
+  policy = new_policy;
 
   return 0;
 }
@@ -54,9 +60,12 @@ Func::Base::Create::to_string(void) const
 int
 Func::Base::Search::from_string(const std::string_view policyname_)
 {
-  policy = Policies::Search::find(policyname_);
-  if(!policy)
+  auto new_policy = Policies::Search::find(policyname_);
+
+  if(!new_policy)
     return -EINVAL;
+
+  policy = new_policy;
 
   return 0;
 }

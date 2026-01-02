@@ -19,16 +19,26 @@ namespace mergerfs
             std::map<std::string,std::string> *kvs);
 
     int
+    get_kv(const fs::path    &mountpoint,
+           const std::string &key,
+           std::string       *val);
+
+    int
+    set_kv(const fs::path    &mountpoint,
+           const std::string &key,
+           const std::string &val);
+
+    int
     basepath(const std::string &path,
-             std::string       &basepath);
+             std::string       *basepath);
     int
     relpath(const std::string &path,
-            std::string       &relpath);
+            std::string       *relpath);
     int
     fullpath(const std::string &path,
-             std::string       &fullpath);
+             std::string       *fullpath);
     int
     allpaths(const std::string        &path,
-             std::vector<std::string> &paths);
+             std::vector<std::string> *paths);
   }
 }

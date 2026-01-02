@@ -32,6 +32,7 @@ using std::set;
 using std::string;
 using std::string_view;
 using std::vector;
+using nonstd::span;
 
 
 void
@@ -284,6 +285,48 @@ str::startswith(const string &str_,
 }
 
 bool
+str::startswith(const string      &str_,
+                const string_view  prefix_)
+{
+  return ((str_.size() >= prefix_.size()) &&
+          (str_.compare(0,prefix_.size(),prefix_) == 0));
+}
+
+bool
+str::startswith(const string &str_,
+                const char   *prefix_)
+{
+  return str::startswith(str_,
+                         std::string_view{prefix_});
+}
+
+bool
+str::startswith(const char        *str_,
+                span<const char*>  prefixes_)
+{
+  for(const auto &prefix : prefixes_)
+    {
+      if(str::startswith(str_,prefix))
+        return true;
+    }
+
+  return false;
+}
+
+bool
+str::startswith(const char        *str_,
+                span<string_view>  prefixes_)
+{
+  for(const auto &prefix : prefixes_)
+    {
+      if(str::startswith(str_,prefix))
+        return true;
+    }
+
+  return false;
+}
+
+bool
 str::endswith(const string &str_,
               const string &suffix_)
 {
@@ -346,4 +389,14 @@ str::replace(const std::string &s_,
                dst_);
 
   return s;
+}
+
+std::string
+str::remove_prefix(const std::string      &str_,
+                   const std::string_view  prefix_)
+{
+  if(str::startswith(str_,prefix_))
+    return str_.substr(prefix_.size());
+
+  return str_;
 }
