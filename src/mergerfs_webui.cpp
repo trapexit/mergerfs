@@ -13,7 +13,140 @@ void
 _get_root(const httplib::Request &req_,
           httplib::Response      &res_)
 {
-  std::string html = R"html(<html></html>)html";
+  std::string html = R"html(
+<!DOCTYPE html>
+<html>
+<head><title>KV Editor</title>
+<style>
+.tab {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+}
+.tab button:hover {
+  background-color: #ddd;
+}
+.tab button.active {
+  background-color: #ccc;
+}
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+</style>
+</head>
+<body>
+<div class="tab">
+  <button class="tablinks active" onclick="openTab(event, 'Advanced')">Advanced</button>
+  <button class="tablinks" onclick="openTab(event, 'Mounts')">Mounts</button>
+</div>
+<div id="Advanced" class="tabcontent" style="display: block;">
+  <div>
+    <label for="mount-select-advanced">Select Mountpoint:</label>
+    <select id="mount-select-advanced"></select>
+  </div>
+  <div id="kv-list"></div>
+</div>
+<div id="Mounts" class="tabcontent">
+  <form>
+    <label for="mount-select">Select Mountpoint:</label>
+    <select id="mount-select"></select>
+  </form>
+</div>
+<script>
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  if (evt) evt.currentTarget.className += " active";
+}
+function loadKV(mount) {
+    let url = '/kv';
+    if (mount) {
+        url += '?mount=' + encodeURIComponent(mount);
+    }
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        const div = document.getElementById('kv-list');
+        div.innerHTML = '';
+        for (const [k, v] of Object.entries(data)) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = v;
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    fetch('/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({key: k, value: input.value})
+                    });
+                }
+            };
+            const label = document.createElement('label');
+            label.textContent = k + ': ';
+            label.appendChild(input);
+            div.appendChild(label);
+            div.appendChild(document.createElement('br'));
+        }
+    });
+}
+function loadMounts() {
+    fetch('/mounts')
+    .then(r => r.json())
+    .then(data => {
+        const select = document.getElementById('mount-select');
+        const selectAdvanced = document.getElementById('mount-select-advanced');
+        [select, selectAdvanced].forEach(s => {
+            s.innerHTML = '';
+            data.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.text = m;
+                s.appendChild(opt);
+            });
+        });
+        const onchangeFunc = function() {
+            const mount = this.value;
+            fetch('/select_mount', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({mount: mount})
+            });
+            loadKV(mount);
+        };
+        select.onchange = onchangeFunc;
+        selectAdvanced.onchange = onchangeFunc;
+        if (data.length > 0) {
+            select.value = data[0];
+            selectAdvanced.value = data[0];
+            loadKV(data[0]);
+        }
+    });
+}
+window.onload = () => { loadMounts(); };
+</script>
+</body>
+</html>
+)html";
 
   res_.set_content(html,
                    "text/html");
