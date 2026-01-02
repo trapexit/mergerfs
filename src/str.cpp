@@ -353,13 +353,7 @@ str::remove_prefix(const std::string      &str_,
                    const std::string_view  prefix_)
 {
   if(str::startswith(str_,prefix_))
-    {
-      std::string s{str_};
-
-      s.erase(0,prefix_.size());
-
-      return s;
-    }
+    return s.substr(prefix_.size());
 
   return str_;
 }
