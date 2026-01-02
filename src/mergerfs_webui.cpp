@@ -68,7 +68,7 @@ _post_kvs(const httplib::Request &req_,
 
       for(const auto &[key,val] : j.items())
         {
-          std::cout << "Updated " << key << " to " << value << std::endl;
+          std::cout << key << ": " << value << std::endl;
         }
 
       res_.set_content("{}", "application/json");
