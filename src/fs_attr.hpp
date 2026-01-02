@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include "fs_path.hpp"
+
 #include "base_types.h"
 
 #define FS_ATTR_NONE (0)
