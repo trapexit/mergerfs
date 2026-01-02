@@ -109,5 +109,5 @@ namespace str
 
   std::string
   remove_prefix(const std::string      &str,
-                const std::string_view &prefix);
+                const std::string_view  prefix);
 }
