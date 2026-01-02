@@ -100,9 +100,11 @@ mergerfs::api::basepath(const std::string &input_path_,
 
 int
 mergerfs::api::relpath(const std::string &input_path_,
-                       std::string       &relpath_)
+                       std::string       *relpath_)
 {
-  return ::_lgetxattr(input_path_,"relpath",relpath_);
+  return fs::xattr::get(input_path_,
+                        "user.mergerfs.relpath",
+                        relpath_);
 }
 
 int
