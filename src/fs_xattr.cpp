@@ -143,7 +143,7 @@ fs::xattr::list(const string &path_,
 int
 fs::xattr::get(const int     fd_,
                const string &attr_,
-               vector<char> *value_)
+               vector<char> *val_)
 {
   ssize_t rv;
 
@@ -154,9 +154,9 @@ fs::xattr::get(const int     fd_,
       if(rv <= 0)
         return rv;
 
-      value_->resize(rv);
+      val_->resize(rv);
 
-      rv = fs::fgetxattr(fd_,attr_,&(*value_)[0],rv);
+      rv = fs::fgetxattr(fd_,attr_,&(*val_)[0],rv);
     }
 
   return rv;
@@ -165,7 +165,7 @@ fs::xattr::get(const int     fd_,
 int
 fs::xattr::get(const string &path_,
                const string &attr_,
-               vector<char> *value_)
+               vector<char> *val_)
 {
   ssize_t rv;
 
@@ -176,9 +176,9 @@ fs::xattr::get(const string &path_,
       if(rv <= 0)
         return rv;
 
-      value_->resize(rv);
+      val_->resize(rv);
 
-      rv = fs::lgetxattr(path_,attr_,&(*value_)[0],rv);
+      rv = fs::lgetxattr(path_,attr_,&(*val_)[0],rv);
     }
 
   return rv;
@@ -187,14 +187,14 @@ fs::xattr::get(const string &path_,
 int
 fs::xattr::get(const int     fd_,
                const string &attr_,
-               string       *value_)
+               string       *val_)
 {
   int          rv;
   vector<char> tmpvalue;
 
   rv = fs::xattr::get(fd_,attr_,&tmpvalue);
   if(rv > 0)
-    *value_ = string{tmpvalue.begin(),tmpvalue.end()};
+    *val_ = string{tmpvalue.begin(),tmpvalue.end()};
 
   return rv;
 }
@@ -202,14 +202,14 @@ fs::xattr::get(const int     fd_,
 int
 fs::xattr::get(const string &path_,
                const string &attr_,
-               string       *value_)
+               string       *val_)
 {
   int rv;
   vector<char> tmpvalue;
 
   rv = fs::xattr::get(path_,attr_,&tmpvalue);
   if(rv > 0)
-    *value_ = string{tmpvalue.begin(),tmpvalue.end()};
+    *val_ = string{tmpvalue.begin(),tmpvalue.end()};
 
   return rv;
 }
@@ -286,13 +286,13 @@ fs::xattr::set(const int     fd_,
 int
 fs::xattr::set(const string &path_,
                const string &key_,
-               const string &value_,
+               const string &val_,
                const int     flags_)
 {
   return fs::lsetxattr(path_,
                        key_,
-                       value_.data(),
-                       value_.size(),
+                       val_.data(),
+                       val_.size(),
                        flags_);
 }
 
