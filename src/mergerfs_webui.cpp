@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 static
 void
-_serve_root(const httplib::Request &req_,
+_get_root(const httplib::Request &req_,
             httplib::Response      &res_)
 {
   std::string html = R"html(<html></html>)html";
@@ -21,7 +21,7 @@ _serve_root(const httplib::Request &req_,
 
 static
 void
-_serve_mounts(const httplib::Request &req_,
+_get_mounts(const httplib::Request &req_,
               httplib::Response      &res_)
 {
   json j;
@@ -43,7 +43,7 @@ _serve_mounts(const httplib::Request &req_,
 
 static
 void
-_serve_kvs(const httplib::Request &req_,
+_get_kvs(const httplib::Request &req_,
            httplib::Response      &res_)
 {
   json j;
@@ -91,9 +91,9 @@ mergerfs::webui::main(const int   argc_,
   host = "0.0.0.0";
   port = 8000;
 
-  http_server.Get("/",::_serve_root);
-  http_server.Get("/mounts",::_serve_mounts);
-  http_server.Get("/kvs",::_serve_kvs);
+  http_server.Get("/",::_get_root);
+  http_server.Get("/mounts",::_get_mounts);
+  http_server.Get("/kvs",::_get_kvs);
   http_server.Post("/kvs",::_post_kvs);
 
   http_server.listen(host,port);
