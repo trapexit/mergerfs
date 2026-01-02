@@ -88,6 +88,10 @@ namespace str
              const std::string &prefix_);
 
   bool
+  startswith(const std::string      &str_,
+             const std::string_view  prefix_);
+
+  bool
   startswith(const char *str,
              const char *prefix);
 
