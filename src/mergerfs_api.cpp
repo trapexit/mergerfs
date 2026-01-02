@@ -12,7 +12,7 @@
 #include <cstring>
 
 
-typedef std::array<char,64*1024> mfs_api_buf_t;
+typedef std::array<char,64*1024> XATTRBuf;
 
 static
 std::string
