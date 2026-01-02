@@ -11,8 +11,6 @@
 #include <cstring>
 
 
-typedef std::array<char,64*1024> XATTRBuf;
-
 static
 std::string
 _mergerfs_config_file(const fs::path &mount_)
