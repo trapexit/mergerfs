@@ -35,6 +35,7 @@ using std::set;
 using std::string;
 using std::string_view;
 using std::vector;
+using nonstd::span;
 
 
 std::vector<std::string>
@@ -264,6 +265,77 @@ str::startswith(const string_view str_,
 }
 
 bool
+str::startswith(const string &str_,
+                const string &prefix_)
+{
+  return ((str_.size() >= prefix_.size()) &&
+          (str_.compare(0,prefix_.size(),prefix_) == 0));
+}
+
+bool
+str::startswith(const string      &str_,
+                const string_view  prefix_)
+{
+  return ((str_.size() >= prefix_.size()) &&
+          (str_.compare(0,prefix_.size(),prefix_) == 0));
+}
+
+bool
+str::startswith(const string &str_,
+                const char   *prefix_)
+{
+  return str::startswith(str_,
+                         std::string_view{prefix_});
+}
+
+bool
+str::startswith(const char        *str_,
+                span<const char*>  prefixes_)
+{
+  for(const auto &prefix : prefixes_)
+    {
+      if(str::startswith(str_,prefix))
+        return true;
+    }
+
+  return false;
+}
+
+bool
+str::startswith(const char        *str_,
+                span<string_view>  prefixes_)
+{
+  for(const auto &prefix : prefixes_)
+    {
+      if(str::startswith(std::string_view{str_},prefix))
+        return true;
+    }
+
+  return false;
+}
+
+bool
+str::endswith(const string &str_,
+              const string &suffix_)
+{
+  return str::endswith(std::string_view{str_}, std::string_view{suffix_});
+}
+
+bool
+str::endswith(const string &str_,
+              const char   *suffix_)
+{
+  return str::endswith(std::string_view{str_}, std::string_view{suffix_});
+}
+
+bool
+str::endswith(const char *str_,
+              const char *suffix_) noexcept
+{
+  return str::endswith(std::string_view{str_}, std::string_view{suffix_});
+}
+
+bool
 str::endswith(const string_view str_,
               const string_view suffix_) noexcept
 {
@@ -331,4 +403,14 @@ str::replace(const std::string_view str_,
     result.push_back(c == src_ ? dst_ : c);
 
   return result;
+}
+
+std::string
+str::remove_prefix(const std::string      &str_,
+                   const std::string_view  prefix_)
+{
+  if(str::startswith(str_,prefix_))
+    return str_.substr(prefix_.size());
+
+  return str_;
 }

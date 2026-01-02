@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "nonstd/span.hpp"
+
 #include <set>
 #include <string>
 #include <string_view>
@@ -95,8 +97,44 @@ namespace str
 
   [[nodiscard]]
   bool
+  startswith(const std::string &str_,
+             const std::string &prefix_);
+
+  [[nodiscard]]
+  bool
+  startswith(const std::string      &str_,
+             const std::string_view  prefix_);
+
+  bool
+  startswith(const std::string &str_,
+             const char        *prefix_);
+
+  bool
   startswith(const char *str,
              const char *prefix) noexcept;
+
+  bool
+  startswith(const char                *str,
+             nonstd::span<const char*>  prefixes);
+
+  bool
+  startswith(const char                     *str,
+             nonstd::span<std::string_view>  prefixes);
+
+  [[nodiscard]]
+  bool
+  endswith(const std::string &str_,
+           const std::string &suffix_);
+
+  [[nodiscard]]
+  bool
+  endswith(const std::string &str_,
+           const char        *suffix_);
+
+  [[nodiscard]]
+  bool
+  endswith(const char *str,
+           const char *suffix) noexcept;
 
   [[nodiscard]]
   bool
@@ -117,4 +155,8 @@ namespace str
   replace(const std::string_view str,
           const char src,
           const char dst);
+
+  std::string
+  remove_prefix(const std::string      &str,
+                const std::string_view  prefix);
 }

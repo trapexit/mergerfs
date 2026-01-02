@@ -10,6 +10,8 @@
 * subprocess: https://github.com/arun11299/cpp-subprocess
 * CLI11: https://github.com/CLIUtils/CLI11
 * string-lite: https://github.com/martinmoene/string-lite
+* httplib: https://github.com/yhirose/cpp-httplib
+* json: https://github.com/nlohmann/json
 * boost
   * download boost
   * ./bootstrap.sh

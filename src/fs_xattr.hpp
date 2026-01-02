@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
@@ -67,10 +69,10 @@ namespace fs
             const int     flags);
     int set(const int                 fd,
             const map<string,string> &attrs);
-    int set(const string &path,
-            const string &key,
-            const string &value,
-            const int     flags);
+    int set(const fs::path &path,
+            const string   &key,
+            const string   &value,
+            const int       flags);
     int set(const string             &path,
             const map<string,string> &attrs);
 
