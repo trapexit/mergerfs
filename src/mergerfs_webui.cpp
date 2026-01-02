@@ -126,11 +126,6 @@ function loadMounts() {
         });
         const onchangeFunc = function() {
             const mount = this.value;
-            fetch('/select_mount', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({mount: mount})
-            });
             loadKV(mount);
         };
         select.onchange = onchangeFunc;
