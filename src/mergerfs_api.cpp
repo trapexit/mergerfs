@@ -25,7 +25,7 @@ static
 int
 _lgetxattr(const std::string &input_path_,
            const std::string &key_,
-           std::string       &val_)
+           std::string       *val_)
 {
   std::string key;
 
