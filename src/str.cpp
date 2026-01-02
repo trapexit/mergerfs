@@ -349,8 +349,8 @@ str::replace(const std::string &s_,
 }
 
 std::string
-str::remove_prefix(const std::string &str,
-                   const std::string &prefix)
+str::remove_prefix(const std::string      &str,
+                   const std::string_view  prefix)
 {
-
+  if(str::startswith(
 }
