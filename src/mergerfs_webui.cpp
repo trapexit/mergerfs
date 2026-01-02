@@ -189,7 +189,7 @@ _get_kvs(const httplib::Request &req_,
 
   mount = req_.get_param_value("mount");
 
-  mergerfs::api::get_kvs("/mnt/tmp/mergerfs",&kvs);
+  mergerfs::api::get_kvs(mount,&kvs);
 
   j = kvs;
 
