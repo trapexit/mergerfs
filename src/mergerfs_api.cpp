@@ -42,7 +42,7 @@ mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
 
   cfgfile = ::_mergerfs_config_file(mountpoint_);
 
-  return fs::exists(dot_mergerfs_filepath);
+  return fs::exists(cfgfile);
 }
 
 int
