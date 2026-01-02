@@ -357,6 +357,8 @@ str::remove_prefix(const std::string      &str_,
       std::string s{str_};
 
       s.erase(0,prefix_.size());
+
+      return s;
     }
 
   return str_;
