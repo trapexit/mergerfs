@@ -65,7 +65,7 @@ namespace fs
             const int     flags);
     int set(const int                 fd,
             const map<string,string> &attrs);
-    int set(const string &path,
+    int set(const fs::path &path,
             const string &key,
             const string &value,
             const int     flags);
