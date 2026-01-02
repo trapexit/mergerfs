@@ -24,7 +24,15 @@ _lgetxattr(const std::string &input_path_,
 
   key = "user.mergerfs." + key_;
 
+
   return fs::xattr::get(input_path_,key,&val_);
+}
+
+static
+std::string
+_mergerfs_config_file(const fs::path &mount_)
+{
+  return mount_ / ".mergerfs";
 }
 
 bool
