@@ -71,7 +71,7 @@ _post_kvs(const httplib::Request &req_,
 
       std::cout << "Updated " << key << " to " << value << std::endl;
 
-      res.set_content("OK", "text/plain");
+      res.set_content("{}", "application/json");
     }
   catch (const std::exception& e)
     {
