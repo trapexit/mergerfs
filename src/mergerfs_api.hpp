@@ -20,8 +20,8 @@ namespace mergerfs
 
     int
     set_kv(const fs::path    &mountpoint,
-           const std::string  key,
-           const std::string  val);
+           const std::string &key,
+           const std::string &val);
 
     int
     basepath(const std::string &path,
