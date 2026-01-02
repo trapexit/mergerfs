@@ -273,13 +273,13 @@ fs::xattr::get(const string       &path_,
 int
 fs::xattr::set(const int     fd_,
                const string &key_,
-               const string &value_,
+               const string &val_,
                const int     flags_)
 {
   return fs::fsetxattr(fd_,
                        key_,
-                       value_.data(),
-                       value_.size(),
+                       val_.data(),
+                       val_.size(),
                        flags_);
 }
 
