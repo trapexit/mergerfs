@@ -67,6 +67,18 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
 }
 
 int
+mergerfs::api::set_kv(const fs::path    &mountpoint_,
+                      const std::string &key_,
+                      const std::string &val_)
+{
+  fs::path dot_mergerfs_filepath;
+
+  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+
+  return fs::xattr::set(dot_mergerfs_filepath,key_,val_,0);
+}
+
+int
 mergerfs::api::allpaths(const std::string        &input_path_,
                         std::vector<std::string> &output_paths_)
 {
