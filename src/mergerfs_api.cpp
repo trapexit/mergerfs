@@ -73,7 +73,7 @@ mergerfs::api::set_kv(const fs::path    &mountpoint_,
 
 int
 mergerfs::api::allpaths(const std::string        &input_path_,
-                        std::vector<std::string> &output_paths_)
+                        std::vector<std::string> *output_paths_)
 {
   int rv;
   std::string val;
