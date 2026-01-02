@@ -191,6 +191,7 @@ _get_kvs(const httplib::Request &req_,
     {
       res_.status = 400;
       res_.set_content("mount param not set", "text/plain");
+      return;
     }
 
   mount = req_.get_param_value("mount");
