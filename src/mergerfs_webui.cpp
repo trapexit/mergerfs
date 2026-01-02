@@ -11,7 +11,7 @@ using json = nlohmann::json;
 static
 void
 _get_root(const httplib::Request &req_,
-            httplib::Response      &res_)
+          httplib::Response      &res_)
 {
   std::string html = R"html(<html></html>)html";
 
@@ -22,7 +22,7 @@ _get_root(const httplib::Request &req_,
 static
 void
 _get_mounts(const httplib::Request &req_,
-              httplib::Response      &res_)
+            httplib::Response      &res_)
 {
   json j;
   fs::MountVec mounts;
@@ -44,7 +44,7 @@ _get_mounts(const httplib::Request &req_,
 static
 void
 _get_kvs(const httplib::Request &req_,
-           httplib::Response      &res_)
+         httplib::Response      &res_)
 {
   json j;
   std::map<std::string,std::string> kvs;
