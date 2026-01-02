@@ -46,9 +46,7 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
       constexpr size_t offset = (sizeof("user.mergerfs.") - 1);
 
       if(offset < k.size())
-        k.substr(offset);
-
-      k = Config::prune_ctrl_xattr(k);
+        k = k.substr(offset);
     }
 
   return 0;
