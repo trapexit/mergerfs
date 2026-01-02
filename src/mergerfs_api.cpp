@@ -20,20 +20,6 @@ _mergerfs_config_file(const fs::path &mount_)
   return mount_ / ".mergerfs";
 }
 
-static
-int
-_lgetxattr(const std::string &input_path_,
-           const std::string &key_,
-           std::string       *val_)
-{
-  std::string key;
-
-  key = "user.mergerfs." + key_;
-
-  return fs::xattr::get(input_path_,key,val_);
-}
-
-
 bool
 mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
 {
