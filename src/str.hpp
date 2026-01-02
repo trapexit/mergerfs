@@ -108,6 +108,6 @@ namespace str
           const char         dst);
 
   std::string
-  remove_prefix(const std::string &str,
-                const std::string &prefix);
+  remove_prefix(const std::string      &str,
+                const std::string_view &prefix);
 }
