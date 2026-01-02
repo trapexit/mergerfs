@@ -35,6 +35,15 @@ _lgetxattr(const std::string &input_path_,
   return rv;
 }
 
+static
+int
+_lsetxattr(const std::string &input_path_,
+           const std::string &key_,
+           const std::string &val_)
+{
+
+}
+
 bool
 mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
 {
