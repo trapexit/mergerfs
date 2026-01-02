@@ -75,8 +75,8 @@ _post_kvs(const httplib::Request &req_,
     }
   catch (const std::exception& e)
     {
-      res.status = 400;
-      res.set_content("Invalid JSON", "text/plain");
+      res_.status = 400;
+      res_.set_content("Invalid JSON", "text/plain");
     }
 }
 
