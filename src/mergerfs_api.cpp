@@ -36,7 +36,16 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
 
   cfgfile = ::_mergerfs_config_file(mountpoint_);
 
-  return fs::xattr::get(cfgfile,kvs_);
+  rv = fs::xattr::get(cfgfile,kvs_);
+  if(rv < 0)
+    return rv;
+
+  for(auto &[k,v] : *kvs_)
+    {
+
+    }
+
+  return 0;
 }
 
 int
