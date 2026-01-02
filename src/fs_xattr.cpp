@@ -284,10 +284,10 @@ fs::xattr::set(const int     fd_,
 }
 
 int
-fs::xattr::set(const string &path_,
-               const string &key_,
-               const string &val_,
-               const int     flags_)
+fs::xattr::set(const fs::path &path_,
+               const string   &key_,
+               const string   &val_,
+               const int       flags_)
 {
   return fs::lsetxattr(path_,
                        key_,
