@@ -70,6 +70,7 @@ _post_kvs(const httplib::Request &req_,
       std::string value = j["value"];
 
       std::cout << "Updated " << key << " to " << value << std::endl;
+
       res.set_content("OK", "text/plain");
     }
   catch (const std::exception& e)
