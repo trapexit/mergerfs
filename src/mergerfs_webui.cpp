@@ -183,16 +183,16 @@ void
 _get_kvs(const httplib::Request &req_,
          httplib::Response      &res_)
 {
-  json j;
-  std::string mount;
-  std::map<std::string,std::string> kvs;
-
   if(not req_.has_param("mount"))
     {
       res_.status = 400;
       res_.set_content("mount param not set", "text/plain");
       return;
     }
+
+  json j;
+  std::string mount;
+  std::map<std::string,std::string> kvs;
 
   mount = req_.get_param_value("mount");
 
