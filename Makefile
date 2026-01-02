@@ -161,7 +161,7 @@ INSTALLMAN1DIR ?= $(DESTDIR)$(MAN1DIR)
 
 
 .PHONY: all
-all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info
+all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs.collect-info $(BUILDDIR)/mergerfs.webui
 
 .PHONY: help
 help:
