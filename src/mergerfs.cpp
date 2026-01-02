@@ -375,7 +375,7 @@ _pick_app_and_run(int    argc_,
   if(appname == "mergerfs.collect-info")
     return mergerfs::collect_info::main(argc_,argv_);
   if(appname == "mergerfs.webui")
-    return mergerfs::webui::main(argc_v,argv_);
+    return mergerfs::webui::main(argc_,argv_);
 
   return ::_main(argc_,argv_);
 }
