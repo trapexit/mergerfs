@@ -62,7 +62,20 @@ void
 _post_kvs(const httplib::Request &req_,
           httplib::Response      &res_)
 {
-
+  try
+    {
+      auto j = json::parse(req.body);
+      std::string key = j["key"];
+      std::string value = j["value"];
+      kv_data[key] = value;
+      std::cout << "Updated " << key << " to " << value << std::endl;
+      res.set_content("OK", "text/plain");
+    }
+  catch (const std::exception& e)
+    {
+      res.status = 400;
+      res.set_content("Invalid JSON", "text/plain");
+    }
 }
 
 int
@@ -81,17 +94,6 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/kvs",::_serve_kvs);
   http_server.Post("/kvs", [&](const Request& req, Response& res)
   {
-    try {
-      auto j = json::parse(req.body);
-      std::string key = j["key"];
-      std::string value = j["value"];
-      kv_data[key] = value;
-      std::cout << "Updated " << key << " to " << value << std::endl;
-      res.set_content("OK", "text/plain");
-    } catch (const std::exception& e) {
-      res.status = 400;
-      res.set_content("Invalid JSON", "text/plain");
-    }
   });
 
 
