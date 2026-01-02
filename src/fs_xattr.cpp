@@ -26,6 +26,7 @@
 #include "fs_lremovexattr.hpp"
 #include "fs_lsetxattr.hpp"
 #include "fs_open.hpp"
+#include "fs_path.hpp"
 #include "str.hpp"
 
 #include <map>
