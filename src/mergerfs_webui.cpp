@@ -13,6 +13,14 @@ void
 _get_root(const httplib::Request &req_,
           httplib::Response      &res_)
 {
+  std::string html;
+
+  if(fs::exists("index.html"))
+    {
+      res_.set_file_content("index.html");
+      return;
+    }
+
   std::string html = R"html(
 <!DOCTYPE html>
 <html>
