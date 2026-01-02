@@ -347,3 +347,7 @@ str::replace(const std::string &s_,
 
   return s;
 }
+
+std::string
+str::remove_prefix(const std::string &str,
+                   const std::string &prefix);
