@@ -183,6 +183,9 @@ $(BUILDDIR)/fsck.mergerfs:
 $(BUILDDIR)/mergerfs.collect-info:
 	$(LN) -sf "mergerfs" $@
 
+$(BUILDDIR)/mergerfs.webui:
+	$(LN) -sf "mergerfs" $@
+
 $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
 	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
@@ -244,6 +247,7 @@ install-base: all
 	$(INSTALL) -v -m 0755 "$(BUILDDIR)/mergerfs" "$(INSTALLBINDIR)/mergerfs"
 	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/fsck.mergerfs"
 	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mergerfs.collect-info"
+	$(LN) -fs "mergerfs" "${INSTALLBINDIR}/mergerfs.webui"
 
 .PHONY: install-mount-tools
 install-mount-tools: install-base
