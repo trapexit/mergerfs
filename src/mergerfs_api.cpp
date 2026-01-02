@@ -42,7 +42,7 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
 
   for(auto &[k,v] : *kvs_)
     {
-
+      k = Config::prune_ctrl_xattr(k);
     }
 
   return 0;
