@@ -16,7 +16,7 @@ _get_root(const httplib::Request &req_,
   std::string html = R"html(
 <!DOCTYPE html>
 <html>
-<head><title>KV Editor</title>
+<head><title>mergerfs ui</title>
 <style>
 .tab {
   overflow: hidden;
