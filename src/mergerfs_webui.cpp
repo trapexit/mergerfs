@@ -94,7 +94,7 @@ function loadKV(mount) {
             input.value = v;
             input.onkeydown = function(e) {
                 if (e.key === 'Enter') {
-                    fetch('/update', {
+                    fetch('/kvs', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({key: k, value: input.value})
