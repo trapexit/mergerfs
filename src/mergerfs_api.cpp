@@ -34,6 +34,7 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
 {
   int rv;
   fs::path cfgfile;
+  std::map<std::string,std::string> kvs;
 
   cfgfile = ::_mergerfs_config_file(mountpoint_);
 
