@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "fs_path.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
