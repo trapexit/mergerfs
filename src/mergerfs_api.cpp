@@ -79,7 +79,6 @@ mergerfs::api::allpaths(const std::string        &input_path_,
   std::string val;
 
   rv = fs::xattr::get(input_path_,"user.mergerfs.allpaths",&val);
-  rv = ::_lgetxattr(input_path_,"allpaths",val);
   if(rv < 0)
     return rv;
 
