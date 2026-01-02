@@ -83,7 +83,7 @@ _mount_point_stats(const std::string &output_)
     {
       std::vector<std::string> allpaths;
 
-      mergerfs::api::allpaths(mount.dir.string(),allpaths);
+      mergerfs::api::allpaths(mount.dir.string(),&allpaths);
       for(const auto &path : allpaths)
         {
           ::_run({"stat",path.c_str()},output_);
