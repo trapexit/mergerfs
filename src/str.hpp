@@ -106,4 +106,8 @@ namespace str
   replace(const std::string &s,
           const char         src,
           const char         dst);
+
+  std::string
+  remove_prefix(const std::string &str,
+                const std::string &prefix);
 }
