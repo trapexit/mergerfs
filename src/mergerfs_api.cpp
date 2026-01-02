@@ -109,7 +109,9 @@ mergerfs::api::relpath(const std::string &input_path_,
 
 int
 mergerfs::api::fullpath(const std::string &input_path_,
-                        std::string       &fullpath_)
+                        std::string       *fullpath_)
 {
-  return ::_lgetxattr(input_path_,"fullpath",fullpath_);
+  return fs::xattr::get(input_path_,
+                        "user.mergerfs.fullpath",
+                        fullpath_);
 }
