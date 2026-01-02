@@ -48,7 +48,7 @@ mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
 
 int
 mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
-                       std::map<std::string,std::string> *$kvs_)
+                       std::map<std::string,std::string> *kvs_)
 {
   fs::path dot_mergerfs_filepath;
 
