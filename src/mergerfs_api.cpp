@@ -63,8 +63,10 @@ mergerfs::api::set_kv(const fs::path    &mountpoint_,
                       const std::string &val_)
 {
   fs::path dot_mergerfs_filepath;
+  std::string xattr_key;
 
   dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+  xattr_key = "user.mergerfs." + key_;
 
   return fs::xattr::set(dot_mergerfs_filepath,key_,val_,0);
 }
