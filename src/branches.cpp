@@ -237,7 +237,7 @@ namespace l
           return rv;
       }
 
-    *branches_ = std::move(tmp_branches);
+    std::swap(*branches_,tmp_branches);
 
     return 0;
   }
