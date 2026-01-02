@@ -68,7 +68,7 @@ _post_kvs(const httplib::Request &req_,
 
       std::string key = j["key"];
       std::string value = j["value"];
-      kv_data[key] = value;
+
       std::cout << "Updated " << key << " to " << value << std::endl;
       res.set_content("OK", "text/plain");
     }
