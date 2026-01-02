@@ -50,11 +50,11 @@ int
 mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
                        std::map<std::string,std::string> *kvs_)
 {
-  fs::path dot_mergerfs_filepath;
+  fs::path cfgfile;
 
-  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+  cfgfile = ::_mergerfs_config_file(mountpoint_);
 
-  return fs::xattr::get(dot_mergerfs_filepath,kvs_);
+  return fs::xattr::get(cfgfile,kvs_);
 }
 
 int
