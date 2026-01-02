@@ -42,7 +42,7 @@ _lsetxattr(const std::string &input_path_,
            const std::string &key_,
            const std::string &val_)
 {
-  return fs::lsetxattr(input_path_,key_,val_,val_.size(),0);
+  return fs::lsetxattr(input_path_,key_,val_.data(),val_.size(),0);
 }
 
 bool
