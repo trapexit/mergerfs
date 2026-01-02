@@ -3,6 +3,7 @@
 #include "fs_xattr.hpp"
 #include "fs_exists.hpp"
 #include "fs_lgetxattr.hpp"
+#include "fs_lsetxattr.hpp"
 #include "str.hpp"
 
 #include "scope_guard.hpp"
