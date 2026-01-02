@@ -79,7 +79,7 @@ function openTab(evt, tabName) {
   if (evt) evt.currentTarget.className += " active";
 }
 function loadKV(mount) {
-    let url = '/kv';
+    let url = '/kvs';
     if (mount) {
         url += '?mount=' + encodeURIComponent(mount);
     }
