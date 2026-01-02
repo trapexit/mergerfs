@@ -97,7 +97,7 @@ function loadKV(mount) {
                     fetch('/kvs', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({key: k, value: input.value})
+                        body: JSON.stringify({k: input.value})
                     });
                 }
             };
