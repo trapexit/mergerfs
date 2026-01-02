@@ -42,8 +42,14 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
   if(rv < 0)
     return rv;
 
-  for(auto &[k,v] : *kvs_)
-    str::remove_prefix(k,"user.mergerfs.");
+  for(auto &[k,v] : kvs)
+    {
+      std::string key;
+
+      key = str::remove_prefix(k,"user.mergerfs.");
+
+      kvs_->insert(
+
 
   return 0;
 }
