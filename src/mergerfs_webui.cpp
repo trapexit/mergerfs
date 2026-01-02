@@ -66,9 +66,6 @@ _post_kvs(const httplib::Request &req_,
     {
       json j = json::parse(req_.body);
 
-      std::string key = j["key"];
-      std::string value = j["value"];
-
       for(const auto &[key,val] : j.items())
         {
 
