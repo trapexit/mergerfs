@@ -184,7 +184,10 @@ _get_kvs(const httplib::Request &req_,
          httplib::Response      &res_)
 {
   json j;
+  std::string mount;
   std::map<std::string,std::string> kvs;
+
+  mount = req_.get_param_value("mount");
 
   mergerfs::api::get_kvs("/mnt/tmp/mergerfs",&kvs);
 
