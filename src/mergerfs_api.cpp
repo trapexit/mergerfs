@@ -91,7 +91,9 @@ int
 mergerfs::api::basepath(const std::string &input_path_,
                         std::string       *basepath_)
 {
-  return fs::xattr::get(input_path_,"user.mergerfs.basepath",basepath_);
+  return fs::xattr::get(input_path_,
+                        "user.mergerfs.basepath",
+                        basepath_);
 }
 
 int
