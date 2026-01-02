@@ -2,6 +2,7 @@
 
 #include "mergerfs_api.hpp"
 #include "fs_mounts.hpp"
+#include "fs_exists.hpp"
 
 #include "httplib.h"
 #include "json.hpp"
