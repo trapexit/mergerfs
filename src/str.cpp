@@ -352,7 +352,10 @@ std::string
 str::remove_prefix(const std::string      &str_,
                    const std::string_view  prefix_)
 {
-  std::string str(str_);
+  if(str_.size() < prefix.size())
+    return str_;
+  if(
+
   if((str_.size() >= prefix.size()) &&
      std::equal(prefix.begin(),prefix.end(),str_.begin()))
     return
