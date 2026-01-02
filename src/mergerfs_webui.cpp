@@ -209,9 +209,20 @@ void
 _post_kvs(const httplib::Request &req_,
           httplib::Response      &res_)
 {
+  if(not req_.has_param("mount"))
+    {
+      res_.status = 400;
+      res_.set_content("mount param not set","text/plain");
+      return;
+    }
+
   try
     {
-      json j = json::parse(req_.body);
+      json j;
+      std::string mount;
+
+      mount
+      j = json::parse(req_.body);
 
       for(const auto &[key,val] : j.items())
         {
