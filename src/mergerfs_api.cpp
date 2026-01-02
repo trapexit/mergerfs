@@ -89,7 +89,7 @@ mergerfs::api::allpaths(const std::string        &input_path_,
 
 int
 mergerfs::api::basepath(const std::string &input_path_,
-                        std::string       &basepath_)
+                        std::string       *basepath_)
 {
   return ::_lgetxattr(input_path_,"basepath",basepath_);
 }
