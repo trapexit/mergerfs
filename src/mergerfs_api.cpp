@@ -52,7 +52,7 @@ mergerfs::api::set_kv(const fs::path    &mountpoint_,
   cfgfile   = ::_mergerfs_config_file(mountpoint_);
   xattr_key = "user.mergerfs." + key_;
 
-  return fs::xattr::set(cfgfile,key,val_,0);
+  return fs::xattr::set(cfgfile,xattr_key,val_,0);
 }
 
 int
