@@ -18,22 +18,13 @@ static
 int
 _lgetxattr(const std::string &input_path_,
            const std::string &key_,
-           std::string       &value_)
+           std::string       &val_)
 {
-  int rv;
   std::string key;
-  mfs_api_buf_t buf;
 
   key = "user.mergerfs." + key_;
-  rv = fs::lgetxattr(input_path_,key,buf.data(),buf.size());
-  if(rv < 0)
-    return rv;
 
-  value_.clear();
-  value_.reserve(rv);
-  value_.append(buf.data(),(size_t)rv);
-
-  return rv;
+  return fs::xattr::get(input_path_,key,&val_);
 }
 
 bool
