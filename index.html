@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head><title>mergerfs ui</title>
+    <link rel="icon"  type="image/png" href="favicon.png">
     <style>
       .tab {
           overflow: hidden;
@@ -40,12 +41,109 @@
       th {
           background-color: #f2f2f2;
       }
+      .modal {
+          display: none;
+          position: fixed;
+          z-index: 1;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          overflow: auto;
+          background-color: rgba(0,0,0,0.4);
+      }
+      .modal-content {
+          background-color: #fefefe;
+          margin: 15% auto;
+          padding: 20px;
+          border: 1px solid #888;
+          width: 80%;
+          max-width: 500px;
+      }
+      .close-modal {
+          color: #aaa;
+          float: right;
+          font-size: 28px;
+          font-weight: bold;
+          cursor: pointer;
+      }
+      .close-modal:hover,
+      .close-modal:focus {
+          color: black;
+          text-decoration: none;
+          cursor: pointer;
+      }
+      .branch-entry {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+          padding: 10px;
+          border: 1px solid #ddd;
+          background-color: #f9f9f9;
+      }
+      .branch-entry input,
+      .branch-entry select {
+          padding: 5px;
+      }
+      .branch-path {
+          flex: 1;
+          min-width: 200px;
+      }
+      .branch-mode {
+          width: 80px;
+      }
+      .branch-minfreespace {
+          width: 100px;
+      }
+      .branch-remove {
+          background-color: #ff4444;
+          color: white;
+          border: none;
+          padding: 5px 10px;
+          cursor: pointer;
+      }
+      .branch-remove:hover {
+          background-color: #cc0000;
+      }
+      .add-branch-btn {
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          cursor: pointer;
+          margin-bottom: 15px;
+      }
+        .add-branch-btn:hover {
+            background-color: #45a049;
+        }
+        .submit-branches-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            margin-left: 10px;
+        }
+        .submit-branches-btn:hover {
+            background-color: #0b7dda;
+        }
+      .mount-list-item {
+          padding: 10px;
+          cursor: pointer;
+          border-bottom: 1px solid #eee;
+      }
+      .mount-list-item:hover {
+          background-color: #f0f0f0;
+      }
     </style>
   </head>
   <body>
     <div class="tab">
       <button class="tablinks active" onclick="openTab(event, 'Advanced')">Advanced</button>
       <button class="tablinks" onclick="openTab(event, 'Mounts')">Mounts</button>
+      <button class="tablinks" onclick="openTab(event, 'Branches')">Branches</button>
     </div>
     <div id="Advanced" class="tabcontent" style="display: block;">
       <div>
@@ -59,6 +157,24 @@
         <label for="mount-select">Select Mountpoint:</label>
         <select id="mount-select"></select>
       </form>
+    </div>
+    <div id="Branches" class="tabcontent">
+      <div>
+        <label for="mount-select-branches">Select Mountpoint:</label>
+        <select id="mount-select-branches"></select>
+      </div>
+      <div style="margin-top: 15px;">
+        <button class="add-branch-btn" onclick="addBranchEntry()">+ Add Branch</button>
+        <button class="submit-branches-btn" onclick="submitBranches()">Submit</button>
+      </div>
+      <div id="branches-list"></div>
+    </div>
+    <div id="pathModal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" onclick="closePathModal()">&times;</span>
+        <h3>Select Path</h3>
+        <div id="mount-list"></div>
+      </div>
     </div>
     <script>
       function openTab(evt, tabName) {
@@ -93,7 +209,18 @@
                   headerRow.appendChild(headerKey);
                   headerRow.appendChild(headerValue);
                   table.appendChild(headerRow);
+                  const priorityKeys = ['version', 'branches'];
+                  const orderedEntries = [];
+                  priorityKeys.forEach(key => {
+                      if (data.hasOwnProperty(key)) {
+                          orderedEntries.push([key, data[key]]);
+                          delete data[key];
+                      }
+                  });
                   for (const [k, v] of Object.entries(data)) {
+                      orderedEntries.push([k, v]);
+                  }
+                  for (const [k, v] of orderedEntries) {
                       const row = document.createElement('tr');
                       const keyCell = document.createElement('td');
                       keyCell.textContent = k;
@@ -102,16 +229,22 @@
                       input.type = 'text';
                       input.value = v;
                       input.style.width = '100%';
-                        input.onkeydown = function(e) {
-                            if (e.key === 'Enter') {
-                                url = '/kvs?mount=' + encodeURIComponent(mount)
-                                fetch(url, {
-                                    method: 'POST',
-                                    headers: {'Content-Type': 'application/json'},
-                                    body: JSON.stringify({[k]: input.value})
-                                });
-                            }
-                        };
+                      input.onkeydown = function(e) {
+                          if (e.key === 'Enter') {
+                              url = '/kvs?mount=' + encodeURIComponent(mount)
+                              fetch(url, {
+                                  method: 'POST',
+                                  headers: {'Content-Type': 'application/json'},
+                                  body: JSON.stringify({[k]: input.value})
+                              }).then(response => {
+                                  if (!response.ok) {
+                                      response.text().then(body => {
+                                          alert('Status: ' + response.status + '\nBody: ' + body);
+                                      });
+                                  }
+                              });
+                          }
+                      };
                       valueCell.appendChild(input);
                       row.appendChild(keyCell);
                       row.appendChild(valueCell);
@@ -120,35 +253,157 @@
                   div.appendChild(table);
               });
       }
-      function loadMounts() {
-          fetch('/mounts')
-              .then(r => r.json())
-              .then(data => {
-                  const select = document.getElementById('mount-select');
-                  const selectAdvanced = document.getElementById('mount-select-advanced');
-                  [select, selectAdvanced].forEach(s => {
-                      s.innerHTML = '';
-                      data.forEach(m => {
-                          const opt = document.createElement('option');
-                          opt.value = m;
-                          opt.text = m;
-                          s.appendChild(opt);
-                      });
-                  });
-                  const onchangeFunc = function() {
-                      const mount = this.value;
-                      loadKV(mount);
-                  };
-                  select.onchange = onchangeFunc;
-                  selectAdvanced.onchange = onchangeFunc;
-                  if (data.length > 0) {
-                      select.value = data[0];
-                      selectAdvanced.value = data[0];
-                      loadKV(data[0]);
-                  }
-              });
-      }
-      window.onload = () => { loadMounts(); };
+       function loadMounts() {
+           fetch('/mounts')
+               .then(r => r.json())
+               .then(data => {
+                   const select = document.getElementById('mount-select');
+                   const selectAdvanced = document.getElementById('mount-select-advanced');
+                   const selectBranches = document.getElementById('mount-select-branches');
+                   [select, selectAdvanced, selectBranches].forEach(s => {
+                       s.innerHTML = '';
+                       data.forEach(m => {
+                           const opt = document.createElement('option');
+                           opt.value = m;
+                           opt.text = m;
+                           s.appendChild(opt);
+                       });
+                   });
+                   const onchangeFunc = function() {
+                       const mount = this.value;
+                       loadKV(mount);
+                   };
+                   const onchangeBranchesFunc = function() {
+                       const mount = this.value;
+                       loadBranches(mount);
+                   };
+                   select.onchange = onchangeFunc;
+                   selectAdvanced.onchange = onchangeFunc;
+                   selectBranches.onchange = onchangeBranchesFunc;
+                   if (data.length > 0) {
+                       select.value = data[0];
+                       selectAdvanced.value = data[0];
+                       selectBranches.value = data[0];
+                       loadKV(data[0]);
+                       loadBranches(data[0]);
+                   }
+               });
+       }
+         function loadBranches(mount) {
+             let url = '/kvs?mount=' + encodeURIComponent(mount);
+             fetch(url)
+                 .then(r => r.json())
+                 .then(data => {
+                     const div = document.getElementById('branches-list');
+                     div.innerHTML = '';
+                     const branchesStr = data.branches;
+                     if (!branchesStr) {
+                         addBranchEntry();
+                         return;
+                     }
+                     const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
+                     branches.forEach(branch => {
+                         addBranchEntry(branch);
+                     });
+                 });
+         }
+        let branchEntryCounter = 0;
+        let pendingPathInput = null;
+        function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+            const container = document.getElementById('branches-list');
+            const entry = document.createElement('div');
+            entry.className = 'branch-entry';
+            entry.id = 'branch-entry-' + branchEntryCounter++;
+            const pathInput = document.createElement('input');
+            pathInput.type = 'text';
+            pathInput.className = 'branch-path';
+            pathInput.placeholder = 'Path';
+            pathInput.value = path;
+            const pathBtn = document.createElement('button');
+            pathBtn.textContent = 'Path';
+            pathBtn.onclick = () => openPathModal(pathInput);
+            const modeSelect = document.createElement('select');
+            modeSelect.className = 'branch-mode';
+            ['RW', 'NC', 'RO'].forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                if (m === mode) opt.selected = true;
+                modeSelect.appendChild(opt);
+            });
+            const minfreespaceInput = document.createElement('input');
+            minfreespaceInput.type = 'text';
+            minfreespaceInput.className = 'branch-minfreespace';
+            minfreespaceInput.placeholder = 'MinFreeSpace';
+            minfreespaceInput.value = minfreespace;
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'branch-remove';
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = () => entry.remove();
+            entry.appendChild(pathInput);
+            entry.appendChild(pathBtn);
+            entry.appendChild(modeSelect);
+            entry.appendChild(minfreespaceInput);
+            entry.appendChild(removeBtn);
+            container.appendChild(entry);
+        }
+        function openPathModal(targetInput) {
+            pendingPathInput = targetInput;
+            const modal = document.getElementById('pathModal');
+            const mountList = document.getElementById('mount-list');
+            mountList.innerHTML = '';
+            fetch('/mounts')
+                .then(r => r.json())
+                .then(mounts => {
+                    mounts.forEach(m => {
+                        const div = document.createElement('div');
+                        div.className = 'mount-list-item';
+                        div.textContent = m;
+                        div.onclick = () => {
+                            if (pendingPathInput) {
+                                pendingPathInput.value = m;
+                            }
+                            closePathModal();
+                        };
+                        mountList.appendChild(div);
+                    });
+                });
+            modal.style.display = 'block';
+        }
+         function closePathModal() {
+             document.getElementById('pathModal').style.display = 'none';
+             pendingPathInput = null;
+         }
+         function submitBranches() {
+             const mount = document.getElementById('mount-select-branches').value;
+             const entries = document.querySelectorAll('.branch-entry');
+             const paths = [];
+             entries.forEach(entry => {
+                 const pathInput = entry.querySelector('.branch-path');
+                 if (pathInput && pathInput.value.trim()) {
+                     paths.push(pathInput.value.trim());
+                 }
+             });
+             const branchesStr = paths.join(':');
+             fetch('/kvs?mount=' + encodeURIComponent(mount), {
+                 method: 'POST',
+                 headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify({"branches": branchesStr})
+             }).then(response => {
+                 if (!response.ok) {
+                     response.text().then(body => {
+                         alert('Status: ' + response.status + '\nBody: ' + body);
+                     });
+                 }
+             });
+         }
+        window.onclick = function(event) {
+            const modal = document.getElementById('pathModal');
+            if (event.target === modal) {
+                closePathModal();
+            }
+        }
+        window.onload = () => { loadMounts(); };
     </script>
   </body>
 </html>
