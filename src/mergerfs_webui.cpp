@@ -209,8 +209,6 @@ void
 _post_kvs(const httplib::Request &req_,
           httplib::Response      &res_)
 {
-  std::cout << "POST /kvs\n";
-
   if(not req_.has_param("mount"))
     {
       res_.status = 400;
