@@ -228,7 +228,7 @@ _post_kvs(const httplib::Request &req_,
 
       for(const auto &[key,val] : j.items())
         {
-          std::cout << key << ": " << val << std::endl;
+          std::cout << "mount=" << mount << " | " << key << ": " << val << std::endl;
         }
 
       res_.set_content("{}", "application/json");
