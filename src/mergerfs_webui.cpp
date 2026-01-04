@@ -196,7 +196,7 @@ _get_mounts_mergerfs(const httplib::Request &req_,
     {
       if(mount.type != "fuse.mergerfs")
         continue;
-      j.push_back(mount.type);
+      j.push_back(mount.dir);
     }
 
   res_.set_content(j.dump(),
