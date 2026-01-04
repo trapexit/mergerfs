@@ -530,12 +530,12 @@
                }
            }
        }
-       function moveEntryUp(entry) {
-           const prev = entry.previousElementSibling;
-           if (prev) {
-               entry.parentNode.insertBefore(prev, entry);
-           }
-       }
+        function moveEntryUp(entry) {
+            const prev = entry.previousElementSibling;
+            if (prev) {
+                entry.parentNode.insertBefore(entry, prev);
+            }
+        }
        function moveEntryDown(entry) {
            const next = entry.nextElementSibling;
            if (next) {
