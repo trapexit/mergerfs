@@ -218,14 +218,15 @@ _get_kv(const httplib::Request &req_,
 
   json j;
   std::string key;
+  std::string val;
   std::string mount;
 
   key   = req_.path_params.at("key");
   mount = req_.get_param_value("mount");
 
-  mergerfs::api::get_kvs(mount,&kvs);
+  val = mergerfs::api::get_kv(mount,);
 
-  j = kvs;
+  j = val;
 
   res_.set_content(j.dump(),
                    "application/json");
