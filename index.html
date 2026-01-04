@@ -191,17 +191,10 @@
   </head>
   <body>
     <div class="tab">
-      <button class="tablinks active" onclick="openTab(event, 'Advanced')">Advanced</button>
-      <button class="tablinks" onclick="openTab(event, 'Branches')">Branches</button>
+      <button class="tablinks active" onclick="openTab(event, 'Branches')">Branches</button>
+      <button class="tablinks" onclick="openTab(event, 'Advanced')">Advanced</button>
     </div>
-    <div id="Advanced" class="tabcontent" style="display: block;">
-      <div>
-        <label for="mount-select-advanced">Select Mountpoint:</label>
-        <select id="mount-select-advanced"></select>
-      </div>
-      <div id="kv-list"></div>
-    </div>
-    <div id="Branches" class="tabcontent">
+    <div id="Branches" class="tabcontent" style="display: block;">
       <div>
         <label for="mount-select-branches">Select Mountpoint:</label>
         <select id="mount-select-branches"></select>
@@ -211,6 +204,13 @@
         <button class="submit-branches-btn" onclick="submitBranches()">Submit</button>
       </div>
       <div id="branches-list"></div>
+    </div>
+    <div id="Advanced" class="tabcontent">
+      <div>
+        <label for="mount-select-advanced">Select Mountpoint:</label>
+        <select id="mount-select-advanced"></select>
+      </div>
+      <div id="kv-list"></div>
     </div>
     <div id="pathModal" class="modal">
       <div class="modal-content">
@@ -251,31 +251,40 @@
       function getMounts() {
           return g_mounts;
       }
-      function loadMounts() {
-          fetch('/mounts')
-              .then(r => r.json())
-              .then(data => {
-                  g_mounts = data;
-                  populateMountSelect('mount-select-advanced', function() {
-                      loadAllForMount(this.value);
-                  });
-                  populateMountSelect('mount-select-branches', function() {
-                      loadAllForMount(this.value);
-                  });
-                  if (g_mounts.length > 0) {
-                      loadAllForMount(g_mounts[0]);
-                  }
-              });
-      }
-      function loadAllForMount(mount) {
-          let url = '/kvs?mount=' + encodeURIComponent(mount);
-          fetch(url)
-              .then(r => r.json())
-              .then(data => {
-                  renderKV(data, mount);
-                  renderBranches(data);
-              });
-      }
+       function loadMounts() {
+           fetch('/mounts')
+               .then(r => {
+                   if (!r.ok) throw new Error('Failed to fetch mounts');
+                   return r.json();
+               })
+               .then(data => {
+                   g_mounts = data;
+                   populateMountSelect('mount-select-advanced', function() {
+                       loadAllForMount(this.value);
+                   });
+                   populateMountSelect('mount-select-branches', function() {
+                       loadAllForMount(this.value);
+                   });
+                   if (g_mounts.length > 0) {
+                       loadAllForMount(g_mounts[0]);
+                   }
+               })
+               .catch(err => console.error('Error loading mounts:', err));
+       }
+       function loadAllForMount(mount) {
+           if (!mount) return;
+           let url = '/kvs?mount=' + encodeURIComponent(mount);
+           fetch(url)
+               .then(r => {
+                   if (!r.ok) throw new Error('Failed to fetch kvs');
+                   return r.json();
+               })
+               .then(data => {
+                   renderKV(data, mount);
+                   renderBranches(data);
+               })
+               .catch(err => console.error('Error loading kvs for mount:', mount, err));
+       }
       function renderKV(data, mount) {
           const div = document.getElementById('kv-list');
           div.innerHTML = '';
@@ -331,23 +340,33 @@
           }
           div.appendChild(table);
       }
-      function renderBranches(data) {
-          const div = document.getElementById('branches-list');
-          div.innerHTML = '';
-          const branchesStr = data.branches;
-          if (!branchesStr) {
-              addBranchEntry();
-              return;
-          }
-          const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
-          branches.forEach(branch => {
-              addBranchEntry(branch);
-          });
-      }
+       function renderBranches(data) {
+           console.log('renderBranches called with data:', data);
+           console.log('All keys in data:', Object.keys(data));
+           const div = document.getElementById('branches-list');
+           if (!div) {
+               console.error('branches-list element not found');
+               return;
+           }
+           div.innerHTML = '';
+           const branchesStr = data.branches || data.branch || data.libfuse_branches;
+           console.log('branchesStr:', branchesStr);
+           if (!branchesStr) {
+               console.log('No branches data found, keys available:', Object.keys(data));
+               addBranchEntry();
+               return;
+           }
+           const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
+           console.log('Parsed branches:', branches);
+           branches.forEach(branch => {
+               addBranchEntry(branch);
+           });
+       }
       let branchEntryCounter = 0;
       let pendingPathInput = null;
-      function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
-          const container = document.getElementById('branches-list');
+       function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+           console.log('addBranchEntry called with path:', path, 'mode:', mode);
+           const container = document.getElementById('branches-list');
           const entry = document.createElement('div');
           entry.className = 'branch-entry';
           entry.id = 'branch-entry-' + branchEntryCounter++;

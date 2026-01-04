@@ -252,6 +252,7 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/",::_get_root);
   http_server.Get("/mounts",::_get_mounts);
   http_server.Get("/kvs",::_get_kvs);
+  http_server.Get("/kvs/:key",::_get_kv);
   http_server.Post("/kvs",::_post_kvs);
 
   http_server.listen(host,port);
