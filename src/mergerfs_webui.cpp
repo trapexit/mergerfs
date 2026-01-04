@@ -170,11 +170,11 @@ _get_mounts(const httplib::Request &req_,
   j = json::array();
   for(const auto &mount : mounts)
     {
-      if((not type.empty()) and (mount.type != type))
-        continue;
-      if(mount.type != "fuse.mergerfs")
-        continue;
-      j.push_back(mount.dir);
+      // if((not type.empty()) and (mount.type != type))
+      //   continue;
+      // if(mount.type != "fuse.mergerfs")
+      //   continue;
+      j.push_back(mount.type);
     }
 
   res_.set_content(j.dump(),
