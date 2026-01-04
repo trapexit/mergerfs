@@ -295,8 +295,8 @@ bool
 str::startswith(const string &str_,
                 const char   *prefix_)
 {
-  return ((str_.size() >= prefix_.size()) &&
-          (str_.compare(0,prefix_.size(),prefix_) == 0));
+  return str::startswith(str_,
+                         std::string_view{prefix_});
 }
 
 bool
