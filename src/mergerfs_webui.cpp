@@ -162,6 +162,10 @@ _valid_fs_type(const std::string &type_)
 {
   if(type_ == "ext2")
     return true;
+  if(type_ == "ext3")
+    return true;
+  if(type_ == "ext4")
+    return true;
 
   return false;
 }
