@@ -63,9 +63,7 @@ get_kv(const fs::path    &mountpoint_,
 
   cfgfile = ::_mergerfs_config_file(mountpoint_);
 
-  fs::xattr::get(cfgfile,key_,&val);
-
-  return val;
+  return fs::xattr::get(cfgfile,key_,val_);
 }
 
 int
