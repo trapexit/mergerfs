@@ -142,7 +142,6 @@
   <body>
     <div class="tab">
       <button class="tablinks active" onclick="openTab(event, 'Advanced')">Advanced</button>
-      <button class="tablinks" onclick="openTab(event, 'Mounts')">Mounts</button>
       <button class="tablinks" onclick="openTab(event, 'Branches')">Branches</button>
     </div>
     <div id="Advanced" class="tabcontent" style="display: block;">
@@ -151,12 +150,6 @@
         <select id="mount-select-advanced"></select>
       </div>
       <div id="kv-list"></div>
-    </div>
-    <div id="Mounts" class="tabcontent">
-      <form>
-        <label for="mount-select">Select Mountpoint:</label>
-        <select id="mount-select"></select>
-      </form>
     </div>
     <div id="Branches" class="tabcontent">
       <div>
@@ -253,42 +246,39 @@
                   div.appendChild(table);
               });
       }
-       function loadMounts() {
-           fetch('/mounts')
-               .then(r => r.json())
-               .then(data => {
-                   const select = document.getElementById('mount-select');
-                   const selectAdvanced = document.getElementById('mount-select-advanced');
-                   const selectBranches = document.getElementById('mount-select-branches');
-                   [select, selectAdvanced, selectBranches].forEach(s => {
-                       s.innerHTML = '';
-                       data.forEach(m => {
-                           const opt = document.createElement('option');
-                           opt.value = m;
-                           opt.text = m;
-                           s.appendChild(opt);
-                       });
-                   });
-                   const onchangeFunc = function() {
-                       const mount = this.value;
-                       loadKV(mount);
-                   };
-                   const onchangeBranchesFunc = function() {
-                       const mount = this.value;
-                       loadBranches(mount);
-                   };
-                   select.onchange = onchangeFunc;
-                   selectAdvanced.onchange = onchangeFunc;
-                   selectBranches.onchange = onchangeBranchesFunc;
-                   if (data.length > 0) {
-                       select.value = data[0];
-                       selectAdvanced.value = data[0];
-                       selectBranches.value = data[0];
-                       loadKV(data[0]);
-                       loadBranches(data[0]);
-                   }
-               });
-       }
+        function loadMounts() {
+            fetch('/mounts')
+                .then(r => r.json())
+                .then(data => {
+                    const selectAdvanced = document.getElementById('mount-select-advanced');
+                    const selectBranches = document.getElementById('mount-select-branches');
+                    [selectAdvanced, selectBranches].forEach(s => {
+                        s.innerHTML = '';
+                        data.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m;
+                            opt.text = m;
+                            s.appendChild(opt);
+                        });
+                    });
+                    const onchangeFunc = function() {
+                        const mount = this.value;
+                        loadKV(mount);
+                    };
+                    const onchangeBranchesFunc = function() {
+                        const mount = this.value;
+                        loadBranches(mount);
+                    };
+                    selectAdvanced.onchange = onchangeFunc;
+                    selectBranches.onchange = onchangeBranchesFunc;
+                    if (data.length > 0) {
+                        selectAdvanced.value = data[0];
+                        selectBranches.value = data[0];
+                        loadKV(data[0]);
+                        loadBranches(data[0]);
+                    }
+                });
+        }
          function loadBranches(mount) {
              let url = '/kvs?mount=' + encodeURIComponent(mount);
              fetch(url)
