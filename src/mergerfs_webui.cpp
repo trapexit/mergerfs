@@ -167,7 +167,7 @@ _get_mounts_mergerfs(const httplib::Request &req_,
 
   fs::mounts(mounts);
 
-  j = json::array();
+  json_array = json::array();
   for(const auto &mount : mounts)
     {
       if(mount.type != "fuse.mergerfs")
