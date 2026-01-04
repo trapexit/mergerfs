@@ -66,7 +66,7 @@ mergerfs::api::get_kv(const fs::path    &mountpoint_,
 
   xattr_key = "user.mergerfs." + key_;
 
-  return fs::xattr::get(cfgfile,key_,val_);
+  return fs::xattr::get(cfgfile,xattr_key,val_);
 }
 
 int
