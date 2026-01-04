@@ -158,8 +158,8 @@ window.onload = () => { loadMounts(); };
 
 static
 void
-_get_mounts_mergerfs(const httplib::Request &req_,
-                     httplib::Response      &res_)
+_get_mounts(const httplib::Request &req_,
+            httplib::Response      &res_)
 {
   json json_array;
   std::string type;
