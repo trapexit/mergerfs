@@ -162,6 +162,7 @@ _get_mounts(const httplib::Request &req_,
             httplib::Response      &res_)
 {
   json j;
+  std::string type;
   fs::MountVec mounts;
 
   fs::mounts(mounts);
