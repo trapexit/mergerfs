@@ -18,9 +18,10 @@ namespace mergerfs
     get_kvs(const fs::path                    &mountpoint,
             std::map<std::string,std::string> *kvs);
 
-    std::string
+    int
     get_kv(const fs::path    &mountpoint,
-           const std::string &key);
+           const std::string &key,
+           std::string       *val);
 
     int
     set_kv(const fs::path    &mountpoint,
