@@ -349,18 +349,35 @@
            }
            div.appendChild(table);
        }
-       function renderBranches(branchesStr) {
-           const div = document.getElementById('branches-list');
-           div.innerHTML = '';
-           if (!branchesStr) {
-               addBranchEntry();
-               return;
-           }
-           const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
-           branches.forEach(branch => {
-               addBranchEntry(branch);
-           });
-       }
+        function renderBranches(branchesStr) {
+            const div = document.getElementById('branches-list');
+            div.innerHTML = '';
+            if (!branchesStr) {
+                addBranchEntry();
+                return;
+            }
+            const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
+            branches.forEach(branchStr => {
+                let path = branchStr;
+                let mode = 'RW';
+                let minfreespace = '';
+                const eqPos = branchStr.indexOf('=');
+                if (eqPos !== -1) {
+                    path = branchStr.substring(0, eqPos).trim();
+                    const options = branchStr.substring(eqPos + 1).trim();
+                    if (options) {
+                        const parts = options.split(',');
+                        if (parts.length >= 1 && parts[0]) {
+                            mode = parts[0].trim().toUpperCase();
+                        }
+                        if (parts.length >= 2 && parts[1]) {
+                            minfreespace = parts[1].trim();
+                        }
+                    }
+                }
+                addBranchEntry(path, mode, minfreespace);
+            });
+        }
        let branchEntryCounter = 0;
        let pendingPathInput = null;
        function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
@@ -424,18 +441,29 @@
           document.getElementById('pathModal').style.display = 'none';
           pendingPathInput = null;
       }
-      function submitBranches() {
-          const mount = document.getElementById('mount-select-branches').value;
-          const entries = document.querySelectorAll('.branch-entry');
-          const paths = [];
-          entries.forEach(entry => {
-              const pathInput = entry.querySelector('.branch-path');
-              if (pathInput && pathInput.value.trim()) {
-                  paths.push(pathInput.value.trim());
-              }
-          });
-          const branchesStr = paths.join(':');
-          fetch('/kvs?mount=' + encodeURIComponent(mount), {
+       function submitBranches() {
+           const mount = document.getElementById('mount-select-branches').value;
+           const entries = document.querySelectorAll('.branch-entry');
+           const branches = [];
+           entries.forEach(entry => {
+               const pathInput = entry.querySelector('.branch-path');
+               const modeSelect = entry.querySelector('.branch-mode');
+               const minfreespaceInput = entry.querySelector('.branch-minfreespace');
+               if (pathInput && pathInput.value.trim()) {
+                   let branchStr = pathInput.value.trim();
+                   if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
+                       branchStr += '=' + modeSelect.value;
+                   } else {
+                       branchStr += '=RW';
+                   }
+                   if (minfreespaceInput && minfreespaceInput.value.trim()) {
+                       branchStr += ',' + minfreespaceInput.value.trim();
+                   }
+                   branches.push(branchStr);
+               }
+           });
+           const branchesStr = branches.join(':');
+           fetch('/kvs?mount=' + encodeURIComponent(mount), {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify({"branches": branchesStr})

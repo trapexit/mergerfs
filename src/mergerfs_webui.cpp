@@ -226,10 +226,19 @@ _get_kv(const httplib::Request &req_,
 
   mergerfs::api::get_kv(mount,key,&val);
 
-  j = val;
+  if(key == "branches")
+    {
+      res_.set_content(val, "text/plain");
+    }
+  else
+    {
+      json j;
 
-  res_.set_content(j.dump(),
-                   "application/json");
+      j = val;
+
+      res_.set_content(j.dump(),
+                       "application/json");
+    }
 }
 
 static
