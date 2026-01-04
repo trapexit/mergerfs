@@ -198,7 +198,7 @@ _get_mounts(const httplib::Request &req_,
     {
       json obj;
 
-      if(::_valid_fs_type(mount.type))
+      if(not ::_valid_fs_type(mount.type))
         continue;
 
       obj["path"] = mount.dir;
