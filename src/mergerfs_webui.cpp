@@ -159,21 +159,13 @@ window.onload = () => { loadMounts(); };
                    "text/html");
 }
 
+#define IERT(S) if(type_ == (S)) return true;
+
 static
 bool
 _valid_fs_type(const std::string &type_)
 {
-  const std::array
-
-  if(type_ == "ext2")
-    return true;
-  if(type_ == "ext3")
-    return true;
-  if(type_ == "ext4")
-    return true;
-  if(type_ == "xfs")
-    return true;
-  if(type_ == ""
+  IERT(
 
   return false;
 }
