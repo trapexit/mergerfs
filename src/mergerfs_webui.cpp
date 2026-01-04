@@ -7,6 +7,9 @@
 #include "httplib.h"
 #include "json.hpp"
 
+#include <regex>
+
+
 using json = nlohmann::json;
 
 static
@@ -160,12 +163,17 @@ static
 bool
 _valid_fs_type(const std::string &type_)
 {
+  const std::array
+
   if(type_ == "ext2")
     return true;
   if(type_ == "ext3")
     return true;
   if(type_ == "ext4")
     return true;
+  if(type_ == "xfs")
+    return true;
+  if(type_ == ""
 
   return false;
 }
