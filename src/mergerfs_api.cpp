@@ -54,6 +54,13 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
   return 0;
 }
 
+std::string
+get_kv(const fs::path    &mountpoint_,
+       const std::string &key_)
+{
+
+}
+
 int
 mergerfs::api::set_kv(const fs::path    &mountpoint_,
                       const std::string &key_,
