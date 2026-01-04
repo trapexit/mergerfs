@@ -3,10 +3,15 @@
   <head><title>mergerfs ui</title>
     <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACf0lEQVQ4EY3BW0jTYRgH4N/7fv9tmkYlBBFRBCW1ESGSdeGFYZIT7Ihi6rSkoNNFUkaHmwVRiRFZBCnSAUlpohZmdiExoiBUgsSiQkQiEknISplu/+97szFjBUbPQ/D72ZPgzbENT7w/s+EF/kNZR1YmKTPvbs+zblpb3XODoA4JkZDRV9+e2nAc/1DekX0ZoEqwQMTUMQn5IOY2iW4Aq2Pu6p7TmENZ25YqaKoUMfdEzB0wlzCIEgS6/22o8xBEtwrUeffF3gr8pbg1xwfwRQPz5ON8UyGE1wS4GBBE+f0m/OmLj0SCYLrpqe7dhpg9gexcBWoATC++jxUGNwdtxDDiDF7Pmw5P2TshMmAEzZ5LLzMLAlszFDsDAIYiDju/sax/EnEYswoCylPTVzz4+XWIWPJAMuJKGH+gxPlIgG8adu5IMsbLO7JK0uvSHYgiMGJS05atFqFG98q0+jcnM0ZTEvv2rVjcsghQymb2Nu1++nH5D64XqMZVSxPd+EUEFmJEE0EZEpjy9Ve6wgtSujOIdUgTbW/Z1TlQ1Oq9pLW9VykDpQ3BiShGPCIwyX0i3h8KL3NP6QVFLYXtz/ObfZXaJFUJ6CFmRBBDACMeAaz4GsMUhKcWbnlcWvso+9aJUlun1EzrpDptpi8QkTgwi2AhDgkAAl5VetswI6vBnwtwgy2h9q53i46WrBtOB4QwSwAmxCP8QVwbBdxkfZ0ohd9vEEWIZ4lAYEBOFSGBA4jgt+CB0+cQhy0SAolhiyzDBCKxCHgPZR02cOwgkYiIDGEO9iSGVTIiLnbWArQEQh9Y23IQECLIGoE+PHB20yjm0FwcHNPaHIGhVBiIRPTBn4WjGt9/EpzPAAAAAElFTkSuQmCC">
     <style>
+      body {
+          background-color: #1a1a1a;
+          color: #e0e0e0;
+          font-family: Arial, sans-serif;
+      }
       .tab {
           overflow: hidden;
-          border: 1px solid #ccc;
-          background-color: #f1f1f1;
+          border: 1px solid #444;
+          background-color: #2d2d2d;
       }
       .tab button {
           background-color: inherit;
@@ -16,30 +21,62 @@
           cursor: pointer;
           padding: 14px 16px;
           transition: 0.3s;
+          color: #e0e0e0;
       }
       .tab button:hover {
-          background-color: #ddd;
+          background-color: #444;
       }
       .tab button.active {
-          background-color: #ccc;
+          background-color: #3d3d3d;
       }
       .tabcontent {
           display: none;
           padding: 6px 12px;
-          border: 1px solid #ccc;
+          border: 1px solid #444;
           border-top: none;
+          background-color: #1e1e1e;
       }
       table {
           border-collapse: collapse;
           width: 100%;
       }
       th, td {
-          border: 1px solid #ddd;
+          border: 1px solid #444;
           padding: 8px;
           text-align: left;
       }
       th {
-          background-color: #f2f2f2;
+          background-color: #2d2d2d;
+          color: #e0e0e0;
+      }
+      tr:nth-child(even) {
+          background-color: #252525;
+      }
+      tr:hover {
+          background-color: #333;
+      }
+      input[type="text"] {
+          background-color: #333;
+          color: #e0e0e0;
+          border: 1px solid #555;
+          padding: 5px;
+      }
+      input[type="text"]:focus {
+          outline: none;
+          border-color: #666;
+      }
+      select {
+          background-color: #333;
+          color: #e0e0e0;
+          border: 1px solid #555;
+          padding: 5px;
+      }
+      select:focus {
+          outline: none;
+          border-color: #666;
+      }
+      label {
+          color: #e0e0e0;
       }
       .modal {
           display: none;
@@ -50,15 +87,16 @@
           width: 100%;
           height: 100%;
           overflow: auto;
-          background-color: rgba(0,0,0,0.4);
+          background-color: rgba(0,0,0,0.7);
       }
       .modal-content {
-          background-color: #fefefe;
+          background-color: #2d2d2d;
           margin: 15% auto;
           padding: 20px;
-          border: 1px solid #888;
+          border: 1px solid #555;
           width: 80%;
           max-width: 500px;
+          color: #e0e0e0;
       }
       .close-modal {
           color: #aaa;
@@ -69,7 +107,7 @@
       }
       .close-modal:hover,
       .close-modal:focus {
-          color: black;
+          color: #fff;
           text-decoration: none;
           cursor: pointer;
       }
@@ -79,12 +117,20 @@
           gap: 10px;
           margin-bottom: 10px;
           padding: 10px;
-          border: 1px solid #ddd;
-          background-color: #f9f9f9;
+          border: 1px solid #444;
+          background-color: #252525;
       }
       .branch-entry input,
       .branch-entry select {
           padding: 5px;
+          background-color: #333;
+          color: #e0e0e0;
+          border: 1px solid #555;
+      }
+      .branch-entry input:focus,
+      .branch-entry select:focus {
+          outline: none;
+          border-color: #666;
       }
       .branch-path {
           flex: 1;
@@ -97,45 +143,49 @@
           width: 100px;
       }
       .branch-remove {
-          background-color: #ff4444;
+          background-color: #8b0000;
           color: white;
           border: none;
           padding: 5px 10px;
           cursor: pointer;
       }
       .branch-remove:hover {
-          background-color: #cc0000;
+          background-color: #a00000;
       }
       .add-branch-btn {
-          background-color: #4CAF50;
+          background-color: #2e7d32;
           color: white;
           border: none;
           padding: 10px 20px;
           cursor: pointer;
           margin-bottom: 15px;
       }
-        .add-branch-btn:hover {
-            background-color: #45a049;
-        }
-        .submit-branches-btn {
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            margin-left: 10px;
-        }
-        .submit-branches-btn:hover {
-            background-color: #0b7dda;
-        }
+      .add-branch-btn:hover {
+          background-color: #388e3c;
+      }
+      .submit-branches-btn {
+          background-color: #1565c0;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          cursor: pointer;
+          margin-bottom: 15px;
+          margin-left: 10px;
+      }
+      .submit-branches-btn:hover {
+          background-color: #1976d2;
+      }
       .mount-list-item {
           padding: 10px;
           cursor: pointer;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid #444;
+          color: #e0e0e0;
       }
       .mount-list-item:hover {
-          background-color: #f0f0f0;
+          background-color: #444;
+      }
+      h3 {
+          color: #e0e0e0;
       }
     </style>
   </head>
