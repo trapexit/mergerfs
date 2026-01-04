@@ -292,6 +292,14 @@ str::startswith(const string      &str_,
 }
 
 bool
+str::startswith(const string &str_,
+                const char   *prefix_)
+{
+  return ((str_.size() >= prefix_.size()) &&
+          (str_.compare(0,prefix_.size(),prefix_) == 0));
+}
+
+bool
 str::endswith(const string &str_,
               const string &suffix_)
 {
