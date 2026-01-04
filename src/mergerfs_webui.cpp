@@ -165,7 +165,9 @@ static
 bool
 _valid_fs_type(const std::string &type_)
 {
-  IERT(
+  IERT("ext2");
+  IERT("ext3");
+  IERT("ext4");
 
   return false;
 }
