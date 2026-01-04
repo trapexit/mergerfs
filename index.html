@@ -275,7 +275,7 @@
            return fetch('/kvs/branches?mount=' + encodeURIComponent(mount))
                .then(r => {
                    if (!r.ok) throw new Error('Failed to fetch branches');
-                   return r.text();
+                   return r.json();
                });
        }
        function fetchKV(mount) {
