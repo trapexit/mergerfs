@@ -161,7 +161,7 @@ void
 _get_mounts_mergerfs(const httplib::Request &req_,
                      httplib::Response      &res_)
 {
-  json j;
+  json json_array;
   std::string type;
   fs::MountVec mounts;
 
@@ -170,6 +170,7 @@ _get_mounts_mergerfs(const httplib::Request &req_,
   json_array = json::array();
   for(const auto &mount : mounts)
     {
+      json
       if(mount.type != "fuse.mergerfs")
         continue;
       j.push_back(mount.type);
