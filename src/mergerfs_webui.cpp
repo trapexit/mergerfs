@@ -224,7 +224,7 @@ _get_kv(const httplib::Request &req_,
   key   = req_.path_params.at("key");
   mount = req_.get_param_value("mount");
 
-  val = mergerfs::api::get_kv(mount,);
+  mergerfs::api::get_kv(mount,key,&val);
 
   j = val;
 
