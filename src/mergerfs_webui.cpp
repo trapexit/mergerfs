@@ -157,6 +157,13 @@ window.onload = () => { loadMounts(); };
 }
 
 static
+bool
+_valid_fs_type(const std::string &type_)
+{
+
+}
+
+static
 void
 _get_mounts(const httplib::Request &req_,
             httplib::Response      &res_)
