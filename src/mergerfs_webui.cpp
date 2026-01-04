@@ -171,6 +171,7 @@ _valid_fs_type(const std::string &type_)
   IERT("btrfs");
   IERT("zfs");
   IERT("reiserfs");
+  IERT("f2fs");
   IERT("ntfs");
   IERT("vfat");
   IERT("exfat");
