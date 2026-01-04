@@ -258,7 +258,7 @@ _post_kvs(const httplib::Request &req_,
                     << key << ": " << (std::string)val << std::endl;
         }
 
-      res_.set_content("{}", "application/json");
+      res_.set_content("{}","application/json");
     }
   catch (const std::exception& e)
     {

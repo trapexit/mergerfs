@@ -175,6 +175,17 @@
       .submit-branches-btn:hover {
       background-color: #1976d2;
       }
+      .path-btn {
+      background-color: #1565c0;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-right: 5px;
+      }
+      .path-btn:hover {
+      background-color: #1976d2;
+      }
       .mount-list-item {
       padding: 10px;
       cursor: pointer;
@@ -251,137 +262,137 @@
       function getMounts() {
           return g_mounts;
       }
-       function loadMounts() {
-           fetch('/mounts')
-               .then(r => {
-                   if (!r.ok) throw new Error('Failed to fetch mounts');
-                   return r.json();
-               })
-               .then(data => {
-                   g_mounts = data;
-                   populateMountSelect('mount-select-advanced', function() {
-                       loadAllForMount(this.value);
-                   });
-                   populateMountSelect('mount-select-branches', function() {
-                       loadAllForMount(this.value);
-                   });
-                   if (g_mounts.length > 0) {
-                       loadAllForMount(g_mounts[0]);
-                   }
-               })
-               .catch(err => console.error('Error loading mounts:', err));
-       }
-       function fetchBranches(mount) {
-           return fetch('/kvs/branches?mount=' + encodeURIComponent(mount))
-               .then(r => {
-                   if (!r.ok) throw new Error('Failed to fetch branches');
-                   return r.json();
-               });
-       }
-       function fetchKV(mount) {
-           return fetch('/kvs?mount=' + encodeURIComponent(mount))
-               .then(r => {
-                   if (!r.ok) throw new Error('Failed to fetch kvs');
-                   return r.json();
-               });
-       }
-       function loadAllForMount(mount) {
-           if (!mount) return;
-           Promise.all([fetchKV(mount), fetchBranches(mount)])
-               .then(([kvData, branchesStr]) => {
-                   renderKV(kvData, mount);
-                   renderBranches(branchesStr);
-               })
-               .catch(err => console.error('Error loading data for mount:', mount, err));
-       }
-       function renderKV(data, mount) {
-           const div = document.getElementById('kv-list');
-           div.innerHTML = '';
-           const table = document.createElement('table');
-           const headerRow = document.createElement('tr');
-           const headerKey = document.createElement('th');
-           headerKey.textContent = 'Key';
-           const headerValue = document.createElement('th');
-           headerValue.textContent = 'Value';
-           headerRow.appendChild(headerKey);
-           headerRow.appendChild(headerValue);
-           table.appendChild(headerRow);
-           const priorityKeys = ['fsname', 'version'];
-           const orderedEntries = [];
-           priorityKeys.forEach(key => {
-               if (data.hasOwnProperty(key)) {
-                   orderedEntries.push([key, data[key]]);
-                   delete data[key];
-               }
-           });
-           for (const [k, v] of Object.entries(data)) {
-               orderedEntries.push([k, v]);
-           }
-           for (const [k, v] of orderedEntries) {
-               const row = document.createElement('tr');
-               const keyCell = document.createElement('td');
-               keyCell.textContent = k;
-               const valueCell = document.createElement('td');
-               const input = document.createElement('input');
-               input.type = 'text';
-               input.value = v;
-               input.style.width = '100%';
-               input.onkeydown = function(e) {
-                   if (e.key === 'Enter') {
-                       const postUrl = '/kvs?mount=' + encodeURIComponent(mount);
-                       fetch(postUrl, {
-                           method: 'POST',
-                           headers: {'Content-Type': 'application/json'},
-                           body: JSON.stringify({[k]: input.value})
-                       }).then(response => {
-                           if (!response.ok) {
-                               response.text().then(body => {
-                                   alert('Status: ' + response.status + '\nBody: ' + body);
-                               });
-                           }
-                       });
-                   }
-               };
-               valueCell.appendChild(input);
-               row.appendChild(keyCell);
-               row.appendChild(valueCell);
-               table.appendChild(row);
-           }
-           div.appendChild(table);
-       }
-        function renderBranches(branchesStr) {
-            const div = document.getElementById('branches-list');
-            div.innerHTML = '';
-            if (!branchesStr) {
-                addBranchEntry();
-                return;
-            }
-            const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
-            branches.forEach(branchStr => {
-                let path = branchStr;
-                let mode = 'RW';
-                let minfreespace = '';
-                const eqPos = branchStr.indexOf('=');
-                if (eqPos !== -1) {
-                    path = branchStr.substring(0, eqPos).trim();
-                    const options = branchStr.substring(eqPos + 1).trim();
-                    if (options) {
-                        const parts = options.split(',');
-                        if (parts.length >= 1 && parts[0]) {
-                            mode = parts[0].trim().toUpperCase();
-                        }
-                        if (parts.length >= 2 && parts[1]) {
-                            minfreespace = parts[1].trim();
-                        }
-                    }
-                }
-                addBranchEntry(path, mode, minfreespace);
-            });
-        }
-       let branchEntryCounter = 0;
-       let pendingPathInput = null;
-       function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
-           const container = document.getElementById('branches-list');
+      function loadMounts() {
+          fetch('/mounts')
+              .then(r => {
+                  if (!r.ok) throw new Error('Failed to fetch mounts');
+                  return r.json();
+              })
+              .then(data => {
+                  g_mounts = data;
+                  populateMountSelect('mount-select-advanced', function() {
+                      loadAllForMount(this.value);
+                  });
+                  populateMountSelect('mount-select-branches', function() {
+                      loadAllForMount(this.value);
+                  });
+                  if (g_mounts.length > 0) {
+                      loadAllForMount(g_mounts[0]);
+                  }
+              })
+              .catch(err => console.error('Error loading mounts:', err));
+      }
+      function fetchBranches(mount) {
+          return fetch('/kvs/branches?mount=' + encodeURIComponent(mount))
+              .then(r => {
+                  if (!r.ok) throw new Error('Failed to fetch branches');
+                  return r.json();
+              });
+      }
+      function fetchKV(mount) {
+          return fetch('/kvs?mount=' + encodeURIComponent(mount))
+              .then(r => {
+                  if (!r.ok) throw new Error('Failed to fetch kvs');
+                  return r.json();
+              });
+      }
+      function loadAllForMount(mount) {
+          if (!mount) return;
+          Promise.all([fetchKV(mount), fetchBranches(mount)])
+              .then(([kvData, branchesStr]) => {
+                  renderKV(kvData, mount);
+                  renderBranches(branchesStr);
+              })
+              .catch(err => console.error('Error loading data for mount:', mount, err));
+      }
+      function renderKV(data, mount) {
+          const div = document.getElementById('kv-list');
+          div.innerHTML = '';
+          const table = document.createElement('table');
+          const headerRow = document.createElement('tr');
+          const headerKey = document.createElement('th');
+          headerKey.textContent = 'Key';
+          const headerValue = document.createElement('th');
+          headerValue.textContent = 'Value';
+          headerRow.appendChild(headerKey);
+          headerRow.appendChild(headerValue);
+          table.appendChild(headerRow);
+          const priorityKeys = ['fsname', 'version'];
+          const orderedEntries = [];
+          priorityKeys.forEach(key => {
+              if (data.hasOwnProperty(key)) {
+                  orderedEntries.push([key, data[key]]);
+                  delete data[key];
+              }
+          });
+          for (const [k, v] of Object.entries(data)) {
+              orderedEntries.push([k, v]);
+          }
+          for (const [k, v] of orderedEntries) {
+              const row = document.createElement('tr');
+              const keyCell = document.createElement('td');
+              keyCell.textContent = k;
+              const valueCell = document.createElement('td');
+              const input = document.createElement('input');
+              input.type = 'text';
+              input.value = v;
+              input.style.width = '100%';
+              input.onkeydown = function(e) {
+                  if (e.key === 'Enter') {
+                      const postUrl = '/kvs?mount=' + encodeURIComponent(mount);
+                      fetch(postUrl, {
+                          method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify({[k]: input.value})
+                      }).then(response => {
+                          if (!response.ok) {
+                              response.text().then(body => {
+                                  alert('Status: ' + response.status + '\nBody: ' + body);
+                              });
+                          }
+                      });
+                  }
+              };
+              valueCell.appendChild(input);
+              row.appendChild(keyCell);
+              row.appendChild(valueCell);
+              table.appendChild(row);
+          }
+          div.appendChild(table);
+      }
+      function renderBranches(branchesStr) {
+          const div = document.getElementById('branches-list');
+          div.innerHTML = '';
+          if (!branchesStr) {
+              addBranchEntry();
+              return;
+          }
+          const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
+          branches.forEach(branchStr => {
+              let path = branchStr;
+              let mode = 'RW';
+              let minfreespace = '';
+              const eqPos = branchStr.indexOf('=');
+              if (eqPos !== -1) {
+                  path = branchStr.substring(0, eqPos).trim();
+                  const options = branchStr.substring(eqPos + 1).trim();
+                  if (options) {
+                      const parts = options.split(',');
+                      if (parts.length >= 1 && parts[0]) {
+                          mode = parts[0].trim().toUpperCase();
+                      }
+                      if (parts.length >= 2 && parts[1]) {
+                          minfreespace = parts[1].trim();
+                      }
+                  }
+              }
+              addBranchEntry(path, mode, minfreespace);
+          });
+      }
+      let branchEntryCounter = 0;
+      let pendingPathInput = null;
+      function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+          const container = document.getElementById('branches-list');
           const entry = document.createElement('div');
           entry.className = 'branch-entry';
           entry.id = 'branch-entry-' + branchEntryCounter++;
@@ -391,6 +402,7 @@
           pathInput.placeholder = 'Path';
           pathInput.value = path;
           const pathBtn = document.createElement('button');
+          pathBtn.className = 'path-btn';
           pathBtn.textContent = 'Path';
           pathBtn.onclick = () => openPathModal(pathInput);
           const modeSelect = document.createElement('select');
@@ -403,85 +415,85 @@
               modeSelect.appendChild(opt);
           });
           const minfreespaceInput = document.createElement('input');
-          minfreespaceInput.type = 'text';
-          minfreespaceInput.className = 'branch-minfreespace';
-          minfreespaceInput.placeholder = 'MinFreeSpace';
-          minfreespaceInput.value = minfreespace;
-          const removeBtn = document.createElement('button');
-          removeBtn.className = 'branch-remove';
-          removeBtn.textContent = 'Remove';
-          removeBtn.onclick = () => entry.remove();
-          entry.appendChild(pathInput);
-          entry.appendChild(pathBtn);
-          entry.appendChild(modeSelect);
-          entry.appendChild(minfreespaceInput);
-          entry.appendChild(removeBtn);
-          container.appendChild(entry);
-      }
-      function openPathModal(targetInput) {
-          pendingPathInput = targetInput;
-          const modal = document.getElementById('pathModal');
-          const mountList = document.getElementById('mount-list');
-          mountList.innerHTML = '';
-          g_mounts.forEach(m => {
-              const div = document.createElement('div');
-              div.className = 'mount-list-item';
-              div.textContent = m;
-              div.onclick = () => {
-                  if (pendingPathInput) {
-                      pendingPathInput.value = m;
-                  }
-                  closePathModal();
-              };
-              mountList.appendChild(div);
-          });
-          modal.style.display = 'block';
-      }
-      function closePathModal() {
-          document.getElementById('pathModal').style.display = 'none';
-          pendingPathInput = null;
-      }
-       function submitBranches() {
-           const mount = document.getElementById('mount-select-branches').value;
-           const entries = document.querySelectorAll('.branch-entry');
-           const branches = [];
-           entries.forEach(entry => {
-               const pathInput = entry.querySelector('.branch-path');
-               const modeSelect = entry.querySelector('.branch-mode');
-               const minfreespaceInput = entry.querySelector('.branch-minfreespace');
-               if (pathInput && pathInput.value.trim()) {
-                   let branchStr = pathInput.value.trim();
-                   if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
-                       branchStr += '=' + modeSelect.value;
-                   } else {
-                       branchStr += '=RW';
-                   }
-                   if (minfreespaceInput && minfreespaceInput.value.trim()) {
-                       branchStr += ',' + minfreespaceInput.value.trim();
-                   }
-                   branches.push(branchStr);
-               }
-           });
-           const branchesStr = branches.join(':');
-           fetch('/kvs?mount=' + encodeURIComponent(mount), {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({"branches": branchesStr})
-          }).then(response => {
-              if (!response.ok) {
-                  response.text().then(body => {
-                      alert('Status: ' + response.status + '\nBody: ' + body);
-                  });
-              }
-          });
-      }
-      window.onclick = function(event) {
-          const modal = document.getElementById('pathModal');
-          if (event.target === modal) {
-              closePathModal();
-          }
-      }
-      window.onload = () => { loadMounts(); };
-    </script>
-  </body>
+      minfreespaceInput.type = 'text';
+      minfreespaceInput.className = 'branch-minfreespace';
+      minfreespaceInput.placeholder = 'MinFreeSpace';
+      minfreespaceInput.value = minfreespace;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'branch-remove';
+      removeBtn.textContent = 'Remove';
+      removeBtn.onclick = () => entry.remove();
+        entry.appendChild(pathInput);
+        entry.appendChild(pathBtn);
+        entry.appendChild(modeSelect);
+        entry.appendChild(minfreespaceInput);
+        entry.appendChild(removeBtn);
+        container.appendChild(entry);
+        }
+        function openPathModal(targetInput) {
+        pendingPathInput = targetInput;
+        const modal = document.getElementById('pathModal');
+        const mountList = document.getElementById('mount-list');
+        mountList.innerHTML = '';
+        g_mounts.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'mount-list-item';
+        div.textContent = m;
+        div.onclick = () => {
+        if (pendingPathInput) {
+        pendingPathInput.value = m;
+        }
+        closePathModal();
+        };
+        mountList.appendChild(div);
+        });
+        modal.style.display = 'block';
+        }
+        function closePathModal() {
+        document.getElementById('pathModal').style.display = 'none';
+        pendingPathInput = null;
+        }
+        function submitBranches() {
+        const mount = document.getElementById('mount-select-branches').value;
+        const entries = document.querySelectorAll('.branch-entry');
+        const branches = [];
+        entries.forEach(entry => {
+        const pathInput = entry.querySelector('.branch-path');
+        const modeSelect = entry.querySelector('.branch-mode');
+        const minfreespaceInput = entry.querySelector('.branch-minfreespace');
+        if (pathInput && pathInput.value.trim()) {
+        let branchStr = pathInput.value.trim();
+        if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
+        branchStr += '=' + modeSelect.value;
+        } else {
+        branchStr += '=RW';
+        }
+        if (minfreespaceInput && minfreespaceInput.value.trim()) {
+        branchStr += ',' + minfreespaceInput.value.trim();
+        }
+        branches.push(branchStr);
+        }
+        });
+        const branchesStr = branches.join(':');
+        fetch('/kvs?mount=' + encodeURIComponent(mount), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"branches": branchesStr})
+        }).then(response => {
+        if (!response.ok) {
+        response.text().then(body => {
+        alert('Status: ' + response.status + '\nBody: ' + body);
+        });
+        }
+        });
+        }
+        window.onclick = function(event) {
+        const modal = document.getElementById('pathModal');
+        if (event.target === modal) {
+        closePathModal();
+        }
+        }
+        window.onload = () => { loadMounts(); };
+</script>
+</body>
 </html>
