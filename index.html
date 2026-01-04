@@ -263,7 +263,7 @@
           return g_mounts;
       }
       function loadMounts() {
-          fetch('/mounts')
+          fetch('/mounts/mergerfs')
               .then(r => {
                   if (!r.ok) throw new Error('Failed to fetch mounts');
                   return r.json();
@@ -317,7 +317,7 @@
           headerRow.appendChild(headerKey);
           headerRow.appendChild(headerValue);
           table.appendChild(headerRow);
-          const priorityKeys = ['fsname', 'version'];
+          const priorityKeys = ['fsname','branches','version'];
           const orderedEntries = [];
           priorityKeys.forEach(key => {
               if (data.hasOwnProperty(key)) {
@@ -399,7 +399,7 @@
           const pathInput = document.createElement('input');
           pathInput.type = 'text';
           pathInput.className = 'branch-path';
-          pathInput.placeholder = 'Path';
+          pathInput.placeholder = 'path';
           pathInput.value = path;
           const pathBtn = document.createElement('button');
           pathBtn.className = 'path-btn';
@@ -417,7 +417,7 @@
           const minfreespaceInput = document.createElement('input');
       minfreespaceInput.type = 'text';
       minfreespaceInput.className = 'branch-minfreespace';
-      minfreespaceInput.placeholder = 'MinFreeSpace';
+      minfreespaceInput.placeholder = 'minfreespace';
       minfreespaceInput.value = minfreespace;
       const removeBtn = document.createElement('button');
       removeBtn.className = 'branch-remove';
