@@ -198,7 +198,8 @@ _get_mounts(const httplib::Request &req_,
     {
       json obj;
 
-      if(mount.type == "ext2")
+      if(::_valid_fs_type(mount.type))
+        continue;
 
       obj["path"] = mount.dir;
       obj["type"] = mount.type;
