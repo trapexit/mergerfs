@@ -174,6 +174,8 @@ _valid_fs_type(const std::string &type_)
   IERT("ntfs");
   IERT("vfat");
   IERT("exfat");
+  if(str::startswith(type_,"fuse."))
+    return true;
 
   return false;
 }
