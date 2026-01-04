@@ -219,7 +219,7 @@ _get_kv(const httplib::Request &req_,
   json j;
   std::string key;
   std::string val;
-  std::string mount;
+  fs::path mount;
 
   key   = req_.path_params.at("key");
   mount = req_.get_param_value("mount");
