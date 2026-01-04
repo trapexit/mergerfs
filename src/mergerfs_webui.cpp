@@ -158,8 +158,31 @@ window.onload = () => { loadMounts(); };
 
 static
 void
-_get_mounts(const httplib::Request &req_,
-            httplib::Response      &res_)
+_get_mounts_mergerfs(const httplib::Request &req_,
+                     httplib::Response      &res_)
+{
+  json j;
+  std::string type;
+  fs::MountVec mounts;
+
+  fs::mounts(mounts);
+
+  j = json::array();
+  for(const auto &mount : mounts)
+    {
+      if(mount.type != "fuse.mergerfs")
+        continue;
+      j.push_back(mount.type);
+    }
+
+  res_.set_content(j.dump(),
+                   "application/json");
+}
+
+static
+void
+_get_mounts_mergerfs(const httplib::Request &req_,
+                     httplib::Response      &res_)
 {
   json j;
   std::string type;
