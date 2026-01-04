@@ -55,9 +55,9 @@ mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
 }
 
 int
-get_kv(const fs::path    &mountpoint_,
-       const std::string &key_,
-       std::string       *val_)
+mergerfs::api::get_kv(const fs::path    &mountpoint_,
+                      const std::string &key_,
+                      std::string       *val_)
 {
   fs::path cfgfile;
 
