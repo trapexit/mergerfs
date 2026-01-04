@@ -271,101 +271,99 @@
                })
                .catch(err => console.error('Error loading mounts:', err));
        }
-       function loadAllForMount(mount) {
-           if (!mount) return;
-           let url = '/kvs?mount=' + encodeURIComponent(mount);
-           fetch(url)
+       function fetchBranches(mount) {
+           return fetch('/kvs/branches?mount=' + encodeURIComponent(mount))
+               .then(r => {
+                   if (!r.ok) throw new Error('Failed to fetch branches');
+                   return r.text();
+               });
+       }
+       function fetchKV(mount) {
+           return fetch('/kvs?mount=' + encodeURIComponent(mount))
                .then(r => {
                    if (!r.ok) throw new Error('Failed to fetch kvs');
                    return r.json();
-               })
-               .then(data => {
-                   renderKV(data, mount);
-                   renderBranches(data);
-               })
-               .catch(err => console.error('Error loading kvs for mount:', mount, err));
+               });
        }
-      function renderKV(data, mount) {
-          const div = document.getElementById('kv-list');
-          div.innerHTML = '';
-          const table = document.createElement('table');
-          const headerRow = document.createElement('tr');
-          const headerKey = document.createElement('th');
-          headerKey.textContent = 'Key';
-          const headerValue = document.createElement('th');
-          headerValue.textContent = 'Value';
-          headerRow.appendChild(headerKey);
-          headerRow.appendChild(headerValue);
-          table.appendChild(headerRow);
-          const priorityKeys = ['fsname','version', 'branches'];
-          const orderedEntries = [];
-          priorityKeys.forEach(key => {
-              if (data.hasOwnProperty(key)) {
-                  orderedEntries.push([key, data[key]]);
-                  delete data[key];
-              }
-          });
-          for (const [k, v] of Object.entries(data)) {
-              orderedEntries.push([k, v]);
-          }
-          for (const [k, v] of orderedEntries) {
-              const row = document.createElement('tr');
-              const keyCell = document.createElement('td');
-              keyCell.textContent = k;
-              const valueCell = document.createElement('td');
-              const input = document.createElement('input');
-              input.type = 'text';
-              input.value = v;
-              input.style.width = '100%';
-              input.onkeydown = function(e) {
-                  if (e.key === 'Enter') {
-                      const postUrl = '/kvs?mount=' + encodeURIComponent(mount);
-                      fetch(postUrl, {
-                          method: 'POST',
-                          headers: {'Content-Type': 'application/json'},
-                          body: JSON.stringify({[k]: input.value})
-                      }).then(response => {
-                          if (!response.ok) {
-                              response.text().then(body => {
-                                  alert('Status: ' + response.status + '\nBody: ' + body);
-                              });
-                          }
-                      });
-                  }
-              };
-              valueCell.appendChild(input);
-              row.appendChild(keyCell);
-              row.appendChild(valueCell);
-              table.appendChild(row);
-          }
-          div.appendChild(table);
-      }
-       function renderBranches(data) {
-           console.log('renderBranches called with data:', data);
-           console.log('All keys in data:', Object.keys(data));
-           const div = document.getElementById('branches-list');
-           if (!div) {
-               console.error('branches-list element not found');
-               return;
-           }
+       function loadAllForMount(mount) {
+           if (!mount) return;
+           Promise.all([fetchKV(mount), fetchBranches(mount)])
+               .then(([kvData, branchesStr]) => {
+                   renderKV(kvData, mount);
+                   renderBranches(branchesStr);
+               })
+               .catch(err => console.error('Error loading data for mount:', mount, err));
+       }
+       function renderKV(data, mount) {
+           const div = document.getElementById('kv-list');
            div.innerHTML = '';
-           const branchesStr = data.branches || data.branch || data.libfuse_branches;
-           console.log('branchesStr:', branchesStr);
+           const table = document.createElement('table');
+           const headerRow = document.createElement('tr');
+           const headerKey = document.createElement('th');
+           headerKey.textContent = 'Key';
+           const headerValue = document.createElement('th');
+           headerValue.textContent = 'Value';
+           headerRow.appendChild(headerKey);
+           headerRow.appendChild(headerValue);
+           table.appendChild(headerRow);
+           const priorityKeys = ['fsname', 'version'];
+           const orderedEntries = [];
+           priorityKeys.forEach(key => {
+               if (data.hasOwnProperty(key)) {
+                   orderedEntries.push([key, data[key]]);
+                   delete data[key];
+               }
+           });
+           for (const [k, v] of Object.entries(data)) {
+               orderedEntries.push([k, v]);
+           }
+           for (const [k, v] of orderedEntries) {
+               const row = document.createElement('tr');
+               const keyCell = document.createElement('td');
+               keyCell.textContent = k;
+               const valueCell = document.createElement('td');
+               const input = document.createElement('input');
+               input.type = 'text';
+               input.value = v;
+               input.style.width = '100%';
+               input.onkeydown = function(e) {
+                   if (e.key === 'Enter') {
+                       const postUrl = '/kvs?mount=' + encodeURIComponent(mount);
+                       fetch(postUrl, {
+                           method: 'POST',
+                           headers: {'Content-Type': 'application/json'},
+                           body: JSON.stringify({[k]: input.value})
+                       }).then(response => {
+                           if (!response.ok) {
+                               response.text().then(body => {
+                                   alert('Status: ' + response.status + '\nBody: ' + body);
+                               });
+                           }
+                       });
+                   }
+               };
+               valueCell.appendChild(input);
+               row.appendChild(keyCell);
+               row.appendChild(valueCell);
+               table.appendChild(row);
+           }
+           div.appendChild(table);
+       }
+       function renderBranches(branchesStr) {
+           const div = document.getElementById('branches-list');
+           div.innerHTML = '';
            if (!branchesStr) {
-               console.log('No branches data found, keys available:', Object.keys(data));
                addBranchEntry();
                return;
            }
            const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
-           console.log('Parsed branches:', branches);
            branches.forEach(branch => {
                addBranchEntry(branch);
            });
        }
-      let branchEntryCounter = 0;
-      let pendingPathInput = null;
+       let branchEntryCounter = 0;
+       let pendingPathInput = null;
        function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
-           console.log('addBranchEntry called with path:', path, 'mode:', mode);
            const container = document.getElementById('branches-list');
           const entry = document.createElement('div');
           entry.className = 'branch-entry';
