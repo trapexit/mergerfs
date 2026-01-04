@@ -172,8 +172,8 @@ _get_mounts(const httplib::Request &req_,
     {
       json obj;
 
-      obj["path"] = mounts.dir;
-      obj["type"] = mounts.type;
+      obj["path"] = mount.dir;
+      obj["type"] = mount.type;
 
       json_array.push_back(obj);
     }
