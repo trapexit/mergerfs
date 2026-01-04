@@ -190,10 +190,15 @@
        background-color: #424242;
        color: white;
        border: none;
-       padding: 5px 8px;
        cursor: pointer;
        margin-right: 3px;
-       font-size: 12px;
+       width: 28px;
+       height: 28px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 16px;
+       font-weight: bold;
        }
        .branch-move-btn:hover {
        background-color: #616161;
@@ -463,16 +468,16 @@
            minfreespaceInput.className = 'branch-minfreespace';
            minfreespaceInput.placeholder = 'minfreespace';
            minfreespaceInput.value = minfreespace;
-           const moveUpBtn = document.createElement('button');
-           moveUpBtn.className = 'branch-move-btn';
-           moveUpBtn.textContent = '^';
-           moveUpBtn.title = 'Move up';
-           moveUpBtn.onclick = () => moveEntryUp(entry);
-           const moveDownBtn = document.createElement('button');
-           moveDownBtn.className = 'branch-move-btn';
-           moveDownBtn.textContent = 'v';
-           moveDownBtn.title = 'Move down';
-           moveDownBtn.onclick = () => moveEntryDown(entry);
+            const moveUpBtn = document.createElement('button');
+            moveUpBtn.className = 'branch-move-btn branch-move-up';
+            moveUpBtn.innerHTML = '&#9650;';
+            moveUpBtn.title = 'Move up';
+            moveUpBtn.onclick = () => moveEntryUp(entry);
+            const moveDownBtn = document.createElement('button');
+            moveDownBtn.className = 'branch-move-btn branch-move-down';
+            moveDownBtn.innerHTML = '&#9660;';
+            moveDownBtn.title = 'Move down';
+            moveDownBtn.onclick = () => moveEntryDown(entry);
            const removeBtn = document.createElement('button');
            removeBtn.className = 'branch-remove';
            removeBtn.textContent = 'Remove';
