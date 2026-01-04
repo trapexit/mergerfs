@@ -252,7 +252,7 @@
                   headerRow.appendChild(headerKey);
                   headerRow.appendChild(headerValue);
                   table.appendChild(headerRow);
-                  const priorityKeys = ['version', 'branches'];
+                  const priorityKeys = ['fsname','version', 'branches'];
                   const orderedEntries = [];
                   priorityKeys.forEach(key => {
                       if (data.hasOwnProperty(key)) {
