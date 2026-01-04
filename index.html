@@ -183,10 +183,48 @@
       cursor: pointer;
       margin-right: 5px;
       }
-      .path-btn:hover {
-      background-color: #1976d2;
-      }
-      .mount-list-item {
+       .path-btn:hover {
+       background-color: #1976d2;
+       }
+       .branch-move-btn {
+       background-color: #424242;
+       color: white;
+       border: none;
+       padding: 5px 8px;
+       cursor: pointer;
+       margin-right: 3px;
+       font-size: 12px;
+       }
+       .branch-move-btn:hover {
+       background-color: #616161;
+       }
+       .branch-move-btn:disabled {
+       opacity: 0.3;
+       cursor: not-allowed;
+       }
+       .branch-entry {
+       display: flex;
+       align-items: center;
+       padding: 8px;
+       margin: 5px 0;
+       background-color: #2d2d2d;
+       border-radius: 4px;
+       cursor: grab;
+       transition: background-color 0.2s, box-shadow 0.2s;
+       }
+       .branch-entry:hover {
+       background-color: #3d3d3d;
+       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+       }
+       .branch-entry.dragging {
+       opacity: 0.5;
+       cursor: grabbing;
+       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+       }
+       .branch-entry.drag-over {
+       border-top: 2px solid #1565c0;
+       }
+       .mount-list-item {
       padding: 10px;
       cursor: pointer;
       border-bottom: 1px solid #444;
@@ -391,45 +429,114 @@
       }
       let branchEntryCounter = 0;
       let pendingPathInput = null;
-      function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
-          const container = document.getElementById('branches-list');
-          const entry = document.createElement('div');
-          entry.className = 'branch-entry';
-          entry.id = 'branch-entry-' + branchEntryCounter++;
-          const pathInput = document.createElement('input');
-          pathInput.type = 'text';
-          pathInput.className = 'branch-path';
-          pathInput.placeholder = 'path';
-          pathInput.value = path;
-          const pathBtn = document.createElement('button');
-          pathBtn.className = 'path-btn';
-          pathBtn.textContent = 'Path';
-          pathBtn.onclick = () => openPathModal(pathInput);
-          const modeSelect = document.createElement('select');
-          modeSelect.className = 'branch-mode';
-          ['RW', 'NC', 'RO'].forEach(m => {
-              const opt = document.createElement('option');
-              opt.value = m;
-              opt.textContent = m;
-              if (m === mode) opt.selected = true;
-              modeSelect.appendChild(opt);
-          });
-          const minfreespaceInput = document.createElement('input');
-      minfreespaceInput.type = 'text';
-      minfreespaceInput.className = 'branch-minfreespace';
-      minfreespaceInput.placeholder = 'minfreespace';
-      minfreespaceInput.value = minfreespace;
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'branch-remove';
-      removeBtn.textContent = 'Remove';
-      removeBtn.onclick = () => entry.remove();
-        entry.appendChild(pathInput);
-        entry.appendChild(pathBtn);
-        entry.appendChild(modeSelect);
-        entry.appendChild(minfreespaceInput);
-        entry.appendChild(removeBtn);
-        container.appendChild(entry);
-        }
+       function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+           const container = document.getElementById('branches-list');
+           const entry = document.createElement('div');
+           entry.className = 'branch-entry';
+           entry.draggable = true;
+           entry.id = 'branch-entry-' + branchEntryCounter++;
+           entry.addEventListener('dragstart', handleDragStart);
+           entry.addEventListener('dragend', handleDragEnd);
+           entry.addEventListener('dragover', handleDragOver);
+           entry.addEventListener('dragleave', handleDragLeave);
+           entry.addEventListener('drop', handleDrop);
+           const pathInput = document.createElement('input');
+           pathInput.type = 'text';
+           pathInput.className = 'branch-path';
+           pathInput.placeholder = 'path';
+           pathInput.value = path;
+           const pathBtn = document.createElement('button');
+           pathBtn.className = 'path-btn';
+           pathBtn.textContent = 'Path';
+           pathBtn.onclick = () => openPathModal(pathInput);
+           const modeSelect = document.createElement('select');
+           modeSelect.className = 'branch-mode';
+           ['RW', 'NC', 'RO'].forEach(m => {
+               const opt = document.createElement('option');
+               opt.value = m;
+               opt.textContent = m;
+               if (m === mode) opt.selected = true;
+               modeSelect.appendChild(opt);
+           });
+           const minfreespaceInput = document.createElement('input');
+           minfreespaceInput.type = 'text';
+           minfreespaceInput.className = 'branch-minfreespace';
+           minfreespaceInput.placeholder = 'minfreespace';
+           minfreespaceInput.value = minfreespace;
+           const moveUpBtn = document.createElement('button');
+           moveUpBtn.className = 'branch-move-btn';
+           moveUpBtn.textContent = '^';
+           moveUpBtn.title = 'Move up';
+           moveUpBtn.onclick = () => moveEntryUp(entry);
+           const moveDownBtn = document.createElement('button');
+           moveDownBtn.className = 'branch-move-btn';
+           moveDownBtn.textContent = 'v';
+           moveDownBtn.title = 'Move down';
+           moveDownBtn.onclick = () => moveEntryDown(entry);
+           const removeBtn = document.createElement('button');
+           removeBtn.className = 'branch-remove';
+           removeBtn.textContent = 'Remove';
+           removeBtn.onclick = () => entry.remove();
+           entry.appendChild(pathInput);
+           entry.appendChild(pathBtn);
+           entry.appendChild(modeSelect);
+           entry.appendChild(minfreespaceInput);
+           entry.appendChild(moveUpBtn);
+           entry.appendChild(moveDownBtn);
+           entry.appendChild(removeBtn);
+           container.appendChild(entry);
+       }
+       let draggedEntry = null;
+       function handleDragStart(e) {
+           draggedEntry = this;
+           this.classList.add('dragging');
+           e.dataTransfer.effectAllowed = 'move';
+           e.dataTransfer.setData('text/plain', this.id);
+       }
+       function handleDragEnd(e) {
+           this.classList.remove('dragging');
+           document.querySelectorAll('.branch-entry').forEach(entry => {
+               entry.classList.remove('drag-over');
+           });
+           draggedEntry = null;
+       }
+       function handleDragOver(e) {
+           e.preventDefault();
+           e.dataTransfer.dropEffect = 'move';
+           if (this !== draggedEntry) {
+               this.classList.add('drag-over');
+           }
+       }
+       function handleDragLeave(e) {
+           this.classList.remove('drag-over');
+       }
+       function handleDrop(e) {
+           e.preventDefault();
+           this.classList.remove('drag-over');
+           if (this !== draggedEntry) {
+               const container = document.getElementById('branches-list');
+               const allEntries = Array.from(container.querySelectorAll('.branch-entry'));
+               const draggedIndex = allEntries.indexOf(draggedEntry);
+               const targetIndex = allEntries.indexOf(this);
+               if (draggedIndex < targetIndex) {
+                   container.insertBefore(draggedEntry, this.nextSibling);
+               } else {
+                   container.insertBefore(draggedEntry, this);
+               }
+           }
+       }
+       function moveEntryUp(entry) {
+           const prev = entry.previousElementSibling;
+           if (prev) {
+               entry.parentNode.insertBefore(prev, entry);
+           }
+       }
+       function moveEntryDown(entry) {
+           const next = entry.nextElementSibling;
+           if (next) {
+               entry.parentNode.insertBefore(next, entry);
+           }
+       }
        function openPathModal(targetInput) {
            pendingPathInput = targetInput;
            const modal = document.getElementById('pathModal');
