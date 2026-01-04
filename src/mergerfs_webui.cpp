@@ -280,8 +280,8 @@ mergerfs::webui::main(const int   argc_,
   port = 8000;
 
   http_server.Get("/",::_get_root);
-  http_server.Get("/mounts/mergerfs",::_get_mounts_mergerfs);
   http_server.Get("/mounts",::_get_mounts);
+  http_server.Get("/mounts/mergerfs",::_get_mounts_mergerfs);
   http_server.Get("/kvs",::_get_kvs);
   http_server.Get("/kvs/:key",::_get_kv);
   http_server.Post("/kvs",::_post_kvs);
