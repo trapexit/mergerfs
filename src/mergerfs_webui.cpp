@@ -362,9 +362,9 @@ _post_kvs_key(const httplib::Request &req_,
         }
       else
         {
+          res_.status = 400;
           j["result"] = "error";
           j["error"] = ::_generate_error(mount,key,val,rv);
-          res_.status = 400;
         }
 
       res_.set_content(j.dump(),
