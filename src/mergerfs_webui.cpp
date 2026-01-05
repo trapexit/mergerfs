@@ -407,7 +407,7 @@ mergerfs::webui::main(const int   argc_,
     ->description("")
     ->default_val("0.0.0.0");
   app.add_option("--port",port)
-    ->description("")
+    ->description("TCP port to use")
     ->default_val(8080);
 
   try
