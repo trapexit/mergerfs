@@ -300,6 +300,8 @@ _generate_error(const fs::path    &mount_,
 {
   json rv;
 
+  rv = json::object();
+
   rv["mount"] = mount_.string();
   rv["key"] = key_;
   rv["value"] = val_;
