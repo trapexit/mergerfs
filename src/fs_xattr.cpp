@@ -45,16 +45,9 @@ fs::xattr::list(const int     fd_,
 
   attrs_->resize(4096);
 
-
-  while(rv == -ERANGE)
+  while(true)
     {
-      rv = fs::flistxattr(fd_,NULL,0);
-      if(rv <= 0)
-        return rv;
-
-      attrs_->resize(rv);
-
-      rv = fs::flistxattr(fd_,&(*attrs_)[0],rv);
+      rv = fs::flistxattr(fd_,attrs_->data(),attrs_->size());
     }
 
   return rv;
