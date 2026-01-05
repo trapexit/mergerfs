@@ -153,7 +153,7 @@ fs::xattr::get(const int     fd_,
 
   while(true)
     {
-      rv = fs::fgetxattr(fd_,attr_,&(*val_)[0],val_->size());
+      rv = fs::fgetxattr(fd_,attr_,val_->data(),val_->size());
       if(rv >= 0)
         return rv;
       if(rv != -ERANGE)
@@ -175,15 +175,12 @@ fs::xattr::get(const string &path_,
   ssize_t rv;
 
   rv = -ERANGE;
-  while(rv == -ERANGE)
+  val_->resize(64);
+
+  while(true)
     {
-      rv = fs::lgetxattr(path_,attr_,NULL,0);
-      if(rv <= 0)
-        return rv;
+      rv = fs::lgetxattr(path_,attr_,val_->data(),val_->size());
 
-      val_->resize(rv);
-
-      rv = fs::lgetxattr(path_,attr_,&(*val_)[0],rv);
     }
 
   return rv;
