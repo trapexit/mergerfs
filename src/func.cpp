@@ -60,9 +60,12 @@ Func::Base::Create::to_string(void) const
 int
 Func::Base::Search::from_string(const std::string_view policyname_)
 {
-  policy = Policies::Search::find(policyname_);
-  if(!policy)
+  auto new_policy = Policies::Search::find(policyname_);
+
+  if(!new_policy)
     return -EINVAL;
+
+  policy = new_policy;
 
   return 0;
 }
