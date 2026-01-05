@@ -183,53 +183,53 @@
       cursor: pointer;
       margin-right: 5px;
       }
-       .path-btn:hover {
-       background-color: #1976d2;
-       }
-       .branch-move-btn {
-       background-color: #424242;
-       color: white;
-       border: none;
-       cursor: pointer;
-       margin-right: 3px;
-       width: 28px;
-       height: 28px;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       font-size: 16px;
-       font-weight: bold;
-       }
-       .branch-move-btn:hover {
-       background-color: #616161;
-       }
-       .branch-move-btn:disabled {
-       opacity: 0.3;
-       cursor: not-allowed;
-       }
-       .branch-entry {
-       display: flex;
-       align-items: center;
-       padding: 8px;
-       margin: 5px 0;
-       background-color: #2d2d2d;
-       border-radius: 4px;
-       cursor: grab;
-       transition: background-color 0.2s, box-shadow 0.2s;
-       }
-       .branch-entry:hover {
-       background-color: #3d3d3d;
-       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-       }
-       .branch-entry.dragging {
-       opacity: 0.5;
-       cursor: grabbing;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-       }
-       .branch-entry.drag-over {
-       border-top: 2px solid #1565c0;
-       }
-       .mount-list-item {
+      .path-btn:hover {
+      background-color: #1976d2;
+      }
+      .branch-move-btn {
+      background-color: #424242;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-right: 3px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      }
+      .branch-move-btn:hover {
+      background-color: #616161;
+      }
+      .branch-move-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      }
+      .branch-entry {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      margin: 5px 0;
+      background-color: #2d2d2d;
+      border-radius: 4px;
+      cursor: grab;
+      transition: background-color 0.2s, box-shadow 0.2s;
+      }
+      .branch-entry:hover {
+      background-color: #3d3d3d;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+      .branch-entry.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
+      .branch-entry.drag-over {
+      border-top: 2px solid #1565c0;
+      }
+      .mount-list-item {
       padding: 10px;
       cursor: pointer;
       border-bottom: 1px solid #444;
@@ -240,6 +240,28 @@
       }
       h3 {
       color: #e0e0e0;
+      }
+      .toast {
+      display: none;
+      position: fixed;
+      bottom: 50%;
+      right: 50%;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 4px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 2s;
+      }
+      .toast.show_success {
+      display: block;
+      background-color: #2e7d32;
+      opacity: 1;
+      }
+      .toast.show_failure {
+      display: block;
+      background-color: red;
+      opacity: 1;
       }
     </style>
   </head>
@@ -273,6 +295,7 @@
         <div id="mount-list"></div>
       </div>
     </div>
+    <div id="toast" class="toast"></div>
     <script>
       let g_mounts = [];
       function openTab(evt, tabName) {
@@ -380,29 +403,31 @@
               input.type = 'text';
               input.value = v;
               input.style.width = '100%';
-               input.onkeydown = function(e) {
-                   if (e.key === 'Enter') {
-                       const key = encodeURIComponent(k)
-                       const mount_uri = encodeURIComponent(mount)
-                       const postUrl = `/kvs/${key}?mount=${mount}`
-                       fetch(postUrl, {
-                           method: 'POST',
-                           headers: {'Content-Type': 'application/json'},
-                           body: JSON.stringify(input.value)
-                       }).then(response => {
-                           if(!response.ok) {
-                               response.json().then(body => {
-                                   msg = `HTTP Status: ${response.status}\n`
-                                   msg += `mount: ${body["error"]["mount"]}\n`
-                                   msg += `key: ${body["error"]["key"]}\n`
-                                   msg += `value: ${body["error"]["value"]}\n`
-                                   msg += `msg: ${body["error"]["msg"]}`
-                                   alert(msg)
-                               });
-                           }
-                       });
-                   }
-               };
+              input.onkeydown = function(e) {
+                  if (e.key === 'Enter') {
+                      const key = encodeURIComponent(k)
+                      const mount_uri = encodeURIComponent(mount)
+                      const postUrl = `/kvs/${key}?mount=${mount}`
+                      fetch(postUrl, {
+                          method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify(input.value)
+                      }).then(response => {
+                          if(response.ok) {
+                              msg = `Success: ${key}=${input.value}`
+                              showToast(msg,true);
+                          } else {
+                              response.json().then(body => {
+                                  msg = `msg: ${body["error"]["msg"]}<br>`
+                                  msg += `mount: ${body["error"]["mount"]}<br>`
+                                  msg += `key: ${body["error"]["key"]}<br>`
+                                  msg += `value: ${body["error"]["value"]}`
+                                  showToast(msg,false);
+                              });
+                          }
+                      });
+                  }
+              };
               valueCell.appendChild(input);
               row.appendChild(keyCell);
               row.appendChild(valueCell);
@@ -441,186 +466,201 @@
       }
       let branchEntryCounter = 0;
       let pendingPathInput = null;
-       function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
-           const container = document.getElementById('branches-list');
-           const entry = document.createElement('div');
-           entry.className = 'branch-entry';
-           entry.draggable = true;
-           entry.id = 'branch-entry-' + branchEntryCounter++;
-           entry.addEventListener('dragstart', handleDragStart);
-           entry.addEventListener('dragend', handleDragEnd);
-           entry.addEventListener('dragover', handleDragOver);
-           entry.addEventListener('dragleave', handleDragLeave);
-           entry.addEventListener('drop', handleDrop);
-           const pathInput = document.createElement('input');
-           pathInput.type = 'text';
-           pathInput.className = 'branch-path';
-           pathInput.placeholder = 'path';
-           pathInput.value = path;
-           const pathBtn = document.createElement('button');
-           pathBtn.className = 'path-btn';
-           pathBtn.textContent = 'Path';
-           pathBtn.onclick = () => openPathModal(pathInput);
-           const modeSelect = document.createElement('select');
-           modeSelect.className = 'branch-mode';
-           ['RW', 'NC', 'RO'].forEach(m => {
-               const opt = document.createElement('option');
-               opt.value = m;
-               opt.textContent = m;
-               if (m === mode) opt.selected = true;
-               modeSelect.appendChild(opt);
-           });
-           const minfreespaceInput = document.createElement('input');
-           minfreespaceInput.type = 'text';
-           minfreespaceInput.className = 'branch-minfreespace';
-           minfreespaceInput.placeholder = 'minfreespace';
-           minfreespaceInput.value = minfreespace;
-            const moveUpBtn = document.createElement('button');
-            moveUpBtn.className = 'branch-move-btn branch-move-up';
-            moveUpBtn.innerHTML = '&#9650;';
-            moveUpBtn.title = 'Move up';
-            moveUpBtn.onclick = () => moveEntryUp(entry);
-            const moveDownBtn = document.createElement('button');
-            moveDownBtn.className = 'branch-move-btn branch-move-down';
-            moveDownBtn.innerHTML = '&#9660;';
-            moveDownBtn.title = 'Move down';
-            moveDownBtn.onclick = () => moveEntryDown(entry);
-           const removeBtn = document.createElement('button');
-           removeBtn.className = 'branch-remove';
-           removeBtn.textContent = 'Remove';
-           removeBtn.onclick = () => entry.remove();
-           entry.appendChild(pathInput);
-           entry.appendChild(pathBtn);
-           entry.appendChild(modeSelect);
-           entry.appendChild(minfreespaceInput);
-           entry.appendChild(moveUpBtn);
-           entry.appendChild(moveDownBtn);
-           entry.appendChild(removeBtn);
-           container.appendChild(entry);
-       }
-       let draggedEntry = null;
-       function handleDragStart(e) {
-           draggedEntry = this;
-           this.classList.add('dragging');
-           e.dataTransfer.effectAllowed = 'move';
-           e.dataTransfer.setData('text/plain', this.id);
-       }
-       function handleDragEnd(e) {
-           this.classList.remove('dragging');
-           document.querySelectorAll('.branch-entry').forEach(entry => {
-               entry.classList.remove('drag-over');
-           });
-           draggedEntry = null;
-       }
-       function handleDragOver(e) {
-           e.preventDefault();
-           e.dataTransfer.dropEffect = 'move';
-           if (this !== draggedEntry) {
-               this.classList.add('drag-over');
-           }
-       }
-       function handleDragLeave(e) {
-           this.classList.remove('drag-over');
-       }
-       function handleDrop(e) {
-           e.preventDefault();
-           this.classList.remove('drag-over');
-           if (this !== draggedEntry) {
-               const container = document.getElementById('branches-list');
-               const allEntries = Array.from(container.querySelectorAll('.branch-entry'));
-               const draggedIndex = allEntries.indexOf(draggedEntry);
-               const targetIndex = allEntries.indexOf(this);
-               if (draggedIndex < targetIndex) {
-                   container.insertBefore(draggedEntry, this.nextSibling);
-               } else {
-                   container.insertBefore(draggedEntry, this);
-               }
-           }
-       }
-        function moveEntryUp(entry) {
-            const prev = entry.previousElementSibling;
-            if (prev) {
-                entry.parentNode.insertBefore(entry, prev);
-            }
-        }
-       function moveEntryDown(entry) {
-           const next = entry.nextElementSibling;
-           if (next) {
-               entry.parentNode.insertBefore(next, entry);
-           }
-       }
-       function openPathModal(targetInput) {
-           pendingPathInput = targetInput;
-           const modal = document.getElementById('pathModal');
-           const mountList = document.getElementById('mount-list');
-           mountList.innerHTML = '';
-           fetch('/mounts')
-               .then(r => r.json())
-               .then(mounts => {
-                   mounts.forEach(m => {
-                       const div = document.createElement('div');
-                       div.className = 'mount-list-item';
-                       div.innerHTML = '<span style="color: #888;">[' + m.type + ']</span> ' + m.path;
-                       div.onclick = () => {
-                           if (pendingPathInput) {
-                               pendingPathInput.value = m.path;
-                           }
-                           closePathModal();
-                       };
-                       mountList.appendChild(div);
-                   });
-               })
-               .catch(err => {
-                   console.error('Error loading mounts:', err);
-                   mountList.innerHTML = '<div style="padding: 10px; color: #ff6b6b;">Error loading mounts</div>';
-               });
-           modal.style.display = 'block';
-       }
-        function closePathModal() {
-        document.getElementById('pathModal').style.display = 'none';
-        pendingPathInput = null;
-        }
-        function submitBranches() {
-        const mount = document.getElementById('mount-select-branches').value;
-        const entries = document.querySelectorAll('.branch-entry');
-        const branches = [];
-        entries.forEach(entry => {
-        const pathInput = entry.querySelector('.branch-path');
-        const modeSelect = entry.querySelector('.branch-mode');
-        const minfreespaceInput = entry.querySelector('.branch-minfreespace');
-        if (pathInput && pathInput.value.trim()) {
-        let branchStr = pathInput.value.trim();
-        if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
-        branchStr += '=' + modeSelect.value;
-        } else {
-        branchStr += '=RW';
-        }
-        if (minfreespaceInput && minfreespaceInput.value.trim()) {
-        branchStr += ',' + minfreespaceInput.value.trim();
-        }
-        branches.push(branchStr);
-        }
-        });
-        const branchesStr = branches.join(':');
-        fetch(`/kvs/branches?mount=${encodeURIComponent(mount)}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(branchesStr)
-        }).then(response => {
-        if (!response.ok) {
-        response.text().then(body => {
-        alert('Status: ' + response.status + '\nBody: ' + body);
-        });
-        }
-        });
-        }
-        window.onclick = function(event) {
-        const modal = document.getElementById('pathModal');
-        if (event.target === modal) {
-        closePathModal();
-        }
-        }
-        window.onload = () => { loadMounts(); };
-</script>
-</body>
+      function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+          const container = document.getElementById('branches-list');
+          const entry = document.createElement('div');
+          entry.className = 'branch-entry';
+          entry.draggable = true;
+          entry.id = 'branch-entry-' + branchEntryCounter++;
+          entry.addEventListener('dragstart', handleDragStart);
+          entry.addEventListener('dragend', handleDragEnd);
+          entry.addEventListener('dragover', handleDragOver);
+          entry.addEventListener('dragleave', handleDragLeave);
+          entry.addEventListener('drop', handleDrop);
+          const pathInput = document.createElement('input');
+          pathInput.type = 'text';
+          pathInput.className = 'branch-path';
+          pathInput.placeholder = 'path';
+          pathInput.value = path;
+          const pathBtn = document.createElement('button');
+          pathBtn.className = 'path-btn';
+          pathBtn.textContent = 'Path';
+          pathBtn.onclick = () => openPathModal(pathInput);
+          const modeSelect = document.createElement('select');
+          modeSelect.className = 'branch-mode';
+          ['RW', 'NC', 'RO'].forEach(m => {
+              const opt = document.createElement('option');
+              opt.value = m;
+              opt.textContent = m;
+              if (m === mode) opt.selected = true;
+              modeSelect.appendChild(opt);
+          });
+          const minfreespaceInput = document.createElement('input');
+          minfreespaceInput.type = 'text';
+          minfreespaceInput.className = 'branch-minfreespace';
+          minfreespaceInput.placeholder = 'minfreespace';
+          minfreespaceInput.value = minfreespace;
+          const moveUpBtn = document.createElement('button');
+          moveUpBtn.className = 'branch-move-btn branch-move-up';
+          moveUpBtn.innerHTML = '&#9650;';
+          moveUpBtn.title = 'Move up';
+          moveUpBtn.onclick = () => moveEntryUp(entry);
+          const moveDownBtn = document.createElement('button');
+          moveDownBtn.className = 'branch-move-btn branch-move-down';
+          moveDownBtn.innerHTML = '&#9660;';
+          moveDownBtn.title = 'Move down';
+          moveDownBtn.onclick = () => moveEntryDown(entry);
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'branch-remove';
+          removeBtn.textContent = 'Remove';
+          removeBtn.onclick = () => entry.remove();
+          entry.appendChild(pathInput);
+          entry.appendChild(pathBtn);
+          entry.appendChild(modeSelect);
+          entry.appendChild(minfreespaceInput);
+          entry.appendChild(moveUpBtn);
+          entry.appendChild(moveDownBtn);
+          entry.appendChild(removeBtn);
+          container.appendChild(entry);
+      }
+      let draggedEntry = null;
+      function handleDragStart(e) {
+          draggedEntry = this;
+          this.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', this.id);
+      }
+      function handleDragEnd(e) {
+          this.classList.remove('dragging');
+          document.querySelectorAll('.branch-entry').forEach(entry => {
+              entry.classList.remove('drag-over');
+          });
+          draggedEntry = null;
+      }
+      function handleDragOver(e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          if (this !== draggedEntry) {
+              this.classList.add('drag-over');
+          }
+      }
+      function handleDragLeave(e) {
+          this.classList.remove('drag-over');
+      }
+      function handleDrop(e) {
+          e.preventDefault();
+          this.classList.remove('drag-over');
+          if (this !== draggedEntry) {
+              const container = document.getElementById('branches-list');
+              const allEntries = Array.from(container.querySelectorAll('.branch-entry'));
+              const draggedIndex = allEntries.indexOf(draggedEntry);
+              const targetIndex = allEntries.indexOf(this);
+              if (draggedIndex < targetIndex) {
+                  container.insertBefore(draggedEntry, this.nextSibling);
+              } else {
+                  container.insertBefore(draggedEntry, this);
+              }
+          }
+      }
+      function moveEntryUp(entry) {
+          const prev = entry.previousElementSibling;
+          if (prev) {
+              entry.parentNode.insertBefore(entry, prev);
+          }
+      }
+      function moveEntryDown(entry) {
+          const next = entry.nextElementSibling;
+          if (next) {
+              entry.parentNode.insertBefore(next, entry);
+          }
+      }
+      function openPathModal(targetInput) {
+          pendingPathInput = targetInput;
+          const modal = document.getElementById('pathModal');
+          const mountList = document.getElementById('mount-list');
+          mountList.innerHTML = '';
+          fetch('/mounts')
+              .then(r => r.json())
+              .then(mounts => {
+                  mounts.forEach(m => {
+                      const div = document.createElement('div');
+                      div.className = 'mount-list-item';
+                      div.innerHTML = '<span style="color: #888;">[' + m.type + ']</span> ' + m.path;
+                      div.onclick = () => {
+                          if (pendingPathInput) {
+                              pendingPathInput.value = m.path;
+                          }
+                          closePathModal();
+                      };
+                      mountList.appendChild(div);
+                  });
+              })
+              .catch(err => {
+                  console.error('Error loading mounts:', err);
+                  mountList.innerHTML = '<div style="padding: 10px; color: #ff6b6b;">Error loading mounts</div>';
+              });
+          modal.style.display = 'block';
+      }
+      function closePathModal() {
+          document.getElementById('pathModal').style.display = 'none';
+          pendingPathInput = null;
+      }
+      function submitBranches() {
+          const mount = document.getElementById('mount-select-branches').value;
+          const entries = document.querySelectorAll('.branch-entry');
+          const branches = [];
+          entries.forEach(entry => {
+              const pathInput = entry.querySelector('.branch-path');
+              const modeSelect = entry.querySelector('.branch-mode');
+              const minfreespaceInput = entry.querySelector('.branch-minfreespace');
+              if (pathInput && pathInput.value.trim()) {
+                  let branchStr = pathInput.value.trim();
+                  if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
+                      branchStr += '=' + modeSelect.value;
+                  } else {
+                      branchStr += '=RW';
+                  }
+                  if (minfreespaceInput && minfreespaceInput.value.trim()) {
+                      branchStr += ',' + minfreespaceInput.value.trim();
+                  }
+                  branches.push(branchStr);
+              }
+          });
+          const branchesStr = branches.join(':');
+          fetch(`/kvs/branches?mount=${encodeURIComponent(mount)}`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(branchesStr)
+          }).then(response => {
+              if (!response.ok) {
+                  response.text().then(body => {
+                      alert('Status: ' + response.status + '\nBody: ' + body);
+                  });
+              }
+          });
+      }
+
+      function showToast(msg,success) {
+          const toast = document.getElementById('toast');
+          toast.innerHTML = msg;
+          if(success) {
+              toast.classList.remove('show_failure');
+              toast.classList.add('show_success');
+              setTimeout(() => toast.classList.remove('show_success'), 3000);
+          } else {
+              toast.classList.remove('show_success');
+              toast.classList.add('show_failure')
+              setTimeout(() => toast.classList.remove('show_failure'), 5000);
+          }
+      }
+      
+      window.onclick = function(event) {
+          const modal = document.getElementById('pathModal');
+          if (event.target === modal) {
+              closePathModal();
+          }
+      }
+      window.onload = () => { loadMounts(); };
+      </script>
+  </body>
 </html>
