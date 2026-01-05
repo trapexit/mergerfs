@@ -48,6 +48,14 @@ fs::xattr::list(const int     fd_,
   while(true)
     {
       rv = fs::flistxattr(fd_,attrs_->data(),attrs_->size());
+      if(rv >= 0)
+        return rv;
+      if(rv != -ERANGE)
+        return rv;
+      if(attrs_->size() > 65536)
+        return -E2BIG;
+
+      attrs_->resize(attrs_->size() * 1.2);
     }
 
   return rv;
