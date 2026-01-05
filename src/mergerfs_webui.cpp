@@ -306,7 +306,13 @@ _post_kvs_key(const httplib::Request &req_,
   try
     {
       json j;
-      std::string mount;
+      fs::path mount;
+      std::string key;
+      std::string val;
+
+      key = req_.path_params.at("key");
+      mount = req_.get_param_value("mount");
+
 
       j     = json::parse(req_.body);
       mount = req_.get_param_value("mount");
