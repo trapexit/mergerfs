@@ -180,7 +180,6 @@ fs::xattr::get(const string &path_,
 {
   ssize_t rv;
 
-  rv = -ERANGE;
   val_->resize(64);
 
   while(true)
