@@ -353,7 +353,7 @@ _post_kvs_key(const httplib::Request &req_,
       mount = req_.get_param_value("mount");
 
       fmt::print("j: {}\nkey: {}\nval: {}\nmount: {}\n",
-                 j.string(),
+                 (std::string)j,
                  key,
                  val,
                  mount.string());
