@@ -22,6 +22,9 @@
 int
 Func::Base::Action::from_string(const std::string_view policyname_)
 {
+  Policy::Action new_policy;
+
+
   policy = Policies::Action::find(policyname_);
   if(!policy)
     return -EINVAL;
