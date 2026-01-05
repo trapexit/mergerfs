@@ -352,6 +352,13 @@ _post_kvs_key(const httplib::Request &req_,
       val = j;
       mount = req_.get_param_value("mount");
 
+
+      res_.set_content("",
+                       "application/json");
+
+      return;
+
+
       rv = mergerfs::api::set_kv(mount,key,val);
 
       j = json::object();
