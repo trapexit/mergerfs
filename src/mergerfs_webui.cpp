@@ -298,7 +298,8 @@ _post_kvs(const httplib::Request &req_,
   if(not req_.has_param("mount"))
     {
       res_.status = 400;
-      res_.set_content("mount param not set","text/plain");
+      res_.set_content("mount param not set",
+                       "text/plain");
       return;
     }
 
