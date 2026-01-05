@@ -404,7 +404,7 @@ mergerfs::webui::main(const int   argc_,
   app.name("USAGE: mergerfs.webui");
 
   app.add_option("--host",host)
-    ->description("")
+    ->description("Interface to bind to")
     ->default_val("0.0.0.0");
   app.add_option("--port",port)
     ->description("TCP port to use")
