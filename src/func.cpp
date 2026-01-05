@@ -41,9 +41,12 @@ Func::Base::Action::to_string(void) const
 int
 Func::Base::Create::from_string(const std::string_view policyname_)
 {
-  policy = Policies::Create::find(policyname_);
-  if(!policy)
+  auto new_policy = Policies::Create::find(policyname_);
+
+  if(!new_policy)
     return -EINVAL;
+
+  policy = new_policy;
 
   return 0;
 }
