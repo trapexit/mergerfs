@@ -36,8 +36,6 @@
 
 #define TOOBIG_SIZE 65536
 
-using std::istringstream;
-
 
 int
 fs::xattr::list(const int     fd_,
