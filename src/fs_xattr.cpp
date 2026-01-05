@@ -149,6 +149,7 @@ fs::xattr::get(const int     fd_,
   ssize_t rv;
 
   rv = -ERANGE;
+  val_->resize(64);
   while(rv == -ERANGE)
     {
       rv = fs::fgetxattr(fd_,attr_,NULL,0);
