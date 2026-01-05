@@ -406,6 +406,15 @@ mergerfs::webui::main(const int   argc_,
   app.add_option("--host",host);
   app.add_option("--port",port);
 
+  try
+    {
+      app.parse(argc_,argv_);
+    }
+  catch(const CLI::ParseError &e)
+    {
+      return app.exit(e);
+    }
+
 
   httplib::Server http_server;
 
