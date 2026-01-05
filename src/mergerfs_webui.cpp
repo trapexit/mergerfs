@@ -306,10 +306,12 @@ _generate_error(const fs::path    &mount_,
   switch(err_)
     {
     case -EROFS:
-      rv["message"] = fmt::format("key '{}' is readonly",key_);
+      rv["message"] = fmt::format("'{}' is readonly",key_);
       break;
     case -EINVAL:
-      rv["message"] = "";
+      rv["message"] = fmt::format("value '{}' is not valid for '{}'",
+                                  val_,
+                                  key_);
       break;
 
 
