@@ -22,11 +22,9 @@
 int
 Func::Base::Action::from_string(const std::string_view policyname_)
 {
-  Policy::Action new_policy;
+  auto new_policy = Policies::Action::find(policyname_);
 
-
-  policy = Policies::Action::find(policyname_);
-  if(!policy)
+  if(!new_policy)
     return -EINVAL;
 
   return 0;
