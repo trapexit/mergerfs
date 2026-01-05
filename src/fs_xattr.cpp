@@ -34,8 +34,10 @@
 #include <string>
 #include <vector>
 
+#define TOOBIG_SIZE 65536
 
 using std::istringstream;
+
 
 int
 fs::xattr::list(const int     fd_,
@@ -72,6 +74,11 @@ fs::xattr::list(const string &path_,
   while(true)
     {
       rv = fs::llistxattr(path_,attrs_->data(),attrs_->size());
+      if(rv >= 0)
+        return rv;
+      if(rv != -ERANGE)
+        return rv;
+      if(attrs_->size() > 65536)
     }
 
   return rv;
