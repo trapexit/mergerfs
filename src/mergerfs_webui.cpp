@@ -367,6 +367,7 @@ _post_kvs_key(const httplib::Request &req_,
           j["error"] = ::_generate_error(mount,key,val,rv);
         }
 
+      fmt::print(j.dump());
       res_.set_content(j.dump(),
                        "application/json");
 
