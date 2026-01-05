@@ -8,6 +8,7 @@
 #include "fmt/core.h"
 #include "httplib.h"
 #include "json.hpp"
+#include "CLI11.hpp"
 
 #include <unistd.h>
 
