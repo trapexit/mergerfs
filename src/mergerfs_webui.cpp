@@ -263,8 +263,8 @@ _get_kvs(const httplib::Request &req_,
 
 static
 void
-_get_kv(const httplib::Request &req_,
-        httplib::Response      &res_)
+_get_kvs_key(const httplib::Request &req_,
+             httplib::Response      &res_)
 {
   if(not req_.has_param("mount"))
     {
@@ -292,8 +292,8 @@ _get_kv(const httplib::Request &req_,
 
 static
 void
-_post_kvs(const httplib::Request &req_,
-          httplib::Response      &res_)
+_post_kvs_key(const httplib::Request &req_,
+              httplib::Response      &res_)
 {
   if(not req_.has_param("mount"))
     {
