@@ -305,7 +305,7 @@ _generate_error(const fs::path    &mount_,
   switch(err_)
     {
     case -EROFS:
-      rv[
+      rv["errorstr"]
       break;
     case -EINVAL:
       break;
