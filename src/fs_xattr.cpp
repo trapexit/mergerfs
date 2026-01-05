@@ -153,7 +153,7 @@ fs::xattr::get(const int     fd_,
 
   do
     {
-
+      rv = fs::fgetxattr(fd_,attr_,&(*val_)[0],val_->size());
 
     }
   while(rv == -ERANGE);
@@ -166,7 +166,7 @@ fs::xattr::get(const int     fd_,
 
       val_->resize(rv);
 
-      rv = fs::fgetxattr(fd_,attr_,&(*val_)[0],rv);
+
     }
 
   return rv;
