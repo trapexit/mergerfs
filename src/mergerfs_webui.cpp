@@ -291,6 +291,29 @@ _get_kvs_key(const httplib::Request &req_,
 }
 
 static
+json
+_generate_error(const fs::path    &mount_,
+                const std::string &key_,
+                const std::string &val_,
+                const int          err_)
+{
+  json rv;
+
+  rv["mount"] = mount_.string();
+  rv["key"] = key_;
+  rv["value"] = val_;
+  switch(err_)
+    {
+    case -EROFS:
+      rv[
+      break;
+    case -EINVAL:
+      break;
+
+
+}
+
+static
 void
 _post_kvs_key(const httplib::Request &req_,
               httplib::Response      &res_)
