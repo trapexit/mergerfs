@@ -76,7 +76,10 @@ fs::xattr::list(const string &path_,
     {
       rv = fs::llistxattr(path_,attrs_->data(),attrs_->size());
       if(rv >= 0)
-        return rv;
+        {
+          attrs_->resize(rv);
+          return rv;
+        }
       if(rv != -ERANGE)
         return rv;
       if(attrs_->size() > TOOBIG_SIZE)
