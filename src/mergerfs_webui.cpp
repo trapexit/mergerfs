@@ -358,13 +358,13 @@ _post_kvs_key(const httplib::Request &req_,
       if(rv >= 0)
         {
           res_.status = 200;
-          j["result"] = "success";
+          //          j["result"] = "success";
         }
       else
         {
           res_.status = 400;
-          j["result"] = "error";
-          j["error"] = ::_generate_error(mount,key,val,rv);
+          //          j["result"] = "error";
+          //          j["error"] = ::_generate_error(mount,key,val,rv);
         }
 
       fmt::print(j.dump());
