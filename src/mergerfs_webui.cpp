@@ -368,7 +368,7 @@ _post_kvs_key(const httplib::Request &req_,
         }
 
       fmt::print(j.dump());
-      res_.set_content(j.dump(),
+      res_.set_content("",
                        "application/json");
 
     }
