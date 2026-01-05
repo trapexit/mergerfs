@@ -364,7 +364,7 @@ _post_kvs_key(const httplib::Request &req_,
         {
           res_.status = 400;
           j["result"] = "error";
-          j["error"] = ::_generate_error(mount,key,val,rv);
+          //          j["error"] = ::_generate_error(mount,key,val,rv);
         }
 
       fmt::print(j.dump());
