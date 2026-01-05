@@ -352,6 +352,8 @@ _post_kvs_key(const httplib::Request &req_,
       res_.set_content("",
                        "application/json");
 
+      return;
+
 
       j = json::parse(req_.body);
       key = req_.path_params.at("key");
