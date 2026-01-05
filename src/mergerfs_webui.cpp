@@ -355,9 +355,14 @@ _post_kvs_key(const httplib::Request &req_,
       rv = mergerfs::api::set_kv(mount,key,val);
 
       j = json::object();
-      res_.status = 200;
-      if(rv < 0)
+      if(rv >= 0)
         {
+          res_.status = 200;
+          j["result"] = "success";
+        }
+      else
+        {
+          j["result"] = "error";
           j["error"] = ::_generate_error(mount,key,val,rv);
           res_.status = 400;
         }
