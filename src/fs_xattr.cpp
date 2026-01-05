@@ -162,7 +162,7 @@ fs::xattr::get(const int     fd_,
       val_->resize(val_->size() * 1.2);
     }
 
-  return rv;
+  return 0;
 }
 
 int
