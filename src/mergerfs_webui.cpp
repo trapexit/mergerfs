@@ -313,8 +313,12 @@ _generate_error(const fs::path    &mount_,
                                   val_,
                                   key_);
       break;
+    default:
+      rv["message"] = strerror(-err_);
+      break;
+    }
 
-
+  return rv;
 }
 
 static
