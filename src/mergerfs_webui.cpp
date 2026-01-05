@@ -395,6 +395,15 @@ int
 mergerfs::webui::main(const int   argc_,
                       char      **argv_)
 {
+  CLI::App app;
+
+  app.description("mergerfs.webui:"
+                  " A simple webui to configure mergerfs instances");
+  app.name("USAGE: mergerfs.webui");
+
+
+
+
   httplib::Server http_server;
   std::string host;
   int port;
