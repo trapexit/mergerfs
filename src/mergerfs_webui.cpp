@@ -423,9 +423,6 @@ mergerfs::webui::main(const int   argc_,
 
   httplib::Server http_server;
 
-  host = "0.0.0.0";
-  port = 8000;
-
   http_server.Get("/",::_get_root);
   http_server.Get("/mounts",::_get_mounts);
   http_server.Get("/mounts/mergerfs",::_get_mounts_mergerfs);
