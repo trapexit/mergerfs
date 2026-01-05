@@ -319,6 +319,7 @@ _generate_error(const fs::path    &mount_,
       rv["msg"] = fmt::format("mergerfs.webui (pid {}) is running as uid {}"
                               " which appears not to have access to modify the"
                               " mount's config",
+                              ::getpid(),
                               ::getuid());
       break;
     case -ENOTCONN:
