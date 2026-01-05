@@ -390,9 +390,14 @@
                            headers: {'Content-Type': 'application/json'},
                            body: JSON.stringify(input.value)
                        }).then(response => {
-                           if (!response.ok) {
-                               response.text().then(body => {
-                                   alert('Status: ' + response.status + '\nBody: ' + body);
+                           if(!response.ok) {
+                               response.json().then(body => {
+                                   msg = `HTTP Status: ${response.status}\n`
+                                   msg += `mount: ${body["error"]["mount"]}\n`
+                                   msg += `key: ${body["error"]["key"]}\n`
+                                   msg += `value: ${body["error"]["value"]}\n`
+                                   msg += `msg: ${body["error"]["msg"]}`
+                                   alert(msg)
                                });
                            }
                        });
