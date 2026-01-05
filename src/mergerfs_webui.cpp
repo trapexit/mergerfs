@@ -5,6 +5,7 @@
 #include "mergerfs_api.hpp"
 #include "str.hpp"
 
+#include "fmt/core.h"
 #include "httplib.h"
 #include "json.hpp"
 
@@ -305,7 +306,7 @@ _generate_error(const fs::path    &mount_,
   switch(err_)
     {
     case -EROFS:
-      rv["message"] = fmt::format("",key_);
+      rv["message"] = fmt::format("key '{}' ",key_);
       break;
     case -EINVAL:
       rv["message"] = "";
