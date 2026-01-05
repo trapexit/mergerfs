@@ -348,10 +348,11 @@ _post_kvs_key(const httplib::Request &req_,
       std::string val;
 
       key = req_.path_params.at("key");
+      val = j;
       mount = req_.get_param_value("mount");
       j = json::parse(req_.body);
 
-      rv = mergerfs::api::set_kv(mount,key,(std::string)j);
+      rv = mergerfs::api::set_kv(mount,key,val);
 
       j = json::object();
       res_.status = 200;
