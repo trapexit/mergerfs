@@ -305,9 +305,10 @@ _generate_error(const fs::path    &mount_,
   switch(err_)
     {
     case -EROFS:
-      rv["errorstr"]
+      rv["message"] = fmt::format("",key_);
       break;
     case -EINVAL:
+      rv["message"] = "";
       break;
 
 
