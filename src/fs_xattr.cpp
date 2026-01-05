@@ -195,7 +195,10 @@ fs::xattr::get(const string &path_,
     {
       rv = fs::lgetxattr(path_,attr_,val_->data(),val_->size());
       if(rv >= 0)
-        return rv;
+        {
+          val_->resize(rv);
+          return rv;
+        }
       if(rv != -ERANGE)
         return rv;
       if(val_->size() > TOOBIG_SIZE)
