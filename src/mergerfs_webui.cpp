@@ -415,7 +415,6 @@ mergerfs::webui::main(const int   argc_,
       return app.exit(e);
     }
 
-
   httplib::Server http_server;
 
   host = "0.0.0.0";
