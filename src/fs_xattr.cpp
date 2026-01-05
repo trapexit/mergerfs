@@ -158,8 +158,6 @@ fs::xattr::get(const int     fd_,
         return rv;
       if(rv != -ERANGE)
         return rv;
-      if(val_->size() > 65536)
-        return -ERANGE;
 
       val_->resize(val_->size() * 1.2);
     }
