@@ -67,16 +67,11 @@ fs::xattr::list(const string &path_,
 {
   ssize_t rv;
 
-  rv = -ERANGE;
-  while(rv == -ERANGE)
+  attrs_->resize(4096);
+
+  while(true)
     {
-      rv = fs::llistxattr(path_,NULL,0);
-      if(rv <= 0)
-        return rv;
-
-      attrs_->resize(rv);
-
-      rv = fs::llistxattr(path_,&(*attrs_)[0],rv);
+      rv = fs::llistxattr(path_,attrs_->data(),attrs_->size());
     }
 
   return rv;
