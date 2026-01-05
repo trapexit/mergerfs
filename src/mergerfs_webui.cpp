@@ -321,7 +321,10 @@ _post_kvs_key(const httplib::Request &req_,
       res_.status = 200;
       if(rv < 0)
         {
-          j["error"] = strerror(-rv);
+          j["error"] = ::_generate_error_string(mount,
+                                                key,
+                                                val,
+                                                -rv);
           res_.status = 400;
         }
 
