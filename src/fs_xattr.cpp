@@ -78,7 +78,7 @@ fs::xattr::list(const string &path_,
         return rv;
       if(rv != -ERANGE)
         return rv;
-      if(attrs_->size() > 65536)
+      if(attrs_->size() > TOOBIG_SIZE)
     }
 
   return rv;
