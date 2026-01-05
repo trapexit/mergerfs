@@ -408,8 +408,6 @@ mergerfs::webui::main(const int   argc_,
 
 
   httplib::Server http_server;
-  std::string host;
-  int port;
 
   host = "0.0.0.0";
   port = 8000;
