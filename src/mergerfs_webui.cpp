@@ -374,6 +374,7 @@ _post_kvs_key(const httplib::Request &req_,
     }
   catch (const std::exception& e)
     {
+      fmt::print("{}\n",e);
       res_.status = 400;
       res_.set_content("Invalid JSON","text/plain");
     }
