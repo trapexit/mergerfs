@@ -312,11 +312,12 @@ _post_kvs_key(const httplib::Request &req_,
 
       key = req_.path_params.at("key");
       mount = req_.get_param_value("mount");
-
       j = json::parse(req_.body);
 
 
-      res_.set_content("","application/json");
+
+      res_.set_content("",
+                       "application/json");
     }
   catch (const std::exception& e)
     {
