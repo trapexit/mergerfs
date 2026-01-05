@@ -204,7 +204,6 @@
       background-color: #616161;
       }
       .branch-move-btn:disabled {
-      opacity: 0.3;
       cursor: not-allowed;
       }
       .branch-entry {
@@ -222,12 +221,11 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       }
       .branch-entry.dragging {
-      opacity: 0.5;
       cursor: grabbing;
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
       }
       .branch-entry.drag-over {
-      border-top: 2px solid #1565c0;
+      border: 2px solid #1565c0;
       }
       .mount-list-item {
       padding: 10px;
@@ -632,7 +630,11 @@
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify(branchesStr)
           }).then(response => {
-              if (!response.ok) {
+              if(response.ok) {
+                  const msg = 'branches updated'
+                  showToast(msg,true);
+                  loadMounts();
+              } else {
                   response.text().then(body => {
                       alert('Status: ' + response.status + '\nBody: ' + body);
                   });
