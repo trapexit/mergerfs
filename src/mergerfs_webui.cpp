@@ -423,12 +423,15 @@ mergerfs::webui::main(const int   argc_,
 
   httplib::Server http_server;
 
+
   http_server.Get("/",::_get_root);
   http_server.Get("/mounts",::_get_mounts);
   http_server.Get("/mounts/mergerfs",::_get_mounts_mergerfs);
   http_server.Get("/kvs",::_get_kvs);
   http_server.Get("/kvs/:key",::_get_kvs_key);
   http_server.Post("/kvs/:key",::_post_kvs_key);
+
+  fmt::print("host:port=http://{}\n",host,port);
 
   http_server.listen(host,port);
 
