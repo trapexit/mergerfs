@@ -9,6 +9,8 @@
 #include "httplib.h"
 #include "json.hpp"
 
+#include <unistd.h>
+
 
 using json = nlohmann::json;
 
