@@ -151,12 +151,17 @@ fs::xattr::get(const int     fd_,
   rv = -ERANGE;
   val_->resize(64);
 
-  do
+  while(true)
     {
       rv = fs::fgetxattr(fd_,attr_,&(*val_)[0],val_->size());
+      if(rv >= 0)
+        return rv;
+      if(rv != -ERANGE)
+        return rv;
 
+      val_->resize(val_->size() * 1.2);
     }
-  while(rv == -ERANGE);
+
 
   while(rv == -ERANGE)
     {
