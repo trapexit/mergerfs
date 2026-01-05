@@ -314,7 +314,7 @@ _post_kvs_key(const httplib::Request &req_,
       mount = req_.get_param_value("mount");
       j = json::parse(req_.body);
 
-      mergerfs::api::set_kv(mount,key,(std::string)j);
+      rv =mergerfs::api::set_kv(mount,key,(std::string)j);
 
       res_.set_content("",
                        "application/json");
