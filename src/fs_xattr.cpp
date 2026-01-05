@@ -180,7 +180,14 @@ fs::xattr::get(const string &path_,
   while(true)
     {
       rv = fs::lgetxattr(path_,attr_,val_->data(),val_->size());
+      if(rv >= 0)
+        return rv;
+      if(rv != -ERANGE)
+        return rv;
+      if(val_->size() > 65536)
+        return -E2BIG;
 
+      val_->resize(val_->size() * 1.2);
     }
 
   return rv;
