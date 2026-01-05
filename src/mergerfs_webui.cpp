@@ -406,7 +406,9 @@ mergerfs::webui::main(const int   argc_,
   app.add_option("--host",host)
     ->description("")
     ->default_val("0.0.0.0");
-  app.add_option("--port",port);
+  app.add_option("--port",port)
+    ->description("")
+    ->default_val(8080);
 
   try
     {
