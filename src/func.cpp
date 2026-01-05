@@ -27,6 +27,8 @@ Func::Base::Action::from_string(const std::string_view policyname_)
   if(!new_policy)
     return -EINVAL;
 
+  policy = new_policy;
+
   return 0;
 }
 
