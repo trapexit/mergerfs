@@ -162,18 +162,6 @@ fs::xattr::get(const int     fd_,
       val_->resize(val_->size() * 1.2);
     }
 
-
-  while(rv == -ERANGE)
-    {
-      rv = fs::fgetxattr(fd_,attr_,NULL,0);
-      if(rv <= 0)
-        return rv;
-
-      val_->resize(rv);
-
-
-    }
-
   return rv;
 }
 
