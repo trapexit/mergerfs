@@ -316,9 +316,16 @@ _post_kvs_key(const httplib::Request &req_,
       j = json::parse(req_.body);
 
       rv = mergerfs::api::set_kv(mount,key,(std::string)j);
+      if(rv < 0)
+        {
 
-      res_.set_content("",
-                       "application/json");
+        }
+      else
+        {
+          j = json::object();
+          res_.set_content(j.dump(),
+                           "application/json");
+        }
     }
   catch (const std::exception& e)
     {
