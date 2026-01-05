@@ -349,7 +349,7 @@ _post_kvs_key(const httplib::Request &req_,
 
       fmt::print("body: {}; json: {}; empty: {}\n",
                  req_.body,
-                 json::parse(req_.body),
+                 (std::string)json::parse(req_.body),
                  req_.body.empty());
 
       res_.set_content("",
