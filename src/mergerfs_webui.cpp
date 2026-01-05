@@ -305,6 +305,7 @@ _post_kvs_key(const httplib::Request &req_,
 
   try
     {
+      int rv;
       json j;
       fs::path mount;
       std::string key;
