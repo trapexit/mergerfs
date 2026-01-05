@@ -403,7 +403,7 @@ mergerfs::webui::main(const int   argc_,
                   " A simple webui to configure mergerfs instances");
   app.name("USAGE: mergerfs.webui");
 
-  app_add_option("--host",host);
+  app.add_option("--host",host);
   app.add_option("--port",port);
 
 
