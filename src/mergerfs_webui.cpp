@@ -313,18 +313,10 @@ _post_kvs_key(const httplib::Request &req_,
       key = req_.path_params.at("key");
       mount = req_.get_param_value("mount");
 
+      j = json::parse(req_.body);
 
-      j     = json::parse(req_.body);
-      mount = req_.get_param_value("mount");
 
-      for(const auto &[key,val] : j.items())
-        {
-          std::cout << "mount=" << mount << " | "
-                    << key << ": " << (std::string)val
-                    << std::endl;
-        }
-
-      res_.set_content("{}","application/json");
+      res_.set_content("","application/json");
     }
   catch (const std::exception& e)
     {
