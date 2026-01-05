@@ -313,6 +313,11 @@ _generate_error(const fs::path    &mount_,
                                   val_,
                                   key_);
       break;
+    case -ENOTCONN:
+      rv["msg"] = fmt::format("Appears the mergerfs mount is broken. "
+                              "mergerfs may have crashed.",
+                              mount_.string());
+      break;
     default:
       rv["msg"] = strerror(-err_);
       break;
