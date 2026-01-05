@@ -409,6 +409,7 @@ mergerfs::webui::main(const int   argc_,
   app.add_option("--port",port)
     ->description("TCP port to use")
     ->default_val(8080);
+  app.add_option("--password"
 
   try
     {
