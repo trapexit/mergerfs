@@ -54,7 +54,7 @@ fs::xattr::list(const int     fd_,
         return rv;
       if(rv != -ERANGE)
         return rv;
-      if(attrs_->size() > 65536)
+      if(attrs_->size() > TOOBIG_SIZE)
         return -E2BIG;
 
       attrs_->resize(attrs_->size() * 1.2);
