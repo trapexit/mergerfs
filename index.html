@@ -242,8 +242,9 @@
       .toast {
       display: none;
       position: fixed;
-      bottom: 50%;
-      right: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
       color: white;
       padding: 12px 24px;
       border-radius: 4px;
@@ -642,19 +643,22 @@
           });
       }
 
-      function showToast(msg,success) {
-          const toast = document.getElementById('toast');
-          toast.innerHTML = msg;
-          if(success) {
-              toast.classList.remove('show_failure');
-              toast.classList.add('show_success');
-              setTimeout(() => toast.classList.remove('show_success'), 3000);
-          } else {
-              toast.classList.remove('show_success');
-              toast.classList.add('show_failure')
-              setTimeout(() => toast.classList.remove('show_failure'), 5000);
-          }
-      }
+       let toastTimer = null;
+
+       function showToast(msg,success) {
+           const toast = document.getElementById('toast');
+           if (toastTimer) clearTimeout(toastTimer);
+           toast.innerHTML = msg;
+           if(success) {
+               toast.classList.remove('show_failure');
+               toast.classList.add('show_success');
+               toastTimer = setTimeout(() => toast.classList.remove('show_success'), 3000);
+           } else {
+               toast.classList.remove('show_success');
+               toast.classList.add('show_failure')
+               toastTimer = setTimeout(() => toast.classList.remove('show_failure'), 5000);
+           }
+       }
       
       window.onclick = function(event) {
           const modal = document.getElementById('pathModal');
