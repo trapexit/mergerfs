@@ -803,34 +803,52 @@
               keyCell.textContent = k;
               const valueCell = document.createElement('td');
               const input = document.createElement('input');
-              input.type = 'text';
-              input.value = v;
-              input.style.width = '100%';
-              input.onkeydown = function(e) {
-                  if (e.key === 'Enter') {
-                      const key = encodeURIComponent(k)
-                      const mount_uri = encodeURIComponent(mount)
-                      const postUrl = `/kvs/${key}?mount=${mount}`
-                      fetch(postUrl, {
-                          method: 'POST',
-                          headers: {'Content-Type': 'application/json'},
-                          body: JSON.stringify(input.value)
-                      }).then(response => {
-                          if(response.ok) {
-                              msg = `Success: ${key}=${input.value}`
-                              showToast(msg,true);
-                          } else {
-                              response.json().then(body => {
-                                  msg = `msg: ${body["error"]["msg"]}<br>`
-                                  msg += `mount: ${body["error"]["mount"]}<br>`
-                                  msg += `key: ${body["error"]["key"]}<br>`
-                                  msg += `value: ${body["error"]["value"]}`
-                                  showToast(msg,false);
-                              });
-                          }
-                      });
-                  }
-              };
+               input.type = 'text';
+               input.value = v;
+               input.style.width = '100%';
+               function submitValue(e) {
+                   if (e) {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       e.stopImmediatePropagation();
+                   }
+                   const key = encodeURIComponent(k)
+                   const mount_uri = encodeURIComponent(mount)
+                   const postUrl = `/kvs/${key}?mount=${mount}`
+                   fetch(postUrl, {
+                       method: 'POST',
+                       headers: {'Content-Type': 'application/json'},
+                       body: JSON.stringify(input.value)
+                   }).then(response => {
+                       if(response.ok) {
+                           msg = `Success: ${key}=${input.value}`
+                           showToast(msg,true);
+                       } else {
+                           response.json().then(body => {
+                               msg = `msg: ${body["error"]["msg"]}<br>`
+                               msg += `mount: ${body["error"]["mount"]}<br>`
+                               msg += `key: ${body["error"]["key"]}<br>`
+                               msg += `value: ${body["error"]["value"]}`
+                               showToast(msg,false);
+                           });
+                       }
+                   });
+                   input.blur();
+               }
+               function handleEnter(e) {
+                   if (e.key === 'Enter' || e.keyCode === 13 || e.which === 13) {
+                       submitValue(e);
+                   }
+               }
+               input.onkeydown = handleEnter;
+               input.onkeypress = handleEnter;
+               input.onkeyup = handleEnter;
+               input.addEventListener('input', function(e) {
+                   if (e.inputType === 'insertLineBreak') {
+                       submitValue(e);
+                   }
+               });
+               input.addEventListener('change', function() { submitValue(); });
               valueCell.appendChild(input);
               row.appendChild(keyCell);
               row.appendChild(valueCell);
