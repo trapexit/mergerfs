@@ -1022,10 +1022,12 @@
           const modal = document.getElementById('pathModal');
           const mountList = document.getElementById('mount-list');
           mountList.innerHTML = '';
+          const currentMount = document.getElementById('mount-select-branches').value;
           fetch('/mounts')
               .then(r => r.json())
               .then(mounts => {
                   mounts.forEach(m => {
+                      if (m.path === currentMount) return;
                       const div = document.createElement('div');
                       div.className = 'mount-list-item';
                       div.innerHTML = '<span style="color: #888;">[' + m.type + ']</span> ' + m.path;
@@ -1037,6 +1039,9 @@
                       };
                       mountList.appendChild(div);
                   });
+                  if (mountList.children.length === 0) {
+                      mountList.innerHTML = '<div style="padding: 10px; color: #888;">No other mountpoints available</div>';
+                  }
               })
               .catch(err => {
                   console.error('Error loading mounts:', err);
