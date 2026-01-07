@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head><title>mergerfs ui</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACf0lEQVQ4EY3BW0jTYRgH4N/7fv9tmkYlBBFRBCW1ESGSdeGFYZIT7Ihi6rSkoNNFUkaHmwVRiRFZBCnSAUlpohZmdiExoiBUgsSiQkQiEknISplu/+97szFjBUbPQ/D72ZPgzbENT7w/s+EF/kNZR1YmKTPvbs+zblpb3XODoA4JkZDRV9+e2nAc/1DekX0ZoEqwQMTUMQn5IOY2iW4Aq2Pu6p7TmENZ25YqaKoUMfdEzB0wlzCIEgS6/22o8xBEtwrUeffF3gr8pbg1xwfwRQPz5ON8UyGE1wS4GBBE+f0m/OmLj0SCYLrpqe7dhpg9gexcBWoATC++jxUGNwdtxDDiDF7Pmw5P2TshMmAEzZ5LLzMLAlszFDsDAIYiDju/sax/EnEYswoCylPTVzz4+XWIWPJAMuJKGH+gxPlIgG8adu5IMsbLO7JK0uvSHYgiMGJS05atFqFG98q0+jcnM0ZTEvv2rVjcsghQymb2Nu1++nH5D64XqMZVSxPd+EUEFmJEE0EZEpjy9Ve6wgtSujOIdUgTbW/Z1TlQ1Oq9pLW9VykDpQ3BiShGPCIwyX0i3h8KL3NP6QVFLYXtz/ObfZXaJFUJ6CFmRBBDACMeAaz4GsMUhKcWbnlcWvso+9aJUlun1EzrpDptpi8QkTgwi2AhDgkAAl5VetswI6vBnwtwgy2h9q53i46WrBtOB4QwSwAmxCP8QVwbBdxkfZ0ohd9vEEWIZ4lAYEBOFSGBA4jgt+CB0+cQhy0SAolhiyzDBCKxCHgPZR02cOwgkYiIDGEO9iSGVTIiLnbWArQEQh9Y23IQECLIGoE+PHB20yjm0FwcHNPaHIGhVBiIRPTBn4WjGt9/EpzPAAAAAElFTkSuQmCC">
     <style>
+      * {
+        box-sizing: border-box;
+      }
       body {
           background-color: #1a1a1a;
           color: #e0e0e0;
@@ -12,16 +16,21 @@
           overflow: hidden;
           border: 1px solid #444;
           background-color: #2d2d2d;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px;
       }
       .tab button {
           background-color: inherit;
-          float: left;
           border: none;
           outline: none;
           cursor: pointer;
-          padding: 14px 16px;
+          padding: 14px 12px;
           transition: 0.3s;
       color: #e0e0e0;
+      flex: 1;
+      min-width: 120px;
+      white-space: nowrap;
       }
       .tab button:hover {
       background-color: #444;
@@ -164,13 +173,13 @@
       background-color: #388e3c;
       }
       .submit-branches-btn {
-      background-color: #1565c0;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      cursor: pointer;
-      margin-bottom: 15px;
-      margin-left: 10px;
+          background-color: #1565c0;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          cursor: pointer;
+          margin-bottom: 15px;
+          margin-left: 0;
       }
       .submit-branches-btn:hover {
       background-color: #1976d2;
@@ -215,6 +224,9 @@
       border-radius: 4px;
       cursor: grab;
       transition: background-color 0.2s, box-shadow 0.2s;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 60px;
       }
       .branch-entry:hover {
       background-color: #3d3d3d;
@@ -262,6 +274,158 @@
       background-color: red;
       opacity: 1;
       }
+      .container {
+        padding: 6px 12px;
+      }
+      .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+      }
+      .action-buttons button {
+        flex: 1;
+        min-width: 140px;
+      }
+      .table-container {
+        overflow-x: auto;
+        width: 100%;
+      }
+      .select-wrapper {
+        margin-bottom: 15px;
+      }
+      .select-wrapper label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .select-wrapper select {
+        width: 100%;
+      }
+      .controls-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 15px;
+      }
+      @media (min-width: 769px) {
+        .select-wrapper {
+          display: inline-block;
+        }
+        .select-wrapper select {
+          width: auto;
+          min-width: 200px;
+        }
+        .action-buttons {
+          display: inline-flex;
+          gap: 10px;
+          margin-top: 20px;
+        }
+        .action-buttons button {
+          flex: none;
+          min-width: auto;
+        }
+      }
+      @media (max-width: 768px) {
+        .controls-row {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+        }
+        .action-buttons {
+          flex-direction: row;
+        }
+        .tab {
+          gap: 1px;
+        }
+        .tab button {
+          padding: 12px 8px;
+          font-size: 14px;
+        }
+        .tabcontent {
+          padding: 4px 8px;
+        }
+        .branch-entry {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+        }
+        .branch-path,
+        .branch-mode,
+        .branch-minfreespace {
+          width: 100%;
+          min-width: auto;
+          margin-bottom: 5px;
+        }
+        .path-btn {
+          width: 100%;
+          margin: 0;
+        }
+        .branch-move-btn {
+          flex: 1;
+          min-width: 44px;
+          height: 44px;
+        }
+        .branch-remove {
+          flex: 2;
+          padding: 12px;
+          min-height: 44px;
+        }
+        .add-branch-btn,
+        .submit-branches-btn {
+          padding: 12px 16px;
+          font-size: 14px;
+        }
+        input[type="text"],
+        select {
+          padding: 10px;
+          font-size: 16px;
+          min-height: 44px;
+        }
+        .modal-content {
+          width: 95%;
+          margin: 10% auto;
+          padding: 15px;
+        }
+        .toast {
+          padding: 16px 20px;
+          font-size: 14px;
+          max-width: 90%;
+        }
+      }
+      @media (max-width: 480px) {
+        .tab {
+          flex-direction: column;
+        }
+        .tab button {
+          width: 100%;
+          min-width: auto;
+          border-bottom: 1px solid #444;
+        }
+        .action-buttons button {
+          width: 100%;
+          min-width: auto;
+        }
+        .branch-move-btn {
+          font-size: 14px;
+        }
+        .branch-remove {
+          font-size: 14px;
+        }
+        th, td {
+          padding: 6px;
+          font-size: 12px;
+        }
+      }
+      @media (min-width: 1200px) {
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        .tab,
+        .tabcontent {
+          border-radius: 4px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -270,22 +434,30 @@
       <button class="tablinks" onclick="openTab(event, 'Advanced')">Advanced</button>
     </div>
     <div id="Branches" class="tabcontent" style="display: block;">
-      <div>
-        <label for="mount-select-branches">Select Mountpoint:</label>
-        <select id="mount-select-branches"></select>
+      <div class="container">
+        <div class="controls-row">
+          <div class="select-wrapper">
+            <label for="mount-select-branches">Select Mountpoint:</label>
+            <select id="mount-select-branches"></select>
+          </div>
+          <div class="action-buttons">
+            <button class="add-branch-btn" onclick="addBranchEntry()">+ Add Branch</button>
+            <button class="submit-branches-btn" onclick="submitBranches()">Submit</button>
+          </div>
+        </div>
+        <div id="branches-list"></div>
       </div>
-      <div style="margin-top: 15px;">
-        <button class="add-branch-btn" onclick="addBranchEntry()">+ Add Branch</button>
-        <button class="submit-branches-btn" onclick="submitBranches()">Submit</button>
-      </div>
-      <div id="branches-list"></div>
     </div>
     <div id="Advanced" class="tabcontent">
-      <div>
-        <label for="mount-select-advanced">Select Mountpoint:</label>
-        <select id="mount-select-advanced"></select>
+      <div class="container">
+        <div class="select-wrapper">
+          <label for="mount-select-advanced">Select Mountpoint:</label>
+          <select id="mount-select-advanced"></select>
+        </div>
+        <div class="table-container">
+          <div id="kv-list"></div>
+        </div>
       </div>
-      <div id="kv-list"></div>
     </div>
     <div id="pathModal" class="modal">
       <div class="modal-content">
