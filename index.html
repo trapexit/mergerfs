@@ -141,15 +141,96 @@
       outline: none;
       border-color: #666;
       }
-      .branch-path {
-      flex: 1;
-      min-width: 200px;
-      }
-      .branch-mode {
-      width: 80px;
-      }
-      .branch-minfreespace {
-      width: 100px;
+       .branch-minfreespace-value {
+         flex: 0 0 55px;
+         border-radius: 4px 0 0 4px;
+         min-width: 55px;
+         background-color: #333;
+         color: #e0e0e0;
+         border: 1px solid #555;
+         border-right: none;
+       }
+       .branch-minfreespace-value:focus {
+         border-color: #666;
+         border-right: none;
+       }
+       .branch-minfreespace-unit {
+         flex: 0 0 55px;
+         border: 1px solid #555;
+         border-left: none;
+         border-radius: 0 4px 4px 0;
+         padding-right: 5px;
+         background-color: #333;
+         color: #e0e0e0;
+         text-align: center;
+       }
+       .branch-minfreespace-unit:focus {
+         outline: none;
+         border: 1px solid #666;
+         border-left: none;
+       }
+       .branch-path {
+       flex: 1;
+       min-width: 200px;
+       width: 100%;
+       }
+        .branch-mode {
+        width: 80px;
+        flex-shrink: 0;
+        }
+        .branch-controls-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-left: auto;
+          flex-shrink: 0;
+          flex-wrap: wrap;
+        }
+       .branch-minfreespace-container {
+         display: flex;
+         gap: 0;
+         align-items: stretch;
+         border: none;
+         border-radius: 4px;
+         background-color: transparent;
+         padding: 0;
+         flex-shrink: 0;
+       }
+        .branches-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 8px;
+          margin-bottom: 10px;
+          background-color: #252525;
+          border: 1px solid #444;
+          border-radius: 4px;
+          font-weight: bold;
+          font-size: 13px;
+          color: #e0e0e0;
+        }
+        .header-path {
+          flex: 1;
+          min-width: 200px;
+        }
+        .header-path-btn {
+          width: 70px;
+        }
+        .header-mode {
+          width: 80px;
+          text-align: center;
+        }
+        .header-minfreespace {
+          width: 120px;
+          text-align: left;
+        }
+       .header-actions {
+         display: flex;
+         gap: 8px;
+       }
+      .header-actions div {
+        width: 28px;
+        text-align: center;
       }
       .branch-remove {
       background-color: #8b0000;
@@ -184,50 +265,158 @@
       .submit-branches-btn:hover {
       background-color: #1976d2;
       }
-      .path-btn {
-      background-color: #1565c0;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-      margin-right: 5px;
-      }
+        .path-btn {
+        background-color: #1565c0;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        margin-right: 0;
+        flex-shrink: 0;
+        }
       .path-btn:hover {
       background-color: #1976d2;
       }
-      .branch-move-btn {
-      background-color: #424242;
-      color: white;
-      border: none;
-      cursor: pointer;
-      margin-right: 3px;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      font-weight: bold;
-      }
+       .branch-move-btn {
+       background-color: #424242;
+       color: white;
+       border: none;
+       cursor: pointer;
+       width: 28px;
+       height: 28px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 16px;
+       font-weight: bold;
+       flex-shrink: 0;
+       }
       .branch-move-btn:hover {
       background-color: #616161;
       }
       .branch-move-btn:disabled {
       cursor: not-allowed;
       }
-      .branch-entry {
-      display: flex;
-      align-items: center;
-      padding: 8px;
-      margin: 5px 0;
-      background-color: #2d2d2d;
-      border-radius: 4px;
-      cursor: grab;
-      transition: background-color 0.2s, box-shadow 0.2s;
-      flex-wrap: wrap;
-      gap: 8px;
-      min-height: 60px;
-      }
+       .branch-entry {
+       display: flex;
+       align-items: center;
+       padding: 8px;
+       margin: 5px 0;
+       background-color: #2d2d2d;
+       border-radius: 4px;
+       cursor: grab;
+       transition: background-color 0.2s, box-shadow 0.2s;
+       gap: 8px;
+       min-height: 60px;
+       }
+       .branch-entry:hover {
+       background-color: #3d3d3d;
+       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+       }
+       .branch-entry.dragging {
+       cursor: grabbing;
+       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+       }
+       .branch-entry.drag-over {
+       border: 2px solid #1565c0;
+       }
+       .branch-path {
+       flex: 1;
+       min-width: 200px;
+       }
+        .branch-mode {
+        width: 80px;
+        flex-shrink: 0;
+        }
+        .branch-controls-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .branch-minfreespace-container {
+          display: flex;
+          gap: 0;
+          align-items: stretch;
+          border: none;
+          border-radius: 4px;
+          background-color: transparent;
+          padding: 0;
+          flex-shrink: 0;
+        }
+        .branch-minfreespace-value {
+          width: 60px;
+          border-radius: 4px 0 0 4px;
+          min-width: 60px;
+          background-color: #333;
+          color: #e0e0e0;
+          border: 1px solid #555;
+          border-right: none;
+        }
+        .branch-minfreespace-value:focus {
+          border-color: #666;
+          border-right: none;
+        }
+        .branch-minfreespace-unit {
+          width: 60px;
+          border: 1px solid #555;
+          border-left: none;
+          border-radius: 0 4px 4px 0;
+          padding-right: 5px;
+          background-color: #333;
+          color: #e0e0e0;
+          text-align: center;
+          min-width: 60px;
+        }
+        .branch-minfreespace-unit:focus {
+          outline: none;
+          border: 1px solid #666;
+          border-left: none;
+        }
+       .path-btn {
+        width: 70px;
+        background-color: #1565c0;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        flex-shrink: 0;
+        }
+       .path-btn:hover {
+       background-color: #1976d2;
+       }
+        .branch-move-btn {
+        background-color: #424242;
+        color: white;
+        border: none;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: bold;
+        flex-shrink: 0;
+        }
+       .branch-move-btn:hover {
+       background-color: #616161;
+       }
+       .branch-move-btn:disabled {
+       cursor: not-allowed;
+       }
+       .branch-remove {
+       width: 80px;
+       background-color: #8b0000;
+       color: white;
+       border: none;
+       padding: 5px 10px;
+       cursor: pointer;
+       flex-shrink: 0;
+       }
+       .branch-remove:hover {
+       background-color: #a00000;
+       }
       .branch-entry:hover {
       background-color: #3d3d3d;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -325,7 +514,7 @@
           min-width: auto;
         }
       }
-      @media (max-width: 768px) {
+        @media (max-width: 768px) {
         .controls-row {
           flex-direction: column;
           align-items: stretch;
@@ -347,18 +536,62 @@
         .branch-entry {
           flex-direction: column;
           align-items: stretch;
-          gap: 10px;
+          gap: 8px;
         }
-        .branch-path,
-        .branch-mode,
-        .branch-minfreespace {
+        .branch-path {
           width: 100%;
           min-width: auto;
-          margin-bottom: 5px;
         }
-        .path-btn {
+        .branch-controls-wrapper {
+          flex-direction: row;
+          gap: 8px;
           width: 100%;
-          margin: 0;
+          flex-wrap: wrap;
+        }
+        .path-btn,
+        .branch-mode,
+        .branch-remove {
+          flex: 1;
+          min-width: 60px;
+        }
+        .branch-minfreespace-container {
+          display: flex;
+          gap: 0;
+          margin-bottom: 0;
+          border: none;
+          border-radius: 4px;
+          background-color: transparent;
+          padding: 0;
+          flex: 1;
+          min-width: 120px;
+        }
+        .branch-minfreespace-value {
+          width: 60px;
+          min-width: 60px;
+          border-radius: 4px 0 0 4px;
+          background-color: #333;
+          color: #e0e0e0;
+          border: 1px solid #555;
+          border-right: none;
+        }
+        .branch-minfreespace-value:focus {
+          border-color: #666;
+          border-right: none;
+        }
+        .branch-minfreespace-unit {
+          width: 60px;
+          min-width: 60px;
+          border: 1px solid #555;
+          border-left: none;
+          border-radius: 0 4px 4px 0;
+          background-color: #333;
+          color: #e0e0e0;
+          text-align: center;
+        }
+        .branch-minfreespace-unit:focus {
+          outline: none;
+          border: 1px solid #666;
+          border-left: none;
         }
         .branch-move-btn {
           flex: 1;
@@ -366,7 +599,6 @@
           height: 44px;
         }
         .branch-remove {
-          flex: 2;
           padding: 12px;
           min-height: 44px;
         }
@@ -391,7 +623,7 @@
           font-size: 14px;
           max-width: 90%;
         }
-      }
+       }
       @media (max-width: 480px) {
         .tab {
           flex-direction: column;
@@ -609,6 +841,9 @@
       function renderBranches(branchesStr) {
           const div = document.getElementById('branches-list');
           div.innerHTML = '';
+
+
+
           if (!branchesStr) {
               addBranchEntry();
               return;
@@ -648,50 +883,87 @@
           entry.addEventListener('dragover', handleDragOver);
           entry.addEventListener('dragleave', handleDragLeave);
           entry.addEventListener('drop', handleDrop);
-          const pathInput = document.createElement('input');
-          pathInput.type = 'text';
-          pathInput.className = 'branch-path';
-          pathInput.placeholder = 'path';
-          pathInput.value = path;
-          const pathBtn = document.createElement('button');
-          pathBtn.className = 'path-btn';
-          pathBtn.textContent = 'Path';
-          pathBtn.onclick = () => openPathModal(pathInput);
-          const modeSelect = document.createElement('select');
-          modeSelect.className = 'branch-mode';
-          ['RW', 'NC', 'RO'].forEach(m => {
+           const pathInput = document.createElement('input');
+           pathInput.type = 'text';
+           pathInput.className = 'branch-path';
+           pathInput.placeholder = 'path';
+           pathInput.value = path;
+           const controlsWrapper = document.createElement('div');
+           controlsWrapper.className = 'branch-controls-wrapper';
+           const pathBtn = document.createElement('button');
+           pathBtn.className = 'path-btn';
+           pathBtn.textContent = 'Path';
+           pathBtn.onclick = () => openPathModal(pathInput);
+           const modeSelect = document.createElement('select');
+           modeSelect.className = 'branch-mode';
+           ['RW', 'NC', 'RO'].forEach(m => {
+               const opt = document.createElement('option');
+               opt.value = m;
+               opt.textContent = m;
+               if (m === mode) opt.selected = true;
+               modeSelect.appendChild(opt);
+           });
+           const minfreespaceContainer = document.createElement('div');
+           minfreespaceContainer.className = 'branch-minfreespace-container';
+          const minfreespaceValueInput = document.createElement('input');
+          minfreespaceValueInput.type = 'number';
+          minfreespaceValueInput.className = 'branch-minfreespace-value';
+           minfreespaceValueInput.placeholder = 'minfreespace';
+          minfreespaceValueInput.min = '0';
+          const minfreespaceUnitSelect = document.createElement('select');
+          minfreespaceUnitSelect.className = 'branch-minfreespace-unit';
+          const units = [
+              {value: 'B', label: 'B'},
+              {value: 'K', label: 'KiB'},
+              {value: 'M', label: 'MiB'},
+              {value: 'G', label: 'GiB'},
+              {value: 'T', label: 'TiB'}
+          ];
+          units.forEach(u => {
               const opt = document.createElement('option');
-              opt.value = m;
-              opt.textContent = m;
-              if (m === mode) opt.selected = true;
-              modeSelect.appendChild(opt);
+              opt.value = u.value;
+              opt.textContent = u.label;
+              minfreespaceUnitSelect.appendChild(opt);
           });
-          const minfreespaceInput = document.createElement('input');
-          minfreespaceInput.type = 'text';
-          minfreespaceInput.className = 'branch-minfreespace';
-          minfreespaceInput.placeholder = 'minfreespace';
-          minfreespaceInput.value = minfreespace;
-          const moveUpBtn = document.createElement('button');
-          moveUpBtn.className = 'branch-move-btn branch-move-up';
-          moveUpBtn.innerHTML = '&#9650;';
-          moveUpBtn.title = 'Move up';
-          moveUpBtn.onclick = () => moveEntryUp(entry);
-          const moveDownBtn = document.createElement('button');
-          moveDownBtn.className = 'branch-move-btn branch-move-down';
-          moveDownBtn.innerHTML = '&#9660;';
-          moveDownBtn.title = 'Move down';
-          moveDownBtn.onclick = () => moveEntryDown(entry);
-          const removeBtn = document.createElement('button');
-          removeBtn.className = 'branch-remove';
-          removeBtn.textContent = 'Remove';
-          removeBtn.onclick = () => entry.remove();
-          entry.appendChild(pathInput);
-          entry.appendChild(pathBtn);
-          entry.appendChild(modeSelect);
-          entry.appendChild(minfreespaceInput);
-          entry.appendChild(moveUpBtn);
-          entry.appendChild(moveDownBtn);
-          entry.appendChild(removeBtn);
+          let minfreespaceValue = '';
+          let minfreespaceUnit = 'G';
+          if (minfreespace) {
+              const match = minfreespace.match(/^(\d+)([BKMG])?$/i);
+              if (match) {
+                  minfreespaceValue = match[1];
+                  if (match[2]) {
+                      minfreespaceUnit = match[2].toUpperCase();
+                  }
+              } else {
+                  minfreespaceValue = minfreespace;
+              }
+          }
+           minfreespaceValueInput.value = minfreespaceValue;
+           minfreespaceUnitSelect.value = minfreespaceUnit;
+           minfreespaceContainer.appendChild(minfreespaceValueInput);
+           minfreespaceContainer.appendChild(minfreespaceUnitSelect);
+           const moveUpBtn = document.createElement('button');
+           moveUpBtn.className = 'branch-move-btn branch-move-up';
+           moveUpBtn.innerHTML = '&#9650;';
+           moveUpBtn.title = 'Move up';
+           moveUpBtn.onclick = () => moveEntryUp(entry);
+           const moveDownBtn = document.createElement('button');
+           moveDownBtn.className = 'branch-move-btn branch-move-down';
+           moveDownBtn.innerHTML = '&#9660;';
+           moveDownBtn.title = 'Move down';
+           moveDownBtn.onclick = () => moveEntryDown(entry);
+           const removeBtn = document.createElement('button');
+           removeBtn.className = 'branch-remove';
+           removeBtn.textContent = 'Remove';
+           removeBtn.onclick = () => entry.remove();
+           controlsWrapper.appendChild(pathBtn);
+           controlsWrapper.appendChild(modeSelect);
+           controlsWrapper.appendChild(minfreespaceContainer);
+           controlsWrapper.appendChild(moveUpBtn);
+           controlsWrapper.appendChild(moveDownBtn);
+           controlsWrapper.appendChild(removeBtn);
+           entry.appendChild(pathInput);
+           entry.appendChild(controlsWrapper);
           container.appendChild(entry);
       }
       let draggedEntry = null;
@@ -783,7 +1055,8 @@
           entries.forEach(entry => {
               const pathInput = entry.querySelector('.branch-path');
               const modeSelect = entry.querySelector('.branch-mode');
-              const minfreespaceInput = entry.querySelector('.branch-minfreespace');
+              const minfreespaceValueInput = entry.querySelector('.branch-minfreespace-value');
+              const minfreespaceUnitSelect = entry.querySelector('.branch-minfreespace-unit');
               if (pathInput && pathInput.value.trim()) {
                   let branchStr = pathInput.value.trim();
                   if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
@@ -791,8 +1064,10 @@
                   } else {
                       branchStr += '=RW';
                   }
-                  if (minfreespaceInput && minfreespaceInput.value.trim()) {
-                      branchStr += ',' + minfreespaceInput.value.trim();
+                  if (minfreespaceValueInput && minfreespaceValueInput.value.trim() && minfreespaceUnitSelect) {
+                      const value = minfreespaceValueInput.value.trim();
+                      const unit = minfreespaceUnitSelect.value;
+                      branchStr += ',' + value + unit;
                   }
                   branches.push(branchStr);
               }
