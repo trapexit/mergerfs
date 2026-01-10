@@ -255,16 +255,10 @@ _get_kvs(const httplib::Request &req_,
 
   mergerfs::api::get_kvs(mount,&kvs);
 
-  for(const auto &[key, value] : kvs)
-    {
-      if(!first) response += ",";
-      response += "\"" + key + "\":\"" + value + "\"";
-      first = false;
-    }
+  j = kvs;
 
-  response += "}";
-
-  res_.set_content(response, "application/json");
+  res_.set_content(j.dump(),
+                   "application/json");
 }
 
 static
