@@ -274,6 +274,7 @@ _get_kvs_key(const httplib::Request &req_,
       return;
     }
 
+  json j;
   fs::path mount;
   std::string key;
   std::string val;
@@ -283,7 +284,10 @@ _get_kvs_key(const httplib::Request &req_,
 
   mergerfs::api::get_kv(mount,key,&val);
 
-  res_.set_content(val, "text/plain");
+  j = val;
+
+  res_.set_content(j.dump(),
+                   "application/json");
 }
 
 // New endpoints for enhanced UI
