@@ -12,6 +12,8 @@
 
 #include <unistd.h>
 
+using json = nlohmann::json;
+
 
 static
 json
