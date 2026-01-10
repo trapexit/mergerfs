@@ -405,7 +405,10 @@ _post_kvs_key(const httplib::Request &req_,
   else
     {
       res_.status = 400;
-      res_.set_content("{\"result\":\"error\",\"message\":\"Failed to set configuration\"}", "application/json");
+      j["result"] = "error";
+      j["error"] = ::_generate_error(mount,key,val,rv);
+      res_.set_content(j.dump(),
+                       "application/json");
     }
 }
 
