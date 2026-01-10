@@ -397,7 +397,8 @@ _post_kvs_key(const httplib::Request &req_,
 
   if(rv >= 0)
     {
-      res_.set_content("{\"result\":\"success\"}", "application/json");
+      res_.set_content("{\"result\":\"success\"}",
+                       "application/json");
     }
   else
     {
