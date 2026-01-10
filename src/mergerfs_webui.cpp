@@ -6,14 +6,10 @@
 #include "str.hpp"
 
 #include "CLI11.hpp"
-#include "fmt/core.h"
 #include "httplib.h"
-#include "json.hpp"
 
 #include <unistd.h>
-
-
-using json = nlohmann::json;
+#include <iostream>
 
 static
 void
@@ -159,7 +155,7 @@ window.onload = () => { loadMounts(); };
 )html";
 
   res_.set_content(html,
-                   "text/html");
+                    "text/html");
 }
 
 #define IERT(S) if(type_ == (S)) return true;
@@ -191,28 +187,26 @@ void
 _get_mounts(const httplib::Request &req_,
             httplib::Response      &res_)
 {
-  json json_array;
+  std::string response = "[";
   std::string type;
   fs::MountVec mounts;
+  bool first = true;
 
   fs::mounts(mounts);
 
-  json_array = json::array();
   for(const auto &mount : mounts)
     {
-      json obj;
-
       if(not ::_valid_fs_type(mount.type))
         continue;
 
-      obj["path"] = mount.dir;
-      obj["type"] = mount.type;
-
-      json_array.push_back(obj);
+      if(!first) response += ",";
+      response += "{\"path\":\"" + mount.dir.string() + "\",\"type\":\"" + mount.type + "\"}";
+      first = false;
     }
 
-  res_.set_content(json_array.dump(),
-                   "application/json");
+  response += "]";
+
+  res_.set_content(response, "application/json");
 }
 
 static
@@ -220,22 +214,26 @@ void
 _get_mounts_mergerfs(const httplib::Request &req_,
                      httplib::Response      &res_)
 {
-  json j;
+  std::string response = "[";
   std::string type;
   fs::MountVec mounts;
+  bool first = true;
 
   fs::mounts(mounts);
 
-  j = json::array();
   for(const auto &mount : mounts)
     {
       if(mount.type != "fuse.mergerfs")
         continue;
-      j.push_back(mount.dir);
+
+      if(!first) response += ",";
+      response += "\"" + mount.dir.string() + "\"";
+      first = false;
     }
 
-  res_.set_content(j.dump(),
-                   "application/json");
+  response += "]";
+
+  res_.set_content(response, "application/json");
 }
 
 static
@@ -251,18 +249,25 @@ _get_kvs(const httplib::Request &req_,
       return;
     }
 
-  json j;
+  std::string response = "{";
   std::string mount;
   std::map<std::string,std::string> kvs;
+  bool first = true;
 
   mount = req_.get_param_value("mount");
 
   mergerfs::api::get_kvs(mount,&kvs);
 
-  j = kvs;
+  for(const auto &[key, value] : kvs)
+    {
+      if(!first) response += ",";
+      response += "\"" + key + "\":\"" + value + "\"";
+      first = false;
+    }
 
-  res_.set_content(j.dump(),
-                   "application/json");
+  response += "}";
+
+  res_.set_content(response, "application/json");
 }
 
 static
@@ -278,7 +283,6 @@ _get_kvs_key(const httplib::Request &req_,
       return;
     }
 
-  json j;
   fs::path mount;
   std::string key;
   std::string val;
@@ -288,54 +292,168 @@ _get_kvs_key(const httplib::Request &req_,
 
   mergerfs::api::get_kv(mount,key,&val);
 
-  j = val;
+  res_.set_content(val, "text/plain");
+}
 
-  res_.set_content(j.dump(),
-                   "application/json");
+// New endpoints for enhanced UI
+
+static
+void
+_get_branches(const httplib::Request &req_,
+              httplib::Response      &res_)
+{
+  if(not req_.has_param("mount"))
+    {
+      res_.status = 400;
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
+      return;
+    }
+
+  fs::path mount;
+  std::string val;
+
+  mount = req_.get_param_value("mount");
+
+  if(mergerfs::api::get_kv(mount,"branches",&val) >= 0)
+    {
+      res_.set_content(val, "text/plain");
+    }
+  else
+    {
+      res_.set_content("", "text/plain");
+    }
 }
 
 static
-json
-_generate_error(const fs::path    &mount_,
-                const std::string &key_,
-                const std::string &val_,
-                const int          err_)
+void
+_post_branches(const httplib::Request &req_,
+               httplib::Response      &res_)
 {
-  json rv;
-
-  rv = json::object();
-
-  rv["mount"] = mount_.string();
-  rv["key"] = key_;
-  rv["value"] = val_;
-  switch(err_)
+  if(not req_.has_param("mount"))
     {
-    case -EROFS:
-      rv["msg"] = fmt::format("'{}' is read only",key_);
-      break;
-    case -EINVAL:
-      rv["msg"] = fmt::format("value '{}' is not valid for '{}'",
-                                  val_,
-                                  key_);
-      break;
-    case -EACCES:
-      rv["msg"] = fmt::format("mergerfs.webui (pid {}) is running as uid {}"
-                              " which appears not to have access to modify the"
-                              " mount's config",
-                              ::getpid(),
-                              ::getuid());
-      break;
-    case -ENOTCONN:
-      rv["msg"] = fmt::format("Appears the mergerfs mount '{}' is broken. "
-                              "mergerfs may have crashed.",
-                              mount_.string());
-      break;
-    default:
-      rv["msg"] = strerror(-err_);
-      break;
+      res_.status = 400;
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
+      return;
     }
 
-  return rv;
+  fs::path mount;
+  std::string val;
+
+  mount = req_.get_param_value("mount");
+  val = req_.body;
+
+  int rv = mergerfs::api::set_kv(mount,"branches",val);
+
+  if(rv >= 0)
+    {
+      res_.set_content("{\"result\":\"success\"}", "application/json");
+    }
+  else
+    {
+      res_.status = 400;
+      res_.set_content("{\"result\":\"error\",\"message\":\"Failed to set branches\"}", "application/json");
+    }
+}
+
+static
+void
+_get_xattr(const httplib::Request &req_,
+           httplib::Response      &res_)
+{
+  if(not req_.has_param("mount"))
+    {
+      res_.status = 400;
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
+      return;
+    }
+
+  fs::path mount;
+  std::string key;
+  std::string val;
+
+  mount = req_.get_param_value("mount");
+  key = req_.path_params.at("key");
+
+  int rv = mergerfs::api::get_kv(mount,key,&val);
+
+  if(rv >= 0)
+    {
+      res_.set_content("\"" + val + "\"", "application/json");
+    }
+  else
+    {
+      res_.status = 404;
+      res_.set_content("{\"error\":\"xattr not found\"}", "application/json");
+    }
+}
+
+static
+void
+_post_xattr(const httplib::Request &req_,
+            httplib::Response      &res_)
+{
+  if(not req_.has_param("mount"))
+    {
+      res_.status = 400;
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
+      return;
+    }
+
+  fs::path mount;
+  std::string key;
+  std::string val;
+
+  mount = req_.get_param_value("mount");
+  key = req_.path_params.at("key");
+  val = req_.body;
+
+  int rv = mergerfs::api::set_kv(mount,key,val);
+
+  if(rv >= 0)
+    {
+      res_.set_content("{\"result\":\"success\"}", "application/json");
+    }
+  else
+    {
+      res_.status = 400;
+      res_.set_content("{\"result\":\"error\",\"message\":\"Failed to set xattr\"}", "application/json");
+    }
+}
+
+static
+void
+_execute_command(const httplib::Request &req_,
+                 httplib::Response      &res_)
+{
+  if(not req_.has_param("mount"))
+    {
+      res_.status = 400;
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
+      return;
+    }
+
+  fs::path mount;
+  std::string cmd;
+
+  mount = req_.get_param_value("mount");
+  cmd = req_.path_params.at("command");
+
+  int rv = mergerfs::api::set_kv(mount,"cmd." + cmd,"");
+
+  if(rv >= 0)
+    {
+      res_.set_content("{\"result\":\"success\",\"message\":\"Command executed\"}", "application/json");
+    }
+  else
+    {
+      res_.status = 400;
+      res_.set_content("{\"result\":\"error\",\"message\":\"Failed to execute command\"}", "application/json");
+    }
 }
 
 static
@@ -346,48 +464,29 @@ _post_kvs_key(const httplib::Request &req_,
   if(not req_.has_param("mount"))
     {
       res_.status = 400;
-      res_.set_content("mount param not set",
-                       "text/plain");
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
       return;
     }
 
-  try
+  fs::path mount;
+  std::string key;
+  std::string val;
+
+  key = req_.path_params.at("key");
+  val = req_.body;
+  mount = req_.get_param_value("mount");
+
+  int rv = mergerfs::api::set_kv(mount,key,val);
+
+  if(rv >= 0)
     {
-      int rv;
-      json j;
-      fs::path mount;
-      std::string key;
-      std::string val;
-
-      j = json::parse(req_.body);
-      key = req_.path_params.at("key");
-      val = j;
-      mount = req_.get_param_value("mount");
-
-      rv = mergerfs::api::set_kv(mount,key,val);
-
-      j = json::object();
-      if(rv >= 0)
-        {
-          res_.status = 200;
-          j["result"] = "success";
-        }
-      else
-        {
-          res_.status = 400;
-          j["result"] = "error";
-          j["error"] = ::_generate_error(mount,key,val,rv);
-        }
-
-      res_.set_content(j.dump(),
-                       "application/json");
-
+      res_.set_content("{\"result\":\"success\"}", "application/json");
     }
-  catch (const std::exception& e)
+  else
     {
-      fmt::print("{}\n",e.what());
       res_.status = 400;
-      res_.set_content("Invalid JSON","text/plain");
+      res_.set_content("{\"result\":\"error\",\"message\":\"Failed to set configuration\"}", "application/json");
     }
 }
 
@@ -433,7 +532,14 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/kvs/:key",::_get_kvs_key);
   http_server.Post("/kvs/:key",::_post_kvs_key);
 
-  fmt::print("host:port = http://{}:{}\n",host,port);
+  // New endpoints for enhanced UI
+  http_server.Get("/branches",::_get_branches);
+  http_server.Post("/branches",::_post_branches);
+  http_server.Get("/xattr/:key",::_get_xattr);
+  http_server.Post("/xattr/:key",::_post_xattr);
+  http_server.Post("/cmd/:command",::_execute_command);
+
+  std::cout << "host:port = http://" << host << ":" << port << std::endl;
 
   http_server.listen(host,port);
 

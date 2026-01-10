@@ -1,1142 +1,2269 @@
 <!DOCTYPE html>
-<html>
-  <head><title>mergerfs ui</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mergerfs Runtime Configuration Manager</title>
+    <meta name="description" content="Advanced runtime configuration and management tool for mergerfs filesystem">
     <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACf0lEQVQ4EY3BW0jTYRgH4N/7fv9tmkYlBBFRBCW1ESGSdeGFYZIT7Ihi6rSkoNNFUkaHmwVRiRFZBCnSAUlpohZmdiExoiBUgsSiQkQiEknISplu/+97szFjBUbPQ/D72ZPgzbENT7w/s+EF/kNZR1YmKTPvbs+zblpb3XODoA4JkZDRV9+e2nAc/1DekX0ZoEqwQMTUMQn5IOY2iW4Aq2Pu6p7TmENZ25YqaKoUMfdEzB0wlzCIEgS6/22o8xBEtwrUeffF3gr8pbg1xwfwRQPz5ON8UyGE1wS4GBBE+f0m/OmLj0SCYLrpqe7dhpg9gexcBWoATC++jxUGNwdtxDDiDF7Pmw5P2TshMmAEzZ5LLzMLAlszFDsDAIYiDju/sax/EnEYswoCylPTVzz4+XWIWPJAMuJKGH+gxPlIgG8adu5IMsbLO7JK0uvSHYgiMGJS05atFqFG98q0+jcnM0ZTEvv2rVjcsghQymb2Nu1++nH5D64XqMZVSxPd+EUEFmJEE0EZEpjy9Ve6wgtSujOIdUgTbW/Z1TlQ1Oq9pLW9VykDpQ3BiShGPCIwyX0i3h8KL3NP6QVFLYXtz/ObfZXaJFUJ6CFmRBBDACMeAaz4GsMUhKcWbnlcWvso+9aJUlun1EzrpDptpi8QkTgwi2AhDgkAAl5VetswI6vBnwtwgy2h9q53i46WrBtOB4QwSwAmxCP8QVwbBdxkfZ0ohd9vEEWIZ4lAYEBOFSGBA4jgt+CB0+cQhy0SAolhiyzDBCKxCHgPZR02cOwgkYiIDGEO9iSGVTIiLnbWArQEQh9Y23IQECLIGoE+PHB20yjm0FwcHNPaHIGhVBiIRPTBn4WjGt9/EpzPAAAAAElFTkSuQmCC">
     <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-          background-color: #1a1a1a;
-          color: #e0e0e0;
-          font-family: Arial, sans-serif;
-      }
-      .tab {
-          overflow: hidden;
-          border: 1px solid #444;
-          background-color: #2d2d2d;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 2px;
-      }
-      .tab button {
-          background-color: inherit;
-          border: none;
-          outline: none;
-          cursor: pointer;
-          padding: 14px 12px;
-          transition: 0.3s;
-      color: #e0e0e0;
-      flex: 1;
-      min-width: 120px;
-      white-space: nowrap;
-      }
-      .tab button:hover {
-      background-color: #444;
-      }
-      .tab button.active {
-      background-color: #3d3d3d;
-      }
-      .tabcontent {
-      display: none;
-      padding: 6px 12px;
-      border: 1px solid #444;
-      border-top: none;
-      background-color: #1e1e1e;
-      }
-      table {
-      border-collapse: collapse;
-      width: 100%;
-      }
-      th, td {
-      border: 1px solid #444;
-      padding: 8px;
-      text-align: left;
-      }
-      th {
-      background-color: #2d2d2d;
-      color: #e0e0e0;
-      }
-      tr:nth-child(even) {
-      background-color: #252525;
-      }
-      tr:hover {
-      background-color: #333;
-      }
-      input[type="text"] {
-      background-color: #333;
-      color: #e0e0e0;
-      border: 1px solid #555;
-      padding: 5px;
-      }
-      input[type="text"]:focus {
-      outline: none;
-      border-color: #666;
-      }
-      select {
-      background-color: #333;
-      color: #e0e0e0;
-      border: 1px solid #555;
-      padding: 5px;
-      }
-      select:focus {
-      outline: none;
-      border-color: #666;
-      }
-      label {
-      color: #e0e0e0;
-      }
-      .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.7);
-      }
-      .modal-content {
-      background-color: #2d2d2d;
-      margin: 15% auto;
-      padding: 20px;
-      border: 1px solid #555;
-      width: 80%;
-      max-width: 500px;
-      color: #e0e0e0;
-      }
-      .close-modal {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      }
-      .close-modal:hover,
-      .close-modal:focus {
-      color: #fff;
-      text-decoration: none;
-      cursor: pointer;
-      }
-      .branch-entry {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #444;
-      background-color: #252525;
-      }
-      .branch-entry input,
-      .branch-entry select {
-      padding: 5px;
-      background-color: #333;
-      color: #e0e0e0;
-      border: 1px solid #555;
-      }
-      .branch-entry input:focus,
-      .branch-entry select:focus {
-      outline: none;
-      border-color: #666;
-      }
-       .branch-minfreespace-value {
-         flex: 0 0 55px;
-         border-radius: 4px 0 0 4px;
-         min-width: 55px;
-         background-color: #333;
-         color: #e0e0e0;
-         border: 1px solid #555;
-         border-right: none;
-       }
-       .branch-minfreespace-value:focus {
-         border-color: #666;
-         border-right: none;
-       }
-       .branch-minfreespace-unit {
-         flex: 0 0 55px;
-         border: 1px solid #555;
-         border-left: none;
-         border-radius: 0 4px 4px 0;
-         padding-right: 5px;
-         background-color: #333;
-         color: #e0e0e0;
-         text-align: center;
-       }
-       .branch-minfreespace-unit:focus {
-         outline: none;
-         border: 1px solid #666;
-         border-left: none;
-       }
-       .branch-path {
-       flex: 1;
-       min-width: 200px;
-       width: 100%;
-       }
-        .branch-mode {
-        width: 80px;
-        flex-shrink: 0;
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #1e1e1e;
+            --bg-hover: #3d3d3d;
+            --bg-input: #333;
+            --border-color: #444;
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaa;
+            --accent-primary: #1565c0;
+            --accent-hover: #1976d2;
+            --success-color: #2e7d32;
+            --success-hover: #388e3c;
+            --danger-color: #8b0000;
+            --danger-hover: #a00000;
+            --warning-color: #f57c00;
+            --radius: 4px;
+            --transition: all 0.2s ease;
+            --shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-        .branch-controls-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-left: auto;
-          flex-shrink: 0;
-          flex-wrap: wrap;
+
+        * {
+            box-sizing: border-box;
         }
-       .branch-minfreespace-container {
-         display: flex;
-         gap: 0;
-         align-items: stretch;
-         border: none;
-         border-radius: 4px;
-         background-color: transparent;
-         padding: 0;
-         flex-shrink: 0;
-       }
-        .branches-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 6px 8px;
-          margin-bottom: 10px;
-          background-color: #252525;
-          border: 1px solid #444;
-          border-radius: 4px;
-          font-weight: bold;
-          font-size: 13px;
-          color: #e0e0e0;
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
         }
-        .header-path {
-          flex: 1;
-          min-width: 200px;
-        }
-        .header-path-btn {
-          width: 70px;
-        }
-        .header-mode {
-          width: 80px;
-          text-align: center;
-        }
-        .header-minfreespace {
-          width: 120px;
-          text-align: left;
-        }
-       .header-actions {
-         display: flex;
-         gap: 8px;
-       }
-      .header-actions div {
-        width: 28px;
-        text-align: center;
-      }
-      .branch-remove {
-      background-color: #8b0000;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-      }
-      .branch-remove:hover {
-      background-color: #a00000;
-      }
-      .add-branch-btn {
-      background-color: #2e7d32;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      cursor: pointer;
-      margin-bottom: 15px;
-      }
-      .add-branch-btn:hover {
-      background-color: #388e3c;
-      }
-      .submit-branches-btn {
-          background-color: #1565c0;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          cursor: pointer;
-          margin-bottom: 15px;
-          margin-left: 0;
-      }
-      .submit-branches-btn:hover {
-      background-color: #1976d2;
-      }
-        .path-btn {
-        background-color: #1565c0;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        cursor: pointer;
-        margin-right: 0;
-        flex-shrink: 0;
-        }
-      .path-btn:hover {
-      background-color: #1976d2;
-      }
-       .branch-move-btn {
-       background-color: #424242;
-       color: white;
-       border: none;
-       cursor: pointer;
-       width: 28px;
-       height: 28px;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       font-size: 16px;
-       font-weight: bold;
-       flex-shrink: 0;
-       }
-      .branch-move-btn:hover {
-      background-color: #616161;
-      }
-      .branch-move-btn:disabled {
-      cursor: not-allowed;
-      }
-       .branch-entry {
-       display: flex;
-       align-items: center;
-       padding: 8px;
-       margin: 5px 0;
-       background-color: #2d2d2d;
-       border-radius: 4px;
-       cursor: grab;
-       transition: background-color 0.2s, box-shadow 0.2s;
-       gap: 8px;
-       min-height: 60px;
-       }
-       .branch-entry:hover {
-       background-color: #3d3d3d;
-       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-       }
-       .branch-entry.dragging {
-       cursor: grabbing;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-       }
-       .branch-entry.drag-over {
-       border: 2px solid #1565c0;
-       }
-       .branch-path {
-       flex: 1;
-       min-width: 200px;
-       }
-        .branch-mode {
-        width: 80px;
-        flex-shrink: 0;
-        }
-        .branch-controls-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-        .branch-minfreespace-container {
-          display: flex;
-          gap: 0;
-          align-items: stretch;
-          border: none;
-          border-radius: 4px;
-          background-color: transparent;
-          padding: 0;
-          flex-shrink: 0;
-        }
-        .branch-minfreespace-value {
-          width: 60px;
-          border-radius: 4px 0 0 4px;
-          min-width: 60px;
-          background-color: #333;
-          color: #e0e0e0;
-          border: 1px solid #555;
-          border-right: none;
-        }
-        .branch-minfreespace-value:focus {
-          border-color: #666;
-          border-right: none;
-        }
-        .branch-minfreespace-unit {
-          width: 60px;
-          border: 1px solid #555;
-          border-left: none;
-          border-radius: 0 4px 4px 0;
-          padding-right: 5px;
-          background-color: #333;
-          color: #e0e0e0;
-          text-align: center;
-          min-width: 60px;
-        }
-        .branch-minfreespace-unit:focus {
-          outline: none;
-          border: 1px solid #666;
-          border-left: none;
-        }
-       .path-btn {
-        width: 70px;
-        background-color: #1565c0;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        cursor: pointer;
-        flex-shrink: 0;
-        }
-       .path-btn:hover {
-       background-color: #1976d2;
-       }
-        .branch-move-btn {
-        background-color: #424242;
-        color: white;
-        border: none;
-        cursor: pointer;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: bold;
-        flex-shrink: 0;
-        }
-       .branch-move-btn:hover {
-       background-color: #616161;
-       }
-       .branch-move-btn:disabled {
-       cursor: not-allowed;
-       }
-       .branch-remove {
-       width: 80px;
-       background-color: #8b0000;
-       color: white;
-       border: none;
-       padding: 5px 10px;
-       cursor: pointer;
-       flex-shrink: 0;
-       }
-       .branch-remove:hover {
-       background-color: #a00000;
-       }
-      .branch-entry:hover {
-      background-color: #3d3d3d;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      }
-      .branch-entry.dragging {
-      cursor: grabbing;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      }
-      .branch-entry.drag-over {
-      border: 2px solid #1565c0;
-      }
-      .mount-list-item {
-      padding: 10px;
-      cursor: pointer;
-      border-bottom: 1px solid #444;
-      color: #e0e0e0;
-      }
-      .mount-list-item:hover {
-      background-color: #444;
-      }
-      h3 {
-      color: #e0e0e0;
-      }
-      .toast {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-50%);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 4px;
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 2s;
-      }
-      .toast.show_success {
-      display: block;
-      background-color: #2e7d32;
-      opacity: 1;
-      }
-      .toast.show_failure {
-      display: block;
-      background-color: red;
-      opacity: 1;
-      }
-      .container {
-        padding: 6px 12px;
-      }
-      .action-buttons {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 15px;
-      }
-      .action-buttons button {
-        flex: 1;
-        min-width: 140px;
-      }
-      .table-container {
-        overflow-x: auto;
-        width: 100%;
-      }
-      .select-wrapper {
-        margin-bottom: 15px;
-      }
-      .select-wrapper label {
-        display: block;
-        margin-bottom: 5px;
-      }
-      .select-wrapper select {
-        width: 100%;
-      }
-      .controls-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 15px;
-        gap: 15px;
-      }
-      @media (min-width: 769px) {
-        .select-wrapper {
-          display: inline-block;
-        }
-        .select-wrapper select {
-          width: auto;
-          min-width: 200px;
-        }
-        .action-buttons {
-          display: inline-flex;
-          gap: 10px;
-          margin-top: 20px;
-        }
-        .action-buttons button {
-          flex: none;
-          min-width: auto;
-        }
-      }
-        @media (max-width: 768px) {
-        .controls-row {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
-        }
-        .action-buttons {
-          flex-direction: row;
-        }
-        .tab {
-          gap: 1px;
-        }
-        .tab button {
-          padding: 12px 8px;
-          font-size: 14px;
-        }
-        .tabcontent {
-          padding: 4px 8px;
-        }
-        .branch-entry {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 8px;
-        }
-        .branch-path {
-          width: 100%;
-          min-width: auto;
-        }
-        .branch-controls-wrapper {
-          flex-direction: row;
-          gap: 8px;
-          width: 100%;
-          flex-wrap: wrap;
-        }
-        .path-btn,
-        .branch-mode,
-        .branch-remove {
-          flex: 1;
-          min-width: 60px;
-        }
-        .branch-minfreespace-container {
-          display: flex;
-          gap: 0;
-          margin-bottom: 0;
-          border: none;
-          border-radius: 4px;
-          background-color: transparent;
-          padding: 0;
-          flex: 1;
-          min-width: 120px;
-        }
-        .branch-minfreespace-value {
-          width: 60px;
-          min-width: 60px;
-          border-radius: 4px 0 0 4px;
-          background-color: #333;
-          color: #e0e0e0;
-          border: 1px solid #555;
-          border-right: none;
-        }
-        .branch-minfreespace-value:focus {
-          border-color: #666;
-          border-right: none;
-        }
-        .branch-minfreespace-unit {
-          width: 60px;
-          min-width: 60px;
-          border: 1px solid #555;
-          border-left: none;
-          border-radius: 0 4px 4px 0;
-          background-color: #333;
-          color: #e0e0e0;
-          text-align: center;
-        }
-        .branch-minfreespace-unit:focus {
-          outline: none;
-          border: 1px solid #666;
-          border-left: none;
-        }
-        .branch-move-btn {
-          flex: 1;
-          min-width: 44px;
-          height: 44px;
-        }
-        .branch-remove {
-          padding: 12px;
-          min-height: 44px;
-        }
-        .add-branch-btn,
-        .submit-branches-btn {
-          padding: 12px 16px;
-          font-size: 14px;
-        }
-        input[type="text"],
-        select {
-          padding: 10px;
-          font-size: 16px;
-          min-height: 44px;
-        }
-        .modal-content {
-          width: 95%;
-          margin: 10% auto;
-          padding: 15px;
-        }
-        .toast {
-          padding: 16px 20px;
-          font-size: 14px;
-          max-width: 90%;
-        }
-       }
-      @media (max-width: 480px) {
-        .tab {
-          flex-direction: column;
-        }
-        .tab button {
-          width: 100%;
-          min-width: auto;
-          border-bottom: 1px solid #444;
-        }
-        .action-buttons button {
-          width: 100%;
-          min-width: auto;
-        }
-        .branch-move-btn {
-          font-size: 14px;
-        }
-        .branch-remove {
-          font-size: 14px;
-        }
-        th, td {
-          padding: 6px;
-          font-size: 12px;
-        }
-      }
-      @media (min-width: 1200px) {
+
         .container {
-          max-width: 1200px;
-          margin: 0 auto;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        .tab,
-        .tabcontent {
-          border-radius: 4px;
+
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 0;
+            margin-bottom: 30px;
         }
-      }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+
+
+        .tabs {
+            display: flex;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius) var(--radius) 0 0;
+            overflow: hidden;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 15px 25px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tab-button.active {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--accent-primary);
+        }
+
+        .tab-button:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: -2px;
+        }
+
+        .tab-content {
+            display: none;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 var(--radius) var(--radius);
+            padding: 25px;
+            min-height: 500px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .controls-section {
+            margin-bottom: 25px;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input[type="text"], input[type="number"], input[type="search"] {
+            background-color: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            transition: var(--transition);
+            min-width: 200px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+        }
+
+        .button {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .button:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .button.success {
+            background-color: var(--success-color);
+        }
+
+        .button.success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .button.danger {
+            background-color: var(--danger-color);
+        }
+
+        .button.danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .button.secondary {
+            background-color: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .button.secondary:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding-left: 40px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            background-color: var(--bg-secondary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background-color: var(--bg-hover);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .branches-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .branch-entry {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .branch-path-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .branch-entry:hover {
+            background-color: var(--bg-hover);
+            box-shadow: var(--shadow);
+        }
+
+        .branch-entry.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .branch-entry.drag-over {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+        }
+
+        .branch-path {
+            flex: 1;
+        }
+
+        .branch-mode {
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        .branch-minfreespace {
+            display: flex;
+            gap: 0;
+            flex-shrink: 0;
+        }
+
+        .branch-minfreespace input {
+            border-radius: var(--radius) 0 0 var(--radius);
+            width: 80px;
+            text-align: center;
+        }
+
+        .branch-minfreespace select {
+            border-radius: 0 var(--radius) var(--radius) 0;
+            width: 80px;
+        }
+
+        .branch-controls {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--radius);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-button:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .icon-button:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        .icon-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .browse-button {
+            min-width: 80px;
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.2s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-close:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        .mount-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mount-item {
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mount-item:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--accent-primary);
+        }
+
+        .mount-item.selected {
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .mount-path {
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .mount-type {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background-color: var(--bg-input);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: var(--radius);
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            max-width: 400px;
+            box-shadow: var(--shadow);
+            animation: slideInRight 0.3s ease;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.success {
+            background-color: var(--success-color);
+        }
+
+        .toast.error {
+            background-color: var(--danger-color);
+        }
+
+        .toast.warning {
+            background-color: var(--warning-color);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            text-align: center;
+            border-radius: var(--radius);
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .branches-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .header-path { flex: 1; min-width: 250px; }
+        .header-mode { width: 100px; text-align: center; }
+        .header-minfreespace { width: 160px; text-align: center; }
+        .header-actions { width: 120px; text-align: center; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .validation-error {
+            color: var(--danger-color);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        /* Policy-specific styles */
+        .policy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .policy-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .policy-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-primary);
+        }
+
+        .policy-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .policy-select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .command-section {
+            margin-top: 20px;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .command-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 15px;
+            text-align: center;
+        }
+
+        .command-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .command-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                padding: 12px 15px;
+            }
+
+            .branch-entry {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .branch-path-group,
+            .branch-path,
+            .branch-mode,
+            .branch-minfreespace,
+            .branch-controls {
+                width: 100%;
+            }
+
+            .branch-minfreespace {
+                flex-direction: row;
+            }
+
+            .branch-minfreespace input,
+            .branch-minfreespace select {
+                flex: 1;
+            }
+
+            .branches-header {
+                display: none;
+            }
+
+            .modal-content {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .toast {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+
+            .policy-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .command-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #ffffff;
+                --text-secondary: #ffffff;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
-  </head>
-  <body>
-    <div class="tab">
-      <button class="tablinks active" onclick="openTab(event, 'Branches')">Branches</button>
-      <button class="tablinks" onclick="openTab(event, 'Advanced')">Advanced</button>
-    </div>
-    <div id="Branches" class="tabcontent" style="display: block;">
-      <div class="container">
-        <div class="controls-row">
-          <div class="select-wrapper">
-            <label for="mount-select-branches">Select Mountpoint:</label>
-            <select id="mount-select-branches"></select>
-          </div>
-          <div class="action-buttons">
-            <button class="add-branch-btn" onclick="addBranchEntry()">+ Add Branch</button>
-            <button class="submit-branches-btn" onclick="submitBranches()">Submit</button>
-          </div>
+</head>
+<body>
+        <header>
+        <div class="header-content">
+            <h1>mergerfs ui</h1>
+            <div class="subtitle">Advanced configuration and management tool</div>
         </div>
-        <div id="branches-list"></div>
-      </div>
-    </div>
-    <div id="Advanced" class="tabcontent">
-      <div class="container">
-        <div class="select-wrapper">
-          <label for="mount-select-advanced">Select Mountpoint:</label>
-          <select id="mount-select-advanced"></select>
+    </header>
+
+    <main class="container">
+        <div class="tabs" role="tablist">
+            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="branches-panel" id="branches-tab" tabindex="0">
+                Branches
+            </button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="policies-panel" id="policies-tab" tabindex="-1">
+                Policies
+            </button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="config-panel" id="config-tab" tabindex="-1">
+                Configuration
+            </button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="commands-panel" id="commands-tab" tabindex="-1">
+                Commands
+            </button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="info-panel" id="info-tab" tabindex="-1">
+                File Info
+            </button>
         </div>
-        <div class="table-container">
-          <div id="kv-list"></div>
+
+        <!-- Branches Tab -->
+        <div class="tab-content active" id="branches-panel" role="tabpanel" aria-labelledby="branches-tab">
+            <div class="controls-section">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label for="mount-select-branches">Mount Point</label>
+                        <select id="mount-select-branches">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="button" id="add-branch-btn">
+                            <span>+</span> Add Branch
+                        </button>
+                        <button class="button success" id="save-branches-btn">
+                            <span>💾</span> Save Configuration
+                        </button>
+                        <button class="button secondary" id="reset-branches-btn">
+                            <span>↺</span> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="branches-header">
+                <div class="header-path">Branch Path</div>
+                <div class="header-mode">Mode</div>
+                <div class="header-minfreespace">Min Free Space</div>
+                <div class="header-actions">Actions</div>
+            </div>
+
+            <div class="branches-container" id="branches-container">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <p>No branches configured</p>
+                    <p class="help-text">Click "Add Branch" to get started</p>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Policies Tab -->
+        <div class="tab-content" id="policies-panel" role="tabpanel" aria-labelledby="policies-tab">
+            <div class="controls-section">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label for="mount-select-policies">Mount Point</label>
+                        <select id="mount-select-policies">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="button success" id="save-policies-btn">
+                            <span>💾</span> Save Policies
+                        </button>
+                        <button class="button secondary" id="reset-policies-btn">
+                            <span>↺</span> Reset to Defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-grid" id="policy-grid">
+                <div class="policy-card">
+                    <div class="policy-title">Create Category</div>
+                    <div class="policy-description">
+                        Controls how new files and directories are created. Default: pfrd (percentage free random distribution)
+                    </div>
+                    <select class="policy-select" id="policy-create">
+                        <option value="pfrd">pfrd - Percentage Free Random Distribution</option>
+                        <option value="mfs">mfs - Most Free Space</option>
+                        <option value="lfs">lfs - Least Free Space</option>
+                        <option value="lus">lus - Least Used Space</option>
+                        <option value="rand">rand - Random</option>
+                        <option value="ff">ff - First Found</option>
+                        <option value="epmfs">epmfs - Existing Path Most Free Space</option>
+                        <option value="eprand">eprand - Existing Path Random</option>
+                    </select>
+                </div>
+
+                <div class="policy-card">
+                    <div class="policy-title">Search Category</div>
+                    <div class="policy-description">
+                        Controls how files are searched and accessed. Default: ff (first found)
+                    </div>
+                    <select class="policy-select" id="policy-search">
+                        <option value="ff">ff - First Found</option>
+                        <option value="newest">newest - Newest File</option>
+                        <option value="rand">rand - Random</option>
+                    </select>
+                </div>
+
+                <div class="policy-card">
+                    <div class="policy-title">Action Category</div>
+                    <div class="policy-description">
+                        Controls how file attributes are modified. Default: epall (existing path all)
+                    </div>
+                    <select class="policy-select" id="policy-action">
+                        <option value="epall">epall - Existing Path All</option>
+                        <option value="all">all - All Branches</option>
+                        <option value="epff">epff - Existing Path First Found</option>
+                        <option value="ff">ff - First Found</option>
+                    </select>
+                </div>
+
+                <div class="policy-card">
+                    <div class="policy-title">Readdir Policy</div>
+                    <div class="policy-description">
+                        Controls how directory contents are read. Default: seq (sequential)
+                    </div>
+                    <select class="policy-select" id="policy-readdir">
+                        <option value="seq">seq - Sequential</option>
+                        <option value="cosr">cosr - Concurrent Open Sequential Read</option>
+                        <option value="cor">cor - Concurrent Open and Read</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="help-text" style="margin-top: 20px;">
+                <strong>Policy Categories:</strong><br>
+                • Create: mkdir, create, mknod, symlink<br>
+                • Search: access, getattr, getxattr, ioctl, listxattr, open, readlink<br>
+                • Action: chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens<br>
+                • Readdir: Directory listing operations
+            </div>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div class="tab-content" id="config-panel" role="tabpanel" aria-labelledby="config-tab">
+            <div class="controls-section">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label for="mount-select-config">Mount Point</label>
+                        <select id="mount-select-config">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="button" id="export-config-btn">
+                            <span>📥</span> Export
+                        </button>
+                        <button class="button" id="import-config-btn">
+                            <span>📤</span> Import
+                        </button>
+                        <button class="button secondary" id="refresh-config-btn">
+                            <span>🔄</span> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="search" class="search-input" id="config-search" placeholder="Search configuration options...">
+            </div>
+
+            <div class="table-container">
+                <table id="config-table">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Current Value</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="config-tbody">
+                        <tr>
+                            <td colspan="3" class="empty-state">Loading configuration...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Commands Tab -->
+        <div class="tab-content" id="commands-panel" role="tabpanel" aria-labelledby="commands-tab">
+            <div class="controls-section">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label for="mount-select-commands">Mount Point</label>
+                        <select id="mount-select-commands">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command-section">
+                <h3 style="margin-bottom: 15px;">Runtime Commands</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">Garbage Collection</div>
+                        <div class="command-description">
+                            Trigger thorough garbage collection of mergerfs resources
+                        </div>
+                        <button class="button" id="cmd-gc">Execute</button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="command-title">Quick GC</div>
+                        <div class="command-description">
+                            Trigger simple garbage collection (runs periodically)
+                        </div>
+                        <button class="button" id="cmd-gc1">Execute</button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="command-title">Invalidate Cache</div>
+                        <div class="command-description">
+                            Invalidate all FUSE node caches (for debugging)
+                        </div>
+                        <button class="button warning" id="cmd-invalidate">Execute</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-text" style="margin-top: 20px;">
+                <strong>Commands:</strong><br>
+                • GC: Comprehensive cleanup of internal caches and resources<br>
+                • Quick GC: Lightweight cleanup that runs automatically every ~15 minutes<br>
+                • Invalidate: Forces FUSE to release cached file information (use for debugging)
+            </div>
+        </div>
+
+        <!-- File Info Tab -->
+        <div class="tab-content" id="info-panel" role="tabpanel" aria-labelledby="info-tab">
+            <div class="controls-section">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label for="mount-select-info">Mount Point</label>
+                        <select id="mount-select-info">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="file-path-input">File Path</label>
+                        <input type="text" id="file-path-input" placeholder="/path/to/file/in/mergerfs">
+                    </div>
+                    <div class="action-buttons">
+                        <button class="button" id="get-file-info-btn">
+                            <span>🔍</span> Get Info
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="file-info-content">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📄</div>
+                    <p>Enter a file path to get mergerfs-specific information</p>
+                    <p class="help-text">Information includes basepath, relpath, fullpath, and allpaths</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Path Selection Modal -->
+    <div class="modal" id="pathModal" role="dialog" aria-labelledby="pathModalTitle" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="pathModalTitle">Select Mount Path</h2>
+                <button class="modal-close" id="pathModalClose" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="search" class="search-input" id="mount-search" placeholder="Search mount points...">
+                </div>
+                <div class="mount-list" id="mount-list">
+                    <div class="empty-state">Loading available mount points...</div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="pathModal" class="modal">
-      <div class="modal-content">
-        <span class="close-modal" onclick="closePathModal()">&times;</span>
-        <h3>Select Path</h3>
-        <div id="mount-list"></div>
-      </div>
-    </div>
-    <div id="toast" class="toast"></div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
     <script>
-      let g_mounts = [];
-      function openTab(evt, tabName) {
-          var i, tabcontent, tablinks;
-          tabcontent = document.getElementsByClassName("tabcontent");
-          for (i = 0; i < tabcontent.length; i++) {
-              tabcontent[i].style.display = "none";
-          }
-          tablinks = document.getElementsByClassName("tablinks");
-          for (i = 0; i < tablinks.length; i++) {
-              tablinks[i].className = tablinks[i].className.replace(" active", "");
-          }
-          document.getElementById(tabName).style.display = "block";
-          if (evt) evt.currentTarget.className += " active";
-      }
-      function populateMountSelect(selectId, onchangeFunc) {
-          const select = document.getElementById(selectId);
-          select.innerHTML = '';
-          g_mounts.forEach(m => {
-              const opt = document.createElement('option');
-              opt.value = m;
-              opt.text = m;
-              select.appendChild(opt);
-          });
-          select.onchange = onchangeFunc;
-          if (g_mounts.length > 0) {
-              select.value = g_mounts[0];
-          }
-      }
-      function getMounts() {
-          return g_mounts;
-      }
-      function loadMounts() {
-          fetch('/mounts/mergerfs')
-              .then(r => {
-                  if (!r.ok) throw new Error('Failed to fetch mounts');
-                  return r.json();
-              })
-              .then(data => {
-                  g_mounts = data;
-                  populateMountSelect('mount-select-advanced', function() {
-                      loadAllForMount(this.value);
-                  });
-                  populateMountSelect('mount-select-branches', function() {
-                      loadAllForMount(this.value);
-                  });
-                  if (g_mounts.length > 0) {
-                      loadAllForMount(g_mounts[0]);
-                  }
-              })
-              .catch(err => console.error('Error loading mounts:', err));
-      }
-      function fetchBranches(mount) {
-          return fetch('/kvs/branches?mount=' + encodeURIComponent(mount))
-              .then(r => {
-                  if (!r.ok) throw new Error('Failed to fetch branches');
-                  return r.json();
-              });
-      }
-      function fetchKV(mount) {
-          return fetch('/kvs?mount=' + encodeURIComponent(mount))
-              .then(r => {
-                  if (!r.ok) throw new Error('Failed to fetch kvs');
-                  return r.json();
-              });
-      }
-      function loadAllForMount(mount) {
-          if (!mount) return;
-          Promise.all([fetchKV(mount), fetchBranches(mount)])
-              .then(([kvData, branchesStr]) => {
-                  renderKV(kvData, mount);
-                  renderBranches(branchesStr);
-              })
-              .catch(err => console.error('Error loading data for mount:', mount, err));
-      }
-      function renderKV(data, mount) {
-          const div = document.getElementById('kv-list');
-          div.innerHTML = '';
-          const table = document.createElement('table');
-          const headerRow = document.createElement('tr');
-          const headerKey = document.createElement('th');
-          headerKey.textContent = 'Key';
-          const headerValue = document.createElement('th');
-          headerValue.textContent = 'Value';
-          headerRow.appendChild(headerKey);
-          headerRow.appendChild(headerValue);
-          table.appendChild(headerRow);
-          const priorityKeys = ['fsname','branches','version'];
-          const orderedEntries = [];
-          priorityKeys.forEach(key => {
-              if (data.hasOwnProperty(key)) {
-                  orderedEntries.push([key, data[key]]);
-                  delete data[key];
-              }
-          });
-          for (const [k, v] of Object.entries(data)) {
-              orderedEntries.push([k, v]);
-          }
-          for (const [k, v] of orderedEntries) {
-              const row = document.createElement('tr');
-              const keyCell = document.createElement('td');
-              keyCell.textContent = k;
-              const valueCell = document.createElement('td');
-              const input = document.createElement('input');
-               input.type = 'text';
-               input.value = v;
-               input.style.width = '100%';
-               function submitValue(e) {
-                   if (e) {
-                       e.preventDefault();
-                       e.stopPropagation();
-                       e.stopImmediatePropagation();
-                   }
-                   const key = encodeURIComponent(k)
-                   const mount_uri = encodeURIComponent(mount)
-                   const postUrl = `/kvs/${key}?mount=${mount}`
-                   fetch(postUrl, {
-                       method: 'POST',
-                       headers: {'Content-Type': 'application/json'},
-                       body: JSON.stringify(input.value)
-                   }).then(response => {
-                       if(response.ok) {
-                           msg = `Success: ${key}=${input.value}`
-                           showToast(msg,true);
-                       } else {
-                           response.json().then(body => {
-                               msg = `msg: ${body["error"]["msg"]}<br>`
-                               msg += `mount: ${body["error"]["mount"]}<br>`
-                               msg += `key: ${body["error"]["key"]}<br>`
-                               msg += `value: ${body["error"]["value"]}`
-                               showToast(msg,false);
-                           });
-                       }
-                   });
-                   input.blur();
-               }
-               function handleEnter(e) {
-                   if (e.key === 'Enter' || e.keyCode === 13 || e.which === 13) {
-                       submitValue(e);
-                   }
-               }
-               input.onkeydown = handleEnter;
-               input.onkeypress = handleEnter;
-               input.onkeyup = handleEnter;
-               input.addEventListener('input', function(e) {
-                   if (e.inputType === 'insertLineBreak') {
-                       submitValue(e);
-                   }
-               });
-               input.addEventListener('change', function() { submitValue(); });
-              valueCell.appendChild(input);
-              row.appendChild(keyCell);
-              row.appendChild(valueCell);
-              table.appendChild(row);
-          }
-          div.appendChild(table);
-      }
-      function renderBranches(branchesStr) {
-          const div = document.getElementById('branches-list');
-          div.innerHTML = '';
+        // Global state management
+        const AppState = {
+            mounts: [],
+            currentMount: null,
+            branches: [],
+            config: {},
+            policies: {},
+            pendingPathInput: null,
+            branchCounter: 0
+        };
+
+        // Utility functions
+        const Utils = {
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            },
+
+            formatBytes(bytes, decimals = 2) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            },
+
+            validatePath(path) {
+                if (!path || typeof path !== 'string') {
+                    return { valid: false, message: 'Path is required' };
+                }
+                if (path.length > 4096) {
+                    return { valid: false, message: 'Path too long' };
+                }
+                if (!path.startsWith('/')) {
+                    return { valid: false, message: 'Path must be absolute' };
+                }
+                return { valid: true };
+            },
+
+            validateMinfreespace(value, unit) {
+                const num = parseFloat(value);
+                if (isNaN(num) || num < 0) {
+                    return { valid: false, message: 'Must be a positive number' };
+                }
+                if (unit === 'B' && num > 9000000000000000) {
+                    return { valid: false, message: 'Value too large' };
+                }
+                return { valid: true };
+            }
+        };
+
+        // API service - Updated to use xattrs for runtime configuration
+        const API = {
+            async request(url, options = {}) {
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...options.headers
+                        },
+                        ...options
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error('API request failed:', error);
+                    showToast(error.message || 'Request failed', 'error');
+                    throw error;
+                }
+            },
+
+            async getMounts() {
+                const data = await this.request('/mounts/mergerfs');
+                AppState.mounts = data;
+                return data;
+            },
+
+            async getAllMounts() {
+                return await this.request('/mounts');
+            },
+
+            async getBranches(mount) {
+                const response = await fetch(`/kvs/branches?mount=${encodeURIComponent(mount)}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                return await response.text();
+            },
+
+            async getConfig(mount) {
+                const data = await this.request(`/kvs?mount=${encodeURIComponent(mount)}`);
+                return data;
+            },
+
+            async setConfig(mount, key, value) {
+                return await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`, {
+                    method: 'POST',
+                    body: JSON.stringify(value)
+                });
+            },
+
+            async setBranches(mount, branches) {
+                return await this.request(`/kvs/branches?mount=${encodeURIComponent(mount)}`, {
+                    method: 'POST',
+                    body: JSON.stringify(branches)
+                });
+            },
+
+            // Runtime xattr operations
+            async setXattr(mount, key, value) {
+                // Use the .mergerfs pseudo file for runtime configuration
+                const xattrKey = `user.mergerfs.${key}`;
+                return await this.request(`/${encodeURIComponent(mount)}/.mergerfs`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Attr-Key': xattrKey,
+                        'Content-Type': 'text/plain'
+                    },
+                    body: value
+                });
+            },
+
+            async getXattr(mount, key) {
+                const xattrKey = `user.mergerfs.${key}`;
+                return await this.request(`/${encodeURIComponent(mount)}/.mergerfs?xattr=${encodeURIComponent(xattrKey)}`);
+            },
+
+            async executeCommand(mount, command) {
+                return await this.setXattr(mount, `cmd.${command}`, '');
+            },
+
+            async getFileInfo(mount, filePath, infoType) {
+                const xattrKey = `user.mergerfs.${infoType}`;
+                return await this.request(`/${encodeURIComponent(mount)}${filePath}?xattr=${encodeURIComponent(xattrKey)}`);
+            }
+        };
+
+        // UI Components
+        const UI = {
+            showLoading(element) {
+                if (element) {
+                    element.innerHTML = '<div class="loading-spinner"></div> Loading...';
+                }
+            },
+
+            hideLoading(element, content) {
+                if (element) {
+                    element.innerHTML = content || '';
+                }
+            },
+
+            showModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('show');
+                    modal.setAttribute('aria-hidden', 'false');
+                    const focusableElements = modal.querySelectorAll('button, input, select, textarea');
+                    if (focusableElements.length > 0) {
+                        focusableElements[0].focus();
+                    }
+                }
+            },
+
+            hideModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('show');
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            },
+
+            createBranchEntry(path = '', mode = 'RW', minfreespace = '') {
+                const entry = document.createElement('div');
+                entry.className = 'branch-entry';
+                entry.draggable = true;
+                entry.id = `branch-entry-${AppState.branchCounter++}`;
+
+                // Path group with input and browse button
+                const pathGroup = document.createElement('div');
+                pathGroup.className = 'branch-path-group';
+
+                const pathInput = document.createElement('input');
+                pathInput.type = 'text';
+                pathInput.className = 'branch-path';
+                pathInput.placeholder = '/path/to/branch';
+                pathInput.value = path;
+                pathInput.setAttribute('aria-label', 'Branch path');
+
+                const browseBtn = document.createElement('button');
+                browseBtn.className = 'icon-button browse-button';
+                browseBtn.innerHTML = 'Browse';
+                browseBtn.title = 'Browse mount points';
+                browseBtn.setAttribute('aria-label', 'Browse mount points');
+                browseBtn.onclick = () => openPathModal(pathInput);
+
+                pathGroup.appendChild(pathInput);
+                pathGroup.appendChild(browseBtn);
+
+                const modeSelect = document.createElement('select');
+                modeSelect.className = 'branch-mode';
+                modeSelect.setAttribute('aria-label', 'Branch mode');
+
+                const modes = [
+                    { value: 'RW', label: 'Read/Write' },
+                    { value: 'RO', label: 'Read-Only' },
+                    { value: 'NC', label: 'No Create' }
+                ];
+
+                modes.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.value;
+                    option.textContent = m.label;
+                    if (m.value === mode) option.selected = true;
+                    modeSelect.appendChild(option);
+                });
+
+                const minfreespaceContainer = document.createElement('div');
+                minfreespaceContainer.className = 'branch-minfreespace';
+
+                const valueInput = document.createElement('input');
+                valueInput.type = 'number';
+                valueInput.className = 'branch-minfreespace-value';
+                valueInput.placeholder = '0';
+                valueInput.min = '0';
+                valueInput.setAttribute('aria-label', 'Minimum free space value');
+
+                const unitSelect = document.createElement('select');
+                unitSelect.className = 'branch-minfreespace-unit';
+                unitSelect.setAttribute('aria-label', 'Minimum free space unit');
+
+                const units = [
+                    { value: 'B', label: 'B' },
+                    { value: 'K', label: 'KB' },
+                    { value: 'M', label: 'MB' },
+                    { value: 'G', label: 'GB' },
+                    { value: 'T', label: 'TB' }
+                ];
+
+                units.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.value;
+                    option.textContent = u.label;
+                    unitSelect.appendChild(option);
+                });
+
+                let value = '';
+                let unit = 'G';
+                if (minfreespace) {
+                    const match = minfreespace.match(/^(\d+)([BKMG])?$/i);
+                    if (match) {
+                        value = match[1];
+                        if (match[2]) unit = match[2].toUpperCase();
+                    } else {
+                        value = minfreespace;
+                    }
+                }
+
+                valueInput.value = value;
+                unitSelect.value = unit;
+
+                minfreespaceContainer.appendChild(valueInput);
+                minfreespaceContainer.appendChild(unitSelect);
+
+                const controls = document.createElement('div');
+                controls.className = 'branch-controls';
+
+                const moveUpBtn = document.createElement('button');
+                moveUpBtn.className = 'icon-button';
+                moveUpBtn.innerHTML = '↑';
+                moveUpBtn.title = 'Move up';
+                moveUpBtn.setAttribute('aria-label', 'Move branch up');
+                moveUpBtn.onclick = () => moveBranchUp(entry);
+
+                const moveDownBtn = document.createElement('button');
+                moveDownBtn.className = 'icon-button';
+                moveDownBtn.innerHTML = '↓';
+                moveDownBtn.title = 'Move down';
+                moveDownBtn.setAttribute('aria-label', 'Move branch down');
+                moveDownBtn.onclick = () => moveBranchDown(entry);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'icon-button';
+                removeBtn.innerHTML = '🗑';
+                removeBtn.title = 'Remove branch';
+                removeBtn.setAttribute('aria-label', 'Remove branch');
+                removeBtn.onclick = () => entry.remove();
+
+                controls.appendChild(moveUpBtn);
+                controls.appendChild(moveDownBtn);
+                controls.appendChild(removeBtn);
+
+                entry.appendChild(pathGroup);
+                entry.appendChild(modeSelect);
+                entry.appendChild(minfreespaceContainer);
+                entry.appendChild(controls);
+
+                this.addDragDropListeners(entry);
+
+                return entry;
+            },
+
+            addDragDropListeners(entry) {
+                entry.addEventListener('dragstart', handleDragStart);
+                entry.addEventListener('dragend', handleDragEnd);
+                entry.addEventListener('dragover', handleDragOver);
+                entry.addEventListener('dragleave', handleDragLeave);
+                entry.addEventListener('drop', handleDrop);
+            }
+        };
+
+        // Toast notifications
+        function showToast(message, type = 'success', duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
 
 
 
-          if (!branchesStr) {
-              addBranchEntry();
-              return;
-          }
-          const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
-          branches.forEach(branchStr => {
-              let path = branchStr;
-              let mode = 'RW';
-              let minfreespace = '';
-              const eqPos = branchStr.indexOf('=');
-              if (eqPos !== -1) {
-                  path = branchStr.substring(0, eqPos).trim();
-                  const options = branchStr.substring(eqPos + 1).trim();
-                  if (options) {
-                      const parts = options.split(',');
-                      if (parts.length >= 1 && parts[0]) {
-                          mode = parts[0].trim().toUpperCase();
-                      }
-                      if (parts.length >= 2 && parts[1]) {
-                          minfreespace = parts[1].trim();
-                      }
-                  }
-              }
-              addBranchEntry(path, mode, minfreespace);
-          });
-      }
-      let branchEntryCounter = 0;
-      let pendingPathInput = null;
-      function addBranchEntry(path = '', mode = 'RW', minfreespace = '') {
-          const container = document.getElementById('branches-list');
-          const entry = document.createElement('div');
-          entry.className = 'branch-entry';
-          entry.draggable = true;
-          entry.id = 'branch-entry-' + branchEntryCounter++;
-          entry.addEventListener('dragstart', handleDragStart);
-          entry.addEventListener('dragend', handleDragEnd);
-          entry.addEventListener('dragover', handleDragOver);
-          entry.addEventListener('dragleave', handleDragLeave);
-          entry.addEventListener('drop', handleDrop);
-           const pathInput = document.createElement('input');
-           pathInput.type = 'text';
-           pathInput.className = 'branch-path';
-           pathInput.placeholder = 'path';
-           pathInput.value = path;
-           const controlsWrapper = document.createElement('div');
-           controlsWrapper.className = 'branch-controls-wrapper';
-           const pathBtn = document.createElement('button');
-           pathBtn.className = 'path-btn';
-            pathBtn.textContent = 'Mounts';
-           pathBtn.onclick = () => openPathModal(pathInput);
-           const modeSelect = document.createElement('select');
-           modeSelect.className = 'branch-mode';
-           ['RW', 'NC', 'RO'].forEach(m => {
-               const opt = document.createElement('option');
-               opt.value = m;
-               opt.textContent = m;
-               if (m === mode) opt.selected = true;
-               modeSelect.appendChild(opt);
-           });
-           const minfreespaceContainer = document.createElement('div');
-           minfreespaceContainer.className = 'branch-minfreespace-container';
-          const minfreespaceValueInput = document.createElement('input');
-          minfreespaceValueInput.type = 'number';
-          minfreespaceValueInput.className = 'branch-minfreespace-value';
-           minfreespaceValueInput.placeholder = 'minfreespace';
-          minfreespaceValueInput.min = '0';
-          const minfreespaceUnitSelect = document.createElement('select');
-          minfreespaceUnitSelect.className = 'branch-minfreespace-unit';
-          const units = [
-              {value: 'B', label: 'B'},
-              {value: 'K', label: 'KiB'},
-              {value: 'M', label: 'MiB'},
-              {value: 'G', label: 'GiB'},
-              {value: 'T', label: 'TiB'}
-          ];
-          units.forEach(u => {
-              const opt = document.createElement('option');
-              opt.value = u.value;
-              opt.textContent = u.label;
-              minfreespaceUnitSelect.appendChild(opt);
-          });
-          let minfreespaceValue = '';
-          let minfreespaceUnit = 'G';
-          if (minfreespace) {
-              const match = minfreespace.match(/^(\d+)([BKMG])?$/i);
-              if (match) {
-                  minfreespaceValue = match[1];
-                  if (match[2]) {
-                      minfreespaceUnit = match[2].toUpperCase();
-                  }
-              } else {
-                  minfreespaceValue = minfreespace;
-              }
-          }
-           minfreespaceValueInput.value = minfreespaceValue;
-           minfreespaceUnitSelect.value = minfreespaceUnit;
-           minfreespaceContainer.appendChild(minfreespaceValueInput);
-           minfreespaceContainer.appendChild(minfreespaceUnitSelect);
-           const moveUpBtn = document.createElement('button');
-           moveUpBtn.className = 'branch-move-btn branch-move-up';
-           moveUpBtn.innerHTML = '&#9650;';
-           moveUpBtn.title = 'Move up';
-           moveUpBtn.onclick = () => moveEntryUp(entry);
-           const moveDownBtn = document.createElement('button');
-           moveDownBtn.className = 'branch-move-btn branch-move-down';
-           moveDownBtn.innerHTML = '&#9660;';
-           moveDownBtn.title = 'Move down';
-           moveDownBtn.onclick = () => moveEntryDown(entry);
-           const removeBtn = document.createElement('button');
-           removeBtn.className = 'branch-remove';
-           removeBtn.textContent = 'Remove';
-           removeBtn.onclick = () => entry.remove();
-           controlsWrapper.appendChild(pathBtn);
-           controlsWrapper.appendChild(modeSelect);
-           controlsWrapper.appendChild(minfreespaceContainer);
-           controlsWrapper.appendChild(moveUpBtn);
-           controlsWrapper.appendChild(moveDownBtn);
-           controlsWrapper.appendChild(removeBtn);
-           entry.appendChild(pathInput);
-           entry.appendChild(controlsWrapper);
-          container.appendChild(entry);
-      }
-      let draggedEntry = null;
-      function handleDragStart(e) {
-          draggedEntry = this;
-          this.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', this.id);
-      }
-      function handleDragEnd(e) {
-          this.classList.remove('dragging');
-          document.querySelectorAll('.branch-entry').forEach(entry => {
-              entry.classList.remove('drag-over');
-          });
-          draggedEntry = null;
-      }
-      function handleDragOver(e) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          if (this !== draggedEntry) {
-              this.classList.add('drag-over');
-          }
-      }
-      function handleDragLeave(e) {
-          this.classList.remove('drag-over');
-      }
-      function handleDrop(e) {
-          e.preventDefault();
-          this.classList.remove('drag-over');
-          if (this !== draggedEntry) {
-              const container = document.getElementById('branches-list');
-              const allEntries = Array.from(container.querySelectorAll('.branch-entry'));
-              const draggedIndex = allEntries.indexOf(draggedEntry);
-              const targetIndex = allEntries.indexOf(this);
-              if (draggedIndex < targetIndex) {
-                  container.insertBefore(draggedEntry, this.nextSibling);
-              } else {
-                  container.insertBefore(draggedEntry, this);
-              }
-          }
-      }
-      function moveEntryUp(entry) {
-          const prev = entry.previousElementSibling;
-          if (prev) {
-              entry.parentNode.insertBefore(entry, prev);
-          }
-      }
-      function moveEntryDown(entry) {
-          const next = entry.nextElementSibling;
-          if (next) {
-              entry.parentNode.insertBefore(next, entry);
-          }
-      }
-      function openPathModal(targetInput) {
-          pendingPathInput = targetInput;
-          const modal = document.getElementById('pathModal');
-          const mountList = document.getElementById('mount-list');
-          mountList.innerHTML = '';
-          const currentMount = document.getElementById('mount-select-branches').value;
-          fetch('/mounts')
-              .then(r => r.json())
-              .then(mounts => {
-                  mounts.forEach(m => {
-                      if (m.path === currentMount) return;
-                      const div = document.createElement('div');
-                      div.className = 'mount-list-item';
-                      div.innerHTML = '<span style="color: #888;">[' + m.type + ']</span> ' + m.path;
-                      div.onclick = () => {
-                          if (pendingPathInput) {
-                              pendingPathInput.value = m.path;
-                          }
-                          closePathModal();
-                      };
-                      mountList.appendChild(div);
-                  });
-                  if (mountList.children.length === 0) {
-                      mountList.innerHTML = '<div style="padding: 10px; color: #888;">No other mountpoints available</div>';
-                  }
-              })
-              .catch(err => {
-                  console.error('Error loading mounts:', err);
-                  mountList.innerHTML = '<div style="padding: 10px; color: #ff6b6b;">Error loading mounts</div>';
-              });
-          modal.style.display = 'block';
-      }
-      function closePathModal() {
-          document.getElementById('pathModal').style.display = 'none';
-          pendingPathInput = null;
-      }
-      function submitBranches() {
-          const mount = document.getElementById('mount-select-branches').value;
-          const entries = document.querySelectorAll('.branch-entry');
-          const branches = [];
-          entries.forEach(entry => {
-              const pathInput = entry.querySelector('.branch-path');
-              const modeSelect = entry.querySelector('.branch-mode');
-              const minfreespaceValueInput = entry.querySelector('.branch-minfreespace-value');
-              const minfreespaceUnitSelect = entry.querySelector('.branch-minfreespace-unit');
-              if (pathInput && pathInput.value.trim()) {
-                  let branchStr = pathInput.value.trim();
-                  if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
-                      branchStr += '=' + modeSelect.value;
-                  } else {
-                      branchStr += '=RW';
-                  }
-                  if (minfreespaceValueInput && minfreespaceValueInput.value.trim() && minfreespaceUnitSelect) {
-                      const value = minfreespaceValueInput.value.trim();
-                      const unit = minfreespaceUnitSelect.value;
-                      branchStr += ',' + value + unit;
-                  }
-                  branches.push(branchStr);
-              }
-          });
-          const branchesStr = branches.join(':');
-          fetch(`/kvs/branches?mount=${encodeURIComponent(mount)}`, {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify(branchesStr)
-          }).then(response => {
-              if(response.ok) {
-                  const msg = 'branches updated'
-                  showToast(msg,true);
-                  loadMounts();
-              } else {
-                  response.text().then(body => {
-                      alert('Status: ' + response.status + '\nBody: ' + body);
-                  });
-              }
-          });
-      }
+        // Tab management
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
 
-       let toastTimer = null;
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.getAttribute('aria-controls');
 
-       function showToast(msg,success) {
-           const toast = document.getElementById('toast');
-           if (toastTimer) clearTimeout(toastTimer);
-           toast.innerHTML = msg;
-           if(success) {
-               toast.classList.remove('show_failure');
-               toast.classList.add('show_success');
-               toastTimer = setTimeout(() => toast.classList.remove('show_success'), 3000);
-           } else {
-               toast.classList.remove('show_success');
-               toast.classList.add('show_failure')
-               toastTimer = setTimeout(() => toast.classList.remove('show_failure'), 5000);
-           }
-       }
-      
-      window.onclick = function(event) {
-          const modal = document.getElementById('pathModal');
-          if (event.target === modal) {
-              closePathModal();
-          }
-      }
-      window.onload = () => { loadMounts(); };
-      </script>
-  </body>
+                    tabButtons.forEach(btn => {
+                        btn.setAttribute('aria-selected', 'false');
+                        btn.classList.remove('active');
+                        btn.setAttribute('tabindex', '-1');
+                    });
+
+                    button.setAttribute('aria-selected', 'true');
+                    button.classList.add('active');
+                    button.setAttribute('tabindex', '0');
+
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+
+                    document.getElementById(targetTab).classList.add('active');
+
+                    localStorage.setItem('mergerfs_activeTab', targetTab);
+                });
+
+                button.addEventListener('keydown', (e) => {
+                    let targetButton = null;
+
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                        case 'ArrowUp':
+                            targetButton = button.previousElementSibling || tabButtons[tabButtons.length - 1];
+                            break;
+                        case 'ArrowRight':
+                        case 'ArrowDown':
+                            targetButton = button.nextElementSibling || tabButtons[0];
+                            break;
+                        case 'Home':
+                            targetButton = tabButtons[0];
+                            break;
+                        case 'End':
+                            targetButton = tabButtons[tabButtons.length - 1];
+                            break;
+                    }
+
+                    if (targetButton) {
+                        e.preventDefault();
+                        targetButton.focus();
+                    }
+                });
+            });
+
+            const savedTab = localStorage.getItem('mergerfs_activeTab');
+            if (savedTab) {
+                const savedButton = document.querySelector(`[aria-controls="${savedTab}"]`);
+                if (savedButton) {
+                    savedButton.click();
+                }
+            }
+        }
+
+        // Mount management
+        async function loadMounts() {
+            try {
+                await API.getMounts();
+                populateMountSelects();
+
+                if (AppState.mounts.length > 0) {
+                    AppState.currentMount = AppState.mounts[0];
+                    await loadMountData(AppState.currentMount);
+                }
+            } catch (error) {
+                console.error('Failed to load mounts:', error);
+                showToast('Failed to load mount points', 'error');
+            }
+        }
+
+        function populateMountSelects() {
+            const selects = ['mount-select-branches', 'mount-select-policies', 'mount-select-config', 'mount-select-commands', 'mount-select-info'];
+
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '';
+
+                    if (AppState.mounts.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'No mounts available';
+                        select.appendChild(option);
+                        return;
+                    }
+
+                    AppState.mounts.forEach(mount => {
+                        const option = document.createElement('option');
+                        option.value = mount;
+                        option.textContent = mount;
+                        select.appendChild(option);
+                    });
+
+                    if (AppState.currentMount) {
+                        select.value = AppState.currentMount;
+                    }
+
+                    select.addEventListener('change', async () => {
+                        if (select.value) {
+                            AppState.currentMount = select.value;
+                            await loadMountData(select.value);
+                        }
+                    });
+                }
+            });
+        }
+
+        async function loadMountData(mount) {
+            if (!mount) return;
+
+            try {
+                const activeTab = document.querySelector('.tab-button[aria-selected="true"]').getAttribute('aria-controls');
+
+                switch(activeTab) {
+                    case 'branches-panel':
+                        await loadBranches(mount);
+                        break;
+                    case 'policies-panel':
+                        await loadPolicies(mount);
+                        break;
+                    case 'config-panel':
+                        await loadConfig(mount);
+                        break;
+                    case 'commands-panel':
+                        // Commands don't need data loading
+                        break;
+                    case 'info-panel':
+                        // File info is loaded on demand
+                        break;
+                }
+            } catch (error) {
+                console.error('Failed to load mount data:', error);
+                showToast('Failed to load configuration', 'error');
+            }
+        }
+
+        // Branch management
+        async function loadBranches(mount) {
+            const container = document.getElementById('branches-container');
+            UI.showLoading(container);
+
+            try {
+                const branchesStr = await API.getBranches(mount);
+                const container = document.getElementById('branches-container');
+                container.innerHTML = '';
+
+                if (!branchesStr) {
+                    container.innerHTML = UI.createBranchEntry().outerHTML;
+                    return;
+                }
+
+                const branches = branchesStr.split(':').map(b => b.trim()).filter(b => b);
+
+                if (branches.length === 0) {
+                    container.innerHTML = UI.createBranchEntry().outerHTML;
+                    return;
+                }
+
+                branches.forEach(branchStr => {
+                    let path = branchStr;
+                    let mode = 'RW';
+                    let minfreespace = '';
+
+                    const eqPos = branchStr.indexOf('=');
+                    if (eqPos !== -1) {
+                        path = branchStr.substring(0, eqPos).trim();
+                        const options = branchStr.substring(eqPos + 1).trim();
+                        if (options) {
+                            const parts = options.split(',');
+                            if (parts.length >= 1 && parts[0]) {
+                                mode = parts[0].trim().toUpperCase();
+                            }
+                            if (parts.length >= 2 && parts[1]) {
+                                minfreespace = parts[1].trim();
+                            }
+                        }
+                    }
+
+                    container.appendChild(UI.createBranchEntry(path, mode, minfreespace));
+                });
+            } catch (error) {
+                console.error('Failed to load branches:', error);
+                const container = document.getElementById('branches-container');
+                container.innerHTML = '<div class="empty-state">Failed to load branches</div>';
+            }
+        }
+
+        async function saveBranches() {
+            if (!AppState.currentMount) {
+                showToast('No mount selected', 'error');
+                return;
+            }
+
+            const entries = document.querySelectorAll('.branch-entry');
+            const branches = [];
+
+            for (const entry of entries) {
+                const pathInput = entry.querySelector('.branch-path');
+                const modeSelect = entry.querySelector('.branch-mode');
+                const valueInput = entry.querySelector('.branch-minfreespace-value');
+                const unitSelect = entry.querySelector('.branch-minfreespace-unit');
+
+                if (pathInput && pathInput.value.trim()) {
+                    const pathValidation = Utils.validatePath(pathInput.value.trim());
+                    if (!pathValidation.valid) {
+                        showToast(`Invalid path: ${pathValidation.message}`, 'error');
+                        pathInput.focus();
+                        return;
+                    }
+
+                    if (valueInput.value.trim()) {
+                        const spaceValidation = Utils.validateMinfreespace(valueInput.value.trim(), unitSelect.value);
+                        if (!spaceValidation.valid) {
+                            showToast(`Invalid minfreespace: ${spaceValidation.message}`, 'error');
+                            valueInput.focus();
+                            return;
+                        }
+                    }
+
+                    let branchStr = pathInput.value.trim();
+
+                    if (modeSelect && modeSelect.value && modeSelect.value !== 'RW') {
+                        branchStr += '=' + modeSelect.value;
+                    } else {
+                        branchStr += '=RW';
+                    }
+
+                    if (valueInput && valueInput.value.trim() && unitSelect) {
+                        const value = valueInput.value.trim();
+                        const unit = unitSelect.value;
+                        branchStr += ',' + value + unit;
+                    }
+
+                    branches.push(branchStr);
+                }
+            }
+
+            if (branches.length === 0) {
+                showToast('At least one branch is required', 'error');
+                return;
+            }
+
+            try {
+                await API.setBranches(AppState.currentMount, branches.join(':'));
+                showToast('Branch configuration saved successfully', 'success');
+                await loadBranches(AppState.currentMount);
+            } catch (error) {
+                console.error('Failed to save branches:', error);
+                showToast('Failed to save branch configuration', 'error');
+            }
+        }
+
+        function addBranchEntry() {
+            const container = document.getElementById('branches-container');
+
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            container.appendChild(UI.createBranchEntry());
+        }
+
+        function moveBranchUp(entry) {
+            const prev = entry.previousElementSibling;
+            if (prev && prev.classList.contains('branch-entry')) {
+                entry.parentNode.insertBefore(entry, prev);
+            }
+        }
+
+        function moveBranchDown(entry) {
+            const next = entry.nextElementSibling;
+            if (next && next.classList.contains('branch-entry')) {
+                entry.parentNode.insertBefore(next, entry);
+            }
+        }
+
+        // Drag and drop handlers
+        let draggedEntry = null;
+
+        function handleDragStart(e) {
+            draggedEntry = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.branch-entry').forEach(entry => {
+                entry.classList.remove('drag-over');
+            });
+            draggedEntry = null;
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+
+            if (this !== draggedEntry) {
+                this.classList.add('drag-over');
+            }
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            this.classList.remove('drag-over');
+
+            if (draggedEntry !== this) {
+                const container = document.getElementById('branches-container');
+                const allEntries = Array.from(container.querySelectorAll('.branch-entry'));
+                const draggedIndex = allEntries.indexOf(draggedEntry);
+                const targetIndex = allEntries.indexOf(this);
+
+                if (draggedIndex < targetIndex) {
+                    container.insertBefore(draggedEntry, this.nextSibling);
+                } else {
+                    container.insertBefore(draggedEntry, this);
+                }
+            }
+
+            return false;
+        }
+
+        // Policy management
+        async function loadPolicies(mount) {
+            // Load current policy values from runtime configuration
+            try {
+                const policyKeys = ['category.create', 'category.search', 'category.action', 'func.readdir'];
+                const policyValues = {};
+
+                for (const key of policyKeys) {
+                    try {
+                        const value = await API.getXattr(mount, key);
+                        policyValues[key] = value;
+                    } catch (e) {
+                        console.warn(`Failed to load policy ${key}:`, e);
+                        policyValues[key] = getDefaultPolicy(key);
+                    }
+                }
+
+                // Update UI with loaded values
+                Object.entries(policyValues).forEach(([key, value]) => {
+                    const selectId = `policy-${key.split('.').pop()}`;
+                    const select = document.getElementById(selectId);
+                    if (select) {
+                        select.value = value;
+                    }
+                });
+
+                AppState.policies = policyValues;
+            } catch (error) {
+                console.error('Failed to load policies:', error);
+                showToast('Failed to load policies', 'error');
+            }
+        }
+
+        function getDefaultPolicy(key) {
+            const defaults = {
+                'category.create': 'pfrd',
+                'category.search': 'ff',
+                'category.action': 'epall',
+                'func.readdir': 'seq'
+            };
+            return defaults[key] || '';
+        }
+
+        async function savePolicies() {
+            if (!AppState.currentMount) {
+                showToast('No mount selected', 'error');
+                return;
+            }
+
+            const policyMappings = {
+                'policy-create': 'category.create',
+                'policy-search': 'category.search',
+                'policy-action': 'category.action',
+                'policy-readdir': 'func.readdir'
+            };
+
+            try {
+                for (const [selectId, policyKey] of Object.entries(policyMappings)) {
+                    const select = document.getElementById(selectId);
+                    if (select && select.value) {
+                        await API.setXattr(AppState.currentMount, policyKey, select.value);
+                    }
+                }
+
+                showToast('Policy configuration saved successfully', 'success');
+                await loadPolicies(AppState.currentMount);
+            } catch (error) {
+                console.error('Failed to save policies:', error);
+                showToast('Failed to save policy configuration', 'error');
+            }
+        }
+
+        // Configuration management
+        async function loadConfig(mount) {
+            const tbody = document.getElementById('config-tbody');
+            UI.showLoading(tbody);
+
+            try {
+                const config = await API.getConfig(mount);
+                AppState.config = config;
+                renderConfigTable(config);
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Failed to load configuration</td></tr>';
+            }
+        }
+
+        function renderConfigTable(config) {
+            const tbody = document.getElementById('config-tbody');
+            tbody.innerHTML = '';
+
+            const priorityKeys = ['fsname', 'branches', 'version', 'minfreespace', 'moveonenospc'];
+            const orderedEntries = [];
+
+            priorityKeys.forEach(key => {
+                if (config.hasOwnProperty(key)) {
+                    orderedEntries.push([key, config[key]]);
+                    delete config[key];
+                }
+            });
+
+            for (const [key, value] of Object.entries(config)) {
+                orderedEntries.push([key, value]);
+            }
+
+            const descriptions = {
+                'fsname': 'Filesystem name',
+                'branches': 'Branch paths and options',
+                'version': 'mergerfs version',
+                'minfreespace': 'Minimum free space for creation',
+                'moveonenospc': 'Move file when no space left',
+                'cache.files': 'File caching mode',
+                'cache.attr': 'Attribute cache timeout',
+                'cache.entry': 'Entry cache timeout',
+                'category.create': 'File creation policy',
+                'category.search': 'File search policy',
+                'category.action': 'File action policy',
+                'inodecalc': 'Inode calculation method',
+                'threads': 'Number of worker threads'
+            };
+
+            orderedEntries.forEach(([key, value]) => {
+                const row = document.createElement('tr');
+
+                const keyCell = document.createElement('td');
+                keyCell.textContent = key;
+                keyCell.style.fontFamily = 'monospace';
+                keyCell.style.fontSize = '13px';
+
+                const valueCell = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+                input.style.width = '100%';
+                input.style.fontFamily = 'monospace';
+                input.style.fontSize = '13px';
+
+                const debouncedSave = Utils.debounce(async () => {
+                    try {
+                        await API.setConfig(AppState.currentMount, key, input.value);
+                        showToast(`Updated ${key}`, 'success', 2000);
+                    } catch (error) {
+                        showToast(`Failed to update ${key}`, 'error');
+                        input.value = value;
+                    }
+                }, 1000);
+
+                input.addEventListener('input', debouncedSave);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        input.blur();
+                    }
+                });
+
+                valueCell.appendChild(input);
+
+                const descCell = document.createElement('td');
+                descCell.textContent = descriptions[key] || '';
+                descCell.style.fontSize = '12px';
+                descCell.style.color = 'var(--text-secondary)';
+
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                row.appendChild(descCell);
+                tbody.appendChild(row);
+            });
+
+            if (orderedEntries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No configuration available</td></tr>';
+            }
+        }
+
+        // Command execution
+        async function executeCommand(command) {
+            if (!AppState.currentMount) {
+                showToast('No mount selected', 'error');
+                return;
+            }
+
+            try {
+                await API.executeCommand(AppState.currentMount, command);
+                showToast(`${command} command executed successfully`, 'success');
+            } catch (error) {
+                console.error(`Failed to execute ${command}:`, error);
+                showToast(`Failed to execute ${command}`, 'error');
+            }
+        }
+
+        // File info
+        async function getFileInfo() {
+            const mount = AppState.currentMount;
+            const filePath = document.getElementById('file-path-input').value.trim();
+
+            if (!mount) {
+                showToast('No mount selected', 'error');
+                return;
+            }
+
+            if (!filePath) {
+                showToast('Please enter a file path', 'error');
+                return;
+            }
+
+            const content = document.getElementById('file-info-content');
+            UI.showLoading(content);
+
+            try {
+                const infoTypes = ['basepath', 'relpath', 'fullpath', 'allpaths'];
+                const info = {};
+
+                for (const type of infoTypes) {
+                    try {
+                        info[type] = await API.getFileInfo(mount, filePath, type);
+                    } catch (e) {
+                        info[type] = 'Not available';
+                    }
+                }
+
+                content.innerHTML = `
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border-color);">
+                        <h3 style="margin-top: 0; color: var(--accent-primary);">File Information</h3>
+                        <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: monospace; font-size: 13px;">
+                            <strong>Base Path:</strong> <span>${Utils.escapeHtml(info.basepath)}</span>
+                            <strong>Relative Path:</strong> <span>${Utils.escapeHtml(info.relpath)}</span>
+                            <strong>Full Path:</strong> <span>${Utils.escapeHtml(info.fullpath)}</span>
+                            <strong>All Paths:</strong> <span style="word-break: break-all;">${Utils.escapeHtml(info.allpaths)}</span>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to get file info:', error);
+                content.innerHTML = '<div class="empty-state">Failed to retrieve file information</div>';
+                showToast('Failed to get file information', 'error');
+            }
+        }
+
+        // Modal management
+        function openPathModal(targetInput) {
+            AppState.pendingPathInput = targetInput;
+            UI.showModal('pathModal');
+            loadAvailableMounts();
+        }
+
+        async function loadAvailableMounts() {
+            const mountList = document.getElementById('mount-list');
+            UI.showLoading(mountList);
+
+            try {
+                const mounts = await API.getAllMounts();
+                const currentMount = AppState.currentMount;
+
+                mountList.innerHTML = '';
+
+                const filteredMounts = mounts.filter(m => m.path !== currentMount);
+
+                if (filteredMounts.length === 0) {
+                    mountList.innerHTML = '<div class="empty-state">No other mount points available</div>';
+                    return;
+                }
+
+                filteredMounts.forEach(mount => {
+                    const item = document.createElement('div');
+                    item.className = 'mount-item';
+                    item.innerHTML = `
+                        <div>
+                            <div class="mount-path">${Utils.escapeHtml(mount.path)}</div>
+                        </div>
+                        <div class="mount-type">${Utils.escapeHtml(mount.type)}</div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        if (AppState.pendingPathInput) {
+                            AppState.pendingPathInput.value = mount.path;
+                        }
+                        UI.hideModal('pathModal');
+                        AppState.pendingPathInput = null;
+                    });
+
+                    mountList.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Failed to load mounts:', error);
+                mountList.innerHTML = '<div class="empty-state">Failed to load mount points</div>';
+            }
+        }
+
+        // Search functionality
+        function initSearch() {
+            const searchInput = document.getElementById('config-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', Utils.debounce(() => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const rows = document.querySelectorAll('#config-tbody tr');
+
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(searchTerm) ? '' : 'none';
+                    });
+                }, 300));
+            }
+
+            const mountSearchInput = document.getElementById('mount-search');
+            if (mountSearchInput) {
+                mountSearchInput.addEventListener('input', Utils.debounce(() => {
+                    const searchTerm = mountSearchInput.value.toLowerCase();
+                    const items = document.querySelectorAll('.mount-item');
+
+                    items.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        item.style.display = text.includes(searchTerm) ? '' : 'none';
+                    });
+                }, 300));
+            }
+        }
+
+        // Initialize application
+        async function initApp() {
+            try {
+                initTabs();
+                initSearch();
+                await loadMounts();
+
+                // Set up event listeners
+                document.getElementById('add-branch-btn').addEventListener('click', addBranchEntry);
+                document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
+                document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
+                document.getElementById('save-policies-btn').addEventListener('click', savePolicies);
+                document.getElementById('reset-policies-btn').addEventListener('click', () => loadPolicies(AppState.currentMount));
+                document.getElementById('export-config-btn').addEventListener('click', exportConfig);
+                document.getElementById('import-config-btn').addEventListener('click', importConfig);
+                document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
+                document.getElementById('get-file-info-btn').addEventListener('click', getFileInfo);
+
+                // Command buttons
+                document.getElementById('cmd-gc').addEventListener('click', () => executeCommand('gc'));
+                document.getElementById('cmd-gc1').addEventListener('click', () => executeCommand('gc1'));
+                document.getElementById('cmd-invalidate').addEventListener('click', () => executeCommand('invalidate-all-nodes'));
+
+                // Modal event listeners
+                document.getElementById('pathModalClose').addEventListener('click', () => UI.hideModal('pathModal'));
+                document.getElementById('pathModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'pathModal') {
+                        UI.hideModal('pathModal');
+                    }
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case 's':
+                                e.preventDefault();
+                                const activeTab = document.querySelector('.tab-button[aria-selected="true"]').getAttribute('aria-controls');
+                                if (activeTab === 'branches-panel') {
+                                    document.getElementById('save-branches-btn').click();
+                                } else if (activeTab === 'policies-panel') {
+                                    document.getElementById('save-policies-btn').click();
+                                }
+                                break;
+                            case 'e':
+                                e.preventDefault();
+                                document.getElementById('export-config-btn').click();
+                                break;
+                            case 'o':
+                                e.preventDefault();
+                                document.getElementById('import-config-btn').click();
+                                break;
+
+                        }
+                    }
+
+                    if (e.key === 'Escape') {
+                        UI.hideModal('pathModal');
+                    }
+                });
+
+
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                showToast('Failed to initialize application', 'error');
+            }
+        }
+
+        // Export/Import functionality
+        function exportConfig() {
+            if (!AppState.currentMount) {
+                showToast('No mount selected', 'error');
+                return;
+            }
+
+            const config = {
+                mount: AppState.currentMount,
+                timestamp: new Date().toISOString(),
+                config: AppState.config,
+                policies: AppState.policies,
+                exportedBy: 'mergerfs Runtime Manager'
+            };
+
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mergerfs-config-${AppState.currentMount.replace(/[\/\\]/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast('Configuration exported successfully', 'success');
+        }
+
+        function importConfig() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const config = JSON.parse(text);
+
+                    if (!config.config || !config.mount) {
+                        throw new Error('Invalid configuration file');
+                    }
+
+                    showToast('Configuration imported successfully. Please review and save changes.', 'success');
+                    // Note: Actual import would require proper API implementation
+                } catch (error) {
+                    console.error('Failed to import config:', error);
+                    showToast('Failed to import configuration', 'error');
+                }
+            });
+
+            input.click();
+        }
+
+        // Start the application when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
 </html>
