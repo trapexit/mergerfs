@@ -384,6 +384,7 @@ _post_kvs_key(const httplib::Request &req_,
       return;
     }
 
+  int rv;
   fs::path mount;
   std::string key;
   std::string val;
@@ -392,7 +393,7 @@ _post_kvs_key(const httplib::Request &req_,
   val = json::parse(req_.body);
   mount = req_.get_param_value("mount");
 
-  int rv = mergerfs::api::set_kv(mount,key,val);
+  rv = mergerfs::api::set_kv(mount,key,val);
 
   if(rv >= 0)
     {
