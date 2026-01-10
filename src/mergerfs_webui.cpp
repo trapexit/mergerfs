@@ -33,7 +33,13 @@ _generate_error(const fs::path    &mount_,
   switch(err_)
     {
     case -EROFS:
-    case -EINVAL;
+      rv["msg"] = fmt::format("'{}' is read only.",key_);
+      break;
+    case -EINVAL:
+      rv["msg"] = fmt::format("value '{}' is invalid for '{}'",
+                              val_,
+                              key_);
+      break;
     case -EACCES:
       rv["msg"] = fmt::format("mergerfs.webui (pid {}) is running as uid {}"
                               " which appears not to have access to modify the"
