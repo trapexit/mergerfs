@@ -231,9 +231,8 @@ _get_mounts_mergerfs(const httplib::Request &req_,
       json_array.push_back(mount.dir);
     }
 
-  response += "]";
-
-  res_.set_content(response, "application/json");
+  res_.set_content(json_array.dump(),
+                   "application/json");
 }
 
 static
