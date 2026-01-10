@@ -155,7 +155,7 @@ window.onload = () => { loadMounts(); };
 )html";
 
   res_.set_content(html,
-                    "text/html");
+                   "text/html");
 }
 
 #define IERT(S) if(type_ == (S)) return true;
@@ -187,10 +187,9 @@ void
 _get_mounts(const httplib::Request &req_,
             httplib::Response      &res_)
 {
-  std::string response = "[";
+  json json_array;
   std::string type;
   fs::MountVec mounts;
-  bool first = true;
 
   fs::mounts(mounts);
 
