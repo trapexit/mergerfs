@@ -53,7 +53,7 @@ _generate_error(const fs::path    &mount_,
                               mount_.string());
       break;
     default:
-      rv["msg"] strerror(-err_);
+      rv["msg"] = strerror(-err_);
       break;
     }
 
