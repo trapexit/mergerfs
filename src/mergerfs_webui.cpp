@@ -297,6 +297,7 @@ _get_kvs(const httplib::Request &req_,
       return;
     }
 
+  json j;
   std::string mount;
   std::map<std::string,std::string> kvs;
 
