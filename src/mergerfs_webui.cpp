@@ -22,7 +22,28 @@ _generate_error(const fs::path    &mount_,
                 const std::string &val_,
                 const int          err_)
 {
+  json rv;
 
+  rv = json::object();
+
+  rv["mount"] = mount_.string();
+  rv["key"]   = key_;
+  rv["value"] = val_;
+
+  switch(err_)
+    {
+    case -EROFS:
+    case -EINVAL;
+    case -EACCES:
+    case -ENOTCONN:
+      rv["msg"] = fmt::format("It appears the mergerfs mount '{}' is in a bad state."
+                              " mergerfs may have crashed.",
+                              mount_.string());
+      break;
+    default:
+      rv["msg"] strerror(-err_);
+      break;
+    }
 }
 
 static
