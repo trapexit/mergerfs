@@ -193,19 +193,22 @@ _get_mounts(const httplib::Request &req_,
 
   fs::mounts(mounts);
 
+  json_array = json::array();
   for(const auto &mount : mounts)
     {
       if(not ::_valid_fs_type(mount.type))
         continue;
 
-      if(!first) response += ",";
-      response += "{\"path\":\"" + mount.dir.string() + "\",\"type\":\"" + mount.type + "\"}";
-      first = false;
+      json obj;
+
+      obj["path"] = mount.dir;
+      obj["type"] = mount.type;
+
+      json_array.push_back(obj);
     }
 
-  response += "]";
-
-  res_.set_content(response, "application/json");
+  res_.set_content(json_array.dump(),
+                   "application/json");
 }
 
 static
