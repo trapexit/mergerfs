@@ -222,15 +222,13 @@ _get_mounts_mergerfs(const httplib::Request &req_,
 
   fs::mounts(mounts);
 
-  j = json::array();
+  json_array = json::array();
   for(const auto &mount : mounts)
     {
       if(mount.type != "fuse.mergerfs")
         continue;
 
-      if(!first) response += ",";
-      response += "\"" + mount.dir.string() + "\"";
-      first = false;
+      json_array.push_back(mount.dir);
     }
 
   response += "]";
