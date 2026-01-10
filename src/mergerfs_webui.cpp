@@ -248,7 +248,6 @@ _get_kvs(const httplib::Request &req_,
       return;
     }
 
-  std::string response = "{";
   std::string mount;
   std::map<std::string,std::string> kvs;
   bool first = true;
