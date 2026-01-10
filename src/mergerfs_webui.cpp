@@ -384,31 +384,41 @@ _post_kvs_key(const httplib::Request &req_,
       return;
     }
 
-  int rv;
-  fs::path mount;
-  std::string key;
-  std::string val;
-
-  key = req_.path_params.at("key");
-  val = json::parse(req_.body);
-  mount = req_.get_param_value("mount");
-
-  rv = mergerfs::api::set_kv(mount,key,val);
-
-  json j;
-  if(rv >= 0)
+  try
     {
-      j["result"] = "success";
-      res_.set_content(j.dump(),
-                       "application/json");
+      int rv;
+      fs::path mount;
+      std::string key;
+      std::string val;
+
+      key = req_.path_params.at("key");
+      val = json::parse(req_.body);
+      mount = req_.get_param_value("mount");
+
+      rv = mergerfs::api::set_kv(mount,key,val);
+
+      json j;
+      if(rv >= 0)
+        {
+          j["result"] = "success";
+          res_.set_content(j.dump(),
+                           "application/json");
+        }
+      else
+        {
+          res_.status = 400;
+          j["result"] = "error";
+          j["error"] = ::_generate_error(mount,key,val,rv);
+          res_.set_content(j.dump(),
+                           "application/json");
+        }
     }
-  else
+  catch(const std::exception &e)
     {
+      fmt::print("{}\n",e.what());
       res_.status = 400;
-      j["result"] = "error";
-      j["error"] = ::_generate_error(mount,key,val,rv);
-      res_.set_content(j.dump(),
-                       "application/json");
+      res_.set_content("invalid json",
+                       "text/plain");
     }
 }
 
