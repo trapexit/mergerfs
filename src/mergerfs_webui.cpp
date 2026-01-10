@@ -56,6 +56,8 @@ _generate_error(const fs::path    &mount_,
       rv["msg"] strerror(-err_);
       break;
     }
+
+  return rv;
 }
 
 static
