@@ -465,13 +465,6 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/kvs/:key",::_get_kvs_key);
   http_server.Post("/kvs/:key",::_post_kvs_key);
 
-  // New endpoints for enhanced UI
-  http_server.Get("/branches",::_get_branches);
-  http_server.Post("/branches",::_post_branches);
-  http_server.Get("/xattr/:key",::_get_xattr);
-  http_server.Post("/xattr/:key",::_post_xattr);
-  http_server.Post("/cmd/:command",::_execute_command);
-
   std::cout << "host:port = http://" << host << ":" << port << std::endl;
 
   http_server.listen(host,port);
