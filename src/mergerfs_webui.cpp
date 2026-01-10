@@ -17,6 +17,13 @@ using json = nlohmann::json;
 
 static
 json
+_generate_error(const fs::path    &mount_,
+                const std::string &key_,
+                const std::string &val_,
+                const int          err_)
+{
+
+}
 
 static
 void
