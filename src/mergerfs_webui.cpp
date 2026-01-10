@@ -6,10 +6,15 @@
 #include "str.hpp"
 
 #include "CLI11.hpp"
+#include "fmt/core.h"
 #include "httplib.h"
+#include "json.hpp"
 
 #include <unistd.h>
-#include <iostream>
+
+
+static
+json
 
 static
 void
