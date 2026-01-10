@@ -35,6 +35,12 @@ _generate_error(const fs::path    &mount_,
     case -EROFS:
     case -EINVAL;
     case -EACCES:
+      rv["msg"] = fmt::format("mergerfs.webui (pid {}) is running as uid {}"
+                              " which appears not to have access to modify the"
+                              " mount's config.",
+                              ::getpid(),
+                              ::getuid());
+      break;
     case -ENOTCONN:
       rv["msg"] = fmt::format("It appears the mergerfs mount '{}' is in a bad state."
                               " mergerfs may have crashed.",
