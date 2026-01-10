@@ -250,7 +250,6 @@ _get_kvs(const httplib::Request &req_,
 
   std::string mount;
   std::map<std::string,std::string> kvs;
-  bool first = true;
 
   mount = req_.get_param_value("mount");
 
