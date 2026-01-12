@@ -218,7 +218,7 @@ bool
 _valid_fs_type(const fs::path    &path_,
                const std::string &type_)
 {
-  static constexpr std::array<const char*,5> valid_mount_prefixes =
+  static constexpr std::array<const char*,1> valid_mount_prefixes =
     {
       "/mnt/"
     };
