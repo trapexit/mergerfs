@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "nonstd/span.hpp"
+
 #include <set>
 #include <string>
 #include <vector>
