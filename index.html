@@ -744,6 +744,17 @@
             font-family: monospace;
         }
 
+        .policy-divider {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin: 12px 0 8px 0;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .command-section {
             margin-top: 20px;
         }
@@ -1084,13 +1095,6 @@
 
             <div class="policy-grid" id="policy-grid">
             </div>
-
-            <div class="help-text" style="margin-top: 20px;">
-                <strong>Individual Function Policies:</strong><br>
-                • Each function can have its own policy configured independently<br>
-                • Click "Reset to Defaults" to restore default policies for all functions<br>
-                • Policies are saved immediately when the "Save Policies" button is clicked
-            </div>
         </div>
 
         <!-- Configuration Tab -->
@@ -1216,7 +1220,7 @@
     <script>
         // API interface for mergerfs operations
         const API = {
-            baseURL: 'http://localhost:8080',
+            baseURL: '',
 
             async request(endpoint, options = {}) {
                 try {
@@ -1901,20 +1905,63 @@
         // Policy management
         const policyCategories = {
             create: {
-                title: 'Create Category',
-                description: 'Controls how new files and directories are created',
-                functions: ['mkdir', 'create', 'mknod', 'symlink'],
-                default: 'pfrd',
-                options: [
-                    { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
-                    { value: 'mfs', label: 'mfs - Most Free Space' },
-                    { value: 'lfs', label: 'lfs - Least Free Space' },
-                    { value: 'lus', label: 'lus - Least Used Space' },
-                    { value: 'rand', label: 'rand - Random' },
-                    { value: 'ff', label: 'ff - First Found' },
-                    { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
-                    { value: 'eprand', label: 'eprand - Existing Path Random' }
-                ]
+                title: 'Create & Read Category',
+                description: 'Controls how new files and directories are created and read',
+                functions: ['mkdir', 'create', 'mknod', 'symlink', 'readdir'],
+                defaults: {
+                    'mkdir': 'pfrd',
+                    'create': 'pfrd',
+                    'mknod': 'pfrd',
+                    'symlink': 'pfrd',
+                    'readdir': 'seq'
+                },
+                options: {
+                    'mkdir': [
+                        { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                        { value: 'mfs', label: 'mfs - Most Free Space' },
+                        { value: 'lfs', label: 'lfs - Least Free Space' },
+                        { value: 'lus', label: 'lus - Least Used Space' },
+                        { value: 'rand', label: 'rand - Random' },
+                        { value: 'ff', label: 'ff - First Found' },
+                        { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                        { value: 'eprand', label: 'eprand - Existing Path Random' }
+                    ],
+                    'create': [
+                        { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                        { value: 'mfs', label: 'mfs - Most Free Space' },
+                        { value: 'lfs', label: 'lfs - Least Free Space' },
+                        { value: 'lus', label: 'lus - Least Used Space' },
+                        { value: 'rand', label: 'rand - Random' },
+                        { value: 'ff', label: 'ff - First Found' },
+                        { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                        { value: 'eprand', label: 'eprand - Existing Path Random' }
+                    ],
+                    'mknod': [
+                        { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                        { value: 'mfs', label: 'mfs - Most Free Space' },
+                        { value: 'lfs', label: 'lfs - Least Free Space' },
+                        { value: 'lus', label: 'lus - Least Used Space' },
+                        { value: 'rand', label: 'rand - Random' },
+                        { value: 'ff', label: 'ff - First Found' },
+                        { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                        { value: 'eprand', label: 'eprand - Existing Path Random' }
+                    ],
+                    'symlink': [
+                        { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                        { value: 'mfs', label: 'mfs - Most Free Space' },
+                        { value: 'lfs', label: 'lfs - Least Free Space' },
+                        { value: 'lus', label: 'lus - Least Used Space' },
+                        { value: 'rand', label: 'rand - Random' },
+                        { value: 'ff', label: 'ff - First Found' },
+                        { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                        { value: 'eprand', label: 'eprand - Existing Path Random' }
+                    ],
+                    'readdir': [
+                        { value: 'seq', label: 'seq - Sequential' },
+                        { value: 'cosr', label: 'cosr - Concurrent Open Sequential Read' },
+                        { value: 'cor', label: 'cor - Concurrent Open and Read' }
+                    ]
+                }
             },
             search: {
                 title: 'Search Category',
@@ -1938,17 +1985,6 @@
                     { value: 'epff', label: 'epff - Existing Path First Found' },
                     { value: 'ff', label: 'ff - First Found' }
                 ]
-            },
-            readdir: {
-                title: 'Readdir Category',
-                description: 'Controls how directory contents are read',
-                functions: ['readdir'],
-                default: 'seq',
-                options: [
-                    { value: 'seq', label: 'seq - Sequential' },
-                    { value: 'cosr', label: 'cosr - Concurrent Open Sequential Read' },
-                    { value: 'cor', label: 'cor - Concurrent Open and Read' }
-                ]
             }
         };
 
@@ -1963,7 +1999,8 @@
                 for (const [category, config] of Object.entries(policyCategories)) {
                     for (const func of config.functions) {
                         const key = `func.${func}`;
-                        policyValues[key] = allConfig[key] || config.default;
+                        const defaultVal = config.defaults && config.defaults[func] ? config.defaults[func] : config.default;
+                        policyValues[key] = allConfig[key] || defaultVal;
                     }
                 }
 
@@ -1996,6 +2033,13 @@
                 card.appendChild(desc);
 
                 for (const func of config.functions) {
+                    if (func === 'readdir') {
+                        const divider = document.createElement('div');
+                        divider.className = 'policy-divider';
+                        divider.textContent = 'Readdir';
+                        card.appendChild(divider);
+                    }
+
                     const funcGroup = document.createElement('div');
                     funcGroup.className = 'policy-function-group';
 
@@ -2009,7 +2053,8 @@
                     select.id = `policy-func-${func}`;
                     select.setAttribute('data-func', func);
 
-                    config.options.forEach(opt => {
+                    const options = config.options && config.options[func] ? config.options[func] : config.options;
+                    options.forEach(opt => {
                         const option = document.createElement('option');
                         option.value = opt.value;
                         option.textContent = opt.label;
@@ -2017,12 +2062,13 @@
                     });
 
                     const key = `func.${func}`;
-                    select.value = AppState.policies[key] || config.default;
+                    const defaultVal = config.defaults && config.defaults[func] ? config.defaults[func] : config.default;
+                    select.value = AppState.policies[key] || defaultVal;
 
                     select.addEventListener('change', async () => {
                         if (!AppState.currentMount) {
                             showToast('No mount selected', 'error');
-                            select.value = AppState.policies[key] || config.default;
+                            select.value = AppState.policies[key] || defaultVal;
                             return;
                         }
 
@@ -2034,7 +2080,7 @@
                             console.error(`Failed to update ${func} policy:`, error);
                             const errorMsg = error.message || 'Unknown error';
                             showToast(`Failed to update ${func}: ${errorMsg}`, 'error', 6000);
-                            select.value = AppState.policies[key] || config.default;
+                            select.value = AppState.policies[key] || defaultVal;
                         }
                     });
 
@@ -2043,31 +2089,6 @@
                 }
 
                 policyGrid.appendChild(card);
-            }
-        }
-
-        async function savePolicies() {
-            if (!AppState.currentMount) {
-                showToast('No mount selected', 'error');
-                return;
-            }
-
-            try {
-                for (const [category, config] of Object.entries(policyCategories)) {
-                    for (const func of config.functions) {
-                        const select = document.getElementById(`policy-func-${func}`);
-                        if (select) {
-                            await API.setXattr(AppState.currentMount, `func.${func}`, select.value);
-                        }
-                    }
-                }
-
-                showToast('Policy configuration saved successfully', 'success');
-                await loadPolicies(AppState.currentMount);
-            } catch (error) {
-                console.error('Failed to save policies:', error);
-                const errorMsg = error.message || 'Unknown error';
-                showToast(`Failed to save policy configuration: ${errorMsg}`, 'error', 6000);
             }
         }
 
@@ -2080,7 +2101,8 @@
             try {
                 for (const [category, config] of Object.entries(policyCategories)) {
                     for (const func of config.functions) {
-                        await API.setXattr(AppState.currentMount, `func.${func}`, config.default);
+                        const defaultVal = config.defaults && config.defaults[func] ? config.defaults[func] : config.default;
+                        await API.setXattr(AppState.currentMount, `func.${func}`, defaultVal);
                     }
                 }
 
