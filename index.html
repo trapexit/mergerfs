@@ -331,6 +331,8 @@
             border-radius: var(--radius);
             transition: var(--transition);
             position: relative;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .branch-path-group {
@@ -338,7 +340,16 @@
             align-items: center;
             gap: 8px;
             flex: 1;
-            min-width: 250px;
+            min-width: 200px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .branch-path {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .branch-entry:hover {
@@ -363,12 +374,14 @@
         .branch-mode {
             width: 100px;
             flex-shrink: 0;
+            min-width: 70px;
         }
 
         .branch-minfreespace {
             display: flex;
             gap: 0;
             flex-shrink: 0;
+            min-width: 140px;
         }
 
         .branch-minfreespace input {
@@ -379,7 +392,9 @@
 
         .branch-minfreespace select {
             border-radius: 0 var(--radius) var(--radius) 0;
-            width: 80px;
+            width: 50px;
+            min-width: unset;
+            padding: 10px 8px;
         }
 
         .branch-controls {
@@ -422,6 +437,16 @@
             padding: 8px 12px;
             font-size: 12px;
             white-space: nowrap;
+            border: 1px solid var(--accent-primary);
+            background-color: rgba(21, 101, 192, 0.1);
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+
+        .browse-button:hover {
+            background-color: rgba(21, 101, 192, 0.2);
+            color: var(--accent-hover);
+            border-color: var(--accent-hover);
         }
 
         .modal {
@@ -731,10 +756,85 @@
             margin-bottom: 12px;
         }
 
+        @media (max-width: 1200px) {
+            .branch-path-group {
+                min-width: 180px;
+            }
+
+            .branch-mode {
+                width: 85px;
+            }
+
+            .branch-minfreespace input {
+                width: 60px;
+            }
+
+            .browse-button {
+                min-width: 70px;
+                font-size: 11px;
+            }
+
+            .form-group select {
+                min-width: 150px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .branch-path-group {
+                min-width: 180px;
+            }
+
+            .branch-mode {
+                width: 90px;
+            }
+
+            .branch-minfreespace input {
+                width: 65px;
+            }
+
+            .browse-button {
+                min-width: 70px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .branches-container {
+                overflow-x: auto;
+            }
+
+            .branch-entry {
+                min-width: fit-content;
+            }
+
+            .branch-path-group {
+                min-width: 150px;
+            }
+
+            .branch-mode {
+                width: 80px;
+            }
+
+            .branch-minfreespace input {
+                width: 55px;
+                padding: 8px;
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
+            }
+
+            .branch-entry {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+
+            .branch-path-group {
+                min-width: 200px;
+                flex-shrink: 0;
             }
 
             .header-content {
@@ -760,9 +860,16 @@
                 flex-direction: column;
                 align-items: stretch;
                 gap: 10px;
+                padding: 12px;
             }
 
-            .branch-path-group,
+            .branch-path-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                min-width: unset;
+            }
+
             .branch-path,
             .branch-mode,
             .branch-minfreespace,
@@ -770,13 +877,28 @@
                 width: 100%;
             }
 
-            .branch-minfreespace {
-                flex-direction: row;
+            .branch-path-group .browse-button {
+                width: 100%;
             }
 
-            .branch-minfreespace input,
-            .branch-minfreespace select {
+            .branch-minfreespace {
+                flex-direction: row;
+                gap: 0;
+            }
+
+            .branch-minfreespace input {
                 flex: 1;
+                min-width: 0;
+            }
+
+            .branch-minfreespace select {
+                flex: 0 0 50px;
+                min-width: unset;
+            }
+
+            .branch-controls {
+                justify-content: flex-end;
+                padding-top: 5px;
             }
 
             .branches-header {
@@ -811,6 +933,26 @@
             .button {
                 width: 100%;
                 justify-content: center;
+            }
+
+            .branch-entry {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .branch-controls {
+                justify-content: space-between;
+            }
+
+            .icon-button {
+                padding: 6px;
+            }
+
+            select,
+            input[type="text"],
+            input[type="number"],
+            input[type="search"] {
+                min-width: unset;
             }
         }
 
@@ -851,12 +993,9 @@
             <button class="tab-button" role="tab" aria-selected="false" aria-controls="config-panel" id="config-tab" tabindex="-1">
                 Configuration
             </button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="commands-panel" id="commands-tab" tabindex="-1">
-                Commands
-            </button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="info-panel" id="info-tab" tabindex="-1">
-                File Info
-            </button>
+             <button class="tab-button" role="tab" aria-selected="false" aria-controls="commands-panel" id="commands-tab" tabindex="-1">
+                 Commands
+             </button>
         </div>
 
         <!-- Branches Tab -->
@@ -1074,44 +1213,13 @@
                 </div>
             </div>
 
-            <div class="help-text" style="margin-top: 20px;">
-                <strong>Commands:</strong><br>
-                • GC: Comprehensive cleanup of internal caches and resources<br>
-                • Quick GC: Lightweight cleanup that runs automatically every ~15 minutes<br>
-                • Invalidate: Forces FUSE to release cached file information (use for debugging)
-            </div>
-        </div>
-
-        <!-- File Info Tab -->
-        <div class="tab-content" id="info-panel" role="tabpanel" aria-labelledby="info-tab">
-            <div class="controls-section">
-                <div class="controls-row">
-                    <div class="form-group">
-                        <label for="mount-select-info">Mount Point</label>
-                        <select id="mount-select-info">
-                            <option value="">Loading...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="file-path-input">File Path</label>
-                        <input type="text" id="file-path-input" placeholder="/path/to/file/in/mergerfs">
-                    </div>
-                    <div class="action-buttons">
-                        <button class="button" id="get-file-info-btn">
-                            <span>🔍</span> Get Info
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="file-info-content">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📄</div>
-                    <p>Enter a file path to get mergerfs-specific information</p>
-                    <p class="help-text">Information includes basepath, relpath, fullpath, and allpaths</p>
-                </div>
-            </div>
-        </div>
+             <div class="help-text" style="margin-top: 20px;">
+                 <strong>Commands:</strong><br>
+                 • GC: Comprehensive cleanup of internal caches and resources<br>
+                 • Quick GC: Lightweight cleanup that runs automatically every ~15 minutes<br>
+                 • Invalidate: Forces FUSE to release cached file information (use for debugging)
+             </div>
+         </div>
     </main>
 
     <!-- Path Selection Modal -->
@@ -1137,6 +1245,93 @@
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
     <script>
+        // API interface for mergerfs operations
+        const API = {
+            baseURL: 'http://localhost:8080',
+
+            async request(endpoint, options = {}) {
+                try {
+                    const response = await fetch(`${this.baseURL}${endpoint}`, options);
+                    if (!response.ok) {
+                        let errorMsg = `HTTP ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.error && errorData.error.msg) {
+                                errorMsg = errorData.error.msg;
+                            }
+                        } catch (e) {
+                        }
+                        throw new Error(errorMsg);
+                    }
+                    return response;
+                } catch (error) {
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        throw new Error('mergerfs webui server not running. Start it with: mergerfs.webui');
+                    }
+                    throw error;
+                }
+            },
+
+            async getMounts() {
+                const response = await this.request('/mounts/mergerfs');
+                return await response.json();
+            },
+
+            async getBranches(mount) {
+                const response = await this.request(`/kvs/branches?mount=${encodeURIComponent(mount)}`);
+                const data = await response.json();
+                return data;
+            },
+
+            async setBranches(mount, branches) {
+                await this.request(`/kvs/branches?mount=${encodeURIComponent(mount)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(branches)
+                });
+            },
+
+            async getXattr(mount, key) {
+                const response = await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`);
+                const data = await response.json();
+                return data;
+            },
+
+            async setXattr(mount, key, value) {
+                await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(value)
+                });
+            },
+
+            async getConfig(mount) {
+                const response = await this.request(`/kvs?mount=${encodeURIComponent(mount)}`);
+                return await response.json();
+            },
+
+            async setConfig(mount, key, value) {
+                await this.request(`/kvs/${encodeURIComponent(key)}?mount=${encodeURIComponent(mount)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(value)
+                });
+            },
+
+            async executeCommand(mount, command) {
+                await this.request(`/kvs/cmd.${encodeURIComponent(command)}?mount=${encodeURIComponent(mount)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify('')
+                });
+            },
+
+            async getAllMounts() {
+                const response = await this.request('/mounts');
+                return await response.json();
+            }
+        };
+
         // Global state management
         const AppState = {
             mounts: [],
@@ -1193,6 +1388,12 @@
                     return { valid: false, message: 'Value too large' };
                 }
                 return { valid: true };
+            },
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
         };
 
@@ -1388,7 +1589,7 @@
             const tabContents = document.querySelectorAll('.tab-content');
 
             tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
+                button.addEventListener('click', async () => {
                     const targetTab = button.getAttribute('aria-controls');
 
                     tabButtons.forEach(btn => {
@@ -1408,6 +1609,10 @@
                     document.getElementById(targetTab).classList.add('active');
 
                     localStorage.setItem('mergerfs_activeTab', targetTab);
+
+                    if (AppState.currentMount) {
+                        await loadMountData(AppState.currentMount);
+                    }
                 });
 
                 button.addEventListener('keydown', (e) => {
@@ -1449,7 +1654,7 @@
         // Mount management
         async function loadMounts() {
             try {
-                await API.getMounts();
+                AppState.mounts = await API.getMounts();
                 populateMountSelects();
 
                 if (AppState.mounts.length > 0) {
@@ -1458,12 +1663,12 @@
                 }
             } catch (error) {
                 console.error('Failed to load mounts:', error);
-                showToast('Failed to load mount points', 'error');
+                showToast(error.message || 'Failed to load mount points', 'error');
             }
         }
 
         function populateMountSelects() {
-            const selects = ['mount-select-branches', 'mount-select-policies', 'mount-select-config', 'mount-select-commands', 'mount-select-info'];
+            const selects = ['mount-select-branches', 'mount-select-policies', 'mount-select-config', 'mount-select-commands'];
 
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
@@ -1505,23 +1710,21 @@
             try {
                 const activeTab = document.querySelector('.tab-button[aria-selected="true"]').getAttribute('aria-controls');
 
-                switch(activeTab) {
-                    case 'branches-panel':
-                        await loadBranches(mount);
-                        break;
-                    case 'policies-panel':
-                        await loadPolicies(mount);
-                        break;
-                    case 'config-panel':
-                        await loadConfig(mount);
-                        break;
-                    case 'commands-panel':
-                        // Commands don't need data loading
-                        break;
-                    case 'info-panel':
-                        // File info is loaded on demand
-                        break;
-                }
+                 switch(activeTab) {
+
+                     case 'branches-panel':
+                         await loadBranches(mount);
+                         break;
+                     case 'policies-panel':
+                         await loadPolicies(mount);
+                         break;
+                     case 'config-panel':
+                         await loadConfig(mount);
+                         break;
+                     case 'commands-panel':
+                         // Commands don't need data loading
+                         break;
+                 }
             } catch (error) {
                 console.error('Failed to load mount data:', error);
                 showToast('Failed to load configuration', 'error');
@@ -1575,7 +1778,7 @@
             } catch (error) {
                 console.error('Failed to load branches:', error);
                 const container = document.getElementById('branches-container');
-                container.innerHTML = '<div class="empty-state">Failed to load branches</div>';
+                container.innerHTML = `<div class="empty-state">${error.message || 'Failed to load branches'}</div>`;
             }
         }
 
@@ -1809,7 +2012,9 @@
                 renderConfigTable(config);
             } catch (error) {
                 console.error('Failed to load config:', error);
-                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Failed to load configuration</td></tr>';
+                const errorMsg = error.message || 'Unknown error';
+                tbody.innerHTML = `<tr><td colspan="3" class="empty-state">Failed to load configuration: ${errorMsg}</td></tr>`;
+                showToast(`Failed to load configuration: ${errorMsg}`, 'error', 6000);
             }
         }
 
@@ -1868,7 +2073,8 @@
                         await API.setConfig(AppState.currentMount, key, input.value);
                         showToast(`Updated ${key}`, 'success', 2000);
                     } catch (error) {
-                        showToast(`Failed to update ${key}`, 'error');
+                        const errorMsg = error.message || 'Unknown error';
+                        showToast(`Failed to update ${key}: ${errorMsg}`, 'error', 6000);
                         input.value = value;
                     }
                 }, 1000);
@@ -1915,53 +2121,7 @@
             }
         }
 
-        // File info
-        async function getFileInfo() {
-            const mount = AppState.currentMount;
-            const filePath = document.getElementById('file-path-input').value.trim();
 
-            if (!mount) {
-                showToast('No mount selected', 'error');
-                return;
-            }
-
-            if (!filePath) {
-                showToast('Please enter a file path', 'error');
-                return;
-            }
-
-            const content = document.getElementById('file-info-content');
-            UI.showLoading(content);
-
-            try {
-                const infoTypes = ['basepath', 'relpath', 'fullpath', 'allpaths'];
-                const info = {};
-
-                for (const type of infoTypes) {
-                    try {
-                        info[type] = await API.getFileInfo(mount, filePath, type);
-                    } catch (e) {
-                        info[type] = 'Not available';
-                    }
-                }
-
-                content.innerHTML = `
-                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border-color);">
-                        <h3 style="margin-top: 0; color: var(--accent-primary);">File Information</h3>
-                        <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-family: monospace; font-size: 13px;">
-                            <strong>Base Path:</strong> <span>${Utils.escapeHtml(info.basepath)}</span>
-                            <strong>Relative Path:</strong> <span>${Utils.escapeHtml(info.relpath)}</span>
-                            <strong>Full Path:</strong> <span>${Utils.escapeHtml(info.fullpath)}</span>
-                            <strong>All Paths:</strong> <span style="word-break: break-all;">${Utils.escapeHtml(info.allpaths)}</span>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Failed to get file info:', error);
-                content.innerHTML = '<div class="empty-state">Failed to retrieve file information</div>';
-                showToast('Failed to get file information', 'error');
-            }
-        }
 
         // Modal management
         function openPathModal(targetInput) {
@@ -2049,16 +2209,15 @@
                 initSearch();
                 await loadMounts();
 
-                // Set up event listeners
-                document.getElementById('add-branch-btn').addEventListener('click', addBranchEntry);
-                document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
-                document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
-                document.getElementById('save-policies-btn').addEventListener('click', savePolicies);
-                document.getElementById('reset-policies-btn').addEventListener('click', () => loadPolicies(AppState.currentMount));
-                document.getElementById('export-config-btn').addEventListener('click', exportConfig);
-                document.getElementById('import-config-btn').addEventListener('click', importConfig);
-                document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
-                document.getElementById('get-file-info-btn').addEventListener('click', getFileInfo);
+                 // Set up event listeners
+                 document.getElementById('add-branch-btn').addEventListener('click', addBranchEntry);
+                 document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
+                 document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
+                 document.getElementById('save-policies-btn').addEventListener('click', savePolicies);
+                 document.getElementById('reset-policies-btn').addEventListener('click', () => loadPolicies(AppState.currentMount));
+                 document.getElementById('export-config-btn').addEventListener('click', exportConfig);
+                 document.getElementById('import-config-btn').addEventListener('click', importConfig);
+                 document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
 
                 // Command buttons
                 document.getElementById('cmd-gc').addEventListener('click', () => executeCommand('gc'));
@@ -2085,10 +2244,6 @@
                                 } else if (activeTab === 'policies-panel') {
                                     document.getElementById('save-policies-btn').click();
                                 }
-                                break;
-                            case 'e':
-                                e.preventDefault();
-                                document.getElementById('export-config-btn').click();
                                 break;
                             case 'o':
                                 e.preventDefault();
@@ -2159,7 +2314,8 @@
                     // Note: Actual import would require proper API implementation
                 } catch (error) {
                     console.error('Failed to import config:', error);
-                    showToast('Failed to import configuration', 'error');
+                    const errorMsg = error.message || 'Unknown error';
+                    showToast(`Failed to import configuration: ${errorMsg}`, 'error', 6000);
                 }
             });
 
