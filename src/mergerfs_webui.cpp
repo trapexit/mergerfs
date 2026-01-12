@@ -221,7 +221,6 @@ _valid_fs_type(const fs::path    &path_,
           str::startswith(path_,"/media") or
           str::startswith(path_,"/opt") or
           str::startswith(path_,"/srv")))
-
     return false;
 
   IERT("ext2");
