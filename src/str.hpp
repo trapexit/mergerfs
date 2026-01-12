@@ -102,6 +102,10 @@ namespace str
              const char *prefix);
 
   bool
+  startswith(const char                     *str,
+             nonstd::span<std::string_view>  prefixes);
+
+  bool
   endswith(const std::string &str_,
            const std::string &suffix_);
 
