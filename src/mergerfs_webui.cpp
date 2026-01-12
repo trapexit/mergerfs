@@ -481,7 +481,7 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/kvs/:key",::_get_kvs_key);
   http_server.Post("/kvs/:key",::_post_kvs_key);
 
-  http_server.set_mount_point("/mnt/tmp","./files");
+  http_server.set_mount_point("/files","/mnt/tmp");
 
   fmt::print("host:port = http://{}:{}\n",
              host,
