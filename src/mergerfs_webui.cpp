@@ -225,19 +225,19 @@ _valid_fs_type(const fs::path    &path_,
           str::startswith(path_,"/srv/")))
     return false;
 
+  IERT("bcachefs");
+  IERT("btrfs");
+  IERT("exfat");
   IERT("ext2");
   IERT("ext3");
   IERT("ext4");
-  IERT("xfs");
-  IERT("jfs");
-  IERT("btrfs");
-  IERT("bcachefs");
-  IERT("zfs");
-  IERT("reiserfs");
   IERT("f2fs");
+  IERT("jfs");
   IERT("ntfs");
+  IERT("reiserfs");
   IERT("vfat");
-  IERT("exfat");
+  IERT("xfs");
+  IERT("zfs");
 
   IERF("fuse.kio-fuse");
   IERF("fuse.gvfsd-fuse");
