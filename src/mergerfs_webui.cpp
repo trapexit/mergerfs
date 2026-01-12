@@ -220,8 +220,7 @@ _valid_fs_type(const fs::path    &path_,
 {
   constexpr auto valid_mount_prefixes =
     std::array{
-
-  };
+    "/mnt/"sv};
 
   if(not (str::startswith(path_,"/mnt")   or
           str::startswith(path_,"/media") or
