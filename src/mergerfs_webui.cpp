@@ -207,6 +207,7 @@ window.onload = () => { loadMounts(); };
                    "text/html");
 }
 
+// If Equal Return True
 #define IERT(S) if(type_ == (S)) return true;
 
 static
