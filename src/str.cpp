@@ -32,7 +32,7 @@ using std::set;
 using std::string;
 using std::string_view;
 using std::vector;
-
+using nonstd::span;
 
 void
 str::split(const string_view  str_,
@@ -298,6 +298,10 @@ str::startswith(const string &str_,
   return str::startswith(str_,
                          std::string_view{prefix_});
 }
+
+bool
+str::startswith(const char *str_,
+                nonstd::span<std::string_view>
 
 bool
 str::endswith(const string &str_,
