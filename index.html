@@ -726,6 +726,22 @@
             margin-bottom: 10px;
         }
 
+        .policy-function-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .policy-function-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-transform: lowercase;
+            font-family: monospace;
+        }
+
         .command-section {
             margin-top: 20px;
         }
@@ -920,6 +936,14 @@
                 grid-template-columns: 1fr;
             }
 
+            .policy-function-group {
+                flex-wrap: wrap;
+            }
+
+            .policy-function-label {
+                min-width: 60px;
+            }
+
             .command-grid {
                 grid-template-columns: 1fr;
             }
@@ -1060,67 +1084,13 @@
             </div>
 
             <div class="policy-grid" id="policy-grid">
-                <div class="policy-card">
-                    <div class="policy-title">Create Category</div>
-                    <div class="policy-description">
-                        Controls how new files and directories are created. Default: pfrd (percentage free random distribution)
-                    </div>
-                    <select class="policy-select" id="policy-create">
-                        <option value="pfrd">pfrd - Percentage Free Random Distribution</option>
-                        <option value="mfs">mfs - Most Free Space</option>
-                        <option value="lfs">lfs - Least Free Space</option>
-                        <option value="lus">lus - Least Used Space</option>
-                        <option value="rand">rand - Random</option>
-                        <option value="ff">ff - First Found</option>
-                        <option value="epmfs">epmfs - Existing Path Most Free Space</option>
-                        <option value="eprand">eprand - Existing Path Random</option>
-                    </select>
-                </div>
-
-                <div class="policy-card">
-                    <div class="policy-title">Search Category</div>
-                    <div class="policy-description">
-                        Controls how files are searched and accessed. Default: ff (first found)
-                    </div>
-                    <select class="policy-select" id="policy-search">
-                        <option value="ff">ff - First Found</option>
-                        <option value="newest">newest - Newest File</option>
-                        <option value="rand">rand - Random</option>
-                    </select>
-                </div>
-
-                <div class="policy-card">
-                    <div class="policy-title">Action Category</div>
-                    <div class="policy-description">
-                        Controls how file attributes are modified. Default: epall (existing path all)
-                    </div>
-                    <select class="policy-select" id="policy-action">
-                        <option value="epall">epall - Existing Path All</option>
-                        <option value="all">all - All Branches</option>
-                        <option value="epff">epff - Existing Path First Found</option>
-                        <option value="ff">ff - First Found</option>
-                    </select>
-                </div>
-
-                <div class="policy-card">
-                    <div class="policy-title">Readdir Policy</div>
-                    <div class="policy-description">
-                        Controls how directory contents are read. Default: seq (sequential)
-                    </div>
-                    <select class="policy-select" id="policy-readdir">
-                        <option value="seq">seq - Sequential</option>
-                        <option value="cosr">cosr - Concurrent Open Sequential Read</option>
-                        <option value="cor">cor - Concurrent Open and Read</option>
-                    </select>
-                </div>
             </div>
 
             <div class="help-text" style="margin-top: 20px;">
-                <strong>Policy Categories:</strong><br>
-                • Create: mkdir, create, mknod, symlink<br>
-                • Search: access, getattr, getxattr, ioctl, listxattr, open, readlink<br>
-                • Action: chmod, chown, link, removexattr, rename, rmdir, setxattr, truncate, unlink, utimens<br>
-                • Readdir: Directory listing operations
+                <strong>Individual Function Policies:</strong><br>
+                • Each function can have its own policy configured independently<br>
+                • Click "Reset to Defaults" to restore default policies for all functions<br>
+                • Policies are saved immediately when the "Save Policies" button is clicked
             </div>
         </div>
 
@@ -1930,46 +1900,151 @@
         }
 
         // Policy management
+        const policyCategories = {
+            create: {
+                title: 'Create Category',
+                description: 'Controls how new files and directories are created',
+                functions: ['mkdir', 'create', 'mknod', 'symlink'],
+                default: 'pfrd',
+                options: [
+                    { value: 'pfrd', label: 'pfrd - Percentage Free Random Distribution' },
+                    { value: 'mfs', label: 'mfs - Most Free Space' },
+                    { value: 'lfs', label: 'lfs - Least Free Space' },
+                    { value: 'lus', label: 'lus - Least Used Space' },
+                    { value: 'rand', label: 'rand - Random' },
+                    { value: 'ff', label: 'ff - First Found' },
+                    { value: 'epmfs', label: 'epmfs - Existing Path Most Free Space' },
+                    { value: 'eprand', label: 'eprand - Existing Path Random' }
+                ]
+            },
+            search: {
+                title: 'Search Category',
+                description: 'Controls how files are searched and accessed',
+                functions: ['access', 'getattr', 'getxattr', 'listxattr', 'open', 'readlink'],
+                default: 'ff',
+                options: [
+                    { value: 'ff', label: 'ff - First Found' },
+                    { value: 'newest', label: 'newest - Newest File' },
+                    { value: 'rand', label: 'rand - Random' }
+                ]
+            },
+            action: {
+                title: 'Action Category',
+                description: 'Controls how file attributes are modified',
+                functions: ['chmod', 'chown', 'link', 'removexattr', 'rename', 'rmdir', 'setxattr', 'truncate', 'unlink', 'utimens'],
+                default: 'epall',
+                options: [
+                    { value: 'epall', label: 'epall - Existing Path All' },
+                    { value: 'all', label: 'all - All Branches' },
+                    { value: 'epff', label: 'epff - Existing Path First Found' },
+                    { value: 'ff', label: 'ff - First Found' }
+                ]
+            },
+            readdir: {
+                title: 'Readdir Category',
+                description: 'Controls how directory contents are read',
+                functions: ['readdir'],
+                default: 'seq',
+                options: [
+                    { value: 'seq', label: 'seq - Sequential' },
+                    { value: 'cosr', label: 'cosr - Concurrent Open Sequential Read' },
+                    { value: 'cor', label: 'cor - Concurrent Open and Read' }
+                ]
+            }
+        };
+
         async function loadPolicies(mount) {
-            // Load current policy values from runtime configuration
+            const policyGrid = document.getElementById('policy-grid');
+            policyGrid.innerHTML = '<div class="loading-spinner"></div> Loading policies...';
+
             try {
-                const policyKeys = ['category.create', 'category.search', 'category.action', 'func.readdir'];
+                const allConfig = await API.getConfig(mount);
                 const policyValues = {};
 
-                for (const key of policyKeys) {
-                    try {
-                        const value = await API.getXattr(mount, key);
-                        policyValues[key] = value;
-                    } catch (e) {
-                        console.warn(`Failed to load policy ${key}:`, e);
-                        policyValues[key] = getDefaultPolicy(key);
+                for (const [category, config] of Object.entries(policyCategories)) {
+                    for (const func of config.functions) {
+                        const key = `func.${func}`;
+                        policyValues[key] = allConfig[key] || config.default;
                     }
                 }
 
-                // Update UI with loaded values
-                Object.entries(policyValues).forEach(([key, value]) => {
-                    const selectId = `policy-${key.split('.').pop()}`;
-                    const select = document.getElementById(selectId);
-                    if (select) {
-                        select.value = value;
-                    }
-                });
-
                 AppState.policies = policyValues;
+                renderPolicyCards();
             } catch (error) {
                 console.error('Failed to load policies:', error);
-                showToast('Failed to load policies', 'error');
+                const errorMsg = error.message || 'Unknown error';
+                policyGrid.innerHTML = `<div class="empty-state">Failed to load policies: ${errorMsg}</div>`;
+                showToast(`Failed to load policies: ${errorMsg}`, 'error', 6000);
             }
         }
 
-        function getDefaultPolicy(key) {
-            const defaults = {
-                'category.create': 'pfrd',
-                'category.search': 'ff',
-                'category.action': 'epall',
-                'func.readdir': 'seq'
-            };
-            return defaults[key] || '';
+        function renderPolicyCards() {
+            const policyGrid = document.getElementById('policy-grid');
+            policyGrid.innerHTML = '';
+
+            for (const [category, config] of Object.entries(policyCategories)) {
+                const card = document.createElement('div');
+                card.className = 'policy-card';
+
+                const title = document.createElement('div');
+                title.className = 'policy-title';
+                title.textContent = config.title;
+                card.appendChild(title);
+
+                const desc = document.createElement('div');
+                desc.className = 'policy-description';
+                desc.textContent = config.description;
+                card.appendChild(desc);
+
+                for (const func of config.functions) {
+                    const funcGroup = document.createElement('div');
+                    funcGroup.className = 'policy-function-group';
+
+                    const funcLabel = document.createElement('label');
+                    funcLabel.className = 'policy-function-label';
+                    funcLabel.textContent = func;
+                    funcGroup.appendChild(funcLabel);
+
+                    const select = document.createElement('select');
+                    select.className = 'policy-select';
+                    select.id = `policy-func-${func}`;
+                    select.setAttribute('data-func', func);
+
+                    config.options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        select.appendChild(option);
+                    });
+
+                    const key = `func.${func}`;
+                    select.value = AppState.policies[key] || config.default;
+
+                    select.addEventListener('change', async () => {
+                        if (!AppState.currentMount) {
+                            showToast('No mount selected', 'error');
+                            select.value = AppState.policies[key] || config.default;
+                            return;
+                        }
+
+                        try {
+                            await API.setXattr(AppState.currentMount, key, select.value);
+                            AppState.policies[key] = select.value;
+                            showToast(`${func} policy updated to ${select.value}`, 'success', 2000);
+                        } catch (error) {
+                            console.error(`Failed to update ${func} policy:`, error);
+                            const errorMsg = error.message || 'Unknown error';
+                            showToast(`Failed to update ${func}: ${errorMsg}`, 'error', 6000);
+                            select.value = AppState.policies[key] || config.default;
+                        }
+                    });
+
+                    funcGroup.appendChild(select);
+                    card.appendChild(funcGroup);
+                }
+
+                policyGrid.appendChild(card);
+            }
         }
 
         async function savePolicies() {
@@ -1978,18 +2053,13 @@
                 return;
             }
 
-            const policyMappings = {
-                'policy-create': 'category.create',
-                'policy-search': 'category.search',
-                'policy-action': 'category.action',
-                'policy-readdir': 'func.readdir'
-            };
-
             try {
-                for (const [selectId, policyKey] of Object.entries(policyMappings)) {
-                    const select = document.getElementById(selectId);
-                    if (select && select.value) {
-                        await API.setXattr(AppState.currentMount, policyKey, select.value);
+                for (const [category, config] of Object.entries(policyCategories)) {
+                    for (const func of config.functions) {
+                        const select = document.getElementById(`policy-func-${func}`);
+                        if (select) {
+                            await API.setXattr(AppState.currentMount, `func.${func}`, select.value);
+                        }
                     }
                 }
 
@@ -1997,7 +2067,30 @@
                 await loadPolicies(AppState.currentMount);
             } catch (error) {
                 console.error('Failed to save policies:', error);
-                showToast('Failed to save policy configuration', 'error');
+                const errorMsg = error.message || 'Unknown error';
+                showToast(`Failed to save policy configuration: ${errorMsg}`, 'error', 6000);
+            }
+        }
+
+        async function resetPolicies() {
+            if (!AppState.currentMount) {
+                showToast('No mount selected', 'error');
+                return;
+            }
+
+            try {
+                for (const [category, config] of Object.entries(policyCategories)) {
+                    for (const func of config.functions) {
+                        await API.setXattr(AppState.currentMount, `func.${func}`, config.default);
+                    }
+                }
+
+                showToast('Policies reset to defaults', 'success');
+                await loadPolicies(AppState.currentMount);
+            } catch (error) {
+                console.error('Failed to reset policies:', error);
+                const errorMsg = error.message || 'Unknown error';
+                showToast(`Failed to reset policies: ${errorMsg}`, 'error', 6000);
             }
         }
 
@@ -2214,7 +2307,7 @@
                  document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
                  document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
                  document.getElementById('save-policies-btn').addEventListener('click', savePolicies);
-                 document.getElementById('reset-policies-btn').addEventListener('click', () => loadPolicies(AppState.currentMount));
+                  document.getElementById('reset-policies-btn').addEventListener('click', resetPolicies);
                  document.getElementById('export-config-btn').addEventListener('click', exportConfig);
                  document.getElementById('import-config-btn').addEventListener('click', importConfig);
                  document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
