@@ -239,8 +239,8 @@ _valid_fs_type(const fs::path    &path_,
   IERT("xfs");
   IERT("zfs");
 
-  IERF("fuse.kio-fuse");
   IERF("fuse.gvfsd-fuse");
+  IERF("fuse.kio-fuse");
 
   if(str::startswith(type_,"fuse."))
     return true;
