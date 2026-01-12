@@ -218,14 +218,9 @@ bool
 _valid_fs_type(const fs::path    &path_,
                const std::string &type_)
 {
-  static constexpr auto valid_mount_prefixes =
-    std::array
+  static constexpr std::array<const char*,5> valid_mount_prefixes =
     {
-      "/mnt/",
-      "/media/",
-      "/opt/",
-      "/tmp/",
-      "/srv/"
+      "/mnt/"
     };
 
   if(not str::startswith(path_,valid_mount_prefixes))
