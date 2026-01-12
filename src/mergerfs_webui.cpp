@@ -225,6 +225,7 @@ _valid_fs_type(const std::string &type_)
   IERT("ntfs");
   IERT("vfat");
   IERT("exfat");
+  IERT("fuse.kio-fuse");
   if(str::startswith(type_,"fuse."))
     return true;
 
