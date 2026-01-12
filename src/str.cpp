@@ -301,8 +301,17 @@ str::startswith(const string &str_,
 }
 
 bool
-str::startswith(const char *str_,
-                nonstd::span<std::string_view>
+str::startswith(const char        *str_,
+                span<string_view>  prefixes_)
+{
+  for(const auto &prefix : prefixes_)
+    {
+      if(str::startswith(str_,prefix))
+        return true;
+    }
+
+  return false;
+}
 
 bool
 str::endswith(const string &str_,
