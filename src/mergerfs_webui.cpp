@@ -225,7 +225,7 @@ _valid_fs_type(const fs::path    &path_,
     return false;
 
   auto valid_mount_prefixes = std::initializer_list<const char*>
-    {"/mnt","/media","/opt","/tmp","/srv"};
+    {"/mnt"sv,"/media"sv,"/opt"sv,"/tmp"sv,"/srv"sv};
   if(not str::startswith(path_,valid_mount_prefixes))
     return false;
 
