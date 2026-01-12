@@ -465,7 +465,9 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/kvs/:key",::_get_kvs_key);
   http_server.Post("/kvs/:key",::_post_kvs_key);
 
-  std::cout << "host:port = http://" << host << ":" << port << std::endl;
+  fmt::print("host:port = http://{}:{}\n",
+             host,
+             port);
 
   http_server.listen(host,port);
 
