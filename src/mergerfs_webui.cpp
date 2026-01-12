@@ -209,6 +209,8 @@ window.onload = () => { loadMounts(); };
 
 // If Equal Return True
 #define IERT(S) if(type_ == (S)) return true;
+// If Equal Return False
+#define IERF(S) if(type_ == (S)) return false;
 
 static
 bool
@@ -226,7 +228,6 @@ _valid_fs_type(const std::string &type_)
   IERT("ntfs");
   IERT("vfat");
   IERT("exfat");
-  IERT("fuse.kio-fuse");
   if(str::startswith(type_,"fuse."))
     return true;
 
