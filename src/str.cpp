@@ -34,6 +34,7 @@ using std::string_view;
 using std::vector;
 using nonstd::span;
 
+
 void
 str::split(const string_view  str_,
            const char         delimiter_,
