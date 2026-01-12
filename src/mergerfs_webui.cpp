@@ -214,7 +214,8 @@ window.onload = () => { loadMounts(); };
 
 static
 bool
-_valid_fs_type(const std::string &type_)
+_valid_fs_type(const fs::path    &path_,
+               const std::string &type_)
 {
   IERT("ext2");
   IERT("ext3");
