@@ -697,47 +697,49 @@
         /* Policy-specific styles */
         .policy-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
         }
 
         .policy-card {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: var(--radius);
-            padding: 20px;
+            padding: 15px;
         }
 
         .policy-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: var(--accent-primary);
         }
 
         .policy-description {
-            font-size: 13px;
+            font-size: 11px;
             color: var(--text-secondary);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .policy-select {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
         }
 
         .policy-function-group {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .policy-function-label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             color: var(--text-secondary);
-            min-width: 80px;
+            min-width: 60px;
             text-transform: lowercase;
             font-family: monospace;
         }
@@ -941,7 +943,7 @@
             }
 
             .policy-function-label {
-                min-width: 60px;
+                min-width: 50px;
             }
 
             .command-grid {
@@ -1073,9 +1075,6 @@
                         </select>
                     </div>
                     <div class="action-buttons">
-                        <button class="button success" id="save-policies-btn">
-                            <span>💾</span> Save Policies
-                        </button>
                         <button class="button secondary" id="reset-policies-btn">
                             <span>↺</span> Reset to Defaults
                         </button>
@@ -2306,8 +2305,7 @@
                  document.getElementById('add-branch-btn').addEventListener('click', addBranchEntry);
                  document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
                  document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
-                 document.getElementById('save-policies-btn').addEventListener('click', savePolicies);
-                  document.getElementById('reset-policies-btn').addEventListener('click', resetPolicies);
+                   document.getElementById('reset-policies-btn').addEventListener('click', resetPolicies);
                  document.getElementById('export-config-btn').addEventListener('click', exportConfig);
                  document.getElementById('import-config-btn').addEventListener('click', importConfig);
                  document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
