@@ -231,6 +231,7 @@ _valid_fs_type(const fs::path    &path_,
   IERT("xfs");
   IERT("jfs");
   IERT("btrfs");
+  IERT("bcachefs");
   IERT("zfs");
   IERT("reiserfs");
   IERT("f2fs");
