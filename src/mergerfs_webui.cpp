@@ -220,6 +220,7 @@ _valid_fs_type(const fs::path    &path_,
   if(not (str::startswith(path_,"/mnt")   or
           str::startswith(path_,"/media") or
           str::startswith(path_,"/opt") or
+          str::startswith(path_,"/tmp") or
           str::startswith(path_,"/srv")))
     return false;
 
