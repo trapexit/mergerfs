@@ -239,6 +239,7 @@ _valid_fs_type(const fs::path    &path_,
   IERT("exfat");
 
   IERF("fuse.kio-fuse");
+  IERF("fuse.gvfsd-fuse");
 
   if(str::startswith(type_,"fuse."))
     return true;
