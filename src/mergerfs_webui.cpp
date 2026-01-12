@@ -217,6 +217,11 @@ bool
 _valid_fs_type(const fs::path    &path_,
                const std::string &type_)
 {
+  if(not (str::startswith(path_,"/mnt") or
+          str::startswith(path_,"/media") or
+          str::startswith(path_,"/srv")))
+    return false;
+
   IERT("ext2");
   IERT("ext3");
   IERT("ext4");
