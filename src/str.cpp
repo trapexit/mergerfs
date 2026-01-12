@@ -302,6 +302,19 @@ str::startswith(const string &str_,
 
 bool
 str::startswith(const char        *str_,
+                span<const char*>  prefixes_)
+{
+  for(const auto &prefix : prefixes_)
+    {
+      if(str::startswith(str_,prefix))
+        return true;
+    }
+
+  return false;
+}
+
+bool
+str::startswith(const char        *str_,
                 span<string_view>  prefixes_)
 {
   for(const auto &prefix : prefixes_)
