@@ -2349,15 +2349,6 @@
                 document.addEventListener('keydown', (e) => {
                     if (e.ctrlKey || e.metaKey) {
                         switch(e.key) {
-                            case 's':
-                                e.preventDefault();
-                                const activeTab = document.querySelector('.tab-button[aria-selected="true"]').getAttribute('aria-controls');
-                                if (activeTab === 'branches-panel') {
-                                    document.getElementById('save-branches-btn').click();
-                                } else if (activeTab === 'policies-panel') {
-                                    document.getElementById('save-policies-btn').click();
-                                }
-                                break;
                             case 'o':
                                 e.preventDefault();
                                 document.getElementById('import-config-btn').click();
