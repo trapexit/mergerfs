@@ -225,9 +225,6 @@ _valid_fs_type(const fs::path    &path_,
           str::startswith(path_,"/srv")))
     return false;
 
-  if(not str::startswith(path_,valid_mount_prefixes))
-    return false;
-
   IERT("ext2");
   IERT("ext3");
   IERT("ext4");
