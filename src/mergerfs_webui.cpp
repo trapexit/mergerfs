@@ -218,7 +218,7 @@ bool
 _valid_fs_type(const fs::path    &path_,
                const std::string &type_)
 {
-  static const char *valid_mount_prefixes[] =
+  static std::string_view valid_mount_prefixes[] =
     {
       "/mnt/",
       "/media/",
