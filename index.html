@@ -81,6 +81,43 @@
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .auth-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .auth-password {
+            min-width: 150px;
+        }
+
+        .auth-status {
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .auth-status.connected {
+            color: var(--success-color);
+        }
+
+        .auth-status.error {
+            color: var(--danger-color);
+        }
+
+        .auth-status.pending {
+            color: var(--warning-color);
+        }
+
         h1 {
             margin: 0;
             font-size: 24px;
@@ -251,6 +288,22 @@
 
         .button.secondary:hover {
             background-color: var(--bg-hover);
+        }
+
+        .button.auth-success {
+            background-color: var(--success-color) !important;
+        }
+
+        .button.auth-success:hover {
+            background-color: var(--success-hover) !important;
+        }
+
+        .button.auth-error {
+            background-color: var(--danger-color) !important;
+        }
+
+        .button.auth-error:hover {
+            background-color: var(--danger-hover) !important;
         }
 
         .action-buttons {
@@ -1006,8 +1059,16 @@
 <body>
         <header>
         <div class="header-content">
-            <h1>mergerfs ui</h1>
-            <div class="subtitle">Advanced configuration and management tool</div>
+            <div class="header-left">
+                <h1>mergerfs ui</h1>
+                <div class="subtitle">Advanced configuration and management tool</div>
+            </div>
+            <div class="header-right">
+                <div class="auth-section">
+                    <input type="password" id="password-input" placeholder="Password (optional)" class="auth-password">
+                    <button class="button" id="auth-btn">Verify</button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -1211,10 +1272,21 @@
         // API interface for mergerfs operations
         const API = {
             baseURL: '',
+            authToken: '',
+            passwordRequired: false,
+            authSalt: '',
 
             async request(endpoint, options = {}) {
                 try {
+                    if (this.authToken && options.method && options.method !== 'GET') {
+                        options.headers = options.headers || {};
+                        options.headers['Authorization'] = 'Bearer ' + this.authToken;
+                    }
+
                     const response = await fetch(`${this.baseURL}${endpoint}`, options);
+                    if (response.status === 401) {
+                        throw new Error('Authentication required');
+                    }
                     if (!response.ok) {
                         let errorMsg = `HTTP ${response.status}`;
                         try {
@@ -1233,6 +1305,24 @@
                     }
                     throw error;
                 }
+            },
+
+            async getAuthSalt() {
+                const response = await this.request('/auth/salt');
+                const data = await response.json();
+                this.authSalt = data.salt;
+                this.passwordRequired = data.password_required;
+                return data;
+            },
+
+            async verifyPassword(password) {
+                const hashedPassword = await Utils.hashPassword(password, this.authSalt);
+                const response = await this.request('/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: hashedPassword })
+                });
+                return await response.json();
             },
 
             async getMounts() {
@@ -1303,7 +1393,9 @@
             config: {},
             policies: {},
             pendingPathInput: null,
-            branchCounter: 0
+            branchCounter: 0,
+            isAuthenticated: false,
+            passwordRequired: false
         };
 
         // Utility functions
@@ -1318,6 +1410,18 @@
                     clearTimeout(timeout);
                     timeout = setTimeout(later, wait);
                 };
+            },
+
+            async sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                return hashHex;
+            },
+
+            async hashPassword(password, salt) {
+                return await this.sha256(password + salt);
             },
 
             formatBytes(bytes, decimals = 2) {
@@ -2352,10 +2456,122 @@
                     }
                 });
 
+                // Auth event listeners
+                document.getElementById('auth-btn').addEventListener('click', handleAuth);
+                document.getElementById('password-input').addEventListener('input', () => {
+                    const authBtn = document.getElementById('auth-btn');
+                    if (AppState.isAuthenticated) {
+                        return;
+                    }
+                    authBtn.textContent = 'Verify';
+                    authBtn.className = 'button';
+                    authBtn.disabled = false;
+                });
+                document.getElementById('password-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        handleAuth();
+                    }
+                });
+
+                // Initialize auth state
+                initAuth();
+
 
             } catch (error) {
                 console.error('Failed to initialize application:', error);
                 showToast('Failed to initialize application', 'error');
+            }
+        }
+
+        // Authentication functions
+        async function initAuth() {
+            try {
+                const authInfo = await API.getAuthSalt();
+                AppState.passwordRequired = authInfo.password_required;
+                API.passwordRequired = authInfo.password_required;
+
+                updateAuthStatus();
+
+                if (!AppState.passwordRequired) {
+                    AppState.isAuthenticated = true;
+                    updateAuthStatus();
+                }
+            } catch (error) {
+                console.error('Failed to initialize auth:', error);
+                updateAuthStatus('error', 'Connection failed');
+            }
+        }
+
+        async function handleAuth() {
+            const passwordInput = document.getElementById('password-input');
+            const authBtn = document.getElementById('auth-btn');
+            const statusEl = document.getElementById('auth-status');
+
+            const password = passwordInput.value;
+
+            if (!AppState.passwordRequired) {
+                AppState.isAuthenticated = true;
+                updateAuthStatus();
+                return;
+            }
+
+            if (!password) {
+                updateAuthStatus('error', 'Password required');
+                return;
+            }
+
+            authBtn.disabled = true;
+            authBtn.innerHTML = '<span class="loading-spinner"></span>...';
+
+            try {
+                const hashedPassword = await Utils.hashPassword(password, API.authSalt);
+                const result = await API.verifyPassword(password);
+
+                if (result.valid) {
+                    AppState.isAuthenticated = true;
+                    API.authToken = hashedPassword;
+                    updateAuthStatus('success');
+                } else {
+                    AppState.isAuthenticated = false;
+                    API.authToken = '';
+                    updateAuthStatus('error');
+                    showToast('Invalid password', 'error');
+                }
+            } catch (error) {
+                AppState.isAuthenticated = false;
+                API.authToken = '';
+                updateAuthStatus('error');
+                showToast(error.message, 'error');
+            }
+        }
+
+        function updateAuthStatus(status = '') {
+            const passwordInput = document.getElementById('password-input');
+            const authBtn = document.getElementById('auth-btn');
+
+            authBtn.className = 'button';
+
+            if (AppState.passwordRequired) {
+                if (status === 'success') {
+                    passwordInput.disabled = true;
+                    authBtn.textContent = 'Verified';
+                    authBtn.classList.add('auth-success');
+                    authBtn.disabled = true;
+                } else if (status === 'error') {
+                    passwordInput.disabled = false;
+                    passwordInput.value = '';
+                    authBtn.textContent = 'Failed';
+                    authBtn.classList.add('auth-error');
+                    authBtn.disabled = false;
+                } else {
+                    passwordInput.disabled = false;
+                    authBtn.textContent = 'Verify';
+                    authBtn.disabled = false;
+                }
+            } else {
+                passwordInput.disabled = true;
+                passwordInput.placeholder = 'No password required';
+                authBtn.style.display = 'none';
             }
         }
 

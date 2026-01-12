@@ -132,7 +132,8 @@ LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
 LDFLAGS ?=
 LDLIBS := \
 	-lrt \
-	-pthread
+	-pthread \
+	-lcrypto
 override LDLIBS += \
 	$(LIBFUSE)
 ifeq ($(CXX),g++)

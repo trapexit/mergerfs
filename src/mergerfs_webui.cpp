@@ -11,10 +11,100 @@
 #include "json.hpp"
 
 #include <unistd.h>
+#include <random>
+#include <sstream>
+#include <iomanip>
+#include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <cstring>
 
 using json = nlohmann::json;
 using namespace std::string_view_literals;
 
+
+static std::string g_password_hash = "";
+static std::string g_current_salt = "";
+
+static bool _check_auth(const httplib::Request &req_);
+
+static
+std::string
+_sha256_hex(const std::string &input)
+{
+  unsigned char hash[SHA256_DIGEST_LENGTH];
+  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+  if (!ctx) return "";
+
+  EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr);
+  EVP_DigestUpdate(ctx, input.c_str(), input.length());
+  EVP_DigestFinal_ex(ctx, hash, nullptr);
+  EVP_MD_CTX_free(ctx);
+
+  std::stringstream ss;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
+      ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+    }
+  return ss.str();
+}
+
+static
+std::string
+_generate_salt(size_t length = 16)
+{
+  static const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(0, sizeof(charset) - 2);
+
+  std::string salt;
+  salt.reserve(length);
+  for (size_t i = 0; i < length; i++)
+    {
+      salt += charset[dis(gen)];
+    }
+  return salt;
+}
+
+static
+std::string
+_compute_password_hash(const std::string &password, const std::string &salt)
+{
+  return _sha256_hex(password + salt);
+}
+
+static
+bool
+_validate_password(const std::string &password_provided)
+{
+  if (g_password_hash.empty())
+    {
+      return true;
+    }
+
+  if (password_provided.empty())
+    {
+      return false;
+    }
+
+  return password_provided == g_password_hash;
+}
+
+static
+void
+_set_password(const std::string &password)
+{
+  if (password.empty())
+    {
+      g_password_hash = "";
+      g_current_salt = "";
+    }
+  else
+    {
+      g_current_salt = _generate_salt();
+      g_password_hash = _compute_password_hash(password, g_current_salt);
+    }
+}
 
 static
 json
@@ -402,6 +492,14 @@ _post_kvs_key(const httplib::Request &req_,
       return;
     }
 
+  if (!g_password_hash.empty() && !_check_auth(req_))
+    {
+      res_.status = 401;
+      res_.set_content("{\"error\":\"authentication required\"}",
+                       "application/json");
+      return;
+    }
+
   try
     {
       int rv;
@@ -440,6 +538,78 @@ _post_kvs_key(const httplib::Request &req_,
     }
 }
 
+static
+void
+_get_auth_salt(const httplib::Request &req_,
+               httplib::Response      &res_)
+{
+  json j;
+
+  j["salt"] = g_current_salt;
+  j["password_required"] = !g_password_hash.empty();
+
+  res_.set_content(j.dump(), "application/json");
+}
+
+static
+void
+_post_auth_verify(const httplib::Request &req_,
+                  httplib::Response      &res_)
+{
+  try
+    {
+      json j;
+      json body = json::parse(req_.body);
+
+      std::string password = body.value("password", "");
+
+      if (_validate_password(password))
+        {
+          j["result"] = "success";
+          j["valid"] = true;
+        }
+      else
+        {
+          res_.status = 401;
+          j["result"] = "error";
+          j["valid"] = false;
+          j["error"] = "Invalid password";
+        }
+
+      res_.set_content(j.dump(), "application/json");
+    }
+  catch(const std::exception &e)
+    {
+      fmt::print("{}\n", e.what());
+      res_.status = 400;
+      res_.set_content("invalid json", "text/plain");
+    }
+}
+
+static
+bool
+_check_auth(const httplib::Request &req_)
+{
+  if (g_password_hash.empty())
+    {
+      return true;
+    }
+
+  std::string auth_header = req_.get_header_value("Authorization");
+  if (auth_header.empty())
+    {
+      return false;
+    }
+
+  if (auth_header.substr(0, 7) == "Bearer ")
+    {
+      std::string token = auth_header.substr(7);
+      return _validate_password(token);
+    }
+
+  return false;
+}
+
 int
 mergerfs::webui::main(const int   argc_,
                       char      **argv_)
@@ -471,11 +641,23 @@ mergerfs::webui::main(const int   argc_,
       return app.exit(e);
     }
 
+  if (!password.empty())
+    {
+      _set_password(password);
+      fmt::print("Password authentication enabled\n");
+    }
+  else
+    {
+      fmt::print("No password set. Authentication disabled.\n");
+    }
+
   // TODO: Warn if uid of server is not root but mergerfs is.
 
   httplib::Server http_server;
 
   http_server.Get("/",::_get_root);
+  http_server.Get("/auth/salt",::_get_auth_salt);
+  http_server.Post("/auth/verify",::_post_auth_verify);
   http_server.Get("/mounts",::_get_mounts);
   http_server.Get("/mounts/mergerfs",::_get_mounts_mergerfs);
   http_server.Get("/kvs",::_get_kvs);
