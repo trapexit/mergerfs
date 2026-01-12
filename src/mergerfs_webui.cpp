@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 using json = nlohmann::json;
+using namespace std::string_view_literals;
 
 
 static
@@ -217,6 +218,11 @@ bool
 _valid_fs_type(const fs::path    &path_,
                const std::string &type_)
 {
+  constexpr auto valid_mount_prefixes =
+    std::array{
+
+  };
+
   if(not (str::startswith(path_,"/mnt")   or
           str::startswith(path_,"/media") or
           str::startswith(path_,"/opt")   or
