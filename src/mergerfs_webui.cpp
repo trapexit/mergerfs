@@ -252,7 +252,7 @@ _get_mounts(const httplib::Request &req_,
   json_array = json::array();
   for(const auto &mount : mounts)
     {
-      if(not ::_valid_fs_type(mount.type))
+      if(not ::_valid_fs_type(mount.dir,mount.type))
         continue;
 
       json obj;
