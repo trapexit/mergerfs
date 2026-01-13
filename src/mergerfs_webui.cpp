@@ -26,9 +26,9 @@ static bool _check_auth(const httplib::Request &req_);
 
 static
 std::string
-_sha256_hex(const std::string &input)
+_sha256_hex(const std::string &input_)
 {
-  return picosha2::hash256_hex_string(input);
+  return picosha2::hash256_hex_string(input_);
 }
 
 static
