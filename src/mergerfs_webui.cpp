@@ -473,8 +473,8 @@ _post_kvs_key(const httplib::Request &req_,
 
 static
 void
-_get_auth_salt(const httplib::Request &req_,
-               httplib::Response      &res_)
+_get_auth(const httplib::Request &req_,
+          httplib::Response      &res_)
 {
   json j;
 
@@ -588,7 +588,7 @@ mergerfs::webui::main(const int   argc_,
   httplib::Server http_server;
 
   http_server.Get("/",::_get_root);
-  http_server.Get("/auth/salt",::_get_auth_salt);
+  http_server.Get("/auth",::_get_auth);
   http_server.Post("/auth/verify",::_post_auth_verify);
   http_server.Get("/mounts",::_get_mounts);
   http_server.Get("/mounts/mergerfs",::_get_mounts_mergerfs);

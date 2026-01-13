@@ -1306,8 +1306,8 @@
                 }
             },
 
-            async getAuthSalt() {
-                const response = await this.request('/auth/salt');
+            async getAuth() {
+                const response = await this.request('/auth');
                 const data = await response.json();
                 this.passwordRequired = data.password_required;
                 return data;
@@ -2471,7 +2471,7 @@
         // Authentication functions
         async function initAuth() {
             try {
-                const authInfo = await API.getAuthSalt();
+                const authInfo = await API.getAuth();
                 AppState.passwordRequired = authInfo.password_required;
                 API.passwordRequired = authInfo.password_required;
 
