@@ -1274,7 +1274,6 @@
             baseURL: '',
             authToken: '',
             passwordRequired: false,
-            authSalt: '',
 
             async request(endpoint, options = {}) {
                 try {
@@ -1310,17 +1309,15 @@
             async getAuthSalt() {
                 const response = await this.request('/auth/salt');
                 const data = await response.json();
-                this.authSalt = data.salt;
                 this.passwordRequired = data.password_required;
                 return data;
             },
 
             async verifyPassword(password) {
-                const hashedPassword = await Utils.hashPassword(password, this.authSalt);
                 const response = await this.request('/auth/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: hashedPassword })
+                    body: JSON.stringify({ password: password })
                 });
                 return await response.json();
             },
@@ -1410,18 +1407,6 @@
                     clearTimeout(timeout);
                     timeout = setTimeout(later, wait);
                 };
-            },
-
-            async sha256(message) {
-                const msgBuffer = new TextEncoder().encode(message);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                return hashHex;
-            },
-
-            async hashPassword(password, salt) {
-                return await this.sha256(password + salt);
             },
 
             formatBytes(bytes, decimals = 2) {
@@ -2524,12 +2509,11 @@
             authBtn.innerHTML = '<span class="loading-spinner"></span>...';
 
             try {
-                const hashedPassword = await Utils.hashPassword(password, API.authSalt);
                 const result = await API.verifyPassword(password);
 
                 if (result.valid) {
                     AppState.isAuthenticated = true;
-                    API.authToken = hashedPassword;
+                    API.authToken = password;
                     updateAuthStatus('success');
                 } else {
                     AppState.isAuthenticated = false;

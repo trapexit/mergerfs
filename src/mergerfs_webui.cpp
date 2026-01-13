@@ -9,81 +9,34 @@
 #include "fmt/core.h"
 #include "httplib.h"
 #include "json.hpp"
-#include "picosha2.h"
 
 #include <unistd.h>
-#include <random>
-#include <sstream>
-#include <iomanip>
 #include <cstring>
 
 using json = nlohmann::json;
 
-static std::string g_password_hash = "";
-static std::string g_current_salt = "";
+static std::string g_password = "";
 
 static bool _check_auth(const httplib::Request &req_);
-
-static
-std::string
-_sha256_hex(const std::string &input_)
-{
-  return picosha2::hash256_hex_string(input_);
-}
-
-static
-std::string
-_generate_salt(size_t length_ = 16)
-{
-  static const char charset[] =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis(0,(sizeof(charset) - 2));
-
-  std::string salt;
-  salt.reserve(length_);
-  for(size_t i = 0; i < length_; i++)
-    salt += charset[dis(gen)];
-
-  return salt;
-}
-
-static
-std::string
-_compute_password_hash(const std::string &password_,
-                       const std::string &salt_)
-{
-  return ::_sha256_hex(password_ + salt_);
-}
 
 static
 bool
 _validate_password(const std::string &password_provided_)
 {
-  if(g_password_hash.empty())
+  if(g_password.empty())
     return true;
 
   if(password_provided_.empty())
     return false;
 
-  return (password_provided_ == g_password_hash);
+  return (password_provided_ == g_password);
 }
 
 static
 void
 _set_password(const std::string &password_)
 {
-  if(password_.empty())
-    {
-      g_password_hash = "";
-      g_current_salt = "";
-    }
-  else
-    {
-      g_current_salt  = _generate_salt();
-      g_password_hash = _compute_password_hash(password_,g_current_salt);
-    }
+  g_password = password_;
 }
 
 static
@@ -472,7 +425,7 @@ _post_kvs_key(const httplib::Request &req_,
       return;
     }
 
-  if (!g_password_hash.empty() && !_check_auth(req_))
+  if (!g_password.empty() && !_check_auth(req_))
     {
       res_.status = 401;
       res_.set_content("{\"error\":\"authentication required\"}",
@@ -525,8 +478,7 @@ _get_auth_salt(const httplib::Request &req_,
 {
   json j;
 
-  j["salt"] = g_current_salt;
-  j["password_required"] = !g_password_hash.empty();
+  j["password_required"] = !g_password.empty();
 
   res_.set_content(j.dump(), "application/json");
 }
@@ -570,7 +522,7 @@ static
 bool
 _check_auth(const httplib::Request &req_)
 {
-  if (g_password_hash.empty())
+  if (g_password.empty())
     {
       return true;
     }
