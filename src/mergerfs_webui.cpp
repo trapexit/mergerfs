@@ -39,7 +39,7 @@ _generate_salt(size_t length = 16)
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis(0, sizeof(charset) - 2);
+  std::uniform_int_distribution<> dis(0,(sizeof(charset) - 2));
 
   std::string salt;
   salt.reserve(length);
