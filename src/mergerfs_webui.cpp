@@ -59,15 +59,15 @@ _compute_password_hash(const std::string &password_,
 
 static
 bool
-_validate_password(const std::string &password_provided)
+_validate_password(const std::string &password_provided_)
 {
   if(g_password_hash.empty())
     return true;
 
-  if(password_provided.empty())
+  if(password_provided_.empty())
     return false;
 
-  return (password_provided == g_password_hash);
+  return (password_provided_ == g_password_hash);
 }
 
 static
