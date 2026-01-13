@@ -43,10 +43,9 @@ _generate_salt(size_t length = 16)
 
   std::string salt;
   salt.reserve(length);
-  for (size_t i = 0; i < length; i++)
-    {
-      salt += charset[dis(gen)];
-    }
+  for(size_t i = 0; i < length; i++)
+    salt += charset[dis(gen)];
+
   return salt;
 }
 
