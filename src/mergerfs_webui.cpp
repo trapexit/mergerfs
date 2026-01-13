@@ -61,15 +61,11 @@ static
 bool
 _validate_password(const std::string &password_provided)
 {
-  if (g_password_hash.empty())
-    {
-      return true;
-    }
+  if(g_password_hash.empty())
+    return true;
 
-  if (password_provided.empty())
-    {
-      return false;
-    }
+  if(password_provided.empty())
+    return false;
 
   return password_provided == g_password_hash;
 }
