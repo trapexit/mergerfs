@@ -18,8 +18,6 @@
 #include <cstring>
 
 using json = nlohmann::json;
-using namespace std::string_view_literals;
-
 
 static std::string g_password_hash = "";
 static std::string g_current_salt = "";
