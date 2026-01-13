@@ -72,17 +72,17 @@ _validate_password(const std::string &password_provided_)
 
 static
 void
-_set_password(const std::string &password)
+_set_password(const std::string &password_)
 {
-  if (password.empty())
+  if(password_.empty())
     {
       g_password_hash = "";
       g_current_salt = "";
     }
   else
     {
-      g_current_salt = _generate_salt();
-      g_password_hash = _compute_password_hash(password, g_current_salt);
+      g_current_salt  = _generate_salt();
+      g_password_hash = _compute_password_hash(password_,g_current_salt);
     }
 }
 
