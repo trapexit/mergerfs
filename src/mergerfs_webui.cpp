@@ -33,7 +33,7 @@ _sha256_hex(const std::string &input)
 
 static
 std::string
-_generate_salt(size_t length = 16)
+_generate_salt(size_t length_ = 16)
 {
   static const char charset[] =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -42,8 +42,8 @@ _generate_salt(size_t length = 16)
   std::uniform_int_distribution<> dis(0,(sizeof(charset) - 2));
 
   std::string salt;
-  salt.reserve(length);
-  for(size_t i = 0; i < length; i++)
+  salt.reserve(length_);
+  for(size_t i = 0; i < length_; i++)
     salt += charset[dis(gen)];
 
   return salt;
