@@ -54,7 +54,7 @@ std::string
 _compute_password_hash(const std::string &password_,
                        const std::string &salt_)
 {
-  return _sha256_hex(password_ + salt_);
+  return ::_sha256_hex(password_ + salt_);
 }
 
 static
