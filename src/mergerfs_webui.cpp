@@ -9,13 +9,12 @@
 #include "fmt/core.h"
 #include "httplib.h"
 #include "json.hpp"
+#include "picosha2.h"
 
 #include <unistd.h>
 #include <random>
 #include <sstream>
 #include <iomanip>
-#include <openssl/evp.h>
-#include <openssl/sha.h>
 #include <cstring>
 
 using json = nlohmann::json;
@@ -31,28 +30,15 @@ static
 std::string
 _sha256_hex(const std::string &input)
 {
-  unsigned char hash[SHA256_DIGEST_LENGTH];
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-  if (!ctx) return "";
-
-  EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr);
-  EVP_DigestUpdate(ctx, input.c_str(), input.length());
-  EVP_DigestFinal_ex(ctx, hash, nullptr);
-  EVP_MD_CTX_free(ctx);
-
-  std::stringstream ss;
-  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-    {
-      ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-    }
-  return ss.str();
+  return picosha2::hash256_hex_string(input);
 }
 
 static
 std::string
 _generate_salt(size_t length = 16)
 {
-  static const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  static const char charset[] =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(0, sizeof(charset) - 2);
