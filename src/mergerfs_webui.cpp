@@ -51,9 +51,10 @@ _generate_salt(size_t length = 16)
 
 static
 std::string
-_compute_password_hash(const std::string &password, const std::string &salt)
+_compute_password_hash(const std::string &password_,
+                       const std::string &salt_)
 {
-  return _sha256_hex(password + salt);
+  return _sha256_hex(password_ + salt_);
 }
 
 static
