@@ -413,6 +413,30 @@ _execute_command(const httplib::Request &req_,
 }
 
 static
+bool
+_check_auth(const httplib::Request &req_)
+{
+  if (g_password.empty())
+    {
+      return true;
+    }
+
+  std::string auth_header = req_.get_header_value("Authorization");
+  if (auth_header.empty())
+    {
+      return false;
+    }
+
+  if (auth_header.substr(0, 7) == "Bearer ")
+    {
+      std::string token = auth_header.substr(7);
+      return _validate_password(token);
+    }
+
+  return false;
+}
+
+static
 void
 _post_kvs_key(const httplib::Request &req_,
               httplib::Response      &res_)
@@ -516,30 +540,6 @@ _post_auth_verify(const httplib::Request &req_,
       res_.status = 400;
       res_.set_content("invalid json", "text/plain");
     }
-}
-
-static
-bool
-_check_auth(const httplib::Request &req_)
-{
-  if (g_password.empty())
-    {
-      return true;
-    }
-
-  std::string auth_header = req_.get_header_value("Authorization");
-  if (auth_header.empty())
-    {
-      return false;
-    }
-
-  if (auth_header.substr(0, 7) == "Bearer ")
-    {
-      std::string token = auth_header.substr(7);
-      return _validate_password(token);
-    }
-
-  return false;
 }
 
 int
