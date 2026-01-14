@@ -17,8 +17,6 @@ using json = nlohmann::json;
 
 static std::string g_password = "";
 
-static bool _check_auth(const httplib::Request &req_);
-
 static
 bool
 _validate_password(const std::string &password_provided_)
