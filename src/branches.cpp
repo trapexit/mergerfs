@@ -409,7 +409,10 @@ Branches::from_string(const std::string_view str_)
   Branches::Ptr impl;
   Branches::Ptr new_impl;
 
-  impl = std::atomic_load(&_impl);
+  {
+    std::lock_guard<std::mutex> lock_guard(_mutex);
+    impl = _impl;
+  }
 
   new_impl = std::make_shared<Branches::Impl>(impl->minfreespace());
   *new_impl = *impl;
