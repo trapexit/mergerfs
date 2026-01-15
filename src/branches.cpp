@@ -425,9 +425,7 @@ Branches::from_string(const std::string_view str_)
 std::string
 Branches::to_string(void) const
 {
-  std::lock_guard<std::mutex> lock_guard(_mutex);
-
-  return _impl->to_string();
+  return std::atomic_load(&_impl)->to_string();
 }
 
 void
