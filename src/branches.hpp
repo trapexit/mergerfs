@@ -25,7 +25,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 #include <memory>
@@ -70,8 +69,7 @@ public:
   u64 minfreespace = MINFREESPACE_DEFAULT;
 
 private:
-  mutable std::mutex _mutex;
-  Ptr                _impl;
+  Ptr _impl;
 
 public:
   Branches()
