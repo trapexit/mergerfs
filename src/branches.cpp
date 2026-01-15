@@ -417,10 +417,7 @@ Branches::from_string(const std::string_view str_)
   if(rv < 0)
     return rv;
 
-  {
-    std::lock_guard<std::mutex> lock_guard(_mutex);
-    _impl = new_impl;
-  }
+  std::atomic_store(&_impl,new_impl);
 
   return 0;
 }
