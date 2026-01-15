@@ -82,8 +82,8 @@ public:
   std::string to_string(void) const final;
 
 public:
-  operator Ptr()   const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
-  Ptr operator->() const { std::lock_guard<std::mutex> lg(_mutex); return _impl; }
+  operator Ptr()   const { return std::atomic_load(&_impl); }
+  Ptr operator->() const { return std::atomic_load(&_impl); }
 
 public:
   Impl::iterator begin() { return _impl->begin(); }
