@@ -1054,6 +1054,74 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
+        /* Branch Details Table Styles */
+        .branch-details-table {
+            width: 100%;
+        }
+
+        .branch-details-table th,
+        .branch-details-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .usage-bar-container {
+            width: 100%;
+            max-width: 150px;
+            height: 8px;
+            background-color: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .usage-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .usage-bar.low {
+            background-color: var(--success-color);
+        }
+
+        .usage-bar.medium {
+            background-color: var(--warning-color);
+        }
+
+        .usage-bar.high {
+            background-color: var(--danger-color);
+        }
+
+        .usage-text {
+            font-size: 12px;
+            font-weight: 500;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .readonly-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: var(--warning-color);
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+
+        .branch-error {
+            color: var(--danger-color);
+            font-size: 11px;
+        }
+
+        .space-value {
+            font-family: monospace;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -1076,6 +1144,9 @@
         <div class="tabs" role="tablist">
             <button class="tab-button active" role="tab" aria-selected="true" aria-controls="branches-panel" id="branches-tab" tabindex="0">
                 Branches
+            </button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="branch-details-panel" id="branch-details-tab" tabindex="-1">
+                Branch Details
             </button>
             <button class="tab-button" role="tab" aria-selected="false" aria-controls="policies-panel" id="policies-tab" tabindex="-1">
                 Policies
@@ -1125,6 +1196,46 @@
                     <p>No branches configured</p>
                     <p class="help-text">Click "Add Branch" to get started</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Branch Details Tab -->
+        <div class="tab-content" id="branch-details-panel" role="tabpanel" aria-labelledby="branch-details-tab">
+            <div class="controls-section">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label for="mount-select-branch-details">Mount Point</label>
+                        <select id="mount-select-branch-details">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="button secondary" id="refresh-branch-details-btn">
+                            <span>🔄</span> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="branch-details-table" class="branch-details-table">
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>Mode</th>
+                            <th>Total Space</th>
+                            <th>Used Space</th>
+                            <th>Available Space</th>
+                            <th>Usage %</th>
+                            <th>Min Free Space</th>
+                        </tr>
+                    </thead>
+                    <tbody id="branch-details-tbody">
+                        <tr>
+                            <td colspan="7" class="empty-state">Loading branch details...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -1371,6 +1482,11 @@
 
             async getAllMounts() {
                 const response = await this.request('/mounts');
+                return await response.json();
+            },
+
+            async getBranchesInfo(mount) {
+                const response = await this.request(`/branches-info?mount=${encodeURIComponent(mount)}`);
                 return await response.json();
             }
         };
@@ -1713,7 +1829,7 @@
         }
 
         function populateMountSelects() {
-            const selects = ['mount-select-branches', 'mount-select-policies', 'mount-select-config', 'mount-select-commands'];
+            const selects = ['mount-select-branches', 'mount-select-branch-details', 'mount-select-policies', 'mount-select-config', 'mount-select-commands'];
 
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
@@ -1755,21 +1871,24 @@
             try {
                 const activeTab = document.querySelector('.tab-button[aria-selected="true"]').getAttribute('aria-controls');
 
-                 switch(activeTab) {
+                  switch(activeTab) {
 
-                     case 'branches-panel':
-                         await loadBranches(mount);
-                         break;
-                     case 'policies-panel':
-                         await loadPolicies(mount);
-                         break;
-                     case 'config-panel':
-                         await loadConfig(mount);
-                         break;
-                     case 'commands-panel':
-                         // Commands don't need data loading
-                         break;
-                 }
+                      case 'branches-panel':
+                          await loadBranches(mount);
+                          break;
+                      case 'branch-details-panel':
+                          await loadBranchDetails(mount);
+                          break;
+                      case 'policies-panel':
+                          await loadPolicies(mount);
+                          break;
+                      case 'config-panel':
+                          await loadConfig(mount);
+                          break;
+                      case 'commands-panel':
+                          // Commands don't need data loading
+                          break;
+                  }
             } catch (error) {
                 console.error('Failed to load mount data:', error);
                 showToast('Failed to load configuration', 'error');
@@ -1824,6 +1943,101 @@
                 console.error('Failed to load branches:', error);
                 const container = document.getElementById('branches-container');
                 container.innerHTML = `<div class="empty-state">${error.message || 'Failed to load branches'}</div>`;
+            }
+        }
+
+        // Branch details management
+        async function loadBranchDetails(mount) {
+            const tbody = document.getElementById('branch-details-tbody');
+            UI.showLoading(tbody);
+
+            try {
+                const branches = await API.getBranchesInfo(mount);
+                tbody.innerHTML = '';
+
+                if (!branches || branches.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No branches configured</td></tr>';
+                    return;
+                }
+
+                branches.forEach(branch => {
+                    const row = document.createElement('tr');
+
+                    const totalSpace = branch.total_space || 0;
+                    const usedSpace = branch.used_space || 0;
+                    const availableSpace = branch.available_space || 0;
+                    const usagePercent = totalSpace > 0 ? (usedSpace / totalSpace) * 100 : 0;
+
+                    const usageClass = usagePercent < 70 ? 'low' : (usagePercent < 90 ? 'medium' : 'high');
+
+                    const pathCell = document.createElement('td');
+                    const pathSpan = document.createElement('span');
+                    pathSpan.className = 'space-value';
+                    pathSpan.textContent = Utils.escapeHtml(branch.path);
+                    pathCell.appendChild(pathSpan);
+                    if (branch.readonly) {
+                        const badge = document.createElement('span');
+                        badge.className = 'readonly-badge';
+                        badge.textContent = 'RO';
+                        pathCell.appendChild(badge);
+                    }
+                    if (branch.error) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'branch-error';
+                        errorDiv.textContent = Utils.escapeHtml(branch.error);
+                        pathCell.appendChild(errorDiv);
+                    }
+
+                    const modeCell = document.createElement('td');
+                    modeCell.textContent = Utils.escapeHtml(branch.mode || 'RW');
+
+                    const totalCell = document.createElement('td');
+                    totalCell.className = 'space-value';
+                    totalCell.textContent = Utils.formatBytes(totalSpace);
+
+                    const usedCell = document.createElement('td');
+                    usedCell.className = 'space-value';
+                    usedCell.textContent = Utils.formatBytes(usedSpace);
+
+                    const availableCell = document.createElement('td');
+                    availableCell.className = 'space-value';
+                    availableCell.textContent = Utils.formatBytes(availableSpace);
+
+                    const usageCell = document.createElement('td');
+                    usageCell.style.textAlign = 'center';
+
+                    const usageBarContainer = document.createElement('div');
+                    usageBarContainer.className = 'usage-bar-container';
+
+                    const usageBar = document.createElement('div');
+                    usageBar.className = `usage-bar ${usageClass}`;
+                    usageBar.style.width = `${usagePercent}%`;
+
+                    usageBarContainer.appendChild(usageBar);
+                    usageCell.appendChild(usageBarContainer);
+
+                    const usageText = document.createElement('div');
+                    usageText.className = 'usage-text';
+                    usageText.textContent = `${usagePercent.toFixed(1)}%`;
+                    usageCell.appendChild(usageText);
+
+                    const minfreespaceCell = document.createElement('td');
+                    minfreespaceCell.className = 'space-value';
+                    minfreespaceCell.textContent = Utils.escapeHtml(branch.minfreespace || '-');
+
+                    row.appendChild(pathCell);
+                    row.appendChild(modeCell);
+                    row.appendChild(totalCell);
+                    row.appendChild(usedCell);
+                    row.appendChild(availableCell);
+                    row.appendChild(usageCell);
+                    row.appendChild(minfreespaceCell);
+
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Failed to load branch details:', error);
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${error.message || 'Failed to load branch details'}</td></tr>`;
             }
         }
 
@@ -2397,12 +2611,13 @@
 
                  // Set up event listeners
                  document.getElementById('add-branch-btn').addEventListener('click', addBranchEntry);
-                 document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
-                 document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
-                   document.getElementById('reset-policies-btn').addEventListener('click', resetPolicies);
-                 document.getElementById('export-config-btn').addEventListener('click', exportConfig);
-                 document.getElementById('import-config-btn').addEventListener('click', importConfig);
-                 document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
+                  document.getElementById('save-branches-btn').addEventListener('click', saveBranches);
+                  document.getElementById('reset-branches-btn').addEventListener('click', () => loadBranches(AppState.currentMount));
+                  document.getElementById('refresh-branch-details-btn').addEventListener('click', () => loadBranchDetails(AppState.currentMount));
+                    document.getElementById('reset-policies-btn').addEventListener('click', resetPolicies);
+                  document.getElementById('export-config-btn').addEventListener('click', exportConfig);
+                  document.getElementById('import-config-btn').addEventListener('click', importConfig);
+                  document.getElementById('refresh-config-btn').addEventListener('click', () => loadConfig(AppState.currentMount));
 
                 // Command buttons
                 document.getElementById('cmd-gc').addEventListener('click', () => executeCommand('gc'));

@@ -1,9 +1,11 @@
 #include "mergerfs_webui.hpp"
 
 #include "fs_exists.hpp"
+#include "fs_info.hpp"
 #include "fs_mounts.hpp"
 #include "mergerfs_api.hpp"
 #include "str.hpp"
+#include "strvec.hpp"
 
 #include "CLI11.hpp"
 #include "fmt/core.h"
@@ -540,6 +542,88 @@ _post_auth_verify(const httplib::Request &req_,
     }
 }
 
+static
+void
+_get_branches_info(const httplib::Request &req_,
+                   httplib::Response      &res_)
+{
+  if(not req_.has_param("mount"))
+    {
+      res_.status = 400;
+      res_.set_content("{\"error\":\"mount param not set\"}",
+                       "application/json");
+      return;
+    }
+
+  fs::path mount;
+  std::string branches_str;
+  std::vector<std::string> branches;
+
+  mount = req_.get_param_value("mount");
+
+  int rv = mergerfs::api::get_kv(mount,"branches",&branches_str);
+  if(rv < 0)
+    {
+      res_.status = 404;
+      res_.set_content("{\"error\":\"failed to get branches\"}",
+                       "application/json");
+      return;
+    }
+
+  str::split(branches_str,':',&branches);
+
+  json json_array = json::array();
+
+  for(const auto &branch_full : branches)
+    {
+      fs::info_t info;
+      std::string path;
+      std::string mode;
+      std::string minfreespace;
+
+      str::splitkv(branch_full,'=',&path,&mode);
+
+      if(!mode.empty())
+        {
+          std::string::size_type pos = mode.find(',');
+          if(pos != std::string::npos)
+            {
+              minfreespace = mode.substr(pos + 1);
+              mode = mode.substr(0,pos);
+            }
+        }
+
+      json branch_obj;
+      branch_obj["path"] = path;
+      branch_obj["mode"] = mode;
+      branch_obj["minfreespace"] = minfreespace;
+
+      rv = fs::info(path,&info);
+      if(rv == 0)
+        {
+          uint64_t total = info.spaceavail + info.spaceused;
+
+          branch_obj["total_space"] = total;
+          branch_obj["used_space"] = info.spaceused;
+          branch_obj["available_space"] = info.spaceavail;
+          branch_obj["readonly"] = info.readonly;
+        }
+      else
+        {
+          branch_obj["total_space"] = 0;
+          branch_obj["used_space"] = 0;
+          branch_obj["available_space"] = 0;
+          branch_obj["readonly"] = false;
+          branch_obj["error"] = "Failed to get disk info";
+        }
+
+      json_array.push_back(branch_obj);
+    }
+
+  res_.set_content(json_array.dump(),
+                   "application/json");
+}
+
 int
 mergerfs::webui::main(const int   argc_,
                       char      **argv_)
@@ -593,6 +677,7 @@ mergerfs::webui::main(const int   argc_,
   http_server.Get("/kvs",::_get_kvs);
   http_server.Get("/kvs/:key",::_get_kvs_key);
   http_server.Post("/kvs/:key",::_post_kvs_key);
+  http_server.Get("/branches-info",::_get_branches_info);
 
   fmt::print("host:port = http://{}:{}\n",
              host,
