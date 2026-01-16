@@ -1125,6 +1125,25 @@
             font-family: monospace;
             font-size: 13px;
         }
+
+        #documentation-panel {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #documentation-panel iframe {
+            display: block;
+            border-radius: 0 0 var(--radius) var(--radius);
+        }
+
+        .tab-button a {
+            transition: var(--transition);
+        }
+
+        .tab-button a:hover {
+            opacity: 1 !important;
+            color: var(--accent-primary);
+        }
     </style>
 </head>
 <body>
@@ -1160,6 +1179,10 @@
              <button class="tab-button" role="tab" aria-selected="false" aria-controls="commands-panel" id="commands-tab" tabindex="-1">
                  Commands
              </button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="documentation-panel" id="documentation-tab" tabindex="-1">
+                Documentation
+                <a href="https://trapexit.github.io/mergerfs/latest/" target="_blank" rel="noopener noreferrer" style="background: none; border: none; color: inherit; cursor: pointer; padding: 4px 8px; margin-left: 8px; font-size: 11px; text-decoration: none; opacity: 0.7;">↗</a>
+            </button>
         </div>
 
         <!-- Branches Tab -->
@@ -1356,6 +1379,11 @@
                 </div>
             </div>
          </div>
+
+        <!-- Documentation Tab -->
+        <div class="tab-content" id="documentation-panel" role="tabpanel" aria-labelledby="documentation-tab">
+            <iframe src="https://trapexit.github.io/mergerfs/latest/" style="width: 100%; height: calc(100vh - 250px); border: none;" title="Official mergerfs documentation"></iframe>
+        </div>
     </main>
 
     <!-- Path Selection Modal -->
