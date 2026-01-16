@@ -2851,19 +2851,39 @@
                     const mount = payload.mount;
                     const configMap = payload.config;
 
+                    // Fetch current config to diff against
+                    let currentConfig = {};
+                    try {
+                        currentConfig = await API.getConfig(mount);
+                    } catch (err) {
+                        console.warn('Could not fetch current config; proceeding with updates for all keys', err);
+                    }
+
+                    // Apply only changed keys
                     for (const [key, value] of Object.entries(configMap)) {
                         // Ensure value is string for storage; serialize complex types
                         let valueToSend = (typeof value === 'string') ? value
                                         : (typeof value === 'number' || typeof value === 'boolean') ? String(value)
                                         : JSON.stringify(value);
+
+                        // Compare with currentConfig
+                        const currentVal = currentConfig && currentConfig[key];
+                        const currentStr = (typeof currentVal === 'string') ? currentVal : (currentVal !== undefined && currentVal !== null) ? String(currentVal) : undefined;
+
+                        if (currentStr !== undefined && currentStr === valueToSend) {
+                            // No change; skip
+                            console.log('Skipping unchanged key', key);
+                            continue;
+                        }
+
+                        // Send update for changed value
                         try {
                             await API.setConfig(mount, key, valueToSend);
                         } catch (err) {
-                            // Ignore errors for individual keys
                             console.error('Import kv failed for', key, err);
                         }
                     }
- 
+
                     // Refresh config panel to reflect imported values
                     try {
                         await loadConfig(mount);
