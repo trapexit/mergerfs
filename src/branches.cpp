@@ -203,7 +203,7 @@ namespace l
       {
         std::error_code ec;
 
-        if(!std::filesystem::exists(path,ec))
+        if(!std::filesystem::exists(path))
           {
             SysLog::notice("branch `{}` does not currently exist",path);
           }
