@@ -1382,7 +1382,7 @@
 
         <!-- Documentation Tab -->
         <div class="tab-content" id="documentation-panel" role="tabpanel" aria-labelledby="documentation-tab">
-            <iframe src="https://trapexit.github.io/mergerfs/latest/" style="width: 100%; height: calc(100vh - 250px); border: none;" title="Official mergerfs documentation"></iframe>
+            <iframe id="documentation-iframe" data-src="https://trapexit.github.io/mergerfs/latest/" style="width: 100%; height: calc(100vh - 250px); border: none;" title="Official mergerfs documentation"></iframe>
         </div>
     </main>
 
@@ -1779,6 +1779,30 @@
 
 
 
+        // Tab load policy (lazy reload)
+        const TAB_ALWAYS_RELOAD = true;
+        const TAB_LOADED = {
+          'branches-panel': false,
+          'branch-details-panel': false,
+          'policies-panel': false,
+          'config-panel': false,
+          'commands-panel': false,
+          'documentation-panel': false
+        };
+
+        // Documentation lazy-load helper
+        function loadDocumentationLazy() {
+          const iframe = document.getElementById('documentation-iframe');
+          if (!iframe) return;
+          if (iframe.getAttribute('data-loaded') === 'true') return;
+          const src = iframe.getAttribute('data-src');
+          if (src) {
+            iframe.src = src;
+            iframe.setAttribute('data-loaded','true');
+            TAB_LOADED['documentation-panel'] = true;
+          }
+        }
+
         // Tab management
         function initTabs() {
             const tabButtons = document.querySelectorAll('.tab-button');
@@ -1803,6 +1827,22 @@
                     });
 
                     document.getElementById(targetTab).classList.add('active');
+                    // Lazy-load behavior per-tab
+                    if (targetTab === 'documentation-panel') {
+                        loadDocumentationLazy();
+                    } else if (TAB_ALWAYS_RELOAD) {
+                        // If reloading on each activation is desired, reset per-tab loaded state
+                        TAB_LOADED[targetTab] = false;
+                        // If we have a cached iframe, clear its src so it can re-load when reopened
+                        try {
+                          const el = document.getElementById(targetTab);
+                          if (el && el.src) {
+                            // For panels that are containers, reset any lazy content; here we only affect docs
+                          }
+                        } catch (e) {
+                          // ignore
+                        }
+                    }
 
                     localStorage.setItem('mergerfs_activeTab', targetTab);
 
