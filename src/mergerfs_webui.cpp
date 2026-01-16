@@ -16,6 +16,8 @@
 #include <cstring>
 #include <fstream>
 
+#include "index_min_html_gz.h"
+
 using json = nlohmann::json;
 
 static std::string g_password = "";
