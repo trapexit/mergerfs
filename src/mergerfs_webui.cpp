@@ -99,8 +99,8 @@ _get_root(const httplib::Request &req_,
     {
       if(fs::exists("webui/index.min.html.gz"))
         {
-          res_.set_header("Content-Encoding", "gzip");
-          res_.set_header("Content-Type", "text/html");
+          res_.set_header("Content-Encoding","gzip");
+          res_.set_header("Content-Type","text/html");
           res_.set_file_content("webui/index.min.html.gz");
           return;
         }
