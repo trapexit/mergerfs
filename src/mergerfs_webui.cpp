@@ -14,6 +14,7 @@
 
 #include <unistd.h>
 #include <cstring>
+#include <fstream>
 
 using json = nlohmann::json;
 
@@ -90,6 +91,13 @@ _get_root(const httplib::Request &req_,
           httplib::Response      &res_)
 {
   std::string html;
+
+  if(fs::exists("index.html.min.gz"))
+    {
+      res_.set_header("Content-Encoding", "gzip");
+      res_.set_file_content("webui/index.min.html.gz");
+      return;
+    }
 
   if(fs::exists("index.html"))
     {
