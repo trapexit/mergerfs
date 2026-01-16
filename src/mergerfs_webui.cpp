@@ -91,12 +91,19 @@ _get_root(const httplib::Request &req_,
           httplib::Response      &res_)
 {
   std::string html;
+  std::string accept_encoding;
 
-  if(fs::exists("webui/index.min.html.gz"))
+  accept_encoding = req_.get_header_value("Accept-Encoding");
+
+  if(accept_encoding.find("gzip") != std::string::npos)
     {
-      res_.set_header("Content-Encoding", "gzip");
-      res_.set_file_content("webui/index.min.html.gz");
-      return;
+      if(fs::exists("webui/index.min.html.gz"))
+        {
+          res_.set_header("Content-Encoding", "gzip");
+          res_.set_header("Content-Type", "text/html");
+          res_.set_file_content("webui/index.min.html.gz");
+          return;
+        }
     }
 
   if(fs::exists("webui/index.html"))
