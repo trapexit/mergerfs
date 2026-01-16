@@ -1292,18 +1292,22 @@
                 <input type="search" class="search-input" id="config-search" placeholder="Search configuration options...">
             </div>
 
+            <div style="margin-bottom: 15px; font-size: 12px; color: var(--text-secondary);">
+                For detailed information about configuration options, see the
+                <a href="https://trapexit.github.io/mergerfs/latest/config/options/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-primary); text-decoration: underline;">official documentation</a>.
+            </div>
+
             <div class="table-container">
                 <table id="config-table">
                     <thead>
                         <tr>
                             <th>Option</th>
                             <th>Current Value</th>
-                            <th>Description</th>
                         </tr>
                     </thead>
                     <tbody id="config-tbody">
                         <tr>
-                            <td colspan="3" class="empty-state">Loading configuration...</td>
+                            <td colspan="2" class="empty-state">Loading configuration...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -2416,7 +2420,7 @@
             } catch (error) {
                 console.error('Failed to load config:', error);
                 const errorMsg = error.message || 'Unknown error';
-                tbody.innerHTML = `<tr><td colspan="3" class="empty-state">Failed to load configuration: ${errorMsg}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Failed to load configuration: ${errorMsg}</td></tr>`;
                 showToast(`Failed to load configuration: ${errorMsg}`, 'error', 6000);
             }
         }
@@ -2492,19 +2496,13 @@
 
                 valueCell.appendChild(input);
 
-                const descCell = document.createElement('td');
-                descCell.textContent = descriptions[key] || '';
-                descCell.style.fontSize = '12px';
-                descCell.style.color = 'var(--text-secondary)';
-
                 row.appendChild(keyCell);
                 row.appendChild(valueCell);
-                row.appendChild(descCell);
                 tbody.appendChild(row);
             });
 
             if (orderedEntries.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No configuration available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No configuration available</td></tr>';
             }
         }
 
