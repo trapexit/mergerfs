@@ -92,16 +92,16 @@ _get_root(const httplib::Request &req_,
 {
   std::string html;
 
-  if(fs::exists("index.html.min.gz"))
+  if(fs::exists("webui/index.html.min.gz"))
     {
       res_.set_header("Content-Encoding", "gzip");
       res_.set_file_content("webui/index.min.html.gz");
       return;
     }
 
-  if(fs::exists("index.html"))
+  if(fs::exists("webui/index.html"))
     {
-      res_.set_file_content("index.html");
+      res_.set_file_content("webui/index.html");
       return;
     }
 
