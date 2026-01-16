@@ -2842,14 +2842,36 @@
 
                 try {
                     const text = await file.text();
-                    const config = JSON.parse(text);
+                    const payload = JSON.parse(text);
 
-                    if (!config.config || !config.mount) {
+                    if (!payload.config || !payload.mount) {
                         throw new Error('Invalid configuration file');
                     }
 
-                    showToast('Configuration imported successfully. Please review and save changes.', 'success');
-                    // Note: Actual import would require proper API implementation
+                    const mount = payload.mount;
+                    const configMap = payload.config;
+
+                    for (const [key, value] of Object.entries(configMap)) {
+                        // Ensure value is string for storage; serialize complex types
+                        let valueToSend = (typeof value === 'string') ? value
+                                        : (typeof value === 'number' || typeof value === 'boolean') ? String(value)
+                                        : JSON.stringify(value);
+                        try {
+                            await API.setConfig(mount, key, valueToSend);
+                        } catch (err) {
+                            // Ignore errors for individual keys
+                            console.error('Import kv failed for', key, err);
+                        }
+                    }
+ 
+                    // Refresh config panel to reflect imported values
+                    try {
+                        await loadConfig(mount);
+                    } catch (err) {
+                        console.error('Failed to refresh config after import:', err);
+                    }
+ 
+                    showToast('Configuration imported successfully.', 'success');
                 } catch (error) {
                     console.error('Failed to import config:', error);
                     const errorMsg = error.message || 'Unknown error';
