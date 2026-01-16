@@ -2460,14 +2460,16 @@
             const priorityKeys = ['fsname', 'branches', 'version', 'minfreespace', 'moveonenospc'];
             const orderedEntries = [];
 
+            const configCopy = { ...config };
+
             priorityKeys.forEach(key => {
-                if (config.hasOwnProperty(key)) {
-                    orderedEntries.push([key, config[key]]);
-                    delete config[key];
+                if (configCopy.hasOwnProperty(key)) {
+                    orderedEntries.push([key, configCopy[key]]);
+                    delete configCopy[key];
                 }
             });
 
-            for (const [key, value] of Object.entries(config)) {
+            for (const [key, value] of Object.entries(configCopy)) {
                 orderedEntries.push([key, value]);
             }
 
@@ -2803,25 +2805,30 @@
                 return;
             }
 
-            const config = {
-                mount: AppState.currentMount,
-                timestamp: new Date().toISOString(),
-                config: AppState.config,
-                policies: AppState.policies,
-                exportedBy: 'mergerfs Runtime Manager'
-            };
+            API.getConfig(AppState.currentMount).then(config => {
+                const exportData = {
+                    mount: AppState.currentMount,
+                    timestamp: new Date().toISOString(),
+                    config: config,
+                    exportedBy: 'mergerfs Runtime Manager'
+                };
 
-            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mergerfs-config-${AppState.currentMount.replace(/[\/\\]/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `mergerfs-config-${AppState.currentMount.replace(/[\/\\]/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
 
-            showToast('Configuration exported successfully', 'success');
+                showToast('Configuration exported successfully', 'success');
+            }).catch(error => {
+                console.error('Failed to export config:', error);
+                const errorMsg = error.message || 'Unknown error';
+                showToast(`Failed to export configuration: ${errorMsg}`, 'error', 6000);
+            });
         }
 
         function importConfig() {
