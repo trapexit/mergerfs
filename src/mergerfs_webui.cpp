@@ -92,7 +92,6 @@ void
 _get_root(const httplib::Request &req_,
           httplib::Response      &res_)
 {
-  std::string html;
   std::string accept_encoding;
 
   accept_encoding = req_.get_header_value("Accept-Encoding");
