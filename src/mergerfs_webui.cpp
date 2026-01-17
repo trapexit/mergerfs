@@ -99,6 +99,13 @@ _get_root(const httplib::Request &req_,
 
   if(accept_encoding.find("gzip") != std::string::npos)
     {
+      res_.set_header("Content-Encoding","gzip");
+      res_.set_header("Content-Type","text/html");
+      res_.set_content(index_min_html_gz,
+                       index_min_html_gz_len,
+                       "text/html");
+
+
       if(fs::exists("webui/index.min.html.gz"))
         {
           res_.set_header("Content-Encoding","gzip");
