@@ -100,7 +100,7 @@ _get_root(const httplib::Request &req_,
     {
       res_.set_header("Content-Encoding","gzip");
       res_.set_header("Content-Type","text/html");
-      res_.set_content(index_min_html_gz,
+      res_.set_content((const char*)index_min_html_gz,
                        index_min_html_gz_len,
                        "text/html");
 
