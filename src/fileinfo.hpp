@@ -16,6 +16,31 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+/*
+  FILEINFO - OPEN FILE METADATA
+  =============================
+
+  This file defines the FileInfo class which stores metadata for an open
+  file. Each create and opened file get its own instance while the
+  first one of any set of concurrently open files will be stored in
+  open_files map for reference but always pass around through
+  fuse_file_info_t.fh.
+
+  FUSE FILE HANDLE CONVERSION
+  ---------------------------
+
+  FUSE uses a 64-bit file handle (fuse_file_info_t.fh). We convert between
+  FileInfo* and fh using simple pointer casting:
+
+  - to_fh(FileInfo*): Casts pointer to uint64_t for FUSE
+  - from_fh(uint64_t): Casts back to FileInfo pointer
+
+  This is safe because FileInfo objects remain valid until the last close.
+
+  See fuse_open.cpp and fuse_release.cpp for how FileInfo is used in the
+  open/close flow.
+*/
+
 #pragma once
 
 #include "assert.hpp"
@@ -31,7 +56,8 @@
 class FileInfo : public FH
 {
 public:
-  static FileInfo *from_fh(const u64 fh);
+  static FileInfo *from_fh(const u64);
+  static u64       to_fh(const FileInfo*);
 
 public:
   FileInfo(const int       fd_,
@@ -73,6 +99,14 @@ public:
   u32 direct_io:1;
   Mutex mutex;
 };
+
+inline
+u64
+FileInfo::to_fh(const FileInfo *fi_)
+{
+  ASSERT_NOT_NULL(fi_);
+  return reinterpret_cast<u64>(fi_);
+}
 
 inline
 u64
