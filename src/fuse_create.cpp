@@ -16,6 +16,33 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+/*
+  FILE CREATION WITH FUSE PASSTHROUGH SUPPORT
+  ===========================================
+
+  This file implements FUSE create() which creates a new file and opens it.
+  Unlike fuse_open.cpp, this file does NOT use a retry loop because the
+  kernel guarantees serialization of create operations.
+
+  WHY NO RETRY LOOP?
+  ------------------
+
+  The fuse_open.cpp retry loop handles the case where multiple threads race
+  to open an EXISTING file. With create(), the kernel serializes namespace
+  operations at the VFS layer - only one create for a given path can succeed.
+
+  Additionally, when a file is created, FUSE allocates a completely new
+  nodeid (inode number). Since mergerfs never reuses nodeids, there should
+  never be a collision in the open_files map.
+
+  PASSTHROUGH MODE
+  ----------------
+
+  Like fuse_open.cpp, this file supports FUSE passthrough mode for improved
+  I/O performance. The backing_id is obtained from fuse_passthrough_open()
+  and stored in the OpenFile entry.
+*/
+
 #include "fuse_create.hpp"
 
 #include "state.hpp"
@@ -227,29 +254,26 @@ _(const PassthroughIOEnum e_,
 
 static
 int
-_create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
-                          const fs::path       &fusepath_,
-                          const mode_t          mode_,
-                          fuse_file_info_t     *ffi_,
-                          State::OpenFile      *of_)
+_create(const fuse_req_ctx_t *ctx_,
+        const fs::path       &fusepath_,
+        mode_t                mode_,
+        fuse_file_info_t     *ffi_)
 {
-  int rv;
-  FileInfo *fi;
+  auto &of = state.open_files;
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
     ::_tweak_flags_cache_writeback(&ffi_->flags);
-  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
-                                      ffi_->flags);
+  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,ffi_->flags);
 
-  rv = ::_create(ctx_,
-                 cfg.func.getattr.policy,
-                 cfg.func.create.policy,
-                 cfg.branches,
-                 fusepath_,
-                 ffi_,
-                 mode_,
-                 ctx_->umask);
+  int rv = ::_create(ctx_,
+                     cfg.func.getattr.policy,
+                     cfg.func.create.policy,
+                     cfg.branches,
+                     fusepath_,
+                     ffi_,
+                     mode_,
+                     ctx_->umask);
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
@@ -266,10 +290,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   if(rv < 0)
     return rv;
 
-  fi = FileInfo::from_fh(ffi_->fh);
-
-  of_->ref_count = 1;
-  of_->fi        = fi;
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+  int backing_id = INVALID_BACKING_ID;
 
   switch(_(cfg.passthrough_io,ffi_->flags))
     {
@@ -278,83 +300,40 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
     case _(PassthroughIO::ENUM::RW,O_RDONLY):
     case _(PassthroughIO::ENUM::RW,O_WRONLY):
     case _(PassthroughIO::ENUM::RW,O_RDWR):
+      backing_id = FUSE::passthrough_open(fi->fd);
+      if(fuse_backing_id_is_valid(backing_id))
+        {
+          ffi_->backing_id = backing_id;
+          ffi_->passthrough = true;
+          ffi_->keep_cache = false;
+        }
       break;
     default:
-      return 0;
+      break;
     }
 
-  of_->backing_id = FUSE::passthrough_open(fi->fd);
-  if(of_->backing_id < 0)
-    return 0;
+  bool inserted = of.try_emplace(ctx_->nodeid,
+                                 backing_id,
+                                 fi);
 
-  ffi_->backing_id  = of_->backing_id;
-  ffi_->passthrough = true;
-  ffi_->keep_cache  = false;
+  // Really. This should never happen. FUSE should not be allowing a
+  // create for an existing nodeid. mergerfs doesn't reuse nodeids. It
+  // always uses a fixed generation value and always uses new nodeids.
+  if(not inserted)
+    {
+      const char *msg = "nodeid already exists in open_files map";
+
+      FUSE::passthrough_close(backing_id);
+      fs::close(fi->fd);
+      delete fi;
+
+      SysLog::crit(msg);
+      fmt::println(stderr,"{}",msg);
+
+      return -EIO;
+    }
 
   return 0;
-}
-
-static
-inline
-auto
-_create_insert_lambda(const fuse_req_ctx_t *ctx_,
-                      const fs::path       &fusepath_,
-                      const mode_t          mode_,
-                      fuse_file_info_t     *ffi_,
-                      int                  *_rv_)
-{
-  return
-    [=](auto &val_)
-    {
-      *_rv_ = ::_create_for_insert_lambda(ctx_,
-                                          fusepath_,
-                                          mode_,
-                                          ffi_,
-                                          &val_.second);
-    };
-}
-
-// This function should never be called?
-static
-inline
-auto
-_create_update_lambda()
-{
-  return
-    [](const auto &val_)
-    {
-      fmt::println(stderr,"CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
-      SysLog::crit("CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
-      abort();
-    };
-}
-
-static
-int
-_create(const fuse_req_ctx_t *ctx_,
-        const fs::path       &fusepath_,
-        mode_t                mode_,
-        fuse_file_info_t     *ffi_)
-{
-  int rv;
-  auto &of = state.open_files;
-
-  rv = -EINVAL;
-  of.try_emplace_and_visit(ctx_->nodeid,
-                           ::_create_insert_lambda(ctx_,fusepath_,mode_,ffi_,&rv),
-                           ::_create_update_lambda());
-
-  // Can't abort an emplace_and_visit and can't assume another thread
-  // hasn't created an entry since this failure so erase only if
-  // ref_count is default (0).
-  if(rv < 0)
-    of.erase_if(ctx_->nodeid,
-                [](const auto &val_)
-                {
-                  return (val_.second.ref_count <= 0);
-                });
-
-  return rv;
 }
 
 int
