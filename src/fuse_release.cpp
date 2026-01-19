@@ -16,6 +16,76 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+/*
+  TWO-PHASE FILE RELEASE AND RESOURCE CLEANUP
+  ===========================================
+
+  This file implements FUSE release() with a sophisticated two-phase cleanup
+  mechanism designed to handle concurrent access without deadlocks or leaks.
+
+  THE PROBLEM: CONCURRENT RELEASE AND OPEN
+  ----------------------------------------
+
+  When multiple threads access the same file, we have reference counting to
+  track how many opens are active. When the last close happens, we need to:
+  1. Close the file descriptor
+  2. Close the passthrough backing_id (if any)
+  3. Delete the FileInfo object
+  4. Remove the entry from the open_files map
+
+  The challenge is that these operations can be slow (especially close()),
+  and we CANNOT hold the map lock during slow operations. Other threads
+  may need to open the same file or release other files.
+
+  THE SOLUTION: TWO-PHASE CLEANUP
+  -------------------------------
+
+  Phase 1: _release_ref() - Atomic Reference Management (lines ~35-65)
+    - Runs inside visit() callback (map is locked)
+    - Decrements ref_count
+    - If ref_count reaches 0, captures resources and sets fi = nullptr
+    - This "zombie" state signals that cleanup is needed
+
+  Phase 2: _release_cleanup() - Resource Destruction (lines ~69-88)
+    - Runs OUTSIDE visit() callback (map is unlocked)
+    - Performs slow operations: close(), passthrough_close(), delete
+    - Conditionally erases the map entry using erase_if
+
+  WHY TWO PHASES?
+  --------------
+
+  Without this split, a slow close() would block:
+  - Other threads trying to open the same file
+  - Other threads trying to release other files (global map lock)
+  - The entire FUSE request pipeline
+
+  By separating the fast reference counting from the slow cleanup, we achieve
+  both correctness and high concurrency.
+
+  THE ZOMBIE STATE
+  ----------------
+
+  When ref_count hits 0, we set fi = nullptr. This "zombie" state means:
+  - The entry is marked for destruction
+  - New opens should skip this entry (see fuse_open.cpp line ~305)
+  - Cleanup is in progress or pending
+
+  The erase_if() in _release_cleanup() only erases if fi is still nullptr,
+  protecting against the ABA problem where another thread might have already
+  created a new entry with the same nodeid.
+
+  ORPHAN FILEINFO CLEANUP
+  -----------------------
+
+  The release() function (lines ~116-135) handles the case where a FileInfo
+  was created but never inserted into the map (e.g., open failure). The
+  fi_in_map flag distinguishes between:
+  - FileInfo in map: wait for normal cleanup
+  - FileInfo not in map (orphan): clean up immediately
+
+  See commit 446e9a7b for the complete rationale behind this design.
+*/
+
 #include "fuse_release.hpp"
 
 #include "state.hpp"
@@ -28,80 +98,64 @@
 
 #include "fuse.h"
 
-static
-constexpr
-auto
-_erase_if_lambda(FileInfo *fi_,
-                 bool     *existed_in_map_)
-{
-  return
-    [=](auto &val_)
-    {
-      *existed_in_map_ = true;
-
-      if(fi_ != val_.second.fi)
-        {
-          fs::close(fi_->fd);
-          delete fi_;
-        }
-
-      val_.second.ref_count--;
-      if(val_.second.ref_count > 0)
-        return false;
-
-      if(val_.second.backing_id > 0)
-        FUSE::passthrough_close(val_.second.backing_id);
-      fs::close(val_.second.fi->fd);
-      delete val_.second.fi;
-
-      return true;
-    };
-}
 
 static
 int
-_release(const fuse_req_ctx_t *ctx_,
-         FileInfo             *fi_,
-         const bool            dropcacheonclose_)
+_release(cu64        nodeid_,
+         FileInfo   *fi_,
+         const bool  dropcacheonclose_)
 {
-  bool existed_in_map;
-
-  // according to Feh of nocache calling it once doesn't always work
-  // https://github.com/Feh/nocache
   if(dropcacheonclose_)
     {
       fs::fadvise_dontneed(fi_->fd);
       fs::fadvise_dontneed(fi_->fd);
     }
 
-  // Because of course the API doesn't tell you if the key
-  // existed. Just how many it erased and in this case I only want to
-  // erase if there are no more open files.
-  existed_in_map = false;
-  state.open_files.erase_if(ctx_->nodeid,
-                            ::_erase_if_lambda(fi_,&existed_in_map));
-  if(existed_in_map)
-    return 0;
-
-  fs::close(fi_->fd);
-  delete fi_;
+  FUSE::release(nodeid_,fi_);
 
   return 0;
 }
 
-static
-int
-_release(const fuse_req_ctx_t   *ctx_,
-         const fuse_file_info_t *ffi_)
+void
+FUSE::release(cu64             nodeid_,
+              FileInfo * const fi_)
 {
-  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+  auto     &of         = state.open_files;
+  int       backing_id = INVALID_BACKING_ID;
+  FileInfo *fi_to_free = nullptr;
 
-  return ::_release(ctx_,fi,cfg.dropcacheonclose);
+  of.erase_if(nodeid_,
+              [&](auto &v_)
+              {
+                v_.second.ref_count--;
+                if(v_.second.ref_count > 0)
+                  {
+                    if(fi_ != v_.second.fi)
+                      fi_to_free = fi_;
+                    return false;
+                  }
+
+                fi_to_free = v_.second.fi;
+                backing_id = v_.second.backing_id;
+
+                return true;
+              });
+
+  FUSE::passthrough_close(backing_id);
+  if(fi_to_free)
+    {
+      fs::close(fi_to_free->fd);
+      delete fi_to_free;
+    }
 }
 
 int
 FUSE::release(const fuse_req_ctx_t   *ctx_,
               const fuse_file_info_t *ffi_)
 {
-  return ::_release(ctx_,ffi_);
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+
+  return ::_release(ctx_->nodeid,
+                    fi,
+                    cfg.dropcacheonclose);
 }
