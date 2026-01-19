@@ -3878,13 +3878,16 @@ fuse_passthrough_open(const int fd_)
 
   rv = ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_OPEN,&bm);
 
-  return rv;
+  return ((rv < 0) ? INVALID_BACKING_ID : rv);
 }
 
 int
 fuse_passthrough_close(const int backing_id_)
 {
   int dev_fuse_fd;
+
+  if(!fuse_backing_id_is_valid(backing_id_))
+    return 0;
 
   dev_fuse_fd = fuse_chan_fd(f.se->ch);
 

@@ -281,7 +281,7 @@ fill_open(struct fuse_open_out   *arg_,
     arg_->open_flags |= FOPEN_PARALLEL_DIRECT_WRITES;
   if(ffi_->noflush)
     arg_->open_flags |= FOPEN_NOFLUSH;
-  if(ffi_->passthrough && (ffi_->backing_id > 0))
+  if(ffi_->passthrough && fuse_backing_id_is_valid(ffi_->backing_id))
     {
       arg_->open_flags |= FOPEN_PASSTHROUGH;
       arg_->backing_id  = ffi_->backing_id;

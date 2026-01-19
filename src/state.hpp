@@ -4,12 +4,12 @@
 
 #include "fileinfo.hpp"
 
+#include "fuse.h"
+
 #include <functional>
 #include <map>
 #include <string>
 
-
-constexpr int INVALID_BACKING_ID = -1;
 
 class State
 {
@@ -23,6 +23,14 @@ public:
       : ref_count(0),
         backing_id(INVALID_BACKING_ID),
         fi(nullptr)
+    {
+    }
+
+    OpenFile(const int        backing_id_,
+             FileInfo * const fi_)
+      : ref_count(1),
+        backing_id(backing_id_),
+        fi(fi_)
     {
     }
 

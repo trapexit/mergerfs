@@ -22,13 +22,15 @@
 
 #include "base_types.h"
 
+#include <cassert>
 #include <mutex>
 
 
 class FileInfo : public FH
 {
 public:
-  static FileInfo *from_fh(const u64 fh);
+  static FileInfo *from_fh(const u64);
+  static u64       to_fh(const FileInfo*);
 
 public:
   FileInfo(const int       fd_,
@@ -73,14 +75,23 @@ public:
 
 inline
 u64
+FileInfo::to_fh(const FileInfo *fi_)
+{
+  assert(fi_ != nullptr);
+  return reinterpret_cast<u64>(fi_);
+}
+
+inline
+u64
 FileInfo::to_fh() const
 {
-  return reinterpret_cast<u64>(this);
+  return FileInfo::to_fh(this);
 }
 
 inline
 FileInfo*
 FileInfo::from_fh(const u64 fh_)
 {
+  assert(fh_ != 0);
   return reinterpret_cast<FileInfo*>(fh_);
 }

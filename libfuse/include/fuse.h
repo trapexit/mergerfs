@@ -29,6 +29,16 @@ EXTERN_C_BEGIN
  * Basic FUSE API					       *
  * ----------------------------------------------------------- */
 
+#define INVALID_BACKING_ID (0)
+
+static
+inline
+int
+fuse_backing_id_is_valid(const int backing_id_)
+{
+  return (backing_id_ > INVALID_BACKING_ID);
+}
+
 struct fuse_dirents_t;
 typedef struct fuse_dirents_t fuse_dirents_t;
 

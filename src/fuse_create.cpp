@@ -36,6 +36,7 @@
 
 #include "fuse.h"
 
+#include <cassert>
 #include <string>
 #include <vector>
 
@@ -225,29 +226,26 @@ _(const PassthroughIOEnum e_,
 
 static
 int
-_create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
-                          const fs::path       &fusepath_,
-                          const mode_t          mode_,
-                          fuse_file_info_t     *ffi_,
-                          State::OpenFile      *of_)
+_create(const fuse_req_ctx_t *ctx_,
+        const fs::path       &fusepath_,
+        mode_t                mode_,
+        fuse_file_info_t     *ffi_)
 {
-  int rv;
-  FileInfo *fi;
+  auto &of = state.open_files;
 
   ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
   if(cfg.cache_writeback)
     ::_tweak_flags_cache_writeback(&ffi_->flags);
-  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
-                                      ffi_->flags);
+  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,ffi_->flags);
 
-  rv = ::_create(ctx_,
-                 cfg.func.getattr.policy,
-                 cfg.func.create.policy,
-                 cfg.branches,
-                 fusepath_,
-                 ffi_,
-                 mode_,
-                 ctx_->umask);
+  int rv = ::_create(ctx_,
+                     cfg.func.getattr.policy,
+                     cfg.func.create.policy,
+                     cfg.branches,
+                     fusepath_,
+                     ffi_,
+                     mode_,
+                     ctx_->umask);
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
@@ -264,10 +262,8 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
   if(rv < 0)
     return rv;
 
-  fi = FileInfo::from_fh(ffi_->fh);
-
-  of_->ref_count = 1;
-  of_->fi        = fi;
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+  int backing_id = INVALID_BACKING_ID;
 
   switch(_(cfg.passthrough_io,ffi_->flags))
     {
@@ -276,83 +272,27 @@ _create_for_insert_lambda(const fuse_req_ctx_t *ctx_,
     case _(PassthroughIO::ENUM::RW,O_RDONLY):
     case _(PassthroughIO::ENUM::RW,O_WRONLY):
     case _(PassthroughIO::ENUM::RW,O_RDWR):
+      backing_id = FUSE::passthrough_open(fi->fd);
+      if(fuse_backing_id_is_valid(backing_id))
+        {
+          ffi_->backing_id = backing_id;
+          ffi_->passthrough = true;
+          ffi_->keep_cache = false;
+        }
       break;
     default:
-      return 0;
+      break;
     }
 
-  of_->backing_id = FUSE::passthrough_open(fi->fd);
-  if(of_->backing_id < 0)
-    return 0;
+  bool inserted = of.try_emplace(ctx_->nodeid,
+                                 backing_id,
+                                 fi);
 
-  ffi_->backing_id  = of_->backing_id;
-  ffi_->passthrough = true;
-  ffi_->keep_cache  = false;
+  // Legit... this should never happen.
+  assert(inserted);
+  (void)inserted;
 
   return 0;
-}
-
-static
-inline
-auto
-_create_insert_lambda(const fuse_req_ctx_t *ctx_,
-                      const fs::path       &fusepath_,
-                      const mode_t          mode_,
-                      fuse_file_info_t     *ffi_,
-                      int                  *_rv_)
-{
-  return
-    [=](auto &val_)
-    {
-      *_rv_ = ::_create_for_insert_lambda(ctx_,
-                                          fusepath_,
-                                          mode_,
-                                          ffi_,
-                                          &val_.second);
-    };
-}
-
-// This function should never be called?
-static
-inline
-auto
-_create_update_lambda()
-{
-  return
-    [](const auto &val_)
-    {
-      fmt::println(stderr,"CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
-      SysLog::crit("CREATE_UPDATE_LAMBDA: THIS SHOULD NOT HAPPEN");
-      abort();
-    };
-}
-
-static
-int
-_create(const fuse_req_ctx_t *ctx_,
-        const fs::path       &fusepath_,
-        mode_t                mode_,
-        fuse_file_info_t     *ffi_)
-{
-  int rv;
-  auto &of = state.open_files;
-
-  rv = -EINVAL;
-  of.try_emplace_and_visit(ctx_->nodeid,
-                           ::_create_insert_lambda(ctx_,fusepath_,mode_,ffi_,&rv),
-                           ::_create_update_lambda());
-
-  // Can't abort an emplace_and_visit and can't assume another thread
-  // hasn't created an entry since this failure so erase only if
-  // ref_count is default (0).
-  if(rv < 0)
-    of.erase_if(ctx_->nodeid,
-                [](const auto &val_)
-                {
-                  return (val_.second.ref_count <= 0);
-                });
-
-  return rv;
 }
 
 int

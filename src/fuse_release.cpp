@@ -26,35 +26,6 @@
 
 #include "fuse.h"
 
-static
-constexpr
-auto
-_erase_if_lambda(FileInfo *fi_,
-                 bool     *existed_in_map_)
-{
-  return
-    [=](auto &val_)
-    {
-      *existed_in_map_ = true;
-
-      if(fi_ != val_.second.fi)
-        {
-          fs::close(fi_->fd);
-          delete fi_;
-        }
-
-      val_.second.ref_count--;
-      if(val_.second.ref_count > 0)
-        return false;
-
-      if(val_.second.backing_id > 0)
-        FUSE::passthrough_close(val_.second.backing_id);
-      fs::close(val_.second.fi->fd);
-      delete val_.second.fi;
-
-      return true;
-    };
-}
 
 static
 int
@@ -62,7 +33,10 @@ _release(const fuse_req_ctx_t *ctx_,
          FileInfo             *fi_,
          const bool            dropcacheonclose_)
 {
-  bool existed_in_map;
+  int       backing_id = INVALID_BACKING_ID;
+  FileInfo *map_fi     = nullptr;
+  bool      fi_in_map  = false;
+  auto     &of         = state.open_files;
 
   // according to Feh of nocache calling it once doesn't always work
   // https://github.com/Feh/nocache
@@ -72,34 +46,46 @@ _release(const fuse_req_ctx_t *ctx_,
       fs::fadvise_dontneed(fi_->fd);
     }
 
-  // Because of course the API doesn't tell you if the key
-  // existed. Just how many it erased and in this case I only want to
-  // erase if there are no more open files.
-  existed_in_map = false;
-  state.open_files.erase_if(ctx_->nodeid,
-                            ::_erase_if_lambda(fi_,&existed_in_map));
-  if(existed_in_map)
+  u64 erased;
+
+  erased = of.erase_if(ctx_->nodeid,
+                       [&](auto &v_)
+                       {
+                         fi_in_map = (fi_ == v_.second.fi);
+
+                         v_.second.ref_count--;
+                         if(v_.second.ref_count > 0)
+                           return false;
+
+                         backing_id = v_.second.backing_id;
+                         map_fi     = v_.second.fi;
+
+                         return true;
+                       });
+  if(not fi_in_map)
+    {
+      fs::close(fi_->fd);
+      delete fi_;
+    }
+
+  if(not erased)
     return 0;
 
-  fs::close(fi_->fd);
-  delete fi_;
+  FUSE::passthrough_close(backing_id);
+  if(map_fi)
+    {
+      fs::close(map_fi->fd);
+      delete map_fi;
+    }
 
   return 0;
-}
-
-static
-int
-_release(const fuse_req_ctx_t   *ctx_,
-         const fuse_file_info_t *ffi_)
-{
-  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
-
-  return ::_release(ctx_,fi,cfg.dropcacheonclose);
 }
 
 int
 FUSE::release(const fuse_req_ctx_t   *ctx_,
               const fuse_file_info_t *ffi_)
 {
-  return ::_release(ctx_,ffi_);
+  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+
+  return ::_release(ctx_,fi,cfg.dropcacheonclose);
 }

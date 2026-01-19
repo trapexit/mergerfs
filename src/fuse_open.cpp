@@ -21,6 +21,7 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
+#include "fs_close.hpp"
 #include "fs_cow.hpp"
 #include "fs_fchmod.hpp"
 #include "fs_lchmod.hpp"
@@ -274,146 +275,6 @@ _(const PassthroughIOEnum e_,
 
 static
 int
-_open_for_insert_lambda(const fuse_req_ctx_t *ctx_,
-                        const fs::path       &fusepath_,
-                        fuse_file_info_t     *ffi_,
-                        State::OpenFile      *of_)
-{
-  int rv;
-  FileInfo *fi;
-
-  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
-
-  if(cfg.cache_writeback)
-    ::_tweak_flags_cache_writeback(&ffi_->flags);
-
-  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
-                                      ffi_->flags);
-
-  rv = ::_open(cfg.func.open.policy,
-               cfg.branches,
-               fusepath_,
-               ffi_,
-               cfg.link_cow,
-               cfg.nfsopenhack);
-
-  if(rv < 0)
-    return rv;
-
-  fi = FileInfo::from_fh(ffi_->fh);
-
-  of_->ref_count = 1;
-  of_->fi        = fi;
-
-  switch(_(cfg.passthrough_io,ffi_->flags))
-    {
-    case _(PassthroughIO::ENUM::RO,O_RDONLY):
-    case _(PassthroughIO::ENUM::WO,O_WRONLY):
-    case _(PassthroughIO::ENUM::RW,O_RDONLY):
-    case _(PassthroughIO::ENUM::RW,O_WRONLY):
-    case _(PassthroughIO::ENUM::RW,O_RDWR):
-      break;
-    default:
-      return 0;
-    }
-
-  of_->backing_id = FUSE::passthrough_open(fi->fd);
-  if(of_->backing_id <= 0)
-    return 0;
-
-  ffi_->backing_id  = of_->backing_id;
-  ffi_->passthrough = true;
-  ffi_->keep_cache  = false;
-
-  return 0;
-}
-
-static
-int
-_open_for_update_lambda(const fuse_req_ctx_t *ctx_,
-                        const fs::path       &fusepath_,
-                        fuse_file_info_t     *ffi_,
-                        State::OpenFile      *of_)
-{
-  int rv;
-
-  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
-
-  if(cfg.cache_writeback)
-    ::_tweak_flags_cache_writeback(&ffi_->flags);
-
-  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,
-                                      ffi_->flags);
-
-  rv = ::_open_fd(of_->fi->fd,
-                  &of_->fi->branch,
-                  fusepath_,
-                  ffi_);
-  if(rv < 0)
-    return rv;
-
-  of_->ref_count++;
-
-  if(of_->backing_id <= 0)
-    return 0;
-
-  ffi_->backing_id  = of_->backing_id;
-  ffi_->passthrough = true;
-  ffi_->keep_cache  = false;
-
-  return rv;
-}
-
-static
-inline
-auto
-_open_insert_lambda(const fuse_req_ctx_t *ctx_,
-                    const fs::path       &fusepath_,
-                    fuse_file_info_t     *ffi_,
-                    int                  *rv_)
-{
-  return
-    [=](auto &val_)
-    {
-      *rv_ = ::_open_for_insert_lambda(ctx_,
-                                       fusepath_,
-                                       ffi_,
-                                       &val_.second);
-    };
-}
-
-static
-inline
-auto
-_open_update_lambda(const fuse_req_ctx_t *ctx_,
-                    const fs::path       &fusepath_,
-                    fuse_file_info_t     *ffi_,
-                    int                  *rv_)
-{
-  return
-    [=](auto &val_)
-    {
-      // For the edge case where insert succeeded but the open failed
-      // and hadn't been cleaned up yet. There unfortunately is no way
-      // to abort an insert.
-      if(val_.second.ref_count <= 0)
-        {
-          *rv_ = ::_open_for_insert_lambda(ctx_,
-                                           fusepath_,
-                                           ffi_,
-                                           &val_.second);
-          return;
-        }
-
-      *rv_ = ::_open_for_update_lambda(ctx_,
-                                       fusepath_,
-                                       ffi_,
-                                       &val_.second);
-    };
-}
-
-static
-int
 _open(const fuse_req_ctx_t *ctx_,
       const fs::path       &fusepath_,
       fuse_file_info_t     *ffi_)
@@ -421,22 +282,119 @@ _open(const fuse_req_ctx_t *ctx_,
   int rv;
   auto &of = state.open_files;
 
-  rv = -EINVAL;
-  of.try_emplace_and_visit(ctx_->nodeid,
-                           ::_open_insert_lambda(ctx_,fusepath_,ffi_,&rv),
-                           ::_open_update_lambda(ctx_,fusepath_,ffi_,&rv));
+  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
+  if(cfg.cache_writeback)
+    ::_tweak_flags_cache_writeback(&ffi_->flags);
+  ffi_->noflush = !::_calculate_flush(cfg.flushonclose,ffi_->flags);
 
-  // Can't abort an emplace_and_visit and can't assume another thread
-  // hasn't created an entry since this failure so erase only if
-  // ref_count is default (0).
-  if(rv < 0)
-    of.erase_if(ctx_->nodeid,
-                [](auto &val_)
+  while(true)
+    {
+      FileInfo *fi = nullptr;
+      int backing_id = INVALID_BACKING_ID;
+
+      // The ref increment keeps fuse_release.cpp from erasing and
+      // freeing the entry.
+      of.visit(ctx_->nodeid,
+               [&](auto &v_)
+               {
+                 v_.second.ref_count++;
+                 fi = v_.second.fi;
+                 backing_id = v_.second.backing_id;
+               });
+
+      // If the file is already open...
+      if(fi)
+        {
+          rv = ::_open_fd(fi->fd,
+                          &fi->branch,
+                          fusepath_,
+                          ffi_);
+
+          // If we fail to open the already open file we need to treat it
+          // similarly to fuse_release.
+          if(rv < 0)
+            {
+              fi = nullptr;
+              backing_id = INVALID_BACKING_ID;
+              of.erase_if(ctx_->nodeid,
+                          [&](auto &v_)
+                          {
+                            v_.second.ref_count--;
+                            if(v_.second.ref_count > 0)
+                              return false;
+
+                            fi = v_.second.fi;
+                            backing_id = v_.second.backing_id;
+
+                            return true;
+                          });
+
+              FUSE::passthrough_close(backing_id);
+              if(fi)
                 {
-                  return (val_.second.ref_count <= 0);
-                });
+                  fs::close(fi->fd);
+                  delete fi;
+                }
 
-  return rv;
+              return rv;
+            }
+
+          if(!fuse_backing_id_is_valid(backing_id))
+            return 0;
+
+          ffi_->backing_id  = backing_id;
+          ffi_->passthrough = true;
+          ffi_->keep_cache  = false;
+
+          return 0;
+        }
+
+      // Was not open, do first open, try to insert, if someone beat us
+      // to it in another thread then throw it away and try again.
+      rv = ::_open(cfg.func.open.policy,
+                   cfg.branches,
+                   fusepath_,
+                   ffi_,
+                   cfg.link_cow,
+                   cfg.nfsopenhack);
+      if(rv < 0)
+        return rv;
+
+      fi = FileInfo::from_fh(ffi_->fh);
+
+      switch(_(cfg.passthrough_io,ffi_->flags))
+        {
+        case _(PassthroughIO::ENUM::RO,O_RDONLY):
+        case _(PassthroughIO::ENUM::WO,O_WRONLY):
+        case _(PassthroughIO::ENUM::RW,O_RDONLY):
+        case _(PassthroughIO::ENUM::RW,O_WRONLY):
+        case _(PassthroughIO::ENUM::RW,O_RDWR):
+          backing_id = FUSE::passthrough_open(fi->fd);
+          if(fuse_backing_id_is_valid(backing_id))
+            {
+              ffi_->backing_id  = backing_id;
+              ffi_->passthrough = true;
+              ffi_->keep_cache  = false;
+            }
+          break;
+        default:
+          break;
+        }
+
+      bool inserted;
+
+      inserted = of.try_emplace(ctx_->nodeid,
+                                backing_id,
+                                fi);
+      if(inserted)
+        return 0;
+
+      FUSE::passthrough_close(backing_id);
+      fs::close(fi->fd);
+      delete fi;
+    }
+
+  return 0;
 }
 
 
