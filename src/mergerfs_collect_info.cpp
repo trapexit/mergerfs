@@ -165,6 +165,13 @@ _software_versions(const std::string &output_)
   ::_run({"smbd","--version"},output_);
 }
 
+static
+void
+_lshw(const std::string &output_)
+{
+  ::_run({"lshw"},output_);
+}
+
 
 int
 mergerfs::collect_info::main(int    argc_,
@@ -189,6 +196,7 @@ mergerfs::collect_info::main(int    argc_,
   fmt::print("* Please have mergerfs mounted before running this tool.\n");
 
   fs::unlink(output_filepath);
+
   ::_mergerfs_version(output_filepath);
   ::_uname(output_filepath);
   ::_lsb_release(output_filepath);
@@ -199,10 +207,12 @@ mergerfs::collect_info::main(int    argc_,
   ::_mergerfs_settings(output_filepath);
   ::_fstab(output_filepath);
   ::_software_versions(output_filepath);
+  ::_lshw(output_filepath);
 
   fmt::print("* Upload the following file to your"
              " GitHub ticket or put on https://pastebin.com"
-             " when requesting support.\n* {}\n",output_filepath);
+             " when requesting support.\n* {}\n",
+             output_filepath);
 
   return 0;
 }
