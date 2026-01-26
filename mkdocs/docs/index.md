@@ -25,13 +25,13 @@ the overhead of traditional storage aggregation technologies.
 
 **Key advantages:**
 
-* Mix and match filesystems of any size,
+* [Non-destructive](faq/usage_and_functionality.md#is-adding-or-removing-mergerfs-tofrom-my-setup-destructive) adding and removing of filesystems (even at runtime)
+* Mix and match filesystems of any [size](faq/technical_behavior_and_limitations.md#are-there-any-size-limitations-to-files-directories-etc),
   [type](faq/compatibility_and_integration.md#what-filesystems-can-be-used-as-branches),
   or [underlying
   device](faq/compatibility_and_integration.md#what-types-of-storage-devices-does-mergerfs-work-with)
 * No parity calculations or rebuild times
 * Does not require hard drives to be spinning if not in use
-* Add or remove filesystems on the fly
 * [Direct access to files](faq/usage_and_functionality.md#can-filesystems-still-be-used-directly-outside-of-mergerfs-while-pooled) on individual filesystems when needed
 * Flexible [policies](config/functions_categories_policies.md) for controlling where new files are created
 
@@ -44,7 +44,8 @@ for more details.](project_comparisons.md)
 ## Features
 
 * Logically combine numerous filesystems/paths into a single
-  mount point (JBOFS: Just a Bunch of FileSystems)
+  mount point (JBOFS: Just a Bunch of FileSystems, think filesystem
+  [reverse proxy](https://en.wikipedia.org/wiki/Reverse_proxy))
 * Combine paths of the same or different filesystems
 * Ability to add or remove filesystems/paths without impacting the
   rest of the data
@@ -68,6 +69,7 @@ for more details.](project_comparisons.md)
 
 * RAID like redundancy (see [SnapRAID](https://www.snapraid.it) and
   [NonRAID](https://github.com/qvr/nonraid))
+* RAID like performance improvements
 * LVM/RAID style block device aggregation
 * Data integrity checks, snapshots, file versioning
 * Read/write overlays on top of read-only filesystems (like OverlayFS)
@@ -140,7 +142,7 @@ Head to the [quick start guide](quickstart.md).
   in one of the supported forums](support.md#contact-issue-submission)
   and the docs will be updated.
 * The search feature of MkDocs is not great. Searching for "literal
-  strings" will generally not work. Alernative solutions are being
+  strings" will generally not work. Alternative solutions are being
   investigated.
 * While not intended for end users nor completely accurate some might
   find the AI generated docs at https://deepwiki.com/trapexit/mergerfs
