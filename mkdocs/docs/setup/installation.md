@@ -76,7 +76,7 @@ sudo rpm -i mergerfs-<ver>.fc<rel>.<arch>.rpm
 
 ## SUSE/OpenSUSE
 
-Avaliable at [filesystems repo](https://build.opensuse.org/package/show/filesystems/mergerfs)
+Available at [filesystems repo](https://build.opensuse.org/package/show/filesystems/mergerfs)
 
 if you have not added the repo (e.g. in case of OpenSUSE Tumbleweed, rel=openSUSE_Tumbleweed): 
 

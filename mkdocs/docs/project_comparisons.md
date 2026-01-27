@@ -113,10 +113,13 @@ than 1TB on a pool of two 1TB filesystems.
 ## BTRFS Single Data Profile
 
 [BTRFS'](https://btrfs.readthedocs.io) `single` data profile is
-similar to RAID0 but BTRFS can more explicitly place data and metadata
-on multiple devices. However, like RAID0 and similar technologies if a
-single device fails you may lose all data in the pool. BTRFS does have
-some abilities to recover data but this is not guaranteed.
+similar to RAID0, spreading data across multiple devices but offering
+no redundancy. Unlike mergerfs which pools existing filesystems at a
+high level, BTRFS is a complete filesystem that manages storage
+directly. If a single device fails in BTRFS single mode, you lose all
+data. mergerfs takes a different approach: it pools filesystems as-is
+without redundancy, so a device failure only affects data on that one
+device, not the entire pool.
 
 
 ## RAID5, RAID6
@@ -137,7 +140,8 @@ RAID5 or RAID6 SnapRAID works with drives of different sizes and can
 have more than 2 parity drives. However, parity calculations are not
 done in real-time. However, nonraid is realtime.
 
-For more details and comparison of SnapRAID to related technologies see [https://www.snapraid.it/compare](https://www.snapraid.it/compare).
+For more details and comparison of SnapRAID to related technologies
+see [https://www.snapraid.it/compare](https://www.snapraid.it/compare).
 
 
 ## UnRAID
@@ -148,13 +152,14 @@ UnRAID is a full OS and offers a (FUSE based?) filesystem which
 provides a union of filesystems like mergerfs but with the addition of
 live parity calculation and storage. Outside parity calculations
 mergerfs offers more features and due to the lack of real-time parity
-calculation can have higher peak performance. Some users also prefer
-an open source solution.
+calculation can have higher peak performance. For some users mergerfs
+being open source is also preferable.
 
 For semi-static data mergerfs + [SnapRAID](http://www.snapraid.it)
-provides a similar, but not real-time, solution. NonRAID (see below)
-is a fork of UnRAID's parity calculation solution and can also be used
-with mergerfs.
+provides a similar, but not real-time,
+solution. [NonRAID](https://github.com/qvr/nonraid) (see below) is a
+fork of UnRAID's parity calculation solution and can also be used with
+mergerfs.
 
 
 ## NonRAID
@@ -176,35 +181,87 @@ be used with mergerfs for those looking for a unified view.
 
 * [https://en.wikipedia.org/wiki/ZFS](https://en.wikipedia.org/wiki/ZFS)
 
-ZFS is an advanced filesystem with many features including RAID5/6
-like redundency.
+ZFS is an advanced filesystem that combines storage pooling,
+snapshots, data integrity checking, and built-in RAID-like redundancy
+all in one package. It offers features like transparent compression,
+encryption, and automatic data repair.
 
-mergerfs is very different from ZFS. mergerfs is intended to provide
-flexible pooling of arbitrary filesystems (local or remote), of
-arbitrary sizes, and arbitrary filesystems. Particularly in `write
-once, read many` use cases such as bulk media storage. Where data
-integrity and backup is managed in other ways. In those use cases ZFS
-can introduce a number of costs and limitations as described
-[here](http://louwrentius.com/the-hidden-cost-of-using-zfs-for-your-home-nas.html),
-[here](https://markmcb.com/2020/01/07/five-years-of-btrfs/), and
-[here](https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSWhyNoRealReshaping).
+Unlike mergerfs which focuses on simple pooling of existing
+filesystems, ZFS is a complete filesystem that manages storage
+directly. ZFS requires more resources and planning to set up, making
+it better suited for systems where data protection and integrity are
+critical priorities. mergerfs is simpler and lighter weight, making it
+ideal for users who want to add storage incrementally without the
+overhead of ZFS.
 
-That said given mergerfs' flexibility it is common to see it used in
-combination with ZFS where critical data is written to a RAIDZ pool
-and bulk media stored on traditional filesystems pooled via mergerfs.
+Both technologies can aggregate multiple drives into a single pool,
+but they approach the problem differently. ZFS integrates everything
+into the filesystem, while mergerfs pools existing filesystems. For
+write-once, read-many workloads like bulk media storage where backup
+and data integrity is managed separately, mergerfs is often the better
+choice due to lower resource usage and simpler management.
+
+It's [common to see](https://perfectmediaserver.com) both used
+together: critical data stored on a ZFS pool with redundancy, while
+bulk media is pooled across regular filesystems using mergerfs.
 
 
 ## ZFS AnyRAID
 
 [ZFS
 AnyRAID](https://hexos.com/blog/introducing-zfs-anyraid-sponsored-by-eshtek)
-is a feature being developed for ZFS which is intended to provide more
-flexibility in ZFS pools. Allowing a mix of capacity disks to have
-greater capacity than traditional RAID and would allow for partial
-upgrades while keeping live redundancy.
+is a feature being developed for ZFS to provide more flexibility in
+pools by allowing mixed-capacity disks while maintaining live
+redundancy.
 
-This ZFS feature, as of mid-2025, is extremely early in its development
-and there are no timelines or estimates for when it may be released.
+If released, ZFS AnyRAID would offer somewhat similar flexibility to
+mergerfs' pooling approach, but with built-in redundancy. mergerfs
+already provides this flexibility today: add drives of any size at any
+time with no redundancy overhead. If you need redundancy with that
+flexibility, ZFS AnyRAID could be an option when available; until
+then, mergerfs remains the simpler choice for mixed-capacity pooling
+with redendancy and integrity available via SnapRAID and/or NonRAID.
+
+
+## Bcachefs
+
+* [https://bcachefs.org](https://bcachefs.org)
+
+Bcachefs is a modern copy-on-write filesystem for Linux designed for
+multi-device storage aggregation. It combines the data integrity and
+crash-safety features of ZFS with the performance optimization of
+high-performance filesystems like XFS and ext4.
+
+Bcachefs is fundamentally a multi-device filesystem. It can aggregate
+multiple physical disks of arbitrary sizes into a single logical
+filesystem, allowing data to be automatically distributed across
+devices. It includes built-in replication capabilities similar to RAID
+mirroring and parity RAID, with automatic failover and recovery.
+
+The filesystem features comprehensive data protection including full
+data and metadata checksumming, copy-on-write architecture that
+eliminates write holes, and atomic transactions that ensure crash
+safety. It also provides snapshots, transparent compression (LZ4,
+gzip, Zstandard), and transparent encryption.
+
+Bcachefs provides intelligent tiered storage where data can be
+automatically placed across devices based on access patterns. Faster
+devices (NVMe, SSD) can be designated as foreground or promotion
+targets for hot data, while slower devices (HDD) serve as background
+storage for cold data. This enables efficient use of heterogeneous
+storage without manual configuration.
+
+Like ZFS, bcachefs is most suitable for use cases where integrated
+storage management, data redundancy, and reliability are important. It
+differs from mergerfs in that it is a complete filesystem rather than
+a pooling layer, providing built-in redundancy and automatic data
+placement rather than relying on external tools or the properties of
+underlying filesystems.
+
+Bcachefs is under active development and as of early 2026 should be
+considered beta quality. It is suitable for testing and non-critical
+deployments, but careful evaluation is recommended before use in
+production systems.
 
 
 ## StableBit's DrivePool
@@ -227,6 +284,25 @@ has builtin file duplication which mergerfs does not natively support
 There are a lot of misc differences between the two projects but most
 features in DrivePool can be replicated with external tools in
 combination with mergerfs.
+
+
+## Windows Storage Spaces
+
+* [https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/overview](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/overview)
+
+Windows Storage Spaces is Microsoft's software-defined storage
+platform for Windows Server and Windows Pro. It aggregates multiple
+physical disks into logical storage pools with built-in redundancy
+options (mirroring, parity) and automatic performance optimization
+through tiered caching.
+
+Storage Spaces is Windows-only and requires more planning upfront due
+to redundancy options and RAID-like features. mergerfs is
+Linux-focused and takes a simpler approach, pooling existing
+filesystems without built-in redundancy. If you need a Windows
+solution with integrated data protection, Storage Spaces is a good
+choice. For Linux users seeking lightweight pooling without redundancy
+overhead, mergerfs is the better option.
 
 
 ## Plan9 binds
@@ -308,24 +384,11 @@ offering a different set of capabilities.)
 
 ## 9P
 
-[9P, the Plan 9 Filesystem
-Protocol,](https://en.wikipedia.org/wiki/9P_(protocol)) is a protocol
-developed for the Plan 9 operating system to help expand on the Unix
-idea that everything should be a file. The protocol made its way to
-other systems and is still widely used. As such 9P is not directly
-comparable to mergerfs but more so to FUSE which mergerfs uses. FUSE
-is also a filesystem protocol (though designed for kernel <->
-userspace communication rather than over a network). FUSE, even more
-than the
-[9P2000.L](https://github.com/chaos/diod/blob/master/protocol.md)
-variant of 9P, is focused primarily on supporting Linux filesystem
-features.
-
-mergerfs leverages FUSE but could have in theory leveraged 9P with a
-reduction in features.
-
-While 9P has [extensive
-usage](https://docs.kernel.org/filesystems/9p.html) in certain
-situations its use in modern userland Linux systems is limited. FUSE
-has largely replaced use cases that may have been implemented with 9P
-servers in the past.
+[9P](https://en.wikipedia.org/wiki/9P_(protocol)) is a filesystem
+protocol from the Plan 9 operating system. While historically
+important, it's not directly relevant for users looking to pool
+filesystems. 9P is a network protocol, whereas mergerfs uses FUSE,
+which is designed specifically for implementing filesystems in
+userspace on Linux. FUSE has become the modern standard for this
+purpose and better supports Linux filesystem features. For practical
+filesystem pooling, mergerfs is the standard choice on Linux.

@@ -30,19 +30,28 @@ filesystem function is requested. Which file to select or act on.
 See how [policies](../config/functions_categories_policies.md) work.
 
 
+## Is adding or removing mergerfs to/from my setup destructive?
+
+No. [See
+below.](#can-mergerfs-be-used-with-filesystems-which-already-have-data)
+
+
 ## Can mergerfs be used with filesystems which already have data?
 
 Yes. mergerfs is really just a proxy and does **NOT** interfere with
 the normal form or function of the filesystems, mounts, or paths it
 manages. It literally is interacting with your filesystems as any
 other application does. It can not do anything that any other random
-piece of software can't do.
+piece of software can't do. There is no migration needed.
 
 mergerfs is **not** a traditional filesystem that takes control over
 the underlying drive, block device, or partition. mergerfs is **not**
 RAID. It does **not** manipulate the data that passes through it. It
 does **not** shard data across filesystems. It only shards some
 **behavior** and aggregates others.
+
+Think of it as a filesystem [reverse
+proxy](https://en.wikipedia.org/wiki/Reverse_proxy).
 
 
 ## Can mergerfs be removed without affecting the data?
@@ -132,3 +141,27 @@ cache expires. mergerfs is not actively watching all branches for
 changes and the kernel will have no way to know anything changed so as
 to clear or ignore the cache. This is the same issue you can have with
 [remote filesystems](../remote_filesystems.md).
+
+
+## What are the performance characteristics of using mergerfs?
+
+mergerfs does not stripe or shard data. Instead it acts like a reverse
+proxy / multiplexer. As such it is not possible to have RAID like
+performance improvements. However, its performance is not limited like
+[block level concatenation / JBOD /
+SPAN.](../project_comparisons.md#raid0-jbod-span-drive-concatenation-striping)
+
+* Single file / single stream: Max throughput limited to speed of the
+  chosen underlying branch + FUSE overhead (usually 5–30% slower than
+  direct access; near native with [IO
+  passthrough](../config/passthrough.md)).
+* Aggregate / multi-stream: Can approach sum of all branches' speeds
+  when many independent IO operations run in parallel (multiple files,
+  processes, or clients).
+* Other factors: Latency-sensitive workloads suffer more (slow
+  branches or network drives hurt responsiveness); directory listing
+  and metadata ops slower due to combining branches.
+
+Real-world performance varies heavily with workload, kernel, options,
+and hardware. See [benchmarking](../benchmarking.md) and
+[performance](../performance.md) section for testing tips.

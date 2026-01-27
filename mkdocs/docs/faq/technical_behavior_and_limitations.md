@@ -4,7 +4,7 @@
 
 Yes. [links](https://en.wikipedia.org/wiki/Hard_link) (otherwise known
 as hard links) are fundamentally supported by mergerfs. There is no
-option to enable or disable links. All comments elswhere claiming they
+option to enable or disable links. All comments elsewhere claiming they
 do not work are related to the setup of the user's system.
 
 See the [Intro to Filesystems](../intro_to_filesystems.md) page for more
