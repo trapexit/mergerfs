@@ -29,6 +29,7 @@
 * 2024-02-07 - [Designing & Deploying MANS - A Hybrid NAS Approach with SnapRAID, MergerFS, and OpenZFS](https://blog.muffn.io/posts/part-3-mini-100tb-nas)
 * 2024-03-11 - [Using MergerFS to combine multiple hard drives into one unified media storage](https://fullmetalbrackets.com/blog/two-drives-mergerfs/)
 * 2024-12-20 - [Pooling multiple drives on my Raspberry Pi with mergerfs](https://sebi.io/posts/2024-12-20-pooling-multiple-drives-with-mergerfs/)
+* 2026-01-03 - [NAS-2026 | MergerFS and SnapRAID](https://github.com/DoTheEvo/NAS-MergerFS-SnapRAID)
 
 
 ## Videos
@@ -62,11 +63,11 @@
 * 2024-01-05 - [OpenMediaVault MergerFS Tutorial (Portuguese)](https://www.youtube.com/watch?v=V6Yw86dRUPQ)
 * 2024-02-19 - [Setup and Install MergerFS and SnapRAID (Part 1)](https://noted.lol/mergerfs-and-snapraid-setup-1/)
 * 2024-02-22 - [Setup and Install MergerFS and SnapRAID (Part 2)](https://noted.lol/mergerfs-and-snapraid-setup-part-2/)
+* 2024-05-29 - [Building a 26TB Offsite Backup Server! ft. Tailscale](https://www.youtube.com/watch?v=W_l82GF00UY)
 * 2024-11-15 - [Meu servidor NAS - Parte 18: Recuperando um HD, recuperando o MergerFS e os próximos passos do NAS!](https://www.youtube.com/watch?v=5fy98kPzE3s)
 * 2025-04-23 - [How to build the Perfect Media Server | Part 1 - The Tech Stack | mergerfs, SnapRAID, and docker.](https://www.youtube.com/watch?v=Yt67zz9p0FU)
 * 2025-06-12 - [DIY Unraid-like functionality](https://www.youtube.com/watch?v=fR0XhaWvR1E)
 * 2025-09-22 - [استفاده از Snapraid و MergerFS | جایگزین RAID5](https://www.youtube.com/watch?v=GA6OvaUBKXs)
-
 
 ## Podcasts
 
