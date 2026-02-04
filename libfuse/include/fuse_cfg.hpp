@@ -3,6 +3,8 @@
 #include "base_types.h"
 
 #include <climits>
+#include <cstdio>
+#include <memory>
 #include <string>
 
 #define FUSE_CFG_INVALID_ID    -1
@@ -11,6 +13,9 @@
 
 struct fuse_cfg_t
 {
+  template<typename T>
+  using sp = std::shared_ptr<T>;
+
   s64 uid = FUSE_CFG_INVALID_ID;
   bool valid_uid() const;
 
@@ -23,7 +28,15 @@ struct fuse_cfg_t
   s64 remember_nodes = 0;
 
   bool debug = false;
+  std::shared_ptr<FILE> log_file() const;
+  void log_file(std::shared_ptr<FILE>);
+  std::shared_ptr<std::string> log_filepath() const;
+  void log_filepath(const std::string &);
+private:
+  std::shared_ptr<FILE>        _log_file     = sp<FILE>(stderr,[](FILE*){});
+  std::shared_ptr<std::string> _log_filepath = sp<std::string>();
 
+public:
   int max_background = 0;
   int congestion_threshold = 0;
   u32 max_pages = 32;

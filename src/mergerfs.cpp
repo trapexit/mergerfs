@@ -315,12 +315,16 @@ _main(int    argc_,
   SysLog::info("mergerfs v{} started",MERGERFS_VERSION);
   SysLog::info("Go to https://trapexit.github.io/mergerfs/latest/support for support");
 
+  for(int i = 0; i < argc_; i++)
+    SysLog::info("argv[{}]: {}",i,argv_[i]);
+
   options::parse(&args);
+
   if(!cfg.errs.empty())
     {
       for(auto &err : cfg.errs)
         {
-          std::string s = err.to_string();
+          const std::string s = err.to_string();
 
           SysLog::error("error: {}",s);
           fmt::println(stderr,"mergerfs: ERROR - {}",s);

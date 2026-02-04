@@ -233,5 +233,13 @@ FUSE::init(fuse_conn_info *conn_)
       SysLog::warning("passthrough and cache.writeback are incompatible.");
     }
 
+  SysLog::info("Config:");
+  for(const auto &kv : cfg.get_map())
+    {
+      if(not kv.second->display)
+        continue;
+      SysLog::info("{}={}",kv.first,kv.second->to_string());
+    }
+
   return NULL;
 }
