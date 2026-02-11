@@ -88,11 +88,18 @@ filesystems. Mainly `ext4`.
 
 ## Logging
 
-Filesystems, and therefore mergerfs, are doing lots of small actions
-at high speed. It simply isn't reasonable to log all the actions of
-the system. That said: certain details are logged at startup and when
-performing maintenance tasks. These are logged via `syslog` and on
-`systemd` based systems can be viewed by running
+Filesystems, and therefore mergerfs, are doing **lots** of small
+actions at high speed. It simply isn't reasonable to log all the
+actions of the system all time time. However, there is a debug mode
+which can be toggled on as needed, even at runtime, which will record
+some information to help with debugging. The main thing it will record
+is a trace of all FUSE messages to the location defined by the
+`log.file` option. See [config section](config/options.md) for more
+details.
+
+That said even with debug mode disabled mergerfs will log certain
+details via `syslog` which on `systemd` based systems can be viewed by
+running:
 
 ```
 journalctl -t mergerfs

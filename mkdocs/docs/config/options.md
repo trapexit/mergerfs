@@ -220,7 +220,10 @@ config file.
 * **noforget**: Effectively sets `remember-nodes` to infinity.
 * **allow-idmap=BOOL**: Enables idmap (identity mapping). (default:
   true)
-
+* **debug**: Enable debugging information. At the moment limited to a
+  FUSE message trace saved to `log.file`. (default: false)
+* **log.file**: The file path for the FUSE message trace. Empty string
+  will set to stderr. (default: stderr)
 
 **NOTE:** Options are evaluated in the order listed so if the options
 are **func.rmdir=rand,category.action=ff** the **action** category
