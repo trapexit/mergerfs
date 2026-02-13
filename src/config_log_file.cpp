@@ -16,38 +16,31 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "config_log_metrics.hpp"
-#include "from_string.hpp"
-#include "to_string.hpp"
+#include "config_log_file.hpp"
 
-#include "fuse.h"
+#include "debug.hpp"
+#include "fuse_cfg.hpp"
 
-LogMetrics::LogMetrics(const bool val_)
+#include <memory>
+#include <string>
+
+LogFile::LogFile(const std::string &s_)
 {
-  fuse_log_metrics_set(val_);
+  fuse_debug_set_output(s_);
 }
 
 std::string
-LogMetrics::to_string(void) const
+LogFile::to_string(void) const
 {
-  bool val;
+  auto filepath = fuse_cfg.log_filepath();
 
-  val = fuse_log_metrics_get();
-
-  return str::to(val);
+  return (filepath ? *filepath : "");
 }
 
 int
-LogMetrics::from_string(const std::string_view s_)
+LogFile::from_string(const std::string_view s_)
 {
-  int rv;
-  bool val;
+  const std::string s{s_};
 
-  rv = str::from(s_,&val);
-  if(rv < 0)
-    return rv;
-
-  fuse_log_metrics_set(val);
-
-  return 0;
+  return fuse_debug_set_output(s);
 }

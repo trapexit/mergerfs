@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2026, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -20,10 +20,10 @@
 
 #include "tofrom_string.hpp"
 
-class LogMetrics : public ToFromString
+class Debug : public ToFromString
 {
 public:
-  LogMetrics(const bool);
+  Debug(const bool);
 
 public:
   std::string to_string(void) const final;

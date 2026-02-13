@@ -359,9 +359,6 @@ int fuse_main(int argc,
 
 void fuse_populate_maintenance_thread(struct fuse *fuse);
 
-int  fuse_log_metrics_get(void);
-void fuse_log_metrics_set(int enabled);
-
 
 /**
  * Iterate over cache removing stale entries

@@ -172,6 +172,12 @@ _lshw(const std::string &output_)
   ::_run({"lshw"},output_);
 }
 
+static
+void
+_journalctl(const std::string &output_)
+{
+  ::_run({"journalctl","-t","mergerfs","--since","60 minutes ago"},output_);
+}
 
 int
 mergerfs::collect_info::main(int    argc_,
@@ -208,6 +214,7 @@ mergerfs::collect_info::main(int    argc_,
   ::_fstab(output_filepath);
   ::_software_versions(output_filepath);
   ::_lshw(output_filepath);
+  ::_journalctl(output_filepath);
 
   fmt::print("* Upload the following file to your"
              " GitHub ticket or put on https://pastebin.com"

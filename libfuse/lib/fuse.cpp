@@ -14,6 +14,7 @@
 #include "syslog.hpp"
 
 #include "crc32b.h"
+#include "debug.hpp"
 #include "khash.h"
 #include "kvec.h"
 #include "mutex.hpp"
@@ -66,8 +67,6 @@
 #define NODE_TABLE_MIN_SIZE 8192
 
 #define PARAM(inarg) ((void*)(((char*)(inarg)) + sizeof(*(inarg))))
-
-static int g_LOG_METRICS = 0;
 
 struct fuse_config
 {
@@ -3752,7 +3751,7 @@ fuse_populate_maintenance_thread(struct fuse *f_)
 
   MaintenanceThread::push_job([=](int count_)
   {
-    if(g_LOG_METRICS)
+    if(fuse_cfg.debug)
       metrics_log_nodes_info_to_tmp_dir(f_);
   });
 }
@@ -3776,8 +3775,6 @@ fuse_new(struct fuse_chan             *ch,
 
   if(fuse_opt_parse(args,&f.conf,fuse_lib_opts,fuse_lib_opt_proc) == -1)
     goto out_free_fs;
-
-  g_LOG_METRICS = fuse_cfg.debug;
 
   f.se = fuse_lowlevel_new_common(args,&llop,sizeof(llop),&f);
   if(f.se == NULL)
@@ -3852,18 +3849,6 @@ fuse_destroy(struct fuse *)
   mutex_destroy(&f.lock);
   fuse_session_destroy(f.se);
   kv_destroy(f.remembered_nodes);
-}
-
-void
-fuse_log_metrics_set(int log_)
-{
-  g_LOG_METRICS = log_;
-}
-
-int
-fuse_log_metrics_get(void)
-{
-  return g_LOG_METRICS;
 }
 
 int

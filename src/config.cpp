@@ -110,7 +110,7 @@ Config::Config()
   lazy_umount_mountpoint(false),
   link_cow(false),
   link_exdev(LinkEXDEV::ENUM::PASSTHROUGH),
-  log_metrics(false),
+  log_file({}),
   minfreespace(branches.minfreespace),
   mountpoint(),
   moveonenospc(true),
@@ -137,7 +137,7 @@ Config::Config()
   xattr(XAttr::ENUM::PASSTHROUGH),
 
   _congestion_threshold(fuse_cfg.congestion_threshold),
-  _debug(fuse_cfg.debug),
+  _debug(false),
   _gid(fuse_cfg.gid),
   _max_background(fuse_cfg.max_background),
   _mount(mountpoint),
@@ -260,7 +260,7 @@ Config::Config()
   _map["lazy-umount-mountpoint"]      = &lazy_umount_mountpoint;
   _map["link-cow"]                    = &link_cow;
   _map["link-exdev"]                  = &link_exdev;
-  _map["log.metrics"]                 = &log_metrics;
+  _map["log.file"]                    = &log_file;
   _map["minfreespace"]                = &minfreespace;
   _map["mount"]                       = &_mount;
   _map["mountpoint"]                  = &_mountpoint;

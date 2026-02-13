@@ -240,6 +240,15 @@ int
 fuse_reply_err(fuse_req_t *req_,
                int         err_)
 {
+  if(fuse_cfg.debug)
+    {
+      struct fuse_out_header hdr = {};
+      hdr.unique = req_->ctx.unique;
+      hdr.error  = (err_ > 0) ? -err_ : err_;
+      hdr.len    = sizeof(struct fuse_out_header);
+      fuse_debug_out_header(&hdr);
+    }
+
   return send_reply(req_,err_,NULL,0);
 }
 
@@ -308,6 +317,9 @@ fuse_reply_entry(fuse_req_t                    *req,
   // the kernel.
 #endif
 
+  if(fuse_cfg.debug)
+    fuse_debug_entry_out(req->ctx.unique,&arg,size);
+
   return send_reply_ok(req, &arg, size);
 }
 
@@ -331,6 +343,9 @@ fuse_reply_create(fuse_req_t                    *req,
   fill_entry(earg, e);
   fill_open(oarg, f);
 
+  if(fuse_cfg.debug)
+    fuse_debug_entry_open_out(req->ctx.unique,earg,oarg);
+
   return send_reply_ok(req, &buf, entrysize + sizeof(struct fuse_open_out));
 }
 
@@ -346,6 +361,9 @@ fuse_reply_attr(fuse_req_t        *req,
   arg.attr_valid      = timeout;
   arg.attr_valid_nsec = 0;
   convert_stat(attr,&arg.attr);
+
+  if(fuse_cfg.debug)
+    fuse_debug_attr_out(req->ctx.unique,&arg,size);
 
   return send_reply_ok(req,&arg,size);
 }
@@ -363,6 +381,9 @@ fuse_reply_statx(fuse_req_t        *req_,
   outarg.attr_valid_nsec = 0;
   outarg.stat            = *(struct fuse_statx*)st_;
 
+  if(fuse_cfg.debug)
+    fuse_debug_statx_out(req_->ctx.unique,&outarg);
+
   return send_reply_ok(req_,&outarg,sizeof(outarg));
 }
 
@@ -370,6 +391,9 @@ int
 fuse_reply_readlink(fuse_req_t *req,
                     const char *linkname)
 {
+  if(fuse_cfg.debug)
+    fuse_debug_readlink(req->ctx.unique,linkname);
+
   return send_reply_ok(req, linkname, strlen(linkname));
 }
 
@@ -380,6 +404,9 @@ fuse_reply_open(fuse_req_t             *req,
   struct fuse_open_out arg = {};
 
   fill_open(&arg, f);
+
+  if(fuse_cfg.debug)
+    fuse_debug_open_out(req->ctx.unique,&arg,sizeof(arg));
 
   return send_reply_ok(req, &arg, sizeof(arg));
 }
@@ -392,6 +419,9 @@ fuse_reply_write(fuse_req_t *req,
 
   arg.size = count;
 
+  if(fuse_cfg.debug)
+    fuse_debug_write_out(req->ctx.unique,&arg);
+
   return send_reply_ok(req, &arg, sizeof(arg));
 }
 
@@ -400,6 +430,9 @@ fuse_reply_buf(fuse_req_t *req,
                const char *buf,
                size_t      size)
 {
+  if(fuse_cfg.debug)
+    fuse_debug_data_out(req->ctx.unique,size);
+
   return send_reply_ok(req, buf, size);
 }
 
@@ -436,6 +469,9 @@ fuse_reply_data(fuse_req_t   *req,
   out.unique = req->ctx.unique;
   out.error = 0;
 
+  if(fuse_cfg.debug)
+    fuse_debug_data_out(req->ctx.unique,bufsize_);
+
   res = fuse_send_msg(req->f,req->ch,iov,2);
   if(res <= 0)
     {
@@ -458,6 +494,9 @@ fuse_reply_statfs(fuse_req_t           *req,
 
   convert_statfs(stbuf, &arg.st);
 
+  if(fuse_cfg.debug)
+    fuse_debug_statfs_out(req->ctx.unique,&arg);
+
   return send_reply_ok(req, &arg, size);
 }
 
@@ -468,6 +507,9 @@ fuse_reply_xattr(fuse_req_t *req,
   struct fuse_getxattr_out arg = {};
 
   arg.size = count;
+
+  if(fuse_cfg.debug)
+    fuse_debug_getxattr_out(req->ctx.unique,&arg);
 
   return send_reply_ok(req, &arg, sizeof(arg));
 }
@@ -489,6 +531,9 @@ fuse_reply_lock(fuse_req_t         *req,
     }
   arg.lk.pid = lock->l_pid;
 
+  if(fuse_cfg.debug)
+    fuse_debug_lk_out(req->ctx.unique,&arg);
+
   return send_reply_ok(req, &arg, sizeof(arg));
 }
 
@@ -499,6 +544,9 @@ fuse_reply_bmap(fuse_req_t *req,
   struct fuse_bmap_out arg = {};
 
   arg.block = idx;
+
+  if(fuse_cfg.debug)
+    fuse_debug_bmap_out(req->ctx.unique,&arg);
 
   return send_reply_ok(req, &arg, sizeof(arg));
 }
@@ -541,6 +589,9 @@ fuse_reply_ioctl_retry(fuse_req_t         *req,
   arg.flags |= FUSE_IOCTL_RETRY;
   arg.in_iovs = in_count;
   arg.out_iovs = out_count;
+
+  if(fuse_cfg.debug)
+    fuse_debug_ioctl_out(req->ctx.unique,&arg);
   iov[count].iov_base = &arg;
   iov[count].iov_len = sizeof(arg);
   count++;
@@ -619,6 +670,9 @@ fuse_reply_ioctl(fuse_req_t *req,
   arg.in_iovs  = 0;
   arg.out_iovs = 0;
 
+  if(fuse_cfg.debug)
+    fuse_debug_ioctl_out(req->ctx.unique,&arg);
+
   count = 1;
   iov[count].iov_base = &arg;
   iov[count].iov_len  = sizeof(arg);
@@ -649,6 +703,10 @@ fuse_reply_ioctl_iov(fuse_req_t         *req,
     return fuse_reply_err(req, ENOMEM);
 
   arg.result = result;
+
+  if(fuse_cfg.debug)
+    fuse_debug_ioctl_out(req->ctx.unique,&arg);
+
   padded_iov[1].iov_base = &arg;
   padded_iov[1].iov_len = sizeof(arg);
 
@@ -667,6 +725,9 @@ fuse_reply_poll(fuse_req_t *req,
   struct fuse_poll_out arg = {};
 
   arg.revents = revents;
+
+  if(fuse_cfg.debug)
+    fuse_debug_poll_out(req->ctx.unique,&arg);
 
   return send_reply_ok(req, &arg, sizeof(arg));
 }
@@ -1272,6 +1333,9 @@ do_init(fuse_req_t            *req,
 
   fuse_syslog_fuse_init_out(&outarg);
 
+  if(fuse_cfg.debug)
+    fuse_debug_init_out(req->ctx.unique,&outarg,outargsize);
+
   send_reply_ok(req, &outarg, outargsize);
 }
 
@@ -1722,8 +1786,12 @@ fuse_send_errno(struct fuse_ll   *f_,
 
   out.unique   = unique_id_;
   out.error    = -errno_;
+  out.len      = sizeof(struct fuse_out_header);
   iov.iov_base = &out;
   iov.iov_len  = sizeof(struct fuse_out_header);
+
+  if(fuse_cfg.debug)
+    fuse_debug_out_header(&out);
 
   fuse_send_msg(f_,ch_,&iov,1);
 }
@@ -1777,6 +1845,9 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
 
   in = (struct fuse_in_header*)msgbuf_->mem;
 
+  if(fuse_cfg.debug)
+    fuse_debug_in_header(in);
+
   req = fuse_ll_alloc_req(se_->f);
   if(req == NULL)
     return fuse_send_enomem(se_->f,se_->ch,in->unique);
@@ -1816,6 +1887,9 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   struct fuse_in_header *in;
 
   in = (struct fuse_in_header*)msgbuf_->mem;
+
+  if(fuse_cfg.debug)
+    fuse_debug_in_header(in);
 
   req = fuse_ll_alloc_req(se_->f);
   if(req == NULL)

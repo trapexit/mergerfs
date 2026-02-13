@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2021, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2026, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -22,69 +22,133 @@
 
 #include "syslog.hpp"
 
+#include "fuse_cfg.hpp"
 #include "fuse_kernel.h"
 
 #include "fmt/core.h"
+#include "fmt/format.h"
 
+#include <memory>
 #include <string>
 
 #include <errno.h>
 #include <fcntl.h>
-#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-
-static FILE *g_OUTPUT = NULL;
+#include <time.h>
 
 #define PARAM(inarg) (((char *)(inarg)) + sizeof(*(inarg)))
 
 static
-int
-debug_set_output_null()
+void
+_fclose_deleter(FILE *f_)
 {
-  g_OUTPUT = stderr;
-  setvbuf(g_OUTPUT,NULL,_IOLBF,0);
+  if(f_ == nullptr)
+    return;
+  if(f_ == stdin)
+    return;
+  if(f_ == stdout)
+    return;
+  if(f_ == stderr)
+    return;
+
+  fclose(f_);
+}
+
+static
+int
+_debug_set_output_stderr()
+{
+  auto new_log_file = std::shared_ptr<FILE>(stderr,[](FILE*){});
+
+  fuse_cfg.log_file(new_log_file);
+  fuse_cfg.log_filepath("/dev/stderr");
 
   return 0;
 }
 
 static
 int
-debug_set_output_filepath(const char *filepath_)
+_debug_set_output_filepath(const std::string &filepath_)
 {
-  FILE *tmp;
+  FILE *tmp_new_file;
 
-  tmp = fopen(filepath_,"a");
-  if(tmp == NULL)
+  tmp_new_file = fopen(filepath_.c_str(),"a");
+  if(tmp_new_file == NULL)
     return -errno;
 
-  g_OUTPUT = tmp;
-  setvbuf(g_OUTPUT,NULL,_IOLBF,0);
+  setvbuf(tmp_new_file,NULL,_IOLBF,0);
+
+  auto new_log_file =
+    std::shared_ptr<FILE>(tmp_new_file,::_fclose_deleter);
+
+  fuse_cfg.log_file(new_log_file);
+  fuse_cfg.log_filepath(filepath_);
 
   return 0;
 }
 
 int
-debug_set_output(const char *filepath_)
+fuse_debug_set_output(const std::string &filepath_)
 {
-  if(filepath_ == NULL)
-    return debug_set_output_null();
+  if(filepath_.empty())
+    return _debug_set_output_stderr();
 
-  return debug_set_output_filepath(filepath_);
+  return _debug_set_output_filepath(filepath_.c_str());
 }
 
 static
-__attribute__((constructor))
-void
-debug_constructor(void)
+uint64_t
+_timestamp_ns(void)
 {
-  debug_set_output(NULL);
+  struct timespec ts;
+
+  clock_gettime(CLOCK_MONOTONIC,&ts);
+
+  return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
+}
+
+static
+std::string
+_quoted(const char *str_)
+{
+  std::string out;
+
+  out += '"';
+  for(const char *p = str_; *p; p++)
+    {
+      if(*p == '"' || *p == '\\')
+        out += '\\';
+      out += *p;
+    }
+  out += '"';
+
+  return out;
+}
+
+static
+std::string
+_quoted(const char *data_,
+        size_t      len_)
+{
+  std::string out;
+
+  out += '"';
+  for(size_t i = 0; i < len_; i++)
+    {
+      if(data_[i] == '"' || data_[i] == '\\')
+        out += '\\';
+      out += data_[i];
+    }
+  out += '"';
+
+  return out;
 }
 
 static
 const
 char*
-open_accmode_to_str(const int flags_)
+_open_accmode_to_str(const int flags_)
 {
   switch(flags_ & O_ACCMODE)
     {
@@ -104,7 +168,7 @@ open_accmode_to_str(const int flags_)
 static
 const
 char*
-fuse_write_flag_to_str(const uint32_t offset_)
+_fuse_write_flag_to_str(const uint32_t offset_)
 {
   switch(1 << offset_)
     {
@@ -123,7 +187,7 @@ fuse_write_flag_to_str(const uint32_t offset_)
 static
 const
 char*
-open_flag_to_str(const uint64_t offset_)
+_open_flag_to_str(const uint64_t offset_)
 {
   switch(1 << offset_)
     {
@@ -166,7 +230,7 @@ open_flag_to_str(const uint64_t offset_)
 static
 const
 char*
-fuse_flag_to_str(const uint64_t offset_)
+_fuse_flag_to_str(const uint64_t offset_)
 {
   switch(1ULL << offset_)
     {
@@ -272,10 +336,12 @@ fuse_debug_init_flag_name(const uint64_t flag_)
 #undef FUSE_INIT_FLAG_CASE
 
 static
-void
-debug_open_flags(const uint32_t flags_)
+std::string
+_open_flags_str(const uint32_t flags_)
 {
-  fmt::print("{}, ",open_accmode_to_str(flags_));
+  std::string buf;
+
+  buf += _open_accmode_to_str(flags_);
   for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
@@ -283,12 +349,15 @@ debug_open_flags(const uint32_t flags_)
       if(!(flags_ & (1 << i)))
         continue;
 
-      str = open_flag_to_str(i);
+      str = _open_flag_to_str(i);
       if(str == NULL)
         continue;
 
-      fmt::print("{}, ",str);
+      buf += '|';
+      buf += str;
     }
+
+  return buf;
 }
 
 #define FOPEN_FLAG_CASE(X) case FOPEN_##X: return #X
@@ -296,7 +365,7 @@ debug_open_flags(const uint32_t flags_)
 static
 const
 char*
-fuse_fopen_flag_to_str(const uint32_t offset_)
+_fuse_fopen_flag_to_str(const uint32_t offset_)
 {
   switch(1 << offset_)
     {
@@ -312,82 +381,191 @@ fuse_fopen_flag_to_str(const uint32_t offset_)
 
 #undef FOPEN_FLAG_CASE
 
-void
-debug_fuse_open_out(const struct fuse_open_out *arg_)
+static
+std::string
+_fopen_flags_str(const uint32_t flags_)
 {
-  fmt::print(stderr,
-             "fuse_open_out:"
-             " fh=0x{:#08x};"
-             " open_flags=0x{:#04x} (",
-             arg_->fh,
-             arg_->open_flags);
-  for(size_t i = 0; i < (sizeof(arg_->open_flags) * 8); i++)
+  std::string buf;
+
+  for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
     {
       const char *str;
 
-      if(!(arg_->open_flags & (1 << i)))
+      if(!(flags_ & (1 << i)))
         continue;
 
-      str = fuse_fopen_flag_to_str(i);
+      str = _fuse_fopen_flag_to_str(i);
       if(str == NULL)
         continue;
 
-      fmt::print(stderr,"{},",str);
+      if(!buf.empty())
+        buf += '|';
+      buf += str;
     }
-  fmt::print(stderr,");\n");
+
+  return buf;
+}
+
+static
+std::string
+_write_flags_str(const uint32_t flags_)
+{
+  std::string buf;
+
+  for(size_t i = 0; i < (sizeof(flags_) * 8); i++)
+    {
+      const char *str;
+
+      if(!(flags_ & (1 << i)))
+        continue;
+
+      str = _fuse_write_flag_to_str(i);
+      if(str == NULL)
+        continue;
+
+      if(!buf.empty())
+        buf += '|';
+      buf += str;
+    }
+
+  return buf;
+}
+
+static
+std::string
+_fuse_init_flags_str(const uint64_t flags_)
+{
+  std::string buf;
+
+  for(uint64_t i = 0; i < (sizeof(flags_)*8); i++)
+    {
+      const char *str;
+
+      if(!(flags_ & (1ULL << i)))
+        continue;
+
+      str = _fuse_flag_to_str(i);
+      if(str == NULL)
+        continue;
+
+      if(!buf.empty())
+        buf += '|';
+      buf += str;
+    }
+
+  return buf;
+}
+
+static
+std::string
+_xattr_value_to_printable(const char *data_,
+                          uint32_t    size_)
+{
+  bool is_printable = true;
+
+  for(uint32_t i = 0; i < size_; i++)
+    {
+      unsigned char c = (unsigned char)data_[i];
+      if(c < 0x20 || c > 0x7E)
+        {
+          is_printable = false;
+          break;
+        }
+    }
+
+  if(is_printable)
+    return _quoted(data_,size_);
+
+  std::string hex;
+  hex += '"';
+  for(uint32_t i = 0; i < size_; i++)
+    {
+      if(i > 0)
+        hex += ' ';
+      hex += fmt::format("{:02X}",(unsigned char)data_[i]);
+    }
+  hex += '"';
+
+  return hex;
+}
+
+void
+fuse_debug_open_out(const uint64_t              unique_,
+                    const struct fuse_open_out *arg_,
+                    const uint64_t              argsize_)
+{
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " fh=0x{:08X}"
+             " open_flags=0x{:04X}"
+             " open_flags_str=\"{}\""
+             "\n",
+             _timestamp_ns(),
+             unique_,
+             sizeof(struct fuse_out_header) + argsize_,
+             arg_->fh,
+             arg_->open_flags,
+             _fopen_flags_str(arg_->open_flags));
 }
 
 static
 void
-debug_fuse_lookup(const void *arg_)
+_debug_fuse_lookup(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name = (const char*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_lookup:"
-             " name={};"
-             "\n"
-             ,
-             name);
+  fmt::print(output.get(),
+             "name={}\n",
+             ::              _quoted(name));
 }
 
 static
 void
-debug_fuse_getattr_in(const void *arg_)
+_debug_fuse_getattr_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_getattr_in *arg = (const fuse_getattr_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_getattr_in:"
-             " getattr_flags=0x{:#08x};"
-             " fh=0x{:08x};\n",
+  fmt::print(output.get(),
+             "getattr_flags=0x{:08X}"
+             " fh=0x{:08X}"
+             "\n",
              arg->getattr_flags,
              arg->fh);
 }
 
 static
 void
-debug_fuse_setattr_in(const void *arg_)
+_debug_fuse_setattr_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_setattr_in *arg = (const fuse_setattr_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_setattr_in:"
-             " valid={};"
-             " fh=0x{:#08x};"
-             " size={};"
-             " lock_owner={};"
-             " atime={};"
-             " atimensec={};"
-             " mtime={};"
-             " mtimensec={};"
-             " ctime={};"
-             " ctimensec={};"
-             " mode={:o};"
-             " uid={};"
-             " gid={};"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "valid={}"
+             " fh=0x{:08X}"
+             " size={}"
+             " lock_owner={}"
+             " atime={}"
+             " atimensec={}"
+             " mtime={}"
+             " mtimensec={}"
+             " ctime={}"
+             " ctimensec={}"
+             " mode={:o}"
+             " uid={}"
+             " gid={}"
+             "\n",
              arg->valid,
              arg->fh,
              arg->size,
@@ -405,106 +583,110 @@ debug_fuse_setattr_in(const void *arg_)
 
 static
 void
-debug_fuse_access_in(const void *arg_)
+_debug_fuse_access_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_access_in *arg = (const fuse_access_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_access_in:"
-             " mask=0x{:#08x};"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "mask=0x{:08X}"
+             "\n",
              arg->mask);
 }
 
 static
 void
-debug_fuse_mknod_in(const void *arg_)
+_debug_fuse_mknod_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_mknod_in *arg = (const fuse_mknod_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_mknod_in:"
-             " mode={:o};"
-             " rdev=0x{#:08x};"
-             " umask={:o};"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "mode={:o}"
+             " rdev=0x{:08X}"
+             " umask={:o}"
+             " name={}"
+             "\n",
              arg->mode,
              arg->rdev,
-             arg->umask);
+             arg->umask,
+             _quoted(PARAM(arg)));
 }
 
 static
 void
-debug_fuse_mkdir_in(const void *arg_)
+_debug_fuse_mkdir_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_mkdir_in *arg = (const fuse_mkdir_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_mkdir_in:"
-             " mode={:o};"
-             " umask={:o};"
-             " name=%s;"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "mode={:o}"
+             " umask={:o}"
+             " name={}"
+             "\n",
              arg->mode,
              arg->umask,
-             PARAM(arg));
+             _quoted(PARAM(arg)));
 }
 
 static
 void
-debug_fuse_unlink(const void *arg_)
+_debug_fuse_unlink(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name = (const char*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_unlink:"
-             " name=%s;"
-             "\n"
-             ,
-             name);
+  fmt::print(output.get(),
+             "name={}"
+             "\n",
+             ::              _quoted(name));
 }
 
 static
 void
-debug_fuse_rmdir(const void *arg_)
+_debug_fuse_rmdir(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name = (const char*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_mkdir:"
-             " name=%s;"
-             "\n"
-             ,
-             name);
+  fmt::print(output.get(),
+             "name={}"
+             "\n",
+             ::              _quoted(name));
 }
 
 static
 void
-debug_fuse_symlink(const void *arg_)
+_debug_fuse_symlink(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name;
   const char *linkname;
 
   name     = (const char*)arg_;
   linkname = (name + (strlen(name) + 1));
 
-  fmt::print(g_OUTPUT,
-             "fuse_mkdir:"
-             " linkname=%s;"
-             " name=%s;"
-             "\n"
-             ,
-             linkname,
-             name);
+  fmt::print(output.get(),
+             "name={}"
+             " linkname={}"
+             "\n",
+             _quoted(name),
+             _quoted(linkname));
 }
 
 static
 void
-debug_fuse_rename_in(const void *arg_)
+_debug_fuse_rename_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *oldname;
   const char *newname;
   const struct fuse_rename_in *arg = (const fuse_rename_in*)arg_;
@@ -512,195 +694,190 @@ debug_fuse_rename_in(const void *arg_)
   oldname = PARAM(arg);
   newname = (oldname + strlen(oldname) + 1);
 
-  fmt::print(g_OUTPUT,
-             "fuse_rename_in:"
-             " oldname=%s;"
-             " newdir={};"
-             " newname=%s;"
-             "\n"
-             ,
-             oldname,
+  fmt::print(output.get(),
+             "oldname={}"
+             " newdir={}"
+             " newname={}"
+             "\n",
+             _quoted(oldname),
              arg->newdir,
-             newname);
+             _quoted(newname));
 }
 
 static
 void
-debug_fuse_link_in(const void *arg_)
+_debug_fuse_link_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name;
   const struct fuse_link_in *arg = (const fuse_link_in*)arg_;
 
   name = PARAM(arg);
 
-  fmt::print(g_OUTPUT,
-             "fuse_link_in:"
-             " oldnodeid={};"
-             " name=%s;"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "oldnodeid={}"
+             " name={}"
+             "\n",
              arg->oldnodeid,
-             name);
+             ::              _quoted(name));
 }
 
 static
 void
-debug_fuse_create_in(const void *arg_)
+_debug_fuse_create_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name;
   const struct fuse_create_in *arg = (const fuse_create_in*)arg_;
 
   name = PARAM(arg);
 
-  fmt::print(g_OUTPUT,
-             "fuse_create_in:"
-             " mode={:o};"
-             " umask={:o};"
-             " name=%s;"
-             " flags=0x%X (",
+  fmt::print(output.get(),
+             "mode={:o}"
+             " umask={:o}"
+             " name={}"
+             " flags=0x{:X}"
+             " flags_str=\"{}\""
+             "\n",
              arg->mode,
              arg->umask,
-             name,
-             arg->flags);
-  debug_open_flags(arg->flags);
-  fmt::print(g_OUTPUT,");\n");
+             _quoted(name),
+             arg->flags,
+             _open_flags_str(arg->flags));
 }
 
 static
 void
-debug_fuse_open_in(const void *arg_)
+_debug_fuse_open_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_open_in *arg = (const fuse_open_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_open_in:"
-             " flags=0x%08X (",
-             arg->flags);
-  debug_open_flags(arg->flags);
-  fmt::print(g_OUTPUT,");\n");
+  fmt::print(output.get(),
+             "flags=0x{:08X}"
+             " flags_str=\"{}\""
+             "\n",
+             arg->flags,
+             _open_flags_str(arg->flags));
 }
 
 static
 void
-debug_fuse_read_in(const void *arg_)
+_debug_fuse_read_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_read_in *arg = (const fuse_read_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_read_in:"
-             " fh=0x{:#08x};"
-             " offset={};"
-             " size={};"
-             " read_flags=%X;"
-             " lock_owner=0x{:#08x};"
-             " flags=0x%X ("
-             ,
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " offset={}"
+             " size={}"
+             " read_flags=0x{:X}"
+             " lock_owner=0x{:08X}"
+             " flags=0x{:X}"
+             " flags_str=\"{}\""
+             "\n",
              arg->fh,
              arg->offset,
              arg->size,
              arg->read_flags,
              arg->lock_owner,
-             arg->flags);
-  debug_open_flags(arg->flags);
-  fmt::print(g_OUTPUT,");\n");
+             arg->flags,
+             _open_flags_str(arg->flags));
 }
 
 static
 void
-debug_fuse_write_in(const void *arg_)
+_debug_fuse_write_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_write_in *arg = (const fuse_write_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_write_in:"
-             " fh=0x{:#08x};"
-             " offset={};"
-             " size={};"
-             " lock_owner=0x{:#08x};"
-             " flags=0x%X ("
-             ,
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " offset={}"
+             " size={}"
+             " lock_owner=0x{:08X}"
+             " flags=0x{:X}"
+             " flags_str=\"{}\""
+             " write_flags=0x{:X}"
+             " write_flags_str=\"{}\""
+             "\n",
              arg->fh,
              arg->offset,
              arg->size,
              arg->lock_owner,
-             arg->flags);
-  debug_open_flags(arg->flags);
-  fmt::print(g_OUTPUT,
-             "); write_flags=0x%X (",
-             arg->write_flags);
-  for(size_t i = 0; i < (sizeof(arg->write_flags) * 8); i++)
-    {
-      const char *str;
-
-      if(!(arg->write_flags & (1 << i)))
-        continue;
-
-      str = fuse_write_flag_to_str(i);
-      if(str == NULL)
-        continue;
-
-      fmt::print(g_OUTPUT,"%s,",str);
-    }
-  fmt::print(g_OUTPUT,");\n");
+             arg->flags,
+             _open_flags_str(arg->flags),
+             arg->write_flags,
+             _write_flags_str(arg->write_flags));
 }
 
 static
 void
-debug_fuse_flush_in(const void *arg_)
+_debug_fuse_flush_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_flush_in *arg = (const fuse_flush_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_flush_in:"
-             " fh=0x{:#08x};"
-             " lock_owner=0x{:#08x};"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " lock_owner=0x{:08X}"
+             "\n",
              arg->fh,
              arg->lock_owner);
 }
 
 static
 void
-debug_fuse_release_in(const void *arg_)
+_debug_fuse_release_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_release_in *arg = (const fuse_release_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_release_in:"
-             " fh=0x{:#08x};"
-             " release_flags=0x%X;"
-             " lock_owner=0x{:#08x};"
-             " flags=0x%X ("
-             ,
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " release_flags=0x{:X}"
+             " lock_owner=0x{:08X}"
+             " flags=0x{:X}"
+             " flags_str=\"{}\""
+             "\n",
              arg->fh,
              arg->release_flags,
              arg->lock_owner,
-             arg->flags);
-  debug_open_flags(arg->flags);
-  fmt::print(g_OUTPUT,");\n");
+             arg->flags,
+             _open_flags_str(arg->flags));
 }
 
 static
 void
-debug_fuse_fsync_in(const void *arg_)
+_debug_fuse_fsync_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_fsync_in *arg = (const fuse_fsync_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_fsync_in:"
-             " fh=0x{:#08x};"
-             " fsync_flags=0x%X;"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " fsync_flags=0x{:X}"
+             "\n",
              arg->fh,
              arg->fsync_flags);
 }
 
 static
 void
-debug_fuse_setxattr_in(const void *arg_)
+_debug_fuse_setxattr_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name;
   const char *value;
   const struct fuse_setxattr_in *arg = (const fuse_setxattr_in*)arg_;
@@ -708,117 +885,343 @@ debug_fuse_setxattr_in(const void *arg_)
   name  = PARAM(arg);
   value = (name + strlen(name) + 1);
 
-  fmt::print(g_OUTPUT,
-             "fuse_setxattr_in:"
-             " size={};"
-             " flags=0x%X;"
-             " name=%s;"
-             " value=%s;"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "size={}"
+             " flags=0x{:X}"
+             " name={}"
+             " value={}"
+             "\n",
              arg->size,
              arg->flags,
-             name,
-             value);
+             _quoted(name),
+             _xattr_value_to_printable(value,arg->size));
 }
 
 static
 void
-debug_fuse_getxattr_in(const void *arg_)
+_debug_fuse_getxattr_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name;
   const struct fuse_getxattr_in *arg = (const fuse_getxattr_in*)arg_;
 
   name = PARAM(arg);
 
-  fmt::print(g_OUTPUT,
-             "fuse_getxattr_in:"
-             " size={};"
-             " name=%s;"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "size={}"
+             " name={}"
+             "\n",
              arg->size,
-             name);
+             ::              _quoted(name));
 }
 
 static
 void
-debug_fuse_listxattr(const void *arg_)
+_debug_fuse_listxattr(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_getxattr_in *arg = (const fuse_getxattr_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_listxattr:"
-             " size={};"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "size={}"
+             "\n",
              arg->size);
 }
 
 static
 void
-debug_fuse_removexattr(const void *arg_)
+_debug_fuse_removexattr(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const char *name = (const char*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_removexattr:"
-             " name=%s;"
-             "\n"
-             ,
-             name);
+  fmt::print(output.get(),
+             "name={}"
+             "\n",
+             ::              _quoted(name));
 }
 
 static
 void
-debug_fuse_fallocate_in(const void *arg_)
+_debug_fuse_fallocate_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_fallocate_in *arg = (const fuse_fallocate_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_fallocate_in:"
-             " fh=0x{:#08x};"
-             " offset={};"
-             " length={};"
-             " mode={:o};"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " offset={}"
+             " length={}"
+             " mode={:o}"
+             "\n",
              arg->fh,
              arg->offset,
              arg->length,
              arg->mode);
 }
 
+static
 void
-debug_fuse_init_in(const struct fuse_init_in *arg_)
+_debug_fuse_forget_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_forget_in *arg = (const fuse_forget_in*)arg_;
+
+  fmt::print(output.get(),
+             "nlookup={}"
+             "\n",
+             arg->nlookup);
+}
+
+static
+void
+_debug_fuse_batch_forget_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_batch_forget_in *arg = (const fuse_batch_forget_in*)arg_;
+  const struct fuse_forget_one *items = (const fuse_forget_one*)PARAM(arg);
+
+  fmt::print(output.get(),
+             "count={}",
+             arg->count);
+  for(uint32_t i = 0; i < arg->count; i++)
+    {
+      fmt::print(output.get(),
+                 " item.{}={{nodeid={},nlookup={}}}",
+                 i,
+                 items[i].nodeid,
+                 items[i].nlookup);
+    }
+  fmt::print(output.get(),"\n");
+}
+
+static
+void
+_debug_fuse_lk_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_lk_in *arg = (const fuse_lk_in*)arg_;
+
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " owner=0x{:016X}"
+             " lk_start={}"
+             " lk_end={}"
+             " lk_type={}"
+             " lk_pid={}"
+             " lk_flags=0x{:X}"
+             "\n",
+             arg->fh,
+             arg->owner,
+             arg->lk.start,
+             arg->lk.end,
+             arg->lk.type,
+             arg->lk.pid,
+             arg->lk_flags);
+}
+
+static
+void
+_debug_fuse_bmap_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_bmap_in *arg = (const fuse_bmap_in*)arg_;
+
+  fmt::print(output.get(),
+             "block={}"
+             " blocksize={}"
+             "\n",
+             arg->block,
+             arg->blocksize);
+}
+
+static
+void
+_debug_fuse_ioctl_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_ioctl_in *arg = (const fuse_ioctl_in*)arg_;
+
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " flags=0x{:X}"
+             " cmd=0x{:X}"
+             " arg=0x{:016X}"
+             " in_size={}"
+             " out_size={}"
+             "\n",
+             arg->fh,
+             arg->flags,
+             arg->cmd,
+             arg->arg,
+             arg->in_size,
+             arg->out_size);
+}
+
+static
+void
+_debug_fuse_poll_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_poll_in *arg = (const fuse_poll_in*)arg_;
+
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " kh=0x{:016X}"
+             " flags=0x{:X}"
+             " events=0x{:X}"
+             "\n",
+             arg->fh,
+             arg->kh,
+             arg->flags,
+             arg->events);
+}
+
+static
+void
+_debug_fuse_rename2_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const char *oldname;
+  const char *newname;
+  const struct fuse_rename2_in *arg = (const fuse_rename2_in*)arg_;
+
+  oldname = PARAM(arg);
+  newname = (oldname + strlen(oldname) + 1);
+
+  fmt::print(output.get(),
+             "oldname={}"
+             " newdir={}"
+             " newname={}"
+             " flags=0x{:X}"
+             "\n",
+             _quoted(oldname),
+             arg->newdir,
+             _quoted(newname),
+             arg->flags);
+}
+
+static
+void
+_debug_fuse_lseek_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_lseek_in *arg = (const fuse_lseek_in*)arg_;
+
+  fmt::print(output.get(),
+             "fh=0x{:08X}"
+             " offset={}"
+             " whence={}"
+             "\n",
+             arg->fh,
+             arg->offset,
+             arg->whence);
+}
+
+static
+void
+_debug_fuse_copy_file_range_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_copy_file_range_in *arg = (const fuse_copy_file_range_in*)arg_;
+
+  fmt::print(output.get(),
+             "fh_in=0x{:08X}"
+             " off_in={}"
+             " nodeid_out={}"
+             " fh_out=0x{:08X}"
+             " off_out={}"
+             " len={}"
+             " flags=0x{:X}"
+             "\n",
+             arg->fh_in,
+             arg->off_in,
+             arg->nodeid_out,
+             arg->fh_out,
+             arg->off_out,
+             arg->len,
+             arg->flags);
+}
+
+static
+void
+_debug_fuse_statx_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const struct fuse_statx_in *arg = (const fuse_statx_in*)arg_;
+
+  fmt::print(output.get(),
+             "getattr_flags=0x{:08X}"
+             " fh=0x{:08X}"
+             " sx_flags=0x{:X}"
+             " sx_mask=0x{:X}"
+             "\n",
+             arg->getattr_flags,
+             arg->fh,
+             arg->sx_flags,
+             arg->sx_mask);
+}
+
+static
+void
+_debug_fuse_tmpfile_in(const void *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  const char *name;
+  const struct fuse_create_in *arg = (const fuse_create_in*)arg_;
+
+  name = PARAM(arg);
+
+  fmt::print(output.get(),
+             "mode={:o}"
+             " umask={:o}"
+             " name={}"
+             " flags=0x{:08X}"
+             " flags_str=\"{}\""
+             "\n",
+             arg->mode,
+             arg->umask,
+             _quoted(name),
+             arg->flags,
+             _open_flags_str(arg->flags));
+}
+
+static
+void
+_debug_init_in(const struct fuse_init_in *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
   uint64_t flags;
 
   flags = (((uint64_t)arg_->flags) | ((uint64_t)arg_->flags2) << 32);
-  fmt::print(g_OUTPUT,
-             "FUSE_INIT_IN: "
-             " major={};"
-             " minor={};"
-             " max_readahead={};"
-             " flags=0x%016lx (",
+  fmt::print(output.get(),
+             "major={}"
+             " minor={}"
+             " max_readahead={}"
+             " flags=0x{:016X}"
+             " flags_str=\"{}\""
+             "\n",
              arg_->major,
              arg_->minor,
              arg_->max_readahead,
-             flags);
-  for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
-    {
-      const char *str;
-
-      if(!(flags & (1ULL << i)))
-        continue;
-
-      str = fuse_flag_to_str(i);
-      if(str == NULL)
-        continue;
-
-      fmt::print(g_OUTPUT,"%s, ",str);
-    }
-  fmt::print(g_OUTPUT,")\n");
+             flags,
+             _fuse_init_flags_str(flags));
 }
 
 void
@@ -899,50 +1302,42 @@ fuse_syslog_fuse_init_out(const struct fuse_init_out *arg_)
 
 
 void
-debug_fuse_init_out(const uint64_t              unique_,
+fuse_debug_init_out(const uint64_t              unique_,
                     const struct fuse_init_out *arg_,
                     const uint64_t              argsize_)
 {
+  auto output = fuse_cfg.log_file();
+
   uint64_t flags;
   const struct fuse_init_out *arg = arg_;
 
   flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
-  fmt::print(g_OUTPUT,
-             "FUSE_INIT_OUT:"
-             " major={};"
-             " minor={};"
-             " max_readahead={};"
-             " flags=0x%016lx ("
-             ,
-             /* unique_, */
-             /* sizeof(struct fuse_out_header) + argsize_, */
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " major={}"
+             " minor={}"
+             " max_readahead={}"
+             " flags=0x{:016X}"
+             " flags_str=\"{}\""
+             " max_background={}"
+             " congestion_threshold={}"
+             " max_write={}"
+             " time_gran={}"
+             " max_pages={}"
+             " map_alignment={}"
+             "\n",
+             _timestamp_ns(),
+             unique_,
+             sizeof(struct fuse_out_header) + argsize_,
              arg->major,
              arg->minor,
              arg->max_readahead,
-             flags);
-
-  for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
-    {
-      const char *str;
-
-      if(!(flags & (1ULL << i)))
-        continue;
-
-      str = fuse_flag_to_str(i);
-      if(str == NULL)
-        continue;
-
-      fmt::print(g_OUTPUT,"%s, ",str);
-    }
-
-  fmt::print(g_OUTPUT,
-             "); max_background={};"
-             " congestion_threshold={};"
-             " max_write={};"
-             " time_gran={};"
-             " max_pages={};"
-             " map_alignment={};"
-             "\n",
+             flags,
+             _fuse_init_flags_str(flags),
              arg->max_background,
              arg->congestion_threshold,
              arg->max_write,
@@ -953,26 +1348,26 @@ debug_fuse_init_out(const uint64_t              unique_,
 
 static
 void
-debug_fuse_attr(const struct fuse_attr *attr_)
+_debug_fuse_attr(const struct fuse_attr *attr_)
 {
-  fmt::print(g_OUTPUT,
-             "attr:"
-             " ino=0x%016" PRIx64 ";"
-             " size={};"
-             " blocks={};"
-             " atime={};"
-             " atimensec={};"
-             " mtime={};"
-             " mtimensec={};"
-             " ctime={};"
-             " ctimesec={};"
-             " mode={:o};"
-             " nlink={};"
-             " uid={};"
-             " gid={};"
-             " rdev={};"
-             " blksize={};"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ino=0x{:016X}"
+             " size={}"
+             " blocks={}"
+             " atime={}"
+             " atimensec={}"
+             " mtime={}"
+             " mtimensec={}"
+             " ctime={}"
+             " ctimensec={}"
+             " mode={:o}"
+             " nlink={}"
+             " uid={}"
+             " gid={}"
+             " rdev={}"
+             " blksize={}",
              attr_->ino,
              attr_->size,
              attr_->blocks,
@@ -992,16 +1387,17 @@ debug_fuse_attr(const struct fuse_attr *attr_)
 
 static
 void
-debug_fuse_entry(const struct fuse_entry_out *entry_)
+_debug_fuse_entry(const struct fuse_entry_out *entry_)
 {
-  fmt::print(g_OUTPUT,
-             " fuse_entry_out:"
-             " nodeid=0x%016" PRIx64 ";"
-             " generation=0x%016" PRIx64 ";"
-             " entry_valid={};"
-             " entry_valid_nsec={};"
-             " attr_valid={};"
-             " attr_valid_nsec={};"
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "nodeid=0x{:016X}"
+             " generation=0x{:016X}"
+             " entry_valid={}"
+             " entry_valid_nsec={}"
+             " attr_valid={}"
+             " attr_valid_nsec={}"
              " ",
              entry_->nodeid,
              entry_->generation,
@@ -1009,55 +1405,62 @@ debug_fuse_entry(const struct fuse_entry_out *entry_)
              entry_->entry_valid_nsec,
              entry_->attr_valid,
              entry_->attr_valid_nsec);
-  debug_fuse_attr(&entry_->attr);
+  _debug_fuse_attr(&entry_->attr);
 }
 
 void
-debug_fuse_entry_out(const uint64_t               unique_,
+fuse_debug_entry_out(const uint64_t               unique_,
                      const struct fuse_entry_out *arg_,
                      const uint64_t               argsize_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " ",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_out_header) + argsize_);
-  debug_fuse_entry(arg_);
-
+  _debug_fuse_entry(arg_);
+  fmt::print(output.get(),"\n");
 }
 
 void
-debug_fuse_attr_out(const uint64_t              unique_,
+fuse_debug_attr_out(const uint64_t              unique_,
                     const struct fuse_attr_out *arg_,
                     const uint64_t              argsize_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             "fuse_attr_out:"
-             " attr_valid={};"
-             " attr_valid_nsec={};"
-             " ino={};"
-             " size={};"
-             " blocks={};"
-             " atime={};"
-             " atimensec={};"
-             " mtime={};"
-             " mtimensec={};"
-             " ctime={};"
-             " ctimensec={};"
-             " mode={:o};"
-             " nlink={};"
-             " uid={};"
-             " gid={};"
-             " rdev={};"
-             " blksize={};"
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " attr_valid={}"
+             " attr_valid_nsec={}"
+             " ino=0x{:016X}"
+             " size={}"
+             " blocks={}"
+             " atime={}"
+             " atimensec={}"
+             " mtime={}"
+             " mtimensec={}"
+             " ctime={}"
+             " ctimensec={}"
+             " mode={:o}"
+             " nlink={}"
+             " uid={}"
+             " gid={}"
+             " rdev={}"
+             " blksize={}"
              "\n",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_out_header) + argsize_,
              arg_->attr_valid,
@@ -1081,32 +1484,33 @@ debug_fuse_attr_out(const uint64_t              unique_,
 
 static
 void
-debug_fuse_interrupt_in(const void *arg_)
+_debug_fuse_interrupt_in(const void *arg_)
 {
+  auto output = fuse_cfg.log_file();
+
   const struct fuse_interrupt_in *arg = (const fuse_interrupt_in*)arg_;
 
-  fmt::print(g_OUTPUT,
-             "fuse_interrupt_in:"
-             " unique=0x%016" PRIx64 ";"
-             "\n"
-             ,
+  fmt::print(output.get(),
+             "target_unique=0x{:016X}"
+             "\n",
              arg->unique);
 }
 
 static
 const
 char*
-opcode_name(enum fuse_opcode op_)
+_opcode_name(enum fuse_opcode op_)
 {
   static const char *names[] =
     {
-      "INVALID",
+      "RESERVED",
       "LOOKUP",
       "FORGET",
       "GETATTR",
       "SETATTR",
       "READLINK",
       "SYMLINK",
+      "RESERVED",
       "MKNOD",
       "MKDIR",
       "UNLINK",
@@ -1118,6 +1522,7 @@ opcode_name(enum fuse_opcode op_)
       "WRITE",
       "STATFS",
       "RELEASE",
+      "RESERVED",
       "FSYNC",
       "SETXATTR",
       "GETXATTR",
@@ -1147,29 +1552,40 @@ opcode_name(enum fuse_opcode op_)
       "LSEEK",
       "COPY_FILE_RANGE",
       "SETUPMAPPING",
-      "REMOVEMAPPING"
+      "REMOVEMAPPING",
+      "SYNCFS",
+      "TMPFILE",
+      "STATX"
     };
 
   if(op_ >= (sizeof(names) / sizeof(names[0])))
-    return "::UNKNOWN::";
+    return "UNKNOWN";
 
   return names[op_];
 }
 
 void
-debug_fuse_in_header(const struct fuse_in_header *hdr_)
+fuse_debug_in_header(const struct fuse_in_header *hdr_)
 {
   const void *arg = &hdr_[1];
+  auto output = fuse_cfg.log_file();
 
-  fmt::print(stderr,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=%s ({});"
-             " nodeid={};"
-             " uid={};"
-             " gid={};"
-             " pid={}; || ",
+  flockfile(output.get());
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=IN"
+             " unique=0x{:016X}"
+             " opcode={}"
+             " opcode_id={}"
+             " nodeid={}"
+             " uid={}"
+             " gid={}"
+             " pid={}"
+             " ",
+             _timestamp_ns(),
              hdr_->unique,
-             opcode_name((fuse_opcode)hdr_->opcode),
+             _opcode_name((fuse_opcode)hdr_->opcode),
              hdr_->opcode,
              hdr_->nodeid,
              hdr_->uid,
@@ -1179,185 +1595,260 @@ debug_fuse_in_header(const struct fuse_in_header *hdr_)
   switch(hdr_->opcode)
     {
     case FUSE_LOOKUP:
-      debug_fuse_lookup(arg);
+      _debug_fuse_lookup(arg);
       break;
-    case FUSE_INIT:
-      debug_fuse_init_in((const fuse_init_in*)arg);
+    case FUSE_FORGET:
+      _debug_fuse_forget_in(arg);
       break;
     case FUSE_GETATTR:
-      debug_fuse_getattr_in(arg);
+      _debug_fuse_getattr_in(arg);
       break;
     case FUSE_SETATTR:
-      debug_fuse_setattr_in(arg);
+      _debug_fuse_setattr_in(arg);
       break;
-    case FUSE_ACCESS:
-      debug_fuse_access_in(arg);
-      break;
-    case FUSE_MKNOD:
-      debug_fuse_mknod_in(arg);
-      break;
-    case FUSE_MKDIR:
-      debug_fuse_mkdir_in(arg);
-      break;
-    case FUSE_UNLINK:
-      debug_fuse_unlink(arg);
-      break;
-    case FUSE_RMDIR:
-      debug_fuse_rmdir(arg);
+    case FUSE_READLINK:
+      fmt::print(output.get(),"\n");
       break;
     case FUSE_SYMLINK:
-      debug_fuse_symlink(arg);
+      _debug_fuse_symlink(arg);
+      break;
+    case FUSE_UNLINK:
+      _debug_fuse_unlink(arg);
+      break;
+    case FUSE_RMDIR:
+      _debug_fuse_rmdir(arg);
+      break;
+    case FUSE_MKNOD:
+      _debug_fuse_mknod_in(arg);
+      break;
+    case FUSE_MKDIR:
+      _debug_fuse_mkdir_in(arg);
       break;
     case FUSE_RENAME:
-      debug_fuse_rename_in(arg);
+      _debug_fuse_rename_in(arg);
       break;
     case FUSE_LINK:
-      debug_fuse_link_in(arg);
-      break;
-    case FUSE_CREATE:
-      debug_fuse_create_in(arg);
+      _debug_fuse_link_in(arg);
       break;
     case FUSE_OPEN:
-      debug_fuse_open_in(arg);
-      break;
-    case FUSE_OPENDIR:
-      debug_fuse_open_in(arg);
+      _debug_fuse_open_in(arg);
       break;
     case FUSE_READ:
-      debug_fuse_read_in(arg);
-      break;
-    case FUSE_READDIR:
-      debug_fuse_read_in(arg);
-      break;
-    case FUSE_READDIRPLUS:
-      debug_fuse_read_in(arg);
+      _debug_fuse_read_in(arg);
       break;
     case FUSE_WRITE:
-      debug_fuse_write_in(arg);
+      _debug_fuse_write_in(arg);
+      break;
+    case FUSE_STATFS:
+      fmt::print(output.get(),"\n");
       break;
     case FUSE_RELEASE:
-      debug_fuse_release_in(arg);
+      _debug_fuse_release_in(arg);
       break;
-    case FUSE_RELEASEDIR:
-      debug_fuse_release_in(arg);
-      break;
-    case FUSE_FSYNCDIR:
-      debug_fuse_fsync_in(arg);
-      break;
-    case FUSE_GETXATTR:
-      debug_fuse_getxattr_in(arg);
-      break;
-    case FUSE_LISTXATTR:
-      debug_fuse_listxattr(arg);
+    case FUSE_FSYNC:
+      _debug_fuse_fsync_in(arg);
       break;
     case FUSE_SETXATTR:
-      debug_fuse_setxattr_in(arg);
+      _debug_fuse_setxattr_in(arg);
+      break;
+    case FUSE_GETXATTR:
+      _debug_fuse_getxattr_in(arg);
+      break;
+    case FUSE_LISTXATTR:
+      _debug_fuse_listxattr(arg);
       break;
     case FUSE_REMOVEXATTR:
-      debug_fuse_removexattr(arg);
-      break;
-    case FUSE_FALLOCATE:
-      debug_fuse_fallocate_in(arg);
+      _debug_fuse_removexattr(arg);
       break;
     case FUSE_FLUSH:
-      debug_fuse_flush_in(arg);
+      _debug_fuse_flush_in(arg);
+      break;
+    case FUSE_OPENDIR:
+      _debug_fuse_open_in(arg);
+      break;
+    case FUSE_READDIR:
+      _debug_fuse_read_in(arg);
+      break;
+    case FUSE_RELEASEDIR:
+      _debug_fuse_release_in(arg);
+      break;
+    case FUSE_FSYNCDIR:
+      _debug_fuse_fsync_in(arg);
+      break;
+    case FUSE_GETLK:
+      _debug_fuse_lk_in(arg);
+      break;
+    case FUSE_SETLK:
+      _debug_fuse_lk_in(arg);
+      break;
+    case FUSE_SETLKW:
+      _debug_fuse_lk_in(arg);
       break;
     case FUSE_INTERRUPT:
-      debug_fuse_interrupt_in(arg);
+      _debug_fuse_interrupt_in(arg);
+      break;
+    case FUSE_BMAP:
+      _debug_fuse_bmap_in(arg);
+      break;
+    case FUSE_CREATE:
+      _debug_fuse_create_in(arg);
+      break;
+    case FUSE_IOCTL:
+      _debug_fuse_ioctl_in(arg);
+      break;
+    case FUSE_POLL:
+      _debug_fuse_poll_in(arg);
+      break;
+    case FUSE_BATCH_FORGET:
+      _debug_fuse_batch_forget_in(arg);
+      break;
+    case FUSE_FALLOCATE:
+      _debug_fuse_fallocate_in(arg);
+      break;
+    case FUSE_READDIRPLUS:
+      _debug_fuse_read_in(arg);
+      break;
+    case FUSE_RENAME2:
+      _debug_fuse_rename2_in(arg);
+      break;
+    case FUSE_LSEEK:
+      _debug_fuse_lseek_in(arg);
+      break;
+    case FUSE_COPY_FILE_RANGE:
+      _debug_fuse_copy_file_range_in(arg);
+      break;
+    case FUSE_TMPFILE:
+      _debug_fuse_tmpfile_in(arg);
+      break;
+    case FUSE_STATX:
+      _debug_fuse_statx_in(arg);
+      break;
+    case FUSE_ACCESS:
+      _debug_fuse_access_in(arg);
+      break;
+    case FUSE_INIT:
+      _debug_init_in((const fuse_init_in*)arg);
       break;
     default:
-      fmt::print(g_OUTPUT,"FIXME\n");
+      fmt::print(output.get(),"unknown_opcode={}\n",hdr_->opcode);
       break;
     }
+
+  funlockfile(output.get());
 }
 
 void
-debug_fuse_out_header(const struct fuse_out_header *hdr_)
+fuse_debug_out_header(const struct fuse_out_header *hdr_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=%d (%s);"
-             " len={};"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  char strerror_buf[128];
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error={}"
+             " error_str=\"{}\""
+             " len={}"
+             "\n",
+             _timestamp_ns(),
              hdr_->unique,
              hdr_->error,
-             strerror(-hdr_->error),
-             sizeof(struct fuse_out_header));
+             strerror_r(-hdr_->error,strerror_buf,sizeof(strerror_buf)),
+             hdr_->len);
 }
 
 void
-debug_fuse_entry_open_out(const uint64_t               unique_,
+fuse_debug_entry_open_out(const uint64_t               unique_,
                           const struct fuse_entry_out *entry_,
                           const struct fuse_open_out  *open_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " ",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_entry_out) + sizeof(struct fuse_open_out));
-  debug_fuse_entry(entry_);
-
+  _debug_fuse_entry(entry_);
+  fmt::print(output.get(),
+             " fh=0x{:08X}"
+             " open_flags=0x{:04X}"
+             " open_flags_str=\"{}\""
+             "\n",
+             open_->fh,
+             open_->open_flags,
+             _fopen_flags_str(open_->open_flags));
 }
 
 void
-debug_fuse_readlink(const uint64_t  unique_,
+fuse_debug_readlink(const uint64_t  unique_,
                     const char     *linkname_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             "readlink: linkname=%s"
-             "\n"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " linkname={}"
+             "\n",
+             _timestamp_ns(),
              unique_,
              (sizeof(struct fuse_out_header) + strlen(linkname_)),
-             linkname_);
+             _quoted(linkname_));
 }
 
 void
-debug_fuse_write_out(const uint64_t               unique_,
+fuse_debug_write_out(const uint64_t               unique_,
                      const struct fuse_write_out *arg_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             " fuse_write_out:"
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
              " size={}"
-             "\n"
-             ,
+             "\n",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_write_out),
              arg_->size);
 }
 
 void
-debug_fuse_statfs_out(const uint64_t                unique_,
+fuse_debug_statfs_out(const uint64_t                unique_,
                       const struct fuse_statfs_out *arg_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             " fuse_statfs_out:"
-             " blocks={};"
-             " bfree={};"
-             " bavail={};"
-             " files={};"
-             " ffree={};"
-             " bsize={};"
-             " namelen={};"
-             " frsize={};"
-             "\n"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " blocks={}"
+             " bfree={}"
+             " bavail={}"
+             " files={}"
+             " ffree={}"
+             " bsize={}"
+             " namelen={}"
+             " frsize={}"
+             "\n",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_statfs_out),
              arg_->st.blocks,
@@ -1371,40 +1862,43 @@ debug_fuse_statfs_out(const uint64_t                unique_,
 }
 
 void
-debug_fuse_getxattr_out(const uint64_t            unique_,
+fuse_debug_getxattr_out(const uint64_t            unique_,
                         const struct fuse_getxattr_out *arg_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             " fuse_getxattr_out:"
-             " size={};"
-             "\n"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " size={}"
+             "\n",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_out_header) + sizeof(struct fuse_getxattr_out),
              arg_->size);
-
 }
 
 void
-debug_fuse_lk_out(const uint64_t            unique_,
+fuse_debug_lk_out(const uint64_t            unique_,
                   const struct fuse_lk_out *arg_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             " fuse_file_lock:"
-             " start={};"
-             " end={};"
-             " type={};"
-             " pid={};"
-             "\n"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " lk_start={}"
+             " lk_end={}"
+             " lk_type={}"
+             " lk_pid={}"
+             "\n",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_out_header) + sizeof(struct fuse_lk_out),
              arg_->lk.start,
@@ -1414,20 +1908,127 @@ debug_fuse_lk_out(const uint64_t            unique_,
 }
 
 void
-debug_fuse_bmap_out(const uint64_t              unique_,
+fuse_debug_bmap_out(const uint64_t              unique_,
                     const struct fuse_bmap_out *arg_)
 {
-  fmt::print(g_OUTPUT,
-             "unique=0x%016" PRIx64 ";"
-             " opcode=RESPONSE;"
-             " error=0 (Success);"
-             " len={}; || "
-             " fuse_bmap_out:"
-             " block={};"
-             "\n"
-             ,
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " block={}"
+             "\n",
+             _timestamp_ns(),
              unique_,
              sizeof(struct fuse_out_header) + sizeof(struct fuse_bmap_out),
              arg_->block);
+}
 
+void
+fuse_debug_statx_out(const uint64_t               unique_,
+                     const struct fuse_statx_out *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " attr_valid={}"
+             " attr_valid_nsec={}"
+             " flags=0x{:X}"
+             " ino=0x{:016X}"
+             " size={}"
+             " blocks={}"
+             " mode={:o}"
+             " nlink={}"
+             " uid={}"
+             " gid={}"
+             " blksize={}"
+             "\n",
+             _timestamp_ns(),
+             unique_,
+             sizeof(struct fuse_out_header) + sizeof(struct fuse_statx_out),
+             arg_->attr_valid,
+             arg_->attr_valid_nsec,
+             arg_->flags,
+             arg_->stat.ino,
+             arg_->stat.size,
+             arg_->stat.blocks,
+             arg_->stat.mode,
+             arg_->stat.nlink,
+             arg_->stat.uid,
+             arg_->stat.gid,
+             arg_->stat.blksize);
+}
+
+void
+fuse_debug_data_out(const uint64_t unique_,
+                    const size_t   size_)
+{
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " data_size={}"
+             "\n",
+             _timestamp_ns(),
+             unique_,
+             sizeof(struct fuse_out_header) + size_,
+             size_);
+}
+
+void
+fuse_debug_ioctl_out(const uint64_t               unique_,
+                     const struct fuse_ioctl_out *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " result={}"
+             " flags=0x{:X}"
+             " in_iovs={}"
+             " out_iovs={}"
+             "\n",
+             _timestamp_ns(),
+             unique_,
+             sizeof(struct fuse_out_header) + sizeof(struct fuse_ioctl_out),
+             arg_->result,
+             arg_->flags,
+             arg_->in_iovs,
+             arg_->out_iovs);
+}
+
+void
+fuse_debug_poll_out(const uint64_t              unique_,
+                    const struct fuse_poll_out *arg_)
+{
+  auto output = fuse_cfg.log_file();
+
+  fmt::print(output.get(),
+             "ts={}"
+             " dir=OUT"
+             " unique=0x{:016X}"
+             " error=0"
+             " len={}"
+             " revents=0x{:X}"
+             "\n",
+             _timestamp_ns(),
+             unique_,
+             sizeof(struct fuse_out_header) + sizeof(struct fuse_poll_out),
+             arg_->revents);
 }

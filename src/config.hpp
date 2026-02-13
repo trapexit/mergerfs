@@ -19,12 +19,13 @@
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
+#include "config_debug.hpp"
 #include "config_dummy.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
-#include "config_log_metrics.hpp"
+#include "config_log_file.hpp"
 #include "config_moveonenospc.hpp"
 #include "config_nfsopenhack.hpp"
 #include "config_noforget.hpp"
@@ -140,7 +141,7 @@ public:
   ConfigBOOL     lazy_umount_mountpoint;
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
-  LogMetrics     log_metrics;
+  LogFile        log_file;
   TFSRef<u64>    minfreespace;
   fs::path       mountpoint;
   MoveOnENOSPC   moveonenospc;
@@ -169,7 +170,7 @@ public:
 
 private:
   TFSRef<int>      _congestion_threshold;
-  TFSRef<bool>     _debug;
+  Debug            _debug;
   CfgDummy         _dummy;
   TFSRef<s64>      _gid;
   TFSRef<int>      _max_background;
@@ -201,6 +202,7 @@ public:
   void keys_xattr(std::string &s) const;
   ssize_t keys_listxattr(char *list, size_t size) const;
   ssize_t keys_listxattr_size() const;
+  const Str2TFStrMap& get_map() const { return _map; }
 
 public:
   int get(const std::string &key, std::string *val) const;
