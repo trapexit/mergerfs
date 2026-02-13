@@ -91,6 +91,7 @@ struct fuse_opt fuse_mount_opts[] =
     FUSE_OPT_KEY("max_read=",		KEY_KERN_OPT),
     FUSE_OPT_KEY("max_read=",		FUSE_OPT_KEY_KEEP),
     FUSE_OPT_KEY("user=",		KEY_MTAB_OPT),
+    FUSE_OPT_KEY("-n",			KEY_MTAB_OPT),
     FUSE_OPT_KEY("-r",			KEY_RO),
     FUSE_OPT_KEY("ro",			KEY_KERN_FLAG),
     FUSE_OPT_KEY("rw",			KEY_KERN_FLAG),
@@ -210,7 +211,14 @@ static int fuse_mount_opt_proc(void *data, const char *arg, int key,
 
     case KEY_MTAB_OPT:
       return fuse_opt_add_opt(&mo->mtab_opts, arg);
+
+    case FUSE_OPT_KEY_OPT:
+      if(strncmp("x-",arg,2) == 0)
+        return fuse_opt_add_opt(&mo->mtab_opts,arg);
+      return 1;
     }
+
+  /* passthrough unknown options */
   return 1;
 }
 
