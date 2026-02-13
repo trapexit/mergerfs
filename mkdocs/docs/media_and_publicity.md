@@ -68,6 +68,8 @@
 * 2025-04-23 - [How to build the Perfect Media Server | Part 1 - The Tech Stack | mergerfs, SnapRAID, and docker.](https://www.youtube.com/watch?v=Yt67zz9p0FU)
 * 2025-06-12 - [DIY Unraid-like functionality](https://www.youtube.com/watch?v=fR0XhaWvR1E)
 * 2025-09-22 - [استفاده از Snapraid و MergerFS | جایگزین RAID5](https://www.youtube.com/watch?v=GA6OvaUBKXs)
+* 2026-02-10 - [Never run out of space again! Using MergerFS with Immich to expand your storage seamlessly](https://www.youtube.com/watch?v=Vbu4WzWUikQ)
+
 
 ## Podcasts
 
