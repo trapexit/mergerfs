@@ -33,14 +33,6 @@
 #include <assert.h>
 #include <sys/file.h>
 
-#ifndef F_LINUX_SPECIFIC_BASE
-#define F_LINUX_SPECIFIC_BASE       1024
-#endif
-#ifndef F_SETPIPE_SZ
-#define F_SETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 7)
-#endif
-
-
 #define PARAM(inarg) (((char*)(inarg)) + sizeof(*(inarg)))
 #define OFFSET_MAX 0x7fffffffffffffffLL
 
@@ -434,22 +426,6 @@ fuse_reply_buf(fuse_req_t *req,
     fuse_debug_data_out(req->ctx.unique,size);
 
   return send_reply_ok(req, buf, size);
-}
-
-struct fuse_ll_pipe
-{
-  size_t size;
-  int can_grow;
-  int pipe[2];
-};
-
-static
-void
-fuse_ll_pipe_free(struct fuse_ll_pipe *llp)
-{
-  close(llp->pipe[0]);
-  close(llp->pipe[1]);
-  free(llp);
 }
 
 int
@@ -1748,7 +1724,6 @@ void
 fuse_ll_destroy(void *data)
 {
   struct fuse_ll *f = (struct fuse_ll *)data;
-  struct fuse_ll_pipe *llp;
 
   if(f->got_init && !f->got_destroy)
     {
@@ -1756,22 +1731,10 @@ fuse_ll_destroy(void *data)
         f->op.destroy(f->userdata);
     }
 
-  llp = (fuse_ll_pipe*)pthread_getspecific(f->pipe_key);
-  if(llp != NULL)
-    fuse_ll_pipe_free(llp);
-  pthread_key_delete(f->pipe_key);
   mutex_destroy(&f->lock);
   free(f);
 
   lfmp_clear(&g_FMP_fuse_req);
-}
-
-static
-void
-fuse_ll_pipe_destructor(void *data)
-{
-  struct fuse_ll_pipe *llp = (fuse_ll_pipe*)data;
-  fuse_ll_pipe_free(llp);
 }
 
 static
@@ -1950,7 +1913,6 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
                          size_t                          op_size,
                          void                           *userdata)
 {
-  int err;
   struct fuse_ll *f;
   struct fuse_session *se;
 
@@ -1971,16 +1933,8 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   f->notify_ctr = 1;
   mutex_init(&f->lock);
 
-  err = pthread_key_create(&f->pipe_key, fuse_ll_pipe_destructor);
-  if(err)
-    {
-      fprintf(stderr, "fuse: failed to create thread specific key: %s\n",
-              strerror(err));
-      goto out_free;
-    }
-
   if(fuse_opt_parse(args,NULL,fuse_ll_opts,fuse_ll_opt_proc) == -1)
-    goto out_key_destroy;
+    goto out_free;
 
   memcpy(&f->op, op, op_size);
   f->owner = getuid();
@@ -1992,12 +1946,10 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
                         (void*)fuse_ll_destroy);
 
   if(!se)
-    goto out_key_destroy;
+    goto out_free;
 
   return se;
 
- out_key_destroy:
-  pthread_key_delete(f->pipe_key);
  out_free:
   mutex_destroy(&f->lock);
   free(f);
