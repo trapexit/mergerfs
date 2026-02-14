@@ -1,6 +1,7 @@
 #pragma once
 
 #include "extern_c.h"
+#include "fuse_conn_info.hpp"
 #include "fuse_opt.h"
 #include "fuse_timeouts.h"
 
@@ -76,7 +77,7 @@ struct fuse_file_info_t
 };
 
 /**
- * Capability bits for 'fuse_conn_info.capable' and 'fuse_conn_info.want'
+ * Capability bits for 'fuse_conn_info_t.capable' and 'fuse_conn_info_t.want'
  *
  * FUSE_CAP_ASYNC_READ: filesystem supports asynchronous read requests
  * FUSE_CAP_POSIX_LOCKS: filesystem supports "remote" locking
@@ -127,21 +128,6 @@ struct fuse_file_info_t
 #define FUSE_IOCTL_DIR		(1 << 4)
 
 #define FUSE_IOCTL_MAX_IOV	256
-
-/**
- * Connection information, passed to the ->init() method
- *
- * Some of the elements are read-write, these can be changed to
- * indicate the value requested by the filesystem.  The requested
- * value must usually be smaller than the indicated value.
- */
-struct fuse_conn_info
-{
-  unsigned proto_major;
-  unsigned proto_minor;
-  uint64_t capable;
-  uint64_t want;
-};
 
 struct fuse_session;
 struct fuse_chan;

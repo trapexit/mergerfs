@@ -150,7 +150,7 @@ struct fuse_operations
   int (*fsyncdir)(const fuse_req_ctx_t *,
                   const fuse_file_info_t *,
                   int);
-  void *(*init)(struct fuse_conn_info *conn);
+  void *(*init)(fuse_conn_info_t *conn);
   void (*destroy)(void);
   int (*access)(const fuse_req_ctx_t *,
                 const char *,

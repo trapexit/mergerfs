@@ -43,19 +43,6 @@ struct fuse_notify_req
   struct fuse_notify_req *prev;
 };
 
-struct fuse_ll
-{
-  struct fuse_lowlevel_ops op;
-  void *userdata;
-  uid_t owner;
-  struct fuse_conn_info conn;
-  pthread_mutex_t lock;
-  int got_init;
-  int got_destroy;
-  uint64_t notify_ctr;
-  struct fuse_notify_req notify_list;
-};
-
 struct fuse_cmd
 {
   char *buf;
@@ -79,11 +66,6 @@ int fuse_chan_clearfd(struct fuse_chan *ch);
 
 void fuse_kern_unmount(const char *mountpoint, int fd);
 int fuse_kern_mount(const char *mountpoint, struct fuse_args *args);
-
-int fuse_send_reply_iov_nofree(fuse_req_t req, int error, struct iovec *iov,
-			       int count);
-void fuse_free_req(fuse_req_t req);
-
 
 struct fuse *fuse_setup_common(int argc,
                                char *argv[],

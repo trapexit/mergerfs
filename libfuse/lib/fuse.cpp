@@ -21,7 +21,7 @@
 #include "node.hpp"
 
 #include "fuse_cfg.hpp"
-#include "fuse_req.h"
+#include "fuse_req.hpp"
 #include "fuse_dirents.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -1323,8 +1323,8 @@ reply_entry(fuse_req_t                    *req_,
 
 static
 void
-fuse_lib_init(void                  *data,
-              struct fuse_conn_info *conn)
+fuse_lib_init(void             *data,
+              fuse_conn_info_t *conn)
 {
   f.ops.init(conn);
 }
@@ -1747,7 +1747,7 @@ fuse_lib_mknod(fuse_req_t            *req_,
   arg  = (fuse_mknod_in*)fuse_hdr_arg(hdr_);
   name = (const char*)PARAM(arg);
 
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
   else
     name = (char*)arg + FUSE_COMPAT_MKNOD_IN_SIZE;
@@ -1803,7 +1803,7 @@ fuse_lib_mkdir(fuse_req_t            *req_,
 
   arg  = (fuse_mkdir_in*)fuse_hdr_arg(hdr_);
   name = (const char*)PARAM(arg);
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
 
   err = get_path_name(hdr_->nodeid,name,&fusepath);
@@ -2040,7 +2040,7 @@ fuse_lib_create(fuse_req_t            *req_,
 
   ffi.flags = arg->flags;
 
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
   else
     name = ((char*)arg + sizeof(struct fuse_open_in));
@@ -2194,7 +2194,7 @@ fuse_lib_read(fuse_req_t            *req_,
 
   arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
-  if(req_->f->conn.proto_minor >= 9)
+  if(req_->conn.proto_minor >= 9)
     {
       ffi.flags      = arg->flags;
       ffi.lock_owner = arg->lock_owner;
@@ -2229,7 +2229,7 @@ fuse_lib_write(fuse_req_t            *req_,
   arg     = (fuse_write_in*)fuse_hdr_arg(hdr_);
   ffi.fh  = arg->fh;
   ffi.writepage = !!(arg->write_flags & 1);
-  if(req_->f->conn.proto_minor < 9)
+  if(req_->conn.proto_minor < 9)
     {
       data = ((char*)arg) + FUSE_COMPAT_WRITE_IN_SIZE;
     }
@@ -2549,8 +2549,8 @@ fuse_lib_setxattr(fuse_req_t            *req_,
   struct fuse_setxattr_in *arg;
 
   arg = (fuse_setxattr_in*)fuse_hdr_arg(hdr_);
-  if((req_->f->conn.capable & FUSE_SETXATTR_EXT) &&
-     (req_->f->conn.want & FUSE_SETXATTR_EXT))
+  if((req_->conn.capable & FUSE_SETXATTR_EXT) &&
+     (req_->conn.want & FUSE_SETXATTR_EXT))
     name = (const char*)PARAM(arg);
   else
     name = (((char*)arg) + FUSE_COMPAT_SETXATTR_IN_SIZE);
@@ -2791,7 +2791,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
 
   ffi.flags = arg->flags;
 
-  if(req_->f->conn.proto_minor >= 12)
+  if(req_->conn.proto_minor >= 12)
     req_->ctx.umask = arg->umask;
   else
     name = (char*)arg + sizeof(struct fuse_open_in);
@@ -3035,7 +3035,7 @@ fuse_lib_release(fuse_req_t            *req_,
   arg = (fuse_release_in*)fuse_hdr_arg(hdr_);
   ffi.fh    = arg->fh;
   ffi.flags = arg->flags;
-  if(req_->f->conn.proto_minor >= 8)
+  if(req_->conn.proto_minor >= 8)
     {
       ffi.flush      = !!(arg->release_flags & FUSE_RELEASE_FLUSH);
       ffi.lock_owner = arg->lock_owner;
@@ -3073,7 +3073,7 @@ fuse_lib_flush(fuse_req_t             *req_,
 
   ffi.fh = arg->fh;
   ffi.flush = 1;
-  if(req_->f->conn.proto_minor >= 7)
+  if(req_->conn.proto_minor >= 7)
     ffi.lock_owner = arg->lock_owner;
 
   err = fuse_flush_common(req_,hdr_->nodeid,&ffi);
@@ -3233,14 +3233,14 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
   const struct fuse_ioctl_in *arg;
 
   arg = (fuse_ioctl_in*)fuse_hdr_arg(hdr_);
-  if((arg->flags & FUSE_IOCTL_DIR) && !(req_->f->conn.want & FUSE_CAP_IOCTL_DIR))
+  if((arg->flags & FUSE_IOCTL_DIR) && !(req_->conn.want & FUSE_CAP_IOCTL_DIR))
     {
       fuse_reply_err(req_,ENOTTY);
       return;
     }
 
   if((sizeof(void*) == 4)              &&
-     (req_->f->conn.proto_minor >= 16) &&
+     (req_->conn.proto_minor >= 16) &&
      !(arg->flags & FUSE_IOCTL_32BIT))
     {
       req_->ioctl_64bit = 1;
@@ -3314,7 +3314,6 @@ fuse_lib_poll(fuse_req_t                  *req_,
 
       ph->kh = arg->kh;
       ph->ch = req_->ch;
-      ph->f  = req_->f;
     }
 
   err = f.ops.poll(&req_->ctx,
