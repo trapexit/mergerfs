@@ -3,7 +3,7 @@
 #include "extern_c.h"
 #include "fuse_common.h"
 #include "fuse_kernel.h"
-#include "fuse_req.h"
+#include "fuse_req.hpp"
 
 #include <fcntl.h>
 #include <stdint.h>
@@ -119,7 +119,7 @@ struct fuse_lowlevel_ops
   void (*getattr)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*getlk)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*getxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
-  void (*init)(void *userdata, struct fuse_conn_info *conn);
+  void (*init)(void *userdata, fuse_conn_info_t *conn);
   void (*ioctl)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*link)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*listxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
