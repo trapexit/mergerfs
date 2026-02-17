@@ -123,12 +123,12 @@ test_str_stuff()
 void
 test_config_branches()
 {
-  uint64_t minfreespace;
-  Branches b(minfreespace);
+  uint64_t minfreespace = 1234;
+  Branches b;
+  b.minfreespace = minfreespace;
   Branches::Ptr bcp0;
   Branches::Ptr bcp1;
 
-  minfreespace = 1234;
   TEST_CHECK(b->minfreespace() == 1234);
   TEST_CHECK(b.to_string() == "");
 
