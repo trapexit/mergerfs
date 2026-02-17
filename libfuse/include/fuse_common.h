@@ -135,25 +135,24 @@ struct fuse_pollhandle_t;
 typedef struct fuse_pollhandle_t fuse_pollhandle_t;
 
 /**
- * Create a FUSE mountpoint
+ * Mount a FUSE filesystem.
  *
- * Returns a control file descriptor suitable for passing to
- * fuse_new()
+ * This function creates a FUSE mount and returns the /dev/fuse file descriptor.
+ * The file descriptor is stored in the session for internal use.
  *
  * @param mountpoint the mount point path
  * @param args argument vector
- * @return the communication channel on success, NULL on failure
+ * @return the /dev/fuse file descriptor on success, -1 on failure
  */
-struct fuse_chan *fuse_mount(const char       *mountpoint,
-                             struct fuse_args *args);
+int fuse_mount(const char *mountpoint, struct fuse_args *args);
 
 /**
  * Umount a FUSE mountpoint
  *
  * @param mountpoint the mount point path
- * @param ch the communication channel
+ * @param fd the /dev/fuse file descriptor (or -1 if already closed)
  */
-void fuse_unmount(const char *mountpoint, struct fuse_chan *ch);
+void fuse_unmount(const char *mountpoint, int fd);
 
 /**
  * Parse common options

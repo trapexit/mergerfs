@@ -273,14 +273,16 @@ struct fuse_operations
  * Create a new FUSE filesystem.
  *
  * @param ch the communication channel
+ * @param fd the /dev/fuse file descriptor
+ * @param bufsize the buffer size for FUSE communication
  * @param args argument vector
  * @param op the filesystem operations
- * @param op_size the size of the fuse_operations structure
  * @return the created FUSE handle
  */
-struct fuse *fuse_new(struct fuse_chan *ch,
-                      struct fuse_args *args,
-                      const struct fuse_operations *op);
+struct fuse *fuse_new(int fd,
+                       size_t bufsize,
+                       struct fuse_args *args,
+                       const struct fuse_operations *op);
 
 /**
  * Destroy the FUSE handle.

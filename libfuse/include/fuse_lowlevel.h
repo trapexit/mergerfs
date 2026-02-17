@@ -29,13 +29,7 @@ EXTERN_C_BEGIN
  */
 struct fuse_session;
 
-/**
- * Channel
- *
- * A communication channel, providing hooks for sending and receiving
- * messages
- */
-struct fuse_chan;
+
 
 /** Directory entry parameters supplied to fuse_reply_entry() */
 struct fuse_entry_param
@@ -425,14 +419,14 @@ int fuse_lowlevel_notify_poll(fuse_pollhandle_t *ph);
 /**
  * Notify to invalidate cache for an inode
  *
- * @param ch the channel through which to send the invalidation
+ * @param se the session through which to send the invalidation
  * @param ino the inode number
  * @param off the offset in the inode where to start invalidating
  *            or negative to invalidate attributes only
  * @param len the amount of cache to invalidate or 0 for all
  * @return zero for success, -errno for failure
  */
-int fuse_lowlevel_notify_inval_inode(struct fuse_chan *ch, uint64_t ino,
+int fuse_lowlevel_notify_inval_inode(struct fuse_session *se, uint64_t ino,
                                      off_t off, off_t len);
 
 /**
@@ -443,13 +437,13 @@ int fuse_lowlevel_notify_inval_inode(struct fuse_chan *ch, uint64_t ino,
  * don't call it with a lock held that can also be held by a filesystem
  * operation.
  *
- * @param ch the channel through which to send the invalidation
+ * @param se the session through which to send the invalidation
  * @param parent inode number
  * @param name file name
  * @param namelen strlen() of file name
  * @return zero for success, -errno for failure
  */
-int fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch, uint64_t parent,
+int fuse_lowlevel_notify_inval_entry(struct fuse_session *se, uint64_t parent,
                                      const char *name, size_t namelen);
 
 /**
@@ -461,14 +455,14 @@ int fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch, uint64_t parent,
  * don't call it with a lock held that can also be held by a filesystem
  * operation.
  *
- * @param ch the channel through which to send the notification
+ * @param se the session through which to send the notification
  * @param parent inode number
  * @param child inode number
  * @param name file name
  * @param namelen strlen() of file name
  * @return zero for success, -errno for failure
  */
-int fuse_lowlevel_notify_delete(struct fuse_chan *ch,
+int fuse_lowlevel_notify_delete(struct fuse_session *se,
                                 uint64_t parent, uint64_t child,
                                 const char *name, size_t namelen);
 
@@ -490,14 +484,14 @@ int fuse_lowlevel_notify_delete(struct fuse_chan *ch,
  * buffer.  For dirty pages the write() method will be called
  * regardless of having been retrieved previously.
  *
- * @param ch the channel through which to send the invalidation
+ * @param se the session through which to send the invalidation
  * @param ino the inode number
  * @param size the number of bytes to retrieve
  * @param offset the starting offset into the file to retrieve from
  * @param cookie user data to supply to the reply callback
  * @return zero for success, -errno for failure
  */
-int fuse_lowlevel_notify_retrieve(struct fuse_chan *ch, uint64_t ino,
+int fuse_lowlevel_notify_retrieve(struct fuse_session *se, uint64_t ino,
                                   size_t size, off_t offset, void *cookie);
 
 
@@ -554,8 +548,6 @@ struct fuse_session *fuse_session_new(void *data,
                                       void *receive_buf,
                                       void *process_buf,
                                       void *destroy);
-void fuse_session_add_chan(struct fuse_session *se, struct fuse_chan *ch);
-void fuse_session_remove_chan(struct fuse_chan *ch);
 void fuse_session_destroy(struct fuse_session *se);
 void fuse_session_exit(struct fuse_session *se);
 int fuse_session_exited(struct fuse_session *se);
@@ -573,44 +565,12 @@ int fuse_session_loop_mt(struct fuse_session *se,
                          const int            process_thread_queue_depth,
                          const char          *pin_threads_type);
 
-/* ----------------------------------------------------------- *
- * Channel interface					       *
- * ----------------------------------------------------------- */
-
-struct fuse_chan *fuse_chan_new(int fd, size_t bufsize);
-
-/**
- * Query the file descriptor of the channel
- *
- * @param ch the channel
- * @return the file descriptor passed to fuse_chan_new()
- */
-int fuse_chan_fd(struct fuse_chan *ch);
-
-/**
- * Query the minimal receive buffer size
- *
- * @param ch the channel
- * @return the buffer size passed to fuse_chan_new()
- */
-size_t fuse_chan_bufsize(struct fuse_chan *ch);
-
-/**
- * Query the user data
- *
- * @param ch the channel
- * @return the user data passed to fuse_chan_new()
- */
-void *fuse_chan_data(struct fuse_chan *ch);
-
-/**
- * Query the session to which this channel is assigned
- *
- * @param ch the channel
- * @return the session, or NULL if the channel is not assigned
- */
-struct fuse_session *fuse_chan_session(struct fuse_chan *ch);
-
-void fuse_chan_destroy(struct fuse_chan *ch);
+/* Direct file descriptor and buffer size accessors
+ * (channel fields inlined into session for single-mount simplicity) */
+int fuse_session_fd(struct fuse_session *se);
+size_t fuse_session_bufsize(struct fuse_session *se);
+int fuse_session_clearfd(struct fuse_session *se);
+void fuse_session_setfd(struct fuse_session *se, int fd);
+void fuse_session_setbufsize(struct fuse_session *se, size_t bufsize);
 
 EXTERN_C_END

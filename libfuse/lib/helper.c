@@ -194,14 +194,14 @@ int fuse_daemonize(int foreground)
 }
 
 static
-struct fuse_chan *
+int
 fuse_mount_common(const char       *mountpoint_,
-                  struct fuse_args *args_)
+                  struct fuse_args *args_,
+                  size_t           *bufsize_)
 {
   int fd;
   long bufsize;
   long pagesize;
-  struct fuse_chan *ch;
 
   /*
    * Make sure file descriptors 0, 1 and 2 are open, otherwise chaos
@@ -216,38 +216,34 @@ fuse_mount_common(const char       *mountpoint_,
 
   fd = fuse_kern_mount(mountpoint_,args_);
   if(fd == -1)
-    return NULL;
+    return -1;
 
   pagesize = sysconf(_SC_PAGESIZE);
   bufsize  = ((FUSE_DEFAULT_MAX_MAX_PAGES + 1) * pagesize);
 
-  ch = fuse_chan_new(fd,bufsize);
-  if(!ch)
-    fuse_kern_unmount(mountpoint_, fd);
+  if (bufsize_)
+    *bufsize_ = bufsize;
 
-  return ch;
+  return fd;
 }
 
-struct fuse_chan *
+int
 fuse_mount(const char       *mountpoint_,
            struct fuse_args *args_)
 {
-  return fuse_mount_common(mountpoint_,args_);
+  return fuse_mount_common(mountpoint_,args_,NULL);
 }
 
-static void fuse_unmount_common(const char *mountpoint, struct fuse_chan *ch)
+static void fuse_unmount_common(const char *mountpoint, int fd)
 {
-  if (mountpoint) {
-    int fd = ch ? fuse_chan_clearfd(ch) : -1;
+  if (mountpoint && fd != -1) {
     fuse_kern_unmount(mountpoint, fd);
-    if (ch)
-      fuse_chan_destroy(ch);
   }
 }
 
-void fuse_unmount(const char *mountpoint, struct fuse_chan *ch)
+void fuse_unmount(const char *mountpoint, int fd)
 {
-  fuse_unmount_common(mountpoint, ch);
+  fuse_unmount_common(mountpoint, fd);
 }
 
 struct fuse*
@@ -258,7 +254,8 @@ fuse_setup_common(int argc,
                   int *fd)
 {
   struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
-  struct fuse_chan *ch;
+  int fuse_fd;
+  size_t bufsize;
   struct fuse *fuse;
   int foreground;
   int res;
@@ -267,13 +264,13 @@ fuse_setup_common(int argc,
   if (res == -1)
     return NULL;
 
-  ch = fuse_mount_common(*mountpoint, &args);
-  if (!ch) {
+  fuse_fd = fuse_mount_common(*mountpoint, &args, &bufsize);
+  if (fuse_fd == -1) {
     fuse_opt_free_args(&args);
     goto err_free;
   }
 
-  fuse = fuse_new(ch, &args, op);
+  fuse = fuse_new(fuse_fd, bufsize, &args, op);
   fuse_opt_free_args(&args);
   if (fuse == NULL)
     goto err_unmount;
@@ -287,12 +284,12 @@ fuse_setup_common(int argc,
     goto err_unmount;
 
   if (fd)
-    *fd = fuse_chan_fd(ch);
+    *fd = fuse_fd;
 
   return fuse;
 
  err_unmount:
-  fuse_unmount_common(*mountpoint, ch);
+  fuse_unmount_common(*mountpoint, fuse_fd);
  err_free:
   free(*mountpoint);
   return NULL;
@@ -313,9 +310,12 @@ struct fuse *fuse_setup(int argc,
 static void fuse_teardown_common(char *mountpoint)
 {
   struct fuse_session *se = fuse_get_session();
-  struct fuse_chan *ch = se->ch;
+  int fd = se ? se->fd : -1;
   fuse_remove_signal_handlers(se);
-  fuse_unmount_common(mountpoint, ch);
+  if (mountpoint && fd != -1) {
+    se->fd = -1;
+    fuse_kern_unmount(mountpoint, fd);
+  }
   free(mountpoint);
 }
 

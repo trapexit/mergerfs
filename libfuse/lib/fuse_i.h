@@ -14,9 +14,13 @@
 
 #include "extern_c.h"
 
-struct fuse_chan;
 struct fuse_ll;
 
+/* Simplified fuse_session - fields inlined from former fuse_chan
+ * Since mergerfs only supports one mount, we collapse the hierarchy:
+ * fuse_session -> fuse_chan -> fd
+ * into a single structure with direct fields.
+ */
 struct fuse_session
 {
   int (*receive_buf)(struct fuse_session *se,
@@ -29,7 +33,10 @@ struct fuse_session
 
   struct fuse_ll *f;
   volatile int exited;
-  struct fuse_chan *ch;
+
+  /* Formerly in fuse_chan - inlined for single-mount simplicity */
+  int fd;            /* /dev/fuse file descriptor */
+  size_t bufsize;    /* Buffer size for I/O operations */
 };
 
 struct fuse_notify_req
@@ -43,26 +50,22 @@ struct fuse_notify_req
   struct fuse_notify_req *prev;
 };
 
-struct fuse_cmd
-{
-  char *buf;
-  size_t buflen;
-  struct fuse_chan *ch;
-};
+
 
 EXTERN_C_BEGIN
 
-struct fuse *fuse_new_common(struct fuse_chan *ch,
-                             struct fuse_args *args,
+struct fuse *fuse_new_common(int                fd,
+                             size_t             bufsize,
+                             struct fuse_args  *args,
 			     const struct fuse_operations *op);
 
-struct fuse_chan *fuse_kern_chan_new(int fd);
+
 
 struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
                                               const struct fuse_lowlevel_ops *op,
                                               size_t op_size, void *userdata);
 
-int fuse_chan_clearfd(struct fuse_chan *ch);
+
 
 void fuse_kern_unmount(const char *mountpoint, int fd);
 int fuse_kern_mount(const char *mountpoint, struct fuse_args *args);

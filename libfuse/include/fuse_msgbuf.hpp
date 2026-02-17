@@ -21,16 +21,16 @@
 #include "base_types.h"
 #include "fuse_msgbuf_t.h"
 
-u32      msgbuf_get_pagesize();
-void     msgbuf_set_bufsize(const uint32_t size);
-uint64_t msgbuf_get_bufsize();
+u32  msgbuf_get_pagesize();
+void msgbuf_set_bufsize(const u64 size);
+u64  msgbuf_get_bufsize();
 
 fuse_msgbuf_t *msgbuf_alloc();
 fuse_msgbuf_t *msgbuf_alloc_page_aligned();
 void           msgbuf_free(fuse_msgbuf_t *msgbuf);
 
-void           msgbuf_gc();
-void           msgbuf_gc_10percent();
+void msgbuf_gc();
+void msgbuf_gc_10percent();
 
-uint64_t       msgbuf_alloc_count();
-uint64_t       msgbuf_avail_count();
+u64 msgbuf_alloc_count();
+u64 msgbuf_avail_count();
