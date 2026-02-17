@@ -22,22 +22,22 @@
 
 #include <unistd.h>
 
+#include <cassert>
 #include <atomic>
-#include <cstdint>
 #include <cstdlib>
 #include <mutex>
 #include <vector>
 
 
-static std::uint32_t g_PAGESIZE = 0;
-static std::uint32_t g_BUFSIZE  = 0;
+static u32 g_PAGESIZE = 0;
+static u64 g_BUFSIZE  = 0;
 
-static std::atomic<std::uint_fast64_t> g_MSGBUF_ALLOC_COUNT;
+static std::atomic<std::uint_fast64_t> g_MSGBUF_ALLOC_COUNT = 0;
 
 static std::mutex g_MUTEX;
 static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
 
-uint64_t
+u64
 msgbuf_get_bufsize()
 {
   return g_BUFSIZE;
@@ -54,7 +54,7 @@ msgbuf_get_pagesize()
 // aligned. +1 again for fuse header as the max_pages value is for the
 // body.
 void
-msgbuf_set_bufsize(const uint32_t size_in_pages_)
+msgbuf_set_bufsize(const u64 size_in_pages_)
 {
   g_BUFSIZE = ((size_in_pages_ + 2) * g_PAGESIZE);
 }
@@ -84,7 +84,14 @@ __attribute__((constructor))
 void
 _msgbuf_constructor()
 {
-  g_PAGESIZE = sysconf(_SC_PAGESIZE);
+  long pagesize = sysconf(_SC_PAGESIZE);
+
+  assert(pagesize > 0);
+  g_PAGESIZE = pagesize;
+
+  // Ensure fuse headers fit within a single page for O_DIRECT alignment
+  assert((sizeof(struct fuse_in_header) + sizeof(struct fuse_write_in))
+         < g_PAGESIZE);
 
   msgbuf_set_bufsize(FUSE_DEFAULT_MAX_MAX_PAGES);
 }
@@ -94,17 +101,17 @@ __attribute__((destructor))
 void
 _msgbuf_destructor()
 {
-
+  msgbuf_gc();
 }
 
 static
 void*
-_page_aligned_malloc(const uint64_t size_)
+_page_aligned_malloc(const u64 size_in_bytes_)
 {
   int rv;
   void *buf = NULL;
 
-  rv = posix_memalign(&buf,g_PAGESIZE,size_);
+  rv = posix_memalign(&buf,g_PAGESIZE,size_in_bytes_);
   if(rv != 0)
     return NULL;
 
@@ -167,26 +174,30 @@ msgbuf_destroy(fuse_msgbuf_t *msgbuf_)
 void
 msgbuf_free(fuse_msgbuf_t *msgbuf_)
 {
-  std::lock_guard<std::mutex> lck(g_MUTEX);
+  bool destroy;
 
-  if(msgbuf_->size != (g_BUFSIZE - g_PAGESIZE))
+  {
+    std::lock_guard<std::mutex> lck(g_MUTEX);
+
+    destroy = (msgbuf_->size != (g_BUFSIZE - g_PAGESIZE));
+    if(!destroy)
+      g_MSGBUF_STACK.emplace_back(msgbuf_);
+  }
+
+  if(destroy)
     {
       msgbuf_destroy(msgbuf_);
       g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
-      return;
     }
-
-  g_MSGBUF_STACK.emplace_back(msgbuf_);
-
 }
 
-uint64_t
+u64
 msgbuf_alloc_count()
 {
   return g_MSGBUF_ALLOC_COUNT;
 }
 
-uint64_t
+u64
 msgbuf_avail_count()
 {
   std::lock_guard<std::mutex> lck(g_MUTEX);

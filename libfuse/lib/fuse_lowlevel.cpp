@@ -102,16 +102,16 @@ iov_length(const struct iovec *iov,
 
 static
 int
-fuse_send_msg(struct fuse_chan *ch,
-              struct iovec     *iov,
-              int               count)
+fuse_send_msg(struct fuse_session *se,
+              struct iovec        *iov,
+              int                  count)
 {
   int rv;
   struct fuse_out_header *out = (fuse_out_header*)iov[0].iov_base;
 
   out->len = iov_length(iov, count);
 
-  rv = writev(fuse_chan_fd(ch),iov,count);
+  rv = writev(se->fd,iov,count);
   if(rv == -1)
     return -errno;
 
@@ -143,7 +143,7 @@ fuse_send_reply_iov_nofree(fuse_req_t   *req,
   iov[0].iov_base = &out;
   iov[0].iov_len  = sizeof(struct fuse_out_header);
 
-  return fuse_send_msg(req->ch, iov, count);
+  return fuse_send_msg(req->se, iov, count);
 }
 
 static
@@ -424,7 +424,7 @@ fuse_reply_data(fuse_req_t   *req,
   if(fuse_cfg.debug)
     fuse_debug_data_out(req->ctx.unique,bufsize_);
 
-  res = fuse_send_msg(req->ch,iov,2);
+  res = fuse_send_msg(req->se,iov,2);
   if(res <= 0)
     {
       fuse_req_free(req);
@@ -1077,7 +1077,7 @@ do_init(fuse_req_t            *req,
 
   max_write = UINT_MAX;
   max_readahead = UINT_MAX;
-  bufsize = fuse_chan_bufsize(req->ch);
+  bufsize = req->se->bufsize;
 
   inargflags = 0;
   outargflags = 0;
@@ -1421,10 +1421,10 @@ do_lseek(fuse_req_t            *req_,
 
 static
 int
-send_notify_iov(struct fuse_chan *ch,
-                int               notify_code,
-                struct iovec     *iov,
-                int               count)
+send_notify_iov(struct fuse_session *se,
+                int                  notify_code,
+                struct iovec        *iov,
+                int                  count)
 {
   struct fuse_out_header out;
 
@@ -1436,7 +1436,7 @@ send_notify_iov(struct fuse_chan *ch,
   iov[0].iov_base = &out;
   iov[0].iov_len = sizeof(struct fuse_out_header);
 
-  return fuse_send_msg(ch, iov, count);
+  return fuse_send_msg(se, iov, count);
 }
 
 int
@@ -1452,7 +1452,7 @@ fuse_lowlevel_notify_poll(fuse_pollhandle_t *ph)
       iov[1].iov_base = &outarg;
       iov[1].iov_len = sizeof(outarg);
 
-      return send_notify_iov(ph->ch, FUSE_NOTIFY_POLL, iov, 2);
+      return send_notify_iov(ph->se, FUSE_NOTIFY_POLL, iov, 2);
     }
   else
     {
@@ -1461,15 +1461,15 @@ fuse_lowlevel_notify_poll(fuse_pollhandle_t *ph)
 }
 
 int
-fuse_lowlevel_notify_inval_inode(struct fuse_chan *ch,
-                                 uint64_t          ino,
-                                 off_t             off,
-                                 off_t             len)
+fuse_lowlevel_notify_inval_inode(struct fuse_session *se,
+                                 uint64_t             ino,
+                                 off_t                off,
+                                 off_t                len)
 {
   struct fuse_notify_inval_inode_out outarg;
   struct iovec iov[2];
 
-  if(!ch)
+  if(!se)
     return -EINVAL;
 
   outarg.ino = ino;
@@ -1479,19 +1479,19 @@ fuse_lowlevel_notify_inval_inode(struct fuse_chan *ch,
   iov[1].iov_base = &outarg;
   iov[1].iov_len  = sizeof(outarg);
 
-  return send_notify_iov(ch, FUSE_NOTIFY_INVAL_INODE, iov, 2);
+  return send_notify_iov(se, FUSE_NOTIFY_INVAL_INODE, iov, 2);
 }
 
 int
-fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch,
-                                 uint64_t          parent,
-                                 const char       *name,
-                                 size_t            namelen)
+fuse_lowlevel_notify_inval_entry(struct fuse_session *se,
+                                 uint64_t             parent,
+                                 const char          *name,
+                                 size_t               namelen)
 {
   struct fuse_notify_inval_entry_out outarg;
   struct iovec iov[3];
 
-  if(!ch)
+  if(!se)
     return -EINVAL;
 
   outarg.parent  = parent;
@@ -1504,20 +1504,20 @@ fuse_lowlevel_notify_inval_entry(struct fuse_chan *ch,
   iov[2].iov_base = (void *)name;
   iov[2].iov_len = namelen + 1;
 
-  return send_notify_iov(ch, FUSE_NOTIFY_INVAL_ENTRY, iov, 3);
+  return send_notify_iov(se, FUSE_NOTIFY_INVAL_ENTRY, iov, 3);
 }
 
 int
-fuse_lowlevel_notify_delete(struct fuse_chan *ch,
-                            uint64_t          parent,
-                            uint64_t          child,
-                            const char       *name,
-                            size_t            namelen)
+fuse_lowlevel_notify_delete(struct fuse_session *se,
+                            uint64_t             parent,
+                            uint64_t             child,
+                            const char          *name,
+                            size_t               namelen)
 {
   struct fuse_notify_delete_out outarg;
   struct iovec iov[3];
 
-  if(!ch)
+  if(!se)
     return -EINVAL;
 
   if(f.conn.proto_minor < 18)
@@ -1533,7 +1533,7 @@ fuse_lowlevel_notify_delete(struct fuse_chan *ch,
   iov[2].iov_base = (void *)name;
   iov[2].iov_len = namelen + 1;
 
-  return send_notify_iov(ch, FUSE_NOTIFY_DELETE, iov, 3);
+  return send_notify_iov(se, FUSE_NOTIFY_DELETE, iov, 3);
 }
 
 struct fuse_retrieve_req
@@ -1558,18 +1558,18 @@ fuse_ll_retrieve_reply(struct fuse_notify_req *nreq,
 }
 
 int
-fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
-                              uint64_t          ino,
-                              size_t            size,
-                              off_t             offset,
-                              void             *cookie)
+fuse_lowlevel_notify_retrieve(struct fuse_session *se,
+                                uint64_t             ino,
+                                size_t               size,
+                                off_t                offset,
+                                void                *cookie)
 {
   struct fuse_notify_retrieve_out outarg;
   struct iovec iov[2];
   struct fuse_retrieve_req *rreq;
   int err;
 
-  if(!ch)
+  if(!se)
     return -EINVAL;
 
   if(f.conn.proto_minor < 15)
@@ -1594,7 +1594,7 @@ fuse_lowlevel_notify_retrieve(struct fuse_chan *ch,
   iov[1].iov_base = &outarg;
   iov[1].iov_len = sizeof(outarg);
 
-  err = send_notify_iov(ch, FUSE_NOTIFY_RETRIEVE, iov, 2);
+  err = send_notify_iov(se, FUSE_NOTIFY_RETRIEVE, iov, 2);
   if(err)
     {
       mutex_lock(&f.lock);
@@ -1685,9 +1685,9 @@ fuse_ll_destroy(void *data)
 
 static
 void
-fuse_send_errno(struct fuse_chan *ch_,
-                const int         errno_,
-                const uint64_t    unique_id_)
+fuse_send_errno(struct fuse_session *se_,
+                const int            errno_,
+                const uint64_t       unique_id_)
 {
   struct fuse_out_header out = {};
   struct iovec           iov = {};
@@ -1701,15 +1701,15 @@ fuse_send_errno(struct fuse_chan *ch_,
   if(fuse_cfg.debug)
     fuse_debug_out_header(&out);
 
-  fuse_send_msg(ch_,&iov,1);
+  fuse_send_msg(se_,&iov,1);
 }
 
 static
 void
-fuse_send_enomem(struct fuse_chan *ch_,
-                 const uint64_t    unique_id_)
+fuse_send_enomem(struct fuse_session *se_,
+                 const uint64_t       unique_id_)
 {
-  fuse_send_errno(ch_,ENOMEM,unique_id_);
+  fuse_send_errno(se_,ENOMEM,unique_id_);
 }
 
 // static
@@ -1728,7 +1728,7 @@ fuse_ll_buf_receive_read(struct fuse_session *se_,
 {
   int rv;
 
-  rv = read(fuse_chan_fd(se_->ch),msgbuf_->mem,msgbuf_->size);
+  rv = read(se_->fd,msgbuf_->mem,msgbuf_->size);
   if(rv == -1)
     return -errno;
 
@@ -1757,7 +1757,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
 
   req = fuse_req_alloc();
   if(req == NULL)
-    return fuse_send_enomem(se_->ch,in->unique);
+    return fuse_send_enomem(se_,in->unique);
 
   req->ctx.len    = in->len;
   req->ctx.opcode = in->opcode;
@@ -1768,7 +1768,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   req->ctx.pid    = in->pid;
   req->ctx.umask  = 0;
   req->conn       = f.conn;
-  req->ch         = se_->ch;
+  req->se         = se_;
 
   err = ENOSYS;
   if(in->opcode >= FUSE_MAXOPS)
@@ -1801,7 +1801,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
 
   req = fuse_req_alloc();
   if(req == NULL)
-    return fuse_send_enomem(se_->ch,in->unique);
+    return fuse_send_enomem(se_,in->unique);
 
   req->ctx.len    = in->len;
   req->ctx.opcode = in->opcode;
@@ -1811,7 +1811,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   req->ctx.gid    = in->gid;
   req->ctx.pid    = in->pid;
   req->ctx.umask  = 0;
-  req->ch         = se_->ch;
+  req->se         = se_;
 
   err = EIO;
   if(in->opcode != FUSE_INIT)

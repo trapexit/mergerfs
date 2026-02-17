@@ -3313,7 +3313,7 @@ fuse_lib_poll(fuse_req_t                  *req_,
         }
 
       ph->kh = arg->kh;
-      ph->ch = req_->ch;
+      ph->se = req_->se;
     }
 
   err = f.ops.poll(&req_->ctx,
@@ -3708,7 +3708,7 @@ fuse_invalidate_all_nodes()
                names.size());
   for(auto &name : names)
     {
-      fuse_lowlevel_notify_inval_entry(f.se->ch,
+      fuse_lowlevel_notify_inval_entry(f.se,
                                        FUSE_ROOT_ID,
                                        name.c_str(),
                                        name.size());
@@ -3756,7 +3756,8 @@ fuse_populate_maintenance_thread(struct fuse *f_)
 }
 
 struct fuse*
-fuse_new(struct fuse_chan             *ch,
+fuse_new(int                           fd_,
+         size_t                        bufsize_,
          struct fuse_args             *args,
          const struct fuse_operations *ops_)
 {
@@ -3779,7 +3780,9 @@ fuse_new(struct fuse_chan             *ch,
   if(f.se == NULL)
     goto out_free_fs;
 
-  fuse_session_add_chan(f.se,ch);
+  /* Inlined channel fields - direct assignment */
+  f.se->fd = fd_;
+  f.se->bufsize = bufsize_;
 
   /* Trace topmost layer by default */
   srand(time(NULL));
@@ -3857,7 +3860,7 @@ fuse_passthrough_open(const int fd_)
   int dev_fuse_fd;
   struct fuse_backing_map bm = {};
 
-  dev_fuse_fd = fuse_chan_fd(f.se->ch);
+  dev_fuse_fd = f.se->fd;
   bm.fd       = fd_;
 
   rv = ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_OPEN,&bm);
@@ -3870,7 +3873,7 @@ fuse_passthrough_close(const int backing_id_)
 {
   int dev_fuse_fd;
 
-  dev_fuse_fd = fuse_chan_fd(f.se->ch);
+  dev_fuse_fd = f.se->fd;
 
   return ::ioctl(dev_fuse_fd,FUSE_DEV_IOC_BACKING_CLOSE,&backing_id_);
 }

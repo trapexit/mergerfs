@@ -4,7 +4,7 @@
 
   This program can be distributed under the terms of the GNU LGPLv2.
   See the file COPYING.LIB
-*/
+ */
 
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -17,15 +17,14 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
+/*
+ * Simplified session management for single-mount filesystems.
+ * The fuse_chan structure has been removed and its fields inlined
+ * into fuse_session (fd, bufsize) since mergerfs only supports
+ * one mount point per process.
+ */
 
-struct fuse_chan
-{
-  struct fuse_session *se;
-  int fd;
-  size_t bufsize;
-};
-
-struct fuse_session *
+struct fuse_session*
 fuse_session_new(void *data,
                  void *receive_buf,
                  void *process_buf,
@@ -42,38 +41,25 @@ fuse_session_new(void *data,
   se->receive_buf = receive_buf;
   se->process_buf = process_buf;
   se->destroy     = destroy;
+  se->fd          = -1;  /* Not yet mounted */
+  se->bufsize     = 0;
 
   return se;
-}
-
-void fuse_session_add_chan(struct fuse_session *se, struct fuse_chan *ch)
-{
-  assert(se->ch == NULL);
-  assert(ch->se == NULL);
-  se->ch = ch;
-  ch->se = se;
-}
-
-void fuse_session_remove_chan(struct fuse_chan *ch)
-{
-  struct fuse_session *se = ch->se;
-  if (se) {
-    assert(se->ch == ch);
-    se->ch = NULL;
-    ch->se = NULL;
-  }
 }
 
 void
 fuse_session_destroy(struct fuse_session *se)
 {
   se->destroy(se->f);
-  if(se->ch != NULL)
-    fuse_chan_destroy(se->ch);
+  if(se->fd != -1) {
+    close(se->fd);
+    se->fd = -1;
+  }
   free(se);
 }
 
-void fuse_session_reset(struct fuse_session *se)
+void
+fuse_session_reset(struct fuse_session *se)
 {
   se->exited = 0;
 }
@@ -96,59 +82,37 @@ fuse_session_data(struct fuse_session *se)
   return se->f;
 }
 
-struct fuse_chan *
-fuse_chan_new(int fd,
-              size_t bufsize)
+/* Direct accessors for inlined channel fields */
+int
+fuse_session_fd(struct fuse_session *se)
 {
-  struct fuse_chan *ch;
-
-  ch = (struct fuse_chan*)malloc(sizeof(*ch));
-  if(ch == NULL)
-    {
-      fprintf(stderr, "fuse: failed to allocate channel\n");
-      return NULL;
-    }
-
-  memset(ch, 0, sizeof(*ch));
-
-  ch->fd = fd;
-  ch->bufsize = bufsize;
-
-  return ch;
+  return se->fd;
 }
 
-int fuse_chan_fd(struct fuse_chan *ch)
+size_t
+fuse_session_bufsize(struct fuse_session *se)
 {
-  return ch->fd;
+  return se->bufsize;
 }
 
-int fuse_chan_clearfd(struct fuse_chan *ch)
+int
+fuse_session_clearfd(struct fuse_session *se)
 {
-  int fd = ch->fd;
-  ch->fd = -1;
+  int fd = se->fd;
+  se->fd = -1;
   return fd;
 }
 
-size_t fuse_chan_bufsize(struct fuse_chan *ch)
+void
+fuse_session_setfd(struct fuse_session *se,
+                   int                   fd)
 {
-  return ch->bufsize;
-}
-
-struct fuse_session *fuse_chan_session(struct fuse_chan *ch)
-{
-  return ch->se;
+  se->fd = fd;
 }
 
 void
-fuse_chan_destroy(struct fuse_chan *ch)
+fuse_session_setbufsize(struct fuse_session *se,
+                        size_t               bufsize)
 {
-  int fd;
-
-  fuse_session_remove_chan(ch);
-
-  fd = fuse_chan_fd(ch);
-  if(fd != -1)
-    close(fd);
-
-  free(ch);
+  se->bufsize = bufsize;
 }
