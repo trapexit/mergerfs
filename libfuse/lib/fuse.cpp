@@ -3583,25 +3583,12 @@ metrics_log_nodes_info(FILE *file_)
   struct tm tm;
   struct timeval tv;
   uint64_t sizeof_node;
-  float node_usage_ratio;
-  uint64_t node_slab_count;
-  uint64_t node_avail_objs;
-  uint64_t node_total_alloc_mem;
 
   gettimeofday(&tv,NULL);
   localtime_r(&tv.tv_sec,&tm);
   strftime(time_str,sizeof(time_str),"%Y-%m-%dT%H:%M:%S.000%z",&tm);
 
   sizeof_node = sizeof(node_t);
-
-  lfmp_t *lfmp;
-  lfmp = node_lfmp();
-  lfmp_lock(lfmp);
-  node_slab_count = fmp_slab_count(&lfmp->fmp);
-  node_usage_ratio = fmp_slab_usage_ratio(&lfmp->fmp);
-  node_avail_objs = fmp_avail_objs(&lfmp->fmp);
-  node_total_alloc_mem = fmp_total_allocated_memory(&lfmp->fmp);
-  lfmp_unlock(lfmp);
 
   snprintf(buf,sizeof(buf),
            "time: %s\n"
@@ -3612,10 +3599,6 @@ metrics_log_nodes_info(FILE *file_)
            "node name_table size: %" PRIu64 "\n"
            "node name_table usage: %" PRIu64 "\n"
            "node name_table total allocated memory: %" PRIu64 "\n"
-           "node memory pool slab count: %" PRIu64 "\n"
-           "node memory pool usage ratio: %f\n"
-           "node memory pool avail objs: %" PRIu64 "\n"
-           "node memory pool total allocated memory: %" PRIu64 "\n"
            "msgbuf bufsize: %" PRIu64 "\n"
            "msgbuf allocation count: %" PRIu64 "\n"
            "msgbuf available count: %" PRIu64 "\n"
@@ -3630,10 +3613,6 @@ metrics_log_nodes_info(FILE *file_)
            (uint64_t)f.name_table.size,
            (uint64_t)f.name_table.use,
            (uint64_t)(f.name_table.size * sizeof(node_t*)),
-           node_slab_count,
-           node_usage_ratio,
-           node_avail_objs,
-           node_total_alloc_mem,
            msgbuf_get_bufsize(),
            msgbuf_alloc_count(),
            msgbuf_avail_count(),
@@ -3719,7 +3698,7 @@ void
 fuse_gc()
 {
   SysLog::info("running thorough garbage collection");
-  node_gc();
+  node_clear();
   msgbuf_gc();
   fuse_malloc_trim();
 }
@@ -3728,7 +3707,7 @@ void
 fuse_gc1()
 {
   SysLog::info("running basic garbage collection");
-  node_gc1();
+  node_gc();
   msgbuf_gc_10percent();
   fuse_malloc_trim();
 }
