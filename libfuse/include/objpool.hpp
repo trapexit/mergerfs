@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <atomic>
 #include <mutex>
 #include <new>
 #include <utility>
@@ -45,6 +47,7 @@ private:
 private:
   std::mutex _mtx;
   Node *_head = nullptr;
+  std::atomic<size_t> _pooled_count{0};
 
 public:
   ObjPool() = default;
@@ -66,7 +69,10 @@ private:
 
     Node *node = _head;
     if(node)
-      _head = node->next;
+      {
+        _head = node->next;
+        _pooled_count.fetch_sub(1, std::memory_order_relaxed);
+      }
 
     return node;
   }
@@ -78,6 +84,7 @@ private:
 
     node_->next = _head;
     _head = node_;
+    _pooled_count.fetch_add(1, std::memory_order_relaxed);
   }
 
 public:
@@ -90,6 +97,7 @@ public:
       std::lock_guard<std::mutex> lock(_mtx);
       head  = _head;
       _head = nullptr;
+      _pooled_count.store(0, std::memory_order_relaxed);
     }
 
     while(head)
@@ -132,5 +140,26 @@ public:
     obj_->~T();
 
     _push_node(to_node(obj_));
+  }
+
+  size_t
+  size() const noexcept
+  {
+    return _pooled_count.load(std::memory_order_relaxed);
+  }
+
+  void
+  gc() noexcept
+  {
+    size_t count = _pooled_count.load(std::memory_order_relaxed);
+    size_t to_free = std::max(count / 10, size_t{1});
+
+    for(size_t i = 0; i < to_free; ++i)
+      {
+        Node *node = _pop_node();
+        if(not node)
+          break;
+        ::operator delete(node, std::align_val_t{alignof(T)});
+      }
   }
 };
