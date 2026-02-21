@@ -1,9 +1,10 @@
 #include "maintenance_thread.hpp"
 
+#include "mutex.hpp"
+
 #include "fmt/core.h"
 
 #include <cassert>
-#include <mutex>
 #include <vector>
 
 #include <pthread.h>
@@ -12,7 +13,7 @@
 
 pthread_t g_thread;
 std::vector<std::function<void(int)>> g_funcs;
-std::mutex g_mutex;
+mutex_t g_mutex;
 
 static
 void*
@@ -27,7 +28,7 @@ _thread_loop(void *)
     {
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
       {
-        std::lock_guard<std::mutex> lg(g_mutex);
+        LockGuard lg(g_mutex);
         for(auto &func : g_funcs)
           func(count);
       }
@@ -52,7 +53,7 @@ MaintenanceThread::setup()
 void
 MaintenanceThread::push_job(const std::function<void(int)> &func_)
 {
-  std::lock_guard<std::mutex> lg(g_mutex);
+  LockGuard lg(g_mutex);
 
   g_funcs.emplace_back(func_);
 }

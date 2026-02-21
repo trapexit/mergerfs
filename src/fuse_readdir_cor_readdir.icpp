@@ -36,7 +36,7 @@ _readdir(const fs::path &branch_path_,
          const fs::path &rel_dirpath_,
          HashSet        &names_,
          fuse_dirents_t *dirents_,
-         std::mutex     &mutex_)
+         mutex_t        &mutex_)
 {
   DIR *dir;
   fs::path rel_filepath;
@@ -53,7 +53,7 @@ _readdir(const fs::path &branch_path_,
   rel_filepath = rel_dirpath_ / "dummy";
   while(true)
     {
-      std::lock_guard<std::mutex> lk(mutex_);
+      LockGuard lk(mutex_);
       for(int i = 0; i < MAX_ENTRIES_PER_LOOP; i++)
         {
           int rv;

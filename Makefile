@@ -169,6 +169,8 @@ help:
 	@echo "USE_XATTR=0     - build program without xattrs functionality"
 	@echo "STATIC=1        - build static binary"
 	@echo "LTO=1           - build with link time optimization"
+	@echo "SANITIZE=1      - build with sanitizers (address,undefined,leak)"
+	@echo "SANITIZE=list   - build with custom sanitizers (comma separated)"
 	@echo "CLEANUP=1       - cleanup images between release build process"
 	@echo "PKGDIR=/dir/    - location for release build pkgs"
 	@echo "GITREF=gitref   - gitref to use for release builds"

@@ -123,7 +123,7 @@ struct fuse
   struct node_table id_table;
   nodeid_gen_t nodeid_gen;
   unsigned int hidectr;
-  pthread_mutex_t lock;
+  mutex_t lock;
   struct fuse_config conf;
   fuse_operations ops;
   struct lock_queue_element *lockq;
@@ -146,9 +146,9 @@ struct lock
 
 struct fuse_dh
 {
-  pthread_mutex_t lock;
-  uint64_t        fh;
-  fuse_dirents_t  d;
+  mutex_t        lock;
+  uint64_t       fh;
+  fuse_dirents_t d;
 };
 
 static struct fuse f = {};
@@ -638,7 +638,7 @@ find_node(uint64_t    parent,
 {
   node_t *node;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   if(!name)
     node = get_node(parent);
   else
@@ -668,7 +668,7 @@ find_node(uint64_t    parent,
     }
   inc_nlookup(node);
  out_err:
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
   return node;
 }
 
@@ -973,7 +973,7 @@ get_path_common(uint64_t     nodeid,
 {
   int err;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   err = try_get_path(nodeid,name,path,wnode,true);
   if(err == -EAGAIN)
     {
@@ -986,7 +986,7 @@ get_path_common(uint64_t     nodeid,
 
       err = wait_path(&qe);
     }
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   return err;
 }
@@ -1031,7 +1031,7 @@ get_path2(uint64_t     nodeid1,
 {
   int err;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   err = try_get_path2(nodeid1,name1,nodeid2,name2,
                       path1,path2,wnode1,wnode2);
   if(err == -EAGAIN)
@@ -1049,7 +1049,7 @@ get_path2(uint64_t     nodeid1,
 
       err = wait_path(&qe);
     }
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   return err;
 }
@@ -1060,11 +1060,11 @@ free_path_wrlock(uint64_t  nodeid,
                  node_t   *wnode,
                  char     *path)
 {
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   unlock_path(nodeid,wnode,NULL);
   if(f.lockq)
     wake_up_queued();
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
   free(path);
 }
 
@@ -1086,11 +1086,11 @@ free_path2(uint64_t  nodeid1,
            char     *path1,
            char     *path2)
 {
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   unlock_path(nodeid1,wnode1,NULL);
   unlock_path(nodeid2,wnode2,NULL);
   wake_up_queued();
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
   free(path1);
   free(path2);
 }
@@ -1105,7 +1105,7 @@ forget_node(const uint64_t nodeid,
   if(nodeid == FUSE_ROOT_ID)
     return;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   node = get_node(nodeid);
 
   /*
@@ -1146,7 +1146,7 @@ forget_node(const uint64_t nodeid,
       kv_push(remembered_node_t,f.remembered_nodes,fn);
     }
 
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 }
 
 static
@@ -1168,11 +1168,11 @@ remove_node(uint64_t    dir,
 {
   node_t *node;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   node = lookup_node(dir,name);
   if(node != NULL)
     unlink_node(node);
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 }
 
 static
@@ -1186,7 +1186,7 @@ rename_node(uint64_t    olddir,
   node_t *node;
   node_t *newnode;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   node = lookup_node(olddir,oldname);
   newnode = lookup_node(newdir,newname);
   if(node == NULL)
@@ -1203,7 +1203,7 @@ rename_node(uint64_t    olddir,
     }
 
  out:
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
   return err;
 }
 
@@ -1257,9 +1257,9 @@ set_path_info(uint64_t                 nodeid,
   e->ino        = node->nodeid;
   e->generation = ((e->ino == FUSE_ROOT_ID) ? 0 : f.nodeid_gen.generation);
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   update_stat(node,&e->attr);
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   set_stat(e->ino,&e->attr);
 
@@ -1356,16 +1356,16 @@ fuse_lib_lookup(fuse_req_t            *req_,
       if(name[1] == '\0')
         {
           name = NULL;
-          mutex_lock(&f.lock);
+          mutex_lock(f.lock);
           dot = get_node_nocheck(nodeid);
           if(dot == NULL)
             {
-              mutex_unlock(&f.lock);
+              mutex_unlock(f.lock);
               reply_entry(req_,&e,-ESTALE);
               return;
             }
           dot->refctr++;
-          mutex_unlock(&f.lock);
+          mutex_unlock(f.lock);
         }
       else if((name[1] == '.') && (name[2] == '\0'))
         {
@@ -1376,9 +1376,9 @@ fuse_lib_lookup(fuse_req_t            *req_,
             }
 
           name = NULL;
-          mutex_lock(&f.lock);
+          mutex_lock(f.lock);
           nodeid = get_node(nodeid)->parent->nodeid;
-          mutex_unlock(&f.lock);
+          mutex_unlock(f.lock);
         }
     }
 
@@ -1396,9 +1396,9 @@ fuse_lib_lookup(fuse_req_t            *req_,
 
   if(dot)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       unref_node(dot);
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
     }
 
   reply_entry(req_,&e,err);
@@ -1488,10 +1488,10 @@ fuse_lib_getattr(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       node = get_node(hdr_->nodeid);
       update_stat(node,&buf);
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
       set_stat(hdr_->nodeid,&buf);
       fuse_reply_attr(req_,&buf,timeout.attr);
     }
@@ -1668,9 +1668,9 @@ fuse_lib_setattr(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       update_stat(get_node(hdr_->nodeid),&stbuf);
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
       set_stat(hdr_->nodeid,&stbuf);
       fuse_reply_attr(req_,&stbuf,timeout.attr);
     }
@@ -2011,7 +2011,7 @@ fuse_do_release(fuse_req_ctx_t   *req_ctx_,
   f.ops.release(req_ctx_,
                 ffi_);
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   {
     node_t *node;
 
@@ -2019,7 +2019,7 @@ fuse_do_release(fuse_req_ctx_t   *req_ctx_,
     assert(node->open_count > 0);
     node->open_count--;
   }
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 }
 
 static
@@ -2078,9 +2078,9 @@ fuse_lib_create(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       get_node(e.ino)->open_count++;
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -2109,7 +2109,7 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
   node_t *node;
   fuse_timeouts_t timeout;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
 
   node = get_node(ino);
   if(node->is_stat_cache_valid)
@@ -2117,12 +2117,12 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
       int err;
       struct stat stbuf;
 
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
       err = f.ops.fgetattr(req_ctx_,
                            fi->fh,
                            &stbuf,
                            &timeout);
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
 
       if(!err)
         update_stat(node,&stbuf);
@@ -2135,7 +2135,7 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
 
   node->is_stat_cache_valid = 1;
 
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 }
 
 static
@@ -2167,9 +2167,9 @@ fuse_lib_open(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       get_node(hdr_->nodeid)->open_count++;
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
       /* The open syscall was interrupted,so it must be cancelled */
       if(fuse_reply_open(req_,&ffi) == -ENOENT)
         fuse_do_release(&req_->ctx,hdr_->nodeid,&ffi);
@@ -2307,7 +2307,7 @@ fuse_lib_opendir(fuse_req_t            *req_,
     }
 
   fuse_dirents_init(&dh->d);
-  mutex_init(&dh->lock);
+  mutex_init(dh->lock);
 
   llffi.fh = (uintptr_t)dh;
   ffi.flags = llffi.flags;
@@ -2331,14 +2331,14 @@ fuse_lib_opendir(fuse_req_t            *req_,
              must be cancelled */
           f.ops.releasedir(&req_->ctx,
                            &ffi);
-          mutex_destroy(&dh->lock);
+          mutex_destroy(dh->lock);
           free(dh);
         }
     }
   else
     {
       fuse_reply_err(req_,err);
-      mutex_destroy(&dh->lock);
+      mutex_destroy(dh->lock);
       free(dh);
     }
 
@@ -2390,7 +2390,7 @@ fuse_lib_readdir(fuse_req_t            *req_,
   dh = get_dirhandle(&llffi,&ffi);
   d  = &dh->d;
 
-  mutex_lock(&dh->lock);
+  mutex_lock(dh->lock);
 
   rv = 0;
   if((arg->offset == 0) || (kv_size(d->data) == 0))
@@ -2411,7 +2411,7 @@ fuse_lib_readdir(fuse_req_t            *req_,
                  size);
 
  out:
-  mutex_unlock(&dh->lock);
+  mutex_unlock(dh->lock);
 }
 
 static
@@ -2434,7 +2434,7 @@ fuse_lib_readdir_plus(fuse_req_t            *req_,
   dh = get_dirhandle(&llffi,&ffi);
   d  = &dh->d;
 
-  mutex_lock(&dh->lock);
+  mutex_lock(dh->lock);
 
   rv = 0;
   if((arg->offset == 0) || (kv_size(d->data) == 0))
@@ -2455,7 +2455,7 @@ fuse_lib_readdir_plus(fuse_req_t            *req_,
                  size);
 
  out:
-  mutex_unlock(&dh->lock);
+  mutex_unlock(dh->lock);
 }
 
 static
@@ -2478,9 +2478,9 @@ fuse_lib_releasedir(fuse_req_t            *req_,
                    &ffi);
 
   /* Done to keep race condition between last readdir reply and the unlock */
-  mutex_lock(&dh->lock);
-  mutex_unlock(&dh->lock);
-  mutex_destroy(&dh->lock);
+  mutex_lock(dh->lock);
+  mutex_unlock(dh->lock);
+  mutex_destroy(dh->lock);
   fuse_dirents_free(&dh->d);
   free(dh);
   fuse_reply_err(req_,0);
@@ -2823,9 +2823,9 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
 
   if(!err)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       get_node(e.ino)->open_count++;
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -3010,9 +3010,9 @@ fuse_flush_common(fuse_req_t       *req_,
     {
       flock_to_lock(&lock,&l);
       l.owner = ffi_->lock_owner;
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       locks_insert(get_node(ino_),&l);
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
 
       /* if op.lock() is defined FLUSH is needed regardless
          of op.flush() */
@@ -3135,11 +3135,11 @@ fuse_lib_getlk(fuse_req_t                  *req_,
 
   flock_to_lock(&flk,&lk);
   lk.owner = ffi.lock_owner;
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   conflict = locks_conflict(get_node(hdr_->nodeid),&lk);
   if(conflict)
     lock_to_flock(conflict,&flk);
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
   if(!conflict)
     err = fuse_lock_common(req_,hdr_->nodeid,&ffi,&flk,F_GETLK);
   else
@@ -3166,9 +3166,9 @@ fuse_lib_setlk(fuse_req_t        *req_,
       lock_t l;
       flock_to_lock(lock,&l);
       l.owner = fi->lock_owner;
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       locks_insert(get_node(ino),&l);
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
     }
 
   fuse_reply_err(req_,err);
@@ -3361,12 +3361,12 @@ static
 void
 remembered_nodes_sort()
 {
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   qsort(&kv_first(f.remembered_nodes),
         kv_size(f.remembered_nodes),
         sizeof(remembered_node_t),
         remembered_node_cmp);
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 }
 
 #define MAX_PRUNE 100
@@ -3379,7 +3379,7 @@ fuse_prune_some_remembered_nodes(int *offset_)
   int pruned;
   int checked;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
 
   pruned = 0;
   checked = 0;
@@ -3414,7 +3414,7 @@ fuse_prune_some_remembered_nodes(int *offset_)
       pruned++;
     }
 
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   if((pruned < MAX_PRUNE) && (checked < MAX_CHECK))
     *offset_ = -1;
@@ -3662,7 +3662,7 @@ fuse_invalidate_all_nodes()
 {
   std::vector<std::string> names;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   for(size_t i = 0; i < f.id_table.size; i++)
     {
       node_t *node;
@@ -3681,7 +3681,7 @@ fuse_invalidate_all_nodes()
           names.emplace_back(node->name);
         }
     }
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   SysLog::info("invalidating {} file entries",
                names.size());
@@ -3699,7 +3699,7 @@ fuse_gc()
 {
   SysLog::info("running thorough garbage collection");
   node_clear();
-  msgbuf_gc();
+  msgbuf_clear();
   fuse_malloc_trim();
 }
 
@@ -3708,7 +3708,7 @@ fuse_gc1()
 {
   SysLog::info("running basic garbage collection");
   node_gc();
-  msgbuf_gc_10percent();
+  msgbuf_gc();
   fuse_malloc_trim();
 }
 
@@ -3773,7 +3773,7 @@ fuse_new(int                           fd_,
   if(node_table_init(&f.id_table) == -1)
     goto out_free_name_table;
 
-  mutex_init(&f.lock);
+  mutex_init(f.lock);
 
   kv_init(f.remembered_nodes);
 
@@ -3827,7 +3827,7 @@ fuse_destroy(struct fuse *)
 
   free(f.id_table.array);
   free(f.name_table.array);
-  mutex_destroy(&f.lock);
+  mutex_destroy(f.lock);
   fuse_session_destroy(f.se);
   kv_destroy(f.remembered_nodes);
 }

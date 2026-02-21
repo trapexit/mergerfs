@@ -6,6 +6,8 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "hashset.hpp"
+
+#include "mutex.hpp"
 #include "scope_guard.hpp"
 
 #include "fuse_msgbuf.hpp"
@@ -19,7 +21,7 @@ _readdir(const fs::path &branch_path_,
          const fs::path &rel_dirpath_,
          HashSet        &names_,
          fuse_dirents_t *dirents_,
-         std::mutex     &mutex_)
+         mutex_t        &mutex_)
 {
   int fd;
   fuse_msgbuf_t *buf;
@@ -45,7 +47,7 @@ _readdir(const fs::path &branch_path_,
       if(nread <= 0)
         return nread;
 
-      std::lock_guard<std::mutex> lk(mutex_);
+      LockGuard lk(mutex_);
       for(ssize_t pos = 0; pos < nread;)
         {
           int rv;

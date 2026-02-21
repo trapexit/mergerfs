@@ -29,8 +29,8 @@ fuse_msgbuf_t *msgbuf_alloc();
 fuse_msgbuf_t *msgbuf_alloc_page_aligned();
 void           msgbuf_free(fuse_msgbuf_t *msgbuf);
 
+void msgbuf_clear();
 void msgbuf_gc();
-void msgbuf_gc_10percent();
 
 u64 msgbuf_alloc_count();
 u64 msgbuf_avail_count();

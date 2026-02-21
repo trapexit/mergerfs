@@ -2,19 +2,19 @@
 
 #include "fmt/core.h"
 
+#include <ctime>
 #include <cstdlib>
 
 #include <pthread.h>
-#include <time.h>
 
 #ifndef PTHREAD_MUTEX_ADAPTIVE_NP
 # define PTHREAD_MUTEX_ADAPTIVE_NP PTHREAD_MUTEX_NORMAL
 #endif
 
-#define mutex_init(M)    _mutex_init(M,__FILE__,__func__,__LINE__)
-#define mutex_destroy(M) _mutex_destroy(M,__FILE__,__func__,__LINE__)
-#define mutex_lock(M)    _mutex_lock(M,__FILE__,__func__,__LINE__)
-#define mutex_unlock(M)  _mutex_unlock(M,__FILE__,__func__,__LINE__)
+#define mutex_init(M)    _mutex_init((M),__FILE__,__func__,__LINE__)
+#define mutex_destroy(M) _mutex_destroy((M),__FILE__,__func__,__LINE__)
+#define mutex_lock(M)    _mutex_lock((M),__FILE__,__func__,__LINE__)
+#define mutex_unlock(M)  _mutex_unlock((M),__FILE__,__func__,__LINE__)
 
 
 static
@@ -34,13 +34,13 @@ _print_error_and_abort(const char *func1_,
                file_,
                func2_,
                linenum_);
-  abort();
+  std::abort();
 }
 
 static
 inline
 void
-_mutex_init(pthread_mutex_t *mutex_,
+_mutex_init(pthread_mutex_t &mutex_,
             const char      *file_,
             const char      *func_,
             const int        linenum_)
@@ -51,7 +51,7 @@ _mutex_init(pthread_mutex_t *mutex_,
   pthread_mutexattr_init(&attr);
   pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_ADAPTIVE_NP);
 
-  rv = pthread_mutex_init(mutex_,&attr);
+  rv = pthread_mutex_init(&mutex_,&attr);
   if(rv != 0)
     _print_error_and_abort(__func__,rv,file_,func_,linenum_);
 
@@ -61,14 +61,14 @@ _mutex_init(pthread_mutex_t *mutex_,
 static
 inline
 void
-_mutex_destroy(pthread_mutex_t *mutex_,
+_mutex_destroy(pthread_mutex_t &mutex_,
                const char      *file_,
                const char      *func_,
                const int        linenum_)
 {
   int rv;
 
-  rv = pthread_mutex_destroy(mutex_);
+  rv = pthread_mutex_destroy(&mutex_);
   if(rv != 0)
     _print_error_and_abort(__func__,rv,file_,func_,linenum_);
 }
@@ -76,7 +76,7 @@ _mutex_destroy(pthread_mutex_t *mutex_,
 static
 inline
 void
-_mutex_lock(pthread_mutex_t *mutex_,
+_mutex_lock(pthread_mutex_t &mutex_,
             const char      *file_,
             const char      *func_,
             const int        linenum_)
@@ -95,7 +95,7 @@ _mutex_lock(pthread_mutex_t *mutex_,
           timeout.tv_nsec -= 1000000000;
         }
 
-      rv = pthread_mutex_timedlock(mutex_,&timeout);
+      rv = pthread_mutex_timedlock(&mutex_,&timeout);
       switch(rv)
         {
         case 0:
@@ -119,14 +119,14 @@ _mutex_lock(pthread_mutex_t *mutex_,
 static
 inline
 void
-_mutex_unlock(pthread_mutex_t *mutex_,
+_mutex_unlock(pthread_mutex_t &mutex_,
               const char      *file_,
               const char      *func_,
               const int        linenum_)
 {
   int rv;
 
-  rv = pthread_mutex_unlock(mutex_);
+  rv = pthread_mutex_unlock(&mutex_);
   if(rv != 0)
     _print_error_and_abort(__func__,rv,file_,func_,linenum_);
 }

@@ -20,9 +20,9 @@
 #include "fh.hpp"
 #include "fs_path.hpp"
 
-#include "base_types.h"
+#include "mutex.hpp"
 
-#include <mutex>
+#include "base_types.h"
 
 
 class FileInfo : public FH
@@ -40,6 +40,7 @@ public:
       branch(*branch_),
       direct_io(direct_io_)
   {
+    mutex_init(mutex);
   }
 
   FileInfo(const int       fd_,
@@ -51,6 +52,7 @@ public:
       branch(branch_),
       direct_io(direct_io_)
   {
+    mutex_init(mutex);
   }
 
   FileInfo(const FileInfo *fi_)
@@ -59,6 +61,7 @@ public:
       branch(fi_->branch),
       direct_io(fi_->direct_io)
   {
+    mutex_init(mutex);
   }
 
 public:
@@ -68,7 +71,7 @@ public:
   int fd;
   Branch branch;
   u32 direct_io:1;
-  std::mutex mutex;
+  mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 };
 
 inline
