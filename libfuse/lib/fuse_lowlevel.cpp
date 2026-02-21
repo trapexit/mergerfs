@@ -47,7 +47,7 @@ struct fuse_ll
   void *userdata;
   uid_t owner;
   fuse_conn_info_t conn;
-  pthread_mutex_t lock;
+  mutex_t lock;
   int got_init;
   int got_destroy;
   uint64_t notify_ctr;
@@ -1339,7 +1339,7 @@ do_notify_reply(fuse_req_t            *req,
   struct fuse_notify_req *nreq;
   struct fuse_notify_req *head;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   head = &f.notify_list;
   for(nreq = head->next; nreq != head; nreq = nreq->next)
     {
@@ -1349,7 +1349,7 @@ do_notify_reply(fuse_req_t            *req,
           break;
         }
     }
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   if(nreq != head)
     nreq->reply(nreq, req, hdr_->nodeid, &hdr_[1]);
@@ -1579,12 +1579,12 @@ fuse_lowlevel_notify_retrieve(struct fuse_session *se,
   if(rreq == NULL)
     return -ENOMEM;
 
-  mutex_lock(&f.lock);
+  mutex_lock(f.lock);
   rreq->cookie = cookie;
   rreq->nreq.unique = f.notify_ctr++;
   rreq->nreq.reply = fuse_ll_retrieve_reply;
   list_add_nreq(&rreq->nreq, &f.notify_list);
-  mutex_unlock(&f.lock);
+  mutex_unlock(f.lock);
 
   outarg.notify_unique = rreq->nreq.unique;
   outarg.nodeid = ino;
@@ -1597,9 +1597,9 @@ fuse_lowlevel_notify_retrieve(struct fuse_session *se,
   err = send_notify_iov(se, FUSE_NOTIFY_RETRIEVE, iov, 2);
   if(err)
     {
-      mutex_lock(&f.lock);
+      mutex_lock(f.lock);
       list_del_nreq(&rreq->nreq);
-      mutex_unlock(&f.lock);
+      mutex_unlock(f.lock);
       free(rreq);
     }
 
@@ -1680,7 +1680,8 @@ fuse_ll_destroy(void *data)
         f.op.destroy(f.userdata);
     }
 
-  mutex_destroy(&f.lock);
+  mutex_destroy(f.lock);
+  msgbuf_gc();
 }
 
 static
@@ -1868,7 +1869,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
 
   list_init_nreq(&f.notify_list);
   f.notify_ctr = 1;
-  mutex_init(&f.lock);
+  mutex_init(f.lock);
 
   if(fuse_opt_parse(args,NULL,fuse_ll_opts,fuse_ll_opt_proc) == -1)
     goto out_free;
@@ -1888,7 +1889,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   return se;
 
  out_free:
-  mutex_destroy(&f.lock);
+  mutex_destroy(f.lock);
 
   return nullptr;
 }

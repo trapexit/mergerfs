@@ -27,7 +27,6 @@
 #include <map>
 #include <string>
 
-#include <pthread.h>
 #include <sys/statvfs.h>
 #include <time.h>
 
@@ -42,7 +41,8 @@ typedef std::map<std::string,Element> statvfs_cache;
 
 static uint64_t        g_timeout    = 0;
 static statvfs_cache   g_cache;
-static pthread_mutex_t g_cache_lock = PTHREAD_MUTEX_INITIALIZER;
+static Mutex           g_cache_lock;
+
 
 static
 uint64_t
@@ -81,7 +81,7 @@ fs::statvfs_cache(const char     *path_,
   rv = 0;
   now = ::_get_time();
 
-  mutex_lock(&g_cache_lock);
+  mutex_lock(g_cache_lock);
 
   e = &g_cache[path_];
 
@@ -93,7 +93,7 @@ fs::statvfs_cache(const char     *path_,
 
   *st_ = e->st;
 
-  mutex_unlock(&g_cache_lock);
+  mutex_unlock(g_cache_lock);
 
   return rv;
 }

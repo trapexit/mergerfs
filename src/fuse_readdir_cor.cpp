@@ -51,7 +51,7 @@ _concurrent_readdir(ThreadPool          &tp_,
                     fuse_dirents_t      *dirents_)
 {
   HashSet names;
-  std::mutex mutex;
+  Mutex mutex;
   std::vector<std::future<int>> futures;
 
   fuse_dirents_reset(dirents_);

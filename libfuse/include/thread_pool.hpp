@@ -4,13 +4,14 @@
 #include "moodycamel/lightweightsemaphore.h"
 #include "invocable.h"
 
+#include "mutex.hpp"
+
 #include <algorithm>
 #include <atomic>
 #include <csignal>
 #include <cstring>
 #include <future>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -91,7 +92,7 @@ private:
 private:
   std::string const      _name;
   std::vector<pthread_t> _threads;
-  mutable std::mutex     _threads_mutex;
+  mutable Mutex          _threads_mutex;
 };
 
 
@@ -230,7 +231,8 @@ ThreadPool::add_thread(const std::string name_)
     pthread_setname_np(t,name.c_str());
 
   {
-    std::lock_guard<std::mutex> lg(_threads_mutex);
+    LockGuard lg(_threads_mutex);
+
     _threads.push_back(t);
   }
 
@@ -243,7 +245,8 @@ int
 ThreadPool::remove_thread(void)
 {
   {
-    std::lock_guard<std::mutex> lg(_threads_mutex);
+    LockGuard lg(_threads_mutex);
+
     if(_threads.size() <= 1)
       return -EINVAL;
   }
@@ -258,7 +261,7 @@ ThreadPool::remove_thread(void)
       promise.set_value(t);
 
       {
-        std::lock_guard<std::mutex> lg(_threads_mutex);
+        LockGuard lg(_threads_mutex);
 
         for(auto i = _threads.begin(); i != _threads.end(); ++i)
           {
@@ -285,8 +288,9 @@ int
 ThreadPool::set_threads(std::size_t const count_)
 {
   int diff;
+
   {
-    std::lock_guard<std::mutex> lg(_threads_mutex);
+    LockGuard lg(_threads_mutex);
 
     diff = ((int)count_ - (int)_threads.size());
   }
@@ -304,7 +308,7 @@ inline
 void
 ThreadPool::shutdown(void)
 {
-  std::lock_guard<std::mutex> lg(_threads_mutex);
+  LockGuard lg(_threads_mutex);
 
   for(pthread_t tid : _threads)
     pthread_cancel(tid);
@@ -375,7 +379,7 @@ inline
 std::vector<pthread_t>
 ThreadPool::threads() const
 {
-  std::lock_guard<std::mutex> lg(_threads_mutex);
+  LockGuard lg(_threads_mutex);
 
   return _threads;
 }

@@ -19,53 +19,69 @@
 
 #include "fuse.h"
 #include "fuse_kernel.h"
+#include "objpool.hpp"
+
+#include "fmt/core.h"
 
 #include <unistd.h>
 
 #include <cassert>
-#include <atomic>
 #include <cstdlib>
-#include <mutex>
-#include <vector>
 
 
-static u32 g_PAGESIZE = 0;
-static u64 g_BUFSIZE  = 0;
+static u32 g_pagesize = 0;
+static u64 g_bufsize  = 0;
 
-static std::atomic<std::uint_fast64_t> g_MSGBUF_ALLOC_COUNT = 0;
-
-static std::mutex g_MUTEX;
-static std::vector<fuse_msgbuf_t*> g_MSGBUF_STACK;
-
-u64
-msgbuf_get_bufsize()
-{
-  return g_BUFSIZE;
-}
-
-u32
-msgbuf_get_pagesize()
-{
-  return g_PAGESIZE;
-}
-
-// +1 page so that it is used for the "header" of the allocation as
-// well as to allow for offseting for write requests to be page
-// aligned. +1 again for fuse header as the max_pages value is for the
-// body.
+static
+__attribute__((constructor))
 void
-msgbuf_set_bufsize(const u64 size_in_pages_)
+_constructor()
 {
-  g_BUFSIZE = ((size_in_pages_ + 2) * g_PAGESIZE);
+  long pagesize = sysconf(_SC_PAGESIZE);
+
+  assert(pagesize > 0);
+  g_pagesize = pagesize;
+
+  assert((sizeof(struct fuse_in_header) + sizeof(struct fuse_write_in))
+         < g_pagesize);
+
+  msgbuf_set_bufsize(FUSE_DEFAULT_MAX_MAX_PAGES);
 }
+
+struct PageAlignedAllocator
+{
+  void*
+  allocate(size_t size_, size_t align_)
+  {
+    void *buf = NULL;
+    int rv = posix_memalign(&buf, align_, size_);
+    return (rv == 0) ? buf : NULL;
+  }
+
+  void
+  deallocate(void *ptr_, size_t /*size_*/, size_t /*align_*/)
+  {
+    free(ptr_);
+  }
+};
+
+struct ShouldPoolMsgbuf
+{
+  bool operator()(const fuse_msgbuf_t *msgbuf) const noexcept
+  {
+    return msgbuf->size == (g_bufsize - g_pagesize);
+  }
+};
+
+static ObjPool<fuse_msgbuf_t, PageAlignedAllocator, ShouldPoolMsgbuf> g_msgbuf_pool;
 
 static
 void
 _msgbuf_page_align(fuse_msgbuf_t *msgbuf_)
 {
   msgbuf_->mem   = (char*)msgbuf_;
-  msgbuf_->mem  += g_PAGESIZE;
-  msgbuf_->size  = (g_BUFSIZE - g_PAGESIZE);
+  msgbuf_->mem  += g_pagesize;
+  msgbuf_->size  = (g_bufsize - g_pagesize);
 }
 
 static
@@ -73,49 +89,10 @@ void
 _msgbuf_write_align(fuse_msgbuf_t *msgbuf_)
 {
   msgbuf_->mem   = (char*)msgbuf_;
-  msgbuf_->mem  += g_PAGESIZE;
+  msgbuf_->mem  += g_pagesize;
   msgbuf_->mem  -= sizeof(struct fuse_in_header);
   msgbuf_->mem  -= sizeof(struct fuse_write_in);
-  msgbuf_->size  = (g_BUFSIZE - g_PAGESIZE);
-}
-
-static
-__attribute__((constructor))
-void
-_msgbuf_constructor()
-{
-  long pagesize = sysconf(_SC_PAGESIZE);
-
-  assert(pagesize > 0);
-  g_PAGESIZE = pagesize;
-
-  // Ensure fuse headers fit within a single page for O_DIRECT alignment
-  assert((sizeof(struct fuse_in_header) + sizeof(struct fuse_write_in))
-         < g_PAGESIZE);
-
-  msgbuf_set_bufsize(FUSE_DEFAULT_MAX_MAX_PAGES);
-}
-
-static
-__attribute__((destructor))
-void
-_msgbuf_destructor()
-{
-  msgbuf_gc();
-}
-
-static
-void*
-_page_aligned_malloc(const u64 size_in_bytes_)
-{
-  int rv;
-  void *buf = NULL;
-
-  rv = posix_memalign(&buf,g_PAGESIZE,size_in_bytes_);
-  if(rv != 0)
-    return NULL;
-
-  return buf;
+  msgbuf_->size  = (g_bufsize - g_pagesize);
 }
 
 typedef void (*msgbuf_setup_func_t)(fuse_msgbuf_t*);
@@ -126,32 +103,15 @@ _msgbuf_alloc(msgbuf_setup_func_t setup_func_)
 {
   fuse_msgbuf_t *msgbuf;
 
-  g_MUTEX.lock();
-  if(g_MSGBUF_STACK.empty())
-    {
-      g_MUTEX.unlock();
-
-      msgbuf = (fuse_msgbuf_t*)_page_aligned_malloc(g_BUFSIZE);
-      if(msgbuf == NULL)
-        return NULL;
-
-      g_MSGBUF_ALLOC_COUNT.fetch_add(1,std::memory_order_relaxed);
-    }
-  else
-    {
-      msgbuf = g_MSGBUF_STACK.back();
-      g_MSGBUF_STACK.pop_back();
-      g_MUTEX.unlock();
-    }
+  msgbuf = g_msgbuf_pool.alloc(g_bufsize);
+  if(msgbuf == NULL)
+    return NULL;
 
   setup_func_(msgbuf);
 
   return msgbuf;
 }
 
-// Offset the memory so write request payload will be placed on page
-// boundry so O_DIRECT can work. No impact on other message types
-// except for `read` which will require using `msgbuf_page_align`.
 fuse_msgbuf_t*
 msgbuf_alloc()
 {
@@ -164,88 +124,50 @@ msgbuf_alloc_page_aligned()
   return _msgbuf_alloc(_msgbuf_page_align);
 }
 
-static
-void
-msgbuf_destroy(fuse_msgbuf_t *msgbuf_)
-{
-  free(msgbuf_);
-}
-
 void
 msgbuf_free(fuse_msgbuf_t *msgbuf_)
 {
-  bool destroy;
+  g_msgbuf_pool.free(msgbuf_, g_bufsize);
+}
 
-  {
-    std::lock_guard<std::mutex> lck(g_MUTEX);
+u64
+msgbuf_get_bufsize()
+{
+  return g_bufsize;
+}
 
-    destroy = (msgbuf_->size != (g_BUFSIZE - g_PAGESIZE));
-    if(!destroy)
-      g_MSGBUF_STACK.emplace_back(msgbuf_);
-  }
+u32
+msgbuf_get_pagesize()
+{
+  return g_pagesize;
+}
 
-  if(destroy)
-    {
-      msgbuf_destroy(msgbuf_);
-      g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
-    }
+void
+msgbuf_set_bufsize(const u64 size_in_pages_)
+{
+  g_bufsize = ((size_in_pages_ + 2) * g_pagesize);
 }
 
 u64
 msgbuf_alloc_count()
 {
-  return g_MSGBUF_ALLOC_COUNT;
+  return g_msgbuf_pool.size();
 }
 
 u64
 msgbuf_avail_count()
 {
-  std::lock_guard<std::mutex> lck(g_MUTEX);
-
-  return g_MSGBUF_STACK.size();
-}
-
-void
-msgbuf_gc_10percent()
-{
-  std::vector<fuse_msgbuf_t*> togc;
-
-  {
-    std::size_t size;
-    std::size_t ten_percent;
-
-    std::lock_guard<std::mutex> lck(g_MUTEX);
-
-    size        = g_MSGBUF_STACK.size();
-    ten_percent = (size / 10);
-
-    for(std::size_t i = 0; i < ten_percent; i++)
-      {
-        togc.push_back(g_MSGBUF_STACK.back());
-        g_MSGBUF_STACK.pop_back();
-      }
-  }
-
-  for(auto msgbuf : togc)
-    {
-      msgbuf_destroy(msgbuf);
-      g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
-    }
+  return g_msgbuf_pool.size();
 }
 
 void
 msgbuf_gc()
 {
-  std::vector<fuse_msgbuf_t*> oldstack;
+  g_msgbuf_pool.gc();
+}
 
-  {
-    std::lock_guard<std::mutex> lck(g_MUTEX);
-    oldstack.swap(g_MSGBUF_STACK);
-  }
-
-  for(auto msgbuf: oldstack)
-    {
-      msgbuf_destroy(msgbuf);
-      g_MSGBUF_ALLOC_COUNT.fetch_sub(1,std::memory_order_relaxed);
-    }
+void
+msgbuf_clear()
+{
+  g_msgbuf_pool.clear();
 }

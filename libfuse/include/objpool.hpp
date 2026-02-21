@@ -16,14 +16,43 @@
 
 #pragma once
 
+#include "mutex.hpp"
+
 #include <algorithm>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <new>
 #include <utility>
 #include <type_traits>
 
-template<typename T>
+struct DefaultAllocator
+{
+  void*
+  allocate(size_t size_, size_t align_)
+  {
+    return ::operator new(size_, std::align_val_t{align_});
+  }
+
+  void
+  deallocate(void *ptr_, size_t /*size_*/, size_t align_)
+  {
+    ::operator delete(ptr_, std::align_val_t{align_});
+  }
+};
+
+struct DefaultShouldPool
+{
+  template<typename T>
+  bool operator()(T*) const noexcept
+  {
+    return true;
+  }
+};
+
+template<typename T,
+         typename Allocator = DefaultAllocator,
+         typename ShouldPool = DefaultShouldPool>
 class ObjPool
 {
 private:
@@ -45,11 +74,34 @@ private:
   }
 
 private:
-  std::mutex _mtx;
+  mutex_t _mtx;
   Node *_head = nullptr;
-  std::atomic<size_t> _pooled_count{0};
+  std::atomic<size_t> _pool_count{0};
+  Allocator _allocator;
+  ShouldPool _should_pool;
 
 public:
+  template<typename AllocPred,
+           typename = std::enable_if_t<
+             !std::is_same_v<std::decay_t<AllocPred>, ObjPool> &&
+             !std::is_same_v<std::decay_t<AllocPred>, Allocator>
+           >>
+  explicit
+  ObjPool(AllocPred&& allocator_pred_)
+    : _allocator(allocator_pred_)
+  {}
+
+  template<typename ShouldPoolPred,
+           typename = std::enable_if_t<
+             !std::is_same_v<std::decay_t<ShouldPoolPred>, ObjPool> &&
+             !std::is_same_v<std::decay_t<ShouldPoolPred>, ShouldPool>
+           >>
+  explicit
+  ObjPool(Allocator allocator_, ShouldPoolPred&& should_pool_pred_)
+    : _allocator(allocator_),
+      _should_pool(std::forward<ShouldPoolPred>(should_pool_pred_))
+  {}
+
   ObjPool() = default;
   ObjPool(const ObjPool&) = delete;
   ObjPool& operator=(const ObjPool&) = delete;
@@ -65,14 +117,16 @@ private:
   Node*
   _pop_node()
   {
-    std::lock_guard<std::mutex> lock(_mtx);
+    mutex_lock(&_mtx);
 
     Node *node = _head;
     if(node)
       {
         _head = node->next;
-        _pooled_count.fetch_sub(1, std::memory_order_relaxed);
+        _pool_count.fetch_sub(1, std::memory_order_relaxed);
       }
+
+    mutex_unlock(&_mtx);
 
     return node;
   }
@@ -80,11 +134,14 @@ private:
   void
   _push_node(Node *node_)
   {
-    std::lock_guard<std::mutex> lock(_mtx);
+    mutex_lock(_mtx);
 
     node_->next = _head;
     _head = node_;
-    _pooled_count.fetch_add(1, std::memory_order_relaxed);
+
+    mutex_unlock(_mtx);
+
+    _pool_count.fetch_add(1, std::memory_order_relaxed);
   }
 
 public:
@@ -93,24 +150,26 @@ public:
   {
     Node *head;
 
-    {
-      std::lock_guard<std::mutex> lock(_mtx);
-      head  = _head;
-      _head = nullptr;
-      _pooled_count.store(0, std::memory_order_relaxed);
-    }
+    mutex_lock(_mtx);
+
+    head  = _head;
+    _head = nullptr;
+
+    mutex_unlock(_mtx);
+
+    _pool_count.store(0, std::memory_order_relaxed);
 
     while(head)
       {
         Node *next = head->next;
-        ::operator delete(head, std::align_val_t{alignof(T)});
+        _allocator.deallocate(head, sizeof(Node), alignof(Node));
         head = next;
       }
   }
 
   template<typename... Args>
   T*
-  alloc(Args&&... args_)
+  alloc(size_t size_ = sizeof(T), Args&&... args_)
   {
     void *mem;
     Node *node;
@@ -118,7 +177,7 @@ public:
     node = _pop_node();
     mem  = (node ?
             static_cast<void*>(node) :
-            ::operator new(sizeof(T), std::align_val_t{alignof(T)}));
+            _allocator.allocate(size_, alignof(T)));
 
     try
       {
@@ -126,32 +185,38 @@ public:
       }
     catch(...)
       {
-        _push_node(static_cast<Node*>(mem));
+        if(!node)
+          _allocator.deallocate(mem, size_, alignof(T));
         throw;
       }
   }
 
   void
-  free(T *obj_) noexcept
+  free(T *obj_, size_t size_ = sizeof(T)) noexcept
   {
     if(not obj_)
       return;
 
+    bool should_pool = _should_pool(obj_);
+
     obj_->~T();
 
-    _push_node(to_node(obj_));
+    if(should_pool)
+      _push_node(to_node(obj_));
+    else
+      _allocator.deallocate(obj_, size_, alignof(T));
   }
 
   size_t
   size() const noexcept
   {
-    return _pooled_count.load(std::memory_order_relaxed);
+    return _pool_count.load(std::memory_order_relaxed);
   }
 
   void
   gc() noexcept
   {
-    size_t count = _pooled_count.load(std::memory_order_relaxed);
+    size_t count = _pool_count.load(std::memory_order_relaxed);
     size_t to_free = std::max(count / 10, size_t{1});
 
     for(size_t i = 0; i < to_free; ++i)
@@ -159,7 +224,7 @@ public:
         Node *node = _pop_node();
         if(not node)
           break;
-        ::operator delete(node, std::align_val_t{alignof(T)});
+        _allocator.deallocate(node, sizeof(Node), alignof(Node));
       }
   }
 };

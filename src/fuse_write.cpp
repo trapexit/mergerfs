@@ -26,6 +26,8 @@
 #include "fs_pwriten.hpp"
 #include "ioprio.hpp"
 
+#include "scope_guard.hpp"
+
 #include "fuse.h"
 
 
@@ -174,7 +176,8 @@ _write(const fuse_file_info_t *ffi_,
   // could change the move file behavior to use a known target file
   // and have threads use O_EXCL and back off and wait for the
   // transfer to complete before retrying.
-  std::lock_guard<std::mutex> guard(fi->mutex);
+  mutex_lock(fi->mutex);
+  DEFER { mutex_unlock(fi->mutex); };
 
   if(fi->direct_io)
     return ::_write_direct_io(buf_,count_,offset_,fi);
