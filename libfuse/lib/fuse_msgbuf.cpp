@@ -103,7 +103,7 @@ _msgbuf_alloc(msgbuf_setup_func_t setup_func_)
 {
   fuse_msgbuf_t *msgbuf;
 
-  msgbuf = g_msgbuf_pool.alloc(g_bufsize);
+  msgbuf = g_msgbuf_pool.alloc_size(g_bufsize);
   if(msgbuf == NULL)
     return NULL;
 
@@ -127,7 +127,7 @@ msgbuf_alloc_page_aligned()
 void
 msgbuf_free(fuse_msgbuf_t *msgbuf_)
 {
-  g_msgbuf_pool.free(msgbuf_, g_bufsize);
+  g_msgbuf_pool.free_size(msgbuf_,g_bufsize);
 }
 
 u64
