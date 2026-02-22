@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -117,7 +118,7 @@ private:
   Node*
   _pop_node()
   {
-    mutex_lock(&_mtx);
+    mutex_lock(_mtx);
 
     Node *node = _head;
     if(node)
@@ -126,7 +127,7 @@ private:
         _pool_count.fetch_sub(1, std::memory_order_relaxed);
       }
 
-    mutex_unlock(&_mtx);
+    mutex_unlock(_mtx);
 
     return node;
   }
@@ -138,10 +139,9 @@ private:
 
     node_->next = _head;
     _head = node_;
+    _pool_count.fetch_add(1, std::memory_order_relaxed);
 
     mutex_unlock(_mtx);
-
-    _pool_count.fetch_add(1, std::memory_order_relaxed);
   }
 
 public:
@@ -154,10 +154,9 @@ public:
 
     head  = _head;
     _head = nullptr;
+    _pool_count.store(0, std::memory_order_relaxed);
 
     mutex_unlock(_mtx);
-
-    _pool_count.store(0, std::memory_order_relaxed);
 
     while(head)
       {
@@ -169,10 +168,27 @@ public:
 
   template<typename... Args>
   T*
-  alloc(size_t size_ = sizeof(T), Args&&... args_)
+  alloc(Args&&... args_)
+  {
+    return _alloc_impl(sizeof(T), std::forward<Args>(args_)...);
+  }
+
+  template<typename... Args>
+  T*
+  alloc_size(size_t size_, Args&&... args_)
+  {
+    return _alloc_impl(size_, std::forward<Args>(args_)...);
+  }
+
+private:
+  template<typename... Args>
+  T*
+  _alloc_impl(size_t size_, Args&&... args_)
   {
     void *mem;
     Node *node;
+
+    assert(size_ >= sizeof(T));
 
     node = _pop_node();
     mem  = (node ?
@@ -191,8 +207,15 @@ public:
       }
   }
 
+public:
   void
-  free(T *obj_, size_t size_ = sizeof(T)) noexcept
+  free(T *obj_) noexcept
+  {
+    free_size(obj_, sizeof(T));
+  }
+
+  void
+  free_size(T *obj_, size_t size_) noexcept
   {
     if(not obj_)
       return;
