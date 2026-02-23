@@ -289,7 +289,7 @@ _warn_if_not_root()
   if(uid == 0)
     return;
 
-  constexpr const char s[] =
+  constexpr const char *s =
     "mergerfs is not running as root"
     " and may not work correctly";
   fmt::println(stderr,"* WARNING: {}",s);
@@ -330,7 +330,7 @@ _main(int    argc_,
           fmt::println(stderr,"mergerfs: ERROR - {}",s);
         }
 
-      return 1;
+      return EXIT_FAILURE;
     }
 
   if(cfg.branches_mount_timeout > 0)
@@ -339,7 +339,7 @@ _main(int    argc_,
 
       failure = ::_wait_for_mount();
       if(failure)
-        return 1;
+        return EXIT_FAILURE;
     }
 
   ::_warn_if_not_root();
