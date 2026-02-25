@@ -91,12 +91,13 @@ static int add_default_subtype(const char *progname, struct fuse_args *args)
   else if (basename[1] != '\0')
     basename++;
 
-  subtype_opt = (char *) malloc(strlen(basename) + 64);
+  size_t optlen = strlen(basename) + 64;
+  subtype_opt = (char *) malloc(optlen);
   if (subtype_opt == NULL) {
     fprintf(stderr, "fuse: memory allocation failed\n");
     return -1;
   }
-  sprintf(subtype_opt, "-osubtype=%s", basename);
+  snprintf(subtype_opt, optlen, "-osubtype=%s", basename);
   res = fuse_opt_add_arg(args, subtype_opt);
   free(subtype_opt);
   return res;
@@ -246,6 +247,7 @@ void fuse_unmount(const char *mountpoint, int fd)
   fuse_unmount_common(mountpoint, fd);
 }
 
+static
 struct fuse*
 fuse_setup_common(int argc,
                   char *argv[],

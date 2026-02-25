@@ -3,7 +3,7 @@
 #include "syslog.hpp"
 
 void
-PinThreads::R1L(const CPU::ThreadIdVec threads_)
+PinThreads::R1L(const CPU::ThreadIdVec &threads_)
 {
   CPU::CPUVec cpus;
 
@@ -16,7 +16,7 @@ PinThreads::R1L(const CPU::ThreadIdVec threads_)
 }
 
 void
-PinThreads::R1P(const CPU::ThreadIdVec threads_)
+PinThreads::R1P(const CPU::ThreadIdVec &threads_)
 {
   CPU::Core2CPUsMap core2cpus;
 
@@ -28,9 +28,22 @@ PinThreads::R1P(const CPU::ThreadIdVec threads_)
     CPU::setaffinity(thread_id,core2cpus.begin()->second);
 }
 
+template<typename T>
+static
 void
-PinThreads::RP1L(const CPU::ThreadIdVec read_threads_,
-                 const CPU::ThreadIdVec process_threads_)
+_RP1(const CPU::ThreadIdVec &read_threads_,
+      const CPU::ThreadIdVec &process_threads_,
+      const T                &cpus_)
+{
+  for(auto const thread_id : read_threads_)
+    CPU::setaffinity(thread_id,*cpus_.begin());
+  for(auto const thread_id : process_threads_)
+    CPU::setaffinity(thread_id,*cpus_.begin());
+}
+
+void
+PinThreads::RP1L(const CPU::ThreadIdVec &read_threads_,
+                 const CPU::ThreadIdVec &process_threads_)
 {
   CPU::CPUVec cpus;
 
@@ -38,15 +51,12 @@ PinThreads::RP1L(const CPU::ThreadIdVec read_threads_,
   if(cpus.empty())
     return;
 
-  for(auto const thread_id : read_threads_)
-    CPU::setaffinity(thread_id,cpus.front());
-  for(auto const thread_id : process_threads_)
-    CPU::setaffinity(thread_id,cpus.front());
+  _RP1(read_threads_,process_threads_,cpus);
 }
 
 void
-PinThreads::RP1P(const CPU::ThreadIdVec read_threads_,
-                 const CPU::ThreadIdVec process_threads_)
+PinThreads::RP1P(const CPU::ThreadIdVec &read_threads_,
+                 const CPU::ThreadIdVec &process_threads_)
 {
   CPU::Core2CPUsMap core2cpus;
 
@@ -54,16 +64,13 @@ PinThreads::RP1P(const CPU::ThreadIdVec read_threads_,
   if(core2cpus.empty())
     return;
 
-  for(auto const thread_id : read_threads_)
-    CPU::setaffinity(thread_id,core2cpus.begin()->second);
-  for(auto const thread_id : process_threads_)
-    CPU::setaffinity(thread_id,core2cpus.begin()->second);
+  _RP1(read_threads_,process_threads_,core2cpus.begin()->second);
 }
 
 
 void
-PinThreads::R1LP1L(const CPU::ThreadIdVec read_threads_,
-                   const CPU::ThreadIdVec process_threads_)
+PinThreads::R1LP1L(const CPU::ThreadIdVec &read_threads_,
+                   const CPU::ThreadIdVec &process_threads_)
 {
   CPU::CPUVec cpus;
 
@@ -80,8 +87,8 @@ PinThreads::R1LP1L(const CPU::ThreadIdVec read_threads_,
 
 
 void
-PinThreads::R1PP1P(const CPU::ThreadIdVec read_threads_,
-                   const CPU::ThreadIdVec process_threads_)
+PinThreads::R1PP1P(const CPU::ThreadIdVec &read_threads_,
+                   const CPU::ThreadIdVec &process_threads_)
 {
   CPU::Core2CPUsMap core2cpus;
 
@@ -101,8 +108,8 @@ PinThreads::R1PP1P(const CPU::ThreadIdVec read_threads_,
 
 
 void
-PinThreads::RPSL(const CPU::ThreadIdVec read_threads_,
-                 const CPU::ThreadIdVec process_threads_)
+PinThreads::RPSL(const CPU::ThreadIdVec &read_threads_,
+                 const CPU::ThreadIdVec &process_threads_)
 {
   CPU::CPUVec cpus;
 
@@ -129,8 +136,8 @@ PinThreads::RPSL(const CPU::ThreadIdVec read_threads_,
 
 
 void
-PinThreads::RPSP(const CPU::ThreadIdVec read_threads_,
-                 const CPU::ThreadIdVec process_threads_)
+PinThreads::RPSP(const CPU::ThreadIdVec &read_threads_,
+                 const CPU::ThreadIdVec &process_threads_)
 {
   CPU::Core2CPUsMap core2cpus;
 
@@ -157,8 +164,8 @@ PinThreads::RPSP(const CPU::ThreadIdVec read_threads_,
 
 
 void
-PinThreads::R1PPSP(const CPU::ThreadIdVec read_threads_,
-                   const CPU::ThreadIdVec process_threads_)
+PinThreads::R1PPSP(const CPU::ThreadIdVec &read_threads_,
+                   const CPU::ThreadIdVec &process_threads_)
 {
   CPU::Core2CPUsMap core2cpus;
   CPU::Core2CPUsMap leftover;
@@ -186,9 +193,9 @@ PinThreads::R1PPSP(const CPU::ThreadIdVec read_threads_,
 
 
 void
-PinThreads::pin(const CPU::ThreadIdVec read_threads_,
-                const CPU::ThreadIdVec process_threads_,
-                const std::string      type_)
+PinThreads::pin(const CPU::ThreadIdVec &read_threads_,
+                const CPU::ThreadIdVec &process_threads_,
+                const std::string      &type_)
 {
   if(type_.empty() || (type_ == "false"))
     return;

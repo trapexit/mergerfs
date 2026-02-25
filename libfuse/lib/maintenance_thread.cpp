@@ -10,10 +10,9 @@
 #include <pthread.h>
 #include <unistd.h>
 
-
-pthread_t g_thread;
-std::vector<std::function<void(int)>> g_funcs;
-mutex_t g_mutex;
+static pthread_t g_thread;
+static std::vector<std::function<void(int)>> g_funcs;
+static mutex_t g_mutex;
 
 static
 void*

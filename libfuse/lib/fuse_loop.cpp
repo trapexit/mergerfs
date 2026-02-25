@@ -205,7 +205,7 @@ _calculate_thread_count(const int raw_thread_count_)
   else if(raw_thread_count_ < 0)
     {
       thread_count = (std::thread::hardware_concurrency() / -raw_thread_count_);
-      thread_count = std::min(1,thread_count);
+      thread_count = std::max(1,thread_count);
     }
   else if(raw_thread_count_ > 0)
     {

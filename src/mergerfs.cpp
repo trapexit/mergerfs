@@ -128,7 +128,7 @@ _get_fuse_operations(struct fuse_operations &ops_,
   ops_.mknod           = FUSE::mknod;
   ops_.open            = FUSE::open;
   ops_.opendir         = FUSE::opendir;
-  ops_.poll            = FUSE::poll;;
+  ops_.poll            = FUSE::poll;
   ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
   ops_.readdir         = FUSE::readdir;
   ops_.readdir_plus    = FUSE::readdir_plus;
