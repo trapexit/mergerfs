@@ -33,4 +33,3 @@ void msgbuf_clear();
 void msgbuf_gc();
 
 u64 msgbuf_alloc_count();
-u64 msgbuf_avail_count();

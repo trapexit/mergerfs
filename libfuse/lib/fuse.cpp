@@ -36,7 +36,6 @@
 #include <vector>
 
 #include <assert.h>
-#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -50,7 +49,6 @@
 #include <string.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/uio.h>
@@ -64,13 +62,14 @@
 #define FUSE_UNKNOWN_INO UINT64_MAX
 #define OFFSET_MAX 0x7fffffffffffffffLL
 
+#define PATH_BUFSIZE_HALF_MAX 0x80000000u
+#define PATH_BUFSIZE_MAX      0xffffffffu
+
+#define INFO_FILE_MAX_SIZE (1024 * 1024)
+
 #define NODE_TABLE_MIN_SIZE 8192
 
 #define PARAM(inarg) ((void*)(((char*)(inarg)) + sizeof(*(inarg))))
-
-struct fuse_config
-{
-};
 
 struct lock_queue_element
 {
@@ -124,7 +123,6 @@ struct fuse
   nodeid_gen_t nodeid_gen;
   unsigned int hidectr;
   mutex_t lock;
-  struct fuse_config conf;
   fuse_operations ops;
   struct lock_queue_element *lockq;
 
@@ -689,8 +687,8 @@ add_name(char       **buf,
 
       while(newbufsize < pathlen + len + 1)
         {
-          if(newbufsize >= 0x80000000)
-            newbufsize = 0xffffffff;
+          if(newbufsize >= PATH_BUFSIZE_HALF_MAX)
+            newbufsize = PATH_BUFSIZE_MAX;
           else
             newbufsize *= 2;
         }
@@ -1646,17 +1644,6 @@ fuse_lib_setattr(fuse_req_t            *req_,
                  f.ops.utimens(&req_->ctx,&fusepath[1],tv) :
                  f.ops.futimens(&req_->ctx,fh,tv));
         }
-      else if(!err && ((arg->valid & (FATTR_ATIME|FATTR_MTIME)) == (FATTR_ATIME|FATTR_MTIME)))
-        {
-          struct timespec tv[2];
-          tv[0].tv_sec  = arg->atime;
-          tv[0].tv_nsec = arg->atimensec;
-          tv[1].tv_sec  = arg->mtime;
-          tv[1].tv_nsec = arg->mtimensec;
-          err = ((fusepath != NULL) ?
-                 f.ops.utimens(&req_->ctx,&fusepath[1],tv) :
-                 f.ops.futimens(&req_->ctx,fh,tv));
-        }
 
       if(!err)
         err = ((fusepath != NULL) ?
@@ -2245,8 +2232,6 @@ fuse_lib_write(fuse_req_t            *req_,
                     data,
                     arg->size,
                     arg->offset);
-  free_path(hdr_->nodeid,NULL);
-
   if(res >= 0)
     fuse_reply_write(req_,res);
   else
@@ -3535,28 +3520,6 @@ fuse_exit()
   f.se->exited = 1;
 }
 
-enum
-  {
-    KEY_HELP,
-  };
-
-#define FUSE_LIB_OPT(t,p,v) { t,offsetof(struct fuse_config,p),v }
-
-static const struct fuse_opt fuse_lib_opts[] =
-  {
-    FUSE_OPT_END
-  };
-
-static
-int
-fuse_lib_opt_proc(void             *data,
-                  const char       *arg,
-                  int               key,
-                  struct fuse_args *outargs)
-{
-  return 1;
-}
-
 static
 int
 node_table_init(struct node_table *t)
@@ -3601,7 +3564,6 @@ metrics_log_nodes_info(FILE *file_)
            "node name_table total allocated memory: %" PRIu64 "\n"
            "msgbuf bufsize: %" PRIu64 "\n"
            "msgbuf allocation count: %" PRIu64 "\n"
-           "msgbuf available count: %" PRIu64 "\n"
            "msgbuf total allocated memory: %" PRIu64 "\n"
            "\n"
            ,
@@ -3615,7 +3577,6 @@ metrics_log_nodes_info(FILE *file_)
            (uint64_t)(f.name_table.size * sizeof(node_t*)),
            msgbuf_get_bufsize(),
            msgbuf_alloc_count(),
-           msgbuf_avail_count(),
            msgbuf_alloc_count() * msgbuf_get_bufsize()
            );
 
@@ -3631,12 +3592,11 @@ metrics_log_nodes_info_to_tmp_dir(struct fuse *f_)
   char filepath[256];
   struct stat st;
   char const *mode = "a";
-  off_t const max_size = (1024 * 1024);
 
   sprintf(filepath,"/tmp/mergerfs.%d.info",getpid());
 
   rv = lstat(filepath,&st);
-  if((rv == 0) && (st.st_size > max_size))
+  if((rv == 0) && (st.st_size > INFO_FILE_MAX_SIZE))
     mode = "w";
 
   file = fopen(filepath,mode);
@@ -3751,9 +3711,6 @@ fuse_new(int                           fd_,
       llop.getlk = NULL;
       llop.setlk = NULL;
     }
-
-  if(fuse_opt_parse(args,&f.conf,fuse_lib_opts,fuse_lib_opt_proc) == -1)
-    goto out_free_fs;
 
   f.se = fuse_lowlevel_new_common(args,&llop,sizeof(llop),&f);
   if(f.se == NULL)

@@ -29,17 +29,19 @@ struct fuse_opt_context
 void
 fuse_opt_free_args(struct fuse_args *args)
 {
-  if (args) {
-    if (args->argv && args->allocated) {
-      int i;
-      for (i = 0; i < args->argc; i++)
-        free(args->argv[i]);
-      free(args->argv);
+  if (args)
+    {
+      if (args->argv && args->allocated)
+        {
+          int i;
+          for (i = 0; i < args->argc; i++)
+            free(args->argv[i]);
+          free(args->argv);
+        }
+      args->argc = 0;
+      args->argv = NULL;
+      args->allocated = 0;
     }
-    args->argc = 0;
-    args->argv = NULL;
-    args->allocated = 0;
-  }
 }
 
 static
@@ -63,10 +65,11 @@ fuse_opt_add_arg(struct fuse_args *args, const char *arg)
     return alloc_failed();
 
   newargv = realloc(args->argv, (args->argc + 2) * sizeof(char *));
-  if (!newargv) {
-    free(newarg);
-    return alloc_failed();
-  }
+  if (!newargv)
+    {
+      free(newarg);
+      return alloc_failed();
+    }
 
   args->argv = newargv;
   args->allocated = 1;
@@ -82,12 +85,14 @@ static int fuse_opt_insert_arg_common(struct fuse_args *args, int pos,
   if (fuse_opt_add_arg(args, arg) == -1)
     return -1;
 
-  if (pos != args->argc - 1) {
-    char *newarg = args->argv[args->argc - 1];
-    memmove(&args->argv[pos + 1], &args->argv[pos],
-            sizeof(char *) * (args->argc - pos - 1));
-    args->argv[pos] = newarg;
-  }
+  if (pos != args->argc - 1)
+
+    {
+      char *newarg = args->argv[args->argc - 1];
+      memmove(&args->argv[pos + 1], &args->argv[pos],
+              sizeof(char *) * (args->argc - pos - 1));
+      args->argv[pos] = newarg;
+    }
   return 0;
 }
 
@@ -98,10 +103,11 @@ int fuse_opt_insert_arg(struct fuse_args *args, int pos, const char *arg)
 
 static int next_arg(struct fuse_opt_context *ctx, const char *opt)
 {
-  if (ctx->argctr + 1 >= ctx->argc) {
-    fprintf(stderr, "fuse: missing argument after `%s'\n", opt);
-    return -1;
-  }
+  if (ctx->argctr + 1 >= ctx->argc)
+    {
+      fprintf(stderr, "fuse: missing argument after `%s'\n", opt);
+      return -1;
+    }
   ctx->argctr++;
   return 0;
 }
@@ -120,16 +126,19 @@ static int add_opt_common(char **opts, const char *opt, int esc)
     return alloc_failed();
 
   *opts = d;
-  if (oldlen) {
-    d += oldlen;
-    *d++ = ',';
-  }
+  if (oldlen)
+    {
+      d += oldlen;
+      *d++ = ',';
+    }
 
-  for (; *opt; opt++) {
-    if (esc && (*opt == ',' || *opt == '\\'))
-      *d++ = '\\';
-    *d++ = *opt;
-  }
+  for (; *opt; opt++)
+
+    {
+      if (esc && (*opt == ',' || *opt == '\\'))
+        *d++ = '\\';
+      *d++ = *opt;
+    }
   *d = '\0';
 
   return 0;
@@ -156,11 +165,13 @@ static int call_proc(struct fuse_opt_context *ctx, const char *arg, int key,
   if (key == FUSE_OPT_KEY_DISCARD)
     return 0;
 
-  if (key != FUSE_OPT_KEY_KEEP && ctx->proc) {
-    int res = ctx->proc(ctx->data, arg, key, &ctx->outargs);
-    if (res == -1 || !res)
-      return res;
-  }
+  if (key != FUSE_OPT_KEY_KEEP && ctx->proc)
+
+    {
+      int res = ctx->proc(ctx->data, arg, key, &ctx->outargs);
+      if (res == -1 || !res)
+        return res;
+    }
   if (iso)
     return add_opt(ctx, arg);
   else
@@ -207,13 +218,14 @@ static int process_opt_param(void *var, const char *format, const char *param,
 			     const char *arg)
 {
   assert(format[0] == '%');
-  if (format[1] == 's') {
-    char *copy = strdup(param);
-    if (!copy)
-      return alloc_failed();
+  if (format[1] == 's')
+    {
+      char *copy = strdup(param);
+      if (!copy)
+        return alloc_failed();
 
-    *(char **) var = copy;
-  } else {
+      *(char **) var = copy;
+    } else {
     if (sscanf(param, format, var) != 1) {
       fprintf(stderr, "fuse: invalid parameter in option `%s'\n", arg);
       return -1;
@@ -226,19 +238,21 @@ static int process_opt(struct fuse_opt_context *ctx,
 		       const struct fuse_opt *opt, unsigned sep,
 		       const char *arg, int iso)
 {
-  if (opt->offset == -1U) {
-    if (call_proc(ctx, arg, opt->value, iso) == -1)
-      return -1;
-  } else {
-    void *var = ctx->data + opt->offset;
-    if (sep && opt->templ[sep + 1]) {
-      const char *param = arg + sep;
-      if (opt->templ[sep] == '=')
-        param ++;
-      if (process_opt_param(var, opt->templ + sep + 1,
-                            param, arg) == -1)
+  if (opt->offset == -1U)
+    {
+      if (call_proc(ctx, arg, opt->value, iso) == -1)
         return -1;
-    } else
+    } else {
+    void *var = ctx->data + opt->offset;
+    if (sep && opt->templ[sep + 1])
+      {
+        const char *param = arg + sep;
+        if (opt->templ[sep] == '=')
+          param ++;
+        if (process_opt_param(var, opt->templ + sep + 1,
+                              param, arg) == -1)
+          return -1;
+      } else
       *(int *)var = opt->value;
   }
   return 0;
@@ -272,19 +286,20 @@ static int process_gopt(struct fuse_opt_context *ctx, const char *arg, int iso)
 {
   unsigned sep;
   const struct fuse_opt *opt = find_opt(ctx->opt, arg, &sep);
-  if (opt) {
-    for (; opt; opt = find_opt(opt + 1, arg, &sep)) {
-      int res;
-      if (sep && opt->templ[sep] == ' ' && !arg[sep])
-        res = process_opt_sep_arg(ctx, opt, sep, arg,
-                                  iso);
-      else
-        res = process_opt(ctx, opt, sep, arg, iso);
-      if (res == -1)
-        return -1;
-    }
-    return 0;
-  } else
+  if (opt)
+    {
+      for (; opt; opt = find_opt(opt + 1, arg, &sep)) {
+        int res;
+        if (sep && opt->templ[sep] == ' ' && !arg[sep])
+          res = process_opt_sep_arg(ctx, opt, sep, arg,
+                                    iso);
+        else
+          res = process_opt(ctx, opt, sep, arg, iso);
+        if (res == -1)
+          return -1;
+      }
+      return 0;
+    } else
     return call_proc(ctx, arg, FUSE_OPT_KEY_OPT, iso);
 }
 
@@ -294,36 +309,41 @@ static int process_real_option_group(struct fuse_opt_context *ctx, char *opts)
   char *d = s;
   int end = 0;
 
-  while (!end) {
-    if (*s == '\0')
-      end = 1;
-    if (*s == ',' || end) {
-      int res;
+  while (!end)
 
-      *d = '\0';
-      res = process_gopt(ctx, opts, 1);
-      if (res == -1)
-        return -1;
-      d = opts;
-    } else {
-      if (s[0] == '\\' && s[1] != '\0') {
-        s++;
-        if (s[0] >= '0' && s[0] <= '3' &&
-            s[1] >= '0' && s[1] <= '7' &&
-            s[2] >= '0' && s[2] <= '7') {
-          *d++ = (s[0] - '0') * 0100 +
-            (s[1] - '0') * 0010 +
-            (s[2] - '0');
-          s += 2;
+    {
+      if (*s == '\0')
+        end = 1;
+      if (*s == ',' || end)
+        {
+          int res;
+
+          *d = '\0';
+          res = process_gopt(ctx, opts, 1);
+          if (res == -1)
+            return -1;
+          d = opts;
         } else {
+        if (s[0] == '\\' && s[1] != '\0')
+          {
+            s++;
+            if (s[0] >= '0' && s[0] <= '3' &&
+                s[1] >= '0' && s[1] <= '7' &&
+                s[2] >= '0' && s[2] <= '7')
+              {
+                *d++ = (s[0] - '0') * 0100 +
+                  (s[1] - '0') * 0010 +
+                  (s[2] - '0');
+                s += 2;
+              } else {
+              *d++ = *s;
+            }
+          } else {
           *d++ = *s;
         }
-      } else {
-        *d++ = *s;
       }
+      s++;
     }
-    s++;
-  }
 
   return 0;
 }
@@ -333,10 +353,12 @@ static int process_option_group(struct fuse_opt_context *ctx, const char *opts)
   int res;
   char *copy = strdup(opts);
 
-  if (!copy) {
-    fprintf(stderr, "fuse: memory allocation failed\n");
-    return -1;
-  }
+  if (!copy)
+
+    {
+      fprintf(stderr, "fuse: memory allocation failed\n");
+      return -1;
+    }
   res = process_real_option_group(ctx, copy);
   free(copy);
   return res;
@@ -346,17 +368,19 @@ static int process_one(struct fuse_opt_context *ctx, const char *arg)
 {
   if (ctx->nonopt || arg[0] != '-')
     return call_proc(ctx, arg, FUSE_OPT_KEY_NONOPT, 0);
-  else if (arg[1] == 'o') {
-    if (arg[2])
-      return process_option_group(ctx, arg + 2);
-    else {
-      if (next_arg(ctx, arg) == -1)
-        return -1;
+  else if (arg[1] == 'o')
+    {
+      if (arg[2])
+        return process_option_group(ctx, arg + 2);
+      else
+        {
+          if (next_arg(ctx, arg) == -1)
+            return -1;
 
-      return process_option_group(ctx,
-                                  ctx->argv[ctx->argctr]);
-    }
-  } else if (arg[1] == '-' && !arg[2]) {
+          return process_option_group(ctx,
+                                      ctx->argv[ctx->argctr]);
+        }
+    } else if (arg[1] == '-' && !arg[2]) {
     if (add_arg(ctx, arg) == -1)
       return -1;
     ctx->nonopt = ctx->outargs.argc;
@@ -367,20 +391,23 @@ static int process_one(struct fuse_opt_context *ctx, const char *arg)
 
 static int opt_parse(struct fuse_opt_context *ctx)
 {
-  if (ctx->argc) {
-    if (add_arg(ctx, ctx->argv[0]) == -1)
-      return -1;
-  }
+  if (ctx->argc)
+    {
+      if (add_arg(ctx, ctx->argv[0]) == -1)
+        return -1;
+    }
 
   for (ctx->argctr = 1; ctx->argctr < ctx->argc; ctx->argctr++)
     if (process_one(ctx, ctx->argv[ctx->argctr]) == -1)
       return -1;
 
-  if (ctx->opts) {
-    if (fuse_opt_insert_arg(&ctx->outargs, 1, "-o") == -1 ||
-        fuse_opt_insert_arg(&ctx->outargs, 2, ctx->opts) == -1)
-      return -1;
-  }
+  if (ctx->opts)
+
+    {
+      if (fuse_opt_insert_arg(&ctx->outargs, 1, "-o") == -1 ||
+          fuse_opt_insert_arg(&ctx->outargs, 2, ctx->opts) == -1)
+        return -1;
+    }
 
   /* If option separator ("--") is the last argument, remove it */
   if (ctx->nonopt && ctx->nonopt == ctx->outargs.argc &&
@@ -409,11 +436,12 @@ int fuse_opt_parse(struct fuse_args *args, void *data,
   ctx.argv = args->argv;
 
   res = opt_parse(&ctx);
-  if (res != -1) {
-    struct fuse_args tmp = *args;
-    *args = ctx.outargs;
-    ctx.outargs = tmp;
-  }
+  if (res != -1)
+    {
+      struct fuse_args tmp = *args;
+      *args = ctx.outargs;
+      ctx.outargs = tmp;
+    }
   free(ctx.opts);
   fuse_opt_free_args(&ctx.outargs);
   return res;

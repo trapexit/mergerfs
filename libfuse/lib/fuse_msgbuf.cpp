@@ -32,6 +32,9 @@
 static u32 g_pagesize = 0;
 static u64 g_bufsize  = 0;
 
+/* Extra pages: 1 for page-alignment headroom, 1 for fuse_in_header+fuse_write_in alignment */
+#define MSGBUF_OVERHEAD_PAGES 2
+
 static
 __attribute__((constructor))
 void
@@ -145,17 +148,11 @@ msgbuf_get_pagesize()
 void
 msgbuf_set_bufsize(const u64 size_in_pages_)
 {
-  g_bufsize = ((size_in_pages_ + 2) * g_pagesize);
+  g_bufsize = ((size_in_pages_ + MSGBUF_OVERHEAD_PAGES) * g_pagesize);
 }
 
 u64
 msgbuf_alloc_count()
-{
-  return g_msgbuf_pool.size();
-}
-
-u64
-msgbuf_avail_count()
 {
   return g_msgbuf_pool.size();
 }

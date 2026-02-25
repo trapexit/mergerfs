@@ -42,7 +42,7 @@ fuse_session_new(void *data,
   se->process_buf = process_buf;
   se->destroy     = destroy;
   se->fd          = -1;  /* Not yet mounted */
-  se->bufsize     = 0;
+  //se->bufsize     = 0;
 
   return se;
 }
@@ -80,19 +80,6 @@ void*
 fuse_session_data(struct fuse_session *se)
 {
   return se->f;
-}
-
-/* Direct accessors for inlined channel fields */
-int
-fuse_session_fd(struct fuse_session *se)
-{
-  return se->fd;
-}
-
-size_t
-fuse_session_bufsize(struct fuse_session *se)
-{
-  return se->bufsize;
 }
 
 int

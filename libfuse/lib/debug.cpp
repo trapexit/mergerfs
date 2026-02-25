@@ -38,6 +38,7 @@
 #include <time.h>
 
 #define PARAM(inarg) (((char *)(inarg)) + sizeof(*(inarg)))
+#define STRERR_BUF_SIZE 128
 
 static
 void
@@ -230,59 +231,7 @@ _open_flag_to_str(const uint64_t offset_)
 static
 const
 char*
-_fuse_flag_to_str(const uint64_t offset_)
-{
-  switch(1ULL << offset_)
-    {
-      FUSE_INIT_FLAG_CASE(ASYNC_READ);
-      FUSE_INIT_FLAG_CASE(POSIX_LOCKS);
-      FUSE_INIT_FLAG_CASE(FILE_OPS);
-      FUSE_INIT_FLAG_CASE(ATOMIC_O_TRUNC);
-      FUSE_INIT_FLAG_CASE(EXPORT_SUPPORT);
-      FUSE_INIT_FLAG_CASE(BIG_WRITES);
-      FUSE_INIT_FLAG_CASE(DONT_MASK);
-      FUSE_INIT_FLAG_CASE(SPLICE_WRITE);
-      FUSE_INIT_FLAG_CASE(SPLICE_MOVE);
-      FUSE_INIT_FLAG_CASE(SPLICE_READ);
-      FUSE_INIT_FLAG_CASE(FLOCK_LOCKS);
-      FUSE_INIT_FLAG_CASE(HAS_IOCTL_DIR);
-      FUSE_INIT_FLAG_CASE(AUTO_INVAL_DATA);
-      FUSE_INIT_FLAG_CASE(DO_READDIRPLUS);
-      FUSE_INIT_FLAG_CASE(READDIRPLUS_AUTO);
-      FUSE_INIT_FLAG_CASE(ASYNC_DIO);
-      FUSE_INIT_FLAG_CASE(WRITEBACK_CACHE);
-      FUSE_INIT_FLAG_CASE(NO_OPEN_SUPPORT);
-      FUSE_INIT_FLAG_CASE(PARALLEL_DIROPS);
-      FUSE_INIT_FLAG_CASE(HANDLE_KILLPRIV);
-      FUSE_INIT_FLAG_CASE(POSIX_ACL);
-      FUSE_INIT_FLAG_CASE(ABORT_ERROR);
-      FUSE_INIT_FLAG_CASE(MAX_PAGES);
-      FUSE_INIT_FLAG_CASE(CACHE_SYMLINKS);
-      FUSE_INIT_FLAG_CASE(NO_OPENDIR_SUPPORT);
-      FUSE_INIT_FLAG_CASE(EXPLICIT_INVAL_DATA);
-      FUSE_INIT_FLAG_CASE(MAP_ALIGNMENT);
-      FUSE_INIT_FLAG_CASE(SUBMOUNTS);
-      FUSE_INIT_FLAG_CASE(HANDLE_KILLPRIV_V2);
-      FUSE_INIT_FLAG_CASE(SETXATTR_EXT);
-      FUSE_INIT_FLAG_CASE(INIT_EXT);
-      FUSE_INIT_FLAG_CASE(INIT_RESERVED);
-      FUSE_INIT_FLAG_CASE(SECURITY_CTX);
-      FUSE_INIT_FLAG_CASE(HAS_INODE_DAX);
-      FUSE_INIT_FLAG_CASE(CREATE_SUPP_GROUP);
-      FUSE_INIT_FLAG_CASE(HAS_EXPIRE_ONLY);
-      FUSE_INIT_FLAG_CASE(DIRECT_IO_ALLOW_MMAP);
-      FUSE_INIT_FLAG_CASE(PASSTHROUGH);
-      FUSE_INIT_FLAG_CASE(NO_EXPORT_SUPPORT);
-      FUSE_INIT_FLAG_CASE(HAS_RESEND);
-      FUSE_INIT_FLAG_CASE(ALLOW_IDMAP);
-      FUSE_INIT_FLAG_CASE(OVER_IO_URING);
-    }
-
-  return NULL;
-}
-
-std::string
-fuse_debug_init_flag_name(const uint64_t flag_)
+_fuse_init_flag_name(const uint64_t flag_)
 {
   switch(flag_)
     {
@@ -330,10 +279,25 @@ fuse_debug_init_flag_name(const uint64_t flag_)
       FUSE_INIT_FLAG_CASE(OVER_IO_URING);
     }
 
-  return "unknown";
+  return nullptr;
 }
 
 #undef FUSE_INIT_FLAG_CASE
+
+static
+const
+char*
+_fuse_flag_to_str(const uint64_t offset_)
+{
+  return ::_fuse_init_flag_name(1ULL << offset_);
+}
+
+std::string
+fuse_debug_init_flag_name(const uint64_t flag_)
+{
+  const char *s = ::_fuse_init_flag_name(flag_);
+  return s ? s : "unknown";
+}
 
 static
 std::string
@@ -524,7 +488,7 @@ _debug_fuse_lookup(const void *arg_)
 
   fmt::print(output.get(),
              "name={}\n",
-             ::              _quoted(name));
+             ::_quoted(name));
 }
 
 static
@@ -644,7 +608,7 @@ _debug_fuse_unlink(const void *arg_)
   fmt::print(output.get(),
              "name={}"
              "\n",
-             ::              _quoted(name));
+             ::_quoted(name));
 }
 
 static
@@ -658,7 +622,7 @@ _debug_fuse_rmdir(const void *arg_)
   fmt::print(output.get(),
              "name={}"
              "\n",
-             ::              _quoted(name));
+             ::_quoted(name));
 }
 
 static
@@ -720,7 +684,7 @@ _debug_fuse_link_in(const void *arg_)
              " name={}"
              "\n",
              arg->oldnodeid,
-             ::              _quoted(name));
+             ::_quoted(name));
 }
 
 static
@@ -913,7 +877,7 @@ _debug_fuse_getxattr_in(const void *arg_)
              " name={}"
              "\n",
              arg->size,
-             ::              _quoted(name));
+             ::_quoted(name));
 }
 
 static
@@ -941,7 +905,7 @@ _debug_fuse_removexattr(const void *arg_)
   fmt::print(output.get(),
              "name={}"
              "\n",
-             ::              _quoted(name));
+             ::_quoted(name));
 }
 
 static
@@ -1178,31 +1142,6 @@ _debug_fuse_statx_in(const void *arg_)
 
 static
 void
-_debug_fuse_tmpfile_in(const void *arg_)
-{
-  auto output = fuse_cfg.log_file();
-
-  const char *name;
-  const struct fuse_create_in *arg = (const fuse_create_in*)arg_;
-
-  name = PARAM(arg);
-
-  fmt::print(output.get(),
-             "mode={:o}"
-             " umask={:o}"
-             " name={}"
-             " flags=0x{:08X}"
-             " flags_str=\"{}\""
-             "\n",
-             arg->mode,
-             arg->umask,
-             _quoted(name),
-             arg->flags,
-             _open_flags_str(arg->flags));
-}
-
-static
-void
 _debug_init_in(const struct fuse_init_in *arg_)
 {
   auto output = fuse_cfg.log_file();
@@ -1309,9 +1248,8 @@ fuse_debug_init_out(const uint64_t              unique_,
   auto output = fuse_cfg.log_file();
 
   uint64_t flags;
-  const struct fuse_init_out *arg = arg_;
 
-  flags = (((uint64_t)arg->flags) | ((uint64_t)arg->flags2) << 32);
+  flags = (((uint64_t)arg_->flags) | ((uint64_t)arg_->flags2) << 32);
   fmt::print(output.get(),
              "ts={}"
              " dir=OUT"
@@ -1333,17 +1271,17 @@ fuse_debug_init_out(const uint64_t              unique_,
              _timestamp_ns(),
              unique_,
              sizeof(struct fuse_out_header) + argsize_,
-             arg->major,
-             arg->minor,
-             arg->max_readahead,
+             arg_->major,
+             arg_->minor,
+             arg_->max_readahead,
              flags,
              _fuse_init_flags_str(flags),
-             arg->max_background,
-             arg->congestion_threshold,
-             arg->max_write,
-             arg->time_gran,
-             arg->max_pages,
-             arg->map_alignment);
+             arg_->max_background,
+             arg_->congestion_threshold,
+             arg_->max_write,
+             arg_->time_gran,
+             arg_->max_pages,
+             arg_->map_alignment);
 }
 
 static
@@ -1718,7 +1656,7 @@ fuse_debug_in_header(const struct fuse_in_header *hdr_)
       _debug_fuse_copy_file_range_in(arg);
       break;
     case FUSE_TMPFILE:
-      _debug_fuse_tmpfile_in(arg);
+      _debug_fuse_create_in(arg);
       break;
     case FUSE_STATX:
       _debug_fuse_statx_in(arg);
@@ -1742,7 +1680,7 @@ fuse_debug_out_header(const struct fuse_out_header *hdr_)
 {
   auto output = fuse_cfg.log_file();
 
-  char strerror_buf[128];
+  char strerror_buf[STRERR_BUF_SIZE];
 
   fmt::print(output.get(),
              "ts={}"

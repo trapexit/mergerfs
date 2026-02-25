@@ -1713,15 +1713,6 @@ fuse_send_enomem(struct fuse_session *se_,
   fuse_send_errno(se_,ENOMEM,unique_id_);
 }
 
-// static
-// void
-// fuse_send_einval(struct fuse_ll   *f_,
-//                  struct fuse_chan *ch_,
-//                  const uint64_t    unique_id_)
-// {
-//   fuse_send_errno(f_,ch_,EINVAL,unique_id_);
-// }
-
 static
 int
 fuse_ll_buf_receive_read(struct fuse_session *se_,
@@ -1831,23 +1822,6 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   return;
 }
 
-static const struct fuse_opt fuse_ll_opts[] =
-  {
-    FUSE_OPT_END
-  };
-
-static
-int
-fuse_ll_opt_proc(void             *data_,
-                 const char       *arg_,
-                 int               key_,
-                 struct fuse_args *outargs_)
-{
-  fmt::print(stderr, "fuse: ERROR - unknown option - '{}'\n", arg_);
-
-  return -1;
-}
-
 /*
  * always call fuse_lowlevel_new_common() internally, to work around a
  * misfeature in the FreeBSD runtime linker, which links the old
@@ -1870,9 +1844,6 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   list_init_nreq(&f.notify_list);
   f.notify_ctr = 1;
   mutex_init(f.lock);
-
-  if(fuse_opt_parse(args,NULL,fuse_ll_opts,fuse_ll_opt_proc) == -1)
-    goto out_free;
 
   memcpy(&f.op,op,op_size);
   f.owner = getuid();

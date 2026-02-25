@@ -20,6 +20,9 @@
 /* 32KB - same as glibc getdents buffer size */
 #define DENTS_BUF_EXPAND_SIZE (1024 * 32)
 
+/* Initial pre-allocated capacity for directory-entry offset vector */
+#define DENTS_OFFS_INITIAL_CAPACITY 64
+
 static
 uint64_t
 _round_up(const uint64_t number_,
@@ -146,7 +149,7 @@ fuse_dirents_init(fuse_dirents_t *d_)
     return -ENOMEM;
 
   kv_init(d_->offs);
-  kv_resize(uint32_t,d_->offs,64);
+  kv_resize(uint32_t,d_->offs,DENTS_OFFS_INITIAL_CAPACITY);
   kv_push(uint32_t,d_->offs,0);
 
   return 0;

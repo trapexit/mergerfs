@@ -14,8 +14,6 @@
 
 #include "extern_c.h"
 
-struct fuse_ll;
-
 /* Simplified fuse_session - fields inlined from former fuse_chan
  * Since mergerfs only supports one mount, we collapse the hierarchy:
  * fuse_session -> fuse_chan -> fd
@@ -54,13 +52,6 @@ struct fuse_notify_req
 
 EXTERN_C_BEGIN
 
-struct fuse *fuse_new_common(int                fd,
-                             size_t             bufsize,
-                             struct fuse_args  *args,
-			     const struct fuse_operations *op);
-
-
-
 struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
                                               const struct fuse_lowlevel_ops *op,
                                               size_t op_size, void *userdata);
@@ -69,12 +60,6 @@ struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
 
 void fuse_kern_unmount(const char *mountpoint, int fd);
 int fuse_kern_mount(const char *mountpoint, struct fuse_args *args);
-
-struct fuse *fuse_setup_common(int argc,
-                               char *argv[],
-			       const struct fuse_operations *op,
-                               char **mountpoint,
-			       int *fd);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
 
