@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -304,9 +305,9 @@ str::trim(const std::string &str_)
 
   rv = str_;
 
-  while(!rv.empty() && (rv[0] == ' '))
+  while(!rv.empty() && std::isspace(static_cast<unsigned char>(rv[0])))
     rv.erase(0);
-  while(!rv.empty() && (rv[rv.size()-1] == ' '))
+  while(!rv.empty() && std::isspace(static_cast<unsigned char>(rv[rv.size()-1])))
     rv.erase(rv.size()-1);
 
   return rv;
