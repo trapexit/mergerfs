@@ -42,6 +42,7 @@ inline
 uint64_t
 DirInfo::to_fh() const
 {
+  ASSERT_NOT_NULL(this);
   return reinterpret_cast<u64>(this);
 }
 
@@ -49,5 +50,11 @@ inline
 DirInfo*
 DirInfo::from_fh(const u64 fh_)
 {
-  return reinterpret_cast<DirInfo*>(fh_);
+  DirInfo *rv;
+
+  rv = reinterpret_cast<DirInfo*>(fh_);
+
+  ASSERT_NOT_NULL(rv);
+
+  return rv;
 }
