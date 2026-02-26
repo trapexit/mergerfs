@@ -30,3 +30,27 @@ namespace assert
   struct StaticAssert<true>
   {};
 }
+
+#ifdef NDEBUG
+
+#define ASSERT_NOT_NULL(ptr)
+
+#else
+
+#include <cassert>
+#include <iostream>
+
+#define ASSERT_NOT_NULL(ptr)                            \
+  do {                                                  \
+    auto *_tmp = (ptr);                                 \
+    if((_tmp) == nullptr) {                             \
+      std::cerr << "ASSERT_NOT_NULL failed\n"           \
+                << "  expression: \"" #ptr "\"\n"       \
+                << "  file: " << __FILE__ << "\n"       \
+                << "  line: " << __LINE__ << "\n"       \
+                << "  function: " << __func__ << "\n";  \
+      assert((_tmp) != nullptr);                        \
+    }                                                   \
+  } while (0)
+
+#endif

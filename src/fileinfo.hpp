@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "assert.hpp"
 #include "branch.hpp"
 #include "fh.hpp"
 #include "fs_path.hpp"
@@ -42,7 +43,6 @@ public:
       branch(*branch_),
       direct_io(direct_io_)
   {
-    mutex_init(mutex);
   }
 
   FileInfo(const int       fd_,
@@ -54,7 +54,6 @@ public:
       branch(branch_),
       direct_io(direct_io_)
   {
-    mutex_init(mutex);
   }
 
   FileInfo(const FileInfo *fi_)
@@ -63,7 +62,6 @@ public:
       branch(fi_->branch),
       direct_io(fi_->direct_io)
   {
-    mutex_init(mutex);
   }
 
 public:
@@ -73,13 +71,14 @@ public:
   int fd;
   Branch branch;
   u32 direct_io:1;
-  mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+  Mutex mutex;
 };
 
 inline
 u64
 FileInfo::to_fh() const
 {
+  ASSERT_NOT_NULL(this);
   return reinterpret_cast<u64>(this);
 }
 
@@ -87,5 +86,11 @@ inline
 FileInfo*
 FileInfo::from_fh(const u64 fh_)
 {
-  return reinterpret_cast<FileInfo*>(fh_);
+  FileInfo *rv;
+
+  rv = reinterpret_cast<FileInfo*>(fh_);
+
+  ASSERT_NOT_NULL(rv);
+
+  return rv;
 }
