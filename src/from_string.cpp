@@ -69,10 +69,14 @@ str::from(const std::string_view  val_,
 
 int
 str::from(const std::string_view  val_,
-          int64_t                *rv_)
+           int64_t                *rv_)
 {
   int64_t tmp;
   const int base = 10;
+  constexpr int64_t K = 1024LL;
+  constexpr int64_t M = K * 1024LL;
+  constexpr int64_t G = M * 1024LL;
+  constexpr int64_t T = G * 1024LL;
 
   auto [ptr,ec] = std::from_chars(val_.begin(),
                                   val_.end(),
@@ -81,50 +85,60 @@ str::from(const std::string_view  val_,
 
   if(ec != std::errc{})
     return -EINVAL;
-  *rv_ = tmp;
   if(ptr == val_.end())
-    return 0;
+    {
+      *rv_ = tmp;
+      return 0;
+    }
 
   switch(*ptr)
     {
     case 'b':
     case 'B':
-      *rv_ *= 1ULL;
       break;
 
     case 'k':
     case 'K':
-      *rv_ *= 1024ULL;
+      if(__builtin_mul_overflow(tmp,K,&tmp))
+        return -EOVERFLOW;
       break;
 
     case 'm':
     case 'M':
-      *rv_ *= (1024ULL * 1024ULL);
+      if(__builtin_mul_overflow(tmp,M,&tmp))
+        return -EOVERFLOW;
       break;
 
     case 'g':
     case 'G':
-      *rv_ *= (1024ULL * 1024ULL * 1024ULL);
+      if(__builtin_mul_overflow(tmp,G,&tmp))
+        return -EOVERFLOW;
       break;
 
     case 't':
     case 'T':
-      *rv_ *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+      if(__builtin_mul_overflow(tmp,T,&tmp))
+        return -EOVERFLOW;
       break;
 
     default:
       return -EINVAL;
     }
 
+  *rv_ = tmp;
   return 0;
 }
 
 int
 str::from(const std::string_view  val_,
-          uint64_t               *rv_)
+           uint64_t               *rv_)
 {
   uint64_t tmp;
   const int base = 10;
+  constexpr uint64_t K = 1024ULL;
+  constexpr uint64_t M = K * 1024ULL;
+  constexpr uint64_t G = M * 1024ULL;
+  constexpr uint64_t T = G * 1024ULL;
 
   auto [ptr,ec] = std::from_chars(val_.begin(),
                                   val_.end(),
@@ -133,41 +147,47 @@ str::from(const std::string_view  val_,
 
   if(ec != std::errc{})
     return -EINVAL;
-  *rv_ = tmp;
   if(ptr == val_.end())
-    return 0;
+    {
+      *rv_ = tmp;
+      return 0;
+    }
 
   switch(*ptr)
     {
     case 'b':
     case 'B':
-      *rv_ *= 1ULL;
       break;
 
     case 'k':
     case 'K':
-      *rv_ *= 1024ULL;
+      if(__builtin_mul_overflow(tmp,K,&tmp))
+        return -EOVERFLOW;
       break;
 
     case 'm':
     case 'M':
-      *rv_ *= (1024ULL * 1024ULL);
+      if(__builtin_mul_overflow(tmp,M,&tmp))
+        return -EOVERFLOW;
       break;
 
     case 'g':
     case 'G':
-      *rv_ *= (1024ULL * 1024ULL * 1024ULL);
+      if(__builtin_mul_overflow(tmp,G,&tmp))
+        return -EOVERFLOW;
       break;
 
     case 't':
     case 'T':
-      *rv_ *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+      if(__builtin_mul_overflow(tmp,T,&tmp))
+        return -EOVERFLOW;
       break;
 
     default:
       return -EINVAL;
     }
 
+  *rv_ = tmp;
   return 0;
 }
 
