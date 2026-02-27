@@ -57,6 +57,9 @@ FUSE::futimens(const fuse_req_ctx_t  *ctx_,
                               });
     }
 
+  if(fh == 0)
+    return -ENOENT;
+
   FileInfo *fi = FileInfo::from_fh(fh);
 
   return ::_futimens(fi->fd,ts_);
