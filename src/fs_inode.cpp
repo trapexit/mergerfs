@@ -23,6 +23,7 @@
 
 #include <cstdint>
 
+#include <atomic>
 #include <pthread.h>
 #include <sys/stat.h>
 
@@ -37,7 +38,7 @@ static uint64_t _hybrid_hash(const std::string &,
                              const ino_t);
 
 
-static inodefunc_t g_func = ::_hybrid_hash;
+static std::atomic<inodefunc_t> g_func{::_hybrid_hash};
 
 
 static
@@ -150,19 +151,19 @@ int
 fs::inode::set_algo(const std::string &algo_)
 {
   if(algo_ == "passthrough")
-    g_func = ::_passthrough;
+    g_func.store(::_passthrough);
   ef(algo_ == "path-hash")
-    g_func = ::_path_hash;
+    g_func.store(::_path_hash);
   ef(algo_ == "path-hash32")
-    g_func = ::_path_hash32;
+    g_func.store(::_path_hash32);
   ef(algo_ == "devino-hash")
-    g_func = ::_devino_hash;
+    g_func.store(::_devino_hash);
   ef(algo_ == "devino-hash32")
-    g_func = ::_devino_hash32;
+    g_func.store(::_devino_hash32);
   ef(algo_ == "hybrid-hash")
-    g_func = ::_hybrid_hash;
+    g_func.store(::_hybrid_hash);
   ef(algo_ == "hybrid-hash32")
-    g_func = ::_hybrid_hash32;
+    g_func.store(::_hybrid_hash32);
   else
     return -EINVAL;
 
@@ -172,19 +173,20 @@ fs::inode::set_algo(const std::string &algo_)
 std::string
 fs::inode::get_algo(void)
 {
-  if(g_func == ::_passthrough)
+  inodefunc_t func = g_func.load();
+  if(func == ::_passthrough)
     return "passthrough";
-  if(g_func == ::_path_hash)
+  if(func == ::_path_hash)
     return "path-hash";
-  if(g_func == ::_path_hash32)
+  if(func == ::_path_hash32)
     return "path-hash32";
-  if(g_func == ::_devino_hash)
+  if(func == ::_devino_hash)
     return "devino-hash";
-  if(g_func == ::_devino_hash32)
+  if(func == ::_devino_hash32)
     return "devino-hash32";
-  if(g_func == ::_hybrid_hash)
+  if(func == ::_hybrid_hash)
     return "hybrid-hash";
-  if(g_func == ::_hybrid_hash32)
+  if(func == ::_hybrid_hash32)
     return "hybrid-hash32";
 
   return {};
@@ -196,7 +198,7 @@ fs::inode::calc(const std::string &branch_path_,
                 const mode_t       mode_,
                 const ino_t        ino_)
 {
-  return g_func(branch_path_,fusepath_,mode_,ino_);
+  return g_func.load()(branch_path_,fusepath_,mode_,ino_);
 }
 
 void
