@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "assert.hpp"
 #include "fh.hpp"
 
 #include "base_types.h"

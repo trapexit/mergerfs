@@ -55,6 +55,9 @@ FUSE::ftruncate(const fuse_req_ctx_t *ctx_,
                               });
     }
 
+  if(fh == 0)
+    return -ENOENT;
+
   FileInfo *fi = FileInfo::from_fh(fh);
 
   return ::_ftruncate(fi->fd,size_);
