@@ -9,6 +9,7 @@
 * scope_guard: https://github.com/Neargye/scope_guard
 * subprocess: https://github.com/arun11299/cpp-subprocess
 * CLI11: https://github.com/CLIUtils/CLI11
+* string-lite: https://github.com/martinmoene/string-lite
 * boost
   * download boost
   * ./bootstrap.sh

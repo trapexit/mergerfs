@@ -1,19 +1,19 @@
 //
-// Copyright (c) 2021-2021 Martin Moene
+// Copyright (c) 2025-2025 Martin Moene
 //
 // https://github.com/martinmoene/string-lite
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef NONSTD_STRING_LITE_HPP
-#define NONSTD_STRING_LITE_HPP
+#ifndef NONSTD_STRING_BARE_HPP
+#define NONSTD_STRING_BARE_HPP
 
-#define string_lite_MAJOR  0
-#define string_lite_MINOR  0
-#define string_lite_PATCH  0
+#define string_bare_MAJOR  0
+#define string_bare_MINOR  0
+#define string_bare_PATCH  0
 
-#define string_lite_VERSION  string_STRINGIFY(string_lite_MAJOR) "." string_STRINGIFY(string_lite_MINOR) "." string_STRINGIFY(string_lite_PATCH)
+#define string_bare_VERSION  string_STRINGIFY(string_bare_MAJOR) "." string_STRINGIFY(string_bare_MINOR) "." string_STRINGIFY(string_bare_PATCH)
 
 #define string_STRINGIFY(  x )  string_STRINGIFY_( x )
 #define string_STRINGIFY_( x )  #x
@@ -30,14 +30,34 @@
 //# pragma message("string.hpp: Note: Tweak header not supported.")
 #endif
 
-#ifdef __has_include
-# if __has_include( <string_view> )
-#  define string_HAVE_STD_STRING_VIEW  1
-# else
-#  define string_HAVE_STD_STRING_VIEW  0
-# endif
-#else
-# define  string_HAVE_STD_STRING_VIEW  0
+// string configuration:
+
+// Select character types to provide:
+
+#if !defined( string_CONFIG_PROVIDE_CHAR_T )
+# define string_CONFIG_PROVIDE_CHAR_T  1
+#endif
+
+#if !defined( string_CONFIG_PROVIDE_WCHAR_T )
+# define string_CONFIG_PROVIDE_WCHAR_T  0
+#endif
+
+#if !defined( string_CONFIG_PROVIDE_CHAR8_T )
+# define string_CONFIG_PROVIDE_CHAR8_T  0
+#endif
+
+#if !defined( string_CONFIG_PROVIDE_CHAR16_T )
+# define string_CONFIG_PROVIDE_CHAR16_T  0
+#endif
+
+#if !defined( string_CONFIG_PROVIDE_CHAR32_T )
+# define string_CONFIG_PROVIDE_CHAR32_T  0
+#endif
+
+// Provide regex variants: default off, as it increases compile time considerably.
+
+#if !defined( string_CONFIG_PROVIDE_REGEX )
+# define string_CONFIG_PROVIDE_REGEX  0
 #endif
 
 // Control presence of exception handling (try and auto discover):
@@ -53,26 +73,7 @@
 # endif
 #endif
 
-// TODO Switch between various versions of string_view:
-// - minimal version: nonstd::string::string_view
-// - lite version: nonstd::string_view
-// - std version: std::string_view
-
-#define  string_CONFIG_SELECT_STRING_VIEW_INTERNAL  1
-#define  string_CONFIG_SELECT_STRING_VIEW_NONSTD    2
-#define  string_CONFIG_SELECT_STRING_VIEW_STD       3
-
-#ifndef  string_CONFIG_SELECT_STRING_VIEW
-# define string_CONFIG_SELECT_STRING_VIEW string_CONFIG_SELECT_STRING_VIEW_INTERNAL
-#endif
-
-#if      string_CONFIG_SELECT_STRING_VIEW==string_CONFIG_SELECT_STRING_VIEW_STD && !string_HAVE_STD_STRING_VIEW
-# error  string-lite: std::string_view selected but is not available: C++17?
-#elif   0 // string_CONFIG_SELECT_STRING_VIEW==string_CONFIG_SELECT_STRING_VIEW_NONSTD && !defined(NONSTD_SV_LITE_H_INCLUDED)
-# error  string-lite: string-view-lite selected but is not available: nonstd/string_view.hpp included before nonstd/string.hpp?
-#endif
-
-// C++ language version detection (C++23 is speculative):
+// C++ language version detection:
 // Note: VC14.0/1900 (VS2015) lacks too much from C++14.
 
 #ifndef   string_CPLUSPLUS
@@ -88,7 +89,8 @@
 #define string_CPP14_OR_GREATER  ( string_CPLUSPLUS >= 201402L )
 #define string_CPP17_OR_GREATER  ( string_CPLUSPLUS >= 201703L )
 #define string_CPP20_OR_GREATER  ( string_CPLUSPLUS >= 202002L )
-#define string_CPP23_OR_GREATER  ( string_CPLUSPLUS >= 202300L )
+#define string_CPP23_OR_GREATER  ( string_CPLUSPLUS >= 202302L )
+#define string_CPP26_OR_GREATER  ( string_CPLUSPLUS >  202302L )  // not finalized yet
 
 // MSVC version:
 
@@ -149,7 +151,7 @@
 
 // Presence of C++11 language features:
 
-#define string_HAVE_FREE_BEGIN              string_CPP14_120
+#define string_HAVE_FREE_BEGIN              string_CPP11_120
 #define string_HAVE_CONSTEXPR_11           (string_CPP11_000 && !string_BETWEEN(string_COMPILER_MSVC_VER, 1, 1910))
 #define string_HAVE_NOEXCEPT                string_CPP11_140
 #define string_HAVE_NULLPTR                 string_CPP11_100
@@ -161,12 +163,13 @@
 // Presence of C++14 language features:
 
 #define string_HAVE_CONSTEXPR_14            string_CPP14_000
-#define string_HAVE_FREE_BEGIN              string_CPP14_120
+#define string_HAVE_FREE_CBEGIN             string_CPP14_120
 
 // Presence of C++17 language features:
 
 #define string_HAVE_FREE_SIZE               string_CPP17_140
 #define string_HAVE_NODISCARD               string_CPP17_000
+#define string_HAVE_STRING_VIEW             string_CPP17_000
 
 // Presence of C++20 language features:
 
@@ -221,449 +224,86 @@
 # define string_explicit_cv /*explicit*/
 #endif
 
-#define string_HAS_ENABLE_IF_          (string_HAVE_TYPE_TRAITS && string_HAVE_DEFAULT_FN_TPL_ARGS)
-#define string_TEST_STRING_CONTAINS    (string_HAS_ENABLE_IF_ && !string_BETWEEN(string_COMPILER_MSVC_VER, 1, 1910))
-#define string_TEST_STRING_STARTS_WITH  string_TEST_STRING_CONTAINS
-#define string_TEST_STRING_ENDS_WITH    string_TEST_STRING_CONTAINS
-
-// Method enabling (return type):
-
-#if string_HAVE_TYPE_TRAITS
-# define string_ENABLE_IF_R_(VA, R)  typename std::enable_if< (VA), R >::type
-#else
-# define string_ENABLE_IF_R_(VA, R)  R
-#endif
-
-// Method enabling (function template argument):
-
-#if string_HAS_ENABLE_IF_
-
-// VS 2013 seems to have trouble with SFINAE for default non-type arguments:
-# if !string_BETWEEN( string_COMPILER_MSVC_VER, 1, 1900 )
-#  define string_ENABLE_IF_(VA) , typename std::enable_if< (VA), int >::type = 0
-# else
-#  define string_ENABLE_IF_(VA) , typename = typename std::enable_if< (VA), ::nonstd::string::detail::enabler >::type
-# endif
-
-# define string_ENABLE_IF_HAS_METHOD_(  type, method)  string_ENABLE_IF_(  string_HAS_METHOD_( type, method) )
-# define string_DISABLE_IF_HAS_METHOD_( type, method)  string_ENABLE_IF_( !string_HAS_METHOD_( type, method) )
-
-#else
-# define  string_ENABLE_IF_(VA)
-# define  string_ENABLE_IF_HAS_METHOD_( type, member)
-# define  string_DISABLE_IF_HAS_METHOD_(type, member)
-#endif
-
 // Additional includes:
 
-#include <algorithm>
 #include <cassert>
-#include <cstring>
+
+#include <algorithm>    // std::transform()
 #include <iterator>
 #include <locale>
+#include <limits>
 #include <string>
+#include <tuple>
 #include <vector>
 
-#if string_HAVE_REGEX
+#if string_HAVE_STRING_VIEW
+# include <string_view>
+#else
+// # pragma message("string.hpp: Using internal nonstd::std17::basic_string_view<CharT>.")
+#endif
+
+#if string_CONFIG_PROVIDE_REGEX && string_HAVE_REGEX
 # include <regex>
 #endif
 
-#if ! string_CONFIG_NO_EXCEPTIONS
-# include <stdexcept>
-#endif
-
-#if string_HAVE_TYPE_TRAITS
-# include <type_traits>
-#elif string_HAVE_TR1_TYPE_TRAITS
-# include <tr1/type_traits>
-#endif
-
-#if    string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_INTERNAL
-// noop
-#elif  string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_NONSTD
-# define nssv_CONFIG_SELECT_STRING_VIEW    nssv_STRING_VIEW_NONSTD
-# include "nonstd/string_view.hpp"
-#elif  string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_STD
-# include <string_view>
-#endif
-
-// Method detection:
-
-#define string_HAS_METHOD_( T, M )  \
-    ::nonstd::string::has_##M<T>::value
-
-#if string_CPP11_OR_GREATER && !string_BETWEEN(string_COMPILER_GNUC_VERSION, 1, 500)
-
-# define string_MAKE_HAS_METHOD_( M )                   \
-    template< typename T >                              \
-    using M##_t = decltype(std::declval<T>().M());      \
-                                                        \
-    template<typename T >                               \
-    using has_##M = std23::is_detected<M##_t, T>;
-
-#else // string_CPP11_OR_GREATER
-
-# define string_MAKE_HAS_METHOD_( M )                   \
-    template< typename T >                              \
-    struct has_##M                                      \
-    {                                                   \
-        typedef char yes[1];                            \
-        typedef char no[2];                             \
-                                                        \
-        template< typename U >                          \
-        static yes & test( int (*)[sizeof(std98::declval<U>().M(), 1)] );    \
-                                                        \
-        template< typename U >                          \
-        static no & test(...);                          \
-                                                        \
-        static const bool value = sizeof( test<T>(NULL) ) == sizeof(yes); \
-    };
-
-#endif
-
-// Type traits:
 namespace nonstd {
+
+//
+// string details:
+//
+
 namespace string {
 
-namespace std98 {
+// npos
 
-template< typename T, T v > struct integral_constant { enum { value = v }; };
-typedef integral_constant< bool, true  > true_type;
-typedef integral_constant< bool, false > false_type;
+#if string_HAVE_STRING_VIEW
+    static string_constexpr std::size_t npos = std::string_view::npos;
+#elif string_CPP17_OR_GREATER
+    static string_constexpr std::size_t npos = std::string::npos;
+#elif string_CPP11_OR_GREATER
+    enum : std::size_t { npos = std::string::npos };
+#else
+    enum { npos = std::string::npos };
+#endif  // string_HAVE_STRING_VIEW
 
-template< typename T, typename U >
-struct is_same { enum dummy { value = false }; };
-
-template< typename T >
-struct is_same<T, T> { enum dummy { value = true }; };
-
-template< typename T >
-T declval();
-
-} // namespace std98
-
-#if string_CPP11_OR_GREATER
-
-namespace std11 {
-
-template< bool B, typename T, typename F >
-struct conditional { typedef T type; };
-
-template< typename T, typename F >
-struct conditional<false, T, F> { typedef F type; };
-
-template< typename T > struct remove_const          { typedef T type; };
-template< typename T > struct remove_const<const T> { typedef T type; };
-
-template< typename T > struct remove_volatile             { typedef T type; };
-template< typename T > struct remove_volatile<volatile T> { typedef T type; };
-
-template< typename T > struct remove_cv { typedef typename remove_volatile<typename remove_const<T>::type>::type type; };
-
-// template< typename T > struct is_const          : std98::false_type {};
-// template< typename T > struct is_const<const T> : std98::true_type {};
-
-template< typename T > struct is_pointer_helper     : std98::false_type {};
-template< typename T > struct is_pointer_helper<T*> : std98::true_type {};
-template< typename T > struct is_pointer : is_pointer_helper<typename remove_cv<T>::type> {};
-
-} // C++11
-
-namespace std14 {
-
-template< bool B, typename T, typename F >
-using conditional_t = typename std11::conditional<B,T,F>::type;
-
-} // namespace c++14
-
-namespace std17 {
-
-template< typename... >
-using void_t = void;
-
-} // namespace c++17
-
-namespace std20 {
-
-// type identity, to establish non-deduced contexts in template argument deduction:
-
-template< typename T >
-struct type_identity
-{
-    typedef T type;
-};
-
-#if string_CPP11_100
-
-struct identity
-{
-    template< typename T >
-    string_constexpr T && operator ()( T && arg ) const string_noexcept
-    {
-        return std::forward<T>( arg );
-    }
-};
-
-#endif // string_CPP11_100
-
-} // namespace c++20
-
-namespace std23 {
 namespace detail {
 
-template< typename Default, typename AlwaysVoid, template<class...> class Op, typename... Args >
-struct detector
+template< typename T >
+string_constexpr std::size_t to_size_t(T value) string_noexcept
 {
-    using value_t = std::false_type;
-    using type = Default;
-};
-
-template< typename Default, template<class...> class Op, typename... Args >
-struct detector<Default, std17::void_t<Op<Args...>>, Op, Args...>
-{
-    using value_t = std::true_type;
-    using type = Op<Args...>;
-};
+    return static_cast<std::size_t>( value );
+}
 
 } // namespace detail
 
-struct nonesuch
-{
-    ~nonesuch() = delete;
-    nonesuch( nonesuch const & ) = delete;
-    void operator=( nonesuch const & ) = delete;
-};
+namespace std14 {
+} // namespace std14
 
-// pre-C+17 requires `class Op`:
-template< template<typename...> class Op, typename... Args >
-using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
+namespace std17 {
 
-} // std23
+#if string_HAVE_STRING_VIEW
 
-#endif // string_CPP11_OR_GREATER
+using std::basic_string_view;
 
-// for string_HAS_METHOD_:
+# if string_CONFIG_PROVIDE_CHAR_T
+    using std::string_view;
+# endif
+# if string_CONFIG_PROVIDE_WCHAR_T
+    using std::wstring_view;
+# endif
+# if string_CONFIG_PROVIDE_CHAR8_T
+    using std::u8string_view;
+# endif
+# if string_CONFIG_PROVIDE_CHAR16_T
+    using std::u16string_view;
+# endif
+# if string_CONFIG_PROVIDE_CHAR32_T
+    using std::u32string_view;
+# endif
 
-string_MAKE_HAS_METHOD_( begin )
-string_MAKE_HAS_METHOD_( clear )
-string_MAKE_HAS_METHOD_( contains )
-string_MAKE_HAS_METHOD_( empty )
-string_MAKE_HAS_METHOD_( starts_with )
-string_MAKE_HAS_METHOD_( ends_with )
-string_MAKE_HAS_METHOD_( replace )
+#else // string_HAVE_STRING_VIEW
 
-// string-lite API functions:
-
-// Utilities:
-
-template< typename CharT >
-string_nodiscard CharT nullchr() string_noexcept
-{
-    return 0;
-}
-
-// free function min():
-
-template< typename T >
-inline T min( T a, typename std20::type_identity<T>::type b )
-{
-    return a < b ? a : b;
-}
-
-// free function length():
-
-template< typename Coll >
-string_nodiscard size_t length( Coll const & coll )
-{
-    return coll.length();
-}
-
-#if string_HAVE_FREE_SIZE
-
-using std::size;
-
-#else // string_HAVE_FREE_SIZE
-
-template< typename Cont >
-string_nodiscard inline size_t size( Cont const & c )
-{
-    return c.size();
-}
-
-#endif // string_HAVE_FREE_SIZE
-
-// nonstd size(C-string)
-
-// TODO Add char16_t, char32_t, wchar_t variations - size()
-
-string_nodiscard inline size_t size( char * s )
-{
-    return strlen( s );
-}
-
-string_nodiscard inline size_t size( char const * s )
-{
-    return strlen( s );
-}
-
-string_nodiscard inline size_t size( wchar_t * s )
-{
-    return wcslen( s );
-}
-
-string_nodiscard inline size_t size( wchar_t const * s )
-{
-    return wcslen( s );
-}
-
-#if string_HAVE_CHAR16_T
-#endif
-
-// non-standard begin(), end() for char*:
-
-// TODO Add char16_t, char32_t, wchar_t variations - begin(), end()
-
-template< typename PCharT >
-string_nodiscard inline
-string_ENABLE_IF_R_(std11::is_pointer<PCharT>::value, PCharT)
-begin( PCharT text )
-{
-    return text;
-}
-
-template< typename PCharT >
-string_nodiscard inline
-string_ENABLE_IF_R_(std11::is_pointer<PCharT>::value, PCharT)
-end( PCharT text )
-{
-    return text + size( text );
-}
-
-template< typename CharT >
-string_nodiscard inline CharT const *
-cbegin( CharT const * text )
-{
-    return text;
-}
-
-template< typename CharT >
-string_nodiscard inline CharT const *
-cend( CharT const * text )
-{
-    return text + size( text );
-}
-
-// standard begin() and end():
-
-#if string_HAVE_FREE_BEGIN
-
-using std::begin;
-using std::cbegin;
-using std::crbegin;
-using std::end;
-using std::cend;
-using std::crend;
-
-#else // string_HAVE_FREE_BEGIN
-
-template< typename StringT >
-string_nodiscard inline typename StringT::iterator begin( StringT & text )
-{
-    return text.begin();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::iterator end( StringT & text )
-{
-    return text.end();
-}
-
-#if string_CPP11_000
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_iterator begin( StringT const & text )
-{
-    return text.cbegin();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_iterator end( StringT const & text )
-{
-    return text.cend();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_iterator cbegin( StringT const & text )
-{
-    return text.cbegin();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_iterator cend( StringT const & text )
-{
-    return text.cend();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::reverse_iterator rbegin( StringT const & text )
-{
-    return text.rbegin();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::reverse_iterator rend( StringT const & text )
-{
-    return text.rend();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_reverse_iterator crbegin( StringT const & text )
-{
-    return text.crbegin();
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_reverse_iterator crend( StringT const & text )
-{
-    return text.crend();
-}
-
-#else // string_CPP11_000
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_iterator cbegin( StringT const & text )
-{
-    typedef typename StringT::const_iterator const_iterator;
-    return const_iterator( text.begin() );
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_iterator cend( StringT const & text )
-{
-    typedef typename StringT::const_iterator const_iterator;
-    return const_iterator( text.end() );
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_reverse_iterator crbegin( StringT const & text )
-{
-    typedef typename StringT::const_reverse_iterator const_reverse_iterator;
-    return const_reverse_iterator( text.rbegin() );
-}
-
-template< typename StringT >
-string_nodiscard inline typename StringT::const_reverse_iterator crend( StringT const & text )
-{
-    typedef typename StringT::const_reverse_iterator const_reverse_iterator;
-    return const_reverse_iterator( text.rend() );
-}
-
-#endif // string_CPP11_000
-#endif // string_HAVE_FREE_BEGIN
-
-// Minimal internal string_view for string algorithm library, when requested:
-
-#if string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_INTERNAL
+// Local basic_string_view.
 
 template
 <
@@ -691,6 +331,16 @@ public:
     typedef std::size_t     size_type;
     typedef std::ptrdiff_t  difference_type;
 
+    // Constants:
+
+#if string_CPP17_OR_GREATER
+    static string_constexpr std::size_t npos = string::npos;
+#elif string_CPP11_OR_GREATER
+    enum : std::size_t { npos = string::npos };
+#else
+    enum { npos = string::npos };
+#endif
+
     // 24.4.2.1 Construction and assignment:
 
     string_constexpr basic_string_view() string_noexcept
@@ -708,9 +358,9 @@ public:
         , size_( count )
     {}
 
-    string_constexpr basic_string_view( CharT const * b, CharT const * e ) string_noexcept // non-standard noexcept
+    string_constexpr basic_string_view( CharT const * b, CharT const * e ) string_noexcept // C++20, non-standard noexcept
         : data_( b )
-        , size_( e - b )
+        , size_( detail::to_size_t(e - b) )
     {}
 
     string_constexpr basic_string_view( std::basic_string<CharT> & s ) string_noexcept // non-standard noexcept
@@ -726,7 +376,7 @@ public:
 // #if string_HAVE_EXPLICIT_CONVERSION
 
     template< class Allocator >
-    string_explicit operator std::basic_string<CharT, Traits, Allocator>() const
+    string_nodiscard string_explicit operator std::basic_string<CharT, Traits, Allocator>() const
     {
         return to_string( Allocator() );
     }
@@ -736,7 +386,7 @@ public:
 #if string_CPP11_OR_GREATER
 
     template< class Allocator = std::allocator<CharT> >
-    std::basic_string<CharT, Traits, Allocator>
+    string_nodiscard std::basic_string<CharT, Traits, Allocator>
     to_string( Allocator const & a = Allocator() ) const
     {
         return std::basic_string<CharT, Traits, Allocator>( begin(), end(), a );
@@ -744,14 +394,14 @@ public:
 
 #else
 
-    std::basic_string<CharT, Traits>
+    string_nodiscard std::basic_string<CharT, Traits>
     to_string() const
     {
         return std::basic_string<CharT, Traits>( begin(), end() );
     }
 
     template< class Allocator >
-    std::basic_string<CharT, Traits, Allocator>
+    string_nodiscard std::basic_string<CharT, Traits, Allocator>
     to_string( Allocator const & a ) const
     {
         return std::basic_string<CharT, Traits, Allocator>( begin(), end(), a );
@@ -759,8 +409,7 @@ public:
 
 #endif // string_CPP11_OR_GREATER
 
-
-    string_constexpr14 size_type find( basic_string_view v, size_type pos = 0 ) const string_noexcept  // (1)
+    string_nodiscard string_constexpr14 size_type find( basic_string_view v, size_type pos = 0 ) const string_noexcept  // (1)
     {
         return assert( v.size() == 0 || v.data() != string_nullptr )
             , pos >= size()
@@ -768,23 +417,81 @@ public:
             : to_pos( std::search( cbegin() + pos, cend(), v.cbegin(), v.cend(), Traits::eq ) );
     }
 
-    string_constexpr14 size_type find( CharT c, size_type pos = 0 ) const string_noexcept  // (2)
+    string_nodiscard string_constexpr14 size_type rfind( basic_string_view v, size_type pos = npos ) const string_noexcept  // (1)
+    {
+        if ( size() < v.size() )
+        {
+            return npos;
+        }
+
+        if ( v.empty() )
+        {
+            return (std::min)( size(), pos );
+        }
+
+        const_iterator last   = cbegin() + (std::min)( size() - v.size(), pos ) + v.size();
+        const_iterator result = std::find_end( cbegin(), last, v.cbegin(), v.cend(), Traits::eq );
+
+        return result != last ? size_type( result - cbegin() ) : npos;
+    }
+
+    string_nodiscard string_constexpr14 size_type find( CharT c, size_type pos = 0 ) const string_noexcept  // (2)
     {
         return find( basic_string_view( &c, 1 ), pos );
     }
 
-    string_constexpr size_type find_first_of( basic_string_view v, size_type pos = 0 ) const string_noexcept  // (1)
+    string_nodiscard string_constexpr size_type find_first_of( basic_string_view v, size_type pos = 0 ) const string_noexcept  // (1)
     {
         return pos >= size()
             ? npos
             : to_pos( std::find_first_of( cbegin() + pos, cend(), v.cbegin(), v.cend(), Traits::eq ) );
     }
 
-    string_constexpr size_type     size()   const string_noexcept { return size_; }
-    string_constexpr size_type     length() const string_noexcept { return size_; }
-    string_constexpr const_pointer data()   const string_noexcept { return data_; }
+    string_nodiscard string_constexpr size_type find_first_of( CharT c, size_type pos = 0 ) const string_noexcept  // (2)
+    {
+        return find_first_of( basic_string_view( &c, 1 ), pos );
+    }
 
-    string_constexpr14 basic_string_view substr( size_type pos = 0, size_type n = npos ) const
+    string_nodiscard string_constexpr size_type find_last_of( basic_string_view v, size_type pos = npos ) const string_noexcept  // (1)
+    {
+        return empty()
+            ? npos
+            : pos >= size()
+            ? find_last_of( v, size() - 1 )
+            : to_pos( std::find_first_of( const_reverse_iterator( cbegin() + pos + 1 ), crend(), v.cbegin(), v.cend(), Traits::eq ) );
+    }
+
+    string_nodiscard string_constexpr size_type find_first_not_of( basic_string_view v, size_type pos = 0 ) const string_noexcept  // (1)
+    {
+        return pos >= size()
+            ? npos
+            : to_pos( std::find_if( cbegin() + pos, cend(), not_in_view( v ) ) );
+    }
+
+    string_nodiscard string_constexpr size_type find_last_not_of( basic_string_view v, size_type pos = npos ) const string_noexcept  // (1)
+    {
+        return empty()
+            ? npos
+            : pos >= size()
+            ? find_last_not_of( v, size() - 1 )
+            : to_pos( std::find_if( const_reverse_iterator( cbegin() + pos + 1 ), crend(), not_in_view( v ) ) );
+    }
+
+    string_nodiscard string_constexpr14 int compare( basic_string_view v ) const string_noexcept
+    {
+        auto const result = Traits::compare( data(), v.data(), (std::min)(size(), v.size()) );
+
+        return result != 0
+            ? result
+            : size() == v.size() ? 0 : size() < v.size() ? -1 : +1;
+    }
+
+    string_nodiscard string_constexpr bool          empty()  const string_noexcept { return size_ == 0; }
+    string_nodiscard string_constexpr size_type     size()   const string_noexcept { return size_; }
+    string_nodiscard string_constexpr size_type     length() const string_noexcept { return size_; }
+    string_nodiscard string_constexpr const_pointer data()   const string_noexcept { return data_; }
+
+    string_nodiscard string_constexpr14 basic_string_view substr( size_type pos = 0, size_type n = npos ) const
     {
 #if string_CONFIG_NO_EXCEPTIONS
         assert( pos <= size() );
@@ -794,1518 +501,1640 @@ public:
             throw std::out_of_range("string_view::substr()");
         }
 #endif
-        return basic_string_view( data() + pos, (std::min)( n, size() - pos ) );
+        return basic_string_view( data() + pos, n == npos? size() - pos : (std::min)( n, size() - pos ) );
     }
 
-    string_constexpr const_iterator begin()  const string_noexcept { return data_;         }
-    string_constexpr const_iterator end()    const string_noexcept { return data_ + size_; }
+    string_nodiscard string_constexpr const_iterator begin()  const string_noexcept { return data_;         }
+    string_nodiscard string_constexpr const_iterator end()    const string_noexcept { return data_ + size_; }
 
-    string_constexpr const_iterator cbegin() const string_noexcept { return begin(); }
-    string_constexpr const_iterator cend()   const string_noexcept { return end();   }
+    string_nodiscard string_constexpr const_iterator cbegin() const string_noexcept { return begin(); }
+    string_nodiscard string_constexpr const_iterator cend()   const string_noexcept { return end();   }
 
-    string_constexpr const_reverse_iterator rbegin()  const string_noexcept { return const_reverse_iterator( end() );   }
-    string_constexpr const_reverse_iterator rend()    const string_noexcept { return const_reverse_iterator( begin() ); }
+    string_nodiscard string_constexpr const_reverse_iterator rbegin()  const string_noexcept { return const_reverse_iterator( end() );   }
+    string_nodiscard string_constexpr const_reverse_iterator rend()    const string_noexcept { return const_reverse_iterator( begin() ); }
 
-    string_constexpr const_reverse_iterator crbegin() const string_noexcept { return rbegin(); }
-    string_constexpr const_reverse_iterator crend()   const string_noexcept { return rend();   }
+    string_nodiscard string_constexpr const_reverse_iterator crbegin() const string_noexcept { return rbegin(); }
+    string_nodiscard string_constexpr const_reverse_iterator crend()   const string_noexcept { return rend();   }
 
-    string_constexpr size_type to_pos( const_iterator it ) const
+private:
+    struct not_in_view
+    {
+        const basic_string_view v;
+
+        string_constexpr explicit not_in_view( basic_string_view v_ ) : v( v_ ) {}
+
+        string_nodiscard string_constexpr bool operator()( CharT c ) const
+        {
+            return npos == v.find_first_of( c );
+        }
+    };
+
+    string_nodiscard string_constexpr size_type to_pos( const_iterator it ) const
     {
         return it == cend() ? npos : size_type( it - cbegin() );
     }
 
-    // Constants:
-
-#if string_CPP17_OR_GREATER
-    static string_constexpr size_type npos = size_type(-1);
-#elif string_CPP11_OR_GREATER
-    enum : size_type { npos = size_type(-1) };
-#else
-    enum { npos = size_type(-1) };
-#endif
+    string_nodiscard string_constexpr size_type to_pos( const_reverse_iterator it ) const
+    {
+        return it == crend() ? npos : size_type( crend() - it - 1 );
+    }
 
 private:
     const_pointer data_;
     size_type     size_;
 };
 
-typedef basic_string_view<char>      string_view;
-typedef basic_string_view<wchar_t>   wstring_view;
+template< class CharT, class Traits >
+string_nodiscard string_constexpr bool
+operator==( basic_string_view<CharT,Traits> lhs, basic_string_view<CharT,Traits> rhs ) string_noexcept
+{
+    return lhs.compare( rhs ) == 0;
+}
 
-#if string_HAVE_CHAR16_T
+template< class CharT, class Traits >
+string_nodiscard string_constexpr bool
+operator!=( basic_string_view<CharT,Traits> lhs, basic_string_view<CharT,Traits> rhs ) string_noexcept
+{
+    return lhs.compare( rhs ) != 0;
+}
 
+template< class CharT, class Traits >
+string_nodiscard string_constexpr bool
+operator<( basic_string_view<CharT,Traits> lhs, basic_string_view<CharT,Traits> rhs ) string_noexcept
+{
+    return lhs.compare( rhs ) < 0;
+}
+
+template< class CharT, class Traits >
+string_nodiscard string_constexpr bool
+operator<=( basic_string_view<CharT,Traits> lhs, basic_string_view<CharT,Traits> rhs ) string_noexcept
+{
+    return lhs.compare( rhs ) <= 0;
+}
+
+template< class CharT, class Traits >
+string_nodiscard string_constexpr bool
+operator>( basic_string_view<CharT,Traits> lhs, basic_string_view<CharT,Traits> rhs ) string_noexcept
+{
+    return lhs.compare( rhs ) > 0;
+}
+
+template< class CharT, class Traits >
+string_nodiscard string_constexpr bool
+operator>=( basic_string_view<CharT,Traits> lhs, basic_string_view<CharT,Traits> rhs ) string_noexcept
+{
+    return compare( lhs, rhs ) >= 0;
+}
+
+#if string_CONFIG_PROVIDE_CHAR_T
+typedef basic_string_view<char>     string_view;
+#endif
+
+#if string_CONFIG_PROVIDE_WCHAR_T
+typedef basic_string_view<wchar_t>  wstring_view;
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR8_T && string_HAVE_CHAR8_T
+typedef basic_string_view<char8_t>  u8string_view;
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR16_T
 typedef basic_string_view<char16_t>  u16string_view;
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR32_T
 typedef basic_string_view<char32_t>  u32string_view;
 #endif
 
-template< typename T >
-string_nodiscard inline size_t size( basic_string_view<T> const & sv )
+template< typename CharT >
+string_nodiscard inline std::size_t size( basic_string_view<CharT> const & sv ) string_noexcept
 {
     return sv.size();
 }
 
-template< typename T >
-string_nodiscard inline typename basic_string_view<T>::const_reverse_iterator
-crbegin( basic_string_view<T> const & sv )
-{
-    typedef typename basic_string_view<T>::const_reverse_iterator const_reverse_iterator;
-    return const_reverse_iterator( sv.rbegin() );
-}
+#endif // string_HAVE_STRING_VIEW
+
+} // namespace std17
+
+namespace std20 {
+
+// type identity, to establish non-deduced contexts in template argument deduction:
 
 template< typename T >
-string_nodiscard inline typename basic_string_view<T>::const_reverse_iterator
-crend( basic_string_view<T> const & sv )
+struct type_identity
 {
-    typedef typename basic_string_view<T>::const_reverse_iterator const_reverse_iterator;
-    return const_reverse_iterator( sv.rend() );
-}
+    typedef T type;
+};
 
-#elif string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_NONSTD
+} // namespace std20
 
-using nonstd::sv_lite::basic_string_view;
-using nonstd::sv_lite::string_view;
-using nonstd::sv_lite::wstring_view;
-
-#if nssv_HAVE_WCHAR16_T
-using nonstd::sv_lite::u16string_view;
-#endif
-#if nssv_HAVE_WCHAR32_T
-using nonstd::sv_lite::u32string_view;
-#endif
-
-#elif string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_STD
-
-using std::basic_string_view;
-using std::string_view;
-using std::wstring_view;
-#if string_HAVE_CHAR16_T
-using std::u16string_view;
-using std::u32string_view;
-#endif
-
-#endif // string_CONFIG_SELECT_STRING_VIEW_INTERNAL
-
-// Convert string_view to std::string:
-
-#if string_CONFIG_SELECT_STRING_VIEW != string_CONFIG_SELECT_STRING_VIEW_NONSTD
-
-template< class CharT, class Traits >
-std::basic_string<CharT, Traits>
-to_string( basic_string_view<CharT, Traits> v )
-{
-    return std::basic_string<CharT, Traits>( v.begin(), v.end() );
-}
-
-template< class CharT, class Traits, class Allocator >
-std::basic_string<CharT, Traits, Allocator>
-to_string( basic_string_view<CharT, Traits> v, Allocator const & a )
-{
-    return std::basic_string<CharT, Traits, Allocator>( v.begin(), v.end(), a );
-}
-
-#endif // string_CONFIG_SELECT_STRING_VIEW
-
-// to_identity() - let nonstd::string_view operate with pre-std::string_view std::string methods:
-
-template< class CharT >
-CharT const * to_identity( CharT const * s )
-{
-    return s;
-}
-
-template< class CharT, class Traits, class Allocator >
-std::basic_string<CharT, Traits, Allocator>
-to_identity( std::basic_string<CharT, Traits, Allocator> const & s )
-{
-    return s;
-}
-
-#if string_CONFIG_SELECT_STRING_VIEW == string_CONFIG_SELECT_STRING_VIEW_STD
-
-template< class CharT, class Traits >
-basic_string_view<CharT, Traits>
-to_identity( basic_string_view<CharT, Traits> v )
-{
-    return v;
-}
-
-#else
-
-template< class CharT, class Traits >
-std::basic_string<CharT, Traits>
-to_identity( basic_string_view<CharT, Traits> v )
-{
-    return to_string( v );
-}
-
-#endif // string_CONFIG_SELECT_STRING_VIEW
-
-// namespace detail:
+namespace std23 {
+} // namespace std23
 
 namespace detail {
 
-// for string_ENABLE_IF_():
+//
+// Utilities:
+//
 
-/*enum*/ class enabler{};
+// null character:
 
 template< typename CharT >
-string_nodiscard inline CharT as_lowercase( CharT chr )
+string_nodiscard string_constexpr CharT nullchr() string_noexcept
+{
+    return 0;
+}
+
+// null C-string:
+
+#if string_CONFIG_PROVIDE_CHAR_T
+string_nodiscard inline string_constexpr char const * nullstr( char ) string_noexcept
+{
+    return "";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_WCHAR_T
+string_nodiscard inline string_constexpr wchar_t const * nullstr( wchar_t ) string_noexcept
+{
+    return L"";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR8_T
+string_nodiscard inline string_constexpr char8_t const * nullstr( char8_t ) string_noexcept
+{
+    return u8"";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR16_T
+string_nodiscard inline string_constexpr char16_t const * nullstr( char16_t ) string_noexcept
+{
+    return u"";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR32_T
+string_nodiscard inline string_constexpr char32_t const * nullstr( char32_t ) string_noexcept
+{
+    return U"";
+}
+#endif
+
+// default strip set:
+
+#if string_CONFIG_PROVIDE_CHAR_T
+string_nodiscard inline string_constexpr char const * default_strip_set( char ) string_noexcept
+{
+    return " \t\n";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_WCHAR_T
+string_nodiscard inline string_constexpr wchar_t const * default_strip_set( wchar_t ) string_noexcept
+{
+    return L" \t\n";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR8_T
+string_nodiscard inline string_constexpr char8_t const * default_strip_set( char8_t ) string_noexcept
+{
+    return u8" \t\n";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR16_T
+string_nodiscard inline string_constexpr char16_t const * default_strip_set( char16_t ) string_noexcept
+{
+    return u" \t\n";
+}
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR32_T
+string_nodiscard inline string_constexpr char32_t const * default_strip_set( char32_t ) string_noexcept
+{
+    return U" \t\n";
+}
+#endif
+
+// to_string(sv):
+
+#if string_HAVE_STRING_VIEW
+    #define MK_DETAIL_TO_STRING_SV(T)                           \
+    string_nodiscard inline std::basic_string<T>                \
+    to_string( std17::basic_string_view<T> sv )                 \
+    {                                                           \
+        return std::basic_string<T>( sv );                      \
+    }
+#else
+    #define MK_DETAIL_TO_STRING_SV(T)                           \
+    string_nodiscard inline std::basic_string<T>                \
+    to_string( std17::basic_string_view<T> sv )                 \
+    {                                                           \
+        return std::basic_string<T>( sv.begin(), sv.end() );    \
+    }
+#endif
+
+#if string_CONFIG_PROVIDE_CHAR_T
+    MK_DETAIL_TO_STRING_SV( char )
+#endif
+#if string_CONFIG_PROVIDE_WCHAR_T
+    MK_DETAIL_TO_STRING_SV( wchar_t )
+#endif
+#if string_CONFIG_PROVIDE_CHAR8_T
+    MK_DETAIL_TO_STRING_SV( char8_t )
+#endif
+#if string_CONFIG_PROVIDE_CHAR16_T
+    MK_DETAIL_TO_STRING_SV( char16_t )
+#endif
+#if string_CONFIG_PROVIDE_CHAR32_T
+    MK_DETAIL_TO_STRING_SV( char32_t )
+#endif
+
+#undef MK_DETAIL_TO_STRING_SV
+
+}  // namespace detail
+}  // namespace string
+
+// enable use of string-specific namespaces detail and stdxx:
+
+using namespace string;
+
+//
+// Observers
+//
+
+// length()
+
+#define string_MK_LENGTH(T)                                         \
+    string_nodiscard inline string_constexpr std::size_t            \
+    length( std17::basic_string_view<T> text ) string_noexcept      \
+    {                                                               \
+        return text.length();                                       \
+    }
+
+// size()
+
+#define string_MK_SIZE(T)                                           \
+    string_nodiscard inline string_constexpr std::size_t            \
+    size( std17::basic_string_view<T> text ) string_noexcept        \
+    {                                                               \
+        return text.size();                                         \
+    }
+
+// is_empty()
+
+#define string_MK_IS_EMPTY(T)                                       \
+    string_nodiscard inline string_constexpr bool                   \
+    is_empty( std17::basic_string_view<T> text ) string_noexcept    \
+{                                                                   \
+        return text.empty();                                        \
+    }
+
+//
+// Searching:
+//
+
+namespace string {
+namespace detail {
+
+template< typename CharT, typename SeekT >
+string_nodiscard std::size_t
+find_first(
+    std17::basic_string_view<CharT> text
+    , SeekT const & seek, std::size_t pos ) string_noexcept
+{
+    return text.find( seek, pos );
+}
+
+} // namespace detail
+} // namespace string
+
+// find_first()
+
+#define string_MK_FIND_FIRST(CharT)                 \
+    template< typename SeekT >                      \
+    string_nodiscard std::size_t                    \
+    find_first(                                     \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek ) string_noexcept      \
+    {                                               \
+        return text.find( seek );                   \
+    }
+
+#if string_CPP17_000
+# define string_MK_FIND_FIRST_CHAR(CharT)           \
+    string_nodiscard inline std::size_t             \
+    find_first(                                     \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek ) string_noexcept              \
+    {                                               \
+        return find_first( text, std::basic_string<CharT>( &seek, &seek + 1 ) ); \
+    }
+#else
+# define string_MK_FIND_FIRST_CHAR(CharT)           \
+    string_nodiscard inline std::size_t             \
+    find_first(                                     \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek ) string_noexcept              \
+    {                                               \
+        return find_first( text, std17::basic_string_view<CharT>( &seek, &seek + 1 ) ); \
+    }
+#endif
+
+// find_last()
+
+#define string_MK_FIND_LAST(CharT)                  \
+    template< typename SeekT >                      \
+    string_nodiscard std::size_t                    \
+    find_last(                                      \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek ) string_noexcept      \
+    {                                               \
+        return text.rfind( seek );                  \
+    }
+
+#if string_CPP17_000
+# define string_MK_FIND_LAST_CHAR(CharT)            \
+    string_nodiscard inline std::size_t             \
+    find_last(                                      \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek )                              \
+    {                                               \
+        return find_last( text, std::basic_string<CharT>( &seek, &seek + 1 ) ); \
+    }
+#else
+# define string_MK_FIND_LAST_CHAR(CharT)            \
+    string_nodiscard inline std::size_t             \
+    find_last(                                      \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek )                              \
+    {                                               \
+        return find_last( text, std17::basic_string_view<CharT>( &seek, &seek + 1 ) );  \
+    }
+#endif
+
+// find_first_of()
+
+#define string_MK_FIND_FIRST_OF(CharT)              \
+    template< typename SeekT >                      \
+    string_nodiscard std::size_t                    \
+    find_first_of(                                  \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        return text.find_first_of( seek );          \
+    }
+
+// find_last_of()
+
+#define string_MK_FIND_LAST_OF(CharT)               \
+    template< typename SeekT >                      \
+    string_nodiscard std::size_t                    \
+    find_last_of(                                   \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        return text.find_last_of( seek );           \
+    }
+
+// find_first_not_of()
+
+#define string_MK_FIND_FIRST_NOT_OF(CharT)          \
+    template< typename SeekT >                      \
+    string_nodiscard std::size_t                    \
+    find_first_not_of(                              \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        return text.find_first_not_of( seek );      \
+    }
+
+// find_last_not_of()
+
+#define string_MK_FIND_LAST_NOT_OF(CharT)           \
+    template< typename SeekT >                      \
+    string_nodiscard std::size_t                    \
+    find_last_not_of(                               \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        return text.find_last_not_of( seek );       \
+    }
+
+// TODO: ??? find_if()
+
+// TODO: ??? find_if_not()
+
+// contains() - C++23
+
+#if string_CPP23_OR_GREATER
+# define string_MK_CONTAINS(CharT)                  \
+    template< typename SeekT >                      \
+    string_nodiscard bool                           \
+    contains(                                       \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek ) string_noexcept      \
+{                                                   \
+        return text.contains( seek );               \
+    }
+#else
+# define string_MK_CONTAINS(CharT)                  \
+    template< typename SeekT >                      \
+    string_nodiscard bool                           \
+    contains(                                       \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek ) string_noexcept      \
+    {                                               \
+        return string::npos != find_first(text, seek);  \
+    }
+#endif
+
+// contains_all_of()
+
+# define string_MK_CONTAINS_ALL_OF(CharT)           \
+    string_nodiscard inline bool                    \
+    contains_all_of(                                \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        for ( auto const chr : set )                \
+        {                                           \
+            if ( ! contains( text, chr ) )          \
+                return false;                       \
+        }                                           \
+        return true;                                \
+    }
+
+// contains_any_of()
+
+# define string_MK_CONTAINS_ANY_OF(CharT)           \
+    string_nodiscard inline bool                    \
+    contains_any_of(                                \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        for ( auto const chr : set )                \
+        {                                           \
+            if ( contains( text, chr ) )            \
+                return true;                        \
+        }                                           \
+        return false;                               \
+    }
+
+// contains_none_of()
+
+# define string_MK_CONTAINS_NONE_OF(CharT)          \
+    string_nodiscard inline bool                    \
+    contains_none_of(                               \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        return ! contains_any_of( text, set );      \
+    }
+
+// starts_with() - C++20
+
+#if string_CPP20_OR_GREATER
+# define string_MK_STARTS_WITH(CharT)               \
+    template< typename SeekT >                      \
+    string_nodiscard bool                           \
+    starts_with(                                    \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        return text.starts_with( seek );            \
+    }
+#else
+# define string_MK_STARTS_WITH(CharT)               \
+    template< typename SeekT >                      \
+    string_nodiscard bool                           \
+    starts_with(                                    \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        const std17::basic_string_view<CharT> look( seek );     \
+                                                    \
+        if ( size( look ) > size( text ) )          \
+        {                                           \
+            return false;                           \
+        }                                           \
+        return std::equal( look.begin(), look.end(), text.begin() );    \
+    }
+#endif  // string_CPP20_OR_GREATER
+
+#if string_CPP17_000
+# define string_MK_STARTS_WITH_CHAR(CharT)          \
+    string_nodiscard inline bool                    \
+    starts_with(                                    \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek )                              \
+    {                                               \
+        return starts_with( text, std::basic_string<CharT>( &seek, &seek + 1) );    \
+    }
+#else
+# define string_MK_STARTS_WITH_CHAR(CharT)          \
+    string_nodiscard inline bool                    \
+    starts_with(                                    \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek )                              \
+    {                                               \
+        return starts_with( text, std17::basic_string_view<CharT>( &seek, &seek + 1) ); \
+    }
+#endif  // string_CPP17_000
+
+// starts_with_all_of()
+
+# define string_MK_STARTS_WITH_ALL_OF(CharT)        \
+    string_nodiscard inline bool                    \
+    starts_with_all_of(                             \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        if ( text.empty() )                         \
+            return false;                           \
+                                                    \
+        std::basic_string<CharT> result;            \
+                                                    \
+        for ( auto const chr : text )               \
+        {                                           \
+            if ( !contains( set, chr ) )            \
+                break;                              \
+            if ( !contains( result, chr ) )         \
+                result.append( 1, chr );            \
+        }                                           \
+        return contains_all_of( result, set );      \
+    }
+
+// starts_with_any_of()
+
+# define string_MK_STARTS_WITH_ANY_OF(CharT)        \
+    string_nodiscard inline bool                    \
+    starts_with_any_of(                             \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        if ( text.empty() )                         \
+            return false;                           \
+                                                    \
+        return contains( set, *text.cbegin() );     \
+    }
+
+// starts_with_none_of()
+
+# define string_MK_STARTS_WITH_NONE_OF(CharT)       \
+    string_nodiscard inline bool                    \
+    starts_with_none_of(                            \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        return ! starts_with_any_of( text, set );   \
+    }
+
+// ends_with() - C++20
+
+#if string_CPP20_OR_GREATER
+# define string_MK_ENDS_WITH(CharT)                 \
+    template< typename SeekT >                      \
+    string_nodiscard bool                           \
+    ends_with( std17::basic_string_view<CharT> text, SeekT const & seek )   \
+    {                                               \
+        return text.ends_with( seek );              \
+    }
+#else
+# define string_MK_ENDS_WITH(CharT)                 \
+    template< typename SeekT >                      \
+    string_nodiscard bool                           \
+    ends_with(                                      \
+        std17::basic_string_view<CharT> text        \
+        , SeekT const & seek )                      \
+    {                                               \
+        const std17::basic_string_view<CharT> look( seek ); \
+                                                    \
+        if ( size( look ) > size( text ) )          \
+        {                                           \
+            return false;                           \
+        }                                           \
+        return std::equal( look.rbegin(), look.rend(), text.rbegin() ); \
+    }
+#endif
+
+#if string_CPP17_000
+# define string_MK_ENDS_WITH_CHAR(CharT)            \
+    string_nodiscard inline bool                    \
+    ends_with(                                      \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek )                              \
+    {                                               \
+        return ends_with( text, std::basic_string<CharT>( &seek, &seek + 1) );  \
+    }
+#else
+# define string_MK_ENDS_WITH_CHAR(CharT)            \
+    string_nodiscard inline bool                    \
+    ends_with(                                      \
+        std17::basic_string_view<CharT> text        \
+        , CharT seek )                              \
+    {                                               \
+        return ends_with( text, std17::basic_string_view<CharT>( &seek, &seek + 1) );   \
+    }
+#endif
+
+// ends_with_all_of()
+
+# define string_MK_ENDS_WITH_ALL_OF(CharT)          \
+    string_nodiscard inline bool                    \
+    ends_with_all_of(                               \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        if ( text.empty() )                         \
+            return false;                           \
+                                                    \
+        std::basic_string<CharT> result;            \
+                                                    \
+        for ( auto it = text.crbegin(); it != text.crend(); ++it )  \
+        {                                           \
+            auto const chr = *it;                   \
+            if ( !contains( set, chr ) )            \
+                break;                              \
+            if ( !contains( result, chr ) )         \
+                result.append( 1, chr );            \
+        }                                           \
+        return contains_all_of( result, set );      \
+    }
+
+// ends_with_any_of()
+
+# define string_MK_ENDS_WITH_ANY_OF(CharT)          \
+    string_nodiscard inline bool                    \
+    ends_with_any_of(                               \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        if ( text.empty() )                         \
+            return false;                           \
+                                                    \
+        return contains( set, *text.crbegin() );    \
+    }
+
+// ends_with_none_of()
+
+# define string_MK_ENDS_WITH_NONE_OF(CharT)         \
+    string_nodiscard inline bool                    \
+    ends_with_none_of(                              \
+        std17::basic_string_view<CharT> text        \
+        , std17::basic_string_view<CharT> set )     \
+    {                                               \
+        return !ends_with_any_of( text, set );      \
+    }
+
+//
+// Modifiers:
+//
+
+namespace string {
+namespace detail {
+
+// Transform case (character):
+
+template< typename CharT >
+string_nodiscard CharT to_lowercase( CharT chr )
 {
     return std::tolower( chr, std::locale() );
 }
 
 template< typename CharT >
-string_nodiscard inline CharT as_uppercase( CharT chr )
+string_nodiscard CharT to_uppercase( CharT chr )
 {
     return std::toupper( chr, std::locale() );
 }
 
-// case conversion:
+// Transform case; serve both CharT* and StringT&:
 
-// Note: serve both CharT* and StringT&:
-
-template< typename StringT, typename Fn >
-StringT & to_case( StringT & text, Fn fn ) string_noexcept
+template< typename CharT, typename Fn >
+string_nodiscard std::basic_string<CharT> to_case( std::basic_string<CharT> text, Fn fn )
 {
     std::transform(
-        string::begin( text ), string::end( text )
-        , string::begin( text )
+        std::begin( text ), std::end( text )
+        , std::begin( text )
         , fn
     );
-
     return text;
 }
 
-// find_first():
+} // namespace detail
+} // namespace string
 
-template< typename StringT, typename SubT >
-typename StringT::iterator find_first( StringT & text, SubT const & seek )
+// capitalize():
+
+#define string_MK_CAPITALIZE(CharT)                             \
+    string_nodiscard inline std::basic_string<CharT>            \
+    capitalize( std17::basic_string_view<CharT> text )          \
+    {                                                           \
+        if ( text.empty() )                                     \
+            return {};                                          \
+                                                                \
+        std::basic_string<CharT> result{ to_string( text ) };   \
+        result[0] = to_uppercase( result[0] );                  \
+                                                                \
+        return result;                                          \
+    }
+
+// to_lowercase(), to_uppercase()
+
+#define string_MK_TO_CASE_CHAR(CharT, Function)                 \
+    string_nodiscard inline CharT to_ ## Function( CharT chr )  \
+    {                                                           \
+        return detail::to_ ## Function<CharT>( chr );           \
+    }
+
+#define string_MK_TO_CASE_STRING(CharT, Function)               \
+    string_nodiscard inline std::basic_string<CharT> to_ ## Function( std17::basic_string_view<CharT> text )    \
+    {                                                           \
+        return detail::to_case( std::basic_string<CharT>(text), detail::to_ ## Function<CharT> );   \
+    }
+
+// strip_left()
+
+#define string_MK_STRIP_LEFT(CharT)                                                         \
+    string_nodiscard inline std::basic_string<CharT>                                        \
+    strip_left(                                                                             \
+        std17::basic_string_view<CharT> text                                                \
+        , std17::basic_string_view<CharT> set = detail::default_strip_set(CharT{}) )        \
+    {                                                                                       \
+        return std::basic_string<CharT>( text ).erase( 0, text.find_first_not_of( set ) );  \
+    }
+
+// strip_right()
+
+#define string_MK_STRIP_RIGHT(CharT)                                                        \
+    string_nodiscard inline std::basic_string<CharT>                                        \
+    strip_right(                                                                            \
+        std17::basic_string_view<CharT> text                                                \
+        , std17::basic_string_view<CharT> set = detail::default_strip_set(CharT{}) )        \
+    {                                                                                       \
+        return std::basic_string<CharT>( text ).erase( text.find_last_not_of( set ) + 1 );  \
+    }
+
+// strip()
+
+#define string_MK_STRIP(CharT)                                                              \
+    string_nodiscard inline std::basic_string<CharT>                                        \
+    strip(                                                                                  \
+        std17::basic_string_view<CharT> text                                                \
+        , std17::basic_string_view<CharT> set = detail::default_strip_set(CharT{}) )        \
+    {                                                                                       \
+        return strip_left( strip_right( text, set ), set );                                 \
+    }
+
+// erase_all()
+
+namespace string {
+namespace detail {
+
+template< typename CharT >
+string_nodiscard std::basic_string<CharT>
+erase_all( std17::basic_string_view<CharT> text, std17::basic_string_view<CharT> what )
 {
-    return std::search(
-        string::begin(text), string::end(text)
-        , string::cbegin(seek), string::cend(seek)
-    );
-}
+    std::basic_string<CharT> result( text );
 
-template< typename StringT, typename SubT >
-typename StringT::const_iterator find_first( StringT const & text, SubT const & seek )
-{
-    return std::search(
-        string::cbegin(text), string::cend(text)
-        , string::cbegin(seek), string::cend(seek)
-    );
-}
-
-// find_last():
-
-template< typename StringIt, typename SubIt, typename PredicateT >
-StringIt find_last( StringIt text_pos, StringIt text_end, SubIt seek_pos, SubIt seek_end, PredicateT compare )
-{
-    if ( seek_pos == seek_end )
-        return text_end;
-
-    StringIt result = text_end;
-
-    while ( true )
+    for ( auto pos = detail::find_first<CharT>( result, what, 0 ) ;; )
     {
-        StringIt new_result = std::search( text_pos, text_end, seek_pos, seek_end, compare );
+        pos = detail::find_first<CharT>( result, what, pos );
 
-        if ( new_result == text_end )
-        {
+        if ( pos == std::basic_string<CharT>::npos )
             break;
-        }
-        else
-        {
-            result = new_result;
-            text_pos = result;
-            ++text_pos;
-        }
+
+        result.erase( pos, what.length() );
     }
     return result;
 }
 
-template< typename StringT, typename SubT, typename PredicateT >
-typename StringT::iterator find_last( StringT & text, SubT const & seek, PredicateT compare )
-{
-    return detail::find_last(
-        string::begin(text), string::end(text)
-        , string::cbegin(seek), string::cend(seek)
-        , compare
-    );
-}
+} // detail
+} // namespace string
 
-template< typename StringT, typename SubT, typename PredicateT >
-typename StringT::const_iterator find_last( StringT const & text, SubT const & seek, PredicateT compare )
-{
-    return detail::find_last(
-        string::cbegin(text), string::cend(text)
-        , string::cbegin(seek), string::cend(seek)
-        , compare
-    );
-}
+// erase()
 
-// starts_with():
+#define string_MK_ERASE(CharT)                          \
+    string_nodiscard inline std::basic_string<CharT>    \
+    erase(                                              \
+        std17::basic_string_view<CharT> text            \
+        , std::size_t pos                               \
+        , std::size_t len = npos )                      \
+        {                                               \
+            return to_string( text ).erase( pos, len ); \
+        }
 
-template< typename StringIt, typename SubIt, typename PredicateT >
-bool starts_with( StringIt text_pos, StringIt text_end, SubIt seek_pos, SubIt seek_end, PredicateT compare )
-{
-    for( ; text_pos != text_end && seek_pos != seek_end; ++text_pos, ++seek_pos )
-    {
-        if( !compare( *text_pos, *seek_pos ) )
-            return false;
+// erase_all()
+
+#define string_MK_ERASE_ALL(CharT)                      \
+    string_nodiscard inline std::basic_string<CharT>    \
+    erase_all(                                          \
+        std17::basic_string_view<CharT> text            \
+        , std17::basic_string_view<CharT> what )        \
+    {                                                   \
+        return detail::erase_all( text, what );         \
     }
 
-    return seek_pos == seek_end;
-}
+// erase_first()
 
-template< typename StringT, typename SubT, typename PredicateT >
-bool starts_with( StringT const & text, SubT const & seek, PredicateT compare )
-{
-    return detail::starts_with(
-        string::cbegin(text), string::cend(text)
-        , string::cbegin(seek), string::cend(seek)
-        , compare
-    );
-}
-
-// ends_with():
-
-template< typename StringT, typename SubT, typename PredicateT >
-bool ends_with( StringT const & text, SubT const & seek, PredicateT compare )
-{
-    return detail::starts_with(
-        string::crbegin(text), string::crend(text)
-        , string::crbegin(seek), string::crend(seek)
-        , compare
-    );
-}
-
-// replace_all():
-
-// TODO replace_all() - alg:
-
-template< typename StringIt, typename FromIt, typename ToIt, typename PredicateT >
-bool replace_all
-(
-    StringIt text_pos, StringIt text_end
-    , FromIt from_pos, FromIt from_end
-    , ToIt to_pos, ToIt to_end
-    , PredicateT compare
-)
-{
-    return true; // error
-}
-
-template< typename CharT, typename FromT, typename ToT >
-std::basic_string<CharT> & replace_all( std::basic_string<CharT> & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    for ( ;; )
-    {
-        const size_t pos = text.find( from );
-
-        if ( pos == std::string::npos )
-            return text;
-
-        text.replace( pos, ::nonstd::string::size(from), to_identity(to) );
+#define string_MK_ERASE_FIRST(CharT)                    \
+    string_nodiscard inline std::basic_string<CharT>    \
+    erase_first(                                        \
+        std17::basic_string_view<CharT> text            \
+        , std17::basic_string_view<CharT> what )        \
+    {                                                   \
+        std::basic_string<CharT> result( text );        \
+                                                        \
+        const auto pos = find_first( result, what );    \
+                                                        \
+        return pos != std::basic_string<CharT>::npos    \
+            ? result.erase( pos, what.length() )        \
+            : result;                                   \
     }
-}
 
-template< typename StringT, typename FromT, typename ToT >
-StringT & replace_all( StringT & text, FromT const & from, ToT const & to ) string_noexcept
+// erase_last()
+
+#define string_MK_ERASE_LAST(CharT)                     \
+    string_nodiscard inline std::basic_string<CharT>    \
+    erase_last(                                         \
+        std17::basic_string_view<CharT> text            \
+        , std17::basic_string_view<CharT> what )        \
+    {                                                   \
+        std::basic_string<CharT> result( text );        \
+                                                        \
+        const auto pos = find_last( result, what );     \
+                                                        \
+        return pos != std::basic_string<CharT>::npos    \
+            ? result.erase( pos, what.length() )        \
+            : result;                                   \
+    }
+
+// insert()
+
+#define string_MK_INSERT(CharT)                         \
+    string_nodiscard inline std::basic_string<CharT>    \
+    insert(                                             \
+        std17::basic_string_view<CharT> text            \
+        , std::size_t pos                               \
+        , std17::basic_string_view<CharT> what )        \
+        {                                               \
+            return                                      \
+                to_string( text.substr(0, pos ) )       \
+                + to_string( what )                     \
+                + to_string( text.substr(pos) );        \
+        }
+
+// replace_all()
+
+namespace string {
+namespace detail {
+
+template< typename CharT >
+string_nodiscard std::basic_string<CharT>
+replace_all(
+    std17::basic_string_view<CharT> text
+    , std17::basic_string_view<CharT> what
+    , std17::basic_string_view<CharT> with )
 {
-    typedef typename StringT::value_type A;
+    std::basic_string<CharT> result( text );
 
-    (void) detail::replace_all(
-        string::begin(text), string::end(text)
-        , string::cbegin(from), string::cend(from)
-        , string::cbegin(to), string::cend(to)
-        , std::equal_to<A>()
-    );
+    if ( with == what )
+        return result;
 
-    return text;
+    for ( auto pos = detail::find_first<CharT>( result, what, 0 ) ;; )
+    {
+        pos = detail::find_first<CharT>( result, what, pos );
+
+        if ( pos == std::basic_string<CharT>::npos )
+            break;
+
+#if string_CPP17_OR_GREATER
+        result.replace( pos, what.length(), with );
+#else
+        result.replace( pos, what.length(), std::basic_string<CharT>(with) );
+#endif
+    }
+    return result;
 }
 
-// replace_first():
+} // detail
+} // namespace string
 
-template< typename CharT, typename FromT, typename ToT >
-std::basic_string<CharT> & replace_first( std::basic_string<CharT> & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    const size_t pos = text.find( to_identity(from) );
+// replace()
 
-    if ( pos == std::string::npos )
-        return text;
+#define string_MK_REPLACE(CharT)                        \
+    string_nodiscard inline std::basic_string<CharT>    \
+    replace(                                            \
+        std17::basic_string_view<CharT> text            \
+        , std::size_t pos                               \
+        , std::size_t len                               \
+        , std17::basic_string_view<CharT> what )        \
+        {                                               \
+            return                                      \
+                to_string( text.substr(0, pos ) )       \
+                + to_string( what )                     \
+                + to_string( text.substr(pos + len) );  \
+        }
 
-    return text.replace( pos, ::nonstd::string::size(from), to_identity(to) );
-}
+// replace_all()
 
-// replace_last():
+#define string_MK_REPLACE_ALL(CharT)                    \
+    string_nodiscard inline std::basic_string<CharT>    \
+    replace_all(                                        \
+        std17::basic_string_view<CharT> text            \
+        , std17::basic_string_view<CharT> what          \
+        , std17::basic_string_view<CharT> with )        \
+    {                                                   \
+        return detail::replace_all( text, what, with ); \
+    }
 
-template< typename CharT, typename FromT, typename ToT >
-std::basic_string<CharT> &
-replace_last( std::basic_string<CharT> & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    const size_t pos = text.rfind( to_identity(from) );
+// replace_first()
 
-    if ( pos == std::string::npos )
-        return text;
+#define string_MK_REPLACE_FIRST(CharT)                  \
+    string_nodiscard inline std::basic_string<CharT>    \
+    replace_first(                                      \
+        std17::basic_string_view<CharT> text            \
+        , std17::basic_string_view<CharT> what          \
+        , std17::basic_string_view<CharT> with )        \
+    {                                                   \
+        std::basic_string<CharT> result( text );        \
+                                                        \
+        const auto pos = find_first( result, what );    \
+                                                        \
+        return pos != std::basic_string<CharT>::npos    \
+            ? result.replace( pos, what.length(), std::basic_string<CharT>(with) )  \
+            : detail::nullstr(CharT{});                 \
+    }
 
-    return text.replace( pos, ::nonstd::string::size(from), to_identity(to) );
-}
+// replace_last()
 
-// append():
+#define string_MK_REPLACE_LAST(CharT)                   \
+    string_nodiscard inline std::basic_string<CharT>    \
+    replace_last(                                       \
+        std17::basic_string_view<CharT> text            \
+        , std17::basic_string_view<CharT> what          \
+        , std17::basic_string_view<CharT> with )        \
+    {                                                   \
+        std::basic_string<CharT> result( text );        \
+                                                        \
+        const auto pos = find_last( result, what );     \
+                                                        \
+        return pos != std::basic_string<CharT>::npos    \
+            ? result.replace( pos, what.length(), std::basic_string<CharT>(with) )  \
+            : detail::nullstr(CharT{});                 \
+    }
 
-template< typename CharT, typename TailT >
-string_constexpr CharT *
-append( CharT * text, TailT const & tail ) string_noexcept
-{
-    return std::strcat( text, to_identity(tail) );
-}
+//
+// Joining, splitting:
+//
 
-template< typename CharT, typename TailT >
-string_constexpr std::basic_string<CharT> &
-append( std::basic_string<CharT> & text, TailT const & tail ) string_noexcept
-{
-    return text.append( to_identity(tail) );
-}
+// append()
 
-// TODO trim() - alg
+#if string_CPP17_OR_GREATER
+# define string_MK_APPEND(CharT)                                            \
+    template< typename TailT >                                              \
+    string_nodiscard std::basic_string<CharT>                               \
+    append( std17::basic_string_view<CharT> text, TailT const & tail )      \
+    {                                                                       \
+        return std::basic_string<CharT>( text ).append( tail );             \
+    }
+#else
+# define string_MK_APPEND(CharT)                                            \
+    template< typename TailT >                                              \
+    string_nodiscard std::basic_string<CharT>                               \
+    append( std17::basic_string_view<CharT> text, TailT const & tail )      \
+    {                                                                       \
+        return std::basic_string<CharT>( text ) + std::basic_string<CharT>(tail); \
+    }
+# endif
 
-template< typename CharT, typename SetT >
-string_constexpr14 CharT *
-trim_left( CharT * text, SetT const * set ) string_noexcept
-{
-    // TODO trim() - strspn(CharT), adapt std::strspn to CharT
-    const int pos = std::strspn( text, set );
+// substring()
 
-    memmove( text, text + pos, 1 + size( text ) - pos );
+#define string_MK_SUBSTRING(CharT)                                          \
+    string_nodiscard inline std::basic_string<CharT>                        \
+    substring(                                                              \
+        std17::basic_string_view<CharT> text                                \
+        , std::size_t pos = 0                                               \
+        , std::size_t count = string::npos )                                \
+    {                                                                       \
+        return std::basic_string<CharT>( text ).substr( pos, count );       \
+    }
 
-    return text;
-}
+// join()
 
-template< typename CharT, typename SetT >
-string_constexpr std::basic_string<CharT> &
-trim_left( std::basic_string<CharT> & text, SetT const & set ) string_noexcept
-{
-    return text.erase( 0, text.find_first_not_of( set ) );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT &
-trim_left( StringT & text, SetT const & /*set*/ ) string_noexcept
-{
-    //  TODO trim() - make generic version
-    return text;
-}
-
-template< typename CharT, typename SetT >
-string_constexpr14 CharT *
-trim_right( CharT * text, SetT const * set ) string_noexcept
-{
-    std::size_t length = size( text );
-
-    if ( !length )
-        return text;
-
-    char * end = text + length - 1;
-
-    // TODO trim() - strspn(CharT), adapt std::strchr to CharT
-    while ( end >= text && std::strchr( set, *end ) )
-        end--;
-
-    *( end + 1 ) = '\0';
-
-    return text;
-}
-
-template< typename CharT, typename SetT >
-string_constexpr std::basic_string<CharT> &
-trim_right( std::basic_string<CharT> & text, SetT const & set ) string_noexcept
-{
-    return text.erase( text.find_last_not_of( set ) + 1 );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT &
-trim_right( StringT & text, SetT const & /*set*/ ) string_noexcept
-{
-    //  TODO trim() - make generic version
-    return text;
-}
-
-template< typename CharT, typename SetT >
-string_constexpr CharT *
-trim( CharT * text, SetT const * set ) string_noexcept
-{
-    return trim_right( trim_left( text, set ), set);
-}
-
-template< typename CharT, typename SetT >
-string_constexpr std::basic_string<CharT> &
-trim( std::basic_string<CharT> & text, SetT const & set ) string_noexcept
-{
-    return trim_right( trim_left( text, set ), set);
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT &
-trim( StringT & text, SetT const & set ) string_noexcept
-{
-    return trim_right( trim_left( text, set ), set);
-}
-
-// TODO join() - alg
+#define string_MK_JOIN(CharT)                                               \
+    template< typename Coll >                                               \
+    string_nodiscard std::basic_string<CharT>                               \
+    join( Coll const & coll, std17::basic_string_view<CharT> sep )          \
+    {                                                                       \
+        std::basic_string<CharT> result{};                                  \
+        typename Coll::const_iterator const coll_begin = coll.cbegin();     \
+        typename Coll::const_iterator const coll_end   = coll.cend();       \
+        typename Coll::const_iterator pos = coll_begin;                     \
+                                                                            \
+        if ( pos != coll_end )                                              \
+        {                                                                   \
+            result = append( result, *pos++ );                              \
+        }                                                                   \
+                                                                            \
+        for ( ; pos != coll_end; ++pos )                                    \
+        {                                                                   \
+            result = append( append( result,  sep ), *pos );                \
+        }                                                                   \
+                                                                            \
+        return result;                                                      \
+    }
 
 // split():
 
-template< typename CharT, typename Delimiter >
-std::vector<basic_string_view<CharT> >
-split(basic_string_view<CharT> text, Delimiter delimiter)
+namespace string {
+namespace detail {
+
+template< typename CharT >
+string_nodiscard inline auto
+split_left(
+    std17::basic_string_view<CharT> text
+    , std17::basic_string_view<CharT> set
+    , std::size_t count = std::numeric_limits<std::size_t>::max() )
+    -> std::tuple<std17::basic_string_view<CharT>, std17::basic_string_view<CharT>>
 {
-    std::vector<basic_string_view<CharT> > result;
+        auto const pos = text.find_first_of( set );
 
-    size_t pos = 0;
+        if ( pos == npos )
+            return { text, text };
 
-    for( basic_string_view<CharT> sv = delimiter(text, pos); sv.cbegin() != text.cend(); sv = delimiter(text, pos) )
+        auto const n = (std::min)( count, text.substr( pos ).find_first_not_of( set ) );
+
+        return { text.substr( 0, pos ), n != npos ? text.substr( pos + n ) : text.substr( text.size(), 0 ) };
+
+        // Note: `text.substr( text.size(), 0 )` indicates empty and end of text, see `lhs.cend() == text.cend()` in detail::split().
+}
+
+template< typename CharT >
+string_nodiscard inline auto
+split_right(
+    std17::basic_string_view<CharT> text
+    , std17::basic_string_view<CharT> set
+    , std::size_t count = std::numeric_limits<std::size_t>::max() )
+    -> std::tuple<std17::basic_string_view<CharT>, std17::basic_string_view<CharT>>
+{
+        auto const pos = text.find_last_of( set );
+
+        if ( pos == npos )
+            return { text, text };
+
+        auto const n = (std::min)( count, pos - text.substr( 0, pos ).find_last_not_of( set ) );
+
+        return { text.substr( 0, pos - n + 1 ), text.substr( pos + 1 ) };
+}
+
+template< typename CharT >
+string_nodiscard std::vector< std17::basic_string_view<CharT> >
+split( std17::basic_string_view<CharT> text
+    , std17::basic_string_view<CharT> set
+    , std::size_t Nsplit )
+{
+    std::vector< std17::basic_string_view<CharT> > result;
+
+    std17::basic_string_view<CharT> lhs = text;
+    std17::basic_string_view<CharT> rhs;
+
+    for( std::size_t cnt = 1; ; ++cnt )
     {
-        result.push_back(sv);
-        pos = (sv.end() - text.begin()) + length(delimiter);
+        if ( cnt >= Nsplit )
+        {
+            result.push_back( lhs );   // push tail:
+            break;
+        }
+
+        std::tie(lhs, rhs) = split_left( lhs, set /*, Nset*/ );
+
+        result.push_back( lhs );
+
+        if ( lhs.cend() == text.cend() )
+            break;
+
+        lhs = rhs;
     }
 
     return result;
 }
 
 } // namespace detail
-
-// Observers:
-
-// is_empty():
-
-template< typename CharT >
-string_nodiscard bool is_empty( CharT const * cp ) string_noexcept
-{
-    assert( cp != string_nullptr );
-    return *cp == nullchr<CharT>();
-}
-
-template< typename StringT
-    string_ENABLE_IF_HAS_METHOD_(StringT, empty)
->
-string_nodiscard bool is_empty( StringT const & text ) string_noexcept
-{
-    return text.empty();
-}
-
-// find_first():
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_constexpr typename StringT::iterator find_first( StringT & text, SubT const & seek )
-{
-    return detail::find_first( text, seek );
-}
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_constexpr typename StringT::const_iterator find_first( StringT const & text, SubT const & seek )
-{
-    return detail::find_first( text, seek );
-}
-
-template< typename CharT, typename SubT >
-string_constexpr CharT * find_first( CharT * text, SubT const & seek )
-{
-    return detail::find_first( text, seek );
-}
-
-// find_last():
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_constexpr typename StringT::iterator find_last( StringT & text, SubT const & seek )
-{
-    typedef typename StringT::value_type A;
-
-    return detail::find_last( text, seek, std::equal_to<A>() );
-}
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_constexpr typename StringT::const_iterator find_last( StringT const & text, SubT const & seek )
-{
-    typedef typename StringT::value_type A;
-
-    return detail::find_last( text, seek, std::equal_to<A>() );
-}
-
-template< typename CharT, typename SubT >
-string_constexpr CharT * find_last( CharT * text, SubT const & seek )
-{
-    return detail::find_last( text, seek, std::equal_to<CharT>() );
-}
-
-// contains(); C++23-like string::contains():
-
-#if string_TEST_STRING_CONTAINS
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, contains)
->
-string_nodiscard string_constexpr bool contains( StringT const & text, SubT const & seek ) string_noexcept
-{
-    return text.contains( seek );
-}
-
-template< typename StringT, typename SubT
-    string_DISABLE_IF_HAS_METHOD_(StringT, contains)
-    string_ENABLE_IF_( !std::is_arithmetic<SubT>::value )
->
-string_nodiscard string_constexpr bool contains( StringT const & text, SubT const & seek ) string_noexcept
-{
-    return string::end( text ) != find_first( text, seek );
-}
-
-template< typename StringT, typename CharT
-    string_DISABLE_IF_HAS_METHOD_(StringT, contains)
-    string_ENABLE_IF_( std::is_arithmetic<CharT>::value )
->
-string_nodiscard string_constexpr14 bool contains( StringT const & text, CharT seek ) string_noexcept
-{
-    CharT look[] = { seek, nullchr<CharT>() };
-    return string::end( text ) != find_first( text, look );
-}
-
-#else // string_TEST_STRING_CONTAINS
-
-template< typename StringT, typename SubT >
-string_nodiscard string_constexpr bool contains( StringT const & text, SubT const & seek ) string_noexcept
-{
-    return string::cend( text ) != find_first( text, seek );
-}
-
-template< typename StringT >
-string_nodiscard string_constexpr bool contains( StringT const & text, char const * seek ) string_noexcept
-{
-    return string::cend( text ) != find_first( text, seek );
-}
-
-template< typename StringT >
-string_nodiscard string_constexpr bool contains( StringT const & text, char seek ) string_noexcept
-{
-    char look[] = { seek, nullchr<char>() };
-    return string::cend( text ) != find_first( text, look );
-}
-
-#endif // string_TEST_STRING_CONTAINS
-
-#if string_HAVE_REGEX
-
-template< typename StringT >
-string_nodiscard string_constexpr bool contains( StringT const & text, std::regex const & re ) string_noexcept
-{
-    return std::regex_search( text, re );
-}
-
-template< typename StringT, typename ReT >
-string_nodiscard string_constexpr bool contains_re( StringT const & text, ReT const & re ) string_noexcept
-{
-    return contains( text, std::regex(re) );
-}
-
-#endif // string_HAVE_REGEX
-
-// starts_with():
-
-#if string_TEST_STRING_STARTS_WITH
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, starts_with)
->
-string_nodiscard string_constexpr bool starts_with( StringT const & text, SubT const & seek ) string_noexcept
-{
-    return text.starts_with( seek );
-}
-
-template< typename StringT, typename SubT
-    string_DISABLE_IF_HAS_METHOD_(StringT, starts_with)
-    string_ENABLE_IF_( !std::is_arithmetic<SubT>::value )
->
-string_nodiscard string_constexpr bool starts_with( StringT const & text, SubT const & seek ) string_noexcept
-{
-    typedef typename StringT::value_type A;
-
-    return detail::starts_with( text, seek, std::equal_to<A>() );
-}
-
-template< typename StringT, typename CharT
-    string_DISABLE_IF_HAS_METHOD_(StringT, starts_with)
-    string_ENABLE_IF_( std::is_arithmetic<CharT>::value )
->
-string_nodiscard string_constexpr14 bool starts_with( StringT const & text, CharT seek ) string_noexcept
-{
-    CharT look[] = { seek, nullchr<CharT>() };
-
-    // return detail::starts_with( text, look, std::equal_to<CharT>() );
-    return detail::starts_with( text, StringT(look), std::equal_to<CharT>() );
-}
-
-#else // string_TEST_STRING_STARTS_WITH
-
-template< typename StringT, typename SubT >
-string_nodiscard string_constexpr bool starts_with( StringT const & text, SubT const & seek ) string_noexcept
-{
-    typedef typename StringT::value_type A;
-
-    return detail::starts_with( text, seek, std::equal_to<A>() );
-}
-
-template< typename StringT >
-string_nodiscard string_constexpr bool starts_with( StringT const & text, char const * seek ) string_noexcept
-{
-    typedef typename StringT::value_type A;
-
-    return detail::starts_with( text, seek, std::equal_to<A>() );
-}
-
-template< typename StringT >
-string_nodiscard string_constexpr14 bool starts_with( StringT const & text, char seek ) string_noexcept
-{
-    char look[] = { seek, nullchr<char>() };
-
-    return detail::starts_with( text, StringT(look), std::equal_to<char>() );
-}
-
-#endif // string_TEST_STRING_STARTS_WITH
-
-// ends_with():
-
-#if string_TEST_STRING_ENDS_WITH
-
-template< typename StringT, typename SubT
-    string_ENABLE_IF_HAS_METHOD_(StringT, ends_with)
->
-string_nodiscard string_constexpr bool ends_with( StringT const & text, SubT const & seek ) string_noexcept
-{
-    return text.ends_with( seek );
-}
-
-template< typename StringT, typename SubT
-    string_DISABLE_IF_HAS_METHOD_(StringT, ends_with)
-    string_ENABLE_IF_( !std::is_arithmetic<SubT>::value )
->
-string_nodiscard string_constexpr bool ends_with( StringT const & text, SubT const & seek ) string_noexcept
-{
-    typedef typename StringT::value_type A;
-
-    return detail::ends_with( text, StringT(seek), std::equal_to<A>() );
-}
-
-template< typename StringT, typename CharT
-    string_DISABLE_IF_HAS_METHOD_(StringT, ends_with)
-    string_ENABLE_IF_( std::is_arithmetic<CharT>::value )
->
-string_nodiscard string_constexpr14 bool ends_with( StringT const & text, CharT seek ) string_noexcept
-{
-    CharT look[] = { seek, nullchr<CharT>() };
-
-    return detail::ends_with( text, StringT(look), std::equal_to<CharT>() );
-}
-
-#else // string_TEST_STRING_ENDS_WITH
-
-template< typename StringT, typename SubT >
-string_nodiscard string_constexpr bool ends_with( StringT const & text, SubT const & seek ) string_noexcept
-{
-    typedef typename StringT::value_type A;
-
-    return detail::ends_with( text, seek, std::equal_to<A>() );
-}
-
-template< typename StringT >
-string_nodiscard string_constexpr bool ends_with( StringT const & text, char const * seek ) string_noexcept
-{
-    typedef typename StringT::value_type A;
-
-    return detail::ends_with( text, StringT(seek), std::equal_to<A>() );
-}
-
-template< typename StringT >
-string_nodiscard string_constexpr bool ends_with( StringT const & text, char seek ) string_noexcept
-{
-    char look[] = { seek, nullchr<char>() };
-
-    return detail::ends_with( text, StringT(look), std::equal_to<char>() );
-}
-
-#endif // string_TEST_STRING_ENDS_WITH
-
-// Modifiers:
-
-// replace_all():
-
-template< typename CharT, typename FromT, typename ToT
-    // string_ENABLE_IF_HAS_METHOD_(StringT, replace)
->
-string_nodiscard string_constexpr std::basic_string<CharT> &
-replace_all( std::basic_string<CharT> & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_all( text, from, to );
-}
-
-template< typename StringT, typename FromT, typename ToT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_nodiscard string_constexpr StringT &
-replace_all( StringT & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_all( text, from, to );
-}
-
-// replaced_all():
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr std::basic_string<CharT>
-replaced_all( CharT const * text, FromT const & from, ToT const & to ) string_noexcept
-{
-    std::basic_string<CharT> result( text );
-
-    return replace_all( result, from, to );
-}
-
-template< typename StringT, typename FromT, typename ToT >
-string_nodiscard string_constexpr StringT
-replaced_all( StringT const & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    StringT result( text );
-
-    return replace_all( result, from, to );
-}
-
-// replace_first():
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr CharT *
-replace_first( CharT * text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_first( text, from, to );
-}
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr std::basic_string<CharT> &
-replace_first( std::basic_string<CharT> & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_first( text, from, to );
-}
-
-template< typename StringT, typename FromT, typename ToT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_nodiscard string_constexpr StringT &
-replace_first( StringT & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_first( text, from, to );
-}
-
-// replaced_first():
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr std::basic_string<CharT>
-replaced_first( CharT const * text, FromT const & from, ToT const & to ) string_noexcept
-{
-    std::basic_string<CharT> result( text );
-
-    return replace_first( result, from, to );
-}
-
-template< typename StringT, typename FromT, typename ToT >
-string_nodiscard string_constexpr StringT
-replaced_first( StringT const & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    StringT result( text );
-
-    return replace_first( result, from, to );
-}
-
-// replace_last():
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr CharT *
-replace_last( CharT * text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_last( text, from, to );
-}
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr std::basic_string<CharT> &
-replace_last( std::basic_string<CharT> & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_last( text, from, to );
-}
-
-template< typename StringT, typename FromT, typename ToT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_nodiscard string_constexpr StringT &
-replace_last( StringT & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    return detail::replace_last( text, from, to );
-}
-
-// replaced_last():
-
-template< typename CharT, typename FromT, typename ToT >
-string_nodiscard string_constexpr std::basic_string<CharT>
-replaced_last( CharT const * text, FromT const & from, ToT const & to ) string_noexcept
-{
-    std::basic_string<CharT> result( text );
-
-    return replace_last( result, from, to );
-}
-
-template< typename StringT, typename FromT, typename ToT >
-string_nodiscard string_constexpr StringT
-replaced_last( StringT const & text, FromT const & from, ToT const & to ) string_noexcept
-{
-    StringT result( text );
-
-    return replace_last( result, from, to );
-}
-
-// clear():
-
-template< typename CharT >
-CharT * clear( CharT * cp ) string_noexcept
-{
-    *cp = nullchr<CharT>();
-    return cp;
-}
-
-template< typename StringT
-    string_ENABLE_IF_HAS_METHOD_(StringT, clear)
->
-StringT & clear( StringT & text ) string_noexcept
-{
-    text.clear();
-    return text;
-}
-
-// to_lowercase(), to_uppercase():
-
-template< typename CharT >
-CharT * to_lowercase( CharT * cp ) string_noexcept
-{
-    return detail::to_case( cp, detail::as_lowercase<CharT> );
-}
-
-template< typename CharT >
-CharT * to_uppercase( CharT * cp ) string_noexcept
-{
-    return detail::to_case( cp, detail::as_uppercase<CharT> );
-}
-
-template< typename StringT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-StringT & to_lowercase( StringT & text ) string_noexcept
-{
-    return detail::to_case( text, detail::as_lowercase<typename StringT::value_type> );
-}
-
-template< typename StringT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-StringT & to_uppercase( StringT & text ) string_noexcept
-{
-    return detail::to_case( text, detail::as_uppercase<typename StringT::value_type> );
-}
-
-template< typename StringT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_nodiscard StringT as_lowercase( StringT const & text ) string_noexcept
-{
-    StringT result( text );
-    to_lowercase( result );
-    return result;
-}
-
-template< typename StringT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_nodiscard StringT as_uppercase( StringT const & text ) string_noexcept
-{
-    StringT result( text );
-    to_uppercase( result );
-    return result;
-}
-
-// append():
-
-template< typename CharT, typename TailT >
-string_constexpr CharT *
-append( CharT * text, TailT const & tail ) string_noexcept
-{
-    return detail::append( text, tail );
-}
-
-template< typename StringT, typename TailT >
-string_constexpr StringT &
-append( StringT & text, TailT const & tail ) string_noexcept
-{
-    return detail::append( text, tail );
-}
-
-// appended():
-
-template< typename StringT, typename TailT
-    string_ENABLE_IF_HAS_METHOD_(StringT, begin)
->
-string_nodiscard string_constexpr StringT
-appended( StringT const & text, TailT const & tail ) string_noexcept
-{
-    StringT result( text );
-
-    return detail::append( result, tail );
-}
-
-// TODO trim()
-
-// trim_left():
-
-template< typename StringT >
-inline StringT const default_trim_set()
-{
-    return " \t\n";
-}
-
-template< typename CharT, typename SetT >
-string_constexpr CharT *
-trim_left( CharT * text, SetT const * set ) string_noexcept
-{
-    return detail::trim_left( text, set );
-}
-
-template< typename CharT >
-string_constexpr CharT *
-trim_left( CharT * text ) string_noexcept
-{
-    return trim_left( text, default_trim_set<CharT const *>() );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT &
-trim_left( StringT & text, SetT const & set ) string_noexcept
-{
-    return detail::trim_left( text, set );
-}
-
-template< typename StringT >
-string_constexpr StringT &
-trim_left( StringT & text ) string_noexcept
-{
-    return trim_left( text, default_trim_set<StringT>() );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr14 StringT
-trimmed_left( StringT const & text, SetT const & set ) string_noexcept
-{
-    StringT result( text );
-    return detail::trim_left( result, set );
-}
-
-template< typename StringT >
-string_constexpr StringT
-trimmed_left( StringT const & text ) string_noexcept
-{
-    return trimmed_left( text, default_trim_set<StringT>() );
-}
-
-// trim_right():
-
-template< typename CharT, typename SetT >
-string_constexpr CharT *
-trim_right( CharT * text, SetT const * set ) string_noexcept
-{
-    return detail::trim_right( text, set );
-}
-
-template< typename CharT >
-string_constexpr CharT *
-trim_right( CharT * text ) string_noexcept
-{
-    return trim_right( text, default_trim_set<CharT const *>() );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT &
-trim_right( StringT & text, SetT const & set ) string_noexcept
-{
-    return detail::trim_right( text, set );
-}
-
-template< typename StringT >
-string_constexpr StringT &
-trim_right( StringT & text ) string_noexcept
-{
-    return trim_right( text, default_trim_set<StringT>() );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr14 StringT
-trimmed_right( StringT const & text, SetT const & set ) string_noexcept
-{
-    StringT result( text );
-    return detail::trim_right( result, set );
-}
-
-template< typename StringT >
-string_constexpr StringT
-trimmed_right( StringT const & text ) string_noexcept
-{
-    return trimmed_right( text, default_trim_set<StringT>() );
-}
-
-// trim():
-
-template< typename CharT, typename SetT >
-string_constexpr CharT *
-trim( CharT * text, SetT const * set ) string_noexcept
-{
-    return detail::trim( text, set );
-}
-
-template< typename CharT >
-string_constexpr CharT *
-trim( CharT * text ) string_noexcept
-{
-    return trim( text, default_trim_set<CharT const *>() );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT &
-trim( StringT & text, SetT const & set ) string_noexcept
-{
-    return detail::trim( text, set );
-}
-
-template< typename StringT >
-string_constexpr StringT &
-trim( StringT & text ) string_noexcept
-{
-    return trim( text, default_trim_set<StringT>() );
-}
-
-template< typename StringT, typename SetT >
-string_constexpr StringT
-trimmed( StringT const & text, SetT const & set ) string_noexcept
-{
-    StringT result( text );
-    return detail::trim( result, set );
-}
-
-template< typename StringT >
-string_constexpr StringT
-trimmed( StringT const & text ) string_noexcept
-{
-    return trimmed( text, default_trim_set<StringT>() );
-}
-
-// TODO join():
-
-// Note: add way to defined return type:
-
-template< typename Coll, typename SepT
-//    string_ENABLE_IF_( !std::is_pointer<typename Coll::value_type>::value )
->
-string_nodiscard string_constexpr14
-typename Coll::value_type
-join( Coll const & coll, SepT const & sep ) string_noexcept
-{
-    typename Coll::value_type result;
-
-    typename Coll::const_iterator const coll_begin = string::cbegin(coll);
-    typename Coll::const_iterator const coll_end   = string::cend(coll);
-
-    typename Coll::const_iterator pos = coll_begin;
-
-    if ( pos != coll_end )
-    {
-        append( result, *pos++ );
-    }
-
-    for ( ; pos != coll_end; ++pos )
-    {
-        append( append( result,  sep ), *pos );
-    }
-
-    return result;
-}
-
-// split():
-
-// Various kinds of delimiters:
-// - literal_delimiter - a single string delimiter
-// - any_of_delimiter - any of given characters as delimiter
-// - fixed_delimiter - fixed length delimiter
-// - limit_delimiter - not implemented
-// - regex_delimiter - regular expression delimiter
-// - char_delimiter - single-char delimiter
-
-template< typename CharT >
-basic_string_view<CharT> basic_delimiter_end(basic_string_view<CharT> sv)
-{
-#if string_CONFIG_SELECT_STRING_VIEW != string_CONFIG_SELECT_STRING_VIEW_STD
-    return basic_string_view<CharT>(sv.cend(), size_t(0));
-#else
-    return basic_string_view<CharT>(sv.data() + sv.size(), size_t(0));
-#endif
-}
-
-// a single string delimiter:
-
-template< typename CharT >
-class basic_literal_delimiter
-{
-    const std::basic_string<CharT> delimiter_;
-    mutable size_t found_;
-
-public:
-    explicit basic_literal_delimiter(basic_string_view<CharT> sv)
-        : delimiter_(to_string(sv))
-        , found_(0)
-    {}
-
-    size_t length() const
-    {
-        return delimiter_.length();
-    }
-
-    basic_string_view<CharT> operator()(basic_string_view<CharT> text, size_t pos) const
-    {
-        return find(text, pos);
-    }
-
-    basic_string_view<CharT> find(basic_string_view<CharT> text, size_t pos) const
-    {
-        // out of range, return 'empty' if last match was at end of text, else return 'done':
-        if ( pos >= text.length())
-        {
-            // last delimiter match at end of text?
-            if ( found_ != text.length() - 1 )
-                return basic_delimiter_end(text);
-
-            found_ = 0;
-            return text.substr(text.length() - 1, 0);
-        }
-
-        // a single character at a time:
-        if (0 == delimiter_.length())
-        {
-            return text.substr(pos, 1);
-        }
-
-        found_ = text.find(delimiter_, pos);
-
-        // at a delimiter, or searching past the last delimiter:
-        if (found_ == pos || pos == text.length())
-        {
-            return text.substr(pos, 0);
-        }
-
-        // no delimiter found:
-        if (found_ == basic_string_view<CharT>::npos)
-        {
-            // return remaining text:
-            if (pos < text.length())
-            {
-                return text.substr(pos);
-            }
-
-            // nothing left, return 'done':
-            return basic_delimiter_end(text);
-        }
-
-        // delimited text:
-        return text.substr(pos, found_ - pos);
-    }
-};
-
-// any of given characters as delimiter:
-
-template< typename CharT >
-class basic_any_of_delimiter
-{
-    const std::basic_string<CharT> delimiters_;
-
-public:
-    explicit basic_any_of_delimiter(basic_string_view<CharT> sv)
-        : delimiters_(to_string(sv)) {}
-
-    size_t length() const
-    {
-        return (min)( size_t(1), delimiters_.length());
-    }
-
-    basic_string_view<CharT> operator()(basic_string_view<CharT> text, size_t pos) const
-    {
-        return find(text, pos);
-    }
-
-    basic_string_view<CharT> find(basic_string_view<CharT> text, size_t pos) const
-    {
-        // out of range, return 'done':
-        if ( pos > text.length())
-            return basic_delimiter_end(text);
-
-        // a single character at a time:
-        if (0 == delimiters_.length())
-        {
-            return text.substr(pos, 1);
-        }
-
-        size_t found = text.find_first_of(delimiters_, pos);
-
-        // at a delimiter, or searching past the last delimiter:
-        if (found == pos || (pos == text.length()))
-        {
-            return basic_string_view<CharT>();
-        }
-
-        // no delimiter found:
-        if (found == basic_string_view<CharT>::npos)
-        {
-            // return remaining text:
-            if (pos < text.length())
-            {
-                return text.substr(pos);
-            }
-
-            // nothing left, return 'done':
-            return basic_delimiter_end(text);
-        }
-
-        // delimited text:
-        return text.substr(pos, found - pos);
-    }
-};
-
-// fixed length delimiter:
-
-template< typename CharT >
-class basic_fixed_delimiter
-{
-    size_t len_;
-
-public:
-    explicit basic_fixed_delimiter(size_t len)
-        : len_(len) {}
-
-    size_t length() const
-    {
-        return 0;
-    }
-
-    string_view operator()(basic_string_view<CharT> text, size_t pos) const
-    {
-        return find(text, pos);
-    }
-
-    string_view find(basic_string_view<CharT> text, size_t pos) const
-    {
-        // out of range, return 'done':
-        if ( pos > text.length())
-            return basic_delimiter_end(text);
-
-        // current slice:
-        return text.substr(pos, len_);
-    }
-};
-
-// TODO limit_delimiter - Delimiter template would take another Delimiter and a size_t limiting
-// the given delimiter to matching a max numbers of times. This is similar to the 3rd argument to
-// perl's split() function.
-
-template< typename CharT, typename DelimiterT >
-class basic_limit_delimiter;
-
-// regular expression delimiter:
-
-#if string_HAVE_REGEX
-
-template< typename CharT >
-class basic_regex_delimiter
-{
-    std::regex     delimiter_re_;               // regular expression designating delimiters
-    size_t         delimiter_len_;              // length of regular expression
-    mutable size_t matched_delimiter_length_;   // length of the actually matched delimiter
-    mutable bool   trailing_delimiter_seen;     // whether to provide last empty result
-
-public:
-    explicit basic_regex_delimiter(basic_string_view<CharT> sv)
-        : delimiter_re_(to_string(sv))
-        , delimiter_len_(sv.length())
-        , matched_delimiter_length_(0u)
-        , trailing_delimiter_seen(false)
-    {}
-
-    size_t length() const
-    {
-        return matched_delimiter_length_;
-    }
-
-    basic_string_view<CharT> operator()(basic_string_view<CharT> text, size_t pos) const
-    {
-        return find(text, pos);
-    }
-
-    basic_string_view<CharT> find(basic_string_view<CharT> text, size_t pos) const
-    {
-        // trailing empty entry:
-        // TODO this feels like a hack, don't know any better at this moment
-        if (trailing_delimiter_seen)
-        {
-            trailing_delimiter_seen = false;
-            return basic_string_view<CharT>();
-        }
-
-        // out of range, return 'done':
-        if ( pos > text.length())
-            return basic_delimiter_end(text);
-
-        // a single character at a time:
-        if (0 == delimiter_len_)
-        {
-            return text.substr(pos, 1);
-        }
-
-        std::smatch m;
-        std::basic_string<CharT> s = to_string(text.substr(pos));
-
-        const bool found = std::regex_search(s, m, delimiter_re_);
-
-        matched_delimiter_length_ = m.length();
-
-        // no delimiter found:
-        if (!found)
-        {
-            // return remaining text:
-            if (pos < text.length())
-            {
-                return text.substr(pos);
-            }
-
-            // nothing left, return 'done':
-            return basic_delimiter_end(text);
-        }
-
-        // at a trailing delimiter, remember for next round:
-        else if ((size_t(m.position()) == s.length() - 1))
-        {
-            trailing_delimiter_seen = true;
-        }
-
-        // delimited text, the match in the input string:
-        return text.substr(pos, m.position());
-    }
-};
-
-#endif // string_HAVE_REGEX
-
-// single-char delimiter:
-
-template< typename CharT >
-class basic_char_delimiter
-{
-    CharT c_;
-
-public:
-    explicit basic_char_delimiter(CharT c)
-        : c_(c) {}
-
-    size_t length() const
-    {
-        return 1;
-    }
-
-    basic_string_view<CharT> operator()(basic_string_view<CharT> text, size_t pos) const
-    {
-        return find(text, pos);
-    }
-
-    basic_string_view<CharT> find(basic_string_view<CharT> text, size_t pos) const
-    {
-        size_t found = text.find(c_, pos);
-
-        // nothing left, return 'done':
-        if (found == basic_string_view<CharT>::npos)
-            return basic_delimiter_end(text);
-
-        // the c_ in the input string:
-        return text.substr(found, 1);
-    }
-};
-
- // typedefs:
-
-typedef basic_literal_delimiter< char  >  literal_delimiter;
-typedef basic_literal_delimiter<wchar_t> wliteral_delimiter;
-typedef basic_any_of_delimiter<  char  >  any_of_delimiter;
-typedef basic_any_of_delimiter< wchar_t> wany_of_delimiter;
-typedef basic_fixed_delimiter<   char  >  fixed_delimiter;
-typedef basic_fixed_delimiter<  wchar_t> wfixed_delimiter;
-typedef basic_char_delimiter<    char  >  char_delimiter;
-typedef basic_char_delimiter<   wchar_t> wchar_t_delimiter;
-// typedef basic_limit_delimiter<   char  >  limit_delimiter;
-// typedef basic_limit_delimiter<  wchar_t> wlimit_delimiter;
-
-#if string_HAVE_REGEX
-typedef basic_regex_delimiter<   char  >  regex_delimiter;
-typedef basic_regex_delimiter<  wchar_t> wregex_delimiter;
-#endif
-
-#if string_HAVE_CHAR16_T
-
-typedef basic_literal_delimiter<char16_t> u16literal_delimiter;
-typedef basic_literal_delimiter<char32_t> u32literal_delimiter;
-typedef basic_any_of_delimiter< char16_t> u16any_of_delimiter;
-typedef basic_any_of_delimiter< char32_t> u32any_of_delimiter;
-typedef basic_fixed_delimiter<  char16_t> u16fixed_delimiter;
-typedef basic_fixed_delimiter<  char32_t> u32fixed_delimiter;
-typedef basic_char_delimiter<   char16_t> u16char_delimiter;
-typedef basic_char_delimiter<   char32_t> u32char_delimiter;
-// typedef basic_limit_delimiter<  char16_t> u16limit_delimiter;
-// typedef basic_limit_delimiter<  char32_t> u32limit_delimiter;
-
-#if string_HAVE_REGEX
-typedef basic_regex_delimiter<  char16_t> u16regex_delimiter;
-typedef basic_regex_delimiter<  char32_t> u32regex_delimiter;
-#endif
-
-#endif // string_HAVE_CHAR16_T
-
-// split():
-
-template<typename Delimiter> std::vector< string_view> split( string_view text, Delimiter delimiter) { return detail::split(text, delimiter); }
-template<typename Delimiter> std::vector<wstring_view> split(wstring_view text, Delimiter delimiter) { return detail::split(text, delimiter); }
-
-#if string_HAVE_CHAR16_T
-template<typename Delimiter> std::vector<u16string_view> split(u16string_view text, Delimiter delimiter) { return detail::split(text, delimiter); }
-template<typename Delimiter> std::vector<u32string_view> split(u32string_view text, Delimiter delimiter) { return detail::split(text, delimiter); }
-#endif
-
-inline std::vector<string_view> split(string_view text, char const * d) { return detail::split(text, literal_delimiter(d)); }
-
 } // namespace string
+
+// split() -> vector
+
+#define string_MK_SPLIT(CharT)                                                                      \
+    string_nodiscard inline std::vector< std17::basic_string_view<CharT>>                           \
+    split(                                                                                          \
+        std17::basic_string_view<CharT> text                                                        \
+        , std17::basic_string_view<CharT> set                                                       \
+        , std::size_t Nsplit = std::numeric_limits<std::size_t>::max() )                            \
+    {                                                                                               \
+        return detail::split(text, set, Nsplit );                                                   \
+    }
+
+#if string_CONFIG_PROVIDE_CHAR_T
+
+// split_left() -> tuple
+
+#define string_MK_SPLIT_LEFT( CharT )                                                               \
+string_nodiscard inline auto                                                                        \
+split_left(                                                                                         \
+    std17::basic_string_view<CharT> text                                                            \
+    , std17::basic_string_view<CharT> set                                                           \
+    , std::size_t count = std::numeric_limits<std::size_t>::max() )                                 \
+    -> std::tuple<std17::basic_string_view<CharT>, std17::basic_string_view<CharT>>                 \
+{                                                                                                   \
+    return detail::split_left( text, set, count );                                                  \
+}
+
+// split_right() -> tuple
+
+#define string_MK_SPLIT_RIGHT( CharT )                                                              \
+string_nodiscard inline auto                                                                        \
+split_right(                                                                                        \
+    std17::basic_string_view<CharT> text                                                            \
+    , std17::basic_string_view<CharT> set                                                           \
+    , std::size_t count = std::numeric_limits<std::size_t>::max() )                                 \
+    -> std::tuple<std17::basic_string_view<CharT>, std17::basic_string_view<CharT>>                 \
+{                                                                                                   \
+    return detail::split_right( text, set, count );                                                 \
+}
+
+#endif // string_CONFIG_PROVIDE_CHAR_T
+
+//
+// Comparision:
+//
+
+// defined in namespace nonstd
+
+#define string_MK_COMPARE( CharT )                  \
+    string_nodiscard inline string_constexpr14 int  \
+    compare( std17::basic_string_view<CharT> lhs, std17::basic_string_view<CharT> rhs ) string_noexcept \
+    {                                               \
+        return lhs.compare( rhs );                  \
+    }
+
+// defined in namespace nonstd::string::std17
+
+#define string_MK_COMPARE_EQ( CharT )               \
+    string_nodiscard inline string_constexpr14 bool \
+    operator==( basic_string_view<CharT> lhs, basic_string_view<CharT> rhs )  \
+    {                                               \
+        return compare( lhs, rhs ) == 0;            \
+    }
+
+#define string_MK_COMPARE_NE( CharT )               \
+    string_nodiscard inline string_constexpr14 bool \
+    operator!=( basic_string_view<CharT> lhs, basic_string_view<CharT> rhs )  \
+    {                                               \
+        return compare( lhs, rhs ) != 0;            \
+    }
+
+#define string_MK_COMPARE_LT( CharT )               \
+    string_nodiscard inline string_constexpr14 bool \
+    operator<( basic_string_view<CharT> lhs, basic_string_view<CharT> rhs )   \
+    {                                               \
+        return compare( lhs, rhs ) < 0;             \
+    }
+
+#define string_MK_COMPARE_LE( CharT )               \
+    string_nodiscard inline string_constexpr14 bool \
+    operator<=( basic_string_view<CharT> lhs, basic_string_view<CharT> rhs )  \
+    {                                               \
+        return compare( lhs, rhs ) <= 0;            \
+    }
+
+#define string_MK_COMPARE_GE( CharT )               \
+    string_nodiscard inline string_constexpr14 bool \
+    operator>=( basic_string_view<CharT> lhs, basic_string_view<CharT> rhs )  \
+    {                                               \
+        return compare( lhs, rhs ) >= 0;            \
+    }
+
+#define string_MK_COMPARE_GT( CharT )               \
+    string_nodiscard inline string_constexpr14 bool \
+    operator>( basic_string_view<CharT> lhs, basic_string_view<CharT> rhs )   \
+    {                                               \
+        return compare( lhs, rhs ) > 0;             \
+    }
+
+//
+// Define requested functions:
+//
+
+// Provide to_string() for std17::string_view:
+
+using detail::to_string;
+
+#if string_CONFIG_PROVIDE_CHAR_T
+
+string_MK_IS_EMPTY           ( char )
+string_MK_LENGTH             ( char )
+string_MK_SIZE               ( char )
+string_MK_FIND_FIRST         ( char )
+string_MK_FIND_FIRST_CHAR    ( char )
+string_MK_FIND_LAST          ( char )
+string_MK_FIND_LAST_CHAR     ( char )
+string_MK_FIND_FIRST_OF      ( char )
+string_MK_FIND_LAST_OF       ( char )
+string_MK_FIND_FIRST_NOT_OF  ( char )
+string_MK_FIND_LAST_NOT_OF   ( char )
+string_MK_APPEND             ( char )
+string_MK_CONTAINS           ( char )      // includes char search type
+string_MK_CONTAINS_ALL_OF    ( char )
+string_MK_CONTAINS_ANY_OF    ( char )
+string_MK_CONTAINS_NONE_OF   ( char )
+string_MK_STARTS_WITH        ( char )
+string_MK_STARTS_WITH_CHAR   ( char )
+string_MK_STARTS_WITH_ALL_OF ( char )
+string_MK_STARTS_WITH_ANY_OF ( char )
+string_MK_STARTS_WITH_NONE_OF( char )
+string_MK_ENDS_WITH          ( char )
+string_MK_ENDS_WITH_CHAR     ( char )
+string_MK_ENDS_WITH_ALL_OF   ( char )
+string_MK_ENDS_WITH_ANY_OF   ( char )
+string_MK_ENDS_WITH_NONE_OF  ( char )
+string_MK_ERASE              ( char )
+string_MK_ERASE_ALL          ( char )
+string_MK_ERASE_FIRST        ( char )
+string_MK_ERASE_LAST         ( char )
+string_MK_INSERT             ( char )
+string_MK_REPLACE            ( char )
+string_MK_REPLACE_ALL        ( char )
+string_MK_REPLACE_FIRST      ( char )
+string_MK_REPLACE_LAST       ( char )
+string_MK_STRIP_LEFT         ( char )
+string_MK_STRIP_RIGHT        ( char )
+string_MK_STRIP              ( char )
+string_MK_SUBSTRING          ( char )
+string_MK_TO_CASE_CHAR       ( char, lowercase )
+string_MK_TO_CASE_CHAR       ( char, uppercase )
+string_MK_TO_CASE_STRING     ( char, lowercase )
+string_MK_TO_CASE_STRING     ( char, uppercase )
+string_MK_CAPITALIZE         ( char )
+string_MK_JOIN               ( char )
+string_MK_SPLIT              ( char )
+string_MK_SPLIT_LEFT         ( char )
+string_MK_SPLIT_RIGHT        ( char )
+
+string_MK_COMPARE            ( char )
+
+// string_view operators:
+
+namespace string { namespace std17 {
+
+string_MK_COMPARE_EQ         ( char )
+string_MK_COMPARE_NE         ( char )
+string_MK_COMPARE_LT         ( char )
+string_MK_COMPARE_LE         ( char )
+string_MK_COMPARE_GE         ( char )
+string_MK_COMPARE_GT         ( char )
+
+}}  // namespace string::std17
+
+#endif // string_CONFIG_PROVIDE_CHAR_T
+
+#if string_CONFIG_PROVIDE_WCHAR_T
+
+string_MK_IS_EMPTY           ( wchar_t )
+string_MK_LENGTH             ( wchar_t )
+string_MK_SIZE               ( wchar_t )
+string_MK_FIND_FIRST         ( wchar_t )
+string_MK_FIND_FIRST_CHAR    ( wchar_t )
+string_MK_FIND_LAST          ( wchar_t )
+string_MK_FIND_LAST_CHAR     ( wchar_t )
+string_MK_FIND_FIRST_OF      ( wchar_t )
+string_MK_FIND_LAST_OF       ( wchar_t )
+string_MK_FIND_FIRST_NOT_OF  ( wchar_t )
+string_MK_FIND_LAST_NOT_OF   ( wchar_t )
+string_MK_APPEND             ( wchar_t )
+string_MK_CONTAINS           ( wchar_t )      // includes wchar_t search type
+string_MK_CONTAINS_ALL_OF    ( wchar_t )
+string_MK_CONTAINS_ANY_OF    ( wchar_t )
+string_MK_CONTAINS_NONE_OF   ( wchar_t )
+string_MK_STARTS_WITH        ( wchar_t )
+string_MK_STARTS_WITH_CHAR   ( wchar_t )
+string_MK_STARTS_WITH_ALL_OF ( wchar_t )
+string_MK_STARTS_WITH_ANY_OF ( wchar_t )
+string_MK_STARTS_WITH_NONE_OF( wchar_t )
+string_MK_ENDS_WITH          ( wchar_t )
+string_MK_ENDS_WITH_CHAR     ( wchar_t )
+string_MK_ENDS_WITH_ALL_OF   ( wchar_t )
+string_MK_ENDS_WITH_ANY_OF   ( wchar_t )
+string_MK_ENDS_WITH_NONE_OF  ( wchar_t )
+string_MK_ERASE              ( wchar_t )
+string_MK_ERASE_ALL          ( wchar_t )
+string_MK_ERASE_FIRST        ( wchar_t )
+string_MK_ERASE_LAST         ( wchar_t )
+string_MK_INSERT             ( wchar_t )
+string_MK_REPLACE            ( wchar_t )
+string_MK_REPLACE_ALL        ( wchar_t )
+string_MK_REPLACE_FIRST      ( wchar_t )
+string_MK_REPLACE_LAST       ( wchar_t )
+string_MK_STRIP_LEFT         ( wchar_t )
+string_MK_STRIP_RIGHT        ( wchar_t )
+string_MK_STRIP              ( wchar_t )
+string_MK_SUBSTRING          ( wchar_t )
+string_MK_TO_CASE_CHAR       ( wchar_t, lowercase )
+string_MK_TO_CASE_CHAR       ( wchar_t, uppercase )
+string_MK_TO_CASE_STRING     ( wchar_t, lowercase )
+string_MK_TO_CASE_STRING     ( wchar_t, uppercase )
+string_MK_CAPITALIZE         ( wchar_t )
+string_MK_JOIN               ( wchar_t )
+string_MK_SPLIT              ( wchar_t )
+string_MK_SPLIT_LEFT         ( wchar_t )
+string_MK_SPLIT_RIGHT        ( wchar_t )
+// ...
+string_MK_COMPARE            ( wchar_t )
+
+// string_view operators:
+
+namespace string { namespace std17 {
+
+string_MK_COMPARE_EQ         ( wchar_t )
+string_MK_COMPARE_NE         ( wchar_t )
+string_MK_COMPARE_LT         ( wchar_t )
+string_MK_COMPARE_LE         ( wchar_t )
+string_MK_COMPARE_GE         ( wchar_t )
+string_MK_COMPARE_GT         ( wchar_t )
+
+}}  // namespace string::std17
+
+#endif // string_CONFIG_PROVIDE_WCHAR_T
+
+#if string_CONFIG_PROVIDE_CHAR8_T && string_HAVE_CHAR8_T
+
+string_MK_IS_EMPTY           ( char8_t )
+string_MK_LENGTH             ( char8_t )
+string_MK_SIZE               ( char8_t )
+string_MK_FIND_FIRST         ( char8_t )
+string_MK_FIND_FIRST_CHAR    ( char8_t )
+string_MK_FIND_LAST          ( char8_t )
+string_MK_FIND_LAST_CHAR     ( char8_t )
+string_MK_FIND_FIRST_OF      ( char8_t )
+string_MK_FIND_LAST_OF       ( char8_t )
+string_MK_FIND_FIRST_NOT_OF  ( char8_t )
+string_MK_FIND_LAST_NOT_OF   ( char8_t )
+string_MK_APPEND             ( char8_t )
+string_MK_CONTAINS           ( char8_t )      // includes char search type
+string_MK_CONTAINS_ALL_OF    ( char8_t )
+string_MK_CONTAINS_ANY_OF    ( char8_t )
+string_MK_CONTAINS_NONE_OF   ( char8_t )
+string_MK_STARTS_WITH        ( char8_t )
+string_MK_STARTS_WITH_CHAR   ( char8_t )
+string_MK_STARTS_WITH_ALL_OF ( char8_t )
+string_MK_STARTS_WITH_ANY_OF ( char8_t )
+string_MK_STARTS_WITH_NONE_OF( char8_t )
+string_MK_ENDS_WITH          ( char8_t )
+string_MK_ENDS_WITH_CHAR     ( char8_t )
+string_MK_ENDS_WITH_ALL_OF   ( char8_t )
+string_MK_ENDS_WITH_ANY_OF   ( char8_t )
+string_MK_ENDS_WITH_NONE_OF  ( char8_t )
+string_MK_ERASE              ( char8_t )
+string_MK_ERASE_ALL          ( char8_t )
+string_MK_ERASE_FIRST        ( char8_t )
+string_MK_ERASE_LAST         ( char8_t )
+string_MK_INSERT             ( char8_t )
+string_MK_REPLACE            ( char8_t )
+string_MK_REPLACE_ALL        ( char8_t )
+string_MK_REPLACE_FIRST      ( char8_t )
+string_MK_REPLACE_LAST       ( char8_t )
+string_MK_STRIP_LEFT         ( char8_t )
+string_MK_STRIP_RIGHT        ( char8_t )
+string_MK_STRIP              ( char8_t )
+string_MK_SUBSTRING          ( char8_t )
+string_MK_TO_CASE_CHAR       ( char8_t, lowercase )
+string_MK_TO_CASE_CHAR       ( char8_t, uppercase )
+string_MK_TO_CASE_STRING     ( char8_t, lowercase )
+string_MK_TO_CASE_STRING     ( char8_t, uppercase )
+string_MK_CAPITALIZE         ( char8_t )
+string_MK_JOIN               ( char8_t )
+string_MK_SPLIT              ( char8_t )
+string_MK_SPLIT_LEFT         ( char8_t )
+string_MK_SPLIT_RIGHT        ( char8_t )
+// ...
+string_MK_COMPARE            ( char8_t )
+
+// string_view operators:
+
+namespace string { namespace std17 {
+
+string_MK_COMPARE_EQ         ( char8_t )
+string_MK_COMPARE_NE         ( char8_t )
+string_MK_COMPARE_LT         ( char8_t )
+string_MK_COMPARE_LE         ( char8_t )
+string_MK_COMPARE_GE         ( char8_t )
+string_MK_COMPARE_GT         ( char8_t )
+
+}}  // namespace string::std17
+
+#endif // string_CONFIG_PROVIDE_CHAR8_T && string_HAVE_CHAR8_T
+
+#if string_CONFIG_PROVIDE_CHAR16_T
+
+string_MK_IS_EMPTY           ( char16_t )
+string_MK_LENGTH             ( char16_t )
+string_MK_SIZE               ( char16_t )
+string_MK_FIND_FIRST         ( char16_t )
+string_MK_FIND_FIRST_CHAR    ( char16_t )
+string_MK_FIND_LAST          ( char16_t )
+string_MK_FIND_LAST_CHAR     ( char16_t )
+string_MK_FIND_FIRST_OF      ( char16_t )
+string_MK_FIND_LAST_OF       ( char16_t )
+string_MK_FIND_FIRST_NOT_OF  ( char16_t )
+string_MK_FIND_LAST_NOT_OF   ( char16_t )
+string_MK_APPEND             ( char16_t )
+string_MK_CONTAINS           ( char16_t )      // includes char search type
+string_MK_CONTAINS_ALL_OF    ( char16_t )
+string_MK_CONTAINS_ANY_OF    ( char16_t )
+string_MK_CONTAINS_NONE_OF   ( char16_t )
+string_MK_STARTS_WITH        ( char16_t )
+string_MK_STARTS_WITH_CHAR   ( char16_t )
+string_MK_STARTS_WITH_ALL_OF ( char16_t )
+string_MK_STARTS_WITH_ANY_OF ( char16_t )
+string_MK_STARTS_WITH_NONE_OF( char16_t )
+string_MK_ENDS_WITH          ( char16_t )
+string_MK_ENDS_WITH_CHAR     ( char16_t )
+string_MK_ENDS_WITH_ALL_OF   ( char16_t )
+string_MK_ENDS_WITH_ANY_OF   ( char16_t )
+string_MK_ENDS_WITH_NONE_OF  ( char16_t )
+string_MK_ERASE              ( char16_t )
+string_MK_ERASE_ALL          ( char16_t )
+string_MK_ERASE_FIRST        ( char16_t )
+string_MK_ERASE_LAST         ( char16_t )
+string_MK_INSERT             ( char16_t )
+string_MK_REPLACE            ( char16_t )
+string_MK_REPLACE_ALL        ( char16_t )
+string_MK_REPLACE_FIRST      ( char16_t )
+string_MK_REPLACE_LAST       ( char16_t )
+string_MK_STRIP_LEFT         ( char16_t )
+string_MK_STRIP_RIGHT        ( char16_t )
+string_MK_STRIP              ( char16_t )
+string_MK_SUBSTRING          ( char16_t )
+string_MK_TO_CASE_CHAR       ( char16_t, lowercase )
+string_MK_TO_CASE_CHAR       ( char16_t, uppercase )
+string_MK_TO_CASE_STRING     ( char16_t, lowercase )
+string_MK_TO_CASE_STRING     ( char16_t, uppercase )
+string_MK_CAPITALIZE         ( char16_t )
+string_MK_JOIN               ( char16_t )
+string_MK_SPLIT              ( char16_t )
+string_MK_SPLIT_LEFT         ( char16_t )
+string_MK_SPLIT_RIGHT        ( char16_t )
+// ...
+string_MK_COMPARE            ( char16_t )
+
+// string_view operators:
+
+namespace string { namespace std17 {
+
+string_MK_COMPARE_EQ         ( char16_t )
+string_MK_COMPARE_NE         ( char16_t )
+string_MK_COMPARE_LT         ( char16_t )
+string_MK_COMPARE_LE         ( char16_t )
+string_MK_COMPARE_GE         ( char16_t )
+string_MK_COMPARE_GT         ( char16_t )
+
+}}  // namespace string::std17
+
+#endif // string_CONFIG_PROVIDE_CHAR16_T
+
+#if string_CONFIG_PROVIDE_CHAR32_T
+
+string_MK_IS_EMPTY           ( char32_t )
+string_MK_LENGTH             ( char32_t )
+string_MK_SIZE               ( char32_t )
+string_MK_FIND_FIRST         ( char32_t )
+string_MK_FIND_FIRST_CHAR    ( char32_t )
+string_MK_FIND_LAST          ( char32_t )
+string_MK_FIND_LAST_CHAR     ( char32_t )
+string_MK_FIND_FIRST_OF      ( char32_t )
+string_MK_FIND_LAST_OF       ( char32_t )
+string_MK_FIND_FIRST_NOT_OF  ( char32_t )
+string_MK_FIND_LAST_NOT_OF   ( char32_t )
+string_MK_APPEND             ( char32_t )
+string_MK_CONTAINS           ( char32_t )      // includes char search type
+string_MK_CONTAINS_ALL_OF    ( char32_t )
+string_MK_CONTAINS_ANY_OF    ( char32_t )
+string_MK_CONTAINS_NONE_OF   ( char32_t )
+string_MK_STARTS_WITH        ( char32_t )
+string_MK_STARTS_WITH_CHAR   ( char32_t )
+string_MK_STARTS_WITH_ALL_OF ( char32_t )
+string_MK_STARTS_WITH_ANY_OF ( char32_t )
+string_MK_STARTS_WITH_NONE_OF( char32_t )
+string_MK_ENDS_WITH          ( char32_t )
+string_MK_ENDS_WITH_CHAR     ( char32_t )
+string_MK_ENDS_WITH_ALL_OF   ( char32_t )
+string_MK_ENDS_WITH_ANY_OF   ( char32_t )
+string_MK_ENDS_WITH_NONE_OF  ( char32_t )
+string_MK_ERASE              ( char32_t )
+string_MK_ERASE_ALL          ( char32_t )
+string_MK_ERASE_FIRST        ( char32_t )
+string_MK_ERASE_LAST         ( char32_t )
+string_MK_INSERT             ( char32_t )
+string_MK_REPLACE            ( char32_t )
+string_MK_REPLACE_ALL        ( char32_t )
+string_MK_REPLACE_FIRST      ( char32_t )
+string_MK_REPLACE_LAST       ( char32_t )
+string_MK_STRIP_LEFT         ( char32_t )
+string_MK_STRIP_RIGHT        ( char32_t )
+string_MK_STRIP              ( char32_t )
+string_MK_SUBSTRING          ( char32_t )
+string_MK_TO_CASE_CHAR       ( char32_t, lowercase )
+string_MK_TO_CASE_CHAR       ( char32_t, uppercase )
+string_MK_TO_CASE_STRING     ( char32_t, lowercase )
+string_MK_TO_CASE_STRING     ( char32_t, uppercase )
+string_MK_CAPITALIZE         ( char32_t )
+string_MK_JOIN               ( char32_t )
+string_MK_SPLIT              ( char32_t )
+string_MK_SPLIT_LEFT         ( char32_t )
+string_MK_SPLIT_RIGHT        ( char32_t )
+// ...
+string_MK_COMPARE            ( char32_t )
+
+// string_view operators:
+
+namespace string { namespace std17 {
+
+string_MK_COMPARE_EQ         ( char32_t )
+string_MK_COMPARE_NE         ( char32_t )
+string_MK_COMPARE_LT         ( char32_t )
+string_MK_COMPARE_LE         ( char32_t )
+string_MK_COMPARE_GE         ( char32_t )
+string_MK_COMPARE_GT         ( char32_t )
+
+}}  // namespace string::std17
+
+#endif // string_CONFIG_PROVIDE_CHAR32_T
+
+// #undef string_MK_*
+
+#undef string_MK_IS_EMPTY
+#undef string_MK_LENGTH
+#undef string_MK_SIZE
+#undef string_MK_APPEND
+#undef string_MK_CONTAINS
+#undef string_MK_CONTAINS_ALL_OF
+#undef string_MK_CONTAINS_ANY_OF
+#undef string_MK_CONTAINS_NONE_OF
+#undef string_MK_STARTS_WITH
+#undef string_MK_STARTS_WITH_CHAR
+#undef string_MK_STARTS_WITH_ALL_OF
+#undef string_MK_STARTS_WITH_ANY_OF
+#undef string_MK_STARTS_WITH_NONE_OF
+#undef string_MK_ENDS_WITH
+#undef string_MK_ENDS_WITH_CHAR
+#undef string_MK_ENDS_WITH_ALL_OF
+#undef string_MK_ENDS_WITH_ANY_OF
+#undef string_MK_ENDS_WITH_NONE_OF
+#undef string_MK_FIND_FIRST
+#undef string_MK_FIND_FIRST_CHAR
+#undef string_MK_FIND_LAST
+#undef string_MK_FIND_LAST_CHAR
+#undef string_MK_FIND_FIRST_OF
+#undef string_MK_FIND_LAST_OF
+#undef string_MK_FIND_FIRST_NOT_OF
+#undef string_MK_FIND_LAST_NOT_OF
+#undef string_MK_ERASE
+#undef string_MK_ERASE_ALL
+#undef string_MK_ERASE_FIRST
+#undef string_MK_ERASE_LAST
+#undef string_MK_INSERT
+#undef string_MK_REPLACE
+#undef string_MK_REPLACE_ALL
+#undef string_MK_REPLACE_FIRST
+#undef string_MK_REPLACE_LAST
+#undef string_MK_STRIP_LEFT
+#undef string_MK_STRIP_RIGHT
+#undef string_MK_STRIP
+#undef string_MK_SUBSTRING
+#undef string_MK_TO_CASE_CHAR
+#undef string_MK_TO_CASE_CHAR
+#undef string_MK_TO_CASE_STRING
+#undef string_MK_TO_CASE_STRING
+#undef string_MK_CAPITALIZE
+#undef string_MK_JOIN
+#undef string_MK_SPLIT
+#undef string_MK_SPLIT_LEFT
+#undef string_MK_SPLIT_RIGHT
+#undef string_MK_COMPARE
+#undef string_MK_COMPARE_EQ
+#undef string_MK_COMPARE_NE
+#undef string_MK_COMPARE_LT
+#undef string_MK_COMPARE_LE
+#undef string_MK_COMPARE_GE
+#undef string_MK_COMPARE_GT
+
 } // namespace nonstd
 
-namespace nonstd {
+#endif  // NONSTD_STRING_BARE_HPP
 
-// using string::clear;
-
-} // namespace nonstd
-
-#endif // NONSTD_STRING_LITE_HPP
+/*
+ * end of file
+ */
