@@ -25,7 +25,7 @@ enum modifiers
     mod_hidden = 256
 };
 
-BOOST_DESCRIBE_CONSTEXPR_OR_CONST modifiers mod_any_access = static_cast<modifiers>( mod_public | mod_protected | mod_private );
+BOOST_DESCRIBE_INLINE_CONSTEXPR modifiers mod_any_access = static_cast<modifiers>( mod_public | mod_protected | mod_private );
 
 } // namespace describe
 } // namespace boost

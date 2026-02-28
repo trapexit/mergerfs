@@ -11,6 +11,14 @@
 #include <boost/mp11/utility.hpp>
 #include <boost/mp11/detail/config.hpp>
 
+#if BOOST_MP11_WORKAROUND( BOOST_MP11_GCC, >= 140000 )
+
+#include <boost/mp11/detail/mp_list.hpp>
+#include <boost/mp11/detail/mp_append.hpp>
+#include <boost/mp11/detail/mp_front.hpp>
+
+#endif
+
 #if BOOST_MP11_WORKAROUND( BOOST_MP11_MSVC, < 1930 )
 
 // not exactly good practice, but...
@@ -25,6 +33,30 @@ namespace boost
 {
 namespace mp11
 {
+
+#if BOOST_MP11_WORKAROUND( BOOST_MP11_GCC, >= 140000 )
+
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=120161
+
+namespace detail
+{
+
+template<class M, class K> struct mp_map_find_impl;
+
+template<template<class...> class M, class... T, class K> struct mp_map_find_impl<M<T...>, K>
+{
+    template<class U> using _f = mp_if<std::is_same<mp_front<U>, K>, mp_list<U>, mp_list<>>;
+
+    using _l = mp_append<_f<T>..., mp_list<void>>;
+
+    using type = mp_front<_l>;
+};
+
+} // namespace detail
+
+template<class M, class K> using mp_map_find = typename detail::mp_map_find_impl<M, K>::type;
+
+#else
 
 // mp_map_find
 namespace detail
@@ -80,6 +112,8 @@ template<template<class...> class M, class... T, class K> struct mp_map_find_imp
 } // namespace detail
 
 template<class M, class K> using mp_map_find = typename detail::mp_map_find_impl<M, K>::type;
+
+#endif
 
 } // namespace mp11
 } // namespace boost

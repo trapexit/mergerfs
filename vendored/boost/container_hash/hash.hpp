@@ -1,5 +1,5 @@
 // Copyright 2005-2014 Daniel James.
-// Copyright 2021, 2022 Peter Dimov.
+// Copyright 2021, 2022, 2025 Peter Dimov.
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
@@ -11,6 +11,7 @@
 #define BOOST_FUNCTIONAL_HASH_HASH_HPP
 
 #include <boost/container_hash/hash_fwd.hpp>
+#include <boost/container_hash/hash_is_avalanching.hpp>
 #include <boost/container_hash/is_range.hpp>
 #include <boost/container_hash/is_contiguous_range.hpp>
 #include <boost/container_hash/is_unordered_range.hpp>
@@ -557,19 +558,15 @@ namespace boost
 
 #endif
 
-    // boost::unordered::hash_is_avalanching
+    // hash_is_avalanching
 
-    namespace unordered
-    {
-        template<class T> struct hash_is_avalanching;
-        template<class Ch> struct hash_is_avalanching< boost::hash< std::basic_string<Ch> > >: std::is_integral<Ch> {};
+    template<class Ch> struct hash_is_avalanching< boost::hash< std::basic_string<Ch> > >: std::is_integral<Ch> {};
 
 #if !defined(BOOST_NO_CXX17_HDR_STRING_VIEW)
 
-        template<class Ch> struct hash_is_avalanching< boost::hash< std::basic_string_view<Ch> > >: std::is_integral<Ch> {};
+    template<class Ch> struct hash_is_avalanching< boost::hash< std::basic_string_view<Ch> > >: std::is_integral<Ch> {};
 
 #endif
-    } // namespace unordered
 
 } // namespace boost
 
