@@ -60,8 +60,129 @@ Documentation for C++ subprocessing library.
 #endif
 
 extern "C" {
-#ifdef __USING_WINDOWS__
-  #include <windows.h>
+
+  /*
+   * == Windows API Declarations ==
+   *
+   * Manually declare only the Windows API functions we need instead of
+   * including the full <windows.h> to:
+   *
+   *  1. Keep compile times fast.
+   *  2. Prevent name collisions with common names like min/max.
+   *  3. Make the library self-contained and clean.
+   */
+
+  #ifdef __USING_WINDOWS__
+  
+  #define CONST const
+  #define WINAPI __stdcall
+  
+  #define TRUE 1
+  #define FALSE 0
+  
+  #define INFINITE 0xFFFFFFFF
+  
+  #define STATUS_WAIT_0 ((unsigned long)0x00000000L)
+  #define WAIT_OBJECT_0 ((STATUS_WAIT_0) + 0)
+  
+  #define HANDLE_FLAG_INHERIT 0x00000001
+  
+  #define STARTF_USESTDHANDLES 0x00000100
+  
+  #define CREATE_NO_WINDOW           0x08000000
+  #define CREATE_UNICODE_ENVIRONMENT 0x00000400
+  
+  #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
+  #define FORMAT_MESSAGE_FROM_SYSTEM     0x00001000
+  #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
+  #define FORMAT_MESSAGE_MAX_WIDTH_MASK  0x000000FF
+  
+  #define LANG_NEUTRAL  0x00
+  #define SUBLANG_DEFAULT 0x01
+  
+  #ifdef _M_CEE_PURE
+    typedef System::ArgIterator va_list;
+  #else
+    typedef char* va_list;
+  #endif
+  
+  typedef void VOID;
+  typedef char CHAR;
+  typedef wchar_t WCHAR;
+  
+  typedef int BOOL;
+  typedef unsigned int UINT;
+  typedef unsigned short USHORT;
+  typedef unsigned short WORD;
+  typedef unsigned long DWORD;
+  
+  typedef size_t SIZE_T;
+  
+  typedef void* PVOID;
+  typedef void* LPVOID;
+  typedef const void* LPCVOID;
+  
+  typedef void* HANDLE;
+  typedef HANDLE HLOCAL;
+  typedef HANDLE* PHANDLE;
+  
+  typedef DWORD* LPDWORD;
+  
+  typedef CHAR* LPSTR;
+  typedef WCHAR* LPWCH;
+  typedef WCHAR* LPWSTR;
+  typedef CONST WCHAR* LPCWSTR;
+  
+  typedef struct _SECURITY_ATTRIBUTES {
+      DWORD nLength;
+      LPVOID lpSecurityDescriptor;
+      BOOL bInheritHandle;
+  } SECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
+  
+  typedef struct _PROCESS_INFORMATION {
+      HANDLE hProcess;
+      HANDLE hThread;
+      DWORD dwProcessId;
+      DWORD dwThreadId;
+  } PROCESS_INFORMATION, *LPPROCESS_INFORMATION;
+  
+  typedef struct _STARTUPINFOW {
+      DWORD cb;
+      LPWSTR lpReserved;
+      LPWSTR lpDesktop;
+      LPWSTR lpTitle;
+      DWORD dwX;
+      DWORD dwY;
+      DWORD dwXSize;
+      DWORD dwYSize;
+      DWORD dwXCountChars;
+      DWORD dwYCountChars;
+      DWORD dwFillAttribute;
+      DWORD dwFlags;
+      WORD wShowWindow;
+      WORD cbReserved2;
+      unsigned char* lpReserved2;
+      HANDLE hStdInput;
+      HANDLE hStdOutput;
+      HANDLE hStdError;
+  } STARTUPINFOW, * LPSTARTUPINFOW;
+  
+  BOOL   WINAPI CloseHandle(HANDLE);
+  BOOL   WINAPI CreatePipe(PHANDLE, PHANDLE, LPSECURITY_ATTRIBUTES, DWORD);
+  BOOL   WINAPI CreateProcessW(LPCWSTR, LPWSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCWSTR, LPSTARTUPINFOW, LPPROCESS_INFORMATION);
+  BOOL   WINAPI FreeEnvironmentStringsW(LPWCH);
+  BOOL   WINAPI GetExitCodeProcess(HANDLE, LPDWORD);
+  BOOL   WINAPI SetHandleInformation(HANDLE, DWORD, DWORD);
+  BOOL   WINAPI TerminateProcess(HANDLE, UINT);
+  DWORD  WINAPI FormatMessageA(DWORD, LPCVOID, DWORD, DWORD, LPSTR, DWORD, va_list*);
+  DWORD  WINAPI GetLastError(VOID);
+  DWORD  WINAPI WaitForSingleObject(HANDLE, DWORD);
+  HLOCAL WINAPI LocalFree(HLOCAL);
+  LPWSTR WINAPI GetEnvironmentStringsW(VOID);
+  
+  #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
+  #define MAKELANGID(p, s) ((((WORD)(s)) << 10) | (WORD)(p))
+
   #include <io.h>
   #include <cwchar>
 #else
