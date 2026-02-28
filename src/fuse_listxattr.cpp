@@ -21,7 +21,6 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_llistxattr.hpp"
-#include "ugid.hpp"
 #include "xattr.hpp"
 
 #include "fuse.h"

@@ -34,7 +34,6 @@
 #include "fuse_passthrough.hpp"
 #include "procfs.hpp"
 #include "stat_util.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
 

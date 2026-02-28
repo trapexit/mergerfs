@@ -22,7 +22,6 @@
 #include "errno.hpp"
 #include "fs_eaccess.hpp"
 #include "fs_path.hpp"
-#include "ugid.hpp"
 
 #include <string>
 #include <vector>

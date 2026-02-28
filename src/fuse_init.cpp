@@ -23,7 +23,6 @@
 #include "procfs.hpp"
 #include "state.hpp"
 #include "syslog.hpp"
-#include "ugid.hpp"
 
 #include "fs_path.hpp"
 #include "fs_exists.hpp"

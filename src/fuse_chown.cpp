@@ -23,7 +23,6 @@
 #include "fs_lchown.hpp"
 #include "fs_path.hpp"
 #include "policy_rv.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
 

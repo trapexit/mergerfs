@@ -23,7 +23,6 @@
 #include "fs_lutimens.hpp"
 #include "fs_path.hpp"
 #include "policy_rv.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
 
