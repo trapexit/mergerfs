@@ -1,5 +1,5 @@
 // Copyright 2005-2009 Daniel James.
-// Copyright 2021, 2022 Peter Dimov.
+// Copyright 2021, 2022, 2025 Peter Dimov.
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
@@ -31,6 +31,8 @@ template<class It> std::size_t hash_range( It, It );
 
 template<class It> void hash_unordered_range( std::size_t&, It, It );
 template<class It> std::size_t hash_unordered_range( It, It );
+
+template<class Hash> struct hash_is_avalanching;
 
 } // namespace boost
 

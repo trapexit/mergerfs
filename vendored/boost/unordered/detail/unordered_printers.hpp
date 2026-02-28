@@ -1,11 +1,11 @@
-// Copyright 2024 Braden Ganetsky
+// Copyright 2024-2025 Braden Ganetsky
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
-// Generated on 2024-08-25T17:48:54
+// Generated on 2025-08-21T03:09:19
 
-#ifndef BOOST_UNORDERED_UNORDERED_PRINTERS_HPP
-#define BOOST_UNORDERED_UNORDERED_PRINTERS_HPP
+#ifndef BOOST_UNORDERED_DETAIL_UNORDERED_PRINTERS_HPP
+#define BOOST_UNORDERED_DETAIL_UNORDERED_PRINTERS_HPP
 
 #ifndef BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS
 #if defined(__ELF__)
@@ -14,7 +14,7 @@
 #pragma clang diagnostic ignored "-Woverlength-strings"
 #endif
 __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
-        ".ascii \"\\4gdb.inlined-script.BOOST_UNORDERED_UNORDERED_PRINTERS_HPP\\n\"\n"
+        ".ascii \"\\4gdb.inlined-script.BOOST_UNORDERED_DETAIL_UNORDERED_PRINTERS_HPP\\n\"\n"
         ".ascii \"import gdb.printing\\n\"\n"
         ".ascii \"import gdb.xmethod\\n\"\n"
         ".ascii \"import re\\n\"\n"
@@ -58,14 +58,15 @@ __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
 
         ".ascii \"class BoostUnorderedFcaPrinter:\\n\"\n"
         ".ascii \"    def __init__(self, val):\\n\"\n"
-        ".ascii \"        self.val = BoostUnorderedHelpers.maybe_unwrap_reference(val)\\n\"\n"
-        ".ascii \"        self.name = f\\\"{self.val.type.strip_typedefs()}\\\".split(\\\"<\\\")[0]\\n\"\n"
+        ".ascii \"        val = BoostUnorderedHelpers.maybe_unwrap_reference(val)\\n\"\n"
+        ".ascii \"        self.table = val[\\\"table_\\\"]\\n\"\n"
+        ".ascii \"        self.name = f\\\"{val.type.strip_typedefs()}\\\".split(\\\"<\\\")[0]\\n\"\n"
         ".ascii \"        self.name = self.name.replace(\\\"boost::unordered::\\\", \\\"boost::\\\")\\n\"\n"
         ".ascii \"        self.is_map = self.name.endswith(\\\"map\\\")\\n\"\n"
-        ".ascii \"        self.cpo = BoostUnorderedPointerCustomizationPoint(self.val[\\\"table_\\\"][\\\"buckets_\\\"][\\\"buckets\\\"])\\n\"\n"
+        ".ascii \"        self.cpo = BoostUnorderedPointerCustomizationPoint(self.table[\\\"buckets_\\\"][\\\"buckets\\\"])\\n\"\n"
 
         ".ascii \"    def to_string(self):\\n\"\n"
-        ".ascii \"        size = self.val[\\\"table_\\\"][\\\"size_\\\"]\\n\"\n"
+        ".ascii \"        size = self.table[\\\"size_\\\"]\\n\"\n"
         ".ascii \"        return f\\\"{self.name} with {size} elements\\\"\\n\"\n"
 
         ".ascii \"    def display_hint(self):\\n\"\n"
@@ -73,7 +74,7 @@ __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
 
         ".ascii \"    def children(self):\\n\"\n"
         ".ascii \"        def generator():\\n\"\n"
-        ".ascii \"            grouped_buckets = self.val[\\\"table_\\\"][\\\"buckets_\\\"]\\n\"\n"
+        ".ascii \"            grouped_buckets = self.table[\\\"buckets_\\\"]\\n\"\n"
 
         ".ascii \"            size = grouped_buckets[\\\"size_\\\"]\\n\"\n"
         ".ascii \"            buckets = grouped_buckets[\\\"buckets\\\"]\\n\"\n"
@@ -167,14 +168,20 @@ __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
 
         ".ascii \"class BoostUnorderedFoaPrinter:\\n\"\n"
         ".ascii \"    def __init__(self, val):\\n\"\n"
-        ".ascii \"        self.val = BoostUnorderedHelpers.maybe_unwrap_reference(val)\\n\"\n"
-        ".ascii \"        self.name = f\\\"{self.val.type.strip_typedefs()}\\\".split(\\\"<\\\")[0]\\n\"\n"
+        ".ascii \"        val = BoostUnorderedHelpers.maybe_unwrap_reference(val)\\n\"\n"
+        ".ascii \"        self.table = val[\\\"table_\\\"]\\n\"\n"
+        ".ascii \"        self.name = f\\\"{val.type.strip_typedefs()}\\\".split(\\\"<\\\")[0]\\n\"\n"
         ".ascii \"        self.name = self.name.replace(\\\"boost::unordered::\\\", \\\"boost::\\\")\\n\"\n"
         ".ascii \"        self.is_map = self.name.endswith(\\\"map\\\")\\n\"\n"
-        ".ascii \"        self.cpo = BoostUnorderedPointerCustomizationPoint(self.val[\\\"table_\\\"][\\\"arrays\\\"][\\\"groups_\\\"])\\n\"\n"
+        ".ascii \"        self.cpo = BoostUnorderedPointerCustomizationPoint(self.table[\\\"arrays\\\"][\\\"groups_\\\"])\\n\"\n"
+        ".ascii \"        self.groups = self.cpo.to_address(self.table[\\\"arrays\\\"][\\\"groups_\\\"])\\n\"\n"
+        ".ascii \"        self.elements = self.cpo.to_address(self.table[\\\"arrays\\\"][\\\"elements_\\\"])\\n\"\n"
+
+        ".ascii \"        self.N = 15 # `self.groups.dereference()[\\\"N\\\"]` may be optimized out\\n\"\n"
+        ".ascii \"        self.sentinel_ = 1 # `self.groups.dereference()[\\\"sentinel_\\\"]` may be optimized out\\n\"\n"
 
         ".ascii \"    def to_string(self):\\n\"\n"
-        ".ascii \"        size = BoostUnorderedHelpers.maybe_unwrap_atomic(self.val[\\\"table_\\\"][\\\"size_ctrl\\\"][\\\"size\\\"])\\n\"\n"
+        ".ascii \"        size = BoostUnorderedHelpers.maybe_unwrap_atomic(self.table[\\\"size_ctrl\\\"][\\\"size\\\"])\\n\"\n"
         ".ascii \"        return f\\\"{self.name} with {size} elements\\\"\\n\"\n"
 
         ".ascii \"    def display_hint(self):\\n\"\n"
@@ -204,30 +211,21 @@ __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
         ".ascii \"        m = group[\\\"m\\\"]\\n\"\n"
         ".ascii \"        at = lambda b: BoostUnorderedHelpers.maybe_unwrap_atomic(m[b][\\\"n\\\"])\\n\"\n"
 
-        ".ascii \"        N = group[\\\"N\\\"]\\n\"\n"
-        ".ascii \"        sentinel_ = group[\\\"sentinel_\\\"]\\n\"\n"
         ".ascii \"        if self.is_regular_layout(group):\\n\"\n"
-        ".ascii \"            return pos == N-1 and at(N-1) == sentinel_\\n\"\n"
+        ".ascii \"            return pos == self.N-1 and at(self.N-1) == self.sentinel_\\n\"\n"
         ".ascii \"        else:\\n\"\n"
-        ".ascii \"            return pos == N-1 and (at(0) & 0x4000400040004000) == 0x4000 and (at(1) & 0x4000400040004000) == 0\\n\"\n"
+        ".ascii \"            return pos == self.N-1 and (at(0) & 0x4000400040004000) == 0x4000 and (at(1) & 0x4000400040004000) == 0\\n\"\n"
 
         ".ascii \"    def children(self):\\n\"\n"
         ".ascii \"        def generator():\\n\"\n"
-        ".ascii \"            table = self.val[\\\"table_\\\"]\\n\"\n"
-        ".ascii \"            groups = self.cpo.to_address(table[\\\"arrays\\\"][\\\"groups_\\\"])\\n\"\n"
-        ".ascii \"            elements = self.cpo.to_address(table[\\\"arrays\\\"][\\\"elements_\\\"])\\n\"\n"
-
-        ".ascii \"            pc_ = groups.cast(gdb.lookup_type(\\\"unsigned char\\\").pointer())\\n\"\n"
-        ".ascii \"            p_ = elements\\n\"\n"
+        ".ascii \"            pc_ = self.groups.cast(gdb.lookup_type(\\\"unsigned char\\\").pointer())\\n\"\n"
+        ".ascii \"            p_ = self.elements\\n\"\n"
         ".ascii \"            first_time = True\\n\"\n"
-        ".ascii \"            mask = 0\\n\"\n"
-        ".ascii \"            n0 = 0\\n\"\n"
-        ".ascii \"            n = 0\\n\"\n"
 
         ".ascii \"            count = 0\\n\"\n"
         ".ascii \"            while p_ != 0:\\n\"\n"
         ".ascii \"                # This if block mirrors the condition in the begin() call\\n\"\n"
-        ".ascii \"                if (not first_time) or (self.match_occupied(groups.dereference()) & 1):\\n\"\n"
+        ".ascii \"                if (not first_time) or (self.match_occupied(self.groups.dereference()) & 1):\\n\"\n"
         ".ascii \"                    pointer = BoostUnorderedHelpers.maybe_unwrap_foa_element(p_)\\n\"\n"
         ".ascii \"                    value = self.cpo.to_address(pointer).dereference()\\n\"\n"
         ".ascii \"                    if self.is_map:\\n\"\n"
@@ -241,17 +239,17 @@ __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
         ".ascii \"                    count += 1\\n\"\n"
         ".ascii \"                first_time = False\\n\"\n"
 
-        ".ascii \"                n0 = pc_.cast(gdb.lookup_type(\\\"uintptr_t\\\")) % groups.dereference().type.sizeof\\n\"\n"
+        ".ascii \"                n0 = pc_.cast(gdb.lookup_type(\\\"uintptr_t\\\")) % self.groups.dereference().type.sizeof\\n\"\n"
         ".ascii \"                pc_ = self.cpo.next(pc_, -n0)\\n\"\n"
 
-        ".ascii \"                mask = (self.match_occupied(pc_.cast(groups.type).dereference()) >> (n0+1)) << (n0+1)\\n\"\n"
+        ".ascii \"                mask = (self.match_occupied(pc_.cast(self.groups.type).dereference()) >> (n0+1)) << (n0+1)\\n\"\n"
         ".ascii \"                while mask == 0:\\n\"\n"
-        ".ascii \"                    pc_ = self.cpo.next(pc_, groups.dereference().type.sizeof)\\n\"\n"
-        ".ascii \"                    p_ = self.cpo.next(p_, groups.dereference()[\\\"N\\\"])\\n\"\n"
-        ".ascii \"                    mask = self.match_occupied(pc_.cast(groups.type).dereference())\\n\"\n"
+        ".ascii \"                    pc_ = self.cpo.next(pc_, self.groups.dereference().type.sizeof)\\n\"\n"
+        ".ascii \"                    p_ = self.cpo.next(p_, self.N)\\n\"\n"
+        ".ascii \"                    mask = self.match_occupied(pc_.cast(self.groups.type).dereference())\\n\"\n"
 
         ".ascii \"                n = BoostUnorderedHelpers.countr_zero(mask)\\n\"\n"
-        ".ascii \"                if self.is_sentinel(pc_.cast(groups.type).dereference(), n):\\n\"\n"
+        ".ascii \"                if self.is_sentinel(pc_.cast(self.groups.type).dereference(), n):\\n\"\n"
         ".ascii \"                    p_ = 0\\n\"\n"
         ".ascii \"                else:\\n\"\n"
         ".ascii \"                    pc_ = self.cpo.next(pc_, n)\\n\"\n"
@@ -411,4 +409,4 @@ __asm__(".pushsection \".debug_gdb_scripts\", \"MS\",%progbits,1\n"
 #endif // defined(__ELF__)
 #endif // !defined(BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
-#endif // !defined(BOOST_UNORDERED_UNORDERED_PRINTERS_HPP)
+#endif // !defined(BOOST_UNORDERED_DETAIL_UNORDERED_PRINTERS_HPP)

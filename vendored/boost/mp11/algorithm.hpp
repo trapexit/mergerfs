@@ -970,7 +970,7 @@ template<template<class...> class L, class T1, class T2, class T3, class T4, cla
 
 } // namespace detail
 
-template<class L, class V, template<class...> class F> using mp_reverse_fold = typename detail::mp_reverse_fold_impl<L, V, F>::type;
+template<class L, class V, template<class...> class F> using mp_reverse_fold = typename detail::mp_reverse_fold_impl<mp_rename<L, mp_list>, V, F>::type;
 template<class L, class V, class Q> using mp_reverse_fold_q = mp_reverse_fold<L, V, Q::template fn>;
 
 // mp_unique<L>
