@@ -23,7 +23,6 @@
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "error.hpp"
-#include "ugid.hpp"
 
 
 FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_,

@@ -30,7 +30,6 @@
 #include "fs_symlink.hpp"
 #include "fs_unlink.hpp"
 #include "fuse_symlink.hpp"
-#include "ugid.hpp"
 
 #include <algorithm>
 #include <iostream>

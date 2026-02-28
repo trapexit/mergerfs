@@ -27,7 +27,6 @@
 #include "fs_mkdir.hpp"
 #include "fs_path.hpp"
 #include "fs_xattr.hpp"
-#include "ugid.hpp"
 
 #include "fs_close.hpp"
 #include "fs_fstat.hpp"

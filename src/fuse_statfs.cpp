@@ -24,7 +24,6 @@
 #include "fs_path.hpp"
 #include "fs_lstatvfs.hpp"
 #include "statvfs_util.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
 

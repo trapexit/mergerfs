@@ -29,7 +29,6 @@
 #include "state.hpp"
 #include "str.hpp"
 #include "symlinkify.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
 

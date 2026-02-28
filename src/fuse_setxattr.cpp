@@ -27,7 +27,6 @@
 #include "num.hpp"
 #include "policy_rv.hpp"
 #include "str.hpp"
-#include "ugid.hpp"
 #include "syslog.hpp"
 
 #include "fuse.h"

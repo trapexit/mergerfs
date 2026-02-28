@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include "ugid.hpp"
-
 #include "fuse.h"
 
 // Becoming root is required due to current security policies within

@@ -23,7 +23,6 @@
 #include "error.hpp"
 #include "fs_path.hpp"
 #include "fs_unlink.hpp"
-#include "ugid.hpp"
 
 #include "fuse.h"
 

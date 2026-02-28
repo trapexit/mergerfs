@@ -22,7 +22,6 @@
 
 #include "config.hpp"
 #include "supported_getdents64.hpp"
-#include "ugid.hpp"
 
 #ifdef MERGERFS_SUPPORTED_GETDENTS64
 #include "fuse_readdir_seq_getdents.icpp"

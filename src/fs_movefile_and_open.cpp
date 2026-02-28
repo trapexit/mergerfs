@@ -34,7 +34,6 @@
 #include "fs_stat.hpp"
 #include "fs_unlink.hpp"
 #include "policy.hpp"
-#include "ugid.hpp"
 
 #include <string>
 #include <vector>

@@ -25,7 +25,6 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "str.hpp"
-#include "ugid.hpp"
 #include "version.hpp"
 
 #include "fuse.h"

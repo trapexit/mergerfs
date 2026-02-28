@@ -33,7 +33,6 @@
 #include "fs_path.hpp"
 #include "mergerfs_ioctl.hpp"
 #include "str.hpp"
-#include "ugid.hpp"
 
 #include <string>
 #include <vector>
