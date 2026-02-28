@@ -30,7 +30,7 @@
 
 #include "fmt/core.h"
 #include "fmt/chrono.h"
-#include "CLI11.hpp"
+#include "CLI11/CLI11.hpp"
 
 #include "base_types.h"
 

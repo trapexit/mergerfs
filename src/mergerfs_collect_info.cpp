@@ -22,11 +22,11 @@
 #include "fs_mounts.hpp"
 #include "fs_unlink.hpp"
 
-#include "CLI11.hpp"
+#include "CLI11/CLI11.hpp"
 #include "fmt/core.h"
 #include "fmt/ranges.h"
 #include "scope_guard.hpp"
-#include "subprocess.hpp"
+#include "subprocess/subprocess.hpp"
 
 #include <stdio.h>
 

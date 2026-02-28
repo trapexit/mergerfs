@@ -18,7 +18,7 @@
 
 #include "rnd.hpp"
 
-#include "rapidhash.h"
+#include "rapidhash/rapidhash.h"
 
 #include <cstdint>
 

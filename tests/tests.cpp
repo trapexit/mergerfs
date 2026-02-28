@@ -1,4 +1,4 @@
-#include "acutest.h"
+#include "acutest/acutest.h"
 
 #include "config.hpp"
 #include "str.hpp"

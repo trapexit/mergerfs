@@ -120,15 +120,18 @@ override CXXFLAGS += \
 	-MP
 override INC_FLAGS := \
 	-Isrc \
-	-Ilibfuse/include
+	-Ivendored \
+	-Ivendored/libfuse/include
 override MFS_FLAGS  := \
 	-DUSE_XATTR=$(USE_XATTR) \
 	-DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
 override TESTS_FLAGS := \
 	-Isrc \
+	-Ivendored \
+	-Ivendored/acutest \
 	-DTESTS
 
-LIBFUSE := libfuse/$(BUILDDIR)/libfuse.a
+LIBFUSE := vendored/libfuse/$(BUILDDIR)/libfuse.a
 LDFLAGS ?=
 LDLIBS := \
 	-lrt \
@@ -191,7 +194,7 @@ $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
 .PHONY: libfuse
 $(LIBFUSE):
 libfuse:
-	$(MAKE) -C libfuse
+	$(MAKE) -C vendored/libfuse
 
 tests: $(BUILDDIR)/tests
 
@@ -229,7 +232,7 @@ preload: $(BUILDDIR)/preload.so
 clean: rpm-clean
 	$(RM) -rf $(BUILDDIR)
 	$(FIND) . -name "*~" -delete
-	$(MAKE) -C libfuse clean
+	$(MAKE) -C vendored/libfuse clean
 
 .PHONY: distclean
 distclean: clean
@@ -250,7 +253,7 @@ install-base: all
 .PHONY: install-mount-tools
 install-mount-tools: install-base
 	$(MKDIR) -p "$(INSTALLBINDIR)"
-	$(MAKE) -C libfuse install
+	$(MAKE) -C vendored/libfuse install
 
 .PHONY: install-man
 install-man: man/$(MANPAGE)
