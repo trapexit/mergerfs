@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "khash.h"
-#include "rapidhash.h"
+#include "khash/khash.h"
+#include "rapidhash/rapidhash.h"
 
 KHASH_SET_INIT_INT64(hashset);
 

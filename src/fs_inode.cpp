@@ -19,7 +19,7 @@
 #include "fs_inode.hpp"
 
 #include "ef.hpp"
-#include "rapidhash.h"
+#include "rapidhash/rapidhash.h"
 
 #include <cstdint>
 
