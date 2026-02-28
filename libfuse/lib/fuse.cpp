@@ -15,7 +15,6 @@
 
 #include "crc32b.h"
 #include "debug.hpp"
-#include "khash.h"
 #include "kvec.h"
 #include "mutex.hpp"
 #include "node.hpp"
