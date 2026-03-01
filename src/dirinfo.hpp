@@ -40,7 +40,7 @@ public:
 };
 
 inline
-uint64_t
+u64
 DirInfo::to_fh() const
 {
   ASSERT_NOT_NULL(this);

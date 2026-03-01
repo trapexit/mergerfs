@@ -18,10 +18,10 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse_req_ctx.h"
 
 #include <cstddef>
-#include <cstdint>
 
 
 namespace FUSE
@@ -30,5 +30,5 @@ namespace FUSE
   bmap(const fuse_req_ctx_t *ctx,
        const char           *fusepath,
        size_t                blocksize,
-       uint64_t             *idx);
+       u64                  *idx);
 }

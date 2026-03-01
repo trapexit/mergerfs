@@ -45,7 +45,7 @@ int
 _create_1(const Branches::Ptr &branches_,
           const fs::path      &fusepath_,
           BranchInfoVec       *branchinfo_,
-          uint64_t            *sum_)
+          u64                 *sum_)
 {
   int rv;
   int error;
@@ -80,7 +80,7 @@ int
 _get_branchinfo(const Branches::Ptr &branches_,
                 const fs::path      &fusepath_,
                 BranchInfoVec       *branchinfo_,
-                uint64_t            *sum_)
+                u64                 *sum_)
 {
   int rv;
   fs::path fusepath;
@@ -102,10 +102,10 @@ _get_branchinfo(const Branches::Ptr &branches_,
 static
 Branch*
 _get_branch(const BranchInfoVec &branchinfo_,
-            const uint64_t       sum_)
+            cu64                  sum_)
 {
-  uint64_t idx;
-  uint64_t threshold;
+  u64 idx;
+  u64 threshold;
 
   if(sum_ == 0)
     return nullptr;
@@ -132,7 +132,7 @@ _create(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int rv;
-  uint64_t sum;
+  u64 sum;
   Branch *branch;
   BranchInfoVec branchinfo;
 

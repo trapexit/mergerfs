@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 
-ConfigPageSize::ConfigPageSize(const uint64_t v_)
+ConfigPageSize::ConfigPageSize(cu64 v_)
   : _v(v_)
 {
 
@@ -46,8 +46,8 @@ ConfigPageSize::to_string(void) const
 int
 ConfigPageSize::from_string(const std::string_view s_)
 {
-  uint64_t v;
-  uint64_t pagesize;
+  u64 v;
+  u64 pagesize;
 
   pagesize = sysconf(_SC_PAGESIZE);
 

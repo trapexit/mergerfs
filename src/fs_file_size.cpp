@@ -16,14 +16,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_fstat.hpp"
+#include "fs_file_size.hpp"
 
-#include <cstdint>
+#include "fs_fstat.hpp"
 
 
 namespace fs
 {
-  int64_t
+  s64
   file_size(const int fd_)
   {
     int rv;

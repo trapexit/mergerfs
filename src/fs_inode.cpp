@@ -21,29 +21,27 @@
 #include "ef.hpp"
 #include "rapidhash/rapidhash.h"
 
-#include <cstdint>
-
 #include <atomic>
 #include <pthread.h>
 #include <sys/stat.h>
 
-typedef uint64_t (*inodefunc_t)(const std::string &,
-                                const std::string &,
-                                const mode_t,
-                                const ino_t);
+typedef u64 (*inodefunc_t)(const std::string &,
+                           const std::string &,
+                           const mode_t,
+                           const ino_t);
 
-static uint64_t _hybrid_hash(const std::string &,
-                             const std::string &,
-                             const mode_t,
-                             const ino_t);
+static u64 _hybrid_hash(const std::string &,
+                        const std::string &,
+                        const mode_t,
+                        const ino_t);
 
 
 static std::atomic<inodefunc_t> g_func{::_hybrid_hash};
 
 
 static
-uint32_t
-_h64_to_h32(uint64_t h_)
+u32
+_h64_to_h32(u64 h_)
 {
   h_ ^= (h_ >> 32);
   h_ *= 0x9E3779B9;
@@ -51,7 +49,7 @@ _h64_to_h32(uint64_t h_)
 }
 
 static
-uint64_t
+u64
 _passthrough(const std::string &branch_path_,
              const std::string &fusepath_,
              const mode_t           mode_,
@@ -61,13 +59,13 @@ _passthrough(const std::string &branch_path_,
 }
 
 static
-uint64_t
+u64
 _path_hash(const std::string &branch_path_,
            const std::string &fusepath_,
            const mode_t           mode_,
            const ino_t            ino_)
 {
-  uint64_t seed;
+  u64 seed;
 
   seed = rapidhash(&fusepath_[0],fusepath_.size());
 
@@ -75,13 +73,13 @@ _path_hash(const std::string &branch_path_,
 }
 
 static
-uint64_t
+u64
 _path_hash32(const std::string &branch_path_,
              const std::string &fusepath_,
              const mode_t           mode_,
              const ino_t            ino_)
 {
-  uint64_t h;
+  u64 h;
 
   h = ::_path_hash(branch_path_,
                    fusepath_,
@@ -92,13 +90,13 @@ _path_hash32(const std::string &branch_path_,
 }
 
 static
-uint64_t
+u64
 _devino_hash(const std::string &branch_path_,
              const std::string &fusepath_,
              const mode_t           mode_,
              const ino_t            ino_)
 {
-  uint64_t seed;
+  u64 seed;
 
   seed = rapidhash(&branch_path_[0],branch_path_.size());
   seed = rapidhash_withSeed(&ino_,sizeof(ino_),seed);
@@ -107,13 +105,13 @@ _devino_hash(const std::string &branch_path_,
 }
 
 static
-uint64_t
+u64
 _devino_hash32(const std::string &branch_path_,
                const std::string &fusepath_,
                const mode_t           mode_,
                const ino_t            ino_)
 {
-  uint64_t h;
+  u64 h;
 
   h = ::_devino_hash(branch_path_,
                      fusepath_,
@@ -124,7 +122,7 @@ _devino_hash32(const std::string &branch_path_,
 }
 
 static
-uint64_t
+u64
 _hybrid_hash(const std::string &branch_path_,
              const std::string &fusepath_,
              const mode_t           mode_,
@@ -136,7 +134,7 @@ _hybrid_hash(const std::string &branch_path_,
 }
 
 static
-uint64_t
+u64
 _hybrid_hash32(const std::string &branch_path_,
                const std::string &fusepath_,
                const mode_t           mode_,
@@ -192,7 +190,7 @@ fs::inode::get_algo(void)
   return {};
 }
 
-uint64_t
+u64
 fs::inode::calc(const std::string &branch_path_,
                 const std::string &fusepath_,
                 const mode_t       mode_,

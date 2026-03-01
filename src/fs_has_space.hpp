@@ -18,7 +18,8 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
+
 #include <string>
 
 
@@ -26,5 +27,5 @@ namespace fs
 {
   bool
   has_space(const std::string &str,
-            const int64_t      size);
+            cs64                 size);
 }

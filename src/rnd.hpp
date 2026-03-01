@@ -18,7 +18,8 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
+
 #include <random>
 
 class RND
@@ -27,10 +28,10 @@ public:
   RND();
 
 public:
-  static uint64_t rand64(void);
-  static uint64_t rand64(const uint64_t max_);
-  static uint64_t rand64(const uint64_t min_,
-                         const uint64_t max_);
+  static u64 rand64(void);
+  static u64 rand64(cu64 max_);
+  static u64 rand64(cu64 min_,
+                    cu64 max_);
 
   template<typename T>
   static

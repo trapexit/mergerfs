@@ -69,14 +69,14 @@ str::from(const std::string_view  val_,
 
 int
 str::from(const std::string_view  val_,
-           int64_t                *rv_)
+           s64                    *rv_)
 {
-  int64_t tmp;
+  s64 tmp;
   const int base = 10;
-  constexpr int64_t K = 1024LL;
-  constexpr int64_t M = K * 1024LL;
-  constexpr int64_t G = M * 1024LL;
-  constexpr int64_t T = G * 1024LL;
+  constexpr s64 K = 1024LL;
+  constexpr s64 M = K * 1024LL;
+  constexpr s64 G = M * 1024LL;
+  constexpr s64 T = G * 1024LL;
 
   auto [ptr,ec] = std::from_chars(val_.begin(),
                                   val_.end(),
@@ -131,14 +131,14 @@ str::from(const std::string_view  val_,
 
 int
 str::from(const std::string_view  val_,
-           uint64_t               *rv_)
+           u64                    *rv_)
 {
-  uint64_t tmp;
+  u64 tmp;
   const int base = 10;
-  constexpr uint64_t K = 1024ULL;
-  constexpr uint64_t M = K * 1024ULL;
-  constexpr uint64_t G = M * 1024ULL;
-  constexpr uint64_t T = G * 1024ULL;
+  constexpr u64 K = 1024ULL;
+  constexpr u64 M = K * 1024ULL;
+  constexpr u64 G = M * 1024ULL;
+  constexpr u64 T = G * 1024ULL;
 
   auto [ptr,ec] = std::from_chars(val_.begin(),
                                   val_.end(),

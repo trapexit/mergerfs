@@ -266,11 +266,11 @@ _open(const Policy::Search &searchFunc_,
 }
 
 constexpr
-uint64_t
+u64
 _(const PassthroughIOEnum e_,
-  const uint64_t          m_)
+  const u64                m_)
 {
-  return ((((uint64_t)e_) << 32) | (m_ & O_ACCMODE));
+  return ((((u64)e_) << 32) | (m_ & O_ACCMODE));
 }
 
 static

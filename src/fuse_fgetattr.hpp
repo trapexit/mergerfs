@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 #include <sys/stat.h>
@@ -29,7 +30,7 @@ namespace FUSE
 {
   int
   fgetattr(const fuse_req_ctx_t *ctx,
-           const uint64_t        fh,
-           struct stat          *st,
-           fuse_timeouts_t      *timeout);
+           cu64                   fh,
+           struct stat           *st,
+           fuse_timeouts_t       *timeout);
 }

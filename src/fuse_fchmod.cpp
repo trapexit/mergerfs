@@ -40,10 +40,10 @@ _fchmod(const int    fd_,
 
 int
 FUSE::fchmod(const fuse_req_ctx_t *ctx_,
-             const uint64_t        fh_,
-             const mode_t          mode_)
+             cu64                   fh_,
+             const mode_t           mode_)
 {
-  uint64_t fh;
+  u64 fh;
 
   fh = fh_;
   if(fh == 0)

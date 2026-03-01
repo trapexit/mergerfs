@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
 
 
 namespace fs
 {
-  int64_t
+  s64
   file_size(const int fd);
 }

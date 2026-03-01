@@ -43,11 +43,11 @@ _fchown(const int   fd_,
 
 int
 FUSE::fchown(const fuse_req_ctx_t *ctx_,
-             const uint64_t        fh_,
-             const uid_t           uid_,
-             const gid_t           gid_)
+             cu64                   fh_,
+             const uid_t            uid_,
+             const gid_t            gid_)
 {
-  uint64_t fh;
+  u64 fh;
 
   fh = fh_;
   if(fh == 0)

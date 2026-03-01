@@ -81,9 +81,9 @@
 static
 int
 _ioctl(const int       fd_,
-       const uint32_t  cmd_,
+       const u32       cmd_,
        void           *data_,
-       uint32_t       *out_bufsz_)
+       u32            *out_bufsz_)
 {
   int rv;
 
@@ -109,9 +109,9 @@ static
 int
 _ioctl_file(const fuse_req_ctx_t   *ctx_,
             const fuse_file_info_t *ffi_,
-            const uint32_t          cmd_,
+            const u32               cmd_,
             void                   *data_,
-            uint32_t               *out_bufsz_)
+            u32                    *out_bufsz_)
 {
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
@@ -127,9 +127,9 @@ int
 _ioctl_dir_base(const Policy::Search &searchFunc_,
                 const Branches       &branches_,
                 const fs::path       &fusepath_,
-                const uint32_t        cmd_,
+                const u32             cmd_,
                 void                 *data_,
-                uint32_t             *out_bufsz_)
+                u32                  *out_bufsz_)
 {
   int fd;
   int rv;
@@ -157,9 +157,9 @@ static
 int
 _ioctl_dir(const fuse_req_ctx_t   *ctx_,
            const fuse_file_info_t *ffi_,
-           const uint32_t          cmd_,
+           const u32               cmd_,
            void                   *data_,
-           uint32_t               *out_bufsz_)
+           u32                    *out_bufsz_)
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
@@ -185,7 +185,7 @@ FUSE::ioctl(const fuse_req_ctx_t   *ctx_,
             void                   *arg_,
             unsigned int            flags_,
             void                   *data_,
-            uint32_t               *out_bufsz_)
+            u32                    *out_bufsz_)
 {
   if(::_is_btrfs_ioctl_cmd(cmd_))
     return -ENOTTY;

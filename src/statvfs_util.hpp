@@ -18,7 +18,8 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
+
 #include <string>
 
 #include <sys/statvfs.h>
@@ -36,7 +37,7 @@ namespace StatVFS
 
   static
   inline
-  int64_t
+  s64
   spaceavail(const struct statvfs &st_)
   {
     return (st_.f_frsize * st_.f_bavail);
@@ -44,7 +45,7 @@ namespace StatVFS
 
   static
   inline
-  int64_t
+  s64
   spaceused(const struct statvfs &st_)
   {
     return (st_.f_frsize * (st_.f_blocks - st_.f_bavail));

@@ -43,7 +43,7 @@ FUSE::flock(const fuse_req_ctx_t   *ctx_,
             const fuse_file_info_t *ffi_,
             int                     op_)
 {
-  uint64_t fh;
+  u64 fh;
 
   fh = ffi_->fh;
   if(fh == 0)

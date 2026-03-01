@@ -42,10 +42,10 @@ _futimens(const int             fd_,
 
 int
 FUSE::futimens(const fuse_req_ctx_t  *ctx_,
-               const uint64_t         fh_,
-               const struct timespec  ts_[2])
+               cu64                    fh_,
+               const struct timespec   ts_[2])
 {
-  uint64_t fh;
+  u64 fh;
 
   fh = fh_;
   if(fh == 0)

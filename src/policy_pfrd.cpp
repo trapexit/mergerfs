@@ -34,8 +34,8 @@
 
 struct BranchInfo
 {
-  uint64_t  spaceavail;
-  Branch   *branch;
+  u64      spaceavail;
+  Branch  *branch;
 };
 
 typedef std::vector<BranchInfo> BranchInfoVec;
@@ -44,7 +44,7 @@ static
 int
 _get_branchinfo(const Branches::Ptr &branches_,
                 BranchInfoVec       *branchinfo_,
-                uint64_t            *sum_)
+                u64                 *sum_)
 {
   int rv;
   int err;
@@ -75,10 +75,10 @@ _get_branchinfo(const Branches::Ptr &branches_,
 static
 Branch*
 _get_branch(const BranchInfoVec &branchinfo_,
-            const uint64_t       sum_)
+            cu64                  sum_)
 {
-  uint64_t idx;
-  uint64_t threshold;
+  u64 idx;
+  u64 threshold;
 
   if(sum_ == 0)
     return nullptr;
@@ -105,7 +105,7 @@ _create(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int err;
-  uint64_t sum;
+  u64 sum;
   Branch *branch;
   BranchInfoVec branchinfo;
 

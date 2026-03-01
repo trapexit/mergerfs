@@ -23,7 +23,6 @@
 
 #include "mutex.hpp"
 
-#include <cstdint>
 #include <map>
 #include <string>
 
@@ -33,36 +32,36 @@
 
 struct Element
 {
-  uint64_t       time;
+  u64            time;
   struct statvfs st;
 };
 
 typedef std::map<std::string,Element> statvfs_cache;
 
-static uint64_t        g_timeout    = 0;
+static u64             g_timeout    = 0;
 static statvfs_cache   g_cache;
 static Mutex           g_cache_lock;
 
 
 static
-uint64_t
+u64
 _get_time(void)
 {
-  uint64_t rv;
+  u64 rv;
 
   rv = ::time(NULL);
 
   return rv;
 }
 
-uint64_t
+u64
 fs::statvfs_cache_timeout(void)
 {
   return g_timeout;
 }
 
 void
-fs::statvfs_cache_timeout(const uint64_t timeout_)
+fs::statvfs_cache_timeout(cu64 timeout_)
 {
   g_timeout = timeout_;
 }
@@ -73,7 +72,7 @@ fs::statvfs_cache(const char     *path_,
 {
   int rv;
   Element *e;
-  uint64_t now;
+  u64 now;
 
   if(g_timeout == 0)
     return fs::statvfs(path_,st_);
@@ -114,7 +113,7 @@ fs::statvfs_cache_readonly(const std::string &path_,
 
 int
 fs::statvfs_cache_spaceavail(const std::string &path_,
-                             uint64_t          *spaceavail_)
+                             u64               *spaceavail_)
 {
   int rv;
   struct statvfs st;
@@ -128,7 +127,7 @@ fs::statvfs_cache_spaceavail(const std::string &path_,
 
 int
 fs::statvfs_cache_spaceused(const std::string &path_,
-                            uint64_t          *spaceused_)
+                            u64               *spaceused_)
 {
   int rv;
   struct statvfs st;

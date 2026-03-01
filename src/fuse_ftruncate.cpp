@@ -40,10 +40,10 @@ _ftruncate(const int   fd_,
 
 int
 FUSE::ftruncate(const fuse_req_ctx_t *ctx_,
-                const uint64_t        fh_,
-                off_t                 size_)
+                cu64                   fh_,
+                off_t                  size_)
 {
-  uint64_t fh;
+  u64 fh;
 
   fh = fh_;
   if(fh == 0)

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
 
 #include <sys/statvfs.h>
 
@@ -27,10 +27,10 @@
 
 namespace fs
 {
-  uint64_t
+  u64
   statvfs_cache_timeout(void);
   void
-  statvfs_cache_timeout(const uint64_t timeout);
+  statvfs_cache_timeout(cu64 timeout);
 
   int
   statvfs_cache(const char     *path,
@@ -42,9 +42,9 @@ namespace fs
 
   int
   statvfs_cache_spaceavail(const std::string &path,
-                           uint64_t          *spaceavail);
+                           u64               *spaceavail);
 
   int
   statvfs_cache_spaceused(const std::string &path,
-                          uint64_t          *spaceused);
+                          u64               *spaceused);
 }

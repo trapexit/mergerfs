@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 #include <sys/types.h>
@@ -28,6 +29,6 @@ namespace FUSE
 {
   int
   ftruncate(const fuse_req_ctx_t *ctx,
-            const uint64_t        fh,
-            off_t                 size);
+            cu64                   fh,
+            off_t                  size);
 }

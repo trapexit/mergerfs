@@ -18,22 +18,23 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
+
 #include <string>
 
 
 namespace fs
 {
   int
-  readahead(const std::uint64_t major_dev,
-            const std::uint64_t minor_dev,
-            const std::uint64_t size_in_kb);
+  readahead(cu64 major_dev,
+            cu64 minor_dev,
+            cu64 size_in_kb);
 
   int
-  readahead(const std::uint64_t dev,
-            const std::uint64_t size_in_kb);
+  readahead(cu64 dev,
+            cu64 size_in_kb);
 
   int
-  readahead(const std::string   path,
-            const std::uint64_t size_in_kb);
+  readahead(const std::string path,
+            cu64               size_in_kb);
 }

@@ -199,7 +199,7 @@ _wait_for_mount()
   paths = cfg.branches->to_paths();
 
   SysLog::info("Waiting {} seconds for {} branches to mount",
-               (uint64_t)cfg.branches_mount_timeout,
+               (u64)cfg.branches_mount_timeout,
                paths.size());
 
   timeout = std::chrono::milliseconds(cfg.branches_mount_timeout * 1000);
@@ -214,7 +214,7 @@ _wait_for_mount()
                         " within the timeout of {}s. Exiting",
                         failures,
                         paths.size(),
-                        (uint64_t)cfg.branches_mount_timeout);
+                        (u64)cfg.branches_mount_timeout);
           return true;
         }
 

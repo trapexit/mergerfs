@@ -41,13 +41,13 @@ _create(const Branches::Ptr  &branches_,
 {
   int rv;
   int error;
-  uint64_t eplus;
+  u64 eplus;
   fs::info_t info;
   Branch *obranch;
 
   obranch = nullptr;
   error = ENOENT;
-  eplus = std::numeric_limits<uint64_t>::max();
+  eplus = std::numeric_limits<u64>::max();
   for(auto &branch : *branches_)
     {
       if(branch.ro_or_nc())
@@ -84,13 +84,13 @@ _action(const Branches::Ptr  &branches_,
 {
   int rv;
   int error;
-  uint64_t eplus;
+  u64 eplus;
   fs::info_t info;
   Branch *obranch;
 
   obranch = nullptr;
   error = ENOENT;
-  eplus = std::numeric_limits<uint64_t>::max();
+  eplus = std::numeric_limits<u64>::max();
   for(auto &branch : *branches_)
     {
       if(branch.ro())
@@ -124,8 +124,8 @@ _search(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int rv;
-  uint64_t eplus;
-  uint64_t spaceused;
+  u64 eplus;
+  u64 spaceused;
   Branch *obranch;
 
   obranch = nullptr;

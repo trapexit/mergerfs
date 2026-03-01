@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 
@@ -25,7 +26,7 @@ namespace FUSE
 {
   int
   fsync(const fuse_req_ctx_t *ctx,
-        const uint64_t        fh,
-        int                   isdatasync);
+        cu64                   fh,
+        int                    isdatasync);
 
 }
