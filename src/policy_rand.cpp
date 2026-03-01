@@ -20,7 +20,6 @@
 
 #include "errno.hpp"
 #include "policy.hpp"
-#include "policy_rand.hpp"
 #include "policies.hpp"
 #include "rnd.hpp"
 
