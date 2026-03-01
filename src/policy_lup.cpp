@@ -33,8 +33,6 @@
 #include <limits>
 #include <string>
 
-using std::string;
-
 static
 int
 _action(const Branches::Ptr  &branches_,

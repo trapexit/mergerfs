@@ -29,8 +29,6 @@
 
 #include <string>
 
-using std::string;
-
 static
 int
 _create(const Branches::Ptr  &ibranches_,

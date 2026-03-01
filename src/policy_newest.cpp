@@ -32,8 +32,6 @@
 
 #include <sys/stat.h>
 
-using std::string;
-
 static
 int
 _create(const Branches::Ptr  &branches_,
