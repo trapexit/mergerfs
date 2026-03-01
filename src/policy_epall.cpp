@@ -108,7 +108,7 @@ _search(const Branches::Ptr  &branches_,
       if(!fs::exists(branch.path,fusepath_))
         continue;
 
-      paths_.push_back(&branch);
+      paths_.emplace_back(&branch);
     }
 
   if(paths_.empty())

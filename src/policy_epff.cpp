@@ -58,7 +58,7 @@ _create(const Branches::Ptr  &branches_,
       if(info.spaceavail < branch.minfreespace())
         error_and_continue(error,ENOSPC);
 
-      paths_.push_back(&branch);
+      paths_.emplace_back(&branch);
 
       return 0;
     }
@@ -89,7 +89,7 @@ _action(const Branches::Ptr  &branches_,
       if(readonly)
         error_and_continue(error,EROFS);
 
-      paths_.push_back(&branch);
+      paths_.emplace_back(&branch);
 
       return 0;
     }
@@ -108,7 +108,7 @@ _search(const Branches::Ptr  &branches_,
       if(!fs::exists(branch.path,fusepath_))
         continue;
 
-      paths_.push_back(&branch);
+      paths_.emplace_back(&branch);
 
       return 0;
     }

@@ -92,7 +92,7 @@ _action(const Branches::Ptr  &branches_,
   if(obranch == nullptr)
     return -error;
 
-  paths_.push_back(obranch);
+  paths_.emplace_back(obranch);
 
   return 0;
 }
@@ -153,7 +153,7 @@ _search(const Branches::Ptr &branches_,
   if(obranch == nullptr)
     return -ENOENT;
 
-  paths_.push_back(obranch);
+  paths_.emplace_back(obranch);
 
   return 0;
 }
@@ -216,7 +216,7 @@ _create(const Branches::Ptr  &branches_,
   if(obranch == nullptr)
     return -error;
 
-  paths_.push_back(obranch);
+  paths_.emplace_back(obranch);
 
   return 0;
 }
