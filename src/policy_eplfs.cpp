@@ -25,7 +25,6 @@
 #include "fs_statvfs_cache.hpp"
 #include "policies.hpp"
 #include "policy.hpp"
-#include "policy_eplfs.hpp"
 #include "policy_error.hpp"
 
 #include <limits>

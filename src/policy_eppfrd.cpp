@@ -24,7 +24,6 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
-#include "policy_eppfrd.hpp"
 #include "policy_error.hpp"
 #include "rnd.hpp"
 #include "rwlock.hpp"
