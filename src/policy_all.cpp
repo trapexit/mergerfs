@@ -51,7 +51,7 @@ _create(const Branches::Ptr  &ibranches_,
       if(info.spaceavail < branch.minfreespace())
         error_and_continue(error,ENOSPC);
 
-      obranches_.push_back(&branch);
+      obranches_.emplace_back(&branch);
     }
 
   if(obranches_.empty())

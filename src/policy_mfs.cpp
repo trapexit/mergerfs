@@ -64,7 +64,7 @@ _create(const Branches::Ptr  &branches_,
   if(!obranch)
     return -error;
 
-  paths_.push_back(obranch);
+  paths_.emplace_back(obranch);
 
   return 0;
 }
