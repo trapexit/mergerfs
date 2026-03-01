@@ -120,6 +120,7 @@ override CXXFLAGS += \
 FUSERMOUNT_DIR := $(BINDIR)
 FUSE_FLAGS := \
 	-Iinclude \
+	-I.. \
 	-I$(BUILDDIR) \
 	-D_REENTRANT \
 	-D_FILE_OFFSET_BITS=64 \
