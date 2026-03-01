@@ -68,7 +68,7 @@ _create(const Branches::Ptr  &branches_,
       obranch = &branch;
     }
 
-  if(obranch == nullptr)
+  if(!obranch)
     return -error;
 
   paths_.emplace_back(obranch);
@@ -109,7 +109,7 @@ _action(const Branches::Ptr  &branches_,
       obranch = &branch;
     }
 
-  if(obranch == nullptr)
+  if(!obranch)
     return -error;
 
   paths_.emplace_back(obranch);
@@ -144,7 +144,7 @@ _search(const Branches::Ptr  &branches_,
       obranch = &branch;
     }
 
-  if(obranch == nullptr)
+  if(!obranch)
     return -ENOENT;
 
   paths_.emplace_back(obranch);

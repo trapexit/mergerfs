@@ -71,7 +71,7 @@ _action(const Branches::Ptr  &branches_,
           total = 1;
         }
 
-      if(obranch == nullptr)
+      if(!obranch)
         {
           best_used = used;
           best_total = total;
@@ -89,7 +89,7 @@ _action(const Branches::Ptr  &branches_,
       obranch = &branch;
     }
 
-  if(obranch == nullptr)
+  if(!obranch)
     return -error;
 
   paths_.emplace_back(obranch);
@@ -132,7 +132,7 @@ _search(const Branches::Ptr &branches_,
           total = 1;
         }
 
-      if(obranch == nullptr)
+      if(!obranch)
         {
           best_used = used;
           best_total = total;
@@ -150,7 +150,7 @@ _search(const Branches::Ptr &branches_,
       obranch = &branch;
     }
 
-  if(obranch == nullptr)
+  if(!obranch)
     return -ENOENT;
 
   paths_.emplace_back(obranch);
@@ -195,7 +195,7 @@ _create(const Branches::Ptr  &branches_,
           total = 1;
         }
 
-      if(obranch == nullptr)
+      if(!obranch)
         {
           best_used = used;
           best_total = total;
@@ -213,7 +213,7 @@ _create(const Branches::Ptr  &branches_,
       obranch = &branch;
     }
 
-  if(obranch == nullptr)
+  if(!obranch)
     return -error;
 
   paths_.emplace_back(obranch);

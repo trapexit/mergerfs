@@ -43,7 +43,7 @@ static
 bool
 _is_attrname_security_capability(const char *attrname_)
 {
-  return (strcmp(attrname_,SECURITY_CAPABILITY) == 0);
+  return str::eq(attrname_,SECURITY_CAPABILITY);
 }
 
 static
