@@ -30,8 +30,6 @@
 #include <limits>
 #include <string>
 
-using std::string;
-
 static
 int
 _create(const Branches::Ptr  &branches_,

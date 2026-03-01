@@ -23,8 +23,6 @@
 
 #include <string>
 
-using std::string;
-
 
 int
 Policy::ERoFS::Action::operator()(const Branches::Ptr  &branches_,
