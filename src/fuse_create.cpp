@@ -218,11 +218,11 @@ _create(const ugid_t          ugid_,
 }
 
 constexpr
-uint64_t
+u64
 _(const PassthroughIOEnum e_,
-  const uint64_t          m_)
+  cu64                    m_)
 {
-  return ((((uint64_t)e_) << 32) | (m_ & O_ACCMODE));
+  return ((((u64)e_) << 32) | (m_ & O_ACCMODE));
 }
 
 static

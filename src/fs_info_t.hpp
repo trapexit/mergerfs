@@ -18,15 +18,15 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
 
 
 namespace fs
 {
   struct info_t
   {
-    bool     readonly;
-    uint64_t spaceavail;
-    uint64_t spaceused;
+    bool readonly;
+    u64  spaceavail;
+    u64  spaceused;
   };
 }

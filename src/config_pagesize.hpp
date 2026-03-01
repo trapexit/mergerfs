@@ -18,17 +18,16 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "tofrom_string.hpp"
-
-#include <cstdint>
 
 class ConfigPageSize : public ToFromString
 {
 private:
-  uint64_t _v;
+  u64 _v;
 
 public:
-  ConfigPageSize(const uint64_t);
+  ConfigPageSize(cu64);
   ConfigPageSize(const std::string &);
 
 public:
@@ -37,14 +36,14 @@ public:
 
 public:
   ConfigPageSize&
-  operator=(const uint64_t v_)
+  operator=(cu64 v_)
   {
     _v = v_;
 
     return *this;
   }
 
-  operator uint64_t() const
+  operator u64() const
   {
     return _v;
   }

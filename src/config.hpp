@@ -54,7 +54,8 @@
 
 #include "fuse.h"
 
-#include <cstdint>
+#include "base_types.h"
+
 #include <map>
 #include <memory>
 #include <string>
@@ -63,8 +64,8 @@
 #include <sys/stat.h>
 
 typedef ToFromWrapper<bool>                 ConfigBOOL;
-typedef ToFromWrapper<uint64_t>             ConfigUINT64;
-typedef ToFromWrapper<int64_t>              ConfigS64;
+typedef ToFromWrapper<u64>                  ConfigU64;
+typedef ToFromWrapper<s64>                  ConfigS64;
 typedef ToFromWrapper<int>                  ConfigINT;
 typedef ToFromWrapper<std::string>          ConfigSTR;
 typedef ToFromWrapper<fs::path>             ConfigPath;
@@ -114,15 +115,15 @@ public:
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   Branches       branches;
-  ConfigUINT64   branches_mount_timeout;
+  ConfigU64      branches_mount_timeout;
   ConfigBOOL     branches_mount_timeout_fail;
-  ConfigUINT64   cache_attr;
-  ConfigUINT64   cache_entry;
+  ConfigU64      cache_attr;
+  ConfigU64      cache_entry;
   CacheFiles     cache_files;
   ConfigSet      cache_files_process_names;
-  ConfigUINT64   cache_negative_entry;
+  ConfigU64      cache_negative_entry;
   ConfigBOOL     cache_readdir;
-  ConfigUINT64   cache_statfs;
+  ConfigU64      cache_statfs;
   ConfigBOOL     cache_symlinks;
   ConfigBOOL     cache_writeback;
   Categories     category;
@@ -159,7 +160,7 @@ public:
   TFSRef<int>    process_thread_queue_depth;
   ProxyIOPrio    proxy_ioprio;
   TFSRef<int>    read_thread_count;
-  ConfigUINT64   readahead;
+  ConfigU64      readahead;
   FUSE::ReadDir  readdir;
   RenameEXDEV    rename_exdev;
   ConfigINT      scheduling_priority;

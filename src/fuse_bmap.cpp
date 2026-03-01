@@ -25,7 +25,7 @@ int
 FUSE::bmap(const fuse_req_ctx_t *ctx_,
            const char           *fusepath_,
            size_t                blocksize_,
-           uint64_t             *idx_)
+           u64                  *idx_)
 {
   (void)ctx_;
   (void)fusepath_;

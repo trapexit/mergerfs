@@ -18,23 +18,23 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 #include "fuse_kernel.h"
 
-#include <cstdint>
 
 namespace FUSE
 {
   int statx(const fuse_req_ctx_t *ctx,
             const char           *fusepath,
-            const uint32_t        flags,
-            const uint32_t        mask,
+            cu32                   flags,
+            cu32                   mask,
             struct fuse_statx    *st,
             fuse_timeouts_t      *timeout);
   int statx_fh(const fuse_req_ctx_t *ctx,
-               const uint64_t        fh,
-               const uint32_t        flags,
-               const uint32_t        mask,
+               cu64                   fh,
+               cu32                   flags,
+               cu32                   mask,
                struct fuse_statx    *st,
                fuse_timeouts_t      *timeout);
 }

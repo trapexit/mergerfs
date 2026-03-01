@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fs_path.hpp"
 
-#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -29,8 +29,8 @@ namespace str
 {
   int from(const std::string_view, bool *);
   int from(const std::string_view, int *);
-  int from(const std::string_view, uint64_t *);
-  int from(const std::string_view, int64_t *);
+  int from(const std::string_view, u64 *);
+  int from(const std::string_view, s64 *);
   int from(const std::string_view, std::string *);
   int from(const std::string_view, const std::string *);
   int from(const std::string_view, fs::path *);

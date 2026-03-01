@@ -39,13 +39,13 @@ _create(const Branches::Ptr  &branches_,
 {
   int rv;
   int error;
-  uint64_t epmfs;
+  u64 epmfs;
   fs::info_t info;
   Branch *obranch;
 
   obranch = nullptr;
   error = ENOENT;
-  epmfs = std::numeric_limits<uint64_t>::min();
+  epmfs = std::numeric_limits<u64>::min();
   for(auto &branch : *branches_)
     {
       if(branch.ro_or_nc())
@@ -82,13 +82,13 @@ _action(const Branches::Ptr  &branches_,
 {
   int rv;
   int error;
-  uint64_t epmfs;
+  u64 epmfs;
   fs::info_t info;
   Branch *obranch;
 
   obranch = nullptr;
   error = ENOENT;
-  epmfs = std::numeric_limits<uint64_t>::min();
+  epmfs = std::numeric_limits<u64>::min();
   for(auto &branch : *branches_)
     {
       if(branch.ro())
@@ -122,8 +122,8 @@ _search(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int rv;
-  uint64_t epmfs;
-  uint64_t spaceavail;
+  u64 epmfs;
+  u64 spaceavail;
   Branch *obranch;
 
   obranch = nullptr;

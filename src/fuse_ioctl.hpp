@@ -18,8 +18,7 @@
 
 #pragma once
 
-#include <cstdint>
-
+#include "base_types.h"
 #include "fuse.h"
 
 
@@ -32,5 +31,5 @@ namespace FUSE
         void                   *arg,
         unsigned int            flags,
         void                   *data,
-        uint32_t               *out_bufsz);
+        u32                    *out_bufsz);
 }

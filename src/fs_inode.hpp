@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse_kernel.h"
 
-#include <cstdint>
 #include <string>
 
 #include <sys/stat.h>
@@ -33,10 +33,10 @@ namespace fs
     int set_algo(const std::string &s);
     std::string get_algo(void);
 
-    uint64_t calc(const std::string &basepath,
-                  const std::string &fusepath,
-                  const mode_t           mode,
-                  const ino_t            ino);
+    u64 calc(const std::string &basepath,
+             const std::string &fusepath,
+             const mode_t           mode,
+             const ino_t            ino);
 
     void calc(const std::string &basepath,
               const std::string &fusepath,

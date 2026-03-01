@@ -18,11 +18,12 @@
 
 #pragma once
 
-#include <cstdint>
+#include "base_types.h"
+
 #include <string>
 
 
 namespace num
 {
-  std::string humanize(const uint64_t bytes);
+  std::string humanize(cu64 bytes);
 }

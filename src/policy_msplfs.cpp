@@ -41,12 +41,12 @@ _create_1(const Branches::Ptr &branches_,
           int                 *err_)
 {
   int rv;
-  uint64_t lfs;
+  u64 lfs;
   fs::info_t info;
   Branch *obranch;
 
   obranch = nullptr;
-  lfs = std::numeric_limits<uint64_t>::max();
+  lfs = std::numeric_limits<u64>::max();
   for(auto &branch : *branches_)
     {
       if(branch.ro_or_nc())

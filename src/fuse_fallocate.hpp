@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 
@@ -25,8 +26,8 @@ namespace FUSE
 {
   int
   fallocate(const fuse_req_ctx_t *ctx,
-            const uint64_t        fh,
-            int                   mode,
-            off_t                 offset,
-            off_t                 len);
+            cu64                   fh,
+            int                    mode,
+            off_t                  offset,
+            off_t                  len);
 }

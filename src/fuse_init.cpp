@@ -83,7 +83,7 @@ _want_if_capable_max_pages(fuse_conn_info_t *conn_,
                            Config         &cfg_)
 {
   std::fstream f;
-  uint64_t max_pages_limit;
+  u64 max_pages_limit;
 
   if(fs::exists(MAX_PAGES_LIMIT_FILEPATH))
     {
@@ -91,8 +91,8 @@ _want_if_capable_max_pages(fuse_conn_info_t *conn_,
         SysLog::info("fuse_msg_size > {}: setting it to {}",
                      MAX_FUSE_MSG_SIZE,
                      MAX_FUSE_MSG_SIZE);
-      cfg_.fuse_msg_size = std::min((uint64_t)cfg_.fuse_msg_size,
-                                    (uint64_t)MAX_FUSE_MSG_SIZE);
+      cfg_.fuse_msg_size = std::min((u64)cfg_.fuse_msg_size,
+                                    (u64)MAX_FUSE_MSG_SIZE);
 
       f.open(MAX_PAGES_LIMIT_FILEPATH,f.in|f.out);
       if(f.is_open())
@@ -104,11 +104,11 @@ _want_if_capable_max_pages(fuse_conn_info_t *conn_,
           if(cfg_.fuse_msg_size > max_pages_limit)
             {
               f.seekp(0);
-              f << (uint64_t)cfg_.fuse_msg_size;
+              f << (u64)cfg_.fuse_msg_size;
               f.flush();
               SysLog::info("{} changed to {}",
                            MAX_PAGES_LIMIT_FILEPATH,
-                           (uint64_t)cfg_.fuse_msg_size);
+                           (u64)cfg_.fuse_msg_size);
             }
           f.close();
         }
@@ -122,11 +122,11 @@ _want_if_capable_max_pages(fuse_conn_info_t *conn_,
     {
       if(cfg_.fuse_msg_size > FUSE_DEFAULT_MAX_MAX_PAGES)
         SysLog::info("fuse_msg_size request {} > {}: setting it to {}",
-                     (uint64_t)cfg_.fuse_msg_size,
+                     (u64)cfg_.fuse_msg_size,
                      FUSE_DEFAULT_MAX_MAX_PAGES,
                      FUSE_DEFAULT_MAX_MAX_PAGES);
-      cfg_.fuse_msg_size = std::min((uint64_t)cfg_.fuse_msg_size,
-                                    (uint64_t)FUSE_DEFAULT_MAX_MAX_PAGES);
+      cfg_.fuse_msg_size = std::min((u64)cfg_.fuse_msg_size,
+                                    (u64)FUSE_DEFAULT_MAX_MAX_PAGES);
     }
 
   if(::_capable(conn_,FUSE_CAP_MAX_PAGES))
@@ -134,7 +134,7 @@ _want_if_capable_max_pages(fuse_conn_info_t *conn_,
       ::_want(conn_,FUSE_CAP_MAX_PAGES);
       fuse_cfg.max_pages = cfg_.fuse_msg_size;
       SysLog::info("requesting max pages size of {}",
-                   (uint64_t)cfg_.fuse_msg_size);
+                   (u64)cfg_.fuse_msg_size);
     }
   else
     {
@@ -162,7 +162,7 @@ _set_readahead_on_mount_and_branches()
 {
   Branches::Ptr branches;
 
-  if((uint64_t)cfg.readahead == 0)
+  if((u64)cfg.readahead == 0)
     return;
 
   ::_readahead(cfg.mountpoint,cfg.readahead);

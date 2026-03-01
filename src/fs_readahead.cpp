@@ -21,7 +21,6 @@
 #include "fmt/core.h"
 #include "fs_lstat.hpp"
 
-#include <cstdint>
 #include <fstream>
 #include <string>
 
@@ -34,16 +33,16 @@
 
 static
 std::string
-_generate_readahead_sys_path(const std::uint64_t major_,
-                             const std::uint64_t minor_)
+_generate_readahead_sys_path(cu64 major_,
+                             cu64 minor_)
 {
   return fmt::format("/sys/class/bdi/{}:{}/read_ahead_kb",major_,minor_);
 }
 
 int
-fs::readahead(const std::uint64_t major_dev_,
-              const std::uint64_t minor_dev_,
-              const std::uint64_t size_in_kb_)
+fs::readahead(cu64 major_dev_,
+              cu64 minor_dev_,
+              cu64 size_in_kb_)
 {
   std::string syspath;
   std::ofstream ofs;
@@ -61,11 +60,11 @@ fs::readahead(const std::uint64_t major_dev_,
 }
 
 int
-fs::readahead(const std::uint64_t dev_,
-              const std::uint64_t size_in_kb_)
+fs::readahead(cu64 dev_,
+              cu64 size_in_kb_)
 {
-  std::uint32_t major_dev;
-  std::uint32_t minor_dev;
+  u32 major_dev;
+  u32 minor_dev;
 
   major_dev = major(dev_);
   minor_dev = minor(dev_);
@@ -74,8 +73,8 @@ fs::readahead(const std::uint64_t dev_,
 }
 
 int
-fs::readahead(const std::string   path_,
-              const std::uint64_t size_in_kb_)
+fs::readahead(const std::string path_,
+              cu64               size_in_kb_)
 {
   int rv;
   struct stat st;

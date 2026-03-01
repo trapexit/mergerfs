@@ -46,7 +46,7 @@ int
 _get_branchinfo_create(const Branches::Ptr &branches_,
                        const fs::path      &fusepath_,
                        BranchInfoVec       *branchinfo_,
-                       uint64_t            *sum_)
+                       u64                 *sum_)
 {
   int rv;
   int error;
@@ -81,7 +81,7 @@ int
 _get_branchinfo_action(const Branches::Ptr &branches_,
                        const fs::path      &fusepath_,
                        BranchInfoVec       *branchinfo_,
-                       uint64_t            *sum_)
+                       u64                 *sum_)
 {
   int rv;
   int error;
@@ -114,10 +114,10 @@ int
 _get_branchinfo_search(const Branches::Ptr &branches_,
                        const fs::path      &fusepath_,
                        BranchInfoVec       *branchinfo_,
-                       uint64_t            *sum_)
+                       u64                 *sum_)
 {
   int rv;
-  uint64_t spaceavail;
+  u64 spaceavail;
 
   *sum_ = 0;
   for(auto &branch : *branches_)
@@ -139,10 +139,10 @@ _get_branchinfo_search(const Branches::Ptr &branches_,
 static
 Branch*
 _get_branch(const BranchInfoVec &branchinfo_,
-            const uint64_t       sum_)
+            cu64                  sum_)
 {
-  uint64_t idx;
-  uint64_t threshold;
+  u64 idx;
+  u64 threshold;
 
   if(sum_ == 0)
     return NULL;
@@ -169,7 +169,7 @@ _create(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int err;
-  uint64_t sum;
+  u64 sum;
   Branch *branch;
   BranchInfoVec branchinfo;
 
@@ -190,7 +190,7 @@ _action(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int err;
-  uint64_t sum;
+  u64 sum;
   Branch *branch;
   BranchInfoVec branchinfo;
 
@@ -211,7 +211,7 @@ _search(const Branches::Ptr  &branches_,
         std::vector<Branch*> &paths_)
 {
   int err;
-  uint64_t sum;
+  u64 sum;
   Branch *branch;
   BranchInfoVec branchinfo;
 

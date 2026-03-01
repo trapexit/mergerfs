@@ -21,16 +21,14 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#include <cstdint>
-
 
 ssize_t
 FUSE::setupmapping(const fuse_req_ctx_t *ctx_,
-                   uint64_t             *fh_,
-                   uint64_t              foffset_,
-                   uint64_t              len_,
-                   uint64_t              flags_,
-                   uint64_t              moffset_)
+                   u64                  *fh_,
+                   cu64                   foffset_,
+                   cu64                   len_,
+                   cu64                   flags_,
+                   cu64                   moffset_)
 {
   return -ENOSYS;
 }

@@ -17,6 +17,7 @@
 */
 
 #include "ef.hpp"
+#include "num.hpp"
 
 #include "fmt/core.h"
 
@@ -24,8 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-#include <cstdint>
 
 
 #define KB (1024ULL)
@@ -37,7 +36,7 @@
 namespace num
 {
   std::string
-  humanize(const uint64_t bytes_)
+  humanize(cu64 bytes_)
   {
     if(bytes_ < KB)
       return fmt::format("{}",bytes_);

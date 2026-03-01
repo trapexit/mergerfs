@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "khash/khash.h"
 #include "rapidhash/rapidhash.h"
 
@@ -39,10 +40,10 @@ public:
   inline
   int
   put(const char     *str_,
-      const uint64_t  len_)
+      cu64             len_)
   {
     int rv;
-    uint64_t h;
+    u64 h;
     khint_t key;
 
     h = rapidhash(str_,len_);

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 #include "fuse_req_ctx.h"
@@ -29,6 +30,6 @@ namespace FUSE
 {
   int
   fchmod(const fuse_req_ctx_t *ctx,
-         const uint64_t        fh,
-         const mode_t          mode);
+         cu64                   fh,
+         const mode_t           mode);
 }

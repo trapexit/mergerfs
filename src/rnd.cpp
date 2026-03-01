@@ -20,12 +20,10 @@
 
 #include "rapidhash/rapidhash.h"
 
-#include <cstdint>
-
 #include <sys/time.h>
 
 
-static uint64_t G_SEED;
+static u64 G_SEED;
 
 __attribute__((constructor))
 static
@@ -43,28 +41,28 @@ _constructor()
 
 // Lifted from wyhash.h's wyrand()
 static
-uint64_t
-_rapidhash_rand(uint64_t *seed_)
+u64
+_rapidhash_rand(u64 *seed_)
 {
   *seed_ += 0x2d358dccaa6c78a5ull;
   return rapid_mix(*seed_,*seed_ ^ 0x8bb84b93962eacc9ull);
 }
 
-uint64_t
+u64
 RND::rand64(void)
 {
   return _rapidhash_rand(&G_SEED);
 }
 
-uint64_t
-RND::rand64(const uint64_t max_)
+u64
+RND::rand64(cu64 max_)
 {
   return (RND::rand64() % max_);
 }
 
-uint64_t
-RND::rand64(const uint64_t min_,
-            const uint64_t max_)
+u64
+RND::rand64(cu64 min_,
+            cu64 max_)
 {
   return (min_ + (RND::rand64() % (max_ - min_)));
 }

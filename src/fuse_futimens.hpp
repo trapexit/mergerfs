@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 #include <sys/stat.h>
@@ -27,6 +28,6 @@ namespace FUSE
 {
   int
   futimens(const fuse_req_ctx_t *ctx,
-           const uint64_t        fh,
-           const timespec        ts[2]);
+           cu64                   fh,
+           const timespec         ts[2]);
 }

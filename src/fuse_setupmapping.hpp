@@ -18,15 +18,16 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fuse.h"
 
 
 namespace FUSE
 {
   ssize_t setupmapping(const fuse_req_ctx_t *ctx,
-                       uint64_t *fh_,
-                       uint64_t  foffset_,
-                       uint64_t  len_,
-                       uint64_t  flags_,
-                       uint64_t  moffset_);
+                       u64                  *fh_,
+                       cu64                   foffset_,
+                       cu64                   len_,
+                       cu64                   flags_,
+                       cu64                   moffset_);
 }

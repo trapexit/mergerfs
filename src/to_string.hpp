@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include "base_types.h"
 #include "fs_path.hpp"
 
-#include <cstdint>
 #include <filesystem>
 #include <string>
 
@@ -29,8 +29,8 @@ namespace str
 {
   std::string to(const bool);
   std::string to(const int);
-  std::string to(const uint64_t);
-  std::string to(const int64_t);
+  std::string to(cu64);
+  std::string to(cs64);
   std::string to(const std::string&);
   std::string to(const fs::path&);
 }

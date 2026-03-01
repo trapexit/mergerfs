@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "base_types.h"
+
 
 namespace endian
 {
@@ -26,7 +28,7 @@ namespace endian
   bool
   is_big(void)
   {
-    const union { uint32_t i; char c[4]; } u = { 0x01000000 };
+    const union { u32 i; char c[4]; } u = { 0x01000000 };
 
     return u.c[0];
   }

@@ -20,7 +20,6 @@
 
 #include "fmt/core.h"
 
-#include <cstdint>
 #include <string>
 
 
@@ -37,13 +36,13 @@ str::to(const int int_)
 }
 
 std::string
-str::to(const uint64_t uint64_)
+str::to(cu64 uint64_)
 {
   return fmt::format("{}",uint64_);
 }
 
 std::string
-str::to(const int64_t int64_)
+str::to(cs64 int64_)
 {
   return fmt::format("{}",int64_);
 }
