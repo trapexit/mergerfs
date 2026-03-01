@@ -46,16 +46,16 @@ _create_1(const Branches::Ptr &branches_,
   for(auto &branch : *branches_)
     {
       if(branch.ro_or_nc())
-        error_and_continue(*err_,-EROFS);
+        error_and_continue(*err_,EROFS);
       if(!fs::exists(branch.path,fusepath_))
-        error_and_continue(*err_,-ENOENT);
+        error_and_continue(*err_,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
-        error_and_continue(*err_,-ENOENT);
+        error_and_continue(*err_,ENOENT);
       if(info.readonly)
-        error_and_continue(*err_,-EROFS);
+        error_and_continue(*err_,EROFS);
       if(info.spaceavail < branch.minfreespace())
-        error_and_continue(*err_,-ENOSPC);
+        error_and_continue(*err_,ENOSPC);
       if(info.spaceused >= lus)
         continue;
 
@@ -76,7 +76,7 @@ _create(const Branches::Ptr  &branches_,
   Branch *branch;
   fs::path fusepath;
 
-  err = -ENOENT;
+  err = ENOENT;
   fusepath = fusepath_;
   for(;;)
     {
@@ -89,7 +89,7 @@ _create(const Branches::Ptr  &branches_,
     }
 
   if(!branch)
-    return err;
+    return -err;
 
   paths_.emplace_back(branch);
 
