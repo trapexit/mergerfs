@@ -1,22 +1,31 @@
 # Limiting drive spinup
 
+## Does mergerfs do anything to prevent drive spinup?
+
+No. In fact it makes it worse.
+
+
 ## How can I setup my system to limit drive spinup?
 
-TL;DR: You really can't. Not through mergerfs alone. In fact mergerfs
-makes an attempt to do so more complicated.
+TL;DR: You really can't. Not through mergerfs alone. In fact using
+mergerfs makes any general attempt to limit spinup more complicated.
 
 
-mergerfs is a proxy. Despite having some caching behaviors it is not
-designed to cache much more than metadata. It proxies calls between
-client software and underlying filesystems. If a client makes a
-request such as `open`, `readdir`, `stat`, etc. it must translate that
-into something that makes sense across multiple filesystems. For
-`readdir` that means running the call against all branches and
-aggregating the output. For `open` that means finding the file to open
-and doing so. The only way to find the file to open is to scan across
-all branches and sort the results and pick one. There is no practical
-way to do otherwise. Especially given so many mergerfs users expect
-out-of-band changes to "just work."
+mergerfs is a proxy. Despite having [some caching
+behaviors](../config/cache.md) it is not designed to cache much more
+than metadata. It proxies calls between client software and underlying
+filesystems. If a client makes a request such as `open`, `readdir`,
+`stat`, etc. it must translate that into something that makes sense
+across multiple filesystems. For `readdir` that means running the same
+call against all branches and aggregating the output. For `open` that
+means finding the file to open and doing so. The only way to find the
+file to open is to scan across all branches and sort the results and
+pick one. There is some variability in how much searching is done due
+to
+[policies](../config/functions_categories_policies.md#policy-descriptions)
+but not much. There is no practical way to do otherwise. Especially
+given so many mergerfs users expect out-of-band changes to "just
+work."
 
 The best way to limit spinup of drives is to limit their usage at the
 client level. Meaning keeping software from interacting with the
@@ -33,21 +42,26 @@ filesystems and on startup everything scanned and stored. From then on
 it would have to carefully update all the same data the filesystems
 do. It couldn't be kept in RAM because it would take up too much space
 so it'd have to be on a SSD or other storage device. If anything
-changed out of band it would break things in weird ways. It could
-rescan on occasion but that would require spinning up
-everything. Filesystem watches could be used to get updates when the
-filesystem changes but that would allow for race conditions and
-might keep the drives from spinning down. Something as "simple" as
-keeping the current available free space on each filesystem isn't as
-easy as one might think given reflinks, snapshots, and other block
-level dedup technologies as well as the space used includes not just
-raw file usage.
+changed out of band it would break things in weird ways (and MANY
+users depend on out of band changes working.) It could rescan on
+occasion but that would require spinning up everything. Filesystem
+watches could be used to get updates when the filesystem changes but
+that would allow for subtle race conditions and might keep the drives
+from spinning down. Also, since mergerfs is just another piece of
+software interacting with the filesystem ALL mergerfs requests would
+be echoed back to it causing lots of overhead throwing away a super
+majority of events it triggered. And something as "simple" as keeping
+the current available free space on each filesystem is not as easy as
+one might think given reflinks, snapshots, and other block level dedup
+technologies distort the meaning of usage values.
 
-Even if all metadata (including xattrs) is cached some software will
-open files (media like videos and audio) to check their
-metadata. Granted a Plex or Jellyfin scan which may do that is
-different from a random directory listing but is still something to
-consider. Those "deep" scans can't be kept from waking drives.
+Only if ALL metadata and all file locations were cached could mergerfs
+then do very targeted file operations so as not to trigger a scan
+across the pool. But that would break out of band interactions. It
+would require accepting possibly bad behavior by space based policies
+since space would be imprecisely computed. It would require long scans
+of the filesystems on startup. It would require fundamental changes to
+how mergerfs works.
 
 
 ### What if you only query already active drives?
@@ -56,7 +70,8 @@ Let's assume that is plausible (it isn't because some drives actually
 will spin up if you ask if they are spun down... yes... really) you
 would have to either cache all the metadata on the filesystem or treat
 it like the filesystem doesn't exist. The former has all the problems
-mentioned prior and the latter would break a lot of things.
+mentioned prior and the latter would break a lot of things. Suddenly
+whole filesystems worth of data would be missing because it spun down.
 
 
 ### Is there anything that can be done where mergerfs is involved?
@@ -74,6 +89,8 @@ complexity.
    storage space, you can limit the likelihood of the underlying
    spinning disks from needing to be hit.
 
-Remember too that while it may be a tradeoff you are willing to live
+Remember too that while it may be a trade off you are willing to live
 with there is decent evidence that spinning down drives puts increased
-wear on them and can lead to their death earlier than otherwise.
+wear on them and can lead to their death earlier than otherwise. You
+may end up saving money on electricity but spending more on having to
+purchase new drives.
