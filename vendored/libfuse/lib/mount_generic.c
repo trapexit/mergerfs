@@ -182,7 +182,7 @@ set_mount_flag(const char *s,
         }
     }
 
-  fprintf(stderr, "fuse: internal error, can't find mount flag\n");
+  fprintf(stderr, "mergerfs: internal error, can't find mount flag\n");
   abort();
 }
 
@@ -326,19 +326,19 @@ static int fuse_mount_fusermount(const char *mountpoint, struct mount_opts *mo,
   int rv;
 
   if (!mountpoint) {
-    fprintf(stderr, "fuse: missing mountpoint parameter\n");
+    fprintf(stderr, "mergerfs: missing mountpoint parameter\n");
     return -1;
   }
 
   res = socketpair(PF_UNIX, SOCK_STREAM, 0, fds);
   if(res == -1) {
-    perror("fuse: socketpair() failed");
+    perror("mergerfs: socketpair() failed");
     return -1;
   }
 
   pid = fork();
   if(pid == -1) {
-    perror("fuse: fork() failed");
+    perror("mergerfs: fork() failed");
     close(fds[0]);
     close(fds[1]);
     return -1;
@@ -371,7 +371,7 @@ static int fuse_mount_fusermount(const char *mountpoint, struct mount_opts *mo,
     snprintf(env, sizeof(env), "%i", fds[0]);
     setenv(FUSE_COMMFD_ENV, env, 1);
     exec_fusermount(argv);
-    perror("fuse: failed to exec fusermount");
+    perror("mergerfs: failed to exec fusermount");
     _exit(1);
   }
 
@@ -388,8 +388,11 @@ static int fuse_mount_fusermount(const char *mountpoint, struct mount_opts *mo,
   return rv;
 }
 
-static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
-			  const char *mnt_opts)
+static
+int
+fuse_mount_sys(const char        *mnt,
+               struct mount_opts *mo,
+               const char        *mnt_opts)
 {
   char tmp[128];
   const char *devname = "/dev/fuse";
@@ -399,17 +402,35 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
   int fd;
   int res;
 
-  if (!mnt) {
-    fprintf(stderr, "fuse: missing mountpoint parameter\n");
-    return -1;
-  }
+  if(!mnt)
+    {
+      fprintf(stderr, "mergerfs: missing mountpoint parameter\n");
+      return -1;
+    }
 
   res = stat(mnt, &stbuf);
-  if (res == -1) {
-    fprintf(stderr ,"fuse: failed to access mountpoint %s: %s\n",
-            mnt, strerror(errno));
-    return -1;
-  }
+  if(res == -1)
+    {
+      switch(errno)
+        {
+        case ENOTCONN:
+          fprintf(stderr,
+                  "mergerfs: mountpoint %s appears to be a broken FUSE mount; "
+                  "unmounting it\n",
+                  mnt);
+          res = umount(mnt);
+          if(res == 0)
+            fprintf(stderr,"mergerfs: umount succeeded");
+          break;
+        default:
+          fprintf(stderr,
+                  "mergerfs: failed to access mountpoint %s: %s; "
+                  "attempting to mount anyway\n",
+                  mnt,
+                  strerror(errno));
+          break;
+        }
+    }
 
   if (mo->auto_unmount) {
     /* Tell the caller to fallback to fusermount because
@@ -420,9 +441,9 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
   fd = open(devname, O_RDWR);
   if (fd == -1) {
     if (errno == ENODEV || errno == ENOENT)
-      fprintf(stderr, "fuse: device not found, try 'modprobe fuse' first\n");
+      fprintf(stderr, "mergerfs: device not found, try 'modprobe fuse' first\n");
     else
-      fprintf(stderr, "fuse: failed to open %s: %s\n",
+      fprintf(stderr, "mergerfs: failed to open %s: %s\n",
               devname, strerror(errno));
     return -1;
   }
@@ -440,7 +461,7 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
 
   type = malloc((mo->subtype ? strlen(mo->subtype) : 0) + 32);
   if (!type || !source) {
-    fprintf(stderr, "fuse: failed to allocate memory\n");
+    fprintf(stderr, "mergerfs: failed to allocate memory\n");
     goto out_close;
   }
 
@@ -476,11 +497,16 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
       int errno_save = errno;
       if (mo->blkdev && errno == ENODEV &&
           !fuse_mnt_check_fuseblk())
-        fprintf(stderr,
-                "fuse: 'fuseblk' support missing\n");
+        {
+          fprintf(stderr,
+                  "mergerfs: 'fuseblk' support missing\n");
+        }
       else
-        fprintf(stderr, "fuse: mount failed: %s\n",
-                strerror(errno_save));
+        {
+          fprintf(stderr,
+                  "mergerfs: mount failed: %s\n",
+                  strerror(errno_save));
+        }
     }
 
     goto out_close;
