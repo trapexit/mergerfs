@@ -126,7 +126,7 @@ _search(const Branches::Ptr  &branches_,
   Branch *obranch;
 
   obranch = nullptr;
-  eplus = 0;
+  eplus = std::numeric_limits<u64>::max();
   for(auto &branch : *branches_)
     {
       if(!fs::exists(branch.path,fusepath_))
