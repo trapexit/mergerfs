@@ -48,7 +48,7 @@ _copydata_copy_file_range(const int src_fd_,
         case -EAGAIN:
           continue;
         case 0:
-          break;
+          return (count_ - nleft);
         default:
           if(rv < 0)
             return rv;
