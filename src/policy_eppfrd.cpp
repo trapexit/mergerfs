@@ -132,7 +132,10 @@ _get_branchinfo_search(const Branches::Ptr &branches_,
       branchinfo_->push_back({spaceavail,&branch});
     }
 
-  return -ENOENT;
+  if(branchinfo_->empty())
+    return -ENOENT;
+
+  return 0;
 }
 
 static
