@@ -30,13 +30,16 @@
 struct DefaultAllocator
 {
   void*
-  allocate(size_t size_, size_t align_)
+  allocate(size_t size_,
+           size_t align_)
   {
     return ::operator new(size_, std::align_val_t{align_});
   }
 
   void
-  deallocate(void *ptr_, size_t /*size_*/, size_t align_)
+  deallocate(void   *ptr_,
+             size_t /*size_*/,
+             size_t  align_)
   {
     ::operator delete(ptr_, std::align_val_t{align_});
   }
@@ -60,11 +63,14 @@ private:
   struct alignas(alignof(T)) Node
   {
     Node *next;
+    size_t alloc_size;
   };
 
 private:
-  static_assert(sizeof(T) >= sizeof(Node), "T must be at least pointer-sized");
-  static_assert(std::is_nothrow_destructible_v<T>, "T must be nothrow destructible");
+  static_assert(sizeof(T) >= sizeof(Node),
+                "T must be at least pointer-sized + size_t");
+  static_assert(std::is_nothrow_destructible_v<T>,
+                "T must be nothrow destructible");
 
 private:
   static
@@ -116,30 +122,41 @@ public:
 
 private:
   Node*
-  _pop_node()
+  _pop_node(const size_t required_size_)
   {
     mutex_lock(_mtx);
 
-    Node *node = _head;
-    if(node)
+    Node **prev = &_head;
+    while(*prev)
       {
-        _head = node->next;
-        _pool_count.fetch_sub(1, std::memory_order_relaxed);
+        Node *node = *prev;
+        if(node->alloc_size >= required_size_)
+          {
+            *prev = node->next;
+            _pool_count.fetch_sub(1,std::memory_order_relaxed);
+            mutex_unlock(_mtx);
+            return node;
+          }
+
+        prev = &node->next;
       }
 
     mutex_unlock(_mtx);
 
-    return node;
+    return nullptr;;
   }
 
   void
-  _push_node(Node *node_)
+  _push_node(Node         *node_,
+             const size_t  alloc_size_)
   {
+    node_->alloc_size = alloc_size_;
+
     mutex_lock(_mtx);
 
     node_->next = _head;
     _head = node_;
-    _pool_count.fetch_add(1, std::memory_order_relaxed);
+    _pool_count.fetch_add(1,std::memory_order_relaxed);
 
     mutex_unlock(_mtx);
   }
@@ -154,14 +171,14 @@ public:
 
     head  = _head;
     _head = nullptr;
-    _pool_count.store(0, std::memory_order_relaxed);
+    _pool_count.store(0,std::memory_order_relaxed);
 
     mutex_unlock(_mtx);
 
     while(head)
       {
         Node *next = head->next;
-        _allocator.deallocate(head, sizeof(Node), alignof(Node));
+        _allocator.deallocate(head,head->alloc_size,alignof(Node));
         head = next;
       }
   }
@@ -170,14 +187,16 @@ public:
   T*
   alloc(Args&&... args_)
   {
-    return _alloc_impl(sizeof(T), std::forward<Args>(args_)...);
+    return _alloc_impl(sizeof(T),
+                       std::forward<Args>(args_)...);
   }
 
   template<typename... Args>
   T*
   alloc_size(size_t size_, Args&&... args_)
   {
-    return _alloc_impl(size_, std::forward<Args>(args_)...);
+    return _alloc_impl(size_,
+                       std::forward<Args>(args_)...);
   }
 
 private:
@@ -190,7 +209,7 @@ private:
 
     assert(size_ >= sizeof(T));
 
-    node = _pop_node();
+    node = _pop_node(size_);
     mem  = (node ?
             static_cast<void*>(node) :
             _allocator.allocate(size_, alignof(T)));
@@ -203,6 +222,8 @@ private:
       {
         if(!node)
           _allocator.deallocate(mem, size_, alignof(T));
+        else
+          _push_node(node,node->alloc_size);
         throw;
       }
   }
@@ -215,7 +236,8 @@ public:
   }
 
   void
-  free_size(T *obj_, size_t size_) noexcept
+  free_size(T      *obj_,
+            size_t  size_) noexcept
   {
     if(not obj_)
       return;
@@ -225,9 +247,9 @@ public:
     obj_->~T();
 
     if(should_pool)
-      _push_node(to_node(obj_));
+      _push_node(to_node(obj_),size_);
     else
-      _allocator.deallocate(obj_, size_, alignof(T));
+      _allocator.deallocate(obj_,size_,alignof(T));
   }
 
   size_t
@@ -240,14 +262,14 @@ public:
   gc() noexcept
   {
     size_t count = _pool_count.load(std::memory_order_relaxed);
-    size_t to_free = std::max(count / 10, size_t{1});
+    size_t to_free = std::max(count / 10,size_t{1});
 
     for(size_t i = 0; i < to_free; ++i)
       {
-        Node *node = _pop_node();
+        Node *node = _pop_node(0);
         if(not node)
           break;
-        _allocator.deallocate(node, sizeof(Node), alignof(Node));
+        _allocator.deallocate(node,node->alloc_size,alignof(Node));
       }
   }
 };
