@@ -259,11 +259,20 @@ static int receive_fd(int fd)
   }
 
   cmsg = CMSG_FIRSTHDR(&msg);
-  if (cmsg->cmsg_type != SCM_RIGHTS) {
-    fprintf(stderr, "got control message of unknown type %d\n",
-            cmsg->cmsg_type);
-    return -1;
-  }
+  if(!cmsg)
+    {
+      fprintf(stderr,"no control message received or not enough buf space\n");
+      return -1;
+    }
+
+  if(cmsg->cmsg_type != SCM_RIGHTS)
+    {
+      fprintf(stderr,
+              "got control message of unknown type %d\n",
+              cmsg->cmsg_type);
+      return -1;
+    }
+
   return *(int*)CMSG_DATA(cmsg);
 }
 
