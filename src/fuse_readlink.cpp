@@ -39,7 +39,7 @@ _readlink_core_standard(const fs::path &fullpath_,
 {
   int rv;
 
-  rv = fs::readlink(fullpath_,buf_,size_);
+  rv = fs::readlink(fullpath_,buf_,(size_ - 1));
   if(rv < 0)
     return rv;
 
@@ -65,7 +65,8 @@ _readlink_core_symlinkify(const fs::path &fullpath_,
   if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
     return ::_readlink_core_standard(fullpath_,buf_,size_);
 
-  strncpy(buf_,fullpath_.c_str(),size_);
+  strncpy(buf_,fullpath_.c_str(),(size_ - 1));
+  buf_[size_ - 1] = '\0';
 
   return 0;
 }
