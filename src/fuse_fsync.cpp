@@ -51,5 +51,8 @@ FUSE::fsync(const fuse_req_ctx_t *ctx_,
 {
   FileInfo *fi = FileInfo::from_fh(fh_);
 
+  if(not fi)
+    return -EBADF;
+
   return ::_fsync(fi->fd,isdatasync_);
 }

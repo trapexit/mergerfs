@@ -60,6 +60,11 @@ FUSE::copy_file_range(const fuse_req_ctx_t   *ctx_,
   FileInfo *src_fi = FileInfo::from_fh(src_ffi_->fh);
   FileInfo *dst_fi = FileInfo::from_fh(dst_ffi_->fh);
 
+  if(not src_fi)
+    return -EBADF;
+  if(not dst_fi)
+    return -EBADF;
+
   return ::_copy_file_range(src_fi->fd,
                             src_off_,
                             dst_fi->fd,
