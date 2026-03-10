@@ -439,26 +439,38 @@ fuse_mount_sys(const char        *mnt,
                   strerror(errno));
           break;
         }
+
+      memset(&stbuf,0,sizeof(stbuf));
+      res = stat(mnt,&stbuf);
+      if(res == -1)
+        stbuf.st_mode = S_IFDIR;
     }
 
-  if (mo->auto_unmount) {
-    /* Tell the caller to fallback to fusermount because
-       auto-unmount does not work otherwise. */
-    return -2;
-  }
+  if (mo->auto_unmount)
+    {
+      /* Tell the caller to fallback to fusermount because
+         auto-unmount does not work otherwise. */
+      return -2;
+    }
 
   fd = open(devname, O_RDWR);
-  if (fd == -1) {
-    if (errno == ENODEV || errno == ENOENT)
-      fprintf(stderr, "mergerfs: device not found, try 'modprobe fuse' first\n");
-    else
-      fprintf(stderr, "mergerfs: failed to open %s: %s\n",
-              devname, strerror(errno));
-    return -1;
-  }
+  if(fd == -1)
+    {
+      if(errno == ENODEV || errno == ENOENT)
+        fprintf(stderr, "mergerfs: device not found, try 'modprobe fuse' first\n");
+      else
+        fprintf(stderr, "mergerfs: failed to open %s: %s\n",
+                devname, strerror(errno));
+      return -1;
+    }
 
-  snprintf(tmp, sizeof(tmp),  "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
-           fd, stbuf.st_mode & S_IFMT, getuid(), getgid());
+  snprintf(tmp,
+           sizeof(tmp),
+           "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
+           fd,
+           stbuf.st_mode & S_IFMT,
+           getuid(),
+           getgid());
 
   res = fuse_opt_add_opt(&mo->kernel_opts, tmp);
   if (res == -1)
