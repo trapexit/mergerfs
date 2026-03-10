@@ -20,6 +20,8 @@
 
 #include "rapidhash/rapidhash.h"
 
+#include <cassert>
+
 #include <sys/time.h>
 
 
@@ -57,6 +59,7 @@ RND::rand64(void)
 u64
 RND::rand64(cu64 max_)
 {
+  assert(max_ > 0);
   return (RND::rand64() % max_);
 }
 
@@ -64,5 +67,6 @@ u64
 RND::rand64(cu64 min_,
             cu64 max_)
 {
+  assert(max_ > min_);
   return (min_ + (RND::rand64() % (max_ - min_)));
 }
