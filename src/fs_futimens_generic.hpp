@@ -134,13 +134,13 @@ _set_utime_omit_to_current_value(const int              dirfd_,
   if(rv < 0)
     return rv;
 
-  atime = fs::stat_atime(st);
-  mtime = fs::stat_mtime(st);
+  atime = fs::stat_atime(&st);
+  mtime = fs::stat_mtime(&st);
 
   if(ts_[0].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[0],atime);
+    TIMESPEC_TO_TIMEVAL(&tv_[0],atime);
   if(ts_[1].tv_nsec == UTIME_OMIT)
-    TIMESPEC_TO_TIMEVAL(&tv[1],mtime);
+    TIMESPEC_TO_TIMEVAL(&tv_[1],mtime);
 
   return 0;
 }
@@ -164,8 +164,8 @@ _set_utime_omit_to_current_value(const int             fd_,
   if(rv < 0)
     return rv;
 
-  atime = fs::stat_atime(st);
-  mtime = fs::stat_mtime(st);
+  atime = fs::stat_atime(&st);
+  mtime = fs::stat_mtime(&st);
 
   if(ts_[0].tv_nsec == UTIME_OMIT)
     TIMESPEC_TO_TIMEVAL(&tv_[0],atime);
@@ -184,7 +184,7 @@ _set_utime_now_to_now(const struct timespec ts_[2],
   int rv;
   struct timeval now;
 
-  if(::_any_timespec_is_utime_now(ts_))
+  if(!::_any_timespec_is_utime_now(ts_))
     return 0;
 
   rv = time::gettimeofday(&now,NULL);
@@ -212,7 +212,7 @@ _convert_timespec_to_timeval(const int               dirfd_,
   int rv;
 
   if(::_should_be_set_to_now(ts_))
-    return (tvp=NULL,0);
+    return (tvp_=NULL,0);
 
   TIMESPEC_TO_TIMEVAL(&tv_[0],&ts_[0]);
   TIMESPEC_TO_TIMEVAL(&tv_[1],&ts_[1]);
@@ -239,7 +239,7 @@ _convert_timespec_to_timeval(const int               fd_,
   int rv;
 
   if(::_should_be_set_to_now(ts_))
-    return (*tvp=NULL,0);
+    return (*tvp_=NULL,0);
 
   TIMESPEC_TO_TIMEVAL(&tv_[0],&ts_[0]);
   TIMESPEC_TO_TIMEVAL(&tv_[1],&ts_[1]);
@@ -252,7 +252,7 @@ _convert_timespec_to_timeval(const int               fd_,
   if(rv < 0)
     return rv;
 
-  return (*tvp=tv,0);
+  return (*tvp_=tv_,0);
 }
 
 namespace fs
