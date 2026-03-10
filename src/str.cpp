@@ -108,7 +108,7 @@ str::lsplit1(const string_view &str_,
     return;
 
   off = str_.find(delimiter_);
-  if(off == std::string::npos)
+  if(off == std::string_view::npos)
     {
       result_->push_back(std::string{str_});
     }
@@ -233,7 +233,7 @@ str::longest_common_prefix(const vector<string> &vec_)
 
 string
 str::remove_common_prefix_and_join(const vector<string> &vec_,
-                              const char            sep_)
+                                   const char            sep_)
 {
   size_t idx;
 
@@ -306,9 +306,9 @@ str::trim(const std::string &str_)
   rv = str_;
 
   while(!rv.empty() && std::isspace(static_cast<unsigned char>(rv[0])))
-    rv.erase(0);
+    rv.erase(0,1);
   while(!rv.empty() && std::isspace(static_cast<unsigned char>(rv[rv.size()-1])))
-    rv.erase(rv.size()-1);
+    rv.erase(rv.size()-1,1);
 
   return rv;
 }
