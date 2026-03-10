@@ -20,7 +20,7 @@
 
 #include "base_types.h"
 
-#include <random>
+#include <vector>
 
 class RND
 {
@@ -38,14 +38,10 @@ public:
   void
   shrink_to_rand_elem(std::vector<T> &v_)
   {
-    static std::mt19937 gen(std::random_device{}());
-
     if(v_.size() <= 1)
       return;
 
-    std::uniform_int_distribution<> dist(0,(v_.size() - 1));
-
-    std::swap(v_[0],v_[dist(gen)]);
+    std::swap(v_[0],v_[RND::rand64(v_.size())]);
 
     v_.resize(1);
   }
