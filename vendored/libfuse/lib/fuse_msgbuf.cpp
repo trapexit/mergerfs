@@ -148,7 +148,14 @@ msgbuf_get_pagesize()
 void
 msgbuf_set_bufsize(const u64 size_in_pages_)
 {
-  g_bufsize = ((size_in_pages_ + MSGBUF_OVERHEAD_PAGES) * g_pagesize);
+  u64 new_bufsize;
+
+  new_bufsize = ((size_in_pages_ + MSGBUF_OVERHEAD_PAGES) * g_pagesize);
+  if(new_bufsize != g_bufsize)
+    {
+      g_bufsize = new_bufsize;
+      g_msgbuf_pool.clear();
+    }
 }
 
 u64
