@@ -2,6 +2,12 @@
 
 #include "config.hpp"
 #include "str.hpp"
+#include "thread_pool.hpp"
+
+#include <atomic>
+#include <chrono>
+#include <numeric>
+#include <thread>
 
 void
 test_nop()
@@ -481,6 +487,517 @@ test_config()
   TEST_CHECK(cfg.set("async-read","true") == 0);
 }
 
+// =====================================================================
+// ThreadPool tests
+// =====================================================================
+
+void
+test_tp_construct_default()
+{
+  ThreadPool tp(2, 4, "test.default");
+
+  auto threads = tp.threads();
+
+  TEST_CHECK(threads.size() == 2);
+}
+
+void
+test_tp_construct_named()
+{
+  ThreadPool tp(1, 2, "test.named");
+
+  auto threads = tp.threads();
+
+  TEST_CHECK(threads.size() == 1);
+}
+
+void
+test_tp_construct_zero_threads_throws()
+{
+  bool threw = false;
+
+  try
+    {
+      ThreadPool tp(0, 4, "test.zero");
+    }
+  catch(const std::runtime_error &)
+    {
+      threw = true;
+    }
+
+  TEST_CHECK(threw);
+}
+
+void
+test_tp_enqueue_work()
+{
+  ThreadPool tp(2, 4, "test.ew");
+
+  std::atomic<int> counter{0};
+
+  for(int i = 0; i < 10; ++i)
+    tp.enqueue_work([&counter](){ counter.fetch_add(1); });
+
+  // wait for completion
+  for(int i = 0; i < 1000 && counter.load() < 10; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 10);
+}
+
+void
+test_tp_enqueue_work_with_ptoken()
+{
+  ThreadPool tp(2, 4, "test.ewp");
+
+  std::atomic<int> counter{0};
+  auto ptok = tp.ptoken();
+
+  for(int i = 0; i < 10; ++i)
+    tp.enqueue_work(ptok, [&counter](){ counter.fetch_add(1); });
+
+  for(int i = 0; i < 1000 && counter.load() < 10; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 10);
+}
+
+void
+test_tp_try_enqueue_work()
+{
+  // Use 1 thread and a small queue depth of 2
+  ThreadPool tp(1, 2, "test.tew");
+
+  std::atomic<int> counter{0};
+
+  // These should succeed (queue has room)
+  bool ok = tp.try_enqueue_work([&counter](){ counter.fetch_add(1); });
+  TEST_CHECK(ok);
+
+  for(int i = 0; i < 1000 && counter.load() < 1; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 1);
+}
+
+void
+test_tp_try_enqueue_work_with_ptoken()
+{
+  ThreadPool tp(1, 2, "test.tewp");
+
+  std::atomic<int> counter{0};
+  auto ptok = tp.ptoken();
+
+  bool ok = tp.try_enqueue_work(ptok, [&counter](){ counter.fetch_add(1); });
+  TEST_CHECK(ok);
+
+  for(int i = 0; i < 1000 && counter.load() < 1; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 1);
+}
+
+void
+test_tp_try_enqueue_work_for()
+{
+  ThreadPool tp(1, 2, "test.tewf");
+
+  std::atomic<int> counter{0};
+
+  bool ok = tp.try_enqueue_work_for(100000, // 100ms
+                                    [&counter](){ counter.fetch_add(1); });
+  TEST_CHECK(ok);
+
+  for(int i = 0; i < 1000 && counter.load() < 1; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 1);
+}
+
+void
+test_tp_try_enqueue_work_for_with_ptoken()
+{
+  ThreadPool tp(1, 2, "test.tewfp");
+
+  std::atomic<int> counter{0};
+  auto ptok = tp.ptoken();
+
+  bool ok = tp.try_enqueue_work_for(ptok,
+                                    100000, // 100ms
+                                    [&counter](){ counter.fetch_add(1); });
+  TEST_CHECK(ok);
+
+  for(int i = 0; i < 1000 && counter.load() < 1; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 1);
+}
+
+void
+test_tp_enqueue_task_int()
+{
+  ThreadPool tp(2, 4, "test.eti");
+
+  auto future = tp.enqueue_task([]() -> int { return 42; });
+
+  TEST_CHECK(future.get() == 42);
+}
+
+void
+test_tp_enqueue_task_void()
+{
+  ThreadPool tp(2, 4, "test.etv");
+
+  std::atomic<bool> ran{false};
+
+  auto future = tp.enqueue_task([&ran]() { ran.store(true); });
+
+  future.get(); // should not throw
+
+  TEST_CHECK(ran.load());
+}
+
+void
+test_tp_enqueue_task_string()
+{
+  ThreadPool tp(2, 4, "test.ets");
+
+  auto future = tp.enqueue_task([]() -> std::string { return "hello"; });
+
+  TEST_CHECK(future.get() == "hello");
+}
+
+void
+test_tp_enqueue_task_exception()
+{
+  ThreadPool tp(2, 4, "test.ete");
+
+  auto future = tp.enqueue_task([]() -> int
+    {
+      throw std::runtime_error("task error");
+      return 0;
+    });
+
+  bool caught = false;
+
+  try
+    {
+      future.get();
+    }
+  catch(const std::runtime_error &e)
+    {
+      caught = true;
+      TEST_CHECK(std::string(e.what()) == "task error");
+    }
+
+  TEST_CHECK(caught);
+}
+
+void
+test_tp_threads_returns_correct_count()
+{
+  ThreadPool tp(4, 8, "test.thr");
+
+  auto threads = tp.threads();
+
+  TEST_CHECK(threads.size() == 4);
+
+  // All thread IDs should be non-zero
+  for(auto t : threads)
+    TEST_CHECK(t != 0);
+}
+
+void
+test_tp_threads_unique_ids()
+{
+  ThreadPool tp(4, 8, "test.uid");
+
+  auto threads = tp.threads();
+
+  // All thread IDs should be unique
+  for(std::size_t i = 0; i < threads.size(); ++i)
+    for(std::size_t j = i + 1; j < threads.size(); ++j)
+      TEST_CHECK(threads[i] != threads[j]);
+}
+
+void
+test_tp_add_thread()
+{
+  ThreadPool tp(2, 4, "test.add");
+
+  TEST_CHECK(tp.threads().size() == 2);
+
+  int rv = tp.add_thread();
+
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(tp.threads().size() == 3);
+}
+
+void
+test_tp_remove_thread()
+{
+  ThreadPool tp(3, 4, "test.rm");
+
+  TEST_CHECK(tp.threads().size() == 3);
+
+  int rv = tp.remove_thread();
+
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(tp.threads().size() == 2);
+}
+
+void
+test_tp_remove_thread_refuses_last()
+{
+  ThreadPool tp(1, 4, "test.rmlast");
+
+  TEST_CHECK(tp.threads().size() == 1);
+
+  int rv = tp.remove_thread();
+
+  TEST_CHECK(rv == -EINVAL);
+  TEST_CHECK(tp.threads().size() == 1);
+}
+
+void
+test_tp_set_threads_grow()
+{
+  ThreadPool tp(2, 8, "test.grow");
+
+  TEST_CHECK(tp.threads().size() == 2);
+
+  int rv = tp.set_threads(4);
+
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(tp.threads().size() == 4);
+}
+
+void
+test_tp_set_threads_shrink()
+{
+  ThreadPool tp(4, 8, "test.shrink");
+
+  TEST_CHECK(tp.threads().size() == 4);
+
+  int rv = tp.set_threads(2);
+
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(tp.threads().size() == 2);
+}
+
+void
+test_tp_set_threads_zero()
+{
+  ThreadPool tp(2, 4, "test.sz");
+
+  int rv = tp.set_threads(0);
+
+  TEST_CHECK(rv == -EINVAL);
+  TEST_CHECK(tp.threads().size() == 2);
+}
+
+void
+test_tp_set_threads_same()
+{
+  ThreadPool tp(3, 4, "test.same");
+
+  int rv = tp.set_threads(3);
+
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(tp.threads().size() == 3);
+}
+
+void
+test_tp_work_after_add_thread()
+{
+  ThreadPool tp(1, 4, "test.waat");
+
+  tp.add_thread();
+  tp.add_thread();
+
+  std::atomic<int> counter{0};
+  const int N = 20;
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work([&counter](){ counter.fetch_add(1); });
+
+  for(int i = 0; i < 2000 && counter.load() < N; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == N);
+}
+
+void
+test_tp_work_after_remove_thread()
+{
+  ThreadPool tp(3, 4, "test.wart");
+
+  tp.remove_thread();
+
+  std::atomic<int> counter{0};
+  const int N = 10;
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work([&counter](){ counter.fetch_add(1); });
+
+  for(int i = 0; i < 2000 && counter.load() < N; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == N);
+}
+
+void
+test_tp_worker_exception_no_crash()
+{
+  ThreadPool tp(2, 4, "test.exc");
+
+  // Enqueue work that throws -- pool should not crash
+  tp.enqueue_work([](){
+    throw std::runtime_error("deliberate error");
+  });
+
+  // Enqueue normal work after the exception
+  std::atomic<bool> ran{false};
+  tp.enqueue_work([&ran](){ ran.store(true); });
+
+  for(int i = 0; i < 1000 && !ran.load(); ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(ran.load());
+}
+
+void
+test_tp_concurrent_enqueue()
+{
+  ThreadPool tp(4, 64, "test.conc");
+
+  std::atomic<int> counter{0};
+  const int PRODUCERS = 4;
+  const int ITEMS_PER = 50;
+  const int TOTAL = PRODUCERS * ITEMS_PER;
+
+  std::vector<std::thread> producers;
+  for(int p = 0; p < PRODUCERS; ++p)
+    {
+      producers.emplace_back([&tp, &counter]()
+        {
+          auto ptok = tp.ptoken();
+          for(int i = 0; i < ITEMS_PER; ++i)
+            tp.enqueue_work(ptok, [&counter](){ counter.fetch_add(1); });
+        });
+    }
+
+  for(auto &t : producers)
+    t.join();
+
+  for(int i = 0; i < 5000 && counter.load() < TOTAL; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == TOTAL);
+}
+
+void
+test_tp_enqueue_task_multiple()
+{
+  ThreadPool tp(4, 16, "test.etm");
+
+  std::vector<std::future<int>> futures;
+  const int N = 20;
+
+  for(int i = 0; i < N; ++i)
+    futures.push_back(tp.enqueue_task([i]() -> int { return i * i; }));
+
+  for(int i = 0; i < N; ++i)
+    TEST_CHECK(futures[i].get() == i * i);
+}
+
+void
+test_tp_ptoken_creation()
+{
+  ThreadPool tp(2, 4, "test.ptok");
+
+  // Multiple ptokens should be independently usable
+  auto ptok1 = tp.ptoken();
+  auto ptok2 = tp.ptoken();
+
+  std::atomic<int> counter{0};
+
+  tp.enqueue_work(ptok1, [&counter](){ counter.fetch_add(1); });
+  tp.enqueue_work(ptok2, [&counter](){ counter.fetch_add(1); });
+
+  for(int i = 0; i < 1000 && counter.load() < 2; ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  TEST_CHECK(counter.load() == 2);
+}
+
+void
+test_tp_destruction_drains_queue()
+{
+  std::atomic<int> counter{0};
+
+  {
+    ThreadPool tp(2, 64, "test.drain");
+
+    for(int i = 0; i < 50; ++i)
+      tp.enqueue_work([&counter](){
+        counter.fetch_add(1);
+      });
+
+    // destructor runs here -- should drain all queued work
+  }
+
+  TEST_CHECK(counter.load() == 50);
+}
+
+void
+test_tp_move_only_callable()
+{
+  ThreadPool tp(2, 4, "test.moc");
+
+  auto ptr = std::make_unique<int>(99);
+
+  auto future = tp.enqueue_task([p = std::move(ptr)]() -> int
+    {
+      return *p;
+    });
+
+  TEST_CHECK(future.get() == 99);
+}
+
+void
+test_tp_work_ordering_single_thread()
+{
+  // With a single thread, work should execute in FIFO order
+  ThreadPool tp(1, 16, "test.order");
+
+  std::vector<int> results;
+  std::mutex mtx;
+  const int N = 10;
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work([i, &results, &mtx](){
+      std::lock_guard<std::mutex> lk(mtx);
+      results.push_back(i);
+    });
+
+  // Wait for all work to complete
+  for(int i = 0; i < 2000; ++i)
+    {
+      {
+        std::lock_guard<std::mutex> lk(mtx);
+        if((int)results.size() == N)
+          break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+  std::lock_guard<std::mutex> lk(mtx);
+  TEST_CHECK((int)results.size() == N);
+  for(int i = 0; i < N; ++i)
+    TEST_CHECK(results[i] == i);
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -499,5 +1016,36 @@ TEST_LIST =
    {"config_xattr",test_config_xattr},
    {"config",test_config},
    {"str",test_str_stuff},
+   {"tp_construct_default",test_tp_construct_default},
+   {"tp_construct_named",test_tp_construct_named},
+   {"tp_construct_zero_threads_throws",test_tp_construct_zero_threads_throws},
+   {"tp_enqueue_work",test_tp_enqueue_work},
+   {"tp_enqueue_work_with_ptoken",test_tp_enqueue_work_with_ptoken},
+   {"tp_try_enqueue_work",test_tp_try_enqueue_work},
+   {"tp_try_enqueue_work_with_ptoken",test_tp_try_enqueue_work_with_ptoken},
+   {"tp_try_enqueue_work_for",test_tp_try_enqueue_work_for},
+   {"tp_try_enqueue_work_for_with_ptoken",test_tp_try_enqueue_work_for_with_ptoken},
+   {"tp_enqueue_task_int",test_tp_enqueue_task_int},
+   {"tp_enqueue_task_void",test_tp_enqueue_task_void},
+   {"tp_enqueue_task_string",test_tp_enqueue_task_string},
+   {"tp_enqueue_task_exception",test_tp_enqueue_task_exception},
+   {"tp_enqueue_task_multiple",test_tp_enqueue_task_multiple},
+   {"tp_threads_returns_correct_count",test_tp_threads_returns_correct_count},
+   {"tp_threads_unique_ids",test_tp_threads_unique_ids},
+   {"tp_add_thread",test_tp_add_thread},
+   {"tp_remove_thread",test_tp_remove_thread},
+   {"tp_remove_thread_refuses_last",test_tp_remove_thread_refuses_last},
+   {"tp_set_threads_grow",test_tp_set_threads_grow},
+   {"tp_set_threads_shrink",test_tp_set_threads_shrink},
+   {"tp_set_threads_zero",test_tp_set_threads_zero},
+   {"tp_set_threads_same",test_tp_set_threads_same},
+   {"tp_work_after_add_thread",test_tp_work_after_add_thread},
+   {"tp_work_after_remove_thread",test_tp_work_after_remove_thread},
+   {"tp_worker_exception_no_crash",test_tp_worker_exception_no_crash},
+   {"tp_concurrent_enqueue",test_tp_concurrent_enqueue},
+   {"tp_ptoken_creation",test_tp_ptoken_creation},
+   {"tp_destruction_drains_queue",test_tp_destruction_drains_queue},
+   {"tp_move_only_callable",test_tp_move_only_callable},
+   {"tp_work_ordering_single_thread",test_tp_work_ordering_single_thread},
    {NULL,NULL}
   };

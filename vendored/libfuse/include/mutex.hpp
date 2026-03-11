@@ -6,6 +6,8 @@
 #include "mutex_ndebug.hpp"
 #endif
 
+#include "scope_guard.hpp"
+
 typedef pthread_mutex_t mutex_t;
 
 // Simple mutex_t wrapper to provide RAII
@@ -50,3 +52,10 @@ public:
     mutex_unlock(_mutex);
   }
 };
+
+// Single-line mutex guard using scope_guard
+// Expands to mutex_lock() followed by DEFER mutex_unlock()
+// Both lock and unlock capture __FILE__/__func__/__LINE__ from the call site
+#define mutex_lockguard(m) \
+  mutex_lock(m);           \
+  DEFER { mutex_unlock(m); }
