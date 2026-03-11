@@ -32,7 +32,7 @@ namespace fs
        void         *buf_,
        const size_t  count_)
   {
-    int rv;
+    ssize_t rv;
 
     rv = ::read(fd_,buf_,count_);
 
