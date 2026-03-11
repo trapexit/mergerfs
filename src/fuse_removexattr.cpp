@@ -36,14 +36,14 @@ _removexattr_loop_core(const fs::path &basepath_,
                        const char     *attrname_,
                        PolicyRV       *prv_)
 {
+  int rv;
   fs::path fullpath;
 
   fullpath = basepath_ / fusepath_;
 
-  errno = 0;
-  fs::lremovexattr(fullpath,attrname_);
+  rv = fs::lremovexattr(fullpath,attrname_);
 
-  prv_->insert(errno,basepath_);
+  prv_->insert(rv,basepath_);
 }
 
 static

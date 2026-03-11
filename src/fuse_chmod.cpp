@@ -37,14 +37,14 @@ _chmod_loop_core(const std::string &basepath_,
                  const mode_t       mode_,
                  PolicyRV          *prv_)
 {
+  int rv;
   fs::path fullpath;
 
   fullpath = basepath_ / fusepath_;
 
-  errno = 0;
-  fs::lchmod(fullpath,mode_);
+  rv = fs::lchmod(fullpath,mode_);
 
-  prv_->insert(errno,basepath_);
+  prv_->insert(rv,basepath_);
 }
 
 static
