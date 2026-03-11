@@ -1,41 +1,50 @@
+/*
+  ISC License
+
+  Copyright (c) 2026, Antonio SJ Musumeci <trapexit@spawn.link>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
 #pragma once
 
-#include "moodycamel/blockingconcurrentqueue.h"
-#include "moodycamel/lightweightsemaphore.h"
+#include "bounded_queue.hpp"
 #include "invocable.h"
 
 #include "mutex.hpp"
 
 #include <algorithm>
 #include <atomic>
+#include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <cstring>
 #include <future>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <pthread.h>
 #include <syslog.h>
 
-#define SEM
-//#undef SEM
-
-#ifdef SEM
-#define SEMA_WAIT(S) (S.wait())
-#define SEMA_SIGNAL(S) (S.signal())
-#else
-#define SEMA_WAIT(S)
-#define SEMA_SIGNAL(S)
-#endif
-
 
 struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 {
-  static const int MAX_SEMA_SPINS = 1;
+  static const int MAX_SEMA_SPINS = 10;
 };
 
 
@@ -47,24 +56,28 @@ public:
 
 private:
   using Func  = ofats::any_invocable<void()>;
-  using Queue = moodycamel::BlockingConcurrentQueue<Func,ThreadPoolTraits>;
+  using Queue = BoundedQueue<Func,ThreadPoolTraits>;
+  struct ThreadExitSignal {};
 
 public:
   explicit
-  ThreadPool(const unsigned thread_count_    = std::thread::hardware_concurrency(),
-             const unsigned max_queue_depth_ = std::thread::hardware_concurrency(),
-             std::string const name_         = {});
+  ThreadPool(const unsigned thread_count_ = std::thread::hardware_concurrency(),
+             const unsigned max_queue_depth_ = std::thread::hardware_concurrency() * 2,
+             const std::string &name_ = {});
   ~ThreadPool();
+
+  ThreadPool(const ThreadPool&) = delete;
+  ThreadPool& operator=(const ThreadPool&) = delete;
+  ThreadPool(ThreadPool&&) = delete;
+  ThreadPool& operator=(ThreadPool&&) = delete;
 
 private:
   static void *start_routine(void *arg_);
 
 public:
-  int add_thread(std::string const name = {});
-  int remove_thread(void);
+  int add_thread(const std::string &name = {});
+  int remove_thread();
   int set_threads(const std::size_t count);
-
-  void shutdown(void);
 
 public:
   template<typename FuncType>
@@ -77,6 +90,26 @@ public:
   enqueue_work(FuncType &&func_);
 
   template<typename FuncType>
+  bool
+  try_enqueue_work(ThreadPool::PToken &ptok_,
+                   FuncType &&func_);
+
+  template<typename FuncType>
+  bool
+  try_enqueue_work(FuncType &&func_);
+
+  template<typename FuncType>
+  bool
+  try_enqueue_work_for(ThreadPool::PToken  &ptok_,
+                       std::int64_t         timeout_usecs_,
+                       FuncType           &&func_);
+
+  template<typename FuncType>
+  bool
+  try_enqueue_work_for(std::int64_t  timeout_usecs_,
+                       FuncType    &&func_);
+
+  template<typename FuncType>
   [[nodiscard]]
   std::future<std::invoke_result_t<FuncType>>
   enqueue_task(FuncType&& func_);
@@ -87,7 +120,6 @@ public:
 
 private:
   Queue _queue;
-  moodycamel::LightweightSemaphore _sema;
 
 private:
   std::string const      _name;
@@ -98,11 +130,10 @@ private:
 
 
 inline
-ThreadPool::ThreadPool(const unsigned    thread_count_,
-                       const unsigned    max_queue_depth_,
-                       const std::string name_)
-  : _queue(),
-    _sema(max_queue_depth_),
+ThreadPool::ThreadPool(const unsigned     thread_count_,
+                       const unsigned     max_queue_depth_,
+                       const std::string &name_)
+  : _queue(max_queue_depth_),
     _name(name_)
 {
   sigset_t oldset;
@@ -128,8 +159,11 @@ ThreadPool::ThreadPool(const unsigned    thread_count_,
           continue;
         }
 
-      if(!_name.empty())
-        pthread_setname_np(t,_name.c_str());
+      if(not _name.empty())
+        {
+          std::string name = _name.substr(0, 15);
+          pthread_setname_np(t, name.c_str());
+        }
 
       _threads.push_back(t);
     }
@@ -150,18 +184,25 @@ ThreadPool::ThreadPool(const unsigned    thread_count_,
 inline
 ThreadPool::~ThreadPool()
 {
+  std::vector<pthread_t> threads;
+
+  {
+    mutex_lockguard(_threads_mutex);
+    threads = _threads;
+  }
+
   syslog(LOG_DEBUG,
          "threadpool (%s): destroying %zu threads",
          _name.c_str(),
-         _threads.size());
+         threads.size());
 
-  for(auto t : _threads)
-    pthread_cancel(t);
-  for(auto t : _threads)
+  for(auto _ : threads)
+    _queue.enqueue_unbounded([](){ throw ThreadExitSignal{}; });
+  for(auto t : threads)
     pthread_join(t,NULL);
 }
 
-
+// Threads purposefully do not restore default signal handling.
 inline
 void*
 ThreadPool::start_routine(void *arg_)
@@ -171,8 +212,7 @@ ThreadPool::start_routine(void *arg_)
   bool done;
   ThreadPool::Func func;
   ThreadPool::Queue &q = btp->_queue;
-  moodycamel::LightweightSemaphore &sema = btp->_sema;
-  ThreadPool::CToken ctok(btp->_queue);
+  ThreadPool::CToken ctok(btp->_queue.make_ctoken());
 
   done = false;
   while(!done)
@@ -185,12 +225,26 @@ ThreadPool::start_routine(void *arg_)
         {
           func();
         }
-      catch(std::exception &e)
+      catch(const ThreadExitSignal&)
         {
           done = true;
         }
+      catch(std::exception &e)
+        {
+          syslog(LOG_CRIT,
+                 "threadpool (%s): uncaught exception caught by worker - %s",
+                 btp->_name.c_str(),
+                 e.what());
+        }
+      catch(...)
+        {
+          syslog(LOG_CRIT,
+                 "threadpool (%s): uncaught non-standard exception caught by worker",
+                 btp->_name.c_str());
+        }
 
-      SEMA_SIGNAL(sema);
+      // force destruction to release resources
+      func = {};
 
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
     }
@@ -198,11 +252,9 @@ ThreadPool::start_routine(void *arg_)
   return nullptr;
 }
 
-
-
 inline
 int
-ThreadPool::add_thread(const std::string name_)
+ThreadPool::add_thread(const std::string &name_)
 {
   int rv;
   pthread_t t;
@@ -227,97 +279,93 @@ ThreadPool::add_thread(const std::string name_)
       return -rv;
     }
 
-  if(!name.empty())
-    pthread_setname_np(t,name.c_str());
+  if(not name.empty())
+    {
+      std::string n = name.substr(0, 15);
+      pthread_setname_np(t,n.c_str());
+    }
 
   {
-    LockGuard lg(_threads_mutex);
-
+    mutex_lockguard(_threads_mutex);
     _threads.push_back(t);
   }
 
   return 0;
 }
 
-
 inline
 int
-ThreadPool::remove_thread(void)
+ThreadPool::remove_thread()
 {
   {
-    LockGuard lg(_threads_mutex);
-
+    mutex_lockguard(_threads_mutex);
     if(_threads.size() <= 1)
       return -EINVAL;
   }
 
-  std::promise<pthread_t> promise;
+  auto promise = std::make_shared<std::promise<std::optional<pthread_t>>>();
+
   auto func =
-    [this,&promise]()
+    [this,promise]()
     {
       pthread_t t;
 
       t = pthread_self();
-      promise.set_value(t);
 
       {
-        LockGuard lg(_threads_mutex);
+        mutex_lockguard(_threads_mutex);
 
-        for(auto i = _threads.begin(); i != _threads.end(); ++i)
+        if(_threads.size() <= 1)
           {
-            if(*i != t)
-              continue;
-
-            _threads.erase(i);
-            break;
+            promise->set_value(std::nullopt);
+            return;
           }
+
+        auto it = std::find(_threads.begin(),
+                            _threads.end(),
+                            t);
+        if(it != _threads.end())
+          _threads.erase(it);
       }
 
-      pthread_exit(NULL);
+      promise->set_value(t);
+
+      throw ThreadExitSignal{};
     };
 
-  enqueue_work(std::move(func));
-  pthread_join(promise.get_future().get(),NULL);
+  _queue.enqueue_unbounded(std::move(func));
 
-  return 0;
+  auto result = promise->get_future().get();
+  if(result.has_value())
+    {
+      pthread_join(result.value(),NULL);
+      return 0;
+    }
+
+  return -EINVAL;
 }
-
 
 inline
 int
-ThreadPool::set_threads(std::size_t const count_)
+ThreadPool::set_threads(const std::size_t count_)
 {
-  int diff;
+  if(count_ == 0)
+    return -EINVAL;
+
+  std::size_t current;
 
   {
-    LockGuard lg(_threads_mutex);
-
-    diff = ((int)count_ - (int)_threads.size());
+    mutex_lockguard(_threads_mutex);
+    current = _threads.size();
   }
 
-  for(auto i = diff; i > 0; --i)
+  for(std::size_t i = current; i < count_; ++i)
     add_thread();
-  for(auto i = diff; i < 0; ++i)
+  for(std::size_t i = count_; i < current; ++i)
     remove_thread();
 
-  return diff;
+  return 0;
 }
-
-
-inline
-void
-ThreadPool::shutdown(void)
-{
-  LockGuard lg(_threads_mutex);
-
-  for(pthread_t tid : _threads)
-    pthread_cancel(tid);
-  for(pthread_t tid : _threads)
-    pthread_join(tid,NULL);
-
-  _threads.clear();
-}
-
 
 template<typename FuncType>
 inline
@@ -325,19 +373,60 @@ void
 ThreadPool::enqueue_work(ThreadPool::PToken  &ptok_,
                          FuncType           &&func_)
 {
-  SEMA_WAIT(_sema);
   _queue.enqueue(ptok_,
                  std::forward<FuncType>(func_));
 }
-
 
 template<typename FuncType>
 inline
 void
 ThreadPool::enqueue_work(FuncType &&func_)
 {
-  SEMA_WAIT(_sema);
   _queue.enqueue(std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+inline
+bool
+ThreadPool::try_enqueue_work(ThreadPool::PToken &ptok_,
+                             FuncType &&func_)
+{
+  return _queue.try_enqueue(ptok_,
+                            std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+inline
+bool
+ThreadPool::try_enqueue_work(FuncType &&func_)
+{
+  return _queue.try_enqueue(std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+inline
+bool
+ThreadPool::try_enqueue_work_for(ThreadPool::PToken  &ptok_,
+                                 std::int64_t         timeout_usecs_,
+                                 FuncType           &&func_)
+{
+  return _queue.try_enqueue_for(ptok_,
+                                timeout_usecs_,
+                                std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+inline
+bool
+ThreadPool::try_enqueue_work_for(std::int64_t  timeout_usecs_,
+                                 FuncType    &&func_)
+{
+  return _queue.try_enqueue_for(timeout_usecs_,
+                                std::forward<FuncType>(func_));
 }
 
 
@@ -359,8 +448,15 @@ ThreadPool::enqueue_task(FuncType&& func_)
     {
       try
         {
-          auto rv = func_();
-          promise_.set_value(std::move(rv));
+          if constexpr (std::is_void_v<TaskReturnType>)
+            {
+              func_();
+              promise_.set_value();
+            }
+          else
+            {
+              promise_.set_value(func_());
+            }
         }
       catch(...)
         {
@@ -368,7 +464,6 @@ ThreadPool::enqueue_task(FuncType&& func_)
         }
     };
 
-  SEMA_WAIT(_sema);
   _queue.enqueue(std::move(work));
 
   return future;
@@ -379,7 +474,7 @@ inline
 std::vector<pthread_t>
 ThreadPool::threads() const
 {
-  LockGuard lg(_threads_mutex);
+  mutex_lockguard(_threads_mutex);
 
   return _threads;
 }
@@ -389,5 +484,5 @@ inline
 ThreadPool::PToken
 ThreadPool::ptoken()
 {
-  return ThreadPool::PToken(_queue);
+  return _queue.make_ptoken();
 }
