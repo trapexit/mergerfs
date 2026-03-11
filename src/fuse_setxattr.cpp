@@ -110,14 +110,14 @@ _setxattr_loop_core(const fs::path &basepath_,
                     const int       flags_,
                     PolicyRV       *prv_)
 {
+  int rv;
   fs::path fullpath;
 
   fullpath = basepath_ / fusepath_;
 
-  errno = 0;
-  fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
+  rv = fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
 
-  prv_->insert(errno,basepath_);
+  prv_->insert(rv,basepath_);
 }
 
 static
