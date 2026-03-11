@@ -425,15 +425,9 @@ fuse_reply_data(fuse_req_t   *req,
     fuse_debug_data_out(req->ctx.unique,bufsize_);
 
   res = fuse_send_msg(req->se,iov,2);
-  if(res <= 0)
-    {
-      fuse_req_free(req);
-      return res;
-    }
-  else
-    {
-      return fuse_reply_err(req, res);
-    }
+  fuse_req_free(req);
+
+  return res;
 }
 
 int
