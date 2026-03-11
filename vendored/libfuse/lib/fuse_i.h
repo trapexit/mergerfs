@@ -14,6 +14,8 @@
 
 #include "extern_c.h"
 
+#include <signal.h>
+
 /* Simplified fuse_session - fields inlined from former fuse_chan
  * Since mergerfs only supports one mount, we collapse the hierarchy:
  * fuse_session -> fuse_chan -> fd
@@ -30,7 +32,7 @@ struct fuse_session
   void (*destroy)(void *data);
 
   struct fuse_ll *f;
-  volatile int exited;
+  volatile sig_atomic_t exited;
 
   /* Formerly in fuse_chan - inlined for single-mount simplicity */
   int fd;            /* /dev/fuse file descriptor */
