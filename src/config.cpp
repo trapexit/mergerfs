@@ -325,7 +325,8 @@ Config::keys(std::string &s_) const
       s_ += '\0';
     }
 
-  s_.resize(s_.size() - 1);
+  if(!s_.empty())
+    s_.resize(s_.size() - 1);
 }
 
 
