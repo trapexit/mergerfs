@@ -46,12 +46,19 @@ ConfigPageSize::to_string(void) const
 int
 ConfigPageSize::from_string(const std::string_view s_)
 {
+  int rv;
   u64 v;
   u64 pagesize;
 
+  if(s_.empty())
+    return -EINVAL;
+
   pagesize = sysconf(_SC_PAGESIZE);
 
-  str::from(s_,&v);
+  rv = str::from(s_,&v);
+  if(rv < 0)
+    return rv;
+
   if(!std::isalpha(s_.back()))
     v *= pagesize;
 
