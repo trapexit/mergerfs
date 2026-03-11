@@ -38,14 +38,14 @@ _chown_loop_core(const fs::path &basepath_,
                  const gid_t     gid_,
                  PolicyRV       *prv_)
 {
+  int rv;
   fs::path fullpath;
 
   fullpath = basepath_ / fusepath_;
 
-  errno = 0;
-  fs::lchown(fullpath,uid_,gid_);
+  rv = fs::lchown(fullpath,uid_,gid_);
 
-  prv_->insert(errno,basepath_);
+  prv_->insert(rv,basepath_);
 }
 
 static
