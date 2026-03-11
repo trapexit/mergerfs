@@ -1454,7 +1454,7 @@ fuse_lib_getattr(fuse_req_t            *req_,
   uint64_t fh;
   struct stat buf;
   node_t *node;
-  fuse_timeouts_t timeout;
+  fuse_timeouts_t timeouts{};
   const struct fuse_getattr_in *arg;
 
   arg = (fuse_getattr_in*)fuse_hdr_arg(hdr_);
@@ -1477,8 +1477,8 @@ fuse_lib_getattr(fuse_req_t            *req_,
   if(!err)
     {
       err = ((fusepath != NULL) ?
-             f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeout) :
-             f.ops.fgetattr(&req_->ctx,fh,&buf,&timeout));
+             f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts) :
+             f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts));
 
       free_path(hdr_->nodeid,fusepath);
     }
@@ -1490,7 +1490,7 @@ fuse_lib_getattr(fuse_req_t            *req_,
       update_stat(node,&buf);
       mutex_unlock(f.lock);
       set_stat(hdr_->nodeid,&buf);
-      fuse_reply_attr(req_,&buf,timeout.attr);
+      fuse_reply_attr(req_,&buf,timeouts.attr);
     }
   else
     {
@@ -1579,7 +1579,7 @@ fuse_lib_setattr(fuse_req_t            *req_,
   struct stat stbuf = {};
   char *fusepath;
   int err;
-  fuse_timeouts_t timeout;
+  fuse_timeouts_t timeouts{};
   struct fuse_setattr_in *arg;
 
   arg = (fuse_setattr_in*)fuse_hdr_arg(hdr_);
@@ -1646,8 +1646,8 @@ fuse_lib_setattr(fuse_req_t            *req_,
 
       if(!err)
         err = ((fusepath != NULL) ?
-               f.ops.getattr(&req_->ctx,&fusepath[1],&stbuf,&timeout) :
-               f.ops.fgetattr(&req_->ctx,fh,&stbuf,&timeout));
+               f.ops.getattr(&req_->ctx,&fusepath[1],&stbuf,&timeouts) :
+               f.ops.fgetattr(&req_->ctx,fh,&stbuf,&timeouts));
 
       free_path(hdr_->nodeid,fusepath);
     }
@@ -1658,7 +1658,7 @@ fuse_lib_setattr(fuse_req_t            *req_,
       update_stat(get_node(hdr_->nodeid),&stbuf);
       mutex_unlock(f.lock);
       set_stat(hdr_->nodeid,&stbuf);
-      fuse_reply_attr(req_,&stbuf,timeout.attr);
+      fuse_reply_attr(req_,&stbuf,timeouts.attr);
     }
   else
     {
@@ -2093,7 +2093,7 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
                 fuse_file_info_t *fi)
 {
   node_t *node;
-  fuse_timeouts_t timeout;
+  fuse_timeouts_t timeouts{};
 
   mutex_lock(f.lock);
 
@@ -2107,7 +2107,7 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
       err = f.ops.fgetattr(req_ctx_,
                            fi->fh,
                            &stbuf,
-                           &timeout);
+                           &timeouts);
       mutex_lock(f.lock);
 
       if(!err)
