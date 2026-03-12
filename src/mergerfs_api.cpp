@@ -85,7 +85,7 @@ mergerfs::api::allpaths(const std::string        &input_path_,
   if(rv < 0)
     return rv;
 
-  str::split_on_null(val,&output_paths_);
+  output_paths_ = str::split_on_null(val);
 
   return 0;
 }

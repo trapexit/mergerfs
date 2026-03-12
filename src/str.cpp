@@ -26,141 +26,127 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <fnmatch.h>
 
-using std::istringstream;
 using std::set;
 using std::string;
 using std::string_view;
 using std::vector;
 
 
-void
-str::split(const string_view  str_,
-           const char         delimiter_,
-           vector<string>    *result_)
+std::vector<std::string>
+str::split(const string_view str_,
+           const char        delimiter_)
 {
-  size_t pos;
-  size_t start;
-  size_t length;
+  std::vector<std::string> result;
 
-  assert(result_ != nullptr);
   if(str_.empty())
-    return;
+    return result;
 
-  start = 0;
-  pos   = str_.find(delimiter_,start);
+  size_t start = 0;
+  size_t pos = str_.find(delimiter_, start);
   while(pos != std::string_view::npos)
     {
-      length = (pos - start);
-      result_->push_back(std::string{str_.substr(start,length)});
+      size_t length = (pos - start);
+      result.emplace_back(str_.substr(start, length));
       start = pos + 1;
-      pos = str_.find(delimiter_,start);
+      pos = str_.find(delimiter_, start);
     }
 
-  result_->push_back(std::string{str_.substr(start)});
+  result.emplace_back(str_.substr(start));
+
+  return result;
 }
 
-void
-str::split(const string_view  str_,
-           const char         delimiter_,
-           set<string>       *result_)
+std::set<std::string>
+str::split_to_set(const string_view str_,
+                  const char        delimiter_)
 {
-  size_t pos;
-  size_t start;
-  size_t length;
+  std::set<std::string> result;
 
-  assert(result_ != nullptr);
   if(str_.empty())
-    return;
+    return result;
 
-  start = 0;
-  pos   = str_.find(delimiter_,start);
+  size_t start = 0;
+  size_t pos = str_.find(delimiter_, start);
   while(pos != std::string_view::npos)
     {
-      length = (pos - start);
-      result_->insert(std::string{str_.substr(start,length)});
+      size_t length = (pos - start);
+      result.emplace(str_.substr(start, length));
       start = pos + 1;
-      pos = str_.find(delimiter_,start);
+      pos = str_.find(delimiter_, start);
     }
 
-  result_->insert(std::string{str_.substr(start)});
+  result.emplace(str_.substr(start));
+
+  return result;
 }
 
-void
-str::split_on_null(const std::string_view    str_,
-                   std::vector<std::string> *result_)
+std::vector<std::string>
+str::split_on_null(const std::string_view str_)
 {
-  return str::split(str_,'\0',result_);
+  return str::split(str_, '\0');
 }
 
-void
-str::lsplit1(const string_view &str_,
-             const char         delimiter_,
-             vector<string>    *result_)
+std::vector<std::string>
+str::lsplit1(const string_view str_,
+             const char        delimiter_)
 {
-  std::size_t off;
+  std::vector<std::string> result;
 
-  assert(result_ != nullptr);
   if(str_.empty())
-    return;
+    return result;
 
-  off = str_.find(delimiter_);
+  std::size_t off = str_.find(delimiter_);
   if(off == std::string_view::npos)
     {
-      result_->push_back(std::string{str_});
+      result.emplace_back(str_);
     }
   else
     {
-      result_->push_back(std::string{str_.substr(0,off)});
-      result_->push_back(std::string{str_.substr(off+1)});
+      result.emplace_back(str_.substr(0, off));
+      result.emplace_back(str_.substr(off + 1));
     }
+
+  return result;
 }
 
-void
-str::rsplit1(const string_view &str_,
-             const char         delimiter_,
-             vector<string>    *result_)
+std::vector<std::string>
+str::rsplit1(const string_view str_,
+             const char        delimiter_)
 {
-  std::size_t off;
+  std::vector<std::string> result;
 
-  assert(result_ != nullptr);
   if(str_.empty())
-    return;
+    return result;
 
-  off = str_.rfind(delimiter_);
-  if(off == std::string::npos)
+  std::size_t off = str_.rfind(delimiter_);
+  if(off == std::string_view::npos)
     {
-      result_->push_back(std::string{str_});
+      result.emplace_back(str_);
     }
   else
     {
-      result_->push_back(std::string{str_.substr(0,off)});
-      result_->push_back(std::string{str_.substr(off+1)});
+      result.emplace_back(str_.substr(0, off));
+      result.emplace_back(str_.substr(off + 1));
     }
+
+  return result;
 }
 
-void
-str::splitkv(const std::string_view  str_,
-             const char              delimiter_,
-             std::string            *key_,
-             std::string            *val_)
+std::pair<std::string, std::string>
+str::splitkv(const std::string_view str_,
+             const char             delimiter_)
 {
-  size_t pos;
-
-  pos = str_.find(delimiter_);
+  std::size_t pos = str_.find(delimiter_);
   if(pos != std::string_view::npos)
-    {
-      *key_ = str_.substr(0, pos);
-      *val_ = str_.substr(pos + 1);
-    }
-  else
-    {
-      *key_ = str_;
-      *val_ = "";
-    }
+    return {std::string{str_.substr(0, pos)},
+            std::string{str_.substr(pos + 1)}};
+
+  return {std::string{str_}, std::string{}};
 }
 
 string
@@ -182,7 +168,7 @@ string
 str::join(const vector<string> &vec_,
           const char            sep_)
 {
-  return str::join(vec_,0,sep_);
+  return str::join(vec_, 0, sep_);
 }
 
 string
@@ -191,9 +177,14 @@ str::join(const set<string> &set_,
 {
   string rv;
 
+  if(set_.empty())
+    return {};
+
   for(auto const &s : set_)
     rv += s + sep_;
-  rv.pop_back();
+
+  if(!rv.empty())
+    rv.pop_back();
 
   return rv;
 }
@@ -222,11 +213,9 @@ str::longest_common_prefix_index(const vector<string> &vec_)
 string
 str::longest_common_prefix(const vector<string> &vec_)
 {
-  size_t idx;
-
-  idx = longest_common_prefix_index(vec_);
+  size_t idx = longest_common_prefix_index(vec_);
   if(idx != string::npos)
-    return vec_[0].substr(0,idx);
+    return vec_[0].substr(0, idx);
 
   return string();
 }
@@ -235,32 +224,27 @@ string
 str::remove_common_prefix_and_join(const vector<string> &vec_,
                                    const char            sep_)
 {
-  size_t idx;
-
-  idx = str::longest_common_prefix_index(vec_);
+  size_t idx = str::longest_common_prefix_index(vec_);
   if(idx == string::npos)
     idx = 0;
 
-  return str::join(vec_,idx,sep_);
+  return str::join(vec_, idx, sep_);
 }
 
 void
 str::erase_fnmatches(const vector<string> &patterns_,
                      vector<string>       &strs_)
 {
-  vector<string>::iterator si;
-  vector<string>::const_iterator pi;
-
-  si = strs_.begin();
+  auto si = strs_.begin();
   while(si != strs_.end())
     {
       int match = FNM_NOMATCH;
 
-      for(pi = patterns_.begin();
+      for(auto pi = patterns_.begin();
           pi != patterns_.end() && match != 0;
           ++pi)
         {
-          match = fnmatch(pi->c_str(),si->c_str(),0);
+          match = fnmatch(pi->c_str(), si->c_str(), 0);
         }
 
       if(match == 0)
@@ -271,58 +255,57 @@ str::erase_fnmatches(const vector<string> &patterns_,
 }
 
 bool
-str::isprefix(const string &s0_,
-              const string &s1_)
+str::startswith(const string_view str_,
+                const string_view prefix_) noexcept
 {
-  return ((s0_.size() >= s1_.size()) &&
-          (s0_.compare(0,s1_.size(),s1_) == 0));
+  if(prefix_.size() > str_.size())
+    return false;
+  return str_.compare(0, prefix_.size(), prefix_) == 0;
 }
 
 bool
-str::startswith(const string &str_,
-                const string &prefix_)
-{
-  return ((str_.size() >= prefix_.size()) &&
-          (str_.compare(0,prefix_.size(),prefix_) == 0));
-}
-
-bool
-str::endswith(const string &str_,
-              const string &suffix_)
+str::endswith(const string_view str_,
+              const string_view suffix_) noexcept
 {
   if(suffix_.size() > str_.size())
     return false;
-
-  return std::equal(suffix_.rbegin(),
-                    suffix_.rend(),
-                    str_.rbegin());
+  return str_.compare(str_.size() - suffix_.size(),
+                      suffix_.size(),
+                      suffix_) == 0;
 }
 
 std::string
-str::trim(const std::string &str_)
+str::trim(const std::string_view str_)
 {
-  std::string rv;
+  if(str_.empty())
+    return std::string{};
 
-  rv = str_;
+  auto start = str_.begin();
+  auto end = str_.end();
 
-  while(!rv.empty() && std::isspace(static_cast<unsigned char>(rv[0])))
-    rv.erase(0,1);
-  while(!rv.empty() && std::isspace(static_cast<unsigned char>(rv[rv.size()-1])))
-    rv.erase(rv.size()-1,1);
+  while(start != end && std::isspace(static_cast<unsigned char>(*start)))
+    ++start;
 
-  return rv;
+  if(start == end)
+    return std::string{};
+
+  --end;
+  while(end != start && std::isspace(static_cast<unsigned char>(*end)))
+    --end;
+
+  return std::string{start, end + 1};
 }
 
 bool
 str::eq(const char *s0_,
-        const char *s1_)
+        const char *s1_) noexcept
 {
-  return (strcmp(s0_,s1_) == 0);
+  return (std::strcmp(s0_, s1_) == 0);
 }
 
 bool
 str::startswith(const char *s_,
-                const char *p_)
+                const char *p_) noexcept
 {
   while(*p_)
     {
@@ -337,16 +320,15 @@ str::startswith(const char *s_,
 }
 
 std::string
-str::replace(const std::string &s_,
-             const char         src_,
-             const char         dst_)
+str::replace(const std::string_view str_,
+             const char src_,
+             const char dst_)
 {
-  std::string s(s_);
+  std::string result;
+  result.reserve(str_.size());
 
-  std::replace(s.begin(),
-               s.end(),
-               src_,
-               dst_);
+  for(char c : str_)
+    result.push_back(c == src_ ? dst_ : c);
 
-  return s;
+  return result;
 }
