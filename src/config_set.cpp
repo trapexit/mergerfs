@@ -37,7 +37,8 @@ ConfigSet::from_string(const std::string_view str_)
 {
   this->clear();
 
-  str::split(str_,'|',this);
+  auto tmp = str::split_to_set(str_,'|');
+  this->insert(tmp.begin(), tmp.end());
 
   return 0;
 }

@@ -90,8 +90,8 @@ fs::xattr::list(const int       fd_,
   rv = fs::xattr::list(fd_,&attrs);
   if(rv > 0)
     {
-      string tmp(attrs.begin(),attrs.end());
-      str::split(tmp,'\0',attrvector_);
+    string tmp(attrs.begin(),attrs.end());
+    *attrvector_ = str::split(tmp,'\0');
     }
 
   return rv;
@@ -107,8 +107,8 @@ fs::xattr::list(const string   &path_,
   rv = fs::xattr::list(path_,&attrs);
   if(rv > 0)
     {
-      string tmp(attrs.begin(),attrs.end());
-      str::split(tmp,'\0',attrvector_);
+    string tmp(attrs.begin(),attrs.end());
+    *attrvector_ = str::split(tmp,'\0');
     }
 
   return rv;

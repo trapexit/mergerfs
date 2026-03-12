@@ -135,7 +135,7 @@ namespace l
     std::string options;
     std::vector<std::string> v;
 
-    str::rsplit1(str_,'=',&v);
+    v = str::rsplit1(str_,'=');
     switch(v.size())
       {
       case 1:
@@ -145,8 +145,7 @@ namespace l
       case 2:
         *glob_  = v[0];
         options = v[1];
-        v.clear();
-        str::split(options,',',&v);
+    v = str::split(options,',');
         switch(v.size())
           {
           case 2:
@@ -229,7 +228,7 @@ namespace l
     StrVec paths;
     Branches::Impl tmp_branches(branches_->minfreespace());
 
-    str::split(str_,':',&paths);
+    paths = str::split(str_,':');
     for(auto &path : paths)
       {
         rv = l::parse(path,&tmp_branches);
@@ -251,7 +250,7 @@ namespace l
     std::vector<std::string> paths;
     Branches::Impl tmp_branches(branches_->minfreespace());
 
-    str::split(str_,':',&paths);
+    paths = str::split(str_,':');
     for(auto &path : paths)
       {
         rv = l::parse(path,&tmp_branches);
@@ -275,7 +274,7 @@ namespace l
     StrVec paths;
     Branches::Impl tmp_branches(branches_->minfreespace());
 
-    str::split(str_,':',&paths);
+    paths = str::split(str_,':');
     for(auto &path : paths)
       {
         rv = l::parse(path,&tmp_branches);
@@ -315,7 +314,7 @@ namespace l
   {
     StrVec patterns;
 
-    str::split(str_,':',&patterns);
+    patterns = str::split(str_,':');
     for(auto i = branches_->begin(); i != branches_->end();)
       {
         int match = FNM_NOMATCH;
