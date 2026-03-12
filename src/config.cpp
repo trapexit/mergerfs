@@ -430,10 +430,7 @@ Config::set(const std::string &key_,
 int
 Config::set(const std::string &kv_)
 {
-  std::string key;
-  std::string val;
-
-  str::splitkv(kv_,'=',&key,&val);
+  auto [key, val] = str::splitkv(kv_,'=');
   key = str::trim(key);
   val = str::trim(val);
 
