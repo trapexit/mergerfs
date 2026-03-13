@@ -229,7 +229,7 @@ ThreadPool::start_routine(void *arg_)
         {
           done = true;
         }
-      catch(std::exception &e)
+      catch(const std::exception &e)
         {
           syslog(LOG_CRIT,
                  "threadpool (%s): uncaught exception caught by worker - %s",
