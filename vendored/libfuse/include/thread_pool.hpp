@@ -24,14 +24,11 @@
 #include "mutex.hpp"
 
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <csignal>
-#include <cstdint>
 #include <cstring>
 #include <future>
 #include <memory>
-#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -44,7 +41,7 @@
 
 struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 {
-  static const int MAX_SEMA_SPINS = 10;
+  static const int MAX_SEMA_SPINS = 1;
 };
 
 
@@ -57,7 +54,6 @@ public:
 private:
   using Func  = ofats::any_invocable<void()>;
   using Queue = BoundedQueue<Func,ThreadPoolTraits>;
-  struct ThreadExitSignal {};
 
 public:
   explicit
@@ -184,21 +180,14 @@ ThreadPool::ThreadPool(const unsigned     thread_count_,
 inline
 ThreadPool::~ThreadPool()
 {
-  std::vector<pthread_t> threads;
-
-  {
-    mutex_lockguard(_threads_mutex);
-    threads = _threads;
-  }
-
   syslog(LOG_DEBUG,
          "threadpool (%s): destroying %zu threads",
          _name.c_str(),
-         threads.size());
+         _threads.size());
 
-  for(auto _ : threads)
-    _queue.enqueue_unbounded([](){ throw ThreadExitSignal{}; });
-  for(auto t : threads)
+  for(auto t : _threads)
+    pthread_cancel(t);
+  for(auto t : _threads)
     pthread_join(t,NULL);
 }
 
@@ -209,13 +198,11 @@ ThreadPool::start_routine(void *arg_)
 {
   ThreadPool *btp = static_cast<ThreadPool*>(arg_);
 
-  bool done;
   ThreadPool::Func func;
   ThreadPool::Queue &q = btp->_queue;
   ThreadPool::CToken ctok(btp->_queue.make_ctoken());
 
-  done = false;
-  while(!done)
+  while(true)
     {
       q.wait_dequeue(ctok,func);
 
@@ -225,11 +212,13 @@ ThreadPool::start_routine(void *arg_)
         {
           func();
         }
-      catch(const ThreadExitSignal&)
+#if defined(__GLIBCXX__)
+      catch(const __cxxabiv1::__forced_unwind&)
         {
-          done = true;
+          throw;
         }
-      catch(std::exception &e)
+#endif
+      catch(const std::exception &e)
         {
           syslog(LOG_CRIT,
                  "threadpool (%s): uncaught exception caught by worker - %s",
@@ -241,6 +230,7 @@ ThreadPool::start_routine(void *arg_)
           syslog(LOG_CRIT,
                  "threadpool (%s): uncaught non-standard exception caught by worker",
                  btp->_name.c_str());
+
         }
 
       // force destruction to release resources
@@ -303,7 +293,7 @@ ThreadPool::remove_thread()
       return -EINVAL;
   }
 
-  auto promise = std::make_shared<std::promise<std::optional<pthread_t>>>();
+  auto promise = std::make_shared<std::promise<pthread_t>>();
 
   auto func =
     [this,promise]()
@@ -315,12 +305,6 @@ ThreadPool::remove_thread()
       {
         mutex_lockguard(_threads_mutex);
 
-        if(_threads.size() <= 1)
-          {
-            promise->set_value(std::nullopt);
-            return;
-          }
-
         auto it = std::find(_threads.begin(),
                             _threads.end(),
                             t);
@@ -330,19 +314,14 @@ ThreadPool::remove_thread()
 
       promise->set_value(t);
 
-      throw ThreadExitSignal{};
+      pthread_exit(NULL);
     };
 
   _queue.enqueue_unbounded(std::move(func));
 
-  auto result = promise->get_future().get();
-  if(result.has_value())
-    {
-      pthread_join(result.value(),NULL);
-      return 0;
-    }
+  pthread_join(promise->get_future().get(),NULL);
 
-  return -EINVAL;
+  return 0;
 }
 
 inline

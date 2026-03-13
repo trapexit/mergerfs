@@ -318,6 +318,9 @@ fuse_session_loop_mt(struct fuse_session *se_,
   while(!fuse_session_exited(se_))
     sem_wait(&finished);
 
+  for(auto t : read_threads)
+    pthread_cancel(t);
+
   sem_destroy(&finished);
 
   return 0;
