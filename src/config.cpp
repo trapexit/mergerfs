@@ -471,9 +471,11 @@ Config::from_file(const std::string &filepath_)
   int rv;
   std::ifstream ifstrm;
 
+  errno = 0;
   ifstrm.open(filepath_);
   if(!ifstrm.good())
     {
+      errno = errno ? errno : EIO;
       errs.push_back({errno,filepath_});
       return -errno;
     }
