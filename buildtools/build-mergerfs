@@ -38,18 +38,27 @@ elif [ -e /sbin/apk ]; then
 elif [ -e /usr/sbin/pkg ]; then
     echo "NOT YET SUPPORTED"
     exit 1
+elif [ -e /usr/bin/pacman ]; then
+    make tarball
 else
     echo "NOT YET SUPPORTED"
     exit 1
 fi
 
 echo "Copy packages to host..."
-find "${BUILDDIR}" \
-     -type f \
-     \( -name "*.deb" -or -name "*.rpm" \) \
-     -not -name "*dbgsym*" \
-     -not -name "*sym*" \
-     -not -name "*src.rpm" \
-     -exec cp -v {} /build/ \;
+if [ -e /usr/bin/pacman ]; then
+    find "${BUILDDIR}" \
+         -type f \
+         -name "*.tar.gz" \
+         -exec cp -v {} /build/ \;
+else
+    find "${BUILDDIR}" \
+         -type f \
+         \( -name "*.deb" -or -name "*.rpm" \) \
+         -not -name "*dbgsym*" \
+         -not -name "*sym*" \
+         -not -name "*src.rpm" \
+         -exec cp -v {} /build/ \;
+fi
 
 exit 0

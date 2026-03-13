@@ -47,12 +47,23 @@ def build(git_repo,
 
 
 def setup():
-    args = ['sudo',
-            'apt-get',
-            'install',
-            '-fy',
-            'qemu-user-static',
-            'qemu-user-binfmt']
+    # Detect distribution
+    if os.path.exists('/usr/bin/apt-get'):
+        args = ['sudo',
+                'apt-get',
+                'install',
+                '-fy',
+                'qemu-user-static',
+                'qemu-user-binfmt']
+    elif os.path.exists('/usr/bin/pacman'):
+        args = ['sudo',
+                'pacman',
+                '-Sy',
+                '--noconfirm',
+                'qemu-user-static']
+    else:
+        print("Unsupported distribution for setup")
+        sys.exit(1)
     print(args)
     subprocess.run(args)
 

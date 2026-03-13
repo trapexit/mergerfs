@@ -16,4 +16,6 @@ elif [ -e /sbin/apk ]; then
         python3 \
         qemu-user-static \
         podman
+elif [ -e /usr/bin/pacman ]; then
+    pacman -Sy --noconfirm qemu-user-static podman
 fi
