@@ -34,4 +34,6 @@ elif [ -e /sbin/apk ]; then
 elif [ -e /usr/sbin/pkg ]; then
     pkg install \
         git gmake gcc
+elif [ -e /usr/bin/pacman ]; then
+    pacman -Sy --noconfirm base-devel git fakeroot
 fi
