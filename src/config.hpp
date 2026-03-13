@@ -95,7 +95,7 @@ public:
   {
   private:
     fs::path  _cfg_file;
-    int       _depth = 0;
+    static thread_local int _depth;
 
   public:
     CfgConfigFile();

@@ -46,6 +46,8 @@ constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
 
 Config cfg;
 
+thread_local int Config::CfgConfigFile::_depth = 0;
+
 Config::CfgConfigFile::CfgConfigFile()
 {
 }
