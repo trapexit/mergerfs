@@ -20,6 +20,8 @@
 
 #include "from_string.hpp"
 
+#include <cassert>
+#include <climits>
 #include <cctype>
 #include <string>
 
@@ -48,12 +50,20 @@ ConfigPageSize::from_string(const std::string_view s_)
 {
   int rv;
   u64 v;
+  long tmp;
   u64 pagesize;
 
   if(s_.empty())
     return -EINVAL;
 
-  pagesize = sysconf(_SC_PAGESIZE);
+  tmp = sysconf(_SC_PAGESIZE);
+  if(tmp <= 0)
+    {
+      perror("mergerfs: pagesize query failed");
+      std::abort();
+    }
+
+  pagesize = (u64)tmp;
 
   rv = str::from(s_,&v);
   if(rv < 0)
