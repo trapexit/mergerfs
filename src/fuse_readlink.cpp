@@ -34,12 +34,12 @@ static
 int
 _readlink_core_standard(const fs::path &fullpath_,
                         char           *buf_,
-                        const size_t    size_)
+                        const size_t    bufsize_)
 
 {
   int rv;
 
-  rv = fs::readlink(fullpath_,buf_,(size_ - 1));
+  rv = fs::readlink(fullpath_,buf_,(bufsize_ - 1));
   if(rv < 0)
     return rv;
 
@@ -52,7 +52,7 @@ static
 int
 _readlink_core_symlinkify(const fs::path &fullpath_,
                           char           *buf_,
-                          const size_t    size_,
+                          const size_t    bufsize_,
                           const time_t    symlinkify_timeout_)
 {
   int rv;
@@ -63,10 +63,10 @@ _readlink_core_symlinkify(const fs::path &fullpath_,
     return rv;
 
   if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
-    return ::_readlink_core_standard(fullpath_,buf_,size_);
+    return ::_readlink_core_standard(fullpath_,buf_,bufsize_);
 
-  strncpy(buf_,fullpath_.c_str(),(size_ - 1));
-  buf_[size_ - 1] = '\0';
+  strncpy(buf_,fullpath_.c_str(),(bufsize_ - 1));
+  buf_[bufsize_ - 1] = '\0';
 
   return 0;
 }
@@ -76,7 +76,7 @@ int
 _readlink_core(const fs::path &basepath_,
                const fs::path &fusepath_,
                char           *buf_,
-               const size_t    size_,
+               const size_t    bufsize_,
                const bool      symlinkify_,
                const time_t    symlinkify_timeout_)
 {
@@ -85,9 +85,9 @@ _readlink_core(const fs::path &basepath_,
   fullpath = basepath_ / fusepath_;
 
   if(symlinkify_)
-    return ::_readlink_core_symlinkify(fullpath,buf_,size_,symlinkify_timeout_);
+    return ::_readlink_core_symlinkify(fullpath,buf_,bufsize_,symlinkify_timeout_);
 
-  return ::_readlink_core_standard(fullpath,buf_,size_);
+  return ::_readlink_core_standard(fullpath,buf_,bufsize_);
 }
 
 static
@@ -96,12 +96,11 @@ _readlink(const Policy::Search &searchFunc_,
           const Branches       &ibranches_,
           const fs::path       &fusepath_,
           char                 *buf_,
-          const size_t          size_,
+          const size_t          bufsize_,
           const bool            symlinkify_,
           const time_t          symlinkify_timeout_)
 {
   int rv;
-  StrVec basepaths;
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
@@ -111,7 +110,7 @@ _readlink(const Policy::Search &searchFunc_,
   return ::_readlink_core(obranches[0]->path,
                           fusepath_,
                           buf_,
-                          size_,
+                          bufsize_,
                           symlinkify_,
                           symlinkify_timeout_);
 }
@@ -120,15 +119,18 @@ int
 FUSE::readlink(const fuse_req_ctx_t *ctx_,
                const char           *fusepath_,
                char                 *buf_,
-               size_t                size_)
+               size_t                bufsize_)
 {
   const fs::path fusepath{fusepath_};
+
+  if(bufsize_ == 0)
+    return -EINVAL;
 
   return ::_readlink(cfg.func.readlink.policy,
                      cfg.branches,
                      fusepath,
                      buf_,
-                     size_,
+                     bufsize_,
                      cfg.symlinkify,
                      cfg.symlinkify_timeout);
 }
