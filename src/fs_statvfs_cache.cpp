@@ -23,8 +23,8 @@
 
 #include "mutex.hpp"
 
-#include <map>
 #include <string>
+#include <unordered_map>
 
 #include <sys/statvfs.h>
 #include <time.h>
@@ -36,11 +36,11 @@ struct Element
   struct statvfs st;
 };
 
-typedef std::map<std::string,Element> statvfs_cache;
+typedef std::unordered_map<std::string,Element> statvfs_cache;
 
-static u64             g_timeout    = 0;
-static statvfs_cache   g_cache;
-static Mutex           g_cache_lock;
+static u64           g_timeout = 0;
+static statvfs_cache g_cache;
+static Mutex         g_cache_lock;
 
 
 static
@@ -67,8 +67,8 @@ fs::statvfs_cache_timeout(cu64 timeout_)
 }
 
 int
-fs::statvfs_cache(const char     *path_,
-                  struct statvfs *st_)
+fs::statvfs_cache(const std::string &path_,
+                  struct statvfs    *st_)
 {
   int rv;
   Element *e;
@@ -104,7 +104,7 @@ fs::statvfs_cache_readonly(const std::string &path_,
   int rv;
   struct statvfs st;
 
-  rv = fs::statvfs_cache(path_.c_str(),&st);
+  rv = fs::statvfs_cache(path_,&st);
   if(rv == 0)
     *readonly_ = StatVFS::readonly(st);
 
@@ -118,7 +118,7 @@ fs::statvfs_cache_spaceavail(const std::string &path_,
   int rv;
   struct statvfs st;
 
-  rv = fs::statvfs_cache(path_.c_str(),&st);
+  rv = fs::statvfs_cache(path_,&st);
   if(rv == 0)
     *spaceavail_ = StatVFS::spaceavail(st);
 
@@ -132,7 +132,7 @@ fs::statvfs_cache_spaceused(const std::string &path_,
   int rv;
   struct statvfs st;
 
-  rv = fs::statvfs_cache(path_.c_str(),&st);
+  rv = fs::statvfs_cache(path_,&st);
   if(rv == 0)
     *spaceused_ = StatVFS::spaceused(st);
 

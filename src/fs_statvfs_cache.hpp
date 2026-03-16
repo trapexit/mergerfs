@@ -33,8 +33,8 @@ namespace fs
   statvfs_cache_timeout(cu64 timeout);
 
   int
-  statvfs_cache(const char     *path,
-                struct statvfs *st);
+  statvfs_cache(const std::string &path,
+                struct statvfs    *st);
 
   int
   statvfs_cache_readonly(const std::string &path,
