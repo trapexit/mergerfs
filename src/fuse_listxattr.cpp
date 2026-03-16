@@ -26,7 +26,6 @@
 #include "fuse.h"
 
 #include <filesystem>
-#include <optional>
 #include <string>
 #include <cstring>
 
@@ -37,12 +36,16 @@ _listxattr_size(const std::vector<Branch*> &branches_,
                 const fs::path             &fusepath_)
 {
   ssize_t size;
+  ssize_t err;
+  bool success;
   fs::path fullpath;
 
   if(branches_.empty())
     return -ENOENT;
 
-  size = 0;
+  size    = 0;
+  err     = -ENOENT;
+  success = false;
   for(const auto branch : branches_)
     {
       ssize_t rv;
@@ -51,10 +54,18 @@ _listxattr_size(const std::vector<Branch*> &branches_,
 
       rv = fs::llistxattr(fullpath,NULL,0);
       if(rv < 0)
-        continue;
+        {
+          if(err == -ENOENT)
+            err = rv;
+          continue;
+        }
 
+      success = true;
       size += rv;
     }
+
+  if(success == false)
+    return err;
 
   return size;
 }
@@ -68,36 +79,41 @@ _listxattr(const std::vector<Branch*> &branches_,
 {
   ssize_t rv;
   ssize_t size;
+  ssize_t err;
+  bool success;
   fs::path fullpath;
-  std::optional<ssize_t> err;
 
   if(size_ == 0)
     return ::_listxattr_size(branches_,fusepath_);
 
-  size = 0;
-  err  = -ENOENT;
+  size    = 0;
+  err     = -ENOENT;
+  success = false;
   for(const auto branch : branches_)
     {
       fullpath = branch->path / fusepath_;
 
       rv = fs::llistxattr(fullpath,list_,size_);
-      if(rv == -ERANGE)
-        return -ERANGE;
       if(rv < 0)
         {
-          if(!err.has_value())
+          if(rv == -ERANGE)
+            return -ERANGE;
+          if(err == -ENOENT)
             err = rv;
           continue;
         }
 
-      err = 0;
+      if((size_t)rv > size_)
+        return -ERANGE;
+
+      success = true;
       list_ += rv;
       size_ -= rv;
       size  += rv;
     }
 
-  if(err < 0)
-    return err.value();
+  if(success == false)
+    return err;
 
   return size;
 }
