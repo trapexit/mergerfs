@@ -35,8 +35,8 @@ constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(3
 
 static
 bool
-_branch_is_mounted(const struct stat           &src_st_,
-                   const fs::path &branch_path_)
+_branch_is_mounted(const struct stat &src_st_,
+                   const fs::path    &branch_path_)
 {
   int rv;
   struct stat st;
