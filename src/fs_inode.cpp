@@ -52,8 +52,8 @@ static
 u64
 _passthrough(const std::string &branch_path_,
              const std::string &fusepath_,
-             const mode_t           mode_,
-             const ino_t            ino_)
+             const mode_t       mode_,
+             const ino_t        ino_)
 {
   return ino_;
 }
@@ -62,8 +62,8 @@ static
 u64
 _path_hash(const std::string &branch_path_,
            const std::string &fusepath_,
-           const mode_t           mode_,
-           const ino_t            ino_)
+           const mode_t       mode_,
+           const ino_t        ino_)
 {
   u64 seed;
 
@@ -76,8 +76,8 @@ static
 u64
 _path_hash32(const std::string &branch_path_,
              const std::string &fusepath_,
-             const mode_t           mode_,
-             const ino_t            ino_)
+             const mode_t       mode_,
+             const ino_t        ino_)
 {
   u64 h;
 
@@ -93,8 +93,8 @@ static
 u64
 _devino_hash(const std::string &branch_path_,
              const std::string &fusepath_,
-             const mode_t           mode_,
-             const ino_t            ino_)
+             const mode_t       mode_,
+             const ino_t        ino_)
 {
   u64 seed;
 
@@ -108,8 +108,8 @@ static
 u64
 _devino_hash32(const std::string &branch_path_,
                const std::string &fusepath_,
-               const mode_t           mode_,
-               const ino_t            ino_)
+               const mode_t       mode_,
+               const ino_t        ino_)
 {
   u64 h;
 
@@ -125,8 +125,8 @@ static
 u64
 _hybrid_hash(const std::string &branch_path_,
              const std::string &fusepath_,
-             const mode_t           mode_,
-             const ino_t            ino_)
+             const mode_t       mode_,
+             const ino_t        ino_)
 {
   return (S_ISDIR(mode_) ?
           ::_path_hash(branch_path_,fusepath_,mode_,ino_) :
