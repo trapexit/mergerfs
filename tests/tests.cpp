@@ -6,9 +6,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstring>
 #include <future>
 #include <mutex>
 #include <numeric>
+#include <sstream>
 #include <thread>
 
 template<typename Predicate>
@@ -1521,6 +1523,418 @@ test_tp_heavy_add_remove_churn_under_enqueue()
   TEST_CHECK(executed.load() == TOTAL);
 }
 
+void
+test_config_has_key()
+{
+  Config cfg;
+
+  TEST_CHECK(cfg.has_key("async-read") == true);
+  TEST_CHECK(cfg.has_key("branches") == true);
+  TEST_CHECK(cfg.has_key("version") == true);
+  TEST_CHECK(cfg.has_key("nonexistent-key-xyz") == false);
+  TEST_CHECK(cfg.has_key("") == false);
+
+  // Underscore form should NOT match (has_key does no normalization)
+  TEST_CHECK(cfg.has_key("async_read") == false);
+}
+
+void
+test_config_keys()
+{
+  Config cfg;
+
+  const auto &map = cfg.get_map();
+
+  // Result must be non-empty
+  TEST_CHECK(!map.empty());
+
+  // Verify known keys are present
+  TEST_CHECK(map.count("async-read") > 0);
+  TEST_CHECK(map.count("branches")   > 0);
+  TEST_CHECK(map.count("version")    > 0);
+
+  // No key should be empty
+  for(const auto &[k, v] : map)
+    TEST_CHECK(!k.empty());
+}
+
+void
+test_config_keys_xattr()
+{
+  Config cfg;
+
+  ssize_t needed = cfg.keys_listxattr(nullptr, 0);
+  TEST_CHECK(needed > 0);
+
+  std::string s(needed, '\0');
+  ssize_t written = cfg.keys_listxattr(s.data(), needed);
+  TEST_CHECK(written > 0);
+  s.resize(written);
+
+  // Every token must start with "user.mergerfs." and end with NUL
+  const char *p   = s.data();
+  const char *end = p + s.size();
+  int count = 0;
+
+  while(p < end)
+    {
+      const char *nul = static_cast<const char*>(memchr(p, '\0', end - p));
+      TEST_CHECK(nul != nullptr);
+      if(!nul) break;
+
+      std::string entry(p, nul);
+      TEST_CHECK(str::startswith(entry, "user.mergerfs."));
+      ++count;
+      p = nul + 1;
+    }
+
+  TEST_CHECK(count > 0);
+}
+
+void
+test_config_keys_listxattr_size()
+{
+  Config cfg;
+
+  ssize_t sz = cfg.keys_listxattr_size();
+  TEST_CHECK(sz > 0);
+
+  // Size must accommodate a buffer filled by keys_listxattr
+  std::string buf(sz, '\0');
+  ssize_t written = cfg.keys_listxattr(buf.data(), sz);
+  TEST_CHECK(written > 0);
+  TEST_CHECK(written <= sz);
+}
+
+void
+test_config_keys_listxattr_fill()
+{
+  Config cfg;
+
+  // size=0 must return required size (not write anything)
+  ssize_t needed = cfg.keys_listxattr(nullptr, 0);
+  TEST_CHECK(needed > 0);
+
+  // Allocate exact size and fill
+  std::vector<char> buf(needed);
+  ssize_t written = cfg.keys_listxattr(buf.data(), needed);
+  TEST_CHECK(written > 0);
+  TEST_CHECK(written <= needed);
+
+  // Every entry must start with "user.mergerfs." and end with NUL
+  const char *p   = buf.data();
+  const char *end = p + written;
+  int count = 0;
+  while(p < end)
+    {
+      const char *nul = static_cast<const char*>(memchr(p, '\0', end - p));
+      TEST_CHECK(nul != nullptr);
+      if(!nul) break;
+
+      std::string entry(p, nul);
+      TEST_CHECK(str::startswith(entry, "user.mergerfs."));
+      TEST_CHECK(entry.size() > strlen("user.mergerfs."));
+      ++count;
+      p = nul + 1;
+    }
+
+  TEST_CHECK(count > 0);
+
+  // Keys reported by keys_listxattr must be consistent across two calls
+  std::vector<char> xattr_buf(needed);
+  ssize_t xattr_written = cfg.keys_listxattr(xattr_buf.data(), needed);
+  TEST_CHECK(xattr_written == written);
+  TEST_CHECK(memcmp(buf.data(), xattr_buf.data(), written) == 0);
+}
+
+void
+test_config_keys_listxattr_erange()
+{
+  Config cfg;
+
+  // Buffer too small (1 byte) must return -ERANGE
+  char tiny[1] = {'\xff'};
+  ssize_t rv = cfg.keys_listxattr(tiny, 1);
+  TEST_CHECK(rv == -ERANGE);
+}
+
+void
+test_config_get_set_roundtrip()
+{
+  Config cfg;
+  std::string val;
+
+  // bool: async-read
+  TEST_CHECK(cfg.set("async-read", "false") == 0);
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  TEST_CHECK(cfg.set("async-read", "true") == 0);
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  // u64: cache-attr
+  TEST_CHECK(cfg.set("cache.attr", "42") == 0);
+  TEST_CHECK(cfg.get("cache.attr", &val) == 0);
+  TEST_CHECK(val == "42");
+
+  // string: fsname
+  TEST_CHECK(cfg.set("fsname", "myfs") == 0);
+  TEST_CHECK(cfg.get("fsname", &val) == 0);
+  TEST_CHECK(val == "myfs");
+}
+
+void
+test_config_get_unknown_key()
+{
+  Config cfg;
+  std::string val;
+
+  int rv = cfg.get("no-such-key", &val);
+  TEST_CHECK(rv == -ENOATTR);
+}
+
+void
+test_config_set_unknown_key()
+{
+  Config cfg;
+
+  int rv = cfg.set("no-such-key", "value");
+  TEST_CHECK(rv == -ENOATTR);
+}
+
+void
+test_config_set_invalid_value()
+{
+  Config cfg;
+  std::string val;
+
+  // "async-read" is a bool — "notabool" must be rejected
+  int rv = cfg.set("async-read", "notabool");
+  TEST_CHECK(rv == -EINVAL);
+
+  // value must be unchanged
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "true");
+}
+
+void
+test_config_set_underscore_normalization()
+{
+  Config cfg;
+  std::string val;
+
+  // Underscores must be converted to hyphens
+  TEST_CHECK(cfg.set("async_read", "false") == 0);
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+}
+
+void
+test_config_get_underscore_normalization()
+{
+  Config cfg;
+  std::string val;
+
+  TEST_CHECK(cfg.set("async-read", "false") == 0);
+  TEST_CHECK(cfg.get("async_read", &val) == 0);
+  TEST_CHECK(val == "false");
+}
+
+void
+test_config_set_kv_form()
+{
+  Config cfg;
+  std::string val;
+
+  TEST_CHECK(cfg.set("async-read=false") == 0);
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  // With spaces around delimiter
+  TEST_CHECK(cfg.set("async-read = true") == 0);
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "true");
+}
+
+void
+test_config_readonly_before_init()
+{
+  Config cfg;
+  std::string val;
+
+  // version is RO even before finish_initializing()
+  int rv = cfg.set("version", "9.9.9");
+  TEST_CHECK(rv == -EROFS);
+}
+
+void
+test_config_readonly_after_init()
+{
+  Config cfg;
+  std::string val;
+
+  // Before init: mutable fields can be set
+  TEST_CHECK(cfg.set("async-read", "false") == 0);
+
+  cfg.finish_initializing();
+
+  // async-read is marked RO after init
+  int rv = cfg.set("async-read", "true");
+  TEST_CHECK(rv == -EROFS);
+
+  // Value must be unchanged
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+}
+
+void
+test_config_mutable_after_init()
+{
+  Config cfg;
+  std::string val;
+
+  cfg.finish_initializing();
+
+  // dropcacheonclose is NOT RO after init — should still be settable
+  TEST_CHECK(cfg.set("dropcacheonclose", "true") == 0);
+  TEST_CHECK(cfg.get("dropcacheonclose", &val) == 0);
+  TEST_CHECK(val == "true");
+}
+
+void
+test_config_from_stream_basic()
+{
+  Config cfg;
+  std::string val;
+
+  std::istringstream ss("async-read=false\ncache.attr=99\n");
+  int rv = cfg.from_stream(ss);
+  TEST_CHECK(rv == 0);
+
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  TEST_CHECK(cfg.get("cache.attr", &val) == 0);
+  TEST_CHECK(val == "99");
+}
+
+void
+test_config_from_stream_comments_and_blanks()
+{
+  Config cfg;
+  std::string val;
+
+  std::istringstream ss(
+    "# this is a comment\n"
+    "\n"
+    "   \n"
+    "async-read=false\n"
+    "# another comment\n"
+    "cache.attr=7\n"
+  );
+
+  int rv = cfg.from_stream(ss);
+  TEST_CHECK(rv == 0);
+
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  TEST_CHECK(cfg.get("cache.attr", &val) == 0);
+  TEST_CHECK(val == "7");
+}
+
+void
+test_config_from_stream_bad_lines()
+{
+  Config cfg;
+
+  std::istringstream ss("async-read=false\nbad-key-xyz=oops\ncache.attr=5\n");
+  int rv = cfg.from_stream(ss);
+
+  // Must report error but still apply valid lines
+  TEST_CHECK(rv == -EINVAL);
+  TEST_CHECK(!cfg.errs.empty());
+
+  std::string val;
+  TEST_CHECK(cfg.get("async-read", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  TEST_CHECK(cfg.get("cache.attr", &val) == 0);
+  TEST_CHECK(val == "5");
+}
+
+void
+test_config_from_file_nonexistent()
+{
+  Config cfg;
+
+  int rv = cfg.from_file("/this/path/does/not/exist/config.txt");
+  TEST_CHECK(rv < 0);
+  TEST_CHECK(!cfg.errs.empty());
+}
+
+void
+test_config_is_rootdir()
+{
+  TEST_CHECK(Config::is_rootdir("") == true);
+  TEST_CHECK(Config::is_rootdir("/") == false);
+  TEST_CHECK(Config::is_rootdir("/foo") == false);
+}
+
+void
+test_config_is_ctrl_file()
+{
+  TEST_CHECK(Config::is_ctrl_file(".mergerfs") == true);
+  TEST_CHECK(Config::is_ctrl_file("/.mergerfs") == false);
+  TEST_CHECK(Config::is_ctrl_file("mergerfs") == false);
+  TEST_CHECK(Config::is_ctrl_file("") == false);
+}
+
+void
+test_config_is_mergerfs_xattr()
+{
+  TEST_CHECK(Config::is_mergerfs_xattr("user.mergerfs.async-read") == true);
+  TEST_CHECK(Config::is_mergerfs_xattr("user.mergerfs.") == true);
+  TEST_CHECK(Config::is_mergerfs_xattr("user.mergerfs") == false);
+  TEST_CHECK(Config::is_mergerfs_xattr("user.other.async-read") == false);
+  TEST_CHECK(Config::is_mergerfs_xattr("") == false);
+}
+
+void
+test_config_is_cmd_xattr()
+{
+  TEST_CHECK(Config::is_cmd_xattr("user.mergerfs.cmd.foo") == true);
+  TEST_CHECK(Config::is_cmd_xattr("user.mergerfs.cmd.") == true);
+  TEST_CHECK(Config::is_cmd_xattr("user.mergerfs.async-read") == false);
+  TEST_CHECK(Config::is_cmd_xattr("user.mergerfs.cmd") == false);
+  TEST_CHECK(Config::is_cmd_xattr("") == false);
+}
+
+void
+test_config_prune_ctrl_xattr()
+{
+  TEST_CHECK(Config::prune_ctrl_xattr("user.mergerfs.async-read") == "async-read");
+  TEST_CHECK(Config::prune_ctrl_xattr("user.mergerfs.cache.attr") == "cache.attr");
+  // Exactly the prefix — nothing after it: returns empty
+  TEST_CHECK(Config::prune_ctrl_xattr("user.mergerfs.") == "");
+  // Shorter than prefix — returns empty
+  TEST_CHECK(Config::prune_ctrl_xattr("user.mergerfs") == "");
+  TEST_CHECK(Config::prune_ctrl_xattr("") == "");
+}
+
+void
+test_config_prune_cmd_xattr()
+{
+  using sv = std::string_view;
+
+  TEST_CHECK(Config::prune_cmd_xattr("user.mergerfs.cmd.foo") == sv("foo"));
+  TEST_CHECK(Config::prune_cmd_xattr("user.mergerfs.cmd.bar.baz") == sv("bar.baz"));
+  TEST_CHECK(Config::prune_cmd_xattr("user.mergerfs.cmd.") == sv(""));
+  TEST_CHECK(Config::prune_cmd_xattr("user.mergerfs.cmd") == sv(""));
+  TEST_CHECK(Config::prune_cmd_xattr("") == sv(""));
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -1538,6 +1952,32 @@ TEST_LIST =
    {"config_statfsignore",test_config_statfs_ignore},
    {"config_xattr",test_config_xattr},
    {"config",test_config},
+   {"config_has_key",test_config_has_key},
+   {"config_keys",test_config_keys},
+   {"config_keys_xattr",test_config_keys_xattr},
+   {"config_keys_listxattr_size",test_config_keys_listxattr_size},
+   {"config_keys_listxattr_fill",test_config_keys_listxattr_fill},
+   {"config_keys_listxattr_erange",test_config_keys_listxattr_erange},
+   {"config_get_set_roundtrip",test_config_get_set_roundtrip},
+   {"config_get_unknown_key",test_config_get_unknown_key},
+   {"config_set_unknown_key",test_config_set_unknown_key},
+   {"config_set_invalid_value",test_config_set_invalid_value},
+   {"config_set_underscore_normalization",test_config_set_underscore_normalization},
+   {"config_get_underscore_normalization",test_config_get_underscore_normalization},
+   {"config_set_kv_form",test_config_set_kv_form},
+   {"config_readonly_before_init",test_config_readonly_before_init},
+   {"config_readonly_after_init",test_config_readonly_after_init},
+   {"config_mutable_after_init",test_config_mutable_after_init},
+   {"config_from_stream_basic",test_config_from_stream_basic},
+   {"config_from_stream_comments_and_blanks",test_config_from_stream_comments_and_blanks},
+   {"config_from_stream_bad_lines",test_config_from_stream_bad_lines},
+   {"config_from_file_nonexistent",test_config_from_file_nonexistent},
+   {"config_is_rootdir",test_config_is_rootdir},
+   {"config_is_ctrl_file",test_config_is_ctrl_file},
+   {"config_is_mergerfs_xattr",test_config_is_mergerfs_xattr},
+   {"config_is_cmd_xattr",test_config_is_cmd_xattr},
+   {"config_prune_ctrl_xattr",test_config_prune_ctrl_xattr},
+   {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
    {"str",test_str_stuff},
    {"tp_construct_default",test_tp_construct_default},
    {"tp_construct_named",test_tp_construct_named},

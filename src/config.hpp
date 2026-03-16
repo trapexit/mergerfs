@@ -72,7 +72,6 @@ typedef ToFromWrapper<fs::path>             ConfigPath;
 typedef std::map<std::string,ToFromString*> Str2TFStrMap;
 typedef ROToFromWrapper<std::string>        ConfigROSTR;
 
-extern const std::string CONTROLFILE;
 
 class Config
 {
@@ -107,9 +106,6 @@ public:
 
 public:
   Config();
-
-public:
-  Config& operator=(const Config&);
 
 public:
   ConfigBOOL     allow_idmap;
@@ -201,8 +197,6 @@ public:
 
 public:
   bool has_key(const std::string &key) const;
-  void keys(std::string &s) const;
-  void keys_xattr(std::string &s) const;
   ssize_t keys_listxattr(char *list, size_t size) const;
   ssize_t keys_listxattr_size() const;
   const Str2TFStrMap& get_map() const { return _map; }
@@ -221,13 +215,11 @@ public:
   static bool is_ctrl_file(const fs::path &fusepath);
   static bool is_mergerfs_xattr(const char *attrname);
   static bool is_cmd_xattr(const std::string_view &attrname);
-  static std::string prune_ctrl_xattr(const std::string &s);
+  static std::string_view prune_ctrl_xattr(const std::string_view s);
   static std::string_view prune_cmd_xattr(const std::string_view &s);
 
 private:
   Str2TFStrMap _map;
 };
-
-std::ostream& operator<<(std::ostream &s,const Config::ErrVec &ev);
 
 extern Config cfg;
