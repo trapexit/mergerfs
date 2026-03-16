@@ -17,27 +17,17 @@
 */
 
 #include "config.hpp"
-#include "ef.hpp"
 #include "errno.hpp"
-#include "from_string.hpp"
+#include "fmt/core.h"
 #include "fs_path.hpp"
 #include "nonstd/string.hpp"
-#include "num.hpp"
-#include "rwlock.hpp"
 #include "str.hpp"
-#include "to_string.hpp"
 #include "version.hpp"
 
-#include <algorithm>
-#include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <string>
 
-#include <pthread.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 
 constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
@@ -61,14 +51,13 @@ Config::CfgConfigFile::from_string(const std::string_view s_)
   if(_depth > 5)
     return -ELOOP;
   _depth++;
+  struct DepthGuard { int &d; ~DepthGuard() { --d; } } guard{_depth};
 
   cfg_file = (s_.empty() ? _cfg_file : s_);
 
   rv = cfg.from_file(cfg_file);
   if(rv == 0)
     _cfg_file = cfg_file;
-
-  _depth--;
 
   return rv;
 }
@@ -316,37 +305,6 @@ Config::has_key(const std::string &key_) const
   return _map.count(key_);
 }
 
-void
-Config::keys(std::string &s_) const
-{
-  s_.reserve(512);
-
-  for(const auto &[key,val] : _map)
-    {
-      s_ += key;
-      s_ += '\0';
-    }
-
-  if(!s_.empty())
-    s_.resize(s_.size() - 1);
-}
-
-
-void
-Config::keys_xattr(std::string &s_) const
-{
-  s_.reserve(1024);
-  for(const auto &[key,val] : _map)
-    {
-      if(val->display == false)
-        continue;
-
-      s_ += "user.mergerfs.";
-      s_ += key;
-      s_ += '\0';
-    }
-}
-
 ssize_t
 Config::keys_listxattr_size() const
 {
@@ -380,13 +338,16 @@ Config::keys_listxattr(char   *list_,
       if(val->display == false)
         continue;
 
-      auto rv = fmt::format_to_n(list,size,
-                                 "user.mergerfs.{}\0",
-                                 key);
-      if(rv.out > (list + size))
+      static constexpr std::string_view prefix = "user.mergerfs.";
+      ssize_t entry_size = (ssize_t)(prefix.size() + key.size() + 1);
+      if(entry_size > size)
         return -ERANGE;
-      list += rv.size;
-      size -= rv.size;
+      memcpy(list, prefix.data(), prefix.size());
+      list += prefix.size();
+      memcpy(list, key.data(), key.size());
+      list += key.size();
+      *list++ = '\0';
+      size -= entry_size;
     }
 
   return (list - list_);
@@ -442,7 +403,6 @@ Config::set(const std::string &kv_)
 int
 Config::from_stream(std::istream &istrm_)
 {
-  int rv;
   std::string line;
   Config::ErrVec new_errs;
 
@@ -452,23 +412,21 @@ Config::from_stream(std::istream &istrm_)
       if(line.empty() || (line[0] == '#'))
         continue;
 
-      rv = set(line);
+      int rv = set(line);
       if(rv < 0)
         new_errs.push_back({-rv,line});
     }
 
-  rv = (new_errs.empty() ? 0 : -EINVAL);
   errs.insert(errs.end(),
               new_errs.begin(),
               new_errs.end());
 
-  return rv;
+  return (new_errs.empty() ? 0 : -EINVAL);
 }
 
 int
 Config::from_file(const std::string &filepath_)
 {
-  int rv;
   std::ifstream ifstrm;
 
   errno = 0;
@@ -480,11 +438,7 @@ Config::from_file(const std::string &filepath_)
       return -errno;
     }
 
-  rv = from_stream(ifstrm);
-
-  ifstrm.close();
-
-  return rv;
+  return from_stream(ifstrm);
 }
 
 void
@@ -517,10 +471,10 @@ Config::is_cmd_xattr(const std::string_view &attrname_)
   return nonstd::starts_with(attrname_,"user.mergerfs.cmd.");
 }
 
-std::string
-Config::prune_ctrl_xattr(const std::string &s_)
+std::string_view
+Config::prune_ctrl_xattr(const std::string_view s_)
 {
-  const size_t offset = (sizeof("user.mergerfs.") - 1);
+  constexpr size_t offset = (sizeof("user.mergerfs.") - 1);
 
   if(offset < s_.size())
     return s_.substr(offset);
