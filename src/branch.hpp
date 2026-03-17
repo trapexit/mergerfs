@@ -20,7 +20,6 @@
 
 #include "base_types.h"
 #include "strvec.hpp"
-#include "tofrom_string.hpp"
 #include "fs_path.hpp"
 
 #include <cstdint>
@@ -31,12 +30,11 @@
 #include <variant>
 
 
-class Branch final : public ToFromString
+class Branch final
 {
 public:
   enum class Mode
     {
-      INVALID,
       RO,
       RW,
       NC
@@ -61,8 +59,7 @@ public:
   bool ro_or_nc(void) const;
 
 public:
-  int from_string(const std::string_view str) final;
-  std::string to_string(void) const final;
+  std::string to_string(void) const;
 
 public:
   u64 minfreespace() const;

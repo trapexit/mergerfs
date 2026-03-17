@@ -367,6 +367,905 @@ test_config_branches()
   TEST_CHECK(b.from_string("./foo/bar:/bar/baz:blah/asdf") == 0);
 }
 
+// ---------------------------------------------------------------------------
+// Branch unit tests
+// ---------------------------------------------------------------------------
+
+void
+test_branch_default_ctor_mode()
+{
+  Branch b;
+
+  TEST_CHECK(b.mode == Branch::Mode::RW);
+}
+
+void
+test_branch_to_string_modes()
+{
+  uint64_t global = 0;
+  Branch b(global);
+
+  b.path = "/mnt/disk1";
+
+  b.mode = Branch::Mode::RW;
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW");
+
+  b.mode = Branch::Mode::RO;
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RO");
+
+  b.mode = Branch::Mode::NC;
+  TEST_CHECK(b.to_string() == "/mnt/disk1=NC");
+}
+
+void
+test_branch_to_string_with_minfreespace()
+{
+  uint64_t global = 0;
+  Branch b(global);
+
+  b.path = "/mnt/disk1";
+  b.mode = Branch::Mode::RW;
+
+  // While minfreespace is held by pointer (global default), it is NOT emitted
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW");
+
+  // Once set_minfreespace is called the value is stored locally and IS emitted
+  b.set_minfreespace(1024);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,1K");
+
+  b.set_minfreespace(1024 * 1024);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,1M");
+
+  b.set_minfreespace(1024 * 1024 * 1024);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,1G");
+
+  b.set_minfreespace(500);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,500");
+}
+
+void
+test_branch_mode_predicates()
+{
+  Branch b;
+
+  b.mode = Branch::Mode::RW;
+  TEST_CHECK(b.ro()       == false);
+  TEST_CHECK(b.nc()       == false);
+  TEST_CHECK(b.ro_or_nc() == false);
+
+  b.mode = Branch::Mode::RO;
+  TEST_CHECK(b.ro()       == true);
+  TEST_CHECK(b.nc()       == false);
+  TEST_CHECK(b.ro_or_nc() == true);
+
+  b.mode = Branch::Mode::NC;
+  TEST_CHECK(b.ro()       == false);
+  TEST_CHECK(b.nc()       == true);
+  TEST_CHECK(b.ro_or_nc() == true);
+}
+
+void
+test_branch_minfreespace_pointer_vs_value()
+{
+  uint64_t global = 9999;
+  Branch b(global);
+
+  // Reads through the pointer
+  TEST_CHECK(b.minfreespace() == 9999);
+
+  // Pointer tracks changes to the referenced global
+  global = 1234;
+  TEST_CHECK(b.minfreespace() == 1234);
+
+  // set_minfreespace switches variant to owned u64
+  b.set_minfreespace(42);
+  TEST_CHECK(b.minfreespace() == 42);
+
+  // Global changes no longer affect it
+  global = 9999;
+  TEST_CHECK(b.minfreespace() == 42);
+}
+
+void
+test_branch_copy_constructor()
+{
+  uint64_t global = 100;
+  Branch orig(global);
+  orig.path = "/orig";
+  orig.mode = Branch::Mode::RO;
+
+  Branch copy(orig);
+  TEST_CHECK(copy.path == "/orig");
+  TEST_CHECK(copy.mode == Branch::Mode::RO);
+  TEST_CHECK(copy.minfreespace() == 100);
+}
+
+void
+test_branch_copy_assignment()
+{
+  uint64_t global = 77;
+  Branch a(global);
+  a.path = "/a";
+  a.mode = Branch::Mode::NC;
+  a.set_minfreespace(555);
+
+  Branch b;
+  b = a;
+  TEST_CHECK(b.path == "/a");
+  TEST_CHECK(b.mode == Branch::Mode::NC);
+  TEST_CHECK(b.minfreespace() == 555);
+}
+
+// ---------------------------------------------------------------------------
+// Branches unit tests
+// ---------------------------------------------------------------------------
+
+void
+test_branches_default_minfreespace()
+{
+  Branches b;
+
+  // Default minfreespace propagates into each parsed branch
+  b.minfreespace = 8192;
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 8192);
+}
+
+void
+test_branches_per_branch_minfreespace_overrides_default()
+{
+  Branches b;
+  b.minfreespace = 1000;
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,2000") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 2000);
+  TEST_MSG("expected 2000, got %lu", (unsigned long)(*p)[0].minfreespace());
+}
+
+void
+test_branches_add_end_operator()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+  TEST_CHECK(b->size() == 1);
+
+  // + appends to end
+  TEST_CHECK(b.from_string("+/tmp/b") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 2);
+  TEST_CHECK((*p)[0].path == "/tmp/a");
+  TEST_CHECK((*p)[1].path == "/tmp/b");
+
+  // +> also appends to end
+  TEST_CHECK(b.from_string("+>/tmp/c") == 0);
+  p = b;
+  TEST_CHECK((*p).size() == 3);
+  TEST_CHECK((*p)[2].path == "/tmp/c");
+}
+
+void
+test_branches_add_begin_operator()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+  TEST_CHECK(b.from_string("+</tmp/b") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 2);
+  TEST_CHECK((*p)[0].path == "/tmp/b");
+  TEST_CHECK((*p)[1].path == "/tmp/a");
+}
+
+void
+test_branches_set_operator()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b") == 0);
+  TEST_CHECK(b->size() == 2);
+
+  // = replaces the whole list
+  TEST_CHECK(b.from_string("=/tmp/c") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 1);
+  TEST_CHECK((*p)[0].path == "/tmp/c");
+}
+
+void
+test_branches_erase_end_operator()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b:/tmp/c") == 0);
+  TEST_CHECK(b.from_string("->") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 2);
+  TEST_CHECK((*p).back().path == "/tmp/b");
+}
+
+void
+test_branches_erase_begin_operator()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b:/tmp/c") == 0);
+  TEST_CHECK(b.from_string("-<") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 2);
+  TEST_CHECK((*p).front().path == "/tmp/b");
+}
+
+void
+test_branches_erase_fnmatch_operator()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/disk1:/tmp/disk2:/mnt/ssd") == 0);
+
+  // Remove branches matching /tmp/*
+  TEST_CHECK(b.from_string("-/tmp/*") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 1);
+  TEST_CHECK((*p)[0].path == "/mnt/ssd");
+}
+
+void
+test_branches_erase_fnmatch_multiple_patterns()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b:/mnt/c:/mnt/d") == 0);
+  TEST_CHECK(b.from_string("-/tmp/a:/mnt/d") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 2);
+  TEST_CHECK((*p)[0].path == "/tmp/b");
+  TEST_CHECK((*p)[1].path == "/mnt/c");
+}
+
+void
+test_branches_invalid_mode()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=XX") == -EINVAL);
+}
+
+void
+test_branches_invalid_minfreespace()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,notanumber") == -EINVAL);
+}
+
+void
+test_branches_to_paths()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b:/tmp/c") == 0);
+  Branches::Ptr p = b;
+
+  std::vector<fs::path> paths = (*p).to_paths();
+  TEST_CHECK(paths.size() == 3);
+  TEST_CHECK(paths[0] == "/tmp/a");
+  TEST_CHECK(paths[1] == "/tmp/b");
+  TEST_CHECK(paths[2] == "/tmp/c");
+
+  StrVec sv;
+  (*p).to_paths(sv);
+  TEST_CHECK(sv.size() == 3);
+  TEST_CHECK(sv[0] == "/tmp/a");
+  TEST_CHECK(sv[1] == "/tmp/b");
+  TEST_CHECK(sv[2] == "/tmp/c");
+}
+
+void
+test_branches_cow_semantics()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+  Branches::Ptr snap0 = b;
+
+  TEST_CHECK(b.from_string("+/tmp/b") == 0);
+  Branches::Ptr snap1 = b;
+
+  // Each mutation produces a new Impl pointer
+  TEST_CHECK(snap0.get() != snap1.get());
+
+  // snap0 is unchanged
+  TEST_CHECK((*snap0).size() == 1);
+  TEST_CHECK((*snap1).size() == 2);
+}
+
+void
+test_branches_mode_round_trip()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=RO:/tmp/b=NC:/tmp/c=RW") == 0);
+  TEST_CHECK(b.to_string() == "/tmp/a=RO:/tmp/b=NC:/tmp/c=RW");
+
+  Branches::Ptr p = b;
+  TEST_CHECK((*p)[0].mode == Branch::Mode::RO);
+  TEST_CHECK((*p)[1].mode == Branch::Mode::NC);
+  TEST_CHECK((*p)[2].mode == Branch::Mode::RW);
+}
+
+void
+test_branches_srcmounts_to_string()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=RO,1234:/tmp/b=NC") == 0);
+
+  SrcMounts sm(b);
+  // SrcMounts::to_string emits only paths, no mode or minfreespace
+  TEST_CHECK(sm.to_string() == "/tmp/a:/tmp/b");
+}
+
+void
+test_branches_srcmounts_empty()
+{
+  Branches b;
+  SrcMounts sm(b);
+
+  TEST_CHECK(sm.to_string() == "");
+}
+
+// ---------------------------------------------------------------------------
+// Branch::to_string humanization edge cases
+// ---------------------------------------------------------------------------
+
+void
+test_branch_to_string_1t()
+{
+  uint64_t global = 0;
+  Branch b(global);
+  b.path = "/mnt/disk1";
+  b.mode = Branch::Mode::RW;
+
+  b.set_minfreespace(1024ULL * 1024 * 1024 * 1024);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,1T");
+
+  b.set_minfreespace(2ULL * 1024 * 1024 * 1024 * 1024);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,2T");
+}
+
+void
+test_branch_to_string_non_exact_multiple()
+{
+  // 1536 = 1.5K: not divisible by any tier, emitted as raw decimal
+  uint64_t global = 0;
+  Branch b(global);
+  b.path = "/mnt/disk1";
+  b.mode = Branch::Mode::RW;
+
+  b.set_minfreespace(1536);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,1536");
+
+  // 1537 also not exact
+  b.set_minfreespace(1537);
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,1537");
+}
+
+void
+test_branch_to_string_zero_owned_minfreespace()
+{
+  // Default Branch() holds u64(0) in variant — to_string WILL emit ",0"
+  Branch b;
+  b.path = "/mnt/disk1";
+  b.mode = Branch::Mode::RW;
+
+  TEST_CHECK(b.to_string() == "/mnt/disk1=RW,0");
+}
+
+void
+test_branch_copy_pointer_aliasing()
+{
+  // A copy of a pointer-backed Branch shares the same pointer —
+  // mutating the original global value is seen by both.
+  uint64_t global = 1024;
+  Branch orig(global);
+  orig.path = "/mnt/a";
+  orig.mode = Branch::Mode::RW;
+
+  Branch copy = orig;
+
+  TEST_CHECK(orig.minfreespace() == 1024);
+  TEST_CHECK(copy.minfreespace() == 1024);
+
+  // Both see the updated value through the shared pointer
+  global = 2048;
+  TEST_CHECK(orig.minfreespace() == 2048);
+  TEST_CHECK(copy.minfreespace() == 2048);
+}
+
+// ---------------------------------------------------------------------------
+// parse_mode: case-sensitivity
+// ---------------------------------------------------------------------------
+
+void
+test_branches_mode_case_sensitivity()
+{
+  Branches b;
+
+  // Only exact uppercase is accepted
+  TEST_CHECK(b.from_string("/tmp/a=rw") == -EINVAL);
+  TEST_CHECK(b.from_string("/tmp/a=ro") == -EINVAL);
+  TEST_CHECK(b.from_string("/tmp/a=nc") == -EINVAL);
+  TEST_CHECK(b.from_string("/tmp/a=Rw") == -EINVAL);
+  TEST_CHECK(b.from_string("/tmp/a=RW") == 0);
+}
+
+// ---------------------------------------------------------------------------
+// parse_minfreespace: suffix variants
+// ---------------------------------------------------------------------------
+
+void
+test_branches_minfreespace_lowercase_suffixes()
+{
+  Branches b;
+  Branches::Ptr p;
+
+  // Lowercase k/m/g/t must be accepted and multiply correctly
+  TEST_CHECK(b.from_string("/tmp/a=RW,1k") == 0);
+  p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL);
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,1m") == 0);
+  p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL * 1024);
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,1g") == 0);
+  p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL * 1024 * 1024);
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,1t") == 0);
+  p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL * 1024 * 1024 * 1024);
+}
+
+void
+test_branches_minfreespace_bytes_suffix()
+{
+  Branches b;
+  Branches::Ptr p;
+
+  // 'B' / 'b' suffix means bytes (no multiplication)
+  TEST_CHECK(b.from_string("/tmp/a=RW,1024B") == 0);
+  p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL);
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,1024b") == 0);
+  p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL);
+}
+
+void
+test_branches_minfreespace_zero()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,0") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 0ULL);
+  // to_string should reproduce the zero
+  TEST_CHECK(p->to_string() == "/tmp/a=RW,0");
+}
+
+void
+test_branches_minfreespace_negative_invalid()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,-1") == -EINVAL);
+}
+
+void
+test_branches_minfreespace_overflow()
+{
+  Branches b;
+
+  // 16777216T overflows u64 (16777216 * 2^40 > 2^64-1)
+  TEST_CHECK(b.from_string("/tmp/a=RW,16777216T") == -EOVERFLOW);
+}
+
+// ---------------------------------------------------------------------------
+// Minfreespace round-trip through Branches
+// ---------------------------------------------------------------------------
+
+void
+test_branches_minfreespace_round_trip()
+{
+  Branches b;
+
+  // Parse 1K — should store 1024, to_string should emit "1K"
+  TEST_CHECK(b.from_string("/tmp/a=RW,1K") == 0);
+  {
+    Branches::Ptr p = b;
+    TEST_CHECK((*p)[0].minfreespace() == 1024ULL);
+    TEST_CHECK(p->to_string() == "/tmp/a=RW,1K");
+
+    // Re-parsing the output should produce the same state
+    TEST_CHECK(b.from_string(p->to_string()) == 0);
+  }
+  {
+    Branches::Ptr p = b;
+    TEST_CHECK((*p)[0].minfreespace() == 1024ULL);
+  }
+}
+
+void
+test_branches_minfreespace_round_trip_1t()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a=RW,1T") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p)[0].minfreespace() == 1024ULL * 1024 * 1024 * 1024);
+  TEST_CHECK(p->to_string() == "/tmp/a=RW,1T");
+}
+
+// ---------------------------------------------------------------------------
+// Instruction dispatch edge cases
+// ---------------------------------------------------------------------------
+
+void
+test_branches_clear_with_equals_alone()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b") == 0);
+  TEST_CHECK(b->size() == 2);
+
+  // "=" alone clears the list
+  TEST_CHECK(b.from_string("=") == 0);
+  TEST_CHECK(b->empty());
+}
+
+void
+test_branches_empty_string_clears_same_as_equals()
+{
+  // "" and "=" both dispatch to l::set — should produce identical result
+  Branches b1, b2;
+
+  TEST_CHECK(b1.from_string("/tmp/a") == 0);
+  TEST_CHECK(b2.from_string("/tmp/a") == 0);
+
+  TEST_CHECK(b1.from_string("=") == 0);
+  TEST_CHECK(b2.from_string("") == 0);
+
+  TEST_CHECK(b1->empty());
+  TEST_CHECK(b2->empty());
+}
+
+void
+test_branches_plus_and_plus_greater_equivalent()
+{
+  // "+" and "+>" both dispatch to l::add_end
+  Branches b1, b2;
+
+  TEST_CHECK(b1.from_string("/tmp/a") == 0);
+  TEST_CHECK(b2.from_string("/tmp/a") == 0);
+
+  TEST_CHECK(b1.from_string("+/tmp/b") == 0);
+  TEST_CHECK(b2.from_string("+>/tmp/b") == 0);
+
+  TEST_CHECK(b1->to_string() == b2->to_string());
+}
+
+void
+test_branches_unknown_instruction_einval()
+{
+  Branches b;
+
+  // "++" is not a recognized instruction
+  TEST_CHECK(b.from_string("++-/tmp/a") == -EINVAL);
+
+  // "+-" is not recognized either
+  TEST_CHECK(b.from_string("+-/tmp/a") == -EINVAL);
+}
+
+// ---------------------------------------------------------------------------
+// parse_branch edge cases
+// ---------------------------------------------------------------------------
+
+void
+test_branches_empty_options_after_equals_einval()
+{
+  Branches b;
+
+  // "/tmp/a=" — empty options field (no mode) is invalid
+  TEST_CHECK(b.from_string("/tmp/a=") == -EINVAL);
+}
+
+void
+test_branches_path_with_equals_in_name()
+{
+  Branches b;
+
+  // rsplit1 splits on the LAST '=' so "/path/with=sign=RW" works
+  TEST_CHECK(b.from_string("/tmp/with=equals=RW") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p)[0].path == "/tmp/with=equals");
+  TEST_CHECK((*p)[0].mode == Branch::Mode::RW);
+}
+
+// ---------------------------------------------------------------------------
+// add_begin / add_end with multiple colon-separated paths
+// ---------------------------------------------------------------------------
+
+void
+test_branches_add_end_multiple_paths()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+
+  // "+>" with two paths should append both in order
+  TEST_CHECK(b.from_string("+>/tmp/b:/tmp/c") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 3);
+  TEST_CHECK((*p)[0].path == "/tmp/a");
+  TEST_CHECK((*p)[1].path == "/tmp/b");
+  TEST_CHECK((*p)[2].path == "/tmp/c");
+}
+
+void
+test_branches_add_begin_multiple_paths()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+
+  // "+<" with two paths should prepend both in order
+  TEST_CHECK(b.from_string("+</tmp/b:/tmp/c") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 3);
+  TEST_CHECK((*p)[0].path == "/tmp/b");
+  TEST_CHECK((*p)[1].path == "/tmp/c");
+  TEST_CHECK((*p)[2].path == "/tmp/a");
+}
+
+// ---------------------------------------------------------------------------
+// erase_fnmatch edge cases
+// ---------------------------------------------------------------------------
+
+void
+test_branches_erase_empty_pattern_noop()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b") == 0);
+
+  // "-" alone (empty pattern) — no-op, list unchanged
+  TEST_CHECK(b.from_string("-") == 0);
+  TEST_CHECK(b->size() == 2);
+}
+
+void
+test_branches_erase_wildcard_removes_all()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b:/tmp/c") == 0);
+
+  // "-*" — '*' matches everything (no FNM_PATHNAME, so '*' matches '/')
+  TEST_CHECK(b.from_string("-*") == 0);
+  TEST_CHECK(b->empty());
+}
+
+void
+test_branches_erase_nonmatching_pattern_noop()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b") == 0);
+
+  // Pattern that matches nothing — list unchanged
+  TEST_CHECK(b.from_string("-/mnt/*") == 0);
+  TEST_CHECK(b->size() == 2);
+}
+
+void
+test_branches_erase_multi_pattern_first_miss_second_hit()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/mnt/b") == 0);
+
+  // First pattern matches nothing, second matches /mnt/b
+  TEST_CHECK(b.from_string("-/nonexist/*:/mnt/*") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 1);
+  TEST_CHECK((*p)[0].path == "/tmp/a");
+}
+
+// ---------------------------------------------------------------------------
+// erase_begin / erase_end on single-element list
+// ---------------------------------------------------------------------------
+
+void
+test_branches_erase_end_single_element()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+  TEST_CHECK(b.from_string("->") == 0);
+  TEST_CHECK(b->empty());
+}
+
+void
+test_branches_erase_begin_single_element()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+  TEST_CHECK(b.from_string("-<") == 0);
+  TEST_CHECK(b->empty());
+}
+
+void
+test_branches_erase_end_empty_returns_enoent()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("->") == -ENOENT);
+  TEST_CHECK(b->empty());
+}
+
+void
+test_branches_erase_begin_empty_returns_enoent()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("-<") == -ENOENT);
+  TEST_CHECK(b->empty());
+}
+
+// ---------------------------------------------------------------------------
+// Operation sequences
+// ---------------------------------------------------------------------------
+
+void
+test_branches_clear_then_add()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b") == 0);
+  TEST_CHECK(b.from_string("=") == 0);
+  TEST_CHECK(b->empty());
+
+  TEST_CHECK(b.from_string("+/tmp/c") == 0);
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 1);
+  TEST_CHECK((*p)[0].path == "/tmp/c");
+}
+
+void
+test_branches_add_begin_then_end_then_erase_both()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/b") == 0);
+  TEST_CHECK(b.from_string("+</tmp/a") == 0);  // prepend
+  TEST_CHECK(b.from_string("+>/tmp/c") == 0);  // append
+  {
+    Branches::Ptr p = b;
+    TEST_CHECK((*p).size() == 3);
+    TEST_CHECK((*p)[0].path == "/tmp/a");
+    TEST_CHECK((*p)[1].path == "/tmp/b");
+    TEST_CHECK((*p)[2].path == "/tmp/c");
+  }
+
+  TEST_CHECK(b.from_string("-<") == 0);  // remove first
+  TEST_CHECK(b.from_string("->") == 0);  // remove last
+  {
+    Branches::Ptr p = b;
+    TEST_CHECK((*p).size() == 1);
+    TEST_CHECK((*p)[0].path == "/tmp/b");
+  }
+}
+
+void
+test_branches_error_in_multipath_add_leaves_list_unchanged()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+
+  // Second path has invalid mode — the whole add should fail atomically
+  TEST_CHECK(b.from_string("+/tmp/b:/tmp/c=XX") == -EINVAL);
+
+  // Original list unchanged
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 1);
+  TEST_CHECK((*p)[0].path == "/tmp/a");
+}
+
+void
+test_branches_error_in_set_leaves_list_unchanged()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+
+  // Invalid set — list should be unchanged
+  TEST_CHECK(b.from_string("=/tmp/b=BADMODE") == -EINVAL);
+
+  Branches::Ptr p = b;
+  TEST_CHECK((*p).size() == 1);
+  TEST_CHECK((*p)[0].path == "/tmp/a");
+}
+
+// ---------------------------------------------------------------------------
+// Branches::minfreespace live tracking
+// ---------------------------------------------------------------------------
+
+void
+test_branches_global_minfreespace_live_tracking()
+{
+  Branches b;
+
+  b.from_string("/tmp/a");
+
+  // Branch uses pointer to Branches::minfreespace — tracks it live
+  uint64_t initial = b.minfreespace;
+  {
+    Branches::Ptr p = b;
+    TEST_CHECK((*p)[0].minfreespace() == initial);
+  }
+
+  b.minfreespace = 999999;
+  {
+    Branches::Ptr p = b;
+    TEST_CHECK((*p)[0].minfreespace() == 999999);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SrcMounts: from_string stub and live reflection of Branches mutations
+// ---------------------------------------------------------------------------
+
+void
+test_branches_srcmounts_from_string_noop()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a:/tmp/b") == 0);
+
+  SrcMounts sm(b);
+
+  // from_string on SrcMounts is a no-op stub — always returns 0, no change
+  TEST_CHECK(sm.from_string("/tmp/c:/tmp/d") == 0);
+
+  // Branches should be unchanged (still /tmp/a:/tmp/b)
+  TEST_CHECK(sm.to_string() == "/tmp/a:/tmp/b");
+}
+
+void
+test_branches_srcmounts_reflects_mutations()
+{
+  Branches b;
+
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
+
+  SrcMounts sm(b);
+  TEST_CHECK(sm.to_string() == "/tmp/a");
+
+  // Mutate Branches; SrcMounts::to_string should reflect the new state
+  TEST_CHECK(b.from_string("+/tmp/b") == 0);
+  TEST_CHECK(sm.to_string() == "/tmp/a:/tmp/b");
+
+  TEST_CHECK(b.from_string("->") == 0);
+  TEST_CHECK(sm.to_string() == "/tmp/a");
+}
+
 void
 test_config_cachefiles()
 {
@@ -1943,6 +2842,64 @@ TEST_LIST =
    {"config_int",test_config_int},
    {"config_str",test_config_str},
    {"config_branches",test_config_branches},
+   {"branch_default_ctor_mode",test_branch_default_ctor_mode},
+   {"branch_to_string_modes",test_branch_to_string_modes},
+   {"branch_to_string_with_minfreespace",test_branch_to_string_with_minfreespace},
+   {"branch_mode_predicates",test_branch_mode_predicates},
+   {"branch_minfreespace_pointer_vs_value",test_branch_minfreespace_pointer_vs_value},
+   {"branch_copy_constructor",test_branch_copy_constructor},
+   {"branch_copy_assignment",test_branch_copy_assignment},
+   {"branches_default_minfreespace",test_branches_default_minfreespace},
+   {"branches_per_branch_minfreespace_overrides_default",test_branches_per_branch_minfreespace_overrides_default},
+   {"branches_add_end_operator",test_branches_add_end_operator},
+   {"branches_add_begin_operator",test_branches_add_begin_operator},
+   {"branches_set_operator",test_branches_set_operator},
+   {"branches_erase_end_operator",test_branches_erase_end_operator},
+   {"branches_erase_begin_operator",test_branches_erase_begin_operator},
+   {"branches_erase_fnmatch_operator",test_branches_erase_fnmatch_operator},
+   {"branches_erase_fnmatch_multiple_patterns",test_branches_erase_fnmatch_multiple_patterns},
+   {"branches_invalid_mode",test_branches_invalid_mode},
+   {"branches_invalid_minfreespace",test_branches_invalid_minfreespace},
+   {"branches_to_paths",test_branches_to_paths},
+   {"branches_cow_semantics",test_branches_cow_semantics},
+   {"branches_mode_round_trip",test_branches_mode_round_trip},
+   {"branches_srcmounts_to_string",test_branches_srcmounts_to_string},
+   {"branches_srcmounts_empty",test_branches_srcmounts_empty},
+   {"branch_to_string_1t",test_branch_to_string_1t},
+   {"branch_to_string_non_exact_multiple",test_branch_to_string_non_exact_multiple},
+   {"branch_to_string_zero_owned_minfreespace",test_branch_to_string_zero_owned_minfreespace},
+   {"branch_copy_pointer_aliasing",test_branch_copy_pointer_aliasing},
+   {"branches_mode_case_sensitivity",test_branches_mode_case_sensitivity},
+   {"branches_minfreespace_lowercase_suffixes",test_branches_minfreespace_lowercase_suffixes},
+   {"branches_minfreespace_bytes_suffix",test_branches_minfreespace_bytes_suffix},
+   {"branches_minfreespace_zero",test_branches_minfreespace_zero},
+   {"branches_minfreespace_negative_invalid",test_branches_minfreespace_negative_invalid},
+   {"branches_minfreespace_overflow",test_branches_minfreespace_overflow},
+   {"branches_minfreespace_round_trip",test_branches_minfreespace_round_trip},
+   {"branches_minfreespace_round_trip_1t",test_branches_minfreespace_round_trip_1t},
+   {"branches_clear_with_equals_alone",test_branches_clear_with_equals_alone},
+   {"branches_empty_string_clears_same_as_equals",test_branches_empty_string_clears_same_as_equals},
+   {"branches_plus_and_plus_greater_equivalent",test_branches_plus_and_plus_greater_equivalent},
+   {"branches_unknown_instruction_einval",test_branches_unknown_instruction_einval},
+   {"branches_empty_options_after_equals_einval",test_branches_empty_options_after_equals_einval},
+   {"branches_path_with_equals_in_name",test_branches_path_with_equals_in_name},
+   {"branches_add_end_multiple_paths",test_branches_add_end_multiple_paths},
+   {"branches_add_begin_multiple_paths",test_branches_add_begin_multiple_paths},
+   {"branches_erase_empty_pattern_noop",test_branches_erase_empty_pattern_noop},
+   {"branches_erase_wildcard_removes_all",test_branches_erase_wildcard_removes_all},
+   {"branches_erase_nonmatching_pattern_noop",test_branches_erase_nonmatching_pattern_noop},
+   {"branches_erase_multi_pattern_first_miss_second_hit",test_branches_erase_multi_pattern_first_miss_second_hit},
+   {"branches_erase_end_single_element",test_branches_erase_end_single_element},
+   {"branches_erase_begin_single_element",test_branches_erase_begin_single_element},
+   {"branches_erase_end_empty_returns_enoent",test_branches_erase_end_empty_returns_enoent},
+   {"branches_erase_begin_empty_returns_enoent",test_branches_erase_begin_empty_returns_enoent},
+   {"branches_clear_then_add",test_branches_clear_then_add},
+   {"branches_add_begin_then_end_then_erase_both",test_branches_add_begin_then_end_then_erase_both},
+   {"branches_error_in_multipath_add_leaves_list_unchanged",test_branches_error_in_multipath_add_leaves_list_unchanged},
+   {"branches_error_in_set_leaves_list_unchanged",test_branches_error_in_set_leaves_list_unchanged},
+   {"branches_global_minfreespace_live_tracking",test_branches_global_minfreespace_live_tracking},
+   {"branches_srcmounts_from_string_noop",test_branches_srcmounts_from_string_noop},
+   {"branches_srcmounts_reflects_mutations",test_branches_srcmounts_reflects_mutations},
    {"config_cachefiles",test_config_cachefiles},
    {"config_inodecalc",test_config_inodecalc},
    {"config_moveonenospc",test_config_moveonenospc},

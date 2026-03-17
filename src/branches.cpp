@@ -82,7 +82,10 @@ namespace l
 
     offset = s_.find_first_not_of("+<>-=");
     if(offset == std::string::npos)
-      return;
+      {
+        *instr_ = s_.substr(0, std::min(s_.size(), (size_t)2));
+        return;
+      }
 
     if(offset > 1)
       offset = 2;
@@ -293,6 +296,9 @@ namespace l
   int
   erase_begin(Branches::Impl *branches_)
   {
+    if(branches_->empty())
+      return -ENOENT;
+
     branches_->erase(branches_->begin());
 
     return 0;
@@ -302,6 +308,9 @@ namespace l
   int
   erase_end(Branches::Impl *branches_)
   {
+    if(branches_->empty())
+      return -ENOENT;
+
     branches_->pop_back();
 
     return 0;
