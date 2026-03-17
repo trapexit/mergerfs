@@ -17,11 +17,10 @@
 */
 
 #include "branch.hpp"
-#include "ef.hpp"
-#include "errno.hpp"
 #include "num.hpp"
 
 Branch::Branch()
+  : mode(Branch::Mode::RW)
 {
 }
 
@@ -35,12 +34,6 @@ Branch::Branch(const Branch &branch_)
 Branch::Branch(const u64 &default_minfreespace_)
   : _minfreespace(&default_minfreespace_)
 {
-}
-
-int
-Branch::from_string(const std::string_view str_)
-{
-  return -EINVAL;
 }
 
 std::string
@@ -63,7 +56,6 @@ Branch::to_string(void) const
       rv += "NC";
       break;
     }
-
 
   if(std::holds_alternative<u64>(_minfreespace))
     {
