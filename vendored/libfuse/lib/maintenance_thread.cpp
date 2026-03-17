@@ -1,10 +1,8 @@
 #include "maintenance_thread.hpp"
 
+#include "fatal.hpp"
 #include "mutex.hpp"
 
-#include "fmt/core.h"
-
-#include <cassert>
 #include <vector>
 
 #include <pthread.h>
@@ -46,7 +44,8 @@ MaintenanceThread::setup()
   int rv;
 
   rv = pthread_create(&g_thread,NULL,_thread_loop,NULL);
-  assert((rv == 0) && "pthread_create failed");
+  if(rv != 0)
+    fatal::abort("pthread_create failed: rv={}",rv);
 }
 
 void

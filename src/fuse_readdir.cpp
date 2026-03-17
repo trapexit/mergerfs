@@ -21,6 +21,7 @@
 #include "fuse_readdir_factory.hpp"
 
 #include "dirinfo.hpp"
+#include "fatal.hpp"
 #include "fuse_dirents.hpp"
 
 #include "config.hpp"
@@ -108,7 +109,8 @@ FUSE::ReadDir::operator()(const fuse_req_ctx_t   *ctx_,
   std::shared_ptr<FUSE::ReadDirBase> readdir;
 
   readdir = std::atomic_load(&_impl);
-  assert(readdir);
+  if(!readdir)
+    fatal::abort("readdir impl is null");
 
   rv = (*readdir)(ctx_,ffi_,buf_);
   if(rv == -ENOENT)
