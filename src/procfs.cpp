@@ -22,47 +22,56 @@
 
 #include "procfs.hpp"
 
-#include "errno.hpp"
+#include "fatal.hpp"
 #include "fs_close.hpp"
 #include "fs_open.hpp"
 #include "fs_openat.hpp"
 #include "fs_read.hpp"
 
 #include "fmt/core.h"
+#include "scope_guard.hpp"
 
 #include <array>
-#include <cassert>
-
-#include <pthread.h>
+#include <cstring>
 
 static int g_PROCFS_DIR_FD = -1;
 namespace procfs { int PROC_SELF_FD_FD = -1; }
 static constexpr const char PROCFS_PATH[] = "/proc";
 
-int
+void
 procfs::init()
 {
-  int rv;
-
   if(g_PROCFS_DIR_FD >= 0)
-    return 0;
+    return;
 
-  rv = fs::open(PROCFS_PATH,O_PATH|O_DIRECTORY);
-  if(rv < 0)
-    return rv;
-
-  g_PROCFS_DIR_FD = rv;
+  g_PROCFS_DIR_FD = fs::open(PROCFS_PATH,O_PATH|O_DIRECTORY);
+  if(g_PROCFS_DIR_FD < 0)
+    fatal::abort("failed to open {}: {}",PROCFS_PATH,strerror(-g_PROCFS_DIR_FD));
 
 #if defined(__linux__)
-// This is critical to the function of the app. abort if failed to
-// open.
   static constexpr const char PROC_SELF_FD[] = "/proc/self/fd";
 
   procfs::PROC_SELF_FD_FD = fs::open(PROC_SELF_FD,O_PATH|O_DIRECTORY);
-  assert(procfs::PROC_SELF_FD_FD >= 0);
+  if(procfs::PROC_SELF_FD_FD < 0)
+    fatal::abort("failed to open /proc/self/fd: {}",strerror(-procfs::PROC_SELF_FD_FD));
 #endif
+}
 
-  return 0;
+void
+procfs::shutdown()
+{
+  if(g_PROCFS_DIR_FD >= 0)
+    {
+      fs::close(g_PROCFS_DIR_FD);
+      g_PROCFS_DIR_FD = -1;
+    }
+#if defined(__linux__)
+  if(procfs::PROC_SELF_FD_FD >= 0)
+    {
+      fs::close(procfs::PROC_SELF_FD_FD);
+      procfs::PROC_SELF_FD_FD = -1;
+    }
+#endif
 }
 
 std::string
@@ -73,21 +82,26 @@ procfs::get_name(const int tid_)
   std::array<char,256> commpath;
   fmt::format_to_n_result<char*> frv;
 
+  if(g_PROCFS_DIR_FD < 0)
+    fatal::abort("procfs::get_name called before procfs::init()");
+
+  // Reserve 1 byte for the NUL terminator that format_to_n does not write.
   frv = fmt::format_to_n(commpath.data(),commpath.size()-1,"{}/comm",tid_);
   frv.out[0] = '\0';
 
   fd = fs::openat(g_PROCFS_DIR_FD,commpath.data(),O_RDONLY);
   if(fd < 0)
     return {};
+  DEFER { fs::close(fd); };
 
-  rv = fs::read(fd,commpath.data(),commpath.size());
-  if(rv < 0)
+  rv = fs::read(fd,commpath.data(),commpath.size()-1);
+  if(rv <= 0)
     return {};
 
-  // Overwrite the newline with NUL
-  commpath[rv-1] = '\0';
-
-  fs::close(fd);
+  if(commpath[rv-1] == '\n')
+    commpath[rv-1] = '\0';
+  else
+    commpath[rv] = '\0';
 
   return commpath.data();
 }
