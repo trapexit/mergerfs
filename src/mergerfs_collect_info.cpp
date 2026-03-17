@@ -25,7 +25,7 @@
 #include "CLI11/CLI11.hpp"
 #include "fmt/core.h"
 #include "fmt/ranges.h"
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 #include "subprocess/subprocess.hpp"
 
 #include <stdio.h>

@@ -6,7 +6,7 @@
 #include "mutex_ndebug.hpp"
 #endif
 
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 typedef pthread_mutex_t mutex_t;
 

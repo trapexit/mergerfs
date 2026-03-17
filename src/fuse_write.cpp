@@ -28,7 +28,7 @@
 #include "fs_pwriten.hpp"
 #include "ioprio.hpp"
 
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 #include "fuse.h"
 

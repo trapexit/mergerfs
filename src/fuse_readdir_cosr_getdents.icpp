@@ -27,7 +27,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "ugid.hpp"
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 #include "fuse_msgbuf.hpp"
 #include "fuse_dirents.hpp"

@@ -25,7 +25,7 @@
 #include "fs_inode.hpp"
 #include "fs_open.hpp"
 #include "hashset.hpp"
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 #include "fuse_dirents.hpp"
 #include "fuse_msgbuf.hpp"
