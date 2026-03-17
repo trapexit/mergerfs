@@ -29,7 +29,7 @@
 #include "fs_read.hpp"
 
 #include "fmt/core.h"
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 #include <array>
 #include <cstring>

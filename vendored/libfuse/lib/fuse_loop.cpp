@@ -5,7 +5,7 @@
 #include "cpu.hpp"
 #include "pin_threads.hpp"
 #include "fmt/core.h"
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 #include "thread_pool.hpp"
 #include "syslog.hpp"
 #include "maintenance_thread.hpp"

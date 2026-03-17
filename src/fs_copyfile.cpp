@@ -34,7 +34,7 @@
 #include "fs_unlink.hpp"
 #include "fs_xattr.hpp"
 
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 #include <fcntl.h>
 #include <signal.h>

@@ -23,7 +23,7 @@
 #include "fs_lgetxattr.hpp"
 #include "str.hpp"
 
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 #include <array>
 #include <cstring>

@@ -36,7 +36,7 @@
 #include "fs_fchmod.hpp"
 #include "fs_futimens.hpp"
 
-#include "scope_guard.hpp"
+#include "scope_guard/scope_guard.hpp"
 
 
 static
