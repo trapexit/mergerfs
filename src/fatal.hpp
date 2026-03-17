@@ -18,13 +18,23 @@
 
 #pragma once
 
-#include <string>
+#include "syslog.hpp"
 
-namespace procfs
+#include "fmt/core.h"
+
+#include <cstdlib>
+
+namespace fatal
 {
-  extern int PROC_SELF_FD_FD;
-
-  void init();
-  void shutdown();
-  std::string get_name(const int tid);
+  template<typename... Args>
+  [[noreturn]]
+  void
+  abort(fmt::format_string<Args...> format_,
+        Args&&... args_)
+  {
+    auto msg = fmt::format(format_,std::forward<Args>(args_)...);
+    fmt::println(stderr,"mergerfs: FATAL - {}",msg);
+    SysLog::crit("{}",msg);
+    std::abort();
+  }
 }
