@@ -13,6 +13,8 @@
 #include "mutex.hpp"
 
 #include "debug.hpp"
+#include "fatal.hpp"
+#include "fmt/core.h"
 #include "fuse_cfg.hpp"
 #include "fuse_i.h"
 #include "fuse_kernel.h"
@@ -20,7 +22,6 @@
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "stat_utils.h"
-#include "fmt/core.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,8 +63,9 @@ void
 fuse_ll_constructor(void)
 {
   pagesize = sysconf(_SC_PAGESIZE);
+  if(pagesize <= 0)
+    fatal::abort("pagesize query failed - {}",strerror(errno));
 }
-
 
 static
 void
