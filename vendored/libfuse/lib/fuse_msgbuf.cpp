@@ -32,7 +32,8 @@
 static u32 g_pagesize = 0;
 static u64 g_bufsize  = 0;
 
-/* Extra pages: 1 for page-alignment headroom, 1 for fuse_in_header+fuse_write_in alignment */
+/* Extra pages: 1 for page-alignment headroom, 1 for
+   fuse_in_header+fuse_write_in alignment */
 #define MSGBUF_OVERHEAD_PAGES 2
 
 static
