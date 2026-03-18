@@ -18,6 +18,7 @@
 
 #include "config_pagesize.hpp"
 
+#include "fatal.hpp"
 #include "from_string.hpp"
 
 #include <cassert>
@@ -58,10 +59,7 @@ ConfigPageSize::from_string(const std::string_view s_)
 
   tmp = sysconf(_SC_PAGESIZE);
   if(tmp <= 0)
-    {
-      perror("mergerfs: pagesize query failed");
-      std::abort();
-    }
+    fatal::abort("pagesize query failed - {}",strerror(errno));
 
   pagesize = (u64)tmp;
 

@@ -17,11 +17,10 @@
 
 #include "fuse_msgbuf.hpp"
 
+#include "fatal.hpp"
 #include "fuse.h"
 #include "fuse_kernel.h"
 #include "objpool.hpp"
-
-#include "fmt/core.h"
 
 #include <unistd.h>
 
@@ -34,7 +33,7 @@ static u64 g_bufsize  = 0;
 
 /* Extra pages: 1 for page-alignment headroom, 1 for
    fuse_in_header+fuse_write_in alignment */
-#define MSGBUF_OVERHEAD_PAGES 2
+static constexpr u64 MSGBUF_OVERHEAD_PAGES = 2ULL;
 
 static
 __attribute__((constructor))
@@ -43,7 +42,9 @@ _constructor()
 {
   long pagesize = sysconf(_SC_PAGESIZE);
 
-  assert(pagesize > 0);
+  if(pagesize <= 0)
+    fatal::abort("pagesize query failed - {}",strerror(errno));
+
   g_pagesize = pagesize;
 
   assert((sizeof(struct fuse_in_header) + sizeof(struct fuse_write_in))
@@ -57,9 +58,9 @@ struct PageAlignedAllocator
   void*
   allocate(size_t size_, size_t align_)
   {
-    void *buf = NULL;
+    void *buf = nullptr;
     int rv = posix_memalign(&buf, align_, size_);
-    return (rv == 0) ? buf : NULL;
+    return (rv == 0) ? buf : nullptr;
   }
 
   void
@@ -131,6 +132,9 @@ msgbuf_alloc_page_aligned()
 void
 msgbuf_free(fuse_msgbuf_t *msgbuf_)
 {
+  if(msgbuf_ == nullptr)
+    return;
+
   g_msgbuf_pool.free_size(msgbuf_,g_bufsize);
 }
 
