@@ -27,6 +27,7 @@
 
 #include "fuse.h"
 
+#include <algorithm>
 #include <cstring>
 
 
@@ -39,11 +40,12 @@ _readlink_core_standard(const fs::path &fullpath_,
 {
   int rv;
 
-  rv = fs::readlink(fullpath_,buf_,(bufsize_ - 1));
+  rv = fs::readlink(fullpath_,buf_,bufsize_);
   if(rv < 0)
     return rv;
 
-  buf_[rv] = '\0';
+  if((size_t)rv < bufsize_)
+    buf_[rv] = '\0';
 
   return 0;
 }
@@ -56,17 +58,23 @@ _readlink_core_symlinkify(const fs::path &fullpath_,
                           const time_t    symlinkify_timeout_)
 {
   int rv;
+  size_t n;
+  std::string fullpath_str;
   struct stat st;
 
-  rv = fs::lstat(fullpath_,&st);
+  fullpath_str = fullpath_.string();
+
+  rv = fs::lstat(fullpath_str,&st);
   if(rv < 0)
     return rv;
 
   if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
     return ::_readlink_core_standard(fullpath_,buf_,bufsize_);
 
-  strncpy(buf_,fullpath_.c_str(),(bufsize_ - 1));
-  buf_[bufsize_ - 1] = '\0';
+  n = std::min(fullpath_str.size(),bufsize_);
+  memcpy(buf_,fullpath_str.c_str(),n);
+  if(n < bufsize_)
+    buf_[n] = '\0';
 
   return 0;
 }
@@ -106,6 +114,8 @@ _readlink(const Policy::Search &searchFunc_,
   rv = searchFunc_(ibranches_,fusepath_,obranches);
   if(rv < 0)
     return rv;
+  if(obranches.empty())
+    return -ENOENT;
 
   return ::_readlink_core(obranches[0]->path,
                           fusepath_,
