@@ -149,7 +149,7 @@ fs::copyfile(const int                src_fd_,
         }
 
       rv = fs::file_changed(src_fd_,src_st);
-      if(rv == FS_FILE_CHANGED)
+      if(rv != FS_FILE_UNCHANGED)
         {
           fs::unlink(dst_tmppath);
           continue;
