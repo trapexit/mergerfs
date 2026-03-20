@@ -3252,7 +3252,7 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
     }
 
   assert(!arg->in_size || !out_size || arg->in_size == out_size);
-  if(out_buf)
+  if(out_buf && in_buf)
     memcpy(out_buf,in_buf,arg->in_size);
 
   err = f.ops.ioctl(&req_->ctx,
