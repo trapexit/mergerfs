@@ -6,7 +6,6 @@
   See the file COPYING.LIB.
 */
 
-#include "fuse_i.h"
 #include "fuse_opt.h"
 #include "mount_util.h"
 
@@ -19,6 +18,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <sys/mount.h>

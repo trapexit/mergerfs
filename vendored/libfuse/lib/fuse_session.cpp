@@ -4,16 +4,16 @@
 
   This program can be distributed under the terms of the GNU LGPLv2.
   See the file COPYING.LIB
- */
+*/
 
-#include "fuse_i.h"
+#include "fuse_i.hpp"
 #include "fuse_kernel.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <sys/uio.h>
 
@@ -30,19 +30,19 @@ fuse_session_new(void *data,
                  void *process_buf,
                  void *destroy)
 {
-  struct fuse_session *se = (struct fuse_session *) malloc(sizeof(*se));
-  if (se == NULL) {
-    fprintf(stderr, "fuse: failed to allocate session\n");
-    return NULL;
-  }
+  auto *se = new(std::nothrow) fuse_session();
 
-  memset(se, 0, sizeof(*se));
-  se->f           = data;
-  se->receive_buf = receive_buf;
-  se->process_buf = process_buf;
-  se->destroy     = destroy;
-  se->fd          = -1;  /* Not yet mounted */
-  //se->bufsize     = 0;
+  if(se == nullptr)
+    {
+      fprintf(stderr, "fuse: failed to allocate session\n");
+      return nullptr;
+    }
+
+  se->f           = static_cast<struct fuse_ll*>(data);
+  se->receive_buf = reinterpret_cast<int(*)(struct fuse_session*, fuse_msgbuf_t*)>(receive_buf);
+  se->process_buf = reinterpret_cast<void(*)(struct fuse_session*, const fuse_msgbuf_t*)>(process_buf);
+  se->destroy     = reinterpret_cast<void(*)(void*)>(destroy);
+  se->fd          = -1;
 
   return se;
 }
@@ -50,12 +50,16 @@ fuse_session_new(void *data,
 void
 fuse_session_destroy(struct fuse_session *se)
 {
-  se->destroy(se->f);
-  if(se->fd != -1) {
-    close(se->fd);
-    se->fd = -1;
-  }
-  free(se);
+  if(se->destroy)
+    se->destroy(se->f);
+
+  if(se->fd != -1)
+    {
+      close(se->fd);
+      se->fd = -1;
+    }
+
+  delete se;
 }
 
 void
@@ -102,4 +106,16 @@ fuse_session_setbufsize(struct fuse_session *se,
                         size_t               bufsize)
 {
   se->bufsize = bufsize;
+}
+
+int
+fuse_session_fd(struct fuse_session *se)
+{
+  return se->fd;
+}
+
+size_t
+fuse_session_bufsize(struct fuse_session *se)
+{
+  return se->bufsize;
 }
