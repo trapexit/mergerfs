@@ -11,111 +11,73 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string>
 
-static char *progname;
+static const char *progname;
 
-static char *xstrdup(const char *s)
+static std::string shell_quote(const std::string &s)
 {
-  char *t = strdup(s);
-  if (!t) {
-    fprintf(stderr, "%s: failed to allocate memory\n", progname);
-    exit(1);
+  std::string r = "'";
+
+  for (char c : s) {
+    if (c == '\'')
+      r += "'\\''";
+    else
+      r += c;
   }
-  return t;
+  r += "'";
+
+  return r;
 }
 
-static void *xrealloc(void *oldptr, size_t size)
+static std::string add_option(const std::string &opt,
+                              const std::string &options)
 {
-  void *ptr = realloc(oldptr, size);
-  if (!ptr) {
-    fprintf(stderr, "%s: failed to allocate memory\n", progname);
-    exit(1);
-  }
-  return ptr;
-}
+  if (options.empty())
+    return opt;
 
-static void add_arg(char **cmdp, const char *opt)
-{
-  size_t optlen = strlen(opt);
-  size_t cmdlen = *cmdp ? strlen(*cmdp) : 0;
-  char *cmd = static_cast<char*>(xrealloc(*cmdp, cmdlen + optlen * 4 + 4));
-  char *s;
-  s = cmd + cmdlen;
-  if (*cmdp)
-    *s++ = ' ';
-
-  *s++ = '\'';
-  for (; *opt; opt++) {
-    if (*opt == '\'') {
-      *s++ = '\'';
-      *s++ = '\\';
-      *s++ = '\'';
-      *s++ = '\'';
-    } else
-      *s++ = *opt;
-  }
-  *s++ = '\'';
-  *s = '\0';
-  *cmdp = cmd;
-}
-
-static char *add_option(const char *opt, char *options)
-{
-  int oldlen = options ? strlen(options) : 0;
-
-  options = static_cast<char*>(xrealloc(options, oldlen + 1 + strlen(opt) + 1));
-  if (!oldlen)
-    strcpy(options, opt);
-  else {
-    strcat(options, ",");
-    strcat(options, opt);
-  }
-  return options;
+  return options + "," + opt;
 }
 
 int main(int argc, char *argv[])
 {
-  char *type = NULL;
-  char *source;
-  const char *mountpoint;
-  char *basename;
-  char *options = NULL;
-  char *command = NULL;
-  char *setuid = NULL;
-  int i;
+  std::string type;
+  std::string source;
+  std::string mountpoint;
+  std::string basename;
+  std::string options;
+  std::string command;
+  std::string setuid;
   int dev = 1;
   int suid = 1;
 
   progname = argv[0];
-  basename = strrchr(argv[0], '/');
-  if (basename)
-    basename++;
-  else
-    basename = argv[0];
+  {
+    const char *slash = strrchr(argv[0], '/');
+    basename = slash ? (slash + 1) : argv[0];
+  }
 
-  type = const_cast<char*>("mergerfs");
-  if (strncmp(basename, "mount.fuse.", 11) == 0)
-    type = basename + 11;
-  if (strncmp(basename, "mount.fuseblk.", 14) == 0)
-    type = basename + 14;
+  type = "mergerfs";
+  if (strncmp(basename.c_str(), "mount.fuse.", 11) == 0)
+    type = basename.substr(11);
+  if (strncmp(basename.c_str(), "mount.fuseblk.", 14) == 0)
+    type = basename.substr(14);
 
-  if (type && !type[0])
-    type = NULL;
+  if (type.empty())
+    type = "";
 
   if (argc < 3) {
     fprintf(stderr,
             "usage: %s %s destination [-t type] [-o opt[,opts...]]\n",
-            progname, type ? "source" : "type#[source]");
+            progname, type.empty() ? "type#[source]" : "source");
     exit(1);
   }
 
   source = argv[1];
-  if (!source[0])
-    source = NULL;
 
   mountpoint = argv[2];
 
-  for (i = 3; i < argc; i++) {
+  for (int i = 3; i < argc; i++) {
     if (strcmp(argv[i], "-v") == 0) {
       continue;
     } else if (strcmp(argv[i], "-t") == 0) {
@@ -128,25 +90,25 @@ int main(int argc, char *argv[])
         exit(1);
       }
       type = argv[i];
-      if (strncmp(type, "fuse.", 5) == 0)
-        type += 5;
-      else if (strncmp(type, "fuseblk.", 8) == 0)
-        type += 8;
+      if (strncmp(type.c_str(), "fuse.", 5) == 0)
+        type = type.substr(5);
+      else if (strncmp(type.c_str(), "fuseblk.", 8) == 0)
+        type = type.substr(8);
 
-      if (!type[0]) {
+      if (type.empty()) {
         fprintf(stderr,
                 "%s: empty type given as argument to option '-t'\n",
                 progname);
         exit(1);
       }
-    } else	if (strcmp(argv[i], "-o") == 0) {
+    } else if (strcmp(argv[i], "-o") == 0) {
       char *opts;
       char *opt;
       i++;
       if (i == argc)
         break;
 
-      opts = xstrdup(argv[i]);
+      opts = strdup(argv[i]);
       opt = strtok(opts, ",");
       while (opt)
         {
@@ -165,7 +127,7 @@ int main(int argc, char *argv[])
               NULL
             };
         if (strncmp(opt, "setuid=", 7) == 0) {
-          setuid = xstrdup(opt + 7);
+          setuid = opt + 7;
           ignore = 1;
         }
         for (j = 0; ignore_opts[j]; j++)
@@ -182,6 +144,7 @@ int main(int argc, char *argv[])
         }
         opt = strtok(NULL, ",");
       }
+      free(opts);
     }
   }
 
@@ -190,13 +153,17 @@ int main(int argc, char *argv[])
   if (suid)
     options = add_option("suid", options);
 
-  if (!type) {
-    if (source) {
-      type = xstrdup(source);
-      source = strchr(type, '#');
-      if (source)
-        *source++ = '\0';
-      if (!type[0]) {
+  if (type.empty()) {
+    if (!source.empty()) {
+      size_t hash_pos = source.find('#');
+      if (hash_pos != std::string::npos) {
+        type = source.substr(0, hash_pos);
+        source = source.substr(hash_pos + 1);
+      } else {
+        type = source;
+        source.clear();
+      }
+      if (type.empty()) {
         fprintf(stderr, "%s: empty filesystem type\n",
                 progname);
         exit(1);
@@ -207,29 +174,27 @@ int main(int argc, char *argv[])
     }
   }
 
-  add_arg(&command, type);
-  if (source)
-    add_arg(&command, source);
-  add_arg(&command, mountpoint);
-  if (options) {
-    add_arg(&command, "-o");
-    add_arg(&command, options);
+  command += shell_quote(type);
+  if (!source.empty())
+    command += " " + shell_quote(source);
+  command += " " + shell_quote(mountpoint);
+  if (!options.empty()) {
+    command += " " + shell_quote("-o");
+    command += " " + shell_quote(options);
   }
 
-  if (setuid && setuid[0]) {
-    char *sucommand = command;
-    command = NULL;
-    add_arg(&command, "su");
-    add_arg(&command, "-");
-    add_arg(&command, setuid);
-    add_arg(&command, "-c");
-    add_arg(&command, sucommand);
+  if (!setuid.empty()) {
+    std::string sucommand = command;
+    command = "su";
+    command += " -";
+    command += " " + shell_quote(setuid);
+    command += " -c";
+    command += " " + shell_quote(sucommand);
   } else if (!getenv("HOME")) {
-    /* Hack to make filesystems work in the boot environment */
     setenv("HOME", "/root", 0);
   }
 
-  execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+  execl("/bin/sh", "/bin/sh", "-c", command.c_str(), NULL);
   fprintf(stderr, "%s: failed to execute /bin/sh: %s\n", progname,
           strerror(errno));
   return 1;

@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <stddef.h>
 #include <string.h>
+#include <string>
 #include <fcntl.h>
 #include <errno.h>
 #include <poll.h>
@@ -407,8 +408,8 @@ fuse_mount_sys(const char        *mnt,
 {
   char tmp[128];
   const char *devname = "/dev/fuse";
-  char *source = NULL;
-  char *type = NULL;
+  std::string source;
+  std::string type;
   struct stat stbuf;
   int fd;
   int res;
@@ -478,36 +479,23 @@ fuse_mount_sys(const char        *mnt,
   if (res == -1)
     goto out_close;
 
-  source = static_cast<char*>(malloc((mo->fsname ? strlen(mo->fsname) : 0) +
-                  (mo->subtype ? strlen(mo->subtype) : 0) +
-                  strlen(devname) + 32));
+  type = mo->blkdev ? "fuseblk" : "fuse";
+  if (mo->subtype)
+    type += "." + std::string(mo->subtype);
 
-  type = static_cast<char*>(malloc((mo->subtype ? strlen(mo->subtype) : 0) + 32));
-  if (!type || !source) {
-    fprintf(stderr, "mergerfs: failed to allocate memory\n");
-    goto out_close;
-  }
+  source = mo->fsname ? mo->fsname : (mo->subtype ? mo->subtype : devname);
 
-  strcpy(type, mo->blkdev ? "fuseblk" : "fuse");
-  if (mo->subtype) {
-    strcat(type, ".");
-    strcat(type, mo->subtype);
-  }
-  strcpy(source,
-         mo->fsname ? mo->fsname : (mo->subtype ? mo->subtype : devname));
-
-  res = mount(source, mnt, type, mo->flags, mo->kernel_opts);
+  res = mount(source.c_str(), mnt, type.c_str(), mo->flags, mo->kernel_opts);
   if (res == -1 && errno == ENODEV && mo->subtype) {
     /* Probably missing subtype support */
-    strcpy(type, mo->blkdev ? "fuseblk" : "fuse");
+    type = mo->blkdev ? "fuseblk" : "fuse";
     if (mo->fsname) {
       if (!mo->blkdev)
-        sprintf(source, "%s#%s", mo->subtype,
-                mo->fsname);
+        source = std::string(mo->subtype) + "#" + mo->fsname;
     } else {
-      strcpy(source, type);
+      source = type;
     }
-    res = mount(source, mnt, type, mo->flags, mo->kernel_opts);
+    res = mount(source.c_str(), mnt, type.c_str(), mo->flags, mo->kernel_opts);
   }
   if (res == -1) {
     /*
@@ -543,7 +531,7 @@ fuse_mount_sys(const char        *mnt,
     if (!newmnt)
       goto out_umount;
 
-    res = fuse_mnt_add_mount("fuse", source, newmnt, type,
+    res = fuse_mnt_add_mount("fuse", source.c_str(), newmnt, type.c_str(),
                              mnt_opts);
     free(newmnt);
     if (res == -1)
@@ -551,16 +539,12 @@ fuse_mount_sys(const char        *mnt,
   }
 #endif /* IGNORE_MTAB */
 #endif /* __NetBSD__ */
-  free(type);
-  free(source);
 
   return fd;
 
  out_umount:
   umount2(mnt, 2); /* lazy umount */
  out_close:
-  free(type);
-  free(source);
   close(fd);
   return res;
 }

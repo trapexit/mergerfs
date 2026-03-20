@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <signal.h>
 #include <dirent.h>
 #include <errno.h>
@@ -249,11 +250,6 @@ int fuse_mnt_remove_mount(const char *progname, const char *mnt)
 char *fuse_mnt_resolve_path(const char *progname, const char *orig)
 {
   char buf[PATH_MAX];
-  char *copy;
-  char *dst;
-  char *end;
-  char *lastcomp;
-  const char *toresolv;
 
   if (!orig[0]) {
     fprintf(stderr, "%s: invalid mountpoint '%s'\n", progname,
@@ -261,57 +257,46 @@ char *fuse_mnt_resolve_path(const char *progname, const char *orig)
     return NULL;
   }
 
-  copy = strdup(orig);
-  if (copy == NULL) {
-    fprintf(stderr, "%s: failed to allocate memory\n", progname);
+  std::string copy = orig;
+  std::string lastcomp;
+  std::string toresolv;
+
+  while (!copy.empty() && copy.back() == '/')
+    copy.pop_back();
+
+  if (!copy.empty() && copy.find('/') != std::string::npos) {
+    size_t last_slash = copy.find_last_of('/');
+    lastcomp = copy.substr(last_slash + 1);
+    toresolv = copy.substr(0, last_slash);
+    if(toresolv.empty())
+      toresolv = "/";
+
+    if (lastcomp == "." || lastcomp == "..") {
+      lastcomp.clear();
+      toresolv = copy;
+    }
+  } else if (!copy.empty()) {
+    lastcomp = copy;
+    toresolv = ".";
+  } else {
+    toresolv = "/";
+  }
+
+  if (realpath(toresolv.c_str(), buf) == NULL) {
+    fprintf(stderr, "%s: bad mount point %s: %s\n", progname, orig,
+            strerror(errno));
     return NULL;
   }
 
-  toresolv = copy;
-  lastcomp = NULL;
-  for (end = copy + strlen(copy) - 1; end > copy && *end == '/'; end --);
-  if (end[0] != '/') {
-    char *tmp;
-    end[1] = '\0';
-    tmp = strrchr(copy, '/');
-    if (tmp == NULL) {
-      lastcomp = copy;
-      toresolv = ".";
-    } else {
-      lastcomp = tmp + 1;
-      if (tmp == copy)
-        toresolv = "/";
-    }
-    if (strcmp(lastcomp, ".") == 0 || strcmp(lastcomp, "..") == 0) {
-      lastcomp = NULL;
-      toresolv = copy;
-    }
-    else if (tmp)
-      tmp[0] = '\0';
-  }
-  if (realpath(toresolv, buf) == NULL) {
-    fprintf(stderr, "%s: bad mount point %s: %s\n", progname, orig,
-            strerror(errno));
-    free(copy);
-    return NULL;
-  }
-  if (lastcomp == NULL)
-    dst = strdup(buf);
-  else {
-    unsigned buflen = strlen(buf);
-    size_t dstlen = buflen + 1 + strlen(lastcomp) + 1;
-    dst = static_cast<char*>(malloc(dstlen));
-    if (dst) {
-      if (buflen && buf[buflen-1] == '/')
-        snprintf(dst, dstlen, "%s%s", buf, lastcomp);
-      else
-        snprintf(dst, dstlen, "%s/%s", buf, lastcomp);
-    }
-  }
-  free(copy);
-  if (dst == NULL)
-    fprintf(stderr, "%s: failed to allocate memory\n", progname);
-  return dst;
+  std::string dst;
+  if (lastcomp.empty())
+    dst = buf;
+  else if (buf[strlen(buf) - 1] == '/')
+    dst = std::string(buf) + lastcomp;
+  else
+    dst = std::string(buf) + "/" + lastcomp;
+
+  return strdup(dst.c_str());
 }
 
 int fuse_mnt_check_fuseblk(void)
