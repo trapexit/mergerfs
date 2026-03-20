@@ -3674,19 +3674,19 @@ fuse_gc1()
 void
 fuse_populate_maintenance_thread(struct fuse *f_)
 {
-  MaintenanceThread::push_job([=](int count_)
+  MaintenanceThread::push_job([=](u64 count_)
   {
     if(remember_nodes())
       fuse_prune_remembered_nodes();
   });
 
-  MaintenanceThread::push_job([](int count_)
+  MaintenanceThread::push_job([](u64 count_)
   {
     if((count_ % 15) == 0)
       fuse_gc1();
   });
 
-  MaintenanceThread::push_job([=](int count_)
+  MaintenanceThread::push_job([=](u64 count_)
   {
     if(fuse_cfg.debug)
       metrics_log_nodes_info_to_tmp_dir(f_);
