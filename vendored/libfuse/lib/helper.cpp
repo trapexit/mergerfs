@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <string>
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
@@ -86,24 +87,14 @@ fuse_helper_opt_proc(void             *data,
 
 static int add_default_subtype(const char *progname, struct fuse_args *args)
 {
-  int res;
-  char *subtype_opt;
   const char *basename = strrchr(progname, '/');
   if (basename == NULL)
     basename = progname;
   else if (basename[1] != '\0')
     basename++;
 
-  size_t optlen = strlen(basename) + 64;
-  subtype_opt = (char *) malloc(optlen);
-  if (subtype_opt == NULL) {
-    fprintf(stderr, "fuse: memory allocation failed\n");
-    return -1;
-  }
-  snprintf(subtype_opt, optlen, "-osubtype=%s", basename);
-  res = fuse_opt_add_arg(args, subtype_opt);
-  free(subtype_opt);
-  return res;
+  std::string subtype_opt = "-osubtype=" + std::string(basename);
+  return fuse_opt_add_arg(args, subtype_opt.c_str());
 }
 
 int
