@@ -14,7 +14,7 @@
 
 #include "extern_c.h"
 
-#include <signal.h>
+#include <atomic>
 
 /* Simplified fuse_session - fields inlined from former fuse_chan
  * Since mergerfs only supports one mount, we collapse the hierarchy:
@@ -32,7 +32,7 @@ struct fuse_session
   void (*destroy)(void *data);
 
   struct fuse_ll *f;
-  volatile sig_atomic_t exited;
+  std::atomic<int> exited;
 
   /* Formerly in fuse_chan - inlined for single-mount simplicity */
   int fd;            /* /dev/fuse file descriptor */
@@ -57,12 +57,5 @@ EXTERN_C_BEGIN
 struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
                                               const struct fuse_lowlevel_ops *op,
                                               size_t op_size, void *userdata);
-
-
-
-void fuse_kern_unmount(const char *mountpoint, int fd);
-int fuse_kern_mount(const char *mountpoint, struct fuse_args *args);
-
-int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
 
 EXTERN_C_END

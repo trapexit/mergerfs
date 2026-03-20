@@ -22,7 +22,7 @@
 #include "fuse_cfg.hpp"
 #include "fuse_req.hpp"
 #include "fuse_dirents.hpp"
-#include "fuse_i.h"
+#include "fuse_i.hpp"
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
 #include "fuse_opt.h"

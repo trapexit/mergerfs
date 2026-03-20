@@ -6,7 +6,7 @@
   See the file COPYING.LIB.
 */
 
-#include "fuse_i.h"
+#include "fuse.h"
 #include "fuse_opt.h"
 #include "fuse_lowlevel.h"
 
@@ -18,6 +18,9 @@
 #include <limits.h>
 #include <errno.h>
 #include <sys/param.h>
+
+int fuse_kern_mount(const char *mountpoint, struct fuse_args *args);
+void fuse_kern_unmount(const char *mountpoint, int fd);
 
 enum  {
   KEY_HELP,
@@ -312,10 +315,10 @@ struct fuse *fuse_setup(int argc,
 static void fuse_teardown_common(char *mountpoint)
 {
   struct fuse_session *se = fuse_get_session();
-  int fd = se ? se->fd : -1;
+  int fd = se ? fuse_session_fd(se) : -1;
   fuse_remove_signal_handlers(se);
   if (mountpoint && fd != -1) {
-    se->fd = -1;
+    fuse_session_clearfd(se);
     fuse_kern_unmount(mountpoint, fd);
   }
   free(mountpoint);

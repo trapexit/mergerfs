@@ -16,7 +16,7 @@
 #include "fatal.hpp"
 #include "fmt/core.h"
 #include "fuse_cfg.hpp"
-#include "fuse_i.h"
+#include "fuse_i.hpp"
 #include "fuse_kernel.h"
 #include "fuse_msgbuf.hpp"
 #include "fuse_opt.h"

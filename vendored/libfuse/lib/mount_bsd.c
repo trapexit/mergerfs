@@ -6,7 +6,6 @@
   See the file COPYING.LIB.
 */
 
-#include "fuse_i.h"
 #include "fuse_opt.h"
 
 #include <sys/stat.h>

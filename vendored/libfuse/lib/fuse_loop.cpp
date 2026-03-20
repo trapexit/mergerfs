@@ -10,7 +10,7 @@
 #include "syslog.hpp"
 #include "maintenance_thread.hpp"
 
-#include "fuse_i.h"
+#include "fuse_i.hpp"
 #include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
 
