@@ -16,9 +16,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#pragma once
+
 #if defined __FreeBSD__ || __NetBSD__ || __OpenBSD__ || __DragonFly__
-# include "mount_bsd.c"
+# include "mount_bsd.h"
 #else
-# include "mount_generic.c"
-# include "mount_util.c"
+# include "mount_generic.h"
+# include "mount_util.h"
 #endif

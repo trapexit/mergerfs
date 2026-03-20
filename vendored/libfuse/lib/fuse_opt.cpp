@@ -64,7 +64,7 @@ fuse_opt_add_arg(struct fuse_args *args, const char *arg)
   if (!newarg)
     return alloc_failed();
 
-  newargv = realloc(args->argv, (args->argc + 2) * sizeof(char *));
+  newargv = static_cast<char**>(realloc(args->argv, (args->argc + 2) * sizeof(char *)));
   if (!newargv)
     {
       free(newarg);
@@ -120,7 +120,7 @@ static int add_arg(struct fuse_opt_context *ctx, const char *arg)
 static int add_opt_common(char **opts, const char *opt, int esc)
 {
   unsigned oldlen = *opts ? strlen(*opts) : 0;
-  char *d = realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1);
+  char *d = static_cast<char*>(realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1));
 
   if (!d)
     return alloc_failed();
@@ -224,9 +224,9 @@ static int process_opt_param(void *var, const char *format, const char *param,
       if (!copy)
         return alloc_failed();
 
-      *(char **) var = copy;
+      *static_cast<char**>(var) = copy;
     } else {
-    if (sscanf(param, format, var) != 1) {
+    if (sscanf(param, format, static_cast<int*>(var)) != 1) {
       fprintf(stderr, "fuse: invalid parameter in option `%s'\n", arg);
       return -1;
     }
@@ -243,7 +243,7 @@ static int process_opt(struct fuse_opt_context *ctx,
       if (call_proc(ctx, arg, opt->value, iso) == -1)
         return -1;
     } else {
-    void *var = ctx->data + opt->offset;
+    char *var = static_cast<char*>(ctx->data) + opt->offset;
     if (sep && opt->templ[sep + 1])
       {
         const char *param = arg + sep;
@@ -253,7 +253,7 @@ static int process_opt(struct fuse_opt_context *ctx,
                               param, arg) == -1)
           return -1;
       } else
-      *(int *)var = opt->value;
+      *static_cast<int*>(static_cast<void*>(var)) = opt->value;
   }
   return 0;
 }
@@ -270,7 +270,7 @@ static int process_opt_sep_arg(struct fuse_opt_context *ctx,
     return -1;
 
   param = ctx->argv[ctx->argctr];
-  newarg = malloc(sep + strlen(param) + 1);
+  newarg = static_cast<char*>(malloc(sep + strlen(param) + 1));
   if (!newarg)
     return alloc_failed();
 
@@ -423,11 +423,16 @@ int fuse_opt_parse(struct fuse_args *args, void *data,
 		   const struct fuse_opt opts[], fuse_opt_proc_t proc)
 {
   int res;
-  struct fuse_opt_context ctx = {
-    .data = data,
-    .opt = opts,
-    .proc = proc,
-  };
+  struct fuse_opt_context ctx;
+  ctx.data = data;
+  ctx.opt = opts;
+  ctx.proc = proc;
+  ctx.argctr = 0;
+  ctx.argc = 0;
+  ctx.argv = nullptr;
+  ctx.outargs = {};
+  ctx.opts = nullptr;
+  ctx.nonopt = 0;
 
   if (!args || !args->argv || !args->argc)
     return 0;

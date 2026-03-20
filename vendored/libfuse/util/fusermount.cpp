@@ -7,8 +7,6 @@
 */
 /* This program does the mounting and unmounting of FUSE filesystems */
 
-#define _GNU_SOURCE /* for clone */
-
 #include "mount_util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -234,7 +232,7 @@ static int may_unmount(const char *mnt, int quiet)
  */
 static int check_is_mount_child(void *p)
 {
-  const char **a = p;
+  const char **a = static_cast<const char**>(p);
   const char *last = a[0];
   const char *mnt = a[1];
   int res;
@@ -305,10 +303,12 @@ static pid_t clone_newns(void *a)
   char *stack = buf + (sizeof(buf) / 2 - ((size_t) buf & 15));
 
 #ifdef __ia64__
+  extern "C" {
   extern int __clone2(int (*fn)(void *),
                       void *child_stack_base, size_t stack_size,
                       int flags, void *arg, pid_t *ptid,
                       void *tls, pid_t *ctid);
+  }
 
   return __clone2(check_is_mount_child, stack, sizeof(buf) / 2,
                   CLONE_NEWNS, a, NULL, NULL, NULL);
@@ -649,7 +649,7 @@ static int add_option(char **optsp, const char *opt, unsigned expand)
   else {
     unsigned oldsize = strlen(*optsp);
     unsigned newsize = oldsize + 1 + strlen(opt) + expand + 1;
-    newopts = (char *) realloc(*optsp, newsize);
+    newopts = static_cast<char*>(realloc(*optsp, newsize));
     if (newopts)
       sprintf(newopts + oldsize, ",%s", opt);
   }
@@ -713,7 +713,7 @@ get_string_opt(const char *s,
 
   if (*val)
     free(*val);
-  *val = (char *) malloc(len - opt_len + 1);
+  *val = static_cast<char*>(malloc(len - opt_len + 1));
   if (!*val) {
     fprintf(stderr, "%s: failed to allocate memory\n", progname);
     return 0;
@@ -747,7 +747,7 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
   char *type = NULL;
   int blkdev = 0;
 
-  optbuf = (char *) malloc(strlen(opts) + 128);
+  optbuf = static_cast<char*>(malloc(strlen(opts) + 128));
   if (!optbuf) {
     fprintf(stderr, "%s: failed to allocate memory\n", progname);
     return -1;
@@ -827,10 +827,10 @@ static int do_mount(const char *mnt, char **typep, mode_t rootmode,
   sprintf(d, "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
           fd, rootmode, getuid(), getgid());
 
-  source = malloc((fsname ? strlen(fsname) : 0) +
-                  (subtype ? strlen(subtype) : 0) + strlen(dev) + 32);
+  source = static_cast<char*>(malloc((fsname ? strlen(fsname) : 0) +
+                  (subtype ? strlen(subtype) : 0) + strlen(dev) + 32));
 
-  type = malloc((subtype ? strlen(subtype) : 0) + 32);
+  type = static_cast<char*>(malloc((subtype ? strlen(subtype) : 0) + 32));
   if (!type || !source) {
     fprintf(stderr, "%s: failed to allocate memory\n", progname);
     goto err;
@@ -1147,7 +1147,7 @@ static int send_fd(int sock_fd, int fd)
   p_cmsg->cmsg_level = SOL_SOCKET;
   p_cmsg->cmsg_type = SCM_RIGHTS;
   p_cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
-  p_fds = (int *) CMSG_DATA(p_cmsg);
+  p_fds = reinterpret_cast<int*>(CMSG_DATA(p_cmsg));
   *p_fds = fd;
   msg.msg_controllen = p_cmsg->cmsg_len;
   msg.msg_name = NULL;

@@ -56,7 +56,7 @@ fuse_helper_opt_proc(void             *data,
                      int               key,
                      struct fuse_args *outargs)
 {
-  struct helper_opts *hopts = data;
+  struct helper_opts *hopts = static_cast<struct helper_opts*>(data);
 
   switch (key)
     {
