@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 static pthread_t g_thread;
-static std::vector<std::function<void(int)>> g_funcs;
+static std::vector<std::function<void(u64)>> g_funcs;
 static mutex_t g_mutex;
 
 static
@@ -49,7 +49,7 @@ MaintenanceThread::setup()
 }
 
 void
-MaintenanceThread::push_job(const std::function<void(int)> &func_)
+MaintenanceThread::push_job(const std::function<void(u64)> &func_)
 {
   LockGuard lg(g_mutex);
 
