@@ -1,17 +1,24 @@
 #include "acutest/acutest.h"
 
 #include "config.hpp"
+#include "fs_copyfile.hpp"
 #include "str.hpp"
 #include "thread_pool.hpp"
 
 #include <atomic>
 #include <chrono>
 #include <cstring>
+#include <filesystem>
+#include <fcntl.h>
+#include <fstream>
 #include <future>
 #include <mutex>
 #include <numeric>
 #include <sstream>
 #include <thread>
+
+#include <sys/stat.h>
+#include <unistd.h>
 
 template<typename Predicate>
 bool
@@ -2834,6 +2841,145 @@ test_config_prune_cmd_xattr()
   TEST_CHECK(Config::prune_cmd_xattr("") == sv(""));
 }
 
+void
+test_fs_copyfile_basic()
+{
+  int rv;
+  int src_fd;
+  struct stat st;
+  fs::path src_path;
+  fs::path dst_path;
+  fs::path tmp_dir;
+  char tmp_template[] = "/tmp/mergerfs-test-copyfile-basic-XXXXXX";
+
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  tmp_dir = tmp_template;
+  src_path = tmp_dir / "src.bin";
+  dst_path = tmp_dir / "dst.bin";
+
+  src_fd = ::open(src_path.c_str(),O_RDWR|O_CREAT|O_TRUNC,0600);
+  TEST_CHECK(src_fd >= 0);
+  if(src_fd < 0)
+    {
+      std::filesystem::remove_all(tmp_dir);
+      return;
+    }
+
+  rv = ::ftruncate(src_fd,(16 * 1024 * 1024));
+  TEST_CHECK(rv == 0);
+  rv = ::pwrite(src_fd,"A",1,0);
+  TEST_CHECK(rv == 1);
+  rv = ::pwrite(src_fd,"Z",1,((16 * 1024 * 1024) - 1));
+  TEST_CHECK(rv == 1);
+
+  rv = fs::copyfile(src_fd,dst_path,{.cleanup_failure = true});
+  TEST_CHECK(rv == 0);
+
+  rv = ::fstat(src_fd,&st);
+  TEST_CHECK(rv == 0);
+
+  struct stat dst_st;
+  rv = ::stat(dst_path.c_str(),&dst_st);
+  TEST_CHECK(rv == 0);
+  if(rv == 0)
+    TEST_CHECK(st.st_size == dst_st.st_size);
+
+  char c;
+  int dst_fd = ::open(dst_path.c_str(),O_RDONLY);
+  TEST_CHECK(dst_fd >= 0);
+  if(dst_fd >= 0)
+    {
+      rv = ::pread(dst_fd,&c,1,0);
+      TEST_CHECK((rv == 1) && (c == 'A'));
+      rv = ::pread(dst_fd,&c,1,(dst_st.st_size - 1));
+      TEST_CHECK((rv == 1) && (c == 'Z'));
+      ::close(dst_fd);
+    }
+
+  ::close(src_fd);
+  std::filesystem::remove_all(tmp_dir);
+}
+
+void
+test_fs_copyfile_source_changes_cleanup_tmpfiles()
+{
+  int rv;
+  int src_fd;
+  fs::path src_path;
+  fs::path dst_path;
+  fs::path tmp_dir;
+  std::atomic<bool> stop_mutator{false};
+  std::atomic<int> mutator_updates{0};
+  char tmp_template[] = "/tmp/mergerfs-test-copyfile-race-XXXXXX";
+
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  tmp_dir = tmp_template;
+  src_path = tmp_dir / "src.bin";
+  dst_path = tmp_dir / "dst.bin";
+
+  src_fd = ::open(src_path.c_str(),O_RDWR|O_CREAT|O_TRUNC,0600);
+  TEST_CHECK(src_fd >= 0);
+  if(src_fd < 0)
+    {
+      std::filesystem::remove_all(tmp_dir);
+      return;
+    }
+
+  rv = ::ftruncate(src_fd,(64 * 1024 * 1024));
+  TEST_CHECK(rv == 0);
+
+  auto mutator = std::thread([&]()
+  {
+    for(int i = 0; i < 200 && !stop_mutator.load(); ++i)
+      {
+        struct timespec ts[2];
+
+        ::clock_gettime(CLOCK_REALTIME,&ts[0]);
+        ts[1] = ts[0];
+        ::utimensat(AT_FDCWD,src_path.c_str(),ts,0);
+
+        mutator_updates.fetch_add(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+  });
+
+  rv = fs::copyfile(src_fd,dst_path,{.cleanup_failure = true});
+  stop_mutator.store(true);
+  mutator.join();
+
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(mutator_updates.load() > 0);
+
+  bool found_tmp_file = false;
+  std::string tmp_prefix;
+  tmp_prefix = ".";
+  tmp_prefix += dst_path.filename().string();
+  tmp_prefix += "_";
+  for(const auto &entry : std::filesystem::directory_iterator(tmp_dir))
+    {
+      const std::string name = entry.path().filename().string();
+      if(name.rfind(tmp_prefix,0) == 0)
+        {
+          found_tmp_file = true;
+          break;
+        }
+    }
+  TEST_CHECK(found_tmp_file == false);
+
+  ::close(src_fd);
+  std::filesystem::remove_all(tmp_dir);
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -2933,9 +3079,11 @@ TEST_LIST =
    {"config_is_ctrl_file",test_config_is_ctrl_file},
    {"config_is_mergerfs_xattr",test_config_is_mergerfs_xattr},
    {"config_is_cmd_xattr",test_config_is_cmd_xattr},
-   {"config_prune_ctrl_xattr",test_config_prune_ctrl_xattr},
-   {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
-   {"str",test_str_stuff},
+    {"config_prune_ctrl_xattr",test_config_prune_ctrl_xattr},
+    {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
+    {"fs_copyfile_basic",test_fs_copyfile_basic},
+    {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
+    {"str",test_str_stuff},
    {"tp_construct_default",test_tp_construct_default},
    {"tp_construct_named",test_tp_construct_named},
    {"tp_construct_zero_threads_throws",test_tp_construct_zero_threads_throws},
