@@ -6,6 +6,8 @@
   See the file COPYING.LIB.
 */
 
+#pragma once
+
 #include "fuse_opt.h"
 #include "mount_util.h"
 
@@ -189,7 +191,7 @@ set_mount_flag(const char *s,
 static int fuse_mount_opt_proc(void *data, const char *arg, int key,
 			       struct fuse_args *outargs)
 {
-  struct mount_opts *mo = data;
+  struct mount_opts *mo = static_cast<struct mount_opts*>(data);
 
   switch (key)
     {
@@ -273,7 +275,7 @@ static int receive_fd(int fd)
       return -1;
     }
 
-  return *(int*)CMSG_DATA(cmsg);
+  return *reinterpret_cast<int*>(CMSG_DATA(cmsg));
 }
 
 void fuse_kern_unmount(const char *mountpoint, int fd)
@@ -476,11 +478,11 @@ fuse_mount_sys(const char        *mnt,
   if (res == -1)
     goto out_close;
 
-  source = malloc((mo->fsname ? strlen(mo->fsname) : 0) +
+  source = static_cast<char*>(malloc((mo->fsname ? strlen(mo->fsname) : 0) +
                   (mo->subtype ? strlen(mo->subtype) : 0) +
-                  strlen(devname) + 32);
+                  strlen(devname) + 32));
 
-  type = malloc((mo->subtype ? strlen(mo->subtype) : 0) + 32);
+  type = static_cast<char*>(malloc((mo->subtype ? strlen(mo->subtype) : 0) + 32));
   if (!type || !source) {
     fprintf(stderr, "mergerfs: failed to allocate memory\n");
     goto out_close;

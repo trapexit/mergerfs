@@ -76,12 +76,7 @@ INSTALLMAN1DIR ?= $(DESTDIR)$(MAN1DIR)
 
 BUILDDIR := build
 
-SRC_C = \
-	lib/crc32b.c \
-	lib/fuse_opt.c \
-	lib/fuse_signals.c \
-	lib/helper.c \
-	lib/mount.c
+SRC_C =
 SRC_CXX = $(wildcard lib/*.cpp)
 
 OBJS := $(SRC_C:lib/%.c=$(BUILDDIR)/.objs/%.c.o)
@@ -144,14 +139,14 @@ $(BUILDDIR)/libfuse.a: $(OBJS)
 .PHONY: utils
 utils: mergerfs-fusermount mount.mergerfs
 
-$(BUILDDIR)/mergerfs-fusermount: util/fusermount.c lib/mount_util.c
-	$(CC) $(CFLAGS) $(FUSE_FLAGS) -Ilib -o $(BUILDDIR)/mergerfs-fusermount util/fusermount.c lib/mount_util.c
+$(BUILDDIR)/mergerfs-fusermount: util/fusermount.cpp
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -Ilib -o $(BUILDDIR)/mergerfs-fusermount util/fusermount.cpp
 
 mergerfs-fusermount: $(BUILDDIR)/mergerfs-fusermount
 
-$(BUILDDIR)/mount.mergerfs: $(BUILDDIR)/libfuse.a util/mount.mergerfs.c
+$(BUILDDIR)/mount.mergerfs: $(BUILDDIR)/libfuse.a util/mount.mergerfs.cpp
 	echo STATIC=$(STATIC) $(STATIC_FLAGS)
-	$(CC) $(CFLAGS) $(FUSE_FLAGS) -o $(BUILDDIR)/mount.mergerfs util/mount.mergerfs.c $(BUILDDIR)/libfuse.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -o $(BUILDDIR)/mount.mergerfs util/mount.mergerfs.cpp $(BUILDDIR)/libfuse.a $(LDFLAGS)
 
 mount.mergerfs: $(BUILDDIR)/mount.mergerfs
 

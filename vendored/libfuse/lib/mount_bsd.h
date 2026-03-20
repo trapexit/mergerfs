@@ -6,6 +6,8 @@
   See the file COPYING.LIB.
 */
 
+#pragma once
+
 #include "fuse_opt.h"
 
 #include <sys/stat.h>
@@ -106,7 +108,7 @@ static void mount_version(void)
 static int fuse_mount_opt_proc(void *data, const char *arg, int key,
 			       struct fuse_args *outargs)
 {
-  struct mount_opts *mo = data;
+  struct mount_opts *mo = static_cast<struct mount_opts*>(data);
 
   switch (key) {
   case KEY_RO:

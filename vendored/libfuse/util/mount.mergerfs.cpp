@@ -38,7 +38,7 @@ static void add_arg(char **cmdp, const char *opt)
 {
   size_t optlen = strlen(opt);
   size_t cmdlen = *cmdp ? strlen(*cmdp) : 0;
-  char *cmd = xrealloc(*cmdp, cmdlen + optlen * 4 + 4);
+  char *cmd = static_cast<char*>(xrealloc(*cmdp, cmdlen + optlen * 4 + 4));
   char *s;
   s = cmd + cmdlen;
   if (*cmdp)
@@ -63,7 +63,7 @@ static char *add_option(const char *opt, char *options)
 {
   int oldlen = options ? strlen(options) : 0;
 
-  options = xrealloc(options, oldlen + 1 + strlen(opt) + 1);
+  options = static_cast<char*>(xrealloc(options, oldlen + 1 + strlen(opt) + 1));
   if (!oldlen)
     strcpy(options, opt);
   else {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
   else
     basename = argv[0];
 
-  type = "mergerfs";
+  type = const_cast<char*>("mergerfs");
   if (strncmp(basename, "mount.fuse.", 11) == 0)
     type = basename + 11;
   if (strncmp(basename, "mount.fuseblk.", 14) == 0)

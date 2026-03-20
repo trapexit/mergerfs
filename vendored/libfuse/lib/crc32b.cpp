@@ -78,12 +78,12 @@ crc32b_continue(const void     *buf_,
                 const crc32b_t  len_,
                 const crc32b_t  crc_)
 {
-  char *buf;
+  const char *buf;
   crc32b_t i;
   crc32b_t crc;
 
   crc = crc_;
-  buf = (char*)buf_;
+  buf = static_cast<const char*>(buf_);
   for(i = 0; i < len_; i++)
     {
       crc = (CRC32BTABLE[(crc ^ buf[i]) & 0xFFL] ^ (crc >> 8));
