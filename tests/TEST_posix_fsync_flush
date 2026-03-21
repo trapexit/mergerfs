@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_fsync_flush <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-fsync/file")
+        native_file = join(native, "posix-fsync/file")
+        merge_dir = join(mount, "posix-fsync/dir")
+        native_dir = join(native, "posix-fsync/dir")
+
+        touch(merge_file, b"abc")
+        touch(native_file, b"abc")
+        os.makedirs(merge_dir, exist_ok=True)
+        os.makedirs(native_dir, exist_ok=True)
+
+        mfd = os.open(merge_file, os.O_RDWR)
+        nfd = os.open(native_file, os.O_RDWR)
+        try:
+            os.lseek(mfd, 0, os.SEEK_END)
+            os.lseek(nfd, 0, os.SEEK_END)
+            os.write(mfd, b"-merge")
+            os.write(nfd, b"-native")
+
+            err = compare_calls("fsync file", lambda: os.fsync(mfd), lambda: os.fsync(nfd))
+            if err:
+                return fail(err)
+        finally:
+            os.close(mfd)
+            os.close(nfd)
+
+        mdirfd = os.open(merge_dir, os.O_RDONLY | os.O_DIRECTORY)
+        ndirfd = os.open(native_dir, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            err = compare_calls("fsync dir", lambda: os.fsync(mdirfd), lambda: os.fsync(ndirfd))
+            if err:
+                return fail(err)
+        finally:
+            os.close(mdirfd)
+            os.close(ndirfd)
+
+        bad_m = os.open(merge_file, os.O_RDONLY)
+        bad_n = os.open(native_file, os.O_RDONLY)
+        os.close(bad_m)
+        os.close(bad_n)
+        err = compare_calls("fsync EBADF", lambda: os.fsync(bad_m), lambda: os.fsync(bad_n))
+        if err:
+            return fail(err)
+
+        # Close-to-flush parity check: both paths should preserve appended payload.
+        with open(merge_file, "rb") as mf, open(native_file, "rb") as nf:
+            mdata = mf.read()
+            ndata = nf.read()
+        if not (mdata.startswith(b"abc") and ndata.startswith(b"abc")):
+            return fail(f"flush content prefix mismatch mergerfs={mdata!r} native={ndata!r}")
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

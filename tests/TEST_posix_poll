@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+import os
+import select
+import sys
+import tempfile
+
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+def poll_mask(fd, timeout_ms=25):
+    p = select.poll()
+    p.register(fd, select.POLLIN | select.POLLOUT | select.POLLERR | select.POLLHUP)
+    events = p.poll(timeout_ms)
+    mask = 0
+    for _fd, ev in events:
+        mask |= ev
+    return mask
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_poll <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-poll/file")
+        native_file = join(native, "posix-poll/file")
+        touch(merge_file, b"abcdef")
+        touch(native_file, b"abcdef")
+
+        mfd = os.open(merge_file, os.O_RDONLY)
+        nfd = os.open(native_file, os.O_RDONLY)
+        try:
+            mmask = poll_mask(mfd)
+            nmask = poll_mask(nfd)
+
+            # For regular files POLLIN and POLLOUT are typically ready.
+            if bool(mmask & select.POLLIN) != bool(nmask & select.POLLIN):
+                return fail(f"poll POLLIN mismatch mergerfs_mask=0x{mmask:x} native_mask=0x{nmask:x}")
+            if bool(mmask & select.POLLOUT) != bool(nmask & select.POLLOUT):
+                return fail(f"poll POLLOUT mismatch mergerfs_mask=0x{mmask:x} native_mask=0x{nmask:x}")
+        finally:
+            os.close(mfd)
+            os.close(nfd)
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

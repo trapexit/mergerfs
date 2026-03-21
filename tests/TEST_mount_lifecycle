@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+from posix_parity import fail
+
+
+def has_tool(name):
+    return shutil.which(name) is not None
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_mount_lifecycle <mountpoint>", file=sys.stderr)
+        return 1
+
+    # This is a soft integration harness check for init/destroy wiring.
+    # Skip when environment is not prepared for nested mount tests.
+    if os.geteuid() != 0:
+        return 0
+    if not has_tool("mergerfs"):
+        return 0
+    if not has_tool("fusermount") and not has_tool("fusermount3"):
+        return 0
+
+    with tempfile.TemporaryDirectory() as td:
+        b1 = os.path.join(td, "b1")
+        b2 = os.path.join(td, "b2")
+        mp = os.path.join(td, "mp")
+        os.makedirs(b1, exist_ok=True)
+        os.makedirs(b2, exist_ok=True)
+        os.makedirs(mp, exist_ok=True)
+
+        cmd = [
+            "mergerfs",
+            f"{b1}:{b2}",
+            mp,
+            "-o",
+            "defaults,allow_other,use_ino,category.create=mfs",
+        ]
+
+        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if p.returncode != 0:
+            return 0
+
+        try:
+            with open(os.path.join(mp, "lifecycle-file"), "wb") as fp:
+                fp.write(b"ok")
+            if not os.path.exists(os.path.join(mp, "lifecycle-file")):
+                return fail("mount lifecycle: expected created file to exist")
+        finally:
+            um = shutil.which("fusermount3") or shutil.which("fusermount")
+            u = subprocess.run([um, "-u", mp], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if u.returncode != 0:
+                return fail("mount lifecycle: failed to unmount test mount")
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

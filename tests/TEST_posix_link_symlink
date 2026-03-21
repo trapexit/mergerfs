@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_paths
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_link_symlink <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_src = join(mount, "posix-link/src")
+        native_src = join(native, "posix-link/src")
+        merge_dst = join(mount, "posix-link/dst")
+        native_dst = join(native, "posix-link/dst")
+        merge_slnk = join(mount, "posix-link/symlink")
+        native_slnk = join(native, "posix-link/symlink")
+        merge_missing = join(mount, "posix-link/missing")
+        native_missing = join(native, "posix-link/missing")
+
+        cleanup_paths([merge_src, merge_dst, merge_slnk])
+        touch(merge_src, b"src", 0o644)
+        touch(native_src, b"src", 0o644)
+
+        err = compare_calls("link success", lambda: os.link(merge_src, merge_dst), lambda: os.link(native_src, native_dst))
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "link ENOENT source",
+            lambda: os.link(merge_missing, join(mount, "posix-link/dst2")),
+            lambda: os.link(native_missing, join(native, "posix-link/dst2")),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "symlink success",
+            lambda: os.symlink("src", merge_slnk),
+            lambda: os.symlink("src", native_slnk),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "symlink EEXIST",
+            lambda: os.symlink("src", merge_slnk),
+            lambda: os.symlink("src", native_slnk),
+        )
+        if err:
+            return fail(err)
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

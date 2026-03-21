@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+import errno
+import os
+import stat
+import sys
+import tempfile
+
+from posix_parity import cleanup_paths
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import should_compare_inode
+from posix_parity import stat_cmp_basic
+from posix_parity import touch
+
+
+def stat_cmp_basic_with_inode(lhs, rhs):
+    return stat_cmp_basic(lhs, rhs) and lhs.st_ino == rhs.st_ino
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_chmod <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+    stcmp = stat_cmp_basic_with_inode if should_compare_inode(mount) else stat_cmp_basic
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-chmod/file")
+        native_file = join(native, "posix-chmod/file")
+        merge_missing = join(mount, "posix-chmod/missing")
+        native_missing = join(native, "posix-chmod/missing")
+        merge_notdir = join(mount, "posix-chmod/notdir")
+        native_notdir = join(native, "posix-chmod/notdir")
+
+        cleanup_paths([merge_file, merge_notdir])
+
+        touch(merge_file, b"x", 0o644)
+        touch(native_file, b"x", 0o644)
+        touch(merge_notdir, b"x", 0o644)
+        touch(native_notdir, b"x", 0o644)
+
+        err = compare_calls(
+            "chmod success",
+            lambda: os.chmod(merge_file, 0o600),
+            lambda: os.chmod(native_file, 0o600),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "chmod stat parity",
+            lambda: os.lstat(merge_file),
+            lambda: os.lstat(native_file),
+            stcmp,
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "chmod ENOENT",
+            lambda: os.chmod(merge_missing, 0o600),
+            lambda: os.chmod(native_missing, 0o600),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "chmod ENOTDIR",
+            lambda: os.chmod(join(merge_notdir, "child"), 0o600),
+            lambda: os.chmod(join(native_notdir, "child"), 0o600),
+        )
+        if err:
+            return fail(err)
+
+        if os.geteuid() != 0:
+            err = compare_calls(
+                "chmod EPERM setuid",
+                lambda: os.chmod(merge_file, stat.S_ISUID | 0o644),
+                lambda: os.chmod(native_file, stat.S_ISUID | 0o644),
+            )
+            if err:
+                return fail(err)
+        else:
+            _ = errno.EPERM
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

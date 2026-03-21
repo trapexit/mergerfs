@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+import os
+import stat
+import sys
+import tempfile
+
+from posix_parity import cleanup_paths
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_create_mknod <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        os.makedirs(join(mount, "posix-create"), exist_ok=True)
+        os.makedirs(join(native, "posix-create"), exist_ok=True)
+
+        merge_file = join(mount, "posix-create/file")
+        native_file = join(native, "posix-create/file")
+        merge_exist = join(mount, "posix-create/exist")
+        native_exist = join(native, "posix-create/exist")
+        merge_notdir = join(mount, "posix-create/notdir")
+        native_notdir = join(native, "posix-create/notdir")
+
+        cleanup_paths([merge_file, merge_exist, merge_notdir])
+
+        err = compare_calls(
+            "create success",
+            lambda: os.open(merge_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o640),
+            lambda: os.open(native_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o640),
+            close_fds=True,
+        )
+        if err:
+            return fail(err)
+
+        with open(merge_exist, "wb"):
+            pass
+        with open(native_exist, "wb"):
+            pass
+
+        err = compare_calls(
+            "create EEXIST",
+            lambda: os.open(merge_exist, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o640),
+            lambda: os.open(native_exist, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o640),
+        )
+        if err:
+            return fail(err)
+
+        with open(merge_notdir, "wb"):
+            pass
+        with open(native_notdir, "wb"):
+            pass
+
+        err = compare_calls(
+            "create ENOTDIR",
+            lambda: os.open(join(merge_notdir, "child"), os.O_CREAT | os.O_WRONLY, 0o640),
+            lambda: os.open(join(native_notdir, "child"), os.O_CREAT | os.O_WRONLY, 0o640),
+        )
+        if err:
+            return fail(err)
+
+        merge_node = join(mount, "posix-create/mknod")
+        native_node = join(native, "posix-create/mknod")
+        cleanup_paths([merge_node])
+
+        err = compare_calls(
+            "mknod regular",
+            lambda: os.mknod(merge_node, stat.S_IFREG | 0o600, 0),
+            lambda: os.mknod(native_node, stat.S_IFREG | 0o600, 0),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "mknod EEXIST",
+            lambda: os.mknod(merge_node, stat.S_IFREG | 0o600, 0),
+            lambda: os.mknod(native_node, stat.S_IFREG | 0o600, 0),
+        )
+        if err:
+            return fail(err)
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

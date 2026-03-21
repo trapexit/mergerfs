@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+import array
+import fcntl
+import os
+import termios
+import sys
+import tempfile
+
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+def fionread(fd):
+    buf = array.array("i", [0])
+    fcntl.ioctl(fd, termios.FIONREAD, buf, True)
+    return buf[0]
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_ioctl <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-ioctl/file")
+        native_file = join(native, "posix-ioctl/file")
+        touch(merge_file, b"hello-world")
+        touch(native_file, b"hello-world")
+
+        mfd = os.open(merge_file, os.O_RDONLY)
+        nfd = os.open(native_file, os.O_RDONLY)
+        try:
+            err = compare_calls("ioctl FIONREAD", lambda: fionread(mfd), lambda: fionread(nfd), lambda a, b: a == b)
+            if err:
+                return fail(err)
+
+            os.lseek(mfd, 5, os.SEEK_SET)
+            os.lseek(nfd, 5, os.SEEK_SET)
+            err = compare_calls(
+                "ioctl FIONREAD after seek",
+                lambda: fionread(mfd),
+                lambda: fionread(nfd),
+                lambda a, b: a == b,
+            )
+            if err:
+                return fail(err)
+        finally:
+            os.close(mfd)
+            os.close(nfd)
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
