@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+
+import ctypes
+import os
+import sys
+import tempfile
+
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+libc = ctypes.CDLL(None, use_errno=True)
+libc.opendir.argtypes = [ctypes.c_char_p]
+libc.opendir.restype = ctypes.c_void_p
+libc.dirfd.argtypes = [ctypes.c_void_p]
+libc.dirfd.restype = ctypes.c_int
+libc.closedir.argtypes = [ctypes.c_void_p]
+libc.closedir.restype = ctypes.c_int
+
+
+def opendir(path):
+    ctypes.set_errno(0)
+    dp = libc.opendir(path.encode())
+    if not dp:
+        err = ctypes.get_errno()
+        raise OSError(err, os.strerror(err), path)
+    return dp
+
+
+def close_and_dirfd_errno(path):
+    dp = opendir(path)
+    fd = libc.dirfd(dp)
+    if fd < 0:
+        libc.closedir(dp)
+        raise OSError(ctypes.get_errno(), "dirfd failed", path)
+
+    rv = libc.closedir(dp)
+    if rv != 0:
+        raise OSError(ctypes.get_errno(), "closedir failed", path)
+
+    try:
+        os.fstat(fd)
+        return 0
+    except OSError as exc:
+        return exc.errno
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_releasedir <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_dir = join(mount, "posix-releasedir/dir")
+        native_dir = join(native, "posix-releasedir/dir")
+        touch(join(merge_dir, "a"), b"x")
+        touch(join(native_dir, "a"), b"x")
+
+        m_err = close_and_dirfd_errno(merge_dir)
+        n_err = close_and_dirfd_errno(native_dir)
+        if m_err != n_err:
+            return fail(f"releasedir EBADF parity mismatch mergerfs_errno={m_err} native_errno={n_err}")
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

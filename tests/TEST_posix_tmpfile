@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+
+import errno
+import os
+import sys
+import tempfile
+
+from posix_parity import fail
+from posix_parity import join
+
+
+def open_tmpfile(dirpath):
+    return os.open(dirpath, os.O_TMPFILE | os.O_RDWR, 0o600)
+
+
+def errno_of(call):
+    try:
+        call()
+        return 0
+    except OSError as exc:
+        return exc.errno
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_tmpfile <mountpoint>", file=sys.stderr)
+        return 1
+
+    if not hasattr(os, "O_TMPFILE"):
+        return 0
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_dir = join(mount, "posix-tmpfile")
+        native_dir = join(native, "posix-tmpfile")
+        os.makedirs(merge_dir, exist_ok=True)
+        os.makedirs(native_dir, exist_ok=True)
+
+        m_err = errno_of(lambda: open_tmpfile(merge_dir))
+        n_err = errno_of(lambda: open_tmpfile(native_dir))
+        if m_err != n_err:
+            return fail(f"O_TMPFILE support mismatch mergerfs_errno={m_err} native_errno={n_err}")
+
+        # If unsupported on both, treat as skip-pass.
+        if m_err in (errno.EOPNOTSUPP, errno.EISDIR, errno.EINVAL, errno.ENOSYS):
+            return 0
+
+        mfd = open_tmpfile(merge_dir)
+        nfd = open_tmpfile(native_dir)
+        try:
+            mw = os.write(mfd, b"tmpfile-data")
+            nw = os.write(nfd, b"tmpfile-data")
+            if mw != nw:
+                return fail(f"O_TMPFILE write count mismatch mergerfs={mw} native={nw}")
+        finally:
+            os.close(mfd)
+            os.close(nfd)
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

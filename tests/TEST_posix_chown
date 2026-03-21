@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_paths
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_chown <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+    uid = os.getuid()
+    gid = os.getgid()
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-chown/file")
+        native_file = join(native, "posix-chown/file")
+        merge_missing = join(mount, "posix-chown/missing")
+        native_missing = join(native, "posix-chown/missing")
+        merge_notdir = join(mount, "posix-chown/notdir")
+        native_notdir = join(native, "posix-chown/notdir")
+
+        cleanup_paths([merge_file, merge_notdir])
+
+        touch(merge_file, b"x", 0o644)
+        touch(native_file, b"x", 0o644)
+        touch(merge_notdir, b"x", 0o644)
+        touch(native_notdir, b"x", 0o644)
+
+        err = compare_calls(
+            "chown self",
+            lambda: os.chown(merge_file, uid, gid),
+            lambda: os.chown(native_file, uid, gid),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "chown ENOENT",
+            lambda: os.chown(merge_missing, uid, gid),
+            lambda: os.chown(native_missing, uid, gid),
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "chown ENOTDIR",
+            lambda: os.chown(join(merge_notdir, "child"), uid, gid),
+            lambda: os.chown(join(native_notdir, "child"), uid, gid),
+        )
+        if err:
+            return fail(err)
+
+        if os.geteuid() != 0:
+            err = compare_calls(
+                "chown EPERM foreign uid",
+                lambda: os.chown(merge_file, 0, gid),
+                lambda: os.chown(native_file, 0, gid),
+            )
+            if err:
+                return fail(err)
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

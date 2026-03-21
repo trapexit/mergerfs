@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+
+import errno
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_paths
+from posix_parity import compare_access
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import touch
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_access <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-access/file")
+        native_file = join(native, "posix-access/file")
+        merge_notdir = join(mount, "posix-access/notdir")
+        native_notdir = join(native, "posix-access/notdir")
+        merge_missing = join(mount, "posix-access/missing")
+        native_missing = join(native, "posix-access/missing")
+
+        cleanup_paths([merge_file, merge_notdir])
+
+        touch(merge_file, b"ok", 0o644)
+        touch(native_file, b"ok", 0o644)
+        touch(merge_notdir, b"x", 0o644)
+        touch(native_notdir, b"x", 0o644)
+
+        err = compare_access("F_OK existing", merge_file, native_file, os.F_OK)
+        if err:
+            return fail(err)
+
+        err = compare_access(
+            "F_OK missing", merge_missing, native_missing, os.F_OK, errno.ENOENT
+        )
+        if err:
+            return fail(err)
+
+        err = compare_access(
+            "X_OK non-directory prefix",
+            join(merge_notdir, "child"),
+            join(native_notdir, "child"),
+            os.X_OK,
+            errno.ENOTDIR,
+        )
+        if err:
+            return fail(err)
+
+        os.chmod(merge_file, 0)
+        os.chmod(native_file, 0)
+
+        err = compare_access("R_OK unreadable", merge_file, native_file, os.R_OK)
+        if err:
+            return fail(err)
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

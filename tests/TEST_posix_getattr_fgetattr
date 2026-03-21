@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+import os
+import stat
+import sys
+import tempfile
+
+from posix_parity import cleanup_paths
+from posix_parity import compare_calls
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import should_compare_inode
+from posix_parity import stat_cmp_basic
+from posix_parity import touch
+
+
+def st_cmp(lhs, rhs):
+    return (
+        stat_cmp_basic(lhs, rhs)
+        and stat.S_IFMT(lhs.st_mode) == stat.S_IFMT(rhs.st_mode)
+        and lhs.st_nlink == rhs.st_nlink
+    )
+
+
+def st_cmp_with_inode(lhs, rhs):
+    return st_cmp(lhs, rhs) and lhs.st_ino == rhs.st_ino
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_posix_getattr_fgetattr <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+    stcmp = st_cmp_with_inode if should_compare_inode(mount) else st_cmp
+
+    with tempfile.TemporaryDirectory() as native:
+        merge_file = join(mount, "posix-getattr/file")
+        native_file = join(native, "posix-getattr/file")
+        merge_dir = join(mount, "posix-getattr/dir")
+        native_dir = join(native, "posix-getattr/dir")
+        merge_missing = join(mount, "posix-getattr/missing")
+        native_missing = join(native, "posix-getattr/missing")
+        merge_notdir = join(mount, "posix-getattr/notdir")
+        native_notdir = join(native, "posix-getattr/notdir")
+
+        cleanup_paths([merge_file, merge_dir, merge_notdir])
+
+        touch(merge_file, b"abc", 0o640)
+        touch(native_file, b"abc", 0o640)
+        os.makedirs(merge_dir, exist_ok=True)
+        os.makedirs(native_dir, exist_ok=True)
+        touch(merge_notdir, b"x", 0o644)
+        touch(native_notdir, b"x", 0o644)
+
+        err = compare_calls(
+            "lstat regular", lambda: os.lstat(merge_file), lambda: os.lstat(native_file), stcmp
+        )
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "lstat directory", lambda: os.lstat(merge_dir), lambda: os.lstat(native_dir), stcmp
+        )
+        if err:
+            return fail(err)
+
+        mfd = os.open(merge_file, os.O_RDONLY)
+        nfd = os.open(native_file, os.O_RDONLY)
+        try:
+            err = compare_calls("fstat open fd", lambda: os.fstat(mfd), lambda: os.fstat(nfd), stcmp)
+            if err:
+                return fail(err)
+        finally:
+            os.close(mfd)
+            os.close(nfd)
+
+        err = compare_calls("lstat ENOENT", lambda: os.lstat(merge_missing), lambda: os.lstat(native_missing))
+        if err:
+            return fail(err)
+
+        err = compare_calls(
+            "lstat ENOTDIR",
+            lambda: os.lstat(join(merge_notdir, "child")),
+            lambda: os.lstat(join(native_notdir, "child")),
+        )
+        if err:
+            return fail(err)
+
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
