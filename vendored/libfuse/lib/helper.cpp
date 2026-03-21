@@ -10,15 +10,16 @@
 #include "fuse_opt.h"
 #include "fuse_lowlevel.h"
 
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
-#include <string>
-#include <unistd.h>
 #include <string.h>
-#include <limits.h>
-#include <errno.h>
+#include <string>
+#include <sys/mount.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 int fuse_kern_mount(const char *mountpoint, struct fuse_args *args);
 void fuse_kern_unmount(const char *mountpoint, int fd);
@@ -50,6 +51,25 @@ struct fuse_opt fuse_helper_opts[] =
     FUSE_OPT_END
   };
 
+
+static
+char*
+_realpath_mountpoint(const char *path_,
+                     char       *resolved_path_)
+{
+  char *rv;
+
+  rv = realpath(path_,resolved_path_);
+  // If it looks like a disconnected fuse mount try to umount it
+  if((not rv) && (errno == ENOTCONN))
+    {
+      umount(path_);
+      rv = realpath(path_,resolved_path_);
+    }
+
+  return rv;
+}
+
 static
 int
 fuse_helper_opt_proc(void             *data,
@@ -65,10 +85,10 @@ fuse_helper_opt_proc(void             *data,
       if(!hopts->mountpoint)
         {
           char mountpoint[PATH_MAX];
-          if(realpath(arg, mountpoint) == NULL)
+          if(::_realpath_mountpoint(arg, mountpoint) == NULL)
             {
               fprintf(stderr,
-                      "fuse: bad mount point `%s': %s\n",
+                      "mergerfs: bad mount point `%s': %s\n",
                       arg, strerror(errno));
               return -1;
             }
@@ -76,7 +96,7 @@ fuse_helper_opt_proc(void             *data,
         }
       else
         {
-          fprintf(stderr, "fuse: invalid argument `%s'\n", arg);
+          fprintf(stderr, "mergerfs: invalid argument `%s'\n", arg);
           return -1;
         }
 
