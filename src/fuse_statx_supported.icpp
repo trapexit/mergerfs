@@ -200,6 +200,30 @@ _statx(const fs::path    &fusepath_,
   return rv;
 }
 
+static
+int
+_statx(const FileInfo    *fi_,
+       const uint32_t     flags_,
+       const uint32_t     mask_,
+       struct fuse_statx *st_)
+{
+  int rv;
+
+  rv = fs::statx(fi_->fd,
+                 "",
+                 flags_|AT_EMPTY_PATH,
+                 mask_,
+                 st_);
+  if(rv < 0)
+    return rv;
+
+  fs::inode::calc(fi_->branch.path,
+                  fi_->fusepath,
+                  st_);
+
+  return rv;
+}
+
 int
 FUSE::statx(const fuse_req_ctx_t *ctx_,
             const char           *fusepath_,
@@ -228,6 +252,7 @@ FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
                struct fuse_statx    *st_,
                fuse_timeouts_t      *timeout_)
 {
+  int rv;
   uint64_t fh;
 
   fh = fh_;
@@ -245,9 +270,15 @@ FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
 
   FileInfo *fi = FileInfo::from_fh(fh);
 
-  return ::_statx(fi->fusepath,
-                  flags_|AT_STATX_DONT_SYNC,
-                  mask_,
-                  st_,
-                  timeout_);
+  rv =  ::_statx(fi,
+                 flags_|AT_STATX_DONT_SYNC,
+                 mask_,
+                 st_);
+
+  timeout_->entry = ((rv >= 0) ?
+                     cfg.cache_entry :
+                     cfg.cache_negative_entry);
+  timeout_->attr  = cfg.cache_attr;
+
+  return rv;
 }
