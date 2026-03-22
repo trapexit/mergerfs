@@ -43,9 +43,9 @@ _fchown(const int   fd_,
 
 int
 FUSE::fchown(const fuse_req_ctx_t *ctx_,
-             cu64                   fh_,
-             const uid_t            uid_,
-             const gid_t            gid_)
+             cu64                  fh_,
+             const uid_t           uid_,
+             const gid_t           gid_)
 {
   u64 fh;
 
