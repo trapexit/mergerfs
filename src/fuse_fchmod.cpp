@@ -40,8 +40,8 @@ _fchmod(const int    fd_,
 
 int
 FUSE::fchmod(const fuse_req_ctx_t *ctx_,
-             cu64                   fh_,
-             const mode_t           mode_)
+             cu64                  fh_,
+             const mode_t          mode_)
 {
   u64 fh;
 

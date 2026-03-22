@@ -49,9 +49,9 @@ _fgetattr(const FileInfo  *fi_,
 
 int
 FUSE::fgetattr(const fuse_req_ctx_t *ctx_,
-               cu64                   fh_,
-               struct stat           *st_,
-               fuse_timeouts_t       *timeout_)
+               cu64                  fh_,
+               struct stat          *st_,
+               fuse_timeouts_t      *timeout_)
 {
   int rv;
   u64 fh;

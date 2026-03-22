@@ -43,10 +43,10 @@ _fallocate(const int   fd_,
 
 int
 FUSE::fallocate(const fuse_req_ctx_t *ctx_,
-                cu64                   fh_,
-                int                    mode_,
-                off_t                  offset_,
-                off_t                  len_)
+                cu64                  fh_,
+                int                   mode_,
+                off_t                 offset_,
+                off_t                 len_)
 {
   u64 fh;
 
