@@ -23,8 +23,9 @@
   value to -990.
 * mergerfs increases [its available file descriptor and file size
   limit.](https://www.man7.org/linux/man-pages/man3/setrlimit.3p.html)
-* mergerfs lowers its [scheduling
+* mergerfs sets its [scheduling
   priority](https://man7.org/linux/man-pages/man3/setpriority.3p.html)
-  to -10 ([by default](config/options.md))
+  (nice value) to -10 ([by default](config/options.md)), raising its
+  CPU scheduling priority above the default of 0.
 * The [readahead](config/readahead.md) values of mergerfs itself and
   managed filesystems can be modified.

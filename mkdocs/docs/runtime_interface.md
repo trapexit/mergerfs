@@ -35,7 +35,7 @@ configure the mounting of mergerfs (/etc/fstab, systemd, etc.).
 
 ### Command Line Tooling
 
-Extended attributes is prevelant enough that there are common tools
+Extended attributes are prevalent enough that there are common tools
 available for interacting with them.
 
 In Debian / Ubuntu distributions you can get the tools
@@ -122,14 +122,14 @@ user.mergerfs.category.search="mfs"
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
 user.mergerfs.category.search="prfd"
 
-[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.branches -v "'+</mnt/c=RO .mergerfs
+[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.branches -v '+</mnt/c=RO' .mergerfs
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.branches .mergerfs
 user.mergerfs.branches="/mnt/c=RO:/mnt/a=RW:/mnt/b=RW"
 ```
 
 ### Commands
 
-There are a number of commands / behaviors which can be triggerd by
+There are a number of commands / behaviors which can be triggered by
 writing ([setfattr](https://linux.die.net/man/1/setfattr),
 [setxattr](https://linux.die.net/man/2/setxattr)) particular xattr
 keys of `/mountpoint/.mergerfs`. These keys do not show up in key
