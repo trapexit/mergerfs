@@ -58,13 +58,13 @@ read/writes. Contact the software author or worse case the mergerfs
 author so it may be investigated further.
 
 
-### write benchmark
+### Write Benchmark
 
 ```
 $ dd if=/dev/zero of=/mnt/mergerfs/16GB.file bs=1M count=16384 oflag=nocache conv=fdatasync status=progress
 ```
 
-### read benchmark
+### Read Benchmark
 
 ```
 $ dd if=/mnt/mergerfs/16GB.file of=/dev/null bs=1M iflag=nocache conv=fdatasync status=progress
@@ -79,21 +79,21 @@ Below are some basic tests but also try setting `--direct=0`, changing
 the `ioengine`, or playing with other options.
 
 
-#### write
+#### Write
 
 ```
 $ fio --name=writetest --filename=/mnt/mergerfs/16GB.file --size=16Gb --rw=write --bs=1M --direct=1  --numjobs=1 --iodepth=8 --group_reporting --runtime=60 --startdelay=0 --ioengine=psync
 ```
 
 
-#### read
+#### Read
 
 ```
 $ fio --name=readtest --filename=/mnt/mergerfs/16GB.file --size=16Gb --rw=read --bs=1M --direct=1  --numjobs=1 --iodepth=8 --group_reporting --runtime=60 --startdelay=0 --ioengine=psync
 ```
 
 
-### other benchmarks
+### Other Benchmarks
 
 If you are attempting to benchmark other behaviors you must ensure you
 clear kernel caches before runs. In fact it would be a good deal to

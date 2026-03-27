@@ -75,7 +75,7 @@ the read/write workflow, such as
 [moveonenospc](config/moveonenospc.md), will no longer work.
 
 Also, understand that this will only work on dynamically linked
-software (a that dynamically linked with the same general libc version
+software (that is dynamically linked with the same general libc version
 as the software being used with it.) Anything statically compiled will
 not work. Many GoLang and Rust apps are statically compiled.
 
@@ -83,8 +83,8 @@ The library will not interfere with non-mergerfs filesystems. The
 library is written to always fallback to returning the mergerfs opened
 file on error.
 
-While the library was written to account for a number of edgecases
-there could be some yet accounted for so please report any oddities.
+While the library was written to account for a number of edge cases
+there could be some yet unaccounted for so please report any oddities.
 
 Thank you to
 [nohajc](https://github.com/nohajc/mergerfs-io-passthrough) for
@@ -112,7 +112,7 @@ the same path as found on the host so the preload library can see
 them.
 
 **NOTE:** Since a container can have its own OS setup there is no
-guarentee that `preload.so` from the host install will be compatible
+guarantee that `preload.so` from the host install will be compatible
 with the loader found in the container. If that is true it simply
 won't work and shouldn't cause any issues.
 

@@ -63,8 +63,8 @@ nav:
   - setup/installation.md
   - setup/upgrade.md
   - setup/build.md
-- terminology.md
-- intro_to_filesystems.md
+- Terminology: terminology.md
+- Intro to Filesystems: intro_to_filesystems.md
 - Config:
   - config/options.md
   - config/deprecated_options.md
@@ -96,17 +96,17 @@ nav:
   - config/export-support.md
   - config/kernel-permissions-check.md
   - config/lazy-umount-mountpoint.md
-- error_handling_and_logging.md
-- resource_usage.md
-- runtime_interface.md
-- remote_filesystems.md
-- tips_notes.md
-- known_issues_bugs.md
-- project_comparisons.md
-- benchmarking.md
-- performance.md
-- tooling.md
-- extended_usage_patterns.md
+- Error Handling and Logging: error_handling_and_logging.md
+- Resource Usage: resource_usage.md
+- Runtime Interface: runtime_interface.md
+- Remote Filesystems: remote_filesystems.md
+- Tips and Notes: tips_notes.md
+- Known Issues and Bugs: known_issues_bugs.md
+- Project Comparisons: project_comparisons.md
+- Benchmarking: benchmarking.md
+- Performance: performance.md
+- Tooling: tooling.md
+- Extended Usage Patterns: extended_usage_patterns.md
 - FAQ:
   - faq/why_isnt_it_working.md
   - faq/configuration_and_policies.md
@@ -116,7 +116,7 @@ nav:
   - faq/technical_behavior_and_limitations.md
   - faq/have_you_considered.md
   - faq/limit_drive_spinup.md
-- related_projects.md
-- media_and_publicity.md
-- support.md
-- sponsorship_and_donations.md
+- Related Projects: related_projects.md
+- Media and Publicity: media_and_publicity.md
+- Support: support.md
+- Sponsorship and Donations: sponsorship_and_donations.md
