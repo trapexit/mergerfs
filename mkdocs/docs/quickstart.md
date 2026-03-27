@@ -1,4 +1,4 @@
-# QuickStart
+# Quick Start
 
 ## Install
 

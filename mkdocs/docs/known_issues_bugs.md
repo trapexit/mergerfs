@@ -170,7 +170,7 @@ may need to disable the use of the inode in the software if possible
 or change the [inodecalc](config/inodecalc.md) setting if possible.
 
 Generally speaking, in modern setups where there are many non-fully
-complient POSIX filesystem in use, reliance on inode to have a
+compliant POSIX filesystems in use, reliance on inode to have a
 specific meaning is not always reasonable. FUSE, for instance, has no
 requirement that inode values need to be unique or that two files that
 happen to be the same underlying file have the same inode.

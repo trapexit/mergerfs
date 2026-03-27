@@ -90,7 +90,7 @@ filesystems. Mainly `ext4`.
 
 Filesystems, and therefore mergerfs, are doing **lots** of small
 actions at high speed. It simply isn't reasonable to log all the
-actions of the system all time time. However, there is a debug mode
+actions of the system all the time. However, there is a debug mode
 which can be toggled on as needed, even at runtime, which will record
 some information to help with debugging. The main thing it will record
 is a trace of all FUSE messages to the location defined by the

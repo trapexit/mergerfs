@@ -55,7 +55,7 @@ NFS export settings:
   other software. By setting `softerr` or `soft` the NFS client will
   timeout eventually and return an error.
 * `softreval`: NFS client will serve up cached data after `retrans`
-  attempts to revalidate the data. Helps with intermitent network
+  attempts to revalidate the data. Helps with intermittent network
   issues.
 * `timeo=150`: Timeout till retrying request. 
 * `retrans=3`: Number of retrying a request.
@@ -122,7 +122,7 @@ line tool `uuid` or `uuidgen` or through a website such as
 
 `no_root_squash` is required for the same reason mergerfs needs to run
 as `root`. Certain behaviors of mergerfs require control over the
-filesystem that only `root` can preform. If squashing is enabled, or
+filesystem that only `root` can perform. If squashing is enabled, or
 mergerfs was running as non-root, it would be unable to perform
 certain function and you will receive permission errors.
 
