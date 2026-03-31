@@ -67,12 +67,51 @@ Yes. They are completely unrelated pieces of software that just happen
 to work well together.
 
 
-## Can I use mergerfs without nonraid? nonraid without mergerfs?
+## How does mergerfs interact with SnapRAID recovery behavior?
+
+SnapRAID does not choose parity layout based on directory structure or
+relative path. As each file is discovered, SnapRAID fills parity space
+for that file based on its size using the next available parity area.
+This makes the logical parity layout depend on discovery order, file
+size, and how much data already exists on each filesystem at that
+time.  Filesystems with similar used space, regardless of total
+capacity, are more likely to place newly added files into similar
+parity positions.
+
+Because of that, if files are changed or removed across multiple
+branches and those files happen to overlap in parity space, recovery
+of those deleted files may be less reliable. This is not a general
+concern, is not unique to mergerfs usage, and it does not affect
+filesystem failure recovery. It is specifically a concern when trying
+to recover from accidental deletion of files spread across multiple
+filesystems.
+
+In practice this mostly matters when the filesystems have very similar
+used space, the files are created across those filesystems around the
+same time, and you later want SnapRAID to recover an accidental
+deletion spanning multiple filesystems. Otherwise this is usually not
+something to worry about.
+
+If, however, this is a concern it can be beneficial to keep files on
+as few filesystems as possible or otherwise keep related files
+together. See the [collocation
+section.](configuration_and_policies.md#how-can-i-ensure-files-are-collocated-on-the-same-branch)
+
+
+## Can I use mergerfs without NonRAID? NonRAID without mergerfs?
 
 [https://github.com/qvr/nonraid](https://github.com/qvr/nonraid)
 
 Yes. They are completely unrelated pieces of software that just happen
 to work well together.
+
+
+### How does mergerfs interact with NonRAID?
+
+There are no known special interactions or concerns between mergerfs
+and NonRAID. They are separate tools and mergerfs has no known
+behavior which requires any special configuration or caveats when used
+with NonRAID.
 
 
 ## Does mergerfs support CoW / copy-on-write / writes to read-only filesystems?
