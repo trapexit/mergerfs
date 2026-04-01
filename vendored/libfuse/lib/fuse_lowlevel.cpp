@@ -396,6 +396,17 @@ fuse_reply_write(fuse_req_t *req,
 }
 
 int
+fuse_reply_copy_file_range_64(fuse_req_t *req,
+                              size_t      count)
+{
+  struct fuse_copy_file_range_out arg = {};
+
+  arg.bytes_copied = count;
+
+  return send_reply_ok(req, &arg, sizeof(arg));
+}
+
+int
 fuse_reply_buf(fuse_req_t *req,
                const char *buf,
                size_t      size)
@@ -1361,6 +1372,14 @@ do_copy_file_range(fuse_req_t            *req_,
 
 static
 void
+do_copy_file_range_64(fuse_req_t            *req_,
+                      struct fuse_in_header *hdr_)
+{
+  f.op.copy_file_range(req_,hdr_);
+}
+
+static
+void
 do_setupmapping(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
@@ -1602,7 +1621,7 @@ fuse_lowlevel_notify_retrieve(struct fuse_session *se,
   return err;
 }
 
-#define FUSE_OPCODE_LEN (FUSE_STATX + 1)
+#define FUSE_OPCODE_LEN (FUSE_COPY_FILE_RANGE_64 + 1)
 
 typedef void (*fuse_ll_func)(fuse_req_t*, struct fuse_in_header *);
 const
@@ -1661,7 +1680,8 @@ fuse_ll_funcs[FUSE_OPCODE_LEN] =
     do_removemapping,
     do_syncfs,
     do_tmpfile,
-    do_statx
+    do_statx,
+    do_copy_file_range_64
   };
 
 #define FUSE_MAXOPS (sizeof(fuse_ll_funcs) / sizeof(fuse_ll_funcs[0]))
@@ -1757,6 +1777,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   req->ctx.umask  = 0;
   req->conn       = f.conn;
   req->se         = se_;
+  req->ioctl_64bit = 0;
 
   err = ENOSYS;
   if(in->opcode >= FUSE_MAXOPS)
@@ -1795,6 +1816,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   req->ctx.opcode = in->opcode;
   req->ctx.unique = in->unique;
   req->ctx.nodeid = in->nodeid;
+  req->ioctl_64bit = 0;
   req->ctx.uid    = in->uid;
   req->ctx.gid    = in->gid;
   req->ctx.pid    = in->pid;

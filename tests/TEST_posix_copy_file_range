@@ -71,6 +71,52 @@ def main():
             os.close(mdfd)
             os.close(ndfd)
 
+        # Exercise very large copy lengths to validate the 64-bit copy result
+        # path when available. Use sparse files to keep runtime and disk usage low.
+        large_len = (5 << 30) + 4096
+        merge_large_src = join(mount, "posix-cfr/src-large")
+        merge_large_dst = join(mount, "posix-cfr/dst-large")
+        native_large_src = join(native, "posix-cfr/src-large")
+        native_large_dst = join(native, "posix-cfr/dst-large")
+        touch(merge_large_src, b"")
+        touch(merge_large_dst, b"")
+        touch(native_large_src, b"")
+        touch(native_large_dst, b"")
+
+        msfd = os.open(merge_large_src, os.O_RDWR)
+        mdfd = os.open(merge_large_dst, os.O_RDWR)
+        nsfd = os.open(native_large_src, os.O_RDWR)
+        ndfd = os.open(native_large_dst, os.O_RDWR)
+        try:
+            # Make sparse files with one non-zero byte at the end so both sides
+            # have comparable logical contents.
+            os.ftruncate(msfd, large_len)
+            os.ftruncate(nsfd, large_len)
+            os.pwrite(msfd, b"z", large_len - 1)
+            os.pwrite(nsfd, b"z", large_len - 1)
+
+            err = compare_calls(
+                "copy_file_range large sparse",
+                lambda: os.copy_file_range(msfd, mdfd, large_len),
+                lambda: os.copy_file_range(nsfd, ndfd, large_len),
+                lambda a, b: a == b,
+            )
+            if err:
+                return fail(err)
+
+            mstat = os.fstat(mdfd)
+            nstat = os.fstat(ndfd)
+            if mstat.st_size != nstat.st_size:
+                return fail(
+                    "copy_file_range large sparse dst size mismatch "
+                    f"mergerfs={mstat.st_size} native={nstat.st_size}"
+                )
+        finally:
+            os.close(msfd)
+            os.close(mdfd)
+            os.close(nsfd)
+            os.close(ndfd)
+
         return 0
 
 
