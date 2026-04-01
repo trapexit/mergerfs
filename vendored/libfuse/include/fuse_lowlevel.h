@@ -271,6 +271,8 @@ int fuse_reply_open(fuse_req_t *req,
  */
 int fuse_reply_write(fuse_req_t *req, size_t count);
 
+int fuse_reply_copy_file_range_64(fuse_req_t *req, size_t count);
+
 /**
  * Reply with data
  *

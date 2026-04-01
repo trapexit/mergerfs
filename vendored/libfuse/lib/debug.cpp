@@ -226,7 +226,7 @@ _open_flag_to_str(const uint64_t offset_)
 
 #undef OPEN_FLAG_CASE
 
-#define FUSE_INIT_FLAG_CASE(X) case FUSE_##X: return #X
+#define FUSE_INIT_FLAG_CASE(X) case static_cast<uint64_t>(FUSE_##X): return #X
 
 static
 const
@@ -277,6 +277,7 @@ _fuse_init_flag_name(const uint64_t flag_)
       FUSE_INIT_FLAG_CASE(HAS_RESEND);
       FUSE_INIT_FLAG_CASE(ALLOW_IDMAP);
       FUSE_INIT_FLAG_CASE(OVER_IO_URING);
+      FUSE_INIT_FLAG_CASE(REQUEST_TIMEOUT);
     }
 
   return nullptr;
@@ -1493,7 +1494,8 @@ _opcode_name(enum fuse_opcode op_)
       "REMOVEMAPPING",
       "SYNCFS",
       "TMPFILE",
-      "STATX"
+      "STATX",
+      "COPY_FILE_RANGE_64"
     };
 
   if(op_ >= (sizeof(names) / sizeof(names[0])))
@@ -1653,6 +1655,7 @@ fuse_debug_in_header(const struct fuse_in_header *hdr_)
       _debug_fuse_lseek_in(arg);
       break;
     case FUSE_COPY_FILE_RANGE:
+    case FUSE_COPY_FILE_RANGE_64:
       _debug_fuse_copy_file_range_in(arg);
       break;
     case FUSE_TMPFILE:

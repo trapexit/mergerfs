@@ -2711,8 +2711,17 @@ fuse_lib_copy_file_range(fuse_req_t                  *req_,
   fuse_file_info_t ffi_in = {};
   fuse_file_info_t ffi_out = {};
   const struct fuse_copy_file_range_in *arg;
+  struct fuse_copy_file_range_in arg_tmp;
 
   arg = (fuse_copy_file_range_in*)fuse_hdr_arg(hdr_);
+  if(((hdr_->opcode == FUSE_COPY_FILE_RANGE) || (sizeof(size_t) == 4)) &&
+     (arg->len > 0xfffff000ULL))
+    {
+      /* Avoid truncation in the old reply format or 32-bit size_t conversion. */
+      arg_tmp = *arg;
+      arg_tmp.len = 0xfffff000ULL;
+      arg = &arg_tmp;
+    }
   ffi_in.fh  = arg->fh_in;
   ffi_out.fh = arg->fh_out;
 
@@ -2725,7 +2734,12 @@ fuse_lib_copy_file_range(fuse_req_t                  *req_,
                              arg->flags);
 
   if(rv >= 0)
-    fuse_reply_write(req_,rv);
+    {
+      if(hdr_->opcode == FUSE_COPY_FILE_RANGE_64)
+        fuse_reply_copy_file_range_64(req_,rv);
+      else
+        fuse_reply_write(req_,rv);
+    }
   else
     fuse_reply_err(req_,rv);
 }
