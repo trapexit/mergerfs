@@ -1255,6 +1255,12 @@ do_init(fuse_req_t            *req,
       outarg.max_stack_depth = fuse_cfg.passthrough_max_stack_depth;
     }
 
+  if((inargflags & FUSE_REQUEST_TIMEOUT) && fuse_cfg.request_timeout)
+    {
+      outargflags |= FUSE_REQUEST_TIMEOUT;
+      outarg.request_timeout = fuse_cfg.request_timeout;
+    }
+
   if(inargflags & FUSE_INIT_EXT)
     {
       outargflags |= FUSE_INIT_EXT;

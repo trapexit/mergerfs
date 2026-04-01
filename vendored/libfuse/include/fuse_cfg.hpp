@@ -46,6 +46,8 @@ public:
   int process_thread_count = -1;
   int process_thread_queue_depth = 2;
   std::string pin_threads = "false";
+
+  u16 request_timeout = 0;
 };
 
 extern fuse_cfg_t fuse_cfg;

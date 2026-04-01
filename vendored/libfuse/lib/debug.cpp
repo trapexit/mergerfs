@@ -1212,6 +1212,7 @@ fuse_syslog_fuse_init_out(const struct fuse_init_out *arg_)
                        " max_pages={};"
                        " map_alignment={};"
                        " max_stack_depth={};"
+                       " request_timeout={};"
                        " flags=(",
                        arg_->major,
                        arg_->minor,
@@ -1222,7 +1223,8 @@ fuse_syslog_fuse_init_out(const struct fuse_init_out *arg_)
                        arg_->time_gran,
                        arg_->max_pages,
                        arg_->map_alignment,
-                       arg_->max_stack_depth);
+                       arg_->max_stack_depth,
+                       arg_->request_timeout);
 
   for(uint64_t i = 0; i < (sizeof(flags)*8); i++)
     {
@@ -1268,6 +1270,7 @@ fuse_debug_init_out(const uint64_t              unique_,
              " time_gran={}"
              " max_pages={}"
              " map_alignment={}"
+             " request_timeout={}"
              "\n",
              _timestamp_ns(),
              unique_,
@@ -1282,7 +1285,8 @@ fuse_debug_init_out(const uint64_t              unique_,
              arg_->max_write,
              arg_->time_gran,
              arg_->max_pages,
-             arg_->map_alignment);
+             arg_->map_alignment,
+             arg_->request_timeout);
 }
 
 static
