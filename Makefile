@@ -271,16 +271,21 @@ install-strip: install-base
 	$(STRIP) "$(INSTALLBINDIR)/mergerfs"
 
 .PHONY: uninstall
-uninstall: uninstall-base uninstall-mount.mergerfs uninstall-man
+uninstall: uninstall-base uninstall-mount.mergerfs uninstall-preload uninstall-man
 
 uninstall-base:
 	$(RM) -f "$(INSTALLBINDIR)/mergerfs"
+	$(RM) -f "$(INSTALLBINDIR)/fsck.mergerfs"
+	$(RM) -f "$(INSTALLBINDIR)/mergerfs.collect-info"
 
 uninstall-mount.mergerfs:
 	$(RM) -f "$(INSTALLBINDIR)/mount.mergerfs"
 
 uninstall-man:
 	$(RM) -f "$(INSTALLMAN1DIR)/$(MANPAGE)"
+
+uninstall-preload:
+	$(RM) -f "$(INSTALLLIBDIR)/preload.so"
 
 .PHONY: tarball
 tarball: changelog version
@@ -341,7 +346,7 @@ install-build-pkgs:
 
 .PHONY: install-build-tools
 install-build-tools:
-	./bulidtools/install-build-tools
+	./buildtools/install-build-tools
 
 define build_release
 	$(eval GITREF ?= $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD))
@@ -368,7 +373,7 @@ release-arm64:
 release-armhf:
 	$(call build_release,"armhf")
 release-riscv64:
-	$(call build_release,"risc64")
+	$(call build_release,"riscv64")
 release-static:
 	$(call build_release,"static")
 release-tarball:

@@ -326,6 +326,7 @@ _create(const fuse_req_ctx_t *ctx_,
       FUSE::passthrough_close(backing_id);
       fs::close(fi->fd);
       delete fi;
+      ffi_->fh = 0;
 
       SysLog::crit(msg);
       fmt::println(stderr,"{}",msg);

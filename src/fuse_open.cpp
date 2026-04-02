@@ -17,17 +17,17 @@
 */
 
 /*
-  OPEN FILE MANAGEMENT AND CONCURRENCY CONTROL
-  ============================================
+  OPEN FILE MANAGEMENT AND SHARED HANDLE TRACKING
+  ===============================================
 
   This file implements FUSE open() with handling for concurrent access
   to the same file. The key challenge is that multiple threads may
   simultaneously attempt to open the same file (same nodeid), and we
   need to:
 
-  1. Share a single FileInfo instance among all opens of the same file
-  (to be able to re-open the same file and use the same backing id for
-  concurrent open requests)
+  1. Share a single canonical FileInfo entry in the open_files map for all
+  opens of the same file while still giving each FUSE handle its own
+  FileInfo object and file descriptor
   2. Properly reference count to know when to release resources
   3. Handle race conditions without deadlocks or resource leaks
   4. Support FUSE passthrough mode for performance
@@ -41,8 +41,8 @@
 
   When a file is opened:
   1. First, we check if an entry already exists (using visit())
-  2. If it exists and is valid (fi != nullptr), we increment ref_count and
-     share the existing FileInfo by re-opening its file descriptor
+  2. If it exists, we increment ref_count and create a new per-handle
+     FileInfo by re-opening the canonical file descriptor
   3. If it doesn't exist, we create a new FileInfo and try to insert it
   4. If insertion fails (another thread inserted first), we clean up
   and retry (because to use passthrough it MUST be the same underlying
@@ -62,15 +62,13 @@
   underlying file resources. The alternative is to not use passthrough
   on failure but this race should be rare.
 
-  ZOMBIE STATE PROTECTION
-  -----------------------
+  RELEASE INTERACTION
+  -------------------
 
-  When a file is being released (in fuse_release.cpp), the entry enters a
-  "zombie" state where fi is set to nullptr. The check at line ~305 prevents
-  new opens from acquiring a reference to a dying file:
-
-    if(v_.second.fi == nullptr)
-      return;  // Skip zombie entries
+  release() erases the map entry on the final close. Until then, the
+  canonical FileInfo in the map remains valid and overlapping opens can bump
+  ref_count and duplicate its fd. Secondary handles own their own FileInfo
+  objects and are freed independently during release().
 
   PASSTHROUGH MODE
   ----------------
@@ -106,6 +104,8 @@
 #include "stat_util.hpp"
 
 #include "fuse.h"
+
+#include <sched.h>
 
 #include <set>
 #include <string>
@@ -365,7 +365,7 @@ _open(const fuse_req_ctx_t *ctx_,
       int backing_id = INVALID_BACKING_ID;
 
       // The ref increment keeps fuse_release.cpp from erasing and
-      // freeing the entry.
+      // freeing the canonical entry while we duplicate its fd.
       of.visit(ctx_->nodeid,
                [&](auto &v_)
                {
@@ -455,9 +455,11 @@ _open(const fuse_req_ctx_t *ctx_,
       FUSE::passthrough_close(backing_id);
       fs::close(fi->fd);
       delete fi;
+      ffi_->fh = 0;
+      ::sched_yield();
     }
 
-  return -EIO;
+  return -EAGAIN;
 }
 
 

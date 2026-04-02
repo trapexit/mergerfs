@@ -35,15 +35,13 @@
   - backing_id: Kernel handle for FUSE passthrough mode. INVALID_BACKING_ID
     means passthrough is not enabled for this file.
 
-  - fi: Pointer to the FileInfo object containing file metadata and
-    the actual file descriptor to the **first** opened file. Since a
-    specific file descriptor has state associated with it you can not
-    simply reuse the FD for overlapping open requests. Instead it is
-    reopened using openat(/proc/self/fd/X). Additionally, FUSE
-    passthrough feature requires that the same underlying file be used
-    for the nodeid and backing_id. All secondary opens are stored in
-    the fuse_file_info_t.fh only. When set to nullptr, the entry is in
-    "zombie" state (being destroyed but not yet removed from the map).
+  - fi: Pointer to the canonical FileInfo object containing file metadata and
+    the file descriptor used as the source for overlapping opens. Since a
+    file descriptor has state associated with it, concurrent opens get their
+    own duplicated fd and their own FileInfo stored only in
+    fuse_file_info_t.fh. The map entry keeps the canonical FileInfo so later
+    opens can duplicate it and so the nodeid can retain a shared
+    passthrough backing_id.
 
   THREAD SAFETY
   -------------
@@ -65,12 +63,12 @@
   An OpenFile entry goes through these states:
 
   1. NOT IN MAP - File is not open
-  2. ACTIVE (ref_count >= 1, fi != nullptr) - File is open and in use
-  3. ZOMBIE (ref_count = 0, fi = nullptr) - File is being destroyed
-  4. CLEANED UP - Resources freed, entry erased from map
+  2. ACTIVE (ref_count >= 1) - File is open and the canonical FileInfo is in use
+  3. ERASED - The final release removed the map entry and cleanup continues
+     outside the map callback
 
   See fuse_open.cpp and fuse_release.cpp for detailed documentation on the
-  concurrency patterns and two-phase cleanup mechanism.
+  concurrency patterns and per-handle cleanup rules.
 */
 
 #pragma once
