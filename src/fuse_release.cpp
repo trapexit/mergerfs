@@ -17,71 +17,26 @@
 */
 
 /*
-  TWO-PHASE FILE RELEASE AND RESOURCE CLEANUP
-  ===========================================
+  RELEASE OF SHARED AND PER-HANDLE FILEINFO OBJECTS
+  =================================================
 
-  This file implements FUSE release() with a sophisticated two-phase cleanup
-  mechanism designed to handle concurrent access without deadlocks or leaks.
+  The open_files map stores one canonical FileInfo per nodeid together with a
+  ref_count and optional passthrough backing_id. Overlapping opens of the same
+  file increment that ref_count but still allocate their own FileInfo objects
+  with duplicated file descriptors for the individual FUSE handles.
 
-  THE PROBLEM: CONCURRENT RELEASE AND OPEN
-  ----------------------------------------
+  That means release() must handle two ownership cases:
+  - the canonical FileInfo stored in open_files
+  - a per-handle FileInfo that exists only in fuse_file_info_t.fh
 
-  When multiple threads access the same file, we have reference counting to
-  track how many opens are active. When the last close happens, we need to:
-  1. Close the file descriptor
-  2. Close the passthrough backing_id (if any)
-  3. Delete the FileInfo object
-  4. Remove the entry from the open_files map
+  On non-final closes, secondary handle FileInfo objects are freed
+  immediately after the ref_count decrement while the canonical map entry stays
+  alive.
 
-  The challenge is that these operations can be slow (especially close()),
-  and we CANNOT hold the map lock during slow operations. Other threads
-  may need to open the same file or release other files.
-
-  THE SOLUTION: TWO-PHASE CLEANUP
-  -------------------------------
-
-  Phase 1: _release_ref() - Atomic Reference Management (lines ~35-65)
-    - Runs inside visit() callback (map is locked)
-    - Decrements ref_count
-    - If ref_count reaches 0, captures resources and sets fi = nullptr
-    - This "zombie" state signals that cleanup is needed
-
-  Phase 2: _release_cleanup() - Resource Destruction (lines ~69-88)
-    - Runs OUTSIDE visit() callback (map is unlocked)
-    - Performs slow operations: close(), passthrough_close(), delete
-    - Conditionally erases the map entry using erase_if
-
-  WHY TWO PHASES?
-  --------------
-
-  Without this split, a slow close() would block:
-  - Other threads trying to open the same file
-  - Other threads trying to release other files (global map lock)
-  - The entire FUSE request pipeline
-
-  By separating the fast reference counting from the slow cleanup, we achieve
-  both correctness and high concurrency.
-
-  THE ZOMBIE STATE
-  ----------------
-
-  When ref_count hits 0, we set fi = nullptr. This "zombie" state means:
-  - The entry is marked for destruction
-  - New opens should skip this entry (see fuse_open.cpp line ~305)
-  - Cleanup is in progress or pending
-
-  The erase_if() in _release_cleanup() only erases if fi is still nullptr,
-  protecting against the ABA problem where another thread might have already
-  created a new entry with the same nodeid.
-
-  ORPHAN FILEINFO CLEANUP
-  -----------------------
-
-  The release() function (lines ~116-135) handles the case where a FileInfo
-  was created but never inserted into the map (e.g., open failure). The
-  fi_in_map flag distinguishes between:
-  - FileInfo in map: wait for normal cleanup
-  - FileInfo not in map (orphan): clean up immediately
+  On the final close, the map entry is erased atomically and cleanup happens
+  after the erase_if() callback returns so close() and delete do not execute
+  while the map bucket is locked. If the final handle is different from the
+  canonical map-owned FileInfo, both objects must be released.
 */
 
 #include "fuse_release.hpp"
@@ -103,6 +58,9 @@ _release(cu64        nodeid_,
          FileInfo   *fi_,
          const bool  dropcacheonclose_)
 {
+  // The double fadvise is necessary insofar as according to nocache
+  // author (https://github.com/Feh/nocache#limitations) the first one
+  // doesn't always work due to timing issues.
   if(dropcacheonclose_)
     {
       fs::fadvise_dontneed(fi_->fd);
@@ -118,9 +76,10 @@ void
 FUSE::release(cu64             nodeid_,
               FileInfo * const fi_)
 {
-  auto     &of         = state.open_files;
-  int       backing_id = INVALID_BACKING_ID;
-  FileInfo *fi_to_free = nullptr;
+  auto     &of            = state.open_files;
+  int       backing_id    = INVALID_BACKING_ID;
+  FileInfo *canonical_fi  = nullptr;
+  FileInfo *fh_fi_to_free = nullptr;
 
   of.erase_if(nodeid_,
               [&](auto &v_)
@@ -129,21 +88,28 @@ FUSE::release(cu64             nodeid_,
                 if(v_.second.ref_count > 0)
                   {
                     if(fi_ != v_.second.fi)
-                      fi_to_free = fi_;
+                      fh_fi_to_free = fi_;
                     return false;
                   }
 
-                fi_to_free = v_.second.fi;
+                canonical_fi = v_.second.fi;
                 backing_id = v_.second.backing_id;
+                if(fi_ != canonical_fi)
+                  fh_fi_to_free = fi_;
 
                 return true;
               });
 
   FUSE::passthrough_close(backing_id);
-  if(fi_to_free)
+  if(fh_fi_to_free)
     {
-      fs::close(fi_to_free->fd);
-      delete fi_to_free;
+      fs::close(fh_fi_to_free->fd);
+      delete fh_fi_to_free;
+    }
+  if(canonical_fi)
+    {
+      fs::close(canonical_fi->fd);
+      delete canonical_fi;
     }
 }
 

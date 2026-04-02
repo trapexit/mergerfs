@@ -1,21 +1,32 @@
 #!/bin/sh
 
+if [ "$(id -u)" -eq 0 ]; then
+    SUDO=
+elif command -v sudo >/dev/null 2>&1; then
+    SUDO=sudo
+elif command -v doas >/dev/null 2>&1; then
+    SUDO=doas
+else
+    printf '%s\n' "error: need root privileges; run as root or install sudo/doas" >&2
+    exit 1
+fi
+
 if [ -e /usr/bin/apt-get ]; then
     export DEBIAN_FRONTEND=noninteractive
-    apt-get -qy update
-    apt-get -qy --force-yes --no-install-suggests --no-install-recommends install \
+    ${SUDO} apt-get -qy update
+    ${SUDO} apt-get -qy --no-install-suggests --no-install-recommends install \
             qemu-user-static \
             podman
 elif [ -e /usr/bin/dnf ]; then
-    dnf -y update
-    dnf -y install \
+    ${SUDO} dnf -y update
+    ${SUDO} dnf -y install \
         qemu-user-static \
         podman
 elif [ -e /sbin/apk ]; then
-    apk add \
+    ${SUDO} apk add \
         python3 \
         qemu-user-static \
         podman
 elif [ -e /usr/bin/pacman ]; then
-    pacman -Sy --noconfirm qemu-user-static podman
+    ${SUDO} pacman -Sy --noconfirm qemu-user-static podman
 fi

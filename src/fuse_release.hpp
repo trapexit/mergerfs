@@ -36,7 +36,7 @@
 
   The two-phase cleanup mechanism is implemented in fuse_release.cpp. See
   that file for detailed documentation on the reference counting and
-  zombie state handling.
+  canonical vs per-handle ownership rules.
 
   See commit 446e9a7b for the complete rationale behind this design.
 */
