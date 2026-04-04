@@ -556,18 +556,24 @@ something like mergerfs is unable to be used.
 policyfs is a Linux FUSE storage daemon that unifies multiple storage
 paths under a single mountpoint, similarly to mergerfs. Its
 distinguishing features are explicit path-pattern-based routing rules
-for reads and writes, and an optional SQLite metadata index that can
-serve `readdir` and `getattr` operations without spinning up HDDs.
+for placement, and an optional SQLite metadata index that can serve
+`readdir` and `getattr` operations without spinning up HDDs.
 
 Compared with mergerfs, policyfs emphasizes explicit path-based routing
 and optional metadata indexing, while mergerfs emphasizes a broad,
 policy-driven pooling model with longer operational history and wider
-adoption.
+adoption. It doesn't try limiting spinup as doing so fundimentally is
+in [conflict with other features.](faq/limit_drive_spinup.md)
+
+Due to the nature of PolicyFS it can not really be used while changing
+files out-of-band and with the delayed writeback of metadata and
+unlinking there is a greater risk of inconsistancy in error
+conditions.
 
 * **Better than mergerfs for:** explicit path-based routing and optional
   metadata indexing to reduce HDD spin-ups.
 * **Worse than mergerfs for:** users prioritizing project maturity,
-  adoption, and long-established operational behavior.
+  adoption, performance, and long-established operational behavior.
 
 
 ## Greyhole
