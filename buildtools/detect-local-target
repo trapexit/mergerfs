@@ -1,0 +1,119 @@
+#!/bin/bash
+# Detects local OS and maps to containerfiles target
+# Returns target if found in buildtools/containerfiles/, empty string otherwise
+
+set -euo pipefail
+
+CONTAINERFILES_DIR="buildtools/containerfiles"
+
+# Detect system architecture and map to containerfiles format
+detect_arch() {
+    local arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64)     echo "amd64" ;;
+        aarch64)    echo "arm64" ;;
+        armv7l)     echo "armhf" ;;
+        i686|i386)  echo "i386" ;;
+        riscv64)    echo "riscv64" ;;
+        *)          echo "" ;;
+    esac
+}
+
+# Detect distro and version from os-release
+detect_distro() {
+    local os_release="${1:-}"
+    if [[ ! -r "$os_release" ]]; then
+        return 1
+    fi
+    
+    # Source the file safely - ID and VERSION_ID are environment variables
+    . "$os_release"
+    
+    local distro="$ID"
+    local version="$VERSION_ID"
+    
+    # Map distro ID to containerfiles naming convention
+    case "$distro" in
+        ubuntu|debian|fedora) ;;
+        rocky|rhel|centos|almalinux) distro="rockylinux" ;;
+        *)
+            # Fallback to ID_LIKE for derivatives
+            if [[ -n "${ID_LIKE:-}" ]]; then
+                case "$ID_LIKE" in
+                    *ubuntu*) distro="ubuntu" ;;
+                    *debian*) distro="debian" ;;
+                    *fedora*) distro="fedora" ;;
+                esac
+            fi
+            ;;
+    esac
+    
+    # Only return if we have valid distro and version
+    if [[ -n "$distro" && -n "$version" ]]; then
+        echo "$distro:$version"
+    else
+        return 1
+    fi
+}
+
+# Try to find a matching containerfile target
+find_containerfile() {
+    local target="$1"
+    local containerfile="${CONTAINERFILES_DIR}/${target}"
+    
+    # Direct match
+    if [[ -d "$containerfile" || -f "$containerfile" ]]; then
+        echo "$target"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Main detection logic
+main() {
+    local arch
+    
+    # Detect architecture
+    arch=$(detect_arch)
+    if [[ -z "$arch" ]]; then
+        echo "WARNING: Could not detect system architecture" >&2
+        exit 1
+    fi
+    
+    # Try to detect distro from multiple locations
+    local distro_ver
+    distro_ver=$(detect_distro "/etc/os-release") || \
+    distro_ver=$(detect_distro "/usr/lib/os-release") || {
+        echo "WARNING: Could not detect distro from os-release" >&2
+        exit 1
+    }
+    
+    # Build target string
+    local target="${distro_ver}.${arch}"
+    
+    # Try to find matching containerfile
+    if find_containerfile "$target"; then
+        exit 0
+    fi
+    
+    # Try with partial version matching (e.g., 25.10 → 25)
+    local distro="${distro_ver%%:*}"
+    local version="${distro_ver##*:}"
+    
+    # Strip last minor version number and try again
+    local short_version="${version%.*}"
+    if [[ -n "$short_version" ]]; then
+        target="${distro}:${short_version}.${arch}"
+        if find_containerfile "$target"; then
+            exit 0
+        fi
+    fi
+    
+    # No match found
+    echo "WARNING: No containerfile found for target: ${distro_ver}.${arch}" >&2
+    exit 1
+}
+
+main "$@"
