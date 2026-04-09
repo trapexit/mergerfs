@@ -114,11 +114,10 @@ _calculate_flush(FlushOnClose const flushonclose_,
 
 static
 void
-_config_to_ffi_flags(Config           &cfg_,
-                     const int         tid_,
+_config_to_ffi_flags(const int         tid_,
                      fuse_file_info_t *ffi_)
 {
-  switch(cfg_.cache_files)
+  switch(cfg.cache_files)
     {
     case CacheFiles::ENUM::OFF:
       ffi_->direct_io  = 1;
@@ -144,7 +143,7 @@ _config_to_ffi_flags(Config           &cfg_,
       std::string proc_name;
 
       proc_name = procfs::get_name(tid_);
-      if(cfg_.cache_files_process_names.count(proc_name) == 0)
+      if(cfg.cache_files_process_names.count(proc_name) == 0)
         {
           ffi_->direct_io  = 1;
           ffi_->keep_cache = 0;
@@ -159,7 +158,7 @@ _config_to_ffi_flags(Config           &cfg_,
       break;
     }
 
-  if(cfg_.parallel_direct_writes == true)
+  if(cfg.parallel_direct_writes == true)
     ffi_->parallel_direct_writes = ffi_->direct_io;
 }
 
@@ -261,7 +260,7 @@ _create(const fuse_req_ctx_t *ctx_,
 {
   auto &of = state.open_files;
 
-  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
+  ::_config_to_ffi_flags(ctx_->pid,ffi_);
   if(cfg.cache_writeback)
     ::_tweak_flags_cache_writeback(&ffi_->flags);
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,ffi_->flags);
