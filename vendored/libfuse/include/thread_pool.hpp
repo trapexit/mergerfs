@@ -320,9 +320,9 @@ ThreadPool::start_routine(void *arg_)
     {
       q.wait_dequeue(ctok,func);
 
-      // Empty func is a poison pill — exit cleanly.
-      // If _stop is set, destructor owns the join — don't self-remove.
-      // Otherwise this is a set_threads/remove_thread shrink — detach.
+      // Empty func is a poison pill - exit cleanly.
+      // If _stop is set, destructor owns the join - don't self-remove.
+      // Otherwise this is a set_threads/remove_thread shrink - detach.
       if(!func)
         {
           if(!btp->_stop.load(std::memory_order_acquire))
@@ -383,7 +383,7 @@ ThreadPool::start_routine_autoscale(void *arg_)
 
       if(!got)
         {
-          // Timed out — check if we should shrink
+          // Timed out - check if we should shrink
           if(btp->_stop.load(std::memory_order_acquire))
             break;
 
@@ -406,9 +406,9 @@ ThreadPool::start_routine_autoscale(void *arg_)
           continue;
         }
 
-      // Empty func is a poison pill — exit cleanly.
-      // If _stop is set, destructor owns the join — don't self-remove.
-      // Otherwise this is a set_threads/remove_thread shrink — detach.
+      // Empty func is a poison pill - exit cleanly.
+      // If _stop is set, destructor owns the join - don't self-remove.
+      // Otherwise this is a set_threads/remove_thread shrink - detach.
       if(!func)
         {
           if(!btp->_stop.load(std::memory_order_acquire))
@@ -500,11 +500,11 @@ ThreadPool::monitor_routine(void *arg_)
       // Hill-climb: did throughput improve since last adjustment?
       if(throughput >= prev_throughput)
         {
-          // Same direction is working — continue
+          // Same direction is working - continue
         }
       else
         {
-          // Throughput dropped — reverse direction
+          // Throughput dropped - reverse direction
           direction = -direction;
         }
 
@@ -623,7 +623,7 @@ ThreadPool::_remove_thread_locked()
 
   // Single func that sets the thread-local exit flag and signals
   // via promise. The worker loop checks _tl_should_exit after
-  // running the func and exits cleanly — no separate poison pill
+  // running the func and exits cleanly - no separate poison pill
   // needed, so exactly one thread is removed per call.
   auto promise = std::make_shared<std::promise<void>>();
 
@@ -757,7 +757,7 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
   if(_queue.try_enqueue(ptok_,std::forward<FuncType>(func_)))
     return;
 
-  // Queue full — fast-path grow
+  // Queue full - fast-path grow
   if(_autoscale_enabled)
     {
       std::uint64_t now = _tp_now_usecs();
@@ -798,7 +798,7 @@ ThreadPool::enqueue_work_autoscale(FuncType &&func_)
   if(_queue.try_enqueue(std::forward<FuncType>(func_)))
     return;
 
-  // Queue full — fast-path grow
+  // Queue full - fast-path grow
   if(_autoscale_enabled)
     {
       std::uint64_t now = _tp_now_usecs();
