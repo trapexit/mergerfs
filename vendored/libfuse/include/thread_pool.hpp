@@ -291,16 +291,25 @@ ThreadPool::~ThreadPool()
       pthread_join(_monitor_thread,NULL);
     }
 
+  // Snapshot threads under lock to close the race with _remove_self.
+  // After _stop is set, _remove_self becomes a no-op, so no thread
+  // will detach or erase itself from this point forward.
+  std::vector<pthread_t> snapshot;
+  {
+    mutex_lockguard(_threads_mutex);
+    snapshot = _threads;
+  }
+
   syslog(LOG_DEBUG,
          "threadpool (%s): destroying %zu threads",
          _name.c_str(),
-         _threads.size());
+         snapshot.size());
 
   // Enqueue one poison pill per thread
-  for(std::size_t i = 0; i < _threads.size(); ++i)
+  for(std::size_t i = 0; i < snapshot.size(); ++i)
     _queue.enqueue_unbounded(Func{});
 
-  for(auto t : _threads)
+  for(auto t : snapshot)
     pthread_join(t,NULL);
 }
 
@@ -546,6 +555,10 @@ inline
 void
 ThreadPool::_remove_self(pthread_t t_)
 {
+  // During shutdown the destructor owns all joins; don't detach.
+  if(_stop.load(std::memory_order_acquire))
+    return;
+
   mutex_lockguard(_threads_mutex);
 
   auto it = std::find(_threads.begin(),_threads.end(),t_);
