@@ -87,6 +87,7 @@ private:
   int  _add_thread_locked(const std::string &name_);
   int  _remove_thread_locked();
   void _remove_self(pthread_t t_);
+  void _maybe_grow_on_pressure();
 
   static thread_local bool _tl_should_exit;
 
@@ -571,6 +572,37 @@ ThreadPool::_remove_self(pthread_t t_)
 
 
 inline
+void
+ThreadPool::_maybe_grow_on_pressure()
+{
+  if(!_autoscale_enabled)
+    return;
+
+  std::uint64_t now = _tp_now_usecs();
+  std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
+
+  if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
+    return;
+
+  std::size_t count;
+  {
+    mutex_lockguard(_threads_mutex);
+    count = _threads.size();
+  }
+
+  if(count < _scaling_config.max_threads)
+    {
+      add_thread();
+      _last_scale_time_usecs.store(now,std::memory_order_relaxed);
+      syslog(LOG_DEBUG,
+             "threadpool (%s): fast-path grow to %zu threads (queue full)",
+             _name.c_str(),
+             count + 1);
+    }
+}
+
+
+inline
 int
 ThreadPool::_add_thread_locked(const std::string &name_)
 {
@@ -767,37 +799,17 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
 {
   _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 
-  if(_queue.try_enqueue(ptok_,std::forward<FuncType>(func_)))
+  // Materialize into a Func up front so we own the value across
+  // the try/block-enqueue boundary without a double std::forward.
+  Func f(std::forward<FuncType>(func_));
+
+  if(_queue.try_enqueue(std::move(f)))
     return;
 
-  // Queue full - fast-path grow
-  if(_autoscale_enabled)
-    {
-      std::uint64_t now = _tp_now_usecs();
-      std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
-
-      if((now - last) >= (std::uint64_t)_scaling_config.cooldown_usecs)
-        {
-          std::size_t count;
-          {
-            mutex_lockguard(_threads_mutex);
-            count = _threads.size();
-          }
-
-          if(count < _scaling_config.max_threads)
-            {
-              add_thread();
-              _last_scale_time_usecs.store(now,std::memory_order_relaxed);
-              syslog(LOG_DEBUG,
-                     "threadpool (%s): fast-path grow to %zu threads (queue full)",
-                     _name.c_str(),
-                     count + 1);
-            }
-        }
-    }
+  _maybe_grow_on_pressure();
 
   // Block-enqueue (will succeed once a worker frees a slot)
-  _queue.enqueue(ptok_,std::forward<FuncType>(func_));
+  _queue.enqueue(ptok_,std::move(f));
 }
 
 
@@ -808,37 +820,15 @@ ThreadPool::enqueue_work_autoscale(FuncType &&func_)
 {
   _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 
-  if(_queue.try_enqueue(std::forward<FuncType>(func_)))
+  Func f(std::forward<FuncType>(func_));
+
+  if(_queue.try_enqueue(std::move(f)))
     return;
 
-  // Queue full - fast-path grow
-  if(_autoscale_enabled)
-    {
-      std::uint64_t now = _tp_now_usecs();
-      std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
-
-      if((now - last) >= (std::uint64_t)_scaling_config.cooldown_usecs)
-        {
-          std::size_t count;
-          {
-            mutex_lockguard(_threads_mutex);
-            count = _threads.size();
-          }
-
-          if(count < _scaling_config.max_threads)
-            {
-              add_thread();
-              _last_scale_time_usecs.store(now,std::memory_order_relaxed);
-              syslog(LOG_DEBUG,
-                     "threadpool (%s): fast-path grow to %zu threads (queue full)",
-                     _name.c_str(),
-                     count + 1);
-            }
-        }
-    }
+  _maybe_grow_on_pressure();
 
   // Block-enqueue (will succeed once a worker frees a slot)
-  _queue.enqueue(std::forward<FuncType>(func_));
+  _queue.enqueue(std::move(f));
 }
 
 
