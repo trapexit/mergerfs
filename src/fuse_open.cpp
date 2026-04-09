@@ -212,8 +212,7 @@ _calculate_flush(FlushOnClose const flushonclose_,
 
 static
 void
-_config_to_ffi_flags(Config           &cfg_,
-                     const int         tid_,
+_config_to_ffi_flags(const int         tid_,
                      fuse_file_info_t *ffi_)
 {
   switch(cfg.cache_files)
@@ -354,12 +353,12 @@ _open(const fuse_req_ctx_t *ctx_,
   int rv;
   auto &of = state.open_files;
 
-  ::_config_to_ffi_flags(cfg,ctx_->pid,ffi_);
+  ::_config_to_ffi_flags(ctx_->pid,ffi_);
   if(cfg.cache_writeback)
     ::_tweak_flags_cache_writeback(&ffi_->flags);
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,ffi_->flags);
 
-  for(size_t i = 0; i < MAX_OPEN_RETRIES; i++)
+  for(int i = 0; i < MAX_OPEN_RETRIES; i++)
     {
       FileInfo *fi = nullptr;
       int backing_id = INVALID_BACKING_ID;
@@ -456,10 +455,17 @@ _open(const fuse_req_ctx_t *ctx_,
       fs::close(fi->fd);
       delete fi;
       ffi_->fh = 0;
-      ::sched_yield();
+
+      struct timespec duration = {0,((i+1)*1000)};
+      ::nanosleep(&duration,NULL);
     }
 
-  return -EAGAIN;
+  // Perhaps not the best error to return but it is EXTREMELY unlikely
+  // to be hit and if so the system is probably under a lot of
+  // stress. Give the app the opportunity to try it again. If it can't
+  // it'll error probably similarly as having had returned EIO or
+  // similar.
+  return -EINTR;
 }
 
 
