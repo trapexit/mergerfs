@@ -41,12 +41,14 @@ private:
 
   Queue _queue;
   moodycamel::LightweightSemaphore _slots;
+  std::size_t const _max_depth;
 
 public:
   explicit
   BoundedQueue(std::size_t max_depth_)
     : _queue(),
-      _slots(max_depth_)
+      _slots(max_depth_),
+      _max_depth(max_depth_)
   {
   }
 
@@ -135,6 +137,31 @@ public:
   {
     _queue.wait_dequeue(ctok_, item_);
     _slots.signal();
+  }
+
+  // -- Timed dequeue (waits up to timeout, signals slot if successful) -----
+
+  bool
+  try_wait_dequeue_for(CToken &ctok_, T &item_, std::int64_t timeout_usecs_)
+  {
+    if(!_queue.wait_dequeue_timed(ctok_, item_, timeout_usecs_))
+      return false;
+    _slots.signal();
+    return true;
+  }
+
+  // -- Introspection -------------------------------------------------------
+
+  std::size_t
+  max_depth() const
+  {
+    return _max_depth;
+  }
+
+  std::size_t
+  size_approx() const
+  {
+    return _queue.size_approx();
   }
 
   // -- Token creation -----------------------------------------------------

@@ -24,6 +24,7 @@
 #include "mutex.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstring>
@@ -37,6 +38,7 @@
 
 #include <pthread.h>
 #include <syslog.h>
+#include <time.h>
 
 
 struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
@@ -56,10 +58,20 @@ private:
   using Queue = BoundedQueue<Func,ThreadPoolTraits>;
 
 public:
+  struct ScalingConfig
+  {
+    std::size_t min_threads;
+    std::size_t max_threads;
+    std::int64_t sample_interval_usecs;    // hill-climb sample period
+    std::int64_t cooldown_usecs;           // min time between scaling events
+    std::int64_t idle_threshold_usecs;     // worker idle timeout before self-exit
+  };
+
   explicit
-  ThreadPool(const unsigned thread_count_ = std::thread::hardware_concurrency(),
-             const unsigned max_queue_depth_ = std::thread::hardware_concurrency() * 2,
-             const std::string &name_ = {});
+  ThreadPool(const unsigned     thread_count_      = std::thread::hardware_concurrency(),
+             const unsigned     max_queue_depth_    = std::thread::hardware_concurrency() * 2,
+             const std::string &name_               = {},
+             const ScalingConfig *scaling_config_    = nullptr);
   ~ThreadPool();
 
   ThreadPool(const ThreadPool&) = delete;
@@ -69,6 +81,14 @@ public:
 
 private:
   static void *start_routine(void *arg_);
+  static void *start_routine_autoscale(void *arg_);
+  static void *monitor_routine(void *arg_);
+
+  int  _add_thread_locked(const std::string &name_);
+  int  _remove_thread_locked();
+  void _remove_self(pthread_t t_);
+
+  static thread_local bool _tl_should_exit;
 
 public:
   int add_thread(const std::string &name = {});
@@ -110,9 +130,27 @@ public:
   std::future<std::invoke_result_t<FuncType>>
   enqueue_task(FuncType&& func_);
 
+  // Auto-scaling enqueue: grows pool on queue pressure
+  template<typename FuncType>
+  void
+  enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
+                         FuncType           &&func_);
+
+  template<typename FuncType>
+  void
+  enqueue_work_autoscale(FuncType &&func_);
+
 public:
   std::vector<pthread_t> threads() const;
   ThreadPool::PToken ptoken();
+
+  // Introspection
+  std::size_t thread_count() const;
+  std::size_t queue_depth() const;
+  std::size_t queue_capacity() const;
+  std::uint64_t tasks_enqueued() const;
+  std::uint64_t tasks_completed() const;
+  std::uint64_t tasks_pending() const;
 
 private:
   Queue _queue;
@@ -121,17 +159,49 @@ private:
   std::string const      _name;
   std::vector<pthread_t> _threads;
   mutable Mutex          _threads_mutex;
+  Mutex                  _scaling_mutex;
+  std::atomic<bool>      _stop{false};
+
+  // Monitoring counters
+  std::atomic<std::uint64_t> _tasks_enqueued{0};
+  std::atomic<std::uint64_t> _tasks_completed{0};
+
+  // Auto-scaling state
+  bool          _autoscale_enabled;
+  ScalingConfig _scaling_config;
+  pthread_t     _monitor_thread;
+
+  std::atomic<std::uint64_t> _last_scale_time_usecs{0};
 };
 
 
+inline thread_local bool ThreadPool::_tl_should_exit = false;
+
+static
+inline
+std::uint64_t
+_tp_now_usecs()
+{
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC,&ts);
+  return (std::uint64_t)ts.tv_sec * 1000000ULL + (std::uint64_t)ts.tv_nsec / 1000ULL;
+}
+
 
 inline
-ThreadPool::ThreadPool(const unsigned     thread_count_,
-                       const unsigned     max_queue_depth_,
-                       const std::string &name_)
+ThreadPool::ThreadPool(const unsigned        thread_count_,
+                       const unsigned        max_queue_depth_,
+                       const std::string    &name_,
+                       const ScalingConfig  *scaling_config_)
   : _queue(max_queue_depth_),
-    _name(name_)
+    _name(name_),
+    _autoscale_enabled(scaling_config_ != nullptr),
+    _scaling_config(),
+    _monitor_thread()
 {
+  if(scaling_config_)
+    _scaling_config = *scaling_config_;
+
   sigset_t oldset;
   sigset_t newset;
 
@@ -143,8 +213,11 @@ ThreadPool::ThreadPool(const unsigned     thread_count_,
     {
       int rv;
       pthread_t t;
+      auto routine = _autoscale_enabled
+        ? ThreadPool::start_routine_autoscale
+        : ThreadPool::start_routine;
 
-      rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
+      rv = pthread_create(&t,NULL,routine,this);
       if(rv != 0)
         {
           syslog(LOG_WARNING,
@@ -174,24 +247,65 @@ ThreadPool::ThreadPool(const unsigned     thread_count_,
          _name.c_str(),
          _threads.size(),
          max_queue_depth_);
+
+  // Start monitor thread if auto-scaling enabled
+  if(_autoscale_enabled)
+    {
+      sigfillset(&newset);
+      pthread_sigmask(SIG_BLOCK,&newset,&oldset);
+
+      int rv = pthread_create(&_monitor_thread,NULL,
+                              ThreadPool::monitor_routine,this);
+      pthread_sigmask(SIG_SETMASK,&oldset,NULL);
+
+      if(rv != 0)
+        {
+          syslog(LOG_WARNING,
+                 "threadpool (%s): failed to spawn monitor thread - %d (%s)",
+                 _name.c_str(),
+                 rv,
+                 strerror(rv));
+          _autoscale_enabled = false;
+        }
+      else
+        {
+          pthread_setname_np(_monitor_thread, "tp.monitor");
+          syslog(LOG_DEBUG,
+                 "threadpool (%s): auto-scaling enabled [%zu, %zu]",
+                 _name.c_str(),
+                 _scaling_config.min_threads,
+                 _scaling_config.max_threads);
+        }
+    }
 }
 
 
 inline
 ThreadPool::~ThreadPool()
 {
+  _stop.store(true,std::memory_order_release);
+
+  // Stop monitor thread first
+  if(_autoscale_enabled)
+    {
+      pthread_join(_monitor_thread,NULL);
+    }
+
   syslog(LOG_DEBUG,
          "threadpool (%s): destroying %zu threads",
          _name.c_str(),
          _threads.size());
 
-  for(auto t : _threads)
-    pthread_cancel(t);
+  // Enqueue one poison pill per thread
+  for(std::size_t i = 0; i < _threads.size(); ++i)
+    _queue.enqueue_unbounded(Func{});
+
   for(auto t : _threads)
     pthread_join(t,NULL);
 }
 
-// Threads purposefully do not restore default signal handling.
+
+// Standard worker loop: blocks indefinitely on dequeue.
 inline
 void*
 ThreadPool::start_routine(void *arg_)
@@ -206,18 +320,20 @@ ThreadPool::start_routine(void *arg_)
     {
       q.wait_dequeue(ctok,func);
 
-      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+      // Empty func is a poison pill — exit cleanly.
+      // If _stop is set, destructor owns the join — don't self-remove.
+      // Otherwise this is a set_threads/remove_thread shrink — detach.
+      if(!func)
+        {
+          if(!btp->_stop.load(std::memory_order_acquire))
+            btp->_remove_self(pthread_self());
+          break;
+        }
 
       try
         {
           func();
         }
-#if defined(__GLIBCXX__)
-      catch(const __cxxabiv1::__forced_unwind&)
-        {
-          throw;
-        }
-#endif
       catch(const std::exception &e)
         {
           syslog(LOG_CRIT,
@@ -230,21 +346,220 @@ ThreadPool::start_routine(void *arg_)
           syslog(LOG_CRIT,
                  "threadpool (%s): uncaught non-standard exception caught by worker",
                  btp->_name.c_str());
-
         }
 
-      // force destruction to release resources
+      // Force destruction to release resources
       func = {};
 
-      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
+      btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
+
+      // Check if _remove_thread_locked told us to exit
+      if(_tl_should_exit)
+        {
+          _tl_should_exit = false;
+          return nullptr;
+        }
     }
 
   return nullptr;
 }
 
+
+// Auto-scaling worker loop: uses timed dequeue so idle threads can self-exit.
+inline
+void*
+ThreadPool::start_routine_autoscale(void *arg_)
+{
+  ThreadPool *btp = static_cast<ThreadPool*>(arg_);
+
+  ThreadPool::Func func;
+  ThreadPool::Queue &q = btp->_queue;
+  ThreadPool::CToken ctok(btp->_queue.make_ctoken());
+
+  while(true)
+    {
+      bool got = q.try_wait_dequeue_for(ctok,func,
+                                        btp->_scaling_config.idle_threshold_usecs);
+
+      if(!got)
+        {
+          // Timed out — check if we should shrink
+          if(btp->_stop.load(std::memory_order_acquire))
+            break;
+
+          std::size_t count;
+          {
+            mutex_lockguard(btp->_threads_mutex);
+            count = btp->_threads.size();
+          }
+
+          if(count > btp->_scaling_config.min_threads)
+            {
+              syslog(LOG_DEBUG,
+                     "threadpool (%s): idle self-exit (%zu threads remaining)",
+                     btp->_name.c_str(),
+                     count - 1);
+              btp->_remove_self(pthread_self());
+              return nullptr;
+            }
+
+          continue;
+        }
+
+      // Empty func is a poison pill — exit cleanly.
+      // If _stop is set, destructor owns the join — don't self-remove.
+      // Otherwise this is a set_threads/remove_thread shrink — detach.
+      if(!func)
+        {
+          if(!btp->_stop.load(std::memory_order_acquire))
+            btp->_remove_self(pthread_self());
+          break;
+        }
+
+      try
+        {
+          func();
+        }
+      catch(const std::exception &e)
+        {
+          syslog(LOG_CRIT,
+                 "threadpool (%s): uncaught exception caught by worker - %s",
+                 btp->_name.c_str(),
+                 e.what());
+        }
+      catch(...)
+        {
+          syslog(LOG_CRIT,
+                 "threadpool (%s): uncaught non-standard exception caught by worker",
+                 btp->_name.c_str());
+        }
+
+      // Force destruction to release resources
+      func = {};
+
+      btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
+
+      // Check if _remove_thread_locked told us to exit
+      if(_tl_should_exit)
+        {
+          _tl_should_exit = false;
+          return nullptr;
+        }
+    }
+
+  return nullptr;
+}
+
+
+// Hill-climbing monitor thread.
+// Periodically samples throughput, perturbs thread count by +/-1,
+// and moves in the direction that improves throughput.
+inline
+void*
+ThreadPool::monitor_routine(void *arg_)
+{
+  ThreadPool *btp = static_cast<ThreadPool*>(arg_);
+
+  const std::int64_t interval = btp->_scaling_config.sample_interval_usecs;
+  int direction = 1;
+  std::uint64_t prev_completed = btp->_tasks_completed.load(std::memory_order_relaxed);
+  std::uint64_t prev_throughput = 0;
+  bool first_sample = true;
+
+  while(!btp->_stop.load(std::memory_order_acquire))
+    {
+      usleep(interval);
+
+      if(btp->_stop.load(std::memory_order_acquire))
+        break;
+
+      std::uint64_t completed = btp->_tasks_completed.load(std::memory_order_relaxed);
+      std::uint64_t throughput = completed - prev_completed;
+      prev_completed = completed;
+
+      if(first_sample)
+        {
+          prev_throughput = throughput;
+          first_sample = false;
+          continue;
+        }
+
+      // Only adjust if there's meaningful work happening
+      if(throughput == 0 && prev_throughput == 0)
+        {
+          prev_throughput = throughput;
+          continue;
+        }
+
+      std::size_t count;
+      {
+        mutex_lockguard(btp->_threads_mutex);
+        count = btp->_threads.size();
+      }
+
+      // Hill-climb: did throughput improve since last adjustment?
+      if(throughput >= prev_throughput)
+        {
+          // Same direction is working — continue
+        }
+      else
+        {
+          // Throughput dropped — reverse direction
+          direction = -direction;
+        }
+
+      if(direction > 0 && count < btp->_scaling_config.max_threads)
+        {
+          btp->add_thread();
+          btp->_last_scale_time_usecs.store(_tp_now_usecs(),
+                                            std::memory_order_relaxed);
+          syslog(LOG_DEBUG,
+                 "threadpool (%s): hill-climb grow to %zu threads "
+                 "(throughput %lu -> %lu)",
+                 btp->_name.c_str(),
+                 count + 1,
+                 (unsigned long)prev_throughput,
+                 (unsigned long)throughput);
+        }
+      else if(direction < 0 && count > btp->_scaling_config.min_threads)
+        {
+          btp->remove_thread();
+          btp->_last_scale_time_usecs.store(_tp_now_usecs(),
+                                            std::memory_order_relaxed);
+          syslog(LOG_DEBUG,
+                 "threadpool (%s): hill-climb shrink to %zu threads "
+                 "(throughput %lu -> %lu)",
+                 btp->_name.c_str(),
+                 count - 1,
+                 (unsigned long)prev_throughput,
+                 (unsigned long)throughput);
+        }
+
+      prev_throughput = throughput;
+    }
+
+  return nullptr;
+}
+
+
+inline
+void
+ThreadPool::_remove_self(pthread_t t_)
+{
+  mutex_lockguard(_threads_mutex);
+
+  auto it = std::find(_threads.begin(),_threads.end(),t_);
+  if(it != _threads.end())
+    {
+      _threads.erase(it);
+      pthread_detach(t_);
+    }
+}
+
+
 inline
 int
-ThreadPool::add_thread(const std::string &name_)
+ThreadPool::_add_thread_locked(const std::string &name_)
 {
   int rv;
   pthread_t t;
@@ -254,9 +569,13 @@ ThreadPool::add_thread(const std::string &name_)
 
   name = (name_.empty() ? _name : name_);
 
+  auto routine = _autoscale_enabled
+    ? ThreadPool::start_routine_autoscale
+    : ThreadPool::start_routine;
+
   sigfillset(&newset);
   pthread_sigmask(SIG_BLOCK,&newset,&oldset);
-  rv = pthread_create(&t,NULL,ThreadPool::start_routine,this);
+  rv = pthread_create(&t,NULL,routine,this);
   pthread_sigmask(SIG_SETMASK,&oldset,NULL);
 
   if(rv != 0)
@@ -285,7 +604,16 @@ ThreadPool::add_thread(const std::string &name_)
 
 inline
 int
-ThreadPool::remove_thread()
+ThreadPool::add_thread(const std::string &name_)
+{
+  mutex_lockguard(_scaling_mutex);
+  return _add_thread_locked(name_);
+}
+
+
+inline
+int
+ThreadPool::_remove_thread_locked()
 {
   {
     mutex_lockguard(_threads_mutex);
@@ -293,41 +621,40 @@ ThreadPool::remove_thread()
       return -EINVAL;
   }
 
-  auto promise = std::make_shared<std::promise<pthread_t>>();
+  // Single func that sets the thread-local exit flag and signals
+  // via promise. The worker loop checks _tl_should_exit after
+  // running the func and exits cleanly — no separate poison pill
+  // needed, so exactly one thread is removed per call.
+  auto promise = std::make_shared<std::promise<void>>();
 
   auto func =
     [this,promise]()
     {
-      pthread_t t;
-
-      t = pthread_self();
-
-      {
-        mutex_lockguard(_threads_mutex);
-
-        auto it = std::find(_threads.begin(),
-                            _threads.end(),
-                            t);
-        if(it != _threads.end())
-          _threads.erase(it);
-      }
-
-      promise->set_value(t);
-
-      pthread_exit(NULL);
+      _tl_should_exit = true;
+      _remove_self(pthread_self());
+      promise->set_value();
     };
 
   _queue.enqueue_unbounded(std::move(func));
-
-  pthread_join(promise->get_future().get(),NULL);
+  promise->get_future().wait();
 
   return 0;
 }
 
 inline
 int
+ThreadPool::remove_thread()
+{
+  mutex_lockguard(_scaling_mutex);
+  return _remove_thread_locked();
+}
+
+inline
+int
 ThreadPool::set_threads(const std::size_t count_)
 {
+  mutex_lockguard(_scaling_mutex);
+
   if(count_ == 0)
     return -EINVAL;
 
@@ -339,9 +666,9 @@ ThreadPool::set_threads(const std::size_t count_)
   }
 
   for(std::size_t i = current; i < count_; ++i)
-    add_thread();
+    _add_thread_locked({});
   for(std::size_t i = count_; i < current; ++i)
-    remove_thread();
+    _remove_thread_locked();
 
   return 0;
 }
@@ -352,6 +679,7 @@ void
 ThreadPool::enqueue_work(ThreadPool::PToken  &ptok_,
                          FuncType           &&func_)
 {
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue(ptok_,
                  std::forward<FuncType>(func_));
 }
@@ -361,6 +689,7 @@ inline
 void
 ThreadPool::enqueue_work(FuncType &&func_)
 {
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue(std::forward<FuncType>(func_));
 }
 
@@ -371,8 +700,10 @@ bool
 ThreadPool::try_enqueue_work(ThreadPool::PToken &ptok_,
                              FuncType &&func_)
 {
-  return _queue.try_enqueue(ptok_,
-                            std::forward<FuncType>(func_));
+  if(!_queue.try_enqueue(ptok_,std::forward<FuncType>(func_)))
+    return false;
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+  return true;
 }
 
 
@@ -381,7 +712,10 @@ inline
 bool
 ThreadPool::try_enqueue_work(FuncType &&func_)
 {
-  return _queue.try_enqueue(std::forward<FuncType>(func_));
+  if(!_queue.try_enqueue(std::forward<FuncType>(func_)))
+    return false;
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+  return true;
 }
 
 
@@ -392,9 +726,10 @@ ThreadPool::try_enqueue_work_for(ThreadPool::PToken  &ptok_,
                                  std::int64_t         timeout_usecs_,
                                  FuncType           &&func_)
 {
-  return _queue.try_enqueue_for(ptok_,
-                                timeout_usecs_,
-                                std::forward<FuncType>(func_));
+  if(!_queue.try_enqueue_for(ptok_,timeout_usecs_,std::forward<FuncType>(func_)))
+    return false;
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+  return true;
 }
 
 
@@ -404,8 +739,93 @@ bool
 ThreadPool::try_enqueue_work_for(std::int64_t  timeout_usecs_,
                                  FuncType    &&func_)
 {
-  return _queue.try_enqueue_for(timeout_usecs_,
-                                std::forward<FuncType>(func_));
+  if(!_queue.try_enqueue_for(timeout_usecs_,std::forward<FuncType>(func_)))
+    return false;
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+  return true;
+}
+
+
+template<typename FuncType>
+inline
+void
+ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
+                                   FuncType           &&func_)
+{
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+
+  if(_queue.try_enqueue(ptok_,std::forward<FuncType>(func_)))
+    return;
+
+  // Queue full — fast-path grow
+  if(_autoscale_enabled)
+    {
+      std::uint64_t now = _tp_now_usecs();
+      std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
+
+      if((now - last) >= (std::uint64_t)_scaling_config.cooldown_usecs)
+        {
+          std::size_t count;
+          {
+            mutex_lockguard(_threads_mutex);
+            count = _threads.size();
+          }
+
+          if(count < _scaling_config.max_threads)
+            {
+              add_thread();
+              _last_scale_time_usecs.store(now,std::memory_order_relaxed);
+              syslog(LOG_DEBUG,
+                     "threadpool (%s): fast-path grow to %zu threads (queue full)",
+                     _name.c_str(),
+                     count + 1);
+            }
+        }
+    }
+
+  // Block-enqueue (will succeed once a worker frees a slot)
+  _queue.enqueue(ptok_,std::forward<FuncType>(func_));
+}
+
+
+template<typename FuncType>
+inline
+void
+ThreadPool::enqueue_work_autoscale(FuncType &&func_)
+{
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+
+  if(_queue.try_enqueue(std::forward<FuncType>(func_)))
+    return;
+
+  // Queue full — fast-path grow
+  if(_autoscale_enabled)
+    {
+      std::uint64_t now = _tp_now_usecs();
+      std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
+
+      if((now - last) >= (std::uint64_t)_scaling_config.cooldown_usecs)
+        {
+          std::size_t count;
+          {
+            mutex_lockguard(_threads_mutex);
+            count = _threads.size();
+          }
+
+          if(count < _scaling_config.max_threads)
+            {
+              add_thread();
+              _last_scale_time_usecs.store(now,std::memory_order_relaxed);
+              syslog(LOG_DEBUG,
+                     "threadpool (%s): fast-path grow to %zu threads (queue full)",
+                     _name.c_str(),
+                     count + 1);
+            }
+        }
+    }
+
+  // Block-enqueue (will succeed once a worker frees a slot)
+  _queue.enqueue(std::forward<FuncType>(func_));
 }
 
 
@@ -443,6 +863,7 @@ ThreadPool::enqueue_task(FuncType&& func_)
         }
     };
 
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue(std::move(work));
 
   return future;
@@ -464,4 +885,50 @@ ThreadPool::PToken
 ThreadPool::ptoken()
 {
   return _queue.make_ptoken();
+}
+
+
+inline
+std::size_t
+ThreadPool::thread_count() const
+{
+  mutex_lockguard(_threads_mutex);
+  return _threads.size();
+}
+
+inline
+std::size_t
+ThreadPool::queue_depth() const
+{
+  return _queue.size_approx();
+}
+
+inline
+std::size_t
+ThreadPool::queue_capacity() const
+{
+  return _queue.max_depth();
+}
+
+inline
+std::uint64_t
+ThreadPool::tasks_enqueued() const
+{
+  return _tasks_enqueued.load(std::memory_order_relaxed);
+}
+
+inline
+std::uint64_t
+ThreadPool::tasks_completed() const
+{
+  return _tasks_completed.load(std::memory_order_relaxed);
+}
+
+inline
+std::uint64_t
+ThreadPool::tasks_pending() const
+{
+  auto e = _tasks_enqueued.load(std::memory_order_relaxed);
+  auto c = _tasks_completed.load(std::memory_order_relaxed);
+  return (e > c) ? (e - c) : 0;
 }
