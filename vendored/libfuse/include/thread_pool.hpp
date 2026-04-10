@@ -686,11 +686,12 @@ inline
 void
 ThreadPool::_remove_self(pthread_t t_)
 {
-  // During shutdown the destructor owns all joins; don't detach.
+  mutex_lockguard(_threads_mutex);
+
+  // Check _stop under the lock so the destructor can't snapshot this
+  // thread for joining and then race with us detaching ourselves.
   if(_stop.load(std::memory_order_acquire))
     return;
-
-  mutex_lockguard(_threads_mutex);
 
   auto it = std::find(_threads.begin(),_threads.end(),t_);
   if(it != _threads.end())
