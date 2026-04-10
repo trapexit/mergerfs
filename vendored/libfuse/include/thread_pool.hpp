@@ -1190,17 +1190,21 @@ ThreadPool::tasks_completed() const
   return _tasks_completed.load(std::memory_order_relaxed);
 }
 
-// Approximate: the two counters are loaded non-atomically with
-// relaxed ordering.  Loading completed first biases the result
-// toward zero (a completion between the two loads lowers the
-// delta), which is safer for scaling heuristics than over-
-// reporting pressure.
+// Approximate: the two counters are loaded non-atomically.
+// Loading completed first biases the result toward zero (a
+// completion between the two loads lowers the delta), which is
+// safer for scaling heuristics than over-reporting pressure.
+//
+// The first load uses acquire to prevent the CPU from reordering
+// the enqueued load before the completed load.  On x86 (TSO) this
+// is free; on ARM/POWER it emits a barrier that preserves the
+// intended load order so the bias-toward-zero property holds.
 // Suitable for monitoring and heuristics, not for synchronization.
 inline
 std::uint64_t
 ThreadPool::tasks_pending() const
 {
-  auto c = _tasks_completed.load(std::memory_order_relaxed);
+  auto c = _tasks_completed.load(std::memory_order_acquire);
   auto e = _tasks_enqueued.load(std::memory_order_relaxed);
   return (e > c) ? (e - c) : 0;
 }
