@@ -777,6 +777,17 @@ ThreadPool::set_threads(const std::size_t count_)
   if(count_ == 0)
     return -EINVAL;
 
+  // Clamp to autoscale bounds so external callers can't push the
+  // pool outside the range the monitor and idle-exit logic expect.
+  std::size_t count = count_;
+  if(_autoscale_enabled)
+    {
+      if(count < _scaling_config.min_threads)
+        count = _scaling_config.min_threads;
+      if(count > _scaling_config.max_threads)
+        count = _scaling_config.max_threads;
+    }
+
   std::size_t current;
 
   {
@@ -786,14 +797,14 @@ ThreadPool::set_threads(const std::size_t count_)
 
   int rv = 0;
 
-  for(std::size_t i = current; i < count_; ++i)
+  for(std::size_t i = current; i < count; ++i)
     {
       rv = _add_thread_scaling_locked({});
       if(rv != 0)
         return rv;
     }
 
-  for(std::size_t i = count_; i < current; ++i)
+  for(std::size_t i = count; i < current; ++i)
     {
       rv = _remove_thread_scaling_locked();
       if(rv != 0)
