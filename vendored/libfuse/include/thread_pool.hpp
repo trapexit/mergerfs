@@ -463,6 +463,8 @@ ThreadPool::start_routine_autoscale(void *arg_)
 // Hill-climbing monitor thread.
 // Periodically samples throughput, perturbs thread count by +/-1,
 // and moves in the direction that improves throughput.
+// Uses an EMA to smooth throughput noise and requires two consecutive
+// declining samples before reversing direction.
 inline
 void*
 ThreadPool::monitor_routine(void *arg_)
@@ -471,9 +473,12 @@ ThreadPool::monitor_routine(void *arg_)
 
   const std::int64_t interval = btp->_scaling_config.sample_interval_usecs;
   int direction = 1;
+  int decline_streak = 0;
   std::uint64_t prev_completed = btp->_tasks_completed.load(std::memory_order_relaxed);
-  std::uint64_t prev_throughput = 0;
-  bool first_sample = true;
+  double ema_throughput = 0.0;
+  constexpr double ema_alpha = 0.3;  // weight for new samples
+  constexpr int decline_threshold = 2;
+  int warmup_samples = 0;
 
   while(!btp->_stop.load(std::memory_order_acquire))
     {
@@ -483,20 +488,26 @@ ThreadPool::monitor_routine(void *arg_)
         break;
 
       std::uint64_t completed = btp->_tasks_completed.load(std::memory_order_relaxed);
-      std::uint64_t throughput = completed - prev_completed;
+      std::uint64_t raw_throughput = completed - prev_completed;
       prev_completed = completed;
 
-      if(first_sample)
+      // Warm up: seed the EMA with the first two samples before acting.
+      if(warmup_samples < 2)
         {
-          prev_throughput = throughput;
-          first_sample = false;
+          ema_throughput = (warmup_samples == 0)
+            ? (double)raw_throughput
+            : ema_alpha * (double)raw_throughput + (1.0 - ema_alpha) * ema_throughput;
+          ++warmup_samples;
           continue;
         }
 
+      double prev_ema = ema_throughput;
+      ema_throughput = ema_alpha * (double)raw_throughput + (1.0 - ema_alpha) * ema_throughput;
+
       // Only adjust if there's meaningful work happening
-      if(throughput == 0 && prev_throughput == 0)
+      if(ema_throughput < 0.5 && prev_ema < 0.5)
         {
-          prev_throughput = throughput;
+          decline_streak = 0;
           continue;
         }
 
@@ -506,15 +517,23 @@ ThreadPool::monitor_routine(void *arg_)
         count = btp->_threads.size();
       }
 
-      // Hill-climb: did throughput improve since last adjustment?
-      if(throughput >= prev_throughput)
+      // Hill-climb: did smoothed throughput improve since last sample?
+      if(ema_throughput >= prev_ema)
         {
-          // Same direction is working - continue
+          decline_streak = 0;
         }
       else
         {
-          // Throughput dropped - reverse direction
-          direction = -direction;
+          ++decline_streak;
+          if(decline_streak >= decline_threshold)
+            {
+              direction = -direction;
+              decline_streak = 0;
+            }
+          else
+            {
+              continue;  // wait for confirmation before reversing
+            }
         }
 
       if(direction > 0 && count < btp->_scaling_config.max_threads)
@@ -524,11 +543,11 @@ ThreadPool::monitor_routine(void *arg_)
                                             std::memory_order_relaxed);
           syslog(LOG_DEBUG,
                  "threadpool (%s): hill-climb grow to %zu threads "
-                 "(throughput %lu -> %lu)",
+                 "(ema %.1f -> %.1f)",
                  btp->_name.c_str(),
                  count + 1,
-                 (unsigned long)prev_throughput,
-                 (unsigned long)throughput);
+                 prev_ema,
+                 ema_throughput);
         }
       else if(direction < 0 && count > btp->_scaling_config.min_threads)
         {
@@ -537,14 +556,12 @@ ThreadPool::monitor_routine(void *arg_)
                                             std::memory_order_relaxed);
           syslog(LOG_DEBUG,
                  "threadpool (%s): hill-climb shrink to %zu threads "
-                 "(throughput %lu -> %lu)",
+                 "(ema %.1f -> %.1f)",
                  btp->_name.c_str(),
                  count - 1,
-                 (unsigned long)prev_throughput,
-                 (unsigned long)throughput);
+                 prev_ema,
+                 ema_throughput);
         }
-
-      prev_throughput = throughput;
     }
 
   return nullptr;
