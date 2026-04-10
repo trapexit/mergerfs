@@ -534,12 +534,6 @@ ThreadPool::monitor_routine(void *arg_)
           continue;
         }
 
-      std::size_t count;
-      {
-        mutex_lockguard(btp->_threads_mutex);
-        count = btp->_threads.size();
-      }
-
       // Hill-climb: did smoothed throughput improve since last sample?
       if(ema_throughput >= prev_ema)
         {
@@ -568,6 +562,9 @@ ThreadPool::monitor_routine(void *arg_)
           continue;
       }
 
+      // Read count, act, then re-read for an accurate log message.
+      std::size_t count = btp->thread_count();
+
       if(direction > 0 && count < btp->_scaling_config.max_threads)
         {
           btp->add_thread();
@@ -577,7 +574,7 @@ ThreadPool::monitor_routine(void *arg_)
                  "threadpool (%s): hill-climb grow to %zu threads "
                  "(ema %.1f -> %.1f)",
                  btp->_name.c_str(),
-                 count + 1,
+                 btp->thread_count(),
                  prev_ema,
                  ema_throughput);
         }
@@ -590,7 +587,7 @@ ThreadPool::monitor_routine(void *arg_)
                  "threadpool (%s): hill-climb shrink to %zu threads "
                  "(ema %.1f -> %.1f)",
                  btp->_name.c_str(),
-                 count - 1,
+                 btp->thread_count(),
                  prev_ema,
                  ema_throughput);
         }
