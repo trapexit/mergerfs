@@ -60,11 +60,11 @@ private:
 public:
   struct ScalingConfig
   {
-    std::size_t min_threads;
-    std::size_t max_threads;
-    std::int64_t sample_interval_usecs;    // hill-climb sample period
-    std::int64_t cooldown_usecs;           // min time between scaling events
-    std::int64_t idle_threshold_usecs;     // worker idle timeout before self-exit
+    std::size_t  min_threads           = 2;
+    std::size_t  max_threads           = 64;
+    std::int64_t sample_interval_usecs = 100000;   // 100ms hill-climb sample period
+    std::int64_t cooldown_usecs        = 200000;   // 200ms min time between scaling events
+    std::int64_t idle_threshold_usecs  = 5000000;  // 5s worker idle timeout before self-exit
   };
 
   explicit
