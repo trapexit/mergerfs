@@ -80,11 +80,14 @@ public:
   ThreadPool(ThreadPool&&) = delete;
   ThreadPool& operator=(ThreadPool&&) = delete;
 
+  enum WorkerAction { CONTINUE, BREAK, EXIT };
+
 private:
   static void *start_routine(void *arg_);
   static void *start_routine_autoscale(void *arg_);
   static void *monitor_routine(void *arg_);
 
+  WorkerAction _process_func(Func &func_);
   int  _add_thread_scaling_locked(const std::string &name_);
   int  _remove_thread_scaling_locked();
   void _remove_self(pthread_t t_);
@@ -327,6 +330,60 @@ ThreadPool::~ThreadPool()
 }
 
 
+// Shared post-dequeue logic for both worker loops.
+// Returns BREAK for poison pill, EXIT for _tl_should_exit, CONTINUE otherwise.
+inline
+ThreadPool::WorkerAction
+ThreadPool::_process_func(Func &func_)
+{
+  // Empty func is a poison pill - exit cleanly.
+  // If _stop is set, destructor owns the join - don't self-remove.
+  // Otherwise this is a set_threads/remove_thread shrink - detach.
+  if(!func_)
+    {
+      if(!_stop.load(std::memory_order_acquire))
+        _remove_self(pthread_self());
+      return BREAK;
+    }
+
+  try
+    {
+      func_();
+    }
+  catch(const std::exception &e)
+    {
+      syslog(LOG_CRIT,
+             "threadpool (%s): uncaught exception caught by worker - %s",
+             _name.c_str(),
+             e.what());
+    }
+  catch(...)
+    {
+      syslog(LOG_CRIT,
+             "threadpool (%s): uncaught non-standard exception caught by worker",
+             _name.c_str());
+    }
+
+  // Force destruction to release resources
+  func_ = {};
+
+  _tasks_completed.fetch_add(1,std::memory_order_relaxed);
+
+  // _remove_thread_scaling_locked enqueues a lambda that sets
+  // _tl_should_exit and calls _remove_self (which detaches +
+  // erases from _threads).  The lambda runs as normal work above,
+  // so we check the flag here.  The thread has already been
+  // detached by _remove_self, so we just return.
+  if(_tl_should_exit)
+    {
+      _tl_should_exit = false;
+      return EXIT;
+    }
+
+  return CONTINUE;
+}
+
+
 // Standard worker loop: blocks indefinitely on dequeue.
 inline
 void*
@@ -342,49 +399,9 @@ ThreadPool::start_routine(void *arg_)
     {
       q.wait_dequeue(ctok,func);
 
-      // Empty func is a poison pill - exit cleanly.
-      // If _stop is set, destructor owns the join - don't self-remove.
-      // Otherwise this is a set_threads/remove_thread shrink - detach.
-      if(!func)
-        {
-          if(!btp->_stop.load(std::memory_order_acquire))
-            btp->_remove_self(pthread_self());
-          break;
-        }
-
-      try
-        {
-          func();
-        }
-      catch(const std::exception &e)
-        {
-          syslog(LOG_CRIT,
-                 "threadpool (%s): uncaught exception caught by worker - %s",
-                 btp->_name.c_str(),
-                 e.what());
-        }
-      catch(...)
-        {
-          syslog(LOG_CRIT,
-                 "threadpool (%s): uncaught non-standard exception caught by worker",
-                 btp->_name.c_str());
-        }
-
-      // Force destruction to release resources
-      func = {};
-
-      btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
-
-      // _remove_thread_scaling_locked enqueues a lambda that sets
-      // _tl_should_exit and calls _remove_self (which detaches +
-      // erases from _threads).  The lambda runs as normal work above,
-      // so we check the flag here.  The thread has already been
-      // detached by _remove_self, so we just return.
-      if(_tl_should_exit)
-        {
-          _tl_should_exit = false;
-          return nullptr;
-        }
+      WorkerAction action = btp->_process_func(func);
+      if(action != CONTINUE)
+        break;
     }
 
   return nullptr;
@@ -438,45 +455,9 @@ ThreadPool::start_routine_autoscale(void *arg_)
           continue;
         }
 
-      // Empty func is a poison pill - exit cleanly.
-      // If _stop is set, destructor owns the join - don't self-remove.
-      // Otherwise this is a set_threads/remove_thread shrink - detach.
-      if(!func)
-        {
-          if(!btp->_stop.load(std::memory_order_acquire))
-            btp->_remove_self(pthread_self());
-          break;
-        }
-
-      try
-        {
-          func();
-        }
-      catch(const std::exception &e)
-        {
-          syslog(LOG_CRIT,
-                 "threadpool (%s): uncaught exception caught by worker - %s",
-                 btp->_name.c_str(),
-                 e.what());
-        }
-      catch(...)
-        {
-          syslog(LOG_CRIT,
-                 "threadpool (%s): uncaught non-standard exception caught by worker",
-                 btp->_name.c_str());
-        }
-
-      // Force destruction to release resources
-      func = {};
-
-      btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
-
-      // See comment in start_routine for the _tl_should_exit protocol.
-      if(_tl_should_exit)
-        {
-          _tl_should_exit = false;
-          return nullptr;
-        }
+      WorkerAction action = btp->_process_func(func);
+      if(action != CONTINUE)
+        break;
     }
 
   return nullptr;
@@ -920,6 +901,9 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
 {
   // Materialize into a Func up front so we own the value across
   // the try/block-enqueue boundary without a double std::forward.
+  //
+  // Safe: BoundedQueue::try_enqueue checks the semaphore before
+  // forwarding, so f is not moved-from on failure.
   Func f(std::forward<FuncType>(func_));
 
   if(_queue.try_enqueue(std::move(f)))
@@ -941,6 +925,7 @@ inline
 void
 ThreadPool::enqueue_work_autoscale(FuncType &&func_)
 {
+  // See ptok_ overload for safety note on try_enqueue + move.
   Func f(std::forward<FuncType>(func_));
 
   if(_queue.try_enqueue(std::move(f)))
