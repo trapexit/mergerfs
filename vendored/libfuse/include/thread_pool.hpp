@@ -806,9 +806,8 @@ ThreadPool::_maybe_grow_on_pressure()
   if(count >= _scaling_config.max_threads)
     return;
 
-  _last_scale_time_usecs.store(now,std::memory_order_relaxed);
-
   _add_thread_scaling_locked({});
+  _last_scale_time_usecs.store(_now_usecs(),std::memory_order_relaxed);
   syslog(LOG_DEBUG,
          "threadpool (%s): fast-path grow to %zu threads (queue full)",
          _name.c_str(),
