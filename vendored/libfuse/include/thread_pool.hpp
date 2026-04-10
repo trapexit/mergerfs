@@ -89,6 +89,7 @@ private:
   void _remove_self(pthread_t t_);
   bool _try_remove_self_if_above(pthread_t t_, std::size_t min_count_);
   void _maybe_grow_on_pressure();
+  static std::uint64_t _now_usecs();
 
   static thread_local bool _tl_should_exit;
 
@@ -179,10 +180,9 @@ private:
 
 inline thread_local bool ThreadPool::_tl_should_exit = false;
 
-static
 inline
 std::uint64_t
-_tp_now_usecs()
+ThreadPool::_now_usecs()
 {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC,&ts);
@@ -515,7 +515,7 @@ ThreadPool::monitor_routine(void *arg_)
       if(direction > 0 && count < btp->_scaling_config.max_threads)
         {
           btp->add_thread();
-          btp->_last_scale_time_usecs.store(_tp_now_usecs(),
+          btp->_last_scale_time_usecs.store(_now_usecs(),
                                             std::memory_order_relaxed);
           syslog(LOG_DEBUG,
                  "threadpool (%s): hill-climb grow to %zu threads "
@@ -528,7 +528,7 @@ ThreadPool::monitor_routine(void *arg_)
       else if(direction < 0 && count > btp->_scaling_config.min_threads)
         {
           btp->remove_thread();
-          btp->_last_scale_time_usecs.store(_tp_now_usecs(),
+          btp->_last_scale_time_usecs.store(_now_usecs(),
                                             std::memory_order_relaxed);
           syslog(LOG_DEBUG,
                  "threadpool (%s): hill-climb shrink to %zu threads "
@@ -597,7 +597,7 @@ ThreadPool::_maybe_grow_on_pressure()
   if(!_autoscale_enabled)
     return;
 
-  std::uint64_t now = _tp_now_usecs();
+  std::uint64_t now = _now_usecs();
   std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
 
   if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
