@@ -721,11 +721,20 @@ ThreadPool::_remove_self(pthread_t t_)
 
 // Atomically check thread count and remove self if above min_count_.
 // Returns true if removed, false if at or below threshold.
+//
+// Acquires _scaling_mutex then _threads_mutex (matching the lock
+// ordering used by _maybe_grow_on_pressure and the monitor) so that
+// idle self-exit is serialized with set_threads, _remove_thread, and
+// _add_thread.  Without _scaling_mutex, an idle self-exit racing with
+// set_threads could cause set_threads to overshoot because it reads
+// _threads.size() under _threads_mutex but the idle exit shrinks the
+// pool outside _scaling_mutex.
 inline
 bool
 ThreadPool::_try_remove_self_if_above(pthread_t    t_,
                                       std::size_t  min_count_)
 {
+  mutex_lockguard(_scaling_mutex);
   mutex_lockguard(_threads_mutex);
 
   // Check _stop under the lock to close the TOCTOU race with the
