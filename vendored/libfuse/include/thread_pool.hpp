@@ -487,6 +487,12 @@ ThreadPool::monitor_routine(void *arg_)
   constexpr int decline_threshold = 2;
   int warmup_samples = 0;
 
+  // Track expected thread count after the last perturbation so we
+  // can detect external scaling (fast-path grow, idle self-exit)
+  // and avoid misattributing their throughput effects to our action.
+  std::size_t expected_count = btp->thread_count();
+  bool acted_last_cycle = false;
+
   const struct timespec sleep_ts = {
     static_cast<time_t>(interval / 1000000),
     static_cast<long>((interval % 1000000) * 1000)
@@ -534,6 +540,20 @@ ThreadPool::monitor_routine(void *arg_)
           continue;
         }
 
+      std::size_t count = btp->thread_count();
+
+      // If external scaling changed the thread count since our last
+      // perturbation, we can't attribute the throughput delta to our
+      // action.  Reset the streak and skip this cycle.
+      if(acted_last_cycle && count != expected_count)
+        {
+          decline_streak = 0;
+          acted_last_cycle = false;
+          expected_count = count;
+          continue;
+        }
+      acted_last_cycle = false;
+
       // Hill-climb: did smoothed throughput improve since last sample?
       if(ema_throughput >= prev_ema)
         {
@@ -562,19 +582,18 @@ ThreadPool::monitor_routine(void *arg_)
           continue;
       }
 
-      // Read count, act, then re-read for an accurate log message.
-      std::size_t count = btp->thread_count();
-
       if(direction > 0 && count < btp->_scaling_config.max_threads)
         {
           btp->add_thread();
           btp->_last_scale_time_usecs.store(_now_usecs(),
                                             std::memory_order_relaxed);
+          acted_last_cycle = true;
+          expected_count = btp->thread_count();
           syslog(LOG_DEBUG,
                  "threadpool (%s): hill-climb grow to %zu threads "
                  "(ema %.1f -> %.1f)",
                  btp->_name.c_str(),
-                 btp->thread_count(),
+                 expected_count,
                  prev_ema,
                  ema_throughput);
         }
@@ -583,11 +602,13 @@ ThreadPool::monitor_routine(void *arg_)
           btp->remove_thread();
           btp->_last_scale_time_usecs.store(_now_usecs(),
                                             std::memory_order_relaxed);
+          acted_last_cycle = true;
+          expected_count = btp->thread_count();
           syslog(LOG_DEBUG,
                  "threadpool (%s): hill-climb shrink to %zu threads "
                  "(ema %.1f -> %.1f)",
                  btp->_name.c_str(),
-                 btp->thread_count(),
+                 expected_count,
                  prev_ema,
                  ema_throughput);
         }
