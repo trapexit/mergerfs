@@ -527,10 +527,14 @@ ThreadPool::monitor_routine(void *arg_)
       double prev_ema = ema_throughput;
       ema_throughput = ema_alpha * (double)raw_throughput + (1.0 - ema_alpha) * ema_throughput;
 
-      // Only adjust if there's meaningful work happening
+      // Only adjust if there's meaningful work happening.
+      // Reset direction to +1 (bias toward growth) so a stale
+      // shrink direction from before the idle period doesn't
+      // penalize the pool when work resumes.
       if(ema_throughput < 0.5 && prev_ema < 0.5)
         {
           decline_streak = 0;
+          direction = 1;
           continue;
         }
 
