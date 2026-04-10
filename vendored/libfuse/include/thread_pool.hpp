@@ -623,7 +623,10 @@ ThreadPool::monitor_routine(void *arg_)
       acted_last_cycle = false;
 
       // Hill-climb: did smoothed throughput improve since last sample?
-      if(ema_throughput >= prev_ema)
+      // Strict > so flat throughput (saturated/oversized pool) counts
+      // as no improvement, allowing the hill-climber to eventually
+      // shrink an oversized pool rather than only relying on idle timeout.
+      if(ema_throughput > prev_ema)
         {
           decline_streak = 0;
         }
@@ -757,7 +760,13 @@ ThreadPool::_try_remove_self_if_above(pthread_t    t_,
   if(_stop.load(std::memory_order_acquire))
     return false;
 
-  if(_threads.size() <= min_count_)
+  // Account for pending removals that haven't been claimed yet.
+  // Without this, an idle self-exit can race with a monitor shrink:
+  // the monitor increments _remove_count (a pending removal), and
+  // the idle thread also removes itself, pushing the pool below
+  // min_count_.
+  std::size_t pending = _remove_count.load(std::memory_order_relaxed);
+  if(_threads.size() <= min_count_ + pending)
     return false;
 
   auto it = std::find(_threads.begin(),_threads.end(),t_);
@@ -804,12 +813,20 @@ ThreadPool::_maybe_grow_on_pressure()
   if(count >= _scaling_config.max_threads)
     return;
 
-  _add_thread_scaling_locked({});
+  if(_add_thread_scaling_locked({}) != 0)
+    return;
   _last_scale_time_usecs.store(_now_usecs(),std::memory_order_relaxed);
+
+  std::size_t new_count;
+  {
+    mutex_lockguard(_threads_mutex);
+    new_count = _threads.size();
+  }
+
   syslog(LOG_DEBUG,
          "threadpool (%s): fast-path grow to %zu threads (queue full)",
          _name.c_str(),
-         count + 1);
+         new_count);
 }
 
 
@@ -1203,16 +1220,15 @@ ThreadPool::tasks_completed() const
 // completion between the two loads lowers the delta), which is
 // safer for scaling heuristics than over-reporting pressure.
 //
-// The first load uses acquire to prevent the CPU from reordering
-// the enqueued load before the completed load.  On x86 (TSO) this
-// is free; on ARM/POWER it emits a barrier that preserves the
-// intended load order so the bias-toward-zero property holds.
+// Both loads use acquire ordering to guarantee the CPU reads
+// completed before enqueued on weakly-ordered architectures
+// (ARM/POWER).  On x86 (TSO) this is free.
 // Suitable for monitoring and heuristics, not for synchronization.
 inline
 std::uint64_t
 ThreadPool::tasks_pending() const
 {
   auto c = _tasks_completed.load(std::memory_order_acquire);
-  auto e = _tasks_enqueued.load(std::memory_order_relaxed);
+  auto e = _tasks_enqueued.load(std::memory_order_acquire);
   return (e > c) ? (e - c) : 0;
 }
