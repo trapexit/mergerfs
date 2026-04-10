@@ -745,10 +745,21 @@ ThreadPool::set_threads(const std::size_t count_)
     current = _threads.size();
   }
 
+  int rv = 0;
+
   for(std::size_t i = current; i < count_; ++i)
-    _add_thread_locked({});
+    {
+      rv = _add_thread_locked({});
+      if(rv != 0)
+        return rv;
+    }
+
   for(std::size_t i = count_; i < current; ++i)
-    _remove_thread_locked();
+    {
+      rv = _remove_thread_locked();
+      if(rv != 0)
+        return rv;
+    }
 
   return 0;
 }
