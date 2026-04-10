@@ -130,3 +130,30 @@ _mutex_unlock(pthread_mutex_t &mutex_,
   if(rv != 0)
     _print_error_and_abort(__func__,rv,file_,func_,linenum_);
 }
+
+class ScopedMutexLock
+{
+private:
+  pthread_mutex_t &_mutex;
+  const char      *_file;
+  const char      *_func;
+  int              _line;
+
+public:
+  ScopedMutexLock(pthread_mutex_t &mutex_,
+                  const char      *file_,
+                  const char      *func_,
+                  int              line_)
+    : _mutex(mutex_), _file(file_), _func(func_), _line(line_)
+  {
+    _mutex_lock(_mutex,_file,_func,_line);
+  }
+
+  ~ScopedMutexLock()
+  {
+    _mutex_unlock(_mutex,_file,_func,_line);
+  }
+
+  ScopedMutexLock(const ScopedMutexLock&) = delete;
+  ScopedMutexLock& operator=(const ScopedMutexLock&) = delete;
+};

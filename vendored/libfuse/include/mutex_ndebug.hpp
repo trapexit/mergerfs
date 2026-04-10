@@ -62,3 +62,24 @@ mutex_destroy(pthread_mutex_t &mutex_)
   if(rv != 0)
     std::abort();
 }
+
+class ScopedMutexLock
+{
+private:
+  pthread_mutex_t &_mutex;
+
+public:
+  ScopedMutexLock(pthread_mutex_t &mutex_)
+    : _mutex(mutex_)
+  {
+    mutex_lock(_mutex);
+  }
+
+  ~ScopedMutexLock()
+  {
+    mutex_unlock(_mutex);
+  }
+
+  ScopedMutexLock(const ScopedMutexLock&) = delete;
+  ScopedMutexLock& operator=(const ScopedMutexLock&) = delete;
+};
