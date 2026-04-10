@@ -29,6 +29,12 @@
 //   - Producers wait (decrement) before enqueuing, blocking when full.
 //   - Consumers signal (increment) after dequeuing, freeing a slot.
 // This co-locates the invariant so the pairing cannot drift apart.
+//
+// enqueue_unbounded bypasses the semaphore for control messages that must
+// never block. Each such item that is later dequeued via wait_dequeue
+// causes a +1 semaphore inflation, slightly raising the effective max
+// depth. This is bounded by the number of control messages in flight
+// (thread removals, shutdown pills) and is acceptable for correctness.
 template<typename T, typename Traits = moodycamel::ConcurrentQueueDefaultTraits>
 class BoundedQueue
 {
@@ -127,6 +133,10 @@ public:
   void
   enqueue_unbounded(U &&item_)
   {
+    // Try to consume a slot so the dequeue-side signal stays balanced.
+    // If the queue is full (tryWait fails), enqueue anyway - the item
+    // will temporarily exceed max_depth by one until it is consumed.
+    _slots.tryWait();
     _queue.enqueue(std::forward<U>(item_));
   }
 
