@@ -375,7 +375,11 @@ ThreadPool::start_routine(void *arg_)
 
       btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
 
-      // Check if _remove_thread_scaling_locked told us to exit
+      // _remove_thread_scaling_locked enqueues a lambda that sets
+      // _tl_should_exit and calls _remove_self (which detaches +
+      // erases from _threads).  The lambda runs as normal work above,
+      // so we check the flag here.  The thread has already been
+      // detached by _remove_self, so we just return.
       if(_tl_should_exit)
         {
           _tl_should_exit = false;
@@ -459,7 +463,7 @@ ThreadPool::start_routine_autoscale(void *arg_)
 
       btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
 
-      // Check if _remove_thread_scaling_locked told us to exit
+      // See comment in start_routine for the _tl_should_exit protocol.
       if(_tl_should_exit)
         {
           _tl_should_exit = false;
