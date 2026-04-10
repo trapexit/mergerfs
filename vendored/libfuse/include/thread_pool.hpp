@@ -1059,7 +1059,7 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
   // that could violate this ordering.
   Func f(std::forward<FuncType>(func_));
 
-  if(_queue.try_enqueue(std::move(f)))
+  if(_queue.try_enqueue(ptok_,std::move(f)))
     {
       _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
       return;
