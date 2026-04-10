@@ -505,20 +505,19 @@ ThreadPool::start_routine_autoscale(void *arg_)
           if(btp->_stop.load(std::memory_order_acquire))
             break;
 
-          // Copy state needed for the log message BEFORE detaching,
-          // because _try_remove_self_if_above detaches the thread and
-          // the destructor won't wait for us — btp may be destroyed
-          // by the time we reach the syslog call.
+          // Snapshot the minimum thread count BEFORE calling
+          // _try_remove_self_if_above.  If that method returns true
+          // the thread is detached and removed from _threads — the
+          // destructor's snapshot won't include it, so ~ThreadPool
+          // may run concurrently on another thread.  Reading
+          // btp->_scaling_config as an argument to the call would
+          // dereference the pool object before the lock inside
+          // _try_remove_self_if_above serializes with the destructor.
           //
-          // Safety: after _try_remove_self_if_above returns true the
-          // thread is detached and removed from _threads.  The
-          // destructor's snapshot won't include it, so pthread_join
-          // is never called.  From this point we touch only locals
-          // (name is a std::string copy made at function entry), so
-          // there is no use-after-free even if ~ThreadPool runs
-          // concurrently on another thread.
-          if(btp->_try_remove_self_if_above(pthread_self(),
-                                            btp->_scaling_config.min_threads))
+          // name was already copied into a local at function entry,
+          // so the syslog below is also safe.
+          std::size_t const min_thr = btp->_scaling_config.min_threads;
+          if(btp->_try_remove_self_if_above(pthread_self(),min_thr))
             {
               syslog(LOG_DEBUG,
                      "threadpool (%s): idle self-exit",
