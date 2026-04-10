@@ -94,6 +94,7 @@ private:
   int  _remove_thread_scaling_locked();
   void _remove_self(pthread_t t_);
   bool _try_remove_self_if_above(pthread_t t_, std::size_t min_count_);
+  bool _try_claim_removal();
   void _maybe_grow_on_pressure();
   static std::uint64_t _now_usecs();
 
@@ -391,18 +392,11 @@ ThreadPool::_process_func(Func &func_)
       // this pill is ours — detach and exit.  If the count is zero,
       // a worker already claimed the decrement via the task-
       // completion path below; this pill is stale — keep working.
-      {
-        std::size_t count = _remove_count.load(std::memory_order_relaxed);
-        while(count > 0)
-          {
-            if(_remove_count.compare_exchange_weak(count,count - 1,
-                                                    std::memory_order_relaxed))
-              {
-                _remove_self(pthread_self());
-                return EXIT;
-              }
-          }
-      }
+      if(_try_claim_removal())
+        {
+          _remove_self(pthread_self());
+          return EXIT;
+        }
 
       return CONTINUE;
     }
@@ -434,24 +428,11 @@ ThreadPool::_process_func(Func &func_)
   // Workers race to claim a decrement after each task; the winner
   // detaches itself and exits.  During shutdown (_stop set),
   // _remove_self is a no-op, so the destructor still joins us.
-  //
-  // Relaxed ordering is sufficient here: the only side-effect of
-  // claiming the decrement is _remove_self, which acquires
-  // _threads_mutex.  That mutex provides the necessary happens-
-  // before relationship between the increment (scaling side) and
-  // the erase/detach (worker side).
-  {
-    std::size_t count = _remove_count.load(std::memory_order_relaxed);
-    while(count > 0)
-      {
-        if(_remove_count.compare_exchange_weak(count,count - 1,
-                                               std::memory_order_relaxed))
-          {
-            _remove_self(pthread_self());
-            return EXIT;
-          }
-      }
-  }
+  if(_try_claim_removal())
+    {
+      _remove_self(pthread_self());
+      return EXIT;
+    }
 
   return CONTINUE;
 }
@@ -705,6 +686,23 @@ ThreadPool::monitor_routine(void *arg_)
     }
 
   return nullptr;
+}
+
+
+// Try to claim one pending removal.  Returns true if a _remove_count
+// decrement was successfully claimed, false if the count was zero.
+inline
+bool
+ThreadPool::_try_claim_removal()
+{
+  std::size_t count = _remove_count.load(std::memory_order_relaxed);
+  while(count > 0)
+    {
+      if(_remove_count.compare_exchange_weak(count,count - 1,
+                                              std::memory_order_relaxed))
+        return true;
+    }
+  return false;
 }
 
 
