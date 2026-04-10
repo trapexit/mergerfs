@@ -1052,6 +1052,10 @@ ThreadPool::tasks_completed() const
   return _tasks_completed.load(std::memory_order_relaxed);
 }
 
+// Approximate: the two counters are loaded non-atomically with
+// relaxed ordering, so the result may momentarily read zero (or
+// a lower value) while tasks complete between the two loads.
+// Suitable for monitoring and heuristics, not for synchronization.
 inline
 std::uint64_t
 ThreadPool::tasks_pending() const
