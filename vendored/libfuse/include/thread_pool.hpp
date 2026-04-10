@@ -416,8 +416,16 @@ ThreadPool::start_routine_autoscale(void *arg_)
 
           // Copy state needed for the log message BEFORE detaching,
           // because _try_remove_self_if_above detaches the thread and
-          // the destructor won't wait for us - btp may be destroyed
+          // the destructor won't wait for us — btp may be destroyed
           // by the time we reach the syslog call.
+          //
+          // Safety: after _try_remove_self_if_above returns true the
+          // thread is detached and removed from _threads.  The
+          // destructor's snapshot won't include it, so pthread_join
+          // is never called.  From this point we touch only locals
+          // (name is a std::string copy made at function entry), so
+          // there is no use-after-free even if ~ThreadPool runs
+          // concurrently on another thread.
           if(btp->_try_remove_self_if_above(pthread_self(),
                                             btp->_scaling_config.min_threads))
             {
