@@ -933,12 +933,14 @@ ThreadPool::set_threads(const std::size_t count_)
   {
     mutex_lockguard(_threads_mutex);
     current = _threads.size();
+    // Read _remove_count under the same lock to get a consistent
+    // snapshot.  Without the lock a worker could claim a
+    // _remove_count decrement and erase itself from _threads
+    // between the two reads, causing set_threads to double-count
+    // the shrink and over-remove.
+    pending = _remove_count.load(std::memory_order_relaxed);
   }
 
-  // Account for removal signals already in flight so we don't
-  // over-shrink when set_threads is called before prior removals
-  // have drained.
-  pending = _remove_count.load(std::memory_order_relaxed);
   std::size_t effective = (current > pending) ? (current - pending) : 0;
 
   int rv = 0;
