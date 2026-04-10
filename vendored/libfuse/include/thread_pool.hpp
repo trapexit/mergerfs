@@ -30,7 +30,6 @@
 #include <csignal>
 #include <cstring>
 #include <future>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -95,7 +94,7 @@ private:
   void _maybe_grow_on_pressure();
   static std::uint64_t _now_usecs();
 
-  static thread_local bool _tl_should_exit;
+  std::atomic<std::size_t> _remove_count{0};
 
 public:
   int add_thread(const std::string &name = {});
@@ -181,8 +180,6 @@ private:
   std::atomic<std::uint64_t> _last_scale_time_usecs{0};
 };
 
-
-inline thread_local bool ThreadPool::_tl_should_exit = false;
 
 inline
 std::uint64_t
@@ -331,7 +328,7 @@ ThreadPool::~ThreadPool()
 
 
 // Shared post-dequeue logic for both worker loops.
-// Returns BREAK for poison pill, EXIT for _tl_should_exit, CONTINUE otherwise.
+// Returns BREAK for poison pill, EXIT for _remove_count claim, CONTINUE otherwise.
 inline
 ThreadPool::WorkerAction
 ThreadPool::_process_func(Func &func_)
@@ -369,16 +366,22 @@ ThreadPool::_process_func(Func &func_)
 
   _tasks_completed.fetch_add(1,std::memory_order_relaxed);
 
-  // _remove_thread_scaling_locked enqueues a lambda that sets
-  // _tl_should_exit and calls _remove_self (which detaches +
-  // erases from _threads).  The lambda runs as normal work above,
-  // so we check the flag here.  The thread has already been
-  // detached by _remove_self, so we just return.
-  if(_tl_should_exit)
-    {
-      _tl_should_exit = false;
-      return EXIT;
-    }
+  // _remove_thread_scaling_locked increments _remove_count.
+  // Workers race to claim a decrement after each task; the winner
+  // detaches itself and exits.  During shutdown (_stop set),
+  // _remove_self is a no-op, so the destructor still joins us.
+  {
+    std::size_t count = _remove_count.load(std::memory_order_relaxed);
+    while(count > 0)
+      {
+        if(_remove_count.compare_exchange_weak(count,count - 1,
+                                               std::memory_order_relaxed))
+          {
+            _remove_self(pthread_self());
+            return EXIT;
+          }
+      }
+  }
 
   return CONTINUE;
 }
@@ -749,30 +752,10 @@ ThreadPool::_remove_thread_scaling_locked()
       return -EINVAL;
   }
 
-  // Single func that sets the thread-local exit flag and signals
-  // via promise. The worker loop checks _tl_should_exit after
-  // running the func and exits cleanly - no separate poison pill
-  // needed, so exactly one thread is removed per call.
-  //
-  // The future wait is bounded: if no worker picks up the task
-  // within 5 seconds (e.g. all workers running long tasks), bail
-  // with -EBUSY rather than blocking indefinitely while holding
-  // _scaling_mutex and starving the monitor thread.
-  auto promise = std::make_shared<std::promise<void>>();
-
-  auto func =
-    [this,promise]()
-    {
-      _tl_should_exit = true;
-      _remove_self(pthread_self());
-      promise->set_value();
-    };
-
-  _queue.enqueue_unbounded(std::move(func));
-
-  auto status = promise->get_future().wait_for(std::chrono::seconds(5));
-  if(status == std::future_status::timeout)
-    return -EBUSY;
+  // Increment the atomic counter.  The next worker to finish a task
+  // will claim the decrement in _process_func, detach itself via
+  // _remove_self, and exit.  No heap allocation, no blocking.
+  _remove_count.fetch_add(1,std::memory_order_relaxed);
 
   return 0;
 }
