@@ -498,7 +498,14 @@ ThreadPool::monitor_routine(void *arg_)
 
   while(!btp->_stop.load(std::memory_order_acquire))
     {
-      nanosleep(&sleep_ts,NULL);
+      {
+        struct timespec remaining = sleep_ts;
+        while(nanosleep(&remaining,&remaining) == -1 && errno == EINTR)
+          {
+            if(btp->_stop.load(std::memory_order_acquire))
+              break;
+          }
+      }
 
       if(btp->_stop.load(std::memory_order_acquire))
         break;
