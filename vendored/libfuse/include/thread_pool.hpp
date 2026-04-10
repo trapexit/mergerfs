@@ -566,6 +566,7 @@ ThreadPool::monitor_routine(void *arg_)
     {
       // Sleep for one sample interval, but wake immediately if the
       // destructor signals _monitor_cond.
+      std::uint64_t t0 = _now_usecs();
       {
         struct timespec abs_ts;
         clock_gettime(CLOCK_MONOTONIC,&abs_ts);
@@ -586,6 +587,14 @@ ThreadPool::monitor_routine(void *arg_)
 
       if(btp->_stop.load(std::memory_order_acquire))
         break;
+
+      // Skip spurious wakeups.  A short interval yields an
+      // artificially low throughput delta that would cause the EMA
+      // to decline and potentially trigger a false direction
+      // reversal in the hill-climber.
+      std::uint64_t elapsed = _now_usecs() - t0;
+      if(elapsed < (std::uint64_t)interval / 2)
+        continue;
 
       std::uint64_t completed = btp->_tasks_completed.load(std::memory_order_relaxed);
       std::uint64_t raw_throughput = completed - prev_completed;
