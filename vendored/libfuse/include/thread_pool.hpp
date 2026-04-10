@@ -618,6 +618,7 @@ ThreadPool::monitor_routine(void *arg_)
           decline_streak = 0;
           acted_last_cycle = false;
           expected_count = count;
+          prev_completed = completed;
           continue;
         }
       acted_last_cycle = false;
@@ -658,7 +659,7 @@ ThreadPool::monitor_routine(void *arg_)
         if(direction > 0 && count < btp->_scaling_config.max_threads)
           {
             btp->_add_thread_scaling_locked({});
-            btp->_last_scale_time_usecs.store(_now_usecs(),
+            btp->_last_scale_time_usecs.store(now,
                                               std::memory_order_relaxed);
             acted_last_cycle = true;
             expected_count = btp->thread_count();
@@ -673,7 +674,7 @@ ThreadPool::monitor_routine(void *arg_)
         else if(direction < 0 && count > btp->_scaling_config.min_threads)
           {
             btp->_remove_thread_scaling_locked();
-            btp->_last_scale_time_usecs.store(_now_usecs(),
+            btp->_last_scale_time_usecs.store(now,
                                               std::memory_order_relaxed);
             acted_last_cycle = true;
             expected_count = btp->thread_count();
@@ -905,7 +906,8 @@ ThreadPool::_remove_thread_scaling_locked()
     std::size_t min_allowed = 1;
     if(_dynamic_scaling_enabled && _scaling_config.min_threads > min_allowed)
       min_allowed = _scaling_config.min_threads;
-    if(_threads.size() <= min_allowed)
+    std::size_t pending = _remove_count.load(std::memory_order_relaxed);
+    if(_threads.size() <= min_allowed + pending)
       return -EINVAL;
 
     // Increment the atomic counter while still holding the lock.
@@ -1219,16 +1221,12 @@ ThreadPool::tasks_completed() const
 // Loading completed first biases the result toward zero (a
 // completion between the two loads lowers the delta), which is
 // safer for scaling heuristics than over-reporting pressure.
-//
-// Both loads use acquire ordering to guarantee the CPU reads
-// completed before enqueued on weakly-ordered architectures
-// (ARM/POWER).  On x86 (TSO) this is free.
 // Suitable for monitoring and heuristics, not for synchronization.
 inline
 std::uint64_t
 ThreadPool::tasks_pending() const
 {
-  auto c = _tasks_completed.load(std::memory_order_acquire);
-  auto e = _tasks_enqueued.load(std::memory_order_acquire);
+  auto c = _tasks_completed.load(std::memory_order_relaxed);
+  auto e = _tasks_enqueued.load(std::memory_order_relaxed);
   return (e > c) ? (e - c) : 0;
 }
