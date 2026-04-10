@@ -746,9 +746,9 @@ void
 ThreadPool::enqueue_work(ThreadPool::PToken  &ptok_,
                          FuncType           &&func_)
 {
-  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue(ptok_,
                  std::forward<FuncType>(func_));
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 }
 
 template<typename FuncType>
@@ -756,8 +756,8 @@ inline
 void
 ThreadPool::enqueue_work(FuncType &&func_)
 {
-  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue(std::forward<FuncType>(func_));
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 }
 
 
@@ -819,19 +819,21 @@ void
 ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
                                    FuncType           &&func_)
 {
-  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
-
   // Materialize into a Func up front so we own the value across
   // the try/block-enqueue boundary without a double std::forward.
   Func f(std::forward<FuncType>(func_));
 
   if(_queue.try_enqueue(std::move(f)))
-    return;
+    {
+      _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+      return;
+    }
 
   _maybe_grow_on_pressure();
 
   // Block-enqueue (will succeed once a worker frees a slot)
   _queue.enqueue(ptok_,std::move(f));
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 }
 
 
@@ -840,17 +842,19 @@ inline
 void
 ThreadPool::enqueue_work_autoscale(FuncType &&func_)
 {
-  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
-
   Func f(std::forward<FuncType>(func_));
 
   if(_queue.try_enqueue(std::move(f)))
-    return;
+    {
+      _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+      return;
+    }
 
   _maybe_grow_on_pressure();
 
   // Block-enqueue (will succeed once a worker frees a slot)
   _queue.enqueue(std::move(f));
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 }
 
 
@@ -888,8 +892,8 @@ ThreadPool::enqueue_task(FuncType&& func_)
         }
     };
 
-  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue(std::move(work));
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 
   return future;
 }
