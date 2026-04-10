@@ -87,6 +87,7 @@ private:
   int  _add_thread_locked(const std::string &name_);
   int  _remove_thread_locked();
   void _remove_self(pthread_t t_);
+  bool _try_remove_self_if_above(pthread_t t_, std::size_t min_count_);
   void _maybe_grow_on_pressure();
 
   static thread_local bool _tl_should_exit;
@@ -397,19 +398,12 @@ ThreadPool::start_routine_autoscale(void *arg_)
           if(btp->_stop.load(std::memory_order_acquire))
             break;
 
-          std::size_t count;
-          {
-            mutex_lockguard(btp->_threads_mutex);
-            count = btp->_threads.size();
-          }
-
-          if(count > btp->_scaling_config.min_threads)
+          if(btp->_try_remove_self_if_above(pthread_self(),
+                                            btp->_scaling_config.min_threads))
             {
               syslog(LOG_DEBUG,
-                     "threadpool (%s): idle self-exit (%zu threads remaining)",
-                     btp->_name.c_str(),
-                     count - 1);
-              btp->_remove_self(pthread_self());
+                     "threadpool (%s): idle self-exit",
+                     btp->_name.c_str());
               return nullptr;
             }
 
@@ -571,6 +565,31 @@ ThreadPool::_remove_self(pthread_t t_)
 }
 
 
+// Atomically check thread count and remove self if above min_count_.
+// Returns true if removed, false if at or below threshold.
+inline
+bool
+ThreadPool::_try_remove_self_if_above(pthread_t    t_,
+                                      std::size_t  min_count_)
+{
+  if(_stop.load(std::memory_order_acquire))
+    return false;
+
+  mutex_lockguard(_threads_mutex);
+
+  if(_threads.size() <= min_count_)
+    return false;
+
+  auto it = std::find(_threads.begin(),_threads.end(),t_);
+  if(it == _threads.end())
+    return false;
+
+  _threads.erase(it);
+  pthread_detach(t_);
+  return true;
+}
+
+
 inline
 void
 ThreadPool::_maybe_grow_on_pressure()
@@ -662,7 +681,10 @@ ThreadPool::_remove_thread_locked()
 {
   {
     mutex_lockguard(_threads_mutex);
-    if(_threads.size() <= 1)
+    std::size_t min_allowed = 1;
+    if(_autoscale_enabled && _scaling_config.min_threads > min_allowed)
+      min_allowed = _scaling_config.min_threads;
+    if(_threads.size() <= min_allowed)
       return -EINVAL;
   }
 
