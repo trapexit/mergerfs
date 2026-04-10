@@ -24,7 +24,6 @@
 #include "mutex.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <atomic>
 #include <cerrno>
 #include <csignal>
@@ -1042,8 +1041,12 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
       return;
     }
 
-  assert(static_cast<bool>(f) &&
-         "BoundedQueue::try_enqueue moved the callable despite returning false");
+  // If try_enqueue moved the callable despite returning false, the
+  // Func is empty and would act as a poison pill — re-enqueuing it
+  // could cause a worker to exit.  Throw so the caller notices
+  // immediately rather than silently corrupting the pool.
+  if(!static_cast<bool>(f))
+    throw std::logic_error("BoundedQueue::try_enqueue moved the callable despite returning false");
 
   _maybe_grow_on_pressure();
 
@@ -1067,8 +1070,8 @@ ThreadPool::enqueue_work_autoscale(FuncType &&func_)
       return;
     }
 
-  assert(static_cast<bool>(f) &&
-         "BoundedQueue::try_enqueue moved the callable despite returning false");
+  if(!static_cast<bool>(f))
+    throw std::logic_error("BoundedQueue::try_enqueue moved the callable despite returning false");
 
   _maybe_grow_on_pressure();
 
