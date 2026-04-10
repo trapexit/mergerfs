@@ -864,6 +864,10 @@ inline
 int
 ThreadPool::_remove_thread_scaling_locked()
 {
+  // Hold _threads_mutex across both the size check and the
+  // _remove_count increment so that a concurrent removal (idle
+  // self-exit or another _remove_thread call) cannot shrink the
+  // pool below min_allowed between the check and the signal.
   {
     mutex_lockguard(_threads_mutex);
     std::size_t min_allowed = 1;
@@ -871,15 +875,16 @@ ThreadPool::_remove_thread_scaling_locked()
       min_allowed = _scaling_config.min_threads;
     if(_threads.size() <= min_allowed)
       return -EINVAL;
+
+    // Increment the atomic counter while still holding the lock.
+    // A worker will claim the decrement either:
+    //   (a) in the poison-pill handler after dequeuing the wakeup, or
+    //   (b) in the task-completion CAS loop in _process_func.
+    // In case (b) the wakeup pill becomes stale and is harmlessly
+    // ignored (the pill handler sees _remove_count == 0 and continues).
+    _remove_count.fetch_add(1,std::memory_order_relaxed);
   }
 
-  // Increment the atomic counter and enqueue a wakeup pill.
-  // A worker will claim the decrement either:
-  //   (a) in the poison-pill handler after dequeuing the wakeup, or
-  //   (b) in the task-completion CAS loop in _process_func.
-  // In case (b) the wakeup pill becomes stale and is harmlessly
-  // ignored (the pill handler sees _remove_count == 0 and continues).
-  _remove_count.fetch_add(1,std::memory_order_relaxed);
   _queue.enqueue_unbounded(Func{});
 
   return 0;
