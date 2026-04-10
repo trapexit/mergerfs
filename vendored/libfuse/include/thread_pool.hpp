@@ -70,8 +70,12 @@ public:
   explicit
   ThreadPool(const unsigned     thread_count_      = std::thread::hardware_concurrency(),
              const unsigned     max_queue_depth_    = std::thread::hardware_concurrency() * 2,
-             const std::string &name_               = {},
-             const ScalingConfig *scaling_config_    = nullptr);
+             const std::string &name_               = {});
+  explicit
+  ThreadPool(const unsigned     thread_count_,
+             const unsigned     max_queue_depth_,
+             const std::string &name_,
+             ScalingConfig      scaling_config_);
   ~ThreadPool();
 
   ThreadPool(const ThreadPool&) = delete;
@@ -172,13 +176,15 @@ private:
   std::atomic<std::uint64_t> _tasks_enqueued{0};
   std::atomic<std::uint64_t> _tasks_completed{0};
 
-  // Auto-scaling state
-  // _autoscale_enabled is set in the constructor and may be cleared
-  // if the monitor thread fails to spawn.  Read-only after ctor.
-  // _scaling_config is fully immutable after construction.
-  bool                    _autoscale_enabled;
+  // Scaling state
+  // _dynamic_scaling_enabled is derived from min/max bounds and is
+  // immutable after construction.  _scaling_config is fully immutable
+  // after construction.  _monitor_started tracks whether the monitor
+  // thread exists so the destructor knows whether it must wake/join it.
+  bool                    _dynamic_scaling_enabled;
   ScalingConfig const     _scaling_config;
   pthread_t         _monitor_thread;
+  bool              _monitor_started;
   pthread_mutex_t   _monitor_mutex;
   pthread_cond_t    _monitor_cond;
 
@@ -199,13 +205,26 @@ ThreadPool::_now_usecs()
 inline
 ThreadPool::ThreadPool(const unsigned        thread_count_,
                        const unsigned        max_queue_depth_,
+                       const std::string    &name_)
+  : ThreadPool(thread_count_,
+               max_queue_depth_,
+               name_,
+               ScalingConfig{thread_count_, thread_count_})
+{
+}
+
+
+inline
+ThreadPool::ThreadPool(const unsigned        thread_count_,
+                       const unsigned        max_queue_depth_,
                        const std::string    &name_,
-                       const ScalingConfig  *scaling_config_)
+                       ScalingConfig         scaling_config_)
   : _queue(max_queue_depth_),
     _name(name_),
-    _autoscale_enabled(scaling_config_ != nullptr),
-    _scaling_config(scaling_config_ ? *scaling_config_ : ScalingConfig{}),
+    _dynamic_scaling_enabled(scaling_config_.min_threads < scaling_config_.max_threads),
+    _scaling_config(std::move(scaling_config_)),
     _monitor_thread(),
+    _monitor_started(false),
     _monitor_mutex(PTHREAD_MUTEX_INITIALIZER),
     _monitor_cond()
 {
@@ -219,15 +238,12 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     pthread_condattr_destroy(&attr);
   }
 
-  // Clamp initial thread count to ScalingConfig bounds when auto-scaling.
+  // Clamp initial thread count to configured bounds.
   std::size_t count = thread_count_;
-  if(_autoscale_enabled)
-    {
-      if(count < _scaling_config.min_threads)
-        count = _scaling_config.min_threads;
-      if(count > _scaling_config.max_threads)
-        count = _scaling_config.max_threads;
-    }
+  if(count < _scaling_config.min_threads)
+    count = _scaling_config.min_threads;
+  if(count > _scaling_config.max_threads)
+    count = _scaling_config.max_threads;
 
   sigset_t oldset;
   sigset_t newset;
@@ -240,7 +256,7 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     {
       int rv;
       pthread_t t;
-      auto routine = _autoscale_enabled
+      auto routine = _dynamic_scaling_enabled
         ? ThreadPool::start_routine_autoscale
         : ThreadPool::start_routine;
 
@@ -275,8 +291,10 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
          _threads.size(),
          max_queue_depth_);
 
-  // Start monitor thread if auto-scaling enabled
-  if(_autoscale_enabled)
+  // Start the monitor only when dynamic scaling can actually change
+  // the thread count. Fixed-size pools still use _scaling_config for
+  // their initial count, but don't need the monitor thread.
+  if(_dynamic_scaling_enabled)
     {
       sigfillset(&newset);
       pthread_sigmask(SIG_BLOCK,&newset,&oldset);
@@ -288,14 +306,15 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
       if(rv != 0)
         {
           syslog(LOG_WARNING,
-                 "threadpool (%s): failed to spawn monitor thread - %d (%s)",
+                 "threadpool (%s): failed to spawn monitor thread - %d (%s); "
+                 "continuing without hill-climb monitor",
                  _name.c_str(),
                  rv,
                  strerror(rv));
-          _autoscale_enabled = false;
         }
       else
         {
+          _monitor_started = true;
           pthread_setname_np(_monitor_thread, "tp.monitor");
           syslog(LOG_DEBUG,
                  "threadpool (%s): auto-scaling enabled [%zu, %zu]",
@@ -314,7 +333,7 @@ ThreadPool::~ThreadPool()
 
   // Wake the monitor thread so it exits immediately instead of
   // sleeping for up to one sample interval.
-  if(_autoscale_enabled)
+  if(_monitor_started)
     {
       pthread_mutex_lock(&_monitor_mutex);
       pthread_cond_signal(&_monitor_cond);
@@ -741,7 +760,7 @@ inline
 void
 ThreadPool::_maybe_grow_on_pressure()
 {
-  if(!_autoscale_enabled)
+  if(!_dynamic_scaling_enabled)
     return;
 
   // Quick check before contending on the lock.  Uses a stale read
@@ -793,7 +812,7 @@ ThreadPool::_add_thread_scaling_locked(const std::string &name_)
 
   name = (name_.empty() ? _name : name_);
 
-  auto routine = _autoscale_enabled
+  auto routine = _dynamic_scaling_enabled
     ? ThreadPool::start_routine_autoscale
     : ThreadPool::start_routine;
 
@@ -814,7 +833,7 @@ ThreadPool::_add_thread_scaling_locked(const std::string &name_)
       // timer suppresses immediate retries from the monitor and
       // fast-path pressure grow, avoiding syslog spam under
       // sustained resource pressure.
-      if(_autoscale_enabled)
+      if(_dynamic_scaling_enabled)
         _last_scale_time_usecs.store(_now_usecs(),std::memory_order_relaxed);
 
       return -rv;
@@ -850,7 +869,7 @@ ThreadPool::_remove_thread_scaling_locked()
   {
     mutex_lockguard(_threads_mutex);
     std::size_t min_allowed = 1;
-    if(_autoscale_enabled && _scaling_config.min_threads > min_allowed)
+    if(_dynamic_scaling_enabled && _scaling_config.min_threads > min_allowed)
       min_allowed = _scaling_config.min_threads;
     if(_threads.size() <= min_allowed)
       return -EINVAL;
@@ -888,7 +907,7 @@ ThreadPool::set_threads(const std::size_t count_)
   // Clamp to autoscale bounds so external callers can't push the
   // pool outside the range the monitor and idle-exit logic expect.
   std::size_t count = count_;
-  if(_autoscale_enabled)
+  if(_dynamic_scaling_enabled)
     {
       if(count < _scaling_config.min_threads)
         count = _scaling_config.min_threads;

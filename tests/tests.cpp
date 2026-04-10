@@ -1438,6 +1438,37 @@ test_tp_construct_named()
 }
 
 void
+test_tp_construct_scaling_config_by_value()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 3;
+  cfg.max_threads = 5;
+  cfg.sample_interval_usecs = 1000000;
+
+  ThreadPool tp(1, 4, "test.scalingcfg", cfg);
+
+  auto threads = tp.threads();
+
+  TEST_CHECK(threads.size() == 3);
+}
+
+void
+test_tp_construct_fixed_scaling_config()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 1;
+  cfg.max_threads = 1;
+
+  ThreadPool tp(3, 4, "test.fixedcfg", cfg);
+
+  auto threads = tp.threads();
+
+  TEST_CHECK(threads.size() == 1);
+}
+
+void
 test_tp_construct_zero_threads_throws()
 {
   bool threw = false;
@@ -3084,9 +3115,11 @@ TEST_LIST =
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"str",test_str_stuff},
-   {"tp_construct_default",test_tp_construct_default},
-   {"tp_construct_named",test_tp_construct_named},
-   {"tp_construct_zero_threads_throws",test_tp_construct_zero_threads_throws},
+    {"tp_construct_default",test_tp_construct_default},
+    {"tp_construct_named",test_tp_construct_named},
+    {"tp_construct_scaling_config_by_value",test_tp_construct_scaling_config_by_value},
+    {"tp_construct_fixed_scaling_config",test_tp_construct_fixed_scaling_config},
+    {"tp_construct_zero_threads_throws",test_tp_construct_zero_threads_throws},
    {"tp_enqueue_work",test_tp_enqueue_work},
    {"tp_enqueue_work_with_ptoken",test_tp_enqueue_work_with_ptoken},
    {"tp_try_enqueue_work",test_tp_try_enqueue_work},
