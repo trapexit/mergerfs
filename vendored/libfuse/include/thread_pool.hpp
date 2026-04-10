@@ -416,6 +416,12 @@ ThreadPool::_process_func(Func &func_)
   // Workers race to claim a decrement after each task; the winner
   // detaches itself and exits.  During shutdown (_stop set),
   // _remove_self is a no-op, so the destructor still joins us.
+  //
+  // Relaxed ordering is sufficient here: the only side-effect of
+  // claiming the decrement is _remove_self, which acquires
+  // _threads_mutex.  That mutex provides the necessary happens-
+  // before relationship between the increment (scaling side) and
+  // the erase/detach (worker side).
   {
     std::size_t count = _remove_count.load(std::memory_order_relaxed);
     while(count > 0)
