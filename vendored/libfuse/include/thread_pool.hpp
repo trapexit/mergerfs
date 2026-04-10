@@ -598,45 +598,48 @@ ThreadPool::monitor_routine(void *arg_)
             }
         }
 
-      // Respect the global cooldown so the monitor and fast-path
-      // pressure grow don't step on each other.
+      // Hold _scaling_mutex across the cooldown check and the scaling
+      // action so the monitor and fast-path pressure grow cannot both
+      // pass the cooldown gate simultaneously.
       {
+        mutex_lockguard(btp->_scaling_mutex);
+
         std::uint64_t now  = _now_usecs();
         std::uint64_t last = btp->_last_scale_time_usecs.load(std::memory_order_relaxed);
         if((now - last) < (std::uint64_t)btp->_scaling_config.cooldown_usecs)
           continue;
-      }
 
-      if(direction > 0 && count < btp->_scaling_config.max_threads)
-        {
-          btp->add_thread();
-          btp->_last_scale_time_usecs.store(_now_usecs(),
-                                            std::memory_order_relaxed);
-          acted_last_cycle = true;
-          expected_count = btp->thread_count();
-          syslog(LOG_DEBUG,
-                 "threadpool (%s): hill-climb grow to %zu threads "
-                 "(ema %.1f -> %.1f)",
-                 btp->_name.c_str(),
-                 expected_count,
-                 prev_ema,
-                 ema_throughput);
-        }
-      else if(direction < 0 && count > btp->_scaling_config.min_threads)
-        {
-          btp->remove_thread();
-          btp->_last_scale_time_usecs.store(_now_usecs(),
-                                            std::memory_order_relaxed);
-          acted_last_cycle = true;
-          expected_count = btp->thread_count();
-          syslog(LOG_DEBUG,
-                 "threadpool (%s): hill-climb shrink to %zu threads "
-                 "(ema %.1f -> %.1f)",
-                 btp->_name.c_str(),
-                 expected_count,
-                 prev_ema,
-                 ema_throughput);
-        }
+        if(direction > 0 && count < btp->_scaling_config.max_threads)
+          {
+            btp->_add_thread_scaling_locked({});
+            btp->_last_scale_time_usecs.store(_now_usecs(),
+                                              std::memory_order_relaxed);
+            acted_last_cycle = true;
+            expected_count = btp->thread_count();
+            syslog(LOG_DEBUG,
+                   "threadpool (%s): hill-climb grow to %zu threads "
+                   "(ema %.1f -> %.1f)",
+                   btp->_name.c_str(),
+                   expected_count,
+                   prev_ema,
+                   ema_throughput);
+          }
+        else if(direction < 0 && count > btp->_scaling_config.min_threads)
+          {
+            btp->_remove_thread_scaling_locked();
+            btp->_last_scale_time_usecs.store(_now_usecs(),
+                                              std::memory_order_relaxed);
+            acted_last_cycle = true;
+            expected_count = btp->thread_count();
+            syslog(LOG_DEBUG,
+                   "threadpool (%s): hill-climb shrink to %zu threads "
+                   "(ema %.1f -> %.1f)",
+                   btp->_name.c_str(),
+                   expected_count,
+                   prev_ema,
+                   ema_throughput);
+          }
+      }
     }
 
   return nullptr;
