@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <chrono>
 #include <csignal>
 #include <cstring>
 #include <future>
@@ -731,6 +732,11 @@ ThreadPool::_remove_thread_locked()
   // via promise. The worker loop checks _tl_should_exit after
   // running the func and exits cleanly - no separate poison pill
   // needed, so exactly one thread is removed per call.
+  //
+  // The future wait is bounded: if no worker picks up the task
+  // within 5 seconds (e.g. all workers running long tasks), bail
+  // with -EBUSY rather than blocking indefinitely while holding
+  // _scaling_mutex and starving the monitor thread.
   auto promise = std::make_shared<std::promise<void>>();
 
   auto func =
@@ -742,7 +748,10 @@ ThreadPool::_remove_thread_locked()
     };
 
   _queue.enqueue_unbounded(std::move(func));
-  promise->get_future().wait();
+
+  auto status = promise->get_future().wait_for(std::chrono::seconds(5));
+  if(status == std::future_status::timeout)
+    return -EBUSY;
 
   return 0;
 }
