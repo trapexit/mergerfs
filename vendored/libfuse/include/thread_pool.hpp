@@ -173,11 +173,11 @@ private:
   std::atomic<std::uint64_t> _tasks_completed{0};
 
   // Auto-scaling state
-  // _autoscale_enabled and _scaling_config are set once in the
-  // constructor before any threads start and are thereafter read-only.
-  // No synchronization is needed for their accesses.
-  bool              _autoscale_enabled;
-  ScalingConfig     _scaling_config;
+  // _autoscale_enabled is set in the constructor and may be cleared
+  // if the monitor thread fails to spawn.  Read-only after ctor.
+  // _scaling_config is fully immutable after construction.
+  bool                    _autoscale_enabled;
+  ScalingConfig const     _scaling_config;
   pthread_t         _monitor_thread;
   pthread_mutex_t   _monitor_mutex;
   pthread_cond_t    _monitor_cond;
@@ -204,7 +204,7 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
   : _queue(max_queue_depth_),
     _name(name_),
     _autoscale_enabled(scaling_config_ != nullptr),
-    _scaling_config(),
+    _scaling_config(scaling_config_ ? *scaling_config_ : ScalingConfig{}),
     _monitor_thread(),
     _monitor_mutex(PTHREAD_MUTEX_INITIALIZER),
     _monitor_cond()
@@ -218,9 +218,6 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     pthread_cond_init(&_monitor_cond,&attr);
     pthread_condattr_destroy(&attr);
   }
-
-  if(scaling_config_)
-    _scaling_config = *scaling_config_;
 
   // Clamp initial thread count to ScalingConfig bounds when auto-scaling.
   std::size_t count = thread_count_;
