@@ -608,6 +608,15 @@ ThreadPool::_maybe_grow_on_pressure()
   if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
     return;
 
+  // CAS to claim the cooldown window — only one caller wins.
+  if(!_last_scale_time_usecs.compare_exchange_strong(last,now,
+                                                     std::memory_order_relaxed))
+    return;
+
+  // Hold _scaling_mutex so the thread-count check and add are atomic
+  // with respect to other scaling operations.
+  mutex_lockguard(_scaling_mutex);
+
   std::size_t count;
   {
     mutex_lockguard(_threads_mutex);
@@ -616,8 +625,7 @@ ThreadPool::_maybe_grow_on_pressure()
 
   if(count < _scaling_config.max_threads)
     {
-      add_thread();
-      _last_scale_time_usecs.store(now,std::memory_order_relaxed);
+      _add_thread_locked({});
       syslog(LOG_DEBUG,
              "threadpool (%s): fast-path grow to %zu threads (queue full)",
              _name.c_str(),
