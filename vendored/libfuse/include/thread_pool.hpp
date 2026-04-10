@@ -481,9 +481,14 @@ ThreadPool::monitor_routine(void *arg_)
   constexpr int decline_threshold = 2;
   int warmup_samples = 0;
 
+  const struct timespec sleep_ts = {
+    static_cast<time_t>(interval / 1000000),
+    static_cast<long>((interval % 1000000) * 1000)
+  };
+
   while(!btp->_stop.load(std::memory_order_acquire))
     {
-      usleep(interval);
+      nanosleep(&sleep_ts,NULL);
 
       if(btp->_stop.load(std::memory_order_acquire))
         break;
