@@ -669,15 +669,23 @@ ThreadPool::_maybe_grow_on_pressure()
   if(!_autoscale_enabled)
     return;
 
-  std::uint64_t now = _now_usecs();
-  std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
-
-  if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
-    return;
+  // Quick check before contending on the lock.  Uses a stale read
+  // but the authoritative re-check happens under the lock below.
+  {
+    std::uint64_t now  = _now_usecs();
+    std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
+    if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
+      return;
+  }
 
   // Hold _scaling_mutex so the thread-count check and add are atomic
   // with respect to other scaling operations.
   mutex_lockguard(_scaling_mutex);
+
+  std::uint64_t now  = _now_usecs();
+  std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
+  if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
+    return;
 
   std::size_t count;
   {
@@ -688,12 +696,7 @@ ThreadPool::_maybe_grow_on_pressure()
   if(count >= _scaling_config.max_threads)
     return;
 
-  // CAS to claim the cooldown window — only one caller wins.
-  // Done after the max-threads check so we don't burn the cooldown
-  // when the pool is already at capacity.
-  if(!_last_scale_time_usecs.compare_exchange_strong(last,now,
-                                                     std::memory_order_relaxed))
-    return;
+  _last_scale_time_usecs.store(now,std::memory_order_relaxed);
 
   _add_thread_scaling_locked({});
   syslog(LOG_DEBUG,
