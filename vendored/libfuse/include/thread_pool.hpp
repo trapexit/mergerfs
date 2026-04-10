@@ -643,10 +643,20 @@ bool
 ThreadPool::_try_remove_self_if_above(pthread_t    t_,
                                       std::size_t  min_count_)
 {
+  mutex_lockguard(_threads_mutex);
+
+  // Check _stop under the lock to close the TOCTOU race with the
+  // destructor.  The destructor sets _stop, then acquires
+  // _threads_mutex to snapshot _threads.  By checking _stop here
+  // under the same lock, either:
+  //   (a) we hold the lock first, see _stop==false, detach and
+  //       erase ourselves — the destructor's snapshot won't
+  //       include us, so it won't join a detached thread; or
+  //   (b) the destructor sets _stop first — we see _stop==true
+  //       and bail out, remaining in _threads for the destructor
+  //       to join.
   if(_stop.load(std::memory_order_acquire))
     return false;
-
-  mutex_lockguard(_threads_mutex);
 
   if(_threads.size() <= min_count_)
     return false;
