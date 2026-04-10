@@ -536,6 +536,15 @@ ThreadPool::monitor_routine(void *arg_)
             }
         }
 
+      // Respect the global cooldown so the monitor and fast-path
+      // pressure grow don't step on each other.
+      {
+        std::uint64_t now  = _now_usecs();
+        std::uint64_t last = btp->_last_scale_time_usecs.load(std::memory_order_relaxed);
+        if((now - last) < (std::uint64_t)btp->_scaling_config.cooldown_usecs)
+          continue;
+      }
+
       if(direction > 0 && count < btp->_scaling_config.max_threads)
         {
           btp->add_thread();
