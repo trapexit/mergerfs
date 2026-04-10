@@ -24,6 +24,7 @@
 #include "mutex.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <atomic>
 #include <cerrno>
 #include <csignal>
@@ -955,8 +956,11 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
   // Materialize into a Func up front so we own the value across
   // the try/block-enqueue boundary without a double std::forward.
   //
-  // Safe: BoundedQueue::try_enqueue checks the semaphore before
-  // forwarding, so f is not moved-from on failure.
+  // INVARIANT: BoundedQueue::try_enqueue checks the semaphore
+  // (tryWait) *before* forwarding the item into the inner queue.
+  // On failure the item is never moved-from, so f remains valid.
+  // The assert below guards against future BoundedQueue changes
+  // that could violate this ordering.
   Func f(std::forward<FuncType>(func_));
 
   if(_queue.try_enqueue(std::move(f)))
@@ -964,6 +968,9 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
       _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
       return;
     }
+
+  assert(static_cast<bool>(f) &&
+         "BoundedQueue::try_enqueue moved the callable despite returning false");
 
   _maybe_grow_on_pressure();
 
@@ -978,7 +985,7 @@ inline
 void
 ThreadPool::enqueue_work_autoscale(FuncType &&func_)
 {
-  // See ptok_ overload for safety note on try_enqueue + move.
+  // See ptok_ overload for invariant and safety note.
   Func f(std::forward<FuncType>(func_));
 
   if(_queue.try_enqueue(std::move(f)))
@@ -986,6 +993,9 @@ ThreadPool::enqueue_work_autoscale(FuncType &&func_)
       _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
       return;
     }
+
+  assert(static_cast<bool>(f) &&
+         "BoundedQueue::try_enqueue moved the callable despite returning false");
 
   _maybe_grow_on_pressure();
 
