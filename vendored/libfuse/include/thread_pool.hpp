@@ -802,6 +802,14 @@ ThreadPool::_add_thread_scaling_locked(const std::string &name_)
              _name.c_str(),
              rv,
              strerror(rv));
+
+      // Treat creation failure as a scaling event so the cooldown
+      // timer suppresses immediate retries from the monitor and
+      // fast-path pressure grow, avoiding syslog spam under
+      // sustained resource pressure.
+      if(_autoscale_enabled)
+        _last_scale_time_usecs.store(_now_usecs(),std::memory_order_relaxed);
+
       return -rv;
     }
 
