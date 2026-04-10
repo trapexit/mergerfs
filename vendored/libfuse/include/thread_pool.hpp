@@ -386,6 +386,7 @@ ThreadPool::start_routine_autoscale(void *arg_)
   ThreadPool::Func func;
   ThreadPool::Queue &q = btp->_queue;
   ThreadPool::CToken ctok(btp->_queue.make_ctoken());
+  std::string const name = btp->_name;
 
   while(true)
     {
@@ -398,12 +399,16 @@ ThreadPool::start_routine_autoscale(void *arg_)
           if(btp->_stop.load(std::memory_order_acquire))
             break;
 
+          // Copy state needed for the log message BEFORE detaching,
+          // because _try_remove_self_if_above detaches the thread and
+          // the destructor won't wait for us - btp may be destroyed
+          // by the time we reach the syslog call.
           if(btp->_try_remove_self_if_above(pthread_self(),
                                             btp->_scaling_config.min_threads))
             {
               syslog(LOG_DEBUG,
                      "threadpool (%s): idle self-exit",
-                     btp->_name.c_str());
+                     name.c_str());
               return nullptr;
             }
 
