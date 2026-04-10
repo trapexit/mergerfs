@@ -85,8 +85,8 @@ private:
   static void *start_routine_autoscale(void *arg_);
   static void *monitor_routine(void *arg_);
 
-  int  _add_thread_locked(const std::string &name_);
-  int  _remove_thread_locked();
+  int  _add_thread_scaling_locked(const std::string &name_);
+  int  _remove_thread_scaling_locked();
   void _remove_self(pthread_t t_);
   bool _try_remove_self_if_above(pthread_t t_, std::size_t min_count_);
   void _maybe_grow_on_pressure();
@@ -365,7 +365,7 @@ ThreadPool::start_routine(void *arg_)
 
       btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
 
-      // Check if _remove_thread_locked told us to exit
+      // Check if _remove_thread_scaling_locked told us to exit
       if(_tl_should_exit)
         {
           _tl_should_exit = false;
@@ -449,7 +449,7 @@ ThreadPool::start_routine_autoscale(void *arg_)
 
       btp->_tasks_completed.fetch_add(1,std::memory_order_relaxed);
 
-      // Check if _remove_thread_locked told us to exit
+      // Check if _remove_thread_scaling_locked told us to exit
       if(_tl_should_exit)
         {
           _tl_should_exit = false;
@@ -652,7 +652,7 @@ ThreadPool::_maybe_grow_on_pressure()
 
   if(count < _scaling_config.max_threads)
     {
-      _add_thread_locked({});
+      _add_thread_scaling_locked({});
       syslog(LOG_DEBUG,
              "threadpool (%s): fast-path grow to %zu threads (queue full)",
              _name.c_str(),
@@ -663,7 +663,7 @@ ThreadPool::_maybe_grow_on_pressure()
 
 inline
 int
-ThreadPool::_add_thread_locked(const std::string &name_)
+ThreadPool::_add_thread_scaling_locked(const std::string &name_)
 {
   int rv;
   pthread_t t;
@@ -711,13 +711,13 @@ int
 ThreadPool::add_thread(const std::string &name_)
 {
   mutex_lockguard(_scaling_mutex);
-  return _add_thread_locked(name_);
+  return _add_thread_scaling_locked(name_);
 }
 
 
 inline
 int
-ThreadPool::_remove_thread_locked()
+ThreadPool::_remove_thread_scaling_locked()
 {
   {
     mutex_lockguard(_threads_mutex);
@@ -761,7 +761,7 @@ int
 ThreadPool::remove_thread()
 {
   mutex_lockguard(_scaling_mutex);
-  return _remove_thread_locked();
+  return _remove_thread_scaling_locked();
 }
 
 inline
@@ -784,14 +784,14 @@ ThreadPool::set_threads(const std::size_t count_)
 
   for(std::size_t i = current; i < count_; ++i)
     {
-      rv = _add_thread_locked({});
+      rv = _add_thread_scaling_locked({});
       if(rv != 0)
         return rv;
     }
 
   for(std::size_t i = count_; i < current; ++i)
     {
-      rv = _remove_thread_locked();
+      rv = _remove_thread_scaling_locked();
       if(rv != 0)
         return rv;
     }
