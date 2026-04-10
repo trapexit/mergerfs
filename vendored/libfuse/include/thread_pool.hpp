@@ -185,6 +185,9 @@ private:
   ScalingConfig const     _scaling_config;
   pthread_t         _monitor_thread;
   bool              _monitor_started;
+  // Raw pthreads (not Mutex/LockGuard) because the condvar requires
+  // CLOCK_MONOTONIC via pthread_condattr_setclock, which the Mutex
+  // wrapper doesn't support.
   pthread_mutex_t   _monitor_mutex;
   pthread_cond_t    _monitor_cond;
 
@@ -244,6 +247,9 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     count = _scaling_config.min_threads;
   if(count > _scaling_config.max_threads)
     count = _scaling_config.max_threads;
+
+  if(max_queue_depth_ == 0)
+    throw std::invalid_argument("threadpool: max_queue_depth must be > 0");
 
   sigset_t oldset;
   sigset_t newset;
@@ -605,6 +611,7 @@ ThreadPool::monitor_routine(void *arg_)
           decline_streak = 0;
           direction = 1;
           warmup_samples = 0;
+          prev_completed = completed;
           continue;
         }
 
@@ -703,7 +710,7 @@ ThreadPool::_try_claim_removal()
   while(count > 0)
     {
       if(_remove_count.compare_exchange_weak(count,count - 1,
-                                              std::memory_order_relaxed))
+                                              std::memory_order_acq_rel))
         return true;
     }
   return false;
@@ -816,7 +823,7 @@ ThreadPool::_maybe_grow_on_pressure()
 
   if(_add_thread_scaling_locked({}) != 0)
     return;
-  _last_scale_time_usecs.store(_now_usecs(),std::memory_order_relaxed);
+  _last_scale_time_usecs.store(now,std::memory_order_relaxed);
 
   std::size_t new_count;
   {
@@ -1156,7 +1163,18 @@ ThreadPool::enqueue_task(FuncType&& func_)
         }
     };
 
-  _queue.enqueue(std::move(work));
+  if(_dynamic_scaling_enabled)
+    {
+      if(!_queue.try_enqueue(std::move(work)))
+        {
+          _maybe_grow_on_pressure();
+          _queue.enqueue(std::move(work));
+        }
+    }
+  else
+    {
+      _queue.enqueue(std::move(work));
+    }
   _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 
   return future;
