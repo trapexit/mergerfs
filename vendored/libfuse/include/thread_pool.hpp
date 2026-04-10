@@ -337,14 +337,34 @@ inline
 ThreadPool::WorkerAction
 ThreadPool::_process_func(Func &func_)
 {
-  // Empty func is a poison pill - exit cleanly.
-  // If _stop is set, destructor owns the join - don't self-remove.
-  // Otherwise this is a set_threads/remove_thread shrink - detach.
+  // Empty func is a poison pill — either a shutdown signal from
+  // the destructor or a wakeup from _remove_thread_scaling_locked.
   if(!func_)
     {
-      if(!_stop.load(std::memory_order_acquire))
-        _remove_self(pthread_self());
-      return BREAK;
+      // During shutdown the destructor owns all joins; exit without detach.
+      if(_stop.load(std::memory_order_acquire))
+        return BREAK;
+
+      // Try to claim a pending shrink request.  Each call to
+      // _remove_thread_scaling_locked increments _remove_count and
+      // enqueues a wakeup pill.  If the count is still positive,
+      // this pill is ours — detach and exit.  If the count is zero,
+      // a worker already claimed the decrement via the task-
+      // completion path below; this pill is stale — keep working.
+      {
+        std::size_t count = _remove_count.load(std::memory_order_relaxed);
+        while(count > 0)
+          {
+            if(_remove_count.compare_exchange_weak(count,count - 1,
+                                                    std::memory_order_relaxed))
+              {
+                _remove_self(pthread_self());
+                return EXIT;
+              }
+          }
+      }
+
+      return CONTINUE;
     }
 
   try
@@ -787,10 +807,14 @@ ThreadPool::_remove_thread_scaling_locked()
       return -EINVAL;
   }
 
-  // Increment the atomic counter.  The next worker to finish a task
-  // will claim the decrement in _process_func, detach itself via
-  // _remove_self, and exit.  No heap allocation, no blocking.
+  // Increment the atomic counter and enqueue a wakeup pill.
+  // A worker will claim the decrement either:
+  //   (a) in the poison-pill handler after dequeuing the wakeup, or
+  //   (b) in the task-completion CAS loop in _process_func.
+  // In case (b) the wakeup pill becomes stale and is harmlessly
+  // ignored (the pill handler sees _remove_count == 0 and continues).
   _remove_count.fetch_add(1,std::memory_order_relaxed);
+  _queue.enqueue_unbounded(Func{});
 
   return 0;
 }
