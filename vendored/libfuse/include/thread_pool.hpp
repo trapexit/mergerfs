@@ -205,14 +205,24 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
   if(scaling_config_)
     _scaling_config = *scaling_config_;
 
+  // Clamp initial thread count to ScalingConfig bounds when auto-scaling.
+  std::size_t count = thread_count_;
+  if(_autoscale_enabled)
+    {
+      if(count < _scaling_config.min_threads)
+        count = _scaling_config.min_threads;
+      if(count > _scaling_config.max_threads)
+        count = _scaling_config.max_threads;
+    }
+
   sigset_t oldset;
   sigset_t newset;
 
   sigfillset(&newset);
   pthread_sigmask(SIG_BLOCK,&newset,&oldset);
 
-  _threads.reserve(thread_count_);
-  for(std::size_t i = 0; i < thread_count_; ++i)
+  _threads.reserve(count);
+  for(std::size_t i = 0; i < count; ++i)
     {
       int rv;
       pthread_t t;
