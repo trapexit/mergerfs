@@ -317,6 +317,11 @@ ThreadPool::~ThreadPool()
          _name.c_str(),
          snapshot.size());
 
+  // Drain any pending _remove_count so workers exiting via poison
+  // pills don't also try to detach themselves (which would be a
+  // no-op due to _stop, but avoids confusion in debugging).
+  _remove_count.store(0,std::memory_order_relaxed);
+
   // Enqueue one poison pill per thread
   for(std::size_t i = 0; i < snapshot.size(); ++i)
     _queue.enqueue_unbounded(Func{});
