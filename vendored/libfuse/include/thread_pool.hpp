@@ -173,9 +173,11 @@ private:
   std::atomic<std::uint64_t> _tasks_completed{0};
 
   // Auto-scaling state
-  bool          _autoscale_enabled;
-  ScalingConfig _scaling_config;
-  pthread_t     _monitor_thread;
+  bool              _autoscale_enabled;
+  ScalingConfig     _scaling_config;
+  pthread_t         _monitor_thread;
+  pthread_mutex_t   _monitor_mutex;
+  pthread_cond_t    _monitor_cond;
 
   std::atomic<std::uint64_t> _last_scale_time_usecs{0};
 };
@@ -200,8 +202,20 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     _name(name_),
     _autoscale_enabled(scaling_config_ != nullptr),
     _scaling_config(),
-    _monitor_thread()
+    _monitor_thread(),
+    _monitor_mutex(PTHREAD_MUTEX_INITIALIZER),
+    _monitor_cond()
 {
+  // Use CLOCK_MONOTONIC for the monitor condvar so timed waits
+  // are immune to wall-clock adjustments (NTP, settimeofday).
+  {
+    pthread_condattr_t attr;
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr,CLOCK_MONOTONIC);
+    pthread_cond_init(&_monitor_cond,&attr);
+    pthread_condattr_destroy(&attr);
+  }
+
   if(scaling_config_)
     _scaling_config = *scaling_config_;
 
@@ -298,11 +312,18 @@ ThreadPool::~ThreadPool()
 {
   _stop.store(true,std::memory_order_release);
 
-  // Stop monitor thread first
+  // Wake the monitor thread so it exits immediately instead of
+  // sleeping for up to one sample interval.
   if(_autoscale_enabled)
     {
+      pthread_mutex_lock(&_monitor_mutex);
+      pthread_cond_signal(&_monitor_cond);
+      pthread_mutex_unlock(&_monitor_mutex);
       pthread_join(_monitor_thread,NULL);
     }
+
+  pthread_cond_destroy(&_monitor_cond);
+  pthread_mutex_destroy(&_monitor_mutex);
 
   // Snapshot threads under lock to close the race with _remove_self.
   // After _stop is set, _remove_self becomes a no-op, so no thread
@@ -518,20 +539,26 @@ ThreadPool::monitor_routine(void *arg_)
   std::size_t expected_count = btp->thread_count();
   bool acted_last_cycle = false;
 
-  const struct timespec sleep_ts = {
-    static_cast<time_t>(interval / 1000000),
-    static_cast<long>((interval % 1000000) * 1000)
-  };
-
   while(!btp->_stop.load(std::memory_order_acquire))
     {
+      // Sleep for one sample interval, but wake immediately if the
+      // destructor signals _monitor_cond.
       {
-        struct timespec remaining = sleep_ts;
-        while(nanosleep(&remaining,&remaining) == -1 && errno == EINTR)
+        struct timespec abs_ts;
+        clock_gettime(CLOCK_MONOTONIC,&abs_ts);
+        abs_ts.tv_nsec += (interval % 1000000) * 1000;
+        abs_ts.tv_sec  += interval / 1000000;
+        if(abs_ts.tv_nsec >= 1000000000L)
           {
-            if(btp->_stop.load(std::memory_order_acquire))
-              break;
+            abs_ts.tv_sec  += 1;
+            abs_ts.tv_nsec -= 1000000000L;
           }
+
+        pthread_mutex_lock(&btp->_monitor_mutex);
+        pthread_cond_timedwait(&btp->_monitor_cond,
+                               &btp->_monitor_mutex,
+                               &abs_ts);
+        pthread_mutex_unlock(&btp->_monitor_mutex);
       }
 
       if(btp->_stop.load(std::memory_order_acquire))
