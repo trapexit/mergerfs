@@ -852,22 +852,29 @@ ThreadPool::set_threads(const std::size_t count_)
     }
 
   std::size_t current;
+  std::size_t pending;
 
   {
     mutex_lockguard(_threads_mutex);
     current = _threads.size();
   }
 
+  // Account for removal signals already in flight so we don't
+  // over-shrink when set_threads is called before prior removals
+  // have drained.
+  pending = _remove_count.load(std::memory_order_relaxed);
+  std::size_t effective = (current > pending) ? (current - pending) : 0;
+
   int rv = 0;
 
-  for(std::size_t i = current; i < count; ++i)
+  for(std::size_t i = effective; i < count; ++i)
     {
       rv = _add_thread_scaling_locked({});
       if(rv != 0)
         return rv;
     }
 
-  for(std::size_t i = count; i < current; ++i)
+  for(std::size_t i = count; i < effective; ++i)
     {
       rv = _remove_thread_scaling_locked();
       if(rv != 0)
