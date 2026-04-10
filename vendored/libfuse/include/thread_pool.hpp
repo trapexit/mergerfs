@@ -173,6 +173,9 @@ private:
   std::atomic<std::uint64_t> _tasks_completed{0};
 
   // Auto-scaling state
+  // _autoscale_enabled and _scaling_config are set once in the
+  // constructor before any threads start and are thereafter read-only.
+  // No synchronization is needed for their accesses.
   bool              _autoscale_enabled;
   ScalingConfig     _scaling_config;
   pthread_t         _monitor_thread;
