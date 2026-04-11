@@ -1013,19 +1013,25 @@ ThreadPool::set_threads(const std::size_t count_)
 
   for(std::size_t i = effective; i < count; ++i)
     {
-      rv = _add_thread_scaling_locked({});
-      if(rv != 0)
-        return rv;
+      int err = _add_thread_scaling_locked({});
+      if(err != 0)
+        {
+          rv = err;
+          break;
+        }
     }
 
   for(std::size_t i = count; i < effective; ++i)
     {
-      rv = _remove_thread_scaling_locked();
-      if(rv != 0)
-        return rv;
+      int err = _remove_thread_scaling_locked();
+      if(err != 0)
+        {
+          rv = err;
+          break;
+        }
     }
 
-  return 0;
+  return rv;
 }
 
 template<typename FuncType>
