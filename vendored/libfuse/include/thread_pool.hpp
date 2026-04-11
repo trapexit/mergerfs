@@ -321,7 +321,12 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
       else
         {
           _monitor_started = true;
-          pthread_setname_np(_monitor_thread, "tp.monitor");
+          {
+            std::string mon_name = _name.empty() ? "tp.monitor" : (_name + ".mon");
+            if(mon_name.size() > 15)
+              mon_name.resize(15);
+            pthread_setname_np(_monitor_thread, mon_name.c_str());
+          }
           syslog(LOG_DEBUG,
                  "threadpool (%s): auto-scaling enabled [%zu, %zu]",
                  _name.c_str(),
@@ -347,9 +352,6 @@ ThreadPool::~ThreadPool()
       pthread_join(_monitor_thread,NULL);
     }
 
-  pthread_cond_destroy(&_monitor_cond);
-  pthread_mutex_destroy(&_monitor_mutex);
-
   // Snapshot threads under lock to close the race with _remove_self.
   // After _stop is set, _remove_self becomes a no-op, so no thread
   // will detach or erase itself from this point forward.
@@ -364,19 +366,17 @@ ThreadPool::~ThreadPool()
          _name.c_str(),
          snapshot.size());
 
-  // Drain any pending _remove_count so workers exiting via poison
-  // pills don't also try to detach themselves (which would be a
-  // no-op due to _stop, but avoids confusion in debugging).
-  // Use release ordering so the store is visible to workers before
-  // they dequeue the poison pills enqueued below.
-  _remove_count.store(0,std::memory_order_release);
-
   // Enqueue one poison pill per thread
   for(std::size_t i = 0; i < snapshot.size(); ++i)
     _queue.enqueue_unbounded(Func{});
 
   for(auto t : snapshot)
     pthread_join(t,NULL);
+
+  // Destroy the monitor condvar/mutex only after all workers are
+  // joined, so no thread can still reference them.
+  pthread_cond_destroy(&_monitor_cond);
+  pthread_mutex_destroy(&_monitor_mutex);
 }
 
 
@@ -481,11 +481,12 @@ ThreadPool::start_routine_autoscale(void *arg_)
   ThreadPool::Queue &q = btp->_queue;
   ThreadPool::CToken ctok(btp->_queue.make_ctoken());
   std::string const name = btp->_name;
+  std::int64_t const idle_threshold = btp->_scaling_config.idle_threshold_usecs;
 
   while(true)
     {
       bool got = q.try_wait_dequeue_for(ctok,func,
-                                        btp->_scaling_config.idle_threshold_usecs);
+                                        idle_threshold);
 
       if(!got)
         {
