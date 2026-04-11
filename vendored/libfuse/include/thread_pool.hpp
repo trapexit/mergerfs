@@ -243,18 +243,76 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     _scaling_config(std::move(scaling_config_)),
     _monitor_thread(),
     _monitor_started(false),
-    _monitor_mutex(PTHREAD_MUTEX_INITIALIZER),
+    _monitor_mutex(),
     _monitor_cond()
 {
+  // Initialize monitor mutex with pthread_mutex_init (not
+  // PTHREAD_MUTEX_INITIALIZER which is for static/aggregate init).
+  {
+    int rv = pthread_mutex_init(&_monitor_mutex,NULL);
+    if(rv != 0)
+      throw std::runtime_error("threadpool: pthread_mutex_init failed");
+  }
+
   // Use CLOCK_MONOTONIC for the monitor condvar so timed waits
   // are immune to wall-clock adjustments (NTP, settimeofday).
   {
     pthread_condattr_t attr;
-    pthread_condattr_init(&attr);
-    pthread_condattr_setclock(&attr,CLOCK_MONOTONIC);
-    pthread_cond_init(&_monitor_cond,&attr);
+    int rv;
+    rv = pthread_condattr_init(&attr);
+    if(rv != 0)
+      {
+        pthread_mutex_destroy(&_monitor_mutex);
+        throw std::runtime_error("threadpool: pthread_condattr_init failed");
+      }
+    rv = pthread_condattr_setclock(&attr,CLOCK_MONOTONIC);
+    if(rv != 0)
+      {
+        pthread_condattr_destroy(&attr);
+        pthread_mutex_destroy(&_monitor_mutex);
+        throw std::runtime_error("threadpool: pthread_condattr_setclock failed");
+      }
+    rv = pthread_cond_init(&_monitor_cond,&attr);
     pthread_condattr_destroy(&attr);
+    if(rv != 0)
+      {
+        pthread_mutex_destroy(&_monitor_mutex);
+        throw std::runtime_error("threadpool: pthread_cond_init failed");
+      }
   }
+
+  // Validate scaling config.  min_threads > max_threads is almost
+  // certainly a caller mistake — silently disabling dynamic scaling
+  // would hide the error.
+  if(_scaling_config.min_threads > _scaling_config.max_threads)
+    {
+      pthread_cond_destroy(&_monitor_cond);
+      pthread_mutex_destroy(&_monitor_mutex);
+      throw std::invalid_argument(
+        "threadpool: scaling_config.min_threads > max_threads");
+    }
+
+  // Timing values are only used when dynamic scaling is enabled
+  // (monitor thread + autoscale workers).  Non-positive values cause
+  // degenerate behavior:
+  //   sample_interval_usecs <= 0:  monitor tight-spins (timedwait
+  //       returns immediately with an in-the-past deadline)
+  //   idle_threshold_usecs  <= 0:  workers spin-exit on every empty
+  //       dequeue, draining the pool to min_threads
+  //   cooldown_usecs        <= 0:  negative wraps to a huge unsigned
+  //       in the comparison, disabling the cooldown gate
+  if(_dynamic_scaling_enabled)
+    {
+      if(_scaling_config.sample_interval_usecs <= 0 ||
+         _scaling_config.cooldown_usecs        <= 0 ||
+         _scaling_config.idle_threshold_usecs  <= 0)
+        {
+          pthread_cond_destroy(&_monitor_cond);
+          pthread_mutex_destroy(&_monitor_mutex);
+          throw std::invalid_argument(
+            "threadpool: scaling_config timing values must be positive");
+        }
+    }
 
   // Clamp initial thread count to configured bounds.
   std::size_t count = thread_count_;
@@ -352,7 +410,12 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
         {
           _monitor_started = true;
           {
-            std::string mon_name = _name.empty() ? "tp.monitor" : (_name + ".mon");
+            // Truncate _name to leave room for the ".mon" suffix
+            // within the 15-char pthread_setname_np limit, so the
+            // monitor thread is distinguishable from workers in ps/htop.
+            std::string mon_name = _name.empty()
+              ? "tp.monitor"
+              : (_name.substr(0,11) + ".mon");
             _set_thread_name(_monitor_thread,mon_name);
           }
           syslog(LOG_DEBUG,
@@ -380,11 +443,18 @@ ThreadPool::~ThreadPool()
       pthread_join(_monitor_thread,NULL);
     }
 
-  // Snapshot threads under lock to close the race with _remove_self.
-  // After _stop is set, _remove_self becomes a no-op, so no thread
-  // will detach or erase itself from this point forward.
+  // Snapshot threads under both locks.  _scaling_mutex serializes
+  // with in-flight _add_thread_scaling_locked calls so a thread
+  // created by _maybe_grow_on_pressure (which passed the _stop
+  // check before the store above) finishes its push_back before
+  // we snapshot.  Without _scaling_mutex a late push_back could
+  // land after the snapshot, leaving the new thread unjoined and
+  // accessing a destroyed pool.
+  // _threads_mutex closes the race with _remove_self, which only
+  // needs _threads_mutex — after _stop is set it becomes a no-op.
   std::vector<pthread_t> snapshot;
   {
+    mutex_lockguard(_scaling_mutex);
     mutex_lockguard(_threads_mutex);
     snapshot = _threads;
   }
@@ -887,14 +957,16 @@ ThreadPool::_maybe_grow_on_pressure()
   if(_stop.load(std::memory_order_acquire))
     return;
 
-  // Quick check before contending on the lock.  Uses a stale read
-  // but the authoritative re-check happens under the lock below.
+  // Quick checks before contending on the lock.  Uses stale reads
+  // but the authoritative re-checks happen under the lock below.
   {
     std::uint64_t now  = _now_usecs();
     std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
     if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
       return;
   }
+  if(thread_count() >= _scaling_config.max_threads)
+    return;
 
   // Hold _scaling_mutex so the thread-count check and add are atomic
   // with respect to other scaling operations.
@@ -905,6 +977,10 @@ ThreadPool::_maybe_grow_on_pressure()
   if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
     return;
 
+  // Read count under _scaling_mutex for the log message below.
+  // _add_thread_scaling_locked does the authoritative max check.
+  std::size_t count = thread_count();
+
   if(_add_thread_scaling_locked({}) != 0)
     return;
   _last_scale_time_usecs.store(now,std::memory_order_relaxed);
@@ -912,7 +988,7 @@ ThreadPool::_maybe_grow_on_pressure()
   syslog(LOG_DEBUG,
          "threadpool (%s): fast-path grow to %zu threads (queue full)",
          _name.c_str(),
-         thread_count());
+         count + 1);
 }
 
 
@@ -920,6 +996,12 @@ inline
 int
 ThreadPool::_add_thread_scaling_locked(const std::string &name_)
 {
+  // Don't spawn threads after the destructor has set _stop.
+  // Combined with the destructor holding _scaling_mutex during
+  // its snapshot, this ensures every created thread is joined.
+  if(_stop.load(std::memory_order_acquire))
+    return -ECANCELED;
+
   if(_dynamic_scaling_enabled)
     {
       mutex_lockguard(_threads_mutex);
