@@ -235,7 +235,9 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
                        const unsigned        max_queue_depth_,
                        const std::string    &name_,
                        ScalingConfig         scaling_config_)
-  : _queue(max_queue_depth_),
+  : _queue(max_queue_depth_ > 0
+           ? max_queue_depth_
+           : throw std::invalid_argument("threadpool: max_queue_depth must be > 0")),
     _name(name_),
     _dynamic_scaling_enabled(scaling_config_.min_threads < scaling_config_.max_threads),
     _scaling_config(std::move(scaling_config_)),
@@ -260,9 +262,6 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     count = _scaling_config.min_threads;
   if(count > _scaling_config.max_threads)
     count = _scaling_config.max_threads;
-
-  if(max_queue_depth_ == 0)
-    throw std::invalid_argument("threadpool: max_queue_depth must be > 0");
 
   sigset_t oldset;
   sigset_t newset;
@@ -687,35 +686,46 @@ ThreadPool::monitor_routine(void *arg_)
         if((now - last) < (std::uint64_t)btp->_scaling_config.cooldown_usecs)
           continue;
 
+        // Re-read thread count under _scaling_mutex so the bound
+        // check is authoritative.  The count read at line 632 is a
+        // pre-lock hint used only by the skip-at-bounds check above;
+        // by the time we get here an idle self-exit or fast-path grow
+        // may have changed it.
+        count = btp->thread_count();
+
         if(direction > 0 && count < btp->_scaling_config.max_threads)
           {
-            btp->_add_thread_scaling_locked({});
-            btp->_last_scale_time_usecs.store(now,
-                                              std::memory_order_relaxed);
-            acted_last_cycle = true;
-            expected_count = btp->thread_count();
-            syslog(LOG_DEBUG,
-                   "threadpool (%s): hill-climb grow to %zu threads "
-                   "(ema %.1f -> %.1f)",
-                   btp->_name.c_str(),
-                   expected_count,
-                   prev_ema,
-                   ema_throughput);
+            if(btp->_add_thread_scaling_locked({}) == 0)
+              {
+                btp->_last_scale_time_usecs.store(now,
+                                                  std::memory_order_relaxed);
+                acted_last_cycle = true;
+                expected_count = btp->thread_count();
+                syslog(LOG_DEBUG,
+                       "threadpool (%s): hill-climb grow to %zu threads "
+                       "(ema %.1f -> %.1f)",
+                       btp->_name.c_str(),
+                       expected_count,
+                       prev_ema,
+                       ema_throughput);
+              }
           }
         else if(direction < 0 && count > btp->_scaling_config.min_threads)
           {
-            btp->_remove_thread_scaling_locked();
-            btp->_last_scale_time_usecs.store(now,
-                                              std::memory_order_relaxed);
-            acted_last_cycle = true;
-            expected_count = btp->thread_count();
-            syslog(LOG_DEBUG,
-                   "threadpool (%s): hill-climb shrink to %zu threads "
-                   "(ema %.1f -> %.1f)",
-                   btp->_name.c_str(),
-                   expected_count,
-                   prev_ema,
-                   ema_throughput);
+            if(btp->_remove_thread_scaling_locked() == 0)
+              {
+                btp->_last_scale_time_usecs.store(now,
+                                                  std::memory_order_relaxed);
+                acted_last_cycle = true;
+                expected_count = btp->thread_count();
+                syslog(LOG_DEBUG,
+                       "threadpool (%s): hill-climb shrink to %zu threads "
+                       "(ema %.1f -> %.1f)",
+                       btp->_name.c_str(),
+                       expected_count,
+                       prev_ema,
+                       ema_throughput);
+              }
           }
       }
     }
@@ -798,7 +808,10 @@ ThreadPool::_try_remove_self_if_above(pthread_t    t_,
   // the idle thread also removes itself, pushing the pool below
   // min_count_.
   std::size_t pending = _remove_count.load(std::memory_order_relaxed);
-  if(_threads.size() <= min_count_ + pending)
+  std::size_t effective = (_threads.size() > pending)
+    ? (_threads.size() - pending)
+    : 0;
+  if(effective <= min_count_)
     return false;
 
   auto it = std::find(_threads.begin(),_threads.end(),t_);
@@ -843,29 +856,14 @@ ThreadPool::_maybe_grow_on_pressure()
   if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
     return;
 
-  std::size_t count;
-  {
-    mutex_lockguard(_threads_mutex);
-    count = _threads.size();
-  }
-
-  if(count >= _scaling_config.max_threads)
-    return;
-
   if(_add_thread_scaling_locked({}) != 0)
     return;
   _last_scale_time_usecs.store(now,std::memory_order_relaxed);
 
-  std::size_t new_count;
-  {
-    mutex_lockguard(_threads_mutex);
-    new_count = _threads.size();
-  }
-
   syslog(LOG_DEBUG,
          "threadpool (%s): fast-path grow to %zu threads (queue full)",
          _name.c_str(),
-         new_count);
+         thread_count());
 }
 
 
@@ -948,7 +946,10 @@ ThreadPool::_remove_thread_scaling_locked()
     if(_dynamic_scaling_enabled && _scaling_config.min_threads > min_allowed)
       min_allowed = _scaling_config.min_threads;
     std::size_t pending = _remove_count.load(std::memory_order_relaxed);
-    if(_threads.size() <= min_allowed + pending)
+    std::size_t effective = (_threads.size() > pending)
+      ? (_threads.size() - pending)
+      : 0;
+    if(effective <= min_allowed)
       return -EINVAL;
 
     // Increment the atomic counter while still holding the lock.
