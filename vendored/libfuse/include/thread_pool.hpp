@@ -724,7 +724,7 @@ ThreadPool::monitor_routine(void *arg_)
           continue;
 
         // Re-read thread count under _scaling_mutex so the bound
-        // check is authoritative.  The count read at line 632 is a
+        // check is authoritative.  The earlier unlocked read is a
         // pre-lock hint used only by the skip-at-bounds check above;
         // by the time we get here an idle self-exit or fast-path grow
         // may have changed it.
