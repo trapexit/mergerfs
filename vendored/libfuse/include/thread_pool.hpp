@@ -367,7 +367,9 @@ ThreadPool::~ThreadPool()
   // Drain any pending _remove_count so workers exiting via poison
   // pills don't also try to detach themselves (which would be a
   // no-op due to _stop, but avoids confusion in debugging).
-  _remove_count.store(0,std::memory_order_relaxed);
+  // Use release ordering so the store is visible to workers before
+  // they dequeue the poison pills enqueued below.
+  _remove_count.store(0,std::memory_order_release);
 
   // Enqueue one poison pill per thread
   for(std::size_t i = 0; i < snapshot.size(); ++i)
@@ -578,10 +580,15 @@ ThreadPool::monitor_routine(void *arg_)
       // Skip spurious wakeups.  A short interval yields an
       // artificially low throughput delta that would cause the EMA
       // to decline and potentially trigger a false direction
-      // reversal in the hill-climber.
+      // reversal in the hill-climber.  Reset prev_completed so the
+      // next real cycle doesn't accumulate the skipped interval's
+      // completions into a single inflated throughput sample.
       std::uint64_t elapsed = _now_usecs() - t0;
       if(elapsed < (std::uint64_t)interval / 2)
-        continue;
+        {
+          prev_completed = btp->_tasks_completed.load(std::memory_order_relaxed);
+          continue;
+        }
 
       std::uint64_t completed = btp->_tasks_completed.load(std::memory_order_relaxed);
       std::uint64_t raw_throughput = completed - prev_completed;
@@ -651,6 +658,16 @@ ThreadPool::monitor_routine(void *arg_)
               continue;  // wait for confirmation before reversing
             }
         }
+
+      // Skip perturbation when already at a bound.  Without this,
+      // at max_threads the grow is a no-op but the next reversal
+      // succeeds at shrinking, creating a slow downward leak.
+      // Symmetrically at min_threads a shrink no-op followed by a
+      // grow reversal would needlessly inflate the pool.
+      if(direction > 0 && count >= btp->_scaling_config.max_threads)
+        continue;
+      if(direction < 0 && count <= btp->_scaling_config.min_threads)
+        continue;
 
       // Hold _scaling_mutex across the cooldown check and the scaling
       // action so the monitor and fast-path pressure grow cannot both
@@ -792,6 +809,13 @@ void
 ThreadPool::_maybe_grow_on_pressure()
 {
   if(!_dynamic_scaling_enabled)
+    return;
+
+  // Don't spawn threads if the pool is shutting down.  Without this
+  // check a caller could grow the pool after the destructor has
+  // already sized its poison-pill batch, leaving the new thread
+  // blocking forever on wait_dequeue with no pill to wake it.
+  if(_stop.load(std::memory_order_acquire))
     return;
 
   // Quick check before contending on the lock.  Uses a stale read
@@ -1167,6 +1191,8 @@ ThreadPool::enqueue_task(FuncType&& func_)
     {
       if(!_queue.try_enqueue(std::move(work)))
         {
+          if(!static_cast<bool>(work))
+            throw std::logic_error("BoundedQueue::try_enqueue moved the callable despite returning false");
           _maybe_grow_on_pressure();
           _queue.enqueue(std::move(work));
         }
