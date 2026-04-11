@@ -514,7 +514,12 @@ ThreadPool::start_routine_autoscale(void *arg_)
           //
           // name was already copied into a local at function entry,
           // so the syslog below is also safe.
-          std::size_t const min_thr = btp->_scaling_config.min_threads;
+          // Floor at 1 to match _remove_thread_scaling_locked's
+          // min_allowed floor.  Without this, min_threads == 0
+          // would let all workers self-exit, draining the pool
+          // to zero threads and stalling non-autoscale enqueues.
+          std::size_t const min_thr = std::max(btp->_scaling_config.min_threads,
+                                               (std::size_t)1);
           if(btp->_try_remove_self_if_above(pthread_self(),min_thr))
             {
               syslog(LOG_DEBUG,
