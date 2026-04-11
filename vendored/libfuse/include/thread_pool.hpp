@@ -1281,15 +1281,16 @@ ThreadPool::tasks_completed() const
 }
 
 // Approximate: the two counters are loaded non-atomically.
-// Loading completed first biases the result toward zero (a
-// completion between the two loads lowers the delta), which is
-// safer for scaling heuristics than over-reporting pressure.
+// Loading enqueued first biases the result toward zero (a
+// completion between the two loads increases c beyond the
+// snapshot of e, shrinking the delta), which is safer for
+// scaling heuristics than over-reporting pressure.
 // Suitable for monitoring and heuristics, not for synchronization.
 inline
 std::uint64_t
 ThreadPool::tasks_pending() const
 {
-  auto c = _tasks_completed.load(std::memory_order_relaxed);
   auto e = _tasks_enqueued.load(std::memory_order_relaxed);
+  auto c = _tasks_completed.load(std::memory_order_relaxed);
   return (e > c) ? (e - c) : 0;
 }
