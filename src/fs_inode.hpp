@@ -19,9 +19,12 @@
 #pragma once
 
 #include "base_types.h"
+#include "fs_path.hpp"
 #include "fuse_kernel.h"
 
+#include <cstddef>
 #include <string>
+#include <string_view>
 
 #include <sys/stat.h>
 
@@ -30,6 +33,36 @@ namespace fs
 {
   namespace inode
   {
+    enum class Algo
+    {
+      PASSTHROUGH,
+      PATH_HASH,
+      PATH_HASH32,
+      DEVINO_HASH,
+      DEVINO_HASH32,
+      HYBRID_HASH,
+      HYBRID_HASH32,
+    };
+
+    class ReaddirCalc
+    {
+    public:
+      ReaddirCalc(const fs::path &branch_path,
+                  const fs::path &dirpath);
+
+    public:
+      u64 calc(const char   *name,
+               const size_t  namelen,
+               const mode_t  mode,
+               const ino_t   ino);
+
+    private:
+      Algo        _algo;
+      u64         _branch_seed;
+      std::string _fusepath;
+      std::size_t _filename_offset;
+    };
+
     int set_algo(const std::string &s);
     std::string get_algo(void);
 
@@ -37,12 +70,22 @@ namespace fs
              const std::string &fusepath,
              const mode_t           mode,
              const ino_t            ino);
+    u64 calc(const fs::path    &basepath,
+             const fs::path    &fusepath,
+             const mode_t       mode,
+             const ino_t        ino);
 
     void calc(const std::string &basepath,
               const std::string &fusepath,
               struct stat            *st);
+    void calc(const fs::path    &basepath,
+              const fs::path    &fusepath,
+              struct stat       *st);
     void calc(const std::string &basepath,
               const std::string &fusepath,
+              struct fuse_statx *st);
+    void calc(const fs::path    &basepath,
+              const fs::path    &fusepath,
               struct fuse_statx *st);
   }
 }
