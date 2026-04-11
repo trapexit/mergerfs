@@ -2,6 +2,9 @@
 
 #include "config.hpp"
 #include "fs_copyfile.hpp"
+#include "fs_inode.hpp"
+#include "hashset.hpp"
+#include "rapidhash/rapidhash.h"
 #include "str.hpp"
 #include "thread_pool.hpp"
 
@@ -1309,6 +1312,59 @@ test_config_inodecalc()
   TEST_CHECK(ic.from_string("hybrid-hash32") == 0);
   TEST_CHECK(ic.to_string() == "hybrid-hash32");
   TEST_CHECK(ic.from_string("asdf") == -EINVAL);
+}
+
+void
+test_fs_inode_readdir_calc_matches_calc()
+{
+  const fs::path branch_path("/mnt/disk1");
+  const std::vector<fs::path> dirpaths = {
+    fs::path(),
+    fs::path("tv/season_01"),
+  };
+  const std::vector<std::pair<std::string,mode_t>> entries = {
+    {"episode_01.mkv", S_IFREG},
+    {"extras", S_IFDIR},
+    {"nfo-file.nfo", S_IFREG},
+    {"a_very_long_entry_name_used_to_force_buffer_growth.txt", S_IFREG},
+  };
+  const std::vector<std::string> algos = {
+    "passthrough",
+    "path-hash",
+    "path-hash32",
+    "devino-hash",
+    "devino-hash32",
+    "hybrid-hash",
+    "hybrid-hash32",
+  };
+
+  for(const auto &algo : algos)
+    {
+      TEST_CHECK(fs::inode::set_algo(algo) == 0);
+
+      for(const auto &dirpath : dirpaths)
+        {
+          fs::inode::ReaddirCalc calc(branch_path,dirpath);
+          ino_t ino = 1000;
+
+          for(const auto &[name,mode] : entries)
+            {
+              const fs::path fullpath = dirpath / name;
+              const u64 expected = fs::inode::calc(branch_path.string(),
+                                                   fullpath.string(),
+                                                   mode,
+                                                   ino);
+              const u64 actual = calc.calc(name.c_str(),
+                                           name.size(),
+                                           mode,
+                                           ino);
+
+              TEST_CHECK(actual == expected);
+
+              ++ino;
+            }
+        }
+    }
 }
 
 void
@@ -2980,6 +3036,82 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
   std::filesystem::remove_all(tmp_dir);
 }
 
+void
+test_hashset_put_and_size()
+{
+  HashSet set;
+  const char *names[] = {
+    "alpha",
+    "bravo",
+    "charlie",
+    "delta",
+    "echo",
+    "foxtrot",
+    "golf",
+    "hotel",
+    "india",
+    "juliet",
+    "kilo",
+    "lima",
+  };
+  const size_t names_len = (sizeof(names) / sizeof(names[0]));
+  const char *extra = "omega-long-filename";
+
+  TEST_CHECK(set.size() == 0);
+  TEST_CHECK(set.put(names[0]) == 1);
+  TEST_CHECK(set.put(names[0],strlen(names[0])) == 0);
+
+  for(size_t i = 1; i < names_len; ++i)
+    TEST_CHECK(set.put(names[i],strlen(names[i])) == 1);
+
+  TEST_CHECK(set.size() == (int)names_len);
+  TEST_CHECK(set.put(names[7]) == 0);
+  TEST_CHECK(set.put(names[11],strlen(names[11])) == 0);
+  TEST_CHECK(set.size() == (int)names_len);
+
+  TEST_CHECK(set.put(extra) == 1);
+  TEST_CHECK(set.put(extra,strlen(extra)) == 0);
+  TEST_CHECK(set.size() == (int)(names_len + 1));
+}
+
+void
+test_rapidhash_withSeed_preserves_default_output()
+{
+  uint8_t buffer[192];
+  const uint64_t seeds[] = {
+    0,
+    1,
+    0x0123456789abcdefull,
+    0xffffffffffffffffull,
+    0xa0761d6478bd642full,
+  };
+
+  for(size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = (uint8_t)(((i * 131u) + 17u) & 0xffu);
+
+  for(size_t offset = 0; offset < 16; ++offset)
+    {
+      const uint8_t *key = buffer + offset;
+
+      for(size_t len = 0; len <= 160; ++len)
+        {
+          for(const uint64_t seed : seeds)
+            {
+              const uint64_t canonical =
+                rapidhash_internal(key,len,seed,rapid_secret);
+
+              TEST_CHECK(rapidhash_withSeed(key,len,seed) == canonical);
+
+              if(len <= 48)
+                TEST_CHECK(rapidhashNano_withSeed(key,len,seed) == canonical);
+
+              if(len <= 80)
+                TEST_CHECK(rapidhashMicro_withSeed(key,len,seed) == canonical);
+            }
+        }
+    }
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -2987,6 +3119,8 @@ TEST_LIST =
    {"config_uint64",test_config_uint64},
    {"config_int",test_config_int},
    {"config_str",test_config_str},
+   {"hashset_put_and_size",test_hashset_put_and_size},
+   {"rapidhash_withSeed_preserves_default_output",test_rapidhash_withSeed_preserves_default_output},
    {"config_branches",test_config_branches},
    {"branch_default_ctor_mode",test_branch_default_ctor_mode},
    {"branch_to_string_modes",test_branch_to_string_modes},
@@ -3048,6 +3182,7 @@ TEST_LIST =
    {"branches_srcmounts_reflects_mutations",test_branches_srcmounts_reflects_mutations},
    {"config_cachefiles",test_config_cachefiles},
    {"config_inodecalc",test_config_inodecalc},
+   {"fs_inode_readdir_calc_matches_calc",test_fs_inode_readdir_calc_matches_calc},
    {"config_moveonenospc",test_config_moveonenospc},
    {"config_nfsopenhack",test_config_nfsopenhack},
    {"config_readdir",test_config_readdir},
