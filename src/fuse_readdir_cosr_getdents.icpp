@@ -84,13 +84,11 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
 {
   Err err;
   HashSet names;
-  fs::path rel_filepath;
   fuse_msgbuf_t *buf;
 
   buf = msgbuf_alloc();
   DEFER { msgbuf_free(buf); };
 
-  rel_filepath = rel_dirpath_ / "dummy";
   for(auto &dh_future : dh_futures_)
     {
       DirRV dirrv;
@@ -102,6 +100,7 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
         continue;
       DEFER { fs::close(dirrv.fd); };
 
+      fs::inode::ReaddirCalc inodecalc(*dirrv.branch_path,rel_dirpath_);
       while(true)
         {
           ssize_t nread;
@@ -124,10 +123,8 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
               if(rv == 0)
                 continue;
 
-              rel_filepath.replace_filename(d->name);
-
-              d->ino = fs::inode::calc(*dirrv.branch_path,
-                                       rel_filepath,
+               d->ino = inodecalc.calc(d->name,
+                                       namelen,
                                        DTTOIF(d->type),
                                        d->ino);
 

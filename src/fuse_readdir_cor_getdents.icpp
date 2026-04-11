@@ -43,7 +43,6 @@ _readdir(const fs::path &branch_path_,
 {
   int fd;
   fuse_msgbuf_t *buf;
-  fs::path rel_filepath;
   fs::path abs_dirpath;
 
   abs_dirpath = branch_path_ / rel_dirpath_;
@@ -56,7 +55,7 @@ _readdir(const fs::path &branch_path_,
   buf = msgbuf_alloc();
   DEFER{ msgbuf_free(buf); };
 
-  rel_filepath = rel_dirpath_ / "dummy";
+  fs::inode::ReaddirCalc inodecalc(branch_path_,rel_dirpath_);
   while(true)
     {
       ssize_t nread;
@@ -80,10 +79,8 @@ _readdir(const fs::path &branch_path_,
           if(rv == 0)
             continue;
 
-          rel_filepath.replace_filename(d->name);
-
-          d->ino = fs::inode::calc(branch_path_,
-                                   rel_filepath,
+           d->ino = inodecalc.calc(d->name,
+                                   namelen,
                                    DTTOIF(d->type),
                                    d->ino);
 

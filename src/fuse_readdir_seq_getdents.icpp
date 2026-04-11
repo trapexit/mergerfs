@@ -39,7 +39,6 @@ _readdir(const Branches::Ptr &branches_,
 {
   Err err;
   HashSet names;
-  fs::path rel_filepath;
   fs::path abs_dirpath;
   fuse_msgbuf_t *buf;
 
@@ -48,10 +47,10 @@ _readdir(const Branches::Ptr &branches_,
   buf = msgbuf_alloc();
   DEFER { msgbuf_free(buf); };
 
-  rel_filepath = rel_dirpath_ / "dummy";
   for(const auto &branch : *branches_)
     {
       int fd;
+      fs::inode::ReaddirCalc inodecalc(branch.path,rel_dirpath_);
 
       abs_dirpath = branch.path / rel_dirpath_;
 
@@ -83,10 +82,8 @@ _readdir(const Branches::Ptr &branches_,
               if(rv == 0)
                 continue;
 
-              rel_filepath.replace_filename(d->name);
-
-              d->ino = fs::inode::calc(branch.path,
-                                       rel_filepath,
+               d->ino = inodecalc.calc(d->name,
+                                       namelen,
                                        DTTOIF(d->type),
                                        d->ino);
 
