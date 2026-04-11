@@ -64,6 +64,7 @@ public:
     std::int64_t sample_interval_usecs = 100000;   // 100ms hill-climb sample period
     std::int64_t cooldown_usecs        = 200000;   // 200ms min time between scaling events
     std::int64_t idle_threshold_usecs  = 5000000;  // 5s worker idle timeout before self-exit
+    int          decline_threshold     = 2;        // consecutive declining samples before reversing direction
   };
 
   explicit
@@ -305,12 +306,13 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
     {
       if(_scaling_config.sample_interval_usecs <= 0 ||
          _scaling_config.cooldown_usecs        <= 0 ||
-         _scaling_config.idle_threshold_usecs  <= 0)
+         _scaling_config.idle_threshold_usecs  <= 0 ||
+         _scaling_config.decline_threshold     <= 0)
         {
           pthread_cond_destroy(&_monitor_cond);
           pthread_mutex_destroy(&_monitor_mutex);
           throw std::invalid_argument(
-            "threadpool: scaling_config timing values must be positive");
+            "threadpool: scaling_config timing/threshold values must be positive");
         }
     }
 
@@ -646,7 +648,7 @@ ThreadPool::monitor_routine(void *arg_)
   std::uint64_t prev_completed = btp->_tasks_completed.load(std::memory_order_relaxed);
   double ema_throughput = 0.0;
   constexpr double ema_alpha = 0.3;  // weight for new samples
-  constexpr int decline_threshold = 2;
+  int const decline_threshold = btp->_scaling_config.decline_threshold;
   int warmup_samples = 0;
 
   // Track expected thread count after the last perturbation so we
