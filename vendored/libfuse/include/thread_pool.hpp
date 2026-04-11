@@ -202,7 +202,7 @@ ThreadPool::_now_usecs()
 {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC,&ts);
-  return (std::uint64_t)ts.tv_sec * 1000000ULL + (std::uint64_t)ts.tv_nsec / 1000ULL;
+  return static_cast<std::uint64_t>(ts.tv_sec) * 1000000ULL + static_cast<std::uint64_t>(ts.tv_nsec) / 1000ULL;
 }
 
 
@@ -608,7 +608,7 @@ ThreadPool::start_routine_autoscale(void *arg_)
           // would let all workers self-exit, draining the pool
           // to zero threads and stalling non-autoscale enqueues.
           std::size_t const min_thr = std::max(btp->_scaling_config.min_threads,
-                                               (std::size_t)1);
+                                               static_cast<std::size_t>(1));
           if(btp->_try_remove_self_if_above(pthread_self(),min_thr))
             {
               syslog(LOG_DEBUG,
@@ -697,28 +697,36 @@ ThreadPool::monitor_routine(void *arg_)
       // next real cycle doesn't accumulate the skipped interval's
       // completions into a single inflated throughput sample.
       std::uint64_t elapsed = _now_usecs() - t0;
-      if(elapsed < (std::uint64_t)interval / 2)
+      if(elapsed < static_cast<std::uint64_t>(interval) / 2)
         {
           prev_completed = btp->_tasks_completed.load(std::memory_order_relaxed);
           continue;
         }
 
       std::uint64_t completed = btp->_tasks_completed.load(std::memory_order_relaxed);
-      std::uint64_t raw_throughput = completed - prev_completed;
+      std::uint64_t delta = completed - prev_completed;
       prev_completed = completed;
+
+      // Normalize to a rate (tasks per sample interval) so the
+      // hill-climber isn't distorted by variable elapsed times.
+      // The spurious-wakeup filter above accepts any cycle ≥ 50%
+      // of the target interval, so raw counts can vary by up to
+      // 2x from timing alone.  Normalizing removes that noise.
+      double throughput_rate = static_cast<double>(delta) *
+        (static_cast<double>(interval) / static_cast<double>(elapsed));
 
       // Warm up: seed the EMA with the first two samples before acting.
       if(warmup_samples < 2)
         {
           ema_throughput = (warmup_samples == 0)
-            ? (double)raw_throughput
-            : ema_alpha * (double)raw_throughput + (1.0 - ema_alpha) * ema_throughput;
+            ? throughput_rate
+            : ema_alpha * throughput_rate + (1.0 - ema_alpha) * ema_throughput;
           ++warmup_samples;
           continue;
         }
 
       double prev_ema = ema_throughput;
-      ema_throughput = ema_alpha * (double)raw_throughput + (1.0 - ema_alpha) * ema_throughput;
+      ema_throughput = ema_alpha * throughput_rate + (1.0 - ema_alpha) * ema_throughput;
 
       // Only adjust if there's meaningful work happening.
       // Reset direction to +1 (bias toward growth) so a stale
@@ -790,7 +798,7 @@ ThreadPool::monitor_routine(void *arg_)
 
         std::uint64_t now  = _now_usecs();
         std::uint64_t last = btp->_last_scale_time_usecs.load(std::memory_order_relaxed);
-        if((now - last) < (std::uint64_t)btp->_scaling_config.cooldown_usecs)
+        if((now - last) < static_cast<std::uint64_t>(btp->_scaling_config.cooldown_usecs))
           continue;
 
         // Re-read thread count under _scaling_mutex so the bound
@@ -962,7 +970,7 @@ ThreadPool::_maybe_grow_on_pressure()
   {
     std::uint64_t now  = _now_usecs();
     std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
-    if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
+    if((now - last) < static_cast<std::uint64_t>(_scaling_config.cooldown_usecs))
       return;
   }
   if(thread_count() >= _scaling_config.max_threads)
@@ -974,7 +982,7 @@ ThreadPool::_maybe_grow_on_pressure()
 
   std::uint64_t now  = _now_usecs();
   std::uint64_t last = _last_scale_time_usecs.load(std::memory_order_relaxed);
-  if((now - last) < (std::uint64_t)_scaling_config.cooldown_usecs)
+  if((now - last) < static_cast<std::uint64_t>(_scaling_config.cooldown_usecs))
     return;
 
   // Read count under _scaling_mutex for the log message below.
@@ -1251,7 +1259,7 @@ ThreadPool::enqueue_work_autoscale(ThreadPool::PToken  &ptok_,
   // INVARIANT: BoundedQueue::try_enqueue checks the semaphore
   // (tryWait) *before* forwarding the item into the inner queue.
   // On failure the item is never moved-from, so f remains valid.
-  // The assert below guards against future BoundedQueue changes
+  // The check below guards against future BoundedQueue changes
   // that could violate this ordering.
   Func f(std::forward<FuncType>(func_));
 
