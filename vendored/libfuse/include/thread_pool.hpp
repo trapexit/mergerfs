@@ -168,7 +168,7 @@ private:
   Queue _queue;
 
 private:
-  std::string const      _name;
+  const std::string      _name;
   std::vector<pthread_t> _threads;
   mutable Mutex          _threads_mutex;
   Mutex                  _scaling_mutex;
@@ -184,7 +184,7 @@ private:
   // after construction.  _monitor_started tracks whether the monitor
   // thread exists so the destructor knows whether it must wake/join it.
   bool                    _dynamic_scaling_enabled;
-  ScalingConfig const     _scaling_config;
+  const ScalingConfig     _scaling_config;
   pthread_t         _monitor_thread;
   bool              _monitor_started;
   // Raw pthreads (not Mutex/LockGuard) because the condvar requires
@@ -580,8 +580,8 @@ ThreadPool::start_routine_autoscale(void *arg_)
   ThreadPool::Func func;
   ThreadPool::Queue &q = btp->_queue;
   ThreadPool::CToken ctok(btp->_queue.make_ctoken());
-  std::string const name = btp->_name;
-  std::int64_t const idle_threshold = btp->_scaling_config.idle_threshold_usecs;
+  const std::string name = btp->_name;
+  const std::int64_t idle_threshold = btp->_scaling_config.idle_threshold_usecs;
 
   while(true)
     {
@@ -609,7 +609,7 @@ ThreadPool::start_routine_autoscale(void *arg_)
           // min_allowed floor.  Without this, min_threads == 0
           // would let all workers self-exit, draining the pool
           // to zero threads and stalling non-autoscale enqueues.
-          std::size_t const min_thr = std::max(btp->_scaling_config.min_threads,
+          const std::size_t min_thr = std::max(btp->_scaling_config.min_threads,
                                                static_cast<std::size_t>(1));
           if(btp->_try_remove_self_if_above(pthread_self(),min_thr))
             {
@@ -648,7 +648,7 @@ ThreadPool::monitor_routine(void *arg_)
   std::uint64_t prev_completed = btp->_tasks_completed.load(std::memory_order_relaxed);
   double ema_throughput = 0.0;
   constexpr double ema_alpha = 0.3;  // weight for new samples
-  int const decline_threshold = btp->_scaling_config.decline_threshold;
+  const int decline_threshold = btp->_scaling_config.decline_threshold;
   int warmup_samples = 0;
 
   // Track expected thread count after the last perturbation so we
