@@ -97,6 +97,7 @@ private:
   bool _try_claim_removal();
   void _maybe_grow_on_pressure();
   static std::uint64_t _now_usecs();
+  static void _set_thread_name(pthread_t t_, const std::string &name_);
 
   std::atomic<std::size_t> _remove_count{0};
 
@@ -206,6 +207,18 @@ ThreadPool::_now_usecs()
 
 
 inline
+void
+ThreadPool::_set_thread_name(pthread_t            t_,
+                             const std::string   &name_)
+{
+  if(name_.empty())
+    return;
+  std::string n = name_.substr(0,15);
+  pthread_setname_np(t_,n.c_str());
+}
+
+
+inline
 ThreadPool::ThreadPool(const unsigned        thread_count_,
                        const unsigned        max_queue_depth_,
                        const std::string    &name_)
@@ -277,12 +290,7 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
           continue;
         }
 
-      if(not _name.empty())
-        {
-          std::string name = _name.substr(0, 15);
-          pthread_setname_np(t, name.c_str());
-        }
-
+      _set_thread_name(t,_name);
       _threads.push_back(t);
     }
 
@@ -323,9 +331,7 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
           _monitor_started = true;
           {
             std::string mon_name = _name.empty() ? "tp.monitor" : (_name + ".mon");
-            if(mon_name.size() > 15)
-              mon_name.resize(15);
-            pthread_setname_np(_monitor_thread, mon_name.c_str());
+            _set_thread_name(_monitor_thread,mon_name);
           }
           syslog(LOG_DEBUG,
                  "threadpool (%s): auto-scaling enabled [%zu, %zu]",
@@ -867,6 +873,13 @@ inline
 int
 ThreadPool::_add_thread_scaling_locked(const std::string &name_)
 {
+  if(_dynamic_scaling_enabled)
+    {
+      mutex_lockguard(_threads_mutex);
+      if(_threads.size() >= _scaling_config.max_threads)
+        return -EAGAIN;
+    }
+
   int rv;
   pthread_t t;
   sigset_t oldset;
@@ -902,11 +915,7 @@ ThreadPool::_add_thread_scaling_locked(const std::string &name_)
       return -rv;
     }
 
-  if(not name.empty())
-    {
-      std::string n = name.substr(0, 15);
-      pthread_setname_np(t,n.c_str());
-    }
+  _set_thread_name(t,name);
 
   {
     mutex_lockguard(_threads_mutex);
@@ -1188,19 +1197,21 @@ ThreadPool::enqueue_task(FuncType&& func_)
         }
     };
 
+  Func f(std::move(work));
+
   if(_dynamic_scaling_enabled)
     {
-      if(!_queue.try_enqueue(std::move(work)))
+      if(!_queue.try_enqueue(std::move(f)))
         {
-          if(!static_cast<bool>(work))
+          if(!static_cast<bool>(f))
             throw std::logic_error("BoundedQueue::try_enqueue moved the callable despite returning false");
           _maybe_grow_on_pressure();
-          _queue.enqueue(std::move(work));
+          _queue.enqueue(std::move(f));
         }
     }
   else
     {
-      _queue.enqueue(std::move(work));
+      _queue.enqueue(std::move(f));
     }
   _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 
