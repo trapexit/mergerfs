@@ -96,6 +96,7 @@ private:
   void _remove_self(pthread_t t_);
   bool _try_remove_self_if_above(pthread_t t_, std::size_t min_count_);
   bool _try_claim_removal();
+  bool _try_claim_and_remove_self(pthread_t t_);
   void _maybe_grow_on_pressure();
   static std::uint64_t _now_usecs();
   static void _set_thread_name(pthread_t t_, const std::string &name_);
@@ -494,17 +495,13 @@ ThreadPool::_process_func(Func &func_)
       if(_stop.load(std::memory_order_acquire))
         return BREAK;
 
-      // Try to claim a pending shrink request.  Each call to
-      // _remove_thread_scaling_locked increments _remove_count and
-      // enqueues a wakeup pill.  If the count is still positive,
-      // this pill is ours — detach and exit.  If the count is zero,
-      // a worker already claimed the decrement via the task-
-      // completion path below; this pill is stale — keep working.
-      if(_try_claim_removal())
-        {
-          _remove_self(pthread_self());
-          return EXIT;
-        }
+      // Try to claim a pending shrink request and atomically remove
+      // self under both _scaling_mutex and _threads_mutex.  This
+      // prevents set_threads from observing a stale effective count
+      // (decremented _remove_count but _threads not yet shrunk) and
+      // issuing excess removals that drain the pool to zero.
+      if(_try_claim_and_remove_self(pthread_self()))
+        return EXIT;
 
       return CONTINUE;
     }
@@ -534,13 +531,12 @@ ThreadPool::_process_func(Func &func_)
 
   // _remove_thread_scaling_locked increments _remove_count.
   // Workers race to claim a decrement after each task; the winner
-  // detaches itself and exits.  During shutdown (_stop set),
-  // _remove_self is a no-op, so the destructor still joins us.
-  if(_try_claim_removal())
-    {
-      _remove_self(pthread_self());
-      return EXIT;
-    }
+  // detaches itself and exits.  Uses the combined claim+remove to
+  // prevent the TOCTOU race with set_threads.  During shutdown
+  // (_stop set), _try_claim_and_remove_self returns false, so
+  // the destructor still joins us.
+  if(_try_claim_and_remove_self(pthread_self()))
+    return EXIT;
 
   return CONTINUE;
 }
@@ -880,6 +876,61 @@ ThreadPool::_try_claim_removal()
 }
 
 
+// Atomically claim a pending removal AND remove self from the thread
+// list under both _scaling_mutex and _threads_mutex.  This closes the
+// TOCTOU race between the old _try_claim_removal + _remove_self
+// two-step: without atomicity, set_threads can observe the decremented
+// _remove_count before _threads is shrunk, miscalculate effective
+// count, and issue excess removals that drain the pool to zero.
+inline
+bool
+ThreadPool::_try_claim_and_remove_self(pthread_t t_)
+{
+  mutex_lockguard(_scaling_mutex);
+  mutex_lockguard(_threads_mutex);
+
+  if(_stop.load(std::memory_order_acquire))
+    return false;
+
+  // Try to claim a pending removal.
+  std::size_t count = _remove_count.load(std::memory_order_relaxed);
+  while(count > 0)
+    {
+      if(_remove_count.compare_exchange_weak(count,count - 1,
+                                              std::memory_order_acq_rel))
+        goto claimed;
+    }
+  return false;
+
+claimed:
+  // Safety floor: never remove the last thread.  Use the same
+  // min_allowed logic as _remove_thread_scaling_locked.
+  {
+    std::size_t min_allowed = 1;
+    if(_dynamic_scaling_enabled && _scaling_config.min_threads > min_allowed)
+      min_allowed = _scaling_config.min_threads;
+    if(_threads.size() <= min_allowed)
+      {
+        // Restore the claim — a future set_threads or grow will
+        // either cancel it or the pool will be large enough.
+        _remove_count.fetch_add(1,std::memory_order_relaxed);
+        return false;
+      }
+  }
+
+  auto it = std::find(_threads.begin(),_threads.end(),t_);
+  if(it == _threads.end())
+    {
+      _remove_count.fetch_add(1,std::memory_order_relaxed);
+      return false;
+    }
+
+  _threads.erase(it);
+  pthread_detach(t_);
+  return true;
+}
+
+
 inline
 void
 ThreadPool::_remove_self(pthread_t t_)
@@ -1156,6 +1207,7 @@ ThreadPool::set_threads(const std::size_t count_)
   std::size_t effective = (current > pending) ? (current - pending) : 0;
 
   int rv = 0;
+  bool changed = false;
 
   for(std::size_t i = effective; i < count; ++i)
     {
@@ -1165,6 +1217,7 @@ ThreadPool::set_threads(const std::size_t count_)
           rv = err;
           break;
         }
+      changed = true;
     }
 
   for(std::size_t i = count; i < effective; ++i)
@@ -1175,7 +1228,13 @@ ThreadPool::set_threads(const std::size_t count_)
           rv = err;
           break;
         }
+      changed = true;
     }
+
+  // Stamp the cooldown timer so the monitor doesn't immediately
+  // perturb the thread count after an explicit set_threads call.
+  if(changed && _dynamic_scaling_enabled)
+    _last_scale_time_usecs.store(_now_usecs(),std::memory_order_relaxed);
 
   return rv;
 }

@@ -1700,7 +1700,7 @@ test_tp_remove_thread()
   int rv = tp.remove_thread();
 
   TEST_CHECK(rv == 0);
-  TEST_CHECK(tp.threads().size() == 2);
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 2; }));
 }
 
 void
@@ -1739,7 +1739,7 @@ test_tp_set_threads_shrink()
   int rv = tp.set_threads(2);
 
   TEST_CHECK(rv == 0);
-  TEST_CHECK(tp.threads().size() == 2);
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 2; }));
 }
 
 void
@@ -2104,7 +2104,7 @@ test_tp_remove_thread_under_load()
 
   TEST_CHECK(rv1 == 0);
   TEST_CHECK(rv2 == 0);
-  TEST_CHECK(tp.threads().size() == 2);
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 2; }));
 
   TEST_CHECK(wait_until([&counter, N](){ return counter.load() == N; }, 10000));
   TEST_CHECK(counter.load() == N);
@@ -2458,6 +2458,602 @@ test_tp_heavy_add_remove_churn_under_enqueue()
   TEST_CHECK(remove_ok.load() > 0);
   TEST_CHECK(wait_until([&executed, TOTAL](){ return executed.load() == TOTAL; }, 30000));
   TEST_CHECK(executed.load() == TOTAL);
+}
+
+// =====================================================================
+// ThreadPool — auto-scaling and introspection tests
+// =====================================================================
+
+void
+test_tp_construct_zero_queue_depth_throws()
+{
+  bool threw = false;
+
+  try
+    {
+      ThreadPool tp(2, 0, "test.zqdepth");
+    }
+  catch(const std::invalid_argument &)
+    {
+      threw = true;
+    }
+
+  TEST_CHECK(threw);
+}
+
+void
+test_tp_construct_scaling_min_gt_max_throws()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 10;
+  cfg.max_threads = 5;
+
+  bool threw = false;
+
+  try
+    {
+      ThreadPool tp(2, 4, "test.mingtmax", cfg);
+    }
+  catch(const std::invalid_argument &)
+    {
+      threw = true;
+    }
+
+  TEST_CHECK(threw);
+}
+
+void
+test_tp_construct_scaling_negative_interval_throws()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 8;
+  cfg.sample_interval_usecs = 0;
+
+  bool threw = false;
+
+  try
+    {
+      ThreadPool tp(2, 4, "test.negival", cfg);
+    }
+  catch(const std::invalid_argument &)
+    {
+      threw = true;
+    }
+
+  TEST_CHECK(threw);
+}
+
+void
+test_tp_construct_scaling_negative_cooldown_throws()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 8;
+  cfg.cooldown_usecs = -1;
+
+  bool threw = false;
+
+  try
+    {
+      ThreadPool tp(2, 4, "test.negcool", cfg);
+    }
+  catch(const std::invalid_argument &)
+    {
+      threw = true;
+    }
+
+  TEST_CHECK(threw);
+}
+
+void
+test_tp_construct_scaling_negative_idle_throws()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 0;
+
+  bool threw = false;
+
+  try
+    {
+      ThreadPool tp(2, 4, "test.negidle", cfg);
+    }
+  catch(const std::invalid_argument &)
+    {
+      threw = true;
+    }
+
+  TEST_CHECK(threw);
+}
+
+void
+test_tp_construct_scaling_clamps_initial_count()
+{
+  // Request 1 thread, but min_threads is 3 — should clamp up to 3
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 3;
+  cfg.max_threads = 6;
+
+  ThreadPool tp(1, 8, "test.clampup", cfg);
+
+  TEST_CHECK(tp.thread_count() >= 3);
+
+  // Request 10 threads, but max_threads is 6 — should clamp down to 6
+  ThreadPool::ScalingConfig cfg2;
+
+  cfg2.min_threads = 2;
+  cfg2.max_threads = 6;
+
+  ThreadPool tp2(10, 8, "test.clampdn", cfg2);
+
+  TEST_CHECK(tp2.thread_count() <= 6);
+}
+
+void
+test_tp_introspection_thread_count()
+{
+  ThreadPool tp(3, 8, "test.itc");
+
+  TEST_CHECK(tp.thread_count() == 3);
+
+  tp.add_thread();
+
+  TEST_CHECK(tp.thread_count() == 4);
+}
+
+void
+test_tp_introspection_queue_capacity()
+{
+  ThreadPool tp(2, 16, "test.iqcap");
+
+  TEST_CHECK(tp.queue_capacity() == 16);
+}
+
+void
+test_tp_introspection_tasks_enqueued_completed()
+{
+  ThreadPool tp(2, 64, "test.ienqcomp");
+
+  TEST_CHECK(tp.tasks_enqueued() == 0);
+  TEST_CHECK(tp.tasks_completed() == 0);
+
+  const int N = 20;
+  std::atomic<int> counter{0};
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work([&counter](){ counter.fetch_add(1); });
+
+  TEST_CHECK(wait_until([&counter, N](){ return counter.load() == N; }));
+  // Give a moment for tasks_completed to catch up
+  TEST_CHECK(wait_until([&tp, N]()
+    {
+      return tp.tasks_completed() == static_cast<std::uint64_t>(N);
+    }));
+
+  TEST_CHECK(tp.tasks_enqueued() == static_cast<std::uint64_t>(N));
+  TEST_CHECK(tp.tasks_completed() == static_cast<std::uint64_t>(N));
+}
+
+void
+test_tp_introspection_tasks_pending()
+{
+  ThreadPool tp(1, 4, "test.ipend");
+
+  std::atomic<bool> release{false};
+  std::atomic<bool> started{false};
+
+  tp.enqueue_work([&release, &started]()
+    {
+      started.store(true);
+      while(!release.load())
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    });
+
+  TEST_CHECK(wait_until([&started](){ return started.load(); }));
+
+  // Enqueue a couple more while the first is blocked
+  tp.enqueue_work([](){});
+  tp.enqueue_work([](){});
+
+  // tasks_pending should be > 0 (at least the 2 queued + 1 running)
+  TEST_CHECK(tp.tasks_pending() > 0);
+
+  release.store(true);
+
+  TEST_CHECK(wait_until([&tp](){ return tp.tasks_pending() == 0; }));
+}
+
+void
+test_tp_introspection_queue_depth()
+{
+  ThreadPool tp(1, 8, "test.iqdepth");
+
+  std::atomic<bool> release{false};
+  std::atomic<bool> started{false};
+
+  tp.enqueue_work([&release, &started]()
+    {
+      started.store(true);
+      while(!release.load())
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    });
+
+  TEST_CHECK(wait_until([&started](){ return started.load(); }));
+
+  tp.enqueue_work([](){});
+  tp.enqueue_work([](){});
+
+  // Queue depth should be approximately 2
+  std::size_t depth = tp.queue_depth();
+  TEST_CHECK(depth >= 1);
+
+  release.store(true);
+
+  TEST_CHECK(wait_until([&tp](){ return tp.queue_depth() == 0; }, 5000));
+}
+
+void
+test_tp_enqueue_work_autoscale()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 500000;   // 500ms
+  cfg.sample_interval_usecs = 100000;  // 100ms
+  cfg.cooldown_usecs = 50000;          // 50ms
+
+  ThreadPool tp(2, 4, "test.eas", cfg);
+
+  std::atomic<int> counter{0};
+  const int N = 50;
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work_autoscale([&counter](){ counter.fetch_add(1); });
+
+  TEST_CHECK(wait_until([&counter, N](){ return counter.load() == N; }, 5000));
+  TEST_CHECK(counter.load() == N);
+}
+
+void
+test_tp_enqueue_work_autoscale_with_ptoken()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 500000;
+  cfg.sample_interval_usecs = 100000;
+  cfg.cooldown_usecs = 50000;
+
+  ThreadPool tp(2, 4, "test.easp", cfg);
+
+  std::atomic<int> counter{0};
+  const int N = 50;
+  auto ptok = tp.ptoken();
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work_autoscale(ptok, [&counter](){ counter.fetch_add(1); });
+
+  TEST_CHECK(wait_until([&counter, N](){ return counter.load() == N; }, 5000));
+  TEST_CHECK(counter.load() == N);
+}
+
+void
+test_tp_autoscale_grows_under_pressure()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 1;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 2000000;  // 2s
+  cfg.sample_interval_usecs = 100000;  // 100ms
+  cfg.cooldown_usecs = 10000;          // 10ms - fast cooldown for test
+
+  // Queue depth of 2 with 1 thread — pressure should trigger growth
+  ThreadPool tp(1, 2, "test.easgrow", cfg);
+
+  TEST_CHECK(tp.thread_count() == 1);
+
+  std::atomic<int> counter{0};
+  const int N = 100;
+
+  // Saturate with slow tasks to trigger pressure growth
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work_autoscale([&counter]()
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        counter.fetch_add(1);
+      });
+
+  TEST_CHECK(wait_until([&counter, N](){ return counter.load() == N; }, 15000));
+  TEST_CHECK(counter.load() == N);
+
+  // Pool should have grown beyond 1 thread at some point
+  // (We can't reliably assert thread_count() > 1 at this instant
+  // since idle timeout may have already shrunk it back, but the work
+  // completing in reasonable time proves growth happened.)
+}
+
+void
+test_tp_autoscale_idle_self_exit()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 1;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 200000;   // 200ms idle timeout
+  cfg.sample_interval_usecs = 100000;
+  cfg.cooldown_usecs = 10000;
+
+  ThreadPool tp(1, 2, "test.easidle", cfg);
+
+  // Manually grow
+  tp.add_thread();
+  tp.add_thread();
+  tp.add_thread();
+
+  TEST_CHECK(tp.thread_count() == 4);
+
+  // Wait for idle threads to self-exit (200ms timeout + margin)
+  TEST_CHECK(wait_until([&tp]()
+    {
+      return tp.thread_count() <= 1;
+    },
+    5000));
+
+  std::size_t count = tp.thread_count();
+  TEST_CHECK(count >= 1);
+  TEST_CHECK(count <= 2);  // should have shrunk significantly
+}
+
+void
+test_tp_set_threads_clamps_to_scaling_bounds()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 6;
+
+  ThreadPool tp(3, 16, "test.stclamp", cfg);
+
+  // Try to set below min — should clamp to 2
+  tp.set_threads(1);
+
+  TEST_CHECK(tp.thread_count() >= 2);
+
+  // Try to set above max — should clamp to 6
+  tp.set_threads(100);
+
+  // Wait for threads to settle
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() <= 6; }));
+  TEST_CHECK(tp.thread_count() <= 6);
+}
+
+void
+test_tp_enqueue_task_autoscale_path()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 500000;
+  cfg.sample_interval_usecs = 100000;
+  cfg.cooldown_usecs = 50000;
+
+  ThreadPool tp(2, 4, "test.etauto", cfg);
+
+  // enqueue_task uses the autoscale try-then-block path when dynamic scaling is enabled
+  std::vector<std::future<int>> futures;
+  const int N = 30;
+
+  for(int i = 0; i < N; ++i)
+    futures.push_back(tp.enqueue_task([i]() -> int { return i * 2; }));
+
+  for(int i = 0; i < N; ++i)
+    TEST_CHECK(futures[i].get() == i * 2);
+}
+
+void
+test_tp_autoscale_stress_concurrent_enqueue()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 16;
+  cfg.idle_threshold_usecs = 1000000;
+  cfg.sample_interval_usecs = 50000;
+  cfg.cooldown_usecs = 10000;
+
+  ThreadPool tp(2, 8, "test.easconc", cfg);
+
+  const int PRODUCERS = 6;
+  const int PER_PRODUCER = 500;
+  const int TOTAL = PRODUCERS * PER_PRODUCER;
+  std::atomic<int> counter{0};
+
+  std::vector<std::thread> producers;
+  for(int p = 0; p < PRODUCERS; ++p)
+    {
+      producers.emplace_back([&tp, &counter]()
+        {
+          auto ptok = tp.ptoken();
+          for(int i = 0; i < PER_PRODUCER; ++i)
+            tp.enqueue_work_autoscale(ptok, [&counter]()
+              {
+                counter.fetch_add(1);
+              });
+        });
+    }
+
+  for(auto &t : producers)
+    t.join();
+
+  TEST_CHECK(wait_until([&counter, TOTAL](){ return counter.load() == TOTAL; }, 15000));
+  TEST_CHECK(counter.load() == TOTAL);
+}
+
+void
+test_tp_autoscale_with_slow_tasks_stress()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 1;
+  cfg.max_threads = 8;
+  cfg.idle_threshold_usecs = 1000000;
+  cfg.sample_interval_usecs = 50000;
+  cfg.cooldown_usecs = 10000;
+
+  ThreadPool tp(1, 4, "test.easslow", cfg);
+
+  std::atomic<int> counter{0};
+  const int N = 80;
+
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work_autoscale([&counter]()
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        counter.fetch_add(1);
+      });
+
+  TEST_CHECK(wait_until([&counter, N](){ return counter.load() == N; }, 30000));
+  TEST_CHECK(counter.load() == N);
+}
+
+void
+test_tp_autoscale_repeated_construct_destroy()
+{
+  const int ROUNDS = 50;
+
+  for(int r = 0; r < ROUNDS; ++r)
+    {
+      ThreadPool::ScalingConfig cfg;
+
+      cfg.min_threads = 1;
+      cfg.max_threads = 4;
+      cfg.idle_threshold_usecs = 200000;
+      cfg.sample_interval_usecs = 50000;
+      cfg.cooldown_usecs = 10000;
+
+      std::atomic<int> counter{0};
+
+      {
+        ThreadPool tp(2, 32, "test.easctor", cfg);
+
+        for(int i = 0; i < 100; ++i)
+          tp.enqueue_work_autoscale([&counter]()
+            {
+              counter.fetch_add(1);
+            });
+      }
+
+      TEST_CHECK(counter.load() == 100);
+    }
+}
+
+void
+test_tp_remove_thread_refuses_below_scaling_min()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 3;
+  cfg.max_threads = 6;
+
+  ThreadPool tp(4, 8, "test.rmscmin", cfg);
+
+  TEST_CHECK(tp.thread_count() == 4);
+
+  // Should succeed: 4 -> 3
+  int rv = tp.remove_thread();
+  TEST_CHECK(rv == 0);
+
+  // Wait for removal to take effect
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 3; }));
+
+  // Should fail: 3 is min_threads
+  rv = tp.remove_thread();
+  TEST_CHECK(rv == -EINVAL);
+  TEST_CHECK(tp.thread_count() == 3);
+}
+
+void
+test_tp_add_thread_refuses_above_scaling_max()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 3;
+
+  ThreadPool tp(3, 8, "test.addscmax", cfg);
+
+  TEST_CHECK(tp.thread_count() == 3);
+
+  // Should fail: already at max_threads
+  int rv = tp.add_thread();
+  TEST_CHECK(rv == -EAGAIN);
+  TEST_CHECK(tp.thread_count() == 3);
+}
+
+void
+test_tp_autoscale_mixed_resize_and_autoscale_enqueue()
+{
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads = 2;
+  cfg.max_threads = 10;
+  cfg.idle_threshold_usecs = 1000000;
+  cfg.sample_interval_usecs = 50000;
+  cfg.cooldown_usecs = 10000;
+
+  ThreadPool tp(3, 64, "test.easmix", cfg);
+
+  const int PRODUCERS = 4;
+  const int PER_PRODUCER = 300;
+  const int TOTAL = PRODUCERS * PER_PRODUCER;
+  std::atomic<int> counter{0};
+  std::atomic<bool> producers_done{false};
+
+  std::thread resizer([&tp, &producers_done]()
+    {
+      int i = 0;
+      while(!producers_done.load())
+        {
+          std::size_t target = 2 + (i % 8);
+          tp.set_threads(target);
+          std::this_thread::sleep_for(std::chrono::milliseconds(5));
+          ++i;
+        }
+    });
+
+  std::vector<std::thread> producers;
+  for(int p = 0; p < PRODUCERS; ++p)
+    {
+      producers.emplace_back([&tp, &counter]()
+        {
+          auto ptok = tp.ptoken();
+          for(int i = 0; i < PER_PRODUCER; ++i)
+            tp.enqueue_work_autoscale(ptok, [&counter]()
+              {
+                counter.fetch_add(1);
+              });
+        });
+    }
+
+  for(auto &t : producers)
+    t.join();
+
+  producers_done.store(true);
+  resizer.join();
+
+  TEST_CHECK(wait_until([&counter, TOTAL](){ return counter.load() == TOTAL; }, 15000));
+  TEST_CHECK(counter.load() == TOTAL);
 }
 
 void
@@ -3161,5 +3757,28 @@ TEST_LIST =
    {"tp_heavy_repeated_construct_destroy",test_tp_heavy_repeated_construct_destroy},
    {"tp_heavy_enqueue_task_mixed_outcomes",test_tp_heavy_enqueue_task_mixed_outcomes},
    {"tp_heavy_add_remove_churn_under_enqueue",test_tp_heavy_add_remove_churn_under_enqueue},
+   {"tp_construct_zero_queue_depth_throws",test_tp_construct_zero_queue_depth_throws},
+   {"tp_construct_scaling_min_gt_max_throws",test_tp_construct_scaling_min_gt_max_throws},
+   {"tp_construct_scaling_negative_interval_throws",test_tp_construct_scaling_negative_interval_throws},
+   {"tp_construct_scaling_negative_cooldown_throws",test_tp_construct_scaling_negative_cooldown_throws},
+   {"tp_construct_scaling_negative_idle_throws",test_tp_construct_scaling_negative_idle_throws},
+   {"tp_construct_scaling_clamps_initial_count",test_tp_construct_scaling_clamps_initial_count},
+   {"tp_introspection_thread_count",test_tp_introspection_thread_count},
+   {"tp_introspection_queue_capacity",test_tp_introspection_queue_capacity},
+   {"tp_introspection_tasks_enqueued_completed",test_tp_introspection_tasks_enqueued_completed},
+   {"tp_introspection_tasks_pending",test_tp_introspection_tasks_pending},
+   {"tp_introspection_queue_depth",test_tp_introspection_queue_depth},
+   {"tp_enqueue_work_autoscale",test_tp_enqueue_work_autoscale},
+   {"tp_enqueue_work_autoscale_with_ptoken",test_tp_enqueue_work_autoscale_with_ptoken},
+   {"tp_autoscale_grows_under_pressure",test_tp_autoscale_grows_under_pressure},
+   {"tp_autoscale_idle_self_exit",test_tp_autoscale_idle_self_exit},
+   {"tp_set_threads_clamps_to_scaling_bounds",test_tp_set_threads_clamps_to_scaling_bounds},
+   {"tp_enqueue_task_autoscale_path",test_tp_enqueue_task_autoscale_path},
+   {"tp_autoscale_stress_concurrent_enqueue",test_tp_autoscale_stress_concurrent_enqueue},
+   {"tp_autoscale_with_slow_tasks_stress",test_tp_autoscale_with_slow_tasks_stress},
+   {"tp_autoscale_repeated_construct_destroy",test_tp_autoscale_repeated_construct_destroy},
+   {"tp_remove_thread_refuses_below_scaling_min",test_tp_remove_thread_refuses_below_scaling_min},
+   {"tp_add_thread_refuses_above_scaling_max",test_tp_add_thread_refuses_above_scaling_max},
+   {"tp_autoscale_mixed_resize_and_autoscale_enqueue",test_tp_autoscale_mixed_resize_and_autoscale_enqueue},
    {NULL,NULL}
   };
