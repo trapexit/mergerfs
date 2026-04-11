@@ -718,7 +718,13 @@ ThreadPool::monitor_routine(void *arg_)
                 btp->_last_scale_time_usecs.store(now,
                                                   std::memory_order_relaxed);
                 acted_last_cycle = true;
-                expected_count = btp->thread_count();
+                // Use count + 1 rather than thread_count() so the
+                // expected value reflects the intended outcome of our
+                // action, not the racy current state.  For grow this
+                // is equivalent (push_back is synchronous) but for
+                // consistency and to avoid an extra lock acquisition,
+                // compute it arithmetically.
+                expected_count = count + 1;
                 syslog(LOG_DEBUG,
                        "threadpool (%s): hill-climb grow to %zu threads "
                        "(ema %.1f -> %.1f)",
@@ -735,7 +741,13 @@ ThreadPool::monitor_routine(void *arg_)
                 btp->_last_scale_time_usecs.store(now,
                                                   std::memory_order_relaxed);
                 acted_last_cycle = true;
-                expected_count = btp->thread_count();
+                // _remove_thread_scaling_locked only increments
+                // _remove_count and enqueues a wakeup pill — it does
+                // not synchronously erase from _threads.  Using
+                // thread_count() here would return the pre-shrink
+                // count, causing the next cycle to misattribute the
+                // deferred removal to external scaling interference.
+                expected_count = count - 1;
                 syslog(LOG_DEBUG,
                        "threadpool (%s): hill-climb shrink to %zu threads "
                        "(ema %.1f -> %.1f)",
