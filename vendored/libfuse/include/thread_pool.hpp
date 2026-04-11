@@ -290,23 +290,42 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
         }
 
       _set_thread_name(t,_name);
-      _threads.push_back(t);
+
+      // Lock around push_back because a just-spawned autoscale
+      // worker can time out on the empty queue and call
+      // _try_remove_self_if_above (which acquires _threads_mutex
+      // and modifies _threads) before the constructor finishes.
+      // Concurrent unlocked push_back and locked erase is UB.
+      {
+        mutex_lockguard(_threads_mutex);
+        _threads.push_back(t);
+      }
     }
 
   pthread_sigmask(SIG_SETMASK,&oldset,NULL);
 
-  if(_threads.empty())
+  // Check under lock: a spawned autoscale worker could have
+  // already modified _threads via _try_remove_self_if_above.
+  {
+    std::size_t n;
     {
-      pthread_cond_destroy(&_monitor_cond);
-      pthread_mutex_destroy(&_monitor_mutex);
-      throw std::runtime_error("threadpool: failed to spawn any threads");
+      mutex_lockguard(_threads_mutex);
+      n = _threads.size();
     }
 
-  syslog(LOG_DEBUG,
-         "threadpool (%s): spawned %zu threads w/ max queue depth %u",
-         _name.c_str(),
-         _threads.size(),
-         max_queue_depth_);
+    if(n == 0)
+      {
+        pthread_cond_destroy(&_monitor_cond);
+        pthread_mutex_destroy(&_monitor_mutex);
+        throw std::runtime_error("threadpool: failed to spawn any threads");
+      }
+
+    syslog(LOG_DEBUG,
+           "threadpool (%s): spawned %zu threads w/ max queue depth %u",
+           _name.c_str(),
+           n,
+           max_queue_depth_);
+  }
 
   // Start the monitor only when dynamic scaling can actually change
   // the thread count. Fixed-size pools still use _scaling_config for
