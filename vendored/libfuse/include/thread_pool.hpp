@@ -296,7 +296,11 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
   pthread_sigmask(SIG_SETMASK,&oldset,NULL);
 
   if(_threads.empty())
-    throw std::runtime_error("threadpool: failed to spawn any threads");
+    {
+      pthread_cond_destroy(&_monitor_cond);
+      pthread_mutex_destroy(&_monitor_mutex);
+      throw std::runtime_error("threadpool: failed to spawn any threads");
+    }
 
   syslog(LOG_DEBUG,
          "threadpool (%s): spawned %zu threads w/ max queue depth %u",
@@ -557,7 +561,7 @@ ThreadPool::monitor_routine(void *arg_)
   std::size_t expected_count = btp->thread_count();
   bool acted_last_cycle = false;
 
-  while(!btp->_stop.load(std::memory_order_acquire))
+  while(true)
     {
       // Sleep for one sample interval, but wake immediately if the
       // destructor signals _monitor_cond.
@@ -573,7 +577,16 @@ ThreadPool::monitor_routine(void *arg_)
             abs_ts.tv_nsec -= 1000000000L;
           }
 
+        // Check _stop under _monitor_mutex to close the lost-wakeup
+        // race: without this, the destructor could set _stop and
+        // signal between our check and the timedwait, losing the
+        // signal and delaying shutdown by up to one sample interval.
         pthread_mutex_lock(&btp->_monitor_mutex);
+        if(btp->_stop.load(std::memory_order_acquire))
+          {
+            pthread_mutex_unlock(&btp->_monitor_mutex);
+            break;
+          }
         pthread_cond_timedwait(&btp->_monitor_cond,
                                &btp->_monitor_mutex,
                                &abs_ts);
