@@ -985,10 +985,6 @@ ThreadPool::_maybe_grow_on_pressure()
   if((now - last) < static_cast<std::uint64_t>(_scaling_config.cooldown_usecs))
     return;
 
-  // Read count under _scaling_mutex for the log message below.
-  // _add_thread_scaling_locked does the authoritative max check.
-  std::size_t count = thread_count();
-
   if(_add_thread_scaling_locked({}) != 0)
     return;
   _last_scale_time_usecs.store(now,std::memory_order_relaxed);
@@ -996,7 +992,7 @@ ThreadPool::_maybe_grow_on_pressure()
   syslog(LOG_DEBUG,
          "threadpool (%s): fast-path grow to %zu threads (queue full)",
          _name.c_str(),
-         count + 1);
+         thread_count());
 }
 
 
@@ -1013,7 +1009,15 @@ ThreadPool::_add_thread_scaling_locked(const std::string &name_)
   if(_dynamic_scaling_enabled)
     {
       mutex_lockguard(_threads_mutex);
-      if(_threads.size() >= _scaling_config.max_threads)
+      // Use effective count (raw minus pending removals) to match
+      // _remove_thread_scaling_locked's symmetric min-bound check.
+      // Without this, pending removal claims block the pool from
+      // growing back to max_threads under load spikes.
+      std::size_t pending = _remove_count.load(std::memory_order_relaxed);
+      std::size_t effective = (_threads.size() > pending)
+        ? (_threads.size() - pending)
+        : 0;
+      if(effective >= _scaling_config.max_threads)
         return -EAGAIN;
     }
 
