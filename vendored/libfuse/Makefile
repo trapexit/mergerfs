@@ -133,13 +133,13 @@ $(BUILDDIR)/stamp:
 	$(MKDIR) -p $(BUILDDIR)/.objs/
 	$(TOUCH) $@
 
-$(BUILDDIR)/libfuse.a: $(OBJS)
+$(BUILDDIR)/libfuse.a: $(OBJS) | $(BUILDDIR)/stamp
 	$(AR) rcs $(BUILDDIR)/libfuse.a $(OBJS)
 
 .PHONY: utils
 utils: mergerfs-fusermount mount.mergerfs
 
-$(BUILDDIR)/mergerfs-fusermount: util/fusermount.cpp
+$(BUILDDIR)/mergerfs-fusermount: util/fusermount.cpp | $(BUILDDIR)/stamp
 	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -Ilib -o $(BUILDDIR)/mergerfs-fusermount util/fusermount.cpp
 
 mergerfs-fusermount: $(BUILDDIR)/mergerfs-fusermount
