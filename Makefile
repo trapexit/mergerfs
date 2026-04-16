@@ -184,19 +184,21 @@ help:
 $(BUILDDIR)/mergerfs: $(LIBFUSE) src/version.hpp $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BUILDDIR)/fsck.mergerfs:
+$(BUILDDIR)/fsck.mergerfs: $(BUILDDIR)/mergerfs
 	$(LN) -sf "mergerfs" $@
 
-$(BUILDDIR)/mergerfs.collect-info:
+$(BUILDDIR)/mergerfs.collect-info: $(BUILDDIR)/mergerfs
 	$(LN) -sf "mergerfs" $@
 
 $(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
 	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
 .PHONY: libfuse
-$(LIBFUSE):
-libfuse:
+libfuse: $(LIBFUSE)
 	$(MAKE) -C vendored/libfuse
+
+$(LIBFUSE):
+	$(MAKE) -C vendored/libfuse $(BUILDDIR)/libfuse.a
 
 tests: $(BUILDDIR)/tests
 
@@ -222,7 +224,7 @@ $(BUILDDIR)/stamp:
 $(BUILDDIR)/.objs/%.cpp.o: src/%.cpp $(BUILDDIR)/stamp
 	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILDDIR)/.test_objs/%.cpp.o: tests/%.cpp
+$(BUILDDIR)/.test_objs/%.cpp.o: tests/%.cpp | $(BUILDDIR)/stamp
 	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR)/preload.so: $(BUILDDIR)/stamp tools/preload.c
