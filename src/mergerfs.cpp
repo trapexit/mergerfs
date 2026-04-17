@@ -261,6 +261,7 @@ static
 void
 _usr1_signal_handler(int signal_)
 {
+  (void)signal_;
   // SysLog::info("Received SIGUSR1 - invalidating all nodes");
   // fuse_invalidate_all_nodes();
 }
@@ -269,8 +270,16 @@ static
 void
 _usr2_signal_handler(int signal_)
 {
+  (void)signal_;
   // SysLog::info("Received SIGUSR2 - triggering thorough gc");
   // fuse_gc();
+}
+
+static
+void
+_hup_signal_handler(int signal_)
+{
+  (void)signal_;
 }
 
 static
@@ -279,6 +288,7 @@ _setup_signal_handlers()
 {
   std::signal(SIGUSR1,::_usr1_signal_handler);
   std::signal(SIGUSR2,::_usr2_signal_handler);
+  std::signal(SIGHUP,::_hup_signal_handler);
 }
 
 static
