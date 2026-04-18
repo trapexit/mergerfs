@@ -115,6 +115,9 @@ _ioctl_file(const fuse_req_ctx_t   *ctx_,
 {
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
+  if(not fi)
+    return -EBADF;
+
   return ::_ioctl(fi->fd,cmd_,data_,out_bufsz_);
 }
 
@@ -162,6 +165,9 @@ _ioctl_dir(const fuse_req_ctx_t   *ctx_,
            u32                    *out_bufsz_)
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
+
+  if(not di)
+    return -EBADF;
 
   return ::_ioctl_dir_base(cfg.func.open.policy,
                            cfg.branches,

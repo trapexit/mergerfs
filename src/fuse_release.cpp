@@ -119,6 +119,9 @@ FUSE::release(const fuse_req_ctx_t   *ctx_,
 {
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
+  if(not fi)
+    return -EBADF;
+
   return ::_release(ctx_->nodeid,
                     fi,
                     cfg.dropcacheonclose);

@@ -104,7 +104,6 @@ inline
 u64
 FileInfo::to_fh(const FileInfo *fi_)
 {
-  ASSERT_NOT_NULL(fi_);
   return reinterpret_cast<u64>(fi_);
 }
 
@@ -112,19 +111,12 @@ inline
 u64
 FileInfo::to_fh() const
 {
-  ASSERT_NOT_NULL(this);
-  return reinterpret_cast<u64>(this);
+  return to_fh(this);
 }
 
 inline
 FileInfo*
 FileInfo::from_fh(const u64 fh_)
 {
-  FileInfo *rv;
-
-  rv = reinterpret_cast<FileInfo*>(fh_);
-
-  ASSERT_NOT_NULL(rv);
-
-  return rv;
+  return reinterpret_cast<FileInfo*>(fh_);
 }

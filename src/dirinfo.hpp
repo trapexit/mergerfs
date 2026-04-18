@@ -27,6 +27,7 @@
 class DirInfo : public FH
 {
 public:
+  static u64      to_fh(const DirInfo*);
   static DirInfo *from_fh(const u64 fh);
 
 public:
@@ -41,21 +42,21 @@ public:
 
 inline
 u64
+DirInfo::to_fh(const DirInfo *di_)
+{
+  return reinterpret_cast<u64>(di_);
+}
+
+inline
+u64
 DirInfo::to_fh() const
 {
-  ASSERT_NOT_NULL(this);
-  return reinterpret_cast<u64>(this);
+  return to_fh(this);
 }
 
 inline
 DirInfo*
 DirInfo::from_fh(const u64 fh_)
 {
-  DirInfo *rv;
-
-  rv = reinterpret_cast<DirInfo*>(fh_);
-
-  ASSERT_NOT_NULL(rv);
-
-  return rv;
+  return reinterpret_cast<DirInfo*>(fh_);
 }

@@ -84,6 +84,9 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
   dirent de;
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
+  if(not di)
+    return -EBADF;
+
   if(!di->fusepath.empty())
     return -ENOENT;
 
