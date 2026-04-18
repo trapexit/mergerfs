@@ -73,7 +73,8 @@ _set_stat_if_leads_to_reg(const fs::path &path_,
 
 static
 int
-_getattr_fake_root(struct stat *st_)
+_getattr_fake_root(struct stat     *st_,
+                   fuse_timeouts_t *timeout_)
 {
   st_->st_dev     = 0;
   st_->st_ino     = 0;
@@ -89,12 +90,16 @@ _getattr_fake_root(struct stat *st_)
   st_->st_mtime   = 0;
   st_->st_ctime   = 0;
 
+  timeout_->entry = cfg.cache_entry;
+  timeout_->attr  = cfg.cache_attr;
+
   return 0;
 }
 
 static
 int
-_getattr_controlfile(struct stat *st_)
+_getattr_controlfile(struct stat     *st_,
+                     fuse_timeouts_t *timeout_)
 {
   static const uid_t  uid = ::getuid();
   static const gid_t  gid = ::getgid();
@@ -113,6 +118,9 @@ _getattr_controlfile(struct stat *st_)
   st_->st_atime   = now;
   st_->st_mtime   = now;
   st_->st_ctime   = now;
+
+  timeout_->entry = cfg.cache_entry;
+  timeout_->attr  = cfg.cache_attr;
 
   return 0;
 }
@@ -189,7 +197,7 @@ _getattr(const fs::path  &fusepath_,
                   cfg.symlinkify_timeout,
                   cfg.follow_symlinks);
   if((rv < 0) && Config::is_rootdir(fusepath_))
-    return ::_getattr_fake_root(st_);
+    return ::_getattr_fake_root(st_,timeout_);
 
   timeout_->entry = ((rv >= 0) ?
                      cfg.cache_entry :
@@ -225,7 +233,7 @@ FUSE::getattr(const fs::path  &fusepath_,
               fuse_timeouts_t *timeout_)
 {
   if(Config::is_ctrl_file(fusepath_))
-    return ::_getattr_controlfile(st_);
+    return ::_getattr_controlfile(st_,timeout_);
 
   return ::_getattr(fusepath_,st_,timeout_);
 }
