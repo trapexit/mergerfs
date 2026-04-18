@@ -16,7 +16,7 @@ static
 void*
 _thread_loop(void *)
 {
-  int count;
+  u64 count;
 
   pthread_setname_np(pthread_self(),"fuse.maint");
 

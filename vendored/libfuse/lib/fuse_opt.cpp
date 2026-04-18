@@ -214,23 +214,35 @@ int fuse_opt_match(const struct fuse_opt *opts, const char *opt)
   return find_opt(opts, opt, &dummy) ? 1 : 0;
 }
 
-static int process_opt_param(void *var, const char *format, const char *param,
-			     const char *arg)
+static
+int
+process_opt_param(void       *var,
+                  const char *format,
+                  const char *param,
+                  const char *arg)
 {
   assert(format[0] == '%');
-  if (format[1] == 's')
+
+  if(format[1] == 's')
     {
       char *copy = strdup(param);
-      if (!copy)
+      if(!copy)
         return alloc_failed();
 
       *static_cast<char**>(var) = copy;
-    } else {
-    if (sscanf(param, format, static_cast<int*>(var)) != 1) {
-      fprintf(stderr, "fuse: invalid parameter in option `%s'\n", arg);
-      return -1;
     }
-  }
+  else
+    {
+      int rv;
+
+      rv = sscanf(param, format, static_cast<int*>(var));
+      if(rv != 1)
+        {
+          fprintf(stderr,"mergerfs: invalid parameter in option `%s'\n",arg);
+          return -1;
+        }
+    }
+
   return 0;
 }
 

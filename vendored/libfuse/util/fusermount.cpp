@@ -445,6 +445,7 @@ static int unmount_fuse_locked(const char *mnt, int quiet, int lazy)
   }
 
  out:
+  free(copy);
   if (res == -1)
     return -1;
 
@@ -688,7 +689,7 @@ static int get_mnt_opts(int flags, char *opts, char **mnt_optsp)
 
     if (add_option(mnt_optsp, "user=", strlen(user)) == -1)
       return -1;
-    strcat(*mnt_optsp, user);
+    strcat(*mnt_optsp,user);
   }
   return 0;
 }
@@ -992,7 +993,7 @@ static int check_perm(const char **mntp, struct stat *stbuf, int *mountpoint_fd)
       return -1;
     }
 
-    sprintf(procfile, "/proc/self/fd/%i", *mountpoint_fd);
+    snprintf(procfile,sizeof(procfile),"/proc/self/fd/%i",*mountpoint_fd);
     *mntp = procfile;
   } else {
     fprintf(stderr,
