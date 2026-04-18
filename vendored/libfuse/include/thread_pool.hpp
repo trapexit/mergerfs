@@ -46,6 +46,18 @@ struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 };
 
 
+// Shutdown contract:
+//   Callers must stop submitting work before destroying the pool.
+//   The destructor does not drain the queue: tasks enqueued but not
+//   yet dequeued when the destructor runs are discarded.  For
+//   enqueue_task this means the std::promise is destroyed unfulfilled
+//   and the caller's future.get() throws std::future_error with
+//   broken_promise.  enqueue_work* variants have no return value and
+//   the work is silently dropped.
+//
+//   An enqueue racing with the destructor is otherwise safe — the
+//   BoundedQueue destructor runs only after all workers are joined, so
+//   the queue is not accessed concurrently during teardown.
 class ThreadPool
 {
 public:
