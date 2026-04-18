@@ -63,7 +63,7 @@ static
 int
 _removexattr(const Policy::Action &actionFunc_,
              const Policy::Search &searchFunc_,
-             const Branches       &ibranches_,
+             const Branches::Ptr   ibranches_,
              const fs::path       &fusepath_,
              const char           *attrname_)
 {
@@ -74,6 +74,8 @@ _removexattr(const Policy::Action &actionFunc_,
   rv = actionFunc_(ibranches_,fusepath_,obranches);
   if(rv < 0)
     return rv;
+  if(obranches.empty())
+    return -ENOENT;
 
   ::_removexattr_loop(obranches,fusepath_,attrname_,&prv);
   if(prv.errors.empty())
@@ -85,6 +87,8 @@ _removexattr(const Policy::Action &actionFunc_,
   rv = searchFunc_(ibranches_,fusepath_,obranches);
   if(rv < 0)
     return rv;
+  if(obranches.empty())
+    return -ENOENT;
 
   return prv.get_error(obranches[0]->path);
 }

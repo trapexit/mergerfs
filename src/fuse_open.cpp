@@ -25,9 +25,9 @@
   simultaneously attempt to open the same file (same nodeid), and we
   need to:
 
-  1. Share a single canonical FileInfo entry in the open_files map for all
-  opens of the same file while still giving each FUSE handle its own
-  FileInfo object and file descriptor
+  1. Share a single canonical FileInfo entry in the open_files map for
+     all opens of the same file while still giving each FUSE handle
+     its own FileInfo object and file descriptor
   2. Properly reference count to know when to release resources
   3. Handle race conditions without deadlocks or resource leaks
   4. Support FUSE passthrough mode for performance
@@ -45,8 +45,8 @@
      FileInfo by re-opening the canonical file descriptor
   3. If it doesn't exist, we create a new FileInfo and try to insert it
   4. If insertion fails (another thread inserted first), we clean up
-  and retry (because to use passthrough it MUST be the same underlying
-  file as the backing id was created)
+     and retry (because to use passthrough it MUST be the same
+     underlying file as the backing id was created)
 
   THE RETRY LOOP
   --------------
@@ -308,7 +308,7 @@ _open_fd(const int         fd_,
 static
 int
 _open(const Policy::Search &searchFunc_,
-      const Branches       &ibranches_,
+      const Branches::Ptr   ibranches_,
       const fs::path       &fusepath_,
       fuse_file_info_t     *ffi_,
       const bool            link_cow_,
@@ -321,6 +321,8 @@ _open(const Policy::Search &searchFunc_,
   rv = searchFunc_(ibranches_,fusepath_,obranches);
   if(rv < 0)
     return rv;
+  if(obranches.empty())
+    return -ENOENT;
 
   filepath = obranches[0]->path / fusepath_;
 

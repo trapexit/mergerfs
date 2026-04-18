@@ -207,7 +207,7 @@ int
 _create(const ugid_t          ugid_,
         const Policy::Search &searchFunc_,
         const Policy::Create &createFunc_,
-        const Branches       &branches_,
+        const Branches::Ptr   branches_,
         const fs::path       &fusepath_,
         fuse_file_info_t     *ffi_,
         const mode_t          mode_,
@@ -224,10 +224,14 @@ _create(const ugid_t          ugid_,
   rv = searchFunc_(branches_,fusedirpath,existingpaths);
   if(rv < 0)
     return rv;
+  if(existingpaths.empty())
+    return -ENOENT;
 
   rv = createFunc_(branches_,fusedirpath,createpaths);
   if(rv < 0)
     return rv;
+  if(createpaths.empty())
+    return -ENOENT;
 
   rv = fs::clonepath(existingpaths[0]->path,
                      createpaths[0]->path,

@@ -74,7 +74,7 @@ static
 int
 _link_create_path(const Policy::Search &searchFunc_,
                   const Policy::Action &actionFunc_,
-                  const Branches       &ibranches_,
+                  const Branches::Ptr   ibranches_,
                   const fs::path       &oldfusepath_,
                   const fs::path       &newfusepath_)
 {
@@ -86,12 +86,16 @@ _link_create_path(const Policy::Search &searchFunc_,
   rv = actionFunc_(ibranches_,oldfusepath_,oldbranches);
   if(rv < 0)
     return rv;
+  if(oldbranches.empty())
+    return -ENOENT;
 
   newfusedirpath = newfusepath_.parent_path();
 
   rv = searchFunc_(ibranches_,newfusedirpath,newbranches);
   if(rv < 0)
     return rv;
+  if(newbranches.empty())
+    return -ENOENT;
 
   return ::_link_create_path_loop(oldbranches,newbranches[0],
                                   oldfusepath_,newfusepath_,
@@ -148,7 +152,7 @@ _link_preserve_path_loop(const std::vector<Branch*> &oldbranches_,
 static
 int
 _link_preserve_path(const Policy::Action &actionFunc_,
-                    const Branches       &branches_,
+                    const Branches::Ptr   branches_,
                     const fs::path       &oldfusepath_,
                     const fs::path       &newfusepath_,
                     struct stat          *st_)
@@ -159,6 +163,8 @@ _link_preserve_path(const Policy::Action &actionFunc_,
   rv = actionFunc_(branches_,oldfusepath_,oldbranches);
   if(rv < 0)
     return rv;
+  if(oldbranches.empty())
+    return -ENOENT;
 
   return ::_link_preserve_path_loop(oldbranches,
                                     oldfusepath_,
@@ -231,8 +237,8 @@ _link_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
-                             const Policy::Search &openPolicy_,
-                             const Branches::Ptr  &ibranches_,
+                              const Policy::Search &openPolicy_,
+                              const Branches::Ptr   ibranches_,
                              const fs::path       &oldpath_,
                              const fs::path       &newpath_,
                              struct stat          *st_,
@@ -245,6 +251,8 @@ _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
   rv = openPolicy_(ibranches_,oldpath_,obranches);
   if(rv < 0)
     return rv;
+  if(obranches.empty())
+    return -ENOENT;
 
   target = obranches[0]->path / oldpath_;
 

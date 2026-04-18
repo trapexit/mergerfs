@@ -76,7 +76,7 @@ _should_ignore(const StatFSIgnore  ignore_,
 
 static
 int
-_statfs(const Branches::Ptr &branches_,
+_statfs(const Branches::Ptr  branches_,
         const fs::path      &fusepath_,
         const StatFS         mode_,
         const StatFSIgnore   ignore_,
@@ -147,7 +147,7 @@ FUSE::statfs(const fuse_req_ctx_t *ctx_,
              const char           *fusepath_,
              struct statvfs       *st_)
 {
-  const fs::path  fusepath{fusepath_};
+  const fs::path fusepath{fusepath_};
 
   return ::_statfs(cfg.branches,
                    fusepath,

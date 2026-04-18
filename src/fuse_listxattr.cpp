@@ -121,7 +121,7 @@ _listxattr(const std::vector<Branch*> &branches_,
 static
 int
 _listxattr(const Policy::Search &searchFunc_,
-           const Branches       &ibranches_,
+           const Branches::Ptr   ibranches_,
            const fs::path       &fusepath_,
            char                 *list_,
            const size_t          size_)

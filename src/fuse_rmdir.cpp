@@ -78,7 +78,7 @@ _rmdir_loop(const std::vector<Branch*> &branches_,
 static
 int
 _rmdir(const Policy::Action &actionFunc_,
-       const Branches       &branches_,
+       const Branches::Ptr   branches_,
        const FollowSymlinks  followsymlinks_,
        const fs::path       &fusepath_)
 {

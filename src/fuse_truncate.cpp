@@ -64,7 +64,7 @@ static
 int
 _truncate(const Policy::Action &actionFunc_,
           const Policy::Search &searchFunc_,
-          const Branches       &branches_,
+          const Branches::Ptr   branches_,
           const fs::path       &fusepath_,
           const off_t           size_)
 {
@@ -75,6 +75,8 @@ _truncate(const Policy::Action &actionFunc_,
   rv = actionFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   ::_truncate_loop(branches,fusepath_,size_,&prv);
   if(prv.errors.empty())
@@ -86,6 +88,8 @@ _truncate(const Policy::Action &actionFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   return prv.get_error(branches[0]->path);
 }

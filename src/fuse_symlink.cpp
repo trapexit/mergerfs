@@ -97,7 +97,7 @@ int
 _symlink(const ugid_t          ugid_,
          const Policy::Search &searchFunc_,
          const Policy::Create &createFunc_,
-         const Branches       &branches_,
+         const Branches::Ptr   branches_,
          const char           *target_,
          const fs::path       &linkpath_,
          struct stat          *st_)
@@ -112,10 +112,14 @@ _symlink(const ugid_t          ugid_,
   rv = searchFunc_(branches_,newdirpath,existingbranches);
   if(rv < 0)
     return rv;
+  if(existingbranches.empty())
+    return -ENOENT;
 
   rv = createFunc_(branches_,newdirpath,newbranches);
   if(rv < 0)
     return rv;
+  if(newbranches.empty())
+    return -ENOENT;
 
   return ::_symlink_loop(ugid_,
                          existingbranches[0]->path,

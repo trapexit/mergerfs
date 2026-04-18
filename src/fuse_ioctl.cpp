@@ -32,6 +32,7 @@
 #include "fs_open.hpp"
 #include "fs_path.hpp"
 #include "mergerfs_ioctl.hpp"
+#include "state.hpp"
 #include "str.hpp"
 
 #include <string>
@@ -128,7 +129,7 @@ _ioctl_file(const fuse_req_ctx_t   *ctx_,
 static
 int
 _ioctl_dir_base(const Policy::Search &searchFunc_,
-                const Branches       &branches_,
+                const Branches::Ptr   branches_,
                 const fs::path       &fusepath_,
                 const u32             cmd_,
                 void                 *data_,
@@ -142,6 +143,8 @@ _ioctl_dir_base(const Policy::Search &searchFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   fullpath = branches[0]->path / fusepath_;
 

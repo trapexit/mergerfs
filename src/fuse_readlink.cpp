@@ -101,7 +101,7 @@ _readlink_core(const fs::path &basepath_,
 static
 int
 _readlink(const Policy::Search &searchFunc_,
-          const Branches       &ibranches_,
+          const Branches::Ptr   ibranches_,
           const fs::path       &fusepath_,
           char                 *buf_,
           const size_t          bufsize_,
