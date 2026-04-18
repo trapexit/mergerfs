@@ -185,6 +185,14 @@ private:
   Mutex                  _scaling_mutex;
   std::atomic<bool>      _stop{false};
 
+  // Mirror of _threads.size() maintained under _threads_mutex.  Lets
+  // hot-path callers (_maybe_grow_on_pressure, monitor hints, public
+  // thread_count() introspection) read the count without contending
+  // on _threads_mutex.  Authoritative mutation paths still re-read
+  // _threads.size() under the lock; the atomic is only a hint
+  // externally, guaranteed-consistent at rest.
+  std::atomic<std::size_t> _thread_count_atomic{0};
+
   // Monitoring counters
   std::atomic<std::uint64_t> _tasks_enqueued{0};
   std::atomic<std::uint64_t> _tasks_completed{0};
@@ -370,6 +378,8 @@ ThreadPool::ThreadPool(const unsigned        thread_count_,
       {
         mutex_lockguard(_threads_mutex);
         _threads.push_back(t);
+        _thread_count_atomic.store(_threads.size(),
+                                   std::memory_order_release);
       }
     }
 
@@ -927,6 +937,8 @@ ThreadPool::_try_claim_and_remove_self(pthread_t t_)
     }
 
   _threads.erase(it);
+  _thread_count_atomic.store(_threads.size(),
+                             std::memory_order_release);
   pthread_detach(t_);
   return true;
 }
@@ -980,6 +992,8 @@ ThreadPool::_try_remove_self_if_above(pthread_t    t_,
     return false;
 
   _threads.erase(it);
+  _thread_count_atomic.store(_threads.size(),
+                             std::memory_order_release);
   pthread_detach(t_);
   return true;
 }
@@ -1095,6 +1109,8 @@ ThreadPool::_add_thread_scaling_locked(const std::string &name_)
   {
     mutex_lockguard(_threads_mutex);
     _threads.push_back(t);
+    _thread_count_atomic.store(_threads.size(),
+                               std::memory_order_release);
   }
 
   return 0;
@@ -1441,8 +1457,14 @@ inline
 std::size_t
 ThreadPool::thread_count() const
 {
-  mutex_lockguard(_threads_mutex);
-  return _threads.size();
+  // Read from the atomic mirror rather than locking _threads_mutex.
+  // Eventually consistent: at rest the value equals _threads.size();
+  // in the tiny window between a vector mutation and the atomic store
+  // (both under _threads_mutex), readers may observe the prior value.
+  // Acceptable for every caller — _add/_remove_thread_scaling_locked
+  // re-check under _threads_mutex, fast-path grow treats it as a
+  // hint, and external introspection is documented as approximate.
+  return _thread_count_atomic.load(std::memory_order_acquire);
 }
 
 inline
