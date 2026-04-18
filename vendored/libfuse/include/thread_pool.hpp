@@ -180,14 +180,21 @@ ThreadPool::ThreadPool(const unsigned     thread_count_,
 inline
 ThreadPool::~ThreadPool()
 {
+  std::vector<pthread_t> threads;
+
+  {
+    mutex_lockguard(_threads_mutex);
+    threads = _threads;
+  }
+
   syslog(LOG_DEBUG,
          "threadpool (%s): destroying %zu threads",
          _name.c_str(),
-         _threads.size());
+         threads.size());
 
-  for(auto t : _threads)
+  for(auto t : threads)
     pthread_cancel(t);
-  for(auto t : _threads)
+  for(auto t : threads)
     pthread_join(t,NULL);
 }
 

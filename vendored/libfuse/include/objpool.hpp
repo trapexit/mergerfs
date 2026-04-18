@@ -214,6 +214,9 @@ private:
             static_cast<void*>(node) :
             _allocator.allocate(size_, alignof(T)));
 
+    if(not mem)
+      return nullptr;
+
     try
       {
         return new(mem) T(std::forward<Args>(args_)...);
@@ -242,12 +245,13 @@ public:
     if(not obj_)
       return;
 
-    bool should_pool = _should_pool(obj_);
+    bool  should_pool = _should_pool(obj_);
+    Node *node        = to_node(obj_);
 
     obj_->~T();
 
     if(should_pool)
-      _push_node(to_node(obj_),size_);
+      _push_node(node,size_);
     else
       _allocator.deallocate(obj_,size_,alignof(T));
   }
