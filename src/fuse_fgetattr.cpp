@@ -54,25 +54,13 @@ FUSE::fgetattr(const fuse_req_ctx_t *ctx_,
                fuse_timeouts_t      *timeout_)
 {
   int rv;
-  u64 fh;
+  FileInfo *fi = FileInfo::from_fh(fh_);
 
-  fh = fh_;
-  if(fh == 0)
-    {
-      state.open_files.cvisit(ctx_->nodeid,
-                              [&](const auto &val_)
-                              {
-                                fh = val_.second.fi->to_fh();
-                              });
-    }
-
-  if(fh == 0)
+  if(not fi)
     {
       timeout_->entry = cfg.cache_negative_entry;
-      return -ENOENT;
+      return -EBADF;
     }
-
-  FileInfo *fi = FileInfo::from_fh(fh);
 
   rv = ::_fgetattr(fi,st_);
 

@@ -39,5 +39,8 @@ FUSE::releasedir(const fuse_req_ctx_t   *ctx_,
 {
   DirInfo *di = DirInfo::from_fh(ffi_->fh);
 
+  if(not di)
+    return -EBADF;
+
   return ::_releasedir(di);
 }

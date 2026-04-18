@@ -423,6 +423,8 @@ _open(const fuse_req_ctx_t *ctx_,
         return rv;
 
       fi = FileInfo::from_fh(ffi_->fh);
+      if(not fi)
+        return -EBADF;
 
       switch(_(cfg.passthrough_io,ffi_->flags))
         {

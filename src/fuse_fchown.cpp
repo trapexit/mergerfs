@@ -47,22 +47,10 @@ FUSE::fchown(const fuse_req_ctx_t *ctx_,
              const uid_t           uid_,
              const gid_t           gid_)
 {
-  u64 fh;
+  FileInfo *fi = FileInfo::from_fh(fh_);
 
-  fh = fh_;
-  if(fh == 0)
-    {
-      state.open_files.cvisit(ctx_->nodeid,
-                              [&](auto &val_)
-                              {
-                                fh = val_.second.fi->to_fh();
-                              });
-    }
-
-  if(fh == 0)
-    return -ENOENT;
-
-  FileInfo *fi = FileInfo::from_fh(fh);
+  if(not fi)
+    return -EBADF;
 
   return ::_fchown(fi->fd,uid_,gid_);
 }

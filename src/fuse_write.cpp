@@ -168,6 +168,8 @@ _write(const fuse_file_info_t *ffi_,
   FileInfo *fi;
 
   fi = FileInfo::from_fh(ffi_->fh);
+  if(not fi)
+    return -EBADF;
 
   // Concurrent writes can only happen if:
   // 1) writeback-cache is enabled and using page caching

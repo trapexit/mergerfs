@@ -292,6 +292,9 @@ _create(const fuse_req_ctx_t *ctx_,
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
   int backing_id = INVALID_BACKING_ID;
 
+  if(not fi)
+    return -EBADF;
+
   switch(_(cfg.passthrough_io,ffi_->flags))
     {
     case _(PassthroughIO::ENUM::RO,O_RDONLY):

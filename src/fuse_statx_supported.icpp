@@ -253,27 +253,15 @@ FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
                fuse_timeouts_t      *timeout_)
 {
   int rv;
-  uint64_t fh;
+  FileInfo *fi = FileInfo::from_fh(fh_);
 
-  fh = fh_;
-  if(fh == 0)
-    {
-      state.open_files.cvisit(ctx_->nodeid,
-                              [&](auto &val_)
-                              {
-                                fh = val_.second.fi->to_fh();
-                              });
-    }
+  if(not fi)
+    return -EBADF;
 
-  if(fh == 0)
-    return -ENOENT;
-
-  FileInfo *fi = FileInfo::from_fh(fh);
-
-  rv =  ::_statx(fi,
-                 flags_|AT_STATX_DONT_SYNC,
-                 mask_,
-                 st_);
+  rv = ::_statx(fi,
+                flags_|AT_STATX_DONT_SYNC,
+                mask_,
+                st_);
 
   timeout_->entry = ((rv >= 0) ?
                      cfg.cache_entry :

@@ -67,6 +67,9 @@ FUSE::read(const fuse_req_ctx_t   *ctx_,
   ioprio::SetFrom iop(ctx_->pid);
   FileInfo *fi = FileInfo::from_fh(ffi_->fh);
 
+  if(not fi)
+    return -EBADF;
+
   if(fi->direct_io)
     return ::_read_direct_io(fi->fd,buf_,size_,offset_);
 
