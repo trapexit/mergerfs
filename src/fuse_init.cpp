@@ -45,7 +45,7 @@ _want(fuse_conn_info_t *conn_,
 static
 bool
 _capable(fuse_conn_info_t *conn_,
-         const int       flag_)
+         const int         flag_)
 {
   return !!(conn_->capable & flag_);
 }
@@ -53,7 +53,7 @@ _capable(fuse_conn_info_t *conn_,
 static
 void
 _want_if_capable(fuse_conn_info_t *conn_,
-                 const int       flag_)
+                 const int         flag_)
 {
   if(::_capable(conn_,flag_))
     ::_want(conn_,flag_);
@@ -62,8 +62,8 @@ _want_if_capable(fuse_conn_info_t *conn_,
 static
 void
 _want_if_capable(fuse_conn_info_t *conn_,
-                 const int       flag_,
-                 ConfigBOOL     *want_)
+                 const int         flag_,
+                 ConfigBOOL       *want_)
 {
   if(*want_ && ::_capable(conn_,flag_))
     {
