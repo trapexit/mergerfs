@@ -87,6 +87,8 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
   fuse_msgbuf_t *buf;
 
   buf = msgbuf_alloc();
+  if(not buf)
+    return -ENOMEM;
   DEFER { msgbuf_free(buf); };
 
   for(auto &dh_future : dh_futures_)

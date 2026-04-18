@@ -45,6 +45,8 @@ _readdir(const Branches::Ptr &branches_,
   fuse_dirents_reset(dirents_);
 
   buf = msgbuf_alloc();
+  if(not buf)
+    return -ENOMEM;
   DEFER { msgbuf_free(buf); };
 
   for(const auto &branch : *branches_)
