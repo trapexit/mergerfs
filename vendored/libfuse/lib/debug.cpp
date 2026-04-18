@@ -63,7 +63,7 @@ _debug_set_output_stderr()
   auto new_log_file = std::shared_ptr<FILE>(stderr,[](FILE*){});
 
   fuse_cfg.log_file(new_log_file);
-  fuse_cfg.log_filepath("/dev/stderr");
+  fuse_cfg.log_filepath("");
 
   return 0;
 }
