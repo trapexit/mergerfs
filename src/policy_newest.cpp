@@ -25,7 +25,6 @@
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "rwlock.hpp"
 
 #include <string>
 #include <limits>

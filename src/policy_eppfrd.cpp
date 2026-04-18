@@ -26,7 +26,6 @@
 #include "policy.hpp"
 #include "policy_error.hpp"
 #include "rnd.hpp"
-#include "rwlock.hpp"
 #include "strvec.hpp"
 
 #include <string>
