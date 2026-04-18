@@ -1445,17 +1445,20 @@ ThreadPool::tasks_completed() const
   return _tasks_completed.load(std::memory_order_relaxed);
 }
 
-// Approximate: the two counters are loaded non-atomically.
-// Loading enqueued first biases the result toward zero (a
-// completion between the two loads increases c beyond the
-// snapshot of e, shrinking the delta), which is safer for
-// scaling heuristics than over-reporting pressure.
+// Approximate: loads are atomic but the pair is not.
+// Loading enqueued first is meant to bias the result toward zero (a
+// completion between the two loads increases c beyond the snapshot
+// of e, shrinking the delta), which is safer for scaling heuristics
+// than over-reporting pressure.  Acquire ordering on both loads plus
+// the intervening acquire fence prevents weak-memory hardware (ARM,
+// POWER) from reordering them and defeating the intended bias.
 // Suitable for monitoring and heuristics, not for synchronization.
 inline
 std::uint64_t
 ThreadPool::tasks_pending() const
 {
-  auto e = _tasks_enqueued.load(std::memory_order_relaxed);
-  auto c = _tasks_completed.load(std::memory_order_relaxed);
+  auto e = _tasks_enqueued.load(std::memory_order_acquire);
+  std::atomic_thread_fence(std::memory_order_acquire);
+  auto c = _tasks_completed.load(std::memory_order_acquire);
   return (e > c) ? (e - c) : 0;
 }
