@@ -82,6 +82,8 @@ _movefile_and_open(const Policy::Create &createFunc_,
   rv = createFunc_(branches_,fusepath_,dst_branch);
   if(rv < 0)
     return rv;
+  if(dst_branch.empty())
+    return -ENOSPC;
 
   origfd_flags = fs::getfl(origfd_);
   if(origfd_flags < 0)
