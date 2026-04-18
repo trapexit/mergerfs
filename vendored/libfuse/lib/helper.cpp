@@ -102,7 +102,7 @@ fuse_helper_opt_proc(void             *data,
 
     default:
       return 1;
-  }
+    }
 }
 
 static int add_default_subtype(const char *progname, struct fuse_args *args)
@@ -153,58 +153,66 @@ fuse_parse_cmdline(struct fuse_args  *args_,
 
  err:
   free(hopts.mountpoint);
+
   return -1;
 }
 
-int fuse_daemonize(int foreground)
+int
+fuse_daemonize(int foreground)
 {
-  if (!foreground) {
-    int nullfd;
-    int waiter[2];
-    char completed;
+  if(!foreground)
+    {
+      int nullfd;
+      int waiter[2];
+      char completed;
 
-    if (pipe(waiter)) {
-      perror("fuse_daemonize: pipe");
-      return -1;
+      if(pipe(waiter))
+        {
+          perror("fuse_daemonize: pipe");
+          return -1;
+        }
+
+      /*
+       * demonize current process by forking it and killing the
+       * parent.  This makes current process as a child of 'init'.
+       */
+      switch(fork())
+        {
+        case -1:
+          perror("fuse_daemonize: fork");
+          return -1;
+        case 0:
+          break;
+        default:
+          read(waiter[0], &completed, sizeof(completed));
+          _exit(0);
+        }
+
+      if(setsid() == -1)
+        {
+          perror("fuse_daemonize: setsid");
+          return -1;
+        }
+
+      (void) chdir("/");
+
+      nullfd = open("/dev/null", O_RDWR, 0);
+      if(nullfd != -1)
+        {
+          (void) dup2(nullfd, 0);
+          (void) dup2(nullfd, 1);
+          (void) dup2(nullfd, 2);
+          if (nullfd > 2)
+            close(nullfd);
+        }
+
+      /* Propagate completion of daemon initializatation */
+      completed = 1;
+      write(waiter[1], &completed, sizeof(completed));
+      close(waiter[0]);
+      close(waiter[1]);
     }
 
-    /*
-     * demonize current process by forking it and killing the
-     * parent.  This makes current process as a child of 'init'.
-     */
-    switch(fork()) {
-    case -1:
-      perror("fuse_daemonize: fork");
-      return -1;
-    case 0:
-      break;
-    default:
-      read(waiter[0], &completed, sizeof(completed));
-      _exit(0);
-    }
-
-    if (setsid() == -1) {
-      perror("fuse_daemonize: setsid");
-      return -1;
-    }
-
-    (void) chdir("/");
-
-    nullfd = open("/dev/null", O_RDWR, 0);
-    if (nullfd != -1) {
-      (void) dup2(nullfd, 0);
-      (void) dup2(nullfd, 1);
-      (void) dup2(nullfd, 2);
-      if (nullfd > 2)
-        close(nullfd);
-    }
-
-    /* Propagate completion of daemon initializatation */
-    completed = 1;
-    write(waiter[1], &completed, sizeof(completed));
-    close(waiter[0]);
-    close(waiter[1]);
-  }
   return 0;
 }
 
