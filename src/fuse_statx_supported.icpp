@@ -75,7 +75,8 @@ _set_stat_if_leads_to_reg(const fs::path    &path_,
 
 static
 int
-_statx_fake_root(struct fuse_statx *st_)
+_statx_fake_root(struct fuse_statx *st_,
+                 fuse_timeouts_t   *timeout_)
 {
   st_->ino     = 0;
   st_->mode    = (S_IFDIR|S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
@@ -88,12 +89,16 @@ _statx_fake_root(struct fuse_statx *st_)
   st_->mtime.tv_sec = 0;
   st_->ctime.tv_sec = 0;
 
+  timeout_->entry = cfg.cache_entry;
+  timeout_->attr  = cfg.cache_attr;
+
   return 0;
 }
 
 static
 int
-_statx_controlfile(struct fuse_statx *st_)
+_statx_controlfile(struct fuse_statx *st_,
+                   fuse_timeouts_t   *timeout_)
 {
   static const uid_t  uid = ::getuid();
   static const gid_t  gid = ::getgid();
@@ -109,6 +114,9 @@ _statx_controlfile(struct fuse_statx *st_)
   st_->atime.tv_sec = now;
   st_->mtime.tv_sec = now;
   st_->ctime.tv_sec = now;
+
+  timeout_->entry = cfg.cache_entry;
+  timeout_->attr  = cfg.cache_attr;
 
   return 0;
 }
@@ -192,7 +200,7 @@ _statx(const fs::path    &fusepath_,
                 cfg.symlinkify_timeout,
                 cfg.follow_symlinks);
   if((rv < 0) && Config::is_rootdir(fusepath_))
-    return ::_statx_fake_root(st_);
+    return ::_statx_fake_root(st_,timeout_);
 
   timeout_->entry = ((rv >= 0) ?
                      cfg.cache_entry :
@@ -237,7 +245,7 @@ FUSE::statx(const fuse_req_ctx_t *ctx_,
   const fs::path fusepath{fusepath_};
 
   if(Config::is_ctrl_file(fusepath))
-    return ::_statx_controlfile(st_);
+    return ::_statx_controlfile(st_,timeout_);
 
   return ::_statx(fusepath,
                   flags_|AT_STATX_DONT_SYNC,
