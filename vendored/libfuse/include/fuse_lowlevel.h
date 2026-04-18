@@ -102,7 +102,7 @@ struct fuse_lowlevel_ops
   void (*bmap)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*copy_file_range)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*create)(fuse_req_t *req, struct fuse_in_header *hdr);
-  void (*destroy)(void *userdata);
+  void (*destroy)();
   void (*fallocate)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*flock)(fuse_req_t *req, uint64_t ino, fuse_file_info_t *fi, int op);
   void (*flush)(fuse_req_t *req, struct fuse_in_header *hdr);
@@ -113,7 +113,7 @@ struct fuse_lowlevel_ops
   void (*getattr)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*getlk)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*getxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
-  void (*init)(void *userdata, fuse_conn_info_t *conn);
+  void (*init)(fuse_conn_info_t *conn);
   void (*ioctl)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*link)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*listxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
@@ -384,20 +384,6 @@ int fuse_reply_ioctl_retry(fuse_req_t *req,
 int fuse_reply_ioctl(fuse_req_t *req, int result, const void *buf, uint32_t size);
 
 /**
- * Reply to finish ioctl with iov buffer
- *
- * Possible requests:
- *   ioctl
- *
- * @param req request handle
- * @param result result to be passed to the caller
- * @param iov the vector containing the data
- * @param count the size of vector
- */
-int fuse_reply_ioctl_iov(fuse_req_t *req, int result, const struct iovec *iov,
-                         int count);
-
-/**
  * Reply with poll result event mask
  *
  * @param req request handle
@@ -535,12 +521,11 @@ int fuse_lowlevel_is_lib_option(const char *opt);
  * @param args argument vector
  * @param op the low level filesystem operations
  * @param op_size sizeof(struct fuse_lowlevel_ops)
- * @param userdata user data
  * @return the created session object, or NULL on failure
  */
 struct fuse_session *fuse_lowlevel_new(struct fuse_args *args,
                                        const struct fuse_lowlevel_ops *op,
-                                       size_t op_size, void *userdata);
+                                       size_t op_size);
 
 /* ----------------------------------------------------------- *
  * Session interface					       *

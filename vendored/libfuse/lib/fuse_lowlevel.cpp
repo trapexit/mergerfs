@@ -45,7 +45,6 @@ static size_t pagesize;
 struct fuse_ll
 {
   struct fuse_lowlevel_ops op;
-  void *userdata;
   uid_t owner;
   fuse_conn_info_t conn;
   mutex_t lock;
@@ -361,6 +360,9 @@ int
 fuse_reply_readlink(fuse_req_t *req,
                     const char *linkname)
 {
+  if(not linkname)
+    return fuse_reply_err(req,EIO);
+
   if(fuse_cfg.debug)
     fuse_debug_readlink(req->ctx.unique,linkname);
 
@@ -538,12 +540,12 @@ fuse_reply_ioctl_retry(fuse_req_t         *req,
                        const struct iovec *out_iov,
                        size_t              out_count)
 {
+  int res;
   struct fuse_ioctl_out arg = {};
   struct fuse_ioctl_iovec *in_fiov = NULL;
   struct fuse_ioctl_iovec *out_fiov = NULL;
   struct iovec iov[4];
   size_t count = 1;
-  int res;
 
   arg.flags |= FUSE_IOCTL_RETRY;
   arg.in_iovs = in_count;
@@ -603,6 +605,7 @@ fuse_reply_ioctl_retry(fuse_req_t         *req,
     }
 
   res = send_reply_iov(req, 0, iov, count);
+
  out:
   free(in_fiov);
   free(out_fiov);
@@ -645,36 +648,6 @@ fuse_reply_ioctl(fuse_req_t *req,
     }
 
   return send_reply_iov(req, 0, iov, count);
-}
-
-int
-fuse_reply_ioctl_iov(fuse_req_t         *req,
-                     int                 result,
-                     const struct iovec *iov,
-                     int                 count)
-{
-  struct iovec *padded_iov;
-  struct fuse_ioctl_out arg = {};
-  int res;
-
-  padded_iov = (iovec*)malloc((count + 2) * sizeof(struct iovec));
-  if(padded_iov == NULL)
-    return fuse_reply_err(req, ENOMEM);
-
-  arg.result = result;
-
-  if(fuse_cfg.debug)
-    fuse_debug_ioctl_out(req->ctx.unique,&arg);
-
-  padded_iov[1].iov_base = &arg;
-  padded_iov[1].iov_len = sizeof(arg);
-
-  memcpy(&padded_iov[2], iov, count * sizeof(struct iovec));
-
-  res = send_reply_iov(req, 0, padded_iov, count + 2);
-  free(padded_iov);
-
-  return res;
 }
 
 int
@@ -1195,8 +1168,7 @@ do_init(fuse_req_t            *req,
     max_write = bufsize;
 
   f.got_init = 1;
-  if(f.op.init)
-    f.op.init(f.userdata, &f.conn);
+  f.op.init(&f.conn);
 
   outargflags = outarg.flags;
   if((inargflags & FUSE_MAX_PAGES) && (f.conn.want & FUSE_CAP_MAX_PAGES))
@@ -1309,7 +1281,8 @@ do_destroy(fuse_req_t            *req,
            struct fuse_in_header *hdr_)
 {
   f.got_destroy = 1;
-  f.op.destroy(f.userdata);
+
+  f.op.destroy();
 
   send_reply_ok(req,NULL,0);
 }
@@ -1697,10 +1670,7 @@ void
 fuse_ll_destroy(void *data)
 {
   if(f.got_init && !f.got_destroy)
-    {
-      if(f.op.destroy)
-        f.op.destroy(f.userdata);
-    }
+    f.op.destroy();
 
   mutex_destroy(f.lock);
   msgbuf_gc();
@@ -1854,8 +1824,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
 struct fuse_session *
 fuse_lowlevel_new_common(struct fuse_args               *args,
                          const struct fuse_lowlevel_ops *op,
-                         size_t                          op_size,
-                         void                           *userdata)
+                         size_t                          op_size)
 {
   struct fuse_session *se;
 
@@ -1871,7 +1840,6 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
 
   memcpy(&f.op,op,op_size);
   f.owner = getuid();
-  f.userdata = userdata;
 
   se = fuse_session_new(&f,
                         (void*)fuse_ll_buf_receive_read,
@@ -1892,8 +1860,7 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
 struct fuse_session*
 fuse_lowlevel_new(struct fuse_args               *args,
                   const struct fuse_lowlevel_ops *op,
-                  size_t                          op_size,
-                  void                           *userdata)
+                  size_t                          op_size)
 {
-  return fuse_lowlevel_new_common(args, op, op_size, userdata);
+  return fuse_lowlevel_new_common(args, op, op_size);
 }

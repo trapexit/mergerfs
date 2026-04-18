@@ -56,6 +56,6 @@ EXTERN_C_BEGIN
 
 struct fuse_session *fuse_lowlevel_new_common(struct fuse_args *args,
                                               const struct fuse_lowlevel_ops *op,
-                                              size_t op_size, void *userdata);
+                                              size_t op_size);
 
 EXTERN_C_END
