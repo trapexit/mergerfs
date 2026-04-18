@@ -546,7 +546,13 @@ ThreadPool::_process_func(Func &func_)
   // prevent the TOCTOU race with set_threads.  During shutdown
   // (_stop set), _try_claim_and_remove_self returns false, so
   // the destructor still joins us.
-  if(_try_claim_and_remove_self(pthread_self()))
+  //
+  // Fast path: most tasks complete with no shrink pending, so avoid
+  // the double-lock acquisition in _try_claim_and_remove_self unless
+  // _remove_count looks non-zero.  A stale zero read just defers the
+  // claim by one task — a later completion on any worker picks it up.
+  if(_remove_count.load(std::memory_order_relaxed) != 0 &&
+     _try_claim_and_remove_self(pthread_self()))
     return EXIT;
 
   return CONTINUE;
