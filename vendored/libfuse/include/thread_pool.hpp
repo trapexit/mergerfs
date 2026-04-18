@@ -58,6 +58,10 @@ struct ThreadPoolTraits : public moodycamel::ConcurrentQueueDefaultTraits
 //   An enqueue racing with the destructor is otherwise safe — the
 //   BoundedQueue destructor runs only after all workers are joined, so
 //   the queue is not accessed concurrently during teardown.
+//
+//   add_thread(), remove_thread(), and set_threads() return
+//   -ECANCELED when called while shutdown is in progress.  Treat a
+//   non-zero return during teardown as expected, not as a failure.
 class ThreadPool
 {
 public:
@@ -168,6 +172,12 @@ public:
   ThreadPool::PToken ptoken();
 
   // Introspection
+  // thread_count() reads an atomic mirror of _threads.size() and is
+  // eventually consistent: at rest (no in-flight scaling operation)
+  // the value equals _threads.size().  A caller that needs an exact
+  // count must be sure no concurrent add/remove/set_threads is in
+  // flight, or wait on the pool settling (see wait_until patterns in
+  // tests/tests.cpp).
   std::size_t thread_count() const;
   std::size_t queue_depth() const;
   std::size_t queue_capacity() const;
