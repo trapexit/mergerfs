@@ -34,7 +34,7 @@
 #include <fnmatch.h>
 
 
-Branches::Impl::Impl(const u64 &default_minfreespace_)
+Branches::Impl::Impl(const u64 *default_minfreespace_)
   : _default_minfreespace(default_minfreespace_)
 {
 }
@@ -48,6 +48,16 @@ Branches::Impl::operator=(Branches::Impl &rval_)
 
   *this_base = *rval_base;
 
+  // Branches using the default minfreespace hold a pointer to their
+  // owning Impl's _default_minfreespace. After copy/move those
+  // pointers still reference the source Impl, so re-link them to this
+  // Impl's _default_minfreespace.
+  for(auto &branch : *this)
+    {
+      if(std::holds_alternative<const u64*>(branch._minfreespace))
+        branch._minfreespace = _default_minfreespace;
+    }
+
   return *this;
 }
 
@@ -60,6 +70,16 @@ Branches::Impl::operator=(Branches::Impl &&rval_)
 
   *this_base = std::move(*rval_base);
 
+  // Branches using the default minfreespace hold a pointer to their
+  // owning Impl's _default_minfreespace. After copy/move those
+  // pointers still reference the source Impl, so re-link them to this
+  // Impl's _default_minfreespace.
+  for(auto &branch : *this)
+    {
+      if(std::holds_alternative<const u64*>(branch._minfreespace))
+        branch._minfreespace = _default_minfreespace;
+    }
+
   return *this;
 }
 
@@ -67,7 +87,7 @@ const
 u64&
 Branches::Impl::minfreespace(void) const
 {
-  return _default_minfreespace;
+  return *_default_minfreespace;
 }
 
 namespace l
@@ -148,7 +168,7 @@ namespace l
       case 2:
         *glob_  = v[0];
         options = v[1];
-    v = str::split(options,',');
+        v = str::split(options,',');
         switch(v.size())
           {
           case 2:
@@ -229,7 +249,7 @@ namespace l
   {
     int rv;
     StrVec paths;
-    Branches::Impl tmp_branches(branches_->minfreespace());
+    Branches::Impl tmp_branches(&branches_->minfreespace());
 
     paths = str::split(str_,':');
     for(auto &path : paths)
@@ -251,7 +271,7 @@ namespace l
   {
     int rv;
     std::vector<std::string> paths;
-    Branches::Impl tmp_branches(branches_->minfreespace());
+    Branches::Impl tmp_branches(&branches_->minfreespace());
 
     paths = str::split(str_,':');
     for(auto &path : paths)
@@ -275,7 +295,7 @@ namespace l
   {
     int rv;
     StrVec paths;
-    Branches::Impl tmp_branches(branches_->minfreespace());
+    Branches::Impl tmp_branches(&branches_->minfreespace());
 
     paths = str::split(str_,':');
     for(auto &path : paths)
@@ -419,7 +439,7 @@ Branches::from_string(const std::string_view str_)
 
   impl = std::atomic_load(&_impl);
 
-  new_impl = std::make_shared<Branches::Impl>(impl->minfreespace());
+  new_impl = std::make_shared<Branches::Impl>(&minfreespace);
   *new_impl = *impl;
 
   rv = new_impl->from_string(str_);
@@ -440,7 +460,16 @@ Branches::to_string(void) const
 void
 Branches::find_and_set_mode_ro()
 {
-  for(auto &branch : *_impl)
+  Branches::Ptr impl;
+  Branches::Ptr new_impl;
+
+  impl = std::atomic_load(&_impl);
+  new_impl = std::make_shared<Branches::Impl>(&minfreespace);
+
+  *new_impl = *impl;
+
+  bool changed = false;
+  for(auto &branch : *new_impl)
     {
       if(branch.mode != Branch::Mode::RW)
         continue;
@@ -452,7 +481,13 @@ Branches::find_and_set_mode_ro()
                       branch.path.string());
 
       branch.mode = Branch::Mode::RO;
+      changed = true;
     }
+
+  if(not changed)
+    return;
+
+  std::atomic_store(&_impl,new_impl);
 }
 
 SrcMounts::SrcMounts(Branches &b_)
