@@ -93,9 +93,7 @@ private:
   WorkerAction _process_func(Func &func_);
   int  _add_thread_scaling_locked(const std::string &name_);
   int  _remove_thread_scaling_locked();
-  void _remove_self(pthread_t t_);
   bool _try_remove_self_if_above(pthread_t t_, std::size_t min_count_);
-  bool _try_claim_removal();
   bool _try_claim_and_remove_self(pthread_t t_);
   void _maybe_grow_on_pressure();
   static std::uint64_t _now_usecs();
@@ -453,8 +451,9 @@ ThreadPool::~ThreadPool()
   // we snapshot.  Without _scaling_mutex a late push_back could
   // land after the snapshot, leaving the new thread unjoined and
   // accessing a destroyed pool.
-  // _threads_mutex closes the race with _remove_self, which only
-  // needs _threads_mutex — after _stop is set it becomes a no-op.
+  // _threads_mutex closes the race with _try_remove_self_if_above and
+  // _try_claim_and_remove_self — both check _stop under this lock, so
+  // after _stop is set they become no-ops and leave us authoritative.
   std::vector<pthread_t> snapshot;
   {
     mutex_lockguard(_scaling_mutex);
@@ -859,27 +858,9 @@ ThreadPool::monitor_routine(void *arg_)
 }
 
 
-// Try to claim one pending removal.  Returns true if a _remove_count
-// decrement was successfully claimed, false if the count was zero.
-inline
-bool
-ThreadPool::_try_claim_removal()
-{
-  std::size_t count = _remove_count.load(std::memory_order_relaxed);
-  while(count > 0)
-    {
-      if(_remove_count.compare_exchange_weak(count,count - 1,
-                                              std::memory_order_acq_rel))
-        return true;
-    }
-  return false;
-}
-
-
 // Atomically claim a pending removal AND remove self from the thread
-// list under both _scaling_mutex and _threads_mutex.  This closes the
-// TOCTOU race between the old _try_claim_removal + _remove_self
-// two-step: without atomicity, set_threads can observe the decremented
+// list under both _scaling_mutex and _threads_mutex.  Atomicity closes
+// a TOCTOU race: without it, set_threads could observe the decremented
 // _remove_count before _threads is shrunk, miscalculate effective
 // count, and issue excess removals that drain the pool to zero.
 inline
@@ -928,26 +909,6 @@ claimed:
   _threads.erase(it);
   pthread_detach(t_);
   return true;
-}
-
-
-inline
-void
-ThreadPool::_remove_self(pthread_t t_)
-{
-  mutex_lockguard(_threads_mutex);
-
-  // Check _stop under the lock so the destructor can't snapshot this
-  // thread for joining and then race with us detaching ourselves.
-  if(_stop.load(std::memory_order_acquire))
-    return;
-
-  auto it = std::find(_threads.begin(),_threads.end(),t_);
-  if(it != _threads.end())
-    {
-      _threads.erase(it);
-      pthread_detach(t_);
-    }
 }
 
 
