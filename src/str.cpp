@@ -300,6 +300,9 @@ bool
 str::eq(const char *s0_,
         const char *s1_) noexcept
 {
+  if((s0_ == nullptr) || (s1_ == nullptr))
+    return (s0_ == s1_);
+
   return (std::strcmp(s0_, s1_) == 0);
 }
 
@@ -307,6 +310,9 @@ bool
 str::startswith(const char *s_,
                 const char *p_) noexcept
 {
+  if((s_ == nullptr) || (p_ == nullptr))
+    return false;
+
   while(*p_)
     {
       if(*p_ != *s_)
