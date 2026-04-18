@@ -8,19 +8,24 @@
 
 #include "fuse_lowlevel.h"
 
+#include <atomic>
+
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
 
-static struct fuse_session *fuse_instance;
+static std::atomic<fuse_session*> g_fuse_instance{nullptr};
 
 static
 void
 exit_handler(int sig)
 {
   (void)sig;
-  if (fuse_instance)
-    fuse_session_exit(fuse_instance);
+  struct fuse_session *instance;
+
+  instance = g_fuse_instance.load(std::memory_order_acquire);
+  if(instance)
+    fuse_session_exit(instance);
 }
 
 static int set_one_signal_handler(int sig, void (*handler)(int), int remove)
@@ -54,20 +59,20 @@ int fuse_set_signal_handlers(struct fuse_session *se)
      (set_one_signal_handler(SIGPIPE, SIG_IGN, 0)      == -1))
     return -1;
 
-  fuse_instance = se;
+  g_fuse_instance.store(se,std::memory_order_release);
+
   return 0;
 }
 
 void fuse_remove_signal_handlers(struct fuse_session *se)
 {
-  if (fuse_instance != se)
-    fprintf(stderr,
-            "fuse: fuse_remove_signal_handlers: unknown session\n");
-  else
-    fuse_instance = NULL;
-
   set_one_signal_handler(SIGINT, exit_handler, 1);
   set_one_signal_handler(SIGTERM, exit_handler, 1);
   set_one_signal_handler(SIGQUIT, exit_handler, 1);
   set_one_signal_handler(SIGPIPE, SIG_IGN, 1);
+
+  if(g_fuse_instance.load(std::memory_order_acquire) != se)
+    fprintf(stderr,"mergerfs: fuse_remove_signal_handlers: unknown session\n");
+  else
+    g_fuse_instance.store(nullptr,std::memory_order_release);
 }
