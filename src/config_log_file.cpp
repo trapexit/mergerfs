@@ -26,7 +26,8 @@
 
 LogFile::LogFile(const std::string &s_)
 {
-  fuse_debug_set_output(s_);
+  if(!s_.empty())
+    fuse_debug_set_output(s_);
 }
 
 std::string
