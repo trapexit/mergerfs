@@ -887,29 +887,31 @@ ThreadPool::_try_claim_and_remove_self(pthread_t t_)
 
   // Try to claim a pending removal.
   std::size_t count = _remove_count.load(std::memory_order_relaxed);
+  bool claimed = false;
   while(count > 0)
     {
       if(_remove_count.compare_exchange_weak(count,count - 1,
                                               std::memory_order_acq_rel))
-        goto claimed;
+        {
+          claimed = true;
+          break;
+        }
     }
-  return false;
+  if(!claimed)
+    return false;
 
-claimed:
   // Safety floor: never remove the last thread.  Use the same
   // min_allowed logic as _remove_thread_scaling_locked.
-  {
-    std::size_t min_allowed = 1;
-    if(_dynamic_scaling_enabled && _scaling_config.min_threads > min_allowed)
-      min_allowed = _scaling_config.min_threads;
-    if(_threads.size() <= min_allowed)
-      {
-        // Restore the claim — a future set_threads or grow will
-        // either cancel it or the pool will be large enough.
-        _remove_count.fetch_add(1,std::memory_order_relaxed);
-        return false;
-      }
-  }
+  std::size_t min_allowed = 1;
+  if(_dynamic_scaling_enabled && _scaling_config.min_threads > min_allowed)
+    min_allowed = _scaling_config.min_threads;
+  if(_threads.size() <= min_allowed)
+    {
+      // Restore the claim — a future set_threads or grow will
+      // either cancel it or the pool will be large enough.
+      _remove_count.fetch_add(1,std::memory_order_relaxed);
+      return false;
+    }
 
   auto it = std::find(_threads.begin(),_threads.end(),t_);
   if(it == _threads.end())
