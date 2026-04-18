@@ -64,7 +64,7 @@ static
 int
 _chmod(const Policy::Action &actionFunc_,
        const Policy::Search &searchFunc_,
-       const Branches       &branches_,
+       const Branches::Ptr   branches_,
        const fs::path       &fusepath_,
        const mode_t          mode_)
 {
@@ -75,6 +75,8 @@ _chmod(const Policy::Action &actionFunc_,
   rv = actionFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   ::_chmod_loop(branches,fusepath_,mode_,&prv);
   if(prv.errors.empty())
@@ -86,6 +88,8 @@ _chmod(const Policy::Action &actionFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   return prv.get_error(branches[0]->path);
 }

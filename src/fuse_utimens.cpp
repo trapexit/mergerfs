@@ -63,7 +63,7 @@ static
 int
 _utimens(const Policy::Action &utimensPolicy_,
          const Policy::Search &getattrPolicy_,
-         const Branches       &branches_,
+         const Branches::Ptr   branches_,
          const fs::path       &fusepath_,
          const timespec        ts_[2])
 {
@@ -74,6 +74,8 @@ _utimens(const Policy::Action &utimensPolicy_,
   rv = utimensPolicy_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   ::_utimens_loop(branches,fusepath_,ts_,&prv);
   if(prv.errors.empty())
@@ -85,6 +87,8 @@ _utimens(const Policy::Action &utimensPolicy_,
   rv = getattrPolicy_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   return prv.get_error(branches[0]->path);
 }

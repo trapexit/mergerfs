@@ -52,7 +52,7 @@ _unlink_loop(const std::vector<Branch*> &branches_,
 static
 int
 _unlink(const Policy::Action &unlinkPolicy_,
-        const Branches       &branches_,
+        const Branches::Ptr   branches_,
         const fs::path       &fusepath_)
 {
   int rv;

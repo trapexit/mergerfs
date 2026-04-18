@@ -30,7 +30,7 @@
 static
 int
 _access(const Policy::Search &searchFunc_,
-        const Branches       &branches_,
+        const Branches::Ptr   branches_,
         const fs::path       &fusepath_,
         const int             mask_)
 {
@@ -42,6 +42,8 @@ _access(const Policy::Search &searchFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   fullpath = branches[0]->path / fusepath_;
 

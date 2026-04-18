@@ -66,7 +66,7 @@ static
 int
 _chown(const Policy::Action &actionFunc_,
        const Policy::Search &searchFunc_,
-       const Branches       &branches_,
+       const Branches::Ptr   branches_,
        const fs::path       &fusepath_,
        const uid_t           uid_,
        const gid_t           gid_)
@@ -78,6 +78,8 @@ _chown(const Policy::Action &actionFunc_,
   rv = actionFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   ::_chown_loop(branches,fusepath_,uid_,gid_,&prv);
 
@@ -90,6 +92,8 @@ _chown(const Policy::Action &actionFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   return prv.get_error(branches[0]->path);
 }

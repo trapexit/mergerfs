@@ -145,7 +145,7 @@ static
 int
 _setxattr(const Policy::Action &setxattrPolicy_,
           const Policy::Search &getxattrPolicy_,
-          const Branches       &branches_,
+          const Branches::Ptr   branches_,
           const fs::path       &fusepath_,
           const char           *attrname_,
           const char           *attrval_,
@@ -159,6 +159,8 @@ _setxattr(const Policy::Action &setxattrPolicy_,
   rv = setxattrPolicy_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   ::_setxattr_loop(branches,fusepath_,attrname_,attrval_,attrvalsize_,flags_,&prv);
   if(prv.errors.empty())
@@ -170,6 +172,8 @@ _setxattr(const Policy::Action &setxattrPolicy_,
   rv = getxattrPolicy_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   return prv.get_error(branches[0]->path);
 }

@@ -97,7 +97,7 @@ _getxattr_from_string(char              *destbuf_,
 
 static
 int
-_getxattr_user_mergerfs_allpaths(const Branches::Ptr &branches_,
+_getxattr_user_mergerfs_allpaths(const Branches::Ptr  branches_,
                                  const fs::path      &fusepath_,
                                  char                *buf_,
                                  const size_t         count_)
@@ -120,7 +120,7 @@ int
 _getxattr_user_mergerfs(const fs::path &basepath_,
                         const fs::path &fusepath_,
                         const fs::path &fullpath_,
-                        const Branches &branches_,
+                        const Branches::Ptr branches_,
                         const char     *attrname_,
                         char           *buf_,
                         const size_t    count_)
@@ -144,7 +144,7 @@ _getxattr_user_mergerfs(const fs::path &basepath_,
 static
 int
 _getxattr(const Policy::Search &searchFunc_,
-          const Branches       &branches_,
+          const Branches::Ptr   branches_,
           const fs::path       &fusepath_,
           const char           *attrname_,
           char                 *buf_,
@@ -157,6 +157,8 @@ _getxattr(const Policy::Search &searchFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   fullpath = branches[0]->path / fusepath_;
 

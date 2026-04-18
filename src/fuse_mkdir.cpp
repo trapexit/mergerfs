@@ -103,7 +103,7 @@ int
 _mkdir(const ugid_t          ugid_,
        const Policy::Search &getattrPolicy_,
        const Policy::Create &mkdirPolicy_,
-       const Branches       &branches_,
+       const Branches::Ptr   branches_,
        const fs::path       &fusepath_,
        const mode_t          mode_,
        const mode_t          umask_)
@@ -118,10 +118,14 @@ _mkdir(const ugid_t          ugid_,
   rv = getattrPolicy_(branches_,fusedirpath,existingbranches);
   if(rv < 0)
     return rv;
+  if(existingbranches.empty())
+    return -ENOENT;
 
   rv = mkdirPolicy_(branches_,fusedirpath,createbranches);
   if(rv < 0)
     return rv;
+  if(createbranches.empty())
+    return -ENOENT;
 
   return ::_mkdir_loop(ugid_,
                        existingbranches[0],

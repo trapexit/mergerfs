@@ -45,7 +45,7 @@ static
 inline
 int
 _readdir(ThreadPool          &tp_,
-         const Branches::Ptr &branches_,
+          const Branches::Ptr  branches_,
          const fs::path      &rel_dirpath_,
          fuse_dirents_t      *dirents_)
 {

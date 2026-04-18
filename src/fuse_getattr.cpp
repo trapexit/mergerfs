@@ -120,7 +120,7 @@ _getattr_controlfile(struct stat *st_)
 static
 int
 _getattr(const Policy::Search &searchFunc_,
-         const Branches       &branches_,
+         const Branches::Ptr   branches_,
          const fs::path       &fusepath_,
          struct stat          *st_,
          const bool            symlinkify_,
@@ -134,6 +134,8 @@ _getattr(const Policy::Search &searchFunc_,
   rv = searchFunc_(branches_,fusepath_,branches);
   if(rv < 0)
     return rv;
+  if(branches.empty())
+    return -ENOENT;
 
   fullpath = branches[0]->path / fusepath_;
 
@@ -144,12 +146,12 @@ _getattr(const Policy::Search &searchFunc_,
       break;
     case FollowSymlinks::ENUM::DIRECTORY:
       rv = fs::lstat(fullpath,st_);
-      if(S_ISLNK(st_->st_mode))
+      if((rv >= 0) && S_ISLNK(st_->st_mode))
         ::_set_stat_if_leads_to_dir(fullpath,st_);
       break;
     case FollowSymlinks::ENUM::REGULAR:
       rv = fs::lstat(fullpath,st_);
-      if(S_ISLNK(st_->st_mode))
+      if((rv >= 0) && S_ISLNK(st_->st_mode))
         ::_set_stat_if_leads_to_reg(fullpath,st_);
       break;
     case FollowSymlinks::ENUM::ALL:
