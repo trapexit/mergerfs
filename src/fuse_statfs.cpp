@@ -41,9 +41,13 @@ _normalize_statvfs(struct statvfs      *fsstat_,
                    const unsigned long  min_frsize_,
                    const unsigned long  min_namemax_)
 {
-  fsstat_->f_blocks  = (fsblkcnt_t)((fsstat_->f_blocks * fsstat_->f_frsize) / min_frsize_);
-  fsstat_->f_bfree   = (fsblkcnt_t)((fsstat_->f_bfree  * fsstat_->f_frsize) / min_frsize_);
-  fsstat_->f_bavail  = (fsblkcnt_t)((fsstat_->f_bavail * fsstat_->f_frsize) / min_frsize_);
+  long double scale;
+
+  scale = (((long double)fsstat_->f_frsize) / ((long double)min_frsize_));
+
+  fsstat_->f_blocks  = (fsblkcnt_t)(fsstat_->f_blocks * scale);
+  fsstat_->f_bfree   = (fsblkcnt_t)(fsstat_->f_bfree  * scale);
+  fsstat_->f_bavail  = (fsblkcnt_t)(fsstat_->f_bavail * scale);
   fsstat_->f_bsize   = min_bsize_;
   fsstat_->f_frsize  = min_frsize_;
   fsstat_->f_namemax = min_namemax_;
