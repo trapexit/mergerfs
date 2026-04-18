@@ -39,13 +39,13 @@ public:
                      public std::vector<Branch>
   {
   private:
-    const u64 &_default_minfreespace;
+    const u64 *_default_minfreespace;
 
   public:
     using Ptr  = std::shared_ptr<Impl>;
 
   public:
-    Impl(const u64 &default_minfreespace);
+    Impl(const u64 *default_minfreespace);
 
   public:
     int from_string(const std::string_view str) final;
@@ -73,7 +73,7 @@ private:
 
 public:
   Branches()
-    : _impl(std::make_shared<Impl>(minfreespace))
+    : _impl(std::make_shared<Impl>(&minfreespace))
   {
   }
 
