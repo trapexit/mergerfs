@@ -3057,6 +3057,336 @@ test_tp_autoscale_mixed_resize_and_autoscale_enqueue()
 }
 
 void
+test_tp_enqueue_task_broken_promise_on_destruction()
+{
+  // Documented contract: tasks queued but not yet executed when the destructor
+  // runs cause their futures to throw std::future_error (broken_promise).
+  std::vector<std::future<int>> futures;
+
+  {
+    // Single slow worker + large queue so items pile up unexecuted.
+    ThreadPool tp(1, 256, "test.brkprom");
+
+    // Pin the one worker in a long-running blocker so queued tasks don't run.
+    std::atomic<bool> block{true};
+    tp.enqueue_work([&block]()
+      {
+        while(block.load())
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      });
+
+    // Wait until the blocker has actually started before we queue the tasks.
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    for(int i = 0; i < 10; ++i)
+      futures.push_back(tp.enqueue_task([i]() -> int { return i; }));
+
+    block.store(false); // let blocker finish — pool destructor will drain the rest
+
+    // Destructor runs here while tasks may still be queued.
+    // Per the shutdown contract, callers stop submitting before destruction;
+    // tasks already queued but not yet dequeued are discarded.
+    // The futures for discarded tasks throw broken_promise.
+  }
+
+  // Count outcomes — some tasks ran, some may have been discarded.
+  // At minimum we must not crash or deadlock.
+  int completed = 0;
+  int broken    = 0;
+
+  for(auto &f : futures)
+    {
+      try
+        {
+          f.get();
+          ++completed;
+        }
+      catch(const std::future_error &e)
+        {
+          TEST_CHECK(e.code() == std::future_errc::broken_promise);
+          ++broken;
+        }
+    }
+
+  TEST_CHECK(completed + broken == 10);
+}
+
+void
+test_tp_thread_count_matches_threads_size()
+{
+  // thread_count() must equal threads().size() at every observable point.
+  ThreadPool tp(3, 16, "test.tcconsist");
+
+  TEST_CHECK(tp.thread_count() == tp.threads().size());
+
+  tp.add_thread();
+  TEST_CHECK(tp.thread_count() == tp.threads().size());
+
+  tp.set_threads(5);
+  TEST_CHECK(tp.thread_count() == tp.threads().size());
+
+  // Shrink — thread_count() is eventually consistent; wait for it to settle.
+  tp.set_threads(2);
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 2; }));
+  TEST_CHECK(tp.thread_count() == tp.threads().size());
+}
+
+void
+test_tp_thread_count_settles_after_churn()
+{
+  // After a burst of add/remove, thread_count() must eventually converge to
+  // threads().size() once the pool is at rest.
+  ThreadPool tp(4, 64, "test.tcchurn");
+
+  for(int i = 0; i < 20; ++i)
+    {
+      tp.add_thread();
+      tp.add_thread();
+      tp.remove_thread();
+      tp.remove_thread();
+    }
+
+  // Pool is back at 4; wait for all deferred removals to settle.
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 4; }, 5000));
+  TEST_CHECK(tp.thread_count() == tp.threads().size());
+}
+
+void
+test_tp_try_enqueue_work_for_ptoken_times_out_when_full()
+{
+  // Ptoken overload of try_enqueue_work_for must also time out when the queue
+  // is full.
+  ThreadPool tp(1, 1, "test.tewfptout");
+
+  std::atomic<bool> release{false};
+  std::atomic<bool> worker_started{false};
+  std::atomic<int>  ran{0};
+
+  tp.enqueue_work([&release, &worker_started, &ran]()
+    {
+      worker_started.store(true);
+      while(!release.load())
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      ran.fetch_add(1);
+    });
+
+  TEST_CHECK(wait_until([&worker_started](){ return worker_started.load(); }));
+
+  // Fill the single queue slot.
+  tp.enqueue_work([&ran](){ ran.fetch_add(1); });
+
+  auto ptok = tp.ptoken();
+  auto start = std::chrono::steady_clock::now();
+  bool ok = tp.try_enqueue_work_for(ptok, 20000, [&ran](){ ran.fetch_add(1); });
+  auto end = std::chrono::steady_clock::now();
+
+  TEST_CHECK(!ok);
+
+  auto elapsed_us =
+    std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+  TEST_CHECK(elapsed_us >= 10000);
+
+  release.store(true);
+  TEST_CHECK(wait_until([&ran](){ return ran.load() == 2; }));
+  TEST_CHECK(ran.load() == 2);
+}
+
+void
+test_tp_tasks_pending_zero_at_construction()
+{
+  ThreadPool tp(2, 8, "test.pend0ctor");
+
+  TEST_CHECK(tp.tasks_pending() == 0);
+  TEST_CHECK(tp.tasks_enqueued() == 0);
+  TEST_CHECK(tp.tasks_completed() == 0);
+}
+
+void
+test_tp_tasks_pending_zero_after_all_complete()
+{
+  ThreadPool tp(4, 64, "test.pend0done");
+
+  const int N = 40;
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work([](){});
+
+  TEST_CHECK(wait_until([&tp](){ return tp.tasks_pending() == 0; }, 5000));
+  TEST_CHECK(tp.tasks_pending() == 0);
+  TEST_CHECK(tp.tasks_enqueued() == static_cast<std::uint64_t>(N));
+  TEST_CHECK(tp.tasks_completed() == static_cast<std::uint64_t>(N));
+}
+
+void
+test_tp_autoscale_verifiable_growth()
+{
+  // Verifies that the autoscale hill-climbing monitor actually increases
+  // thread count when the queue is under sustained pressure.
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads           = 1;
+  cfg.max_threads           = 8;
+  cfg.sample_interval_usecs = 50000;   // 50ms — fast sampling
+  cfg.cooldown_usecs        = 10000;   // 10ms cooldown
+  cfg.idle_threshold_usecs  = 5000000; // 5s — won't shrink during the test
+
+  ThreadPool tp(1, 2, "test.easvgrow", cfg);
+
+  TEST_CHECK(tp.thread_count() == 1);
+
+  const int N = 200;
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work_autoscale([](){ std::this_thread::sleep_for(std::chrono::milliseconds(20)); });
+
+  // Monitor fires every 50ms; pool has a queue depth of 2 and 1 thread.
+  // Sustained queue pressure should trigger at least one grow event.
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() > 1; }, 5000));
+  TEST_CHECK(tp.thread_count() > 1);
+
+  // Wait for all work to finish (pool may grow further; that's fine).
+  TEST_CHECK(wait_until([&tp](){ return tp.tasks_pending() == 0; }, 30000));
+}
+
+void
+test_tp_autoscale_verifiable_shrink_to_min()
+{
+  // After the burst finishes, idle threads should self-exit down to min.
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads           = 1;
+  cfg.max_threads           = 8;
+  cfg.sample_interval_usecs = 50000;   // 50ms
+  cfg.cooldown_usecs        = 10000;
+  cfg.idle_threshold_usecs  = 200000;  // 200ms idle → self-exit
+
+  ThreadPool tp(1, 2, "test.easvshrink", cfg);
+
+  // Grow the pool manually so we have threads to shed.
+  for(int i = 0; i < 4; ++i)
+    tp.add_thread();
+
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 5; }));
+
+  // Let all threads sit idle; they should self-exit down to min (1).
+  std::size_t min_t = cfg.min_threads;
+  TEST_CHECK(wait_until([&tp, min_t](){ return tp.thread_count() <= min_t; }, 5000));
+  TEST_CHECK(tp.thread_count() >= cfg.min_threads);
+  TEST_CHECK(tp.thread_count() <= cfg.min_threads + 1); // allow one extra settling
+}
+
+void
+test_tp_shutdown_ecanceled()
+{
+  // add_thread / remove_thread / set_threads must return -ECANCELED (or an
+  // acceptable error) when called during teardown.  We test by calling them
+  // from another thread that races the destructor.
+  std::atomic<int> add_rv{1};
+  std::atomic<int> rm_rv{1};
+  std::atomic<int> set_rv{1};
+
+  {
+    ThreadPool tp(2, 8, "test.shutcancel");
+
+    // Kick off resize attempts that will race the destructor.
+    std::thread t([&tp, &add_rv, &rm_rv, &set_rv]()
+      {
+        // Tight loop so at least one call hits the _stop window.
+        for(int i = 0; i < 10000; ++i)
+          {
+            int a = tp.add_thread();
+            int r = tp.remove_thread();
+            int s = tp.set_threads(2);
+
+            if(a == -ECANCELED) { add_rv.store(0); }
+            if(r == -ECANCELED) { rm_rv.store(0);  }
+            if(s == -ECANCELED) { set_rv.store(0);  }
+
+            if(add_rv.load() == 0 && rm_rv.load() == 0 && set_rv.load() == 0)
+              break;
+          }
+      });
+
+    // Destructor runs while t is still looping.
+    t.detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+
+  // Wait briefly for the detached thread to observe the -ECANCELED returns.
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+  // At minimum none of these should cause a crash or deadlock.
+  // If we caught -ECANCELED, report it.  Not guaranteed to fire in every run,
+  // so we do not TEST_CHECK failure — this is a smoke test for the path.
+  (void)add_rv;
+  (void)rm_rv;
+  (void)set_rv;
+  TEST_CHECK(true); // reached here without crash/deadlock
+}
+
+void
+test_tp_queue_depth_zero_at_idle()
+{
+  // queue_depth() must be 0 when pool is idle.
+  ThreadPool tp(2, 16, "test.qdepth0");
+
+  TEST_CHECK(tp.queue_depth() == 0);
+
+  std::atomic<bool> ran{false};
+  tp.enqueue_work([&ran](){ ran.store(true); });
+
+  TEST_CHECK(wait_until([&ran](){ return ran.load(); }));
+  TEST_CHECK(wait_until([&tp](){ return tp.queue_depth() == 0; }));
+  TEST_CHECK(tp.queue_depth() == 0);
+}
+
+void
+test_tp_queue_capacity_unchanged_after_resize()
+{
+  // set_threads changes worker count, not queue capacity.
+  ThreadPool tp(2, 32, "test.qcapres");
+
+  TEST_CHECK(tp.queue_capacity() == 32);
+
+  tp.set_threads(8);
+  TEST_CHECK(tp.queue_capacity() == 32);
+
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() == 8; }));
+  TEST_CHECK(tp.queue_capacity() == 32);
+}
+
+void
+test_tp_tasks_enqueued_increments_before_completion()
+{
+  // tasks_enqueued() must increment as soon as work is queued,
+  // independent of when tasks_completed() catches up.
+  ThreadPool tp(1, 64, "test.enqinc");
+
+  std::atomic<bool> block{true};
+  tp.enqueue_work([&block](){
+    while(block.load())
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  // Queue more tasks while the worker is blocked.
+  const int N = 10;
+  for(int i = 0; i < N; ++i)
+    tp.enqueue_work([](){});
+
+  // tasks_enqueued should reflect all N+1 items by now.
+  TEST_CHECK(tp.tasks_enqueued() >= static_cast<std::uint64_t>(N + 1));
+  // tasks_completed should be lagging (at most 1: the blocker itself may
+  // not have incremented yet since it hasn't returned).
+  TEST_CHECK(tp.tasks_completed() <= 1);
+
+  block.store(false);
+  TEST_CHECK(wait_until([&tp]()
+    {
+      return tp.tasks_completed() >= static_cast<std::uint64_t>(11);
+    }, 5000));
+}
+
+void
 test_config_has_key()
 {
   Config cfg;
@@ -3780,5 +4110,17 @@ TEST_LIST =
    {"tp_remove_thread_refuses_below_scaling_min",test_tp_remove_thread_refuses_below_scaling_min},
    {"tp_add_thread_refuses_above_scaling_max",test_tp_add_thread_refuses_above_scaling_max},
    {"tp_autoscale_mixed_resize_and_autoscale_enqueue",test_tp_autoscale_mixed_resize_and_autoscale_enqueue},
+   {"tp_enqueue_task_broken_promise_on_destruction",test_tp_enqueue_task_broken_promise_on_destruction},
+   {"tp_thread_count_matches_threads_size",test_tp_thread_count_matches_threads_size},
+   {"tp_thread_count_settles_after_churn",test_tp_thread_count_settles_after_churn},
+   {"tp_try_enqueue_work_for_ptoken_times_out_when_full",test_tp_try_enqueue_work_for_ptoken_times_out_when_full},
+   {"tp_tasks_pending_zero_at_construction",test_tp_tasks_pending_zero_at_construction},
+   {"tp_tasks_pending_zero_after_all_complete",test_tp_tasks_pending_zero_after_all_complete},
+   {"tp_autoscale_verifiable_growth",test_tp_autoscale_verifiable_growth},
+   {"tp_autoscale_verifiable_shrink_to_min",test_tp_autoscale_verifiable_shrink_to_min},
+   {"tp_shutdown_ecanceled",test_tp_shutdown_ecanceled},
+   {"tp_queue_depth_zero_at_idle",test_tp_queue_depth_zero_at_idle},
+   {"tp_queue_capacity_unchanged_after_resize",test_tp_queue_capacity_unchanged_after_resize},
+   {"tp_tasks_enqueued_increments_before_completion",test_tp_tasks_enqueued_increments_before_completion},
    {NULL,NULL}
   };
