@@ -1320,15 +1320,14 @@ reply_entry(fuse_req_t                    *req_,
 
 static
 void
-fuse_lib_init(void             *data,
-              fuse_conn_info_t *conn)
+fuse_lib_init(fuse_conn_info_t *conn)
 {
   f.ops.init(conn);
 }
 
 static
 void
-fuse_lib_destroy(void *data)
+fuse_lib_destroy()
 {
   f.ops.destroy();
 }
