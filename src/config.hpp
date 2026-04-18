@@ -47,7 +47,6 @@
 #include "fuse_cfg.hpp"
 #include "fuse_readdir.hpp"
 #include "policy.hpp"
-#include "rwlock.hpp"
 #include "tofrom_ref.hpp"
 #include "tofrom_wrapper.hpp"
 #include "syslog.hpp"
