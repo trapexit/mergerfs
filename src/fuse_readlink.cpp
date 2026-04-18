@@ -40,12 +40,11 @@ _readlink_core_standard(const fs::path &fullpath_,
 {
   int rv;
 
-  rv = fs::readlink(fullpath_,buf_,bufsize_);
+  rv = fs::readlink(fullpath_,buf_,(bufsize_ - 1));
   if(rv < 0)
     return rv;
 
-  if((size_t)rv < bufsize_)
-    buf_[rv] = '\0';
+  buf_[rv] = '\0';
 
   return 0;
 }
@@ -71,10 +70,9 @@ _readlink_core_symlinkify(const fs::path &fullpath_,
   if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
     return ::_readlink_core_standard(fullpath_,buf_,bufsize_);
 
-  n = std::min(fullpath_str.size(),bufsize_);
+  n = std::min(fullpath_str.size(),(bufsize_ - 1));
   memcpy(buf_,fullpath_str.c_str(),n);
-  if(n < bufsize_)
-    buf_[n] = '\0';
+  buf_[n] = '\0';
 
   return 0;
 }
