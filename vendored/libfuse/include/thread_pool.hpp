@@ -1105,6 +1105,14 @@ inline
 int
 ThreadPool::_remove_thread_scaling_locked()
 {
+  // Skip once shutdown has begun.  Mirrors _add_thread_scaling_locked's
+  // early return for symmetry and prevents the monitor from enqueuing
+  // wakeup pills that no worker will claim (workers see _stop and
+  // BREAK before reaching _try_claim_and_remove_self), which would
+  // leave stale pills in the queue until BoundedQueue is destroyed.
+  if(_stop.load(std::memory_order_acquire))
+    return -ECANCELED;
+
   // Hold _threads_mutex across both the size check and the
   // _remove_count increment so that a concurrent removal (idle
   // self-exit or another _remove_thread call) cannot shrink the
