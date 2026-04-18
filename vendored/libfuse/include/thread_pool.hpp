@@ -157,6 +157,11 @@ public:
   std::future<std::invoke_result_t<FuncType>>
   enqueue_task(FuncType&& func_);
 
+  template<typename FuncType>
+  [[nodiscard]]
+  std::future<std::invoke_result_t<FuncType>>
+  enqueue_task(ThreadPool::PToken &ptok_, FuncType&& func_);
+
   // Auto-scaling enqueue: grows pool on queue pressure
   template<typename FuncType>
   void
@@ -1438,6 +1443,63 @@ ThreadPool::enqueue_task(FuncType&& func_)
   else
     {
       _queue.enqueue(std::move(f));
+    }
+  _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
+
+  return future;
+}
+
+
+template<typename FuncType>
+[[nodiscard]]
+inline
+std::future<std::invoke_result_t<FuncType>>
+ThreadPool::enqueue_task(ThreadPool::PToken &ptok_,
+                         FuncType          &&func_)
+{
+  using TaskReturnType = std::invoke_result_t<FuncType>;
+  using Promise        = std::promise<TaskReturnType>;
+
+  Promise promise;
+  auto    future = promise.get_future();
+
+  auto work =
+    [promise_ = std::move(promise),
+     func_    = std::forward<FuncType>(func_)]() mutable
+    {
+      try
+        {
+          if constexpr (std::is_void_v<TaskReturnType>)
+            {
+              func_();
+              promise_.set_value();
+            }
+          else
+            {
+              promise_.set_value(func_());
+            }
+        }
+      catch(...)
+        {
+          promise_.set_exception(std::current_exception());
+        }
+    };
+
+  Func f(std::move(work));
+
+  if(_dynamic_scaling_enabled)
+    {
+      if(!_queue.try_enqueue(ptok_,std::move(f)))
+        {
+          if(!static_cast<bool>(f))
+            throw std::logic_error("BoundedQueue::try_enqueue moved the callable despite returning false");
+          _maybe_grow_on_pressure();
+          _queue.enqueue(ptok_,std::move(f));
+        }
+    }
+  else
+    {
+      _queue.enqueue(ptok_,std::move(f));
     }
   _tasks_enqueued.fetch_add(1,std::memory_order_relaxed);
 

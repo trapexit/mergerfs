@@ -3387,6 +3387,158 @@ test_tp_tasks_enqueued_increments_before_completion()
 }
 
 void
+test_tp_enqueue_task_with_ptoken()
+{
+  // Verify the PToken overload of enqueue_task routes work through the
+  // dedicated producer token and returns a valid future.
+  ThreadPool tp(2, 8, "test.etptok");
+
+  auto ptok = tp.ptoken();
+
+  auto f1 = tp.enqueue_task(ptok, []() -> int { return 42; });
+  auto f2 = tp.enqueue_task(ptok, []() -> std::string { return "ptoken"; });
+  auto f3 = tp.enqueue_task(ptok, []() -> void {});
+
+  TEST_CHECK(f1.get() == 42);
+  TEST_CHECK(f2.get() == "ptoken");
+  f3.get(); // void — must not throw
+}
+
+void
+test_tp_enqueue_task_ptoken_exception()
+{
+  // Exceptions thrown inside the task must be forwarded through the future.
+  ThreadPool tp(2, 4, "test.etptokexc");
+
+  auto ptok   = tp.ptoken();
+  auto future = tp.enqueue_task(ptok, []() -> int
+    {
+      throw std::runtime_error("ptoken task error");
+      return 0;
+    });
+
+  bool caught = false;
+  try
+    {
+      future.get();
+    }
+  catch(const std::runtime_error &e)
+    {
+      caught = true;
+      TEST_CHECK(std::string(e.what()) == "ptoken task error");
+    }
+
+  TEST_CHECK(caught);
+}
+
+void
+test_tp_enqueue_task_ptoken_multiple_futures()
+{
+  // Multiple enqueue_task(ptok, ...) calls must all complete correctly.
+  ThreadPool tp(4, 32, "test.etptokmulti");
+
+  auto ptok = tp.ptoken();
+  const int N = 50;
+
+  std::vector<std::future<int>> futures;
+  futures.reserve(N);
+
+  for(int i = 0; i < N; ++i)
+    futures.push_back(tp.enqueue_task(ptok, [i]() -> int { return i * 3; }));
+
+  for(int i = 0; i < N; ++i)
+    TEST_CHECK(futures[i].get() == i * 3);
+}
+
+void
+test_tp_construct_scaling_nonpositive_decline_throws()
+{
+  // decline_threshold <= 0 must throw std::invalid_argument.
+  for(int bad : {0, -1, -100})
+    {
+      ThreadPool::ScalingConfig cfg;
+      cfg.min_threads       = 2;
+      cfg.max_threads       = 8;
+      cfg.decline_threshold = bad;
+
+      bool threw = false;
+      try
+        {
+          ThreadPool tp(2, 4, "test.badecl", cfg);
+        }
+      catch(const std::invalid_argument &)
+        {
+          threw = true;
+        }
+
+      TEST_CHECK(threw);
+    }
+}
+
+void
+test_tp_autoscale_fast_path_grow_on_pressure()
+{
+  // When enqueue_work_autoscale cannot immediately enqueue (queue full),
+  // _maybe_grow_on_pressure must fire and increase thread_count.
+  ThreadPool::ScalingConfig cfg;
+
+  cfg.min_threads           = 1;
+  cfg.max_threads           = 4;
+  cfg.sample_interval_usecs = 100000;
+  cfg.cooldown_usecs        = 10000;  // short so cooldown doesn't block grow
+  cfg.idle_threshold_usecs  = 5000000;
+
+  // 1 thread, queue depth 1 → easy to saturate
+  ThreadPool tp(1, 1, "test.fpgrow", cfg);
+
+  TEST_CHECK(tp.thread_count() == 1);
+
+  std::atomic<bool> release{false};
+  std::atomic<bool> worker_started{false};
+
+  // Task 1: pins worker 1.
+  tp.enqueue_work_autoscale([&release, &worker_started]()
+    {
+      worker_started.store(true);
+      while(!release.load())
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    });
+
+  // Wait until worker 1 is inside task 1 so the queue is empty.
+  TEST_CHECK(wait_until([&worker_started](){ return worker_started.load(); }));
+
+  // Task 2: fills the single queue slot so the next enqueue is blocked.
+  // Use plain enqueue_work (not autoscale) — queue has room so it succeeds.
+  tp.enqueue_work([&release]()
+    {
+      while(!release.load())
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    });
+
+  // Task 3: from a producer thread.  Queue is now full (1/1), so
+  // try_enqueue fails → _maybe_grow_on_pressure fires → thread count grows.
+  std::atomic<bool> producer_done{false};
+  std::thread producer([&tp, &release, &producer_done]()
+    {
+      tp.enqueue_work_autoscale([&release]()
+        {
+          while(!release.load())
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        });
+      producer_done.store(true);
+    });
+
+  // thread_count must rise to 2 (synchronously inside _maybe_grow_on_pressure).
+  TEST_CHECK(wait_until([&tp](){ return tp.thread_count() >= 2; }, 3000));
+  TEST_CHECK(tp.thread_count() >= 2);
+
+  // Release all tasks; wait for drain before locals go out of scope.
+  release.store(true);
+  producer.join();
+  TEST_CHECK(wait_until([&tp](){ return tp.tasks_pending() == 0; }, 5000));
+}
+
+void
 test_config_has_key()
 {
   Config cfg;
@@ -4122,5 +4274,10 @@ TEST_LIST =
    {"tp_queue_depth_zero_at_idle",test_tp_queue_depth_zero_at_idle},
    {"tp_queue_capacity_unchanged_after_resize",test_tp_queue_capacity_unchanged_after_resize},
    {"tp_tasks_enqueued_increments_before_completion",test_tp_tasks_enqueued_increments_before_completion},
+   {"tp_enqueue_task_with_ptoken",test_tp_enqueue_task_with_ptoken},
+   {"tp_enqueue_task_ptoken_exception",test_tp_enqueue_task_ptoken_exception},
+   {"tp_enqueue_task_ptoken_multiple_futures",test_tp_enqueue_task_ptoken_multiple_futures},
+   {"tp_construct_scaling_nonpositive_decline_throws",test_tp_construct_scaling_nonpositive_decline_throws},
+   {"tp_autoscale_fast_path_grow_on_pressure",test_tp_autoscale_fast_path_grow_on_pressure},
    {NULL,NULL}
   };
