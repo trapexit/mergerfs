@@ -22,6 +22,7 @@
 #include "tofrom_string.hpp"
 #include "fuse_readdir_base.hpp"
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 
@@ -58,7 +59,7 @@ namespace FUSE
     void initialize();
 
   private:
-    bool _initialized = false;
+    std::atomic<bool> _initialized = false;
     std::shared_ptr<std::string>       _str;
     std::shared_ptr<FUSE::ReadDirBase> _impl;
   };

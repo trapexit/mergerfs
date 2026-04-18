@@ -53,6 +53,9 @@ _readdir(const fs::path &branch_path_,
   DEFER{ fs::close(fd); };
 
   buf = msgbuf_alloc();
+  if(not buf)
+    return -ENOMEM;
+
   DEFER{ msgbuf_free(buf); };
 
   fs::inode::ReaddirCalc inodecalc(branch_path_,rel_dirpath_);

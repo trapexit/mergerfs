@@ -90,15 +90,18 @@ _handle_ENOENT(const fuse_file_info_t *ffi_,
   if(!di->fusepath.empty())
     return -ENOENT;
 
+  constexpr const char msg[] =
+    "error: no valid mergerfs branch found, check config";
+
   de = {};
 
   de.d_ino = 0;
   de.d_off = 0;
   de.d_type = DT_UNKNOWN;
-  strcpy(de.d_name,"error: no valid mergerfs branch found, check config");
+  strncpy(de.d_name,msg,(sizeof(msg) - 1));
   de.d_reclen = sizeof(de);
 
-  fuse_dirents_add(buf_,&de,::strlen(de.d_name));
+  fuse_dirents_add(buf_,&de,(sizeof(msg) - 1));
 
   return 0;
 }
