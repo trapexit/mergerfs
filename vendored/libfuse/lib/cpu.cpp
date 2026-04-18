@@ -136,6 +136,12 @@ CPU::cpu2core()
 
       ifs >> core_id;
 
+      if(!ifs)
+        {
+          ifs.close();
+          continue;
+        }
+
       c2c[i] = core_id;
 
       ifs.close();
@@ -168,6 +174,12 @@ CPU::core2cpus()
         break;
 
       ifs >> core_id;
+
+      if(!ifs)
+        {
+          ifs.close();
+          continue;
+        }
 
       c2c[core_id].insert(i);
 
