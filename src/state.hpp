@@ -79,6 +79,7 @@
 
 #include "fuse.h"
 
+#include <atomic>
 #include <functional>
 #include <map>
 #include <string>
@@ -102,7 +103,14 @@ public:
     {
     }
 
-    int ref_count;
+    OpenFile(OpenFile &&o_) noexcept
+      : ref_count(o_.ref_count.load()),
+        backing_id(o_.backing_id),
+        fi(o_.fi)
+    {
+    }
+
+    std::atomic<int> ref_count;
     int backing_id;
     FileInfo *fi;
   };
