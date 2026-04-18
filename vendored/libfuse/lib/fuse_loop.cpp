@@ -57,6 +57,13 @@ _print_error(int rv_)
              -rv_);
 }
 
+static
+int
+_nproc()
+{
+  return std::max(1,(int)std::thread::hardware_concurrency());
+}
+
 struct AsyncWorker
 {
   fuse_session *_se;
@@ -86,6 +93,11 @@ struct AsyncWorker
         fuse_msgbuf_t *msgbuf;
 
         msgbuf = msgbuf_alloc();
+        if(not msgbuf)
+          {
+            fmt::println(stderr,"mergerfs: failure to allocate msgbuf, exiting");
+            return;
+          }
 
         while(true)
           {
@@ -141,6 +153,11 @@ struct SyncWorker
         fuse_msgbuf_t *msgbuf;
 
         msgbuf = msgbuf_alloc();
+        if(not msgbuf)
+          {
+            fmt::println(stderr,"mergerfs: failure to allocate msgbuf, exiting");
+            return;
+          }
 
         while(true)
           {
@@ -166,31 +183,6 @@ struct SyncWorker
   }
 };
 
-int
-fuse_start_thread(pthread_t *thread_id,
-                  void      *(*func)(void *),
-                  void      *arg)
-{
-  int res;
-  sigset_t oldset;
-  sigset_t newset;
-
-  sigfillset(&newset);
-  pthread_sigmask(SIG_BLOCK,&newset,&oldset);
-  res = pthread_create(thread_id,NULL,func,arg);
-  pthread_sigmask(SIG_SETMASK,&oldset,NULL);
-
-  if(res != 0)
-    {
-      fprintf(stderr,
-              "fuse: error creating thread: %s\n",
-              strerror(res));
-      return -1;
-    }
-
-  return 0;
-}
-
 static
 int
 _calculate_thread_count(const int raw_thread_count_)
@@ -199,12 +191,12 @@ _calculate_thread_count(const int raw_thread_count_)
 
   if(raw_thread_count_ == 0)
     {
-      thread_count = std::thread::hardware_concurrency();
+      thread_count = ::_nproc();
       thread_count = std::min(8,thread_count);
     }
   else if(raw_thread_count_ < 0)
     {
-      thread_count = (std::thread::hardware_concurrency() / -raw_thread_count_);
+      thread_count = (::_nproc() / -raw_thread_count_);
       thread_count = std::max(1,thread_count);
     }
   else if(raw_thread_count_ > 0)
@@ -225,14 +217,14 @@ _calculate_thread_counts(int *read_thread_count_,
     {
       int nproc;
 
-      nproc = std::thread::hardware_concurrency();
+      nproc = ::_nproc();
       *read_thread_count_ = std::min(8,nproc);
     }
   else if((*read_thread_count_ == 0) && (*process_thread_count_ == 0))
     {
       int nproc;
 
-      nproc = std::thread::hardware_concurrency();
+      nproc = ::_nproc();
       *read_thread_count_ = 2;
       *process_thread_count_ = std::max(2,(nproc - 2));
       *process_thread_count_ = std::min(8,*process_thread_count_);
