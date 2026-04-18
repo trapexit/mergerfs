@@ -50,6 +50,9 @@ fuse_session_new(void *data,
 void
 fuse_session_destroy(struct fuse_session *se)
 {
+  if(se == nullptr)
+    return;
+
   if(se->destroy)
     se->destroy(se->f);
 
