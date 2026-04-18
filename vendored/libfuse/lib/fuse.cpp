@@ -6,7 +6,6 @@
   See the file COPYING.LIB
 */
 
-/* For pthread_rwlock_t */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -15,9 +14,11 @@
 
 #include "crc32b.h"
 #include "debug.hpp"
+#include "fatal.hpp"
 #include "kvec.h"
 #include "mutex.hpp"
 #include "node.hpp"
+#include "xalloc.hpp"
 
 #include "fuse_cfg.hpp"
 #include "fuse_req.hpp"
@@ -188,7 +189,7 @@ id_hash(uint64_t ino)
 
 static
 node_t*
-get_node_nocheck(uint64_t nodeid)
+get_node(const uint64_t nodeid)
 {
   size_t hash = id_hash(nodeid);
   node_t *node;
@@ -198,22 +199,6 @@ get_node_nocheck(uint64_t nodeid)
       return node;
 
   return NULL;
-}
-
-static
-node_t*
-get_node(const uint64_t nodeid)
-{
-  node_t *node = get_node_nocheck(nodeid);
-
-  if(!node)
-    {
-      fprintf(stderr,"fuse internal error: node %llu not found\n",
-              (unsigned long long)nodeid);
-      abort();
-    }
-
-  return node;
 }
 
 static
@@ -290,10 +275,11 @@ node_table_reduce(struct node_table *t)
     return;
 
   newarray = realloc(t->array,sizeof(node_t*) * newsize);
-  if(newarray != NULL)
-    t->array = (node_t**)newarray;
+  if(newarray == NULL)
+    return;
 
-  t->size = newsize;
+  t->array = (node_t**)newarray;
+  t->size  = newsize;
   t->split = t->size / 2;
 }
 
@@ -471,33 +457,32 @@ static
 void
 unhash_name(node_t *node)
 {
-  if(node->name)
+  if(not (node && node->name && node->parent))
+    return;
+
+  size_t   hash  = name_hash(node->parent->nodeid,node->name);
+  node_t **nodep = &f.name_table.array[hash];
+
+  for(; *nodep != NULL; nodep = &(*nodep)->name_next)
     {
-      size_t hash = name_hash(node->parent->nodeid,node->name);
-      node_t **nodep = &f.name_table.array[hash];
+      if(*nodep != node)
+        continue;
 
-      for(; *nodep != NULL; nodep = &(*nodep)->name_next)
-        if(*nodep == node)
-          {
-            *nodep = node->name_next;
-            node->name_next = NULL;
-            unref_node(node->parent);
-            free(node->name);
-            node->name = NULL;
-            node->parent = NULL;
-            f.name_table.use--;
+      *nodep = node->name_next;
+      node->name_next = NULL;
+      unref_node(node->parent);
+      free(node->name);
+      node->name = NULL;
+      node->parent = NULL;
+      f.name_table.use--;
 
-            if(f.name_table.use < f.name_table.size / 4)
-              remerge_name();
-            return;
-          }
-
-      fprintf(stderr,
-              "fuse internal error: unable to unhash node: %llu\n",
-              (unsigned long long)node->nodeid);
-
-      abort();
+      if(f.name_table.use < f.name_table.size / 4)
+        remerge_name();
+      return;
     }
+
+  fatal::abort("mergerfs: unable to unhash node: {}",
+               node->nodeid);
 }
 
 static
@@ -517,6 +502,12 @@ rehash_name()
   for(nodep = &t->array[hash]; *nodep != NULL; nodep = next)
     {
       node_t *node = *nodep;
+      if(node->parent == NULL)
+        {
+          next = &node->name_next;
+          continue;
+        }
+
       size_t newhash = name_hash(node->parent->nodeid,node->name);
 
       if(newhash != hash)
@@ -542,8 +533,15 @@ hash_name(node_t     *node,
           uint64_t    parentid,
           const char *name)
 {
-  size_t hash = name_hash(parentid,name);
-  node_t *parent = get_node(parentid);
+  size_t  hash;
+  node_t *parent;
+
+  hash   = name_hash(parentid,name);
+  parent = get_node(parentid);
+
+  if(parent == NULL)
+    return -1;
+
   node->name = strdup(name);
   if(node->name == NULL)
     return -1;
@@ -634,12 +632,18 @@ find_node(uint64_t    parent,
           const char *name)
 {
   node_t *node;
+  mutex_lockguard(f.lock);
 
-  mutex_lock(f.lock);
   if(!name)
-    node = get_node(parent);
+    {
+      node = get_node(parent);
+      if(node == NULL)
+        goto out_err;
+    }
   else
-    node = lookup_node(parent,name);
+    {
+      node = lookup_node(parent,name);
+    }
 
   if(node == NULL)
     {
@@ -664,8 +668,8 @@ find_node(uint64_t    parent,
       remove_remembered_node(node);
     }
   inc_nlookup(node);
+
  out_err:
-  mutex_unlock(f.lock);
   return node;
 }
 
@@ -723,8 +727,11 @@ unlock_path(uint64_t  nodeid,
       wnode->treelock = 0;
     }
 
-  for(node = get_node(nodeid);
-      node != end && node->nodeid != FUSE_ROOT_ID;
+  node = get_node(nodeid);
+  if(node == NULL)
+    return;
+
+  for(;node != end && node->nodeid != FUSE_ROOT_ID;
       node = node->parent)
     {
       assert(node->treelock != 0);
@@ -794,7 +801,14 @@ try_get_path(uint64_t      nodeid,
         }
     }
 
-  for(node = get_node(nodeid); node->nodeid != FUSE_ROOT_ID; node = node->parent)
+  node = get_node(nodeid);
+  if(node == NULL)
+    {
+      err = -ESTALE;
+      goto out_unlock;
+    }
+
+  for(; node->nodeid != FUSE_ROOT_ID; node = node->parent)
     {
       err = -ESTALE;
       if(node->name == NULL || node->parent == NULL)
@@ -874,7 +888,8 @@ queue_element_wakeup(struct lock_queue_element *qe)
   if(!qe->path1)
     {
       /* Just waiting for it to be unlocked */
-      if(get_node(qe->nodeid1)->treelock == 0)
+      node_t *qnode = get_node(qe->nodeid1);
+      if(qnode && (qnode->treelock == 0))
         pthread_cond_signal(&qe->cond);
 
       return;
@@ -1102,8 +1117,11 @@ forget_node(const uint64_t nodeid,
   if(nodeid == FUSE_ROOT_ID)
     return;
 
-  mutex_lock(f.lock);
+  mutex_lockguard(f.lock);
+
   node = get_node(nodeid);
+  if(node == NULL)
+    return;
 
   /*
    * Node may still be locked due to interrupt idiocy in open,
@@ -1142,8 +1160,6 @@ forget_node(const uint64_t nodeid,
 
       kv_push(remembered_node_t,f.remembered_nodes,fn);
     }
-
-  mutex_unlock(f.lock);
 }
 
 static
@@ -1352,29 +1368,34 @@ fuse_lib_lookup(fuse_req_t            *req_,
       if(name[1] == '\0')
         {
           name = NULL;
-          mutex_lock(f.lock);
-          dot = get_node_nocheck(nodeid);
+          mutex_lockguard(f.lock);
+          dot = get_node(nodeid);
           if(dot == NULL)
             {
-              mutex_unlock(f.lock);
               reply_entry(req_,&e,-ESTALE);
               return;
             }
           dot->refctr++;
-          mutex_unlock(f.lock);
         }
       else if((name[1] == '.') && (name[2] == '\0'))
         {
-          if(nodeid == 1)
+          if(nodeid == FUSE_ROOT_ID)
             {
               reply_entry(req_,&e,-ENOENT);
               return;
             }
 
           name = NULL;
-          mutex_lock(f.lock);
-          nodeid = get_node(nodeid)->parent->nodeid;
-          mutex_unlock(f.lock);
+          mutex_lockguard(f.lock);
+          {
+            node_t *pnode = get_node(nodeid);
+            if((pnode == NULL) || (pnode->parent == NULL))
+              {
+                reply_entry(req_,&e,-ESTALE);
+                return;
+              }
+            nodeid = pnode->parent->nodeid;
+          }
         }
     }
 
@@ -1475,19 +1496,28 @@ fuse_lib_getattr(fuse_req_t            *req_,
 
   if(!err)
     {
-      err = ((fusepath != NULL) ?
-             f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts) :
-             f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts));
+      if(fusepath != NULL)
+        err = f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts);
+      else if(fh != 0)
+        err = f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts);
+      else
+        err = -ENOENT;
 
       free_path(hdr_->nodeid,fusepath);
     }
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node = get_node(hdr_->nodeid);
-      update_stat(node,&buf);
-      mutex_unlock(f.lock);
+      {
+        mutex_lockguard(f.lock);
+        node = get_node(hdr_->nodeid);
+        if(node == NULL)
+          {
+            fuse_reply_err(req_,ESTALE);
+            return;
+          }
+        update_stat(node,&buf);
+      }
       set_stat(hdr_->nodeid,&buf);
       fuse_reply_attr(req_,&buf,timeouts.attr);
     }
@@ -1653,9 +1683,15 @@ fuse_lib_setattr(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      update_stat(get_node(hdr_->nodeid),&stbuf);
-      mutex_unlock(f.lock);
+      {
+        node_t *node;
+        mutex_lockguard(f.lock);
+
+        node = get_node(hdr_->nodeid);
+        if(node)
+          update_stat(node,&stbuf);
+      }
+
       set_stat(hdr_->nodeid,&stbuf);
       fuse_reply_attr(req_,&stbuf,timeouts.attr);
     }
@@ -1743,19 +1779,18 @@ fuse_lib_mknod(fuse_req_t            *req_,
       err = -ENOSYS;
       if(S_ISREG(arg->mode))
         {
-          fuse_file_info_t fi;
+          fuse_file_info_t ffi = {};
 
-          memset(&fi,0,sizeof(fi));
-          fi.flags = O_CREAT | O_EXCL | O_WRONLY;
+          ffi.flags = O_CREAT | O_EXCL | O_WRONLY;
           err = f.ops.create(&req_->ctx,
                              &fusepath[1],
                              arg->mode,
-                             &fi);
+                             &ffi);
           if(!err)
             {
-              err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,&fi);
+              err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,&ffi);
               f.ops.release(&req_->ctx,
-                            &fi);
+                            &ffi);
             }
         }
 
@@ -1996,15 +2031,17 @@ fuse_do_release(fuse_req_ctx_t   *req_ctx_,
   f.ops.release(req_ctx_,
                 ffi_);
 
-  mutex_lock(f.lock);
+  mutex_lockguard(f.lock);
   {
     node_t *node;
 
     node = get_node(ino_);
-    assert(node->open_count > 0);
-    node->open_count--;
+    if(node)
+      {
+        assert(node->open_count > 0);
+        node->open_count--;
+      }
   }
-  mutex_unlock(f.lock);
 }
 
 static
@@ -2020,8 +2057,8 @@ fuse_lib_create(fuse_req_t            *req_,
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
 
-  arg     = (fuse_create_in*)fuse_hdr_arg(hdr_);
-  name    = (const char*)PARAM(arg);
+  arg  = (fuse_create_in*)fuse_hdr_arg(hdr_);
+  name = (const char*)PARAM(arg);
 
   ffi.flags = arg->flags;
 
@@ -2033,7 +2070,15 @@ fuse_lib_create(fuse_req_t            *req_,
   // opportunistically allocate a node so we have a new nodeid for
   // later in the actual create. Added for use with passthrough.
   {
-    node_t *node = find_node(hdr_->nodeid,name);
+    node_t *node;
+
+    node = find_node(hdr_->nodeid,name);
+    if(node == NULL)
+      {
+        fuse_reply_err(req_,ENOMEM);
+        return;
+      }
+
     new_nodeid = node->nodeid;
     req_->ctx.nodeid = new_nodeid;
   }
@@ -2064,7 +2109,9 @@ fuse_lib_create(fuse_req_t            *req_,
   if(!err)
     {
       mutex_lock(f.lock);
-      get_node(e.ino)->open_count++;
+      node_t *node = get_node(e.ino);
+      if(node)
+        node->open_count++;
       mutex_unlock(f.lock);
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
@@ -2097,6 +2144,12 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
   mutex_lock(f.lock);
 
   node = get_node(ino);
+  if(not node)
+    {
+      mutex_unlock(f.lock);
+      return;
+    }
+
   if(node->is_stat_cache_valid)
     {
       int err;
@@ -2133,7 +2186,7 @@ fuse_lib_open(fuse_req_t            *req_,
   fuse_file_info_t ffi = {};
   struct fuse_open_in *arg;
 
-  arg     = (fuse_open_in*)fuse_hdr_arg(hdr_);
+  arg = (fuse_open_in*)fuse_hdr_arg(hdr_);
 
   ffi.flags = arg->flags;
 
@@ -2153,7 +2206,9 @@ fuse_lib_open(fuse_req_t            *req_,
   if(!err)
     {
       mutex_lock(f.lock);
-      get_node(hdr_->nodeid)->open_count++;
+      node_t *node = get_node(hdr_->nodeid);
+      if(node)
+        node->open_count++;
       mutex_unlock(f.lock);
       /* The open syscall was interrupted,so it must be cancelled */
       if(fuse_reply_open(req_,&ffi) == -ENOENT)
@@ -2186,6 +2241,11 @@ fuse_lib_read(fuse_req_t            *req_,
     }
 
   msgbuf = msgbuf_alloc_page_aligned();
+  if(msgbuf == NULL)
+    {
+      fuse_reply_err(req_,ENOMEM);
+      return;
+    }
 
   res = f.ops.read(&req_->ctx,
                    &ffi,
@@ -2259,11 +2319,17 @@ fuse_lib_fsync(fuse_req_t            *req_,
 static
 struct fuse_dh*
 get_dirhandle(const fuse_file_info_t *llfi,
-              fuse_file_info_t       *fi)
+              fuse_file_info_t       *ffi)
 {
   struct fuse_dh *dh = (struct fuse_dh *)(uintptr_t)llfi->fh;
-  memset(fi,0,sizeof(fuse_file_info_t));
-  fi->fh = dh->fh;
+
+  if(dh == NULL)
+    return NULL;
+
+  *ffi = {};
+
+  ffi->fh = dh->fh;
+
   return dh;
 }
 
@@ -2282,14 +2348,21 @@ fuse_lib_opendir(fuse_req_t            *req_,
   arg = (fuse_open_in*)fuse_hdr_arg(hdr_);
   llffi.flags = arg->flags;
 
-  dh = (struct fuse_dh *)calloc(1,sizeof(struct fuse_dh));
+  dh = (fuse_dh*)calloc(1,sizeof(fuse_dh));
   if(dh == NULL)
     {
       fuse_reply_err(req_,ENOMEM);
       return;
     }
 
-  fuse_dirents_init(&dh->d);
+  err = fuse_dirents_init(&dh->d);
+  if(err)
+    {
+      free(dh);
+      fuse_reply_err(req_,ENOMEM);
+      return;
+    }
+
   mutex_init(dh->lock);
 
   llffi.fh = (uintptr_t)dh;
@@ -2312,8 +2385,9 @@ fuse_lib_opendir(fuse_req_t            *req_,
         {
           /* The opendir syscall was interrupted,so it
              must be cancelled */
-          f.ops.releasedir(&req_->ctx,
-                           &ffi);
+          f.ops.releasedir(&req_->ctx,&ffi);
+
+          fuse_dirents_free(&dh->d);
           mutex_destroy(dh->lock);
           free(dh);
         }
@@ -2321,6 +2395,7 @@ fuse_lib_opendir(fuse_req_t            *req_,
   else
     {
       fuse_reply_err(req_,err);
+      fuse_dirents_free(&dh->d);
       mutex_destroy(dh->lock);
       free(dh);
     }
@@ -2371,9 +2446,15 @@ fuse_lib_readdir(fuse_req_t            *req_,
   llffi.fh = arg->fh;
 
   dh = get_dirhandle(&llffi,&ffi);
-  d  = &dh->d;
+  if(not dh)
+    {
+      fuse_reply_err(req_,EBADF);
+      return;
+    }
 
-  mutex_lock(dh->lock);
+  d = &dh->d;
+
+  mutex_lockguard(dh->lock);
 
   rv = 0;
   if((arg->offset == 0) || (kv_size(d->data) == 0))
@@ -2384,17 +2465,17 @@ fuse_lib_readdir(fuse_req_t            *req_,
   if(rv)
     {
       fuse_reply_err(req_,rv);
-      goto out;
+      return;
     }
 
   size = readdir_buf_size(d,size,arg->offset);
 
-  fuse_reply_buf(req_,
-                 readdir_buf(d,arg->offset),
-                 size);
-
- out:
-  mutex_unlock(dh->lock);
+  if(size == 0)
+    fuse_reply_buf(req_,NULL,0);
+  else
+    fuse_reply_buf(req_,
+                   readdir_buf(d,arg->offset),
+                   size);
 }
 
 static
@@ -2415,9 +2496,15 @@ fuse_lib_readdir_plus(fuse_req_t            *req_,
   llffi.fh = arg->fh;
 
   dh = get_dirhandle(&llffi,&ffi);
-  d  = &dh->d;
+  if(not dh)
+    {
+      fuse_reply_err(req_,EBADF);
+      return;
+    }
 
-  mutex_lock(dh->lock);
+  d = &dh->d;
+
+  mutex_lockguard(dh->lock);
 
   rv = 0;
   if((arg->offset == 0) || (kv_size(d->data) == 0))
@@ -2428,17 +2515,17 @@ fuse_lib_readdir_plus(fuse_req_t            *req_,
   if(rv)
     {
       fuse_reply_err(req_,rv);
-      goto out;
+      return;
     }
 
   size = readdir_buf_size(d,size,arg->offset);
 
-  fuse_reply_buf(req_,
-                 readdir_buf(d,arg->offset),
-                 size);
-
- out:
-  mutex_unlock(dh->lock);
+  if(size == 0)
+    fuse_reply_buf(req_,NULL,0);
+  else
+    fuse_reply_buf(req_,
+                   readdir_buf(d,arg->offset),
+                   size);
 }
 
 static
@@ -2447,7 +2534,7 @@ fuse_lib_releasedir(fuse_req_t            *req_,
                     struct fuse_in_header *hdr_)
 {
   struct fuse_dh *dh;
-  fuse_file_info_t ffi;
+  fuse_file_info_t ffi = {};
   fuse_file_info_t llffi = {};
   struct fuse_release_in *arg;
 
@@ -2456,6 +2543,11 @@ fuse_lib_releasedir(fuse_req_t            *req_,
   llffi.flags = arg->flags;
 
   dh = get_dirhandle(&llffi,&ffi);
+  if(not dh)
+    {
+      fuse_reply_err(req_,EBADF);
+      return;
+    }
 
   f.ops.releasedir(&req_->ctx,
                    &ffi);
@@ -2476,7 +2568,8 @@ fuse_lib_fsyncdir(fuse_req_t            *req_,
 {
   int err;
   int is_datasync;
-  fuse_file_info_t ffi;
+  fuse_dh *dh;
+  fuse_file_info_t ffi = {};
   fuse_file_info_t llffi = {};
   struct fuse_fsync_in *arg;
 
@@ -2484,7 +2577,12 @@ fuse_lib_fsyncdir(fuse_req_t            *req_,
   is_datasync = !!(arg->fsync_flags & FUSE_FSYNC_FDATASYNC);
   llffi.fh    = arg->fh;
 
-  get_dirhandle(&llffi,&ffi);
+  dh = get_dirhandle(&llffi,&ffi);
+  if(not dh)
+    {
+      fuse_reply_err(req_,EBADF);
+      return;
+    }
 
   err = f.ops.fsyncdir(&req_->ctx,
                        &ffi,
@@ -2821,7 +2919,9 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   if(!err)
     {
       mutex_lock(f.lock);
-      get_node(e.ino)->open_count++;
+      node_t *node = get_node(e.ino);
+      if(node)
+        node->open_count++;
       mutex_unlock(f.lock);
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
@@ -3007,9 +3107,13 @@ fuse_flush_common(fuse_req_t       *req_,
     {
       flock_to_lock(&lock,&l);
       l.owner = ffi_->lock_owner;
-      mutex_lock(f.lock);
-      locks_insert(get_node(ino_),&l);
-      mutex_unlock(f.lock);
+
+      {
+        mutex_lockguard(f.lock);
+        node_t *n = get_node(ino_);
+        if(n)
+          locks_insert(n,&l);
+      }
 
       /* if op.lock() is defined FLUSH is needed regardless
          of op.flush() */
@@ -3132,11 +3236,15 @@ fuse_lib_getlk(fuse_req_t                  *req_,
 
   flock_to_lock(&flk,&lk);
   lk.owner = ffi.lock_owner;
-  mutex_lock(f.lock);
-  conflict = locks_conflict(get_node(hdr_->nodeid),&lk);
-  if(conflict)
-    lock_to_flock(conflict,&flk);
-  mutex_unlock(f.lock);
+
+  {
+    mutex_lockguard(f.lock);
+    node_t *n = get_node(hdr_->nodeid);
+    conflict = (n ? locks_conflict(n,&lk) : NULL);
+    if(conflict)
+      lock_to_flock(conflict,&flk);
+  }
+
   if(!conflict)
     err = fuse_lock_common(req_,hdr_->nodeid,&ffi,&flk,F_GETLK);
   else
@@ -3156,16 +3264,26 @@ fuse_lib_setlk(fuse_req_t        *req_,
                struct flock     *lock,
                int               sleep)
 {
-  int err = fuse_lock_common(req_,ino,fi,lock,
-                             sleep ? F_SETLKW : F_SETLK);
+  int err;
+
+  err = fuse_lock_common(req_,
+                         ino,
+                         fi,
+                         lock,
+                         sleep ? F_SETLKW : F_SETLK);
   if(!err)
     {
       lock_t l;
+
       flock_to_lock(lock,&l);
       l.owner = fi->lock_owner;
-      mutex_lock(f.lock);
-      locks_insert(get_node(ino),&l);
-      mutex_unlock(f.lock);
+
+      {
+        mutex_lockguard(f.lock);
+        node_t *n = get_node(ino);
+        if(n)
+          locks_insert(n,&l);
+      }
     }
 
   fuse_reply_err(req_,err);
@@ -3223,20 +3341,20 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
 {
   int err;
   char *out_buf = NULL;
-  fuse_file_info_t ffi;
+  fuse_dh *dh;
+  fuse_file_info_t ffi = {};
   fuse_file_info_t llffi = {};
   const void *in_buf;
   uint32_t out_size;
   const struct fuse_ioctl_in *arg;
 
   arg = (fuse_ioctl_in*)fuse_hdr_arg(hdr_);
-  if((arg->flags & FUSE_IOCTL_DIR) && !(req_->conn.want & FUSE_CAP_IOCTL_DIR))
-    {
-      fuse_reply_err(req_,ENOTTY);
-      return;
-    }
 
-  if((sizeof(void*) == 4)              &&
+  err = -EPERM;
+  if(arg->flags & FUSE_IOCTL_UNRESTRICTED)
+    goto err;
+
+  if((sizeof(void*) == 4)           &&
      (req_->conn.proto_minor >= 16) &&
      !(arg->flags & FUSE_IOCTL_32BIT))
     {
@@ -3247,14 +3365,27 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
   out_size = arg->out_size;
   in_buf   = (arg->in_size ? PARAM(arg) : NULL);
 
-  err = -EPERM;
-  if(arg->flags & FUSE_IOCTL_UNRESTRICTED)
-    goto err;
-
   if(arg->flags & FUSE_IOCTL_DIR)
-    get_dirhandle(&llffi,&ffi);
+    {
+      dh = get_dirhandle(&llffi,&ffi);
+      if(not dh)
+        {
+          err = -EBADF;
+          goto err;
+        }
+    }
   else
-    ffi = llffi;
+    {
+      ffi = llffi;
+    }
+
+  if((arg->in_size > 0) &&
+     (out_size > 0)     &&
+     (arg->in_size != out_size))
+    {
+      err = -EINVAL;
+      goto err;
+    }
 
   if(out_size)
     {
@@ -3262,28 +3393,27 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
       out_buf = (char*)malloc(out_size);
       if(!out_buf)
         goto err;
+      DEFER { free(out_buf); };
     }
 
-  assert(!arg->in_size || !out_size || arg->in_size == out_size);
-  if(out_buf && in_buf)
-    memcpy(out_buf,in_buf,arg->in_size);
+  if(in_buf && out_buf)
+    memcpy(out_buf,in_buf,out_size);
 
   err = f.ops.ioctl(&req_->ctx,
                     &ffi,
                     arg->cmd,
                     (void*)(uintptr_t)arg->arg,
                     arg->flags,
-                    out_buf ?: (void *)in_buf,
+                    out_buf ? out_buf : (void*)in_buf,
                     &out_size);
   if(err < 0)
     goto err;
 
   fuse_reply_ioctl(req_,err,out_buf,out_size);
-  goto out;
+  return;
+
  err:
   fuse_reply_err(req_,err);
- out:
-  free(out_buf);
 }
 
 static
@@ -3351,7 +3481,11 @@ remembered_node_cmp(const void *a_,
   const remembered_node_t *a = (const remembered_node_t*)a_;
   const remembered_node_t *b = (const remembered_node_t*)b_;
 
-  return (a->time - b->time);
+  if(a->time < b->time)
+    return -1;
+  if(a->time > b->time)
+    return 1;
+  return 0;
 }
 
 static
@@ -3605,7 +3739,10 @@ metrics_log_nodes_info_to_tmp_dir(struct fuse *f_)
   struct stat st;
   char const *mode = "a";
 
-  sprintf(filepath,"/tmp/mergerfs.%d.info",getpid());
+  snprintf(filepath,
+           sizeof(filepath),
+           "/tmp/mergerfs.%d.info",
+           getpid());
 
   rv = lstat(filepath,&st);
   if((rv == 0) && (st.st_size > INFO_FILE_MAX_SIZE))
@@ -3724,7 +3861,7 @@ fuse_new(int                           fd_,
       llop.setlk = NULL;
     }
 
-  f.se = fuse_lowlevel_new_common(args,&llop,sizeof(llop),&f);
+  f.se = fuse_lowlevel_new_common(args,&llop,sizeof(llop));
   if(f.se == NULL)
     goto out_free_fs;
 
@@ -3749,11 +3886,11 @@ fuse_new(int                           fd_,
   root = node_alloc();
   if(root == NULL)
     {
-      fprintf(stderr,"fuse: memory allocation failed\n");
+      fprintf(stderr,"mergerfs: root node alloc failed\n");
       goto out_free_id_table;
     }
 
-  root->name = strdup("/");
+  root->name = xstrdup("/");
 
   root->parent = NULL;
   root->nodeid = FUSE_ROOT_ID;
