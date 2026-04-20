@@ -217,7 +217,8 @@ config file.
   representation of a file once the OS tells mergerfs it is no longer
   needed. Really only needed for [exporting mergerfs via
   NFS](../remote_filesystems.md) (default: 0)
-* **noforget**: Effectively sets `remember-nodes` to infinity.
+* **never-forget-nodes=BOOL**: Sets `remember-nodes` to
+  infinity. Formerly `noforget`. (default: false)
 * **allow-idmap=BOOL**: Enables idmap (identity mapping). (default:
   true)
 * **debug**: Enable debugging information. At the moment limited to a
