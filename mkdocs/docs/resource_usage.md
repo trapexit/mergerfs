@@ -12,7 +12,7 @@
       depending on [fuse-msg-size](config/fuse-msg-size.md)
     * buffers allocated temporarily for reading directories
     * FUSE nodes
-    * noforget forgotten nodes
+    * never-forget-nodes=true nodes
 
 
 ## Management

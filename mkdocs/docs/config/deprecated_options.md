@@ -7,14 +7,15 @@ function or have been replaced. **They should not be used.**
   automatically if running as root.
 * **async_read**: Use `async-read=true`.
 * **atomic_o_trunc**: Does nothing.
-* **big_writes**: Does nothing.
 * **attr_timeout**: Use [cache.attr](cache.md).
 * **auto_cache**: Use [cache.files=auto-full](cache.md).
+* **big_writes**: Does nothing.
 * **direct_io**: Use [cache.files=off](cache.md).
 * **entry_timeout**: Use [cache.entry](cache.md).
 * **hard_remove**: Does nothing.
 * **kernel_cache**: Use [cache.files=full](cache.md).
 * **negative_entry**: Use [cache.negative-entry](cache.md).
+* **noforget**: Use `never-forget-nodes`.
 * **nonempty**: Does nothing.
 * **splice_move**: Does nothing.
 * **splice_read**: Does nothing.
