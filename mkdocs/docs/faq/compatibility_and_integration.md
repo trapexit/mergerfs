@@ -151,11 +151,13 @@ given the complication it introduces.
 
 ## Can mergerfs be used with NFS root squash?
 
-If mergerfs is pooling a NFS mount then root squash should be disabled
+If mergerfs is pooling a NFS mount then root squash must be disabled
 as mergerfs needs to be able to have elevated privileges to do what it
-does.
+does (set permissions, ownership, etc.)
 
-If you are exporting mergerfs over NFS then it is not really necessary.
+If you are exporting mergerfs over NFS it is not strictly necessary to
+disable root squashing but 3rd party software running as root may
+fail.
 
 See the [section on remote filesystems.](../remote_filesystems.md)
 

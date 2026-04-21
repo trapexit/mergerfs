@@ -120,11 +120,11 @@ value. An easy way to generate a random value is to use the command
 line tool `uuid` or `uuidgen` or through a website such as
 [uuidgenerator.net](https://www.uuidgenerator.net/).
 
-`no_root_squash` is required for the same reason mergerfs needs to run
-as `root`. Certain behaviors of mergerfs require control over the
-filesystem that only `root` can perform. If squashing is enabled, or
-mergerfs was running as non-root, it would be unable to perform
-certain function and you will receive permission errors.
+`no_root_squash` is not *technically* required but suggested. If NFS
+is root squashing then any request that an app running as root makes
+will show up as a different user to mergerfs. This is perfectly fine
+so long as the client software using NFS are not running as root and
+expect to have root like privileges.
 
 
 ## SMB / CIFS

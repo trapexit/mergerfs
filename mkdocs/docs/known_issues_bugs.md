@@ -29,14 +29,27 @@
 
 #### Host vs Container identity
 
-While not a bug some users have found when using containers that
+While **not** a bug some users have found when using containers that
 supplemental groups defined inside the container don't work as
-expected. Since mergerfs lives outside the container it is querying
-the host's group database. Containers have their own user and group
-definitions unless setup otherwise just as different systems would.
+expected. Since mergerfs (typically) lives outside the container it is
+querying the host's supplemental group database. Containers have their
+own user and group definitions unless setup otherwise just as
+different systems would.
 
 Users should mount in the host group file into the containers or use a
 standard shared user and groups technology like NIS or LDAP.
+
+If using Docker or Podman containers with mergerfs running outside
+then you can pass in `/etc/passwd` and `/etc/group`.
+
+```
+docker run \
+  -v /etc/passwd:/etc/passwd:ro \
+  -v /etc/group:/etc/group:ro \
+  -u $(id -u):$(id -g) \
+  -v /data:/data \
+  containerimage
+```
 
 
 ### directory mtime is not being updated
