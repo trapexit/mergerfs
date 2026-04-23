@@ -20,6 +20,7 @@
 
 #include "fs_close.hpp"
 #include "fs_copyfile.hpp"
+#include "fs_is_same_file.hpp"
 #include "fs_lchmod.hpp"
 #include "fs_lchown.hpp"
 #include "fs_lgetxattr.hpp"
@@ -246,9 +247,9 @@ _copy_files(const std::string &src_,
     {
       int rv;
 
-      // TODO: Additional protection to confirm not the literal same
-      // file. fs::is_same_file(src,dst);
       if(src_ == dst.path)
+        continue;
+      if(fs::is_same_file(src_,dst.path) == 1)
         continue;
 
       rv = fs::copyfile(src_,dst.path,{.cleanup_failure=false});
