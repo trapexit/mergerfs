@@ -30,7 +30,7 @@
 #include <string.h>
 
 
-constexpr static const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
+constexpr const char CACHE_FILES_PROCESS_NAMES_DEFAULT[] =
   "rtorrent|"
   "qbittorrent-nox";
 
