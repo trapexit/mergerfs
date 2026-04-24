@@ -1734,7 +1734,8 @@ fuse_debug_entry_open_out(const uint64_t               unique_,
 
 void
 fuse_debug_readlink(const uint64_t  unique_,
-                    const char     *linkname_)
+                    const char     *linkname_,
+                    const size_t    linkname_len_)
 {
   auto output = fuse_cfg.log_file();
 
@@ -1748,8 +1749,8 @@ fuse_debug_readlink(const uint64_t  unique_,
              "\n",
              _timestamp_ns(),
              unique_,
-             (sizeof(struct fuse_out_header) + strlen(linkname_)),
-             _quoted(linkname_));
+             (sizeof(struct fuse_out_header) + linkname_len_),
+             _quoted(linkname_,linkname_len_));
 }
 
 void

@@ -241,7 +241,9 @@ int fuse_reply_statx(fuse_req_t        *req,
  * @param link symbolic link contents
  * @return zero for success, -errno for failure to send reply
  */
-int fuse_reply_readlink(fuse_req_t *req, const char *link);
+int fuse_reply_readlink(fuse_req_t   *req,
+                        const char   *linkname,
+                        const size_t  linkname_len);
 
 /**
  * Reply with open parameters

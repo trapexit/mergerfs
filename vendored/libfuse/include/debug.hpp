@@ -43,7 +43,8 @@ void fuse_debug_entry_open_out(const uint64_t               unique,
                                const struct fuse_entry_out *earg,
                                const struct fuse_open_out  *oarg);
 void fuse_debug_readlink(const uint64_t  unique,
-                         const char     *linkname);
+                         const char     *linkname,
+                         const size_t    linkname_len);
 void fuse_debug_write_out(const uint64_t               unique,
                           const struct fuse_write_out *arg);
 void fuse_debug_statfs_out(const uint64_t                unique,
