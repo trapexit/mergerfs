@@ -1729,29 +1729,24 @@ void
 fuse_lib_readlink(fuse_req_t            *req_,
                   struct fuse_in_header *hdr_)
 {
-  int err;
+  ssize_t rv;
   char *fusepath;
   char linkname[PATH_MAX + 1];
 
-  err = get_path(hdr_->nodeid,&fusepath);
-  if(!err)
+  rv = get_path(hdr_->nodeid,&fusepath);
+  if(!rv)
     {
-      err = f.ops.readlink(&req_->ctx,
-                           &fusepath[1],
-                           linkname,
-                           sizeof(linkname));
+      rv = f.ops.readlink(&req_->ctx,
+                          &fusepath[1],
+                          linkname,
+                          sizeof(linkname));
       free_path(hdr_->nodeid,fusepath);
     }
 
-  if(!err)
-    {
-      linkname[PATH_MAX] = '\0';
-      fuse_reply_readlink(req_,linkname);
-    }
+  if(rv >= 0)
+    fuse_reply_readlink(req_,linkname,rv);
   else
-    {
-      fuse_reply_err(req_,err);
-    }
+    fuse_reply_err(req_,rv);
 }
 
 static

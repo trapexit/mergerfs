@@ -357,16 +357,17 @@ fuse_reply_statx(fuse_req_t        *req_,
 }
 
 int
-fuse_reply_readlink(fuse_req_t *req,
-                    const char *linkname)
+fuse_reply_readlink(fuse_req_t   *req,
+                    const char   *linkname,
+                    const size_t  linkname_len)
 {
   if(not linkname)
     return fuse_reply_err(req,EIO);
 
   if(fuse_cfg.debug)
-    fuse_debug_readlink(req->ctx.unique,linkname);
+    fuse_debug_readlink(req->ctx.unique,linkname,linkname_len);
 
-  return send_reply_ok(req, linkname, strlen(linkname));
+  return send_reply_ok(req,linkname,linkname_len);
 }
 
 int

@@ -25,7 +25,7 @@
 
 namespace FUSE
 {
-  int
+  ssize_t
   readlink(const fuse_req_ctx_t *ctx,
            const char           *fusepath,
            char                 *buf,

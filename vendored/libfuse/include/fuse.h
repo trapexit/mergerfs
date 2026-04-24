@@ -70,10 +70,10 @@ struct fuse_operations
                  const char *,
                  struct stat *,
                  fuse_timeouts_t *);
-  int (*readlink)(const fuse_req_ctx_t *,
-                  const char *,
-                  char *,
-                  size_t);
+  ssize_t (*readlink)(const fuse_req_ctx_t *,
+                      const char *,
+                      char *,
+                      size_t);
   int (*mknod)(const fuse_req_ctx_t *,
                const char *,
                mode_t,
