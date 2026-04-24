@@ -10,6 +10,12 @@ mike deploy --push "latest" "master" --ignore-remote-status
 
 for tag in $(git tag -l | sort --version-sort --reverse)
 do
+    case "${tag}" in
+        *-rc*)
+            continue
+            ;;
+    esac
+
     if git ls-tree -r --name-only "${tag}" | grep -q 'mkdocs.yml'; then
         git checkout "${tag}"
         mike deploy --push "${tag}" --ignore-remote-status
