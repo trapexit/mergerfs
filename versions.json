@@ -5,5 +5,10 @@
     "aliases": [
       "master"
     ]
+  },
+  {
+    "version": "2.41.1",
+    "title": "2.41.1",
+    "aliases": []
   }
 ]
