@@ -27,6 +27,7 @@
 #include "fs_pwrite.hpp"
 #include "fs_pwriten.hpp"
 #include "ioprio.hpp"
+#include "state.hpp"
 
 #include "scope_guard/scope_guard.hpp"
 
@@ -160,14 +161,15 @@ _write_cached(const char   *buf_,
 
 static
 int
-_write(const fuse_file_info_t *ffi_,
+_write(const fuse_req_ctx_t   *ctx_,
+       const fuse_file_info_t *ffi_,
        const char             *buf_,
        const size_t            count_,
        const off_t             offset_)
 {
   FileInfo *fi;
 
-  fi = FileInfo::from_fh(ffi_->fh);
+  fi = state.get_fi(ctx_,ffi_->fh);
   if(not fi)
     return -EBADF;
 
@@ -180,8 +182,7 @@ _write(const fuse_file_info_t *ffi_,
   // could change the move file behavior to use a known target file
   // and have threads use O_EXCL and back off and wait for the
   // transfer to complete before retrying.
-  mutex_lock(fi->mutex);
-  DEFER { mutex_unlock(fi->mutex); };
+  mutex_lockguard(fi->mutex);
 
   if(fi->direct_io)
     return ::_write_direct_io(buf_,count_,offset_,fi);
@@ -198,7 +199,7 @@ FUSE::write(const fuse_req_ctx_t   *ctx_,
 {
   ioprio::SetFrom iop(ctx_->pid);
 
-  return ::_write(ffi_,buf_,count_,offset_);
+  return ::_write(ctx_,ffi_,buf_,count_,offset_);
 }
 
 int

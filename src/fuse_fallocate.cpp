@@ -41,6 +41,13 @@ _fallocate(const int   fd_,
   return rv;
 }
 
+// In cases where the node was opened but unlinked there will be no
+// path and no guarentee of a `fh`. It could always do the lookup but
+// why bother if the kernel has provided it to us? The reason the
+// function doesn't need to run within the visit lambda is because
+// since the request is outstanding the kernel won't be releasing the
+// node and therefore the entry will be valid over the lifetime of
+// this function.
 int
 FUSE::fallocate(const fuse_req_ctx_t *ctx_,
                 cu64                  fh_,
@@ -48,8 +55,9 @@ FUSE::fallocate(const fuse_req_ctx_t *ctx_,
                 off_t                 offset_,
                 off_t                 len_)
 {
-  FileInfo *fi = FileInfo::from_fh(fh_);
+  FileInfo *fi;
 
+  fi = state.get_fi(ctx_,fh_);
   if(not fi)
     return -EBADF;
 

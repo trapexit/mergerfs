@@ -114,8 +114,9 @@ _ioctl_file(const fuse_req_ctx_t   *ctx_,
             void                   *data_,
             u32                    *out_bufsz_)
 {
-  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+  FileInfo *fi;
 
+  fi = state.get_fi(ctx_,ffi_->fh);
   if(not fi)
     return -EBADF;
 

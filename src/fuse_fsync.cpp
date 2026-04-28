@@ -22,6 +22,7 @@
 #include "fileinfo.hpp"
 #include "fs_fdatasync.hpp"
 #include "fs_fsync.hpp"
+#include "state.hpp"
 #include "to_neg_errno.hpp"
 
 #include "fuse.h"
@@ -44,13 +45,21 @@ _fsync(const int fd_,
   return ::to_neg_errno(rv);
 }
 
+// In cases where the node was opened but unlinked there will be no
+// path and no guarentee of a `fh`. It could always do the lookup but
+// why bother if the kernel has provided it to us? The reason the
+// function doesn't need to run within the visit lambda is because
+// since the request is outstanding the kernel won't be releasing the
+// node and therefore the entry will be valid over the lifetime of
+// this function.
 int
 FUSE::fsync(const fuse_req_ctx_t *ctx_,
-            cu64                   fh_,
-            int                    isdatasync_)
+            cu64                  fh_,
+            int                   isdatasync_)
 {
-  FileInfo *fi = FileInfo::from_fh(fh_);
+  FileInfo *fi;
 
+  fi = state.get_fi(ctx_,fh_);
   if(not fi)
     return -EBADF;
 

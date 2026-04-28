@@ -22,6 +22,7 @@
 #include "fileinfo.hpp"
 #include "fs_pread.hpp"
 #include "ioprio.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -65,8 +66,9 @@ FUSE::read(const fuse_req_ctx_t   *ctx_,
            off_t                   offset_)
 {
   ioprio::SetFrom iop(ctx_->pid);
-  FileInfo *fi = FileInfo::from_fh(ffi_->fh);
+  FileInfo *fi;
 
+  fi = state.get_fi(ctx_,ffi_->fh);
   if(not fi)
     return -EBADF;
 

@@ -263,8 +263,9 @@ FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
                fuse_timeouts_t      *timeout_)
 {
   int rv;
-  FileInfo *fi = FileInfo::from_fh(fh_);
+  FileInfo *fi;
 
+  fi = state.get_fi(ctx_,fh_);
   if(not fi)
     return -EBADF;
 

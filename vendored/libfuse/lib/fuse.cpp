@@ -1498,10 +1498,8 @@ fuse_lib_getattr(fuse_req_t            *req_,
     {
       if(fusepath != NULL)
         err = f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts);
-      else if(fh != 0)
-        err = f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts);
       else
-        err = -ENOENT;
+        err = f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts);
 
       free_path(hdr_->nodeid,fusepath);
     }
@@ -1538,20 +1536,29 @@ fuse_lib_statx_path(fuse_req_t            *req_,
   struct fuse_statx st{};
   fuse_timeouts_t timeouts{};
 
-  // TODO: if node unlinked... but FUSE may not send it
   err = get_path(hdr_->nodeid,&fusepath);
+  if(err == -ESTALE)
+    err = 0;
   if(err)
     {
       fuse_reply_err(req_,err);
       return;
     }
 
-  err = f.ops.statx(&req_->ctx,
-                    &fusepath[1],
-                    inarg_->sx_flags,
-                    inarg_->sx_mask,
-                    &st,
-                    &timeouts);
+  if(fusepath != NULL)
+    err = f.ops.statx(&req_->ctx,
+                      &fusepath[1],
+                      inarg_->sx_flags,
+                      inarg_->sx_mask,
+                      &st,
+                      &timeouts);
+  else
+    err = f.ops.statx_fh(&req_->ctx,
+                         0,
+                         inarg_->sx_flags,
+                         inarg_->sx_mask,
+                         &st,
+                         &timeouts);
 
   free_path(hdr_->nodeid,fusepath);
 
