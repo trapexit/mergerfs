@@ -46,7 +46,13 @@ _fgetattr(const FileInfo  *fi_,
   return rv;
 }
 
-
+// In cases where the node was opened but unlinked there will be no
+// path and no guarentee of a `fh`. It could always do the lookup but
+// why bother if the kernel has provided it to us? The reason the
+// function doesn't need to run within the visit lambda is because
+// since the request is outstanding the kernel won't be releasing the
+// node and therefore the entry will be valid over the lifetime of
+// this function.
 int
 FUSE::fgetattr(const fuse_req_ctx_t *ctx_,
                cu64                  fh_,
@@ -54,13 +60,11 @@ FUSE::fgetattr(const fuse_req_ctx_t *ctx_,
                fuse_timeouts_t      *timeout_)
 {
   int rv;
-  FileInfo *fi = FileInfo::from_fh(fh_);
+  FileInfo *fi;
 
+  fi = state.get_fi(ctx_,fh_);
   if(not fi)
-    {
-      timeout_->entry = cfg.cache_negative_entry;
-      return -EBADF;
-    }
+    return -EBADF;
 
   rv = ::_fgetattr(fi,st_);
 

@@ -116,6 +116,24 @@ public:
   };
 
 public:
+  FileInfo*
+  get_fi(const fuse_req_ctx_t *ctx_,
+         cu64                  fh_) const
+  {
+    FileInfo *fi;
+
+    fi = FileInfo::from_fh(fh_);
+    if(not fi)
+      open_files.cvisit(ctx_->nodeid,
+                        [&](auto &v_)
+                        {
+                          fi = v_.second.fi;
+                        });
+
+    return fi;
+  }
+
+public:
   struct GetSet
   {
     std::function<std::string()> get;

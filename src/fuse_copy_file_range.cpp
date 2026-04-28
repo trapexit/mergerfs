@@ -21,6 +21,7 @@
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_copy_file_range.hpp"
+#include "state.hpp"
 
 #include "fuse.h"
 
@@ -57,11 +58,14 @@ FUSE::copy_file_range(const fuse_req_ctx_t   *ctx_,
                       const size_t            size_,
                       const unsigned int      flags_)
 {
-  FileInfo *src_fi = FileInfo::from_fh(src_ffi_->fh);
-  FileInfo *dst_fi = FileInfo::from_fh(dst_ffi_->fh);
+  FileInfo *src_fi;
+  FileInfo *dst_fi;
 
+  src_fi = state.get_fi(ctx_,src_ffi_->fh);
   if(not src_fi)
     return -EBADF;
+
+  dst_fi = state.get_fi(ctx_,dst_ffi_->fh);
   if(not dst_fi)
     return -EBADF;
 
