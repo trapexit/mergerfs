@@ -2,7 +2,6 @@
 
 import os
 import sys
-import tempfile
 
 from posix_parity import cleanup_dir
 from posix_parity import fail
@@ -12,6 +11,42 @@ from posix_parity import mergerfs_get_option
 from posix_parity import mergerfs_set_option
 from posix_parity import temp_dir
 from posix_parity import touch
+
+
+SKIP = 77
+
+
+def used_percent(path):
+    st = os.statvfs(path)
+    if st.f_blocks == 0:
+        return 1.0
+    used = st.f_blocks - st.f_bfree
+    return used / st.f_blocks
+
+
+def branch_for_fullpath(branches, fullpath):
+    fullpath = os.path.realpath(fullpath)
+    for branch in branches:
+        branch = os.path.realpath(branch)
+        try:
+            common = os.path.commonpath([branch, fullpath])
+        except ValueError:
+            continue
+        if common == branch:
+            return branch
+    return None
+
+
+def least_used_branches(branches, rel_dir):
+    scored = []
+    for branch in branches:
+        path = join(branch, rel_dir)
+        if os.path.isdir(path):
+            scored.append((used_percent(path), os.path.realpath(branch)))
+    if not scored:
+        return set()
+    min_used = min(score for score, _ in scored)
+    return {branch for score, branch in scored if score == min_used}
 
 
 def main():
@@ -24,38 +59,53 @@ def main():
     try:
         orig_create = mergerfs_get_option(mount, "func.create")
     except (PermissionError, FileNotFoundError, OSError):
-        return 0
+        print("LUP create policy option unavailable", end="")
+        return SKIP
 
     try:
         orig_search = mergerfs_get_option(mount, "func.search")
     except (PermissionError, FileNotFoundError, OSError):
-        return 0
+        print("LUP search policy option unavailable", end="")
+        return SKIP
 
-    try:
-        orig_action = mergerfs_get_option(mount, "func.action")
-    except (PermissionError, FileNotFoundError, OSError):
-        return 0
+    branches = mergerfs_branches(mount)
+    if len(branches) < 2:
+        print("LUP policy test requires at least 2 branches", end="")
+        return SKIP
 
     merge_base = temp_dir(mount)
+    rel_base = os.path.relpath(merge_base, mount)
 
     try:
+        for branch in branches:
+            os.makedirs(join(branch, rel_base), exist_ok=True)
+
         mergerfs_set_option(mount, "func.create", "lup")
         mergerfs_set_option(mount, "func.search", "lup")
 
         path = join(merge_base, "lup_test_file")
+        expected = least_used_branches(branches, rel_base)
         touch(path, b"lup create test")
         if not os.path.exists(path):
             return fail("LUP create: file not created")
 
-        fullpath = os.getxattr(path, "user.mergerfs.fullpath")
+        fullpath = os.getxattr(path, "user.mergerfs.fullpath").decode()
         if not fullpath:
             return fail("LUP create: no fullpath attribute")
+        actual = branch_for_fullpath(branches, fullpath)
+        if actual not in expected:
+            return fail(f"LUP create: selected {actual}, expected one of {sorted(expected)}")
 
         path2 = join(merge_base, "lup_test_file2")
-        touch(path2, b"lup search test")
-        fullpath2 = os.getxattr(path2, "user.mergerfs.fullpath")
+        for branch in branches:
+            touch(join(branch, rel_base, "lup_test_file2"), b"lup search test")
+        expected = least_used_branches(branches, rel_base)
+        fullpath2 = os.getxattr(path2, "user.mergerfs.fullpath").decode()
         if not fullpath2:
             return fail("LUP search: no fullpath attribute")
+        actual = branch_for_fullpath(branches, fullpath2)
+        if actual not in expected:
+            return fail(f"LUP search: selected {actual}, expected one of {sorted(expected)}")
 
         mergerfs_set_option(mount, "func.create", orig_create)
         mergerfs_set_option(mount, "func.search", orig_search)
@@ -67,6 +117,8 @@ def main():
         return fail(str(exc))
     finally:
         cleanup_dir(merge_base)
+        for branch in branches:
+            cleanup_dir(join(branch, rel_base))
 
 
 if __name__ == "__main__":

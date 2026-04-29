@@ -1227,7 +1227,7 @@ test_branches_global_minfreespace_live_tracking()
 {
   Branches b;
 
-  b.from_string("/tmp/a");
+  TEST_CHECK(b.from_string("/tmp/a") == 0);
 
   // Branch uses pointer to Branches::minfreespace — tracks it live
   uint64_t initial = b.minfreespace;
@@ -1408,6 +1408,12 @@ test_config_nfsopenhack()
 void
 test_config_readdir()
 {
+  Config cfg;
+
+  TEST_CHECK(cfg.has_key("func.readdir") == true);
+
+  const auto &map = cfg.get_map();
+  TEST_CHECK(map.count("func.readdir") > 0);
 }
 
 void
@@ -3470,7 +3476,7 @@ test_rnd_rand64_basic()
 {
   u64 v1 = RND::rand64();
   u64 v2 = RND::rand64();
-  TEST_CHECK(v1 != v2 || true);
+  TEST_CHECK(v1 != v2);
 }
 
 void

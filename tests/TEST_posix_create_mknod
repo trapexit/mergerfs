@@ -53,6 +53,7 @@ def main():
                 "create EEXIST",
                 lambda: os.open(merge_exist, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o640),
                 lambda: os.open(native_exist, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o640),
+                close_fds=True,
             )
             if err:
                 return fail(err)

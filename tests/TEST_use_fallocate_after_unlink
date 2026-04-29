@@ -4,12 +4,32 @@ import os
 import sys
 import tempfile
 
-(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.posix_fallocate(fd,0,1024)
+def main():
+    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(filepath)
+    os.posix_fallocate(fd, 0, 1024)
 
-os.posix_fallocate(fd,0,1024)
+    st1 = os.fstat(fd)
+    if st1.st_size < 1024:
+        os.close(fd)
+        os.unlink(filepath)
+        print("fallocate before unlink: expected size >= 1024, got {}".format(st1.st_size), end='')
+        return 1
 
-os.close(fd)
+    os.unlink(filepath)
+
+    os.posix_fallocate(fd, 1024, 2048)
+
+    st2 = os.fstat(fd)
+    if st2.st_size < 1024 + 2048:
+        os.close(fd)
+        print("fallocate after unlink: expected size >= 3072, got {}".format(st2.st_size), end='')
+        return 1
+
+    os.close(fd)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

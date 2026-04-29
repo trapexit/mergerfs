@@ -40,8 +40,8 @@ def main():
             try:
                 os.lseek(mfd, 0, os.SEEK_END)
                 os.lseek(nfd, 0, os.SEEK_END)
-                os.write(mfd, b"-merge")
-                os.write(nfd, b"-native")
+                os.write(mfd, b"-appended")
+                os.write(nfd, b"-appended")
 
                 err = compare_calls("fsync file", lambda: os.fsync(mfd), lambda: os.fsync(nfd))
                 if err:
@@ -72,8 +72,8 @@ def main():
             with open(merge_file, "rb") as mf, open(native_file, "rb") as nf:
                 mdata = mf.read()
                 ndata = nf.read()
-            if not (mdata.startswith(b"abc") and ndata.startswith(b"abc")):
-                return fail(f"flush content prefix mismatch mergerfs={mdata!r} native={ndata!r}")
+            if mdata != ndata:
+                return fail(f"flush content mismatch mergerfs={mdata!r} native={ndata!r}")
 
             return 0
         finally:

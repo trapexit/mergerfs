@@ -39,7 +39,7 @@ def main():
 
         try:
             orig = mergerfs_get_option(mount, "xattr")
-        except (PermissionError, FileNotFoundError, OSError):
+        except (PermissionError, FileNotFoundError):
             return 0
 
         try:
@@ -48,8 +48,9 @@ def main():
             get_err = get_errno(lambda: os.getxattr(path, xname))
             if set_err != 0:
                 return fail(f"xattr=passthrough setxattr expected success got errno={set_err}")
-            # Current known bug: getxattr may return ENODATA. We still enforce mode switch behavior.
-            if get_err not in (0, errno.ENODATA):
+            if get_err == errno.ENODATA:
+                return fail(f"xattr=passthrough getxattr returned ENODATA (known bug): this masks a parity violation")
+            if get_err != 0:
                 return fail(f"xattr=passthrough getxattr unexpected errno={get_err}")
 
             mergerfs_set_option(mount, "xattr", "noattr")
@@ -59,7 +60,11 @@ def main():
             err = get_errno(lambda: os.setxattr(path, xname, xval))
             if err != errno.ENODATA:
                 return fail(f"xattr=noattr setxattr expected ENODATA got errno={err}")
-        except (PermissionError, FileNotFoundError, OSError):
+
+            # xattr=nosys is intentionally not tested here. It disables the
+            # xattr API, including the runtime interface this test uses to
+            # restore options safely.
+        except (PermissionError, FileNotFoundError):
             return 0
         finally:
             try:

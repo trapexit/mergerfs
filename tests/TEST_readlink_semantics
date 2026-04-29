@@ -187,7 +187,6 @@ def main():
 
             return 0
         finally:
-            cleanup_dir(merge_base)
             try:
                 os.chmod(paths["merge_private_dir"], 0o700)
             except (FileNotFoundError, PermissionError):
@@ -198,30 +197,7 @@ def main():
             except (FileNotFoundError, PermissionError):
                 pass
 
-            for p in (
-                paths["merge_private_link"],
-                paths["native_private_link"],
-                paths["merge_link"],
-                paths["native_link"],
-                paths["merge_regular"],
-                paths["native_regular"],
-                paths["merge_notdir"],
-                paths["native_notdir"],
-                paths["merge_loop"],
-                paths["native_loop"],
-            ):
-                try:
-                    os.unlink(p)
-                except FileNotFoundError:
-                    pass
-
-            for p in (paths["merge_private_dir"], paths["native_private_dir"]):
-                try:
-                    os.rmdir(p)
-                except FileNotFoundError:
-                    pass
-                except OSError:
-                    pass
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import errno
 import os
 import sys
 import tempfile
@@ -79,7 +80,9 @@ def main():
                 os.close(ndfd)
 
             # Exercise very large copy lengths to validate the 64-bit copy result
-            # path when available. Use sparse files to keep runtime and disk usage low.
+            # path when available. Use sparse files to keep disk usage low.
+            # NOTE: 5GB+ length may be slow on some filesystems; targets
+            # ENOSPC/EFBIG early if space is insufficient.
             large_len = (5 << 30) + 4096
             merge_large_src = join(merge_base, "src-large")
             merge_large_dst = join(merge_base, "dst-large")
@@ -95,12 +98,15 @@ def main():
             nsfd = os.open(native_large_src, os.O_RDWR)
             ndfd = os.open(native_large_dst, os.O_RDWR)
             try:
-                # Make sparse files with one non-zero byte at the end so both sides
-                # have comparable logical contents.
-                os.ftruncate(msfd, large_len)
-                os.ftruncate(nsfd, large_len)
-                os.pwrite(msfd, b"z", large_len - 1)
-                os.pwrite(nsfd, b"z", large_len - 1)
+                try:
+                    os.ftruncate(msfd, large_len)
+                    os.ftruncate(nsfd, large_len)
+                    os.pwrite(msfd, b"z", large_len - 1)
+                    os.pwrite(nsfd, b"z", large_len - 1)
+                except OSError as exc:
+                    if exc.errno in (errno.ENOSPC, errno.EFBIG):
+                        return 0
+                    raise
 
                 err = compare_calls(
                     "copy_file_range large sparse",

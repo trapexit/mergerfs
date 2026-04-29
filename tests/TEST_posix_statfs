@@ -14,10 +14,10 @@ from posix_parity import temp_dir
 def statvfs_cmp(lhs, rhs):
     return (
         lhs.f_namemax == rhs.f_namemax
+        and lhs.f_bsize == rhs.f_bsize
+        and lhs.f_frsize == rhs.f_frsize
         and lhs.f_bsize > 0
-        and rhs.f_bsize > 0
         and lhs.f_frsize > 0
-        and rhs.f_frsize > 0
     )
 
 

@@ -4,14 +4,38 @@ import os
 import sys
 import tempfile
 
-atime = 1234
-mtime = 1234
-(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.utime(fd,(atime,mtime))
+def main():
+    atime = 1234
+    mtime = 5678
+    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(filepath)
+    os.utime(fd, (atime, mtime))
 
-os.utime(fd,(atime,mtime))
+    st1 = os.fstat(fd)
+    if st1.st_atime != atime or st1.st_mtime != mtime:
+        os.close(fd)
+        os.unlink(filepath)
+        print("futimens before unlink: expected atime={} mtime={}, got atime={} mtime={}".format(
+            atime, mtime, st1.st_atime, st1.st_mtime), end='')
+        return 1
 
-os.close(fd)
+    os.unlink(filepath)
+
+    atime2 = 9999
+    mtime2 = 8888
+    os.utime(fd, (atime2, mtime2))
+
+    st2 = os.fstat(fd)
+    if st2.st_atime != atime2 or st2.st_mtime != mtime2:
+        os.close(fd)
+        print("futimens after unlink: expected atime={} mtime={}, got atime={} mtime={}".format(
+            atime2, mtime2, st2.st_atime, st2.st_mtime), end='')
+        return 1
+
+    os.close(fd)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

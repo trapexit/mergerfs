@@ -4,13 +4,42 @@ import os
 import sys
 import tempfile
 
-(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-x = os.lstat(filepath)
-x = os.fstat(fd)
+def main():
+    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(filepath)
+    x_before = os.lstat(filepath)
+    x = os.fstat(fd)
 
-y = os.fstat(fd)
+    if x.st_size != x_before.st_size:
+        os.close(fd)
+        os.unlink(filepath)
+        print("fstat before unlink: size mismatch lstat={} fstat={}".format(x_before.st_size, x.st_size), end='')
+        return 1
 
-os.close(fd)
+    if x.st_mode != x_before.st_mode:
+        os.close(fd)
+        os.unlink(filepath)
+        print("fstat before unlink: mode mismatch lstat={} fstat={}".format(x_before.st_mode, x.st_mode), end='')
+        return 1
+
+    os.unlink(filepath)
+
+    y = os.fstat(fd)
+
+    if y.st_nlink != 0:
+        os.close(fd)
+        print("fstat after unlink: expected nlink=0, got {}".format(y.st_nlink), end='')
+        return 1
+
+    if y.st_size != x.st_size:
+        os.close(fd)
+        print("fstat after unlink: size changed from {} to {}".format(x.st_size, y.st_size), end='')
+        return 1
+
+    os.close(fd)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

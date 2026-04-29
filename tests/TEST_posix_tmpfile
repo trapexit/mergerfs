@@ -17,7 +17,8 @@ def open_tmpfile(dirpath):
 
 def errno_of(call):
     try:
-        call()
+        fd = call()
+        os.close(fd)
         return 0
     except OSError as exc:
         return exc.errno
@@ -44,6 +45,8 @@ def main():
 
             m_err = errno_of(lambda: open_tmpfile(merge_dir))
             n_err = errno_of(lambda: open_tmpfile(native_dir))
+            # mergerfs does not currently support O_TMPFILE, so EOPNOTSUPP is
+            # the expected result even when the native filesystem supports it.
             if m_err == errno.EOPNOTSUPP:
                 return 0
             if m_err != n_err:
@@ -54,7 +57,11 @@ def main():
                 return 0
 
             mfd = open_tmpfile(merge_dir)
-            nfd = open_tmpfile(native_dir)
+            try:
+                nfd = open_tmpfile(native_dir)
+            except OSError:
+                os.close(mfd)
+                return fail("O_TMPFILE: native open failed after merge succeeded")
             try:
                 mw = os.write(mfd, b"tmpfile-data")
                 nw = os.write(nfd, b"tmpfile-data")
