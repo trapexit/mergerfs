@@ -38,7 +38,7 @@ else
 ifdef SANITIZE
 ifeq ($(SANITIZE),1)
   override SANITIZE := -fsanitize=address,undefined,leak
-else
+else ifeq ($(filter -fsanitize=%,$(SANITIZE)),)
   override SANITIZE := -fsanitize=$(SANITIZE)
 endif
 endif
