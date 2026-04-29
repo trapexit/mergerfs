@@ -4,10 +4,12 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -19,38 +21,45 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_file = join(mount, "posix-truncate/file")
-        native_file = join(native, "posix-truncate/file")
-        merge_missing = join(mount, "posix-truncate/missing")
-        native_missing = join(native, "posix-truncate/missing")
-
-        cleanup_paths([merge_file])
-        touch(merge_file, b"1234567890")
-        touch(native_file, b"1234567890")
-
-        err = compare_calls("truncate shrink", lambda: os.truncate(merge_file, 3), lambda: os.truncate(native_file, 3))
-        if err:
-            return fail(err)
-
-        err = compare_calls("truncate ENOENT", lambda: os.truncate(merge_missing, 1), lambda: os.truncate(native_missing, 1))
-        if err:
-            return fail(err)
-
-        mfd = os.open(merge_file, os.O_RDWR)
-        nfd = os.open(native_file, os.O_RDWR)
+        merge_base = temp_dir(mount)
         try:
-            err = compare_calls("ftruncate grow", lambda: os.ftruncate(mfd, 16), lambda: os.ftruncate(nfd, 16))
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
+
+            merge_file = join(merge_base, "file")
+            native_file = join(native_base, "file")
+            merge_missing = join(merge_base, "missing")
+            native_missing = join(native_base, "missing")
+
+            cleanup_paths([merge_file])
+            touch(merge_file, b"1234567890")
+            touch(native_file, b"1234567890")
+
+            err = compare_calls("truncate shrink", lambda: os.truncate(merge_file, 3), lambda: os.truncate(native_file, 3))
             if err:
                 return fail(err)
+
+            err = compare_calls("truncate ENOENT", lambda: os.truncate(merge_missing, 1), lambda: os.truncate(native_missing, 1))
+            if err:
+                return fail(err)
+
+            mfd = os.open(merge_file, os.O_RDWR)
+            nfd = os.open(native_file, os.O_RDWR)
+            try:
+                err = compare_calls("ftruncate grow", lambda: os.ftruncate(mfd, 16), lambda: os.ftruncate(nfd, 16))
+                if err:
+                    return fail(err)
+            finally:
+                os.close(mfd)
+                os.close(nfd)
+
+            err = compare_calls("ftruncate EBADF", lambda: os.ftruncate(-1, 4), lambda: os.ftruncate(-1, 4))
+            if err:
+                return fail(err)
+
+            return 0
         finally:
-            os.close(mfd)
-            os.close(nfd)
-
-        err = compare_calls("ftruncate EBADF", lambda: os.ftruncate(-1, 4), lambda: os.ftruncate(-1, 4))
-        if err:
-            return fail(err)
-
-        return 0
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

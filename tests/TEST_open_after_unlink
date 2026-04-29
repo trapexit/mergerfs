@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_dir
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import temp_dir
+from posix_parity import touch
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_open_after_unlink <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+    merge_base = temp_dir(mount)
+
+    try:
+        merge_file = join(merge_base, "testfile")
+        touch(merge_file, b"hello world")
+
+        fd = os.open(merge_file, os.O_RDWR)
+        if fd < 0:
+            return fail("open file for R/W failed")
+
+        data = os.read(fd, 4096)
+        if data != b"hello world":
+            os.close(fd)
+            return fail(f"read before unlink: expected 'hello world', got {data!r}")
+
+        os.unlink(merge_file)
+
+        fd2 = os.dup(fd)
+        os.lseek(fd2, 0, os.SEEK_SET)
+        data2 = os.read(fd2, 4096)
+        if data2 != b"hello world":
+            os.close(fd2)
+            os.close(fd)
+            return fail(f"read after unlink via dup: expected 'hello world', got {data2!r}")
+
+        os.lseek(fd, 0, os.SEEK_SET)
+        written = os.write(fd, b"modified")
+        if written != len(b"modified"):
+            os.close(fd2)
+            os.close(fd)
+            return fail(f"write after unlink: wrote {written}, expected {len(b'modified')}")
+
+        os.lseek(fd, 0, os.SEEK_SET)
+        data3 = os.read(fd, 4096)
+        if not data3.startswith(b"modified"):
+            os.close(fd2)
+            os.close(fd)
+            return fail(f"read back written data: got {data3!r} after writing 'modified'")
+
+        os.close(fd2)
+        os.close(fd)
+
+        return 0
+    except Exception as exc:
+        return fail(str(exc))
+    finally:
+        try:
+            os.unlink(join(merge_base, "testfile"))
+        except FileNotFoundError:
+            pass
+        cleanup_dir(merge_base)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -5,8 +5,10 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -54,17 +56,24 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_dir = join(mount, "posix-releasedir/dir")
-        native_dir = join(native, "posix-releasedir/dir")
-        touch(join(merge_dir, "a"), b"x")
-        touch(join(native_dir, "a"), b"x")
+        merge_base = temp_dir(mount)
+        try:
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-        m_err = close_and_dirfd_errno(merge_dir)
-        n_err = close_and_dirfd_errno(native_dir)
-        if m_err != n_err:
-            return fail(f"releasedir EBADF parity mismatch mergerfs_errno={m_err} native_errno={n_err}")
+            merge_dir = join(merge_base, "dir")
+            native_dir = join(native_base, "dir")
+            touch(join(merge_dir, "a"), b"x")
+            touch(join(native_dir, "a"), b"x")
 
-        return 0
+            m_err = close_and_dirfd_errno(merge_dir)
+            n_err = close_and_dirfd_errno(native_dir)
+            if m_err != n_err:
+                return fail(f"releasedir EBADF parity mismatch mergerfs_errno={m_err} native_errno={n_err}")
+
+            return 0
+        finally:
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

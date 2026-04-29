@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_dir
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import temp_dir
+from posix_parity import touch
+from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_set_option
+from posix_parity import mergerfs_branches
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_api_xattr <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    try:
+        ctrl = join(mount, ".mergerfs")
+        if not os.path.exists(ctrl):
+            return fail(".mergerfs control file not found")
+
+        branches = mergerfs_branches(mount)
+        if not branches:
+            return fail("no branches found")
+
+        merge_base = temp_dir(mount)
+        try:
+            merge_file = join(merge_base, "api_test")
+            touch(merge_file, b"test")
+
+            try:
+                fullpath = os.getxattr(merge_file, "user.mergerfs.fullpath")
+                fullpath_str = fullpath.decode("utf-8", errors="surrogateescape")
+                if not fullpath_str:
+                    return fail("fullpath xattr is empty")
+                if not os.path.exists(fullpath_str):
+                    return fail(f"fullpath '{fullpath_str}' does not exist on disk")
+            except OSError as exc:
+                return fail(f"getxattr fullpath: errno={exc.errno}")
+
+            try:
+                relpath = os.getxattr(merge_file, "user.mergerfs.relpath")
+                relpath_str = relpath.decode("utf-8", errors="surrogateescape")
+                if not relpath_str:
+                    return fail("relpath xattr is empty")
+            except OSError as exc:
+                return fail(f"getxattr relpath: errno={exc.errno}")
+
+            try:
+                basepath = os.getxattr(merge_file, "user.mergerfs.basepath")
+                basepath_str = basepath.decode("utf-8", errors="surrogateescape")
+                if not basepath_str:
+                    return fail("basepath xattr is empty")
+            except OSError as exc:
+                return fail(f"getxattr basepath: errno={exc.errno}")
+
+            try:
+                allpaths = os.getxattr(merge_file, "user.mergerfs.allpaths")
+                allpaths_str = allpaths.decode("utf-8", errors="surrogateescape")
+                if not allpaths_str:
+                    return fail("allpaths xattr is empty")
+            except OSError as exc:
+                return fail(f"getxattr allpaths: errno={exc.errno}")
+
+            return 0
+        finally:
+            cleanup_dir(merge_base)
+
+    except Exception as exc:
+        return fail(str(exc))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

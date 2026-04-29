@@ -70,8 +70,8 @@ _remove(const StrVec &toremove_)
 static
 int
 _rename_create_path(const Policy::Search &searchPolicy_,
-                     const Policy::Action &actionPolicy_,
-                     const Branches::Ptr   branches_,
+                    const Policy::Action &actionPolicy_,
+                    const Branches::Ptr   branches_,
                     const fs::path       &oldfusepath_,
                     const fs::path       &newfusepath_)
 {
@@ -131,7 +131,7 @@ _rename_create_path(const Policy::Search &searchPolicy_,
 static
 int
 _rename_preserve_path(const Policy::Action &actionPolicy_,
-                       const Branches::Ptr   branches_,
+                      const Branches::Ptr   branches_,
                       const fs::path       &oldfusepath_,
                       const fs::path       &newfusepath_)
 {
@@ -202,7 +202,7 @@ _rename_exdev_rename_back(const std::vector<Branch*> &branches_,
 static
 int
 _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
-                             const Branches::Ptr   ibranches_,
+                            const Branches::Ptr   ibranches_,
                             const fs::path       &oldfusepath_,
                             std::vector<Branch*> &obranches_)
 {
@@ -249,8 +249,8 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
 static
 int
 _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
-                           const Policy::Action &actionPolicy_,
-                           const Branches::Ptr   branches_,
+                          const Policy::Action &actionPolicy_,
+                          const Branches::Ptr   branches_,
                           const fs::path       &oldfusepath_,
                           const fs::path       &newfusepath_)
 {
@@ -278,8 +278,8 @@ _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _rename_exdev_abs_symlink(const fuse_req_ctx_t *ctx_,
-                           const Policy::Action &actionPolicy_,
-                           const Branches::Ptr   branches_,
+                          const Policy::Action &actionPolicy_,
+                          const Branches::Ptr   branches_,
                           const fs::path       &mount_,
                           const fs::path       &oldfusepath_,
                           const fs::path       &newfusepath_)

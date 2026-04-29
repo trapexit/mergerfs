@@ -6,6 +6,10 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
+from posix_parity import join
+from posix_parity import temp_dir
+
 
 libc = ctypes.CDLL(None, use_errno=True)
 libc.readlink.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
@@ -50,62 +54,66 @@ def main():
     target = "target-abcdefghijklmnopqrstuvwxyz"
 
     with tempfile.TemporaryDirectory() as native_dir:
-        paths = {
-            "merge_link": os.path.join(mount, "readlink-semantics-link"),
-            "native_link": os.path.join(native_dir, "readlink-semantics-link"),
-            "merge_regular": os.path.join(mount, "readlink-semantics-regular"),
-            "native_regular": os.path.join(native_dir, "readlink-semantics-regular"),
-            "merge_notdir": os.path.join(mount, "readlink-semantics-notdir"),
-            "native_notdir": os.path.join(native_dir, "readlink-semantics-notdir"),
-            "merge_loop": os.path.join(mount, "readlink-semantics-loop"),
-            "native_loop": os.path.join(native_dir, "readlink-semantics-loop"),
-            "merge_private_dir": os.path.join(mount, "readlink-semantics-private"),
-            "native_private_dir": os.path.join(native_dir, "readlink-semantics-private"),
-        }
-        paths["merge_private_link"] = os.path.join(paths["merge_private_dir"], "link")
-        paths["native_private_link"] = os.path.join(paths["native_private_dir"], "link")
+        merge_base = temp_dir(mount)
+        try:
+            native_base = join(native_dir, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-        for p in (
-            paths["merge_private_link"],
-            paths["merge_link"],
-            paths["merge_regular"],
-            paths["merge_notdir"],
-            paths["merge_loop"],
-        ):
+            paths = {
+                "merge_link": join(merge_base, "readlink-semantics-link"),
+                "native_link": join(native_base, "readlink-semantics-link"),
+                "merge_regular": join(merge_base, "readlink-semantics-regular"),
+                "native_regular": join(native_base, "readlink-semantics-regular"),
+                "merge_notdir": join(merge_base, "readlink-semantics-notdir"),
+                "native_notdir": join(native_base, "readlink-semantics-notdir"),
+                "merge_loop": join(merge_base, "readlink-semantics-loop"),
+                "native_loop": join(native_base, "readlink-semantics-loop"),
+                "merge_private_dir": join(merge_base, "readlink-semantics-private"),
+                "native_private_dir": join(native_base, "readlink-semantics-private"),
+            }
+            paths["merge_private_link"] = os.path.join(paths["merge_private_dir"], "link")
+            paths["native_private_link"] = os.path.join(paths["native_private_dir"], "link")
+
+            for p in (
+                paths["merge_private_link"],
+                paths["merge_link"],
+                paths["merge_regular"],
+                paths["merge_notdir"],
+                paths["merge_loop"],
+            ):
+                try:
+                    os.unlink(p)
+                except FileNotFoundError:
+                    pass
+
             try:
-                os.unlink(p)
+                os.rmdir(paths["merge_private_dir"])
             except FileNotFoundError:
                 pass
+            except OSError:
+                pass
 
-        try:
-            os.rmdir(paths["merge_private_dir"])
-        except FileNotFoundError:
-            pass
-        except OSError:
-            pass
+            os.symlink(target, paths["merge_link"])
+            os.symlink(target, paths["native_link"])
 
-        os.symlink(target, paths["merge_link"])
-        os.symlink(target, paths["native_link"])
+            with open(paths["merge_regular"], "w", encoding="ascii"):
+                pass
+            with open(paths["native_regular"], "w", encoding="ascii"):
+                pass
 
-        with open(paths["merge_regular"], "w", encoding="ascii"):
-            pass
-        with open(paths["native_regular"], "w", encoding="ascii"):
-            pass
+            with open(paths["merge_notdir"], "w", encoding="ascii"):
+                pass
+            with open(paths["native_notdir"], "w", encoding="ascii"):
+                pass
 
-        with open(paths["merge_notdir"], "w", encoding="ascii"):
-            pass
-        with open(paths["native_notdir"], "w", encoding="ascii"):
-            pass
+            os.symlink("readlink-semantics-loop", paths["merge_loop"])
+            os.symlink("readlink-semantics-loop", paths["native_loop"])
 
-        os.symlink("readlink-semantics-loop", paths["merge_loop"])
-        os.symlink("readlink-semantics-loop", paths["native_loop"])
+            os.makedirs(paths["merge_private_dir"], exist_ok=True)
+            os.makedirs(paths["native_private_dir"], exist_ok=True)
+            os.symlink(target, paths["merge_private_link"])
+            os.symlink(target, paths["native_private_link"])
 
-        os.makedirs(paths["merge_private_dir"], exist_ok=True)
-        os.makedirs(paths["native_private_dir"], exist_ok=True)
-        os.symlink(target, paths["merge_private_link"])
-        os.symlink(target, paths["native_private_link"])
-
-        try:
             cases = []
 
             for bufsiz in (0, 1, 2, 5, 8, len(target), len(target) + 1):
@@ -127,8 +135,8 @@ def main():
                 ),
                 (
                     "ENOENT missing path",
-                    os.path.join(mount, "readlink-semantics-missing"),
-                    os.path.join(native_dir, "readlink-semantics-missing"),
+                    join(merge_base, "readlink-semantics-missing"),
+                    join(native_base, "readlink-semantics-missing"),
                     128,
                     errno.ENOENT,
                 ),
@@ -148,8 +156,8 @@ def main():
                 ),
                 (
                     "ENAMETOOLONG long pathname",
-                    os.path.join(mount, "a" * 8192),
-                    os.path.join(native_dir, "a" * 8192),
+                    join(merge_base, "a" * 8192),
+                    join(native_base, "a" * 8192),
                     128,
                     errno.ENAMETOOLONG,
                 ),
@@ -179,6 +187,7 @@ def main():
 
             return 0
         finally:
+            cleanup_dir(merge_base)
             try:
                 os.chmod(paths["merge_private_dir"], 0o700)
             except (FileNotFoundError, PermissionError):

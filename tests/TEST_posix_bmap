@@ -7,9 +7,11 @@ import struct
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -30,38 +32,45 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_file = join(mount, "posix-bmap/file")
-        native_file = join(native, "posix-bmap/file")
-        touch(merge_file, b"x" * 8192)
-        touch(native_file, b"x" * 8192)
-
-        mfd = os.open(merge_file, os.O_RDONLY)
-        nfd = os.open(native_file, os.O_RDONLY)
+        merge_base = temp_dir(mount)
         try:
-            # FIBMAP often requires CAP_SYS_RAWIO; compare errno parity if denied.
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
+
+            merge_file = join(merge_base, "file")
+            native_file = join(native_base, "file")
+            touch(merge_file, b"x" * 8192)
+            touch(native_file, b"x" * 8192)
+
+            mfd = os.open(merge_file, os.O_RDONLY)
+            nfd = os.open(native_file, os.O_RDONLY)
+            try:
+                # FIBMAP often requires CAP_SYS_RAWIO; compare errno parity if denied.
+                err = compare_calls(
+                    "ioctl FIBMAP block0",
+                    lambda: fibmap(mfd, 0),
+                    lambda: fibmap(nfd, 0),
+                    lambda a, b: (a >= 0) == (b >= 0),
+                )
+                if err:
+                    # If both denied by privilege checks, compare_calls already passes.
+                    return fail(err)
+            finally:
+                os.close(mfd)
+                os.close(nfd)
+
+            # EBADF parity on closed fds.
             err = compare_calls(
-                "ioctl FIBMAP block0",
+                "ioctl FIBMAP EBADF",
                 lambda: fibmap(mfd, 0),
                 lambda: fibmap(nfd, 0),
-                lambda a, b: (a >= 0) == (b >= 0),
             )
             if err:
-                # If both denied by privilege checks, compare_calls already passes.
                 return fail(err)
+
+            return 0
         finally:
-            os.close(mfd)
-            os.close(nfd)
-
-        # EBADF parity on closed fds.
-        err = compare_calls(
-            "ioctl FIBMAP EBADF",
-            lambda: fibmap(mfd, 0),
-            lambda: fibmap(nfd, 0),
-        )
-        if err:
-            return fail(err)
-
-    return 0
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

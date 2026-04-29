@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_dir
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import mergerfs_branches
+from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_set_option
+from posix_parity import temp_dir
+from posix_parity import touch
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_policy_lup <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    try:
+        orig_create = mergerfs_get_option(mount, "func.create")
+    except (PermissionError, FileNotFoundError, OSError):
+        return 0
+
+    try:
+        orig_search = mergerfs_get_option(mount, "func.search")
+    except (PermissionError, FileNotFoundError, OSError):
+        return 0
+
+    try:
+        orig_action = mergerfs_get_option(mount, "func.action")
+    except (PermissionError, FileNotFoundError, OSError):
+        return 0
+
+    merge_base = temp_dir(mount)
+
+    try:
+        mergerfs_set_option(mount, "func.create", "lup")
+        mergerfs_set_option(mount, "func.search", "lup")
+
+        path = join(merge_base, "lup_test_file")
+        touch(path, b"lup create test")
+        if not os.path.exists(path):
+            return fail("LUP create: file not created")
+
+        fullpath = os.getxattr(path, "user.mergerfs.fullpath")
+        if not fullpath:
+            return fail("LUP create: no fullpath attribute")
+
+        path2 = join(merge_base, "lup_test_file2")
+        touch(path2, b"lup search test")
+        fullpath2 = os.getxattr(path2, "user.mergerfs.fullpath")
+        if not fullpath2:
+            return fail("LUP search: no fullpath attribute")
+
+        mergerfs_set_option(mount, "func.create", orig_create)
+        mergerfs_set_option(mount, "func.search", orig_search)
+
+        return 0
+    except Exception as exc:
+        mergerfs_set_option(mount, "func.create", orig_create)
+        mergerfs_set_option(mount, "func.search", orig_search)
+        return fail(str(exc))
+    finally:
+        cleanup_dir(merge_base)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
