@@ -20,7 +20,6 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "error.hpp"
 #include "fs_path.hpp"
 #include "fs_rmdir.hpp"
 #include "fs_unlink.hpp"
@@ -31,6 +30,51 @@
 
 #include <unistd.h>
 
+// 1. First error sets the initial value
+// 2. If we get -EEXIST or -ENOTEMPTY, it takes priority (overwrites anything)
+// 3. If we already have -EEXIST or -ENOTEMPTY, keep them (don't overwrite)
+// 4. Success (>= 0) only sets to 0 if we don't have a priority error
+// 5. Any other error only overwrites if we don't have a priority error
+struct RmdirErr
+{
+private:
+  std::optional<int> _err;
+
+public:
+  RmdirErr()
+  {
+  }
+
+  operator int()
+  {
+    return (_err.has_value() ? _err.value() : -ENOENT);
+  }
+
+  RmdirErr&
+  operator=(int v_)
+  {
+    if(!_err.has_value())
+      _err = ((v_ >= 0) ? 0 : v_);
+    else if((v_ == -EEXIST) || (v_ == -ENOTEMPTY))
+      _err = v_;
+    else if((*_err == -EEXIST) || (*_err == -ENOTEMPTY))
+      ;
+    else if(v_ >= 0)
+      _err = 0;
+    else
+      _err = v_;
+
+    return *this;
+  }
+
+  bool
+  operator==(int v_)
+  {
+    if(_err.has_value())
+      return (_err.value() == v_);
+    return false;
+  }
+};
 
 static
 int
@@ -65,7 +109,7 @@ _rmdir_loop(const std::vector<Branch*> &branches_,
             const fs::path             &fusepath_,
             const FollowSymlinks        followsymlinks_)
 {
-  Err err;
+  RmdirErr err;
 
   for(const auto &branch : branches_)
     {
