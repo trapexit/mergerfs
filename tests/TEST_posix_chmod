@@ -84,7 +84,7 @@ def main():
 
             if os.geteuid() != 0:
                 err = compare_calls(
-                    "chmod EPERM setuid",
+                    "chmod setuid parity",
                     lambda: os.chmod(merge_file, stat.S_ISUID | 0o644),
                     lambda: os.chmod(native_file, stat.S_ISUID | 0o644),
                 )

@@ -38,6 +38,17 @@ def compare_calls(name, merge_call, native_call, value_cmp=None, close_fds=False
     m_ok, m_val, m_errno = invoke(merge_call)
     n_ok, n_val, n_errno = invoke(native_call)
 
+    if close_fds:
+        # WARNING: close_fds=True should only be used when the callable
+        # returns an fd (non-negative int from os.open etc.), NOT when it
+        # returns arbitrary integers (e.g., byte counts, offsets).
+        try:
+            if m_ok:
+                close_if_fd(m_val)
+        finally:
+            if n_ok:
+                close_if_fd(n_val)
+
     if m_ok != n_ok:
         return (
             f"{name}: success mismatch mergerfs={m_ok} native={n_ok} "
@@ -46,14 +57,7 @@ def compare_calls(name, merge_call, native_call, value_cmp=None, close_fds=False
     if m_errno != n_errno:
         return f"{name}: errno mismatch mergerfs={m_errno} native={n_errno}"
     if m_ok and value_cmp is not None and not value_cmp(m_val, n_val):
-        if close_fds:
-            close_if_fd(m_val)
-            close_if_fd(n_val)
         return f"{name}: value mismatch mergerfs={m_val!r} native={n_val!r}"
-
-    if close_fds:
-        close_if_fd(m_val)
-        close_if_fd(n_val)
 
     return None
 

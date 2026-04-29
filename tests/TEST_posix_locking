@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import fcntl
+import errno
 import os
 import struct
+import subprocess
 import sys
 import tempfile
 
@@ -19,7 +21,36 @@ def pack_flock(l_type, l_whence=0, l_start=0, l_len=0, l_pid=0):
     return struct.pack("hhqqi", l_type, l_whence, l_start, l_len, l_pid)
 
 
+def try_process_lock(path):
+    fd = os.open(path, os.O_RDWR)
+    try:
+        try:
+            fcntl.fcntl(fd, fcntl.F_SETLK, pack_flock(fcntl.F_WRLCK))
+            return 0
+        except OSError as exc:
+            return exc.errno
+    finally:
+        os.close(fd)
+
+
+def child_lock_errno(path):
+    proc = subprocess.run(
+        [sys.executable, __file__, "--try-process-lock", path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or f"child lock helper failed: {proc.returncode}")
+    return int(proc.stdout.strip())
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == "--try-process-lock":
+        print(try_process_lock(sys.argv[2]))
+        return 0
+
     if len(sys.argv) != 2:
         print("usage: TEST_posix_locking <mountpoint>", file=sys.stderr)
         return 1
@@ -74,9 +105,12 @@ def main():
                 if err:
                     return fail(err)
 
-                err = compare_calls("fcntl F_SETLK write lock second fd", lambda: fcntl.fcntl(mfd2, fcntl.F_SETLK, wrlk), lambda: fcntl.fcntl(nfd2, fcntl.F_SETLK, wrlk))
-                if err:
-                    return fail(err)
+                m_lock_errno = child_lock_errno(merge_file)
+                n_lock_errno = child_lock_errno(native_file)
+                if m_lock_errno != n_lock_errno:
+                    return fail(f"fcntl F_SETLK child contention errno mismatch mergerfs={m_lock_errno} native={n_lock_errno}")
+                if m_lock_errno not in (errno.EACCES, errno.EAGAIN):
+                    return fail(f"fcntl F_SETLK child contention expected lock conflict got errno={m_lock_errno}")
 
                 err = compare_calls("fcntl F_SETLK unlock", lambda: fcntl.fcntl(mfd1, fcntl.F_SETLK, unlck), lambda: fcntl.fcntl(nfd1, fcntl.F_SETLK, unlck))
                 if err:
@@ -88,8 +122,8 @@ def main():
                 os.close(bad_n)
                 err = compare_calls(
                     "fcntl EBADF",
-                    lambda: fcntl.fcntl(bad_m, fcntl.F_SETLK, wrlk),
-                    lambda: fcntl.fcntl(bad_n, fcntl.F_SETLK, wrlk),
+                    lambda: fcntl.fcntl(bad_m, fcntl.F_GETFD),
+                    lambda: fcntl.fcntl(bad_n, fcntl.F_GETFD),
                 )
                 if err:
                     return fail(err)

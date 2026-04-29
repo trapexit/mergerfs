@@ -63,6 +63,30 @@ def list_has_cmp(path_m, path_n, xname):
     )
 
 
+def lsetxattr(path, name, value):
+    if hasattr(os, "lsetxattr"):
+        return os.lsetxattr(path, name, value)
+    return os.setxattr(path, name, value, follow_symlinks=False)
+
+
+def lgetxattr(path, name):
+    if hasattr(os, "lgetxattr"):
+        return os.lgetxattr(path, name)
+    return os.getxattr(path, name, follow_symlinks=False)
+
+
+def llistxattr(path):
+    if hasattr(os, "llistxattr"):
+        return os.llistxattr(path)
+    return os.listxattr(path, follow_symlinks=False)
+
+
+def lremovexattr(path, name):
+    if hasattr(os, "lremovexattr"):
+        return os.lremovexattr(path, name)
+    return os.removexattr(path, name, follow_symlinks=False)
+
+
 def main():
     if len(sys.argv) != 2:
         print("usage: TEST_posix_xattr_matrix <mountpoint>", file=sys.stderr)
@@ -106,7 +130,7 @@ def main():
                 ("dir", dir_m, dir_n),
             ]
 
-            xbase = "user.mergerfs.matrix"
+            xbase = "user.xattr_matrix"
 
             for obj_name, path_m, path_n in objs:
                 xname = f"{xbase}.{obj_name}"
@@ -176,40 +200,39 @@ def main():
                     return fail(err)
 
             lxname = f"{xbase}.link"
-            if all(hasattr(os, fn) for fn in ("lsetxattr", "lgetxattr", "llistxattr", "lremovexattr")):
-                err = compare(
-                    "lsetxattr symlink default",
-                    lambda: os.lsetxattr(link_m, lxname, b"lv1"),
-                    lambda: os.lsetxattr(link_n, lxname, b"lv1"),
-                )
-                if err:
-                    return fail(err)
+            err = compare(
+                "lsetxattr symlink default",
+                lambda: lsetxattr(link_m, lxname, b"lv1"),
+                lambda: lsetxattr(link_n, lxname, b"lv1"),
+            )
+            if err:
+                return fail(err)
 
-                err = compare(
-                    "lgetxattr symlink",
-                    lambda: os.lgetxattr(link_m, lxname),
-                    lambda: os.lgetxattr(link_n, lxname),
-                    lambda a, b: a == b,
-                )
-                if err:
-                    return fail(err)
+            err = compare(
+                "lgetxattr symlink",
+                lambda: lgetxattr(link_m, lxname),
+                lambda: lgetxattr(link_n, lxname),
+                lambda a, b: a == b,
+            )
+            if err:
+                return fail(err)
 
-                err = compare(
-                    "llistxattr has symlink key",
-                    lambda: os.llistxattr(link_m),
-                    lambda: os.llistxattr(link_n),
-                    lambda a, b: ((lxname in a) == (lxname in b)),
-                )
-                if err:
-                    return fail(err)
+            err = compare(
+                "llistxattr has symlink key",
+                lambda: llistxattr(link_m),
+                lambda: llistxattr(link_n),
+                lambda a, b: ((lxname in a) == (lxname in b)),
+            )
+            if err:
+                return fail(err)
 
-                err = compare(
-                    "lremovexattr symlink",
-                    lambda: os.lremovexattr(link_m, lxname),
-                    lambda: os.lremovexattr(link_n, lxname),
-                )
-                if err:
-                    return fail(err)
+            err = compare(
+                "lremovexattr symlink",
+                lambda: lremovexattr(link_m, lxname),
+                lambda: lremovexattr(link_n, lxname),
+            )
+            if err:
+                return fail(err)
 
             return 0
         finally:

@@ -11,15 +11,15 @@ from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
 from posix_parity import should_compare_inode
-from posix_parity import stat_cmp_basic
 from posix_parity import temp_dir
 from posix_parity import touch
 
 
 def st_cmp(lhs, rhs):
     return (
-        stat_cmp_basic(lhs, rhs)
-        and stat.S_IFMT(lhs.st_mode) == stat.S_IFMT(rhs.st_mode)
+        stat.S_IFMT(lhs.st_mode) == stat.S_IFMT(rhs.st_mode)
+        and stat.S_IMODE(lhs.st_mode) == stat.S_IMODE(rhs.st_mode)
+        and lhs.st_size == rhs.st_size
         and lhs.st_nlink == rhs.st_nlink
     )
 

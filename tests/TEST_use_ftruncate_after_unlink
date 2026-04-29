@@ -4,12 +4,32 @@ import os
 import sys
 import tempfile
 
-(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.ftruncate(fd,1024)
+def main():
+    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(filepath)
+    os.ftruncate(fd, 1024)
 
-os.ftruncate(fd,1024)
+    st1 = os.fstat(fd)
+    if st1.st_size != 1024:
+        os.close(fd)
+        os.unlink(filepath)
+        print("ftruncate before unlink: expected size 1024, got {}".format(st1.st_size), end='')
+        return 1
 
-os.close(fd)
+    os.unlink(filepath)
+
+    os.ftruncate(fd, 2048)
+
+    st2 = os.fstat(fd)
+    if st2.st_size != 2048:
+        os.close(fd)
+        print("ftruncate after unlink: expected size 2048, got {}".format(st2.st_size), end='')
+        return 1
+
+    os.close(fd)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -68,6 +68,9 @@ def main():
             if err:
                 return fail(err)
 
+            os.chmod(merge_file, 0o644)
+            os.chmod(native_file, 0o644)
+
             return 0
         finally:
             cleanup_dir(merge_base)

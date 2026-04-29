@@ -5,27 +5,42 @@ import sys
 import subprocess
 
 
+SKIP = 77
+
+
 if len(sys.argv) != 2:
-    print('usage: run-test <mergerfs-path>\n',file=sys.stderr)
+    print('usage: run-tests <mountpoint>\n', file=sys.stderr)
     sys.exit(1)
 
 test_path = os.path.realpath(sys.argv[0])
 test_path = os.path.dirname(test_path)
+
+failed = False
 
 for entry in os.scandir(test_path):
     if not entry.name.startswith('TEST_'):
         continue
 
     try:
-        print(entry.name + ': ',end='')
-        fullpath = os.path.join(test_path,entry.name)
-        args = [fullpath,sys.argv[1]]
-        rv = subprocess.Popen(args,stdout=subprocess.PIPE)
-        rv.wait(timeout=10000)
-        if rv.returncode:
-            output = rv.stdout.read().decode()
-            print('FAIL - {}'.format(output))
+        print(entry.name + ': ', end='')
+        fullpath = os.path.join(test_path, entry.name)
+        args = [fullpath, sys.argv[1]]
+        rv = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output, _ = rv.communicate(timeout=120)
+        if rv.returncode == SKIP:
+            print('SKIP - {}'.format(output.decode(errors='replace')))
+        elif rv.returncode:
+            print('FAIL - {}'.format(output.decode(errors='replace')))
+            failed = True
         else:
             print('PASS')
+    except subprocess.TimeoutExpired:
+        rv.kill()
+        rv.wait()
+        print('FAIL - timeout')
+        failed = True
     except Exception as e:
         print('FAIL - {}'.format(e))
+        failed = True
+
+sys.exit(1 if failed else 0)

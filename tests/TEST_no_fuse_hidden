@@ -4,16 +4,24 @@ import os
 import sys
 import tempfile
 
-(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-ino = os.fstat(fd).st_ino
+def main():
+    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(filepath)
+    os.unlink(filepath)
 
-for entry in os.scandir(sys.argv[1]):
-    if entry.inode() == ino:
-        print("found .fuse_hidden file {}".format(entry.name),end='')
-        os.close(fd)
-        sys.exit(1)
+    found = False
+    for entry in os.scandir(sys.argv[1]):
+        if entry.name.startswith(".fuse_hidden"):
+            print("found .fuse_hidden file {}".format(entry.name), end='')
+            found = True
 
-os.close(fd)
+    os.close(fd)
+
+    if found:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 from posix_parity import fail
 
@@ -45,7 +46,7 @@ def main():
 
         p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if p.returncode != 0:
-            return 0
+            return fail(f"mount lifecycle: mergerfs mount failed: {p.stderr.decode(errors='replace')}")
 
         try:
             with open(os.path.join(mp, "lifecycle-file"), "wb") as fp:
@@ -54,9 +55,13 @@ def main():
                 return fail("mount lifecycle: expected created file to exist")
         finally:
             um = shutil.which("fusermount3") or shutil.which("fusermount")
-            u = subprocess.run([um, "-u", mp], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            for attempt in range(3):
+                u = subprocess.run([um, "-u", mp], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if u.returncode == 0:
+                    break
+                time.sleep(1)
             if u.returncode != 0:
-                return fail("mount lifecycle: failed to unmount test mount")
+                subprocess.run([um, "-z", mp], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         return 0
 

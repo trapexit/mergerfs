@@ -66,4 +66,6 @@ Across tests, parity checks include combinations of:
 - Some behavior is runtime/environment dependent (kernel, mount options,
   uid/gid, capabilities). Tests compare mergerfs to native behavior in the same
   runtime to keep assertions robust.
+- Tests that cannot exercise a behavior in the current environment may exit 77
+  and are reported as `SKIP` by `tests/run-tests`.
 - The xattr test uses a `user.*` key and assumes user xattrs are enabled.

@@ -36,7 +36,7 @@ def main():
         return 1
 
     mount = sys.argv[1]
-    xname = "user.mergerfs.posix"
+    xname = "user.posix_parity"
     xvalue = b"parity-check"
 
     with tempfile.TemporaryDirectory() as native:

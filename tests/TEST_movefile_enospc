@@ -3,7 +3,6 @@
 import errno
 import os
 import sys
-import tempfile
 
 from posix_parity import cleanup_dir
 from posix_parity import fail
@@ -15,12 +14,7 @@ from posix_parity import temp_dir
 from posix_parity import touch
 
 
-def get_errno(func):
-    try:
-        func()
-        return 0
-    except OSError as exc:
-        return exc.errno
+SKIP = 77
 
 
 def main():
@@ -32,25 +26,54 @@ def main():
 
     try:
         orig_moveonenospc = mergerfs_get_option(mount, "moveonenospc")
-    except (PermissionError, FileNotFoundError, OSError):
-        return 0
+    except (PermissionError, FileNotFoundError):
+        print("moveonenospc runtime option unavailable", end="")
+        return SKIP
+    except OSError as exc:
+        if exc.errno == errno.EOPNOTSUPP:
+            print("moveonenospc runtime option unsupported", end="")
+            return SKIP
+        raise
 
     branches = mergerfs_branches(mount)
     if len(branches) < 2:
-        return 0
+        print("moveonenospc test requires at least 2 branches", end="")
+        return SKIP
 
+    # The documented feature only runs after write returns ENOSPC/EDQUOT. This
+    # generic mountpoint test cannot safely force a branch into that state.
     merge_base = temp_dir(mount)
 
     try:
-        mergerfs_set_option(mount, "moveonenospc", "true")
-        mergerfs_set_option(mount, "func.moveonenospc", "mfs")
+        mergerfs_set_option(mount, "moveonenospc", "mfs")
+        if mergerfs_get_option(mount, "moveonenospc") != "mfs":
+            return fail("moveonenospc: failed to set documented policy value")
 
         merge_file = join(merge_base, "enospc_test")
         touch(merge_file, b"test data for enospc")
 
+        if not os.path.exists(merge_file):
+            return fail("moveonenospc: file was not created")
+
+        fullpath = None
+        try:
+            fullpath = os.getxattr(merge_file, "user.mergerfs.fullpath").decode()
+        except OSError:
+            pass
+
+        if fullpath and not os.path.exists(fullpath):
+            return fail(f"moveonenospc: fullpath does not exist on disk: {fullpath}")
+
+        with open(merge_file, "r") as f:
+            content = f.read()
+
+        if content != "test data for enospc":
+            return fail(f"moveonenospc: file content mismatch: got {content!r}")
+
         mergerfs_set_option(mount, "moveonenospc", orig_moveonenospc)
 
-        return 0
+        print("moveonenospc ENOSPC path requires a constrained branch", end="")
+        return SKIP
     except Exception as exc:
         try:
             mergerfs_set_option(mount, "moveonenospc", orig_moveonenospc)

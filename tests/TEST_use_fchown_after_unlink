@@ -4,12 +4,34 @@ import os
 import sys
 import tempfile
 
-(fd,filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.fchown(fd,os.getuid(),os.getgid())
+def main():
+    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(filepath)
+    os.fchown(fd, os.getuid(), os.getgid())
 
-os.fchown(fd,os.getuid(),os.getgid())
+    st1 = os.fstat(fd)
+    if st1.st_uid != os.getuid() or st1.st_gid != os.getgid():
+        os.close(fd)
+        os.unlink(filepath)
+        print("fchown before unlink: expected uid={} gid={}, got uid={} gid={}".format(
+            os.getuid(), os.getgid(), st1.st_uid, st1.st_gid), end='')
+        return 1
 
-os.close(fd)
+    os.unlink(filepath)
+
+    os.fchown(fd, os.getuid(), os.getgid())
+
+    st2 = os.fstat(fd)
+    if st2.st_uid != os.getuid() or st2.st_gid != os.getgid():
+        os.close(fd)
+        print("fchown after unlink: expected uid={} gid={}, got uid={} gid={}".format(
+            os.getuid(), os.getgid(), st2.st_uid, st2.st_gid), end='')
+        return 1
+
+    os.close(fd)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

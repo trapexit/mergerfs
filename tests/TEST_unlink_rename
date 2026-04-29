@@ -4,17 +4,38 @@ import os
 import sys
 import tempfile
 
-(srcfd,src) = tempfile.mkstemp(dir=sys.argv[1])
-(tgtfd,tgt) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.fstat(srcfd)
-os.fstat(tgtfd)
+def main():
+    (srcfd, src) = tempfile.mkstemp(dir=sys.argv[1])
+    (tgtfd, tgt) = tempfile.mkstemp(dir=sys.argv[1])
 
-os.unlink(tgt)
-os.rename(src,tgt)
+    st_src_before = os.fstat(srcfd)
+    st_tgt_before = os.fstat(tgtfd)
 
-os.fstat(srcfd)
-os.fstat(tgtfd)
+    os.unlink(tgt)
+    os.rename(src, tgt)
 
-os.close(srcfd)
-os.close(tgtfd)
+    st_src_after = os.fstat(srcfd)
+    st_tgt_after = os.fstat(tgtfd)
+
+    if st_src_after.st_size != st_src_before.st_size:
+        os.close(srcfd)
+        os.close(tgtfd)
+        print("rename: src fd size changed before={} after={}".format(
+            st_src_before.st_size, st_src_after.st_size), end='')
+        return 1
+
+    if st_tgt_after.st_ino != st_tgt_before.st_ino:
+        os.close(srcfd)
+        os.close(tgtfd)
+        print("rename: tgt fd inode changed after unlink+rename expected={} got={}".format(
+            st_tgt_before.st_ino, st_tgt_after.st_ino), end='')
+        return 1
+
+    os.close(srcfd)
+    os.close(tgtfd)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
