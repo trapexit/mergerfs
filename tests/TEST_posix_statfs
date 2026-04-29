@@ -4,9 +4,11 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 
 
 def statvfs_cmp(lhs, rhs):
@@ -27,24 +29,31 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        err = compare_calls(
-            "statvfs mount parity",
-            lambda: os.statvfs(mount),
-            lambda: os.statvfs(native),
-            statvfs_cmp,
-        )
-        if err:
-            return fail(err)
+        merge_base = temp_dir(mount)
+        try:
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-        err = compare_calls(
-            "statvfs ENOENT",
-            lambda: os.statvfs(join(mount, "posix-statfs/missing")),
-            lambda: os.statvfs(join(native, "posix-statfs/missing")),
-        )
-        if err:
-            return fail(err)
+            err = compare_calls(
+                "statvfs mount parity",
+                lambda: os.statvfs(mount),
+                lambda: os.statvfs(native),
+                statvfs_cmp,
+            )
+            if err:
+                return fail(err)
 
-        return 0
+            err = compare_calls(
+                "statvfs ENOENT",
+                lambda: os.statvfs(join(merge_base, "missing")),
+                lambda: os.statvfs(join(native_base, "missing")),
+            )
+            if err:
+                return fail(err)
+
+            return 0
+        finally:
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

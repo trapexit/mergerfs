@@ -5,10 +5,12 @@ import sys
 import tempfile
 import time
 
+from posix_parity import cleanup_dir
 from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -20,57 +22,64 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_file = join(mount, "posix-utimens/file")
-        native_file = join(native, "posix-utimens/file")
-        merge_missing = join(mount, "posix-utimens/missing")
-        native_missing = join(native, "posix-utimens/missing")
-
-        cleanup_paths([merge_file])
-        touch(merge_file, b"x")
-        touch(native_file, b"x")
-
-        now = time.time()
-        times = (now - 1000, now - 500)
-
-        err = compare_calls(
-            "utime path success",
-            lambda: os.utime(merge_file, times=times),
-            lambda: os.utime(native_file, times=times),
-        )
-        if err:
-            return fail(err)
-
-        mfd = os.open(merge_file, os.O_RDWR)
-        nfd = os.open(native_file, os.O_RDWR)
+        merge_base = temp_dir(mount)
         try:
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
+
+            merge_file = join(merge_base, "file")
+            native_file = join(native_base, "file")
+            merge_missing = join(merge_base, "missing")
+            native_missing = join(native_base, "missing")
+
+            cleanup_paths([merge_file])
+            touch(merge_file, b"x")
+            touch(native_file, b"x")
+
+            now = time.time()
+            times = (now - 1000, now - 500)
+
             err = compare_calls(
-                "utime fd success",
-                lambda: os.utime(mfd, times=times),
-                lambda: os.utime(nfd, times=times),
+                "utime path success",
+                lambda: os.utime(merge_file, times=times),
+                lambda: os.utime(native_file, times=times),
             )
             if err:
                 return fail(err)
+
+            mfd = os.open(merge_file, os.O_RDWR)
+            nfd = os.open(native_file, os.O_RDWR)
+            try:
+                err = compare_calls(
+                    "utime fd success",
+                    lambda: os.utime(mfd, times=times),
+                    lambda: os.utime(nfd, times=times),
+                )
+                if err:
+                    return fail(err)
+            finally:
+                os.close(mfd)
+                os.close(nfd)
+
+            err = compare_calls(
+                "utime ENOENT",
+                lambda: os.utime(merge_missing, times=times),
+                lambda: os.utime(native_missing, times=times),
+            )
+            if err:
+                return fail(err)
+
+            err = compare_calls(
+                "utime EBADF",
+                lambda: os.utime(-1, times=times),
+                lambda: os.utime(-1, times=times),
+            )
+            if err:
+                return fail(err)
+
+            return 0
         finally:
-            os.close(mfd)
-            os.close(nfd)
-
-        err = compare_calls(
-            "utime ENOENT",
-            lambda: os.utime(merge_missing, times=times),
-            lambda: os.utime(native_missing, times=times),
-        )
-        if err:
-            return fail(err)
-
-        err = compare_calls(
-            "utime EBADF",
-            lambda: os.utime(-1, times=times),
-            lambda: os.utime(-1, times=times),
-        )
-        if err:
-            return fail(err)
-
-        return 0
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

@@ -4,10 +4,12 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -19,60 +21,67 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_file = join(mount, "posix-rw/file")
-        native_file = join(native, "posix-rw/file")
-        merge_missing = join(mount, "posix-rw/missing")
-        native_missing = join(native, "posix-rw/missing")
-        merge_dir = join(mount, "posix-rw/dir")
-        native_dir = join(native, "posix-rw/dir")
-        merge_notdir = join(mount, "posix-rw/notdir")
-        native_notdir = join(native, "posix-rw/notdir")
-
-        cleanup_paths([merge_file, merge_notdir])
-        touch(merge_file, b"123456", 0o644)
-        touch(native_file, b"123456", 0o644)
-        os.makedirs(merge_dir, exist_ok=True)
-        os.makedirs(native_dir, exist_ok=True)
-        touch(merge_notdir, b"x", 0o644)
-        touch(native_notdir, b"x", 0o644)
-
-        err = compare_calls("open ENOENT", lambda: os.open(merge_missing, os.O_RDONLY), lambda: os.open(native_missing, os.O_RDONLY))
-        if err:
-            return fail(err)
-
-        err = compare_calls("open EISDIR", lambda: os.open(merge_dir, os.O_WRONLY), lambda: os.open(native_dir, os.O_WRONLY))
-        if err:
-            return fail(err)
-
-        err = compare_calls(
-            "open ENOTDIR",
-            lambda: os.open(join(merge_notdir, "child"), os.O_RDONLY),
-            lambda: os.open(join(native_notdir, "child"), os.O_RDONLY),
-        )
-        if err:
-            return fail(err)
-
-        mfd = os.open(merge_file, os.O_RDWR)
-        nfd = os.open(native_file, os.O_RDWR)
+        merge_base = temp_dir(mount)
         try:
-            os.lseek(mfd, 0, os.SEEK_SET)
-            os.lseek(nfd, 0, os.SEEK_SET)
-            m_data = os.read(mfd, 6)
-            n_data = os.read(nfd, 6)
-            if m_data != n_data:
-                return fail(f"read parity mismatch mergerfs={m_data!r} native={n_data!r}")
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-            os.lseek(mfd, 0, os.SEEK_SET)
-            os.lseek(nfd, 0, os.SEEK_SET)
-            mw = os.write(mfd, b"abc")
-            nw = os.write(nfd, b"abc")
-            if mw != nw:
-                return fail(f"write count mismatch mergerfs={mw} native={nw}")
+            merge_file = join(merge_base, "file")
+            native_file = join(native_base, "file")
+            merge_missing = join(merge_base, "missing")
+            native_missing = join(native_base, "missing")
+            merge_dir = join(merge_base, "dir")
+            native_dir = join(native_base, "dir")
+            merge_notdir = join(merge_base, "notdir")
+            native_notdir = join(native_base, "notdir")
+
+            cleanup_paths([merge_file, merge_notdir])
+            touch(merge_file, b"123456", 0o644)
+            touch(native_file, b"123456", 0o644)
+            os.makedirs(merge_dir, exist_ok=True)
+            os.makedirs(native_dir, exist_ok=True)
+            touch(merge_notdir, b"x", 0o644)
+            touch(native_notdir, b"x", 0o644)
+
+            err = compare_calls("open ENOENT", lambda: os.open(merge_missing, os.O_RDONLY), lambda: os.open(native_missing, os.O_RDONLY))
+            if err:
+                return fail(err)
+
+            err = compare_calls("open EISDIR", lambda: os.open(merge_dir, os.O_WRONLY), lambda: os.open(native_dir, os.O_WRONLY))
+            if err:
+                return fail(err)
+
+            err = compare_calls(
+                "open ENOTDIR",
+                lambda: os.open(join(merge_notdir, "child"), os.O_RDONLY),
+                lambda: os.open(join(native_notdir, "child"), os.O_RDONLY),
+            )
+            if err:
+                return fail(err)
+
+            mfd = os.open(merge_file, os.O_RDWR)
+            nfd = os.open(native_file, os.O_RDWR)
+            try:
+                os.lseek(mfd, 0, os.SEEK_SET)
+                os.lseek(nfd, 0, os.SEEK_SET)
+                m_data = os.read(mfd, 6)
+                n_data = os.read(nfd, 6)
+                if m_data != n_data:
+                    return fail(f"read parity mismatch mergerfs={m_data!r} native={n_data!r}")
+
+                os.lseek(mfd, 0, os.SEEK_SET)
+                os.lseek(nfd, 0, os.SEEK_SET)
+                mw = os.write(mfd, b"abc")
+                nw = os.write(nfd, b"abc")
+                if mw != nw:
+                    return fail(f"write count mismatch mergerfs={mw} native={nw}")
+            finally:
+                os.close(mfd)
+                os.close(nfd)
+
+            return 0
         finally:
-            os.close(mfd)
-            os.close(nfd)
-
-        return 0
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

@@ -117,13 +117,13 @@ _getxattr_user_mergerfs_allpaths(const Branches::Ptr  branches_,
 
 static
 int
-_getxattr_user_mergerfs(const fs::path &basepath_,
-                        const fs::path &fusepath_,
-                        const fs::path &fullpath_,
-                        const Branches::Ptr branches_,
-                        const char     *attrname_,
-                        char           *buf_,
-                        const size_t    count_)
+_getxattr_user_mergerfs(const fs::path      &basepath_,
+                        const fs::path      &fusepath_,
+                        const fs::path      &fullpath_,
+                        const Branches::Ptr  branches_,
+                        const char          *attrname_,
+                        char                *buf_,
+                        const size_t         count_)
 {
   std::string key;
 

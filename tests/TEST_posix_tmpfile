@@ -5,8 +5,10 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 
 
 def open_tmpfile(dirpath):
@@ -32,32 +34,39 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_dir = join(mount, "posix-tmpfile")
-        native_dir = join(native, "posix-tmpfile")
-        os.makedirs(merge_dir, exist_ok=True)
-        os.makedirs(native_dir, exist_ok=True)
-
-        m_err = errno_of(lambda: open_tmpfile(merge_dir))
-        n_err = errno_of(lambda: open_tmpfile(native_dir))
-        if m_err != n_err:
-            return fail(f"O_TMPFILE support mismatch mergerfs_errno={m_err} native_errno={n_err}")
-
-        # If unsupported on both, treat as skip-pass.
-        if m_err in (errno.EOPNOTSUPP, errno.EISDIR, errno.EINVAL, errno.ENOSYS):
-            return 0
-
-        mfd = open_tmpfile(merge_dir)
-        nfd = open_tmpfile(native_dir)
+        merge_base = temp_dir(mount)
         try:
-            mw = os.write(mfd, b"tmpfile-data")
-            nw = os.write(nfd, b"tmpfile-data")
-            if mw != nw:
-                return fail(f"O_TMPFILE write count mismatch mergerfs={mw} native={nw}")
-        finally:
-            os.close(mfd)
-            os.close(nfd)
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-    return 0
+            merge_dir = merge_base
+            native_dir = native_base
+
+            m_err = errno_of(lambda: open_tmpfile(merge_dir))
+            n_err = errno_of(lambda: open_tmpfile(native_dir))
+            if m_err == errno.EOPNOTSUPP:
+                return 0
+            if m_err != n_err:
+                return fail(f"O_TMPFILE support mismatch mergerfs_errno={m_err} native_errno={n_err}")
+
+            # If unsupported on both, treat as skip-pass.
+            if m_err in (errno.EOPNOTSUPP, errno.EISDIR, errno.EINVAL, errno.ENOSYS):
+                return 0
+
+            mfd = open_tmpfile(merge_dir)
+            nfd = open_tmpfile(native_dir)
+            try:
+                mw = os.write(mfd, b"tmpfile-data")
+                nw = os.write(nfd, b"tmpfile-data")
+                if mw != nw:
+                    return fail(f"O_TMPFILE write count mismatch mergerfs={mw} native={nw}")
+            finally:
+                os.close(mfd)
+                os.close(nfd)
+
+            return 0
+        finally:
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

@@ -5,9 +5,11 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -116,54 +118,61 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_dir = join(mount, "posix-readdir/dir")
-        native_dir = join(native, "posix-readdir/dir")
-        merge_notdir = join(mount, "posix-readdir/notdir")
-        native_notdir = join(native, "posix-readdir/notdir")
+        merge_base = temp_dir(mount)
+        try:
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-        for idx in range(8):
-            touch(join(merge_dir, f"f{idx}"), b"x")
-            touch(join(native_dir, f"f{idx}"), b"x")
+            merge_dir = join(merge_base, "dir")
+            native_dir = join(native_base, "dir")
+            merge_notdir = join(merge_base, "notdir")
+            native_notdir = join(native_base, "notdir")
 
-        touch(merge_notdir, b"x")
-        touch(native_notdir, b"x")
+            for idx in range(8):
+                touch(join(merge_dir, f"f{idx}"), b"x")
+                touch(join(native_dir, f"f{idx}"), b"x")
 
-        err = compare_calls(
-            "opendir ENOENT",
-            lambda: opendir_or_raise(join(mount, "posix-readdir/missing")),
-            lambda: opendir_or_raise(join(native, "posix-readdir/missing")),
-        )
-        if err:
-            return fail(err)
+            touch(merge_notdir, b"x")
+            touch(native_notdir, b"x")
 
-        err = compare_calls(
-            "opendir ENOTDIR",
-            lambda: opendir_or_raise(join(merge_notdir, "child")),
-            lambda: opendir_or_raise(join(native_notdir, "child")),
-        )
-        if err:
-            return fail(err)
-
-        merge_names = names_set(merge_dir)
-        native_names = names_set(native_dir)
-        if merge_names != native_names:
-            return fail(f"readdir names mismatch mergerfs={sorted(merge_names)} native={sorted(native_names)}")
-
-        merge_consistent = seek_tell_consistent(merge_dir)
-        native_consistent = seek_tell_consistent(native_dir)
-        if merge_consistent != native_consistent:
-            return fail(
-                f"seekdir/telldir consistency mismatch mergerfs={merge_consistent} native={native_consistent}"
+            err = compare_calls(
+                "opendir ENOENT",
+                lambda: opendir_or_raise(join(merge_base, "missing")),
+                lambda: opendir_or_raise(join(native_base, "missing")),
             )
+            if err:
+                return fail(err)
 
-        touch(join(merge_dir, "victim"), b"x")
-        touch(join(native_dir, "victim"), b"x")
-        merge_sig = deleted_visibility_signature(merge_dir, join(merge_dir, "victim"))
-        native_sig = deleted_visibility_signature(native_dir, join(native_dir, "victim"))
-        if merge_sig != native_sig:
-            return fail(f"deleted-entry visibility mismatch mergerfs={merge_sig} native={native_sig}")
+            err = compare_calls(
+                "opendir ENOTDIR",
+                lambda: opendir_or_raise(join(merge_notdir, "child")),
+                lambda: opendir_or_raise(join(native_notdir, "child")),
+            )
+            if err:
+                return fail(err)
 
-        return 0
+            merge_names = names_set(merge_dir)
+            native_names = names_set(native_dir)
+            if merge_names != native_names:
+                return fail(f"readdir names mismatch mergerfs={sorted(merge_names)} native={sorted(native_names)}")
+
+            merge_consistent = seek_tell_consistent(merge_dir)
+            native_consistent = seek_tell_consistent(native_dir)
+            if merge_consistent != native_consistent:
+                return fail(
+                    f"seekdir/telldir consistency mismatch mergerfs={merge_consistent} native={native_consistent}"
+                )
+
+            touch(join(merge_dir, "victim"), b"x")
+            touch(join(native_dir, "victim"), b"x")
+            merge_sig = deleted_visibility_signature(merge_dir, join(merge_dir, "victim"))
+            native_sig = deleted_visibility_signature(native_dir, join(native_dir, "victim"))
+            if merge_sig != native_sig:
+                return fail(f"deleted-entry visibility mismatch mergerfs={merge_sig} native={native_sig}")
+
+            return 0
+        finally:
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

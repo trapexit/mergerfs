@@ -5,10 +5,12 @@ import errno
 import os
 import sys
 
+from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
 from posix_parity import mergerfs_fullpath
 from posix_parity import should_compare_inode
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -177,88 +179,93 @@ def main():
     mount = sys.argv[1]
     stcmp = cmp_statx_basic_with_inode if should_compare_inode(mount) else cmp_statx_basic
 
-    merge_file = join(mount, "posix-statx/file")
-    merge_link = join(mount, "posix-statx/link")
-
-    touch(merge_file, b"hello")
+    merge_base = temp_dir(mount)
 
     try:
-        native_file = mergerfs_fullpath(merge_file)
-    except OSError:
-        return 0
+        merge_file = join(merge_base, "file")
+        merge_link = join(merge_base, "link")
 
-    try:
-        os.unlink(merge_link)
-    except FileNotFoundError:
-        pass
-    os.symlink("file", merge_link)
+        touch(merge_file, b"hello")
 
-    try:
-        native_link = mergerfs_fullpath(merge_link)
-    except OSError:
-        return 0
-
-    # user.mergerfs.fullpath for a symlink may resolve to the target file path
-    # depending on policy behavior. For AT_SYMLINK_NOFOLLOW comparisons we need
-    # the underlying symlink path itself.
-    expected_native_link = os.path.join(os.path.dirname(native_file), "link")
-    if not os.path.islink(native_link):
-        if os.path.islink(expected_native_link):
-            native_link = expected_native_link
-        else:
+        try:
+            native_file = mergerfs_fullpath(merge_file)
+        except OSError:
             return 0
 
-    native_missing = os.path.join(os.path.dirname(native_file), "missing")
+        try:
+            os.unlink(merge_link)
+        except FileNotFoundError:
+            pass
+        os.symlink("file", merge_link)
 
-    mst, nst, err = call_pair(
-        "statx regular",
-        lambda: statx_call(merge_file),
-        lambda: statx_call(native_file),
-    )
-    if err:
-        return fail(err)
-    if not stcmp(mst, nst):
-        return fail(
-            "statx basic mismatch\n"
-            f"  mergerfs path: {merge_file}\n"
-            f"  native path:   {native_file}\n"
-            f"  mergerfs statx: {statx_summary(mst)}\n"
-            f"  native statx:   {statx_summary(nst)}"
+        try:
+            native_link = mergerfs_fullpath(merge_link)
+        except OSError:
+            return 0
+
+        # user.mergerfs.fullpath for a symlink may resolve to the target file path
+        # depending on policy behavior. For AT_SYMLINK_NOFOLLOW comparisons we need
+        # the underlying symlink path itself.
+        expected_native_link = os.path.join(os.path.dirname(native_file), "link")
+        if not os.path.islink(native_link):
+            if os.path.islink(expected_native_link):
+                native_link = expected_native_link
+            else:
+                return 0
+
+        native_missing = os.path.join(os.path.dirname(native_file), "missing")
+
+        mst, nst, err = call_pair(
+            "statx regular",
+            lambda: statx_call(merge_file),
+            lambda: statx_call(native_file),
         )
+        if err:
+            return fail(err)
+        if not stcmp(mst, nst):
+            return fail(
+                "statx basic mismatch\n"
+                f"  mergerfs path: {merge_file}\n"
+                f"  native path:   {native_file}\n"
+                f"  mergerfs statx: {statx_summary(mst)}\n"
+                f"  native statx:   {statx_summary(nst)}"
+            )
 
-    mst, nst, err = call_pair(
-        "statx symlink nofollow",
-        lambda: statx_call(merge_link, flags=AT_SYMLINK_NOFOLLOW),
-        lambda: statx_call(native_link, flags=AT_SYMLINK_NOFOLLOW),
-    )
-    if err:
-        return fail(err)
-    if (mst.stx_mode & 0xF000) != (nst.stx_mode & 0xF000):
-        return fail(
-            "statx symlink type mismatch\n"
-            f"  mergerfs path: {merge_link}\n"
-            f"  native path:   {native_link}\n"
-            f"  mergerfs statx: {statx_summary(mst)}\n"
-            f"  native statx:   {statx_summary(nst)}"
+        mst, nst, err = call_pair(
+            "statx symlink nofollow",
+            lambda: statx_call(merge_link, flags=AT_SYMLINK_NOFOLLOW),
+            lambda: statx_call(native_link, flags=AT_SYMLINK_NOFOLLOW),
         )
+        if err:
+            return fail(err)
+        if (mst.stx_mode & 0xF000) != (nst.stx_mode & 0xF000):
+            return fail(
+                "statx symlink type mismatch\n"
+                f"  mergerfs path: {merge_link}\n"
+                f"  native path:   {native_link}\n"
+                f"  mergerfs statx: {statx_summary(mst)}\n"
+                f"  native statx:   {statx_summary(nst)}"
+            )
 
-    err = expect_same_errno(
-        "statx ENOENT",
-        lambda: statx_call(join(mount, "posix-statx/missing")),
-        lambda: statx_call(native_missing),
-    )
-    if err:
-        return fail(err)
+        err = expect_same_errno(
+            "statx ENOENT",
+            lambda: statx_call(join(merge_base, "missing")),
+            lambda: statx_call(native_missing),
+        )
+        if err:
+            return fail(err)
 
-    err = expect_same_errno(
-        "statx ENOTDIR",
-        lambda: statx_call(join(merge_file, "child")),
-        lambda: statx_call(join(native_file, "child")),
-    )
-    if err:
-        return fail(err)
+        err = expect_same_errno(
+            "statx ENOTDIR",
+            lambda: statx_call(join(merge_file, "child")),
+            lambda: statx_call(join(native_file, "child")),
+        )
+        if err:
+            return fail(err)
 
-    return 0
+        return 0
+    finally:
+        cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

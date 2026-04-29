@@ -3,12 +3,28 @@
 import ctypes
 import errno
 import os
+import shutil
 import stat
+import tempfile
 
 
 libc = ctypes.CDLL(None, use_errno=True)
 libc.access.argtypes = [ctypes.c_char_p, ctypes.c_int]
 libc.access.restype = ctypes.c_int
+
+
+def temp_dir(root):
+    """Create a temporary directory within the given root directory."""
+    return tempfile.mkdtemp(dir=root)
+
+
+def cleanup_dir(path):
+    """Recursively remove a directory and its contents, ignoring errors."""
+    if path and os.path.exists(path):
+        try:
+            shutil.rmtree(path, ignore_errors=True)
+        except Exception:
+            pass
 
 
 def invoke(callable_):

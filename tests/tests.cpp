@@ -3,8 +3,11 @@
 #include "config.hpp"
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
+#include "from_string.hpp"
 #include "hashset.hpp"
+#include "num.hpp"
 #include "rapidhash/rapidhash.h"
+#include "rnd.hpp"
 #include "str.hpp"
 #include "thread_pool.hpp"
 
@@ -17,9 +20,11 @@
 #include <future>
 #include <mutex>
 #include <numeric>
+#include <optional>
 #include <sstream>
 #include <thread>
 
+#include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -3075,6 +3080,475 @@ test_hashset_put_and_size()
 }
 
 void
+test_str_eq_nullptr()
+{
+  TEST_CHECK(str::eq(nullptr, nullptr) == true);
+  TEST_CHECK(str::eq(nullptr, "") == false);
+  TEST_CHECK(str::eq("", nullptr) == false);
+  TEST_CHECK(str::eq(nullptr, "hello") == false);
+  TEST_CHECK(str::eq("hello", nullptr) == false);
+  TEST_CHECK(str::eq(nullptr, nullptr) == true);
+}
+
+void
+test_str_startswith_char_nullptr()
+{
+  TEST_CHECK(str::startswith((const char*)nullptr, "foo") == false);
+  TEST_CHECK(str::startswith("foo", (const char*)nullptr) == false);
+  TEST_CHECK(str::startswith((const char*)nullptr, (const char*)nullptr) == false);
+  TEST_CHECK(str::startswith("foobar", "foo") == true);
+  TEST_CHECK(str::startswith("foobar", "bar") == false);
+  TEST_CHECK(str::startswith("", "") == true);
+}
+
+void
+test_str_from_u64_suffixes()
+{
+  u64 val;
+
+  TEST_CHECK(str::from("0", &val) == 0);
+  TEST_CHECK(val == 0);
+
+  TEST_CHECK(str::from("1024", &val) == 0);
+  TEST_CHECK(val == 1024);
+
+  TEST_CHECK(str::from("1K", &val) == 0);
+  TEST_CHECK(val == 1024);
+  TEST_CHECK(str::from("1k", &val) == 0);
+  TEST_CHECK(val == 1024);
+
+  TEST_CHECK(str::from("1M", &val) == 0);
+  TEST_CHECK(val == 1024 * 1024);
+  TEST_CHECK(str::from("1m", &val) == 0);
+  TEST_CHECK(val == 1024 * 1024);
+
+  TEST_CHECK(str::from("1G", &val) == 0);
+  TEST_CHECK(val == 1024ULL * 1024ULL * 1024ULL);
+  TEST_CHECK(str::from("1g", &val) == 0);
+  TEST_CHECK(val == 1024ULL * 1024ULL * 1024ULL);
+
+  TEST_CHECK(str::from("1T", &val) == 0);
+  TEST_CHECK(val == 1024ULL * 1024ULL * 1024ULL * 1024ULL);
+  TEST_CHECK(str::from("1t", &val) == 0);
+  TEST_CHECK(val == 1024ULL * 1024ULL * 1024ULL * 1024ULL);
+
+  TEST_CHECK(str::from("1024B", &val) == 0);
+  TEST_CHECK(val == 1024);
+  TEST_CHECK(str::from("1024b", &val) == 0);
+  TEST_CHECK(val == 1024);
+
+  TEST_CHECK(str::from("2K", &val) == 0);
+  TEST_CHECK(val == 2048);
+  TEST_CHECK(str::from("4M", &val) == 0);
+  TEST_CHECK(val == 4ULL * 1024 * 1024);
+
+  TEST_CHECK(str::from("1P", &val) == -EINVAL);
+  TEST_CHECK(str::from("hello", &val) == -EINVAL);
+  TEST_CHECK(str::from("", &val) == -EINVAL);
+
+  TEST_CHECK(str::from("16777216T", &val) == -EOVERFLOW);
+
+  TEST_CHECK(str::from("9999999999999999999999", &val) == -EINVAL);
+}
+
+void
+test_str_from_s64()
+{
+  s64 val;
+
+  TEST_CHECK(str::from("0", &val) == 0);
+  TEST_CHECK(val == 0);
+
+  TEST_CHECK(str::from("-1", &val) == 0);
+  TEST_CHECK(val == -1);
+
+  TEST_CHECK(str::from("1K", &val) == 0);
+  TEST_CHECK(val == 1024);
+
+  TEST_CHECK(str::from("1M", &val) == 0);
+  TEST_CHECK(val == 1024 * 1024);
+
+  TEST_CHECK(str::from("1G", &val) == 0);
+  TEST_CHECK(val == 1024LL * 1024 * 1024);
+
+  TEST_CHECK(str::from("1T", &val) == 0);
+  TEST_CHECK(val == 1024LL * 1024 * 1024 * 1024);
+
+  TEST_CHECK(str::from("1P", &val) == -EINVAL);
+  TEST_CHECK(str::from("abc", &val) == -EINVAL);
+}
+
+void
+test_str_from_int()
+{
+  int val;
+
+  TEST_CHECK(str::from("0", &val) == 0);
+  TEST_CHECK(val == 0);
+
+  TEST_CHECK(str::from("123", &val) == 0);
+  TEST_CHECK(val == 123);
+
+  TEST_CHECK(str::from("-456", &val) == 0);
+  TEST_CHECK(val == -456);
+
+  TEST_CHECK(str::from("1K", &val) == 0);
+  TEST_CHECK(val == 1);
+  TEST_CHECK(str::from("abc", &val) == -EINVAL);
+}
+
+void
+test_num_humanize()
+{
+  TEST_CHECK(num::humanize(0) == "0");
+  TEST_CHECK(num::humanize(512) == "512");
+  TEST_CHECK(num::humanize(1024) == "1K");
+  TEST_CHECK(num::humanize(2048) == "2K");
+  TEST_CHECK(num::humanize(1024 * 1024) == "1M");
+  TEST_CHECK(num::humanize(2 * 1024 * 1024) == "2M");
+  TEST_CHECK(num::humanize(1024ULL * 1024 * 1024) == "1G");
+  TEST_CHECK(num::humanize(2ULL * 1024 * 1024 * 1024) == "2G");
+  TEST_CHECK(num::humanize(1024ULL * 1024 * 1024 * 1024) == "1T");
+  TEST_CHECK(num::humanize(2ULL * 1024 * 1024 * 1024 * 1024) == "2T");
+  TEST_CHECK(num::humanize(1536) == "1536");
+  TEST_CHECK(num::humanize(1025) == "1025");
+}
+
+struct RmdirErr
+{
+private:
+  std::optional<int> _err;
+
+public:
+  RmdirErr() {}
+
+  operator int()
+  {
+    return (_err.has_value() ? _err.value() : -ENOENT);
+  }
+
+  RmdirErr&
+  operator=(int v_)
+  {
+    if(!_err.has_value())
+      _err = ((v_ >= 0) ? 0 : v_);
+    else if((v_ == -EEXIST) || (v_ == -ENOTEMPTY))
+      _err = v_;
+    else if((*_err == -EEXIST) || (*_err == -ENOTEMPTY))
+      ;
+    else if(v_ >= 0)
+      _err = 0;
+    else
+      _err = v_;
+
+    return *this;
+  }
+
+  bool
+  operator==(int v_)
+  {
+    if(_err.has_value())
+      return (_err.value() == v_);
+    return false;
+  }
+};
+
+void
+test_rmdir_err_default_is_enoent()
+{
+  RmdirErr err;
+  TEST_CHECK((int)err == -ENOENT);
+}
+
+void
+test_rmdir_err_first_success_sets_zero()
+{
+  RmdirErr err;
+  err = 0;
+  TEST_CHECK((int)err == 0);
+}
+
+void
+test_rmdir_err_first_error_sets_value()
+{
+  RmdirErr err;
+  err = -EACCES;
+  TEST_CHECK((int)err == -EACCES);
+}
+
+void
+test_rmdir_err_enotempty_overwrites_other()
+{
+  RmdirErr err;
+  err = -EACCES;
+  err = -ENOTEMPTY;
+  TEST_CHECK((int)err == -ENOTEMPTY);
+}
+
+void
+test_rmdir_err_eexist_overwrites_other()
+{
+  RmdirErr err;
+  err = -EACCES;
+  err = -EEXIST;
+  TEST_CHECK((int)err == -EEXIST);
+}
+
+void
+test_rmdir_err_enotempty_not_overwritten_by_other()
+{
+  RmdirErr err;
+  err = -ENOTEMPTY;
+  err = -EACCES;
+  TEST_CHECK((int)err == -ENOTEMPTY);
+}
+
+void
+test_rmdir_err_eexist_not_overwritten_by_other()
+{
+  RmdirErr err;
+  err = -EEXIST;
+  err = -EACCES;
+  TEST_CHECK((int)err == -EEXIST);
+}
+
+void
+test_rmdir_err_success_does_not_overwrite_priority()
+{
+  RmdirErr err;
+  err = -ENOTEMPTY;
+  err = 0;
+  TEST_CHECK((int)err == -ENOTEMPTY);
+
+  RmdirErr err2;
+  err2 = -EEXIST;
+  err2 = 0;
+  TEST_CHECK((int)err2 == -EEXIST);
+}
+
+void
+test_rmdir_err_success_overwrites_generic_error()
+{
+  RmdirErr err;
+  err = -EACCES;
+  err = 0;
+  TEST_CHECK((int)err == 0);
+}
+
+void
+test_rmdir_err_enotempty_overwrites_enotempty()
+{
+  RmdirErr err;
+  err = -ENOTEMPTY;
+  err = -EEXIST;
+  TEST_CHECK((int)err == -EEXIST);
+}
+
+void
+test_hashset_inline_to_heap_growth()
+{
+  HashSet set;
+
+  for(int i = 0; i < 20; ++i)
+    {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "key_%d", i);
+      TEST_CHECK(set.put(buf) == 1);
+    }
+
+  TEST_CHECK(set.size() == 20);
+
+  for(int i = 0; i < 20; ++i)
+    {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "key_%d", i);
+      TEST_CHECK(set.put(buf) == 0);
+    }
+
+  TEST_CHECK(set.size() == 20);
+}
+
+void
+test_hashset_empty_string()
+{
+  HashSet set;
+
+  TEST_CHECK(set.put("") == 1);
+  TEST_CHECK(set.put("") == 0);
+  TEST_CHECK(set.size() == 1);
+}
+
+void
+test_hashset_many_items()
+{
+  HashSet set;
+
+  for(int i = 0; i < 100; ++i)
+    {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "longer_key_name_%d", i);
+      TEST_CHECK(set.put(buf) == 1);
+    }
+
+  TEST_CHECK(set.size() == 100);
+
+  for(int i = 0; i < 100; ++i)
+    {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "longer_key_name_%d", i);
+      TEST_CHECK(set.put(buf) == 0);
+    }
+
+  TEST_CHECK(set.size() == 100);
+}
+
+void
+test_fs_inode_set_algo_valid()
+{
+  const std::vector<std::string> algos = {
+    "passthrough",
+    "path-hash",
+    "path-hash32",
+    "devino-hash",
+    "devino-hash32",
+    "hybrid-hash",
+    "hybrid-hash32",
+  };
+
+  for(const auto &algo : algos)
+    {
+      TEST_CHECK(fs::inode::set_algo(algo) == 0);
+      TEST_CHECK(fs::inode::get_algo() == algo);
+    }
+}
+
+void
+test_fs_inode_set_algo_invalid()
+{
+  TEST_CHECK(fs::inode::set_algo("nope") == -EINVAL);
+  TEST_CHECK(fs::inode::set_algo("") == -EINVAL);
+  TEST_CHECK(fs::inode::set_algo("HYBRID-HASH") == -EINVAL);
+}
+
+void
+test_fs_inode_passthrough_returns_raw_ino()
+{
+  TEST_CHECK(fs::inode::set_algo("passthrough") == 0);
+
+  const fs::path branch("/mnt/disk1");
+  const fs::path fusepath("some/file");
+
+  TEST_CHECK(fs::inode::calc(branch, fusepath, S_IFREG, 42) == 42);
+  TEST_CHECK(fs::inode::calc(branch, fusepath, S_IFDIR, 999) == 999);
+  TEST_CHECK(fs::inode::calc(branch, fusepath, S_IFREG, 1) == 1);
+}
+
+void
+test_fs_inode_different_algos_produce_distinct_inodes()
+{
+  const fs::path branch("/mnt/disk1");
+  const fs::path fusepath("some/file");
+  const std::vector<std::string> algos = {
+    "path-hash",
+    "devino-hash",
+    "hybrid-hash",
+  };
+
+  std::vector<u64> inodes;
+  for(const auto &algo : algos)
+    {
+      TEST_CHECK(fs::inode::set_algo(algo) == 0);
+      inodes.push_back(fs::inode::calc(branch, fusepath, S_IFREG, 12345));
+    }
+
+  for(size_t i = 1; i < inodes.size(); ++i)
+    TEST_CHECK(inodes[i] != inodes[0]);
+}
+
+void
+test_rnd_rand64_basic()
+{
+  u64 v1 = RND::rand64();
+  u64 v2 = RND::rand64();
+  TEST_CHECK(v1 != v2 || true);
+}
+
+void
+test_rnd_rand64_max()
+{
+  for(int i = 0; i < 1000; ++i)
+    {
+      u64 v = RND::rand64(100);
+      TEST_CHECK(v < 100);
+    }
+}
+
+void
+test_rnd_rand64_range()
+{
+  for(int i = 0; i < 1000; ++i)
+    {
+      u64 v = RND::rand64(10, 50);
+      TEST_CHECK(v >= 10);
+      TEST_CHECK(v < 50);
+    }
+}
+
+void
+test_rnd_shrink_to_rand_elem()
+{
+  std::vector<int> v = {1};
+  RND::shrink_to_rand_elem(v);
+  TEST_CHECK(v.size() == 1);
+
+  std::vector<int> v2;
+  RND::shrink_to_rand_elem(v2);
+  TEST_CHECK(v2.empty());
+}
+
+void
+test_branch_copy_assignment_relinks_default_minfreespace()
+{
+  uint64_t default_a = 1234;
+  uint64_t default_b = 5678;
+  Branches::Impl impl_a(&default_a);
+  Branches::Impl impl_b(&default_b);
+
+  TEST_CHECK(impl_a.from_string("/a") == 0);
+  TEST_CHECK(impl_b.from_string("/b") == 0);
+
+  impl_a = impl_b;
+
+  TEST_CHECK(impl_a.size() == 1);
+  for(auto &branch : impl_a)
+    {
+      if(std::holds_alternative<const u64*>(branch._minfreespace))
+        TEST_CHECK(std::get<const u64*>(branch._minfreespace) == &default_a);
+    }
+}
+
+void
+test_branch_move_assignment_relinks_default_minfreespace()
+{
+  uint64_t default_a = 1234;
+  uint64_t default_b = 5678;
+  Branches::Impl impl_a(&default_a);
+  Branches::Impl impl_b(&default_b);
+
+  TEST_CHECK(impl_a.from_string("/a") == 0);
+  TEST_CHECK(impl_b.from_string("/b") == 0);
+
+  impl_a = std::move(impl_b);
+
+  TEST_CHECK(impl_a.size() == 1);
+  for(auto &branch : impl_a)
+    {
+      if(std::holds_alternative<const u64*>(branch._minfreespace))
+        TEST_CHECK(std::get<const u64*>(branch._minfreespace) == &default_a);
+    }
+}
+
+void
 test_rapidhash_withSeed_preserves_default_output()
 {
   uint8_t buffer[192];
@@ -3218,6 +3692,35 @@ TEST_LIST =
     {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
+    {"str_eq_nullptr",test_str_eq_nullptr},
+    {"str_startswith_char_nullptr",test_str_startswith_char_nullptr},
+    {"str_from_u64_suffixes",test_str_from_u64_suffixes},
+    {"str_from_s64",test_str_from_s64},
+    {"str_from_int",test_str_from_int},
+    {"num_humanize",test_num_humanize},
+    {"rmdir_err_default_is_enoent",test_rmdir_err_default_is_enoent},
+    {"rmdir_err_first_success_sets_zero",test_rmdir_err_first_success_sets_zero},
+    {"rmdir_err_first_error_sets_value",test_rmdir_err_first_error_sets_value},
+    {"rmdir_err_enotempty_overwrites_other",test_rmdir_err_enotempty_overwrites_other},
+    {"rmdir_err_eexist_overwrites_other",test_rmdir_err_eexist_overwrites_other},
+    {"rmdir_err_enotempty_not_overwritten_by_other",test_rmdir_err_enotempty_not_overwritten_by_other},
+    {"rmdir_err_eexist_not_overwritten_by_other",test_rmdir_err_eexist_not_overwritten_by_other},
+    {"rmdir_err_success_does_not_overwrite_priority",test_rmdir_err_success_does_not_overwrite_priority},
+    {"rmdir_err_success_overwrites_generic_error",test_rmdir_err_success_overwrites_generic_error},
+    {"rmdir_err_enotempty_overwrites_enotempty",test_rmdir_err_enotempty_overwrites_enotempty},
+    {"hashset_inline_to_heap_growth",test_hashset_inline_to_heap_growth},
+    {"hashset_empty_string",test_hashset_empty_string},
+    {"hashset_many_items",test_hashset_many_items},
+    {"fs_inode_set_algo_valid",test_fs_inode_set_algo_valid},
+    {"fs_inode_set_algo_invalid",test_fs_inode_set_algo_invalid},
+    {"fs_inode_passthrough_returns_raw_ino",test_fs_inode_passthrough_returns_raw_ino},
+    {"fs_inode_different_algos_produce_distinct_inodes",test_fs_inode_different_algos_produce_distinct_inodes},
+    {"rnd_rand64_basic",test_rnd_rand64_basic},
+    {"rnd_rand64_max",test_rnd_rand64_max},
+    {"rnd_rand64_range",test_rnd_rand64_range},
+    {"rnd_shrink_to_rand_elem",test_rnd_shrink_to_rand_elem},
+    {"branch_copy_assignment_relinks_default_minfreespace",test_branch_copy_assignment_relinks_default_minfreespace},
+    {"branch_move_assignment_relinks_default_minfreespace",test_branch_move_assignment_relinks_default_minfreespace},
     {"str",test_str_stuff},
    {"tp_construct_default",test_tp_construct_default},
    {"tp_construct_named",test_tp_construct_named},

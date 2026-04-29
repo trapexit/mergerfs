@@ -4,10 +4,12 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -19,52 +21,57 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_dir = join(mount, "posix-mkdir/dir")
-        native_dir = join(native, "posix-mkdir/dir")
-        merge_notdir = join(mount, "posix-mkdir/notdir")
-        native_notdir = join(native, "posix-mkdir/notdir")
+        merge_base = temp_dir(mount)
+        try:
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-        cleanup_paths([merge_dir, merge_notdir])
-        os.makedirs(join(mount, "posix-mkdir"), exist_ok=True)
-        os.makedirs(join(native, "posix-mkdir"), exist_ok=True)
+            merge_dir = join(merge_base, "dir")
+            native_dir = join(native_base, "dir")
+            merge_notdir = join(merge_base, "notdir")
+            native_notdir = join(native_base, "notdir")
 
-        err = compare_calls("mkdir success", lambda: os.mkdir(merge_dir, 0o755), lambda: os.mkdir(native_dir, 0o755))
-        if err:
-            return fail(err)
+            cleanup_paths([merge_dir, merge_notdir])
 
-        err = compare_calls("mkdir EEXIST", lambda: os.mkdir(merge_dir, 0o755), lambda: os.mkdir(native_dir, 0o755))
-        if err:
-            return fail(err)
+            err = compare_calls("mkdir success", lambda: os.mkdir(merge_dir, 0o755), lambda: os.mkdir(native_dir, 0o755))
+            if err:
+                return fail(err)
 
-        touch(merge_notdir, b"x")
-        touch(native_notdir, b"x")
-        err = compare_calls(
-            "mkdir ENOTDIR",
-            lambda: os.mkdir(join(merge_notdir, "child"), 0o755),
-            lambda: os.mkdir(join(native_notdir, "child"), 0o755),
-        )
-        if err:
-            return fail(err)
+            err = compare_calls("mkdir EEXIST", lambda: os.mkdir(merge_dir, 0o755), lambda: os.mkdir(native_dir, 0o755))
+            if err:
+                return fail(err)
 
-        err = compare_calls("rmdir success", lambda: os.rmdir(merge_dir), lambda: os.rmdir(native_dir))
-        if err:
-            return fail(err)
+            touch(merge_notdir, b"x")
+            touch(native_notdir, b"x")
+            err = compare_calls(
+                "mkdir ENOTDIR",
+                lambda: os.mkdir(join(merge_notdir, "child"), 0o755),
+                lambda: os.mkdir(join(native_notdir, "child"), 0o755),
+            )
+            if err:
+                return fail(err)
 
-        err = compare_calls("rmdir ENOENT", lambda: os.rmdir(merge_dir), lambda: os.rmdir(native_dir))
-        if err:
-            return fail(err)
+            err = compare_calls("rmdir success", lambda: os.rmdir(merge_dir), lambda: os.rmdir(native_dir))
+            if err:
+                return fail(err)
 
-        touch(join(mount, "posix-mkdir/nonempty/file"), b"x")
-        touch(join(native, "posix-mkdir/nonempty/file"), b"x")
-        err = compare_calls(
-            "rmdir ENOTEMPTY",
-            lambda: os.rmdir(join(mount, "posix-mkdir/nonempty")),
-            lambda: os.rmdir(join(native, "posix-mkdir/nonempty")),
-        )
-        if err:
-            return fail(err)
+            err = compare_calls("rmdir ENOENT", lambda: os.rmdir(merge_dir), lambda: os.rmdir(native_dir))
+            if err:
+                return fail(err)
 
-        return 0
+            touch(join(merge_base, "nonempty/file"), b"x")
+            touch(join(native_base, "nonempty/file"), b"x")
+            err = compare_calls(
+                "rmdir ENOTEMPTY",
+                lambda: os.rmdir(join(merge_base, "nonempty")),
+                lambda: os.rmdir(join(native_base, "nonempty")),
+            )
+            if err:
+                return fail(err)
+
+            return 0
+        finally:
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":

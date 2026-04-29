@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import errno
+import os
+import sys
+import tempfile
+
+from posix_parity import cleanup_dir
+from posix_parity import fail
+from posix_parity import join
+from posix_parity import mergerfs_branches
+from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_set_option
+from posix_parity import temp_dir
+from posix_parity import touch
+
+
+def get_errno(func):
+    try:
+        func()
+        return 0
+    except OSError as exc:
+        return exc.errno
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: TEST_movefile_enospc <mountpoint>", file=sys.stderr)
+        return 1
+
+    mount = sys.argv[1]
+
+    try:
+        orig_moveonenospc = mergerfs_get_option(mount, "moveonenospc")
+    except (PermissionError, FileNotFoundError, OSError):
+        return 0
+
+    branches = mergerfs_branches(mount)
+    if len(branches) < 2:
+        return 0
+
+    merge_base = temp_dir(mount)
+
+    try:
+        mergerfs_set_option(mount, "moveonenospc", "true")
+        mergerfs_set_option(mount, "func.moveonenospc", "mfs")
+
+        merge_file = join(merge_base, "enospc_test")
+        touch(merge_file, b"test data for enospc")
+
+        mergerfs_set_option(mount, "moveonenospc", orig_moveonenospc)
+
+        return 0
+    except Exception as exc:
+        try:
+            mergerfs_set_option(mount, "moveonenospc", orig_moveonenospc)
+        except Exception:
+            pass
+        return fail(str(exc))
+    finally:
+        cleanup_dir(merge_base)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

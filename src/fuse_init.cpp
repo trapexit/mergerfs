@@ -37,7 +37,7 @@
 static
 void
 _want(fuse_conn_info_t *conn_,
-      const int       flag_)
+      const int         flag_)
 {
   conn_->want |= flag_;
 }
@@ -80,7 +80,7 @@ static const char MAX_PAGES_LIMIT_FILEPATH[] = "/proc/sys/fs/fuse/max_pages_limi
 static
 void
 _want_if_capable_max_pages(fuse_conn_info_t *conn_,
-                           Config         &cfg_)
+                           Config           &cfg_)
 {
   std::fstream f;
   u64 max_pages_limit;

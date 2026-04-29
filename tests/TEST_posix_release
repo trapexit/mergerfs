@@ -4,8 +4,10 @@ import os
 import sys
 import tempfile
 
+from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import temp_dir
 from posix_parity import touch
 
 
@@ -17,62 +19,69 @@ def main():
     mount = sys.argv[1]
 
     with tempfile.TemporaryDirectory() as native:
-        merge_file = join(mount, "posix-release/file")
-        native_file = join(native, "posix-release/file")
-
-        touch(merge_file, b"abc")
-        touch(native_file, b"abc")
-
-        # Open + dup so one close does not release the underlying open-file state.
-        mfd1 = os.open(merge_file, os.O_RDWR)
-        nfd1 = os.open(native_file, os.O_RDWR)
-        mfd2 = os.dup(mfd1)
-        nfd2 = os.dup(nfd1)
-
+        merge_base = temp_dir(mount)
         try:
-            os.close(mfd1)
-            os.close(nfd1)
+            native_base = join(native, os.path.basename(merge_base))
+            os.makedirs(native_base, exist_ok=True)
 
-            mw = os.write(mfd2, b"X")
-            nw = os.write(nfd2, b"X")
-            if mw != nw:
-                return fail(f"release dup write mismatch mergerfs={mw} native={nw}")
+            merge_file = join(merge_base, "file")
+            native_file = join(native_base, "file")
 
-            os.lseek(mfd2, 0, os.SEEK_SET)
-            os.lseek(nfd2, 0, os.SEEK_SET)
-            mr = os.read(mfd2, 4)
-            nr = os.read(nfd2, 4)
-            if mr != nr:
-                return fail(f"release dup read mismatch mergerfs={mr!r} native={nr!r}")
-        finally:
-            os.close(mfd2)
-            os.close(nfd2)
+            touch(merge_file, b"abc")
+            touch(native_file, b"abc")
 
-        with open(merge_file, "rb") as mf, open(native_file, "rb") as nf:
-            md = mf.read()
-            nd = nf.read()
-        if md != nd:
-            return fail(f"release final data mismatch mergerfs={md!r} native={nd!r}")
+            # Open + dup so one close does not release the underlying open-file state.
+            mfd1 = os.open(merge_file, os.O_RDWR)
+            nfd1 = os.open(native_file, os.O_RDWR)
+            mfd2 = os.dup(mfd1)
+            nfd2 = os.dup(nfd1)
 
-        # Closing same fd twice should map to EBADF on both.
-        mfd = os.open(merge_file, os.O_RDONLY)
-        nfd = os.open(native_file, os.O_RDONLY)
-        os.close(mfd)
-        os.close(nfd)
-        try:
+            try:
+                os.close(mfd1)
+                os.close(nfd1)
+
+                mw = os.write(mfd2, b"X")
+                nw = os.write(nfd2, b"X")
+                if mw != nw:
+                    return fail(f"release dup write mismatch mergerfs={mw} native={nw}")
+
+                os.lseek(mfd2, 0, os.SEEK_SET)
+                os.lseek(nfd2, 0, os.SEEK_SET)
+                mr = os.read(mfd2, 4)
+                nr = os.read(nfd2, 4)
+                if mr != nr:
+                    return fail(f"release dup read mismatch mergerfs={mr!r} native={nr!r}")
+            finally:
+                os.close(mfd2)
+                os.close(nfd2)
+
+            with open(merge_file, "rb") as mf, open(native_file, "rb") as nf:
+                md = mf.read()
+                nd = nf.read()
+            if md != nd:
+                return fail(f"release final data mismatch mergerfs={md!r} native={nd!r}")
+
+            # Closing same fd twice should map to EBADF on both.
+            mfd = os.open(merge_file, os.O_RDONLY)
+            nfd = os.open(native_file, os.O_RDONLY)
             os.close(mfd)
-            m_err = 0
-        except OSError as exc:
-            m_err = exc.errno
-        try:
             os.close(nfd)
-            n_err = 0
-        except OSError as exc:
-            n_err = exc.errno
-        if m_err != n_err:
-            return fail(f"release EBADF mismatch mergerfs_errno={m_err} native_errno={n_err}")
+            try:
+                os.close(mfd)
+                m_err = 0
+            except OSError as exc:
+                m_err = exc.errno
+            try:
+                os.close(nfd)
+                n_err = 0
+            except OSError as exc:
+                n_err = exc.errno
+            if m_err != n_err:
+                return fail(f"release EBADF mismatch mergerfs_errno={m_err} native_errno={n_err}")
 
-        return 0
+            return 0
+        finally:
+            cleanup_dir(merge_base)
 
 
 if __name__ == "__main__":
