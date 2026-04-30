@@ -3395,7 +3395,6 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
       out_buf = (char*)malloc(out_size);
       if(!out_buf)
         goto err;
-      DEFER { free(out_buf); };
     }
 
   if(in_buf && out_buf)
@@ -3412,10 +3411,11 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
     goto err;
 
   fuse_reply_ioctl(req_,err,out_buf,out_size);
-  return;
-
+  goto out;
  err:
   fuse_reply_err(req_,err);
+ out:
+  free(out_buf);
 }
 
 static
