@@ -3395,8 +3395,9 @@ fuse_lib_ioctl(fuse_req_t                  *req_,
       out_buf = (char*)malloc(out_size);
       if(!out_buf)
         goto err;
-      DEFER { free(out_buf); };
     }
+
+  DEFER { free(out_buf); };
 
   if(in_buf && out_buf)
     memcpy(out_buf,in_buf,out_size);
