@@ -6,6 +6,7 @@
 * rapidhash: https://github.com/Nicoshev/rapidhash
 * fmt: https://github.com/fmtlib/fmt
 * concurrentqueue: https://github.com/cameron314/concurrentqueue
+* rpmalloc: https://github.com/mjansson/rpmalloc
 * scope_guard: https://github.com/Neargye/scope_guard
 * subprocess: https://github.com/arun11299/cpp-subprocess
 * CLI11: https://github.com/CLIUtils/CLI11

@@ -1,0 +1,250 @@
+1.4.5
+
+Fix for issue where span cache was not properly freed on heap free all
+
+Add rpmalloc_get_heap_for_ptr function to get heap for a given allocation
+
+Fixed medium size block limit and alignment handling when span size is reconfigured
+
+Fixed SIGILL on macOS rosetta mode (x86_64)
+
+Update compatibility with newer clang versions and use intrinsics for memcpy
+
+
+1.4.4
+
+Fixed an issue where an external thread concurrently freeing a block to the deferred list of
+a heap at the same time as owner thread freeing the last used block could cause a race condition
+ending in spen being freed multiple time.
+
+Added fallback path when huge page allocation fails to allocate and promote new pages as a
+transparent huge page
+
+Added option to name pages on Linux and Android.
+
+Compilation compatibility updates for MSYS2, FreeBSD, MacOS/clang and tinycc.
+
+1.4.3
+
+Fixed an issue where certain combinations of memory page size and span map counts could cause
+a deadlock in the mapping of new memory pages.
+
+Tweaked cache levels and avoid setting spans as reserved in a heap when the heap already has
+spans in the thread cache to improve cache usage.
+
+Prefer flags to more actively evict physical pages in madvise calls when partially unmapping
+span ranges on POSIX systems.
+
+
+1.4.2
+
+Fixed an issue where calling _exit might hang the main thread cleanup in rpmalloc if another
+worker thread was terminated while holding exclusive access to the global cache.
+
+Improved caches to prioritize main spans in a chunk to avoid leaving main spans mapped due to
+remaining subspans in caches.
+
+Improve cache reuse by allowing large blocks to use caches from slightly larger cache classes.
+
+Fixed an issue where thread heap statistics would go out of sync when a free span was deferred
+to another thread heap
+
+API breaking change - added flag to rpmalloc_thread_finalize to avoid releasing thread caches.
+Pass nonzero value to retain old behaviour of releasing thread caches to global cache.
+
+Add option to config to set a custom error callback for assert failures (if ENABLE_ASSERT)
+
+
+1.4.1
+
+Dual license as both released to public domain or under MIT license
+
+Allow up to 4GiB memory page sizes
+
+Fix an issue where large page sizes in conjunction with many threads waste a lot of memory (previously
+each heap occupied an entire memory page, now heaps can now share a memory page)
+
+Fixed compilation issue on macOS when ENABLE_PRELOAD is set but not ENABLE_OVERRIDE
+
+New first class heap API allowing explicit heap control and release of entire heap in a single call
+
+Added rpaligned_calloc function for aligned and zero intialized allocations
+
+Fixed natural alignment check in rpaligned_realloc to 16 bytes (check was 32, which is wrong)
+
+Minor performance improvements for all code paths by simplified span handling
+
+Minor performance improvements and for aligned allocations with alignment less or equal to 128 bytes
+by utilizing natural block alignments
+
+Refactor finalization to be compatible with global scope data causing dynamic allocations and frees, like
+C++ objects with custom ctors/dtors
+
+Refactor thread and global cache to be array based instead of list based for improved performance
+and cache size control
+
+Added missing C++ operator overloads with ENABLE_OVERRIDE when using Microsoft C++ runtimes
+
+Fixed issue in pvalloc override that could return less than a memory page in usable size
+
+Added a missing null check in the non-hot allocation code paths
+
+
+1.4.0
+
+Improved cross thread deallocations by using per-span atomic free list to minimize thread
+contention and localize free list processing to actual span
+
+Change span free list to a linked list, conditionally initialized one memory page at a time
+
+Reduce number of conditionals in the fast path allocation and avoid touching heap structure
+at all in best case
+
+Avoid realigning block in deallocation unless span marked as used by alignment > 32 bytes
+
+Revert block granularity and natural alignment to 16 bytes to reduce memory waste
+
+Bugfix for preserving data when reallocating a previously aligned (>32 bytes) block
+
+Use compile time span size by default for improved performance, added build time RPMALLOC_CONFIGURABLE
+preprocessor directive to reenable configurability of span and page size
+
+More detailed statistics
+
+Disabled adaptive thread cache by default
+
+Fixed an issue where reallocations of large blocks could read outsize of memory page boundaries
+
+Tag mmap requests on macOS with tag 240 for identification with vmmap tool
+
+
+1.3.2
+
+Support for alignment equal or larger than memory page size, up to span size
+
+Added adaptive thread cache size based on thread allocation load
+
+Fix 32-bit MSVC Windows builds using incorrect 64-bit pointer CAS
+
+Updated compatibility with clang toolchain and Python 3
+
+Support preconfigured huge pages
+
+Moved active heap counter to statistics
+
+Moved repository to https://github.com/mjansson/rpmalloc
+
+
+1.3.1
+
+Support for huge pages
+
+Bugfix to old size in aligned realloc and usable size for aligned allocs when alignment > 32
+
+Use C11 atomics for non-Microsoft compilers
+
+Remove remaining spin-lock like control for caches, all operations are now lock free
+
+Allow large deallocations to cross thread heaps
+
+
+1.3.0
+
+Make span size configurable and all spans equal in size, removing span size classes and streamlining the thread cache.
+
+Allow super spans to be reserved in advance and split up in multiple used spans to reduce number of system calls. This will not increase committed physical pages, only reserved virtual memory space.
+
+Allow super spans to be reused for allocations of lower size, breaking up the super span and storing remainder in thread cache in order to reduce load on global cache and reduce cache overhead.
+
+Fixed an issue where an allocation of zero bytes would cause a segmentation fault from indexing size class array with index -1.
+
+Fixed an issue where an allocation of maximum large block size (2097120 bytes) would index the heap cache array out of bounds and potentially cause a segmentation fault depending on earlier allocation patterns.
+
+Fixed an issue where memory pages at start of aligned span run was not completely unmapped on POSIX systems.
+
+Fixed an issue where spans were not correctly marked as owned by the heap after traversing the global span cache.
+
+Added function to access the allocator configuration after initialization to find default values.
+
+Removed allocated and reserved statistics to reduce code complexity.
+
+
+1.2.2
+
+Add configurable memory mapper providing map/unmap of memory pages. Default to VirtualAlloc/mmap if none provided. This allows rpmalloc to be used in contexts where memory is provided by internal means.
+
+Avoid using explicit memory map addresses to mmap on POSIX systems. Instead use overallocation of virtual memory space to gain 64KiB alignment of spans. Since extra pages are never touched this should have no impact on real memory usage and remove the possibility of contention in virtual address space with other uses of mmap.
+
+Detect system memory page size at initialization, and allow page size to be set explicitly in initialization. This allows the allocator to be used as a sub-allocator where the page granularity should be lower to reduce risk of wasting unused memory ranges, and adds support for modern iOS devices where page size is 16KiB.
+
+Add build time option to use memory guards, surrounding each allocated block with a dead zone which is checked for consistency when block is freed.
+
+Always finalize thread on allocator finalization, fixing issue when re-initializing allocator in the same thread.
+
+Add basic allocator test cases
+
+
+1.2.1
+
+Split library into rpmalloc only base library and preloadable malloc wrapper library.
+
+Add arg validation to valloc and pvalloc.
+
+Change ARM memory barrier instructions to dmb ish/ishst for compatibility.
+
+Improve preload compatibility on Apple platforms by using pthread key for TLS in wrapper library.
+
+Fix ABA issue in orphaned heap linked list
+
+
+1.2
+
+Dual license under MIT
+
+Fix init/fini checks in malloc entry points for preloading into binaries that does malloc/free in init or fini sections
+
+Fixed an issue where freeing a block which had been realigned during allocation due to alignment request greater than 16 caused the free block link to be written in the wrong place in the block, causing next allocation from the size class to return a bad pointer
+
+Improve mmap 64KiB granularity enforcement loop to avoid excessive iterations
+
+Fix undersized adaptive cache counter array for large block in heap structure, causing potential abort on exit
+
+Avoid hysteresis in realloc by overallocating on small size increases
+
+Add entry point for realloc with alignment and optional flags to avoid preserving content
+
+Add valloc/pvalloc/cfree wrappers
+
+Add C++ new/delete wrappers
+
+
+1.1
+
+Add four cache presets (unlimited, performance priority, size priority and no cache)
+
+Slight performance improvement by dependent class index lookup for merged size classes
+
+Adaptive cache size per thread and per size class for improved memory efficiency, and release thread caches to global cache in fixed size batches
+
+Merged caches for small/medium classes using 64KiB spans with 64KiB large blocks
+
+Require thread initialization with rpmalloc_thread_initialize, add pthread hooks for automatic init/fini
+
+Added rpmalloc_usable_size query entry point
+
+Fix invalid old size in memory copy during realloc
+
+Optional statistics and integer overflow guards
+
+Optional asserts for easier debugging
+
+Provide malloc entry point replacements and automatic init/fini hooks, and a LD_PRELOAD:able dynamic library build
+
+Improve documentation and additional code comments
+
+Move benchmarks to separate repo, https://github.com/mjansson/rpmalloc-benchmark
+
+
+1.0
+
+Initial release

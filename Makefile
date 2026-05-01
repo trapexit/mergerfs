@@ -48,7 +48,18 @@ endif
 endif
 
 USE_XATTR ?= 1
+ifdef SANITIZE
+USE_RPMALLOC ?= 0
+else
+USE_RPMALLOC ?= 1
+endif
 UGID_USE_RWLOCK ?= 0
+
+ifdef SANITIZE
+ifeq ($(USE_RPMALLOC),1)
+$(error SANITIZE is not supported with USE_RPMALLOC=1)
+endif
+endif
 
 ifdef NDEBUG
 OPT_FLAGS := -O2 -DNDEBUG
@@ -133,13 +144,30 @@ override TESTS_FLAGS := \
 	-Ivendored/acutest \
 	-DTESTS
 
-LIBFUSE := vendored/libfuse/$(BUILDDIR)/libfuse.a
+LIBFUSE      := vendored/libfuse/$(BUILDDIR)/libfuse.a
 LDFLAGS ?=
 LDLIBS := \
 	-lrt \
 	-pthread
 override LDLIBS += \
 	$(LIBFUSE)
+ifeq ($(USE_RPMALLOC),1)
+RPMALLOC_OBJ := vendored/rpmalloc/$(BUILDDIR)/rpmalloc$(if $(filter 1,$(STATIC)),-static).c.o
+RPMALLOC_FLAGS := -DENABLE_OVERRIDE=1 -DENABLE_PRELOAD=1
+ifeq ($(STATIC),1)
+RPMALLOC_FLAGS += -DRPMALLOC_NO_PTHREAD_CREATE_OVERRIDE=1
+override LDFLAGS += \
+	-Wl,--allow-multiple-definition
+else
+override LDLIBS += \
+	-ldl
+endif
+LINK_OBJS    := $(OBJS) $(RPMALLOC_OBJ)
+TESTS_LINK_OBJS := $(TESTS_OBJS) $(RPMALLOC_OBJ)
+else
+LINK_OBJS    := $(OBJS)
+TESTS_LINK_OBJS := $(TESTS_OBJS)
+endif
 ifeq ($(CXX),g++)
     GCC_VERSION := $(shell $(CXX) -dumpversion | cut -f1 -d.)
     ifeq ($(shell test $(GCC_VERSION) -lt 9; echo $$?),0)
@@ -172,6 +200,7 @@ all: libfuse $(BUILDDIR)/mergerfs $(BUILDDIR)/fsck.mergerfs $(BUILDDIR)/mergerfs
 help:
 	@echo "usage: make ARG\n"
 	@echo "USE_XATTR=0     - build program without xattrs functionality"
+	@echo "USE_RPMALLOC=0  - build program without rpmalloc"
 	@echo "STATIC=1        - build static binary"
 	@echo "LTO=1           - build with link time optimization"
 	@echo "SANITIZE=1      - build with sanitizers (address,undefined,leak)"
@@ -181,8 +210,8 @@ help:
 	@echo "GITREF=gitref   - gitref to use for release builds"
 
 
-$(BUILDDIR)/mergerfs: $(LIBFUSE) src/version.hpp $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+$(BUILDDIR)/mergerfs: $(LIBFUSE) src/version.hpp $(LINK_OBJS)
+	$(CXX) $(CXXFLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(LINK_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
 $(BUILDDIR)/fsck.mergerfs: $(BUILDDIR)/mergerfs
 	$(LN) -sf "mergerfs" $@
@@ -190,8 +219,8 @@ $(BUILDDIR)/fsck.mergerfs: $(BUILDDIR)/mergerfs
 $(BUILDDIR)/mergerfs.collect-info: $(BUILDDIR)/mergerfs
 	$(LN) -sf "mergerfs" $@
 
-$(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_OBJS)
-	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+$(BUILDDIR)/tests: $(BUILDDIR)/mergerfs $(TESTS_LINK_OBJS)
+	$(CXX) $(CXXFLAGS) $(TESTS_FLAGS) $(INC_FLAGS) $(MFS_FLAGS) $(CPPFLAGS) $(TESTS_LINK_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
 .PHONY: libfuse
 libfuse: $(LIBFUSE)
@@ -199,6 +228,12 @@ libfuse: $(LIBFUSE)
 
 $(LIBFUSE):
 	$(MAKE) -C vendored/libfuse $(BUILDDIR)/libfuse.a
+
+ifeq ($(USE_RPMALLOC),1)
+$(RPMALLOC_OBJ): vendored/rpmalloc/rpmalloc.c vendored/rpmalloc/rpmalloc.h vendored/rpmalloc/malloc.c
+	$(MKDIR) -p vendored/rpmalloc/$(BUILDDIR)
+	$(CC) $(CFLAGS) $(INC_FLAGS) $(CPPFLAGS) $(RPMALLOC_FLAGS) -c $< -o $@
+endif
 
 tests: $(BUILDDIR)/tests
 
@@ -235,6 +270,7 @@ preload: $(BUILDDIR)/preload.so
 .PHONY: clean
 clean: rpm-clean
 	$(RM) -rf $(BUILDDIR)
+	$(RM) -rf vendored/rpmalloc/$(BUILDDIR)
 	$(FIND) . -name "*~" -delete
 	$(MAKE) -C vendored/libfuse clean
 
