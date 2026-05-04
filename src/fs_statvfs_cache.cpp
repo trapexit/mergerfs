@@ -80,7 +80,7 @@ fs::statvfs_cache(const std::string &path_,
   rv = 0;
   now = ::_get_time();
 
-  mutex_lock(g_cache_lock);
+  mutex_lockguard(g_cache_lock);
 
   e = &g_cache[path_];
 
@@ -91,8 +91,6 @@ fs::statvfs_cache(const std::string &path_,
     }
 
   *st_ = e->st;
-
-  mutex_unlock(g_cache_lock);
 
   return rv;
 }

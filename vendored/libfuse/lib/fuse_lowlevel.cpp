@@ -1326,17 +1326,18 @@ do_notify_reply(fuse_req_t            *req,
   struct fuse_notify_req *nreq;
   struct fuse_notify_req *head;
 
-  mutex_lock(f.lock);
-  head = &f.notify_list;
-  for(nreq = head->next; nreq != head; nreq = nreq->next)
-    {
-      if(nreq->unique == req->ctx.unique)
-        {
-          list_del_nreq(nreq);
-          break;
-        }
-    }
-  mutex_unlock(f.lock);
+  {
+    mutex_lockguard(f.lock);
+    head = &f.notify_list;
+    for(nreq = head->next; nreq != head; nreq = nreq->next)
+      {
+        if(nreq->unique == req->ctx.unique)
+          {
+            list_del_nreq(nreq);
+            break;
+          }
+      }
+  }
 
   if(nreq != head)
     nreq->reply(nreq, req, hdr_->nodeid, &hdr_[1]);
@@ -1574,12 +1575,13 @@ fuse_lowlevel_notify_retrieve(struct fuse_session *se,
   if(rreq == NULL)
     return -ENOMEM;
 
-  mutex_lock(f.lock);
-  rreq->cookie = cookie;
-  rreq->nreq.unique = f.notify_ctr++;
-  rreq->nreq.reply = fuse_ll_retrieve_reply;
-  list_add_nreq(&rreq->nreq, &f.notify_list);
-  mutex_unlock(f.lock);
+  {
+    mutex_lockguard(f.lock);
+    rreq->cookie = cookie;
+    rreq->nreq.unique = f.notify_ctr++;
+    rreq->nreq.reply = fuse_ll_retrieve_reply;
+    list_add_nreq(&rreq->nreq, &f.notify_list);
+  }
 
   outarg.notify_unique = rreq->nreq.unique;
   outarg.nodeid = ino;
@@ -1592,9 +1594,10 @@ fuse_lowlevel_notify_retrieve(struct fuse_session *se,
   err = send_notify_iov(se, FUSE_NOTIFY_RETRIEVE, iov, 2);
   if(err)
     {
-      mutex_lock(f.lock);
-      list_del_nreq(&rreq->nreq);
-      mutex_unlock(f.lock);
+      {
+        mutex_lockguard(f.lock);
+        list_del_nreq(&rreq->nreq);
+      }
       free(rreq);
     }
 

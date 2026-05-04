@@ -10,7 +10,7 @@
 
 static pthread_t g_thread;
 static std::vector<std::function<void(u64)>> g_funcs;
-static mutex_t g_mutex;
+static Mutex g_mutex;
 
 static
 void*
@@ -25,8 +25,14 @@ _thread_loop(void *)
     {
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
       {
-        LockGuard lg(g_mutex);
-        for(auto &func : g_funcs)
+        std::vector<std::function<void(u64)>> funcs;
+
+        {
+          mutex_lockguard(g_mutex);
+          funcs = g_funcs;
+        }
+
+        for(auto &func : funcs)
           func(count);
       }
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
@@ -51,7 +57,7 @@ MaintenanceThread::setup()
 void
 MaintenanceThread::push_job(const std::function<void(u64)> &func_)
 {
-  LockGuard lg(g_mutex);
+  mutex_lockguard(g_mutex);
 
   g_funcs.emplace_back(func_);
 }
@@ -61,4 +67,9 @@ MaintenanceThread::stop()
 {
   pthread_cancel(g_thread);
   pthread_join(g_thread,NULL);
+
+  {
+    mutex_lockguard(g_mutex);
+    g_funcs.clear();
+  }
 }

@@ -14,6 +14,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <new>
+
 #include <unistd.h>
 #include <sys/uio.h>
 

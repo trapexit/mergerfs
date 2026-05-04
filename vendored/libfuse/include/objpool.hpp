@@ -81,7 +81,7 @@ private:
   }
 
 private:
-  mutex_t _mtx;
+  Mutex _mtx;
   Node *_head = nullptr;
   std::atomic<size_t> _pool_count{0};
   Allocator _allocator;
@@ -124,7 +124,7 @@ private:
   Node*
   _pop_node(const size_t required_size_)
   {
-    mutex_lock(_mtx);
+    mutex_lockguard(_mtx);
 
     Node **prev = &_head;
     while(*prev)
@@ -134,14 +134,11 @@ private:
           {
             *prev = node->next;
             _pool_count.fetch_sub(1,std::memory_order_relaxed);
-            mutex_unlock(_mtx);
             return node;
           }
 
         prev = &node->next;
       }
-
-    mutex_unlock(_mtx);
 
     return nullptr;;
   }
@@ -152,13 +149,11 @@ private:
   {
     node_->alloc_size = alloc_size_;
 
-    mutex_lock(_mtx);
+    mutex_lockguard(_mtx);
 
     node_->next = _head;
     _head = node_;
     _pool_count.fetch_add(1,std::memory_order_relaxed);
-
-    mutex_unlock(_mtx);
   }
 
 public:
@@ -167,13 +162,13 @@ public:
   {
     Node *head;
 
-    mutex_lock(_mtx);
+    {
+      mutex_lockguard(_mtx);
 
-    head  = _head;
-    _head = nullptr;
-    _pool_count.store(0,std::memory_order_relaxed);
-
-    mutex_unlock(_mtx);
+      head  = _head;
+      _head = nullptr;
+      _pool_count.store(0,std::memory_order_relaxed);
+    }
 
     while(head)
       {

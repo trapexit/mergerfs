@@ -70,7 +70,7 @@ _readdir(const fs::path &branch_path_,
   fs::inode::ReaddirCalc inodecalc(branch_path_,rel_dirpath_);
   while(true)
     {
-      LockGuard lk(mutex_);
+      mutex_lockguard(mutex_);
       for(int i = 0; i < MAX_ENTRIES_PER_LOOP; i++)
         {
           int rv;

@@ -67,7 +67,7 @@ _readdir(const fs::path &branch_path_,
       if(nread <= 0)
         return nread;
 
-      LockGuard lk(mutex_);
+      mutex_lockguard(mutex_);
       for(ssize_t pos = 0; pos < nread;)
         {
           int rv;

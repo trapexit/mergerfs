@@ -6,8 +6,6 @@
 #include "mutex_ndebug.hpp"
 #endif
 
-#include "scope_guard/scope_guard.hpp"
-
 typedef pthread_mutex_t mutex_t;
 
 // Simple mutex_t wrapper to provide RAII
@@ -29,33 +27,29 @@ public:
     mutex_destroy(_mutex);
   }
 
+  Mutex(const Mutex&) = delete;
+  Mutex& operator=(const Mutex&) = delete;
+  Mutex(Mutex&&) = delete;
+  Mutex& operator=(Mutex&&) = delete;
+
   operator mutex_t&()
   {
     return _mutex;
   }
 };
 
-class LockGuard
-{
-private:
-  mutex_t &_mutex;
+// RAII mutex guard macro.  Expands to a single variable declaration,
+// so it is safe in unbraced if/else/for/while.
+// In debug builds the call-site __FILE__/__func__/__LINE__ are
+// forwarded to _mutex_lock/_mutex_unlock for diagnostics.
+#define MUTEX_LOCKGUARD_CONCAT_(a,b) a##b
+#define MUTEX_LOCKGUARD_CONCAT(a,b)  MUTEX_LOCKGUARD_CONCAT_(a,b)
 
-public:
-  LockGuard(mutex_t &mutex_)
-    : _mutex(mutex_)
-  {
-    mutex_lock(_mutex);
-  }
-
-  ~LockGuard()
-  {
-    mutex_unlock(_mutex);
-  }
-};
-
-// Single-line mutex guard using scope_guard
-// Expands to mutex_lock() followed by DEFER mutex_unlock()
-// Both lock and unlock capture __FILE__/__func__/__LINE__ from the call site
+#ifdef DEBUG
 #define mutex_lockguard(m) \
-  mutex_lock(m);           \
-  DEFER { mutex_unlock(m); }
+  ScopedMutexLock MUTEX_LOCKGUARD_CONCAT(_mtx_guard_,__COUNTER__) \
+    ((m),__FILE__,__func__,__LINE__)
+#else
+#define mutex_lockguard(m) \
+  ScopedMutexLock MUTEX_LOCKGUARD_CONCAT(_mtx_guard_,__COUNTER__)(m)
+#endif

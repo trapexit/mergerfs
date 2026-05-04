@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cerrno>
 #include <cstdlib>
 
 #include <pthread.h>
@@ -17,14 +18,27 @@ mutex_init(pthread_mutex_t &mutex_)
   int rv;
   pthread_mutexattr_t attr;
 
-  pthread_mutexattr_init(&attr);
-  pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_ADAPTIVE_NP);
-
-  rv = pthread_mutex_init(&mutex_,&attr);
+  rv = pthread_mutexattr_init(&attr);
   if(rv != 0)
     std::abort();
 
-  pthread_mutexattr_destroy(&attr);
+  rv = pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_ADAPTIVE_NP);
+  if(rv != 0)
+    {
+      pthread_mutexattr_destroy(&attr);
+      std::abort();
+    }
+
+  rv = pthread_mutex_init(&mutex_,&attr);
+  if(rv != 0)
+    {
+      pthread_mutexattr_destroy(&attr);
+      std::abort();
+    }
+
+  rv = pthread_mutexattr_destroy(&attr);
+  if(rv != 0)
+    std::abort();
 }
 
 static
@@ -62,3 +76,25 @@ mutex_destroy(pthread_mutex_t &mutex_)
   if(rv != 0)
     std::abort();
 }
+
+class ScopedMutexLock
+{
+private:
+  pthread_mutex_t &_mutex;
+
+public:
+  explicit
+  ScopedMutexLock(pthread_mutex_t &mutex_)
+    : _mutex(mutex_)
+  {
+    mutex_lock(_mutex);
+  }
+
+  ~ScopedMutexLock() noexcept
+  {
+    mutex_unlock(_mutex);
+  }
+
+  ScopedMutexLock(const ScopedMutexLock&) = delete;
+  ScopedMutexLock& operator=(const ScopedMutexLock&) = delete;
+};

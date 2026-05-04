@@ -326,8 +326,8 @@ fuse_loop_mt(struct fuse *f_)
   if(f_ == NULL)
     return -1;
 
-  MaintenanceThread::setup();
   fuse_populate_maintenance_thread(f_);
+  MaintenanceThread::setup();
 
   res = fuse_session_loop_mt(fuse_get_session(),
                              fuse_cfg.read_thread_count,
