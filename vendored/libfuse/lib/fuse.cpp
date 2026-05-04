@@ -33,6 +33,8 @@
 #include "maintenance_thread.hpp"
 
 #include <string>
+#include <new>
+#include <unordered_map>
 #include <vector>
 
 #include <assert.h>
@@ -101,11 +103,20 @@ struct list_head
   struct list_head *prev;
 };
 
-typedef struct remembered_node_t remembered_node_t;
-struct remembered_node_t
+typedef struct retained_node_t retained_node_t;
+struct retained_node_t
 {
-  node_t *node;
-  time_t  time;
+  node_t         *node;
+  time_t          retained_at;
+  retained_node_t *prev;
+  retained_node_t *next;
+};
+
+struct retention_cache_t
+{
+  retained_node_t *head = NULL;
+  retained_node_t *tail = NULL;
+  std::unordered_map<node_t*,retained_node_t*> by_node;
 };
 
 typedef struct nodeid_gen_t nodeid_gen_t;
@@ -126,7 +137,7 @@ struct fuse
   fuse_operations ops;
   struct lock_queue_element *lockq;
 
-  kvec_t(remembered_node_t) remembered_nodes;
+  retention_cache_t *retention;
 };
 
 struct lock
@@ -150,6 +161,34 @@ struct fuse_dh
 };
 
 static struct fuse f = {};
+
+static
+void
+unref_node(node_t *node);
+
+static
+inline
+s64
+remember_nodes_value()
+{
+  return fuse_cfg.remember_nodes.load(std::memory_order_relaxed);
+}
+
+static
+inline
+bool
+keep_remembered_nodes()
+{
+  return (remember_nodes_value() != 0);
+}
+
+static
+inline
+bool
+node_is_rememberable(const node_t *node_)
+{
+  return ((node_->name != NULL) && (node_->parent != NULL));
+}
 
 /*
   Why was the nodeid:generation logic simplified?
@@ -202,20 +241,6 @@ get_node(const uint64_t nodeid)
 }
 
 static
-void
-remove_remembered_node(node_t *node_)
-{
-  for(size_t i = 0; i < kv_size(f.remembered_nodes); i++)
-    {
-      if(kv_A(f.remembered_nodes,i).node != node_)
-        continue;
-
-      kv_delete(f.remembered_nodes,i);
-      break;
-    }
-}
-
-static
 uint32_t
 stat_crc32b(const struct stat *st_)
 {
@@ -253,6 +278,167 @@ current_time()
     now.tv_sec = time(NULL);
 
   return now.tv_sec;
+}
+
+static
+int
+retention_cache_ensure()
+{
+  retention_cache_t *cache;
+
+  if(f.retention != NULL)
+    return 0;
+
+  cache = new(std::nothrow) retention_cache_t();
+  if(cache == NULL)
+    return -ENOMEM;
+
+  f.retention = cache;
+
+  return 0;
+}
+
+static
+void
+retention_link_tail(retained_node_t *rn_)
+{
+  rn_->prev = f.retention->tail;
+  rn_->next = NULL;
+  if(f.retention->tail)
+    f.retention->tail->next = rn_;
+  else
+    f.retention->head = rn_;
+  f.retention->tail = rn_;
+}
+
+static
+void
+retention_unlink(retained_node_t *rn_)
+{
+  if(rn_->prev)
+    rn_->prev->next = rn_->next;
+  else
+    f.retention->head = rn_->next;
+
+  if(rn_->next)
+    rn_->next->prev = rn_->prev;
+  else
+    f.retention->tail = rn_->prev;
+
+  rn_->prev = NULL;
+  rn_->next = NULL;
+}
+
+static
+void
+retention_move_tail(retained_node_t *rn_,
+                    const time_t     retained_at_)
+{
+  rn_->retained_at = retained_at_;
+
+  if(f.retention->tail == rn_)
+    return;
+
+  retention_unlink(rn_);
+  retention_link_tail(rn_);
+}
+
+static
+retained_node_t*
+retention_find(node_t *node_)
+{
+  if(f.retention == NULL)
+    return NULL;
+
+  auto it = f.retention->by_node.find(node_);
+  if(it == f.retention->by_node.end())
+    return NULL;
+
+  return it->second;
+}
+
+static
+bool
+retention_remove(node_t *node_)
+{
+  retained_node_t *rn;
+
+  if(f.retention == NULL)
+    return false;
+
+  auto it = f.retention->by_node.find(node_);
+  if(it == f.retention->by_node.end())
+    return false;
+
+  rn = it->second;
+  retention_unlink(rn);
+  f.retention->by_node.erase(it);
+  delete rn;
+
+  return true;
+}
+
+static
+int
+retention_add(node_t *node_)
+{
+  retained_node_t *rn;
+  time_t now;
+
+  if(retention_cache_ensure() < 0)
+    return -ENOMEM;
+
+  now = current_time();
+  rn = retention_find(node_);
+  if(rn != NULL)
+    {
+      retention_move_tail(rn,now);
+      return 0;
+    }
+
+  rn = new(std::nothrow) retained_node_t{node_,now,NULL,NULL};
+  if(rn == NULL)
+    return -ENOMEM;
+
+  try
+    {
+      auto result = f.retention->by_node.emplace(node_,rn);
+      if(result.second == false)
+        {
+          delete rn;
+          retention_move_tail(result.first->second,now);
+          return 0;
+        }
+    }
+  catch(...)
+    {
+      delete rn;
+      return -ENOMEM;
+    }
+
+  retention_link_tail(rn);
+
+  return 0;
+}
+
+static
+void
+retention_destroy()
+{
+  retained_node_t *rn;
+  retained_node_t *next;
+
+  if(f.retention == NULL)
+    return;
+
+  for(rn = f.retention->head; rn != NULL; rn = next)
+    {
+      next = rn->next;
+      delete rn;
+    }
+
+  delete f.retention;
+  f.retention = NULL;
 }
 
 static
@@ -559,21 +745,12 @@ hash_name(node_t     *node,
 }
 
 static
-inline
-int
-remember_nodes()
-{
-  return (fuse_cfg.remember_nodes > 0);
-}
-
-static
 void
 delete_node(node_t *node)
 {
   assert(node->treelock == 0);
   unhash_name(node);
-  if(remember_nodes())
-    remove_remembered_node(node);
+  retention_remove(node);
   unhash_id(node);
   node_free(node);
 }
@@ -621,7 +798,7 @@ static
 void
 inc_nlookup(node_t *node)
 {
-  if(!node->nlookup)
+  if(!node->nlookup && !retention_remove(node))
     node->refctr++;
   node->nlookup++;
 }
@@ -652,8 +829,6 @@ find_node(uint64_t    parent,
         goto out_err;
 
       node->nodeid = generate_nodeid(&f.nodeid_gen);
-      if(fuse_cfg.remember_nodes)
-        inc_nlookup(node);
 
       if(hash_name(node,parent,name) == -1)
         {
@@ -663,10 +838,7 @@ find_node(uint64_t    parent,
         }
       hash_id(node);
     }
-  else if((node->nlookup == 1) && remember_nodes())
-    {
-      remove_remembered_node(node);
-    }
+
   inc_nlookup(node);
 
  out_err:
@@ -1072,11 +1244,12 @@ free_path_wrlock(uint64_t  nodeid,
                  node_t   *wnode,
                  char     *path)
 {
-  mutex_lock(f.lock);
-  unlock_path(nodeid,wnode,NULL);
-  if(f.lockq)
-    wake_up_queued();
-  mutex_unlock(f.lock);
+  {
+    mutex_lockguard(f.lock);
+    unlock_path(nodeid,wnode,NULL);
+    if(f.lockq)
+      wake_up_queued();
+  }
   free(path);
 }
 
@@ -1098,11 +1271,12 @@ free_path2(uint64_t  nodeid1,
            char     *path1,
            char     *path2)
 {
-  mutex_lock(f.lock);
-  unlock_path(nodeid1,wnode1,NULL);
-  unlock_path(nodeid2,wnode2,NULL);
-  wake_up_queued();
-  mutex_unlock(f.lock);
+  {
+    mutex_lockguard(f.lock);
+    unlock_path(nodeid1,wnode1,NULL);
+    unlock_path(nodeid2,wnode2,NULL);
+    wake_up_queued();
+  }
   free(path1);
   free(path2);
 }
@@ -1149,43 +1323,48 @@ forget_node(const uint64_t nodeid,
 
   if(node->nlookup == 0)
     {
+      if(keep_remembered_nodes() && node_is_rememberable(node))
+        {
+          if(retention_add(node) == 0)
+            return;
+
+          SysLog::warning("unable to retain node {}: dropping lookup ref",
+                          node->nodeid);
+        }
+
       unref_node(node);
     }
-  else if((node->nlookup == 1) && remember_nodes())
-    {
-      remembered_node_t fn;
-
-      fn.node = node;
-      fn.time = current_time();
-
-      kv_push(remembered_node_t,f.remembered_nodes,fn);
-    }
 }
 
 static
-void
+node_t*
 unlink_node(node_t *node)
 {
-  if(remember_nodes())
-    {
-      assert(node->nlookup > 1);
-      node->nlookup--;
-    }
+  node_t *retained_node;
+
+  /* Open retained nodes need their retention ref for FH ops and release. */
+  if(node->open_count > 0)
+    retained_node = NULL;
+  else
+    retained_node = (retention_remove(node) ? node : NULL);
   unhash_name(node);
+
+  return retained_node;
 }
 
 static
-void
+node_t*
 remove_node(uint64_t    dir,
             const char *name)
 {
   node_t *node;
 
-  mutex_lock(f.lock);
+  mutex_lockguard(f.lock);
   node = lookup_node(dir,name);
   if(node != NULL)
-    unlink_node(node);
-  mutex_unlock(f.lock);
+    return unlink_node(node);
+
+  return NULL;
 }
 
 static
@@ -1193,20 +1372,23 @@ int
 rename_node(uint64_t    olddir,
             const char *oldname,
             uint64_t    newdir,
-            const char *newname)
+            const char *newname,
+            node_t    **deferred_unref_)
 {
   int err = 0;
   node_t *node;
   node_t *newnode;
 
-  mutex_lock(f.lock);
+  *deferred_unref_ = NULL;
+
+  mutex_lockguard(f.lock);
   node = lookup_node(olddir,oldname);
   newnode = lookup_node(newdir,newname);
   if(node == NULL)
     goto out;
 
   if(newnode != NULL)
-    unlink_node(newnode);
+    *deferred_unref_ = unlink_node(newnode);
 
   unhash_name(node);
   if(hash_name(node,newdir,newname) == -1)
@@ -1216,8 +1398,18 @@ rename_node(uint64_t    olddir,
     }
 
  out:
-  mutex_unlock(f.lock);
   return err;
+}
+
+static
+void
+unref_deferred_node(node_t *node_)
+{
+  if(node_ == NULL)
+    return;
+
+  mutex_lockguard(f.lock);
+  unref_node(node_);
 }
 
 static
@@ -1270,9 +1462,10 @@ set_path_info(uint64_t                 nodeid,
   e->ino        = node->nodeid;
   e->generation = ((e->ino == FUSE_ROOT_ID) ? 0 : f.nodeid_gen.generation);
 
-  mutex_lock(f.lock);
-  update_stat(node,&e->attr);
-  mutex_unlock(f.lock);
+  {
+    mutex_lockguard(f.lock);
+    update_stat(node,&e->attr);
+  }
 
   set_stat(e->ino,&e->attr);
 
@@ -1413,9 +1606,8 @@ fuse_lib_lookup(fuse_req_t            *req_,
 
   if(dot)
     {
-      mutex_lock(f.lock);
+      mutex_lockguard(f.lock);
       unref_node(dot);
-      mutex_unlock(f.lock);
     }
 
   reply_entry(req_,&e,err);
@@ -1851,6 +2043,7 @@ fuse_lib_unlink(fuse_req_t            *req_,
   char *fusepath;
   const char *name;
   node_t *wnode;
+  node_t *deferred_unref = NULL;
 
   name = (const char*)PARAM(hdr_);
 
@@ -1864,9 +2057,10 @@ fuse_lib_unlink(fuse_req_t            *req_,
       err = f.ops.unlink(&req_->ctx,
                          &fusepath[1]);
       if(!err)
-        remove_node(hdr_->nodeid,name);
+        deferred_unref = remove_node(hdr_->nodeid,name);
 
       free_path_wrlock(hdr_->nodeid,wnode,fusepath);
+      unref_deferred_node(deferred_unref);
     }
 
   fuse_reply_err(req_,err);
@@ -1881,6 +2075,7 @@ fuse_lib_rmdir(fuse_req_t            *req_,
   char *fusepath;
   const char *name;
   node_t *wnode;
+  node_t *deferred_unref = NULL;
 
   name = (const char*)PARAM(hdr_);
 
@@ -1890,8 +2085,9 @@ fuse_lib_rmdir(fuse_req_t            *req_,
       err = f.ops.rmdir(&req_->ctx,
                         &fusepath[1]);
       if(!err)
-        remove_node(hdr_->nodeid,name);
+        deferred_unref = remove_node(hdr_->nodeid,name);
       free_path_wrlock(hdr_->nodeid,wnode,fusepath);
+      unref_deferred_node(deferred_unref);
     }
 
   fuse_reply_err(req_,err);
@@ -1939,6 +2135,7 @@ fuse_lib_rename(fuse_req_t            *req_,
   const char *newname;
   node_t *wnode1;
   node_t *wnode2;
+  node_t *deferred_unref = NULL;
   struct fuse_rename_in *arg;
 
   arg     = (fuse_rename_in*)fuse_hdr_arg(hdr_);
@@ -1960,9 +2157,14 @@ fuse_lib_rename(fuse_req_t            *req_,
                          &oldpath[1],
                          &newpath[1]);
       if(!err)
-        err = rename_node(hdr_->nodeid,oldname,arg->newdir,newname);
+        err = rename_node(hdr_->nodeid,
+                          oldname,
+                          arg->newdir,
+                          newname,
+                          &deferred_unref);
 
       free_path2(hdr_->nodeid,arg->newdir,wnode1,wnode2,oldpath,newpath);
+      unref_deferred_node(deferred_unref);
     }
 
   fuse_reply_err(req_,err);
@@ -2042,6 +2244,12 @@ fuse_do_release(fuse_req_ctx_t   *req_ctx_,
       {
         assert(node->open_count > 0);
         node->open_count--;
+        /* Drop the retained ref once an unlinked open node is fully closed. */
+        if((node->open_count == 0) &&
+           (node->nlookup == 0) &&
+           !node_is_rememberable(node) &&
+           retention_remove(node))
+          unref_node(node);
       }
   }
 }
@@ -2110,11 +2318,12 @@ fuse_lib_create(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node_t *node = get_node(e.ino);
-      if(node)
-        node->open_count++;
-      mutex_unlock(f.lock);
+      {
+        mutex_lockguard(f.lock);
+        node_t *node = get_node(e.ino);
+        if(node)
+          node->open_count++;
+      }
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -2207,11 +2416,12 @@ fuse_lib_open(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node_t *node = get_node(hdr_->nodeid);
-      if(node)
-        node->open_count++;
-      mutex_unlock(f.lock);
+      {
+        mutex_lockguard(f.lock);
+        node_t *node = get_node(hdr_->nodeid);
+        if(node)
+          node->open_count++;
+      }
       /* The open syscall was interrupted,so it must be cancelled */
       if(fuse_reply_open(req_,&ffi) == -ENOENT)
         fuse_do_release(&req_->ctx,hdr_->nodeid,&ffi);
@@ -2555,8 +2765,9 @@ fuse_lib_releasedir(fuse_req_t            *req_,
                    &ffi);
 
   /* Done to keep race condition between last readdir reply and the unlock */
-  mutex_lock(dh->lock);
-  mutex_unlock(dh->lock);
+  {
+    mutex_lockguard(dh->lock);
+  }
   mutex_destroy(dh->lock);
   fuse_dirents_free(&dh->d);
   free(dh);
@@ -2920,11 +3131,12 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node_t *node = get_node(e.ino);
-      if(node)
-        node->open_count++;
-      mutex_unlock(f.lock);
+      {
+        mutex_lockguard(f.lock);
+        node_t *node = get_node(e.ino);
+        if(node)
+          node->open_count++;
+      }
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -3475,120 +3687,129 @@ fuse_lib_fallocate(fuse_req_t                  *req_,
   fuse_reply_err(req_,err);
 }
 
-static
-int
-remembered_node_cmp(const void *a_,
-                    const void *b_)
-{
-  const remembered_node_t *a = (const remembered_node_t*)a_;
-  const remembered_node_t *b = (const remembered_node_t*)b_;
-
-  if(a->time < b->time)
-    return -1;
-  if(a->time > b->time)
-    return 1;
-  return 0;
-}
-
-static
-void
-remembered_nodes_sort()
-{
-  mutex_lock(f.lock);
-  qsort(&kv_first(f.remembered_nodes),
-        kv_size(f.remembered_nodes),
-        sizeof(remembered_node_t),
-        remembered_node_cmp);
-  mutex_unlock(f.lock);
-}
-
-#define MAX_PRUNE 100
+#define MAX_PRUNE 1000
 #define MAX_CHECK 1000
 
-int
-fuse_prune_some_remembered_nodes(int *offset_)
+struct prune_retention_result_t
 {
+  int    pruned;
+  size_t checked;
+  bool   hit_limit;
+};
+
+static
+size_t
+retention_count()
+{
+  mutex_lockguard(f.lock);
+
+  return ((f.retention == NULL) ? 0 : f.retention->by_node.size());
+}
+
+static
+prune_retention_result_t
+fuse_prune_some_remembered_nodes_limited(size_t check_budget_)
+{
+  const s64 remember = remember_nodes_value();
   time_t now;
-  int pruned;
-  int checked;
+  prune_retention_result_t result = {};
+  size_t max_check;
 
-  mutex_lock(f.lock);
+  if((remember < 0) || (check_budget_ == 0))
+    return result;
 
-  pruned = 0;
-  checked = 0;
-  now = current_time();
-  while(*offset_ < (int)kv_size(f.remembered_nodes))
-    {
-      time_t age;
-      remembered_node_t *fn = &kv_A(f.remembered_nodes,*offset_);
+  {
+    mutex_lockguard(f.lock);
 
-      if(pruned >= MAX_PRUNE)
-        break;
-      if(checked >= MAX_CHECK)
-        break;
+    max_check = ((f.retention == NULL) ? 0 : f.retention->by_node.size());
+    if(max_check > MAX_CHECK)
+      max_check = MAX_CHECK;
+    if(max_check > check_budget_)
+      max_check = check_budget_;
+    now = current_time();
+    while((f.retention != NULL) && (f.retention->head != NULL))
+      {
+        time_t age;
+        retained_node_t *rn = f.retention->head;
+        node_t *node = rn->node;
 
-      checked++;
-      age = (now - fn->time);
-      if(fuse_cfg.remember_nodes > age)
-        break;
+        if(result.pruned >= MAX_PRUNE)
+          {
+            result.hit_limit = true;
+            break;
+          }
+        if(result.checked >= max_check)
+          {
+            result.hit_limit = true;
+            break;
+          }
 
-      assert(fn->node->nlookup == 1);
+        result.checked++;
+        age = (now - rn->retained_at);
+        if((remember > 0) && (remember > age))
+          break;
 
-      /* Don't forget active directories */
-      if(fn->node->refctr > 1)
-        {
-          (*offset_)++;
-          continue;
-        }
+        assert(node->nlookup == 0);
 
-      fn->node->nlookup = 0;
-      unref_node(fn->node);
-      kv_delete(f.remembered_nodes,*offset_);
-      pruned++;
-    }
+        /* Don't forget nodes while another operation holds a path lock. */
+        if(node->treelock != 0)
+          {
+            retention_move_tail(rn,now);
+            continue;
+          }
 
-  mutex_unlock(f.lock);
+        /* Don't forget open files. */
+        if(node->open_count > 0)
+          {
+            retention_move_tail(rn,now);
+            continue;
+          }
 
-  if((pruned < MAX_PRUNE) && (checked < MAX_CHECK))
-    *offset_ = -1;
+        /* Don't forget active directories */
+        if(node->refctr > 1)
+          {
+            retention_move_tail(rn,now);
+            continue;
+          }
 
-  return pruned;
+        retention_remove(node);
+        unref_node(node);
+        result.pruned++;
+      }
+  }
+
+  return result;
+}
+
+int
+fuse_prune_some_remembered_nodes()
+{
+  return fuse_prune_some_remembered_nodes_limited(SIZE_MAX).pruned;
 }
 
 #undef MAX_PRUNE
 #undef MAX_CHECK
 
-static
-void
-sleep_100ms(void)
-{
-  const struct timespec ms100 = {0,100 * 1000000};
-
-  nanosleep(&ms100,NULL);
-}
-
 void
 fuse_prune_remembered_nodes()
 {
-  int offset;
-  int pruned;
+  size_t remaining_checks;
 
-  offset = 0;
-  pruned = 0;
-  for(;;)
+  remaining_checks = retention_count();
+  while(remaining_checks > 0)
     {
-      pruned += fuse_prune_some_remembered_nodes(&offset);
-      if(offset >= 0)
-        {
-          sleep_100ms();
-          continue;
-        }
+      prune_retention_result_t result;
 
-      break;
+      result = fuse_prune_some_remembered_nodes_limited(remaining_checks);
+      if(result.checked == 0)
+        break;
+      if(result.checked >= remaining_checks)
+        break;
+
+      remaining_checks -= result.checked;
+      if(result.hit_limit == false)
+        break;
     }
-
-  if(pruned > 0)
-    remembered_nodes_sort();
 }
 
 static struct fuse_lowlevel_ops fuse_path_ops =
@@ -3694,12 +3915,24 @@ metrics_log_nodes_info(FILE *file_)
   struct tm tm;
   struct timeval tv;
   uint64_t sizeof_node;
+  uint64_t id_table_size;
+  uint64_t id_table_use;
+  uint64_t name_table_size;
+  uint64_t name_table_use;
 
   gettimeofday(&tv,NULL);
   localtime_r(&tv.tv_sec,&tm);
   strftime(time_str,sizeof(time_str),"%Y-%m-%dT%H:%M:%S.000%z",&tm);
 
   sizeof_node = sizeof(node_t);
+  {
+    mutex_lockguard(f.lock);
+
+    id_table_size   = f.id_table.size;
+    id_table_use    = f.id_table.use;
+    name_table_size = f.name_table.size;
+    name_table_use  = f.name_table.use;
+  }
 
   snprintf(buf,sizeof(buf),
            "time: %s\n"
@@ -3717,12 +3950,12 @@ metrics_log_nodes_info(FILE *file_)
            ,
            time_str,
            sizeof_node,
-           (uint64_t)f.id_table.size,
-           (uint64_t)f.id_table.use,
-           (uint64_t)(f.id_table.size * sizeof(node_t*)),
-           (uint64_t)f.name_table.size,
-           (uint64_t)f.name_table.use,
-           (uint64_t)(f.name_table.size * sizeof(node_t*)),
+           id_table_size,
+           id_table_use,
+           (uint64_t)(id_table_size * sizeof(node_t*)),
+           name_table_size,
+           name_table_use,
+           (uint64_t)(name_table_size * sizeof(node_t*)),
            msgbuf_get_bufsize(),
            msgbuf_alloc_count(),
            msgbuf_alloc_count() * msgbuf_get_bufsize()
@@ -3773,26 +4006,27 @@ fuse_invalidate_all_nodes()
 {
   std::vector<std::string> names;
 
-  mutex_lock(f.lock);
-  for(size_t i = 0; i < f.id_table.size; i++)
-    {
-      node_t *node;
+  {
+    mutex_lockguard(f.lock);
+    for(size_t i = 0; i < f.id_table.size; i++)
+      {
+        node_t *node;
 
-      for(node = f.id_table.array[i]; node != NULL; node = node->id_next)
-        {
-          if(node->nodeid == FUSE_ROOT_ID)
-            continue;
-          if(node->name == NULL)
-            continue;
-          if(node->parent == NULL)
-            continue;
-          if(node->parent->nodeid != FUSE_ROOT_ID)
-            continue;
+        for(node = f.id_table.array[i]; node != NULL; node = node->id_next)
+          {
+            if(node->nodeid == FUSE_ROOT_ID)
+              continue;
+            if(node->name == NULL)
+              continue;
+            if(node->parent == NULL)
+              continue;
+            if(node->parent->nodeid != FUSE_ROOT_ID)
+              continue;
 
-          names.emplace_back(node->name);
-        }
-    }
-  mutex_unlock(f.lock);
+            names.emplace_back(node->name);
+          }
+      }
+  }
 
   SysLog::info("invalidating {} file entries",
                names.size());
@@ -3828,7 +4062,7 @@ fuse_populate_maintenance_thread(struct fuse *f_)
 {
   MaintenanceThread::push_job([=](u64 count_)
   {
-    if(remember_nodes())
+    if(remember_nodes_value() >= 0)
       fuse_prune_remembered_nodes();
   });
 
@@ -3840,7 +4074,7 @@ fuse_populate_maintenance_thread(struct fuse *f_)
 
   MaintenanceThread::push_job([=](u64 count_)
   {
-    if(fuse_cfg.debug)
+    if(fuse_cfg.debug.load(std::memory_order_relaxed))
       metrics_log_nodes_info_to_tmp_dir(f_);
   });
 }
@@ -3882,8 +4116,6 @@ fuse_new(int                           fd_,
     goto out_free_name_table;
 
   mutex_init(f.lock);
-
-  kv_init(f.remembered_nodes);
 
   root = node_alloc();
   if(root == NULL)
@@ -3935,9 +4167,9 @@ fuse_destroy(struct fuse *)
 
   free(f.id_table.array);
   free(f.name_table.array);
+  retention_destroy();
   mutex_destroy(f.lock);
   fuse_session_destroy(f.se);
-  kv_destroy(f.remembered_nodes);
 }
 
 int
