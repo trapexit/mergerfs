@@ -22,6 +22,8 @@
 #include "from_string.hpp"
 #include "tofrom_string.hpp"
 
+#include <atomic>
+
 
 template<typename T>
 class TFSRef : public ToFromString
@@ -47,4 +49,39 @@ public:
 
 private:
   T &_data;
+};
+
+template<typename T>
+class TFSRef<std::atomic<T>> : public ToFromString
+{
+public:
+  int
+  from_string(const std::string_view s_) final
+  {
+    T value;
+    int rv;
+
+    rv = str::from(s_,&value);
+    if(rv < 0)
+      return rv;
+
+    _data.store(value,std::memory_order_relaxed);
+
+    return 0;
+  }
+
+  std::string
+  to_string(void) const final
+  {
+    return str::to(_data.load(std::memory_order_relaxed));
+  }
+
+public:
+  TFSRef(std::atomic<T> &data_)
+    : _data(data_)
+  {
+  }
+
+private:
+  std::atomic<T> &_data;
 };

@@ -2,6 +2,7 @@
 
 #include "base_types.h"
 
+#include <atomic>
 #include <climits>
 #include <cstdio>
 #include <memory>
@@ -25,9 +26,9 @@ struct fuse_cfg_t
   s64 umask = FUSE_CFG_INVALID_UMASK;
   bool valid_umask() const;
 
-  s64 remember_nodes = 0;
+  std::atomic<s64> remember_nodes = 0;
 
-  bool debug = false;
+  std::atomic<bool> debug = false;
   std::shared_ptr<FILE> log_file() const;
   void log_file(std::shared_ptr<FILE>);
   std::shared_ptr<std::string> log_filepath() const;

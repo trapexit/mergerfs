@@ -206,7 +206,7 @@ _option_processor(void       *data_,
       return OPT_DISCARD;
 
     case MERGERFS_OPT_DEBUG:
-      fuse_cfg.debug = true;
+      fuse_cfg.debug.store(true,std::memory_order_relaxed);
       return OPT_DISCARD;
 
     case MERGERFS_OPT_HELP:

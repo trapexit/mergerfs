@@ -28,13 +28,13 @@
 
 Debug::Debug(const bool v_)
 {
-  fuse_cfg.debug = v_;
+  fuse_cfg.debug.store(v_,std::memory_order_relaxed);
 }
 
 std::string
 Debug::to_string(void) const
 {
-  return str::to(fuse_cfg.debug);
+  return str::to(fuse_cfg.debug.load(std::memory_order_relaxed));
 }
 
 int
@@ -47,7 +47,7 @@ Debug::from_string(const std::string_view s_)
   if(rv < 0)
     return rv;
 
-  fuse_cfg.debug = val;
+  fuse_cfg.debug.store(val,std::memory_order_relaxed);
 
   // If debug is being enabled, ensure output file is set
   if(val)

@@ -2658,6 +2658,39 @@ test_config_get_set_roundtrip()
 }
 
 void
+test_config_remember_nodes()
+{
+  Config cfg;
+  std::string val;
+
+  TEST_CHECK(cfg.set("remember-nodes","30") == 0);
+  TEST_CHECK(cfg.get("remember-nodes",&val) == 0);
+  TEST_CHECK(val == "30");
+
+  TEST_CHECK(cfg.set("remember","-1") == 0);
+  TEST_CHECK(cfg.get("remember-nodes",&val) == 0);
+  TEST_CHECK(val == "-1");
+
+  TEST_CHECK(cfg.set("remember-nodes","-2") == -EINVAL);
+  TEST_CHECK(cfg.get("remember-nodes",&val) == 0);
+  TEST_CHECK(val == "-1");
+
+  TEST_CHECK(cfg.set("noforget","false") == 0);
+  TEST_CHECK(cfg.get("noforget",&val) == 0);
+  TEST_CHECK(val == "false");
+  TEST_CHECK(cfg.get("remember-nodes",&val) == 0);
+  TEST_CHECK(val == "0");
+
+  TEST_CHECK(cfg.set("noforget","true") == 0);
+  TEST_CHECK(cfg.get("noforget",&val) == 0);
+  TEST_CHECK(val == "true");
+  TEST_CHECK(cfg.get("remember-nodes",&val) == 0);
+  TEST_CHECK(val == "-1");
+
+  TEST_CHECK(cfg.set("remember-nodes","0") == 0);
+}
+
+void
 test_config_get_unknown_key()
 {
   Config cfg;
@@ -3677,6 +3710,7 @@ TEST_LIST =
    {"config_keys_listxattr_fill",test_config_keys_listxattr_fill},
    {"config_keys_listxattr_erange",test_config_keys_listxattr_erange},
    {"config_get_set_roundtrip",test_config_get_set_roundtrip},
+   {"config_remember_nodes",test_config_remember_nodes},
    {"config_get_unknown_key",test_config_get_unknown_key},
    {"config_set_unknown_key",test_config_set_unknown_key},
    {"config_set_invalid_value",test_config_set_invalid_value},

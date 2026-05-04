@@ -20,8 +20,39 @@
 
 #include "tofrom_string.hpp"
 #include "from_string.hpp"
+#include "to_string.hpp"
 
 #include "fuse_cfg.hpp"
+
+#include <errno.h>
+
+
+class CfgRememberNodes : public ToFromString
+{
+public:
+  int
+  from_string(const std::string_view s_)
+  {
+    int rv;
+    s64 v;
+
+    rv = str::from(s_,&v);
+    if(rv < 0)
+      return rv;
+    if(v < -1)
+      return -EINVAL;
+
+    fuse_cfg.remember_nodes.store(v,std::memory_order_relaxed);
+
+    return 0;
+  }
+
+  std::string
+  to_string() const
+  {
+    return str::to(fuse_cfg.remember_nodes.load(std::memory_order_relaxed));
+  }
+};
 
 
 class CfgNoforget : public ToFromString
@@ -36,14 +67,14 @@ public:
     rv = str::from(s_,&b);
     if((b == true) || s_.empty())
       {
-        fuse_cfg.remember_nodes = -1;
+        fuse_cfg.remember_nodes.store(-1,std::memory_order_relaxed);
         return 0;
       }
 
     if(rv)
       return rv;
 
-    fuse_cfg.remember_nodes = 0;
+    fuse_cfg.remember_nodes.store(0,std::memory_order_relaxed);
 
     return 0;
   }
@@ -51,7 +82,7 @@ public:
   std::string
   to_string() const
   {
-    if(fuse_cfg.remember_nodes == -1)
+    if(fuse_cfg.remember_nodes.load(std::memory_order_relaxed) == -1)
       return "true";
     return "false";
   }

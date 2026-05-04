@@ -55,6 +55,7 @@
 
 #include "base_types.h"
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -176,8 +177,8 @@ private:
   TFSRef<fs::path> _mountpoint;
   CfgNoforget      _never_forget_nodes;
   CfgNoforget      _noforget;
-  TFSRef<s64>      _remember;
-  TFSRef<s64>      _remember_nodes;
+  CfgRememberNodes _remember;
+  CfgRememberNodes _remember_nodes;
   SrcMounts        _srcmounts;
   TFSRef<int>      _threads;
   TFSRef<s64>      _uid;
