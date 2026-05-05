@@ -14,7 +14,6 @@
 #include "fuse_kernel.h"
 #include "fuse_req_ctx.h"
 
-#include <fcntl.h>
 #include <time.h>
 #include <utime.h>
 #include <sys/types.h>
@@ -176,10 +175,6 @@ struct fuse_operations
                   const uint64_t,
                   struct stat *,
                   fuse_timeouts_t *);
-  int (*lock)(const fuse_req_ctx_t *,
-              const fuse_file_info_t *,
-              int cmd,
-              struct flock *);
   int (*utimens)(const fuse_req_ctx_t *,
                  const char *,
                  const struct timespec tv[2]);
@@ -211,9 +206,6 @@ struct fuse_operations
               char                   *buf,
               size_t                  size,
               off_t                   off);
-  int (*flock)(const fuse_req_ctx_t *,
-               const fuse_file_info_t *,
-               int op);
   int (*fallocate)(const fuse_req_ctx_t *,
                    const uint64_t,
                    int,

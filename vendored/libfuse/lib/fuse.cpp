@@ -2949,33 +2949,13 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   free_path(hdr_->nodeid,fusepath);
 }
 
+static
 int
 fuse_flush_common(fuse_req_t       *req_,
                   fuse_file_info_t *ffi_)
 {
-  struct flock lock;
-  int err;
-  int errlock;
-
-  memset(&lock,0,sizeof(lock));
-  lock.l_type = F_UNLCK;
-  lock.l_whence = SEEK_SET;
-  err = f.ops.flush(&req_->ctx,
-                    ffi_);
-  errlock = f.ops.lock(&req_->ctx,
-                       ffi_,
-                       F_SETLK,
-                       &lock);
-
-  if(errlock != -ENOSYS)
-    {
-      /* if op.lock() is defined FLUSH is needed regardless
-         of op.flush() */
-      if(err == -ENOSYS)
-        err = 0;
-    }
-
-  return err;
+  return f.ops.flush(&req_->ctx,
+                     ffi_);
 }
 
 static
@@ -3032,83 +3012,6 @@ fuse_lib_flush(fuse_req_t             *req_,
     ffi.lock_owner = arg->lock_owner;
 
   err = fuse_flush_common(req_,&ffi);
-
-  fuse_reply_err(req_,err);
-}
-
-static
-void
-convert_fuse_file_lock(const struct fuse_file_lock *fl,
-                       struct flock                *flock)
-{
-  memset(flock, 0, sizeof(struct flock));
-  flock->l_type = fl->type;
-  flock->l_whence = SEEK_SET;
-  flock->l_start = fl->start;
-  if (fl->end == OFFSET_MAX)
-    flock->l_len = 0;
-  else
-    flock->l_len = fl->end - fl->start + 1;
-  flock->l_pid = fl->pid;
-}
-
-static
-void
-fuse_lib_getlk(fuse_req_t                  *req_,
-               const struct fuse_in_header *hdr_)
-{
-  int err;
-  struct flock flk;
-  fuse_file_info_t ffi = {};
-  const struct fuse_lk_in *arg;
-
-  arg            = (fuse_lk_in*)fuse_hdr_arg(hdr_);
-  ffi.fh         = arg->fh;
-  ffi.lock_owner = arg->owner;
-
-  convert_fuse_file_lock(&arg->lk,&flk);
-
-  err = f.ops.lock(&req_->ctx,
-                   &ffi,
-                   F_GETLK,
-                   &flk);
-
-  if(!err)
-    fuse_reply_lock(req_,&flk);
-  else
-    fuse_reply_err(req_,err);
-}
-
-static
-void
-fuse_lib_setlk(fuse_req_t        *req_,
-               uint64_t          ino,
-               fuse_file_info_t *fi,
-               struct flock     *lock,
-               int               sleep)
-{
-  int err;
-
-  err = f.ops.lock(&req_->ctx,
-                   fi,
-                   sleep ? F_SETLKW : F_SETLK,
-                   lock);
-
-  fuse_reply_err(req_,err);
-}
-
-static
-void
-fuse_lib_flock(fuse_req_t       *req_,
-               uint64_t          ino_,
-               fuse_file_info_t *ffi_,
-               int               op_)
-{
-  int err;
-
-  err = f.ops.flock(&req_->ctx,
-                    ffi_,
-                    op_);
 
   fuse_reply_err(req_,err);
 }
@@ -3405,14 +3308,12 @@ static struct fuse_lowlevel_ops fuse_path_ops =
     .create          = fuse_lib_create,
     .destroy         = fuse_lib_destroy,
     .fallocate       = fuse_lib_fallocate,
-    .flock           = fuse_lib_flock,
     .flush           = fuse_lib_flush,
     .forget          = fuse_lib_forget,
     .forget_multi    = fuse_lib_forget_multi,
     .fsync           = fuse_lib_fsync,
     .fsyncdir        = fuse_lib_fsyncdir,
     .getattr         = fuse_lib_getattr,
-    .getlk           = fuse_lib_getlk,
     .getxattr        = fuse_lib_getxattr,
     .init            = fuse_lib_init,
     .ioctl           = fuse_lib_ioctl,
@@ -3438,7 +3339,6 @@ static struct fuse_lowlevel_ops fuse_path_ops =
     .retrieve_reply  = fuse_lib_retrieve_reply,
     .rmdir           = fuse_lib_rmdir,
     .setattr         = fuse_lib_setattr,
-    .setlk           = fuse_lib_setlk,
     .setupmapping    = fuse_lib_setupmapping,
     .setxattr        = fuse_lib_setxattr,
     .statfs          = fuse_lib_statfs,
@@ -3661,13 +3561,6 @@ fuse_new(int                           fd_,
   struct fuse_lowlevel_ops llop = fuse_path_ops;
 
   f.ops = *ops_;
-
-  /* Oh f**k,this is ugly! */
-  if(!f.ops.lock)
-    {
-      llop.getlk = NULL;
-      llop.setlk = NULL;
-    }
 
   f.se = fuse_lowlevel_new_common(args,&llop,sizeof(llop));
   if(f.se == NULL)

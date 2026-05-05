@@ -209,8 +209,6 @@ FUSE::init(fuse_conn_info_t *conn_)
   ::_want_if_capable(conn_,FUSE_CAP_ALLOW_IDMAP,&cfg.allow_idmap);
   //    ::_want_if_capable(conn_,FUSE_CAP_READDIR_PLUS_AUTO);
   ::_want_if_capable_max_pages(conn_,cfg);
-  conn_->want &= ~FUSE_CAP_POSIX_LOCKS;
-  conn_->want &= ~FUSE_CAP_FLOCK_LOCKS;
 
   ::_spawn_thread_to_set_readahead();
 

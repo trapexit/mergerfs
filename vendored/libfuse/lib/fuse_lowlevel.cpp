@@ -477,29 +477,6 @@ fuse_reply_xattr(fuse_req_t *req,
 }
 
 int
-fuse_reply_lock(fuse_req_t         *req,
-                const struct flock *lock)
-{
-  struct fuse_lk_out arg = {};
-
-  arg.lk.type = lock->l_type;
-  if(lock->l_type != F_UNLCK)
-    {
-      arg.lk.start = lock->l_start;
-      if(lock->l_len == 0)
-        arg.lk.end = OFFSET_MAX;
-      else
-        arg.lk.end = lock->l_start + lock->l_len - 1;
-    }
-  arg.lk.pid = lock->l_pid;
-
-  if(fuse_cfg.debug)
-    fuse_debug_lk_out(req->ctx.unique,&arg);
-
-  return send_reply_ok(req, &arg, sizeof(arg));
-}
-
-int
 fuse_reply_bmap(fuse_req_t *req,
                 uint64_t    idx)
 {
@@ -913,91 +890,6 @@ do_removexattr(fuse_req_t            *req,
   f.op.removexattr(req,hdr_);
 }
 
-static
-void
-convert_fuse_file_lock(struct fuse_file_lock *fl,
-                       struct flock          *flock)
-{
-  memset(flock, 0, sizeof(struct flock));
-  flock->l_type = fl->type;
-  flock->l_whence = SEEK_SET;
-  flock->l_start = fl->start;
-  if(fl->end == OFFSET_MAX)
-    flock->l_len = 0;
-  else
-    flock->l_len = fl->end - fl->start + 1;
-  flock->l_pid = fl->pid;
-}
-
-static
-void
-do_getlk(fuse_req_t            *req,
-         struct fuse_in_header *hdr_)
-{
-  f.op.getlk(req,hdr_);
-}
-
-static
-void
-do_setlk_common(fuse_req_t *req,
-                uint64_t    nodeid,
-                const void *inarg,
-                int         sleep)
-{
-  struct flock flock;
-  fuse_file_info_t fi = {};
-  struct fuse_lk_in *arg = (struct fuse_lk_in*)inarg;
-
-  fi.fh = arg->fh;
-  fi.lock_owner = arg->owner;
-
-  if(arg->lk_flags & FUSE_LK_FLOCK)
-    {
-      int op = 0;
-
-      switch (arg->lk.type)
-        {
-        case F_RDLCK:
-          op = LOCK_SH;
-          break;
-        case F_WRLCK:
-          op = LOCK_EX;
-          break;
-        case F_UNLCK:
-          op = LOCK_UN;
-          break;
-        }
-
-      if(!sleep)
-        op |= LOCK_NB;
-
-      f.op.flock(req,nodeid,&fi,op);
-    }
-  else
-    {
-      convert_fuse_file_lock(&arg->lk, &flock);
-
-      f.op.setlk(req,nodeid,&fi,&flock,sleep);
-    }
-}
-
-static
-void
-do_setlk(fuse_req_t            *req,
-         struct fuse_in_header *hdr_)
-{
-  do_setlk_common(req, hdr_->nodeid, &hdr_[1], 0);
-}
-
-static
-void
-do_setlkw(fuse_req_t            *req,
-          struct fuse_in_header *hdr_)
-{
-  do_setlk_common(req, hdr_->nodeid, &hdr_[1], 1);
-}
-
-static
 void
 do_interrupt(fuse_req_t *req,
              struct fuse_in_header *hdr_)
@@ -1100,8 +992,6 @@ do_init(fuse_req_t            *req,
 
       if(inargflags & FUSE_ASYNC_READ)
         f.conn.capable |= FUSE_CAP_ASYNC_READ;
-      if(inargflags & FUSE_POSIX_LOCKS)
-        f.conn.capable |= FUSE_CAP_POSIX_LOCKS;
       if(inargflags & FUSE_ATOMIC_O_TRUNC)
         f.conn.capable |= FUSE_CAP_ATOMIC_O_TRUNC;
       if(inargflags & FUSE_EXPORT_SUPPORT)
@@ -1110,8 +1000,6 @@ do_init(fuse_req_t            *req,
         f.conn.capable |= FUSE_CAP_BIG_WRITES;
       if(inargflags & FUSE_DONT_MASK)
         f.conn.capable |= FUSE_CAP_DONT_MASK;
-      if(inargflags & FUSE_FLOCK_LOCKS)
-        f.conn.capable |= FUSE_CAP_FLOCK_LOCKS;
       if(inargflags & FUSE_POSIX_ACL)
         f.conn.capable |= FUSE_CAP_POSIX_ACL;
       if(inargflags & FUSE_CACHE_SYMLINKS)
@@ -1152,11 +1040,6 @@ do_init(fuse_req_t            *req,
   if(f.conn.proto_minor >= 18)
     f.conn.capable |= FUSE_CAP_IOCTL_DIR;
 
-  if(f.op.getlk && f.op.setlk)
-    f.conn.want |= FUSE_CAP_POSIX_LOCKS;
-  if(f.op.flock)
-    f.conn.want |= FUSE_CAP_FLOCK_LOCKS;
-
   if(bufsize < FUSE_MIN_READ_BUFFER)
     {
       fprintf(stderr, "fuse: warning: buffer size too small: %zu\n",
@@ -1183,8 +1066,6 @@ do_init(fuse_req_t            *req,
 
   if(f.conn.want & FUSE_CAP_ASYNC_READ)
     outargflags |= FUSE_ASYNC_READ;
-  if(f.conn.want & FUSE_CAP_POSIX_LOCKS)
-    outargflags |= FUSE_POSIX_LOCKS;
   if(f.conn.want & FUSE_CAP_ATOMIC_O_TRUNC)
     outargflags |= FUSE_ATOMIC_O_TRUNC;
   if(f.conn.want & FUSE_CAP_EXPORT_SUPPORT)
@@ -1193,8 +1074,6 @@ do_init(fuse_req_t            *req,
     outargflags |= FUSE_BIG_WRITES;
   if(f.conn.want & FUSE_CAP_DONT_MASK)
     outargflags |= FUSE_DONT_MASK;
-  if(f.conn.want & FUSE_CAP_FLOCK_LOCKS)
-    outargflags |= FUSE_FLOCK_LOCKS;
   if(f.conn.want & FUSE_CAP_POSIX_ACL)
     outargflags |= FUSE_POSIX_ACL;
   if(f.conn.want & FUSE_CAP_CACHE_SYMLINKS)
@@ -1639,9 +1518,9 @@ fuse_ll_funcs[FUSE_OPCODE_LEN] =
     do_readdir,
     do_releasedir,
     do_fsyncdir,
-    do_getlk,
-    do_setlk,
-    do_setlkw,
+    NULL,
+    NULL,
+    NULL,
     do_access,
     do_create,
     do_interrupt,
