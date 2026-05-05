@@ -29,6 +29,7 @@
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "fuse_msgbuf.hpp"
+#include "stat_utils.h"
 
 #include "maintenance_thread.hpp"
 
@@ -220,14 +221,23 @@ uint32_t
 stat_crc32b(const struct stat *st_)
 {
   uint32_t crc;
+  const auto mtimensec = ST_MTIM_NSEC(st_);
+  const auto ctimensec = ST_CTIM_NSEC(st_);
 
   crc = crc32b_start();
+  /* st_dev is not exposed by FUSE attr replies, but the underlying value
+     is still useful as a proxy for whether the backing stat source changed. */
+  crc = crc32b_continue(&st_->st_dev,sizeof(st_->st_dev),crc);
   crc = crc32b_continue(&st_->st_ino,sizeof(st_->st_ino),crc);
   crc = crc32b_continue(&st_->st_size,sizeof(st_->st_size),crc);
-  crc = crc32b_continue(&st_->st_mtim,sizeof(st_->st_mtim),crc);
+  crc = crc32b_continue(&st_->st_mtime,sizeof(st_->st_mtime),crc);
+  crc = crc32b_continue(&mtimensec,sizeof(mtimensec),crc);
+  crc = crc32b_continue(&st_->st_ctime,sizeof(st_->st_ctime),crc);
+  crc = crc32b_continue(&ctimensec,sizeof(ctimensec),crc);
   crc = crc32b_finish(crc);
 
-  return crc;
+  /* 0 is reserved to mean "no valid stat cache fingerprint". */
+  return (crc ? crc : UINT32_MAX);
 }
 
 #ifndef CLOCK_MONOTONIC
@@ -1247,12 +1257,13 @@ update_stat(node_t       *node_,
 {
   uint32_t crc32b;
 
+  if(node_->stat_crc32b == 0)
+    return;
+
   crc32b = stat_crc32b(stnew_);
 
-  if(node_->is_stat_cache_valid && (crc32b != node_->stat_crc32b))
-    node_->is_stat_cache_valid = 0;
-
-  node_->stat_crc32b = crc32b;
+  if(crc32b != node_->stat_crc32b)
+    node_->stat_crc32b = 0;
 }
 
 static
@@ -2152,28 +2163,34 @@ open_auto_cache(fuse_req_ctx_t   *req_ctx_,
       return;
     }
 
-  if(node->is_stat_cache_valid)
-    {
-      int err;
-      struct stat stbuf;
+  {
+    int err;
+    struct stat stbuf;
 
-      mutex_unlock(f.lock);
-      err = f.ops.fgetattr(req_ctx_,
-                           fi->fh,
-                           &stbuf,
-                           &timeouts);
-      mutex_lock(f.lock);
+    mutex_unlock(f.lock);
+    err = f.ops.fgetattr(req_ctx_,
+                         fi->fh,
+                         &stbuf,
+                         &timeouts);
+    mutex_lock(f.lock);
 
-      if(!err)
-        update_stat(node,&stbuf);
-      else
-        node->is_stat_cache_valid = 0;
-    }
+    if(!err)
+      {
+        uint32_t old_crc32b;
+        uint32_t new_crc32b;
 
-  if(node->is_stat_cache_valid)
-    fi->keep_cache = 1;
+        old_crc32b = node->stat_crc32b;
+        new_crc32b = stat_crc32b(&stbuf);
+        if((old_crc32b != 0) && (old_crc32b == new_crc32b))
+          fi->keep_cache = 1;
 
-  node->is_stat_cache_valid = 1;
+        node->stat_crc32b = new_crc32b;
+      }
+    else
+      {
+        node->stat_crc32b = 0;
+      }
+  }
 
   mutex_unlock(f.lock);
 }
