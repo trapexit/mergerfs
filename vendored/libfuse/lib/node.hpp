@@ -1,7 +1,5 @@
 #pragma once
 
-#include "lock.h"
-
 #include <cstdint>
 
 struct node_t
@@ -10,7 +8,6 @@ struct node_t
   node_t *id_next;
   char *name;
   node_t *parent;
-  lock_t *locks;
 
   uint64_t nodeid;
   uint64_t nlookup;
