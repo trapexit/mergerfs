@@ -25,7 +25,7 @@ struct fuse_cfg_t
   s64 umask = FUSE_CFG_INVALID_UMASK;
   bool valid_umask() const;
 
-  s64 remember_nodes = 0;
+  bool remember_nodes = false;
 
   bool debug = false;
   std::shared_ptr<FILE> log_file() const;

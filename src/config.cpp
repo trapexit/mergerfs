@@ -135,10 +135,6 @@ Config::Config()
   _max_background(fuse_cfg.max_background),
   _mount(mountpoint),
   _mountpoint(mountpoint),
-  _never_forget_nodes(),
-  _noforget(),
-  _remember(fuse_cfg.remember_nodes),
-  _remember_nodes(fuse_cfg.remember_nodes),
   _srcmounts(branches),
   _threads(fuse_cfg.read_thread_count),
   _uid(fuse_cfg.uid),
@@ -147,13 +143,22 @@ Config::Config()
 
   _initialized(false)
 {
-  allow_idmap.ro =
+  _congestion_threshold.ro =
+    _max_background.ro =
+    _mount.ro =
+    _mountpoint.ro =
+    _never_forget_nodes.ro =
+    _noforget.ro =
+    _remember.ro =
+    _remember_nodes.ro =
+    _srcmounts.ro =
+    _version.ro =
+    allow_idmap.ro =
     async_read.ro =
     branches_mount_timeout.ro =
     branches_mount_timeout_fail.ro =
     cache_symlinks.ro =
     cache_writeback.ro =
-    _congestion_threshold.ro =
     direct_io_allow_mmap.ro =
     export_support.ro =
     fsname.ro =
@@ -161,9 +166,6 @@ Config::Config()
     handle_killpriv.ro =
     handle_killpriv_v2.ro =
     kernel_permissions_check.ro =
-    _max_background.ro =
-    _mount.ro =
-    _mountpoint.ro =
     nullrw.ro =
     pid.ro =
     pin_threads.ro =
@@ -172,8 +174,6 @@ Config::Config()
     process_thread_queue_depth.ro =
     read_thread_count.ro =
     scheduling_priority.ro =
-    _srcmounts.ro =
-    _version.ro =
     true;
   _congestion_threshold.display =
     _gid.display =
@@ -181,6 +181,7 @@ Config::Config()
     _mount.display =
     _noforget.display =
     _remember.display =
+    _remember_nodes.display =
     _srcmounts.display =
     _threads.display =
     _uid.display =

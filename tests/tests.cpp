@@ -2731,6 +2731,61 @@ test_config_set_kv_form()
 }
 
 void
+test_config_remember_nodes_bool_numeric()
+{
+  bool old_remember_nodes = fuse_cfg.remember_nodes;
+  Config cfg;
+  std::string val;
+
+  fuse_cfg.remember_nodes = false;
+
+  // remember-nodes accepts ints: 0 disables, non-zero enables
+  TEST_CHECK(cfg.set("remember-nodes", "0") == 0);
+  TEST_CHECK(cfg.get("remember-nodes", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  TEST_CHECK(cfg.set("remember-nodes", "86400") == 0);
+  TEST_CHECK(cfg.get("remember-nodes", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  TEST_CHECK(cfg.set("remember", "-1") == 0);
+  TEST_CHECK(cfg.get("remember", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  // remember-nodes also accepts bool strings
+  TEST_CHECK(cfg.set("remember-nodes", "false") == 0);
+  TEST_CHECK(cfg.get("remember-nodes", &val) == 0);
+  TEST_CHECK(val == "false");
+
+  // never-forget-nodes is bool; it reflects the feature state
+  TEST_CHECK(cfg.set("never-forget-nodes", "true") == 0);
+  TEST_CHECK(cfg.get("never-forget-nodes", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  // Querying remember-nodes after never-forget-nodes=true returns true
+  // (both alias the same fuse_cfg.remember_nodes)
+  TEST_CHECK(cfg.get("remember-nodes", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  // Empty string treated as true
+  TEST_CHECK(cfg.set("noforget", "") == 0);
+  TEST_CHECK(cfg.get("noforget", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  // remember-nodes also accepts empty string as true
+  fuse_cfg.remember_nodes = false;
+  TEST_CHECK(cfg.set("remember-nodes", "") == 0);
+  TEST_CHECK(cfg.get("remember-nodes", &val) == 0);
+  TEST_CHECK(val == "true");
+
+  // Invalid string rejected by remember-nodes
+  TEST_CHECK(cfg.set("remember-nodes", "notabool") == -EINVAL);
+
+  fuse_cfg.remember_nodes = old_remember_nodes;
+}
+
+
+void
 test_config_readonly_before_init()
 {
   Config cfg;
@@ -3683,6 +3738,7 @@ TEST_LIST =
    {"config_set_underscore_normalization",test_config_set_underscore_normalization},
    {"config_get_underscore_normalization",test_config_get_underscore_normalization},
    {"config_set_kv_form",test_config_set_kv_form},
+   {"config_remember_nodes_bool_numeric",test_config_remember_nodes_bool_numeric},
    {"config_readonly_before_init",test_config_readonly_before_init},
    {"config_readonly_after_init",test_config_readonly_after_init},
    {"config_mutable_after_init",test_config_mutable_after_init},

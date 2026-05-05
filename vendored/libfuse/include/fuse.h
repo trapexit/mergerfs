@@ -365,13 +365,12 @@ void fuse_populate_maintenance_thread(struct fuse *fuse);
 
 
 /**
- * Iterate over cache removing stale entries
- * use in conjunction with "-oremember"
+ * Legacy cache cleanup entry point.
  *
  * NOTE: This is already done for the standard sessions
  *
  * @param fuse struct fuse pointer for fuse instance
- * @return the number of seconds until the next cleanup
+ * @return 0
  */
 int fuse_clean_cache(struct fuse *fuse);
 

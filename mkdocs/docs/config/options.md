@@ -213,12 +213,11 @@ config file.
 * **passthrough.max-stack-depth=INT**: Set to `1` another filesystem
   can be stacked on mergerfs. Set to `2` to have mergerfs stacked over
   another filesystem. (default: 1)
-* **remember-nodes=INT**: The number of seconds to keep the internal
-  representation of a file once the OS tells mergerfs it is no longer
-  needed. Really only needed for [exporting mergerfs via
-  NFS](../remote_filesystems.md) (default: 0)
-* **never-forget-nodes=BOOL**: Sets `remember-nodes` to
-  infinity. Formerly `noforget`. (default: false)
+* **never-forget-nodes=BOOL**: Keep the internal representation of
+  a file after the OS tells mergerfs it is no longer needed, until the
+  node is unlinked, removed, or replaced. Really only needed for
+  [exporting mergerfs via NFS](../remote_filesystems.md). Formerly
+  `noforget`. (default: false)
 * **allow-idmap=BOOL**: Enables idmap (identity mapping). (default:
   true)
 * **debug**: Enable debugging information. At the moment limited to a
