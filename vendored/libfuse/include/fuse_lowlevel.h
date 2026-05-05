@@ -5,7 +5,6 @@
 #include "fuse_kernel.h"
 #include "fuse_req.hpp"
 
-#include <fcntl.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -104,14 +103,12 @@ struct fuse_lowlevel_ops
   void (*create)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*destroy)();
   void (*fallocate)(fuse_req_t *req, const struct fuse_in_header *hdr);
-  void (*flock)(fuse_req_t *req, uint64_t ino, fuse_file_info_t *fi, int op);
   void (*flush)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*forget)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*forget_multi)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*fsync)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*fsyncdir)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*getattr)(fuse_req_t *req, struct fuse_in_header *hdr);
-  void (*getlk)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*getxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*init)(fuse_conn_info_t *conn);
   void (*ioctl)(fuse_req_t *req, const struct fuse_in_header *hdr);
@@ -137,7 +134,6 @@ struct fuse_lowlevel_ops
   void (*retrieve_reply)(fuse_req_t *req, void *cookie, uint64_t ino, off_t offset);
   void (*rmdir)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*setattr)(fuse_req_t *req, struct fuse_in_header *hdr);
-  void (*setlk)(fuse_req_t *req, uint64_t ino, fuse_file_info_t *fi, struct flock *lock, int sleep);
   void (*setupmapping)(fuse_req_t *req, const struct fuse_in_header *hdr);
   void (*setxattr)(fuse_req_t *req, struct fuse_in_header *hdr);
   void (*statfs)(fuse_req_t *req, struct fuse_in_header *hdr);
@@ -156,7 +152,7 @@ struct fuse_lowlevel_ops
  *   all except forget
  *
  * unlink, rmdir, rename, flush, release, fsync, fsyncdir, setxattr,
- * removexattr and setlk may send a zero code
+ * removexattr may send a zero code
  *
  * @param req request handle
  * @param err the positive error value, or zero for success
@@ -328,18 +324,6 @@ int fuse_reply_statfs(fuse_req_t *req, const struct statvfs *stbuf);
  * @return zero for success, -errno for failure to send reply
  */
 int fuse_reply_xattr(fuse_req_t *req, size_t count);
-
-/**
- * Reply with file lock information
- *
- * Possible requests:
- *   getlk
- *
- * @param req request handle
- * @param lock the lock information
- * @return zero for success, -errno for failure to send reply
- */
-int fuse_reply_lock(fuse_req_t *req, const struct flock *lock);
 
 /**
  * Reply with block index

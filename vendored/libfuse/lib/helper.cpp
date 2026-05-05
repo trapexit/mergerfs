@@ -11,6 +11,7 @@
 #include "fuse_lowlevel.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>

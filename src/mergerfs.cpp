@@ -46,7 +46,6 @@
 #include "fuse_fchmod.hpp"
 #include "fuse_fchown.hpp"
 #include "fuse_fgetattr.hpp"
-#include "fuse_flock.hpp"
 #include "fuse_flush.hpp"
 #include "fuse_fsync.hpp"
 #include "fuse_fsyncdir.hpp"
@@ -58,7 +57,6 @@
 #include "fuse_ioctl.hpp"
 #include "fuse_link.hpp"
 #include "fuse_listxattr.hpp"
-#include "fuse_lock.hpp"
 #include "fuse_mkdir.hpp"
 #include "fuse_mknod.hpp"
 #include "fuse_open.hpp"
@@ -111,7 +109,6 @@ _get_fuse_operations(struct fuse_operations &ops_,
   ops_.fchmod          = FUSE::fchmod;
   ops_.fchown          = FUSE::fchown;
   ops_.fgetattr        = FUSE::fgetattr;
-  ops_.flock           = FUSE::flock;
   ops_.flush           = FUSE::flush;
   ops_.fsync           = FUSE::fsync;
   ops_.fsyncdir        = FUSE::fsyncdir;
@@ -123,7 +120,6 @@ _get_fuse_operations(struct fuse_operations &ops_,
   ops_.ioctl           = FUSE::ioctl;
   ops_.link            = FUSE::link;
   ops_.listxattr       = FUSE::listxattr;
-  ops_.lock            = FUSE::lock;
   ops_.mkdir           = FUSE::mkdir;
   ops_.mknod           = FUSE::mknod;
   ops_.open            = FUSE::open;
