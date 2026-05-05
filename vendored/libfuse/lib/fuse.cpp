@@ -130,16 +130,6 @@ struct fuse
   kvec_t(remembered_node_t) remembered_nodes;
 };
 
-struct lock
-{
-  int type;
-  off_t start;
-  off_t end;
-  pid_t pid;
-  uint64_t owner;
-  struct lock *next;
-};
-
 #define TREELOCK_WRITE -1
 #define TREELOCK_WAIT_OFFSET INT_MIN
 
@@ -2959,156 +2949,11 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   free_path(hdr_->nodeid,fusepath);
 }
 
-static
-lock_t*
-locks_conflict(node_t       *node,
-               const lock_t *lock)
-{
-  lock_t *l;
-
-  for(l = node->locks; l; l = l->next)
-    if(l->owner != lock->owner &&
-       lock->start <= l->end && l->start <= lock->end &&
-       (l->type == F_WRLCK || lock->type == F_WRLCK))
-      break;
-
-  return l;
-}
-
-static
-void
-delete_lock(lock_t **lockp)
-{
-  lock_t *l = *lockp;
-  *lockp = l->next;
-  free(l);
-}
-
-static
-void
-insert_lock(lock_t **pos,
-            lock_t  *lock)
-{
-  lock->next = *pos;
-  *pos       = lock;
-}
-
-static
-int
-locks_insert(node_t *node,
-             lock_t *lock)
-{
-  lock_t **lp;
-  lock_t  *newl1 = NULL;
-  lock_t  *newl2 = NULL;
-
-  if(lock->type != F_UNLCK || lock->start != 0 || lock->end != OFFSET_MAX)
-    {
-      newl1 = (lock_t*)malloc(sizeof(lock_t));
-      newl2 = (lock_t*)malloc(sizeof(lock_t));
-
-      if(!newl1 || !newl2)
-        {
-          free(newl1);
-          free(newl2);
-          return -ENOLCK;
-        }
-    }
-
-  for(lp = &node->locks; *lp;)
-    {
-      lock_t *l = *lp;
-      if(l->owner != lock->owner)
-        goto skip;
-
-      if(lock->type == l->type)
-        {
-          if(l->end < lock->start - 1)
-            goto skip;
-          if(lock->end < l->start - 1)
-            break;
-          if(l->start <= lock->start && lock->end <= l->end)
-            goto out;
-          if(l->start < lock->start)
-            lock->start = l->start;
-          if(lock->end < l->end)
-            lock->end   = l->end;
-          goto delete_lock;
-        }
-      else
-        {
-          if(l->end < lock->start)
-            goto skip;
-          if(lock->end < l->start)
-            break;
-          if(lock->start <= l->start && l->end <= lock->end)
-            goto delete_lock;
-          if(l->end <= lock->end)
-            {
-              l->end = lock->start - 1;
-              goto skip;
-            }
-          if(lock->start <= l->start)
-            {
-              l->start = lock->end + 1;
-              break;
-            }
-          *newl2       = *l;
-          newl2->start = lock->end + 1;
-          l->end       = lock->start - 1;
-          insert_lock(&l->next,newl2);
-          newl2        = NULL;
-        }
-    skip:
-      lp = &l->next;
-      continue;
-
-    delete_lock:
-      delete_lock(lp);
-    }
-  if(lock->type != F_UNLCK)
-    {
-      *newl1 = *lock;
-      insert_lock(lp,newl1);
-      newl1 = NULL;
-    }
- out:
-  free(newl1);
-  free(newl2);
-  return 0;
-}
-
-static
-void
-flock_to_lock(struct flock *flock,
-              lock_t  *lock)
-{
-  memset(lock,0,sizeof(lock_t));
-  lock->type = flock->l_type;
-  lock->start = flock->l_start;
-  lock->end = flock->l_len ? flock->l_start + flock->l_len - 1 : OFFSET_MAX;
-  lock->pid = flock->l_pid;
-}
-
-static
-void
-lock_to_flock(lock_t  *lock,
-              struct flock *flock)
-{
-  flock->l_type = lock->type;
-  flock->l_start = lock->start;
-  flock->l_len = (lock->end == OFFSET_MAX) ? 0 : lock->end - lock->start + 1;
-  flock->l_pid = lock->pid;
-}
-
-static
 int
 fuse_flush_common(fuse_req_t       *req_,
-                  uint64_t          ino_,
                   fuse_file_info_t *ffi_)
 {
   struct flock lock;
-  lock_t l;
   int err;
   int errlock;
 
@@ -3124,16 +2969,6 @@ fuse_flush_common(fuse_req_t       *req_,
 
   if(errlock != -ENOSYS)
     {
-      flock_to_lock(&lock,&l);
-      l.owner = ffi_->lock_owner;
-
-      {
-        mutex_lockguard(f.lock);
-        node_t *n = get_node(ino_);
-        if(n)
-          locks_insert(n,&l);
-      }
-
       /* if op.lock() is defined FLUSH is needed regardless
          of op.flush() */
       if(err == -ENOSYS)
@@ -3168,7 +3003,7 @@ fuse_lib_release(fuse_req_t            *req_,
 
   if(ffi.flush)
     {
-      err = fuse_flush_common(req_,hdr_->nodeid,&ffi);
+      err = fuse_flush_common(req_,&ffi);
       if(err == -ENOSYS)
         err = 0;
     }
@@ -3196,27 +3031,9 @@ fuse_lib_flush(fuse_req_t             *req_,
   if(req_->conn.proto_minor >= 7)
     ffi.lock_owner = arg->lock_owner;
 
-  err = fuse_flush_common(req_,hdr_->nodeid,&ffi);
+  err = fuse_flush_common(req_,&ffi);
 
   fuse_reply_err(req_,err);
-}
-
-static
-int
-fuse_lock_common(fuse_req_t       *req_,
-                 uint64_t          ino_,
-                 fuse_file_info_t *ffi_,
-                 struct flock     *lock_,
-                 int               cmd_)
-{
-  int err;
-
-  err = f.ops.lock(&req_->ctx,
-                   ffi_,
-                   cmd_,
-                   lock_);
-
-  return err;
 }
 
 static
@@ -3241,9 +3058,7 @@ fuse_lib_getlk(fuse_req_t                  *req_,
                const struct fuse_in_header *hdr_)
 {
   int err;
-  lock_t lk;
   struct flock flk;
-  lock_t *conflict;
   fuse_file_info_t ffi = {};
   const struct fuse_lk_in *arg;
 
@@ -3253,21 +3068,10 @@ fuse_lib_getlk(fuse_req_t                  *req_,
 
   convert_fuse_file_lock(&arg->lk,&flk);
 
-  flock_to_lock(&flk,&lk);
-  lk.owner = ffi.lock_owner;
-
-  {
-    mutex_lockguard(f.lock);
-    node_t *n = get_node(hdr_->nodeid);
-    conflict = (n ? locks_conflict(n,&lk) : NULL);
-    if(conflict)
-      lock_to_flock(conflict,&flk);
-  }
-
-  if(!conflict)
-    err = fuse_lock_common(req_,hdr_->nodeid,&ffi,&flk,F_GETLK);
-  else
-    err = 0;
+  err = f.ops.lock(&req_->ctx,
+                   &ffi,
+                   F_GETLK,
+                   &flk);
 
   if(!err)
     fuse_reply_lock(req_,&flk);
@@ -3285,25 +3089,10 @@ fuse_lib_setlk(fuse_req_t        *req_,
 {
   int err;
 
-  err = fuse_lock_common(req_,
-                         ino,
-                         fi,
-                         lock,
-                         sleep ? F_SETLKW : F_SETLK);
-  if(!err)
-    {
-      lock_t l;
-
-      flock_to_lock(lock,&l);
-      l.owner = fi->lock_owner;
-
-      {
-        mutex_lockguard(f.lock);
-        node_t *n = get_node(ino);
-        if(n)
-          locks_insert(n,&l);
-      }
-    }
+  err = f.ops.lock(&req_->ctx,
+                   fi,
+                   sleep ? F_SETLKW : F_SETLK,
+                   lock);
 
   fuse_reply_err(req_,err);
 }
