@@ -100,8 +100,8 @@ Legend:
 | Option | Integration tests | Unit tests |
 |---|---|---|
 | `lazy-umount-mountpoint` | Live-upgrade remount scenario with stale previous mount | Startup control flow and error handling |
-| `remember-nodes` | NFS-like lookup stability over configured retention interval | Node cache retention/expiry logic |
-| `noforget` | No node expiry over extended period | Infinite retention mode mapping |
+| `remember-nodes` | NFS-like lookup stability until unlink/remove/rename replacement | Boolean and numeric compatibility parsing |
+| `noforget` | Retained nodes released on unlink/remove/rename replacement | Alias mapping to retained-node mode |
 | `allow-idmap` | UID/GID mapping behavior in idmapped mounts | Init flag propagation and compatibility checks |
 | `debug` | FUSE trace generation enabled/disabled | Debug option parse and logger toggling |
 | `log.file` | Trace output to stderr vs file path | Path parser and file sink setup |

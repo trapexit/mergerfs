@@ -15,6 +15,7 @@ function or have been replaced. **They should not be used.**
 * **hard_remove**: Does nothing.
 * **kernel_cache**: Use [cache.files=full](cache.md).
 * **negative_entry**: Use [cache.negative-entry](cache.md).
+* **remember**: Use `never-forget-nodes`.
 * **noforget**: Use `never-forget-nodes`.
 * **nonempty**: Does nothing.
 * **splice_move**: Does nothing.

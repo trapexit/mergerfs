@@ -32,18 +32,24 @@ public:
   {
     int rv;
     bool b = false;
+    s64  i = 0;
 
-    rv = str::from(s_,&b);
-    if((b == true) || s_.empty())
+    if(s_.empty())
       {
-        fuse_cfg.remember_nodes = -1;
-        return 0;
+        b = true;
+      }
+    else if((rv = str::from(s_,&i)) == 0)
+      {
+        b = (i != 0);
+      }
+    else
+      {
+        rv = str::from(s_,&b);
+        if(rv)
+          return rv;
       }
 
-    if(rv)
-      return rv;
-
-    fuse_cfg.remember_nodes = 0;
+    fuse_cfg.remember_nodes = b;
 
     return 0;
   }
@@ -51,7 +57,7 @@ public:
   std::string
   to_string() const
   {
-    if(fuse_cfg.remember_nodes == -1)
+    if(fuse_cfg.remember_nodes)
       return "true";
     return "false";
   }

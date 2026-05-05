@@ -102,13 +102,6 @@ struct list_head
   struct list_head *prev;
 };
 
-typedef struct remembered_node_t remembered_node_t;
-struct remembered_node_t
-{
-  node_t *node;
-  time_t  time;
-};
-
 typedef struct nodeid_gen_t nodeid_gen_t;
 struct nodeid_gen_t
 {
@@ -127,7 +120,6 @@ struct fuse
   fuse_operations ops;
   struct lock_queue_element *lockq;
 
-  kvec_t(remembered_node_t) remembered_nodes;
 };
 
 #define TREELOCK_WRITE -1
@@ -193,20 +185,6 @@ get_node(const uint64_t nodeid)
 }
 
 static
-void
-remove_remembered_node(node_t *node_)
-{
-  for(size_t i = 0; i < kv_size(f.remembered_nodes); i++)
-    {
-      if(kv_A(f.remembered_nodes,i).node != node_)
-        continue;
-
-      kv_delete(f.remembered_nodes,i);
-      break;
-    }
-}
-
-static
 uint32_t
 stat_crc32b(const struct stat *st_)
 {
@@ -228,31 +206,6 @@ stat_crc32b(const struct stat *st_)
 
   /* 0 is reserved to mean "no valid stat cache fingerprint". */
   return (crc ? crc : UINT32_MAX);
-}
-
-#ifndef CLOCK_MONOTONIC
-# define CLOCK_MONOTONIC CLOCK_REALTIME
-#endif
-
-static
-time_t
-current_time()
-{
-  int rv;
-  struct timespec now;
-  static clockid_t clockid = CLOCK_MONOTONIC;
-
-  rv = clock_gettime(clockid,&now);
-  if((rv == -1) && (errno == EINVAL))
-    {
-      clockid = CLOCK_REALTIME;
-      rv = clock_gettime(clockid,&now);
-    }
-
-  if(rv == -1)
-    now.tv_sec = time(NULL);
-
-  return now.tv_sec;
 }
 
 static
@@ -560,10 +513,10 @@ hash_name(node_t     *node,
 
 static
 inline
-int
+bool
 remember_nodes()
 {
-  return (fuse_cfg.remember_nodes > 0);
+  return fuse_cfg.remember_nodes;
 }
 
 static
@@ -572,8 +525,6 @@ delete_node(node_t *node)
 {
   assert(node->treelock == 0);
   unhash_name(node);
-  if(remember_nodes())
-    remove_remembered_node(node);
   unhash_id(node);
   node_free(node);
 }
@@ -627,9 +578,44 @@ inc_nlookup(node_t *node)
 }
 
 static
+void
+remember_node(node_t *node)
+{
+  if(node->remembered)
+    return;
+
+  inc_nlookup(node);
+  node->remembered = true;
+}
+
+static
+void
+unref_node_if_unused(node_t *node)
+{
+  if((node->nlookup == 0) &&
+     (node->open_count == 0) &&
+     (node->treelock == 0))
+    unref_node(node);
+}
+
+static
+void
+unremember_node(node_t *node)
+{
+  if(!node->remembered)
+    return;
+
+  assert(node->nlookup > 0);
+  node->remembered = false;
+  node->nlookup--;
+  unref_node_if_unused(node);
+}
+
+static
 node_t*
 find_node(uint64_t    parent,
-          const char *name)
+          const char *name,
+          bool        remember)
 {
   node_t *node;
   mutex_lockguard(f.lock);
@@ -652,8 +638,8 @@ find_node(uint64_t    parent,
         goto out_err;
 
       node->nodeid = generate_nodeid(&f.nodeid_gen);
-      if(fuse_cfg.remember_nodes)
-        inc_nlookup(node);
+      if(remember && remember_nodes())
+        remember_node(node);
 
       if(hash_name(node,parent,name) == -1)
         {
@@ -662,10 +648,6 @@ find_node(uint64_t    parent,
           goto out_err;
         }
       hash_id(node);
-    }
-  else if((node->nlookup == 1) && remember_nodes())
-    {
-      remove_remembered_node(node);
     }
   inc_nlookup(node);
 
@@ -725,6 +707,8 @@ unlock_path(uint64_t  nodeid,
     {
       assert(wnode->treelock == TREELOCK_WRITE);
       wnode->treelock = 0;
+      /* unlink_node() can drop the retained lookup while the node is locked. */
+      unref_node_if_unused(wnode);
     }
 
   node = get_node(nodeid);
@@ -1147,31 +1131,15 @@ forget_node(const uint64_t nodeid,
   assert(node->nlookup >= nlookup);
   node->nlookup -= nlookup;
 
-  if(node->nlookup == 0)
-    {
-      unref_node(node);
-    }
-  else if((node->nlookup == 1) && remember_nodes())
-    {
-      remembered_node_t fn;
-
-      fn.node = node;
-      fn.time = current_time();
-
-      kv_push(remembered_node_t,f.remembered_nodes,fn);
-    }
+  unref_node_if_unused(node);
 }
 
 static
 void
 unlink_node(node_t *node)
 {
-  if(remember_nodes())
-    {
-      assert(node->nlookup > 1);
-      node->nlookup--;
-    }
   unhash_name(node);
+  unremember_node(node);
 }
 
 static
@@ -1205,7 +1173,7 @@ rename_node(uint64_t    olddir,
   if(node == NULL)
     goto out;
 
-  if(newnode != NULL)
+  if((newnode != NULL) && (newnode != node))
     unlink_node(newnode);
 
   unhash_name(node);
@@ -1260,11 +1228,12 @@ static
 int
 set_path_info(uint64_t                 nodeid,
               const char              *name,
-              struct fuse_entry_param *e)
+              struct fuse_entry_param *e,
+              bool                     remember = true)
 {
   node_t *node;
 
-  node = find_node(nodeid,name);
+  node = find_node(nodeid,name,remember);
   if(node == NULL)
     return -ENOMEM;
 
@@ -1296,7 +1265,8 @@ lookup_path(fuse_req_t              *req_,
             const char              *name,
             const char              *fusepath,
             struct fuse_entry_param *e,
-            fuse_file_info_t        *fi)
+            fuse_file_info_t        *fi,
+            bool                     remember = true)
 {
   int rv;
 
@@ -1311,7 +1281,7 @@ lookup_path(fuse_req_t              *req_,
   if(rv)
     return rv;
 
-  return set_path_info(nodeid,name,e);
+  return set_path_info(nodeid,name,e,remember);
 }
 
 static
@@ -2043,6 +2013,7 @@ fuse_do_release(fuse_req_ctx_t   *req_ctx_,
       {
         assert(node->open_count > 0);
         node->open_count--;
+        unref_node_if_unused(node);
       }
   }
 }
@@ -2070,12 +2041,12 @@ fuse_lib_create(fuse_req_t            *req_,
   else
     name = ((char*)arg + sizeof(struct fuse_open_in));
 
-  // opportunistically allocate a node so we have a new nodeid for
-  // later in the actual create. Added for use with passthrough.
+  // Opportunistically allocate a provisional node so passthrough create has
+  // a nodeid. It is remembered only after create fully succeeds.
   {
     node_t *node;
 
-    node = find_node(hdr_->nodeid,name);
+    node = find_node(hdr_->nodeid,name,false);
     if(node == NULL)
       {
         fuse_reply_err(req_,ENOMEM);
@@ -2095,7 +2066,7 @@ fuse_lib_create(fuse_req_t            *req_,
                          &ffi);
       if(!err)
         {
-          err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,&ffi);
+          err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,&ffi,false);
           if(err)
             {
               f.ops.release(&req_->ctx,&ffi);
@@ -2114,7 +2085,11 @@ fuse_lib_create(fuse_req_t            *req_,
       mutex_lock(f.lock);
       node_t *node = get_node(e.ino);
       if(node)
-        node->open_count++;
+        {
+          if(remember_nodes())
+            remember_node(node);
+          node->open_count++;
+        }
       mutex_unlock(f.lock);
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
@@ -3184,122 +3159,6 @@ fuse_lib_fallocate(fuse_req_t                  *req_,
   fuse_reply_err(req_,err);
 }
 
-static
-int
-remembered_node_cmp(const void *a_,
-                    const void *b_)
-{
-  const remembered_node_t *a = (const remembered_node_t*)a_;
-  const remembered_node_t *b = (const remembered_node_t*)b_;
-
-  if(a->time < b->time)
-    return -1;
-  if(a->time > b->time)
-    return 1;
-  return 0;
-}
-
-static
-void
-remembered_nodes_sort()
-{
-  mutex_lock(f.lock);
-  qsort(&kv_first(f.remembered_nodes),
-        kv_size(f.remembered_nodes),
-        sizeof(remembered_node_t),
-        remembered_node_cmp);
-  mutex_unlock(f.lock);
-}
-
-#define MAX_PRUNE 100
-#define MAX_CHECK 1000
-
-int
-fuse_prune_some_remembered_nodes(int *offset_)
-{
-  time_t now;
-  int pruned;
-  int checked;
-
-  mutex_lock(f.lock);
-
-  pruned = 0;
-  checked = 0;
-  now = current_time();
-  while(*offset_ < (int)kv_size(f.remembered_nodes))
-    {
-      time_t age;
-      remembered_node_t *fn = &kv_A(f.remembered_nodes,*offset_);
-
-      if(pruned >= MAX_PRUNE)
-        break;
-      if(checked >= MAX_CHECK)
-        break;
-
-      checked++;
-      age = (now - fn->time);
-      if(fuse_cfg.remember_nodes > age)
-        break;
-
-      assert(fn->node->nlookup == 1);
-
-      /* Don't forget active directories */
-      if(fn->node->refctr > 1)
-        {
-          (*offset_)++;
-          continue;
-        }
-
-      fn->node->nlookup = 0;
-      unref_node(fn->node);
-      kv_delete(f.remembered_nodes,*offset_);
-      pruned++;
-    }
-
-  mutex_unlock(f.lock);
-
-  if((pruned < MAX_PRUNE) && (checked < MAX_CHECK))
-    *offset_ = -1;
-
-  return pruned;
-}
-
-#undef MAX_PRUNE
-#undef MAX_CHECK
-
-static
-void
-sleep_100ms(void)
-{
-  const struct timespec ms100 = {0,100 * 1000000};
-
-  nanosleep(&ms100,NULL);
-}
-
-void
-fuse_prune_remembered_nodes()
-{
-  int offset;
-  int pruned;
-
-  offset = 0;
-  pruned = 0;
-  for(;;)
-    {
-      pruned += fuse_prune_some_remembered_nodes(&offset);
-      if(offset >= 0)
-        {
-          sleep_100ms();
-          continue;
-        }
-
-      break;
-    }
-
-  if(pruned > 0)
-    remembered_nodes_sort();
-}
-
 static struct fuse_lowlevel_ops fuse_path_ops =
   {
     .access          = fuse_lib_access,
@@ -3532,12 +3391,6 @@ fuse_gc1()
 void
 fuse_populate_maintenance_thread(struct fuse *f_)
 {
-  MaintenanceThread::push_job([=](u64 count_)
-  {
-    if(remember_nodes())
-      fuse_prune_remembered_nodes();
-  });
-
   MaintenanceThread::push_job([](u64 count_)
   {
     if((count_ % 15) == 0)
@@ -3581,8 +3434,6 @@ fuse_new(int                           fd_,
     goto out_free_name_table;
 
   mutex_init(f.lock);
-
-  kv_init(f.remembered_nodes);
 
   root = node_alloc();
   if(root == NULL)
@@ -3636,7 +3487,6 @@ fuse_destroy(struct fuse *)
   free(f.name_table.array);
   mutex_destroy(f.lock);
   fuse_session_destroy(f.se);
-  kv_destroy(f.remembered_nodes);
 }
 
 int

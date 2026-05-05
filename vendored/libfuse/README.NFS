@@ -27,7 +27,8 @@ Because the high-level interface is path based, it is not possible to
 delegate looking up by inode to the filesystem.
 
 To work around this, currently a "noforget" option is provided, which
-makes the library remember nodes forever.  This will make the NFS
-server happy, but also results in an ever growing memory footprint for
-the filesystem.  For this reason if the filesystem is large (or the
-memory is small), then this option is not recommended.
+makes the library remember nodes until they are unlinked or otherwise
+removed.  This will make the NFS server happy, but also results in a
+larger memory footprint for the filesystem.  For this reason if the
+filesystem is large (or the memory is small), then this option is not
+recommended.

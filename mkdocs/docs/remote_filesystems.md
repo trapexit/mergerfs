@@ -57,7 +57,7 @@ NFS export settings:
 * `softreval`: NFS client will serve up cached data after `retrans`
   attempts to revalidate the data. Helps with intermittent network
   issues.
-* `timeo=150`: Timeout till retrying request. 
+* `timeo=150`: Timeout till retrying request.
 * `retrans=3`: Number of retrying a request.
 * `rsize=131072`: Read size.
 * `wsize=131072`: Write size.
@@ -76,12 +76,11 @@ but if you run into problems it may be worth trying Samba/SMB.
 
 **mergerfs settings:**
 
-* `never-forget-nodes=true` or `remember-nodes=SECONDS`
+* `never-forget-nodes=true`
 * `inodecalc=path-hash`
 * `lazy-umount-mountpoint=false`
 
-`never-forget-nodes=true` (or `remember-nodes` with a large value such
-as `86400` for a full day) is needed because NFS uses the
+`never-forget-nodes=true` is needed because NFS uses the
 `name_to_handle_at` and `open_by_handle_at` functions which allow a
 program to keep a reference to a file without technically having it
 open in the typical sense. The problem is that FUSE has no way to know
@@ -89,8 +88,8 @@ that NFS has a handle that it will later use to open the file
 again. As a result, it is possible for the kernel to tell mergerfs to
 forget about the file node and should NFS ever ask for that node's
 details in the future it would have nothing to respond with. Keeping
-nodes around forever (or however long is set with `remember-nodes`) is
-not ideal but at the moment the only way to manage the situation.
+nodes around until they are unlinked, removed, or replaced is not ideal
+but at the moment the only way to manage the situation.
 
 `inodecalc=path-hash` is needed because NFS is sensitive to
 out-of-band changes. FUSE doesn't care if a file's inode value changes

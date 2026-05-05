@@ -176,8 +176,8 @@ private:
   TFSRef<fs::path> _mountpoint;
   CfgNoforget      _never_forget_nodes;
   CfgNoforget      _noforget;
-  TFSRef<s64>      _remember;
-  TFSRef<s64>      _remember_nodes;
+  CfgNoforget      _remember;
+  CfgNoforget      _remember_nodes;
   SrcMounts        _srcmounts;
   TFSRef<int>      _threads;
   TFSRef<s64>      _uid;
