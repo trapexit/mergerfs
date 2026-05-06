@@ -1215,6 +1215,13 @@ update_stat(node_t       *node_,
 {
   uint32_t crc32b;
 
+  // This function can only invalidate an existing fingerprint; it
+  // never arms a new one. Arming (writing a non-zero CRC into
+  // state_crc32b) happens exclusively in open_auto_cache(), which is
+  // the single point that decides a file's page cache is worth
+  // retaining across opens. If stat_crc32b is 0 here the cache is
+  // already considered invalid and we have nothing to compare
+  // against.
   if(node_->stat_crc32b == 0)
     return;
 
