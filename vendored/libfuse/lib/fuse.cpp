@@ -2856,8 +2856,6 @@ fuse_lib_syncfs(fuse_req_t                  *req_,
   fuse_reply_err(req_,ENOSYS);
 }
 
-// TODO: This is just a copy of fuse_lib_create. Needs to be rewritten
-// so a nameless node can be setup.
 // name is always '/'
 // nodeid is the base directory
 static
@@ -2868,6 +2866,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   int err;
   char *fusepath;
   const char *name;
+  uint64_t new_nodeid;
   fuse_file_info_t ffi = {};
   struct fuse_entry_param e;
   struct fuse_create_in *arg;
@@ -2882,6 +2881,22 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   else
     name = (char*)arg + sizeof(struct fuse_open_in);
 
+  // Opportunistically allocate a provisional node so passthrough tmpfile has
+  // a nodeid. It is remembered only after tmpfile fully succeeds.
+  {
+    node_t *node;
+
+    node = find_node(hdr_->nodeid,name,false);
+    if(node == NULL)
+      {
+        fuse_reply_err(req_,ENOMEM);
+        return;
+      }
+
+    new_nodeid = node->nodeid;
+    req_->ctx.nodeid = new_nodeid;
+  }
+
   err = get_path_name(hdr_->nodeid,name,&fusepath);
   if(!err)
     {
@@ -2891,7 +2906,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
                           &ffi);
       if(!err)
         {
-          err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,&ffi);
+          err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,&ffi,false);
           if(err)
             {
               f.ops.release(&req_->ctx,
@@ -2912,7 +2927,11 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
       mutex_lock(f.lock);
       node_t *node = get_node(e.ino);
       if(node)
-        node->open_count++;
+        {
+          if(remember_nodes())
+            remember_node(node);
+          node->open_count++;
+        }
       mutex_unlock(f.lock);
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
@@ -2925,6 +2944,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
     }
   else
     {
+      forget_node(new_nodeid,1);
       fuse_reply_err(req_,err);
     }
 
