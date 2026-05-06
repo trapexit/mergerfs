@@ -2,6 +2,30 @@
 
 ## mergerfs
 
+### Advisory file locking not currently supported
+
+mergerfs does not implement POSIX or BSD advisory file locks as
+provided by FUSE. Doing so is complex because, as a union filesystem,
+it would need to forward lock requests to the underlying branches,
+which could result in blocking calls. Locally this is not a major
+concern—the kernel still manages locks for applications that all go
+through the mergerfs mount. However, if an application locks a file
+via the mergerfs mount while another locks the same file directly on
+the underlying filesystem, the locks will not interact as one might
+expect. That usage pattern is uncommon, so it is generally not a
+problem.
+
+The issue becomes more significant if you rely on locks over a remote
+filesystem like NFS across multiple hosts, because mergerfs never
+actually makes a lock call to the underlying branch. While network
+locks are possible, they are generally discouraged, so this may not be
+a huge loss either.
+
+That said, there is a strategy that could add lock support if there is
+sufficient demand, though it would probably be opt-in for performance
+and resource-usage reasons.
+
+
 ### FreeBSD version
 
 * [https://wiki.freebsd.org/FUSEFS](https://wiki.freebsd.org/FUSEFS)
@@ -27,7 +51,7 @@
     * ...
 
 
-#### Host vs Container identity
+### Host vs Container identity
 
 While **not** a bug some users have found when using containers that
 supplemental groups defined inside the container don't work as
